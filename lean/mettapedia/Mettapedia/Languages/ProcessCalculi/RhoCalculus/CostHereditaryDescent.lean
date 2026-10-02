@@ -163,14 +163,14 @@ theorem rho_costWhole_rule_category_of_dropWire (color : CostStaticColor)
             ⟨CostConstructor.base ⟨rhoCalc.terms[1],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PDrop" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>
@@ -205,14 +205,14 @@ theorem rho_costWhole_rule_category_of_quoteWire (color : CostStaticColor)
             ⟨CostConstructor.base ⟨rhoCalc.terms[2],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "NQuote" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>
@@ -568,7 +568,7 @@ theorem bare_whole_rule_category {rule : GrammarRule}
         (usesBareCollection_costBaseConstructor_iff rhoInteractionCut
           sourceConstructor.1).mp bare
       left
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
         rho_bare_src_category sourceConstructor.1 sourceConstructor.2
           sourceBare]
   | wrapped sourceConstructor =>
@@ -580,14 +580,7 @@ theorem bare_whole_rule_category {rule : GrammarRule}
         rho_bare_src_category sourceConstructor.1 sourceConstructor.2
           sourceBare, rho_interactingSort_name]
   | apparatus kind =>
-      obtain ⟨parameterName, collectionType, elementType, shape⟩ := bare
-      cases kind <;>
-        simp [CIGSLT.materializeDeclaredCostConstructor,
-          CostApparatusConstructor.grammarRule,
-          costSignatureUnitConstructor, costSignatureProductConstructor,
-          costSignedConstructor, costTokenStackEmptyConstructor,
-          costTokenStackConsConstructor, costFundingConstructor,
-          costContactConstructor] at shape
+      exact False.elim (kind.grammarRule_notBare _ bare)
 
 /-- Canonical units filter out of parallel contents. -/
 theorem parallelContents_units_eq_nil

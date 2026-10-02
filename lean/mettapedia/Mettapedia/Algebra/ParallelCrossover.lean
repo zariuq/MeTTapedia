@@ -19,10 +19,77 @@ namespace Mettapedia.Algebra.ParallelCrossover
 /-- Sequential load assigned to each available worker. Empty and idle workers
 are represented explicitly rather than assumed to contribute useful width. -/
 def workers (loads : List Nat) : WorkSpan :=
-  loads.foldr (fun load rest => WorkSpan.parallel ⟨load, load⟩ rest) 0
+  WorkSpan.parallelAll (loads.map fun load => ⟨load, load⟩)
 
 /-- Ideal critical path of one fixed worker assignment. -/
 def peak (loads : List Nat) : Nat := loads.foldr max 0
+
+/-- A worker phase assigns an ordered list of slices to each worker. Slices
+on one worker run successively; different worker lanes are independent.
+This representation also permits certified nested child work/span values. -/
+def workerPhase (assignments : List (List WorkSpan)) : WorkSpan :=
+  WorkSpan.parallelAll (assignments.map WorkSpan.sequentialAll)
+
+/-- Later phases start after the preceding phase has joined. A sequential
+fallback after a completed pool phase is a separate phase, not another
+apparently simultaneous worker lane. -/
+def workerPhases (phases : List (List (List WorkSpan))) : WorkSpan :=
+  WorkSpan.sequentialAll (phases.map workerPhase)
+
+theorem workerPhase_work (assignments : List (List WorkSpan)) :
+    (workerPhase assignments).work =
+      (assignments.map fun lane => (lane.map WorkSpan.work).sum).sum := by
+  simp [workerPhase, Function.comp_def]
+
+theorem workerPhase_span (assignments : List (List WorkSpan)) :
+    (workerPhase assignments).span =
+      (assignments.map fun lane => (lane.map WorkSpan.span).sum).foldr max 0 := by
+  simp [workerPhase, Function.comp_def]
+
+theorem workerPhases_work (phases : List (List (List WorkSpan))) :
+    (workerPhases phases).work =
+      (phases.map fun phase =>
+        (phase.map fun lane => (lane.map WorkSpan.work).sum).sum).sum := by
+  simp [workerPhases, workerPhase_work, Function.comp_def]
+
+theorem workerPhases_span (phases : List (List (List WorkSpan))) :
+    (workerPhases phases).span =
+      (phases.map fun phase =>
+        (phase.map fun lane => (lane.map WorkSpan.span).sum).foldr max 0).sum := by
+  simp [workerPhases, workerPhase_span, Function.comp_def]
+
+/-- Worker placement retains every slice's work. Flattening this placement
+for the work projection does not assert that its span is also determined. -/
+theorem workerPhase_work_flatten (assignments : List (List WorkSpan)) :
+    (workerPhase assignments).work = (assignments.flatten.map WorkSpan.work).sum := by
+  rw [workerPhase_work]
+  simp [List.map_flatten, List.sum_flatten, Function.comp_def]
+
+/-- Phase and lane grouping may change span but cannot remove work. -/
+theorem workerPhases_work_flatten (phases : List (List (List WorkSpan))) :
+    (workerPhases phases).work = (phases.flatten.flatten.map WorkSpan.work).sum := by
+  rw [workerPhases_work]
+  simp [List.map_flatten, List.sum_flatten, List.map_map, Function.comp_def]
+
+/-- Two assignments with the same slice occurrences have the same work,
+including when several slices run on one worker or in later phases. -/
+theorem workerPhases_work_eq_of_perm (first second : List (List (List WorkSpan)))
+    (sameSlices : first.flatten.flatten.Perm second.flatten.flatten) :
+    (workerPhases first).work = (workerPhases second).work := by
+  rw [workerPhases_work_flatten, workerPhases_work_flatten]
+  exact (sameSlices.map WorkSpan.work).sum_eq
+
+/-- Two ordered child slices on one worker cost their sum even when a
+second worker runs concurrently. A later sequential fallback adds span. -/
+theorem multiple_slices_and_fallback_control :
+    workerPhases [[ [⟨1, 1⟩, ⟨2, 2⟩], [⟨3, 3⟩] ], [ [⟨4, 4⟩] ]] =
+      ⟨10, 7⟩ := by decide
+
+/-- Forgetting placement and phase boundaries can incorrectly treat all
+four slices as simultaneous. The complete work sum does not fix this loss. -/
+theorem unplaced_children_lose_span :
+    (workerPhases [[ [⟨1, 1⟩, ⟨2, 2⟩], [⟨3, 3⟩] ], [ [⟨4, 4⟩] ]]).span ≠
+      (WorkSpan.parallelAll [⟨1, 1⟩, ⟨2, 2⟩, ⟨3, 3⟩, ⟨4, 4⟩]).span := by decide
 
 @[simp] theorem workers_work (loads : List Nat) :
     (workers loads).work = loads.sum := by

@@ -96,7 +96,7 @@ theorem universeZero_ne_legacyGround :
   intro equality
   have equalCodes := congrArg Term.code equality
   have equalHeads :
-      Tower.Head.sort Tower.zero = Tower.Head.legacyGround :=
+      LevelTower.Head.sort Tower.zero = LevelTower.Head.legacyGround :=
     Tm.head.inj equalCodes
   cases equalHeads
 
@@ -110,7 +110,7 @@ theorem universeZeroWitness_ne_legacyGroundWitness :
     SyntacticContextual.TowerExamples.universeZero.code =
       SyntacticContextual.TowerExamples.legacyGround.code at equalCodes
   have equalHeads :
-      Tower.Head.sort Tower.zero = Tower.Head.legacyGround :=
+      LevelTower.Head.sort Tower.zero = LevelTower.Head.legacyGround :=
     Tm.head.inj equalCodes
   cases equalHeads
 

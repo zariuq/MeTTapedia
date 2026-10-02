@@ -176,7 +176,7 @@ theorem nonempty_input_valid (h : CofinalInaccessibles.{u}) :
 
 theorem inputs_distinguished (h : CofinalInaccessibles.{u}) :
     (meaning h 0).value (fun _ => ∅) ≠ (meaning h 0).value (fun _ => (twoCode h).1) := by
-  rw [lower_computes h _ ⟨True.intro, seed_mem_zero h ∅⟩,
+  rw [lower_computes h _ ⟨True.intro, seed_mem_universeSet h ∅ (0 : Nat)⟩,
     lower_computes h _ (nonempty_input_valid h)]
   intro equal
   have codesEqual := (ZFSet.pair_inj.mp equal).1

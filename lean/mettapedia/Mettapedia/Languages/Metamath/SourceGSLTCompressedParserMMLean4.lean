@@ -647,13 +647,15 @@ def runProofFeedTokens
 
 /-! ## Comment-transparent proof token programmes -/
 
-/-- A token strictly inside a Metamath comment.  The scannerless source GSLT
-proves the stronger character-level fact that neither delimiter occurs as a
-substring; these two token-level consequences are exactly what the production
-`feedToken` comment branch consumes. -/
+/-- A legal token strictly inside a Metamath comment.  The certificate retains
+the delimiter and source-byte checks consumed by the production `feedToken`
+comment branch, including embedded delimiters rather than only whole-token
+delimiter equality. -/
 structure CommentInteriorToken (token : ByteSlice) : Prop where
   notClose : token.eqArray "$)".toAscii = false
   notOpen : token.eqArray "$(".toAscii = false
+  noDelimiter : hasCommentDelimiter token = false
+  sourceBytes : firstNonSourceByte? token = none
 
 /-- One located comment block as observed by the production byte loop.  The
 opening and closing calls are retained rather than erased because the
@@ -691,7 +693,8 @@ theorem runCommentInteriorTokens_eq
       have headStep :
           live.feedToken located.1 located.2 = live := by
         simp [ParserState.feedToken, commentMode,
-          headInterior.notClose, headInterior.notOpen]
+          headInterior.notClose, headInterior.notOpen,
+          headInterior.noDelimiter, headInterior.sourceBytes]
       have tailInterior : ∀ item ∈ tokens,
           CommentInteriorToken item.2 := by
         intro item member
@@ -727,16 +730,18 @@ theorem runLocatedCommentBlock_eq_of_proofMode
     simpa [ParserState.feedToken, entered, comment.closeToken] using restored
   simp [runLocatedCommentBlock, openStep, bodyStep, closeStep]
 
-/-- Negative comment boundary: a nested opening delimiter is rejected by the
-actual production parser, so it cannot be treated as transparent trivia. -/
+/-- Negative comment boundary: when comment-text checking is enforced, a
+nested opening delimiter is rejected by the actual production parser, so it
+cannot be treated as transparent trivia. -/
 theorem nestedCommentOpening_rejected
     (live : ParserState) (inner : TokenParser)
     (offset : Nat) (token : ByteSlice)
     (commentMode : live.tokp = .comment inner)
+    (commentTextEnforced : live.db.config.ignoreCommentText = false)
     (notClose : token.eqArray "$)".toAscii = false)
     (nestedOpen : token.eqArray "$(".toAscii = true) :
     (live.feedToken offset token).db.error? ≠ none := by
-  simp [ParserState.feedToken, commentMode, notClose, nestedOpen,
+  simp [ParserState.feedToken, commentMode, commentTextEnforced, notClose, nestedOpen,
     ParserState.mkErrorFromEvidence, ParserState.withDB]
 
 /-- If the source-derived inner transition fold succeeds, and the lexical

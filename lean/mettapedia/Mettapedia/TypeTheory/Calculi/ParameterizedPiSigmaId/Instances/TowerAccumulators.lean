@@ -101,7 +101,7 @@ theorem authoredType_eq : authoredType = .pi (.const num) (.pi (.const num) (.co
 theorem authoredRhs_eq :
     authoredRhs = .app (.app (.const addOntoFirst) (.var 0)) (.var 1) := rfl
 
-variable (lv : LevelExpr)
+variable (lv : LevelExpr Nat)
 
 /-- The declared types. -/
 def constantType : DeclName → Option (Tm Tower.Head 0) := fun name =>
@@ -250,7 +250,7 @@ theorem declaredSucc₂ :
 
 theorem num_typed₂ {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed TowerNumbersModel.rules₂ Γ (.const num) (.head u) :=
-  TowerNumbersModel.num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort declaredNum₂
+  TowerNumbersModel.num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort declaredNum₂
 
 theorem succ_typed₂ {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed TowerNumbersModel.rules₂ Γ (.const succ) (.pi (.const num) (.const num)) :=
@@ -270,7 +270,7 @@ theorem declaredNum₁ : firstStage.constantType num = some (.head u) := by
 
 theorem num_typed₁ {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed firstStage Γ (.const num) (.head u) :=
-  TowerNumbersModel.num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort declaredNum₁
+  TowerNumbersModel.num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort declaredNum₁
 
 theorem first_typed₁ {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed firstStage Γ (.const addOntoFirst) (.pi (.const num) (.pi (.const num) (.const num))) :=
@@ -467,7 +467,7 @@ theorem numbers_typesFormed (valuation : Nat → Nat) :
   unfold TowerNumbersModel.constantType at declared
   split at declared
   · cases declared
-    exact ⟨_, .sort _, .headType (Tower.HeadTyping.sort _)⟩
+    exact ⟨_, .sort _, .headType (LevelTower.HeadTyping.sort _)⟩
   · split at declared
     · cases declared
       exact ⟨_, .sort _, Derivable.mono decl.sub₁ TowerNumbersModel.ctorType_zero_typed⟩
@@ -647,7 +647,7 @@ theorem semanticNumbers : AllSemantic (setting lv valuation) (TowerNumbersModel.
 
 theorem num_typedNumbers {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed (TowerNumbersModel.rules lv) Γ (.const num) (.head u) :=
-  TowerNumbersModel.num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort
+  TowerNumbersModel.num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort
     (TowerNumbersModel.declaredNum lv)
 
 /-- The package declares the scrutinee-first form by structural recursion on
@@ -699,8 +699,8 @@ theorem declaresFirst :
         (TowerNumbersModel.heads lv) (TowerNumbersModel.algebra lv) (numbers_typesFormed lv valuation)
         (firstCheck_declaresCall lv) (firstCheck_inert lv) (firstCheck_reflects lv)
         (declaredFirstCheck lv) freeE (fun _ => num_ne_first) zero_ne_first freeC
-        (.snoc .nil ⟨_, Tower.IsUniverse.sort _, num_typedNumbers lv⟩)
-        ⟨_, Tower.IsUniverse.sort _, num_typedNumbers lv⟩
+        (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, num_typedNumbers lv⟩)
+        ⟨_, LevelTower.IsUniverse.sort _, num_typedNumbers lv⟩
         (body := firstBody zero []) trivial (checkZero lv)
     · exact bodyTyped_of_check (S₀ := TowerNumbersModel.setting lv valuation)
         (f := addOntoFirst) (T := num) (k := succ) (e := firstEntries) (s := 0) (d := 1 + 0)
@@ -709,11 +709,11 @@ theorem declaresFirst :
         (TowerNumbersModel.heads lv) (TowerNumbersModel.algebra lv) (numbers_typesFormed lv valuation)
         (firstCheck_declaresCall lv) (firstCheck_inert lv) (firstCheck_reflects lv)
         (declaredFirstCheck lv) freeE (fun l => by cases l <;> exact num_ne_first) succ_ne_first freeC
-        (.snoc (.snoc (.snoc .nil ⟨_, Tower.IsUniverse.sort _, num_typedNumbers lv⟩)
-          ⟨_, Tower.IsUniverse.sort _, num_typedNumbers lv⟩)
-          ⟨_, Tower.IsUniverse.sort _, .piForm (num_typedNumbers lv) (Tower.IsUniverse.sort _)
-            (num_typedNumbers lv) (Tower.IsUniverse.sort _) (.sorts _ _)⟩)
-        ⟨_, Tower.IsUniverse.sort _, num_typedNumbers lv⟩
+        (.snoc (.snoc (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, num_typedNumbers lv⟩)
+          ⟨_, LevelTower.IsUniverse.sort _, num_typedNumbers lv⟩)
+          ⟨_, LevelTower.IsUniverse.sort _, .piForm (num_typedNumbers lv) (LevelTower.IsUniverse.sort _)
+            (num_typedNumbers lv) (LevelTower.IsUniverse.sort _) (.sorts _ _)⟩)
+        ⟨_, LevelTower.IsUniverse.sort _, num_typedNumbers lv⟩
         (body := firstBody succ [.recursive]) ⟨trivial, succ_ne_first, trivial⟩ (checkSucc lv)
   rule := by
     intro k fields mem m σ as has
@@ -854,7 +854,7 @@ section Equations
 
 open TowerAccumulatorsModel
 
-variable {lv : LevelExpr} {n : Nat} {Γ : Ctx Tower.Head n}
+variable {lv : LevelExpr Nat} {n : Nat} {Γ : Ctx Tower.Head n}
 
 theorem TowerAccumulators.succ_typed {t : Tm Tower.Head n}
     (typing : Typed (rules lv) Γ t (.const num)) :
@@ -931,7 +931,7 @@ section Recursor
 
 open TowerAccumulatorsModel
 
-variable {lv : LevelExpr} {n : Nat} {Γ : Ctx Tower.Head n}
+variable {lv : LevelExpr Nat} {n : Nat} {Γ : Ctx Tower.Head n}
 
 /-- The recursion's result family `λ t. Π acc. num` is a family of types of the
 recursor's universe. -/

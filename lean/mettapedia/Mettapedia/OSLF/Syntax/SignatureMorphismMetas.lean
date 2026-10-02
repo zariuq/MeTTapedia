@@ -220,6 +220,175 @@ theorem SigMor.instantiateArgs_mapArgs (F : SigMor S T) {M : List (MetaArity S)}
       rfl
 end
 
+/-- Transport a contextual body along equality of its declaration. -/
+def castContextualMetaBody {V : Signature} {a b : MetaArity V} (h : a = b)
+    {Θ : Ctx V} (t : Term V (a.1 ++ Θ) a.2) : Term V (b.1 ++ Θ) b.2 := h ▸ t
+
+theorem castContextualMetaBody_symm {V : Signature} {a b : MetaArity V} (h : a = b)
+    {Θ : Ctx V} (t : Term V (b.1 ++ Θ) b.2) :
+    castContextualMetaBody h (castContextualMetaBody h.symm t) = t := by
+  subst h
+  rfl
+
+/-- Translate the independent ambient variables while retaining each
+metavariable declaration and its dependency prefix. -/
+def SigMor.mapContextualBody (F : SigMor S T) {M : List (MetaArity S)}
+    {Θ : Ctx S} {Θ' : Ctx T} (ρ : VarMap F.sortMap Θ Θ')
+    (body : ContextualAssignment S M Θ) : ContextualAssignment T (F.mapMetas M) Θ' :=
+  fun j => castContextualMetaBody (F.get_mapMetas (F.unmapMetaIndex j)).symm
+    (mapTerm F (liftVarMap F.sortMap ρ (M.get (F.unmapMetaIndex j)).1)
+      (body (F.unmapMetaIndex j)))
+
+theorem SigMor.mapContextualBody_at (F : SigMor S T) {M : List (MetaArity S)}
+    {Θ : Ctx S} {Θ' : Ctx T} (ρ : VarMap F.sortMap Θ Θ')
+    (body : ContextualAssignment S M Θ) (i : Fin M.length) :
+    castContextualMetaBody (F.get_mapMetas i) (F.mapContextualBody ρ body (F.mapMetaIndex i)) =
+      mapTerm F (liftVarMap F.sortMap ρ (M.get i).1) (body i) := by
+  unfold SigMor.mapContextualBody
+  simp only [SigMor.unmap_mapMetaIndex]
+  exact castContextualMetaBody_symm (F.get_mapMetas i) _
+
+theorem contextualInstantiateArgs_castArity {M : List (MetaArity S)} {Θ Ξ Γ : Ctx S}
+    (body : ContextualAssignment S M Θ) (ambient : Sub S Θ Γ) (ordinary : Sub S Ξ Γ)
+    {as bs : List (List S.Srt × S.Srt)} (h : as = bs)
+    (args : Args (Binding.withMetas S M) as Ξ) :
+    ContextualAssignment.instantiateArgs body ambient ordinary
+        (castArgsArity (T := Binding.withMetas S M) h args) =
+      castArgsArity (T := S) h (ContextualAssignment.instantiateArgs body ambient ordinary args) := by
+  subst h
+  rfl
+
+theorem contextualInstantiate_castMetaOp {N : List (MetaArity T)} {Θ Ξ Γ : Ctx T}
+    (body : ContextualAssignment T N Θ) (ambient : Sub T Θ Γ) (ordinary : Sub T Ξ Γ)
+    (j : Fin N.length) {b : MetaArity T} (h : N.get j = b)
+    (args : Args (Binding.withMetas T N) (b.1.map (fun s => ([], s))) Ξ) :
+    ContextualAssignment.instantiate body ambient ordinary
+        (Term.op (.inr (castMetaOp h (.mk j)))
+          (castArgsArity (T := Binding.withMetas T N) (castMetaOp_arity j h).symm args)) =
+      bind (ContextualAssignment.joinSub
+        (argsToSub (ContextualAssignment.instantiateArgs body ambient ordinary args)) ambient)
+        (castContextualMetaBody h (body j)) := by
+  subst b
+  rfl
+
+/-- Mapped dependency arguments and ambient environments combine without
+requiring an inverse of the sort map. -/
+theorem SigMor.joinSub_compat (F : SigMor S T) {Θ : Ctx S} {Θ' : Ctx T}
+    {Γ : Ctx S} {Γ' : Ctx T} (ρ : VarMap F.sortMap Θ Θ') (ν : VarMap F.sortMap Γ Γ')
+    (ambient : Sub S Θ Γ) (ambient' : Sub T Θ' Γ')
+    (ambientCompat : ∀ s v, ambient' (F.sortMap s) (ρ s v) = mapTerm F ν (ambient s v)) :
+    ∀ (dependencies : Ctx S) (arguments : Sub S dependencies Γ)
+      (arguments' : Sub T (dependencies.map F.sortMap) Γ')
+      (_argumentCompat : ∀ s v,
+        arguments' (F.sortMap s) (mapVar F.sortMap s v) = mapTerm F ν (arguments s v))
+      (s : S.Srt) (v : Var (dependencies ++ Θ) s),
+      ContextualAssignment.joinSub arguments' ambient' (F.sortMap s)
+          (liftVarMap F.sortMap ρ dependencies s v) =
+        mapTerm F ν (ContextualAssignment.joinSub arguments ambient s v)
+  | [], _, _, _, s, v => ambientCompat s v
+  | b :: dependencies, _arguments, _arguments', hc, _, .zero => hc b (Var.zero (Γ := dependencies))
+  | _ :: dependencies, arguments, arguments', hc, s, .succ v =>
+      F.joinSub_compat ρ ν ambient ambient' ambientCompat dependencies
+        (fun s v => arguments s (.succ v)) (fun s v => arguments' s (.succ v))
+        (fun s v => hc s (.succ v)) s v
+
+/-- Ambient values weaken through exactly the mapped binder list. -/
+theorem SigMor.weakenSub_compat (F : SigMor S T) {Θ : Ctx S} {Θ' : Ctx T}
+    {Γ : Ctx S} {Γ' : Ctx T} (ρ : VarMap F.sortMap Θ Θ') (ν : VarMap F.sortMap Γ Γ')
+    (ambient : Sub S Θ Γ) (ambient' : Sub T Θ' Γ')
+    (hc : ∀ s v, ambient' (F.sortMap s) (ρ s v) = mapTerm F ν (ambient s v))
+    (bs : Ctx S) (s : S.Srt) (v : Var Θ s) :
+    ContextualAssignment.weakenSub (S := T) (bs.map F.sortMap) ambient' (F.sortMap s) (ρ s v) =
+      mapTerm F (liftVarMap F.sortMap ν bs) (ContextualAssignment.weakenSub (S := S) bs ambient s v) := by
+  unfold ContextualAssignment.weakenSub
+  rw [hc, rename_mapTerm, mapTerm_rename]
+  exact mapTerm_congr F _ _ (fun s v => (liftVarMap_weakenVar F ν bs v).symm) _
+
+mutual
+/-- Signature transport commutes with actual contextual instantiation.
+The three context maps and both environment comparisons are independent. -/
+theorem SigMor.contextualInstantiate_mapTerm (F : SigMor S T) {M : List (MetaArity S)}
+    {Θ : Ctx S} {Θ' : Ctx T} (ρ : VarMap F.sortMap Θ Θ')
+    (body : ContextualAssignment S M Θ) :
+    ∀ {Ξ : Ctx S} {Ξ' : Ctx T} (μ : VarMap F.sortMap Ξ Ξ')
+      {Γ : Ctx S} {Γ' : Ctx T} (ν : VarMap F.sortMap Γ Γ')
+      (ambient : Sub S Θ Γ) (ambient' : Sub T Θ' Γ')
+      (ordinary : Sub S Ξ Γ) (ordinary' : Sub T Ξ' Γ')
+      (_ha : ∀ s v, ambient' (F.sortMap s) (ρ s v) = mapTerm F ν (ambient s v))
+      (_ho : ∀ s v, ordinary' (F.sortMap s) (μ s v) = mapTerm F ν (ordinary s v))
+      {s : S.Srt} (term : Term (Binding.withMetas S M) Ξ s),
+      ContextualAssignment.instantiate (F.mapContextualBody ρ body) ambient' ordinary'
+          (mapTerm (F.withMetas M) μ term) =
+        mapTerm F ν (ContextualAssignment.instantiate body ambient ordinary term)
+  | _, _, _, _, _, _, _, _, _, _, _, ho, _, .var v => ho _ v
+  | _, _, μ, _, _, ν, ambient, ambient', ordinary, ordinary', ha, ho, _, .op (.inl o) args => by
+      change Term.op (F.opMap o)
+        (ContextualAssignment.instantiateArgs (F.mapContextualBody ρ body) ambient' ordinary'
+          (castArgsArity (T := Binding.withMetas T (F.mapMetas M))
+            (F.carriesArity o).symm (mapArgs (F.withMetas M) μ args))) = _
+      rw [contextualInstantiateArgs_castArity,
+        F.contextualInstantiateArgs_mapArgs ρ body μ ν ambient ambient' ordinary ordinary' ha ho]
+      rfl
+  | _, _, μ, _, _, ν, ambient, ambient', ordinary, ordinary', ha, ho, _, .op (.inr (.mk i)) args => by
+      refine (congrArg
+        (ContextualAssignment.instantiate (F.mapContextualBody ρ body) ambient' ordinary')
+        (F.withMetas_mapTerm_meta M μ i args)).trans ?_
+      refine (contextualInstantiate_castMetaOp (F.mapContextualBody ρ body) ambient' ordinary'
+        (F.mapMetaIndex i) (F.get_mapMetas i)
+        (mapFlatArgs (F.withMetas M) μ args)).trans ?_
+      rw [F.mapContextualBody_at]
+      have hargs : ContextualAssignment.instantiateArgs (F.mapContextualBody ρ body) ambient' ordinary'
+          (mapFlatArgs (F.withMetas M) μ args) =
+          mapFlatArgs F ν (ContextualAssignment.instantiateArgs body ambient ordinary args) := by
+        unfold mapFlatArgs
+        rw [contextualInstantiateArgs_castArity,
+          F.contextualInstantiateArgs_mapArgs ρ body μ ν ambient ambient' ordinary ordinary' ha ho]
+      refine (congrArg (fun args => bind (ContextualAssignment.joinSub (argsToSub args) ambient')
+        (mapTerm F (liftVarMap F.sortMap ρ (M.get i).1) (body i))) hargs).trans ?_
+      exact (mapTerm_bind F (liftVarMap F.sortMap ρ (M.get i).1) ν
+        (ContextualAssignment.joinSub
+          (argsToSub (ContextualAssignment.instantiateArgs body ambient ordinary args)) ambient)
+        (ContextualAssignment.joinSub
+          (argsToSub (mapFlatArgs F ν (ContextualAssignment.instantiateArgs body ambient ordinary args))) ambient')
+        (F.joinSub_compat ρ ν ambient ambient' ha (M.get i).1 _ _
+          (argsToSub_mapFlatArgs F ν (ContextualAssignment.instantiateArgs body ambient ordinary args)))
+        (body i)).symm
+
+/-- The same comparison retains argument order and the local binder lift. -/
+theorem SigMor.contextualInstantiateArgs_mapArgs (F : SigMor S T) {M : List (MetaArity S)}
+    {Θ : Ctx S} {Θ' : Ctx T} (ρ : VarMap F.sortMap Θ Θ')
+    (body : ContextualAssignment S M Θ) :
+    ∀ {Ξ : Ctx S} {Ξ' : Ctx T} (μ : VarMap F.sortMap Ξ Ξ')
+      {Γ : Ctx S} {Γ' : Ctx T} (ν : VarMap F.sortMap Γ Γ')
+      (ambient : Sub S Θ Γ) (ambient' : Sub T Θ' Γ')
+      (ordinary : Sub S Ξ Γ) (ordinary' : Sub T Ξ' Γ')
+      (_ha : ∀ s v, ambient' (F.sortMap s) (ρ s v) = mapTerm F ν (ambient s v))
+      (_ho : ∀ s v, ordinary' (F.sortMap s) (μ s v) = mapTerm F ν (ordinary s v))
+      {as : List (List S.Srt × S.Srt)} (args : Args (Binding.withMetas S M) as Ξ),
+      ContextualAssignment.instantiateArgs (F.mapContextualBody ρ body) ambient' ordinary'
+          (mapArgs (F.withMetas M) μ args) =
+        mapArgs F ν (ContextualAssignment.instantiateArgs body ambient ordinary args)
+  | _, _, _, _, _, _, _, _, _, _, _, _, _, .nil => rfl
+  | _, _, μ, _, _, ν, ambient, ambient', ordinary, ordinary', ha, ho, _,
+      .cons (bs := bs) head tail => by
+      change Args.cons
+        (ContextualAssignment.instantiate (F.mapContextualBody ρ body)
+          (ContextualAssignment.weakenSub (S := T) (bs.map F.sortMap) ambient')
+          (liftSub ordinary' (bs.map F.sortMap))
+          (mapTerm (F.withMetas M) (liftVarMap F.sortMap μ bs) head))
+        (ContextualAssignment.instantiateArgs (F.mapContextualBody ρ body) ambient' ordinary'
+          (mapArgs (F.withMetas M) μ tail)) = _
+      rw [F.contextualInstantiate_mapTerm ρ body (liftVarMap F.sortMap μ bs)
+        (liftVarMap F.sortMap ν bs)
+        (ContextualAssignment.weakenSub (S := S) bs ambient)
+        (ContextualAssignment.weakenSub (S := T) (bs.map F.sortMap) ambient')
+        (liftSub ordinary bs) (liftSub ordinary' (bs.map F.sortMap))
+        (F.weakenSub_compat ρ ν ambient ambient' ha bs)
+        (liftSub_compat F μ ν ordinary ordinary' ho bs),
+        F.contextualInstantiateArgs_mapArgs ρ body μ ν ambient ambient' ordinary ordinary' ha ho]
+      rfl
+end
+
 /-- Translate an authored equation schema, including its metavariable interface. -/
 def SigMor.mapEqAxiom (F : SigMor S T) {M : List (MetaArity S)}
     (e : EqAxiom S M) : EqAxiom T (F.mapMetas M) where
@@ -231,16 +400,34 @@ def SigMor.mapEqAxiom (F : SigMor S T) {M : List (MetaArity S)}
 /-- The mapped equation list supplies its own generator compatibility proof. -/
 theorem SigMor.respectsEquations_map (F : SigMor S T) {M : List (MetaArity S)}
     (E : List (EqAxiom S M)) : F.RespectsEquations E (E.map F.mapEqAxiom) := by
-  intro i body
-  let j : Fin (E.map F.mapEqAxiom).length := ⟨i.val, by simpa only [List.length_map] using i.isLt⟩
-  have h := EqClosure.ax (E := E.map F.mapEqAxiom) j (F.mapMetaBody body)
-    (fun _ x => Term.var x)
+  intro i Θ Γ body ambient ordinary
+  let j : Fin (E.map F.mapEqAxiom).length :=
+    ⟨i.val, by simpa only [List.length_map] using i.isLt⟩
+  let mappedBody := F.mapContextualBody (mapVar F.sortMap) body
+  let mappedAmbient := F.mapSub (mapVar F.sortMap) ambient
+  let mappedOrdinary := F.mapSub (mapVar F.sortMap) ordinary
   have hj : (E.map F.mapEqAxiom).get j = F.mapEqAxiom (E.get i) := by
     simp [j, List.get_eq_getElem]
-  simp only [bind_id] at h
-  rw [hj] at h
-  simp only [SigMor.mapEqAxiom, SigMor.onTerm, F.instantiate_mapTerm] at h
-  exact h
+  have admitted : ∀ close : Sub T (F.mapEqAxiom (E.get i)).ctx (Γ.map F.sortMap),
+      EqClosure (E.map F.mapEqAxiom)
+        (ContextualAssignment.instantiate mappedBody mappedAmbient close (F.mapEqAxiom (E.get i)).lhs)
+        (ContextualAssignment.instantiate mappedBody mappedAmbient close (F.mapEqAxiom (E.get i)).rhs) := by
+    rw [← hj]
+    intro close
+    exact EqClosure.ax (E := E.map F.mapEqAxiom) j mappedBody mappedAmbient close
+  have generator := admitted mappedOrdinary
+  dsimp only [SigMor.mapEqAxiom] at generator
+  have left := F.contextualInstantiate_mapTerm (mapVar F.sortMap) body
+    (mapVar F.sortMap) (mapVar F.sortMap) ambient mappedAmbient ordinary mappedOrdinary
+    (F.mapSub_mapVar (mapVar F.sortMap) ambient)
+    (F.mapSub_mapVar (mapVar F.sortMap) ordinary) (E.get i).lhs
+  have right := F.contextualInstantiate_mapTerm (mapVar F.sortMap) body
+    (mapVar F.sortMap) (mapVar F.sortMap) ambient mappedAmbient ordinary mappedOrdinary
+    (F.mapSub_mapVar (mapVar F.sortMap) ambient)
+    (F.mapSub_mapVar (mapVar F.sortMap) ordinary) (E.get i).rhs
+  dsimp only [SigMor.onTerm] at generator ⊢
+  rw [left, right] at generator
+  exact generator
 
 /-- Equation closure is preserved by the schema translation, without a
 user-supplied equation-preservation field. -/
@@ -302,7 +489,7 @@ def identityBody (i : Fin unaryMetas.length) :
   exact .var .zero
 
 theorem source_instance : EqClosure [unaryEquation] ta tb := by
-  have h := EqClosure.ax (E := [unaryEquation]) (Γ := []) 0 identityBody
+  have h := EqClosure.ax_closed (E := [unaryEquation]) (Γ := []) 0 identityBody
     (fun _ x => nomatch x)
   exact h
 
@@ -320,6 +507,35 @@ theorem mapped_instance_not_original :
 theorem transported_schema_equation :
     EqClosure ([unaryEquation].map swap.mapEqAxiom) tb ta :=
   swap.eqClosure_mapEquations (mapVar swap.sortMap) source_instance
+
+/-- The metavariable depends on the independent ambient variable and ignores
+its declared argument. This instance requires contextual axiom admission. -/
+def ambientUnaryBody : ContextualAssignment twoSig unaryMetas [()] := by
+  intro i
+  have hi : i = 0 := Fin.eq_zero i
+  subst i
+  exact .var (.succ .zero)
+
+theorem contextual_source_instance :
+    EqClosure [unaryEquation] (.var .zero : Term twoSig [()] ()) (.op .b .nil) := by
+  have h := EqClosure.ax (E := [unaryEquation]) 0 ambientUnaryBody
+    (fun _ v => Term.var v) (fun _ v => nomatch v)
+  exact h
+
+/-- The same contextual instance crosses a nonidentity signature map;
+the ambient variable stays variable while the constant symbol is exchanged. -/
+theorem transported_contextual_schema_equation :
+    EqClosure ([unaryEquation].map swap.mapEqAxiom)
+      (.var .zero : Term twoSig [()] ()) (.op .a .nil) :=
+  swap.eqClosure_mapEquations (mapVar swap.sortMap) contextual_source_instance
+
+/-- Without authored equations, that ambient variable and constant remain
+separate syntax. The positive instance is supplied by the real generator. -/
+theorem contextual_instance_requires_equation :
+    ¬ EqClosure ([] : List (EqAxiom twoSig unaryMetas))
+      (.var .zero : Term twoSig [()] ()) (.op .b .nil) := by
+  intro h
+  cases eqClosure_empty_eq h
 
 abbrev distinctSortMetas : List (MetaArity RedexPositionWitness.sig) :=
   [([], RedexPositionWitness.Srt.nm), ([], RedexPositionWitness.Srt.pr)]

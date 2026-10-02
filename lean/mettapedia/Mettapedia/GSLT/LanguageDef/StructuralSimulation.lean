@@ -1,40 +1,24 @@
-import Mettapedia.GSLT.LanguageDef.MapLanguageDef
-import Mettapedia.GSLT.LanguageDef.StructuralRenamingSemantics
+import Mettapedia.GSLT.LanguageDef.SymbolMapSimulation
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
-# Simulation of contextual reduction along structural presentation maps
+# Structural simulation and its operational controls
 
-One-step operational reduction of a `LanguageDef` is preserved along
-structural presentation morphisms.  The center is a fuel-indexed simultaneous
-induction over the relational contextual engine (`StepAt` / `PremisesAt` /
-`PremiseAt`): if a base premise evaluator maps source results along a symbol action
-with injective constructor part, every bounded contextual derivation maps to
-a bounded derivation of the image presentation at the same fuel
-(`stepAt_mapLanguageDef`).  Together with monotonicity in the rule set
-(`stepAt_of_rewrites_mem`) this yields the headline simulation theorem
-`step_map_of_structuralMorphism`: a source step is carried by a
-`StructuralMorphism` whose constructor action is injective and whose base
-premise evaluators satisfy the stated simulation laws.
+`SymbolMapSimulation` proves bounded transport directly between two
+presentations: mapped rules remain authored rules, and mapped premise
+results remain evaluator results.  This includes arbitrary constructor
+maps and inclusion of declarations, at the same derivation depth.
 
-At the derived-semantics level, the default evaluator
-`engineBasePremises RelationEnv.empty` is proved to map source results
-(`engineBasePremises_empty_maps_results`) under one extra naming condition:
-the symbol action must fix the builtin relation name `"eq"`.  This condition
-is genuinely required — `builtinRelationTuples` recognises the literal name
-`"eq"`, so an action that renames it silences the builtin equality relation
-in the image (negative canary
-`engineBasePremises_empty_mapping_requires_eq_name`).  Freshness
-premises map unconditionally because `mapPattern` preserves free
-variable names.  The corollary `langReduces_map_of_structuralMorphism`
-transports the default reduction relation of the OSLF synthesis layer.
+The injectivity-taking theorem signatures in this module are retained for
+existing consumers and specialize that general transport.  Injectivity is
+needed for exact matcher-result equality in `StructuralRenamingSemantics`,
+but is unnecessary for forward reduction.  The controls separate these
+claims: collapsing constructors can create a match, and adding target rules
+can introduce a transition with no source counterpart.
 
-Simulation is one-way: the target may have additional rules, so mapped
-patterns can step in the target without any source counterpart
-(`simulation_is_one_way`).  Constructor injectivity is load-bearing:
-`StructuralRenamingSemantics` states `matchPattern_equivariance` only for
-injective actions and contains no counterexample for the non-injective case,
-so `matchPattern_equivariance_requires_injectivity` below records one.
+The default evaluator requires that the built-in relation name `"eq"`
+remain fixed.  Renaming it would discard successful equality queries; the
+negative control checks that premise boundary explicitly.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.StructuralSimulation
@@ -50,29 +34,10 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.StructuralRenamingSemantics
 
-/-! ## Mapping results of base premise evaluators -/
+/-! ## Existing signatures as instances of general transport -/
 
-/-- A change-of-base square for non-contextual premise evidence along a
-symbol action: every result produced by `base` at a source presentation is
-produced, in mapped form, by `base'` at the image presentation.  Unlike the
-exact equality law of the coproduct module, this is a one-directional
-membership law, so the target evaluator may produce additional results. -/
-def MapsBasePremiseResults (symbols : LanguageDefSymbolMap)
-    (base base' : BasePremiseEvaluator) : Prop :=
-  ∀ (language : LanguageDef) (bindings : Bindings) (premise : Premise)
-    (result : Bindings),
-    result ∈ base language bindings premise →
-      mapBindings symbols result ∈
-        base' (mapLanguageDef symbols language) (mapBindings symbols bindings)
-          (mapPremise symbols premise)
-
-/-! ## Mapping bounded contextual reduction -/
-
-/-- Bounded contextual derivations map along a symbol action with injective
-constructor part and a base-result mapping law, at the same contextual
-fuel.  This is the simultaneous induction over `StepAt`, `PremisesAt`, and
-`PremiseAt`: the congruence case recurses through the step relation at the
-same fuel index, so the fuel induction carries all three statements. -/
+/-- Bounded contextual derivations map along an injective symbol action.
+The general theorem needs no injectivity. -/
 theorem stepAt_mapLanguageDef
     {symbols : LanguageDefSymbolMap} {base base' : BasePremiseEvaluator}
     {language : LanguageDef}
@@ -82,89 +47,11 @@ theorem stepAt_mapLanguageDef
     (evidence : StepAt base language fuel source target) :
     StepAt base' (mapLanguageDef symbols language) fuel
       (mapPattern symbols source) (mapPattern symbols target) := by
-  induction fuel generalizing source target with
-  | zero => cases evidence
-  | succ fuel inductionHypothesis =>
-      have premiseMap :
-          ∀ {initial final : Bindings} {premise : Premise},
-            PremiseAt base language fuel initial premise final →
-              PremiseAt base' (mapLanguageDef symbols language) fuel
-                (mapBindings symbols initial) (mapPremise symbols premise)
-                (mapBindings symbols final) := by
-        intro initial final premise premiseEvidence
-        cases premiseEvidence with
-        | freshness member =>
-            exact .freshness (mapsBaseResults _ _ _ _ member)
-        | relationQuery member =>
-            exact .relationQuery (mapsBaseResults _ _ _ _ member)
-        | forAll member =>
-            exact .forAll (mapsBaseResults _ _ _ _ member)
-        | congruence recursive matched merged =>
-            rename_i premiseBindings premiseSource premiseTarget candidate
-            refine PremiseAt.congruence
-              (premiseBindings := mapBindings symbols premiseBindings)
-              (candidate := mapPattern symbols candidate) ?_ ?_ ?_
-            · rw [applyBindings_mapPattern]
-              exact inductionHypothesis recursive
-            · rw [matchPattern_equivariance symbols constructorInjective]
-              exact List.mem_map_of_mem matched
-            · rw [← mergeBindings_mapBindings symbols constructorInjective,
-                merged]
-              rfl
-        | scopedRoot empty recursive matched merged =>
-            rename_i premiseBindings step candidate
-            refine PremiseAt.scopedRoot
-              (premiseBindings := mapBindings symbols premiseBindings)
-              (candidate := mapPattern symbols candidate)
-              (by simp [empty]) ?_ ?_ ?_
-            · rw [applyBindings_mapPattern]
-              exact inductionHypothesis recursive
-            · rw [matchPattern_equivariance symbols constructorInjective]
-              exact List.mem_map_of_mem matched
-            · rw [← mergeBindings_mapBindings symbols constructorInjective,
-                merged]
-              rfl
-      have premisesMap :
-          ∀ {initial final : Bindings} {premises : List Premise},
-            PremisesAt base language fuel initial premises final →
-              PremisesAt base' (mapLanguageDef symbols language) fuel
-                (mapBindings symbols initial)
-                (premises.map (mapPremise symbols))
-                (mapBindings symbols final) := by
-        intro initial final premises premisesEvidence
-        induction premises generalizing initial final with
-        | nil =>
-            cases premisesEvidence
-            exact .nil _
-        | cons premise premises premisesHypothesis =>
-            cases premisesEvidence with
-            | cons first rest =>
-                exact .cons (premiseMap first) (premisesHypothesis rest)
-      cases evidence with
-      | @rule stepFuel stepSource stepTarget authoredRule initialBindings
-          finalBindings ruleMember matched premisesEvidence targetEq =>
-          have matchedSyntactic :
-              initialBindings ∈ matchPattern authoredRule.left source := by
-            simpa using matched
-          have targetSyntactic :
-              Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings authoredRule finalBindings
-                = target := by
-            simpa using targetEq
-          refine StepAt.rule (rule := mapRewriteRule symbols authoredRule)
-            (initialBindings := mapBindings symbols initialBindings)
-            (finalBindings := mapBindings symbols finalBindings)
-            (mem_rewrites_mapLanguageDef symbols ruleMember) ?_ ?_ ?_
-          · simp only [matchPatternForRule_eq_syntactic, mapRewriteRule]
-            rw [matchPattern_equivariance symbols constructorInjective]
-            exact List.mem_map_of_mem matchedSyntactic
-          · simpa only [mapRewriteRule] using premisesMap premisesEvidence
-          · simp only [applyBindingsForRule_eq_syntactic, mapRewriteRule,
-              Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings]
-            rw [applyBindingsScoped_mapPattern]
-            exact congrArg (mapPattern symbols) targetSyntactic
+  exact (fun _ : Function.Injective symbols.constructor =>
+    SymbolMapSimulation.stepAt_map mapsBaseResults evidence) constructorInjective
 
-/-- Unbounded form: the least contextual relation maps into the least
-contextual relation of the image presentation. -/
+/-- The least contextual relation maps into the relation of the image
+presentation. -/
 theorem step_mapLanguageDef
     {symbols : LanguageDefSymbolMap} {base base' : BasePremiseEvaluator}
     {language : LanguageDef}
@@ -175,68 +62,10 @@ theorem step_mapLanguageDef
     Step base' (mapLanguageDef symbols language)
       (mapPattern symbols source) (mapPattern symbols target) := by
   obtain ⟨fuel, bounded⟩ := evidence
-  exact ⟨fuel,
-    stepAt_mapLanguageDef constructorInjective mapsBaseResults bounded⟩
+  exact ⟨fuel, stepAt_mapLanguageDef constructorInjective mapsBaseResults bounded⟩
 
-/-! ## Monotonicity in the rule set for an arbitrary base evaluator -/
-
-/-- Rule-set inclusion preserves a bounded contextual derivation for any base
-evaluator that is itself monotone in the language argument.  Matching and
-instantiation are unchanged because `matchPatternForRule` and
-`applyBindingsForRule` ignore their language argument in the reflection-free
-core.  This generalises `StepAt.mono_rules` from `engineBasePremises` to an
-arbitrary base evaluator. -/
-theorem stepAt_of_rewrites_mem
-    {base : BasePremiseEvaluator} {language language' : LanguageDef}
-    (rulesMem : ∀ rule, List.Mem rule language.rewrites →
-      List.Mem rule language'.rewrites)
-    (baseMono : ∀ bindings premise result,
-      result ∈ base language bindings premise →
-        result ∈ base language' bindings premise)
-    {fuel : Nat} {source target : Pattern}
-    (evidence : StepAt base language fuel source target) :
-    StepAt base language' fuel source target := by
-  induction fuel generalizing source target with
-  | zero => cases evidence
-  | succ fuel inductionHypothesis =>
-      have premiseMono :
-          ∀ {initial final : Bindings} {premise : Premise},
-            PremiseAt base language fuel initial premise final →
-              PremiseAt base language' fuel initial premise final := by
-        intro initial final premise premiseEvidence
-        cases premiseEvidence with
-        | freshness member => exact .freshness (baseMono _ _ _ member)
-        | relationQuery member => exact .relationQuery (baseMono _ _ _ member)
-        | forAll member => exact .forAll (baseMono _ _ _ member)
-        | congruence recursive matched merged =>
-            exact .congruence (inductionHypothesis recursive) matched merged
-        | scopedRoot empty recursive matched merged =>
-            exact .scopedRoot empty (inductionHypothesis recursive) matched merged
-      have premisesMono :
-          ∀ {initial final : Bindings} {premises : List Premise},
-            PremisesAt base language fuel initial premises final →
-              PremisesAt base language' fuel initial premises final := by
-        intro initial final premises premisesEvidence
-        induction premises generalizing initial final with
-        | nil =>
-            cases premisesEvidence
-            exact .nil _
-        | cons premise premises premisesHypothesis =>
-            cases premisesEvidence with
-            | cons first rest =>
-                exact .cons (premiseMono first) (premisesHypothesis rest)
-      cases evidence with
-      | rule ruleMember matched premisesEvidence targetEq =>
-          exact .rule (rulesMem _ ruleMember) (by simpa using matched)
-            (premisesMono premisesEvidence) (by simpa using targetEq)
-
-/-! ## Simulation along a structural morphism -/
-
-/-- **Headline.**  One-step contextual reduction is preserved along a
-structural presentation morphism: a source step maps to a target step on the
-mapped patterns.  The morphism supplies the mapped-rules leg through
-`mapsRewrites`; the base evaluators supply result preservation along the symbol
-action and monotonicity from the mapped source into the full target. -/
+/-- One-step reduction maps along a structural presentation morphism.
+The general theorem needs no injectivity. -/
 theorem step_map_of_structuralMorphism
     {base base' : BasePremiseEvaluator}
     {source target : ValidatedLanguageDef}
@@ -251,287 +80,25 @@ theorem step_map_of_structuralMorphism
     (step : Step base source.language p q) :
     Step base' target.language (mapPattern morphism.symbols p)
       (mapPattern morphism.symbols q) := by
-  obtain ⟨fuel, bounded⟩ := step
-  refine ⟨fuel, stepAt_of_rewrites_mem ?_ baseMono
-    (stepAt_mapLanguageDef constructorInjective mapsBaseResults bounded)⟩
-  intro rule membership
-  rw [mapLanguageDef_rewrites] at membership
-  obtain ⟨sourceRule, sourceMembership, rfl⟩ := List.mem_map.mp membership
-  exact morphism.mapsRewrites sourceRule sourceMembership
+  exact (fun _ : Function.Injective morphism.symbols.constructor =>
+    SymbolMapSimulation.step_map_of_structuralMorphism morphism mapsBaseResults baseMono step)
+    constructorInjective
 
-/-! ## Result preservation for the default base evaluator
-
-`engineBasePremises RelationEnv.empty` is the evaluator underlying
-`langReduces`.  Congruence and `forAll` premises produce nothing at this
-boundary; freshness is equivariant because `mapPattern` preserves free
-variable names; a `relationQuery` premise can only produce results through
-the builtin `"eq"` relation, which survives exactly when the symbol action
-fixes that name. -/
-
-private theorem lookup_mapBindings (symbols : LanguageDefSymbolMap)
-    (bindings : Bindings) (name : String) :
-    (mapBindings symbols bindings).lookup name =
-      (bindings.lookup name).map (mapPattern symbols) := by
-  simp only [Bindings.lookup, find?_mapBindings, Option.map_map]
-  rfl
-
-private theorem freeVars_mapPattern (symbols : LanguageDefSymbolMap)
-    (pattern : Pattern) :
-    freeVars (mapPattern symbols pattern) = freeVars pattern := by
-  induction pattern using Pattern.inductionOn with
-  | hbvar index => rfl
-  | hfvar name => rfl
-  | happly constructor arguments inductionHypothesis =>
-      simp only [mapPattern, mapPatternList_eq_map, freeVars, List.flatMap_map]
-      exact List.flatMap_congr inductionHypothesis
-  | hlambda binder body inductionHypothesis =>
-      simp [mapPattern, freeVars, inductionHypothesis]
-  | hmultiLambda arity binders body inductionHypothesis =>
-      simp [mapPattern, freeVars, inductionHypothesis]
-  | hsubst body replacement bodyHypothesis replacementHypothesis =>
-      simp [mapPattern, freeVars, bodyHypothesis, replacementHypothesis]
-  | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [mapPattern, mapPatternList_eq_map, freeVars, List.flatMap_map]
-      exact List.flatMap_congr inductionHypothesis
-
-private theorem checkFreshness_mapPattern (symbols : LanguageDefSymbolMap)
-    (varName : String) (term : Pattern) :
-    checkFreshness ⟨varName, mapPattern symbols term⟩ =
-      checkFreshness ⟨varName, term⟩ := by
-  simp [checkFreshness, isFresh, freeVars_mapPattern]
-
-/-- Local mirror of the freshness-variable resolution used by
-`premiseStepWithEnv`: a metavariable bound to a name resolves to that name,
-an unbound metavariable resolves to itself, and a non-name binding fails. -/
-private def resolveFreshName (bindings : Bindings) (varName : String) :
-    Option String :=
-  match bindings.lookup varName with
-  | some (.fvar boundName) => some boundName
-  | some _ => none
-  | none => some varName
-
-private theorem premiseStepWithEnv_freshness_eq
-    (relEnv : RelationEnv) (language : LanguageDef) (bindings : Bindings)
-    (condition : FreshnessCondition) :
-    premiseStepWithEnv relEnv language bindings (.freshness condition) =
-      match resolveFreshName bindings condition.varName with
-      | some resolved =>
-          if checkFreshness ⟨resolved, applyBindings bindings condition.term⟩
-          then [bindings]
-          else []
-      | none => [] := rfl
-
-private theorem resolveFreshName_mapBindings (symbols : LanguageDefSymbolMap)
-    (bindings : Bindings) (varName : String) :
-    resolveFreshName (mapBindings symbols bindings) varName =
-      resolveFreshName bindings varName := by
-  unfold resolveFreshName
-  rw [lookup_mapBindings]
-  cases found : bindings.lookup varName with
-  | none => rfl
-  | some value => cases value <;> simp [mapPattern]
-
-private theorem mapPattern_eq_fvar {symbols : LanguageDefSymbolMap}
-    {pattern : Pattern} {name : String}
-    (equal : mapPattern symbols pattern = .fvar name) :
-    pattern = .fvar name := by
-  cases pattern <;> simp_all [mapPattern]
-
-private theorem matchRelationArgument_not_fvar
-    (seed : Bindings) (argument value : Pattern)
-    (notFvar : ∀ name, argument ≠ .fvar name) :
-    matchRelationArgument seed argument value =
-      matchPattern argument value := by
-  cases argument <;> first
-    | rfl
-    | exact absurd rfl (notFvar _)
-
-private theorem matchRelationArgument_equivariance
-    (symbols : LanguageDefSymbolMap)
-    (constructorInjective : Function.Injective symbols.constructor)
-    (seed : Bindings) (argument value : Pattern) :
-    matchRelationArgument (mapBindings symbols seed)
-        (mapPattern symbols argument) (mapPattern symbols value) =
-      (matchRelationArgument seed argument value).map
-        (mapBindings symbols) := by
-  by_cases isFvar : ∃ name, argument = .fvar name
-  · obtain ⟨name, rfl⟩ := isFvar
-    simp only [mapPattern, matchRelationArgument, lookup_mapBindings]
-    cases found : seed.lookup name with
-    | none => simp [mapBindings]
-    | some existing =>
-        by_cases equal : existing = value
-        · subst equal
-          simp
-        · have mappedNotEqual :
-              mapPattern symbols existing ≠ mapPattern symbols value :=
-            fun mappedEqual => equal
-              (mapPattern_injective symbols constructorInjective mappedEqual)
-          simp [equal, mappedNotEqual]
-  · have notFvar : ∀ name, argument ≠ Pattern.fvar name :=
-      fun name equal => isFvar ⟨name, equal⟩
-    rw [matchRelationArgument_not_fvar seed argument value notFvar,
-      matchRelationArgument_not_fvar (mapBindings symbols seed)
-        (mapPattern symbols argument) (mapPattern symbols value)
-        (fun name equal => notFvar name (mapPattern_eq_fvar equal)),
-      matchPattern_equivariance symbols constructorInjective]
-
-private theorem matchRelationArgs_equivariance
-    (symbols : LanguageDefSymbolMap)
-    (constructorInjective : Function.Injective symbols.constructor)
-    (arguments : List Pattern) :
-    ∀ (seed : Bindings) (values : List Pattern),
-      matchRelationArgs (mapBindings symbols seed)
-          (arguments.map (mapPattern symbols))
-          (values.map (mapPattern symbols)) =
-        (matchRelationArgs seed arguments values).map
-          (mapBindings symbols) := by
-  induction arguments with
-  | nil =>
-      intro seed values
-      cases values with
-      | nil => simp [matchRelationArgs]
-      | cons value values => simp [matchRelationArgs]
-  | cons argument arguments inductionHypothesis =>
-      intro seed values
-      cases values with
-      | nil => simp [matchRelationArgs]
-      | cons value values =>
-          simp only [List.map_cons, matchRelationArgs]
-          rw [matchRelationArgument_equivariance symbols constructorInjective]
-          simp only [List.flatMap_map]
-          rw [List.map_flatMap]
-          apply List.flatMap_congr
-          intro headBindings headMembership
-          rw [← mergeBindings_mapBindings symbols constructorInjective]
-          cases merged : mergeBindings seed headBindings with
-          | none => simp
-          | some extended =>
-              simp only [Option.map_some]
-              rw [inductionHypothesis extended values]
-              exact filterMap_merge_mapBindings symbols constructorInjective
-                headBindings (matchRelationArgs extended arguments values)
-
-private theorem builtinRelationTuples_map
-    (symbols : LanguageDefSymbolMap)
-    (relationFixesEq : symbols.relation "eq" = "eq")
-    (sourceLanguage targetLanguage : LanguageDef)
-    (relation : String) (argumentPatterns : List Pattern)
-    {tuple : List Pattern}
-    (member : tuple ∈
-      builtinRelationTuples sourceLanguage relation argumentPatterns) :
-    tuple.map (mapPattern symbols) ∈
-      builtinRelationTuples targetLanguage (symbols.relation relation)
-        (argumentPatterns.map (mapPattern symbols)) := by
-  unfold builtinRelationTuples at member ⊢
-  split at member
-  · rw [relationFixesEq]
-    simp only [List.map_cons, List.map_nil]
-    rcases List.mem_cons.mp member with rfl | member
-    · simp +decide
-    · rcases List.mem_singleton.mp member with rfl
-      simp +decide
-  · cases member
-
-private theorem relationQueryStep_empty_map
-    (symbols : LanguageDefSymbolMap)
-    (constructorInjective : Function.Injective symbols.constructor)
-    (relationFixesEq : symbols.relation "eq" = "eq")
-    (sourceLanguage targetLanguage : LanguageDef)
-    (bindings : Bindings) (relation : String) (arguments : List Pattern)
-    {result : Bindings}
-    (member : result ∈ relationQueryStep RelationEnv.empty sourceLanguage
-      bindings relation arguments) :
-    mapBindings symbols result ∈
-      relationQueryStep RelationEnv.empty targetLanguage
-        (mapBindings symbols bindings) (symbols.relation relation)
-        (arguments.map (mapPattern symbols)) := by
-  simp only [relationQueryStep, RelationEnv.empty, List.append_nil,
-    List.mem_flatMap, List.mem_filterMap] at member ⊢
-  obtain ⟨tuple, tupleMember, premiseBindings, argsMember, merged⟩ := member
-  have argumentPatterns :
-      (arguments.map (mapPattern symbols)).map
-          (applyBindings (mapBindings symbols bindings)) =
-        (arguments.map (applyBindings bindings)).map (mapPattern symbols) := by
-    simp only [List.map_map]
-    exact List.map_congr_left fun argument _ =>
-      applyBindings_mapPattern symbols bindings argument
-  refine ⟨tuple.map (mapPattern symbols), ?_,
-    mapBindings symbols premiseBindings, ?_, ?_⟩
-  · rw [argumentPatterns]
-    exact builtinRelationTuples_map symbols relationFixesEq
-      sourceLanguage targetLanguage relation _ tupleMember
-  · rw [matchRelationArgs_equivariance symbols constructorInjective]
-    exact List.mem_map_of_mem argsMember
-  · rw [← mergeBindings_mapBindings symbols constructorInjective, merged]
-    rfl
-
-/-- The default base evaluator maps results along any symbol action with
-injective constructor part that fixes the builtin relation name `"eq"`.  The
-naming condition is required: see
-`engineBasePremises_empty_mapping_requires_eq_name`. -/
+/-- The default evaluator maps results along an injective symbol action
+that fixes the built-in relation name `"eq"`.  The general theorem needs no
+injectivity. -/
 theorem engineBasePremises_empty_maps_results
     (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (relationFixesEq : symbols.relation "eq" = "eq") :
     MapsBasePremiseResults symbols (engineBasePremises RelationEnv.empty)
       (engineBasePremises RelationEnv.empty) := by
-  intro language bindings premise result member
-  cases premise with
-  | congruence left right =>
-      simp [engineBasePremises] at member
-  | scopedStep step =>
-      simp [engineBasePremises, premiseStepWithEnv] at member
-  | forAll collection parameter body =>
-      simp [engineBasePremises, premiseStepWithEnv] at member
-  | freshness condition =>
-      have memberEval : result ∈ premiseStepWithEnv RelationEnv.empty
-          language bindings (.freshness condition) := member
-      rw [premiseStepWithEnv_freshness_eq] at memberEval
-      show mapBindings symbols result ∈
-        premiseStepWithEnv RelationEnv.empty (mapLanguageDef symbols language)
-          (mapBindings symbols bindings)
-          (.freshness ⟨condition.varName, mapPattern symbols condition.term⟩)
-      rw [premiseStepWithEnv_freshness_eq]
-      cases resolved : resolveFreshName bindings condition.varName with
-      | none =>
-          simp only [resolved] at memberEval
-          cases memberEval
-      | some resolvedName =>
-          simp only [resolved] at memberEval
-          by_cases fresh :
-              checkFreshness ⟨resolvedName, applyBindings bindings condition.term⟩
-          · rw [if_pos fresh] at memberEval
-            have resultEq : result = bindings :=
-              List.mem_singleton.mp memberEval
-            subst resultEq
-            simp only [resolveFreshName_mapBindings, resolved,
-              applyBindings_mapPattern, checkFreshness_mapPattern]
-            rw [if_pos fresh]
-            exact List.mem_singleton.mpr rfl
-          · rw [if_neg fresh] at memberEval
-            cases memberEval
-  | relationQuery relation arguments =>
-      have memberEval : result ∈ relationQueryStep RelationEnv.empty
-          language bindings relation arguments := member
-      exact relationQueryStep_empty_map symbols constructorInjective
-        relationFixesEq language (mapLanguageDef symbols language) bindings
-        relation arguments memberEval
+  exact (fun _ : Function.Injective symbols.constructor =>
+    SymbolMapSimulation.engineBasePremises_empty_maps_results symbols relationFixesEq)
+    constructorInjective
 
-/-- The default base evaluator never consults the language argument: builtin
-relation tuples, freshness checks, and the empty relation environment are all
-language-independent. -/
-theorem engineBasePremises_language_agnostic
-    (relEnv : RelationEnv) (firstLanguage secondLanguage : LanguageDef)
-    (bindings : Bindings) (premise : Premise) :
-    engineBasePremises relEnv firstLanguage bindings premise =
-      engineBasePremises relEnv secondLanguage bindings premise := by
-  cases premise <;> rfl
-
-/-- **Corollary at the derived-semantics level.**  The default reduction
-authored one-step relation `langReduces` is preserved along any
-structural presentation morphism whose symbol action has an injective
-constructor part and fixes the builtin relation name `"eq"`. -/
+/-- The authored default reduction relation is preserved along the
+structural presentation morphism. -/
 theorem langReduces_map_of_structuralMorphism
     {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target)

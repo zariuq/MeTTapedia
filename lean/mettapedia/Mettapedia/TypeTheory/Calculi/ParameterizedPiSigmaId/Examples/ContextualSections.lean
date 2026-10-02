@@ -48,7 +48,7 @@ theorem universeZero_section_ne_legacyGround_section :
   apply extendHom_ne_of_term_code_ne
   intro equalCodes
   have equalHeads :
-      Tower.Head.sort Tower.zero = Tower.Head.legacyGround :=
+      LevelTower.Head.sort Tower.zero = LevelTower.Head.legacyGround :=
     Tm.head.inj equalCodes
   cases equalHeads
 

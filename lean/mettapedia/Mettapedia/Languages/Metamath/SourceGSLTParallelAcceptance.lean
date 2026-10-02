@@ -436,7 +436,7 @@ theorem FlattenedFinalStateEvidence.parallelCertificate
 The universal two-policy composition theorem is stronger than
 `FlattenedFinalStateEvidence`.  It must relate `FileMap`, located expansion,
 and each include-policy decision to mm-lean4's shipped
-`processFileSinglePassWithIO` / `checkSinglePass` driver, including file
+`processFileSinglePassWithIO` / `check` driver, including file
 identity, path normalization, cycle/seen state, and exact rejection sites.
 No theorem in this module claims that still-open driver refinement. -/
 

@@ -8,7 +8,8 @@ import Mathlib.Data.List.Forall2
 An observation uses an actual reachable head normal form, without a search-fuel
 cap. Arguments are observed recursively at smaller depth. The term syntax,
 head extractor, reduction relation, and finite tree datatype are shared with
-the existing graph-lambda development. No admitted `BohmTheory` law is used.
+the existing graph-lambda development. No graph realization or maximality
+theorem is assumed.
 -/
 
 namespace Mettapedia.GSLT.GraphTheory
@@ -33,7 +34,8 @@ private theorem collectArgs_parRed
       exact ihFn (List.Forall₂.cons hArg hAcc) hExtract
   | beta _ _ _ _ => simp [extractHNF.collectArgs] at hExtract
 
-private theorem extractHNF_app_eq (function argument : LambdaTerm) :
+/-- The head form of an application is read off its collected spine. -/
+theorem extractHNF_app_eq (function argument : LambdaTerm) :
     extractHNF (.app function argument) =
       (extractHNF.collectArgs (.app function argument) []).map
         (fun (head, arguments) => (0, head, arguments)) := by
@@ -266,6 +268,11 @@ theorem BohmObservation.tree_eq_iff (depth : Nat) (term : LambdaTerm) (tree : Bo
     rw [← h]
     exact BohmObservation.tree_observation depth term
   · exact BohmObservation.unique (BohmObservation.tree_observation depth term)
+
+@[simp]
+theorem BohmObservation.tree_zero (term : LambdaTerm) :
+    BohmObservation.tree 0 term = .bot :=
+  (BohmObservation.tree_eq_iff 0 term .bot).mpr (.zero term)
 
 /-- Actual reduction preserves the complete finite-depth mathematical tree. -/
 theorem BohmObservation.tree_reduction_eq {term result : LambdaTerm}

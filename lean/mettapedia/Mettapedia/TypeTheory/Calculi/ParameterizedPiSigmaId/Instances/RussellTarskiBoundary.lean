@@ -41,11 +41,11 @@ dependent identity families under binders.  `lift source target a` records a
 cumulative choice that decoding deliberately forgets. -/
 inductive Code : Nat → Type where
   | ground : Code n
-  | univ : LevelExpr → Code n
+  | univ : LevelExpr Nat → Code n
   | pi : Code n → Code (n + 1) → Code n
   | sigma : Code n → Code (n + 1) → Code n
   | id : Code n → Tower.Tm n → Tower.Tm n → Code n
-  | lift : LevelExpr → LevelExpr → Code n → Code n
+  | lift : LevelExpr Nat → LevelExpr Nat → Code n → Code n
   deriving DecidableEq, Repr
 
 /-- Structural decoding into the Russell tower syntax. -/
@@ -215,22 +215,22 @@ theorem Code.subst_ext {sigma tau : Sub Tower.Head n m}
 /-! ## Level-parameter substitution -/
 
 /-- Substitute admitted level expressions throughout a tower head. -/
-def substLevelsHead (theta : Nat → LevelExpr) : Tower.Head → Tower.Head
+def substLevelsHead (theta : Nat → LevelExpr Nat) : Tower.Head → Tower.Head
   | .legacyGround => .legacyGround
   | .sort level => .sort (LevelExpr.subst theta level)
 
 /-- Substitute levels throughout a tower term without changing term binders. -/
-def substLevelsTm (theta : Nat → LevelExpr) (term : Tower.Tm n) :
+def substLevelsTm (theta : Nat → LevelExpr Nat) (term : Tower.Tm n) :
     Tower.Tm n :=
   term.mapHead (substLevelsHead theta)
 
 /-- Substitute levels throughout every entry of a tower context. -/
-def substLevelsCtx (theta : Nat → LevelExpr) (Gamma : Tower.Ctx n) :
+def substLevelsCtx (theta : Nat → LevelExpr Nat) (Gamma : Tower.Ctx n) :
     Tower.Ctx n :=
   Gamma.mapHead (substLevelsHead theta)
 
 /-- Level substitution in an explicit code also reaches identity endpoints. -/
-def Code.substLevels (theta : Nat → LevelExpr) : Code n → Code n
+def Code.substLevels (theta : Nat → LevelExpr Nat) : Code n → Code n
   | .ground => .ground
   | .univ level => .univ (LevelExpr.subst theta level)
   | .pi domain codomain =>
@@ -245,7 +245,7 @@ def Code.substLevels (theta : Nat → LevelExpr) : Code n → Code n
         (substLevels theta code)
 
 /-- Decoding commutes exactly with level-parameter substitution. -/
-@[simp] theorem decode_substLevels (theta : Nat → LevelExpr) (code : Code n) :
+@[simp] theorem decode_substLevels (theta : Nat → LevelExpr Nat) (code : Code n) :
     decode (code.substLevels theta) =
       substLevelsTm theta (decode code) := by
   induction code with
@@ -305,7 +305,7 @@ def Code.substLevels (theta : Nat → LevelExpr) : Code n → Code n
 
 /-- Substitution of term variables and substitution of level parameters
 commute on codes. -/
-theorem Code.substLevels_subst (theta : Nat → LevelExpr)
+theorem Code.substLevels_subst (theta : Nat → LevelExpr Nat)
     (sigma : Sub Tower.Head n m) (code : Code n) :
     (code.subst sigma).substLevels theta =
       (code.substLevels theta).subst
@@ -343,7 +343,7 @@ theorem Code.substLevels_subst (theta : Nat → LevelExpr)
 
 /-- Every tower rule is stable under simultaneous substitution of level
 parameters. -/
-def levelSubstMorphism (theta : Nat → LevelExpr) :
+def levelSubstMorphism (theta : Nat → LevelExpr Nat) :
     Tower.rules.Morphism Tower.rules (substLevelsHead theta) where
   headTyping := by
     intro head universeHead typing
@@ -358,8 +358,8 @@ def levelSubstMorphism (theta : Nat → LevelExpr) :
     intro left right result witness
     cases witness with
     | sorts left right =>
-      simpa [Tower.rules, substLevelsHead, LevelExpr.subst] using
-        (Tower.Join.sorts (LevelExpr.subst theta left)
+      simpa [LevelTower.rules, substLevelsHead, LevelExpr.subst] using
+        (LevelTower.Join.sorts (LevelExpr.subst theta left)
           (LevelExpr.subst theta right))
   cumulative := by
     intro lower upper order
@@ -386,7 +386,7 @@ def levelSubstMorphism (theta : Nat → LevelExpr) :
         exact equality (fun i => LevelExpr.eval valuation (theta i))
   constantType := by
     intro name type impossible
-    simp [Tower.rules] at impossible
+    simp [LevelTower.rules] at impossible
   computation := by
     intro n left right impossible
     exact False.elim impossible
@@ -394,7 +394,7 @@ def levelSubstMorphism (theta : Nat → LevelExpr) :
 /-- Tower typing is stable under substitution of explicit universe-level
 parameters. -/
 theorem towerHasType_substLevels {Gamma : Tower.Ctx n} {term type : Tower.Tm n}
-    (typing : Tower.HasType Gamma term type) (theta : Nat → LevelExpr) :
+    (typing : Tower.HasType Gamma term type) (theta : Nat → LevelExpr Nat) :
     Tower.HasType (substLevelsCtx theta Gamma)
       (substLevelsTm theta term) (substLevelsTm theta type) := by
   exact typing.mapHead (levelSubstMorphism theta)
@@ -404,65 +404,65 @@ theorem towerHasType_substLevels {Gamma : Tower.Ctx n} {term type : Tower.Tm n}
 /-- Tarski code formation.  A lift is admitted only when its source
 annotation agrees with the premise and the semantic level order proves the
 requested cumulative move. -/
-inductive HasCode : Tower.Ctx n → Code n → LevelExpr → Prop where
+inductive HasCode : Tower.Ctx n → Code n → LevelExpr Nat → Prop where
   | ground {Gamma : Tower.Ctx n} :
       HasCode Gamma .ground Tower.zero
-  | univ {Gamma : Tower.Ctx n} (level : LevelExpr) :
+  | univ {Gamma : Tower.Ctx n} (level : LevelExpr Nat) :
       HasCode Gamma (.univ level) (.succ level)
   | pi {Gamma : Tower.Ctx n} {domain : Code n} {codomain : Code (n + 1)}
-      {domainLevel codomainLevel : LevelExpr} :
+      {domainLevel codomainLevel : LevelExpr Nat} :
       HasCode Gamma domain domainLevel →
       HasCode (.snoc Gamma (decode domain)) codomain codomainLevel →
       HasCode Gamma (.pi domain codomain)
         (.max domainLevel codomainLevel)
   | sigma {Gamma : Tower.Ctx n} {domain : Code n}
       {codomain : Code (n + 1)}
-      {domainLevel codomainLevel : LevelExpr} :
+      {domainLevel codomainLevel : LevelExpr Nat} :
       HasCode Gamma domain domainLevel →
       HasCode (.snoc Gamma (decode domain)) codomain codomainLevel →
       HasCode Gamma (.sigma domain codomain)
         (.max domainLevel codomainLevel)
   | id {Gamma : Tower.Ctx n} {type : Code n} {left right : Tower.Tm n}
-      {level : LevelExpr} :
+      {level : LevelExpr Nat} :
       HasCode Gamma type level →
       Tower.HasType Gamma left (decode type) →
       Tower.HasType Gamma right (decode type) →
       HasCode Gamma (.id type left right) level
   | lift {Gamma : Tower.Ctx n} {code : Code n}
-      {source target : LevelExpr} :
+      {source target : LevelExpr Nat} :
       HasCode Gamma code source →
       Tower.Cumulative (.sort source) (.sort target) →
       HasCode Gamma (.lift source target code) target
 
 /-- Russell-style formation for the same generated fragment.  This relation
 is stated directly over tower terms and does not mention codes or decoding. -/
-inductive RussellForm : Tower.Ctx n → Tower.Tm n → LevelExpr → Prop where
+inductive RussellForm : Tower.Ctx n → Tower.Tm n → LevelExpr Nat → Prop where
   | ground {Gamma : Tower.Ctx n} :
       RussellForm Gamma (.head .legacyGround) Tower.zero
-  | univ {Gamma : Tower.Ctx n} (level : LevelExpr) :
+  | univ {Gamma : Tower.Ctx n} (level : LevelExpr Nat) :
       RussellForm Gamma (.head (.sort level)) (.succ level)
   | pi {Gamma : Tower.Ctx n} {domain : Tower.Tm n}
       {codomain : Tower.Tm (n + 1)}
-      {domainLevel codomainLevel : LevelExpr} :
+      {domainLevel codomainLevel : LevelExpr Nat} :
       RussellForm Gamma domain domainLevel →
       RussellForm (.snoc Gamma domain) codomain codomainLevel →
       RussellForm Gamma (.pi domain codomain)
         (.max domainLevel codomainLevel)
   | sigma {Gamma : Tower.Ctx n} {domain : Tower.Tm n}
       {codomain : Tower.Tm (n + 1)}
-      {domainLevel codomainLevel : LevelExpr} :
+      {domainLevel codomainLevel : LevelExpr Nat} :
       RussellForm Gamma domain domainLevel →
       RussellForm (.snoc Gamma domain) codomain codomainLevel →
       RussellForm Gamma (.sigma domain codomain)
         (.max domainLevel codomainLevel)
   | id {Gamma : Tower.Ctx n} {type left right : Tower.Tm n}
-      {level : LevelExpr} :
+      {level : LevelExpr Nat} :
       RussellForm Gamma type level →
       Tower.HasType Gamma left type →
       Tower.HasType Gamma right type →
       RussellForm Gamma (.id type left right) level
   | cumul {Gamma : Tower.Ctx n} {type : Tower.Tm n}
-      {source target : LevelExpr} :
+      {source target : LevelExpr Nat} :
       RussellForm Gamma type source →
       Tower.Cumulative (.sort source) (.sort target) →
       RussellForm Gamma type target
@@ -472,8 +472,8 @@ inductive RussellForm : Tower.Ctx n → Tower.Tm n → LevelExpr → Prop where
 /-- Well-formed Tarski codes remain well formed after any simultaneous
 substitution of admitted level expressions. -/
 theorem HasCode.substLevels {Gamma : Tower.Ctx n} {code : Code n}
-    {level : LevelExpr} (formation : HasCode Gamma code level)
-    (theta : Nat → LevelExpr) :
+    {level : LevelExpr Nat} (formation : HasCode Gamma code level)
+    (theta : Nat → LevelExpr Nat) :
     HasCode (substLevelsCtx theta Gamma) (code.substLevels theta)
       (LevelExpr.subst theta level) := by
   induction formation with
@@ -511,8 +511,8 @@ theorem HasCode.substLevels {Gamma : Tower.Ctx n} {code : Code n}
 /-- The independent Russell formation relation has the same level-substitution
 stability, proved without passing through codes. -/
 theorem RussellForm.substLevels {Gamma : Tower.Ctx n} {type : Tower.Tm n}
-    {level : LevelExpr} (formation : RussellForm Gamma type level)
-    (theta : Nat → LevelExpr) :
+    {level : LevelExpr Nat} (formation : RussellForm Gamma type level)
+    (theta : Nat → LevelExpr Nat) :
     RussellForm (substLevelsCtx theta Gamma)
       (substLevelsTm theta type) (LevelExpr.subst theta level) := by
   induction formation with
@@ -536,7 +536,7 @@ theorem RussellForm.substLevels {Gamma : Tower.Ctx n} {type : Tower.Tm n}
 /-- Every well-formed code decodes to a type in the independent tower typing
 judgment. -/
 theorem HasCode.decode_hasType {Gamma : Tower.Ctx n} {code : Code n}
-    {level : LevelExpr} (formation : HasCode Gamma code level) :
+    {level : LevelExpr Nat} (formation : HasCode Gamma code level) :
     Tower.HasType Gamma (decode code) (.head (.sort level)) := by
   induction formation with
   | ground => exact .headType .legacyGround
@@ -558,7 +558,7 @@ theorem HasCode.decode_hasType {Gamma : Tower.Ctx n} {code : Code n}
 /-- Reflection on the code image: decoding a well-formed code always gives
 an independently formed Russell type at the same level. -/
 theorem HasCode.reflect {Gamma : Tower.Ctx n} {code : Code n}
-    {level : LevelExpr} (formation : HasCode Gamma code level) :
+    {level : LevelExpr Nat} (formation : HasCode Gamma code level) :
     RussellForm Gamma (decode code) level := by
   induction formation with
   | ground => exact .ground
@@ -575,7 +575,7 @@ theorem HasCode.reflect {Gamma : Tower.Ctx n} {code : Code n}
 /-- Preservation into explicit codes: every generated Russell formation has
 a well-formed code whose decoding is exactly the source type. -/
 theorem RussellForm.elaborates {Gamma : Tower.Ctx n} {type : Tower.Tm n}
-    {level : LevelExpr} (formation : RussellForm Gamma type level) :
+    {level : LevelExpr Nat} (formation : RussellForm Gamma type level) :
     ∃ code : Code n, HasCode Gamma code level ∧ decode code = type := by
   induction formation with
   | ground => exact ⟨.ground, .ground, rfl⟩
@@ -598,7 +598,7 @@ theorem RussellForm.elaborates {Gamma : Tower.Ctx n} {type : Tower.Tm n}
 /-- The generated Russell fragment is exactly the decoded image of
 well-formed Tarski codes. -/
 theorem russellForm_iff_code_image (Gamma : Tower.Ctx n) (type : Tower.Tm n)
-    (level : LevelExpr) :
+    (level : LevelExpr Nat) :
     RussellForm Gamma type level ↔
       ∃ code : Code n, HasCode Gamma code level ∧ decode code = type := by
   constructor
@@ -608,7 +608,7 @@ theorem russellForm_iff_code_image (Gamma : Tower.Ctx n) (type : Tower.Tm n)
 
 /-- Russell formation is sound for the independent tower typing relation. -/
 theorem RussellForm.toHasType {Gamma : Tower.Ctx n} {type : Tower.Tm n}
-    {level : LevelExpr} (formation : RussellForm Gamma type level) :
+    {level : LevelExpr Nat} (formation : RussellForm Gamma type level) :
     Tower.HasType Gamma type (.head (.sort level)) := by
   rcases formation.elaborates with ⟨code, codeFormation, rfl⟩
   exact codeFormation.decode_hasType
@@ -619,7 +619,7 @@ theorem RussellForm.toHasType {Gamma : Tower.Ctx n} {type : Tower.Tm n}
 image of the Russell generated fragment. -/
 inductive Canonical : Code n → Prop where
   | ground : Canonical (.ground : Code n)
-  | univ (level : LevelExpr) : Canonical (.univ level : Code n)
+  | univ (level : LevelExpr Nat) : Canonical (.univ level : Code n)
   | pi {domain : Code n} {codomain : Code (n + 1)} :
       Canonical domain → Canonical codomain → Canonical (.pi domain codomain)
   | sigma {domain : Code n} {codomain : Code (n + 1)} :
@@ -675,7 +675,7 @@ theorem liftedGround_hasCode :
       (.succ Tower.zero) := by
   apply HasCode.lift .ground
   intro valuation
-  simp [Tower.zero, LevelExpr.eval]
+  simp [LevelTower.zero, LevelExpr.eval]
 
 /-- Decoding erases lift evidence. -/
 theorem decode_liftedGround :

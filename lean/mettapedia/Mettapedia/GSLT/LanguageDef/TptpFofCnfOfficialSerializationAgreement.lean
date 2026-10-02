@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.ContextualStepFuel
 import Mettapedia.GSLT.LanguageDef.TptpFofCnfOfficialSerializationLanguageDef
 
 /-!
@@ -171,47 +172,6 @@ def EventuallyExact (plan : LexicalPlan) (source result : Pattern) : Prop :=
     rewriteAt (engineBasePremises plan.relationEnv) language fuel source =
       [result]
 
-private theorem stepAt_mono_fuel
-    {base : BasePremiseEvaluator} {lang : LanguageDef}
-    {fuel largerFuel : Nat} {source target : Pattern}
-    (evidence : StepAt base lang fuel source target)
-    (enough : fuel ≤ largerFuel) :
-    StepAt base lang largerFuel source target := by
-  induction fuel generalizing source target largerFuel with
-  | zero => cases evidence
-  | succ fuel inductionHypothesis =>
-      cases largerFuel with
-      | zero => omega
-      | succ largerFuel =>
-          have premiseMono :
-              ∀ {initial final : Bindings} {premise : Premise},
-                PremiseAt base lang fuel initial premise final →
-                  PremiseAt base lang largerFuel initial premise final := by
-            intro initial final premise premiseEvidence
-            cases premiseEvidence with
-            | freshness member => exact .freshness member
-            | relationQuery member => exact .relationQuery member
-            | forAll member => exact .forAll member
-            | congruence recursive matched merged =>
-                exact .congruence
-                  (inductionHypothesis recursive (by omega)) matched merged
-          have premisesMono :
-              ∀ {initial final : Bindings} {premises : List Premise},
-                PremisesAt base lang fuel initial premises final →
-                  PremisesAt base lang largerFuel initial premises final := by
-            intro initial final premises premiseEvidence
-            induction premises generalizing initial final with
-            | nil =>
-                cases premiseEvidence
-                exact .nil initial
-            | cons premise premises inductionHypothesis =>
-                cases premiseEvidence with
-                | cons first rest =>
-                    exact .cons (premiseMono first) (inductionHypothesis rest)
-          cases evidence with
-          | rule ruleMember matched premises targetEq =>
-              exact .rule ruleMember matched (premisesMono premises) targetEq
-
 private theorem mem_rewriteAt_mono_fuel
     {base : BasePremiseEvaluator} {lang : LanguageDef}
     {fuel largerFuel : Nat} {source target : Pattern}
@@ -219,7 +179,7 @@ private theorem mem_rewriteAt_mono_fuel
     (enough : fuel ≤ largerFuel) :
     target ∈ rewriteAt base lang largerFuel source := by
   apply mem_rewriteAt_iff_stepAt.mpr
-  exact stepAt_mono_fuel (mem_rewriteAt_iff_stepAt.mp member) enough
+  exact StepAt.mono_fuel (mem_rewriteAt_iff_stepAt.mp member) enough
 
 /-- Stable exactness excludes invented alternatives at every fuel, including
 fuel below the successful threshold. -/

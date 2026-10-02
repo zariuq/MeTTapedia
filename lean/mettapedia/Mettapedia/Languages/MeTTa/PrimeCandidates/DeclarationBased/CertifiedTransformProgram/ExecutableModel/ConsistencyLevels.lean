@@ -28,7 +28,7 @@ transport of a valid value is related to it. That coherence is not a
 consequence of the transport table. The consistency model has no daimon clause,
 and a transport whose rows reach the daimon is no number: `coe U0 num 0` is
 stuck on the daimon, and no denotation of the numbers relates it to itself
-(`tmodelC_coe_universe_num_not_number`); on model S's value side every type
+(`tmodelC_coe_universe_num_not_number`); on model SN's value side every type
 relates it to the daimon.
 -/
 
@@ -85,11 +85,11 @@ theorem valid_j_at {u w : Tower.Head} (hw : (model v).rules.isUniverse w)
 
 /-- **Identity elimination is valid at every pair of universes of the tower** in
 the consistency model. -/
-theorem valid_j_sorts (lu lw : LevelExpr) :
+theorem valid_j_sorts (lu lw : LevelExpr Nat) :
     ValidTm (model v) .nil (.const jName) (elimType (.sort lu) (.sort lw)) := by
   obtain ⟨w, hw, typed⟩ := TowerEliminatorModel.elimType_typed lu lw
   obtain ⟨validT, partsT, _⟩ := Derivable.valid (tower_sound v) typed trivial
-  exact valid_j_at v (Tower.IsUniverse.sort lw) (validT.validTy hw) partsT
+  exact valid_j_at v (LevelTower.IsUniverse.sort lw) (validT.validTy hw) partsT
 
 /-! ## The recursor at every level -/
 
@@ -188,7 +188,7 @@ theorem valid_numRec_at (w : Tower.Head) (hw : (model v).rules.isUniverse w)
 
 /-- **Large elimination of the numbers in the consistency model**: the recursor
 with its motive into every universe of the tower is valid. -/
-theorem valid_numRec_sorts (lw : LevelExpr) :
+theorem valid_numRec_sorts (lw : LevelExpr Nat) :
     ValidTm (model v) .nil (.const numRecName) (numRecTypeAt (.sort lw)) := by
   have sound₀ := stage_sound_of v (names := [numN, zeroN, sucN]) fun name mem type declared => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -197,8 +197,8 @@ theorem valid_numRec_sorts (lw : LevelExpr) :
     · exact valid_zero v
     · exact valid_suc v
   obtain ⟨validT, partsT, _⟩ := Derivable.valid sound₀ (numRecTypeAt_typed lw) trivial
-  exact valid_numRec_at v (.sort lw) (Tower.IsUniverse.sort lw)
-    (validT.validTy (Tower.IsUniverse.sort _)) partsT
+  exact valid_numRec_at v (.sort lw) (LevelTower.IsUniverse.sort lw)
+    (validT.validTy (LevelTower.IsUniverse.sort _)) partsT
 
 /-! ## The iterator at large families -/
 
@@ -245,7 +245,7 @@ theorem valid_iter_at (k l : Tower.Head)
 
 /-- **The iterator is valid at large families of the tower** in the consistency
 model: its carrier in `U lk` and its family into `U ll`. -/
-theorem valid_iter_sorts (lk ll : LevelExpr) :
+theorem valid_iter_sorts (lk ll : LevelExpr Nat) :
     ValidTm (model v) .nil (.const iterName) (iterTypeAt (.sort lk) (.sort ll)) := by
   have sound₀ := stage_sound_of v (names := [numN]) fun name mem type declared => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -253,7 +253,7 @@ theorem valid_iter_sorts (lk ll : LevelExpr) :
     obtain rfl := Option.some.inj declared
     exact valid_num v
   obtain ⟨validT, partsT, _⟩ := Derivable.valid sound₀ (iterTypeAt_typed lk ll) trivial
-  exact valid_iter_at v (.sort lk) (.sort ll) (validT.validTy (Tower.IsUniverse.sort _)) partsT
+  exact valid_iter_at v (.sort lk) (.sort ll) (validT.validTy (LevelTower.IsUniverse.sort _)) partsT
 
 /-! ## The object package at every level -/
 
@@ -261,7 +261,7 @@ theorem valid_iter_sorts (lk ll : LevelExpr) :
 identity elimination at `elimType (U lu) (U lw)` is valid by the cast, the
 recursor with its motive into `U lr` by large elimination, and every other
 constant and every root step as in the object package. -/
-theorem objectSoundAt (lu lw lr : LevelExpr) : Sound (objectRulesAt lu lw lr) (model v) where
+theorem objectSoundAt (lu lw lr : LevelExpr Nat) : Sound (objectRulesAt lu lw lr) (model v) where
   laws := model_laws v
   headTyping := id
   isUniverse := id
@@ -286,7 +286,7 @@ theorem objectSoundAt (lu lw lr : LevelExpr) : Sound (objectRulesAt lu lw lr) (m
 
 /-- **Consistency of the object package at every level**: no closed term proves
 `∀ n : num, zero = suc n`. -/
-theorem objectRulesAt_consistent (lu lw lr : LevelExpr) (t : Tower.Tm 0) :
+theorem objectRulesAt_consistent (lu lw lr : LevelExpr Nat) (t : Tower.Tm 0) :
     ¬ Typed (objectRulesAt lu lw lr) .nil t (programCodes.holdsOf (falseCode (n := 0))) :=
   no_closed_proof (objectSoundAt (fun _ => 0) lu lw lr) (falseCode_truth fun _ => 0)
     (fun all => Nat.zero_ne_one (numClass_injective (model_laws fun _ => 0).truth.numerals
@@ -317,12 +317,12 @@ at every carrier universe and every motive universe `U lw` of the tower, when
 the transport is coherent at the level of `U lw`.** The coherence is the open
 premise: it is not a consequence of the transport table in this model
 (`tmodelC_coe_universe_num_not_number`). -/
-theorem tmodelC_valid_j_of_coherent (lu lw : LevelExpr)
+theorem tmodelC_valid_j_of_coherent (lu lw : LevelExpr Nat)
     (coherent : TransportCoherent (tmodelC v) coeN ((tmodelC v).levels.level (.sort lw))) :
     ValidTm (tmodelC v) .nil (.const jName) (elimType (.sort lu) (.sort lw)) := by
   obtain ⟨w, hw, typed⟩ := TowerEliminatorModel.elimType_typed lu lw
   obtain ⟨validT, partsT, _⟩ := Derivable.valid (tower_sound_tmodelC v) typed trivial
-  exact ValidTm.transportEliminator_of_coherent (tmodelC_laws v) (Tower.IsUniverse.sort lw)
+  exact ValidTm.transportEliminator_of_coherent (tmodelC_laws v) (LevelTower.IsUniverse.sort lw)
     (tmodelC_j_step v) coherent (validT.validTy hw) partsT
 
 /-- The transport from the lowest universe into the numbers is stuck on the
@@ -338,7 +338,7 @@ theorem tmodelC_coe_universe_num {n : Nat} (d : Tower.Tm n) :
 /-- **The transport's daimon rows give no value in the consistency model.** In
 route T's consistency model, `coe U0 num 0` is stuck on the daimon, and no
 denotation of the numbers relates it to itself: a term stuck on the daimon
-reduces to no numeral. On model S's value side every type relates it to the
+reduces to no numeral. On model SN's value side every type relates it to the
 daimon, which is what coherence there reads; the consistency model has no such
 clause, so its coherence must come from the forms of types with one
 interpretation. -/

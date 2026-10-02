@@ -117,7 +117,7 @@ theorem unfold_step (t : Term rsig [] RSrt.proc) :
     EqClosure unfoldE (bang t) (parT (bang t) t) := by
   have h : EqClosure unfoldE (bind (closeAt t) (instantiate emptyBody unfoldAx.lhs))
       (bind (closeAt t) (instantiate emptyBody unfoldAx.rhs)) :=
-    EqClosure.ax (E := unfoldE) (Γ := ([] : Ctx rsig)) ⟨0, by decide⟩ emptyBody
+    EqClosure.ax_closed unfoldE (Γ := ([] : Ctx rsig)) ⟨0, by decide⟩ emptyBody
       (closeAt t)
   simpa only [unfoldAx, instantiate, instantiateArgs, bind, bindArgs, liftSub,
     closeAt, bang, parT] using h

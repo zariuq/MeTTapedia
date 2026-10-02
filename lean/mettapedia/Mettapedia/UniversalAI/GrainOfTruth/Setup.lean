@@ -1,5 +1,5 @@
 import Mettapedia.UniversalAI.GrainOfTruth.Core
-import Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+import Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 import Mettapedia.UniversalAI.MultiAgent.Environment
 import Mettapedia.UniversalAI.MultiAgent.Policy
 import Mettapedia.UniversalAI.MultiAgent.Value
@@ -12,24 +12,33 @@ import Mathlib.Data.List.OfFn
 import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
-# Grain of Truth: Core Definitions
+# Subjective environments and ε-best responses
 
-This file contains the core definitions for the Grain of Truth framework from
-Leike's PhD thesis, Chapter 7.
+In a multi-agent environment each agent faces a single-agent environment: the
+other agents' policies and the part of the history it does not see are
+marginalized out (Leike's thesis, Section 7.3).
 
-## Main Definitions
+## Main definitions
 
-* `ReflectiveEnvironmentClass` - The class M^O_refl of environments computable
-  with a reflective oracle
-* `BayesMixture` - The Bayesian mixture ξ over M^O_refl
-* `SubjectiveEnvironment` - Agent i's view of a multi-agent environment
-* `EpsilonBestResponse` - When a policy is an ε-best response
-* `EpsilonNashEquilibrium` - When all policies are ε-best responses
+* `SubjectiveEnvironment`, `SubjectiveEnvironment.of`: agent `i`'s view of a
+  multi-agent environment under a joint policy.
+* `isEpsilonBestResponse`: the optimal value exceeds the policy's value by less
+  than `ε` (Definition 7.24).
+* `LeikeStyle.AsymptoticallyOptimalInMean`: the expected gap between the
+  optimal value and the policy's value, under the policy's own trajectory
+  measure, tends to zero.
 
-## Main Results
+## Main result
 
-* `bayes_is_in_class` - The Bayes mixture ξ̄ is in M^O_refl (Proposition 7.1)
-* `bayes_dominates_class` - ξ̄ dominates all ν ∈ M^O_refl
+* `convergence_to_equilibrium`: if every agent's policy is asymptotically
+  optimal in mean in its subjective environment, then for every `ε > 0` the
+  probability that it is an `ε`-best response tends to one. The proof is
+  Markov's inequality.
+
+The hypothesis of that theorem is where the reflective-oracle construction of
+Leike, Taylor and Fallenstein would enter: it supplies a class that contains
+each subjective environment and in which Thompson sampling is asymptotically
+optimal in mean. Neither fact is proved in this directory.
 
 ## References
 
@@ -43,67 +52,9 @@ namespace Mettapedia.UniversalAI.GrainOfTruth
 
 open Mettapedia.UniversalAI.BayesianAgents
 open Mettapedia.UniversalAI.MultiAgent
-open Mettapedia.UniversalAI.ReflectiveOracles
 open Mettapedia.Computability.ArithmeticalHierarchy
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
-open scoped MeasureTheory
 open scoped ENNReal NNReal
-
-/-! ## The Bayesian Mixture
-
-Given a prior w over M^O_refl, the Bayesian mixture is:
-  ξ(e_t | ae_{<t} a_t) = Σ_ν w(ν | ae_{<t}) · ν(e_t | ae_{<t} a_t)
-
-where w(ν | ae_{<t}) is the posterior after observing history ae_{<t}.
--/
-
-/-- Posterior weight after observing a history.
-    w(ν | h) = w(ν) · ν(h) / ξ(h)
-    where ξ(h) = Σ_ν w(ν) · ν(h).
-
-    This is the proper Bayesian update, defined in `GrainOfTruth.FixedPoint`. -/
-noncomputable def posteriorWeight (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (ν_idx : EnvironmentIndex)
-    (h : History) : ℝ≥0∞ :=
-  FixedPoint.bayesianPosteriorWeight O M prior envs ν_idx h
-
-/-- The Bayesian mixture ξ over the class M^O_refl.
-    This is the key construction that is itself in the class. -/
-structure BayesMixture (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) where
-  /-- The mixture probability distribution -/
-  prob : History → Percept → ℝ≥0∞
-  /-- Probabilities sum to at most 1 -/
-  prob_le_one : ∀ h, ∑' x, prob h x ≤ 1
-
-/-! ## Proposition 7.1: Bayes is in the Class
-
-The key result that the Bayesian mixture ξ̄ is itself in M^O_refl.
-This is what enables the grain of truth: Bayesian agents over M^O_refl
-are themselves in M^O_refl.
--/
-
-/-- Bayes mixture is reflective-oracle-computable and thus in M^O_refl.
-    This is Proposition 7.1 from Leike's thesis.
-
-    The key insight: ξ is defined as a weighted sum of oracle-computable
-    environments, which is itself oracle-computable. The completion ξ̄
-    (from semimeasure to measure using O) is also oracle-computable. -/
-theorem bayes_is_in_class (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (_ξ : BayesMixture O M prior) :
-    ∃ idx : EnvironmentIndex, ∃ n, M.members n = idx := by
-  refine ⟨0, ?_⟩
-  exact M.covers_computable 0
-
-/-- The Bayesian mixture dominates all environments in the class.
-    ξ̄(h) ≥ w(ν) · ν(h) for all ν ∈ M^O_refl and all h. -/
-theorem bayes_dominates_class (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (_ξ : BayesMixture O M prior)
-    (ν_idx : EnvironmentIndex) (_h : History) :
-    ∃ c : ℝ≥0∞, 0 < c := by
-  -- The domination constant is c = w(ν) which is positive by prior.positive
-  use prior.weight ν_idx
-  exact prior.positive ν_idx
 
 /-! ## Multi-Agent Setup
 
@@ -125,7 +76,7 @@ structure SubjectiveEnvironment (n : ℕ) (i : Fin n) where
 /-
 Multi-agent history probability induced by a multi-agent environment and a joint policy.
 
-This is Leike's `σ^{π_{1:n}}(h)` from Definition 7.6 of the thesis source:
+This is Leike's `σ^{π_{1:n}}(h)` from Definition 7.22 of the thesis:
 it includes both policy action probabilities and environment percept probabilities.
 -/
 namespace SubjectiveEnvironment
@@ -173,7 +124,7 @@ noncomputable def jointPolicy {n : ℕ} (policies : Fin n → StochasticPolicy) 
 
 /-- Auxiliary: probability of a *remaining* multi-agent history segment, given a realized prefix.
 
-This is a direct translation of the recursion in Definition 7.6:
+This is a direct translation of the recursion in Definition 7.22:
 
 * `σ^{π}(ε) = 1`
 * `σ^{π}(h a) = σ^{π}(h) · ∏ᵢ πᵢ(aᵢ | hᵢ)`
@@ -857,7 +808,7 @@ noncomputable def SubjectiveEnvironment.of {n : ℕ} (i : Fin n)
 
 /-! ## ε-Best Response and Nash Equilibrium
 
-Definition 7.5 from Leike's thesis: A policy π_i is an ε-best response if
+Definition 7.24 from Leike's thesis: A policy π_i is an ε-best response if
   V*_σ_i(h) - V^π_i_σ_i(h) < ε
 -/
 
@@ -868,23 +819,23 @@ noncomputable def policyValue (env : Environment) (π : StochasticPolicy)
   value env π γ h horizon
 
 /-- A policy is an ε-best response in a subjective environment.
-    Definition 7.5: V*_σ_i(h) - V^π_σ_i(h) < ε -/
+    Definition 7.24: V*_σ_i(h) - V^π_σ_i(h) < ε -/
 def isEpsilonBestResponse {n : ℕ} {i : Fin n} (σ_i : SubjectiveEnvironment n i)
     (π : StochasticPolicy) (γ : DiscountFactor) (ε : ℝ) (h : History)
     (horizon : ℕ) : Prop :=
   optimalValue σ_i.asEnvironment γ h horizon -
     policyValue σ_i.asEnvironment π γ h horizon < ε
 
-/-! ## Theorem 7.5: Convergence to Equilibrium
+/-! ## Asymptotic optimality in mean gives ε-best responses
 
-The main result: If all agents use asymptotically optimal policies
-(e.g., Thompson sampling) over M^O_refl, they converge to ε-Nash equilibrium.
+If every agent's policy is asymptotically optimal in mean in its subjective
+environment, the agents play ε-best responses with probability tending to one.
 -/
 
 namespace LeikeStyle
 
 open _root_.MeasureTheory Filter
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 
 /-- *Asymptotically optimal in mean* (Leike): the expected optimality gap tends to `0`
 under the on-policy trajectory measure of `μ` driven by `π`. -/
@@ -945,7 +896,7 @@ theorem integrable_regretOnTrajectory (μ : Environment) (π : Agent) (γ : Disc
       _root_.MeasureTheory.Integrable (fun _ : Trajectory => (horizon : ℝ))
         (environmentMeasureWithPolicy μ π h_stoch) := by
     -- A constant is integrable on a finite measure space.
-    letI : _root_.MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
+    let : _root_.MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
       environmentMeasureWithPolicy_isProbability μ π h_stoch
     exact
       (_root_.MeasureTheory.integrable_const (μ := environmentMeasureWithPolicy μ π h_stoch)
@@ -954,14 +905,15 @@ theorem integrable_regretOnTrajectory (μ : Environment) (π : Agent) (γ : Disc
 
 end LeikeStyle
 
-/-- Theorem 7.5 (Convergence to Equilibrium):
-    If all agents use asymptotically optimal policies in M^O_refl,
-    then they converge to ε-Nash equilibrium.
+/-- The last step of Theorem 7.30 of Leike's thesis: if every agent's policy is
+    asymptotically optimal in mean in its subjective environment, then for all
+    ε > 0 and all agents i, the probability that π_i is an ε-best response
+    converges to 1 as t → ∞.
 
-    For all ε > 0 and all agents i, the probability that π_i is an
-    ε-best response converges to 1 as t → ∞. -/
-theorem convergence_to_equilibrium {n : ℕ} (O : Oracle)
-    (_M : ReflectiveEnvironmentClass O) (σ : MultiAgentEnvironment n)
+    The hypothesis is assumed here. In the thesis it comes from Thompson
+    sampling over the class of environments computable with a reflective
+    oracle. -/
+theorem convergence_to_equilibrium {n : ℕ} (σ : MultiAgentEnvironment n)
     (policies : Fin n → StochasticPolicy)
     (γ : DiscountFactor) (horizon : ℕ)
     (h_stoch : ∀ i : Fin n, isStochastic (SubjectiveEnvironment.of i σ policies).asEnvironment)
@@ -986,19 +938,19 @@ theorem convergence_to_equilibrium {n : ℕ} (O : Oracle)
   have hμ_prob : MeasureTheory.IsProbabilityMeasure μT :=
     environmentMeasureWithPolicy_isProbability σ_i.asEnvironment (policies i) (h_stoch i)
   have hμ_univ : μT.real Set.univ = 1 := by
-    letI : _root_.MeasureTheory.IsProbabilityMeasure μT := hμ_prob
+    let : _root_.MeasureTheory.IsProbabilityMeasure μT := hμ_prob
     exact _root_.MeasureTheory.probReal_univ (μ := μT)
 
   -- Define the (time-indexed) regret random variable.
   let f : ℕ → Trajectory → ℝ := fun t traj =>
-    Mettapedia.UniversalAI.GrainOfTruth.FixedPoint.regret σ_i.asEnvironment (policies i) γ
+    Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior.regret σ_i.asEnvironment (policies i) γ
       (trajectoryToHistory traj t) horizon
 
   have hf_nonneg : ∀ t, 0 ≤ᵐ[μT] f t := by
     intro t
     refine Filter.Eventually.of_forall (fun traj => ?_)
     simpa [f] using
-      (Mettapedia.UniversalAI.GrainOfTruth.FixedPoint.regret_nonneg σ_i.asEnvironment (policies i) γ
+      (Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior.regret_nonneg σ_i.asEnvironment (policies i) γ
         (trajectoryToHistory traj t) horizon)
 
   have hf_integrable : ∀ t, MeasureTheory.Integrable (f t) μT := by
@@ -1052,7 +1004,7 @@ theorem convergence_to_equilibrium {n : ℕ} (O : Oracle)
           ({traj | (ε : ℝ) ≤ f t traj} : Set Trajectory)ᶜ := by
       ext traj
       -- unfold ε-best-response and rewrite as `regret < ε`
-      simp [isEpsilonBestResponse, policyValue, Mettapedia.UniversalAI.GrainOfTruth.FixedPoint.regret, f, σ_i,
+      simp [isEpsilonBestResponse, policyValue, Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior.regret, f, σ_i,
         Set.mem_compl_iff, not_le]
     -- use `measureReal_compl`
     -- μT.real (Aᶜ) = μT.real univ - μT.real A = 1 - μT.real A
@@ -1090,16 +1042,6 @@ theorem convergence_to_equilibrium {n : ℕ} (O : Oracle)
       exact h_event t
     simpa [hEq] using h_one_sub'
   simpa [μT, σ_i, h_eventuallyEq] using this
-
-/-! ## Corollary: Thompson Sampling Convergence (planned)
-
-Leike's Chapter 5 proves asymptotic optimality-in-mean of Thompson sampling via:
-posterior-as-martingale → (Blackwell–Dubins) strong merging → on-policy value convergence.
-
-This file only contains the *game-theory* wrapper (Theorem 7.5 style).
-The learning-theory core will live in the measure-theory pipeline under
-`Mettapedia/UniversalAI/GrainOfTruth/MeasureTheory/`.
--/
 
 /-! ## Helper: Extract Deterministic Policy from Agent
 

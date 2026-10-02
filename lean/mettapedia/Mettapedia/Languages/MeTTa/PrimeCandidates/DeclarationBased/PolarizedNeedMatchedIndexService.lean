@@ -116,8 +116,8 @@ theorem source_typed {n v k : Nat} {Effect : Type} (context : Tower.Ctx n)
     ComputationTyping NativeWireData.rules signature context valueTypes needTypes
       (source (Effect := Effect) expected actual) (.returns (.native NativeWireData.dataType)) := by
   apply ComputationTyping.bindNative
-    ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
-    (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩))
+    ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
+    (.returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩))
   · exact .call (operation_formed .select) (NativeWireData.encode_typing context _)
   · exact .call (operation_formed .consume) (consumeArgument_typed expected (.var 0))
 

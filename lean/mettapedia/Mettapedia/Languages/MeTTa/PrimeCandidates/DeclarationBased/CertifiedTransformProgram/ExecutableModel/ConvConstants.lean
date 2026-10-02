@@ -70,8 +70,8 @@ include ext
 
 /-- The universes of the executable package are universes of the realizer
 side. -/
-theorem isUniverse_sort (level : LevelExpr) : T.R.isUniverse (.sort level) :=
-  ext.sub.isUniverse (Tower.IsUniverse.sort level)
+theorem isUniverse_sort (level : LevelExpr Nat) : T.R.isUniverse (.sort level) :=
+  ext.sub.isUniverse (LevelTower.IsUniverse.sort level)
 
 /-- The lowest universe is a universe of the realizer side. -/
 theorem isUniverse_zero : T.R.isUniverse (.sort Tower.zero) :=
@@ -241,7 +241,7 @@ theorem stage_root {allowed : DeclName → Bool} {R : Rules Tower.Head}
   · exact .inl (semantic (tmodel_step v (tmodelListed v 1 (by decide)) h))
   · exact .inl (semantic (tmodel_step v (tmodelListed v 2 (by decide)) h))
   · obtain ⟨a₀, a₁, a₂, a₃, a₄, a₅, rfl, rfl⟩ := h
-    exact .inr (TypedRootN.transport (nmodel_laws v T) (Tower.IsUniverse.sort _)
+    exact .inr (TypedRootN.transport (nmodel_laws v T) (LevelTower.IsUniverse.sort _)
       (declaredJ allowedIn) (nmodel_jStep v) (nmodel_coeRules v)
       (fun _ _ _ _ _ _ => ext.declaresJ.rule))
   · exact .inl (semantic (tmodel_step v (tmodelListed v 4 (by decide)) h))
@@ -349,9 +349,9 @@ are interpreted by their inductive pack, of one shape with themselves, and they
 are realized by the types, a type constant related to itself. -/
 theorem valid_num : ValidTmN (nmodel v T) .nil (.const numN) U0 := by
   have laws := (nmodel_laws v T).value
-  refine ⟨ValidTyN.sort (Tower.IsUniverse.sort _) ext.isUniverse_zero,
+  refine ⟨ValidTyN.sort (LevelTower.IsUniverse.sort _) ext.isUniverse_zero,
     fun {m r ξ σ σ' Δ ς ς'} _ {P} den => ?_⟩
-  rw [ValueSide.DenS.sort_inv laws (Tower.IsUniverse.sort _) den]
+  rw [ValueSide.DenS.sort_inv laws (LevelTower.IsUniverse.sort _) den]
   refine ⟨fun {_ ξ' _} _ => ⟨_, ValueSide.InterpAt.num laws _ .refl,
     ValueSide.InterpAt.num laws _ .refl, .const (.inr ⟨_, laws.num_role⟩) .refl .refl⟩, ?_⟩
   have typed : Typed T.R Δ numT U0 := ext.numT_typed
@@ -365,9 +365,9 @@ a leaf, and they are realized by the types, a rigid constant related to
 itself. -/
 theorem valid_set : ValidTmN (nmodel v T) .nil (.const setN) U0 := by
   have laws := (nmodel_laws v T).value
-  refine ⟨ValidTyN.sort (Tower.IsUniverse.sort _) ext.isUniverse_zero,
+  refine ⟨ValidTyN.sort (LevelTower.IsUniverse.sort _) ext.isUniverse_zero,
     fun {m r ξ σ σ' Δ ς ς'} _ {P} den => ?_⟩
-  rw [ValueSide.DenS.sort_inv laws (Tower.IsUniverse.sort _) den]
+  rw [ValueSide.DenS.sort_inv laws (LevelTower.IsUniverse.sort _) den]
   refine ⟨fun {_ ξ' _} _ => ⟨_, set_interp v _ ξ', set_interp v _ ξ', set_shape v _ ξ'⟩, ?_⟩
   have typed : Typed T.R Δ setT U0 := ext.setT_typed
   have neutral : Neutral T.roles (setT : Tower.Tm r) := .rigid (args := []) ext.set
@@ -396,7 +396,7 @@ theorem numSetStage_typedSoundN :
 
 /-- **`zero` is valid**: its value has shape zero, and it realizes shape zero. -/
 theorem valid_zero : ValidTmN (nmodel v T) .nil (.const zeroN) numT := by
-  refine ⟨(valid_num v ext).validTy (Tower.IsUniverse.sort _) ext.isUniverse_zero,
+  refine ⟨(valid_num v ext).validTy (LevelTower.IsUniverse.sort _) ext.isUniverse_zero,
     fun {m r ξ σ σ' Δ ς ς'} _ {P} den => ?_⟩
   have shape : VShape v (.const zeroN : Tower.Tm m) .zero := HasShape.zero .refl
   have typed : Typed T.R Δ (.const zeroN) numT := ext.zero_typed
@@ -415,9 +415,9 @@ theorem valid_suc : ValidTmN (nmodel v T) .nil (.const sucN) (.pi numT numT) := 
   obtain ⟨validT, partsT, _⟩ :=
     Derivable.validTN (numStage_typedSoundN v ext) typedType trivial
   refine ValidTmN.close laws (.snoc .nil numT) (C := numT) (f := .const sucN)
-    (validT.validTy (Tower.IsUniverse.sort _) ext.isUniverse_zero) partsT ext.suc_typed
+    (validT.validTy (LevelTower.IsUniverse.sort _) ext.isUniverse_zero) partsT ext.suc_typed
     (fun args short => .inr (.inr ⟨sucN, args, 1, .inl ext.roles_suc, short, rfl⟩))
-    ⟨ValidTyN.liftClosed ((valid_num v ext).validTy (Tower.IsUniverse.sort _)
+    ⟨ValidTyN.liftClosed ((valid_num v ext).validTy (LevelTower.IsUniverse.sort _)
       ext.isUniverse_zero) _, fun {m r ξ σ σ' Δ ς ς'} e {P} den => ?_⟩
   obtain ⟨-, RA, denA, hx, rx⟩ := e
   change DenN (nmodel v T) ξ numT RA at denA
@@ -449,9 +449,9 @@ theorem valid_power : ValidTmN (nmodel v T) .nil (.const powerN) powerType := by
   obtain ⟨validT, partsT, _⟩ :=
     Derivable.validTN (numSetStage_typedSoundN v ext) typedType trivial
   refine ValidTmN.close laws (.snoc .nil setT) (C := setT) (f := .const powerN)
-    (validT.validTy (Tower.IsUniverse.sort _) ext.isUniverse_zero) partsT ext.power_typed
+    (validT.validTy (LevelTower.IsUniverse.sort _) ext.isUniverse_zero) partsT ext.power_typed
     (fun args _ => .inr (.inl (.rigid args ext.power)))
-    ⟨ValidTyN.liftClosed ((valid_set v ext).validTy (Tower.IsUniverse.sort _)
+    ⟨ValidTyN.liftClosed ((valid_set v ext).validTy (LevelTower.IsUniverse.sort _)
       ext.isUniverse_zero) _, fun {m r ξ σ σ' Δ ς ς'} e {P} den => ?_⟩
   obtain ⟨-, RA, denA, -, rx⟩ := e
   change DenN (nmodel v T) ξ setT RA at denA

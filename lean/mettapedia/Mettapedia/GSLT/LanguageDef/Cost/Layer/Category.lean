@@ -497,7 +497,7 @@ namespace Cost.Layer.Hom.CompactMapLaws
 /-- Identity satisfies every generated Cost arrow law.  Normalizer
 naturality is inherited from the checked continued identity on the selected
 compact output. -/
-def id (source : Cost.Layer) :
+theorem id (source : Cost.Layer) :
     Cost.Layer.Hom.CompactMapLaws source source
       (OrderedCIGSLT.Morphism.id source.source) where
   preservesGeneratedBisim := CostGeneratedBisimPreserving.id _
@@ -650,7 +650,7 @@ def toCompactCIGSLTMorphism
 /-- The admissible generated Cost laws are closed under composition.  The
 normalizer square is composed in the indexed open-term fibres; the explicit
 reindexing below is proof-only and does not alter the represented pattern. -/
-def comp {first second third : Cost.Layer}
+theorem comp {first second third : Cost.Layer}
     {left : OrderedCIGSLT.Morphism first.source second.source}
     {right : OrderedCIGSLT.Morphism second.source third.source}
     (leftLaws : Cost.Layer.Hom.CompactMapLaws first second left)
@@ -996,9 +996,12 @@ def Cost.Layer.forget :
   map_id _ := rfl
   map_comp _ _ := rfl
 
-/-- Genuine nondegenerate one-step compact Cost functor.  Its codomain is
-the ordered continued category, not the cost layer domain: closure under a second
-compact Cost step is independently refuted for rho. -/
+/-- The one-step compact Cost functor.  Its codomain is the ordered continued
+category, not the category of Cost layers: a compact output carries no layer
+structure of its own.  For rho, the compact normalizer of a second step does
+not agree with erasing and recompiling
+(`rhoHereditaryCostLayer_not_compactCostNormalizationCoherent`); that a second
+layer cannot exist is not claimed. -/
 def Cost.Layer.compact :
     CategoryTheory.Functor Cost.Layer OrderedCIGSLT where
   obj source := source.compactOutput

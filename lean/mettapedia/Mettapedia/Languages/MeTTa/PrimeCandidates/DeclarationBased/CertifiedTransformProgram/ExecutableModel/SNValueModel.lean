@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.SNTransport
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ObjectSteps
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Fundamental
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.CodeConstants
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Fundamental
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.CodeConstants
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ValueSide.Transport
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.StrongNormalization.Spines
 
@@ -9,7 +9,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Strong
 # The transport value model on the skeleton-free value side
 
 Route T's consistency model `tmodelC`, its daimon and the object package as its
-realizer side, read by model S over the skeleton-free value side with levels in
+realizer side, read by model SN over the skeleton-free value side with levels in
 the natural numbers (`vmodel`):
 
 * its laws are those of `tmodelC` with the daimon rigid and the constructors of
@@ -29,7 +29,7 @@ stage whose constants are valid is sound (`vstage_soundS`).
 Identity elimination is different. On the value side it transports its method
 along the motive, `J A x P d y e ⟶ coe (P x (refl x)) (P y e) d`, while the
 object package computes by its linear rule `J A x P d y (refl z) ⟶ d`, which
-does not compare `x`, `y` and `z`. The root obligation of model S reads a root
+does not compare `x`, `y` and `z`. The root obligation of model SN reads a root
 step without its typing: its two sides must be validly equal wherever each is a
 valid term of one type. At `J U2 U1 (λ y _. y) num U0 (refl U0)`, whose motive
 sends the point `U1` and the endpoint `U0` to themselves, both sides are valid
@@ -68,7 +68,7 @@ namespace CodeModel
 /-- **The transport value model on the skeleton-free value side**: route T's
 consistency model, with its levels in the natural numbers, the daimon, and the
 object package as the realizer side. -/
-def vmodel (v : Nat → Nat) : ModelS.SModel Tower.Head Nat where
+def vmodel (v : Nat → Nat) : ModelSN.SNModel Tower.Head Nat where
   toModel := tmodelC v
   star := starN
   realizers := objectRealizers
@@ -115,7 +115,7 @@ since the numerals of the value side and of the realizer side agree. -/
 theorem vmodel_reading_eq :
     (vmodel v).reading =
       Realizability.candidateReading (tmodelC v).toSetting starN objectRealizers :=
-  ModelS.kcandReading_eq objectRealizers (tmodelC v).toSetting starN numN rfl rfl
+  ModelSN.kcandReading_eq objectRealizers (tmodelC v).toSetting starN numN rfl rfl
     objectRoles_num_ctors
 
 /-! ## The program's codes -/
@@ -252,7 +252,7 @@ theorem tcarrier_sn : ∀ {k : Kind} {C : Carrier k},
         (SN.rename objectReflects wk (tcarrier_sn cod))
 
 /-- The program's codes are read by the model. -/
-theorem vprogramCodes_readS : ModelS.CodesReadS (vmodel v) programCodes where
+theorem vprogramCodes_readS : ModelSN.CodesReadS (vmodel v) programCodes where
   read := tprogramCodes_read v
   decoders := rfl
   propStuck := fun arity scrutinee role => by
@@ -297,15 +297,15 @@ theorem vmodel_step_of_stage {allowed : DeclName → Bool} (noJ : allowed jName 
 for the model**: its root steps are steps of the model's reduction. -/
 theorem vstage_soundS {allowed : DeclName → Bool} (noJ : allowed jName = false)
     (constants : ∀ {name : DeclName} {type : Tower.Tm 0}, allowed name = true →
-      allTypes name = some type → ModelS.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelS.TypedSoundS (stage allowed) (vmodel v) where
+      allTypes name = some type → ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (stage allowed) (vmodel v) where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
   join := id
   cumulative := id
   headEq := id
-  root := fun step => .inl (ModelS.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v)
+  root := fun step => .inl (ModelSN.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v)
     (.inl (vmodel_step_of_stage v noJ step)))
   constants := by
     intro name type declared
@@ -317,8 +317,8 @@ theorem vstage_soundS {allowed : DeclName → Bool} (noJ : allowed jName = false
 are valid is sound for the model. -/
 theorem vstage_soundS_of {names : List DeclName} (noJ : jName ∉ names)
     (constants : ∀ name ∈ names, ∀ {type : Tower.Tm 0}, allTypes name = some type →
-      ModelS.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelS.TypedSoundS (stage (allowedIn names)) (vmodel v) :=
+      ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (stage (allowedIn names)) (vmodel v) :=
   vstage_soundS v (by simpa [allowedIn] using noJ) fun {name _} allowed declared =>
     constants name (by simpa [allowedIn] using allowed) declared
 
@@ -367,8 +367,8 @@ theorem vmodel_mismatchJ_red {n : Nat} :
   have rY := endpointMotive_red (v := v) (U0 : Tower.Tm n) (.refl U0) (.sort (.const 0)) rfl
   have rX :=
     endpointMotive_red (v := v) (U1 : Tower.Tm n) (.refl U1) (.sort (.succ Tower.zero)) rfl
-  obtain ⟨w, rw, dw⟩ := (vmodel_coeRules v).univOther (d := numT) rY (Tower.IsUniverse.sort _)
-    rX (.inl ⟨_, rfl, Tower.IsUniverse.sort _⟩)
+  obtain ⟨w, rw, dw⟩ := (vmodel_coeRules v).univOther (d := numT) rY (LevelTower.IsUniverse.sort _)
+    rX (.inl ⟨_, rfl, LevelTower.IsUniverse.sort _⟩)
     (fun u' e _ => by
       cases e
       exact Nat.zero_lt_one)
@@ -406,9 +406,9 @@ theorem vmodel_mismatchJ_interp (l : Nat) {n : Nat} (ξ : World (vmodel v).readi
 
 /-- **`mismatchJ` is a valid term of `U0`**: at every world it is a daimonic
 type, of one shape with itself, and its object term is strongly normalizing. -/
-theorem vmodel_mismatchJ_valid : ModelS.ValidTmS (vmodel v) .nil mismatchJ U0 := by
-  refine ⟨ModelS.ValidTyS.sort (Tower.IsUniverse.sort _), fun {_ _ ξ σ σ' ς} _ {P} den => ?_⟩
-  rw [ModelS.DenS.sort_inv (vmodel_laws v) (Tower.IsUniverse.sort _) den]
+theorem vmodel_mismatchJ_valid : ModelSN.ValidTmS (vmodel v) .nil mismatchJ U0 := by
+  refine ⟨ModelSN.ValidTyS.sort (LevelTower.IsUniverse.sort _), fun {_ _ ξ σ σ' ς} _ {P} den => ?_⟩
+  rw [ModelSN.DenS.sort_inv (vmodel_laws v) (LevelTower.IsUniverse.sort _) den]
   rw [subst_mismatchJ, subst_mismatchJ, subst_mismatchJ]
   refine ⟨fun {_ ξ' ρ} _ => ?_, mismatchJ_sn⟩
   rw [rename_mismatchJ]
@@ -418,10 +418,10 @@ theorem vmodel_mismatchJ_valid : ModelS.ValidTmS (vmodel v) .nil mismatchJ U0 :=
 /-- **The numbers are a valid term of `U0`**: at every world they are
 interpreted at the lowest level by their inductive pack, of one shape with
 themselves, and the constant is strongly normalizing. -/
-theorem vmodel_valid_num : ModelS.ValidTmS (vmodel v) .nil (.const numN) U0 := by
+theorem vmodel_valid_num : ModelSN.ValidTmS (vmodel v) .nil (.const numN) U0 := by
   have laws := vmodel_valueLaws v
-  refine ⟨ModelS.ValidTyS.sort (Tower.IsUniverse.sort _), fun {_ _ ξ σ σ' ς} _ {P} den => ?_⟩
-  rw [ModelS.DenS.sort_inv (vmodel_laws v) (Tower.IsUniverse.sort _) den]
+  refine ⟨ModelSN.ValidTyS.sort (LevelTower.IsUniverse.sort _), fun {_ _ ξ σ σ' ς} _ {P} den => ?_⟩
+  rw [ModelSN.DenS.sort_inv (vmodel_laws v) (LevelTower.IsUniverse.sort _) den]
   refine ⟨fun {_ ξ' ρ} _ => ?_, numT_sn⟩
   exact ⟨_, ValueSide.InterpAt.num laws _ .refl, ValueSide.InterpAt.num laws _ .refl,
     .const (.inr ⟨_, laws.num_role⟩) .refl .refl⟩
@@ -430,13 +430,13 @@ theorem vmodel_valid_num : ModelS.ValidTmS (vmodel v) .nil (.const numN) U0 := b
 world the universe relates them only if they have one pack, while `mismatchJ`
 has the pack of daimonic types and the numbers have their inductive pack, which
 does not relate `zero` to `suc zero`. -/
-theorem vmodel_mismatchJ_not_equal : ¬ ModelS.ValidEqS (vmodel v) .nil mismatchJ numT U0 := by
+theorem vmodel_mismatchJ_not_equal : ¬ ModelSN.ValidEqS (vmodel v) .nil mismatchJ numT U0 := by
   intro equal
   have laws := vmodel_valueLaws v
   let empty : Sub Tower.Head 0 0 := fun i => Fin.elim0 i
   have den : ValueSide.DenS (vmodel v).value World.closed (Presentation.subst empty U0)
-      (ModelS.universeAt (vmodel v) 0 World.closed) :=
-    ValueSide.DenS.sort (V := (vmodel v).value) (Tower.IsUniverse.sort _) World.closed
+      (ModelSN.universeAt (vmodel v) 0 World.closed) :=
+    ValueSide.DenS.sort (V := (vmodel v).value) (LevelTower.IsUniverse.sort _) World.closed
   obtain ⟨Q, hl, hr, -⟩ :=
     equal.2.2 (σ := empty) (σ' := empty) (ς := empty) trivial den (Morph.id World.closed)
   change ValueSide.InterpAt (vmodel v).value 0 World.closed mismatchJ Q at hl
@@ -458,14 +458,14 @@ theorem vmodel_mismatchJ_not_equal : ¬ ModelS.ValidEqS (vmodel v) .nil mismatch
 the model**: at `mismatchJ` both sides of the object package's step are valid
 terms of `U0`, and they are not validly equal. -/
 theorem vmodel_jRoot_not_semantic :
-    ¬ ModelS.RootSemanticS (vmodel v) (mismatchJ : Tower.Tm 0) numT :=
+    ¬ ModelSN.RootSemanticS (vmodel v) (mismatchJ : Tower.Tm 0) numT :=
   fun semantic => vmodel_mismatchJ_not_equal v
     (semantic (vmodel_mismatchJ_valid v) (vmodel_valid_num v))
 
 /-- **The object package is not sound for the model**: the linear rule of
 identity elimination is one of its root steps, and its root obligation fails at
 `mismatchJ`. -/
-theorem objectRules_not_soundS_vmodel : ¬ ModelS.SoundS objectRules (vmodel v) :=
+theorem objectRules_not_soundS_vmodel : ¬ ModelSN.SoundS objectRules (vmodel v) :=
   fun sound => vmodel_jRoot_not_semantic v (sound.2 objectStep_mismatchJ)
 
 end CodeModel

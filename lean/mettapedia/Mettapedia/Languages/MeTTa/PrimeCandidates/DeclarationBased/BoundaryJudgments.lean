@@ -468,7 +468,7 @@ theorem lambda {context : Tower.Ctx n} {body : Tower.Tm (n + 1)}
   induction typing with
   | headType headTyping => cases termEquality
   | var index => cases termEquality
-  | const impossible => simp [Tower.rules] at impossible
+  | const impossible => simp [LevelTower.rules] at impossible
   | piForm typeDomain isDomain typeCodomain isCodomain join ihDomain ihCodomain =>
       cases termEquality
   | sigmaForm typeDomain isDomain typeCodomain isCodomain join ihDomain ihCodomain =>
@@ -502,7 +502,7 @@ theorem refl {context : Tower.Ctx n} {term type : Tower.Tm n}
   induction typing with
   | headType headTyping => cases termEquality
   | var index => cases termEquality
-  | const impossible => simp [Tower.rules] at impossible
+  | const impossible => simp [LevelTower.rules] at impossible
   | piForm typeDomain isDomain typeCodomain isCodomain join ihDomain ihCodomain =>
       cases termEquality
   | sigmaForm typeDomain isDomain typeCodomain isCodomain join ihDomain ihCodomain =>

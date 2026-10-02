@@ -292,7 +292,7 @@ namespace Cost.SemanticSection.Laws
 
 /-- The original mapped-action laws instantiate the arbitrary-normalizer
 interface for the established static-frame normalizer. -/
-def toStaticRegionNormalizerLaws {source : CIGSLT}
+theorem toStaticRegionNormalizerLaws {source : CIGSLT}
     (laws : Cost.SemanticSection.Laws source) :
     CostTypedStaticRegionNormalizerLaws source
       (fun node values => node.normalizeWithReflective values) where
@@ -654,8 +654,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
     (tailEquivalent :
       (values.supportedOpenAssignment tail).FiberEquivalent
         ((Values.original tail).supportedOpenAssignment tail)) :
-    ((Values.cons value values).supportedOpenAssignment
-      (.cons boundary content tail)).FiberEquivalent
+    (supportedOpenAssignment (.cons boundary content tail) (Values.cons value values)).FiberEquivalent
     ((Values.original (.cons boundary content tail)).supportedOpenAssignment
       (.cons boundary content tail)) := by
   intro name type lookup inner
@@ -668,11 +667,9 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
           source.costWholeReflectionProfile defaultBasePremises
           source.costWholeLanguage targetFree
             (inner ++
-              (TypedCostRegionBoundaryTable.cons boundary content tail
-                ).restorationSupport name) type).iseqv.refl
+              (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail)) name) type).iseqv.refl
           (WellSorted.SupportedOpenAssignment.weakenedValue
-            ((Values.cons value values).supportedOpenAssignment
-              (.cons boundary content tail)) lookup inner))
+            (supportedOpenAssignment (.cons boundary content tail) (Values.cons value values)) lookup inner))
   | none =>
       by_cases keyEquality :
           name = costRegionBoundaryVariableName boundary.boundary
@@ -683,8 +680,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
             decodeCostRegionSourceVariableName_boundary] using lookup
         subst type
         have supportEquality :
-            (TypedCostRegionBoundaryTable.cons boundary content tail
-              ).restorationSupport
+            (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail))
                 (costRegionBoundaryVariableName boundary.boundary) =
               boundary.boundary.targetSupport := by
           simp [TypedCostRegionBoundaryTable.restorationSupport,
@@ -693,8 +689,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
         let boundEquality :
             inner ++ boundary.boundary.targetSupport =
               inner ++
-                (TypedCostRegionBoundaryTable.cons boundary content tail
-                  ).restorationSupport
+                (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail))
                     (costRegionBoundaryVariableName boundary.boundary) :=
           congrArg (fun support => inner ++ support) supportEquality.symm
         have transported :=
@@ -704,8 +699,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
         have leftEndpoint :
             (value.weakenRoot inner).reindexBound boundEquality =
               WellSorted.SupportedOpenAssignment.weakenedValue
-                ((Values.cons value values).supportedOpenAssignment
-                  (.cons boundary content tail)) lookup inner := by
+                (supportedOpenAssignment (.cons boundary content tail) (Values.cons value values)) lookup inner := by
           apply Subtype.ext
           simp [WellSorted.SupportedOpenAssignment.weakenedValue,
             supportedOpenAssignment, supportedAssignment, assignment, resolve,
@@ -730,16 +724,14 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
             using lookup
         have tailStep := tailEquivalent tailLookup inner
         have supportEquality :
-            (TypedCostRegionBoundaryTable.cons boundary content tail
-              ).restorationSupport name =
+            (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail)) name =
               tail.restorationSupport name := by
           simp [TypedCostRegionBoundaryTable.restorationSupport,
             TypedCostRegionBoundaryTable.resolve, decodedName, keyEquality]
         let boundEquality :
             inner ++ tail.restorationSupport name =
               inner ++
-                (TypedCostRegionBoundaryTable.cons boundary content tail
-                  ).restorationSupport name :=
+                (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail)) name :=
           congrArg (fun support => inner ++ support) supportEquality.symm
         have transported :=
           ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
@@ -748,8 +740,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent
         have leftEndpoint :
             ((values.supportedOpenAssignment tail).weakenedValue
               tailLookup inner).reindexBound boundEquality =
-              ((Values.cons value values).supportedOpenAssignment
-                (.cons boundary content tail)).weakenedValue lookup inner := by
+              (supportedOpenAssignment (.cons boundary content tail) (Values.cons value values)).weakenedValue lookup inner := by
           apply Subtype.ext
           simp [WellSorted.SupportedOpenAssignment.weakenedValue,
             supportedOpenAssignment, supportedAssignment, assignment, resolve,
@@ -2310,7 +2301,7 @@ structure CostReferenceOpenSectionLaws (source : CIGSLT) : Prop
 /-- The established compact-executor laws instantiate the generic
 normalizer-parameterized section laws.  This is a compatibility theorem, not
 a second semantic authority: both bundles name the same executor. -/
-def CostReferenceOpenSectionLaws.toCostOpenSectionLawsFor
+theorem CostReferenceOpenSectionLaws.toCostOpenSectionLawsFor
     {source : CIGSLT} (laws : CostReferenceOpenSectionLaws source) :
     CostOpenSectionLawsFor source source.costNormalizeOpen where
   equivalent := by

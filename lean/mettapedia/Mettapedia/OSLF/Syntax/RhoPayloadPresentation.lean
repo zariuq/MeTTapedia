@@ -258,7 +258,7 @@ private def someBody : (k : Fin metas.length) → Term sig (metas.get k).1 (meta
 /-- Quote/drop cancellation, as an instance of the presented equation. -/
 theorem quoteDrop_equiv (m : Term sig Γ Srt.nm) :
     EqClosure equations (quoT (drpT m)) m :=
-  EqClosure.ax (E := equations) (Γ := Γ) 3 someBody (singleName m)
+  EqClosure.ax_closed (E := equations) (Γ := Γ) 3 someBody (singleName m)
 
 theorem equiv_drpT {a b : Term sig Γ Srt.nm} (h : EqClosure equations a b) :
     EqClosure equations (drpT a) (drpT b) := by
@@ -302,14 +302,14 @@ private def singleProc (a : Term sig Γ Srt.pr) : Sub sig [Srt.pr] Γ
 
 theorem parT_comm (a b : Term sig Γ Srt.pr) :
     EqClosure equations (parT a b) (parT b a) :=
-  EqClosure.ax (E := equations) (Γ := Γ) 0 someBody (pairProcs a b)
+  EqClosure.ax_closed (E := equations) (Γ := Γ) 0 someBody (pairProcs a b)
 
 theorem parT_assoc (a b c : Term sig Γ Srt.pr) :
     EqClosure equations (parT (parT a b) c) (parT a (parT b c)) :=
-  EqClosure.ax (E := equations) (Γ := Γ) 1 someBody (tripleProcs a b c)
+  EqClosure.ax_closed (E := equations) (Γ := Γ) 1 someBody (tripleProcs a b c)
 
 theorem parT_nil (a : Term sig Γ Srt.pr) : EqClosure equations (parT a nilT) a :=
-  EqClosure.ax (E := equations) (Γ := Γ) 2 someBody (singleProc a)
+  EqClosure.ax_closed (E := equations) (Γ := Γ) 2 someBody (singleProc a)
 
 theorem nil_parT (a : Term sig Γ Srt.pr) : EqClosure equations (parT nilT a) a :=
   (parT_comm nilT a).trans (parT_nil a)
@@ -617,7 +617,7 @@ theorem activeOutputs_equiv {Γ : Ctx sig} {s : Srt} {t u : Term sig Γ s}
     (motive_1 := fun t u _ => activeOutputs t = activeOutputs u)
     (motive_2 := fun as as' _ => argsOutputs as = argsOutputs as')
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ h
-  · intro i Γ body close
+  · intro i Θ Γ body ambient close
     fin_cases i
     · exact Nat.add_comm _ _
     · exact Nat.add_assoc _ _ _
@@ -723,7 +723,7 @@ theorem spine_invariant {α : Ctx sig → Type} [∀ Γ, AddCommMonoid (α Γ)]
     (motive_1 := fun t u _ => f t = f u)
     (motive_2 := fun as as' _ => ArgsAgree f as as')
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ h
-  · intro i Γ body close
+  · intro i Θ Γ body ambient close
     fin_cases i
     · change f (parT (close _ .zero) (close _ (.succ .zero))) =
         f (parT (close _ (.succ .zero)) (close _ .zero))
@@ -1030,7 +1030,7 @@ theorem key_invariant {Γ : Ctx sig} {s : Srt} {t u : Term sig Γ s}
     (motive_1 := fun t u _ => key t = key u)
     (motive_2 := fun as as' _ => ArgsAgree key as as')
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ h
-  · intro i Γ body close
+  · intro i Θ Γ body ambient close
     fin_cases i
     · exact key_par_comm _ _
     · exact key_par_assoc _ _ _

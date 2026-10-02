@@ -203,7 +203,7 @@ theorem extendEnv_transport {Γ' : Ctx S} {Z : D} (ρ : N.Env Z Γ') :
 theorem transElem_var {X : List (MetaArity S)} {Γ : Ctx S} {γ : S.Srt} (v : Var Γ γ) :
     transElem e (⟨fun _ _ ρ => ρ _ v, fun _ _ _ => rfl⟩ : M.Elem X Γ γ) =
       (⟨fun _ _ ρ => ρ _ v, fun _ _ _ => rfl⟩ : N.Elem X Γ γ) := by
-  apply Elem.ext
+  apply ElemOver.ext
   funext Z m ρ
   change (ρ γ v ≫ Hom.sort e.inv γ) ≫ Hom.sort e.hom γ = ρ γ v
   rw [Category.assoc, inv_hom_sort, Category.comp_id]
@@ -247,7 +247,7 @@ theorem tupleCtx_transport {X X' : List (MetaArity S)} {Z : D} :
 theorem transElem_op {X X' : List (MetaArity S)} {Γ : Ctx S} {s : S.Srt} (o : S.Op s)
     (args : FamilyArgs (withMetas S X') (M.Elem X) (S.arity o) Γ) :
     transElem e (M.opElem o args) = N.opElem o (FamilyArgs.map (fun x => transElem e x) args) := by
-  apply Elem.ext
+  apply ElemOver.ext
   funext Z m ρ
   change (M.tupleArgs args Z _ _ ≫ M.op o) ≫ Hom.sort e.hom s =
     N.tupleArgs (FamilyArgs.map (fun x => transElem e x) args) Z m ρ ≫ N.op o
@@ -256,7 +256,7 @@ theorem transElem_op {X X' : List (MetaArity S)} {Γ : Ctx S} {s : S.Srt} (o : S
 theorem transElem_meta {X : List (MetaArity S)} {Γ : Ctx S} (j : Fin X.length)
     (args : FamilyArgs (withMetas S X) (M.Elem X) ((X.get j).1.map fun b => ([], b)) Γ) :
     transElem e (M.metaElem j args) = N.metaElem j (FamilyArgs.map (fun x => transElem e x) args) := by
-  apply Elem.ext
+  apply ElemOver.ext
   funext Z m ρ
   change (lift (M.tupleCtx (X.get j).1 args Z _ _) ((m ≫ familyMap (Hom.power e.inv) X) ≫
       M.familyProj X j) ≫ M.eval _ _) ≫ Hom.sort e.hom _ =

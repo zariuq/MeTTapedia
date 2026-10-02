@@ -721,14 +721,14 @@ private theorem sort_typing_lower_aux (opacity : OpaqueRelatorExtension.Opacity 
 its conversion and cumulative tails. Opacity is used only in the proved
 universe-conversion invariant, not as an assumed typing rule. -/
 theorem sort_typing_lower_bound (opacity : OpaqueRelatorExtension.Opacity signature)
-    {n : Nat} {context : Tower.Ctx n} {level upper : LevelExpr}
+    {n : Nat} {context : Tower.Ctx n} {level upper : LevelExpr Nat}
     (typed : Typing (OpaqueRelatorExtension.rules signature) context
       (sortTm level) (sortTm upper)) (valuation : Nat → Nat) :
     LevelExpr.eval valuation level + 1 ≤ LevelExpr.eval valuation upper :=
   sort_typing_lower_aux opacity typed level rfl upper (.refl _) valuation
 
 theorem sort_not_typed_at_self (opacity : OpaqueRelatorExtension.Opacity signature)
-    {n : Nat} (context : Tower.Ctx n) (level : LevelExpr) :
+    {n : Nat} (context : Tower.Ctx n) (level : LevelExpr Nat) :
     ¬ Typing (OpaqueRelatorExtension.rules signature) context (sortTm level) (sortTm level) := by
   intro typed
   exact Nat.not_succ_le_self _ (sort_typing_lower_bound opacity typed (fun _ => 0))

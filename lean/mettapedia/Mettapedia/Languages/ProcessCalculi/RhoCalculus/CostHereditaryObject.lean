@@ -171,8 +171,9 @@ private theorem rho_costEquationContextStep_mem_freeFvarNames_iff
                 CostCanonicalLaws.rho_costEquationInstanceAt_canonicalize_eq
                   bounded
               exact ⟨declaration, representatives⟩
-            · exact ⟨_,
-                CostCanonicalLaws.rho_costDerivedInstance_canonicalize_eq derived⟩
+            · obtain ⟨declaration, _membership, representatives⟩ :=
+                CostCanonicalLaws.rho_costDerivedInstance_canonicalize_eq derived
+              exact ⟨declaration, representatives⟩
           apply mem_freeFvarNames_fill_iff_of_iff context name
           calc
             name ∈ redex.freeFvarNames ↔
@@ -793,7 +794,7 @@ def RhoHereditaryReflectiveSupportPreserving : Prop :=
 remaining semantic closure obligations.  All contextual free-name laws,
 typed unary soundness, generator transport to the supported executor, and
 wrapped-constructor preservation are discharged here. -/
-def rhoHereditaryCompactOpenNormalizerLaws_of
+theorem rhoHereditaryCompactOpenNormalizerLaws_of
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel)
     (preservesReflectiveSupport : RhoHereditaryReflectiveSupportPreserving) :

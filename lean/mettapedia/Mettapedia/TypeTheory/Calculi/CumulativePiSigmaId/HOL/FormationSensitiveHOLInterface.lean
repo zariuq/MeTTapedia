@@ -111,7 +111,7 @@ theorem typeAt_formed_of_atoms (declarations : Signature Tower.Head)
           (ib (.snoc context (typeAt types n a))) (.sort Tower.zero)
           (.sorts Tower.zero Tower.zero))
       intro valuation
-      simp [LevelExpr.eval, Tower.zero]
+      simp [LevelExpr.eval, LevelTower.zero]
 
 theorem typeAt_formed (signature : LogicalSignature Base Const) (type : HOL.Ty Base)
     {n : Nat} (context : Tower.Ctx n) :
@@ -143,7 +143,7 @@ theorem equalityDeclarationType_formed (declarations : Signature Tower.Head)
     apply Typing.cumul (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero)
       (.sorts Tower.zero Tower.zero))
     intro valuation
-    simp [LevelExpr.eval, Tower.zero]
+    simp [LevelExpr.eval, LevelTower.zero]
   apply Typing.piForm (R := extendRules Tower.rules declarations)
     (.headType (.sort Tower.zero)) (.sort (.succ Tower.zero))
     (w := .sort (.max (.succ Tower.zero) Tower.zero))

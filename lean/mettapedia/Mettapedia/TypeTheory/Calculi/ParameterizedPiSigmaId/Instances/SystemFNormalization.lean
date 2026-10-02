@@ -1,14 +1,14 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.SystemF
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.Tower
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Fundamental
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.CodeConstants
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Fundamental
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.CodeConstants
 
 /-!
 # Strong normalization of System F from the normalization model
 
 System F embeds in the package of proposition codes over the cumulative tower, and strong
 normalization of the package on typed terms implies strong normalization of System F. This
-file gives the package its normalization model, model S over the skeleton-free value side,
+file gives the package its normalization model, model SN over the skeleton-free value side,
 and so proves strong normalization of Church-style System F for full β- and
 type-β-reduction.
 
@@ -49,6 +49,8 @@ open Realizability
 open StrongNormalization
 open Metatheory.SystemF (Context Term Ty)
 
+variable {L : Type} [UniverseLevel.LevelOrder L]
+
 /-! ## Fresh names -/
 
 /-- The type of numbers the laws of the value side ask for. The package does not declare
@@ -64,13 +66,13 @@ def sucName : DeclName := `SystemF.suc
 /-- The daimon: a fresh rigid constant of the value side. -/
 def daimonName : DeclName := `SystemF.daimon
 
-/-! ## The codes of the package -/
+/-! ## The (codesOver L) of the package -/
 
-/-- The quantifier over codes is the package's only quantifier instance, and its carrier
-is the type of codes. -/
-theorem quantifiers_some {a : DeclName} {T : Tower.Tm 0} (found : codes.quantifiers a = some T) :
-    a = allProp ∧ T = .const codes.prop := by
-  change List.lookup a [(allProp, .const codes.prop)] = some T at found
+/-- The quantifier over (codesOver L) is the package's only quantifier instance, and its carrier
+is the type of (codesOver L). -/
+theorem quantifiers_some {a : DeclName} {T : LevelTower.Tm L 0} (found : (codesOver L).quantifiers a = some T) :
+    a = allProp ∧ T = .const (codesOver L).prop := by
+  change List.lookup a [(allProp, .const (codesOver L).prop)] = some T at found
   unfold List.lookup at found
   cases e : a == allProp with
   | false =>
@@ -81,23 +83,23 @@ theorem quantifiers_some {a : DeclName} {T : Tower.Tm 0} (found : codes.quantifi
       cases found
       exact ⟨eq_of_beq e, rfl⟩
 
-/-- The package has no equation codes. -/
-theorem equationCarrier_none (e : DeclName) : codes.equationCarrier e = none := rfl
+/-- The package has no equation (codesOver L). -/
+theorem equationCarrier_none (e : DeclName) : (codesOver L).equationCarrier e = none := rfl
 
 /-! ## The value side -/
 
-/-- The roles of the value side: implication and the quantifier over codes are
+/-- The roles of the value side: implication and the quantifier over (codesOver L) are
 constructors, the numbers are an inductive type with constructors `zero` and `suc`, and
 every other name is rigid, the decoder included. -/
-def valueRoles : Roles Tower.Head := fun name =>
-  if name = codes.imp then .constructor 2
+def valueRoles : Roles (LevelTower.Head L) := fun name =>
+  if name = (codesOver L).imp then .constructor 2
   else if name = allProp then .constructor 1
   else if name = numName then .inductive [(zeroName, []), (sucName, [.recursive])]
   else if name = zeroName then .constructor 0
   else if name = sucName then .constructor 1
   else .rigid
 
-/-- The quantifier over codes ranges over the carrier of codes. -/
+/-- The quantifier over (codesOver L) ranges over the carrier of (codesOver L). -/
 def valueAllCarrier (name : DeclName) : Option (Σ k, Carrier k) :=
   if name = allProp then some ⟨.gen, .prop⟩ else none
 
@@ -109,22 +111,22 @@ theorem valueAllCarrier_some {a : DeclName} {A : Σ k, Carrier k}
   · rw [if_neg e] at found
     cases found
 
-/-- The value side: the tower's reduction, which decodes nothing, read with the codes of
+/-- The value side: the tower's reduction, which decodes nothing, read with the (codesOver L) of
 System F and fresh numbers. -/
-def valueModel : Model Tower.Head ℕ where
-  rules := Tower.rules
+def valueModel (L : Type) [UniverseLevel.LevelOrder L] : Model (LevelTower.Head L) L where
+  rules := (LevelTower.rules L)
   roles := valueRoles
   zero := zeroName
   suc := sucName
-  imp := codes.imp
+  imp := (codesOver L).imp
   allCarrier := valueAllCarrier
   eqCarrier := fun _ => none
   num := numName
-  prop := codes.prop
-  holds := codes.holds
-  levels := TowerModel.levels fun _ => 0
+  prop := (codesOver L).prop
+  holds := (codesOver L).holds
+  levels := TowerModel.levels fun _ => UniverseLevel.LevelOrder.bot
 
-theorem valueModel_laws : valueModel.Laws where
+theorem valueModel_laws : (valueModel L).Laws where
   truth :=
     { shape := ⟨fun step => step.elim, fun step => step.elim⟩
       zero := rfl
@@ -143,9 +145,9 @@ theorem valueModel_laws : valueModel.Laws where
 
 /-- The roles of the realizer side: the decoder computes at one argument, the code, and
 the code constructors and the numerals are constructors. -/
-def realizerRoles : Roles Tower.Head := fun name =>
-  if name = codes.holds then .computes 1 (.split 0 .constructor fun _ => .leaf)
-  else if name = codes.imp then .constructor 2
+def realizerRoles : Roles (LevelTower.Head L) := fun name =>
+  if name = (codesOver L).holds then .computes 1 (.split 0 .constructor fun _ => .leaf)
+  else if name = (codesOver L).imp then .constructor 2
   else if name = allProp then .constructor 1
   else if name = zeroName then .constructor 0
   else if name = sucName then .constructor 1
@@ -153,7 +155,7 @@ def realizerRoles : Roles Tower.Head := fun name =>
 
 /-- Only the decoder computes on the realizer side, at one argument. -/
 theorem realizerRoles_computes {c : DeclName} {arity : Nat} {scrutinee : InspectTree}
-    (role : realizerRoles c = .computes arity scrutinee) : c = codes.holds ∧ arity = 1 := by
+    (role : realizerRoles (L := L) c = .computes arity scrutinee) : c = (codesOver L).holds ∧ arity = 1 := by
   unfold realizerRoles at role
   split at role
   · cases role
@@ -161,7 +163,7 @@ theorem realizerRoles_computes {c : DeclName} {arity : Nat} {scrutinee : Inspect
   · repeat' split at role
     all_goals cases role
 
-theorem realizerDecoderRoles : DecoderRoles realizerRoles codes.decoders where
+theorem realizerDecoderRoles : DecoderRoles (realizerRoles (L := L)) (codesOver L).decoders where
   holds := rfl
   imp := rfl
   all := fun found => by
@@ -170,32 +172,32 @@ theorem realizerDecoderRoles : DecoderRoles realizerRoles codes.decoders where
   eq := fun found => by cases found
 
 /-- The realizer side's reduction has root shape: the tower has no root computation, and
-the decoding of codes has its own shape. -/
-theorem realizerShape : RootShape rules realizerRoles :=
-  codes.extend_rootShape TowerModel.shape (fun declared => nomatch declared)
+the decoding of (codesOver L) has its own shape. -/
+theorem realizerShape : RootShape (rulesOver L) realizerRoles :=
+  (codesOver L).extend_rootShape TowerModel.shape (fun declared => nomatch declared)
     (fun declared nonrigid => (nonrigid declared.symm).elim) rfl realizerDecoderRoles rfl
 
-theorem realizerReflects : RootReflectsRename rules.computation :=
+theorem realizerReflects : RootReflectsRename (rulesOver L).computation :=
   RootReflectsRename.union RootReflectsRename.empty (decoderComputation_reflectsRename _)
 
 /-- The realizer side: the package under its own reduction. -/
-def realizerSide : Realizers Tower.Head where
-  rules := rules
+def realizerSide : Realizers (LevelTower.Head L) where
+  rules := (rulesOver L)
   roles := realizerRoles
-  decoders := codes.decoders
+  decoders := (codesOver L).decoders
   zero := zeroName
   suc := sucName
   shape := realizerShape
   reflects := realizerReflects
   decoderRoles := realizerDecoderRoles
   numerals := ⟨rfl, rfl⟩
-  decodes := fun step => codes.extend_decoder_step Tower.rules step
+  decodes := fun step => (codesOver L).extend_decoder_step (LevelTower.rules L) step
 
-/-! ## The codes are read by the model -/
+/-! ## The (codesOver L) are read by the (model L) -/
 
 /-- Every constant is strongly normalizing on the realizer side: only the decoder
 computes, and it needs an argument. -/
-theorem const_sn (c : DeclName) {n : Nat} : SN rules (.const c : Tower.Tm n) :=
+theorem const_sn (c : DeclName) {n : Nat} : SN (rulesOver L) (.const c : LevelTower.Tm L n) :=
   SN.constSpine realizerShape (args := [])
     (fun _ _ role => by
       obtain ⟨-, rfl⟩ := realizerRoles_computes role
@@ -204,8 +206,8 @@ theorem const_sn (c : DeclName) {n : Nat} : SN rules (.const c : Tower.Tm n) :=
 
 /-- The closed type of every interpretable carrier is strongly normalizing on the
 realizer side. -/
-theorem carrier_sn : ∀ {k : Kind} {C : Carrier k}, C.Interpretable valueModel →
-    SN rules (C.term valueModel)
+theorem carrier_sn : ∀ {k : Kind} {C : Carrier k}, C.Interpretable (valueModel L) →
+    SN (rulesOver L) (C.term (valueModel L))
   | _, _, .prop => const_sn _
   | _, _, .num => const_sn _
   | _, _, .rigid _ _ _ => const_sn _
@@ -213,7 +215,7 @@ theorem carrier_sn : ∀ {k : Kind} {C : Carrier k}, C.Interpretable valueModel 
       SN.pi (RootShape.spineHeaded realizerShape) (carrier_sn dom)
         (SN.rename realizerReflects wk (carrier_sn cod))
 
-theorem codes_read : CodesRead valueModel codes where
+theorem codes_read : CodesRead (valueModel L) (codesOver L) where
   proofs := .sort _
   prop := rfl
   holds := rfl
@@ -223,15 +225,15 @@ theorem codes_read : CodesRead valueModel codes where
     exact ⟨.gen, .prop, rfl, .prop, rfl⟩
   eq := fun found => by cases found
 
-/-! ## The model -/
+/-! ## The (model L) -/
 
 /-- The only inductive type of the value side is the numbers, with the
 constructors `zero` and `suc`. -/
-theorem valueRoles_inductive {T : DeclName} {cs : List (DeclName × List (Normalization.Field Tower.Head))}
+theorem valueRoles_inductive {T : DeclName} {cs : List (DeclName × List (Normalization.Field (LevelTower.Head L)))}
     (role : valueRoles T = .inductive cs) :
     T = numName ∧ cs = [(zeroName, []), (sucName, [.recursive])] := by
   unfold valueRoles at role
-  by_cases hi : T = codes.imp
+  by_cases hi : T = (codesOver L).imp
   · rw [if_pos hi] at role
     cases role
   rw [if_neg hi] at role
@@ -255,7 +257,7 @@ theorem valueRoles_inductive {T : DeclName} {cs : List (DeclName × List (Normal
 
 /-- The constructors the numbers list are declared as constructors, with their
 numbers of fields. -/
-theorem valueRoles_declared : ConstructorsDeclared valueRoles where
+theorem valueRoles_declared : ConstructorsDeclared (valueRoles (L := L)) where
   arity := by
     intro T cs k fields role mem
     obtain ⟨rfl, rfl⟩ := valueRoles_inductive role
@@ -266,44 +268,50 @@ theorem valueRoles_declared : ConstructorsDeclared valueRoles where
   distinct := by
     intro T cs role
     obtain ⟨rfl, rfl⟩ := valueRoles_inductive role
+    show [zeroName, sucName].Nodup
     decide
 
-/-- The normalization model of the System F package: its value side, the daimon
+/-- The normalization (model L) of the System F package: its value side, the daimon
 and its realizer side, with the tower's levels. -/
-def model : ModelS.SModel Tower.Head Nat where
-  toModel := valueModel
+def model (L : Type) [UniverseLevel.LevelOrder L] : ModelSN.SNModel (LevelTower.Head L) L where
+  toModel := valueModel L
   star := daimonName
   realizers := realizerSide
 
-theorem model_laws : model.Laws where
+theorem model_laws : (model L).Laws where
   values := valueModel_laws
   star := rfl
-  starNotProp := by decide
-  starNotHolds := by decide
+  starNotProp := by
+    show daimonName ≠ propName
+    decide
+  starNotHolds := by
+    show daimonName ≠ holdsName
+    decide
   declared := valueRoles_declared
 
-/-- The codes of System F are read by the model. -/
-theorem codes_readS : ModelS.CodesReadS model codes where
+/-- The (codesOver L) of System F are read by the (model L). -/
+theorem codes_readS : ModelSN.CodesReadS (model L) (codesOver L) where
   read := codes_read
   decoders := rfl
   propStuck := fun _ _ role =>
-    absurd (realizerRoles_computes (c := codes.prop) role).1 (by decide)
+    absurd (realizerRoles_computes (c := (codesOver L).prop) role).1
+      (by show ¬ propName = holdsName; decide)
   carrierSN := carrier_sn
 
 /-! ## Soundness -/
 
 /-- Every root step of the System F package is a decoding, which preserves
-meaning in the model without its typing. -/
-theorem root_semantic {n : Nat} {l r : Tower.Tm n} (step : rules.computation.step l r) :
-    ModelS.RootSemanticS model l r := by
+meaning in the (model L) without its typing. -/
+theorem root_semantic {n : Nat} {l r : LevelTower.Tm L n} (step : (rulesOver L).computation.step l r) :
+    ModelSN.RootSemanticS (model L) l r := by
   rcases step with step | step
   · exact step.elim
-  · exact ModelS.ModelRootS.semantic model_laws codes_read.decodes (.inr step)
+  · exact ModelSN.ModelRootS.semantic model_laws codes_read.decodes (.inr step)
 
-/-- **The System F package is sound for the model, in the untyped reading**: its
-universe rules are the tower's, its root steps are decodings, each preserving
-meaning without its typing, and its constants are the codes. -/
-theorem soundS : ModelS.SoundS rules model := by
+/-- **The System F package is sound for the (model L), in the untyped reading**: its
+universe (rulesOver L) are the tower's, its root steps are decodings, each preserving
+meaning without its typing, and its constants are the (codesOver L). -/
+theorem soundS : ModelSN.SoundS (rulesOver L) (model L) := by
   refine ⟨{ laws := model_laws
             headTyping := id
             isUniverse := id
@@ -313,24 +321,24 @@ theorem soundS : ModelS.SoundS rules model := by
             root := fun step => .inl (root_semantic step)
             constants := ?_ }, root_semantic⟩
   intro name type declared
-  change (codes.codeType name).orElse (fun _ => none) = some type at declared
-  cases code : codes.codeType name with
+  change ((codesOver L).codeType name).orElse (fun _ => none) = some type at declared
+  cases code : (codesOver L).codeType name with
   | none =>
       rw [code] at declared
       cases declared
   | some T =>
       rw [code] at declared
       cases declared
-      exact ModelS.valid_codeS model_laws codes_readS code
+      exact ModelSN.valid_codeS model_laws codes_readS code
 
 /-! ## Strong normalization -/
 
 /-- **Strong normalization of the System F package.** Every term typed in a formed
 context of the package is strongly normalizing under the package's own reduction,
-full β together with the decoding of codes, and so is its type. -/
-theorem rules_sn {n : Nat} {Δ : Tower.Ctx n} {t A : Tower.Tm n}
-    (formed : CtxFormed rules Δ) (typed : Typed rules Δ t A) : SN rules t ∧ SN rules A :=
-  ModelS.Typed.sn soundS.typed formed typed
+full β together with the decoding of (codesOver L), and so is its type. -/
+theorem rules_sn {n : Nat} {Δ : LevelTower.Ctx L n} {t A : LevelTower.Tm L n}
+    (formed : CtxFormed (rulesOver L) Δ) (typed : Typed (rulesOver L) Δ t A) : SN (rulesOver L) t ∧ SN (rulesOver L) A :=
+  ModelSN.Typed.sn soundS.typed formed typed
 
 /-- **Strong normalization of System F.** Every well-typed term of Church-style
 System F is strongly normalizing for full β- and type-β-reduction. -/

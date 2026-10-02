@@ -103,7 +103,7 @@ inductive ContextFormation (rules : Rules Tower.Head) :
     {n : Nat} -> Tower.Ctx n -> LevelSpine n -> Type where
   | nil : ContextFormation rules (.nil : Tower.Ctx 0) .nil
   | snoc {n : Nat} {context : Tower.Ctx n} {type : Tower.Tm n}
-      {levels : LevelSpine n} {level : LevelExpr} :
+      {levels : LevelSpine n} {level : LevelExpr Nat} :
       ContextFormation rules context levels ->
       HasType rules context type (.head (.sort level)) ->
       rules.isUniverse (.sort level) ->
@@ -133,7 +133,7 @@ def includeSignature (signature : Signature Tower.Head) :
       .snoc (ContextFormation.includeSignature signature prior)
         (Presentation.Declaration.HasType.includeSignature Tower.rules
           signature typeFormation.toHasType)
-        (Tower.IsUniverse.sort _)
+        (LevelTower.IsUniverse.sort _)
 
 end ContextFormation
 
@@ -167,7 +167,7 @@ def typeOver {host : FormationHost} {query : FormedTypingQuery}
     TypeOver evidence.formedContext where
   code := query.type
   level := .sort query.level
-  isUniverse := Tower.IsUniverse.sort query.level
+  isUniverse := LevelTower.IsUniverse.sort query.level
   formed := evidence.typeFormation
 
 /-- Native construction returns a term in the host-indexed CwF directly. -/
@@ -204,7 +204,7 @@ formation; no generic checker rule is postulated. -/
 theorem declared_constant_has_hosted_typing
     (host : FormationHost) {name : DeclName} {type : Tower.Tm 0}
     (declared : host.signature.typeOf? name = some type) :
-    ∃ level : LevelExpr,
+    ∃ level : LevelExpr Nat,
       Nonempty (HostedFormedTyping host
         { arity := 0
           context := .nil
@@ -250,7 +250,7 @@ theorem missing_constant_has_no_hosted_type
     ¬ HasType host.rules context (.const name) displayedType := by
   apply HasType.constantImpossibleWhenMissing
   change combinedType Tower.rules host.signature name = none
-  simp [combinedType, Tower.rules, missing]
+  simp [combinedType, LevelTower.rules, missing]
 
 /-! ## Empty-host control -/
 

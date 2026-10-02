@@ -1,4 +1,5 @@
 import Mettapedia.Machines.BranchLocalNeed.ReferenceSemantics
+import Mettapedia.Machines.RevisionDependencySet
 
 /-!
 # reference Need cell lifecycle laws
@@ -1309,6 +1310,60 @@ theorem sibling_isolation
   sibling_lineage_absent spec execution hBranch hPath ⟨s, hBirth⟩ hFresh
 
 
+/-! ## Independent cache deltas and retained history -/
+
+/-- The actual cache writes instantiate the common finite-map commutation
+law. This compares the resulting maps, without discarding either update
+history or claiming a join of choice worlds. -/
+theorem independent_cache_writes_commute_as_maps
+    (heap : Heap Origin Value StableFault) (first second : CellId)
+    (firstRecord secondRecord : CellRecord Origin Value StableFault)
+    (firstState secondState : Cache Value StableFault) (different : first ≠ second) :
+    ((heap.setKnownCache first firstRecord firstState).setKnownCache
+        second secondRecord secondState).current =
+      ((heap.setKnownCache second secondRecord secondState).setKnownCache
+        first firstRecord firstState).current := by
+  exact BindingPublication.applyWrites_commute heap.current
+    [(first, { firstRecord with cache := firstState })]
+    [(second, { secondRecord with cache := secondState })]
+    (by simpa using different.symm)
+
+/-- A captured cache read remains publishable exactly when it was before,
+if both actual writes are outside its consulted cells. This establishes the
+read component of a delta contract, not the ownership of either writer. -/
+theorem independent_cache_writes_preserve_captured_reads
+    {Origin Value StableFault : Type}
+    [DecidableEq Origin] [DecidableEq Value] [DecidableEq StableFault]
+    (view : CapturedReadView CellId (Option (CellRecord Origin Value StableFault)))
+    (heap : Heap Origin Value StableFault) (first second : CellId)
+    (firstRecord secondRecord : CellRecord Origin Value StableFault)
+    (firstState secondState : Cache Value StableFault)
+    (outside : List.Disjoint view.consulted [first, second]) :
+    view.CanPublish
+        ⟨((heap.setKnownCache first firstRecord firstState).setKnownCache
+          second secondRecord secondState).current⟩ ↔
+      view.CanPublish ⟨heap.current⟩ := by
+  exact CapturedReadView.canPublish_applyWrites_iff view ⟨heap.current⟩
+    [(first, { firstRecord with cache := firstState }),
+      (second, { secondRecord with cache := secondState })]
+    (by simpa using outside)
+
+/-- Independent maps do not make retained snapshots identical. Both
+histories remain distinct, so an ancestry-only merge cannot use map equality
+as proof of snapshot authority. -/
+theorem independent_cache_writes_have_different_spines
+    (heap : Heap Origin Value StableFault) (first second : CellId)
+    (firstRecord secondRecord : CellRecord Origin Value StableFault)
+    (firstState secondState : Cache Value StableFault) (different : first ≠ second) :
+    ((heap.setKnownCache first firstRecord firstState).setKnownCache
+        second secondRecord secondState).spine ≠
+      ((heap.setKnownCache second secondRecord secondState).setKnownCache
+        first firstRecord firstState).spine := by
+  intro same
+  have heads := (List.cons.inj same).1
+  have cells : second = first := (HeapUpdate.cache.inj heads).1
+  exact different cells.symm
+
 /-! ## Axiom audits -/
 
 #print axioms step_cellMove
@@ -1324,4 +1379,3 @@ theorem sibling_isolation
 #print axioms sibling_lineage_absent
 
 end Mettapedia.Machines.BranchLocalNeed.NeedCacheLaws
-

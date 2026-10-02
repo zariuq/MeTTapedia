@@ -47,6 +47,36 @@ inductive Reach (S : Store Cell) : Cell → Prop
   | root {c : Cell} : S.root c → Reach S c
   | step {c c' : Cell} : Reach S c → S.pointsTo c c' → Reach S c'
 
+/-- Relocating roots and every outgoing reference transports actual paths.
+Payload equality alone cannot supply either of these graph conditions. -/
+theorem Reach.map {TargetCell : Type} {source : Store Cell} {target : Store TargetCell}
+    (relocate : Cell → TargetCell)
+    (roots : ∀ c, source.root c → target.root (relocate c))
+    (edges : ∀ a b, source.pointsTo a b → target.pointsTo (relocate a) (relocate b))
+    {c : Cell} (live : Reach source c) : Reach target (relocate c) := by
+  induction live with
+  | root rooted => exact .root (roots _ rooted)
+  | step _ edge ih => exact .step ih (edges _ _ edge)
+
+/-- Complete destination roots and outgoing references reflect every
+reachable target path into the source. Unrelated unreachable cells are allowed. -/
+theorem Reach.reflect {TargetCell : Type} {source : Store Cell} {target : Store TargetCell}
+    (relocate : Cell → TargetCell)
+    (roots : ∀ c, target.root c → ∃ original, source.root original ∧ relocate original = c)
+    (edges : ∀ a c, target.pointsTo (relocate a) c →
+      ∃ original, source.pointsTo a original ∧ relocate original = c)
+    {c : TargetCell} (live : Reach target c) :
+    ∃ original, Reach source original ∧ relocate original = c := by
+  induction live with
+  | root rooted =>
+      obtain ⟨original, present, same⟩ := roots _ rooted
+      exact ⟨original, .root present, same⟩
+  | @step a b _ edge ih =>
+      obtain ⟨parent, parentLive, same⟩ := ih
+      rw [← same] at edge
+      obtain ⟨original, reference, equal⟩ := edges parent b edge
+      exact ⟨original, .step parentLive reference, equal⟩
+
 /-- Garbage is the complement of reachability — a derived judgment. -/
 def garbage (S : Store Cell) (c : Cell) : Prop := ¬ Reach S c
 

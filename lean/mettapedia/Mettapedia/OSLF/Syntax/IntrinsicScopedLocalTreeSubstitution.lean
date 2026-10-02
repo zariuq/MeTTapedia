@@ -22,7 +22,7 @@ open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalSubstitution
    substJudgment_identity substJudgment_comp liftEnvironment_injectVar
    substitute_liftEnvironment mapJudgment_substJudgment heq_transport)
 
-universe u
+universe u v
 
 variable {S : Signature} (R : List (LocalRule S))
 
@@ -279,6 +279,52 @@ theorem substTree_comp (A : BindingCloneAlgebra.Algebra.{u} S)
     _ directChild directOnce)) ?_
   exact substTree_congr R A (children position) liftComp rfl _ _
 
+section OccurrenceBaseChange
+
+variable {A : BindingCloneAlgebra.Algebra.{u} S} {B : BindingCloneAlgebra.Algebra.{v} S}
+variable (h : FreeBindingClone.Hom A B)
+variable (occurrence : Instance R A) {Δ : Ctx S}
+variable (σ : Environment S A.substitution.Carrier (conclusionJudgment R A occurrence).1 Δ)
+variable (pf : conclusionJudgment R B (mapInstance R h occurrence) =
+  mapJudgment h (conclusionJudgment R A occurrence))
+
+/-- Base change of a substituted occurrence substitutes the base-changed
+occurrence along the translated environment, through any identification of
+the two conclusions. -/
+theorem mapInstance_subst_transport :
+    mapInstance R h (Instance.subst R occurrence σ) =
+      Instance.subst R (mapInstance R h occurrence)
+        (castEnv pf fun t v => h.raw.map (σ t v)) :=
+  (mapInstance_subst R h occurrence σ).trans
+    (congrArg (Instance.subst R (mapInstance R h occurrence))
+      (eq_of_heq (castEnv_heq pf _)).symm)
+
+/-- Beneath a premise's binders, translating the lifted environment is
+lifting the translated environment. -/
+theorem liftEnvironment_mapInstance
+    (position : Fin (R.get occurrence.index).2.premises.length) :
+    HEq (fun t v => h.raw.map (A.substitution.liftEnvironment σ
+          ((R.get occurrence.index).2.premises.get position).binders t v))
+      (B.substitution.liftEnvironment (castEnv pf fun t v => h.raw.map (σ t v))
+        ((R.get occurrence.index).2.premises.get position).binders) :=
+  heq_of_eq ((SemanticContextualMetavariables.liftEnvironment_map h σ _).trans
+    (congrArg (fun env => B.substitution.liftEnvironment env
+      ((R.get occurrence.index).2.premises.get position).binders)
+      (eq_of_heq (castEnv_heq pf _)).symm))
+
+/-- The premise judgments of a substituted occurrence correspond under base
+change. -/
+theorem childJudgment_mapInstance_subst
+    (position : Fin (R.get occurrence.index).2.premises.length) :
+    mapJudgment h (childJudgment R A (Instance.subst R occurrence σ) position) =
+      childJudgment R B (Instance.subst R (mapInstance R h occurrence)
+        (castEnv pf fun t v => h.raw.map (σ t v))) position :=
+  (mapInstance_child R h (Instance.subst R occurrence σ) position).symm.trans
+    (childJudgment_congr R (mapInstance_subst_transport R h occurrence σ pf)
+      position position HEq.rfl)
+
+end OccurrenceBaseChange
+
 /-- Interpreting a firing history commutes with contextual substitution,
 including each premise's distinct binder extension. -/
 theorem mapTree_substTree {A B : BindingCloneAlgebra.Algebra.{u} S}
@@ -305,34 +351,14 @@ theorem mapTree_substTree {A B : BindingCloneAlgebra.Algebra.{u} S}
   obtain ⟨occurrence, hconc⟩ := shape
   subst hconc
   intro Δ σ target hs
-  have envEq : ∀ (pf : conclusionJudgment R B (mapInstance R h occurrence) =
-      mapJudgment h (conclusionJudgment R A occurrence)),
-      castEnv pf (fun t v => h.raw.map (σ t v)) =
-        (fun t v => h.raw.map (σ t v)) :=
-    fun pf => eq_of_heq (castEnv_heq pf _)
-  have instanceEq : ∀ (pf : conclusionJudgment R B (mapInstance R h occurrence) =
-      mapJudgment h (conclusionJudgment R A occurrence)),
-      mapInstance R h (Instance.subst R occurrence σ) =
-        Instance.subst R (mapInstance R h occurrence)
-          (castEnv pf (fun t v => h.raw.map (σ t v))) := by
-    intro pf
-    rw [envEq pf]
-    exact mapInstance_subst R h occurrence σ
-  refine roll_congr_instance R (instanceEq _) _ _ _ _ ?_
+  refine roll_congr_instance R (mapInstance_subst_transport R h occurrence σ _) _ _ _ _ ?_
   intro position otherPosition samePosition
   cases samePosition
   refine HEq.trans (heq_transport _ _) ?_
   refine HEq.trans (heq_of_eq (ih position _ _ _)) ?_
-  refine substTree_heq R B
-    (mapInstance_child R h occurrence position).symm
-    (heq_transport _ _).symm ?_ ?_ _ _
-  · exact heq_of_eq
-      ((SemanticContextualMetavariables.liftEnvironment_map h σ _).trans
-        (congrArg (fun env => B.substitution.liftEnvironment env
-          ((R.get occurrence.index).2.premises.get position).binders)
-          (envEq _).symm))
-  · exact (mapInstance_child R h (Instance.subst R occurrence σ) position).symm.trans
-      (childJudgment_congr R (instanceEq _) position position HEq.rfl)
+  exact substTree_heq R B (mapInstance_child R h occurrence position).symm
+    (heq_transport _ _).symm (liftEnvironment_mapInstance R h occurrence σ _ position)
+    (childJudgment_mapInstance_subst R h occurrence σ _ position) _ _
 
 #print axioms substTree
 #print axioms substTree_identity

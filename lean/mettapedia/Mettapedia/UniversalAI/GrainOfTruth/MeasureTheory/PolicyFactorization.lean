@@ -9,7 +9,7 @@ This file records the simple but crucial factorization lemma for the on-policy t
 
 `μ^π(cyl(h)) = π(h) * μ(h)`,
 
-where `μ(h)` is the usual history probability from `FixedPoint.lean`, and `π(h)` is the product of
+where `μ(h)` is the usual history probability from `BayesianPosterior.lean`, and `π(h)` is the product of
 the agent's action probabilities along `h`.
 
 It also gives the corresponding factorization for the on-policy Bayes mixture measure `ξ^π`.
@@ -19,13 +19,12 @@ These lemmas are the main algebraic input for the “posterior is a martingale u
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PolicyFactorization
 
-open MeasureTheory ProbabilityTheory
+open ProbabilityTheory
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.MixtureMeasure
-open Mettapedia.UniversalAI.ReflectiveOracles
-open scoped ENNReal NNReal MeasureTheory
+open scoped ENNReal NNReal
 
 /-! ## Action-Probability Along a History -/
 
@@ -147,13 +146,13 @@ theorem environmentMeasureWithPolicy_cylinderSet_eq (μ : Environment) (π : Age
 /-! ## Cylinder Factorization for `ξ^π` -/
 
 /-- Cylinder probability under the on-policy Bayes mixture `ξ^π` factors as
-`π(h) * ξ(h)`, where `ξ(h)` is the discrete mixture probability from `FixedPoint.lean`. -/
-theorem mixtureMeasureWithPolicy_cylinderSet_eq (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+`π(h) * ξ(h)`, where `ξ(h)` is the discrete mixture probability from `BayesianPosterior.lean`. -/
+theorem mixtureMeasureWithPolicy_cylinderSet_eq
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (h : History) (h_wf : h.wellFormed) (h_complete : Even h.length) :
-    mixtureMeasureWithPolicy O M prior envs π h_stoch (cylinderSet h) =
-      policyProbability π h * mixtureProbability O M prior envs h := by
+    mixtureMeasureWithPolicy prior envs π h_stoch (cylinderSet h) =
+      policyProbability π h * mixtureProbability prior envs h := by
   classical
   -- Expand the mixture measure as a countable sum of scaled component measures.
   simp [mixtureMeasureWithPolicy, MeasureTheory.Measure.sum_apply_of_countable,
@@ -177,23 +176,23 @@ theorem mixtureMeasureWithPolicy_cylinderSet_eq (O : Oracle) (M : ReflectiveEnvi
     _ = policyProbability π h * ∑' i : EnvironmentIndex, prior.weight i * historyProbability (envs i) h := by
           simpa using (ENNReal.tsum_mul_left (f := fun i : EnvironmentIndex =>
             prior.weight i * historyProbability (envs i) h) (a := policyProbability π h))
-    _ = policyProbability π h * mixtureProbability O M prior envs h := by
+    _ = policyProbability π h * mixtureProbability prior envs h := by
           simp [mixtureProbability]
 
 /-! ## Posterior Weight × Cylinder Mass -/
 
 /-- On a cylinder event, the posterior weight cancels the mixture probability, leaving the
 corresponding component mass. This is the key algebraic step behind the posterior martingale. -/
-theorem bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ν_idx : EnvironmentIndex)
     (h : History) (h_wf : h.wellFormed) (h_complete : Even h.length) :
-    bayesianPosteriorWeight O M prior envs ν_idx h *
-        mixtureMeasureWithPolicy O M prior envs π h_stoch (cylinderSet h) =
+    bayesianPosteriorWeight prior envs ν_idx h *
+        mixtureMeasureWithPolicy prior envs π h_stoch (cylinderSet h) =
       prior.weight ν_idx *
         environmentMeasureWithPolicy (envs ν_idx) π (h_stoch ν_idx) (cylinderSet h) := by
   classical
-  set denom : ℝ≥0∞ := mixtureProbability O M prior envs h
+  set denom : ℝ≥0∞ := mixtureProbability prior envs h
   by_cases hden : denom = 0
   · -- If the mixture probability is 0, then the cylinder has 0 mixture mass, and also the
     -- ν-component mass in the mixture is 0.
@@ -201,8 +200,8 @@ theorem bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O : Or
       have hle : prior.weight ν_idx * historyProbability (envs ν_idx) h ≤ denom := by
         simpa [denom, mixtureProbability] using ENNReal.le_tsum ν_idx
       exact le_antisymm (le_trans hle (by simp [hden])) (zero_le)
-    have hmix0 : mixtureMeasureWithPolicy O M prior envs π h_stoch (cylinderSet h) = 0 := by
-      simp [mixtureMeasureWithPolicy_cylinderSet_eq (O := O) (M := M) (prior := prior) (envs := envs)
+    have hmix0 : mixtureMeasureWithPolicy prior envs π h_stoch (cylinderSet h) = 0 := by
+      simp [mixtureMeasureWithPolicy_cylinderSet_eq (prior := prior) (envs := envs)
         (π := π) (h_stoch := h_stoch) (h := h) (h_wf := h_wf) (h_complete := h_complete), denom, hden]
     have hcomp0 :
         environmentMeasureWithPolicy (envs ν_idx) π (h_stoch ν_idx) (cylinderSet h) = 0 := by
@@ -216,10 +215,10 @@ theorem bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O : Or
   · have hden_pos : denom ≠ 0 := hden
     -- Use the cylinder factorization of the mixture and component measures.
     have hmix :
-        mixtureMeasureWithPolicy O M prior envs π h_stoch (cylinderSet h) =
+        mixtureMeasureWithPolicy prior envs π h_stoch (cylinderSet h) =
           policyProbability π h * denom := by
       simpa [denom] using
-        (mixtureMeasureWithPolicy_cylinderSet_eq (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+        (mixtureMeasureWithPolicy_cylinderSet_eq (prior := prior) (envs := envs) (π := π)
           (h_stoch := h_stoch) (h := h) (h_wf := h_wf) (h_complete := h_complete))
     have hcomp :
         environmentMeasureWithPolicy (envs ν_idx) π (h_stoch ν_idx) (cylinderSet h) =
@@ -250,8 +249,8 @@ theorem bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O : Or
           hden_pos hden_ne_top)
 
     calc
-      bayesianPosteriorWeight O M prior envs ν_idx h *
-            mixtureMeasureWithPolicy O M prior envs π h_stoch (cylinderSet h)
+      bayesianPosteriorWeight prior envs ν_idx h *
+            mixtureMeasureWithPolicy prior envs π h_stoch (cylinderSet h)
           = (historyProbability (envs ν_idx) h * prior.weight ν_idx / denom) *
               (policyProbability π h * denom) := by
                 simp [bayesianPosteriorWeight, denom, hden_pos, hmix, mul_assoc, mul_comm]

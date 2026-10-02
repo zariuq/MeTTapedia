@@ -2,12 +2,12 @@ import Mettapedia.OSLF.Framework.GSLTEvidence
 import Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-!
-# Universal BinaryWorldModel for Any GSLT with Parallel Composition
+# Binary world models of sampled computational entities
 
 Any type T of "computational entities" (processes, terms, states) gives
 rise to a BinaryWorldModel over multiset ensembles of T.  The construction:
 
-- **State** = `Multiset T` (ensemble; parallel composition = multiset union)
+- **State** = `Multiset T` (an ensemble of samples or candidate entities)
 - **Query** = decidable property of T
 - **BinaryEvidence** = count of satisfying / refuting entities
 
@@ -22,22 +22,21 @@ construction works for ANY T.
 For any type T, the multiset-counting evidence assignment is a
 `BinaryWorldModel (Multiset T) (DecProp T)`.  This means:
 
-**Every GSLT with parallel composition has a canonical BinaryWorldModel.**
+**Every carrier has a multiset-counting BinaryWorldModel.**
 
-The WM evidence framework is not specific to the WM posterior-state
-calculus — it is the natural Bayesian counting layer for any
-computational universe where processes can be composed in parallel.
+No parallel operator, dynamics, sampling distribution, or independence
+assumption is required for this construction. Ensemble addition pools samples;
+it must not be identified with operational parallel composition. Interaction
+can create observations absent from both components in isolation. The
+`RhoContextualWorldModel` module connects actual parallel interactions to these
+counts using queries about an agent in a sampled environment.
 
 ## Connection to Meredith
 
-In L. Gregory Meredith's "Computation, Causality, and Consciousness"
-(2026), every GSLT S = (T, E, R) has a weight map assigning values to
-rewrite steps.  Our construction gives the Bayesian (|amplitude|²)
-shadow: counting satisfying witnesses is the Born-rule projection of
-the amplitude-weighted path integral.
-
-Replacing BinaryEvidence with ℂ in `GSLTEvidenceAssignment` gives Meredith's
-full weight-map framework.
+Meredith's weight maps motivate value-valued readings of computation.
+The theorem here is specifically about counts of predicate-satisfying samples;
+no Born-rule, path-integral, or Bayesian adequacy theorem follows from
+additivity alone.
 
 ## References
 
@@ -106,11 +105,11 @@ instance {T : Type*} : EvidenceType (Multiset T) where
 
     For ANY type T, multiset ensembles of T form a BinaryWorldModel when
     queried by decidable properties.  BinaryEvidence extraction counts
-    satisfying/refuting entities, and is additive over parallel
-    composition (multiset union).
+    satisfying/refuting entities, and is additive over sample pooling
+    (multiset union).
 
     This is the Stage 2 universal theorem:
-    every GSLT with parallel composition has a canonical BinaryWorldModel.
+    every carrier admits a multiset-counting BinaryWorldModel.
 
     Instances:
     - T = Pattern (Rho calculus) → `RhoWorldModel.lean`
@@ -125,12 +124,8 @@ noncomputable instance universalEnsembleWorldModel (T : Type*) :
 
 /-! ## Universal GSLTEvidenceAssignment -/
 
-/-- The universal ensemble evidence assignment over any value monoid.
-
-    When V = BinaryEvidence: Bayesian counting (our WM-PLN case).
-    When V = ℂ: quantum amplitudes (Meredith's weight map).
-
-    The construction is the same — only the target monoid changes. -/
+/-- The ensemble evidence assignment into binary counts. General value-monoid
+assignments require their own atomic contributions and interpretation laws. -/
 noncomputable def universalGSLTEvidence (T : Type*) :
     GSLTEvidenceAssignment (Multiset T) (DecProp T) BinaryEvidence where
   extract := ensembleEvidence
@@ -153,6 +148,30 @@ theorem ensembleEvidence_singleton_of_refutes {T : Type*}
   classical
   apply BinaryEvidence.ext' <;> simp [ensembleEvidence, ← Multiset.cons_zero, h]
 
+/-! ## Witnesses and transport -/
+
+/-- Positive count means that a sampled entity satisfies the query. -/
+theorem ensembleEvidence_pos_iff {T : Type*} (W : Multiset T) (q : DecProp T) :
+    0 < (ensembleEvidence W q).pos ↔ ∃ x ∈ W, q.property x := by
+  classical
+  simp only [ensembleEvidence, Nat.cast_pos]
+  exact Multiset.countP_pos
+
+/-- Transforming every sample and pulling the query back give the same
+evidence whenever the query predicates agree along the transformation. -/
+theorem ensembleEvidence_map {T U : Type*} (W : Multiset T) (transform : T → U)
+    (q : DecProp U) (pulled : DecProp T)
+    (commutes : ∀ x, q.property (transform x) ↔ pulled.property x) :
+    ensembleEvidence (W.map transform) q = ensembleEvidence W pulled := by
+  classical
+  have positives : (fun x => q.property (transform x)) = pulled.property :=
+    funext (fun x => propext (commutes x))
+  have negatives : (fun x => ¬ q.property (transform x)) = (fun x => ¬ pulled.property x) :=
+    funext (fun x => propext (not_congr (commutes x)))
+  apply BinaryEvidence.ext' <;>
+    simp only [ensembleEvidence, Multiset.countP_map,
+      ← Multiset.countP_eq_card_filter, positives, negatives]
+
 /-! ## Total BinaryEvidence = Ensemble Size
 
 The total evidence (pos + neg) for any query equals the ensemble size.
@@ -164,7 +183,6 @@ theorem ensembleEvidence_total {T : Type*}
     ↑(Multiset.card W) := by
   classical
   simp only [ensembleEvidence]
-  push_cast
   exact_mod_cast (Multiset.card_eq_countP_add_countP q.property W).symm
 
 end Mettapedia.OSLF.Framework.GSLTWorldModel

@@ -242,7 +242,7 @@ theorem exists_eq_one_of_shannonEntropy_eq_zero {n : ℕ} (_hn : 0 < n) (p : Pro
   -- Since sum = 1 and each is 0 or 1, exactly one is 1
   have hsum := p.sum_eq_one
   by_contra h_no_one
-  push_neg at h_no_one
+  push Not at h_no_one
   have hall_zero : ∀ i, p.1 i = 0 := fun i => (hcases i).resolve_right (h_no_one i)
   simp only [hall_zero, Finset.sum_const_zero] at hsum
   exact zero_ne_one hsum
@@ -281,7 +281,7 @@ theorem shannonEntropy_eq_zero_iff {n : ℕ} (hn : 0 < n) (p : ProbVec n) :
 theorem continuous_shannonEntropy {n : ℕ} :
     Continuous (fun p : ProbVec n => shannonEntropy p) := by
   unfold shannonEntropy
-  apply continuous_finset_sum
+  apply continuous_finsetSum
   intro i _
   exact continuous_negMulLog.comp (continuous_apply i |>.comp continuous_subtype_val)
 

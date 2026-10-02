@@ -38,6 +38,15 @@ abbrev CStatement.Renames (P : ChurchRules R) : CStatement Head → Prop
   | .sub Γ A B => ∀ {m : Nat} {Δ : CCtx Head m} {ρ : Ren _ m},
       CCtxRen Γ Δ ρ → CBelow P Δ (A.rename ρ) (B.rename ρ)
 
+/-- What renaming gives for the statement of a premise is the statement of the renamed
+premise. -/
+theorem CPremise.renames {P : ChurchRules R} {n m : Nat} {Γ : CCtx Head n} {Δ : CCtx Head m}
+    {ρ : Ren n m} {premise : CPremise Head n} (renames : (premise.statement Γ).Renames P)
+    (c : CCtxRen Γ Δ ρ) : CDerivable P ((premise.rename ρ).statement Δ) := by
+  cases premise with
+  | typing t T => exact renames c
+  | equality a b T => exact renames c
+
 theorem CDerivable.renames {P : ChurchRules R} {statement : CStatement Head}
     (derivation : CDerivable P statement) : statement.Renames P := by
   induction derivation with
@@ -112,7 +121,13 @@ theorem CDerivable.renames {P : ChurchRules R} {statement : CStatement Head}
       rw [CTm.rename_inst0] at second
       simpa only [CTm.rename, CTm.rename_inst0] using
         CDerivable.betaSnd (ihS c) hu (iha c) second
-  | root step _ _ ihL ihR => exact fun c => .root (P.computation.rename _ step) (ihL c) (ihR c)
+  | root step requires _ _ _ ihPremises ihL ihR =>
+      exact fun c => .root (P.computation.rename _ step)
+        (P.computation.requires_rename _ requires)
+        (fun premise member => by
+          obtain ⟨source, mem, rfl⟩ := List.mem_map.1 member
+          exact CPremise.renames (ihPremises source mem) c)
+        (ihL c) (ihR c)
   | etaPi _ _ _ ihF ihG ihBody =>
       intro m Δ ρ c
       have body := ihBody (c.snoc _)
@@ -183,6 +198,16 @@ abbrev CStatement.Substitutes (P : ChurchRules R) : CStatement Head → Prop
       CSubstMor P Γ Δ σ → CEqual P Δ (a.subst σ) (b.subst σ) (A.subst σ)
   | .sub Γ A B => ∀ {m : Nat} {Δ : CCtx Head m} {σ : CSub Head _ m},
       CSubstMor P Γ Δ σ → CBelow P Δ (A.subst σ) (B.subst σ)
+
+/-- What substitution gives for the statement of a premise is the statement of the
+substituted premise. -/
+theorem CPremise.substitutes {P : ChurchRules R} {n m : Nat} {Γ : CCtx Head n}
+    {Δ : CCtx Head m} {σ : CSub Head n m} {premise : CPremise Head n}
+    (substitutes : (premise.statement Γ).Substitutes P) (typed : CSubstMor P Γ Δ σ) :
+    CDerivable P ((premise.subst σ).statement Δ) := by
+  cases premise with
+  | typing t T => exact substitutes typed
+  | equality a b T => exact substitutes typed
 
 theorem CDerivable.substitutes {P : ChurchRules R} {statement : CStatement Head}
     (derivation : CDerivable P statement) : statement.Substitutes P := by
@@ -256,8 +281,13 @@ theorem CDerivable.substitutes {P : ChurchRules R} {statement : CStatement Head}
       rw [CTm.subst_inst0] at second
       simpa only [CTm.subst, CTm.subst_inst0] using
         CDerivable.betaSnd (ihS typed) hu (iha typed) second
-  | root step _ _ ihL ihR =>
-      exact fun typed => .root (P.computation.substitute _ step) (ihL typed) (ihR typed)
+  | root step requires _ _ _ ihPremises ihL ihR =>
+      exact fun typed => .root (P.computation.substitute _ step)
+        (P.computation.requires_substitute _ requires)
+        (fun premise member => by
+          obtain ⟨source, mem, rfl⟩ := List.mem_map.1 member
+          exact CPremise.substitutes (ihPremises source mem) typed)
+        (ihL typed) (ihR typed)
   | etaPi _ _ _ ihF ihG ihBody =>
       intro m Δ σ typed
       have body := ihBody (typed.lift _)

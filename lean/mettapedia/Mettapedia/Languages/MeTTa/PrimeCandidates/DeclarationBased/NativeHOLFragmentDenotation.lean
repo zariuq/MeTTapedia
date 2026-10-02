@@ -511,7 +511,7 @@ theorem unapplied_universal_not_interpreted {gamma : HOL.Ctx BaseSort}
 /-- Supplying a native universe in place of a supported HOL type code cannot
 acquire a universal-operator interpretation through an application rule. -/
 theorem universe_argument_rejected {gamma : HOL.Ctx BaseSort} {type : HOL.Ty BaseSort}
-    (level : LevelExpr)
+    (level : LevelExpr Nat)
     (value : model.Valuation gamma → HOL.Ty.denote model.Carrier type) :
     ¬ Denotes model (.app (.const `HOLUniformList.universal) (sortTm level)) value := by
   intro meaning
@@ -525,7 +525,7 @@ theorem universe_argument_rejected {gamma : HOL.Ctx BaseSort} {type : HOL.Ty Bas
 
 /-- Every native level still has its genuine native successor formation,
 while none is silently treated as one of the fragment's simple HOL codes. -/
-theorem native_universes_outside_fragment {n : Nat} (gamma : Tower.Ctx n) (level : LevelExpr) :
+theorem native_universes_outside_fragment {n : Nat} (gamma : Tower.Ctx n) (level : LevelExpr Nat) :
     Typing HOLNativeRelatorCompatibility.rules gamma (sortTm level) (sortTm (.succ level)) ∧
       ∀ type, ¬ TypeMeaning (n := n) (sortTm level) type := by
   refine ⟨.headType (.sort level), ?_⟩

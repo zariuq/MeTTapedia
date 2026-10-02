@@ -24,13 +24,9 @@ def normalize {source : CIGSLT} {color : CostStaticColor}
     {sort : LangSort source.theory.presentation.presentation.language}
     (term : CostStaticSourceTerm source color free support sourceBound
       targetBound sort) :
-    CostStaticSourceTerm source color free support sourceBound targetBound sort
-    where
-  term := source.openCanonical.normalize term.term
-  supported := source.openCanonicalPreservesWrappedConstructorTyping
-    term.term term.supported
-  safe := source.openCanonical.preservesReflectiveSupport term.term support
-    targetBound (mapTypeExpr (color.symbols source)) term.safe
+    CostStaticSourceTerm source color free support sourceBound targetBound sort :=
+  ContinuationDecorationProfile.StaticSourceTerm.normalize source.openCanonical
+    source.openCanonicalPreservesWrappedConstructorTyping term
 
 @[simp]
 theorem normalize_term {source : CIGSLT} {color : CostStaticColor}
@@ -48,14 +44,9 @@ theorem normalize_idempotent {source : CIGSLT} {color : CostStaticColor}
     {sort : LangSort source.theory.presentation.presentation.language}
     (term : CostStaticSourceTerm source color free support sourceBound
       targetBound sort) :
-    term.normalize.normalize = term.normalize := by
-  cases term with
-  | mk term supported safe =>
-      have identity :=
-        ComputableReflectiveFiberSection.normalize_idempotent
-          source.openCanonical.toComputableReflectiveFiberSection term
-      unfold CostStaticSourceTerm.normalize
-      congr
+    term.normalize.normalize = term.normalize :=
+  ContinuationDecorationProfile.StaticSourceTerm.normalize_idempotent
+    source.openCanonical source.openCanonicalPreservesWrappedConstructorTyping term
 
 theorem normalize_eq_of_equationSetoid
     {source : CIGSLT} {color : CostStaticColor}
@@ -66,27 +57,9 @@ theorem normalize_eq_of_equationSetoid
       targetBound sort}
     (equivalent : (CostStaticSourceTerm.equationSetoid source color free support
       sourceBound targetBound sort).r left right) :
-    left.normalize = right.normalize := by
-  have erased :
-      (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
-        source.reflection.1 defaultBasePremises
-        source.theory.presentation.presentation.language free sourceBound
-          (.base sort.1)).r left.term right.term := by
-    induction equivalent with
-    | rel left right generator =>
-        exact Relation.EqvGen.rel _ _ generator
-    | refl term => exact Relation.EqvGen.refl _
-    | symm left right relation inductionHypothesis =>
-        exact Relation.EqvGen.symm _ _ inductionHypothesis
-    | trans left middle right first second firstIH secondIH =>
-        exact Relation.EqvGen.trans _ _ _ firstIH secondIH
-  have identity := source.openCanonical.complete erased
-  cases left with
-  | mk leftTerm leftSupported leftSafe =>
-      cases right with
-      | mk rightTerm rightSupported rightSafe =>
-          unfold CostStaticSourceTerm.normalize
-          congr
+    left.normalize = right.normalize :=
+  ContinuationDecorationProfile.StaticSourceTerm.normalize_eq_of_equationSetoid
+    source.openCanonical source.openCanonicalPreservesWrappedConstructorTyping equivalent
 
 end CostStaticSourceTerm
 end CostStaticRegionNode
@@ -119,6 +92,7 @@ def original {source : CIGSLT} {color : CostStaticColor}
   current := frame.sourceActionTerm
   canonicalPath := by
     simpa [CostStaticSourceTerm.normalize,
+      ContinuationDecorationProfile.StaticSourceTerm.normalize,
       CostStaticRegionNode.sourceActionTerm,
       CostStaticRegionNode.normalizedSourceActionTerm] using canonicalPath
 

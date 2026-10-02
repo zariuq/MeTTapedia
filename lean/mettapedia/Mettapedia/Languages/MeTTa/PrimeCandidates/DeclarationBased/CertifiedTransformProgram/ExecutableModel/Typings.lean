@@ -64,7 +64,7 @@ variable {allowed : DeclName → Bool} {n : Nat} {Γ : Tower.Ctx n}
 
 abbrev U1 : Tower.Tm n := sortTm (.succ Tower.zero)
 
-theorem universe_typed (level : LevelExpr) :
+theorem universe_typed (level : LevelExpr Nat) :
     Typed (stage allowed) Γ (sortTm level) (sortTm (.succ level)) :=
   .headType (.sort level)
 
@@ -72,23 +72,23 @@ theorem U0_typed : Typed (stage allowed) Γ U0 U1 := universe_typed Tower.zero
 
 theorem raiseT {type : Tower.Tm n} (typed : Typed (stage allowed) Γ type U0) :
     Typed (stage allowed) Γ type U1 :=
-  .cumul typed (fun valuation => by simp [LevelExpr.eval, Tower.zero])
+  .cumul typed (fun valuation => by simp [LevelExpr.eval, LevelTower.zero])
 
-theorem piT {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {level : LevelExpr}
+theorem piT {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (domainTyped : Typed (stage allowed) Γ domain (sortTm level))
     (codomainTyped : Typed (stage allowed) (.snoc Γ domain) codomain (sortTm level)) :
     Typed (stage allowed) Γ (.pi domain codomain) (sortTm level) :=
   .cumul (.piForm domainTyped (.sort level) codomainTyped (.sort level) (.sorts level level))
     (fun valuation => by simp [LevelExpr.eval])
 
-theorem sigmaT {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {level : LevelExpr}
+theorem sigmaT {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (domainTyped : Typed (stage allowed) Γ domain (sortTm level))
     (codomainTyped : Typed (stage allowed) (.snoc Γ domain) codomain (sortTm level)) :
     Typed (stage allowed) Γ (.sigma domain codomain) (sortTm level) :=
   .cumul (.sigmaForm domainTyped (.sort level) codomainTyped (.sort level) (.sorts level level))
     (fun valuation => by simp [LevelExpr.eval])
 
-theorem idT {carrier left right : Tower.Tm n} {level : LevelExpr}
+theorem idT {carrier left right : Tower.Tm n} {level : LevelExpr Nat}
     (carrierTyped : Typed (stage allowed) Γ carrier (sortTm level))
     (leftTyped : Typed (stage allowed) Γ left carrier)
     (rightTyped : Typed (stage allowed) Γ right carrier) :
@@ -96,7 +96,7 @@ theorem idT {carrier left right : Tower.Tm n} {level : LevelExpr}
   .idForm carrierTyped (.sort level) leftTyped rightTyped
 
 /-- A declared constant at its declared type. -/
-theorem constT {name : DeclName} {type : Tower.Tm 0} {level : LevelExpr}
+theorem constT {name : DeclName} {type : Tower.Tm 0} {level : LevelExpr Nat}
     (declared : (stage allowed).constantType name = some type)
     (typed : Typed (stage allowed) .nil type (sortTm level)) :
     Typed (stage allowed) Γ (.const name) (liftClosed type) :=
@@ -455,7 +455,7 @@ section Conversions
 
 /-- Two β-steps of a family of types. -/
 theorem betaTwoT {R : Rules Tower.Head} {n : Nat} {Γ : Tower.Ctx n} {A : Tower.Tm n}
-    {B : Tower.Tm (n + 1)} {M : Tower.Tm (n + 2)} {a b : Tower.Tm n} {level : LevelExpr}
+    {B : Tower.Tm (n + 1)} {M : Tower.Tm (n + 2)} {a b : Tower.Tm n} {level : LevelExpr Nat}
     (formed : Typed R Γ (.pi A (.pi B U0)) (sortTm level)) (hl : R.isUniverse (.sort level))
     (formed₂ : Typed R (.snoc Γ A) (.pi B U0) (sortTm level))
     (body : Typed R (.snoc (.snoc Γ A) B) M U0)

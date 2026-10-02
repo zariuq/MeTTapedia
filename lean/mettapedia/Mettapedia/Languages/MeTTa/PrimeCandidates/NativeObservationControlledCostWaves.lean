@@ -158,6 +158,23 @@ def toCompleteResourceBudgetCertified
   executionSerializable := serializesToTarget separation
   resources := toResourceBudgetSeparation separation
 
+/-- The shared finite resource selector supplies this certificate directly.
+Its deferred list remains separate pending work. Complete-bag demand applies
+to the admitted family, not to every possible match outside the catalogue. -/
+def selectedWaveCertified [DecidableEq Ground]
+    (source : CostConfig Ground) (candidates : List (CostedEvent Ground))
+    (nonempty : (CostResourceWave.select source candidates).1 ≠ []) :=
+  toCompleteResourceBudgetCertified
+    (FamilySeparation.ofSelectedWave source candidates nonempty)
+
+/-- The constructed certificate licenses the selected occurrences as one
+wave, with both its linear inventory and independent unit budget. -/
+theorem selected_wave_is_bulk [DecidableEq Ground]
+    (source : CostConfig Ground) (candidates : List (CostedEvent Ground))
+    (nonempty : (CostResourceWave.select source candidates).1 ≠ []) :
+    ((selectedWaveCertified source candidates nonempty).plan .general).activation = .bulk :=
+  (selectedWaveCertified source candidates nonempty).completeBag_dispatches_bulk rfl
+
 /-- The same semantic and resource evidence can be presented to a bounded
 consumer without changing that consumer's demand. -/
 def toFirstCertified

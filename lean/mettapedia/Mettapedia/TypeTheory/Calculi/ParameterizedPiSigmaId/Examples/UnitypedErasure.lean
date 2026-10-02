@@ -34,10 +34,10 @@ theorem universeZeroType_ne_universeOne :
   intro equality
   have equalCodes := congrArg TypeOver.code equality
   have equalHeads :
-      Tower.Head.sort Tower.zero = Tower.Head.sort (.succ Tower.zero) :=
+      LevelTower.Head.sort Tower.zero = LevelTower.Head.sort (.succ Tower.zero) :=
     Tm.head.inj equalCodes
   have equalLevels : Tower.zero = .succ Tower.zero :=
-    Tower.Head.sort.inj equalHeads
+    LevelTower.Head.sort.inj equalHeads
   change LevelExpr.const 0 = LevelExpr.succ (LevelExpr.const 0) at equalLevels
   cases equalLevels
 

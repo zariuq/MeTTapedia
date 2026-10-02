@@ -272,7 +272,7 @@ open HOLLeibnizNativeQualifiedHOTGOperationalIntegration
 
 /-- The exact generated-OSLF endpoint of the retained HOTG map-fusion
 connection. -/
-abbrev GeneratedOSLFClaim (level : LevelExpr)
+abbrev GeneratedOSLFClaim (level : LevelExpr Nat)
     (lower : ZFSetUniverseClosure.CofinalInaccessibles.{uTerm})
     (x : ZFSetUniformListTraceTypeInterpretation.Value
       ZFSetUniverseLift.carrierCode.{uTerm}
@@ -308,7 +308,7 @@ abbrev GeneratedOSLFClaim (level : LevelExpr)
 the semantic quotient together.  Generated diamonds see the common HOTG
 result, while the proof-relevant paths still expose the exact `18` versus `10`
 step distinction. -/
-theorem semantic_projection (level : LevelExpr)
+theorem semantic_projection (level : LevelExpr Nat)
     (lower : ZFSetUniverseClosure.CofinalInaccessibles.{uTerm})
     (x : ZFSetUniformListTraceTypeInterpretation.Value
       ZFSetUniverseLift.carrierCode.{uTerm}
@@ -342,7 +342,7 @@ theorem semantic_projection (level : LevelExpr)
 /-- The concrete retained map-fusion proof reaches the actual OSLF generated
 from the semantic native-list GSLT.  Both programs satisfy its diamond, while
 the cospan still retains the source proof and the unequal execution lengths. -/
-theorem generated_oslf_projection (level : LevelExpr)
+theorem generated_oslf_projection (level : LevelExpr Nat)
     (lower : ZFSetUniverseClosure.CofinalInaccessibles.{uTerm})
     (x : ZFSetUniformListTraceTypeInterpretation.Value
       ZFSetUniverseLift.carrierCode.{uTerm}

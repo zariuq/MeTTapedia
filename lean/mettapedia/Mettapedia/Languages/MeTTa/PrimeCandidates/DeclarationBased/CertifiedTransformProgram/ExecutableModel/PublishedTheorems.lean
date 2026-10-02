@@ -21,10 +21,10 @@ replacing a name it does not declare (`objectRules_unfoldStable`), so every
 derivation of the extended package unfolds to one of the package.
 
 **The models must compute the new δ-rule.** Publishing `zero` again with the body
-`1` (`zeroIsOne`) starts from a package that model S and the consistency model
+`1` (`zeroIsOne`) starts from a package that model SN and the consistency model
 validate, with a body that is valid at `num` in both; neither model validates
 the extended package (`withTheorem_soundS_design_false`,
-`withTheorem_sound_design_false`). In model S `zero` and `1` have different
+`withTheorem_sound_design_false`). In model SN `zero` and `1` have different
 shapes; in the consistency model the extended package proves `zero = 1`.
 -/
 
@@ -282,25 +282,25 @@ theorem zeroIsOne_delta : zeroIsOne.computation.step (.const zeroN : Tower.Tm 0)
     (n := 0)
   rwa [TelescopeAbstraction.liftClosed_zero] at step
 
-/-- **The design's model-S law is false.** Model S validates the object package
+/-- **The design's model-S law is false.** Model SN validates the object package
 and the body `1` at `num`, but not the package with `zero` published again as
 `1` at its own declared type: the δ-step relates `zero` and `1`, which have
 different shapes, at every typed instance. The law holds when the model computes
 the δ-rule (`withTheorem_soundS`). -/
 theorem withTheorem_soundS_design_false :
-    ∃ (R : Rules Tower.Head) (M : ModelS.SModel Tower.Head ℕ) (name : DeclName)
+    ∃ (R : Rules Tower.Head) (M : ModelSN.SNModel Tower.Head ℕ) (name : DeclName)
       (T body : Tower.Tm 0),
-      ModelS.TypedSoundS R M ∧ ModelS.ValidTmS M .nil body T ∧
-        ¬ ModelS.TypedSoundS (R.withTheorem name T body) M := by
+      ModelSN.TypedSoundS R M ∧ ModelSN.ValidTmS M .nil body T ∧
+        ¬ ModelSN.TypedSoundS (R.withTheorem name T body) M := by
   have sound := vmodel_soundS_objectRules fun _ => 0
-  have validOne := ModelS.Typed.validS sound (numeral_typedO (Γ := .nil) 1) trivial
+  have validOne := ModelSN.Typed.validS sound (numeral_typedO (Γ := .nil) 1) trivial
   refine ⟨objectRules, vmodel fun _ => 0, zeroN, numT, numeral 1, sound, validOne,
     fun sound' => ?_⟩
-  have validZero := ModelS.Typed.validS sound (zero_typedO (Γ := .nil)) trivial
-  have equal : ModelS.ValidEqS (vmodel fun _ => 0) .nil (.const zeroN) (numeral 1) numT := by
+  have validZero := ModelSN.Typed.validS sound (zero_typedO (Γ := .nil)) trivial
+  have equal : ModelSN.ValidEqS (vmodel fun _ => 0) .nil (.const zeroN) (numeral 1) numT := by
     rcases sound'.root zeroIsOne_delta with semantic | typedRoot
     · exact semantic validZero validOne
-    · exact typedRoot (ModelS.Typed.spineFacts sound'
+    · exact typedRoot (ModelSN.Typed.spineFacts sound'
         (Normalization.Derivable.mono zeroIsOne_sub (zero_typedO (Γ := .nil))) trivial) validZero
         validOne
   have laws := vmodel_valueLaws fun _ => 0

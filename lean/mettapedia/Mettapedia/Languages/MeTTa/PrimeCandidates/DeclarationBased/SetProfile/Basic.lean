@@ -542,13 +542,13 @@ abbrev rules : Rules Tower.Head := extendRules Tower.rules declarations
 theorem lookup_allName (type : HOL.Ty SetBase) :
     rules.constantType (allName type) = some (allType type) := by
   change combinedType Tower.rules declarations (allName type) = _
-  simp [combinedType, Tower.rules, Signature.typeOf?, declarations, entries,
+  simp [combinedType, LevelTower.rules, Signature.typeOf?, declarations, entries,
     allInstance?_allName type]
 
 theorem lookup_eqName (type : HOL.Ty SetBase) :
     rules.constantType (eqName type) = some (eqType type) := by
   change combinedType Tower.rules declarations (eqName type) = _
-  simp [combinedType, Tower.rules, Signature.typeOf?, declarations, entries,
+  simp [combinedType, LevelTower.rules, Signature.typeOf?, declarations, entries,
     allInstance?_eqName type, eqInstance?_eqName type]
 
 /-- A name the reader reads as no instance has its fixed declaration. -/
@@ -556,7 +556,7 @@ theorem lookup_fixedName {name : DeclName} (notAll : allInstance? name = none)
     (notEq : eqInstance? name = none) :
     rules.constantType name = (fixedEntry name).map Entry.type := by
   change combinedType Tower.rules declarations name = _
-  simp [combinedType, Tower.rules, Signature.typeOf?, declarations, entries, notAll, notEq]
+  simp [combinedType, LevelTower.rules, Signature.typeOf?, declarations, entries, notAll, notEq]
 
 theorem lookup_fixed {spelling : String}
     (notAll : spelling.toList.take 4 ≠ ['a', 'l', 'l', '@'])

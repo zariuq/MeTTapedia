@@ -88,33 +88,48 @@ def completeAssignments (relEnv : RelationEnv) (lang : LanguageDef)
 
 /-- Execute one rule in an explicit ambient de Bruijn context. The returned
 list retains matching and premise occurrences. -/
-def applyRuleAt (relEnv : RelationEnv) (lang : LanguageDef)
+def applyRuleComparedWithAt (compare : String → Pattern → Pattern → Bool)
+    (operation : Pattern → Pattern → Pattern)
+    (relEnv : RelationEnv) (lang : LanguageDef)
     (ambient : Nat) (rule : RewriteRule) (term : Pattern) : List Pattern :=
   match rule.bindings with
   | none => []
   | some spec =>
       if admittedFor rule spec then
-        (matchRuleAt rule spec ambient term).flatMap fun captured =>
+        (matchRuleWithAt compare rule spec ambient term).flatMap fun captured =>
           (completeAssignments relEnv lang ambient rule spec captured).filterMap
-            (reduct? rule spec ambient)
+            (reductWith? operation rule spec ambient)
       else []
+
+/-- Literal comparison specializes the same contextual execution pipeline. -/
+def applyRuleWithAt (operation : Pattern → Pattern → Pattern)
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (ambient : Nat) (rule : RewriteRule) (term : Pattern) : List Pattern :=
+  applyRuleComparedWithAt literalBodyComparison operation relEnv lang ambient rule term
+
+/-- Ordinary execution specializes the same matching and premise pipeline. -/
+def applyRuleAt (relEnv : RelationEnv) (lang : LanguageDef)
+    (ambient : Nat) (rule : RewriteRule) (term : Pattern) : List Pattern :=
+  applyRuleWithAt Substitution.instantiateBVar relEnv lang ambient rule term
 
 /-- The execution is exactly the sequence of completed scoped assignments
 produced by the matcher and the ordered premise machine. -/
-theorem mem_applyRuleAt_iff (relEnv : RelationEnv) (lang : LanguageDef)
+theorem mem_applyRuleComparedWithAt_iff (compare : String → Pattern → Pattern → Bool)
+    (operation : Pattern → Pattern → Pattern)
+    (relEnv : RelationEnv) (lang : LanguageDef)
     (ambient : Nat) (rule : RewriteRule) (term result : Pattern) :
-    result ∈ applyRuleAt relEnv lang ambient rule term ↔
+    result ∈ applyRuleComparedWithAt compare operation relEnv lang ambient rule term ↔
       ∃ spec captured assignment,
         rule.bindings = some spec ∧
         admittedFor rule spec = true ∧
-        captured ∈ matchRuleAt rule spec ambient term ∧
+        captured ∈ matchRuleWithAt compare rule spec ambient term ∧
         assignment ∈ completeAssignments relEnv lang ambient rule spec captured ∧
-        reduct? rule spec ambient assignment = some result := by
+        reductWith? operation rule spec ambient assignment = some result := by
   cases hspec : rule.bindings with
-  | none => simp [applyRuleAt, hspec]
+  | none => simp [applyRuleComparedWithAt, hspec]
   | some spec =>
       by_cases hvalid : admittedFor rule spec = true
-      · simp only [applyRuleAt, hspec, hvalid, if_true, List.mem_flatMap]
+      · simp only [applyRuleComparedWithAt, hspec, hvalid, if_true, List.mem_flatMap]
         constructor
         · rintro ⟨captured, hcaptured, hresult⟩
           obtain ⟨assignment, hcompleted, hresult⟩ :=
@@ -127,7 +142,31 @@ theorem mem_applyRuleAt_iff (relEnv : RelationEnv) (lang : LanguageDef)
           exact ⟨captured, hcaptured,
             List.mem_filterMap.mpr ⟨assignment, hcompleted, hresult⟩⟩
       · have hfalse : admittedFor rule spec = false := Bool.eq_false_iff.mpr hvalid
-        simp [applyRuleAt, hspec, hfalse]
+        simp [applyRuleComparedWithAt, hspec, hfalse]
+
+theorem mem_applyRuleWithAt_iff (operation : Pattern → Pattern → Pattern)
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (ambient : Nat) (rule : RewriteRule) (term result : Pattern) :
+    result ∈ applyRuleWithAt operation relEnv lang ambient rule term ↔
+      ∃ spec captured assignment,
+        rule.bindings = some spec ∧
+        admittedFor rule spec = true ∧
+        captured ∈ matchRuleAt rule spec ambient term ∧
+        assignment ∈ completeAssignments relEnv lang ambient rule spec captured ∧
+        reductWith? operation rule spec ambient assignment = some result :=
+  mem_applyRuleComparedWithAt_iff literalBodyComparison operation relEnv lang ambient rule term result
+
+/-- Ordinary execution retains the same exact assignment witnesses. -/
+theorem mem_applyRuleAt_iff (relEnv : RelationEnv) (lang : LanguageDef)
+    (ambient : Nat) (rule : RewriteRule) (term result : Pattern) :
+    result ∈ applyRuleAt relEnv lang ambient rule term ↔
+      ∃ spec captured assignment,
+        rule.bindings = some spec ∧
+        admittedFor rule spec = true ∧
+        captured ∈ matchRuleAt rule spec ambient term ∧
+        assignment ∈ completeAssignments relEnv lang ambient rule spec captured ∧
+        reduct? rule spec ambient assignment = some result :=
+  mem_applyRuleWithAt_iff Substitution.instantiateBVar relEnv lang ambient rule term result
 
 /-- Apply the scoped rules of an authored language at the root of an explicit
 ambient context, retaining rule and match multiplicities. Rules without a

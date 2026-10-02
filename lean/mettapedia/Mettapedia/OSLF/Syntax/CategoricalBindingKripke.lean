@@ -34,25 +34,31 @@ namespace Model
 
 variable {S : Signature} (M : Model S D)
 
-/-- A natural family of generalized elements: the interpretation of a term at
-metavariable context `N`, term context `Γ` and sort `s`. -/
+/-- A natural family of generalized elements over a stage object `C`: at every
+stage `Z` above `C` and environment for `Γ`, an element of the sort object,
+natural in the stage. -/
 @[ext]
-structure Elem (N : List (MetaArity S)) (Γ : Ctx S) (s : S.Srt) : Type (max u v) where
-  value : ∀ (Z : D), (Z ⟶ M.family N) → M.Env Z Γ → (Z ⟶ M.sort s)
-  natural : ∀ {Z Z' : D} (h : Z' ⟶ Z) (m : Z ⟶ M.family N) (ρ : M.Env Z Γ),
+structure ElemOver (C : D) (Γ : Ctx S) (s : S.Srt) : Type (max u v) where
+  value : ∀ (Z : D), (Z ⟶ C) → M.Env Z Γ → (Z ⟶ M.sort s)
+  natural : ∀ {Z Z' : D} (h : Z' ⟶ Z) (m : Z ⟶ C) (ρ : M.Env Z Γ),
     value Z' (h ≫ m) (M.restage h ρ) = h ≫ value Z m ρ
+
+/-- The interpretation of a term at metavariable context `N`, term context
+`Γ` and sort `s`: a natural family over the metavariable family object. -/
+abbrev Elem (N : List (MetaArity S)) (Γ : Ctx S) (s : S.Srt) : Type (max u v) :=
+  M.ElemOver (M.family N) Γ s
 
 variable {M}
 
 /-- The values of a semantic environment at a stage. -/
-def envValue {N : List (MetaArity S)} {Γ Δ : Ctx S}
-    (env : ∀ (γ : S.Srt), Var Γ γ → M.Elem N Δ γ) (Z : D) (m : Z ⟶ M.family N)
+def envValue {C : D} {Γ Δ : Ctx S}
+    (env : ∀ (γ : S.Srt), Var Γ γ → M.ElemOver C Δ γ) (Z : D) (m : Z ⟶ C)
     (ρ : M.Env Z Δ) : M.Env Z Γ :=
   fun γ v => (env γ v).value Z m ρ
 
-theorem envValue_restage {N : List (MetaArity S)} {Γ Δ : Ctx S}
-    (env : ∀ (γ : S.Srt), Var Γ γ → M.Elem N Δ γ) {Z Z' : D} (h : Z' ⟶ Z)
-    (m : Z ⟶ M.family N) (ρ : M.Env Z Δ) :
+theorem envValue_restage {C : D} {Γ Δ : Ctx S}
+    (env : ∀ (γ : S.Srt), Var Γ γ → M.ElemOver C Δ γ) {Z Z' : D} (h : Z' ⟶ Z)
+    (m : Z ⟶ C) (ρ : M.Env Z Δ) :
     envValue env Z' (h ≫ m) (M.restage h ρ) = M.restage h (envValue env Z m ρ) := by
   funext γ v
   exact (env γ v).natural h m ρ
@@ -60,27 +66,27 @@ theorem envValue_restage {N : List (MetaArity S)} {Γ Δ : Ctx S}
 variable (M)
 
 /-- The tuple of curried argument interpretations, each beneath its binders. -/
-def tupleArgs {N N' : List (MetaArity S)} :
+def tupleArgs {C : D} {N' : List (MetaArity S)} :
     ∀ {arity : List (List S.Srt × S.Srt)} {Γ : Ctx S},
-      FamilyArgs (withMetas S N') (M.Elem N) arity Γ →
-        ∀ (Z : D), (Z ⟶ M.family N) → M.Env Z Γ → (Z ⟶ M.family arity)
+      FamilyArgs (withMetas S N') (M.ElemOver C) arity Γ →
+        ∀ (Z : D), (Z ⟶ C) → M.Env Z Γ → (Z ⟶ M.family arity)
   | _, _, .nil, Z, _, _ => toUnit Z
   | _, _, .cons (bs := bs) head tail, Z, m, ρ =>
       lift (M.curry (head.value (M.ctx bs ⊗ Z) (snd _ _ ≫ m) (M.extendEnv bs ρ)))
         (tupleArgs tail Z m ρ)
 
 /-- The tuple of interpretations of the arguments of a metavariable. -/
-def tupleCtx {N N' : List (MetaArity S)} :
+def tupleCtx {C : D} {N' : List (MetaArity S)} :
     ∀ (bs : List S.Srt) {Γ : Ctx S},
-      FamilyArgs (withMetas S N') (M.Elem N) (bs.map fun b => ([], b)) Γ →
-        ∀ (Z : D), (Z ⟶ M.family N) → M.Env Z Γ → (Z ⟶ M.ctx bs)
+      FamilyArgs (withMetas S N') (M.ElemOver C) (bs.map fun b => ([], b)) Γ →
+        ∀ (Z : D), (Z ⟶ C) → M.Env Z Γ → (Z ⟶ M.ctx bs)
   | [], _, .nil, Z, _, _ => toUnit Z
   | _ :: bs, _, .cons head tail, Z, m, ρ => lift (head.value Z m ρ) (tupleCtx bs tail Z m ρ)
 
-theorem tupleArgs_natural {N N' : List (MetaArity S)} :
+theorem tupleArgs_natural {C : D} {N' : List (MetaArity S)} :
     ∀ {arity : List (List S.Srt × S.Srt)} {Γ : Ctx S}
-      (args : FamilyArgs (withMetas S N') (M.Elem N) arity Γ) {Z Z' : D} (h : Z' ⟶ Z)
-      (m : Z ⟶ M.family N) (ρ : M.Env Z Γ),
+      (args : FamilyArgs (withMetas S N') (M.ElemOver C) arity Γ) {Z Z' : D} (h : Z' ⟶ Z)
+      (m : Z ⟶ C) (ρ : M.Env Z Γ),
       M.tupleArgs args Z' (h ≫ m) (M.restage h ρ) = h ≫ M.tupleArgs args Z m ρ
   | _, _, .nil, _, _, _, _, _ => toUnit_unique _ _
   | _, _, .cons (bs := bs) head tail, _, _, h, m, ρ => by
@@ -88,10 +94,10 @@ theorem tupleArgs_natural {N N' : List (MetaArity S)} :
       rw [comp_lift, tupleArgs_natural tail h m ρ, M.extendEnv_restage,
         ← M.curry_natural, ← head.natural, whiskerLeft_snd_assoc]
 
-theorem tupleCtx_natural {N N' : List (MetaArity S)} :
+theorem tupleCtx_natural {C : D} {N' : List (MetaArity S)} :
     ∀ (bs : List S.Srt) {Γ : Ctx S}
-      (args : FamilyArgs (withMetas S N') (M.Elem N) (bs.map fun b => ([], b)) Γ)
-      {Z Z' : D} (h : Z' ⟶ Z) (m : Z ⟶ M.family N) (ρ : M.Env Z Γ),
+      (args : FamilyArgs (withMetas S N') (M.ElemOver C) (bs.map fun b => ([], b)) Γ)
+      {Z Z' : D} (h : Z' ⟶ Z) (m : Z ⟶ C) (ρ : M.Env Z Γ),
       M.tupleCtx bs args Z' (h ≫ m) (M.restage h ρ) = h ≫ M.tupleCtx bs args Z m ρ
   | [], _, .nil, _, _, _, _, _ => toUnit_unique _ _
   | _ :: bs, _, .cons head tail, _, _, h, m, ρ => by
@@ -99,9 +105,9 @@ theorem tupleCtx_natural {N N' : List (MetaArity S)} :
       rw [comp_lift, tupleCtx_natural bs tail h m ρ, head.natural]
 
 /-- The substitution structure of natural families. -/
-abbrev kripkeSubstitution (N : List (MetaArity S)) :
-    BindingSubstitutionAlgebra.Algebra.{max u v} (withMetas S N) where
-  Carrier := fun Γ s => M.Elem N Γ s
+abbrev kripkeSubstitution (C : D) {N' : List (MetaArity S)} :
+    BindingSubstitutionAlgebra.Algebra.{max u v} (withMetas S N') where
+  Carrier := fun Γ s => M.ElemOver C Γ s
   injectVar := fun v => ⟨fun _ _ ρ => ρ _ v, fun _ _ _ => rfl⟩
   substitute := fun env x =>
     ⟨fun Z m ρ => x.value Z m (envValue env Z m ρ), fun h m ρ => by
@@ -111,8 +117,8 @@ abbrev kripkeSubstitution (N : List (MetaArity S)) :
   substitute_comp := by intros; rfl
 
 /-- The operator applied to the tupled arguments. -/
-def opElem {N N' : List (MetaArity S)} {Γ : Ctx S} {s : S.Srt} (o : S.Op s)
-    (args : FamilyArgs (withMetas S N') (M.Elem N) (S.arity o) Γ) : M.Elem N Γ s where
+def opElem {C : D} {N' : List (MetaArity S)} {Γ : Ctx S} {s : S.Srt} (o : S.Op s)
+    (args : FamilyArgs (withMetas S N') (M.ElemOver C) (S.arity o) Γ) : M.ElemOver C Γ s where
   value := fun Z m ρ => M.tupleArgs args Z m ρ ≫ M.op o
   natural := fun h m ρ => by rw [M.tupleArgs_natural, Category.assoc]
 
@@ -127,11 +133,11 @@ def metaElem {N : List (MetaArity S)} {Γ : Ctx S} (i : Fin N.length)
 
 /-! ## Substitution commutes with the operations -/
 
-theorem liftEnvironment_value {N : List (MetaArity S)} {Γ Δ : Ctx S}
-    (env : ∀ (γ : S.Srt), Var Γ γ → M.Elem N Δ γ) (Z : D) (m : Z ⟶ M.family N)
+theorem liftEnvironment_value {C : D} {N : List (MetaArity S)} {Γ Δ : Ctx S}
+    (env : ∀ (γ : S.Srt), Var Γ γ → M.ElemOver C Δ γ) (Z : D) (m : Z ⟶ C)
     (ρ : M.Env Z Δ) :
     ∀ (bs : List S.Srt) {γ : S.Srt} (v : Var (bs ++ Γ) γ),
-      ((M.kripkeSubstitution N).liftEnvironment env bs γ v).value (M.ctx bs ⊗ Z) (snd _ _ ≫ m)
+      ((M.kripkeSubstitution C (N' := N)).liftEnvironment env bs γ v).value (M.ctx bs ⊗ Z) (snd _ _ ≫ m)
         (M.extendEnv bs ρ) = M.extendEnv bs (envValue env Z m ρ) γ v
   | [], γ, v => by
       change (env γ v).value (𝟙_ D ⊗ Z) (snd _ _ ≫ m) (M.restage (snd _ _) ρ) = snd _ _ ≫ _
@@ -144,18 +150,18 @@ theorem liftEnvironment_value {N : List (MetaArity S)} {Γ Δ : Ctx S}
       cases v with
       | zero => rfl
       | succ w =>
-          change ((M.kripkeSubstitution N).liftEnvironment env bs γ w).value
+          change ((M.kripkeSubstitution C (N' := N)).liftEnvironment env bs γ w).value
               ((M.sort b ⊗ M.ctx bs) ⊗ Z) (snd _ _ ≫ m)
               (M.restage (lift (fst _ _ ≫ snd _ _) (snd _ _)) (M.extendEnv bs ρ)) =
             lift (fst _ _ ≫ snd _ _) (snd _ _) ≫ M.extendEnv bs (envValue env Z m ρ) γ w
           rw [← liftEnvironment_value env Z m ρ bs w,
-            ← ((M.kripkeSubstitution N).liftEnvironment env bs γ w).natural, lift_snd_assoc]
+            ← ((M.kripkeSubstitution C (N' := N)).liftEnvironment env bs γ w).natural, lift_snd_assoc]
 
-theorem tupleArgs_substituteArgs {N : List (MetaArity S)} {Γ Δ : Ctx S}
-    (env : ∀ (γ : S.Srt), Var Γ γ → M.Elem N Δ γ) (Z : D) (m : Z ⟶ M.family N)
+theorem tupleArgs_substituteArgs {C : D} {N : List (MetaArity S)} {Γ Δ : Ctx S}
+    (env : ∀ (γ : S.Srt), Var Γ γ → M.ElemOver C Δ γ) (Z : D) (m : Z ⟶ C)
     (ρ : M.Env Z Δ) :
-    ∀ {arity : List (List S.Srt × S.Srt)} (args : FamilyArgs (withMetas S N) (M.Elem N) arity Γ),
-      M.tupleArgs ((M.kripkeSubstitution N).substituteArgs env args) Z m ρ =
+    ∀ {arity : List (List S.Srt × S.Srt)} (args : FamilyArgs (withMetas S N) (M.ElemOver C) arity Γ),
+      M.tupleArgs ((M.kripkeSubstitution C (N' := N)).substituteArgs env args) Z m ρ =
         M.tupleArgs args Z m (envValue env Z m ρ)
   | _, .nil => rfl
   | _, .cons (bs := bs) head tail => by
@@ -163,17 +169,17 @@ theorem tupleArgs_substituteArgs {N : List (MetaArity S)} {Γ Δ : Ctx S}
       rw [tupleArgs_substituteArgs env Z m ρ tail]
       congr 2
       change head.value (M.ctx bs ⊗ Z) (snd _ _ ≫ m)
-          (envValue ((M.kripkeSubstitution N).liftEnvironment env bs) (M.ctx bs ⊗ Z) (snd _ _ ≫ m)
+          (envValue ((M.kripkeSubstitution C (N' := N)).liftEnvironment env bs) (M.ctx bs ⊗ Z) (snd _ _ ≫ m)
             (M.extendEnv bs ρ)) = _
       congr 1
       funext γ v
       exact M.liftEnvironment_value env Z m ρ bs v
 
-theorem tupleCtx_substituteArgs {N : List (MetaArity S)} {Γ Δ : Ctx S}
-    (env : ∀ (γ : S.Srt), Var Γ γ → M.Elem N Δ γ) (Z : D) (m : Z ⟶ M.family N)
+theorem tupleCtx_substituteArgs {C : D} {N : List (MetaArity S)} {Γ Δ : Ctx S}
+    (env : ∀ (γ : S.Srt), Var Γ γ → M.ElemOver C Δ γ) (Z : D) (m : Z ⟶ C)
     (ρ : M.Env Z Δ) :
-    ∀ (bs : List S.Srt) (args : FamilyArgs (withMetas S N) (M.Elem N) (bs.map fun b => ([], b)) Γ),
-      M.tupleCtx bs ((M.kripkeSubstitution N).substituteArgs env args) Z m ρ =
+    ∀ (bs : List S.Srt) (args : FamilyArgs (withMetas S N) (M.ElemOver C) (bs.map fun b => ([], b)) Γ),
+      M.tupleCtx bs ((M.kripkeSubstitution C (N' := N)).substituteArgs env args) Z m ρ =
         M.tupleCtx bs args Z m (envValue env Z m ρ)
   | [], .nil => rfl
   | _ :: bs, .cons head tail => by
@@ -181,9 +187,19 @@ theorem tupleCtx_substituteArgs {N : List (MetaArity S)} {Γ Δ : Ctx S}
       rw [tupleCtx_substituteArgs env Z m ρ bs tail]
       rfl
 
+/-- An operator commutes with substitution of natural families. -/
+theorem opElem_substitute {C : D} {N : List (MetaArity S)} {Γ Δ : Ctx S} {s : S.Srt}
+    (env : ∀ (γ : S.Srt), Var Γ γ → M.ElemOver C Δ γ) (o : S.Op s)
+    (args : FamilyArgs (withMetas S N) (M.ElemOver C) (S.arity o) Γ) :
+    (M.kripkeSubstitution C (N' := N)).substitute env (M.opElem o args) =
+      M.opElem o ((M.kripkeSubstitution C (N' := N)).substituteArgs env args) := by
+  apply ElemOver.ext
+  funext Z m ρ
+  exact congrArg (· ≫ M.op o) (M.tupleArgs_substituteArgs env Z m ρ args).symm
+
 /-- The binding clone algebra of natural families at metavariable context `N`. -/
 def kripke (N : List (MetaArity S)) : BindingCloneAlgebra.Algebra.{max u v} (withMetas S N) where
-  substitution := M.kripkeSubstitution N
+  substitution := M.kripkeSubstitution (M.family N)
   operation := fun o args =>
     match o, args with
     | .inl o, args => M.opElem o args
@@ -191,12 +207,9 @@ def kripke (N : List (MetaArity S)) : BindingCloneAlgebra.Algebra.{max u v} (wit
   operation_substitute := by
     intro Γ Δ s env o args
     match o, args with
-    | .inl o, args =>
-        apply Elem.ext
-        funext Z m ρ
-        exact congrArg (· ≫ M.op o) (M.tupleArgs_substituteArgs env Z m ρ args).symm
+    | .inl o, args => exact M.opElem_substitute env o args
     | .inr (.mk i), args =>
-        apply Elem.ext
+        apply ElemOver.ext
         funext Z m ρ
         exact congrArg (fun t => lift t (m ≫ M.familyProj N i) ≫ M.eval _ _)
           (M.tupleCtx_substituteArgs env Z m ρ _ args).symm

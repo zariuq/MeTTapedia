@@ -1,5 +1,5 @@
 import Mettapedia.Languages.Metamath.MMLean4Bridge
-import Mettapedia.Languages.Metamath.ModeInterpretationOrder
+import Metamath.ModeInterpretationOrder
 import Mettapedia.Languages.Metamath.GroundedSemantics
 import Mettapedia.Languages.Metamath.LanguageDefDSL
 import Mettapedia.Languages.Metamath.BridgeConformance
@@ -80,7 +80,7 @@ import Mettapedia.Languages.Metamath.SourceGSLTCompressedMMLean4
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedExecutionMMLean4
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedParserMMLean4
 import Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical
-import Mettapedia.Languages.Metamath.InferenceSupportedProvableBoundary
+import Metamath.Spec.FixedFrameCounterexample
 import Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 import Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding
 import Mettapedia.Languages.Metamath.InferenceDummyAllocation

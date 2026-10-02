@@ -68,7 +68,7 @@ def getEntry
     TypedCostRegionBoundaryTable.Values.Resolved source color targetFree :=
   match values, index with
   | .nil, index => Fin.elim0 index
-  | @TypedCostRegionBoundaryTable.Values.cons _ _ _ _ _ boundary _ tail value
+  | @TypedCostRegionBoundaryTable.Values.cons _ _ _ _ _ _ boundary _ tail value
       childValues, index =>
       Fin.cases ⟨boundary, value⟩
         (fun childIndex => getEntry tail childValues childIndex) index
@@ -86,7 +86,7 @@ theorem getEntry_boundary
   match values, index with
   | .nil, index => Fin.elim0 index
   | .cons _ _, ⟨0, _⟩ => rfl
-  | @TypedCostRegionBoundaryTable.Values.cons _ _ _ _ _ _ _ tail _
+  | @TypedCostRegionBoundaryTable.Values.cons _ _ _ _ _ _ _ _ tail _
       childValues, ⟨position + 1, inBounds⟩ =>
       getEntry_boundary tail childValues
         ⟨position, Nat.lt_of_succ_lt_succ inBounds⟩
@@ -632,7 +632,8 @@ theorem exists_resolve_normalizedAtom_eq_getDecoration
         simp [CostRegionBoundaryTrees.normalizeValues,
           TypedCostRegionBoundaryTable.Values.resolve,
           CostRegionBoundaryTrees.getDecoration]
-        erw [Fin.cases_zero, if_pos rfl] <;> rfl) (fun tailIndex => by
+        erw [Fin.cases_zero, if_pos rfl]
+        rfl) (fun tailIndex => by
         obtain ⟨resolved, resolution, atomEq⟩ :=
           children.exists_resolve_normalizedAtom_eq_getDecoration unambiguous
             tailIndex
@@ -680,7 +681,8 @@ theorem exists_resolve_normalizedAtom_eq_getDecoration
           · simp [CostRegionBoundaryTrees.normalizeValues,
               TypedCostRegionBoundaryTable.Values.resolve,
               CostRegionBoundaryTrees.getDecoration]
-            erw [Fin.cases_succ, if_pos keyEq] <;> rfl
+            erw [Fin.cases_succ, if_pos keyEq]
+            rfl
           · exact headAtomEq
         · refine ⟨resolved, ?_, atomEq⟩
           simp only [CostRegionBoundaryTrees.normalizeValues,
@@ -2176,7 +2178,7 @@ source-variable endpoint is selected by its own skeleton occurrence.  Their
 recursive tree alignment supplies the normalized value, and the established
 support-independent restoration theorem supplies equality at every binder
 depth.  No equality of endpoint boundary identities is assumed. -/
-noncomputable def selectedBoundaryAtom_sourceVariable_commonRestorationApex
+theorem selectedBoundaryAtom_sourceVariable_commonRestorationApex
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
     {color : CostStaticColor} {targetFree : FreeTypeContext}
@@ -2330,7 +2332,7 @@ theorem sourceVariable_restoresAsSelectedBoundary_of_alignment_supportIndependen
 
 /-- A reached source-variable child aligned with a stopped boundary child is
 the right-oriented mixed leaf of the common restoration apex. -/
-noncomputable def sourceVariable_selectedBoundaryAtom_commonRestorationApex
+theorem sourceVariable_selectedBoundaryAtom_commonRestorationApex
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
     {color : CostStaticColor} {targetFree : FreeTypeContext}
@@ -2629,7 +2631,7 @@ The endpoint occurrences remain selected by their independent keep/skip
 embeddings.  Only after the retained certification receipts establish the
 complete common fibre and hereditary alignment establishes the normalized
 value do the two endpoint spellings enter the common semantic namespace. -/
-noncomputable def selectedEnvironmentAtoms_commonRestorationApex
+theorem selectedEnvironmentAtoms_commonRestorationApex
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
     {color : CostStaticColor} {targetFree : FreeTypeContext}
@@ -2695,7 +2697,7 @@ The context alignment retains restoration evidence for every fixed sibling
 and exposes one common hole depth.  The exact stopped occurrences and their
 certification receipts still select the two semantic atoms; the context layer
 may transport those atoms but cannot replace or manufacture them. -/
-noncomputable def selectedEnvironmentAtoms_commonRestorationApex_through_contexts
+theorem selectedEnvironmentAtoms_commonRestorationApex_through_contexts
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
     {color : CostStaticColor} {targetFree : FreeTypeContext}
@@ -2800,7 +2802,7 @@ plan roots.  The two stored `abstract_eq` witnesses are the only endpoint
 casts: exact occurrence selection, semantic-atom reification, common-cospan
 transport, and context filling have already been performed constructively
 below them. -/
-noncomputable def selectedRoots_commonRestorationApex
+theorem selectedRoots_commonRestorationApex
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
     {color : CostStaticColor} {targetFree : FreeTypeContext}
@@ -2887,7 +2889,7 @@ This constructor is intentionally conditional on equality of the two
 contexts.  It handles the maximal common spine directly; genuinely different
 left and right spines remain obligations for the structural pair recursion
 rather than being identified by a context cast. -/
-noncomputable def selectedEnvironmentAtoms_commonRestorationApex_through_sameContext
+theorem selectedEnvironmentAtoms_commonRestorationApex_through_sameContext
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
     {color : CostStaticColor} {targetFree : FreeTypeContext}
@@ -2962,7 +2964,7 @@ noncomputable def selectedEnvironmentAtoms_commonRestorationApex_through_sameCon
 reached sub-plan on the right through their independently retained contexts.
 The inner apex is the only semantic premise; this constructor performs only
 occurrence reification, context composition, and the stored endpoint casts. -/
-noncomputable def selectedRoot_reachedRoot_commonRestorationApex
+theorem selectedRoot_reachedRoot_commonRestorationApex
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : FreeTypeContext}
     {leftPayload leftRootAbstract rightPayload rightRootAbstract : Pattern}
@@ -3049,7 +3051,7 @@ noncomputable def selectedRoot_reachedRoot_commonRestorationApex
 `selectedRoot_reachedRoot_commonRestorationApex`: a reached sub-plan on the
 left and an exact stopped occurrence on the right are lifted without reversing
 or quotienting the endpoint environments. -/
-noncomputable def reachedRoot_selectedRoot_commonRestorationApex
+theorem reachedRoot_selectedRoot_commonRestorationApex
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : FreeTypeContext}
     {leftPayload leftRootAbstract rightPayload rightRootAbstract : Pattern}
@@ -3287,7 +3289,7 @@ Unlike `selectedRoots_commonRestorationApex`, this form keeps the mapped and
 thickened parent indices visible.  It is therefore suitable for a recursive
 caller whose child certificate is stated at the reached target plans rather
 than at their untransported source abstracts. -/
-noncomputable def mappedThickenedRoots_commonRestorationApex
+theorem mappedThickenedRoots_commonRestorationApex
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : FreeTypeContext}
     {leftPayload leftRootAbstract rightPayload rightRootAbstract : Pattern}
@@ -3364,7 +3366,7 @@ This is the reached counterpart of stopped-occurrence root lifting.  It adds
 no child equality: the supplied inner apex remains the sole semantic evidence,
 while the paired context witness accounts for every fixed sibling and the two
 stored plan factorizations account for the endpoint casts. -/
-noncomputable def selectedRoots_commonRestorationApex
+theorem selectedRoots_commonRestorationApex
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : FreeTypeContext}
     {leftPayload leftRootAbstract rightPayload rightRootAbstract : Pattern}
@@ -3446,7 +3448,7 @@ may contain fixed boundary variables whose endpoint spellings differ, while
 the common semantic namespace is precisely where such fixed siblings may be
 compared.  The computed hole depth records every binder increment and quote
 reset on the retained context spine. -/
-noncomputable def selectedRoots_commonRestorationApex_of_reifiedContextEq
+theorem selectedRoots_commonRestorationApex_of_reifiedContextEq
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : FreeTypeContext}
     {leftPayload leftRootAbstract rightPayload rightRootAbstract : Pattern}

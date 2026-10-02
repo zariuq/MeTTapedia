@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.Syntax.PartialRenaming
+import Mettapedia.OSLF.Syntax.BindingSignature
 
 /-!
 # Metavariable assignments with an ambient context
@@ -13,11 +13,6 @@ the ambient variables under each argument's declared binders.
 namespace Mettapedia.OSLF.Binding
 
 set_option autoImplicit false
-
-/-- The declared dependency prefix and the ambient context are distinct.
-In particular, a zero-argument metavariable can hold an ambient open value. -/
-abbrev ContextualAssignment (S : Signature) (M : List (MetaArity S)) (Γ : Ctx S) :=
-  (i : Fin M.length) → Term S ((M.get i).1 ++ Γ) (M.get i).2
 
 namespace ContextualAssignment
 
@@ -63,15 +58,6 @@ theorem mapSub_var {Γ Δ : Ctx S} (rho : Ren S Γ Δ)
   have lifted := funext fun s => funext fun v => liftSub_var_comp rho (M.get i).1 s v
   rw [lifted, bind_var_eq_rename]
 
-/-- Supply the declared arguments and ambient values by one ordinary
-substitution. Both parts may contain arbitrary terms. -/
-def joinSub : {dependencies Γ Δ : Ctx S} →
-    Sub S dependencies Δ → Sub S Γ Δ → Sub S (dependencies ++ Γ) Δ
-  | [], _, _, _, ambient => ambient
-  | _ :: _, _, _, arguments, ambient => fun _ v => match v with
-      | .zero => arguments _ .zero
-      | .succ w => joinSub (fun s v => arguments s (.succ v)) ambient _ w
-
 theorem joinSub_prefix {Γ Δ : Ctx S} : ∀ (dependencies : Ctx S)
     (arguments : Sub S dependencies Δ) (ambient : Sub S Γ Δ)
     (s : S.Srt) (v : Var dependencies s),
@@ -102,10 +88,6 @@ theorem bind_joinSub {Γ Δ Θ : Ctx S} (sigma : Sub S Δ Θ) :
       | succ w =>
           exact congrFun (congrFun
             (bind_joinSub sigma dependencies (fun r v => arguments r (.succ v)) ambient) s) w
-
-/-- Weaken the codomain of a substitution; its source context stays fixed. -/
-def weakenSub {Γ Δ : Ctx S} (bs : Ctx S) (sigma : Sub S Γ Δ) : Sub S Γ (bs ++ Δ) :=
-  fun _ v => rename (fun _ w => weakenVar bs w) (sigma _ v)
 
 theorem weakenSub_nil {Γ Δ : Ctx S} (sigma : Sub S Γ Δ) :
     weakenSub [] sigma = sigma := by
@@ -156,12 +138,6 @@ theorem joinSub_liftSub {Γ Δ Θ : Ctx S} (sigma : Sub S Γ Δ) :
           exact congrFun (congrFun
             (joinSub_liftSub sigma dependencies (fun r v => arguments r (.succ v)) ambient) s) w
 
-/-- Instantiate one occurrence, with its explicit arguments and an ambient
-substitution supplied independently. -/
-def apply {Γ Δ : Ctx S} (body : ContextualAssignment S M Γ) (i : Fin M.length)
-    (arguments : Sub S (M.get i).1 Δ) (ambient : Sub S Γ Δ) : Term S Δ (M.get i).2 :=
-  bind (joinSub arguments ambient) (body i)
-
 theorem bind_apply {Γ Δ Θ : Ctx S} (body : ContextualAssignment S M Γ)
     (i : Fin M.length) (arguments : Sub S (M.get i).1 Δ) (ambient : Sub S Γ Δ)
     (sigma : Sub S Δ Θ) :
@@ -176,29 +152,6 @@ theorem apply_mapSub {Γ Δ Θ : Ctx S} (body : ContextualAssignment S M Γ)
     apply (mapSub sigma body) i arguments ambient =
       apply body i arguments (fun s v => bind ambient (sigma s v)) := by
   simp only [apply, mapSub, bind_comp, joinSub_liftSub]
-
-mutual
-/-- Instantiate the existing schema syntax. The variable substitution is for
-the schema context; the ambient substitution is for supplied metavariable
-values. Under binders only the former acquires new source variables. -/
-def instantiate {Γ : Ctx S} (body : ContextualAssignment S M Γ) :
-    {Ξ Δ : Ctx S} → {s : S.Srt} → Sub S Γ Δ → Sub S Ξ Δ →
-      Term (withMetas S M) Ξ s → Term S Δ s
-  | _, _, _, _, valuation, .var v => valuation _ v
-  | _, _, _, ambient, valuation, .op (.inl f) args =>
-      .op f (instantiateArgs body ambient valuation args)
-  | _, _, _, ambient, valuation, .op (.inr (.mk i)) args =>
-      apply body i (argsToSub (instantiateArgs body ambient valuation args)) ambient
-
-def instantiateArgs {Γ : Ctx S} (body : ContextualAssignment S M Γ) :
-    {arity : List (List S.Srt × S.Srt)} → {Ξ Δ : Ctx S} →
-    Sub S Γ Δ → Sub S Ξ Δ → Args (withMetas S M) arity Ξ → Args S arity Δ
-  | _, _, _, _, _, .nil => .nil
-  | _, _, _, ambient, valuation, .cons (bs := bs) head tail =>
-      .cons (instantiate body (weakenSub (S := S) bs ambient)
-        (liftSub valuation bs) head)
-        (instantiateArgs body ambient valuation tail)
-end
 
 mutual
 /-- Ordinary substitution after instantiation transports both the ambient
@@ -343,6 +296,27 @@ theorem instantiateArgs_mapSub {Γ Γ' : Ctx S} (body : ContextualAssignment S M
         instantiateArgs_mapSub body sigma ambient valuation tail, weakenSub_comp]
 end
 
+/-- An ambient environment can be absorbed into the contextual bodies before
+instantiation. The supplied ordinary arguments remain independent. -/
+theorem instantiate_ambient_normal_form {Θ Ξ Γ : Ctx S}
+    (body : ContextualAssignment S M Θ) (ambient : Sub S Θ Γ)
+    (valuation : Sub S Ξ Γ) {s : S.Srt} (t : Term (withMetas S M) Ξ s) :
+    instantiate body ambient valuation t =
+      instantiate (mapSub ambient body) (fun _ v => .var v) valuation t := by
+  simpa only [bind_id] using
+    (instantiate_mapSub body ambient (fun _ v => .var v) valuation t).symm
+
+/-- The ambient normal form also preserves the ordered, binder-local
+argument spine. -/
+theorem instantiateArgs_ambient_normal_form {Θ Ξ Γ : Ctx S}
+    (body : ContextualAssignment S M Θ) (ambient : Sub S Θ Γ)
+    (valuation : Sub S Ξ Γ) {arity : List (List S.Srt × S.Srt)}
+    (args : Args (withMetas S M) arity Ξ) :
+    instantiateArgs body ambient valuation args =
+      instantiateArgs (mapSub ambient body) (fun _ v => .var v) valuation args := by
+  simpa only [bind_id] using
+    (instantiateArgs_mapSub body ambient (fun _ v => .var v) valuation args).symm
+
 /-- Lifted schema substitution fixes the new binders while transporting both
 parts of an instantiation. -/
 theorem instantiate_liftSub {Γ Ξ Ξ' Δ : Ctx S} (body : ContextualAssignment S M Γ)
@@ -437,6 +411,19 @@ theorem instantiateArgs_ofClosed
         instantiateArgs_ofClosed body ambient valuation tail]
 end
 
+/-- With no schema metavariables, contextual instantiation is ordinary
+substitution and ignores the ambient environment. -/
+theorem instantiate_noMetas {Θ Ξ Γ : Ctx S}
+    (body : ContextualAssignment S [] Θ) (ambient : Sub S Θ Γ)
+    (ordinary : Sub S Ξ Γ) {s : S.Srt} (term : Term (withMetas S []) Ξ s) :
+    instantiate body ambient ordinary term =
+      bind ordinary (Mettapedia.OSLF.Binding.instantiate (S := S) (M := [])
+        (fun i => Fin.elim0 i) term) := by
+  have empty : body = ofClosed (S := S) (M := []) (fun i => Fin.elim0 i) Θ := by
+    funext i
+    exact Fin.elim0 i
+  rw [empty, instantiate_ofClosed]
+
 /-- Instantiate at the assignment's ambient context without further
 substitution of schema variables. -/
 def inContext {Γ : Ctx S} (body : ContextualAssignment S M Γ) {s : S.Srt}
@@ -463,5 +450,18 @@ theorem inContext_renaming {Γ Δ : Ctx S} (body : ContextualAssignment S M Γ)
     inContext_substitution body (fun s v => .var (rho s v)) t
 
 end ContextualAssignment
+
+/-- Every dependency-only axiom instance is admitted by contextual closure.
+The contextual generator remains the single primitive axiom constructor. -/
+theorem EqClosure.ax_closed {S : Signature} {M : List (MetaArity S)}
+    (E : List (EqAxiom S M))
+    (i : Fin E.length) {Γ : Ctx S}
+    (body : (k : Fin M.length) → Term S (M.get k).1 (M.get k).2)
+    (ordinary : Sub S (E.get i).ctx Γ) :
+    EqClosure E (bind ordinary (instantiate body (E.get i).lhs))
+      (bind ordinary (instantiate body (E.get i).rhs)) := by
+  have generated := EqClosure.ax (E := E) i (ContextualAssignment.ofClosed body Γ)
+    (fun _ v => Term.var v) ordinary
+  simpa only [ContextualAssignment.instantiate_ofClosed] using generated
 
 end Mettapedia.OSLF.Binding

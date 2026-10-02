@@ -68,17 +68,17 @@ section Toolkit
 variable {types : DeclName → Option (Tower.Tm 0)} {names : List DeclName} {n : Nat}
   {Γ : Tower.Ctx n}
 
-theorem sortC (level : LevelExpr) :
+theorem sortC (level : LevelExpr Nat) :
     Typed (controlRules types names) Γ (sortTm level) (sortTm (.succ level)) :=
   .headType (.sort level)
 
-theorem raiseC {T : Tower.Tm n} {a b : LevelExpr}
+theorem raiseC {T : Tower.Tm n} {a b : LevelExpr Nat}
     (typed : Typed (controlRules types names) Γ T (sortTm a))
     (le : ∀ ν, LevelExpr.eval ν a ≤ LevelExpr.eval ν b) :
     Typed (controlRules types names) Γ T (sortTm b) :=
   .cumul typed le
 
-theorem piC {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr}
+theorem piC {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (hA : Typed (controlRules types names) Γ A (sortTm level))
     (hB : Typed (controlRules types names) (.snoc Γ A) B (sortTm level)) :
     Typed (controlRules types names) Γ (.pi A B) (sortTm level) :=
@@ -128,8 +128,8 @@ theorem controlRules_typedSoundS {types : DeclName → Option (Tower.Tm 0)} {nam
     (declaredJ : jName ∈ names → ∃ u w, (vmodel v).rules.isUniverse w ∧
       types jName = some (elimType u w))
     (constants : ∀ {name : DeclName} {type : Tower.Tm 0}, types name = some type →
-      ModelS.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelS.TypedSoundS (controlRules types names) (vmodel v) where
+      ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (controlRules types names) (vmodel v) where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
@@ -177,7 +177,7 @@ theorem ctorStage_sub_large : RulesSub ctorStage largeRules :=
 /-- **The first control package is sound for the model**: the recursor with its
 motive into `U1` is valid by large elimination, identity elimination by
 transport, and the numbers and their constructors as declared. -/
-theorem largeRules_soundS : ModelS.TypedSoundS largeRules (vmodel v) :=
+theorem largeRules_soundS : ModelSN.TypedSoundS largeRules (vmodel v) :=
   controlRules_typedSoundS v (fun h => absurd h (by decide)) fun {name type} declared => by
     change largeTypes name = some type at declared
     unfold largeTypes at declared
@@ -341,24 +341,24 @@ end LargeTypings
 /-- **The large motive is valid** in the transport value model, at
 `Π y : num. Id num 0 y → U0`. -/
 theorem largeMotive_valid :
-    ModelS.ValidTmS (vmodel v) .nil largeMotive
+    ModelSN.ValidTmS (vmodel v) .nil largeMotive
       (.pi numT (.pi (.id numT (.const zeroN) (.var 0)) U0)) :=
-  ModelS.Typed.validS (largeRules_soundS v) largeMotiveAt_typed trivial
+  ModelSN.Typed.validS (largeRules_soundS v) largeMotiveAt_typed trivial
 
 /-- **Identity elimination over the large motive is valid**: `J num 0 P 0 1 p`
 is a valid term of `P 1 p` along every path variable `p : Id num 0 1`. -/
 theorem largeMotiveJ_valid :
-    ModelS.ValidTmS (vmodel v) pathContext (largeMotiveJ (.var 0))
+    ModelSN.ValidTmS (vmodel v) pathContext (largeMotiveJ (.var 0))
       (.app (.app largeMotiveAt oneT) (.var 0)) :=
-  ModelS.Typed.validS (largeRules_soundS v) largeMotiveJ_typed
-    (ModelS.CtxFormed.validS (largeRules_soundS v) pathContext_formed)
+  ModelSN.Typed.validS (largeRules_soundS v) largeMotiveJ_typed
+    (ModelSN.CtxFormed.validS (largeRules_soundS v) pathContext_formed)
 
 /-- Identity elimination over the large motive is strongly normalizing under the
 object package's reduction, and so is its type. -/
 theorem largeMotiveJ_sn :
     SN objectRules (largeMotiveJ (.var 0) : Tower.Tm 1) ∧
       SN objectRules (.app (.app largeMotiveAt oneT) (.var 0) : Tower.Tm 1) :=
-  ModelS.Typed.sn (largeRules_soundS fun _ => 0) pathContext_formed largeMotiveJ_typed
+  ModelSN.Typed.sn (largeRules_soundS fun _ => 0) pathContext_formed largeMotiveJ_typed
 
 /-! ## Control 2: identity elimination at a large carrier -/
 
@@ -372,7 +372,7 @@ abbrev carrierRules : Rules Tower.Head := controlRules carrierTypes []
 
 /-- **The second control package is sound for the model**: identity elimination
 at the carrier `U1` is valid by transport. -/
-theorem carrierRules_soundS : ModelS.TypedSoundS carrierRules (vmodel v) :=
+theorem carrierRules_soundS : ModelSN.TypedSoundS carrierRules (vmodel v) :=
   controlRules_typedSoundS v (fun h => absurd h (by simp)) fun {name type} declared => by
     change carrierTypes name = some type at declared
     unfold carrierTypes at declared
@@ -439,9 +439,9 @@ theorem transportJ_typed : Typed carrierRules transportContext transportJ (.var 
 
 /-- **Identity elimination at a large carrier is valid**: a valid term of `Y` in
 the context of two types, a path between them, and a term of the first. -/
-theorem transportJ_valid : ModelS.ValidTmS (vmodel v) transportContext transportJ (.var 2) :=
-  ModelS.Typed.validS (carrierRules_soundS v) transportJ_typed
-    (ModelS.CtxFormed.validS (carrierRules_soundS v) transportContext_formed)
+theorem transportJ_valid : ModelSN.ValidTmS (vmodel v) transportContext transportJ (.var 2) :=
+  ModelSN.Typed.validS (carrierRules_soundS v) transportJ_typed
+    (ModelSN.CtxFormed.validS (carrierRules_soundS v) transportContext_formed)
 
 /-- **Identity elimination at a large carrier computes to the transport** on the
 value side: of `d` from `(λ Z _. Z) X (refl X)` into `(λ Z _. Z) Y p`. -/
@@ -484,9 +484,9 @@ theorem carrierTypes_j :
 /-- **The third control package is sound for the model**: identity elimination
 at carrier level one computes by its linear rule, which holds at its typed
 instances. -/
-theorem carrierJRules_typedSoundS : ModelS.TypedSoundS carrierJRules (vmodel v) :=
+theorem carrierJRules_typedSoundS : ModelSN.TypedSoundS carrierJRules (vmodel v) :=
   controlRules_typedSoundS v
-    (fun _ => ⟨.sort (.succ Tower.zero), .sort Tower.zero, Tower.IsUniverse.sort _, carrierTypes_j⟩)
+    (fun _ => ⟨.sort (.succ Tower.zero), .sort Tower.zero, LevelTower.IsUniverse.sort _, carrierTypes_j⟩)
     fun {name type} declared => by
       change carrierTypes name = some type at declared
       unfold carrierTypes at declared
@@ -549,16 +549,16 @@ theorem largeReflJ_equal : Equal carrierJRules largeReflContext largeReflJ (.var
 /-- **The computation at a large carrier is valid in the model**, by the typed
 step of identity elimination: `J U0 X (λ Z _. Z) d X (refl X)` and `d` are validly
 equal at `X`. -/
-theorem largeReflJ_valid : ModelS.ValidEqS (vmodel v) largeReflContext largeReflJ (.var 0) (.var 1) :=
-  (ModelS.Derivable.validTS (carrierJRules_typedSoundS v) largeReflJ_equal
-    (ModelS.CtxFormed.validS (carrierJRules_typedSoundS v) largeReflContext_formed)).1
+theorem largeReflJ_valid : ModelSN.ValidEqS (vmodel v) largeReflContext largeReflJ (.var 0) (.var 1) :=
+  (ModelSN.Derivable.validTS (carrierJRules_typedSoundS v) largeReflJ_equal
+    (ModelSN.CtxFormed.validS (carrierJRules_typedSoundS v) largeReflContext_formed)).1
 
 /-- Both sides of the computation at a large carrier, and their type, are strongly
 normalizing under the object package's reduction. -/
 theorem largeReflJ_sn :
     SN objectRules largeReflJ ∧ SN objectRules (.var 0 : Tower.Tm 2) ∧
       SN objectRules (.var 1 : Tower.Tm 2) :=
-  ModelS.Equal.sn (carrierJRules_typedSoundS fun _ => 0) largeReflContext_formed largeReflJ_equal
+  ModelSN.Equal.sn (carrierJRules_typedSoundS fun _ => 0) largeReflContext_formed largeReflJ_equal
 
 end CodeModel
 

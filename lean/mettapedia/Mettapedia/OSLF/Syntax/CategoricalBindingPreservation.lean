@@ -249,7 +249,7 @@ theorem classify_sortIso {X : Object S} {s : S.Srt} (t : Term (withMetas S X.ari
   change M.assignHom (termArrow t) ≫ (fst _ _ ≫ (M.emptyPowerIso s).hom) = _
   rw [assignHom_termArrow, lift_fst_assoc, curry_comp_emptyPower]
   unfold generic pointValue
-  rw [M.value_eq_generic X.arities (M.interp X.arities t) (M.family X.arities) (𝟙 _)]
+  rw [M.value_eq_generic (M.interp X.arities t) (M.family X.arities) (𝟙 _)]
   rfl
 
 theorem tupleF_ctxIso {X : Object S} : ∀ {Γ : Ctx S} (ρ : Sub (withMetas S X.arities) Γ []),

@@ -217,7 +217,7 @@ theorem authored_assoc_instances {Γ : Ctx sig}
         (bind sigma (instantiate (fun i : Fin metas.length => Fin.elim0 i) assoc.rhs)) := by
   exact ⟨denotes_substitute sigma authored_assoc_lhs,
     denotes_substitute sigma authored_assoc_rhs,
-    EqClosure.ax (E := monoidE) (i := ⟨0, by decide⟩)
+    EqClosure.ax_closed monoidE (i := ⟨0, by decide⟩)
       (fun i => Fin.elim0 i) sigma⟩
 
 /-- The authored left-unit row is preserved at every intrinsic context. -/
@@ -234,7 +234,7 @@ theorem authored_left_unit_instances {Γ : Ctx sig}
         (bind sigma (instantiate (fun i : Fin metas.length => Fin.elim0 i) leftUnit.rhs)) := by
   exact ⟨denotes_substitute sigma authored_left_unit_lhs,
     denotes_substitute sigma authored_left_unit_rhs,
-    EqClosure.ax (E := monoidE) (i := ⟨1, by decide⟩)
+    EqClosure.ax_closed monoidE (i := ⟨1, by decide⟩)
       (fun i => Fin.elim0 i) sigma⟩
 
 /-- The authored right-unit row is preserved at every intrinsic context. -/
@@ -251,7 +251,7 @@ theorem authored_right_unit_instances {Γ : Ctx sig}
         (bind sigma (instantiate (fun i : Fin metas.length => Fin.elim0 i) rightUnit.rhs)) := by
   exact ⟨denotes_substitute sigma authored_right_unit_lhs,
     denotes_substitute sigma authored_right_unit_rhs,
-    EqClosure.ax (E := monoidE) (i := ⟨2, by decide⟩)
+    EqClosure.ax_closed monoidE (i := ⟨2, by decide⟩)
       (fun i => Fin.elim0 i) sigma⟩
 
 /-- The fragment reader rejects an unsupported constructor instead of

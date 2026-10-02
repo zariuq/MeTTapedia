@@ -48,13 +48,13 @@ universe uLevel u
 not just an external order on universe labels. -/
 theorem sort_judgment {n : Nat} {context : Tower.Ctx n}
     (formed : ContextFormation HOLNativeRelatorCompatibility.rules context)
-    (level : LevelExpr) :
+    (level : LevelExpr Nat) :
     Judgment HOLNativeRelatorCompatibility.rules context
       (sortTm level) (sortTm (.succ level)) :=
-  ⟨formed, .headType (Tower.HeadTyping.sort level)⟩
+  ⟨formed, .headType (LevelTower.HeadTyping.sort level)⟩
 
 /-- Iterating the very successor constructor used by the native head rule. -/
-def successive (base : LevelExpr) : Nat → LevelExpr
+def successive (base : LevelExpr Nat) : Nat → LevelExpr Nat
   | 0 => base
   | step + 1 => .succ (successive base step)
 
@@ -62,7 +62,7 @@ def successive (base : LevelExpr) : Nat → LevelExpr
 Pi/Sigma/identity, declarations, and conversion coherence, so inhabiting it
 is deliberately not named a model of the dependent language. -/
 structure FormationRealization (family : TarskiCodeFamily.{uLevel, u, u}) where
-  onLevel : LevelExpr → family.Level
+  onLevel : LevelExpr Nat → family.Level
   formation : ∀ level, UniverseEmbedding
     (universeAt family (onLevel (.succ level)))
     (universeAt family (onLevel level))
@@ -74,7 +74,7 @@ variable {family : TarskiCodeFamily.{uLevel, u, u}}
 /-- Consecutive native formations compose using the actual universe-code
 and decoded-type components of their semantic embeddings. -/
 theorem later_embeds (realization : FormationRealization family)
-    (base : LevelExpr) {lower upper : Nat} (below : lower < upper) :
+    (base : LevelExpr Nat) {lower upper : Nat} (below : lower < upper) :
     Nonempty (UniverseEmbedding
       (universeAt family (realization.onLevel (successive base upper)))
       (universeAt family (realization.onLevel (successive base lower)))) := by
@@ -90,7 +90,7 @@ theorem later_embeds (realization : FormationRealization family)
 /-- Predicative rank separation forces every finite successor stage to use
 a distinct semantic level. No level-expression equality assumption is used. -/
 theorem successive_injective (realization : FormationRealization family)
-    (predicative : family.PredicativeRanks) (base : LevelExpr) :
+    (predicative : family.PredicativeRanks) (base : LevelExpr Nat) :
     Function.Injective (fun step => realization.onLevel (successive base step)) := by
   intro lower upper equal
   change realization.onLevel (successive base lower) =
@@ -110,7 +110,7 @@ This does not apply to restricted Henkin function domains. -/
 theorem successive_injective_of_closure (realization : FormationRealization family)
     (products : family.PiClosed) (sums : family.SigmaClosed)
     (booleans : ∀ level, ∃ code : family.Code level,
-      Nonempty (family.El level code ≃ Bool)) (base : LevelExpr) :
+      Nonempty (family.El level code ≃ Bool)) (base : LevelExpr Nat) :
     Function.Injective (fun step => realization.onLevel (successive base step)) :=
   realization.successive_injective
     (TarskiClosureRankObstruction.predicativeRanks_of_pi_sigma_bool
@@ -171,7 +171,7 @@ def finiteRankFormation (valuation : Nat → Nat) : FormationRealization FiniteR
 
 /-- The positive control also respects actual native universe-head
 conversion. Its formation alone did not assume this additional property. -/
-theorem finiteRank_headEq (valuation : Nat → Nat) {left right : LevelExpr}
+theorem finiteRank_headEq (valuation : Nat → Nat) {left right : LevelExpr Nat}
     (equal : Tower.HeadEq (.sort left) (.sort right)) :
     (finiteRankFormation valuation).onLevel left =
       (finiteRankFormation valuation).onLevel right :=
@@ -179,7 +179,7 @@ theorem finiteRank_headEq (valuation : Nat → Nat) {left right : LevelExpr}
 
 /-- Level instantiation commutes with the positive control's interpretation. -/
 theorem finiteRank_level_substitution (valuation : Nat → Nat)
-    (substitution : Nat → LevelExpr) (level : LevelExpr) :
+    (substitution : Nat → LevelExpr Nat) (level : LevelExpr Nat) :
     (finiteRankFormation valuation).onLevel (LevelExpr.subst substitution level) =
       (finiteRankFormation (fun index => LevelExpr.eval valuation (substitution index))).onLevel
         level :=
@@ -211,26 +211,26 @@ def formation (valuation : Nat → Nat) :
 
 /-- Every formation path in the supplied enclosing tower is separated.
 The rank theorem is derived from its actual full closure operations. -/
-theorem successive_injective (valuation : Nat → Nat) (base : LevelExpr) :
+theorem successive_injective (valuation : Nat → Nat) (base : LevelExpr Nat) :
     Function.Injective (fun step =>
       (formation operator A B valuation).onLevel (successive base step)) :=
   (formation operator A B valuation).successive_injective
     (TarskiClosureRankObstruction.tower_predicativeRanks operator A B) base
 
-theorem headEq (valuation : Nat → Nat) {left right : LevelExpr}
+theorem headEq (valuation : Nat → Nat) {left right : LevelExpr Nat}
     (equal : Tower.HeadEq (.sort left) (.sort right)) :
     (formation operator A B valuation).onLevel left =
       (formation operator A B valuation).onLevel right := equal valuation
 
 theorem level_substitution (valuation : Nat → Nat)
-    (substitution : Nat → LevelExpr) (level : LevelExpr) :
+    (substitution : Nat → LevelExpr Nat) (level : LevelExpr Nat) :
     (formation operator A B valuation).onLevel (LevelExpr.subst substitution level) =
       (formation operator A B
         (fun index => LevelExpr.eval valuation (substitution index))).onLevel level :=
   LevelExpr.eval_subst valuation substitution level
 
 /-- A native cumulative edge uses the canonical path in this very family. -/
-def cumulativeLift (valuation : Nat → Nat) {left right : LevelExpr}
+def cumulativeLift (valuation : Nat → Nat) {left right : LevelExpr Nat}
     (below : Tower.Cumulative (.sort left) (.sort right))
     (code : (FamilyEnclosingUniverseTower.family operator A B).Code
       (LevelExpr.eval valuation left)) :
@@ -238,7 +238,7 @@ def cumulativeLift (valuation : Nat → Nat) {left right : LevelExpr}
       (LevelExpr.eval valuation right) :=
   FamilyEnclosingUniverseTower.liftCode operator A B (below valuation) code
 
-def decodeCumulativeLift (valuation : Nat → Nat) {left right : LevelExpr}
+def decodeCumulativeLift (valuation : Nat → Nat) {left right : LevelExpr Nat}
     (below : Tower.Cumulative (.sort left) (.sort right))
     (code : (FamilyEnclosingUniverseTower.family operator A B).Code
       (LevelExpr.eval valuation left)) :
@@ -248,13 +248,13 @@ def decodeCumulativeLift (valuation : Nat → Nat) {left right : LevelExpr}
         (LevelExpr.eval valuation left) code :=
   FamilyEnclosingUniverseTower.decodeLift operator A B (below valuation) code
 
-theorem cumulativeLift_id (valuation : Nat → Nat) (level : LevelExpr)
+theorem cumulativeLift_id (valuation : Nat → Nat) (level : LevelExpr Nat)
     (code : (FamilyEnclosingUniverseTower.family operator A B).Code
       (LevelExpr.eval valuation level)) :
     cumulativeLift operator A B valuation (fun _ => Nat.le_refl _) code = code :=
   FamilyEnclosingUniverseTower.liftCode_refl operator A B _ code
 
-theorem cumulativeLift_comp (valuation : Nat → Nat) {first middle last : LevelExpr}
+theorem cumulativeLift_comp (valuation : Nat → Nat) {first middle last : LevelExpr Nat}
     (firstBelow : Tower.Cumulative (.sort first) (.sort middle))
     (secondBelow : Tower.Cumulative (.sort middle) (.sort last))
     (code : (FamilyEnclosingUniverseTower.family operator A B).Code
@@ -290,14 +290,14 @@ def sigmaAt (left right : Nat) :
     (FamilyEnclosingUniverseTower.liftCode operator A B (Nat.le_max_right left right))
     (FamilyEnclosingUniverseTower.decodeLift operator A B (Nat.le_max_right left right))
 
-/-- The output level is the actual maximum used by Tower.Join.sorts. -/
-def pi (valuation : Nat → Nat) (left right : LevelExpr) :
+/-- The output level is the actual maximum used by LevelTower.Join.sorts. -/
+def pi (valuation : Nat → Nat) (left right : LevelExpr Nat) :
     PiCoding (FamilyEnclosingUniverseTower.family operator A B)
       (LevelExpr.eval valuation left) (LevelExpr.eval valuation right)
       (LevelExpr.eval valuation (.max left right)) :=
   piAt operator A B (LevelExpr.eval valuation left) (LevelExpr.eval valuation right)
 
-def sigma (valuation : Nat → Nat) (left right : LevelExpr) :
+def sigma (valuation : Nat → Nat) (left right : LevelExpr Nat) :
     SigmaCoding (FamilyEnclosingUniverseTower.family operator A B)
       (LevelExpr.eval valuation left) (LevelExpr.eval valuation right)
       (LevelExpr.eval valuation (.max left right)) :=
@@ -306,7 +306,7 @@ def sigma (valuation : Nat → Nat) (left right : LevelExpr) :
 /-- Substitution changes the indices, so equality of the actual code/decode
 records is heterogeneous. No equality is postulated between decoded types. -/
 theorem pi_level_substitution (valuation : Nat → Nat)
-    (substitution : Nat → LevelExpr) (left right : LevelExpr) :
+    (substitution : Nat → LevelExpr Nat) (left right : LevelExpr Nat) :
     HEq (pi operator A B valuation (LevelExpr.subst substitution left)
       (LevelExpr.subst substitution right))
       (pi operator A B (fun index => LevelExpr.eval valuation (substitution index)) left right) := by
@@ -319,7 +319,7 @@ theorem pi_level_substitution (valuation : Nat → Nat)
     (LevelExpr.eval_subst valuation substitution right)
 
 theorem sigma_level_substitution (valuation : Nat → Nat)
-    (substitution : Nat → LevelExpr) (left right : LevelExpr) :
+    (substitution : Nat → LevelExpr Nat) (left right : LevelExpr Nat) :
     HEq (sigma operator A B valuation (LevelExpr.subst substitution left)
       (LevelExpr.subst substitution right))
       (sigma operator A B (fun index => LevelExpr.eval valuation (substitution index)) left right) := by
@@ -336,7 +336,7 @@ heads and mixed-level products/sums, plus identity closure at every level.
 Native motives, declarations, and conversion soundness are not conclusions. -/
 theorem formation_and_closure (valuation : Nat → Nat) :
     Nonempty (FormationRealization (FamilyEnclosingUniverseTower.family operator A B)) ∧
-      (∀ left right : LevelExpr,
+      (∀ left right : LevelExpr Nat,
         Nonempty (PiCoding (FamilyEnclosingUniverseTower.family operator A B)
           (LevelExpr.eval valuation left) (LevelExpr.eval valuation right)
           (LevelExpr.eval valuation (.max left right))) ∧

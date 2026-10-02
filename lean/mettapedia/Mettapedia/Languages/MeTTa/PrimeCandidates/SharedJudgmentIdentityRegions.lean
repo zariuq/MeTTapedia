@@ -28,7 +28,7 @@ open Presentation Presentation.Declaration Presentation.FormationSensitive Russe
 open NativeIndexedFamilies NativeIndexedFamilies.Intrinsic
 
 
-variable {n m : Nat} {theta : Nat → LevelExpr} {signature : Signature Tower.Head}
+variable {n m : Nat} {theta : Nat → LevelExpr Nat} {signature : Signature Tower.Head}
 variable {context : Tower.Ctx n}
 
 /-- The nondependent arrow remains the existing Pi constructor. -/
@@ -302,11 +302,11 @@ namespace Controls
 
 /-- An ordinary five-entry native context: B, C, f, p, q. Its endpoints are
 different variables, not a singleton or reflexivity-only input selection. -/
-def telescope (theta : Nat → LevelExpr) : Tower.Ctx 5 :=
+def telescope (theta : Nat → LevelExpr Nat) : Tower.Ctx 5 :=
   .snoc (.snoc (.snoc (.snoc (.snoc .nil (sortTm (theta 0))) (sortTm (theta 1)))
     (arrow (.var 1) (.var 0))) (.var 2)) (.var 3)
 
-theorem context_formed (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem context_formed (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     ContextFormation (NativeIdentityLevelInstantiation.rules theta signature) (telescope theta) := by
   exact .snoc (.snoc (.snoc
     (.snoc (.snoc .nil (.headType (.sort (theta 0))) (.sort (.succ (theta 0))))
@@ -315,7 +315,7 @@ theorem context_formed (theta : Nat → LevelExpr) (signature : Signature Tower.
       (.sorts (theta 0) (theta 1))) (.sort (.max (theta 0) (theta 1))))
     (.var 2) (.sort (theta 0))) (.var 3) (.sort (theta 0))
 
-theorem conditional_example (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem conditional_example (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     Judgment (NativeIdentityLevelInstantiation.rules theta signature) (telescope theta)
       (conditionalCongruence (.var 4) (.var 1) (.var 3) (.var 2) (.var 0))
       (arrow (.id (.var 4) (.var 1) (.var 0))
@@ -323,15 +323,15 @@ theorem conditional_example (theta : Nat → LevelExpr) (signature : Signature T
   conditionalCongruence_typed (context_formed theta signature)
     (.var 4) (.var 3) (.var 1) (.var 0) (.var 2)
 
-def assumedContext (theta : Nat → LevelExpr) : Tower.Ctx 6 :=
+def assumedContext (theta : Nat → LevelExpr Nat) : Tower.Ctx 6 :=
   .snoc (telescope theta) (.id (.var 4) (.var 1) (.var 0))
 
-theorem assumed_context_formed (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem assumed_context_formed (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     ContextFormation (NativeIdentityLevelInstantiation.rules theta signature) (assumedContext theta) :=
   .snoc (context_formed theta signature)
     (.idForm (.var 4) (.sort (theta 0)) (.var 1) (.var 0)) (.sort (theta 0))
 
-theorem assumed_example (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem assumed_example (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     Judgment (NativeIdentityLevelInstantiation.rules theta signature) (assumedContext theta)
       (congruenceTerm (.var 5) (.var 2) (.var 4) (.var 3) (.var 1) (.var 0))
       (.id (.var 4) (.app (.var 3) (.var 2)) (.app (.var 3) (.var 1))) :=
@@ -350,7 +350,7 @@ theorem export_is_not_unconditional :
 theorem assumed_endpoints_remain_distinct :
     (.var (2 : Fin 6) : Tower.Tm 6) ≠ .var 1 := by decide
 
-theorem assumed_example_neutral (theta : Nat → LevelExpr)
+theorem assumed_example_neutral (theta : Nat → LevelExpr Nat)
     {signature : Signature Tower.Head} (opacity : OpaqueRelatorExtension.Opacity signature)
     (output : Tower.Tm 6) :
     ¬ (NativeIdentityLevelInstantiation.rules theta signature).computation.step

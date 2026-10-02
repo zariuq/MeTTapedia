@@ -140,7 +140,7 @@ theorem proof_publication_preserves_application [DecidableEq Name] [DecidableEq 
 
 namespace Controls
 
-def levels : Nat → LevelExpr := LevelExpr.param
+def levels : Nat → LevelExpr Nat := LevelExpr.param
 
 def rules : Rules Tower.Head :=
   NativeIdentityLevelInstantiation.rules levels HOLNativeRelatorCompatibility.signature

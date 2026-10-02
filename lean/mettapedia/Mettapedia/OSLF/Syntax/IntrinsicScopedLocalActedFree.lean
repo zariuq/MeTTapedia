@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.Syntax.IntrinsicScopedLocalTreeSubstitution
 import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalActedFree
+import Mettapedia.OSLF.Syntax.IntrinsicScopedLocalSubstitutionModel
 
 /-!
 # Rule-local trees with substitution-closed event variables
@@ -18,10 +19,12 @@ open Mettapedia.TypeTheory
 open Mettapedia.OSLF.Binding
 open Mettapedia.OSLF.Binding.BindingSubstitutionAlgebra
 open Mettapedia.OSLF.Binding.AuthoredPositionedRulePolynomial (Judgment)
-open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalSubstitution
+open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalSubstitution hiding SubstitutionModel
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalJudgmentCategory
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalEventOrbit
 open Mettapedia.OSLF.Binding.IntrinsicScopedLocalPolynomial
+open Mettapedia.OSLF.Binding.IntrinsicScopedJudgmentAction (JudgmentAction)
+open Mettapedia.OSLF.Binding.IntrinsicScopedLocalSubstitutionModel
 open CategoryTheory
 
 variable {S : Signature}
@@ -176,20 +179,6 @@ theorem substitute_heq
   subst sameTarget
   rfl
 
-private theorem pure_cast {first second : Judgment A}
-    (equal : first = second) (hole : Holes A Seed first) :
-    equal ▸ (IndexedPolynomial.Free.pure (rules R A) hole :
-      Tree R A Seed first) =
-      IndexedPolynomial.Free.pure (rules R A) (equal ▸ hole) := by
-  cases equal
-  rfl
-
-private theorem cast_heq {Index : Type} {F : Index → Type}
-    {first second : Index} (equal : first = second) (value : F first) :
-    HEq (equal ▸ value) value := by
-  cases equal
-  rfl
-
 /-- The identity environment fixes every event leaf and every scoped rule
 node of the free tree. -/
 theorem substitute_identity (judgment : Judgment A)
@@ -218,7 +207,7 @@ theorem substitute_identity (judgment : Judgment A)
           (IndexedPolynomial.Free.pure (rules R A) hole)
           (fun _ v => A.substitution.injectVar v) j h =
         IndexedPolynomial.Free.pure (rules R A) hole
-      rw [substitute_pure, pure_cast,
+      rw [substitute_pure, IndexedPolynomial.Free.pure_transport (rules R A),
         IntrinsicScopedConditionalActedFree.mapHole_identity A Seed j hole h]
   | inr shape =>
       change (position : Fin (R.get shape.1.index).2.premises.length) →
@@ -316,7 +305,7 @@ theorem substitute_comp (judgment : Judgment A)
       rw [substitute_pure R A Seed j hole
         (fun s v => A.substitution.substitute τ (σ s v))
         target hDirect]
-      rw [pure_cast, pure_cast]
+      rw [IndexedPolynomial.Free.pure_transport (rules R A), IndexedPolynomial.Free.pure_transport (rules R A)]
       have holeEq : HEq
           (IntrinsicScopedConditionalActedFree.mapHole A Seed (substJudgment j σ)
             (IntrinsicScopedConditionalActedFree.mapHole A Seed j hole σ) τ)
@@ -328,13 +317,13 @@ theorem substitute_comp (judgment : Judgment A)
             (IntrinsicScopedConditionalActedFree.mapHole A Seed j hole σ) τ)
           (IntrinsicScopedConditionalActedFree.mapHole A Seed (substJudgment j σ)
             (IntrinsicScopedConditionalActedFree.mapHole A Seed j hole σ) τ) :=
-        cast_heq hSecond _
+        eqRec_heq hSecond _
       have rightCast : HEq
           (hDirect ▸ IntrinsicScopedConditionalActedFree.mapHole A Seed j hole
             (fun s v => A.substitution.substitute τ (σ s v)))
           (IntrinsicScopedConditionalActedFree.mapHole A Seed j hole
             (fun s v => A.substitution.substitute τ (σ s v))) :=
-        cast_heq hDirect _
+        eqRec_heq hDirect _
       exact congrArg (IndexedPolynomial.Free.pure (rules R A))
         (eq_of_heq (leftCast.trans (holeEq.trans rightCast.symm)))
   | inr shape =>
@@ -439,70 +428,10 @@ theorem substitute_comp (judgment : Judgment A)
       exact substitute_congr R A Seed (children position) liftComp rfl _ _
 
 
-/-- A rule-local operational model interprets each declaration using only
-its own metavariable telescope. Its evidence also carries contextual
-substitution, including substitution beneath premise-local binders. -/
-structure SubstitutionModel where
-  evidence : OperationalRuleModels.Model (rules R A)
-  act : ∀ (j : Judgment A), evidence.carrier () j →
-    ∀ {Δ : Ctx S} (σ : Environment S A.substitution.Carrier j.1 Δ)
-      (target : Judgment A), substJudgment j σ = target →
-        evidence.carrier () target
-  act_rules : ∀ {j : Judgment A} (shape : Shape R A j)
-    (children : ∀ position : Fin (R.get shape.1.index).2.premises.length,
-      evidence.carrier () (childJudgment R A shape.1 position))
-    {Δ : Ctx S} (σ : Environment S A.substitution.Carrier j.1 Δ)
-    (target : Judgment A) (h : substJudgment j σ = target),
-    act j (evidence.rules.act () j ⟨shape, children⟩) σ target h =
-      evidence.rules.act () target
-        ⟨⟨Instance.subst R shape.1 (castEnv shape.2 σ),
-          (conclusionJudgment_subst R shape.1 (castEnv shape.2 σ)).trans
-            ((substJudgment_castEnv shape.2 σ).trans h)⟩,
-          fun position => act _ (children position)
-            (A.substitution.liftEnvironment (castEnv shape.2 σ)
-              ((R.get shape.1.index).2.premises.get position).binders)
-            (childJudgment R A (Instance.subst R shape.1 (castEnv shape.2 σ))
-              position)
-            (childJudgment_subst R shape.1 (castEnv shape.2 σ) position).symm⟩
-  act_identity : ∀ (j : Judgment A) (value : evidence.carrier () j)
-    (h : substJudgment j (fun _ v => A.substitution.injectVar v) = j),
-    act j value (fun _ v => A.substitution.injectVar v) j h = value
-  act_comp : ∀ (j : Judgment A) (value : evidence.carrier () j) {Δ Θ : Ctx S}
-    (σ : Environment S A.substitution.Carrier j.1 Δ)
-    (τ : Environment S A.substitution.Carrier Δ Θ) (target : Judgment A)
-    (hSecond : substJudgment (substJudgment j σ) τ = target)
-    (hDirect : substJudgment j
-      (fun t v => A.substitution.substitute τ (σ t v)) = target),
-    act (substJudgment j σ) (act j value σ (substJudgment j σ) rfl) τ target
-        hSecond =
-      act j value (fun t v => A.substitution.substitute τ (σ t v)) target
-        hDirect
-
-/-- Transporting indices and proof witnesses does not change an action. -/
-theorem SubstitutionModel.act_heq (model : SubstitutionModel R A)
-    {j₁ j₂ : Judgment A} (sameJudgment : j₁ = j₂)
-    {value₁ : model.evidence.carrier () j₁}
-    {value₂ : model.evidence.carrier () j₂}
-    (sameValue : HEq value₁ value₂) {Δ : Ctx S}
-    {σ₁ : Environment S A.substitution.Carrier j₁.1 Δ}
-    {σ₂ : Environment S A.substitution.Carrier j₂.1 Δ}
-    (sameEnv : HEq σ₁ σ₂)
-    {target₁ target₂ : Judgment A} (sameTarget : target₁ = target₂)
-    (h₁ : substJudgment j₁ σ₁ = target₁)
-    (h₂ : substJudgment j₂ σ₂ = target₂) :
-    HEq (model.act j₁ value₁ σ₁ target₁ h₁)
-      (model.act j₂ value₂ σ₂ target₂ h₂) := by
-  subst sameJudgment
-  cases sameValue
-  cases sameEnv
-  subst sameTarget
-  rfl
-
 /-- The substitution-closed rule-local trees form an operational model. -/
-noncomputable def freeModel : SubstitutionModel R A where
-  evidence := {
-    carrier := fun _ judgment => Tree R A Seed judgment
-    rules := IndexedPolynomial.Free.algebra (rules R A) }
+noncomputable def freeModel : SubstitutionModel.{0, 0} R A where
+  carrier := fun judgment => Tree R A Seed judgment
+  rules := IndexedPolynomial.Free.algebra (rules R A)
   act := substitute R A Seed
   act_rules := by
     intro judgment shape children Δ σ target h
@@ -510,97 +439,11 @@ noncomputable def freeModel : SubstitutionModel R A where
   act_identity := substitute_identity R A Seed
   act_comp := substitute_comp R A Seed
 
-/-- Maps preserve rule actions and contextual substitution on every event. -/
-structure SubstitutionModel.Hom
-    (X Y : SubstitutionModel R A) where
-  evidence : X.evidence ⟶ Y.evidence
-  preserves : ∀ (j : Judgment A) (value : X.evidence.carrier () j)
-    {Δ : Ctx S} (σ : Environment S A.substitution.Carrier j.1 Δ)
-    (target : Judgment A) (h : substJudgment j σ = target),
-    evidence.toFun () target (X.act j value σ target h) =
-      Y.act j (evidence.toFun () j value) σ target h
-
-@[ext] theorem SubstitutionModel.Hom.ext
-    {X Y : SubstitutionModel R A}
-    {f g : SubstitutionModel.Hom R A X Y}
-    (same : f.evidence = g.evidence) : f = g := by
-  cases f
-  cases g
-  cases same
-  rfl
-
-def SubstitutionModel.Hom.id (model : SubstitutionModel R A) :
-    SubstitutionModel.Hom R A model model where
-  evidence := 𝟙 model.evidence
-  preserves := by
-    intro judgment value Δ σ target h
-    rfl
-
-def SubstitutionModel.Hom.comp
-    {X Y Z : SubstitutionModel R A}
-    (first : SubstitutionModel.Hom R A X Y)
-    (second : SubstitutionModel.Hom R A Y Z) :
-    SubstitutionModel.Hom R A X Z where
-  evidence := first.evidence ≫ second.evidence
-  preserves := by
-    intro judgment value Δ σ target h
-    change second.evidence.toFun () target
-        (first.evidence.toFun () target (X.act judgment value σ target h)) =
-      Z.act judgment
-        (second.evidence.toFun () judgment
-          (first.evidence.toFun () judgment value)) σ target h
-    rw [first.preserves, second.preserves]
-
-instance : CategoryTheory.Category (SubstitutionModel R A) where
-  Hom := SubstitutionModel.Hom R A
-  id := SubstitutionModel.Hom.id R A
-  comp := SubstitutionModel.Hom.comp R A
-  id_comp := by
-    intro X Y f
-    apply SubstitutionModel.Hom.ext
-    exact CategoryTheory.Category.id_comp f.evidence
-  comp_id := by
-    intro X Y f
-    apply SubstitutionModel.Hom.ext
-    exact CategoryTheory.Category.comp_id f.evidence
-  assoc := by
-    intro W X Y Z f g h
-    apply SubstitutionModel.Hom.ext
-    exact CategoryTheory.Category.assoc f.evidence g.evidence h.evidence
-
-theorem SubstitutionModel.Hom.id_comp
-    {X Y : SubstitutionModel R A}
-    (f : SubstitutionModel.Hom R A X Y) :
-    SubstitutionModel.Hom.comp R A
-      (SubstitutionModel.Hom.id R A X) f = f := by
-  apply SubstitutionModel.Hom.ext
-  exact CategoryTheory.Category.id_comp f.evidence
-
-theorem SubstitutionModel.Hom.comp_id
-    {X Y : SubstitutionModel R A}
-    (f : SubstitutionModel.Hom R A X Y) :
-    SubstitutionModel.Hom.comp R A f
-      (SubstitutionModel.Hom.id R A Y) = f := by
-  apply SubstitutionModel.Hom.ext
-  exact CategoryTheory.Category.comp_id f.evidence
-
-theorem SubstitutionModel.Hom.assoc
-    {W X Y Z : SubstitutionModel R A}
-    (f : SubstitutionModel.Hom R A W X)
-    (g : SubstitutionModel.Hom R A X Y)
-    (h : SubstitutionModel.Hom R A Y Z) :
-    SubstitutionModel.Hom.comp R A
-      (SubstitutionModel.Hom.comp R A f g) h =
-    SubstitutionModel.Hom.comp R A f
-      (SubstitutionModel.Hom.comp R A g h) := by
-  apply SubstitutionModel.Hom.ext
-  exact CategoryTheory.Category.assoc f.evidence g.evidence h.evidence
-
 /-- A map on event-variable uses must commute with their stored ordinary-
 variable substitution arrows. -/
 structure NaturalAssignment (model : SubstitutionModel R A) where
   value : ∀ judgment : Judgment A,
-    Holes A Seed judgment → model.evidence.carrier () judgment
+    Holes A Seed judgment → model.carrier judgment
   map : ∀ (judgment : Judgment A) (hole : Holes A Seed judgment)
     {Δ : Ctx S} (σ : Environment S A.substitution.Carrier judgment.1 Δ)
     (target : Judgment A) (h : substJudgment judgment σ = target),
@@ -613,10 +456,10 @@ noncomputable def interpret
     (model : SubstitutionModel R A)
     (assigned : NaturalAssignment R A Seed model) :
     ∀ judgment : Judgment A,
-      Tree R A Seed judgment → model.evidence.carrier () judgment :=
+      Tree R A Seed judgment → model.carrier judgment :=
   IndexedPolynomial.Free.fold (rules R A)
     (fun _ judgment hole => assigned.value judgment hole)
-    model.evidence.rules ()
+    model.rules ()
 
 theorem interpret_pure
     (model : SubstitutionModel R A)
@@ -634,7 +477,7 @@ theorem interpret_node
       Tree R A Seed (childJudgment R A shape.1 position)) :
     interpret R A Seed model assigned judgment
         (IndexedPolynomial.Free.node (rules R A) shape children) =
-      model.evidence.rules.act () judgment
+      model.rules.act () judgment
         ⟨shape, fun position =>
           interpret R A Seed model assigned _ (children position)⟩ := rfl
 
@@ -710,7 +553,7 @@ theorem interpret_substitute
         (fun position => interpret R A Seed model assigned _
           (children position)) σ target h).symm
       exact congrArg
-        (fun values => model.evidence.rules.act () target
+        (fun values => model.rules.act () target
           ⟨⟨Instance.subst R shape.1 (castEnv shape.2 σ),
             (conclusionJudgment_subst R shape.1 (castEnv shape.2 σ)).trans
               ((substJudgment_castEnv shape.2 σ).trans h)⟩,
@@ -748,7 +591,7 @@ theorem hom_ext_on_leaves
         second.evidence.toFun () judgment
           (IndexedPolynomial.Free.pure (rules R A) hole)) :
     first = second := by
-  apply SubstitutionModel.Hom.ext
+  apply IntrinsicScopedLocalSubstitutionModel.SubstitutionModel.Hom.ext
   apply IndexedPolynomial.Algebra.Hom.ext
   intro base judgment tree
   cases base
@@ -775,11 +618,11 @@ theorem hom_ext_on_leaves
       calc
         first.evidence.toFun () judgment
             (IndexedPolynomial.Free.node (rules R A) shape children) =
-          model.evidence.rules.act () judgment
+          model.rules.act () judgment
             ⟨shape, fun position =>
               first.evidence.toFun () _ (children position)⟩ :=
           first.evidence.commutes () judgment ⟨shape, children⟩
-        _ = model.evidence.rules.act () judgment
+        _ = model.rules.act () judgment
             ⟨shape, fun position =>
               second.evidence.toFun () _ (children position)⟩ := by
           congr 1
@@ -812,6 +655,17 @@ noncomputable def assignmentOfHom
     rw [substitute_pure R A Seed judgment hole σ
       (substJudgment judgment σ) rfl] at preserved
     exact preserved
+
+/-- Equal uses at equal judgments receive equal values. -/
+theorem NaturalAssignment.value_heq {model : SubstitutionModel R A}
+    (assignment : NaturalAssignment R A Seed model)
+    {first second : Judgment A} (same : first = second)
+    {one : Holes A Seed first} {two : Holes A Seed second}
+    (sameHole : HEq one two) :
+    HEq (assignment.value first one) (assignment.value second two) := by
+  subst same
+  cases sameHole
+  rfl
 
 @[ext] theorem NaturalAssignment.ext
     (model : SubstitutionModel R A)
@@ -849,6 +703,24 @@ noncomputable def freeModelUniversal
     intro judgment hole
     exact interpret_pure R A Seed model
       (assignmentOfHom R A Seed model hom) judgment hole
+
+/-- Follow an interpretation of event uses by a map of models. -/
+noncomputable def NaturalAssignment.mapHom {first second : SubstitutionModel R A}
+    (assigned : NaturalAssignment R A Seed first)
+    (hom : SubstitutionModel.Hom R A first second) : NaturalAssignment R A Seed second :=
+  assignmentOfHom R A Seed second
+    (SubstitutionModel.Hom.comp R A (foldHom R A Seed first assigned) hom)
+
+/-- **Maps of models commute with interpreting firing trees.** -/
+theorem interpret_mapHom {first second : SubstitutionModel R A}
+    (assigned : NaturalAssignment R A Seed first)
+    (hom : SubstitutionModel.Hom R A first second)
+    (judgment : Judgment A) (tree : Tree R A Seed judgment) :
+    interpret R A Seed second (assigned.mapHom R A Seed hom) judgment tree =
+      hom.evidence.toFun () judgment (interpret R A Seed first assigned judgment tree) :=
+  congrArg (fun composite : SubstitutionModel.Hom R A (freeModel R A Seed) second =>
+      composite.evidence.toFun () judgment tree)
+    ((freeModelUniversal R A Seed second).right_inv _)
 
 /-- A closed local-rule derivation is a tree with no event-variable leaves. -/
 noncomputable def embedClosed (judgment : Judgment A) :

@@ -12,8 +12,10 @@ can reach.
 
 The resource graph is the finite heap of `ResourceOwnership`, whose liveness
 uses the existing store-reachability judgment. Cancellation does not evaluate
-the abandoned continuation and does not roll back the supplied world. Native
-finalizer effects and relocation require their own implementation comparison.
+the abandoned continuation and does not roll back the supplied world. A checked
+address and payload relocation preserves publication, selected observations and
+retained bytes, including duplicate answer occurrences. Native root discovery,
+finalizers and the implementation of that copy remain separate obligations.
 -/
 
 set_option autoImplicit false
@@ -189,6 +191,106 @@ theorem commit_preserves_outer_graph
   lookup_collect_of_live state.heap _ (outer_graph_live_after_commit
     state.heap state.roots dead output answers outside live)
 
+section Relocation
+
+variable {DestinationAddress DestinationValue : Type}
+variable [DecidableEq DestinationAddress]
+
+/-- Copying resource storage keeps the actual semantic world. Host authority
+must be checked separately before a runtime installs this session. -/
+def relocateSession (state : Session Owner Address Value World)
+    (destination : Heap DestinationAddress DestinationValue)
+    (copy : Relocation state.heap destination) :
+    Session Owner DestinationAddress DestinationValue World :=
+  ⟨destination, copy.roots state.roots, state.world⟩
+
+theorem relocate_answerRoots {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (owner : Owner) (answers : List Address) :
+    copy.roots (answerRoots owner answers) =
+      answerRoots owner (answers.map copy.address) := by
+  ext pair
+  rcases pair with ⟨other, address⟩
+  rw [mem_answerRoots]
+  constructor
+  · intro member
+    obtain ⟨⟨originalOwner, original⟩, present, same⟩ := Finset.mem_image.mp member
+    have selected := (mem_answerRoots owner originalOwner answers original).mp present
+    exact ⟨(congrArg Prod.fst same).symm.trans selected.1,
+      List.mem_map.mpr ⟨original, selected.2, congrArg Prod.snd same⟩⟩
+  · rintro ⟨sameOwner, member⟩
+    obtain ⟨original, present, sameAddress⟩ := List.mem_map.mp member
+    exact Finset.mem_image.mpr ⟨(owner, original),
+      (mem_answerRoots owner owner answers original).mpr ⟨rfl, present⟩,
+      Prod.ext sameOwner.symm sameAddress⟩
+
+/-- Publication and delimiter cancellation commute with the checked copy.
+Owner identities are kept; selected occurrence order remains in the list. -/
+theorem relocate_commitRoots {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (dead : Finset Owner) (output : Owner) (answers : List Address) :
+    copy.roots (commitRoots roots dead output answers) =
+      commitRoots (copy.roots roots) dead output (answers.map copy.address) := by
+  have publication : copy.roots (publish roots output answers) =
+      publish (copy.roots roots) output (answers.map copy.address) := by
+    unfold publish
+    rw [show copy.roots (roots ∪ answerRoots output answers) =
+      copy.roots roots ∪ copy.roots (answerRoots output answers) from Finset.image_union _ _]
+    rw [relocate_answerRoots copy]
+  unfold commitRoots
+  rw [copy.roots_cancel, publication]
+
+omit [DecidableEq Address] in
+/-- Complete cells are read from destination storage. No equality of payloads
+substitutes for transporting their outgoing references. -/
+theorem relocate_observation {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (answers : List Address) :
+    observe destination (answers.map copy.address) =
+      (observe source answers).map (Option.map (Cell.relocate copy.address copy.payload)) := by
+  simp only [observe, List.map_map]
+  apply List.map_congr_left
+  intro address _
+  exact copy.lookup_eq address
+
+/-- An exported answer survives cancellation in either representation, with
+the same ordered occurrence list and transported complete cells. -/
+theorem relocate_commit_observation
+    (state : Session Owner Address Value World)
+    (destination : Heap DestinationAddress DestinationValue)
+    (copy : Relocation state.heap destination) (dead : Finset Owner)
+    (output : Owner) (answers : List Address) (outside : output ∉ dead)
+    (allocated : ∀ address ∈ answers, address ∈ state.heap.allocated) :
+    observe (commit (relocateSession state destination copy) dead output
+      (answers.map copy.address)).heap (answers.map copy.address) =
+      (observe (commit state dead output answers).heap answers).map
+        (Option.map (Cell.relocate copy.address copy.payload)) := by
+  rw [commit_preserves_selected_observation state dead output answers outside allocated]
+  rw [commit_preserves_selected_observation]
+  · exact relocate_observation copy answers
+  · exact outside
+  · intro address member
+    obtain ⟨original, selected, rfl⟩ := List.mem_map.mp member
+    exact (copy.allocated_iff original).mpr (allocated original selected)
+
+/-- The copied and original published graphs have equal retained byte
+weights. Copying and speculative execution work are separate charges. -/
+theorem relocate_commit_storage
+    (state : Session Owner Address Value World)
+    (destination : Heap DestinationAddress DestinationValue)
+    (copy : Relocation state.heap destination) (dead : Finset Owner)
+    (output : Owner) (answers : List Address) :
+    allocatedBytes (commit (relocateSession state destination copy) dead output
+      (answers.map copy.address)).heap = allocatedBytes (commit state dead output answers).heap := by
+  change allocatedBytes (collect destination
+    (commitRoots (copy.roots state.roots) dead output (answers.map copy.address))) =
+      allocatedBytes (collect state.heap (commitRoots state.roots dead output answers))
+  rw [allocatedBytes_collect, allocatedBytes_collect,
+    ← relocate_commitRoots copy state.roots dead output answers, copy.retainedBytes_eq]
+
+end Relocation
+
 /-- Garbage from the abandoned search is reclaimed unless either an outer
 owner or a published answer still reaches it, possibly through a cycle. -/
 theorem commit_reclaims_unprotected
@@ -262,6 +364,33 @@ open ResourceOwnership.Examples
 
 def cursorSession : Session Nat (Fin 3) Nat Nat :=
   ⟨cyclicHeap, {(0, 0)}, 7⟩
+
+def copiedCursorSession : Session Nat (Fin 4) Nat Nat :=
+  relocateSession cursorSession copiedHeap shiftedCopy
+
+/-- Two answer occurrences share one copied cyclic graph. Retiring the
+cursor retains that graph once, while destination observations keep both
+occurrences and the original semantic world. -/
+theorem copied_duplicate_answers_survive :
+    observe (commit copiedCursorSession {0} 1 [2, 2]).heap [2, 2] =
+      [some (copiedCell 2), some (copiedCell 2)] ∧
+    allocatedBytes (commit copiedCursorSession {0} 1 [2, 2]).heap = 32 ∧
+      (commit copiedCursorSession {0} 1 [2, 2]).world = 7 := by
+  constructor
+  · exact duplicate_answer_observation copiedCursorSession {0} 1 2 (by decide) (by decide)
+  · constructor
+    · change allocatedBytes (collect copiedHeap
+        (commitRoots copiedCursorSession.roots {0} 1 [2, 2])) = 32
+      have rootsExact : commitRoots copiedCursorSession.roots {0} 1 [2, 2] =
+          ({(1, 2)} : Roots Nat (Fin 4)) := by decide
+      have valid : ValidRoots copiedHeap ({(1, 2)} : Roots Nat (Fin 4)) := by
+        intro pair member
+        have same := Finset.mem_singleton.mp member
+        subst pair
+        decide
+      rw [rootsExact, allocatedBytes_collect, ← censusBytes_eq_retainedBytes copiedHeap _ valid]
+      decide
+    · rfl
 
 /-- The yielded value is a descendant of the cursor's old root. Publishing
 it to the caller preserves both it and its shared cyclic successor. -/

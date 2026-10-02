@@ -150,7 +150,7 @@ theorem checked_dependent_identity_admission :
     FormationSensitive.Judgment rules contextSPMPCSourceTargetSymbol
       (.refl primitiveIotaLeft)
       (.id primitiveIotaResultType primitiveIotaRight primitiveIotaRight) := by
-  letI : DecidableRel rules.headEq := Tower.instDecidableHeadEq
+  letI : DecidableRel rules.headEq := LevelTower.instDecidableHeadEq
   have source := FormationSensitiveMILElimination.primitiveIota_judgments.1
   have target := checked_mil_step_preserves source primitive_step_checked
   obtain ⟨sortHead, isUniverse, typeFormed⟩ :=

@@ -31,7 +31,7 @@ open FormationSensitive
 
 abbrev rules := HOLNativeRelatorCompatibility.rules
 
-def annotationLevel : LevelExpr := .max Tower.zero (.succ Tower.zero)
+def annotationLevel : LevelExpr Nat := .max Tower.zero (.succ Tower.zero)
 
 def dataFunctionType {n : Nat} : Tower.Tm n :=
   .pi NativeWireData.dataType (sortTm Tower.zero)

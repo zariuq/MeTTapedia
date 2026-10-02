@@ -1,15 +1,13 @@
 import Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupCanary
 
 /-!
-# Reserved-successor heap-walker adequacy counterexample
+# Reserved-successor heap-walker safety controls
 
 This bounded program deliberately retains a successor row beyond the live
-heap frontier.  The current computable Lean list realization consumes three
-scheduler directives and then stalls without producing either a proof value
-or the explicit frontier fault.  The counterexample identifies an unclosed
-agreement seam between the reflective runner and the MM2 behavior qualified
-by the separate command-line fixtures; it is not a counterexample to the
-abstract reserved-cursor GSLT.
+heap frontier.  The proof, fault, and assertion probes at cursor zero precede
+the cursor advance.  At the live frontier the proof probe is inert, and the
+scheduled fault handler consumes the lookup before the reserved successor
+edge can advance it beyond that frontier.
 -/
 
 set_option autoImplicit false
@@ -18,6 +16,7 @@ set_option maxRecDepth 100000
 namespace Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultCanary
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
+open Mettapedia.Languages.Metamath.MM2DataEncoding (natAtom compressedWordAtom)
 open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
 open Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupCanary
 open Mettapedia.Languages.ProcessCalculi.MORK
@@ -37,13 +36,40 @@ def lookupReservedFaultAfterTerminal : List Atom :=
   cFireReflectiveSourceExecFact lookupReservedFaultProgram
     compressedTerminalDirective
 
-def lookupReservedFaultAfterProbe : List Atom :=
+def lookupReservedFaultAfterInitialProofProbe : List Atom :=
   cFireReflectiveSourceExecFact lookupReservedFaultAfterTerminal
+    compressedProofStepDirective
+
+def lookupReservedFaultAfterProbe : List Atom :=
+  cFireReflectiveSourceExecFact lookupReservedFaultAfterInitialProofProbe
     compressedHeapLookupFaultDirective
 
-def lookupReservedFaultAfterAdvance : List Atom :=
+def lookupReservedFaultAfterAssertionProbe : List Atom :=
   cFireReflectiveSourceExecFact lookupReservedFaultAfterProbe
+    compressedAssertionLaunchDirective
+
+def lookupReservedFaultAfterAdvance : List Atom :=
+  cFireReflectiveSourceExecFact lookupReservedFaultAfterAssertionProbe
     compressedHeapLookupAdvanceDirective
+
+def lookupReservedFaultAfterProofProbe : List Atom :=
+  cFireReflectiveSourceExecFact lookupReservedFaultAfterAdvance
+    compressedProofStepDirective
+
+def lookupReservedFaultAfterFault : List Atom :=
+  cFireReflectiveSourceExecFact lookupReservedFaultAfterProofProbe
+    compressedHeapLookupFaultDirective
+
+def reservedOutOfFrontierLookup : Atom :=
+  .expression
+    [.symbol "mm-compressed-heap-lookup", scopeOwner, proofOwner,
+      natAtom 0, compressedWordAtom [], code 1, code 2]
+
+theorem reserved_fault_after_terminal_supported_exact :
+    cSupportedSourceExecFacts lookupReservedFaultAfterTerminal =
+      [compressedHeapLookupAdvanceDirective, compressedHeapLookupFaultDirective,
+       compressedProofStepDirective, compressedAssertionLaunchDirective] := by
+  rfl
 
 /-- Exact handlers, including the explicit frontier fault, are scheduled
 before the generic cursor advance. -/

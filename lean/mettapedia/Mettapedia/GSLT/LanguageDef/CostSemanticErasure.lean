@@ -43,10 +43,8 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
     (tailEquivalent :
       (leftValues.supportedOpenAssignment tail).FiberEquivalent
         (rightValues.supportedOpenAssignment tail)) :
-    ((Values.cons leftValue leftValues).supportedOpenAssignment
-      (.cons boundary content tail)).FiberEquivalent
-    ((Values.cons rightValue rightValues).supportedOpenAssignment
-      (.cons boundary content tail)) := by
+    (supportedOpenAssignment (.cons boundary content tail) (Values.cons leftValue leftValues)).FiberEquivalent
+    (supportedOpenAssignment (.cons boundary content tail) (Values.cons rightValue rightValues)) := by
   intro name type lookup inner
   cases decodedName : decodeCostRegionSourceVariableName name with
   | some sourceName =>
@@ -57,11 +55,9 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
           source.costWholeReflectionProfile defaultBasePremises
           source.costWholeLanguage targetFree
             (inner ++
-              (TypedCostRegionBoundaryTable.cons boundary content tail
-                ).restorationSupport name) type).iseqv.refl
+              (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail)) name) type).iseqv.refl
           (WellSorted.SupportedOpenAssignment.weakenedValue
-            ((Values.cons leftValue leftValues).supportedOpenAssignment
-              (.cons boundary content tail)) lookup inner))
+            (supportedOpenAssignment (.cons boundary content tail) (Values.cons leftValue leftValues)) lookup inner))
   | none =>
       by_cases keyEquality :
           name = costRegionBoundaryVariableName boundary.boundary
@@ -72,8 +68,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
             decodeCostRegionSourceVariableName_boundary] using lookup
         subst type
         have supportEquality :
-            (TypedCostRegionBoundaryTable.cons boundary content tail
-              ).restorationSupport
+            (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail))
                 (costRegionBoundaryVariableName boundary.boundary) =
               boundary.boundary.targetSupport := by
           simp [TypedCostRegionBoundaryTable.restorationSupport,
@@ -82,8 +77,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
         let boundEquality :
             inner ++ boundary.boundary.targetSupport =
               inner ++
-                (TypedCostRegionBoundaryTable.cons boundary content tail
-                  ).restorationSupport
+                (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail))
                     (costRegionBoundaryVariableName boundary.boundary) :=
           congrArg (fun support => inner ++ support) supportEquality.symm
         have transported :=
@@ -93,8 +87,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
         have leftEndpoint :
             (leftValue.weakenRoot inner).reindexBound boundEquality =
               WellSorted.SupportedOpenAssignment.weakenedValue
-                ((Values.cons leftValue leftValues).supportedOpenAssignment
-                  (.cons boundary content tail)) lookup inner := by
+                (supportedOpenAssignment (.cons boundary content tail) (Values.cons leftValue leftValues)) lookup inner := by
           apply Subtype.ext
           simp [WellSorted.SupportedOpenAssignment.weakenedValue,
             supportedOpenAssignment, supportedAssignment, assignment, resolve,
@@ -102,8 +95,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
         have rightEndpoint :
             (rightValue.weakenRoot inner).reindexBound boundEquality =
               WellSorted.SupportedOpenAssignment.weakenedValue
-                ((Values.cons rightValue rightValues).supportedOpenAssignment
-                  (.cons boundary content tail)) lookup inner := by
+                (supportedOpenAssignment (.cons boundary content tail) (Values.cons rightValue rightValues)) lookup inner := by
           apply Subtype.ext
           simp [WellSorted.SupportedOpenAssignment.weakenedValue,
             supportedOpenAssignment, supportedAssignment, assignment, resolve,
@@ -116,16 +108,14 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
             using lookup
         have tailStep := tailEquivalent tailLookup inner
         have supportEquality :
-            (TypedCostRegionBoundaryTable.cons boundary content tail
-              ).restorationSupport name =
+            (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail)) name =
               tail.restorationSupport name := by
           simp [TypedCostRegionBoundaryTable.restorationSupport,
             TypedCostRegionBoundaryTable.resolve, decodedName, keyEquality]
         let boundEquality :
             inner ++ tail.restorationSupport name =
               inner ++
-                (TypedCostRegionBoundaryTable.cons boundary content tail
-                  ).restorationSupport name :=
+                (TypedCostRegionBoundaryTable.restorationSupport (.cons boundary content tail)) name :=
           congrArg (fun support => inner ++ support) supportEquality.symm
         have transported :=
           ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
@@ -134,8 +124,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
         have leftEndpoint :
             ((leftValues.supportedOpenAssignment tail).weakenedValue
               tailLookup inner).reindexBound boundEquality =
-              ((Values.cons leftValue leftValues).supportedOpenAssignment
-                (.cons boundary content tail)).weakenedValue lookup inner := by
+              (supportedOpenAssignment (.cons boundary content tail) (Values.cons leftValue leftValues)).weakenedValue lookup inner := by
           apply Subtype.ext
           simp [WellSorted.SupportedOpenAssignment.weakenedValue,
             supportedOpenAssignment, supportedAssignment, assignment, resolve,
@@ -143,8 +132,7 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
         have rightEndpoint :
             ((rightValues.supportedOpenAssignment tail).weakenedValue
               tailLookup inner).reindexBound boundEquality =
-              ((Values.cons rightValue rightValues).supportedOpenAssignment
-                (.cons boundary content tail)).weakenedValue lookup inner := by
+              (supportedOpenAssignment (.cons boundary content tail) (Values.cons rightValue rightValues)).weakenedValue lookup inner := by
           apply Subtype.ext
           simp [WellSorted.SupportedOpenAssignment.weakenedValue,
             supportedOpenAssignment, supportedAssignment, assignment, resolve,

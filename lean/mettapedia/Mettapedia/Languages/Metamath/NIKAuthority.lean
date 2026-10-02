@@ -190,7 +190,7 @@ def Derivable (scope : SourceScope) (claim : Claim scope) : Prop :=
 
 /-- Independent supported declarative Metamath meaning. -/
 def Meaning (scope : SourceScope) (claim : Claim scope) : Prop :=
-  Metamath.Spec.Equivalence.SupportedProvable
+  Metamath.Spec.Equivalence.FrameDerivable
     (sourceOperationalDatabase scope.source)
     (sourceOperationalCallerFrame scope.source)
     (Metamath.Spec.Equivalence.exprToFormula

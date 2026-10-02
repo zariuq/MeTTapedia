@@ -380,7 +380,7 @@ theorem declared_num : objectRules.constantType numN = some Package.U0 := rfl
 theorem declared_zero : objectRules.constantType zeroN = some numT := rfl
 theorem declared_suc : objectRules.constantType sucN = some (.pi numT numT) := rfl
 
-theorem piO {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr}
+theorem piO {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (hA : Typed objectRules Γ A (sortTm level))
     (hB : Typed objectRules (.snoc Γ A) B (sortTm level)) :
     Typed objectRules Γ (.pi A B) (sortTm level) :=

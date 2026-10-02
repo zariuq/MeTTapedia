@@ -41,7 +41,7 @@ noncomputable def operations (assembly : Assembly) :
   piCode := QuotientUniverseProducts.piCode
   sigmaCode := QuotientUniverseProducts.sigmaCode
 
-theorem code_meaning {n : Nat} (source : Context assembly n) (level : LevelExpr)
+theorem code_meaning {n : Nat} (source : Context assembly n) (level : LevelExpr Nat)
     (type : Tower.Tm n) (typed : Typing assembly.rules source.raw type (sortTm level)) :
     (data assembly).term source type (sortTm level)
       ((operations assembly).universe.univ ((data assembly).ctx source) level)
@@ -51,7 +51,7 @@ theorem code_meaning {n : Nat} (source : Context assembly n) (level : LevelExpr)
 
 /-- Meaning at an actual universe identifies this native term's code, not
 just some equivalent carrier chosen after checking it. -/
-theorem code_meaning_iff {n : Nat} (source : Context assembly n) (level : LevelExpr)
+theorem code_meaning_iff {n : Nat} (source : Context assembly n) (level : LevelExpr Nat)
     (type : Tower.Tm n) (typed : Typing assembly.rules source.raw type (sortTm level))
     (code : QuotientUniverses.Code ((data assembly).ctx source) level) :
     (data assembly).term source type (sortTm level)
@@ -130,7 +130,7 @@ theorem cumulative_substitution_square
     (semantic : (QuotientCwf.cwf assembly.rules).Sub
       ((data assembly).ctx target) ((data assembly).ctx source))
     (related : (data assembly).sub source target sigma semantic)
-    {type : Tower.Tm n} {first middle last : LevelExpr}
+    {type : Tower.Tm n} {first middle last : LevelExpr Nat}
     (earlier : Tower.Cumulative (.sort first) (.sort middle))
     (later : Tower.Cumulative (.sort middle) (.sort last))
     (admitted : Judgment assembly.rules source.raw type (sortTm first))
@@ -164,7 +164,7 @@ open SharedJudgmentUniverseInterpretation.WeakeningControl
 /-- An actual open code crosses the added Data binder and two universe
 lifts in this model. Coverage and coherence are supplied by the constructions
 above, not by assumptions about a proposed interpretation. -/
-theorem open_code_square (level : LevelExpr) :
+theorem open_code_square (level : LevelExpr Nat) :
     ∃ (code : QuotientUniverses.Code ((data common).ctx (source level)) level)
       (semantic : (QuotientCwf.cwf common.rules).Sub
         ((data common).ctx (target level)) ((data common).ctx (source level))),
@@ -192,7 +192,7 @@ theorem open_code_square (level : LevelExpr) :
 
 /-- Cumulative admission does not identify the universe itself with its
 successor. The changed semantic carrier is rejected by the actual graph. -/
-theorem wrong_universe_meaning {n : Nat} (source : Context common n) (level : LevelExpr) :
+theorem wrong_universe_meaning {n : Nat} (source : Context common n) (level : LevelExpr Nat) :
     ¬ (data common).ty source (sortTm level)
       ((operations common).universe.univ ((data common).ctx source) (.succ level)) := by
   intro changed

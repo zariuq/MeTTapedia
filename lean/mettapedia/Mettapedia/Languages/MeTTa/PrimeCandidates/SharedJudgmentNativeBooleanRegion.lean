@@ -29,9 +29,9 @@ open SharedJudgmentIdentityRegions (arrow)
 
 variable {n m : Nat}
 
-def zero : LevelExpr := Tower.zero
-def one : LevelExpr := .succ zero
-def two : LevelExpr := .succ one
+def zero : LevelExpr Nat := Tower.zero
+def one : LevelExpr Nat := .succ zero
+def two : LevelExpr Nat := .succ one
 
 def boolName : DeclName := `BooleanRegion.Bool
 def falseName : DeclName := `BooleanRegion.false
@@ -103,8 +103,8 @@ theorem bool_typed_one (context : Tower.Ctx n) : Typing rules context boolTm (so
 theorem bool_typed_two (context : Tower.Ctx n) : Typing rules context boolTm (sortTm two) :=
   .cumul (bool_typed context) (fun _ => Nat.le_trans (Nat.le_succ _) (Nat.le_succ _))
 
-def motiveLevel : LevelExpr := .max zero (.succ two)
-def eliminateLevel : LevelExpr := .max motiveLevel (.max two (.max two (.max zero two)))
+def motiveLevel : LevelExpr Nat := .max zero (.succ two)
+def eliminateLevel : LevelExpr Nat := .max motiveLevel (.max two (.max two (.max zero two)))
 
 theorem motiveType_formed (context : Tower.Ctx n) :
     Typing rules context motiveType (sortTm motiveLevel) :=
@@ -191,7 +191,7 @@ def emptyTm : Tower.Tm n := .pi (sortTm zero) (.var 0)
 theorem empty_formed (context : Tower.Ctx n) : Typing rules context emptyTm (sortTm one) := by
   have raw : Typing rules context emptyTm (sortTm (.max one zero)) :=
     .piForm (.headType (.sort zero)) (.sort one) (.var 0) (.sort zero) (.sorts one zero)
-  exact .cumul raw (by intro valuation; simp [LevelExpr.eval, one, zero, Tower.zero])
+  exact .cumul raw (by intro valuation; simp [LevelExpr.eval, one, zero, LevelTower.zero])
 
 def emptyEliminate (impossible target : Tower.Tm n) : Tower.Tm n := .app impossible target
 
@@ -301,28 +301,28 @@ theorem discriminate_typed {context : Tower.Ctx n} (side : Bool)
 /-! ## Dependent Boolean cases and the based selector -/
 
 theorem pi_formed {context : Tower.Ctx n} {domain : Tower.Tm n} {family : Tower.Tm (n + 1)}
-    {level : LevelExpr} (domainFormed : Typing rules context domain (sortTm level))
+    {level : LevelExpr Nat} (domainFormed : Typing rules context domain (sortTm level))
     (familyFormed : Typing rules (.snoc context domain) family (sortTm level)) :
     Typing rules context (.pi domain family) (sortTm level) :=
   .cumul (.piForm domainFormed (.sort level) familyFormed (.sort level) (.sorts level level))
     (fun _ => by simp [LevelExpr.eval])
 
 theorem lambda_typed {context : Tower.Ctx n} {domain : Tower.Tm n}
-    {family body : Tower.Tm (n + 1)} {level : LevelExpr}
+    {family body : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (domainFormed : Typing rules context domain (sortTm level))
     (familyFormed : Typing rules (.snoc context domain) family (sortTm level))
     (bodyTyped : Typing rules (.snoc context domain) body family) :
     Typing rules context (.lam body) (.pi domain family) :=
   .lamIntro (pi_formed domainFormed familyFormed) (.sort level) bodyTyped
 
-theorem arrow_formed {context : Tower.Ctx n} {domain codomain : Tower.Tm n} {level : LevelExpr}
+theorem arrow_formed {context : Tower.Ctx n} {domain codomain : Tower.Tm n} {level : LevelExpr Nat}
     (domainFormed : Typing rules context domain (sortTm level))
     (codomainFormed : Typing rules context codomain (sortTm level)) :
     Typing rules context (arrow domain codomain) (sortTm level) :=
   pi_formed domainFormed codomainFormed.weaken
 
 theorem inst_typed {context : Tower.Ctx n} {body : Tower.Tm (n + 1)} {value : Tower.Tm n}
-    {level : LevelExpr} (bodyFormed : Typing rules (.snoc context boolTm) body (sortTm level))
+    {level : LevelExpr Nat} (bodyFormed : Typing rules (.snoc context boolTm) body (sortTm level))
     (valueTyped : Typing rules context value boolTm) :
     Typing rules context (inst0 value body) (sortTm level) := by
   have base := FormationSensitiveContextual.identityTyped (rules := rules) context
@@ -333,7 +333,7 @@ def casesTerm (body : Tower.Tm (n + 1)) (onFalse onTrue value : Tower.Tm n) : To
   eliminate (.lam body) onFalse onTrue value
 
 theorem cases_typed {context : Tower.Ctx n} {body : Tower.Tm (n + 1)}
-    {onFalse onTrue value : Tower.Tm n} {level : LevelExpr}
+    {onFalse onTrue value : Tower.Tm n} {level : LevelExpr Nat}
     (levelBound : ∀ valuation, LevelExpr.eval valuation level ≤ LevelExpr.eval valuation two)
     (bodyFormed : Typing rules (.snoc context boolTm) body (sortTm level))
     (falseTyped : Typing rules context onFalse (inst0 falseTm body))
@@ -412,7 +412,7 @@ theorem selectorAt_typed (side : Bool) {context : Tower.Ctx n}
     (rightTyped : Typing rules context right boolTm) :
     Typing rules context (selectorAt side right) (arrow (pathType side right) (pathType side right)) := by
   have cases : Typing rules context (selectorAt side right) (inst0 right (selectorBody side)) := by
-    apply cases_typed (level := zero) (by intro valuation; simp [zero, two, one, Tower.zero, LevelExpr.eval])
+    apply cases_typed (level := zero) (by intro valuation; simp [zero, two, one, LevelTower.zero, LevelExpr.eval])
       (selectorBody_formed side context) _ _ rightTyped
     · cases side
       · exact sameBranch_typed false context
@@ -527,7 +527,7 @@ theorem signature_fresh {name : DeclName} {entry : Entry Tower.Head}
 
 theorem signature_types_formed {name : DeclName} {type : Tower.Tm 0}
     (lookup : signature.typeOf? name = some type) :
-    ∃ level : LevelExpr, Typing rules .nil type (sortTm level) := by
+    ∃ level : LevelExpr Nat, Typing rules .nil type (sortTm level) := by
   by_cases isBool : name = boolName
   · subst name
     have typeEquality : type = sortTm zero := by

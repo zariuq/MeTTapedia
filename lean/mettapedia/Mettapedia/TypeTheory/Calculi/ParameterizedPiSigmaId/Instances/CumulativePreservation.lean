@@ -20,8 +20,8 @@ theorem towerHeadPreservation : HeadPreservation Tower.rules := by
       cases next with
       | legacyGround => exact False.elim equality
       | sort nextLevel =>
-          apply Typing.conv (.headType (Tower.HeadTyping.sort nextLevel))
-            (.headType (Tower.HeadTyping.sort (.succ level))) (Tower.IsUniverse.sort _)
+          apply Typing.conv (.headType (LevelTower.HeadTyping.sort nextLevel))
+            (.headType (LevelTower.HeadTyping.sort (.succ level))) (LevelTower.IsUniverse.sort _)
           apply Relation.EqvGen.rel
           apply Step.head
           intro valuation
@@ -37,8 +37,8 @@ theorem Judgment.steps_preserve_tower {Γ : Tower.Ctx n}
     {source target type : Tower.Tm n} (judgment : Judgment Tower.rules Γ source type)
     (steps : ConversionCoherence.StepStar Tower.rules source target) :
     Judgment Tower.rules Γ target type :=
-  judgment.steps_preserve towerUniverseRegularity Tower.piConversionBoundary
-    (EmptyRootConversion.sigmaConversionBoundary Tower.rules rfl Tower.headEq_symmetric)
+  judgment.steps_preserve towerUniverseRegularity LevelTower.piConversionBoundary
+    (EmptyRootConversion.sigmaConversionBoundary Tower.rules rfl LevelTower.headEq_symmetric)
     towerHeadPreservation towerRootPreservation steps
 
 

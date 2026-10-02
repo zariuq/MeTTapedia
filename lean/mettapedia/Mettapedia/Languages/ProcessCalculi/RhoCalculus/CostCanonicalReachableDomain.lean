@@ -240,12 +240,12 @@ theorem rho_generatedParameter_reachable {rule : GrammarRule}
             rhoSourceParallel_bare
           exact absurd ⟨parameterName, collectionType,
             costBaseTypeExpr elementType, by
-              simp [costBaseConstructor, shape, costBaseParameter,
+              simp [costBaseConstructor_def, shape, costBaseParameter_def,
                 isSelectedContinuation, mapParameterType,
                 costBaseTypeExpr]⟩ notBare
         · exact rhoSourceRule_paramsReachable_four
         · exact rhoSourceRule_paramsReachable_five
-      simp only [costBaseConstructor] at parameterMembership
+      simp only [costBaseConstructor_def] at parameterMembership
       obtain ⟨entry, entryMembership, parameterEq⟩ :=
         List.mem_map.mp parameterMembership
       have sourceParameter : entry.1 ∈ sourceRule.params :=
@@ -253,7 +253,7 @@ theorem rho_generatedParameter_reachable {rule : GrammarRule}
       have entryReachable : rhoReachableParam entry.1 = true :=
         List.all_eq_true.mp sourceReachable entry.1 sourceParameter
       subst parameterEq
-      unfold costBaseParameter
+      simp only [costBaseParameter_def]
       split
       · exact rhoReachableParam_map_costWrapped _ entry.1 entryReachable
       · exact rhoReachableParam_map_costBase entry.1 entryReachable
@@ -293,12 +293,13 @@ theorem rho_generatedParameter_reachable {rule : GrammarRule}
       exact rhoReachableParam_map_costWrapped _ sourceParameter entryReachable
   · change rule ∈ [costSignatureUnitConstructor,
       costSignatureProductConstructor,
+      costKeyLeafConstructor, costKeyBranchConstructor, costSignatureCommitConstructor,
       costSignedConstructor
         rhoCIGSLT.theory.presentation.interactingSort.1.name,
       costTokenStackEmptyConstructor, costTokenStackConsConstructor,
       costFundingConstructor, costContactConstructor] at apparatus
     simp only [List.mem_cons, List.not_mem_nil, or_false] at apparatus
-    rcases apparatus with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    rcases apparatus with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       revert parameterMembership
     · intro parameterMembership
       simp [costSignatureUnitConstructor] at parameterMembership
@@ -307,6 +308,18 @@ theorem rho_generatedParameter_reachable {rule : GrammarRule}
         List.not_mem_nil, or_false] at parameterMembership
       rcases parameterMembership with rfl | rfl <;>
         simp [rhoReachableParam, parameterType?, rhoReachableType]
+    · intro parameterMembership
+      simp [costKeyLeafConstructor] at parameterMembership
+    · intro parameterMembership
+      simp only [costKeyBranchConstructor, List.mem_cons,
+        List.not_mem_nil, or_false] at parameterMembership
+      rcases parameterMembership with rfl | rfl <;>
+        simp [rhoReachableParam, parameterType?, rhoReachableType]
+    · intro parameterMembership
+      simp only [costSignatureCommitConstructor, List.mem_cons,
+        List.not_mem_nil, or_false] at parameterMembership
+      rcases parameterMembership with rfl
+      simp [rhoReachableParam, parameterType?, rhoReachableType]
     · intro parameterMembership
       simp only [costSignedConstructor, List.mem_cons,
         List.not_mem_nil, or_false] at parameterMembership

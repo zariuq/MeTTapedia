@@ -243,6 +243,7 @@ def costWholeExecutionProfile (source : CIGSLT) :
 presentation. -/
 def costIGSLT (source : CIGSLT) : IGSLT where
   presentation := source.costWholeInteractivePresentation
+  baseInteraction := isBaseRewrite_of_premises_eq_nil rfl
   executionProfile := source.costWholeExecutionProfile
 
 end CIGSLT

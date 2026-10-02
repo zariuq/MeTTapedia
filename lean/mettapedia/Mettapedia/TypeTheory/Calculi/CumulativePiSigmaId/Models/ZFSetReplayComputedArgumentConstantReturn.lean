@@ -163,7 +163,7 @@ theorem lower_result_distinguishes_inputs (h : CofinalInaccessibles.{u})
       (lowerApplicationCode depth) (term depth) (.head zero) = some result) :
     result.value (fun _ => ∅) ≠ result.value (fun _ => (twoCode h).1) := by
   rw [lower_returns_context_value h constants depth result atResult _
-      ⟨True.intro, seed_mem_zero h ∅⟩,
+      ⟨True.intro, seed_mem_universeSet h ∅ (0 : Nat)⟩,
     lower_returns_context_value h constants depth result atResult _
       (ZFSetReplayApplicationComparisonControls.nonempty_input_valid h)]
   intro equal

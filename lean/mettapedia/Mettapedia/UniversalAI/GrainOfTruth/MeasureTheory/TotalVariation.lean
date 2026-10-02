@@ -22,7 +22,6 @@ Thompson-sampling optimality proofs.
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.TotalVariation
 
 open scoped BigOperators
-open MeasureTheory
 
 variable {α : Type*} [Fintype α] [MeasurableSpace α] [MeasurableSingletonClass α]
 

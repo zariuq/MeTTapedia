@@ -25,10 +25,10 @@ open NativeIndexedFamilies NativeIndexedFamilies.Intrinsic
 open FormationSensitiveBasedIdentity (doubleWeaken basedContext pointSub reflexivitySub)
 open SharedJudgmentIdentityRegions (ofBody_point)
 
-abbrev rules (level : LevelExpr) (signature : Signature Tower.Head) :=
+abbrev rules (level : LevelExpr Nat) (signature : Signature Tower.Head) :=
   NativeIdentityLevelInstantiation.rules (fun _ => level) signature
 
-variable {n m : Nat} {level : LevelExpr} {signature : Signature Tower.Head}
+variable {n m : Nat} {level : LevelExpr Nat} {signature : Signature Tower.Head}
 variable {context : Tower.Ctx n}
 
 theorem based_formed {carrier left : Tower.Tm n}

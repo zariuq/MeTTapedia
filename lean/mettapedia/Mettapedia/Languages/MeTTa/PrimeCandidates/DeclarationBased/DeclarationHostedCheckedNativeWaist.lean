@@ -109,7 +109,7 @@ theorem simplePi_crosses_nativeFamilyHost :
 /-- The fixed structural fragment has no constructor for a global declaration
 constant.  This is an index theorem, not a syntactic search heuristic. -/
 theorem no_intrinsic_bare_constant
-    (name : DeclName) (type : Tower.Tm 0) (level : LevelExpr) :
+    (name : DeclName) (type : Tower.Tm 0) (level : LevelExpr Nat) :
     ¬ Nonempty
       (IntrinsicFormedTyping
         { arity := 0
@@ -124,7 +124,7 @@ theorem no_intrinsic_bare_constant
 /-- Consequently the fixed generic checker cannot derive a declaration
 constant merely because some external host happens to declare it. -/
 theorem no_fixed_checked_constant
-    (name : DeclName) (type : Tower.Tm 0) (level : LevelExpr) :
+    (name : DeclName) (type : Tower.Tm 0) (level : LevelExpr Nat) :
     ¬ Nonempty
       (Derivation formedTypingExtension.target
         (encodeFormedTypingQuery
@@ -155,7 +155,7 @@ kernel, rather than being inferred from the fixed presentation. -/
 theorem declared_constant_is_strictly_native
     (host : FormationHost) {name : DeclName} {type : Tower.Tm 0}
     (declared : host.signature.typeOf? name = some type) :
-    ∃ level : LevelExpr,
+    ∃ level : LevelExpr Nat,
       Nonempty
         (HostedFormedTyping host
           { arity := 0

@@ -349,7 +349,7 @@ theorem par_develop {n : Nat} {source target : Tower.Tm n} :
   | .var index => .var index
   | .const name => .const name
   | .head head => .head head
-  | .headRel equality => .headRel (Tower.headEq_symmetric.symm _ _ equality)
+  | .headRel equality => .headRel (LevelTower.headEq_symmetric.symm _ _ equality)
   | .pi domain codomain => .pi (par_develop domain) (par_develop codomain)
   | .sigma domain codomain => .sigma (par_develop domain) (par_develop codomain)
   | .id carrier left right => .id (par_develop carrier) (par_develop left) (par_develop right)

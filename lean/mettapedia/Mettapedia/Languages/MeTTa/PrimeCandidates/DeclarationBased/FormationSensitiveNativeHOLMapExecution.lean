@@ -72,7 +72,7 @@ theorem holMorphism : FormationSensitiveHOLUniformList.rules.Morphism rules (fun
     have fresh := (HOLNativeRelatorCompatibility.hol_entry_fresh entryKnown).2
     apply combinedType_of_signature nativeInstance.rules FormationSensitiveHOLUniformList.declarations
     · change IntrinsicRelator.rawSignature.typeOf? name = none at fresh
-      simp [LevelInstance.rules, extendRules, combinedType, Tower.rules,
+      simp [LevelInstance.rules, extendRules, combinedType, LevelTower.rules,
         LevelInstance.signature, Signature.typeOf_instantiateLevels, fresh]
     · simpa only [Tm.mapHead_id] using sourceKnown
   computation := by
@@ -172,7 +172,7 @@ theorem pi_zero {context : Tower.Ctx n} {a : Tower.Tm n} {b : Tower.Tm (n + 1)}
   apply FormationSensitive.Typing.cumul
     (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero) (.sorts _ _))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem constantFamily_typed {context : Tower.Ctx n} {domain target : Tower.Tm n}
     (domainFormed : Typing context domain (sortTm Tower.zero))

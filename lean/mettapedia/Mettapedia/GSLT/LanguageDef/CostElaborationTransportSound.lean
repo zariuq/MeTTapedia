@@ -135,9 +135,7 @@ theorem simpleArgument_of_fiberEquation
     apply WellSorted.AvailableOpenArgument.ext
     dsimp only [pack]
     simp only [WellSorted.AvailableOpenArgument.reindexFiber_pattern,
-      WellSorted.AvailableOpenPattern.reindexFiber_pattern,
-      CostRegionTree.originalArgument_pattern,
-      CostRegionTree.originalAvailableOpenPattern_pattern]
+      WellSorted.AvailableOpenPattern.reindexFiber_pattern]
     exact (CostRegionTree.originalArgument_pattern right (.simple name declared)
       True.intro rightParameterType rightCanonical rightObject rightScope).symm
   rw [leftEndpoint, rightEndpoint] at packed
@@ -1755,6 +1753,7 @@ theorem costStaticRegionTransportSound_of_mappedGeneratorFiberAction
       CostStaticRegionNode.CostStaticSourceTerm.generator leftSource
         rightSource := by
     unfold CostStaticRegionNode.CostStaticSourceTerm.generator
+      ContinuationDecorationProfile.StaticSourceTerm.generator
     simpa only [leftSource, rightSource, rightSourceRaw,
       CostStaticRegionNode.CostStaticSourceTerm.reindex_pattern,
       CostStaticRegionNode.sourceActionTermIn_pattern,

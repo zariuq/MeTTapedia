@@ -22,8 +22,8 @@ namespace TowerExamples
 
 open SyntacticContextual.TowerExamples
 
-private abbrev levelOne : LevelExpr := .succ Tower.zero
-private abbrev levelTwo : LevelExpr := .succ levelOne
+private abbrev levelOne : LevelExpr Nat := .succ Tower.zero
+private abbrev levelTwo : LevelExpr Nat := .succ levelOne
 
 /-- The genuinely dependent family `x : U1 ⊢ x type`. -/
 def dependentCodomain :
@@ -138,7 +138,7 @@ theorem diagonalIdentity_ne_mixedIdentity :
   have codeEquality := congrArg TypeOver.code equality
   have rightEquality := Tm.id.inj codeEquality |>.2.2
   have headEquality :
-      Tower.Head.sort Tower.zero = Tower.Head.legacyGround :=
+      LevelTower.Head.sort Tower.zero = LevelTower.Head.legacyGround :=
     Tm.head.inj rightEquality
   cases headEquality
 

@@ -146,7 +146,7 @@ theorem SpineDenotes.substitute {gamma delta : HOL.Ctx BaseSort}
 context substitution. The path uses the existing substitution-closed native
 reduction, not a replay or new evaluation policy. -/
 theorem observed_execution_substitute {gamma delta : HOL.Ctx BaseSort}
-    (level : LevelExpr) {source output : Tower.Tm gamma.length}
+    (level : LevelExpr Nat) {source output : Tower.Tm gamma.length}
     {values : model.Valuation gamma → List Bool}
     (path : Reduces level source output) (meaning : SpineDenotes output values)
     (sigma : Sub Tower.Head gamma.length delta.length)
@@ -165,7 +165,7 @@ theorem observed_execution_substitute {gamma delta : HOL.Ctx BaseSort}
 Its transport is obtained from the actual HOL induction/congruence proof;
 native computation then makes that transported witness observable. -/
 theorem fusion_consumes_hol_refinement {gamma : HOL.Ctx BaseSort}
-    (level : LevelExpr) (f g : Tower.Tm gamma.length)
+    (level : LevelExpr Nat) (f g : Tower.Tm gamma.length)
     (fMeaning gMeaning : FunctionMeaning gamma)
     (fDenotes : Denotes model (type := mapping) f fMeaning)
     (gDenotes : Denotes model (type := mapping) g gMeaning)
@@ -232,7 +232,7 @@ def heads : Heads gamma := [(x, xMeaning)]
 
 /-- The positive case instantiates the source expressions, native execution,
 and the actual HOL proof at the same valuation. -/
-theorem correct_composition_observed (level : LevelExpr) :
+theorem correct_composition_observed (level : LevelExpr Nat) :
     gsltDiamond (reduction level gamma.length).closure
         (observes rho (fun output => output = [true]))
         (applyMap (elementCode gamma) (elementCode gamma) f

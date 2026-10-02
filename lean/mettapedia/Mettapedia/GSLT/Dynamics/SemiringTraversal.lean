@@ -26,7 +26,7 @@ instantiated per algebra, covers
 Two further results give the algebra its multiplicative half and its
 universality:
 
-* `weightSum_orderedProd` — over a commutative semiring, the aggregate of a
+* `weightSum_orderedProd` — over a semiring, the aggregate of a
   conjunction (an ordered product of alternative lists) is the **product of
   the aggregates**: sum-of-products equals product-of-sums.  Weighting
   distributes over joint answers, which is what lets weighted conjunctive
@@ -49,7 +49,9 @@ namespace Mettapedia.GSLT.Dynamics.SemiringTraversal
 
 open Mettapedia.GSLT.Dynamics.UnfoldingTraversal
 
-variable {Ans : Type} {R : Type}
+universe u v w
+
+variable {Ans : Type u} {R : Type v}
 
 /-! ## Aggregation -/
 
@@ -123,7 +125,7 @@ def tupleWeight [Semiring R] (w : Ans → R) (tup : List Ans) : R :=
   (tup.map w).prod
 
 /-- Aggregation distributes over `flatMap`. -/
-theorem weightSum_flatMap [AddCommMonoid R] (f : Ans → R) {β : Type}
+theorem weightSum_flatMap [AddCommMonoid R] (f : Ans → R) {β : Type w}
     (g : β → List Ans) (l : List β) :
     weightSum f (l.flatMap g)
       = ((l.map fun b => weightSum f (g b))).sum := by
@@ -132,7 +134,7 @@ theorem weightSum_flatMap [AddCommMonoid R] (f : Ans → R) {β : Type}
   | cons b rest ih => simp [List.flatMap_cons, weightSum_append, ih]
 
 /-- Scaling every weight on the left scales the aggregate. -/
-theorem weightSum_mul_left [Semiring R] {β : Type}
+theorem weightSum_mul_left [Semiring R] {β : Type w}
     (f : β → R) (c : R) (l : List β) :
     ((l.map fun b => c * f b)).sum = c * (l.map f).sum := by
   induction l with
@@ -140,7 +142,7 @@ theorem weightSum_mul_left [Semiring R] {β : Type}
   | cons b rest ih => simp [ih, mul_add]
 
 /-- Scaling every weight on the right scales the aggregate. -/
-theorem sum_mul_right [Semiring R] {β : Type} (f : β → R) (c : R)
+theorem sum_mul_right [Semiring R] {β : Type w} (f : β → R) (c : R)
     (l : List β) :
     ((l.map fun b => f b * c)).sum = (l.map f).sum * c := by
   induction l with

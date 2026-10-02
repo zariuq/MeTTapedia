@@ -377,7 +377,7 @@ theorem Operations.zeroUniverse
     (operations : Operations signature proofName) :
     operations.target.isUniverse (.sort Tower.zero) := by
   simpa only using
-    operations.proofMorphism.isUniverse (Tower.IsUniverse.sort Tower.zero)
+    operations.proofMorphism.isUniverse (LevelTower.IsUniverse.sort Tower.zero)
 
 theorem Operations.implicationIntro
     {signature : LogicalSignature Base Const} {proofName : DeclName}

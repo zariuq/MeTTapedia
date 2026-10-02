@@ -66,7 +66,7 @@ theorem bare_equal_ground : AEqual Tower.rules .nil bareIdentity groundIdentity 
 
 /-- Two universes of the tower are the same head exactly when their levels
 have the same canonical form. -/
-theorem Tower.headSame_sort_iff (l l' : LevelExpr) :
+theorem Tower.headSame_sort_iff (l l' : LevelExpr Nat) :
     HeadSame Tower.rules (.sort l) (.sort l') ↔ LevelNF.normalize l = LevelNF.normalize l' := by
   rw [LevelNF.normalize_eq_iff]
   constructor
@@ -86,13 +86,13 @@ theorem universeIdentity_rejected_at_raised_arrow :
   show ¬ HeadSame Tower.rules _ _
   rw [Tower.headSame_sort_iff, LevelNF.normalize_eq_iff]
   intro same
-  exact absurd (same fun _ => 0) (by simp [LevelExpr.eval, Tower.zero])
+  exact absurd (same fun _ => 0) (by simp [LevelExpr.eval, LevelTower.zero])
 
 private theorem ground_ne_universe {n : Nat} {Γ : Ctx Tower.Head n}
     (formed : CtxFormed Tower.rules Γ) :
     ¬ TypeEq Tower.rules Γ (.head .legacyGround) (.head (.sort Tower.zero)) := by
   intro equal
-  rcases Tower.head_injective equal formed with same | same
+  rcases LevelTower.head_injective equal formed with same | same
   · cases same
   · exact same
 

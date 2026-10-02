@@ -1,3 +1,6 @@
+import Mettapedia.GSLT.LanguageDef.Cost.RegionBoundaryEvidence
+import Mettapedia.GSLT.LanguageDef.Cost.RegionBoundaryData
+import Mettapedia.GSLT.LanguageDef.Cost.StaticTypeImage
 import Mettapedia.GSLT.LanguageDef.CostInteractive
 import Mettapedia.GSLT.LanguageDef.ReflectiveCanonicalSection
 import Mettapedia.GSLT.LanguageDef.CostStaticTyping
@@ -35,34 +38,6 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open StructuralMorphism
 open ReflectionExtension
 open ReflectiveEquationSemantics
-
-/-- Remove one exact reserved string prefix. -/
-def decodeTaggedPayload (tag name : String) : Option String :=
-  (dropListPrefix? tag.toList name.toList).map String.ofList
-
-@[simp]
-theorem decodeTaggedPayload_append (tag payload : String) :
-    decodeTaggedPayload tag (tag ++ payload) = some payload := by
-  simp [decodeTaggedPayload, String.toList_append]
-
-/-- Successful prefix decoding reconstructs the original string exactly. -/
-theorem decodeTaggedPayload_eq_some_iff (tag name payload : String) :
-    decodeTaggedPayload tag name = some payload ↔
-      name = tag ++ payload := by
-  constructor
-  · intro decoded
-    unfold decodeTaggedPayload at decoded
-    cases decodedPrefix : dropListPrefix? tag.toList name.toList with
-    | none => simp [decodedPrefix] at decoded
-    | some suffix =>
-        simp only [decodedPrefix, Option.map_some, Option.some.injEq] at decoded
-        have reconstructed : tag ++ String.ofList suffix = name := by
-          apply String.toList_inj.mp
-          simpa [String.toList_append] using
-            append_eq_of_dropListPrefix?_eq_some decodedPrefix
-        simpa [decoded] using reconstructed.symm
-  · rintro rfl
-    exact decodeTaggedPayload_append _ _
 
 /-- Decode the constructor label of one selected static namespace. -/
 def decodeCostStaticConstructor (color : CostStaticColor)
@@ -111,7 +86,7 @@ theorem CostStaticColor.hereditaryConstructorImage_decodes
 
 /-- Decode a sort name in the uniform base fiber. -/
 def decodeCostBaseSortName (name : String) : Option String :=
-  decodeTaggedPayload costBaseSortTag name
+  CostStaticTypeImage.decodeBaseSort name
 
 @[simp]
 theorem decodeCostBaseSortName_encode (name : String) :
@@ -122,30 +97,8 @@ theorem decodeCostBaseSortName_encode (name : String) :
 distinguished interacting sort is represented by the single wrapped carrier;
 every other base sort remains in the tagged base fiber. -/
 def decodeCostStaticTypeExpr (source : CIGSLT)
-    (color : CostStaticColor) : TypeExpr → Option TypeExpr
-  | .base sort =>
-      match color with
-      | .base => (decodeCostBaseSortName sort).map TypeExpr.base
-      | .wrapped =>
-          if sort = costWrappedSortName then
-            some (.base source.theory.presentation.interactingSort.1.name)
-          else do
-            let sourceSort ← decodeCostBaseSortName sort
-            if sourceSort =
-                source.theory.presentation.interactingSort.1.name then
-              none
-            else
-              some (.base sourceSort)
-  | .arrow domain codomain => do
-      let sourceDomain ← decodeCostStaticTypeExpr source color domain
-      let sourceCodomain ← decodeCostStaticTypeExpr source color codomain
-      pure (.arrow sourceDomain sourceCodomain)
-  | .multiBinder body => do
-      let sourceBody ← decodeCostStaticTypeExpr source color body
-      pure (.multiBinder sourceBody)
-  | .collection collectionType element => do
-      let sourceElement ← decodeCostStaticTypeExpr source color element
-      pure (.collection collectionType sourceElement)
+    (color : CostStaticColor) (type : TypeExpr) : Option TypeExpr :=
+  CostStaticTypeImage.decode source.theory color type
 
 /-- Decoding is a computable left inverse of either exact static type action.
 The wrapped interacting sort is separated from every tagged base sort by the
@@ -155,34 +108,8 @@ theorem decodeCostStaticTypeExpr_mapTypeExpr (source : CIGSLT)
     (color : CostStaticColor) (type : TypeExpr) :
     decodeCostStaticTypeExpr source color
         (mapTypeExpr (color.symbols source) type) = some type := by
-  induction type with
-  | base sort =>
-      cases color with
-      | base =>
-          change decodeCostStaticTypeExpr source .base
-              (mapTypeExpr costBaseStaticSymbols (.base sort)) = _
-          rw [mapTypeExpr_costBaseStaticSymbols]
-          simp [decodeCostStaticTypeExpr, costBaseTypeExpr,
-            decodeCostBaseSortName_encode]
-      | wrapped =>
-          change decodeCostStaticTypeExpr source .wrapped
-              (mapTypeExpr (costWrappedStaticSymbols source.theory)
-                (.base sort)) = _
-          rw [mapTypeExpr_costWrappedStaticSymbols]
-          by_cases interacting :
-              sort = source.theory.presentation.interactingSort.1.name
-          · subst sort
-            simp [decodeCostStaticTypeExpr, costWrappedTypeExpr]
-          · simp [decodeCostStaticTypeExpr, costWrappedTypeExpr,
-              interacting, costBaseSortName_ne_wrapped,
-              decodeCostBaseSortName_encode]
-  | arrow domain codomain domainHypothesis codomainHypothesis =>
-      simp [decodeCostStaticTypeExpr, mapTypeExpr,
-        domainHypothesis, codomainHypothesis]
-  | multiBinder body inductionHypothesis =>
-      simp [decodeCostStaticTypeExpr, mapTypeExpr, inductionHypothesis]
-  | collection collectionType element inductionHypothesis =>
-      simp [decodeCostStaticTypeExpr, mapTypeExpr, inductionHypothesis]
+  simpa only [decodeCostStaticTypeExpr, CostStaticColor.symbols_eq_symbolsOf] using
+    CostStaticTypeImage.decode_mapTypeExpr source.theory color type
 
 /-- A successfully decoded static type lies in the exact image of the
 selected Cost fiber.  In the wrapped fiber the base-tagged interacting sort
@@ -194,79 +121,8 @@ theorem mapTypeExpr_decodeCostStaticTypeExpr (source : CIGSLT)
     (decoded : decodeCostStaticTypeExpr source color target =
       some sourceType) :
     mapTypeExpr (color.symbols source) sourceType = target := by
-  induction target generalizing sourceType with
-  | base sort =>
-      cases color with
-      | base =>
-          cases decodedSort : decodeCostBaseSortName sort with
-          | none =>
-              simp [decodeCostStaticTypeExpr, decodedSort] at decoded
-          | some sourceSort =>
-              simp [decodeCostStaticTypeExpr, decodedSort] at decoded
-              subst sourceType
-              have sortEquality : sort = costBaseSortName sourceSort :=
-                (decodeTaggedPayload_eq_some_iff
-                  costBaseSortTag sort sourceSort).mp decodedSort
-              subst sort
-              simp [CostStaticColor.symbols, costBaseStaticSymbols,
-                costBaseLanguageDefSymbolMap, mapTypeExpr]
-      | wrapped =>
-          by_cases wrapped : sort = costWrappedSortName
-          · subst sort
-            simp [decodeCostStaticTypeExpr] at decoded
-            subst sourceType
-            simp [CostStaticColor.symbols, costWrappedStaticSymbols,
-              mapTypeExpr]
-          · cases decodedSort : decodeCostBaseSortName sort with
-            | none =>
-                simp [decodeCostStaticTypeExpr, wrapped, decodedSort] at decoded
-            | some sourceSort =>
-                by_cases interacting : sourceSort =
-                    source.theory.presentation.interactingSort.1.name
-                · simp [decodeCostStaticTypeExpr, wrapped, decodedSort,
-                    interacting] at decoded
-                · simp [decodeCostStaticTypeExpr, wrapped, decodedSort,
-                    interacting] at decoded
-                  subst sourceType
-                  have sortEquality : sort = costBaseSortName sourceSort :=
-                    (decodeTaggedPayload_eq_some_iff
-                      costBaseSortTag sort sourceSort).mp decodedSort
-                  subst sort
-                  simp [CostStaticColor.symbols, costWrappedStaticSymbols,
-                    mapTypeExpr, interacting]
-  | arrow domain codomain domainHypothesis codomainHypothesis =>
-      cases decodedDomain : decodeCostStaticTypeExpr source color domain with
-      | none =>
-          simp [decodeCostStaticTypeExpr, decodedDomain] at decoded
-      | some sourceDomain =>
-          cases decodedCodomain :
-              decodeCostStaticTypeExpr source color codomain with
-          | none =>
-              simp [decodeCostStaticTypeExpr, decodedDomain,
-                decodedCodomain] at decoded
-          | some sourceCodomain =>
-              simp [decodeCostStaticTypeExpr, decodedDomain,
-                decodedCodomain] at decoded
-              subst sourceType
-              simp [mapTypeExpr,
-                domainHypothesis decodedDomain,
-                codomainHypothesis decodedCodomain]
-  | multiBinder body inductionHypothesis =>
-      cases decodedBody : decodeCostStaticTypeExpr source color body with
-      | none =>
-          simp [decodeCostStaticTypeExpr, decodedBody] at decoded
-      | some sourceBody =>
-          simp [decodeCostStaticTypeExpr, decodedBody] at decoded
-          subst sourceType
-          simp [mapTypeExpr, inductionHypothesis decodedBody]
-  | collection collectionType element inductionHypothesis =>
-      cases decodedElement : decodeCostStaticTypeExpr source color element with
-      | none =>
-          simp [decodeCostStaticTypeExpr, decodedElement] at decoded
-      | some sourceElement =>
-          simp [decodeCostStaticTypeExpr, decodedElement] at decoded
-          subst sourceType
-          simp [mapTypeExpr, inductionHypothesis decodedElement]
+  simpa only [CostStaticColor.symbols_eq_symbolsOf] using
+    CostStaticTypeImage.mapTypeExpr_decode source.theory color decoded
 
 /-- Each static type action is injective. -/
 theorem mapTypeExpr_costStatic_injective (source : CIGSLT)
@@ -2049,53 +1905,17 @@ theorem reflectiveOpenEquationSetoid_mapCostStatic (source : CIGSLT)
 
 /-! ## Stable keys for opaque region boundaries -/
 
-/-- A boundary is identified by its canonical content together with the
-authored result type and the reflective binder support at which it may be
-filled.  Content alone is insufficient: the same raw pattern at two sorts or
-across two quotation supports is not one typed structural parameter. -/
-structure CostRegionBoundary where
-  /-- Type of the rigid placeholder presented to the source canonicalizer. -/
-  type : TypeExpr
-  /-- Binder support of that placeholder in the source open fiber. -/
-  support : List TypeExpr
-  /-- Exact type of the restored content in the generated Cost fiber.  This
-  need not be the uniform static image of `type`: a boundary at a selected
-  continuation is retyped by the authored interaction cut. -/
-  targetType : TypeExpr
-  /-- Exact binder support of the restored content in the Cost fiber. -/
-  targetSupport : List TypeExpr
-  content : Pattern
-deriving Repr, DecidableEq
+/-- Target-content evidence for the existing continued Cost language.
+Source type/support are retained key coordinates; the checked region plan
+separately establishes their source-fibre coherence. -/
+abbrev TypedCostRegionBoundary (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext) :=
+  CostRegionBoundaryEvidence.TypedCostRegionBoundary source.costWholeLanguage
+    source.costWholeReflectionProfile color targetFree
 
-/-- A boundary together with the typing evidence needed to restore its
-content in the selected Cost fiber.  The raw record remains the stable,
-serializable key; this dependent layer certifies that its source type and
-support are transported to the exact type and binder context inhabited by
-the Cost term. -/
-structure TypedCostRegionBoundary (source : CIGSLT)
-    (color : CostStaticColor)
-    (targetFree : WellSorted.FreeTypeContext) where
-  boundary : CostRegionBoundary
-  contentTyped : WellSorted.HasType source.costWholeLanguage targetFree
-    boundary.targetSupport boundary.content boundary.targetType
-  contentCanonicalBinderMetadata :
-    boundary.content.hasCanonicalBinderMetadata = true
-  contentObjectPattern :
-    WellSorted.isObjectPattern boundary.content = true
-  contentReflectiveScopeSafe :
-    ReflectiveWellSorted.ReflectiveScopeSafeAt
-      source.costWholeReflectionProfile
-      boundary.targetSupport.length boundary.content
-
-/-- One occurrence of a maximal foreign region in a Cost static stratum.
-`context` is traversal evidence only: filling it with `content` reconstructs
-the surrounding root for occurrences emitted by the certified collector
-below.  It is deliberately absent from `CostRegionBoundary`, whose semantic
-identity remains type, reflective support, and canonical content. -/
-structure CostRegionOccurrence where
-  context : OneHoleContext
-  content : Pattern
-deriving Repr, DecidableEq
+namespace TypedCostRegionBoundary
+export CostRegionBoundaryEvidence.TypedCostRegionBoundary (mk)
+end TypedCostRegionBoundary
 
 /-- Occurrence-sensitive assignment of semantic boundary data.  Different
 occurrences may share a semantic boundary, but an assignment can no longer

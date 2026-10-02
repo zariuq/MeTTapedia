@@ -813,7 +813,7 @@ theorem tower_zero_join_lowered :
       Tower.rules.cumulative (.sort (.max Tower.zero Tower.zero)) (.sort Tower.zero) := by
   refine ⟨.sorts _ _, ?_⟩
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem reflSigma_typed_cumulative {Γ : Ctx Head n} {A : Tm Head n} {u w : Head}
     (carrier : Typing R Γ A (.head u)) (isUniv : R.isUniverse u)

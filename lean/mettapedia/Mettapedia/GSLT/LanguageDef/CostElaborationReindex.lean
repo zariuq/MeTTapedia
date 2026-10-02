@@ -85,14 +85,16 @@ theorem materialize_mapDeclaredCostConstructor
         simp [mapDeclaredCostConstructor,
           CIGSLT.materializeDeclaredCostConstructor,
           CostApparatusConstructor.grammarRule, costSignatureUnitConstructor,
-          costSignatureProductConstructor, costSignedConstructor,
+          costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
+          costSignatureCommitConstructor, costSignedConstructor,
           costTokenStackEmptyConstructor, costTokenStackConsConstructor,
           costFundingConstructor, costContactConstructor,
           costSignatureUnitConstructorName,
-          costSignatureProductConstructorName, costSignedConstructorName,
+          costSignatureProductConstructorName, costKeyLeafConstructorName,
+          costKeyBranchConstructorName, costSignatureCommitConstructorName, costSignedConstructorName,
           costTokenStackEmptyConstructorName,
           costTokenStackConsConstructorName, costFundingConstructorName,
-          costContactConstructorName, costSignatureSortName,
+          costContactConstructorName, costSignatureSortName, costKeySortName,
           costTokenStackSortName, mapGrammarRule, mapTermParam, mapTypeExpr,
           morphism.mapsInteractingSortName]
 
@@ -218,6 +220,9 @@ theorem decodeCostStaticTypeExpr_natural
       (decodeCostStaticTypeExpr source color type).map
         (mapTypeExpr morphism.underlying.structural.structural.symbols) := by
   let symbols := morphism.underlying.structural.structural.symbols
+  change CostStaticTypeImage.decode target.theory color
+      (mapTypeExpr (costLanguageDefSymbolMap symbols) type) =
+    (CostStaticTypeImage.decode source.theory color type).map (mapTypeExpr symbols)
   induction type with
   | base sort =>
       cases color with
@@ -225,20 +230,20 @@ theorem decodeCostStaticTypeExpr_natural
           have decoded :=
             decodeTaggedPayload_mapTaggedName costBaseSortTag symbols.sort sort
           have mappedDecoded := congrArg (Option.map TypeExpr.base) decoded
-          simpa [decodeCostStaticTypeExpr, decodeCostBaseSortName,
+          simpa [CostStaticTypeImage.decode, CostStaticTypeImage.decodeBaseSort,
             mapTypeExpr, costLanguageDefSymbolMap, Option.map_map,
             Function.comp_def, symbols] using mappedDecoded
       | wrapped =>
           have decodedBase :
-              decodeCostBaseSortName
+              CostStaticTypeImage.decodeBaseSort
                   ((costLanguageDefSymbolMap symbols).sort sort) =
-                (decodeCostBaseSortName sort).map symbols.sort := by
-            simpa [decodeCostBaseSortName, costLanguageDefSymbolMap] using
+                (CostStaticTypeImage.decodeBaseSort sort).map symbols.sort := by
+            simpa [CostStaticTypeImage.decodeBaseSort, costLanguageDefSymbolMap] using
               decodeTaggedPayload_mapTaggedName costBaseSortTag symbols.sort sort
           by_cases wrapped : sort = costWrappedSortName
           · subst sort
-            simp [decodeCostStaticTypeExpr, mapTypeExpr,
-              morphism.mapsInteractingSortName]
+            simp [CostStaticTypeImage.decode, mapTypeExpr,
+              morphism.mapsInteractingSortName, symbols]
           · have mappedNotWrapped :
                 (costLanguageDefSymbolMap symbols).sort sort ≠
                   costWrappedSortName := by
@@ -246,13 +251,13 @@ theorem decodeCostStaticTypeExpr_natural
               exact wrapped
                 ((costLanguageDefSymbolMap_sort_eq_wrapped_iff symbols sort).mp
                   equality)
-            cases decoded : decodeCostBaseSortName sort with
+            cases decoded : CostStaticTypeImage.decodeBaseSort sort with
             | none =>
-                simp [decodeCostStaticTypeExpr, mapTypeExpr, wrapped,
+                simp [CostStaticTypeImage.decode, mapTypeExpr, wrapped,
                   mappedNotWrapped, decoded, decodedBase, symbols]
             | some sourceSort =>
                 have targetDecoded :
-                    decodeCostBaseSortName
+                    CostStaticTypeImage.decodeBaseSort
                         ((costLanguageDefSymbolMap symbols).sort sort) =
                       some (symbols.sort sourceSort) := by
                   simpa [decoded] using decodedBase
@@ -260,7 +265,7 @@ theorem decodeCostStaticTypeExpr_natural
                     sourceSort =
                       source.theory.presentation.interactingSort.1.name
                 · subst sourceSort
-                  simp [decodeCostStaticTypeExpr, mapTypeExpr, wrapped,
+                  simp [CostStaticTypeImage.decode, mapTypeExpr, wrapped,
                     mappedNotWrapped, decoded, targetDecoded,
                     morphism.mapsInteractingSortName, symbols]
                 · have targetNotInteracting :
@@ -269,20 +274,20 @@ theorem decodeCostStaticTypeExpr_natural
                     intro equality
                     exact interacting
                       (morphism.reflectsInteractingSort sourceSort equality)
-                  simp [decodeCostStaticTypeExpr, mapTypeExpr, wrapped,
+                  simp [CostStaticTypeImage.decode, mapTypeExpr, wrapped,
                     mappedNotWrapped, decoded, targetDecoded, interacting,
                     targetNotInteracting, symbols]
   | arrow domain codomain domainHypothesis codomainHypothesis =>
-      simp only [decodeCostStaticTypeExpr, mapTypeExpr, domainHypothesis,
+      simp only [CostStaticTypeImage.decode, mapTypeExpr, domainHypothesis,
         codomainHypothesis]
-      cases decodeCostStaticTypeExpr source color domain <;>
-        cases decodeCostStaticTypeExpr source color codomain <;> rfl
+      cases CostStaticTypeImage.decode source.theory color domain <;>
+        cases CostStaticTypeImage.decode source.theory color codomain <;> rfl
   | multiBinder body inductionHypothesis =>
-      simp only [decodeCostStaticTypeExpr, mapTypeExpr, inductionHypothesis]
-      cases decodeCostStaticTypeExpr source color body <;> rfl
+      simp only [CostStaticTypeImage.decode, mapTypeExpr, inductionHypothesis]
+      cases CostStaticTypeImage.decode source.theory color body <;> rfl
   | collection collectionType element inductionHypothesis =>
-      simp only [decodeCostStaticTypeExpr, mapTypeExpr, inductionHypothesis]
-      cases decodeCostStaticTypeExpr source color element <;> rfl
+      simp only [CostStaticTypeImage.decode, mapTypeExpr, inductionHypothesis]
+      cases CostStaticTypeImage.decode source.theory color element <;> rfl
 
 /-- Static type formation is natural under a continued morphism. -/
 theorem mapTypeExpr_costStatic_natural
@@ -504,10 +509,27 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
             (source.materializeDeclaredCostConstructor constructor)).algebra? :=
         congrArg GrammarRule.algebra?
           (morphism.materialize_mapDeclaredCostConstructor constructor)
-      _ = (source.materializeDeclaredCostConstructor constructor).algebra? := rfl
-      _ = preimage.sourceConstructor.1.algebra? := preimage.algebraMap
+      _ = (source.materializeDeclaredCostConstructor constructor).algebra?.map
+          (StructuralMorphism.mapCollectionAlgebra generatedSymbols.constructor) := rfl
+      _ = (preimage.sourceConstructor.1.algebra?.map
+          (StructuralMorphism.mapCollectionAlgebra (color.symbols source).constructor)).map
+          (StructuralMorphism.mapCollectionAlgebra generatedSymbols.constructor) :=
+        congrArg (Option.map
+          (StructuralMorphism.mapCollectionAlgebra generatedSymbols.constructor))
+          preimage.algebraMap
+      _ = (preimage.sourceConstructor.1.algebra?.map
+          (StructuralMorphism.mapCollectionAlgebra sourceSymbols.constructor)).map
+          (StructuralMorphism.mapCollectionAlgebra (color.symbols target).constructor) := by
+        simp only [Option.map_map]
+        congr 1
+        funext algebra
+        simp only [Function.comp_apply, StructuralMorphism.mapCollectionAlgebra_comp]
+        congr 1
+        funext name
+        exact morphism.mapConstructor_costStatic_natural color name
       _ = (morphism.underlying.structural.structural.mapConstructor
-            preimage.sourceConstructor).1.algebra? := rfl
+            preimage.sourceConstructor).1.algebra?.map
+          (StructuralMorphism.mapCollectionAlgebra (color.symbols target).constructor) := rfl
 
 end CostStaticConstructorPreimage
 
@@ -1202,7 +1224,7 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
         (occurrences.map (CostRegionOccurrence.map morphism))
   | [], .nil => .nil
   | _ :: _, .cons boundary content tail =>
-      .cons (boundary.map morphism scope)
+      .cons (TypedCostRegionBoundary.map morphism scope boundary)
         (congrArg (mapPattern morphism.costWholeStructural.symbols) content)
         (map morphism scope color tail)
 
@@ -1213,8 +1235,7 @@ theorem map_nil {source target : CIGSLT}
     (color : CostStaticColor)
     (targetFree : WellSorted.FreeTypeContext) :
     map morphism scope color
-        (TypedCostRegionBoundaryTable.nil (source := source)
-          (color := color) (targetFree := targetFree)) =
+        (.nil : TypedCostRegionBoundaryTable source color targetFree []) =
       TypedCostRegionBoundaryTable.nil :=
   rfl
 
@@ -1240,10 +1261,10 @@ theorem map_append {source target : CIGSLT}
         (map morphism scope color right) :=
   match left with
   | .nil => rfl
-  | @TypedCostRegionBoundaryTable.cons _ _ _ occurrence occurrences boundary
+  | @TypedCostRegionBoundaryTable.cons _ _ _ _ occurrence occurrences boundary
       content tail => by
       let mappedOccurrence := occurrence.map morphism
-      let mappedBoundary := boundary.map morphism scope
+      let mappedBoundary := TypedCostRegionBoundary.map morphism scope boundary
       have mappedContent : mappedBoundary.boundary.content =
           mappedOccurrence.content := by
         exact congrArg (mapPattern morphism.costWholeStructural.symbols)

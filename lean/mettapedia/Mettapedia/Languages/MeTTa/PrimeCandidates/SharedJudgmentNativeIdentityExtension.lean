@@ -25,16 +25,16 @@ open NativeIndexedFamilies NativeIndexedFamilies.Intrinsic
 
 variable {n : Nat}
 
-def base (theta : Nat → LevelExpr) : Rules Tower.Head :=
+def base (theta : Nat → LevelExpr Nat) : Rules Tower.Head :=
   NativeIdentityLevelInstantiation.rules theta Signature.empty
 
-def rules (theta : Nat → LevelExpr) (signature : Signature Tower.Head) : Rules Tower.Head :=
+def rules (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) : Rules Tower.Head :=
   extendRules (base theta) signature
 
-variable {theta : Nat → LevelExpr} {signature : Signature Tower.Head}
+variable {theta : Nat → LevelExpr Nat} {signature : Signature Tower.Head}
 variable {context : Tower.Ctx n} {type left motive method : Tower.Tm n}
 
-def Parameters (theta : Nat → LevelExpr) (signature : Signature Tower.Head)
+def Parameters (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head)
     (context : Tower.Ctx n) (type left motive method : Tower.Tm n) : Prop :=
   ContextFormation (rules theta signature) context ∧
     FormationSensitive.CtxMor (rules theta signature)

@@ -130,8 +130,8 @@ open Presentation.Declaration.ComputationAuthority
 open Presentation.Declaration.IndexedFamily
 open Presentation.ConversionCoherence
 
-def elementLevel : LevelExpr := .param 0
-def motiveLevel : LevelExpr := .param 1
+def elementLevel : LevelExpr Nat := .param 0
+def motiveLevel : LevelExpr Nat := .param 1
 
 /-- Names are local to this cumulative presentation, not declarations of a
 selected language. The identity package supplies J, not a choice of K/UIP. -/
@@ -597,7 +597,7 @@ theorem motiveApp_hasType {context : Tower.Ctx n}
   have application := Presentation.HasType.appElim motiveTyping listTyping
   simpa [sortTm, Presentation.inst0, Presentation.subst] using application
 
-def listDeclarationLevel : LevelExpr :=
+def listDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) (.succ elementLevel)
 
 /-- The native family former itself has a formed declaration type. -/
@@ -612,7 +612,7 @@ theorem listType_hasType :
   · exact .sort (.succ elementLevel)
   · exact .sorts (.succ elementLevel) (.succ elementLevel)
 
-def nilDeclarationLevel : LevelExpr :=
+def nilDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) elementLevel
 
 /-- The nullary constructor has a formed declaration type. -/
@@ -630,7 +630,7 @@ theorem nilType_hasType :
 
 /-- Below the element-type binder, both constructor arguments and the result
 remain in the element universe. -/
-def consBodyLevel : LevelExpr :=
+def consBodyLevel : LevelExpr Nat :=
   .max elementLevel (.max elementLevel elementLevel)
 
 theorem consBodyType_hasType :
@@ -651,7 +651,7 @@ theorem consBodyType_hasType :
   · exact .sort (.max elementLevel elementLevel)
   · exact .sorts elementLevel (.max elementLevel elementLevel)
 
-def consDeclarationLevel : LevelExpr :=
+def consDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) consBodyLevel
 
 /-- The binary constructor has a formed declaration type. -/
@@ -680,7 +680,7 @@ def contextAPZ : Tower.Ctx 3 :=
 def contextAPZS : Tower.Ctx 4 :=
   .snoc contextAPZ consCaseType
 
-def motiveTypeLevel : LevelExpr :=
+def motiveTypeLevel : LevelExpr Nat :=
   .max elementLevel (.succ motiveLevel)
 
 /-- A List motive is a dependent family over the native List fibre. -/
@@ -704,13 +704,13 @@ theorem nilCaseType_hasType :
   · apply nilApp_hasType
     exact Presentation.HasType.var 1
 
-def consCaseInnerLevel : LevelExpr :=
+def consCaseInnerLevel : LevelExpr Nat :=
   .max motiveLevel motiveLevel
 
-def consCaseTailLevel : LevelExpr :=
+def consCaseTailLevel : LevelExpr Nat :=
   .max elementLevel consCaseInnerLevel
 
-def consCaseLevel : LevelExpr :=
+def consCaseLevel : LevelExpr Nat :=
   .max elementLevel consCaseTailLevel
 
 /-- The step branch is a dependent function over the head, tail, and the
@@ -745,7 +745,7 @@ theorem consCaseType_hasType :
   · exact .sorts elementLevel
       (.max elementLevel (.max motiveLevel motiveLevel))
 
-def eliminateResultLevel : LevelExpr :=
+def eliminateResultLevel : LevelExpr Nat :=
   .max elementLevel motiveLevel
 
 /-- Once all branches are supplied, the eliminator returns a dependent
@@ -764,16 +764,16 @@ theorem eliminateResultType_hasType :
   · exact .sort motiveLevel
   · exact .sorts elementLevel motiveLevel
 
-def eliminateAfterConsLevel : LevelExpr :=
+def eliminateAfterConsLevel : LevelExpr Nat :=
   .max consCaseLevel eliminateResultLevel
 
-def eliminateAfterNilLevel : LevelExpr :=
+def eliminateAfterNilLevel : LevelExpr Nat :=
   .max motiveLevel eliminateAfterConsLevel
 
-def eliminateAfterMotiveLevel : LevelExpr :=
+def eliminateAfterMotiveLevel : LevelExpr Nat :=
   .max motiveTypeLevel eliminateAfterNilLevel
 
-def eliminateDeclarationLevel : LevelExpr :=
+def eliminateDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) eliminateAfterMotiveLevel
 
 /-- The complete dependent eliminator has a formed closed declaration type.
@@ -824,10 +824,10 @@ def contextAXP : Tower.Ctx 3 :=
 def contextAXPD : Tower.Ctx 4 :=
   .snoc contextAXP identityReflCaseType
 
-def identityMotiveInnerLevel : LevelExpr :=
+def identityMotiveInnerLevel : LevelExpr Nat :=
   .max elementLevel (.succ motiveLevel)
 
-def identityMotiveLevel : LevelExpr :=
+def identityMotiveLevel : LevelExpr Nat :=
   .max elementLevel identityMotiveInnerLevel
 
 /-- The path-induction motive is formed over the endpoint and equality
@@ -902,7 +902,7 @@ def contextAXPDY : Tower.Ctx 5 :=
 def contextAXPDYQ : Tower.Ctx 6 :=
   .snoc contextAXPDY (.id (.var 4) (.var 3) (.var 0))
 
-def identityEliminateResultLevel : LevelExpr :=
+def identityEliminateResultLevel : LevelExpr Nat :=
   .max elementLevel (.max elementLevel motiveLevel)
 
 /-- Path induction returns the motive at the supplied endpoint and equality
@@ -963,16 +963,16 @@ theorem identityEliminateResultType_hasType :
   · exact .sort (.max elementLevel motiveLevel)
   · exact .sorts elementLevel (.max elementLevel motiveLevel)
 
-def identityAfterReflLevel : LevelExpr :=
+def identityAfterReflLevel : LevelExpr Nat :=
   .max motiveLevel identityEliminateResultLevel
 
-def identityAfterMotiveLevel : LevelExpr :=
+def identityAfterMotiveLevel : LevelExpr Nat :=
   .max identityMotiveLevel identityAfterReflLevel
 
-def identityAfterPointLevel : LevelExpr :=
+def identityAfterPointLevel : LevelExpr Nat :=
   .max elementLevel identityAfterMotiveLevel
 
-def identityEliminateDeclarationLevel : LevelExpr :=
+def identityEliminateDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) identityAfterPointLevel
 
 /-- The fixed-left-endpoint identity eliminator is a formed declaration.
@@ -2518,7 +2518,7 @@ Thus raw support alone cannot be promoted to a typed computation receipt. -/
 theorem undeclaredElement_not_hasType (type : Tower.Tm 0) :
     ¬ HasType (.nil : Tower.Ctx 0) undeclaredElement type := by
   have missing : rules.constantType undeclaredElementName = none := by
-    simp [undeclaredElementName, rules, extendRules, combinedType, Tower.rules,
+    simp [undeclaredElementName, rules, extendRules, combinedType, LevelTower.rules,
       rawSignature, declarations, Signature.typeOf?, Signature.ofList,
       Signature.insert, Signature.empty, listName, nilName, consName,
       eliminateName, identityEliminateName]

@@ -1,44 +1,38 @@
-import Mettapedia.Computability.CantorSpace
+import Mettapedia.Computability.BoundedTapeRuns
 import Mathlib.Computability.PartrecCode
 
 /-!
-# Refined Probabilistic Turing Machine Model
+# Probabilistic machines on a prefix-stable encoding of the tape
 
-This file provides a refined PTM model that fixes the monotonicity issues
-in the original `ProbabilisticTM.lean`.
+In `ProbabilisticTM.lean` the first bits of the tape are packed into one
+binary number, so offering one more bit changes the whole encoded input:
 
-## The Problem with the Original Model
-
-The original model encoded random bits as:
 ```
-encodeRandomBits r numBits = (binary number formed from first numBits bits)
+encodeRandomBits [1,0,1,...] 2 = 2
+encodeRandomBits [1,0,1,...] 3 = 5
 ```
-This encoding **changes entirely** when `numBits` changes:
-- `encodeRandomBits [1,0,1,...] 2 = 2` (binary: 10)
-- `encodeRandomBits [1,0,1,...] 3 = 5` (binary: 101)
 
-So increasing `numBits` gives the machine a completely different input,
-breaking monotonicity.
+Here a prefix is encoded by nested pairs with the newest bit outermost, so
+the encoding of a shorter prefix can be read off the encoding of a longer
+one. The machine receives its input, the encoded prefix and the length of the
+prefix.
 
-## The Refined Model
+The runs of a machine form a family bounded by a budget and by the prefix
+offered (`BoundedTapeRuns`), and a run reads only the prefix it is offered.
+So, for every machine, the probability of the output is the limit of the
+probabilities of its stages, which are explicit rational numbers
+(`stageOutputProbR_tendsto`, `outputProbR_approximated_from_below`).
 
-We model PTMs as machines that can **query individual random bits by index**.
-The key insight is that a "well-behaved" PTM:
-1. Queries bits sequentially (0, 1, 2, ...)
-2. Halts after querying some finite prefix
-3. The output depends only on the bits actually queried
+A machine is prefix-monotone when an output obtained from a prefix is
+obtained from every longer prefix, given enough budget. Then a tape gives at
+most one output and the probabilities of the outputs 1 and 0 sum to at most
+one.
 
-With this model:
-- If PTM halts querying bits 0..(k-1), it halts the same way with numBits ≥ k
-- Monotonicity holds naturally
-
-## Implementation
-
-We use a **prefix-stable encoding** where:
-- `prefixEncode r n` encodes bits 0..(n-1) as a list structure
-- `prefixEncode r n` can be extracted from `prefixEncode r (n+k)` for any k
-- A "bit query" operation extracts bit i from the encoding
-
+The budget has to grow with the prefix. The bounded evaluator needs a budget
+above its input, and the encoded input is at least the number of bits
+offered, so no run halts with a budget of at most the number of bits
+(`runPTMR_eq_none_of_fuel_le`). The stages therefore bound the budget and the
+prefix separately, and the prefix law lets the budget grow.
 -/
 
 open MeasureTheory Measure Filter
@@ -158,7 +152,7 @@ theorem truncateEncoding_correct (r : CantorSpace) (n m : ℕ) (h : n ≤ m) :
     have : n = m := Nat.le_antisymm h h_eq
     simp [this]
   · -- n < m case
-    push_neg at h_eq
+    have h_eq : n < m := Nat.lt_of_not_ge h_eq
     simp only [h_eq.not_ge, ↓reduceIte]
     -- m = n + (m - n), so we strip (m - n) layers
     have h_split : m = n + (m - n) := (Nat.add_sub_cancel' (Nat.le_of_lt h_eq)).symm
@@ -167,100 +161,128 @@ theorem truncateEncoding_correct (r : CantorSpace) (n m : ℕ) (h : n ≤ m) :
       arg 2; rw [Nat.add_sub_cancel_left]
     exact iterate_unpair_prefixEncode r n (m - n)
 
-/-- **Key Theorem**: If a PTM halts with (fuel, numBits), then it halts with the same
-output for any (fuel', numBits') where fuel' ≥ fuel and numBits' ≥ numBits,
-PROVIDED the machine is "prefix-respecting".
+/-! ## The bounded evaluator -/
 
-A prefix-respecting machine only examines bits 0..(numBits-1) and doesn't
-depend on numBits being exactly the length it expects.
+/-- The bounded evaluator gives nothing when the budget does not exceed its
+input. -/
+theorem evaln_eq_none_of_le {fuel input : ℕ} (code : Nat.Partrec.Code) (small : fuel ≤ input) :
+    Nat.Partrec.Code.evaln fuel code input = none := by
+  cases result : Nat.Partrec.Code.evaln fuel code input with
+  | none => rfl
+  | some output =>
+      exact absurd (Nat.Partrec.Code.evaln_bound result) (Nat.not_lt_of_ge small)
 
-For now, we state this as a property that well-behaved machines satisfy.
--/
-def isPrefixRespecting (M : PTMIndexR) : Prop :=
-  ∀ (x : ℕ) (r : CantorSpace) (fuel numBits₁ numBits₂ : ℕ) (k : ℕ),
-    numBits₁ ≤ numBits₂ →
-    runPTMR M x r fuel numBits₁ = some k →
-    -- The machine only used bits 0..(numBits₁-1), so result is the same with more bits
-    runPTMR M x r fuel numBits₂ = some k
+/-- With a budget of at most the number of bits offered, no run halts. -/
+theorem runPTMR_eq_none_of_fuel_le (M : PTMIndexR) (x : ℕ) (r : CantorSpace) {fuel numBits : ℕ}
+    (small : fuel ≤ numBits) : runPTMR M x r fuel numBits = none :=
+  evaln_eq_none_of_le M
+    (small.trans ((Nat.right_le_pair _ _).trans (Nat.right_le_pair _ _)))
 
-/-- For prefix-respecting machines, monotonicity holds. -/
-theorem runPTMR_mono_bits (M : PTMIndexR) (hM : isPrefixRespecting M)
-    (x : ℕ) (r : CantorSpace) (fuel : ℕ)
-    {numBits₁ numBits₂ : ℕ} (h : numBits₁ ≤ numBits₂) {k : ℕ}
-    (hr : runPTMR M x r fuel numBits₁ = some k) :
-    runPTMR M x r fuel numBits₂ = some k :=
-  hM x r fuel numBits₁ numBits₂ k h hr
+/-! ## The runs as a bounded family -/
 
-/-- Combined monotonicity for prefix-respecting machines. -/
-theorem runPTMR_mono (M : PTMIndexR) (hM : isPrefixRespecting M)
-    (x : ℕ) (r : CantorSpace)
-    {fuel₁ fuel₂ numBits₁ numBits₂ : ℕ} (hf : fuel₁ ≤ fuel₂) (hn : numBits₁ ≤ numBits₂) {k : ℕ}
-    (hr : runPTMR M x r fuel₁ numBits₁ = some k) :
-    runPTMR M x r fuel₂ numBits₂ = some k := by
-  have h1 := runPTMR_mono_bits M hM x r fuel₁ hn hr
-  exact runPTMR_mono_fuel M x r numBits₂ hf h1
+/-- The runs of a machine on an input. -/
+def ptmRunR (M : PTMIndexR) (x : ℕ) : BoundedRun :=
+  fun r fuel numBits => runPTMR M x r fuel numBits
 
-/-! ## Output Sets and Probabilities -/
+/-- The encoding of a prefix depends on the bits of the prefix only. -/
+theorem prefixEncode_congr {first second : CantorSpace} {numBits : ℕ}
+    (same : ∀ index, index < numBits → first index = second index) :
+    prefixEncode first numBits = prefixEncode second numBits := by
+  induction numBits with
+  | zero => rfl
+  | succ numBits ih =>
+      simp only [prefixEncode]
+      rw [ih fun index within => same index (Nat.lt_succ_of_lt within),
+        same numBits (Nat.lt_succ_self _)]
 
-/-- The set of random tapes for which the PTM outputs 1. -/
+theorem ptmRunR_readsPrefix (M : PTMIndexR) (x : ℕ) : (ptmRunR M x).ReadsPrefix := by
+  intro first second fuel numBits same
+  simp only [ptmRunR, runPTMR, prefixEncode_congr same]
+
+theorem ptmRunR_fuelMonotone (M : PTMIndexR) (x : ℕ) : (ptmRunR M x).FuelMonotone :=
+  fun r numBits _ _ _ bound halted => runPTMR_mono_fuel M x r numBits bound halted
+
+/-- A machine is prefix-monotone when an output obtained from a prefix of the
+tape is obtained from every longer prefix, given enough budget. -/
+def IsPrefixMonotone (M : PTMIndexR) : Prop := ∀ x, (ptmRunR M x).PrefixMonotone
+
+/-! ## Output probability -/
+
+/-- The set of random tapes for which the machine outputs 1. -/
 def outputOneSetR (M : PTMIndexR) (x : ℕ) : Set CantorSpace :=
   {r : CantorSpace | PTMRHaltsWithOutput M x r 1}
 
-/-- The set of tapes where bounded execution gives output k. -/
-def boundedOutputSetR (M : PTMIndexR) (x : ℕ) (fuel numBits : ℕ) : Set CantorSpace :=
-  {r : CantorSpace | runPTMR M x r fuel numBits = some 1}
+theorem outputOneSetR_eq (M : PTMIndexR) (x : ℕ) :
+    outputOneSetR M x = (ptmRunR M x).outputSet 1 := rfl
 
-/-- Bounded output sets are monotone for prefix-respecting machines. -/
-theorem boundedOutputSetR_mono (M : PTMIndexR) (hM : isPrefixRespecting M) (x : ℕ)
-    {n₁ n₂ : ℕ} (h : n₁ ≤ n₂) :
-    boundedOutputSetR M x n₁ n₁ ⊆ boundedOutputSetR M x n₂ n₂ := by
-  intro r hr
-  simp only [boundedOutputSetR, Set.mem_setOf_eq] at hr ⊢
-  exact runPTMR_mono M hM x r h h hr
-
-/-- For prefix-respecting machines, outputOneSet equals the union of diagonal sets. -/
-theorem outputOneSetR_eq_iUnion (M : PTMIndexR) (hM : isPrefixRespecting M) (x : ℕ) :
-    outputOneSetR M x = ⋃ (n : ℕ), boundedOutputSetR M x n n := by
-  ext r
-  simp only [outputOneSetR, PTMRHaltsWithOutput, boundedOutputSetR,
-             Set.mem_setOf_eq, Set.mem_iUnion]
-  constructor
-  · intro ⟨fuel, numBits, hr⟩
-    use max fuel numBits
-    exact runPTMR_mono M hM x r (le_max_left _ _) (le_max_right _ _) hr
-  · intro ⟨n, hr⟩
-    exact ⟨n, n, hr⟩
-
-/-! ## Probability Definitions -/
-
-/-- Output probability for the refined model. -/
+/-- The probability that the machine outputs 1. -/
 noncomputable def outputProbR (M : PTMIndexR) (x : ℕ) : ℝ≥0∞ :=
   coinMeasure (outputOneSetR M x)
 
-/-- Bounded output probability for the refined model. -/
-noncomputable def boundedOutputProbR (M : PTMIndexR) (x : ℕ) (fuel numBits : ℕ) : ℝ≥0∞ :=
-  coinMeasure (boundedOutputSetR M x fuel numBits)
+/-- The probability that the machine outputs 1 with budget and prefix at most
+the stage. -/
+noncomputable def stageOutputProbR (M : PTMIndexR) (x stage : ℕ) : ℝ≥0∞ :=
+  coinMeasure ((ptmRunR M x).stageSet 1 stage)
 
-/-- Bounded approximations are monotone for prefix-respecting machines. -/
-theorem boundedOutputProbR_mono (M : PTMIndexR) (hM : isPrefixRespecting M) (x : ℕ)
-    {n₁ n₂ : ℕ} (h : n₁ ≤ n₂) :
-    boundedOutputProbR M x n₁ n₁ ≤ boundedOutputProbR M x n₂ n₂ := by
-  unfold boundedOutputProbR
-  exact measure_mono (boundedOutputSetR_mono M hM x h)
+/-- **Convergence.** For every machine the probabilities of the stages
+converge to the output probability. -/
+theorem stageOutputProbR_tendsto (M : PTMIndexR) (x : ℕ) :
+    Filter.Tendsto (fun stage => stageOutputProbR M x stage) Filter.atTop
+      (nhds (outputProbR M x)) :=
+  (ptmRunR M x).tendsto_measure_stageSet coinMeasure 1
 
-/-- **Main Convergence Theorem**: For prefix-respecting machines, the diagonal
-sequence of bounded probabilities converges to the true probability. -/
-theorem boundedOutputProbR_tendsto (M : PTMIndexR) (hM : isPrefixRespecting M) (x : ℕ) :
-    Filter.Tendsto (fun n => boundedOutputProbR M x n n) Filter.atTop
-      (nhds (outputProbR M x)) := by
-  unfold outputProbR boundedOutputProbR
-  -- Use measure continuity from below for monotone sequence
-  rw [outputOneSetR_eq_iUnion M hM x]
-  -- The sequence is monotone increasing
-  have h_mono : Monotone (fun n => boundedOutputSetR M x n n) := by
-    intro n₁ n₂ h
-    exact boundedOutputSetR_mono M hM x h
-  -- Apply measure continuity
-  exact tendsto_measure_iUnion_atTop h_mono
+/-- **Approximation from below.** The rational counts of accepted prefixes
+increase with the stage, never exceed the output probability and converge to
+it. -/
+theorem outputProbR_approximated_from_below (M : PTMIndexR) (x : ℕ) :
+    Monotone ((ptmRunR M x).fraction 1) ∧
+      (∀ stage, ENNReal.ofReal ((ptmRunR M x).fraction 1 stage : ℝ) ≤ outputProbR M x) ∧
+      Filter.Tendsto (fun stage => ENNReal.ofReal ((ptmRunR M x).fraction 1 stage : ℝ))
+        Filter.atTop (nhds (outputProbR M x)) :=
+  (ptmRunR_readsPrefix M x).approximated_from_below 1
+
+/-! ## Prefix-monotone machines -/
+
+/-- For a prefix-monotone machine a tape gives at most one output. -/
+theorem IsPrefixMonotone.output_unique {M : PTMIndexR} (monotone : IsPrefixMonotone M)
+    {x : ℕ} {r : CantorSpace} {first second : ℕ}
+    (haltsFirst : PTMRHaltsWithOutput M x r first)
+    (haltsSecond : PTMRHaltsWithOutput M x r second) : first = second :=
+  BoundedRun.output_unique (ptmRunR_fuelMonotone M x) (monotone x) haltsFirst haltsSecond
+
+/-- For a prefix-monotone machine the probabilities of the outputs 1 and 0 sum
+to at most one. -/
+theorem IsPrefixMonotone.binary_probability_le_one {M : PTMIndexR}
+    (monotone : IsPrefixMonotone M) (x : ℕ) :
+    outputProbR M x + coinMeasure {r : CantorSpace | PTMRHaltsWithOutput M x r 0} ≤ 1 :=
+  BoundedRun.coinMeasure_outputSet_add_le_one (ptmRunR_readsPrefix M x)
+    (ptmRunR_fuelMonotone M x) (monotone x) (by decide)
+
+/-- For a prefix-monotone machine the output probability is approached
+through the prefix length alone, with the budget unbounded. -/
+theorem IsPrefixMonotone.prefix_tendsto {M : PTMIndexR} (monotone : IsPrefixMonotone M)
+    (x : ℕ) :
+    Filter.Tendsto (fun numBits => coinMeasure ((ptmRunR M x).prefixSet 1 numBits))
+      Filter.atTop (nhds (outputProbR M x)) :=
+  (monotone x).tendsto_measure_prefixSet coinMeasure 1
+
+/-! ## A machine that always outputs 1 -/
+
+/-- The code of the constant function 1. -/
+def constantOne : Nat.Partrec.Code := Nat.Partrec.Code.const 1
+
+theorem constantOne_eval (input : ℕ) : 1 ∈ Nat.Partrec.Code.eval constantOne input := by
+  rw [constantOne, Nat.Partrec.Code.eval_const]
+  exact Part.mem_some 1
+
+/-- Given enough budget the bounded evaluator gives 1. -/
+theorem constantOne_evaln_complete (input : ℕ) :
+    ∃ fuel, Nat.Partrec.Code.evaln fuel constantOne input = some 1 :=
+  Nat.Partrec.Code.evaln_complete.mp (constantOne_eval input)
+
+/-- The bounded evaluator gives nothing but 1. -/
+theorem constantOne_evaln_sound {fuel input output : ℕ}
+    (halted : Nat.Partrec.Code.evaln fuel constantOne input = some output) : output = 1 :=
+  Part.mem_unique (Nat.Partrec.Code.evaln_sound halted) (constantOne_eval input)
 
 end Mettapedia.Computability

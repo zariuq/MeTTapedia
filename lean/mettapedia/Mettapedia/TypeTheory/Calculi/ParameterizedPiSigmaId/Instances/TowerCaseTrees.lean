@@ -483,7 +483,7 @@ theorem leafConditions : LeafConditions definitions where
 
 /-- The package computing by the four trees is Church–Rosser. -/
 theorem churchRosser : ChurchRosser rules :=
-  caseTree_churchRosser leafConditions Iff.rfl Tower.headEq_symmetric
+  caseTree_churchRosser leafConditions Iff.rfl LevelTower.headEq_symmetric
 
 /-- Every root step happens at a defined constant applied to its arity whose
 tree's skeleton accepts the arguments. -/

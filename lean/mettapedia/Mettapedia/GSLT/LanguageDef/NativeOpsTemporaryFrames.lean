@@ -1,0 +1,191 @@
+import Mettapedia.GSLT.LanguageDef.NativeOpsTargetEval
+
+/-!
+# Protected private temporaries during operand evaluation
+
+Compilation identities are ordinary natural names, not guest word values.
+The relations below retain all source-visible local addresses and the exact
+values of already-created private temporaries. Runtime memory and faults are
+separate state components. Thus later argument evaluation may update aliased
+locals while keeping its earlier by-value argument results.
+-/
+
+set_option autoImplicit false
+
+namespace Mettapedia.GSLT.LanguageDef.NativeOps
+
+/-- All live private names lie in the compilation supply already consumed. -/
+def TemporaryNamesBound (frame : TargetFrame) (bound : Nat) : Prop :=
+  ∀ identity, frame.temporaryNames.contains identity = true → identity ≤ bound
+
+/-- A private map contains no value outside its live lexical names. -/
+def TemporariesScoped (frame : TargetFrame) : Prop :=
+  ∀ identity, frame.temporaryNames.contains identity = false → frame.temporaries identity = none
+
+structure TemporaryProtection (bound : Nat) (before after : TargetFrame) : Prop where
+  storage : after.storage = before.storage
+  nextLocal : after.nextLocal = before.nextLocal
+  bindings : after.bindings = before.bindings
+  names : ∀ identity, identity ≤ bound →
+    after.temporaryNames.contains identity = before.temporaryNames.contains identity
+  values : ∀ identity, identity ≤ bound → after.temporaries identity = before.temporaries identity
+
+def atomWithin (bound : Nat) : NativeIR.Atom → Prop
+  | .temporary identity _ | .iterationCounter identity => identity ≤ bound
+  | .localAddress _ _ | .word _ | .zero _ | .unit => True
+
+theorem temporary_protection_refl (bound : Nat) (frame : TargetFrame) :
+    TemporaryProtection bound frame frame := ⟨rfl, rfl, rfl, fun _ _ => rfl, fun _ _ => rfl⟩
+
+theorem temporary_protection_trans {bound : Nat} {first middle last : TargetFrame}
+    (left : TemporaryProtection bound first middle)
+    (right : TemporaryProtection bound middle last) : TemporaryProtection bound first last :=
+  ⟨right.storage.trans left.storage, right.nextLocal.trans left.nextLocal,
+    right.bindings.trans left.bindings, fun identity within =>
+      (right.names identity within).trans (left.names identity within),
+    fun identity within => (right.values identity within).trans (left.values identity within)⟩
+
+theorem temporary_protection_weaken {small large : Nat} {before after : TargetFrame}
+    (within : small ≤ large) (protection : TemporaryProtection large before after) :
+    TemporaryProtection small before after :=
+  ⟨protection.storage, protection.nextLocal, protection.bindings,
+    fun identity inside => protection.names identity (inside.trans within),
+    fun identity inside => protection.values identity (inside.trans within)⟩
+
+theorem temporary_protection_preserves_source_frame {bound : Nat}
+    {source : SourceFrame} {before after : TargetFrame}
+    (frames : FrameRelated source before) (protection : TemporaryProtection bound before after) :
+    FrameRelated source after :=
+  ⟨protection.storage.trans frames.storage, protection.nextLocal.trans frames.nextLocal,
+    protection.bindings.trans frames.bindings⟩
+
+theorem temporary_bound_fresh {frame : TargetFrame} {bound identity : Nat}
+    (bounded : TemporaryNamesBound frame bound) (fresh : bound < identity) :
+    frame.temporaryNames.contains identity = false := by
+  cases found : frame.temporaryNames.contains identity with
+  | false => rfl
+  | true => exact False.elim ((Nat.not_le_of_lt fresh) (bounded identity found))
+
+theorem declare_temporary_protects {bound identity : Nat} (frame : TargetFrame)
+    (value : TargetValue) (fresh : bound < identity) :
+    TemporaryProtection bound frame (targetDeclareTemporary frame identity value) := by
+  refine ⟨rfl, rfl, rfl, ?_, ?_⟩
+  · intro candidate within
+    have different : candidate ≠ identity := fun same => by subst candidate; omega
+    simp only [targetDeclareTemporary, List.contains_cons, beq_eq_false_iff_ne.mpr different,
+      Bool.false_or]
+  · intro candidate within
+    have different : candidate ≠ identity := fun same => by subst candidate; omega
+    simp only [targetDeclareTemporary, different, if_false]
+
+theorem update_temporary_protects {bound identity : Nat} (frame : TargetFrame)
+    (value : TargetValue) (fresh : bound < identity) :
+    TemporaryProtection bound frame (targetUpdateTemporary frame identity value) := by
+  refine ⟨rfl, rfl, rfl, fun _ _ => rfl, ?_⟩
+  intro candidate within
+  have different : candidate ≠ identity := fun same => by subst candidate; omega
+  simp only [targetUpdateTemporary, different, if_false]
+
+theorem declared_temporary_bound {frame : TargetFrame} {before after identity : Nat}
+    (bounded : TemporaryNamesBound frame before) (extended : before ≤ after)
+    (within : identity ≤ after) (value : TargetValue) :
+    TemporaryNamesBound (targetDeclareTemporary frame identity value) after := by
+  intro candidate live
+  simp only [targetDeclareTemporary, List.contains_cons, Bool.or_eq_true] at live
+  rcases live with same | old
+  · have equal : candidate = identity := eq_of_beq same
+    subst candidate; exact within
+  · exact (bounded candidate old).trans extended
+
+theorem updated_temporary_bound {frame : TargetFrame} {bound identity : Nat}
+    (bounded : TemporaryNamesBound frame bound) (value : TargetValue) :
+    TemporaryNamesBound (targetUpdateTemporary frame identity value) bound := bounded
+
+theorem declared_temporaries_completeNames {frame : TargetFrame}
+    (completeNames : TemporariesScoped frame) (identity : Nat) (value : TargetValue) :
+    TemporariesScoped (targetDeclareTemporary frame identity value) :=
+  declare_temporary_scoped frame identity value completeNames
+
+theorem temporary_protection_local_address {bound : Nat} {before after : TargetFrame}
+    (protection : TemporaryProtection bound before after) (name : String) :
+    targetLocalAddress after name = targetLocalAddress before name := by
+  simp only [targetLocalAddress, protection.bindings, protection.storage]
+
+theorem protection_atom_evaluation {World : Type} {interface : Interface}
+    {bound : Nat} {before after : TargetFrame}
+    (protection : TemporaryProtection bound before after) (atom : NativeIR.Atom)
+    (within : atomWithin bound atom) (initial final : TargetState World) (value : TargetValue) :
+    TargetAtomEval interface before initial atom value ↔
+      TargetAtomEval interface after final atom value := by
+  constructor
+  · intro read
+    cases read with
+    | temporary found live =>
+        exact .temporary ((protection.values _ within).trans found)
+          ((protection.names _ within).trans live)
+    | iterationCounter found live =>
+        exact .iterationCounter ((protection.values _ within).trans found)
+          ((protection.names _ within).trans live)
+    | localAddress found =>
+        exact .localAddress ((temporary_protection_local_address protection _).trans found)
+    | word value => exact .word value
+    | zero initialized => exact .zero initialized
+    | unit => exact .unit
+  · intro read
+    cases read with
+    | temporary found live =>
+        exact .temporary ((protection.values _ within).symm.trans found)
+          ((protection.names _ within).symm.trans live)
+    | iterationCounter found live =>
+        exact .iterationCounter ((protection.values _ within).symm.trans found)
+          ((protection.names _ within).symm.trans live)
+    | localAddress found =>
+        exact .localAddress ((temporary_protection_local_address protection _).symm.trans found)
+    | word value => exact .word value
+    | zero initialized => exact .zero initialized
+    | unit => exact .unit
+
+theorem protection_atoms_evaluation {World : Type} {interface : Interface}
+    {bound : Nat} {before after : TargetFrame}
+    (protection : TemporaryProtection bound before after) (atoms : List NativeIR.Atom)
+    (within : ∀ atom ∈ atoms, atomWithin bound atom)
+    (initial final : TargetState World) (values : List TargetValue) :
+    TargetAtomsEval interface before initial atoms values ↔
+      TargetAtomsEval interface after final atoms values := by
+  induction atoms generalizing values with
+  | nil => constructor <;> intro read <;> cases read <;> exact .nil
+  | cons head rest ih =>
+      constructor
+      · intro read
+        cases read with
+        | cons first tail =>
+            exact .cons ((protection_atom_evaluation protection head (within head (by simp)) _ _ _).mp first)
+              ((ih (fun atom member => within atom (by simp [member])) _).mp tail)
+      · intro read
+        cases read with
+        | cons first tail =>
+            exact .cons ((protection_atom_evaluation protection head (within head (by simp)) _ _ _).mpr first)
+              ((ih (fun atom member => within atom (by simp [member])) _).mpr tail)
+
+theorem target_pure_temporary_any_exact {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World) (result : NativeType)
+    (root : List NativeIR.Instruction) (frame : TargetFrame) (state : TargetState World)
+    (identity : Nat) (type : NativeType) (operation : NativeIR.PureOperation)
+    (unused : frame.temporaryNames.contains identity = false) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root [.temporary identity type operation] frame state out ↔
+      ∃ value, TargetPureEval interface frame state operation value ∧
+        out = ⟨.normal, targetDeclareTemporary frame identity value, state⟩ := by
+  constructor
+  · intro ran
+    cases ran with
+    | next first rest =>
+        cases first with
+        | temporary _ computed =>
+            cases rest
+            exact ⟨_, computed, rfl⟩
+    | «return» first | resume first _ _ | escape first _ => cases first
+  · rintro ⟨value, computed, same⟩
+    subst out
+    exact .next (.temporary unused computed) (.nil _ _ _)
+
+end Mettapedia.GSLT.LanguageDef.NativeOps

@@ -14,7 +14,7 @@ zero and transports the second opaque rule exactly. -/
 theorem load_occurrence_one_exact :
     cReflectiveSourceWorkQueueStep .leaveInert afterLoad0 =
       some afterLoad1 := by
-  rfl
+  decide +kernel
 
 #print axioms load_occurrence_one_exact
 

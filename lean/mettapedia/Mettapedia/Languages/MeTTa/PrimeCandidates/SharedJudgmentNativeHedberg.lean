@@ -26,7 +26,7 @@ open FormationSensitiveBasedIdentity (doubleWeaken basedContext pointSub reflexi
 open SharedJudgmentIdentityRegions (arrow apply_typed ofBody_point)
 open SharedJudgmentNativeIdentityPaths
 
-variable {n m : Nat} {level : LevelExpr} {signature : Signature Tower.Head}
+variable {n m : Nat} {level : LevelExpr Nat} {signature : Signature Tower.Head}
 variable {context : Tower.Ctx n}
 
 def selectorType (carrier left : Tower.Tm n) : Tower.Tm n :=
@@ -309,7 +309,7 @@ theorem hedberg_typed {carrier left selector right first second constant : Tower
   simp only [hedberg, compose_substitute, inverse_substitute, fixed_substitute,
     normalizedComparison_substitute, normalized_substitute, subst]
 
-def selectorLevel (level : LevelExpr) : LevelExpr := .max level (.max level level)
+def selectorLevel (level : LevelExpr Nat) : LevelExpr Nat := .max level (.max level level)
 
 theorem selectorType_formed {carrier left : Tower.Tm n}
     (carrierTyped : Typing (rules level signature) context carrier (sortTm level))
@@ -339,22 +339,22 @@ theorem abstract_judgment {domain : Tower.Tm n} {body result : Tower.Tm (n + 1)}
             (.piForm domainFormed (.sort u) resultFormed.typing (.sort v) (.sorts u v))
             (.sort (.max u v)) judgment.typing⟩
 
-def contextA (level : LevelExpr) : Tower.Ctx 1 := .snoc .nil (sortTm level)
-def contextAX (level : LevelExpr) : Tower.Ctx 2 := .snoc (contextA level) (.var 0)
-def contextAXC (level : LevelExpr) : Tower.Ctx 3 :=
+def contextA (level : LevelExpr Nat) : Tower.Ctx 1 := .snoc .nil (sortTm level)
+def contextAX (level : LevelExpr Nat) : Tower.Ctx 2 := .snoc (contextA level) (.var 0)
+def contextAXC (level : LevelExpr Nat) : Tower.Ctx 3 :=
   .snoc (contextAX level) (selectorType (.var 1) (.var 0))
-def contextAXCY (level : LevelExpr) : Tower.Ctx 4 := .snoc (contextAXC level) (.var 2)
-def contextAXCYP (level : LevelExpr) : Tower.Ctx 5 :=
+def contextAXCY (level : LevelExpr Nat) : Tower.Ctx 4 := .snoc (contextAXC level) (.var 2)
+def contextAXCYP (level : LevelExpr Nat) : Tower.Ctx 5 :=
   .snoc (contextAXCY level) (.id (.var 3) (.var 2) (.var 0))
-def contextAXCYPQ (level : LevelExpr) : Tower.Ctx 6 :=
+def contextAXCYPQ (level : LevelExpr Nat) : Tower.Ctx 6 :=
   .snoc (contextAXCYP level) (.id (.var 4) (.var 3) (.var 1))
 def constancyInstanceType : Tower.Tm 6 :=
   .id (.id (.var 5) (.var 4) (.var 2))
     (select (.var 3) (.var 2) (.var 1)) (select (.var 3) (.var 2) (.var 0))
-def schemaContext (level : LevelExpr) : Tower.Ctx 7 :=
+def schemaContext (level : LevelExpr Nat) : Tower.Ctx 7 :=
   .snoc (contextAXCYPQ level) constancyInstanceType
 
-theorem contextAXCYPQ_formed (level : LevelExpr) (signature : Signature Tower.Head) :
+theorem contextAXCYPQ_formed (level : LevelExpr Nat) (signature : Signature Tower.Head) :
     ContextFormation (rules level signature) (contextAXCYPQ level) := by
   exact .snoc (.snoc (.snoc (.snoc
     (.snoc (.snoc .nil (.headType (.sort level)) (.sort (.succ level))) (.var 0) (.sort level))
@@ -363,7 +363,7 @@ theorem contextAXCYPQ_formed (level : LevelExpr) (signature : Signature Tower.He
     (.idForm (.var 3) (.sort level) (.var 2) (.var 0)) (.sort level))
     (.idForm (.var 4) (.sort level) (.var 3) (.var 1)) (.sort level)
 
-theorem schemaContext_formed (level : LevelExpr) (signature : Signature Tower.Head) :
+theorem schemaContext_formed (level : LevelExpr Nat) (signature : Signature Tower.Head) :
     ContextFormation (rules level signature) (schemaContext level) := by
   have selectorTyped : Typing (rules level signature) (contextAXCYPQ level) (.var 3)
       (selectorType (.var 5) (.var 4)) := by
@@ -376,7 +376,7 @@ theorem schemaContext_formed (level : LevelExpr) (signature : Signature Tower.He
 def schemaTerm : Tower.Tm 7 := hedberg (.var 6) (.var 5) (.var 4) (.var 3) (.var 2) (.var 1) (.var 0)
 def schemaType : Tower.Tm 7 := .id (.id (.var 6) (.var 5) (.var 3)) (.var 2) (.var 1)
 
-theorem schema_judgment (level : LevelExpr) (signature : Signature Tower.Head) :
+theorem schema_judgment (level : LevelExpr Nat) (signature : Signature Tower.Head) :
     Judgment (rules level signature) (schemaContext level) schemaTerm schemaType := by
   have selectorTyped : Typing (rules level signature) (schemaContext level) (.var 4)
       (selectorType (.var 6) (.var 5)) := by
@@ -389,19 +389,19 @@ theorem schema_judgment (level : LevelExpr) (signature : Signature Tower.Head) :
 computation roots can import it before supplying their native selectors. -/
 def hedbergClosed : Tower.Tm 0 := .lam (.lam (.lam (.lam (.lam (.lam (.lam schemaTerm))))))
 
-def hedbergClosedType (level : LevelExpr) : Tower.Tm 0 :=
+def hedbergClosedType (level : LevelExpr Nat) : Tower.Tm 0 :=
   .pi (sortTm level) (.pi (.var 0) (.pi (selectorType (.var 1) (.var 0))
     (.pi (.var 2) (.pi (.id (.var 3) (.var 2) (.var 0))
       (.pi (.id (.var 4) (.var 3) (.var 1)) (.pi constancyInstanceType schemaType))))))
 
-theorem hedbergClosed_judgment (level : LevelExpr) (signature : Signature Tower.Head) :
+theorem hedbergClosed_judgment (level : LevelExpr Nat) (signature : Signature Tower.Head) :
     Judgment (rules level signature) (.nil : Tower.Ctx 0) hedbergClosed (hedbergClosedType level) :=
   abstract_judgment (abstract_judgment (abstract_judgment (abstract_judgment
     (abstract_judgment (abstract_judgment (abstract_judgment (schema_judgment level signature)))))))
 
 /-- The checked closed proof is usable in a real computation extension.
 No opacity condition deletes the extension's datatype iota rules. -/
-theorem hedbergClosed_includeSignature (level : LevelExpr) (signature extension : Signature Tower.Head) :
+theorem hedbergClosed_includeSignature (level : LevelExpr Nat) (signature extension : Signature Tower.Head) :
     Typing (extendRules (rules level signature) extension) (.nil : Tower.Ctx 0)
       hedbergClosed (hedbergClosedType level) :=
   (hedbergClosed_judgment level signature).typing.includeSignature extension
@@ -490,7 +490,7 @@ namespace Controls
 /-- The generic proof is exercised in a genuinely formed native telescope
 whose two paths are distinct variables. Constancy is retained as a typed
 selector equation rather than inserted into conversion. -/
-theorem native_nonreflexive_schema (level : LevelExpr) (signature : Signature Tower.Head) :
+theorem native_nonreflexive_schema (level : LevelExpr Nat) (signature : Signature Tower.Head) :
     ContextFormation (rules level signature) (schemaContext level) ∧
       Typing (rules level signature) (schemaContext level) schemaTerm schemaType ∧
       (.var 2 : Tower.Tm 7) ≠ .var 1 :=

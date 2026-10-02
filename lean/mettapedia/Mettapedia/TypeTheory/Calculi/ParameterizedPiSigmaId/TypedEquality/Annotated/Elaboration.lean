@@ -326,6 +326,27 @@ def patternKnowledge (decls : DeclName → Option (CTm Head 0)) :
           | _ => none) a
   | _, _, _ => Knowledge.empty
 
+/-- The equations the reflexivity positions of a first-order left side impose:
+the point of a reflexivity proof checked against `Id A x y` equals `x` and `y`
+at `A`, as triples (point, endpoint, carrier). -/
+def patternEquations (decls : DeclName → Option (CTm Head 0)) :
+    {k : Nat} → Option (CTm Head k) → Tm Head k → List (CTm Head k × CTm Head k × CTm Head k)
+  | _, _, .app f a =>
+      patternEquations decls none f ++
+        patternEquations decls
+          (match (elaborate decls Knowledge.empty none none f).2 with
+            | some (.pi D _) => some D
+            | _ => none) a
+  | _, expected, .refl a =>
+      (match expected with
+        | some (.id A x y) => [(liftTm a, x, A), (liftTm a, y, A)]
+        | _ => []) ++
+      patternEquations decls
+        (match expected with
+          | some (.id A _ _) => some A
+          | _ => none) a
+  | _, _, _ => []
+
 /-- The elaboration of the left side of a schema. -/
 def elabLeft (decls : DeclName → Option (CTm Head 0)) {k : Nat} (L : Tm Head k) : CTm Head k :=
   (elaborate decls Knowledge.empty none none L).1

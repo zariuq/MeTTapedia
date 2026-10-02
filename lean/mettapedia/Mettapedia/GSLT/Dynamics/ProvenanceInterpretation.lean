@@ -106,11 +106,11 @@ theorem shared_cause_squares (c : Cause) :
 
 /-- The direct interpretation of one derivation in a semiring: the product of
 its causes' values. -/
-def interpDeriv {S : Type} [CommSemiring S] (v : Cause → S) (d : Derivation Cause) : S :=
+def interpDeriv {S : Type} [Semiring S] (v : Cause → S) (d : Derivation Cause) : S :=
   (d.map v).prod
 
 /-- The direct interpretation of a derivation set: alternatives add. -/
-def interpSet {S : Type} [CommSemiring S] (v : Cause → S) (ds : List (Derivation Cause)) : S :=
+def interpSet {S : Type} [Semiring S] (v : Cause → S) (ds : List (Derivation Cause)) : S :=
   (ds.map (interpDeriv v)).sum
 
 /-- One derivation's interpretation is the evaluation of its monomial. -/

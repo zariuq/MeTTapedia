@@ -2,7 +2,7 @@ import Mettapedia.Languages.Metamath.SourceGSLTCheckerAlignment
 import Mettapedia.Languages.Metamath.SourceGSLTIncludeDAG
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedParserComposition
 import Mettapedia.Languages.Metamath.SourceGSLTLexicalClosure
-import Metamath.ParserOperations
+import Metamath.ParserInvariantPreservation
 
 /-!
 # Reader-trace binding for the Metamath source GSLT
@@ -407,7 +407,24 @@ theorem feedToken_commentInterior
     (notClose : token.eqArray "$)".toAscii ≠ true)
     (notOpen : token.eqArray "$(".toAscii ≠ true) :
     (state.feedToken offset token).tokp = .comment inner := by
-  simp [ParserState.feedToken, commentMode, notClose, notOpen]
+  simp [ParserState.feedToken, commentMode, notClose, notOpen,
+    ParserState.mkErrorFromEvidence, ParserState.withDB]
+  split_ifs <;> cases firstNonSourceByte? token <;> simp [commentMode]
+
+/-- In every mode, a successful comment call other than the closing
+delimiter preserves the full state.  Enforced text checks cannot take an
+error branch on success; ignored text is returned unchanged directly. -/
+theorem feedToken_commentNonClose_eq_of_errorFree
+    (state : ParserState) (offset : Nat) (token : ByteSlice)
+    (inner : TokenParser) (commentMode : state.tokp = .comment inner)
+    (notClose : token.eqArray "$)".toAscii ≠ true)
+    (errorFree : (state.feedToken offset token).db.error? = none) :
+    state.feedToken offset token = state := by
+  simp only [ParserState.feedToken, commentMode, if_neg notClose] at errorFree ⊢
+  split_ifs at errorFree ⊢ <;>
+    cases found : firstNonSourceByte? token <;>
+      simp_all [ParserState.mkErrorFromEvidence, ParserState.withDB,
+        DB.mkErrorFromEvidence, DB.mkErrorWithEvidence]
 
 /-- The production delimiter test is exactly the source comment-open byte
 word; no string conversion participates in the comparison. -/
@@ -725,8 +742,8 @@ theorem checkBytesCoreLogged_callContentsAgree
     simpa [run.db_eq] using errorFree
   have feedErrorFree : run.feedRun.final.db.error? = none :=
     doneTrace_before_errorFree run.doneRun.trace doneErrorFree
-  obtain ⟨finalMode, finalCharp, finalBound, _⟩ :=
-    feedAllLogged_normalizedSpans_complete fileId bytes config feedErrorFree
+  obtain ⟨finalMode, finalCharp, finalBound⟩ :=
+    feedAllLogged_finalCharp bytes config feedErrorFree
   intro call member
   rw [run.calls_eq] at member
   rcases List.mem_append.mp member with feedMember | doneMember
@@ -1027,14 +1044,14 @@ theorem significantLocatedCalls_text
 
 /-- **Constructed monolithic same-source binding.** If the source comment
 GSLT accepts the authored scanner output and the shipped core reader accepts
-the same byte array, its retained located calls are exactly that source
-output. -/
+the same byte array in the same mode, its retained located calls are exactly
+that source output. -/
 theorem checkBytesCoreLogged_significantLocatedCalls_eq_stripComments
     (fileId : String) (bytes : ByteArray) (config : ModeConfig := {})
     (errorFree : (checkBytesCoreLogged bytes config).db.error? = none)
     {openSite : LocatedByteSpan} {output : List LocatedByteSpan}
     (stripped : stripComments bytes.data.toList
-      (tokenizeIncrementally fileId bytes) false openSite = .ok output) :
+      (tokenizeIncrementally fileId bytes config) false openSite = .ok output) :
     (checkBytesCoreLogged bytes config).calls.filterMap
         (significantLocatedCall? fileId) =
       output.map (locatedSpan bytes) := by
@@ -1048,16 +1065,16 @@ theorem checkBytesCoreLogged_significantLocatedCalls_eq_stripComments
     (checkBytesCoreLogged_callContentsAgree fileId bytes config errorFree)
     stripped
 
-/-- **Exact raw same-buffer binding.** On successful input, the shipped
-reader's chronological calls, including comment tokens, are exactly the
-located occurrences generated from the authored raw-byte scanner.  Both span
-identity and token content are derived; no ordered-token equality is supplied
-to this theorem. -/
+/-- **Exact raw same-buffer binding.** In every mode and on successful input,
+the shipped reader's chronological calls, including comment tokens, are
+exactly the occurrences generated from the same-mode authored raw-byte
+scanner.  Both span identity and token content are derived; no ordered-token
+equality is supplied to this theorem. -/
 theorem checkBytesCoreLogged_locatedCalls_eq_incrementalScanner
     (fileId : String) (bytes : ByteArray) (config : ModeConfig := {})
     (errorFree : (checkBytesCoreLogged bytes config).db.error? = none) :
     (checkBytesCoreLogged bytes config).calls.map (locatedCall fileId) =
-      (tokenizeIncrementally fileId bytes).map (locatedSpan bytes) := by
+      (tokenizeIncrementally fileId bytes config).map (locatedSpan bytes) := by
   have spans := checkBytesCoreLogged_eq_incrementalGSLTScanner
     fileId bytes config errorFree
   rw [← spans]
@@ -1094,7 +1111,7 @@ theorem checkBytesLogged_locatedCalls_eq_incrementalScanner
     (fileId : String) (bytes : ByteArray) (config : ModeConfig := {})
     (errorFree : (checkBytesLogged bytes config).db.error? = none) :
     (checkBytesLogged bytes config).calls.map (locatedCall fileId) =
-      (tokenizeIncrementally fileId bytes).map (locatedSpan bytes) := by
+      (tokenizeIncrementally fileId bytes config).map (locatedSpan bytes) := by
   rw [checkBytesLogged_calls_eq_core bytes config]
   have coreErrorFree :
       (checkBytesLogged bytes config).coreRun.db.error? = none :=
@@ -1111,7 +1128,7 @@ theorem checkBytesLogged_significantLocatedCalls_eq_stripComments
     (errorFree : (checkBytesLogged bytes config).db.error? = none)
     {openSite : LocatedByteSpan} {output : List LocatedByteSpan}
     (stripped : stripComments bytes.data.toList
-      (tokenizeIncrementally fileId bytes) false openSite = .ok output) :
+      (tokenizeIncrementally fileId bytes config) false openSite = .ok output) :
     (checkBytesLogged bytes config).calls.filterMap
         (significantLocatedCall? fileId) =
       output.map (locatedSpan bytes) := by

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivationCanary
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveSinkBatchLastAdd
 
 set_option autoImplicit false
 set_option maxRecDepth 100000
@@ -45,14 +46,23 @@ def parametricLoadSubstitution (rule : Atom) : Subst :=
   simp [parametricLoadSubstitution, instantiateTemplateAtom?, templateCovered,
     applySubst, Subst.lookup]
 
+@[simp] theorem parametricLoadSubstitution_instantiates_stored_rule (rule : Atom) :
+    instantiateTemplateAtom? (parametricLoadSubstitution rule)
+      (.expression [.symbol "mm-internal-compressed-dispatch-rule",
+        .var "compressed-verifier-rule"]) = some (compressedDispatchRuleRow rule) := by
+  simp [parametricLoadSubstitution, instantiateTemplateAtom?, templateCovered,
+    templatesCovered, applySubst, applySubst.applySubstList, Subst.lookup,
+    compressedDispatchRuleRow]
+
 @[simp] theorem parametricLoadSubstitution_instantiates_successor
     (rule : Atom) :
     instantiateTemplateAtom? (parametricLoadSubstitution rule)
       compressedRuleNextLoadingTemplate = some (canaryLoading 1) := by
   simp [parametricLoadSubstitution, compressedRuleNextLoadingTemplate,
-    instantiateTemplateAtom?, templateCovered, applySubst, Subst.lookup,
+    instantiateTemplateAtom?, templateCovered, templatesCovered, applySubst,
+    applySubst.applySubstList, Subst.lookup,
     canaryLoading, canarySource, canaryPosition, canaryProofOwner,
-    canaryHeaderControl, sourceProofOwnerTemplate, headerControlTemplate]
+    canaryHeaderControl, sourceProofOwnerTemplate, headerControlTemplate, natAtom]
 
 theorem parametricLoadFinal_eq (rule : Atom) :
     parametricLoadFinal rule =
@@ -63,36 +73,43 @@ theorem parametricLoadFinal_eq (rule : Atom) :
   rfl
 
 /-- Once the canonical matcher row is present, the loader sinks are parametric
-in the supplied target rule: they emit the exact opaque value and advance the
-occurrence-indexed cursor. -/
-theorem load_sinks_emit_supplied_rule_and_successor_of_match (rule : Atom)
+in the supplied target rule: they store its exact opaque value in a verifier-
+owned code row and advance the cursor without directly activating that rule. -/
+theorem load_sinks_store_supplied_rule_and_successor_of_match (rule : Atom)
     (rowMember :
       parametricLoadSubstitution rule ∈ parametricLoadRows rule) :
-    rule ∈ parametricLoadFinal rule ∧ canaryLoading 1 ∈ parametricLoadFinal rule := by
+    compressedDispatchRuleRow rule ∈ parametricLoadFinal rule ∧
+      canaryLoading 1 ∈ parametricLoadFinal rule := by
   rw [parametricLoadFinal_eq]
   constructor
-  · simp only [compressedRuleLoadSinks, cApplyReflectiveSinkBatch]
-    apply mem_cApplyReflectiveSinkBatch_add_cons_of_row
-      (parametricLoadRows rule) _ (.var "compressed-verifier-rule") rule
+  · apply mem_cApplyReflectiveSinkBatch_append_add_cons_of_row
+      (parametricLoadRows rule) _
+      [.add compressedRuleLoadSelf, .remove compressedRuleLoadingTemplate]
+      (.expression [.symbol "mm-internal-compressed-dispatch-rule",
+        .var "compressed-verifier-rule"])
+      (compressedDispatchRuleRow rule)
       [.add compressedRuleNextLoadingTemplate]
       (parametricLoadSubstitution rule)
     · exact rowMember
-    · exact parametricLoadSubstitution_instantiates_rule rule
+    · exact parametricLoadSubstitution_instantiates_stored_rule rule
     · intro sink member
       simp only [List.mem_singleton] at member
       subst sink
       exact ⟨compressedRuleNextLoadingTemplate, rfl⟩
-  · simp only [compressedRuleLoadSinks, cApplyReflectiveSinkBatch]
-    apply mem_cApplyReflectiveSinkBatch_add_cons_of_row
-      (parametricLoadRows rule) _ compressedRuleNextLoadingTemplate
-      (canaryLoading 1) [] (parametricLoadSubstitution rule)
+  · apply mem_cApplyReflectiveSinkBatch_append_add_of_row
+      (parametricLoadRows rule) _
+      [.add compressedRuleLoadSelf, .remove compressedRuleLoadingTemplate,
+       .add (.expression [.symbol "mm-internal-compressed-dispatch-rule",
+         .var "compressed-verifier-rule"])]
+      compressedRuleNextLoadingTemplate (canaryLoading 1)
+      (parametricLoadSubstitution rule)
     · exact rowMember
     · exact parametricLoadSubstitution_instantiates_successor rule
-    · simp
 
 #print axioms parametricLoadSubstitution_instantiates_rule
+#print axioms parametricLoadSubstitution_instantiates_stored_rule
 #print axioms parametricLoadSubstitution_instantiates_successor
 #print axioms parametricLoadFinal_eq
-#print axioms load_sinks_emit_supplied_rule_and_successor_of_match
+#print axioms load_sinks_store_supplied_rule_and_successor_of_match
 
 end Mettapedia.Languages.Metamath.MM2CompressedProofRuleLoadParametric

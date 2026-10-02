@@ -4,7 +4,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impred
 /-!
 # The transport value model of the executable package
 
-The value side of model S for the executable package: model C's consistency
+The value side of model SN for the executable package: model C's consistency
 model with a daimon, on which identity elimination transports its method along
 its motive instead of casting it (`tmodelC`).
 

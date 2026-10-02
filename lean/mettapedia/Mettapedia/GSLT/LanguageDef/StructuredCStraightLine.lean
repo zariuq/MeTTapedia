@@ -253,6 +253,13 @@ def runSteps? (handler : ExternalHandler) : Nat → Pattern → Option Pattern
         | some next => runSteps? handler fuel next
         | none => none
 
+/-- A known nonterminal step consumes one unit of the execution budget. -/
+theorem runSteps?_of_step_exact (handler : ExternalHandler) (fuel : Nat)
+    {config next : Pattern} (running : isHalted config = false)
+    (stepped : step? handler config = some next) :
+    runSteps? handler (fuel + 1) config = runSteps? handler fuel next := by
+  simp only [runSteps?, running, Bool.false_eq_true, if_false, stepped]
+
 theorem isHalted_of_runSteps? (handler : ExternalHandler) :
     ∀ {fuel : Nat} {config final : Pattern}, runSteps? handler fuel config = some final →
       isHalted final = true

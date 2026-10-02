@@ -100,10 +100,10 @@ def insertedTargetAgrees (targetLabel : String)
 is a certified `checkBytes` run; the chosen ingress event is provably the head
 of the filtered events from that same run. -/
 structure TargetBoundary (sourceBytes : ByteArray) (targetLabel : String) where
-  run : CheckBytesRun sourceBytes .soundDefault
+  run : CheckBytesRun sourceBytes .sound
   run_eq : run =
     Mettapedia.Languages.Metamath.InferenceOneShotByteLog.checkBytesLogged
-      sourceBytes .soundDefault
+      sourceBytes .sound
   observed : List ObservedProofToken
   observed_eq : observed = targetProofTokens targetLabel run.calls
   first : ObservedProofToken
@@ -126,11 +126,11 @@ def proofTokens {sourceBytes : ByteArray} {targetLabel : String}
 theorem readerDB_eq_checkBytes {sourceBytes : ByteArray}
     {targetLabel : String}
     (boundary : TargetBoundary sourceBytes targetLabel) :
-    boundary.run.db = Metamath.Verify.checkBytes sourceBytes .soundDefault := by
+    boundary.run.db = Metamath.Verify.checkBytes sourceBytes .sound := by
   rw [boundary.run_eq]
   exact
     Mettapedia.Languages.Metamath.InferenceOneShotByteLog.checkBytesLogged_db_eq_checkBytes
-      sourceBytes .soundDefault
+      sourceBytes .sound
 
 end TargetBoundary
 
@@ -196,19 +196,19 @@ structure ChunkedTargetBoundary (sourceBytes : ByteArray)
   first : ObservedProofToken
   first_is_head : observed.head? = some first
   readerAccepted :
-    (Metamath.Verify.checkBytes sourceBytes .soundDefault).error?.isNone = true
+    (Metamath.Verify.checkBytes sourceBytes .sound).error?.isNone = true
   traversalAccepted : run.db.error?.isNone = true
   targetAbsent : first.before.db.find? targetLabel = none
   ingressAgrees : proofIngressAgrees targetLabel first observed = true
   readerInsertedAgrees :
     insertedTargetAgrees targetLabel
-      (Metamath.Verify.checkBytes sourceBytes .soundDefault) first = true
+      (Metamath.Verify.checkBytes sourceBytes .sound) first = true
   traversalInsertedAgrees :
     insertedTargetAgrees targetLabel run.db first = true
   finalDatabaseAgrees :
     (databaseSnapshot run.db ==
       databaseSnapshot
-        (Metamath.Verify.checkBytes sourceBytes .soundDefault)) = true
+        (Metamath.Verify.checkBytes sourceBytes .sound)) = true
 
 namespace ChunkedTargetBoundary
 
@@ -243,7 +243,7 @@ def extractTargetBoundary (sourceBytes : ByteArray) (targetLabel : String) :
     Except AdmissionError (TargetBoundary sourceBytes targetLabel) := do
   let run :=
     Mettapedia.Languages.Metamath.InferenceOneShotByteLog.checkBytesLogged
-      sourceBytes .soundDefault
+      sourceBytes .sound
   if hAccepted : run.db.error?.isNone then
     let observed := targetProofTokens targetLabel run.calls
     match hFirst : observed.head? with
@@ -275,9 +275,9 @@ def extractTargetBoundary (sourceBytes : ByteArray) (targetLabel : String) :
 def extractChunkedTargetBoundary (sourceBytes : ByteArray)
     (targetLabel : String) :
     Except AdmissionError (ChunkedTargetBoundary sourceBytes targetLabel) := do
-  let readerDB := Metamath.Verify.checkBytes sourceBytes .soundDefault
+  let readerDB := Metamath.Verify.checkBytes sourceBytes .sound
   if hReaderAccepted : readerDB.error?.isNone then
-    let run := chunkedTokenLog sourceBytes .soundDefault
+    let run := chunkedTokenLog sourceBytes .sound
     if hTraversalAccepted : run.db.error?.isNone then
       let observed := targetProofTokens targetLabel run.calls
       match hFirst : observed.head? with
@@ -343,13 +343,13 @@ namespace ParsedSource
 
 def readerDB {sourceBytes : ByteArray} {targetLabel : Option String} :
     ParsedSource sourceBytes targetLabel -> RuntimeDB
-  | .database => Metamath.Verify.checkBytes sourceBytes .soundDefault
+  | .database => Metamath.Verify.checkBytes sourceBytes .sound
   | .target _ _ | .chunkedTarget _ _ =>
-      Metamath.Verify.checkBytes sourceBytes .soundDefault
+      Metamath.Verify.checkBytes sourceBytes .sound
 
 def prefixDB {sourceBytes : ByteArray} {targetLabel : Option String} :
     ParsedSource sourceBytes targetLabel -> RuntimeDB
-  | .database => Metamath.Verify.checkBytes sourceBytes .soundDefault
+  | .database => Metamath.Verify.checkBytes sourceBytes .sound
   | .target _ boundary => boundary.prefixDB
   | .chunkedTarget _ boundary => boundary.prefixDB
 
@@ -357,7 +357,7 @@ theorem readerDB_eq_checkBytes {sourceBytes : ByteArray}
     {targetLabel : Option String}
     (parsed : ParsedSource sourceBytes targetLabel) :
     parsed.readerDB =
-      Metamath.Verify.checkBytes sourceBytes .soundDefault := by
+      Metamath.Verify.checkBytes sourceBytes .sound := by
   cases parsed with
   | database => rfl
   | target targetLabel boundary =>
@@ -409,7 +409,7 @@ def prepareBytes (request : AdmissionRequest) :
   match hTarget : request.targetLabel with
   | none =>
       let database :=
-        Metamath.Verify.checkBytes request.sourceBytes .soundDefault
+        Metamath.Verify.checkBytes request.sourceBytes .sound
       if database.error?.isNone then
         let parsed : ParsedSource request.sourceBytes none :=
           .database
@@ -583,7 +583,7 @@ def prepare : SourceRequest -> IO (Except AdmissionError PreparedAdmission)
       if request.targetLabel.isSome then
         return .error .includeTargetNotAvailable
       let rootBytes <- IO.FS.readBinFile request.sourcePath
-      let database <- Metamath.Verify.check request.sourcePath .soundDefault
+      let database <- Metamath.Verify.check request.sourcePath .sound
       if !database.error?.isNone then
         return .error .readerRejected
       match hDefinition : projectForMode none database with

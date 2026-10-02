@@ -530,7 +530,7 @@ def closePair (a b : Term sig [] Srt.pr) : Sub sig [Srt.pr, Srt.pr] []
 /-- **Parallel composition is commutative modulo the equations.** -/
 theorem par_comm (a b : Term sig [] Srt.pr) :
     EqClosure rhoE (parT a b) (parT b a) :=
-  EqClosure.ax (E := rhoE) 0 contUnquote (closePair a b)
+  EqClosure.ax_closed (E := rhoE) 0 contUnquote (closePair a b)
 
 /-- Close the one-variable unit axiom with any process. -/
 def closeOne (a : Term sig [] Srt.pr) : Sub sig [Srt.pr] []
@@ -539,7 +539,7 @@ def closeOne (a : Term sig [] Srt.pr) : Sub sig [Srt.pr] []
 /-- The right-unit law is an instance of the authored unit equation. -/
 theorem par_right_unit (a : Term sig [] Srt.pr) :
     EqClosure rhoE (parT a nilP) a :=
-  EqClosure.ax (E := rhoE) 2 contUnquote (closeOne a)
+  EqClosure.ax_closed (E := rhoE) 2 contUnquote (closeOne a)
 
 /-- The left-unit law is derived, not an additional authored equation. -/
 theorem par_left_unit (a : Term sig [] Srt.pr) :

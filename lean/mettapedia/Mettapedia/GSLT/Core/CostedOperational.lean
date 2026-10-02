@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.Core.GSLTConstructions
 import Mettapedia.GSLT.Core.IndexedOperational
 import Mettapedia.GSLT.Core.SemanticImplementation
+import Mettapedia.GSLT.Core.WriterGSLT
 
 /-!
 # Functorial writer enrichment of operational GSLTs
@@ -30,7 +31,19 @@ open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT
 
-universe u
+universe u v
+
+/-- Erasing a total writer grading preserves and reflects operational steps,
+also when the state and grade carriers live in different universes. -/
+def spendErasureCover {system : GSLT.{u}} {Grade : Type v} [Monoid Grade]
+    (spend : system.StepSpend Grade) (total : spend.Total) :
+    SemanticCoveredTranslation (system.spendLift spend) system where
+  mapTerm := Prod.fst
+  mapEquiv := fun equivalent => equivalent.1
+  mapStep := fun step => GSLT.spendLift_erase_step spend step
+  liftStep := fun {sourceTerm} {targetTerm} step => by
+    obtain ⟨value, lifted⟩ := GSLT.spendLift_lift_step spend total step sourceTerm.2
+    exact ⟨(targetTerm, value), lifted, system.equations.iseqv.refl _⟩
 
 /-- An operational GSLT together with a selected monoidal grade for its
 authentic steps. -/
@@ -114,14 +127,8 @@ the existing `SemanticCoveredTranslation` theorems. -/
 def spendEraseCover {Grade : Type u} [Monoid Grade]
     (system : CostedTheory.{u} Grade) (total : system.spend.Total) :
     SemanticCoveredTranslation
-      (system.theory.spendLift system.spend) system.theory where
-  mapTerm := Prod.fst
-  mapEquiv := fun equivalent => equivalent.1
-  mapStep := fun step => GSLT.spendLift_erase_step system.spend step
-  liftStep := fun {sourceTerm} {targetTerm} step => by
-    obtain ⟨value, lifted⟩ :=
-      GSLT.spendLift_lift_step system.spend total step sourceTerm.2
-    exact ⟨(targetTerm, value), lifted, system.theory.equations.iseqv.refl _⟩
+      (system.theory.spendLift system.spend) system.theory :=
+  spendErasureCover system.spend total
 
 end CostedTranslation
 
@@ -210,28 +217,10 @@ def unitSystem : GSLT where
     rintro source target target' step rfl
     exact step
 
-def unitSpend : unitSystem.StepSpend Nat where
-  graded := fun source target grade =>
-    unitSystem.Step source target ∧ grade = 1
-  sound := And.left
-  resp_left := by
-    rintro source source' target grade rfl graded
-    exact ⟨target, graded, rfl⟩
-  resp_right := by
-    rintro source target target' grade graded rfl
-    exact graded
+def unitSpend : unitSystem.StepSpend Nat := WriterGSLT.constGrading unitSystem 1
 
 /-- A second lawful grading of the identical bare operational theory. -/
-def doubledUnitSpend : unitSystem.StepSpend Nat where
-  graded := fun source target grade =>
-    unitSystem.Step source target ∧ grade = 2
-  sound := And.left
-  resp_left := by
-    rintro source source' target grade rfl graded
-    exact ⟨target, graded, rfl⟩
-  resp_right := by
-    rintro source target target' grade graded rfl
-    exact graded
+def doubledUnitSpend : unitSystem.StepSpend Nat := WriterGSLT.constGrading unitSystem 2
 
 def costedUnit : CostedTheory Nat := ⟨unitSystem, unitSpend⟩
 

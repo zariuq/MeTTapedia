@@ -16,6 +16,7 @@ import Mettapedia.OSLF.Framework.ReductionViewIndexedModalities
 import Mettapedia.TypeTheory.UniverseLevel.ZFSetInterpretation
 import Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory
 import Mettapedia.TypeTheory.CompositionalRelationLifting
+import Mettapedia.TypeTheory.AccessibleRecursion
 /-
 open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId
 open Mettapedia.TypeTheory.UniverseLevel
@@ -175,6 +176,10 @@ import Mettapedia.Logic.GunkyMereology
 import Mettapedia.Logic.StoneGunkDuality
 import Mettapedia.Logic.Metaphysics
 import Mettapedia.Logic.LawsOfForm
+import Mettapedia.Logic.TheoryModel
+import Mettapedia.Logic.Diagonal
+import Mettapedia.Logic.Propositions
+import Mettapedia.GSLT.LanguageDef.BootstrapCell
 import Mettapedia.UniversalAI.SolomonoffPrior
 import Mettapedia.UniversalAI.UniversalMachineBoundary
 import Mettapedia.UniversalAI.IncrementalCompressionBridge
@@ -252,18 +257,28 @@ import Mettapedia.UniversalAI.MultiAgent.Value
 import Mettapedia.UniversalAI.MultiAgent.BestResponse
 import Mettapedia.UniversalAI.MultiAgent.Nash
 import Mettapedia.UniversalAI.MultiAgent.Examples
+import Mettapedia.UniversalAI.MultiAgent.TwoActionGames
 
--- Reflective Oracles (Grain of Truth - Core Infrastructure)
+-- Brouwer's fixed-point theorem for cubes, by Kuhn's combinatorial lemma
+import Mettapedia.Combinatorics.Kuhn.Parity
+import Mettapedia.Topology.BrouwerCube
+
+-- Reflective oracles (Fallenstein, Taylor & Christiano; Leike, Taylor & Fallenstein)
 import Mettapedia.UniversalAI.ReflectiveOracles.Basic
+import Mettapedia.UniversalAI.ReflectiveOracles.FixedPoints
+import Mettapedia.UniversalAI.ReflectiveOracles.Controls
+import Mettapedia.UniversalAI.ReflectiveOracles.Machines
+import Mettapedia.PLN.Bridges.UniversalAI
 
--- Grain of Truth (Phase 4 - Infrastructure only)
-import Mettapedia.UniversalAI.GrainOfTruth.Setup
+-- Bayesian learning with a grain of truth (Leike's thesis, Chapters 5 and 7)
+import Mettapedia.UniversalAI.GrainOfTruth.Main
 
 -- Bridge (connects geometry to probability/logic)
 import Mettapedia.Bridge.BitVectorEvidence
 
 -- Languages
 import Mettapedia.Languages.MeTTa
+import Mettapedia.Languages.TuringMachine
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineTypeQueryGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.CallGuardNativeKernel
 import Mettapedia.Languages.Megalodon.HenkinTypeFragment
@@ -575,8 +590,8 @@ import Mettapedia.Ethics
 -- `LocalityObstruction`/`AsymmetryBudgetObstruction` are repaired for the Lean
 -- 4.31 `.reducible`-transparency change (mass/benchmark wrapper `def`s marked
 -- `@[reducible]`; one projection-defeq `simpa … using` → `using!`), and the
--- `ProbabilisticTM`/`OracleTMRefined`/`OracleTM` `zero_le _` → `bot_le` (the
--- ambient `zero_le` became a zero-argument term).
+-- `ProbabilisticTM` `zero_le _` → `bot_le` (the ambient `zero_le` became a
+-- zero-argument term).
 import Mettapedia.Computability.ArithmeticalHierarchy.Level3
 import Mettapedia.Computability.CantorSpace
 import Mettapedia.Computability.HutterComputability
@@ -599,14 +614,6 @@ import Mettapedia.Computability.KolmogorovComplexity.Prefix
 import Mettapedia.Computability.KolmogorovComplexity.PrefixComplexity
 import Mettapedia.Computability.KolmogorovComplexity.SelfDelimitingCode
 import Mettapedia.Computability.KolmogorovComplexity.Uncomputability
--- `OracleTM` is NOT imported: it is an older parallel variant of the oracle-machine
--- development whose declarations (`oracleOutputOneSet`, …) collide in a single
--- environment with the canonical `OracleTMReal` already imported below.  Its own
--- 4.31 `zero_le _` → `bot_le` fix is applied in place so it stays buildable, but it
--- stays outside the closure (nothing imports it; `OracleTMReal`/`OracleTMRefined`
--- supersede it).
-import Mettapedia.Computability.OracleTMReal
-import Mettapedia.Computability.OracleTMRefined
 import Mettapedia.Computability.ProbabilisticTM
 import Mettapedia.Computability.ProbabilisticTMRefined
 import Mettapedia.Computability.PNP.ABVisibleState
@@ -805,6 +812,7 @@ import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mettapedia.GSLT.Core.Web
 import Mettapedia.GSLT.Core.ChangeOfBase
 import Mettapedia.GSLT.GraphTheory.Basic
+import Mettapedia.GSLT.GraphTheory.Solvability
 import Mettapedia.GSLT.GraphTheory.Approximants
 import Mettapedia.GSLT.GraphTheory.BohmTree
 import Mettapedia.GSLT.GraphTheory.ParallelReduction
@@ -868,6 +876,18 @@ import Mettapedia.GSLT.Meredith.Modal.RewriteModality
 import Mettapedia.GSLT.Meredith.RhoExample
 import Mettapedia.GSLT.Meredith.RhoMinimalContext
 import Mettapedia.GSLT.Meredith.WeaknessBridge
+import Mettapedia.GSLT.ObserverIndexed
+import Mettapedia.GSLT.ObserverSite
+import Mettapedia.GSLT.GradedObservers
+import Mettapedia.GSLT.IdentityAsObservation
+import Mettapedia.GSLT.ScopeAlgebra
+import Mettapedia.GSLT.ScopeConnections
+import Mettapedia.Cybernetics.ApproximateAdequacy
+import Mettapedia.OSLF.Programs
+import Mettapedia.GSLT.ProofPlans
+import Mettapedia.TypeTheory.Unfolding
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInterpretation
 -- Interactive Meredith modules (cost/ReducesN bridges over the rho `Languages` layer),
 -- unblocked now that the `Languages/` cluster compiles at 4.31.
 import Mettapedia.GSLT.Meredith.InteractiveGSLT

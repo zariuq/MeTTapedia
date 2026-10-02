@@ -1,18 +1,18 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.TheoremDefinitions
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Fundamental
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Fundamental
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.Consistency.Fundamental
 
 /-!
 # Published theorems in the models of a package
 
 A package with a published theorem `name : T := body` is sound for a model of
-the package when the model computes the new δ-rule: model S
+the package when the model computes the new δ-rule: model SN
 (`withTheorem_soundS`) when its value side steps `name` to `body`, its
 candidates are closed under that expansion, and the package declares `name`,
 if at all, at `T`; and the consistency model (`withTheorem_sound`) when its
 reduction steps `name` to `body`. The constant is then valid at its statement
 as a definition by one equation, and its δ-rule preserves meaning as a step of
-the model's own computation. Model S reads a root step of the package with the
+the model's own computation. Model SN reads a root step of the package with the
 typing facts of its redex, which are those of the declared type of the redex's
 constant; the extended package keeps them when it keeps that declared type.
 
@@ -36,8 +36,8 @@ variable {Head L : Type} [LevelOrder L]
 
 /-! ## A step of the model's own computation preserves meaning -/
 
-theorem ModelS.rootSemanticS_of_step {M : ModelS.SModel Head L} (laws : M.Laws) {n : Nat}
-    {l r : Tm Head n} (step : M.rules.computation.step l r) : ModelS.RootSemanticS M l r := by
+theorem ModelSN.rootSemanticS_of_step {M : ModelSN.SNModel Head L} (laws : M.Laws) {n : Nat}
+    {l r : Tm Head n} (step : M.rules.computation.step l r) : ModelSN.RootSemanticS M l r := by
   intro Γ A validL validR
   refine ⟨validL, validR, fun {_ _ _ σ _ _} e {_} den => ?_⟩
   exact (den.expansive laws.value).left
@@ -58,11 +58,11 @@ variable {R : Rules Head} {name : DeclName} {T body : Tm Head 0}
 
 /-- The typing facts of a spine in the extended package are those in the
 package, when the package declares `name`, if at all, at `T`. -/
-theorem ModelS.SpineFacts.of_withTheorem {M : ModelS.SModel Head L}
+theorem ModelSN.SpineFacts.of_withTheorem {M : ModelSN.SNModel Head L}
     (agrees : ∀ {T₀ : Tm Head 0}, R.constantType name = some T₀ → T₀ = T) {n : Nat}
     {Γ : Ctx Head n} {t A : Tm Head n}
-    (facts : ModelS.SpineFacts (R.withTheorem name T body) M Γ t A) :
-    ModelS.SpineFacts R M Γ t A := by
+    (facts : ModelSN.SpineFacts (R.withTheorem name T body) M Γ t A) :
+    ModelSN.SpineFacts R M Γ t A := by
   intro c args T₀ spine declared
   refine facts spine ?_
   by_cases same : c = name
@@ -71,17 +71,17 @@ theorem ModelS.SpineFacts.of_withTheorem {M : ModelS.SModel Head L}
   · rw [withTheorem_constantType_of_ne same]
     exact declared
 
-/-- **Model S with a published theorem.** A model of the package that computes
+/-- **Model SN with a published theorem.** A model of the package that computes
 the new δ-rule on its value side, and whose candidates are closed under
 expanding `name` to `body`, is a model of the extended package, when the
 package declares `name`, if at all, at `T`. -/
-theorem withTheorem_soundS {M : ModelS.SModel Head L} (sound : ModelS.TypedSoundS R M)
+theorem withTheorem_soundS {M : ModelSN.SNModel Head L} (sound : ModelSN.TypedSoundS R M)
     (formed : IsType R .nil T) (typed : Typed R .nil body T)
     (agrees : ∀ {T₀ : Tm Head 0}, R.constantType name = some T₀ → T₀ = T)
     (valueStep : ∀ {n : Nat}, M.rules.computation.step (.const name : Tm Head n) (liftClosed body))
     (realizerExpand : ∀ {r : Nat} (X : M.Cand), X.mem (liftClosed body : Tm Head r) →
       X.mem (.const name : Tm Head r)) :
-    ModelS.TypedSoundS (R.withTheorem name T body) M where
+    ModelSN.TypedSoundS (R.withTheorem name T body) M where
   laws := sound.laws
   headTyping := sound.headTyping
   isUniverse := sound.isUniverse
@@ -93,15 +93,15 @@ theorem withTheorem_soundS {M : ModelS.SModel Head L} (sound : ModelS.TypedSound
     rcases step with step | ⟨rfl, rfl⟩
     · rcases sound.root step with semantic | typedRoot
       · exact .inl semantic
-      · exact .inr fun facts => typedRoot (ModelS.SpineFacts.of_withTheorem agrees facts)
-    · exact .inl (ModelS.rootSemanticS_of_step sound.laws valueStep)
+      · exact .inr fun facts => typedRoot (ModelSN.SpineFacts.of_withTheorem agrees facts)
+    · exact .inl (ModelSN.rootSemanticS_of_step sound.laws valueStep)
   constants := by
     intro c A declared
     by_cases same : c = name
     · subst same
       rw [withTheorem_constantType_self, Option.some.injEq] at declared
       subst declared
-      exact ModelS.ValidTmS.definition (Θ := .nil) (C := T) (rhs := body) (f := c) sound formed
+      exact ModelSN.ValidTmS.definition (Θ := .nil) (C := T) (rhs := body) (f := c) sound formed
         typed
         (fun σ => by
           rw [subst_empty]

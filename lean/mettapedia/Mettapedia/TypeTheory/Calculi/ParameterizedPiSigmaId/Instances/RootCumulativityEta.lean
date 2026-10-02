@@ -28,10 +28,10 @@ abbrev familyContext : Ctx Tower.Head 2 :=
   .snoc (.snoc .nil universe₀) (.pi (.var 0) universe₀)
 
 theorem familyContext_formed : CtxFormed Tower.rules familyContext :=
-  .snoc (.snoc .nil ⟨_, Tower.IsUniverse.sort _, .headType (Tower.HeadTyping.sort _)⟩)
-    ⟨_, Tower.IsUniverse.sort _,
-      .piForm (.var 0) (Tower.IsUniverse.sort _) (.headType (Tower.HeadTyping.sort _))
-        (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)⟩
+  .snoc (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, .headType (LevelTower.HeadTyping.sort _)⟩)
+    ⟨_, LevelTower.IsUniverse.sort _,
+      .piForm (.var 0) (LevelTower.IsUniverse.sort _) (.headType (LevelTower.HeadTyping.sort _))
+        (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)⟩
 
 /-- The η-expansion of `F` is typed at `Π (x : A). 𝒰₁`. -/
 theorem etaExpansion_typed_at_raised_codomain :
@@ -49,11 +49,11 @@ theorem family_types_below :
     Below Tower.rules familyContext (.pi (.var 1) universe₀) (.pi (.var 1) universe₁) :=
   .subPi (u := .sort (.max Tower.zero (.succ Tower.zero)))
     (u' := .sort (.max Tower.zero (.succ (.succ Tower.zero)))) (w := .sort Tower.zero)
-    (.piForm (.var 1) (Tower.IsUniverse.sort _) (.headType (Tower.HeadTyping.sort _))
-      (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)) (Tower.IsUniverse.sort _)
-    (.piForm (.var 1) (Tower.IsUniverse.sort _) (.headType (Tower.HeadTyping.sort _))
-      (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)) (Tower.IsUniverse.sort _)
-    (.refl (.var 1)) (Tower.IsUniverse.sort _) (.subUniv (fun _ => Nat.le_succ _))
+    (.piForm (.var 1) (LevelTower.IsUniverse.sort _) (.headType (LevelTower.HeadTyping.sort _))
+      (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)) (LevelTower.IsUniverse.sort _)
+    (.piForm (.var 1) (LevelTower.IsUniverse.sort _) (.headType (LevelTower.HeadTyping.sort _))
+      (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)) (LevelTower.IsUniverse.sort _)
+    (.refl (.var 1)) (LevelTower.IsUniverse.sort _) (.subUniv (fun _ => Nat.le_succ _))
 
 /-- `F` itself is typed at `Π (x : A). 𝒰₁`. -/
 theorem family_typed_at_raised_codomain :
@@ -79,15 +79,15 @@ theorem family_and_eta_expansion_at_raised_codomain :
         (.appElim (A := .var 2) (B := universe₀) (.var 1) (.var 0))
     have familyTyped : Typed Tower.rules familyContext (.pi (.var 1) universe₀)
         (.head (.sort (.max Tower.zero (.succ Tower.zero)))) :=
-      .piForm (.var 1) (Tower.IsUniverse.sort _) (.headType (Tower.HeadTyping.sort _))
-        (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)
+      .piForm (.var 1) (LevelTower.IsUniverse.sort _) (.headType (LevelTower.HeadTyping.sort _))
+        (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)
     have piTyped : Typed Tower.rules (.snoc familyContext (.var 1)) (.pi (.var 2) universe₀)
         (.head (.sort (.max Tower.zero (.succ Tower.zero)))) :=
       familyTyped.weaken (extension := .var 1)
     have beta : Equal Tower.rules (.snoc familyContext (.var 1))
         (.app (.lam (.app (.var 2) (.var 0))) (.var 0)) (.app (.var 1) (.var 0)) universe₀ :=
       .betaPi (A := .var 2) (B := universe₀) (body := .app (.var 2) (.var 0)) (a := .var 0)
-        piTyped (Tower.IsUniverse.sort _)
+        piTyped (LevelTower.IsUniverse.sort _)
         (.appElim (A := .var 3) (B := universe₀) (.var 2) (.var 0)) (.var 0)
     exact .etaPi (.var 0) lamTyped (.symm beta)
   exact ⟨equal, etaExpansion_typed_at_raised_codomain, family_typed_at_raised_codomain,

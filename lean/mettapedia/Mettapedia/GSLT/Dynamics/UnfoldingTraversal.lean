@@ -48,17 +48,19 @@ productivity results, where finite approximants carry the observations.
 
 namespace Mettapedia.GSLT.Dynamics.UnfoldingTraversal
 
-variable {Ans : Type}
+universe u
+
+variable {Ans : Type u}
 
 /-! ## The unfolding tree -/
 
 /-- An activation: the answers produced here, and the sub-activations the body
 makes, in declaration order. -/
-inductive Unfold (Ans : Type) where
+inductive Unfold (Ans : Type u) where
   | node (here : List Ans) (children : List (Unfold Ans))
 
 /-- Induction with the list hypothesis for children. -/
-def Unfold.inductionOn {motive : Unfold Ans → Prop} (t : Unfold Ans)
+theorem Unfold.inductionOn {motive : Unfold Ans → Prop} (t : Unfold Ans)
     (hnode : ∀ here children, (∀ c ∈ children, motive c) →
       motive (.node here children)) : motive t :=
   match t with
@@ -85,7 +87,7 @@ def Complete (trav : Unfold Ans → List Ans) : Prop :=
 /-! ## Bag invariance -/
 
 /-- Pointwise permuted images give permuted `flatMap`s. -/
-theorem flatMap_perm_of_pointwise {α β : Type} {f g : α → List β} :
+theorem flatMap_perm_of_pointwise {α β : Type*} {f g : α → List β} :
     ∀ (l : List α), (∀ a ∈ l, (f a).Perm (g a)) → (l.flatMap f).Perm (l.flatMap g)
   | [], _ => by simp
   | a :: rest, h => by
@@ -156,7 +158,7 @@ end
 
 /-- Trimming a prefix by the length actually taken is trimming by the full
 length: the arithmetic both proofs below turn on. -/
-private theorem sub_length_take {α : Type} (k : Nat) (l : List α) :
+private theorem sub_length_take {α : Type*} (k : Nat) (l : List α) :
     k - (l.take k).length = k - l.length := by
   rw [List.length_take]; omega
 

@@ -995,14 +995,14 @@ private theorem rho_costWhole_rule_category_of_unitWire_local
             ⟨CostConstructor.base ⟨rhoCalc.terms[0],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PZero" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>

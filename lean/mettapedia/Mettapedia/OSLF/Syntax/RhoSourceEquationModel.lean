@@ -83,37 +83,38 @@ end
 mutual
 /-- An ACU axiom rearranges parallel components without changing their
 quotation count, for every closing substitution and continuation body. -/
-theorem quoteCount_acu_axiom : ∀ (i : Fin rhoE.length) {Γ : Ctx sig}
-    (body : (k : Fin metas.length) → Term sig (metas.get k).1 (metas.get k).2)
+theorem quoteCount_acu_axiom : ∀ (i : Fin rhoE.length) {Θ Γ : Ctx sig}
+    (body : ContextualAssignment sig metas Θ)
+    (ambient : Sub sig Θ Γ)
     (close : Sub sig (rhoE.get i).ctx Γ),
-    quoteCount (bind close (instantiate body (rhoE.get i).lhs)) =
-      quoteCount (bind close (instantiate body (rhoE.get i).rhs))
-  | ⟨0, _⟩, _, body, close => by
-      show quoteCount (bind close (instantiate body commPar.lhs)) =
-        quoteCount (bind close (instantiate body commPar.rhs))
-      simp only [commPar, instantiate, instantiateArgs, bind, bindArgs,
+    quoteCount (ContextualAssignment.instantiate body ambient close (rhoE.get i).lhs) =
+      quoteCount (ContextualAssignment.instantiate body ambient close (rhoE.get i).rhs)
+  | ⟨0, _⟩, _, _, body, ambient, close => by
+      show quoteCount (ContextualAssignment.instantiate body ambient close commPar.lhs) =
+        quoteCount (ContextualAssignment.instantiate body ambient close commPar.rhs)
+      simp only [commPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         liftSub, quoteCount, quoteCountArgs, quoteHeadCount]
       omega
-  | ⟨1, _⟩, _, body, close => by
-      show quoteCount (bind close (instantiate body assocPar.lhs)) =
-        quoteCount (bind close (instantiate body assocPar.rhs))
-      simp only [assocPar, instantiate, instantiateArgs, bind, bindArgs,
+  | ⟨1, _⟩, _, _, body, ambient, close => by
+      show quoteCount (ContextualAssignment.instantiate body ambient close assocPar.lhs) =
+        quoteCount (ContextualAssignment.instantiate body ambient close assocPar.rhs)
+      simp only [assocPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         liftSub, quoteCount, quoteCountArgs, quoteHeadCount]
       omega
-  | ⟨2, _⟩, _, body, close => by
-      show quoteCount (bind close (instantiate body rightUnitPar.lhs)) =
-        quoteCount (bind close (instantiate body rightUnitPar.rhs))
-      simp only [rightUnitPar, instantiate, instantiateArgs, bind, bindArgs,
+  | ⟨2, _⟩, _, _, body, ambient, close => by
+      show quoteCount (ContextualAssignment.instantiate body ambient close rightUnitPar.lhs) =
+        quoteCount (ContextualAssignment.instantiate body ambient close rightUnitPar.rhs)
+      simp only [rightUnitPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         liftSub, quoteCount, quoteCountArgs, quoteHeadCount]
       omega
-  | ⟨_ + 3, h⟩, _, _, _ => by simp [rhoE] at h
+  | ⟨_ + 3, h⟩, _, _, _, _, _ => by simp [rhoE] at h
 
 /-- The quotation count is invariant under the entire ACU congruence,
 including congruence below an input binder. -/
 theorem quoteCount_eqClosure : ∀ {Γ : Ctx sig} {sort : Srt}
     {left right : Term sig Γ sort},
     EqClosure rhoE left right → quoteCount left = quoteCount right
-  | _, _, _, _, .ax i body close => quoteCount_acu_axiom i body close
+  | _, _, _, _, .ax i body ambient ordinary => quoteCount_acu_axiom i body ambient ordinary
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (quoteCount_eqClosure h).symm
   | _, _, _, _, .trans h h' =>
@@ -141,7 +142,7 @@ theorem quote_drop_source_equation :
     EqClosure rhoSourceE quotedDroppedName nameVariable := by
   simpa [rhoSourceE, quotedDroppedName, nameVariable, quoteDrop,
     instantiate, instantiateArgs, bind, bindArgs, liftSub] using
-    (EqClosure.ax (E := rhoSourceE) (Γ := [Srt.nm]) 3 contDiscard
+    (EqClosure.ax_closed (E := rhoSourceE) (Γ := [Srt.nm]) 3 contDiscard
       (fun _ v => Term.var v))
 
 /-- ACU alone does not derive the source's name reflection equation. -/

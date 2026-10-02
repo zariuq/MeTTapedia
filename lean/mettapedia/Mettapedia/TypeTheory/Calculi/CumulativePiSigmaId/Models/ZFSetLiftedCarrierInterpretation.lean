@@ -28,7 +28,7 @@ universe u
 /-- The assumption is at the target ambient level, not the level of the
 original HOL set carrier. -/
 noncomputable def carrierAtZero (h : CofinalInaccessibles.{u + 1}) :
-    Code h carrierCode.{u} 0 := ⟨carrierCode, seed_mem_zero h carrierCode⟩
+    Code h carrierCode.{u} 0 := ⟨carrierCode, seed_mem_universeSet h carrierCode (0 : Nat)⟩
 
 noncomputable def decodedCarrier (h : CofinalInaccessibles.{u + 1}) :
     El (carrierAtZero h) ≃ ZFSet.{u} := carrierEquiv

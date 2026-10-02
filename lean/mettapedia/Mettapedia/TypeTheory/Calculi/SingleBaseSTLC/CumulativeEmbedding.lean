@@ -18,7 +18,7 @@ variable {selectedType : IntrinsicSTT.Ty}
 
 /-- All selected simple types are closed cumulative-tower types.  Their universe level is
 retained rather than forced to a single syntactic level expression. -/
-def levelOf : IntrinsicSTT.Ty → LevelExpr
+def levelOf : IntrinsicSTT.Ty → LevelExpr Nat
   | .atom => Presentation.Tower.zero
   | .arr domain codomain => .max (levelOf domain) (levelOf codomain)
 

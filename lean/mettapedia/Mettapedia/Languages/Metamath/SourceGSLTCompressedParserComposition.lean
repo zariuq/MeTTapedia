@@ -345,7 +345,7 @@ theorem tokenizesFrom_spans_inRange {fileId : String}
       {mode : Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical.ScanMode}
       {spans : List LocatedByteSpan},
       Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical.TokenizesFrom
-        fileId bytes cursor mode spans →
+        fileId bytes {} cursor mode spans →
       (∀ start, mode = .token start → start ≤ cursor) →
       cursor ≤ bytes.size →
       ∀ s ∈ spans, s.start ≤ s.stop ∧ s.stop ≤ bytes.size := by

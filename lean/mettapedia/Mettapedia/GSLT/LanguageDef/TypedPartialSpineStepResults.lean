@@ -67,7 +67,7 @@ theorem stepResults_fvar_partialSpine_preserves_types {Evidence : Type}
       have captureResult : capture? rule spec ambient.length
           locals.length (.premise index 0 1) [] initial name candidate =
           some completed := by
-        simpa only [matchAt, Option.mem_toList] using matchMember
+        simpa only [matchAt_fvar, Option.mem_toList] using matchMember
       exact capture?_partialSortedSpine_preserves_types_from_success
         language free rule spec ambient dependencies locals
         (.premise index 0 1) [] initial completed name candidate

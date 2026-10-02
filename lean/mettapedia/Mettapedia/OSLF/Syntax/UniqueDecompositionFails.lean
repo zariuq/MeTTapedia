@@ -133,7 +133,7 @@ def emptyBody : (k : Fin noMetas.length) →
     Term psig (noMetas.get k).1 (noMetas.get k).2 := fun k => k.elim0
 
 /-- Each axiom moves parands around without creating or destroying an output. -/
-theorem countOut_ax (n : Fin 3) : ∀ (i : Fin ac1.length) {Γ : Ctx psig}
+private theorem countOut_closed_ax (n : Fin 3) : ∀ (i : Fin ac1.length) {Γ : Ctx psig}
     (body : (k : Fin noMetas.length) →
       Term psig (noMetas.get k).1 (noMetas.get k).2)
     (close : Sub psig (ac1.get i).ctx Γ),
@@ -159,13 +159,23 @@ theorem countOut_ax (n : Fin 3) : ∀ (i : Fin ac1.length) {Γ : Ctx psig}
       omega
   | ⟨_ + 3, h⟩, _, _, _ => by simp [ac1] at h; omega
 
+/-- Every contextual axiom instance preserves the count. The empty schema
+has no captured bodies, while its ordinary environment remains arbitrary. -/
+theorem countOut_ax (n : Fin 3) (i : Fin ac1.length) {Θ Γ : Ctx psig}
+    (body : ContextualAssignment psig noMetas Θ) (ambient : Sub psig Θ Γ)
+    (ordinary : Sub psig (ac1.get i).ctx Γ) :
+    countOut n (ContextualAssignment.instantiate body ambient ordinary (ac1.get i).lhs) =
+      countOut n (ContextualAssignment.instantiate body ambient ordinary (ac1.get i).rhs) := by
+  rw [ContextualAssignment.instantiate_noMetas, ContextualAssignment.instantiate_noMetas]
+  exact countOut_closed_ax n i emptyBody ordinary
+
 mutual
 /-- **The count is a structural invariant.**  It therefore separates congruence
 classes and not merely terms, which is what a counterexample to a statement
 "unique up to structural congruence" has to do. -/
 theorem countOut_invariant (n : Fin 3) : ∀ {Γ : Ctx psig} {s : PSrt}
     {t u : Term psig Γ s}, EqClosure ac1 t u → countOut n t = countOut n u
-  | _, _, _, _, .ax i body close => countOut_ax n i body close
+  | _, _, _, _, .ax i body ambient ordinary => countOut_ax n i body ambient ordinary
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (countOut_invariant n h).symm
   | _, _, _, _, .trans h h' => (countOut_invariant n h).trans (countOut_invariant n h')
@@ -242,7 +252,7 @@ theorem same_process :
     EqClosure ac1 (parT (parT (u 0) (u 1)) (u 2)) (parT (u 0) (parT (u 1) (u 2))) := by
   have h : EqClosure ac1 (bind threeOuts (instantiate emptyBody assocAx.lhs))
       (bind threeOuts (instantiate emptyBody assocAx.rhs)) :=
-    EqClosure.ax (E := ac1) (Γ := ([] : Ctx psig)) ⟨1, by decide⟩ emptyBody threeOuts
+    EqClosure.ax_closed ac1 (Γ := ([] : Ctx psig)) ⟨1, by decide⟩ emptyBody threeOuts
   simpa only [assocAx, instantiate, instantiateArgs, bind, bindArgs, liftSub,
     threeOuts, parT] using h
 

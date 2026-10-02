@@ -1126,7 +1126,7 @@ theorem rhoBreadthOutputFirstParam :
     costBaseParameter rhoInteractionCut rhoCalc.terms[4]
       (TermParam.simple "n" TypeExpr.name, 0) =
       .simple "n" (.base (costBaseSortName "Name")) := by
-  simp [costBaseParameter, isSelectedContinuation, rhoCalc, mapParameterType,
+  simp [costBaseParameter_def, isSelectedContinuation, rhoCalc, mapParameterType,
     costBaseTypeExpr,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,
@@ -1140,7 +1140,7 @@ theorem rhoBreadthOutputSecondParam :
     costBaseParameter rhoInteractionCut rhoCalc.terms[4]
       (TermParam.simple "q" TypeExpr.proc, 0 + 1) =
       .simple "q" (.base costWrappedSortName) := by
-  simp [costBaseParameter, isSelectedContinuation, rhoCalc, mapParameterType,
+  simp [costBaseParameter_def, isSelectedContinuation, rhoCalc, mapParameterType,
     costWrappedTypeExpr,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,

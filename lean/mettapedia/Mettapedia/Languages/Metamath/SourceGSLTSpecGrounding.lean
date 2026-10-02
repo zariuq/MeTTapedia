@@ -1,7 +1,7 @@
 import Mettapedia.Languages.Metamath.SourceGSLTState
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
 import Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical
-import Mettapedia.Languages.Metamath.InferenceSupportedProvableBoundary
+import Metamath.Spec.FixedFrameCounterexample
 import Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 
 /-!
@@ -52,7 +52,7 @@ edits; definitions were always right):
 namespace Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding
 
 open Metamath.Spec.Equivalence
-open Metamath.Spec.Bridge (MarioVR MarioFormula MarioExpr)
+open Metamath.Spec.Bridge (DeclarativeVR DeclarativeFormula DeclarativeExpr)
 
 /-! ## [MM §4.1.1 Preliminaries] — tokens and white space
 
@@ -60,11 +60,12 @@ open Metamath.Spec.Bridge (MarioVR MarioFormula MarioExpr)
 separated by white space."  The lexical GSLT owns exactly this clause:
 total tokenization by white-space separation, with byte-exact spans.
 
-* Ours: the authored separator definition compiled to the incremental
-  scanner, its chunk-independence law, and its equality with the unique
-  relational tokenization.
+* Ours: the authored separator definition specialized to the verifier mode
+  and compiled to the incremental scanner, its chunk-independence law, and
+  its equality with the unique relational tokenization in that same mode.
 * [mm-lean4 `Metamath.Verify`] the one-shot byte loop; the fusion theorem
-  proves its token-call trace equals ours on every successful input.
+  proves its token-call trace equals ours on every successful input in the
+  same configuration.  The default remains the book's strict separator set.
 * [knife `parser.rs`] `parse_segments` / the segment tokenizer over
   `Token` spans. -/
 
@@ -73,6 +74,9 @@ example := @SourceGSLTRawByteLexical.Tokenizes
 example := @SourceGSLTRawByteLexical.scanRun_append
 example := @SourceGSLTRawByteLexical.tokenizeIncrementally_eq_tokenize
 example := @SourceGSLTRawByteLexical.checkBytesCoreLogged_eq_incrementalGSLTScanner
+example := @SourceGSLTRawByteLexical.verticalTab_strictModes_content
+example := @SourceGSLTRawByteLexical.verticalTab_extendedModes_separator
+example := @SourceGSLTRawByteLexical.verticalTab_default_not_twoSpans
 
 /-! ## [MM §4.1.2 Preprocessing] — comments and file inclusion
 
@@ -170,7 +174,7 @@ extensions to its frame."
 
 The support boundary module proves this distinction is *load-bearing*:
 provability over a bare frame and over its extension differ
-(`InferenceSupportedProvableBoundary`), and the extension theorem below
+(`Metamath.Spec.FixedFrameCounterexample`), and the extension theorem below
 implements the proof-site reconciliation direction.  The source-state
 projection theorems separately prove that optional `$f` and `$d` operations
 are absent from the stored assertion. -/
@@ -196,7 +200,7 @@ the result is pushed onto the stack."
   declarative relation is the per-derivation semantic reading of the same
   algorithm.
 * [mm-lean4 `Metamath.Verify`] the `ProofState` stack machine;
-  `SupportedProvable` is the frame-supported declarative counterpart.
+  `FrameDerivable` is the frame-supported declarative counterpart.
 * [knife `verify.rs`] "a stack of known results; each step … pops zero or
   more results off the stack, does local checks, and pushes a new
   result." -/
@@ -204,7 +208,7 @@ the result is pushed onto the stack."
 example := @SourceGSLTCompressedTheorem.MachineState
 example := @SourceGSLTCompressedTheorem.HeaderBuild
 example := @SourceGSLTCompressedTheorem.Execute
-example := @Metamath.Spec.Equivalence.SupportedProvable
+example := @Metamath.Spec.Equivalence.FrameDerivable
 example := @Metamath.Provable
 example :=
   @InferenceSemanticFiniteSupport.Provable.exists_finiteSupport
@@ -230,7 +234,7 @@ verifier must actually do — dictates the semantic anchor:
 2. stored assertions expose only their **mandatory** frame to later
    proofs.
 
-`SupportedProvable` is that anchor on the mm-lean4 side.  The boundary
+`FrameDerivable` is that anchor on the mm-lean4 side.  The boundary
 module proved the unrestricted declarative `var` rule is *not*
 conservative over it at a fixed frame; the book's own mechanism is the
 extended frame.  The theorem below proves the proof-site half of that
@@ -297,7 +301,7 @@ theorem find?_append_of_none {α : Type _} {p : α → Bool} {l₁ l₂ : List �
       | false => rw [hpx] at h; exact ih h
 
 theorem findVR_append_of_some {vm tail : VarMap}
-    {w : Metamath.Spec.Variable} {vr : MarioVR}
+    {w : Metamath.Spec.Variable} {vr : DeclarativeVR}
     (h : findVR vm w = some vr) :
     findVR (vm ++ tail) w = some vr := by
   unfold findVR at h ⊢
@@ -305,7 +309,7 @@ theorem findVR_append_of_some {vm tail : VarMap}
   | none => rw [hfind] at h; exact nomatch h
   | some q => rw [hfind] at h; rw [find?_append_of_some hfind]; exact h
 
-theorem findVar_append_of_some {vm tail : VarMap} {vr : MarioVR}
+theorem findVar_append_of_some {vm tail : VarMap} {vr : DeclarativeVR}
     {w : Metamath.Spec.Variable}
     (h : findVar vm vr = some w) :
     findVar (vm ++ tail) vr = some w := by
@@ -315,7 +319,7 @@ theorem findVar_append_of_some {vm tail : VarMap} {vr : MarioVR}
   | some q => rw [hfind] at h; rw [find?_append_of_some hfind]; exact h
 
 theorem findVR_extend_of_ne {vm : VarMap} {v : Metamath.Spec.Variable}
-    {vrN : MarioVR} {w : Metamath.Spec.Variable}
+    {vrN : DeclarativeVR} {w : Metamath.Spec.Variable}
     (hnone : findVR vm w = none) (hne : w ≠ v) :
     findVR (vm ++ [(v, vrN)]) w = none := by
   unfold findVR at hnone ⊢
@@ -486,11 +490,11 @@ theorem map_congr_mem {α β : Type _} {f g : α → β} :
 
 theorem frameToContext_hyps (fr : Metamath.Spec.Frame) :
     (frameToContext fr).hyps =
-      fr.hyps.map (hypToMarioFormula (varMapOfFrame fr)) := rfl
+      fr.hyps.map (hypToDeclarativeFormula (varMapOfFrame fr)) := rfl
 
 theorem frameToContext_dj (fr : Metamath.Spec.Frame) :
     (frameToContext fr).dj =
-      dvListToMarioDJ (varMapOfFrame fr) fr.dv := rfl
+      dvListToDeclarativeDJ (varMapOfFrame fr) fr.dv := rfl
 
 /-- The variable map of an extended frame agrees with the base frame's on
 every variable that is either declared in the base frame or distinct from
@@ -514,63 +518,63 @@ theorem findVR_extendFloat_stable {fr : Metamath.Spec.Frame}
         exact nomatch hvr
       · exact findVR_extend_of_ne hfind hne
 
-theorem toMarioSym_extendFloat {fr : Metamath.Spec.Frame}
+theorem toDeclarativeSym_extendFloat {fr : Metamath.Spec.Frame}
     {c₀ : Metamath.Spec.Constant} {v₀ : Metamath.Spec.Variable}
     {s : String}
     (hs : Metamath.Spec.Variable.mk s ∈ fr.vars ∨ s ≠ v₀.v) :
-    toMarioSym (varMapOfFrame (extendFloat fr c₀ v₀)) s =
-      toMarioSym (varMapOfFrame fr) s := by
+    toDeclarativeSym (varMapOfFrame (extendFloat fr c₀ v₀)) s =
+      toDeclarativeSym (varMapOfFrame fr) s := by
   have hs' : (⟨s⟩ : Metamath.Spec.Variable) ∈ fr.vars ∨
       (⟨s⟩ : Metamath.Spec.Variable) ≠ v₀ :=
     hs.imp_right fun hne he =>
       hne (congrArg Metamath.Spec.Variable.v he)
-  simp only [toMarioSym]
+  simp only [toDeclarativeSym]
   rw [findVR_extendFloat_stable hs']
 
-theorem exprToMarioExpr_extendFloat {fr : Metamath.Spec.Frame}
+theorem exprToDeclarativeExpr_extendFloat {fr : Metamath.Spec.Frame}
     {c₀ : Metamath.Spec.Constant} {v₀ : Metamath.Spec.Variable}
     {e : Metamath.Spec.Expr}
     (h : ∀ s ∈ e.syms, Metamath.Spec.Variable.mk s ∈ fr.vars ∨ s ≠ v₀.v) :
-    exprToMarioExpr (varMapOfFrame (extendFloat fr c₀ v₀)) e =
-      exprToMarioExpr (varMapOfFrame fr) e := by
-  unfold exprToMarioExpr
-  exact map_congr_mem fun s hs => toMarioSym_extendFloat (h s hs)
+    exprToDeclarativeExpr (varMapOfFrame (extendFloat fr c₀ v₀)) e =
+      exprToDeclarativeExpr (varMapOfFrame fr) e := by
+  unfold exprToDeclarativeExpr
+  exact map_congr_mem fun s hs => toDeclarativeSym_extendFloat (h s hs)
 
-theorem hypToMarioFormula_extendFloat {fr : Metamath.Spec.Frame}
+theorem hypToDeclarativeFormula_extendFloat {fr : Metamath.Spec.Frame}
     {c₀ : Metamath.Spec.Constant} {v₀ : Metamath.Spec.Variable}
     {h : Metamath.Spec.Hyp} (hmem : h ∈ fr.hyps)
     (hfresh : OptionalFresh fr v₀) :
-    hypToMarioFormula (varMapOfFrame (extendFloat fr c₀ v₀)) h =
-      hypToMarioFormula (varMapOfFrame fr) h := by
+    hypToDeclarativeFormula (varMapOfFrame (extendFloat fr c₀ v₀)) h =
+      hypToDeclarativeFormula (varMapOfFrame fr) h := by
   cases h with
   | floating c w =>
       have hw : w ∈ fr.vars := by
         unfold Metamath.Spec.Frame.vars
         exact List.mem_filterMap.mpr ⟨_, hmem, rfl⟩
-      simp only [hypToMarioFormula]
+      simp only [hypToDeclarativeFormula]
       rw [findVR_extendFloat_stable (Or.inl hw)]
   | essential e =>
-      simp only [hypToMarioFormula, exprToFormula]
-      rw [exprToMarioExpr_extendFloat (by
+      simp only [hypToDeclarativeFormula, exprToFormula]
+      rw [exprToDeclarativeExpr_extendFloat (by
         intro s hs
         exact Or.inr fun heq => hfresh.2 e hmem (heq ▸ hs))]
 
 theorem frameToContext_hyps_extendFloat {fr : Metamath.Spec.Frame}
     {c₀ : Metamath.Spec.Constant} {v₀ : Metamath.Spec.Variable}
-    {g : MarioFormula} (hfresh : OptionalFresh fr v₀)
+    {g : DeclarativeFormula} (hfresh : OptionalFresh fr v₀)
     (hmem : g ∈ (frameToContext fr).hyps) :
     g ∈ (frameToContext (extendFloat fr c₀ v₀)).hyps := by
   rw [frameToContext_hyps] at hmem
   rw [frameToContext_hyps]
   rcases List.mem_map.mp hmem with ⟨h₀, hh₀, himg⟩
   refine List.mem_map.mpr ⟨h₀, List.mem_append_left _ hh₀, ?_⟩
-  rw [hypToMarioFormula_extendFloat hh₀ hfresh]
+  rw [hypToDeclarativeFormula_extendFloat hh₀ hfresh]
   exact himg
 
 theorem frameToContext_dj_le (fr : Metamath.Spec.Frame)
     (c₀ : Metamath.Spec.Constant) (v₀ : Metamath.Spec.Variable) :
     (frameToContext fr).dj ≤ (frameToContext (extendFloat fr c₀ v₀)).dj := by
-  have transport : ∀ {q : MarioVR × MarioVR},
+  have transport : ∀ {q : DeclarativeVR × DeclarativeVR},
       q ∈ (fr.dv.filterMap fun p =>
         match findVR (varMapOfFrame fr) p.1,
               findVR (varMapOfFrame fr) p.2 with
@@ -601,10 +605,10 @@ theorem frameToContext_dj_le (fr : Metamath.Spec.Frame)
   · exact Or.inl (transport hp)
   · exact Or.inr (transport hp)
 
-theorem marioExprWellFormed_extendFloat {fr : Metamath.Spec.Frame}
+theorem declarativeExprWellFormed_extendFloat {fr : Metamath.Spec.Frame}
     {c₀ : Metamath.Spec.Constant} {v₀ : Metamath.Spec.Variable}
-    {me : MarioExpr} (h : MarioExprWellFormed fr me) :
-    MarioExprWellFormed (extendFloat fr c₀ v₀) me := by
+    {me : DeclarativeExpr} (h : DeclarativeExprWellFormed fr me) :
+    DeclarativeExprWellFormed (extendFloat fr c₀ v₀) me := by
   intro vr hvr
   obtain ⟨w, hw⟩ := h vr hvr
   refine ⟨w, ?_⟩
@@ -619,29 +623,28 @@ floating hypothesis over a fresh variable.  This is the dummy-supply engine:
 adding typed support does not disturb an existing derivation.  It is not, by
 itself, the separate mandatory-frame projection theorem governing subsequent
 proofs that reference the stored assertion. -/
-theorem SupportedProvable.extendFloat
+theorem FrameDerivable.extendFloat
     {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}
     {c₀ : Metamath.Spec.Constant} {v₀ : Metamath.Spec.Variable}
     (hfresh : OptionalFresh fr v₀)
-    {fmla : MarioFormula}
-    (h : SupportedProvable Γ fr fmla) :
-    SupportedProvable Γ (SourceGSLTSpecGrounding.extendFloat fr c₀ v₀)
+    {fmla : DeclarativeFormula}
+    (h : FrameDerivable Γ fr fmla) :
+    FrameDerivable Γ (SourceGSLTSpecGrounding.extendFloat fr c₀ v₀)
       fmla := by
   induction h with
   | hyp g hmem =>
-      exact SupportedProvable.hyp g
+      exact Metamath.Derivable.hyp g
         (frameToContext_hyps_extendFloat hfresh hmem)
   | var v hw =>
       obtain ⟨w, hw'⟩ := hw
-      refine SupportedProvable.var v ⟨w, ?_⟩
+      refine Metamath.Derivable.var v ⟨w, ?_⟩
       rw [varMapOfFrame_extendFloat]
       exact findVar_append_of_some hw'
-  | ax σ hax hdj hhyps hvars hwf ih_hyps ih_vars =>
-      exact SupportedProvable.ax σ hax
+  | ax σ hax hdj hhyps hvars ih_hyps ih_vars =>
+      exact Metamath.Derivable.ax σ hax
         (Metamath.DJ.subst.mono (Metamath.DJ.refl _)
           (frameToContext_dj_le fr c₀ v₀) hdj)
         ih_hyps ih_vars
-        (fun v hv => marioExprWellFormed_extendFloat (hwf v hv))
 
 /-! ### Finite optional-frame extensions
 
@@ -735,18 +738,18 @@ theorem dvWellFormed_extendFloats
 
 /-- [MM §4.2.7] A supported proof remains valid after any finite, ordered,
 source-fresh optional floating extension. -/
-theorem SupportedProvable.extendFloats
+theorem FrameDerivable.extendFloats
     {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}
     {declarations :
       List (Metamath.Spec.Constant × Metamath.Spec.Variable)}
     (hsequence : OptionalFloatSequence fr declarations)
-    {fmla : MarioFormula}
-    (h : SupportedProvable Γ fr fmla) :
-    SupportedProvable Γ (extendFloats fr declarations) fmla := by
+    {fmla : DeclarativeFormula}
+    (h : FrameDerivable Γ fr fmla) :
+    FrameDerivable Γ (extendFloats fr declarations) fmla := by
   induction hsequence with
   | nil => exact h
   | @cons fr c v rest hfresh htail ih =>
-      exact ih (SupportedProvable.extendFloat hfresh h)
+      exact ih (FrameDerivable.extendFloat hfresh h)
 
 /-! ### Calibration against the support boundary
 
@@ -757,45 +760,45 @@ The boundary module's repair witness is literally one application of
 the empty frame extended by one optional floating hypothesis. -/
 example :
     SourceGSLTSpecGrounding.extendFloat
-      InferenceSupportedProvableBoundary.emptyFrame
-      InferenceSupportedProvableBoundary.wffConstant
-      InferenceSupportedProvableBoundary.dummyVariable =
-    InferenceSupportedProvableBoundary.dummyFrame := rfl
+      _root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame
+      _root_.Metamath.Spec.FixedFrameCounterexample.wffConstant
+      _root_.Metamath.Spec.FixedFrameCounterexample.dummyVariable =
+    _root_.Metamath.Spec.FixedFrameCounterexample.dummyFrame := rfl
 
 /-- Positive: the extension theorem transports any supported derivation
 over the empty frame into the extended frame (the freshness condition is
 vacuous there). -/
-example {fmla : MarioFormula}
-    (h : SupportedProvable
-      InferenceSupportedProvableBoundary.counterexampleDatabase
-      InferenceSupportedProvableBoundary.emptyFrame fmla) :
-    SupportedProvable
-      InferenceSupportedProvableBoundary.counterexampleDatabase
-      InferenceSupportedProvableBoundary.dummyFrame fmla := by
-  exact SupportedProvable.extendFloat
-    (c₀ := InferenceSupportedProvableBoundary.wffConstant)
-    (v₀ := InferenceSupportedProvableBoundary.dummyVariable)
+example {fmla : DeclarativeFormula}
+    (h : FrameDerivable
+      _root_.Metamath.Spec.FixedFrameCounterexample.counterexampleDatabase
+      _root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame fmla) :
+    FrameDerivable
+      _root_.Metamath.Spec.FixedFrameCounterexample.counterexampleDatabase
+      _root_.Metamath.Spec.FixedFrameCounterexample.dummyFrame fmla := by
+  exact FrameDerivable.extendFloat
+    (c₀ := _root_.Metamath.Spec.FixedFrameCounterexample.wffConstant)
+    (v₀ := _root_.Metamath.Spec.FixedFrameCounterexample.dummyVariable)
     (by
       constructor
-      · simp [InferenceSupportedProvableBoundary.emptyFrame,
+      · simp [_root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame,
           Metamath.Spec.Frame.vars]
       · intro e hmem
-        simp [InferenceSupportedProvableBoundary.emptyFrame] at hmem)
+        simp [_root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame] at hmem)
     h
 
 /-- Negative: the converse direction is refuted by the boundary module —
 `|- c` is supported over the extended (dummy) frame but not over the bare
 frame, so frame extension is strictly monotone. -/
 example :
-    ¬ (SupportedProvable
-        InferenceSupportedProvableBoundary.counterexampleDatabase
-        InferenceSupportedProvableBoundary.emptyFrame
-        InferenceSupportedProvableBoundary.target) ∧
-    SupportedProvable
-      InferenceSupportedProvableBoundary.counterexampleDatabase
-      InferenceSupportedProvableBoundary.dummyFrame
-      InferenceSupportedProvableBoundary.target :=
-  ⟨InferenceSupportedProvableBoundary.not_supportedProvable_target,
-   InferenceSupportedProvableBoundary.supportedProvable_target_with_dummy⟩
+    ¬ (FrameDerivable
+        _root_.Metamath.Spec.FixedFrameCounterexample.counterexampleDatabase
+        _root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame
+        _root_.Metamath.Spec.FixedFrameCounterexample.target) ∧
+    FrameDerivable
+      _root_.Metamath.Spec.FixedFrameCounterexample.counterexampleDatabase
+      _root_.Metamath.Spec.FixedFrameCounterexample.dummyFrame
+      _root_.Metamath.Spec.FixedFrameCounterexample.target :=
+  ⟨_root_.Metamath.Spec.FixedFrameCounterexample.not_frameDerivable_target,
+   _root_.Metamath.Spec.FixedFrameCounterexample.frameDerivable_target_with_dummy⟩
 
 end Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding

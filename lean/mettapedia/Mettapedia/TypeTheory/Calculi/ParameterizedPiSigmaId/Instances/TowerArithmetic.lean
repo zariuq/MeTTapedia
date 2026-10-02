@@ -56,7 +56,7 @@ def body : (k : DeclName) → (fields : List (Field Tower.Head)) →
 /-- The declared type of addition. -/
 def addType : Tm Tower.Head 0 := closeType (ofEntries entries 2) (.const num)
 
-variable (lv : LevelExpr)
+variable (lv : LevelExpr Nat)
 
 /-- The declared types. -/
 def constantType : DeclName → Option (Tm Tower.Head 0) := fun name =>
@@ -160,7 +160,7 @@ theorem declaredSucc₂ :
 
 theorem num_typed₂ {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed TowerNumbersModel.rules₂ Γ (.const num) (.head u) :=
-  TowerNumbersModel.num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort declaredNum₂
+  TowerNumbersModel.num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort declaredNum₂
 
 theorem succ_typed₂ {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed TowerNumbersModel.rules₂ Γ (.const succ) (.pi (.const num) (.const num)) :=
@@ -386,7 +386,7 @@ end TowerArithmeticModel
 
 /-! ## Consequences for the tower with addition -/
 
-theorem TowerArithmeticModel.setting_roles_num (lv : LevelExpr) (valuation : Nat → Nat) :
+theorem TowerArithmeticModel.setting_roles_num (lv : LevelExpr Nat) (valuation : Nat → Nat) :
     (TowerArithmeticModel.setting lv valuation).roles num = .inductive ctors :=
   TowerArithmeticModel.roles_num
 
@@ -394,7 +394,7 @@ section Consequences
 
 open TowerArithmeticModel
 
-variable {lv : LevelExpr} {n : Nat} {Γ : Ctx Tower.Head n}
+variable {lv : LevelExpr Nat} {n : Nat} {Γ : Ctx Tower.Head n}
 
 /-- Reduction preserves typing, including the recursor's computation and the
 equations of addition. -/

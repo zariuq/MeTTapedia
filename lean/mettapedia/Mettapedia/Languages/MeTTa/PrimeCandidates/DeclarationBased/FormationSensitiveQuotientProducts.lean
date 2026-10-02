@@ -44,7 +44,7 @@ abbrev NativeContext (signature : Declaration.Signature Tower.Head) :=
 abbrev NativeQContext (signature : Declaration.Signature Tower.Head) :=
   QuotientCwf.QContext (OpaqueRelatorExtension.rules signature)
 
-def universeLevel : (head : Tower.Head) → Tower.IsUniverse head → LevelExpr
+def universeLevel : (head : Tower.Head) → Tower.IsUniverse head → LevelExpr Nat
   | .sort level, _ => level
   | .legacyGround, member => nomatch member
 
@@ -53,7 +53,7 @@ theorem universeLevel_spec (head : Tower.Head) (member : Tower.IsUniverse head) 
   cases member
   rfl
 
-def nativeLevel {context : NativeContext signature} (type : TypeOver context) : LevelExpr :=
+def nativeLevel {context : NativeContext signature} (type : TypeOver context) : LevelExpr Nat :=
   universeLevel type.level type.universeWitness
 
 theorem nativeLevel_spec {context : NativeContext signature} (type : TypeOver context) :
@@ -285,7 +285,7 @@ the universe level carried by a chosen representative of either class. -/
 theorem pi_atUniverse {context : NativeQContext signature}
     {domain : QuotientCwf.Ty context}
     {codomain : QuotientCwf.Ty (QuotientCwf.ext context domain)}
-    {lower upper : LevelExpr} (domainAt : domain.AtUniverse (.sort lower))
+    {lower upper : LevelExpr Nat} (domainAt : domain.AtUniverse (.sort lower))
     (codomainAt : codomain.AtUniverse (.sort upper)) :
     (pi domain codomain).AtUniverse (.sort (.max lower upper)) := by
   obtain ⟨actualDomain, domainClass, domainLevel⟩ := domainAt
@@ -306,16 +306,16 @@ theorem pi_atUniverse {context : NativeQContext signature}
     rw [subst_ids]
     exact codomainConversion
   · have lowerEq : nativeLevel actualDomain = lower := by
-      exact Tower.Head.sort.inj ((nativeLevel_spec actualDomain).symm.trans domainLevel)
+      exact LevelTower.Head.sort.inj ((nativeLevel_spec actualDomain).symm.trans domainLevel)
     have upperEq : nativeLevel transferred = upper := by
-      exact Tower.Head.sort.inj ((nativeLevel_spec transferred).symm.trans codomainLevel)
-    change Tower.Head.sort (.max (nativeLevel actualDomain) (nativeLevel transferred)) = _
+      exact LevelTower.Head.sort.inj ((nativeLevel_spec transferred).symm.trans codomainLevel)
+    change LevelTower.Head.sort (.max (nativeLevel actualDomain) (nativeLevel transferred)) = _
     rw [lowerEq, upperEq]
 
 theorem sigma_atUniverse {context : NativeQContext signature}
     {domain : QuotientCwf.Ty context}
     {codomain : QuotientCwf.Ty (QuotientCwf.ext context domain)}
-    {lower upper : LevelExpr} (domainAt : domain.AtUniverse (.sort lower))
+    {lower upper : LevelExpr Nat} (domainAt : domain.AtUniverse (.sort lower))
     (codomainAt : codomain.AtUniverse (.sort upper)) :
     (sigma domain codomain).AtUniverse (.sort (.max lower upper)) := by
   obtain ⟨actualDomain, domainClass, domainLevel⟩ := domainAt
@@ -336,10 +336,10 @@ theorem sigma_atUniverse {context : NativeQContext signature}
     rw [subst_ids]
     exact codomainConversion
   · have lowerEq : nativeLevel actualDomain = lower := by
-      exact Tower.Head.sort.inj ((nativeLevel_spec actualDomain).symm.trans domainLevel)
+      exact LevelTower.Head.sort.inj ((nativeLevel_spec actualDomain).symm.trans domainLevel)
     have upperEq : nativeLevel transferred = upper := by
-      exact Tower.Head.sort.inj ((nativeLevel_spec transferred).symm.trans codomainLevel)
-    change Tower.Head.sort (.max (nativeLevel actualDomain) (nativeLevel transferred)) = _
+      exact LevelTower.Head.sort.inj ((nativeLevel_spec transferred).symm.trans codomainLevel)
+    change LevelTower.Head.sort (.max (nativeLevel actualDomain) (nativeLevel transferred)) = _
     rw [lowerEq, upperEq]
 
 theorem pi_formation_substitution (signature : Declaration.Signature Tower.Head) :

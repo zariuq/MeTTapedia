@@ -108,7 +108,7 @@ def headEqual (left right : Tower.Head) : Bool :=
 theorem headEqual_exact (left right : Tower.Head) :
     headEqual left right = true ↔ Tower.HeadEq left right := by
   cases left <;> cases right <;>
-    simp [headEqual, Tower.HeadEq, LevelNF.normalize_eq_iff]
+    simp [headEqual, LevelTower.HeadEq, LevelNF.normalize_eq_iff]
 
 /-- A two-input query, not an enumeration of the infinitely many equivalent
 universe spellings.  Malformed encodings remain outside the query interface. -/
@@ -122,9 +122,9 @@ theorem encodedHeadEqual_exact (left right : Tower.Head) :
       Tower.HeadEq left right := by
   simp [encodedHeadEqual, towerHeadCodec.decode_encode, headEqual_exact]
 
-theorem level_query_substitution {left right : LevelExpr}
+theorem level_query_substitution {left right : LevelExpr Nat}
     (equal : headEqual (.sort left) (.sort right) = true)
-    (substitution : Nat → LevelExpr) :
+    (substitution : Nat → LevelExpr Nat) :
     headEqual (.sort (LevelExpr.subst substitution left))
       (.sort (LevelExpr.subst substitution right)) = true := by
   simp only [headEqual, decide_eq_true_eq] at equal ⊢

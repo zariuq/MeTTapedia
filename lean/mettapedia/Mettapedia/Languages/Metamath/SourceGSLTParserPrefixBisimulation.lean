@@ -567,8 +567,8 @@ theorem checkBytesRun_calls_after_errorFree
 /-! ## Erasing comment administration -/
 
 /-- Any call erased by the reader's significant-token projection is
-database-transparent on an accepted run.  A nested opener would create an
-error, so the success premise eliminates precisely that malformed branch. -/
+database-transparent on an accepted run.  Success excludes enforced text
+errors, while modes which ignore comment text preserve the state directly. -/
 theorem insignificantCall_db_eq (call : TokenCall)
     (afterErrorFree : call.after.db.error? = none)
     (insignificant : significantCall? call = none) :
@@ -578,12 +578,8 @@ theorem insignificantCall_db_eq (call : TokenCall)
   | comment inner =>
       by_cases closeToken : call.origin.token.eqArray "$)".toAscii = true
       · simp [ParserState.feedToken, modeEq, closeToken]
-      · by_cases nestedOpen :
-            call.origin.token.eqArray "$(".toAscii = true
-        · simp [ParserState.feedToken, modeEq, closeToken, nestedOpen,
-            ParserState.mkErrorFromEvidence, ParserState.withDB,
-            DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at afterErrorFree
-        · simp [ParserState.feedToken, modeEq, closeToken, nestedOpen]
+      · rw [feedToken_commentNonClose_eq_of_errorFree call.before
+          call.origin.parserOffset call.origin.token inner modeEq closeToken afterErrorFree]
   | start =>
       have commentOpen : call.origin.token.eqArray "$(".toAscii = true := by
         simp [significantCall?, significantToken?, modeEq] at insignificant
@@ -716,13 +712,9 @@ theorem insignificantCall_logicalMode_eq (call : TokenCall)
   | comment inner =>
       by_cases closeToken : call.origin.token.eqArray "$)".toAscii = true
       · simp [ParserState.feedToken, modeEq, closeToken, logicalTokenMode]
-      · by_cases nestedOpen :
-            call.origin.token.eqArray "$(".toAscii = true
-        · simp [ParserState.feedToken, modeEq, closeToken, nestedOpen,
-            ParserState.mkErrorFromEvidence, ParserState.withDB,
-            DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at afterErrorFree
-        · simp [ParserState.feedToken, modeEq, closeToken, nestedOpen,
-            logicalTokenMode]
+      · rw [feedToken_commentNonClose_eq_of_errorFree call.before
+          call.origin.parserOffset call.origin.token inner modeEq closeToken afterErrorFree]
+        rw [modeEq]
   | start =>
       have commentOpen : call.origin.token.eqArray "$(".toAscii = true := by
         simp [significantCall?, significantToken?, modeEq] at insignificant
@@ -3681,7 +3673,7 @@ noncomputable def SpelledCallTrace.compressedHeader :
 
 /-- The retained closing `)` changes only the proof-token phase and enters
 compressed decoding between proof steps. -/
-noncomputable def SpelledCallTrace.compressedClose_final
+theorem SpelledCallTrace.compressedClose_final
     {fileId : String} {db : DB} {before : RuntimeProofState}
     {entries : List (LocatedToken × TokenCall)}
     {final : ParserObservedState}
@@ -4128,7 +4120,7 @@ noncomputable def ReaderCompressedBody.reflectProgram
     initial body.after tokensValid savePlacement
       (by simpa [tokens] using body.execution)
   have finishConditions :=
-    Metamath.ParserAnyModeEquivalence.finishProof_success_stack_conditions
+    Metamath.ParserAnyFormatEquivalence.finishProof_success_stack_conditions
       parser body.after finishSuccess
   have finalPhaseComplete : reflected.finalPhase = .betweenSteps ∨
       reflected.finalPhase = .justCompletedStep := by
@@ -4542,7 +4534,7 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
     have actionLabel := program.preservesLabel
     exact actionLabel.trans (headerIdentity.1.trans (by rfl))
   have finishConditions :=
-    Metamath.ParserAnyModeEquivalence.finishProof_success_stack_conditions
+    Metamath.ParserAnyFormatEquivalence.finishProof_success_stack_conditions
       anchor.state bodyRun.after finished.finish_success
   have bodyStack : bodyRun.after.stack = #[bodyRun.after.fmla] :=
     array_eq_singleton_of_size_getElem bodyRun.after.stack

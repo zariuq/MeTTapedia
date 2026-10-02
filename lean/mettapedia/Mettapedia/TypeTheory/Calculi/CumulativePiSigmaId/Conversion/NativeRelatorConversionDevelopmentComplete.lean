@@ -154,7 +154,7 @@ theorem cofinal (source : Tower.Tm n) : Cofinal source := by
       intro target parallel
       cases parallel with
       | head _ => exact .head value
-      | headRel equality => exact .headRel (Tower.headEq_symmetric.symm _ _ equality)
+      | headRel equality => exact .headRel (LevelTower.headEq_symmetric.symm _ _ equality)
   | pi domain codomain first second =>
       obtain ⟨dd, first⟩ := first
       obtain ⟨dc, second⟩ := second

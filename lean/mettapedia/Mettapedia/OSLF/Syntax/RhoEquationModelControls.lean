@@ -22,21 +22,23 @@ equations. A claimed equation-model interface cannot silently use raw terms. -/
 theorem raw_terms_do_not_satisfy_rho_equations :
     ¬ Satisfies (Mettapedia.OSLF.Binding.BindingCloneAlgebra.terms sig) rhoE := by
   intro h
-  have comm := h 0
-    (fun k => contDiscard k)
-    (Γ := [Srt.pr, Srt.pr])
-    (fun _ v => Term.var v)
+  have comm := h.congruenceSound
+    (EqClosure.ax_closed (E := rhoE) (i := 0) contDiscard
+      (Γ := [Srt.pr, Srt.pr]) (fun _ v => Term.var v))
   have comm' :
       (Term.op (S := sig) (Γ := [Srt.pr, Srt.pr]) Op.par
         (.cons (.var .zero) (.cons (.var (.succ .zero)) .nil))) =
       Term.op (S := sig) Op.par
         (.cons (.var (.succ .zero)) (.cons (.var .zero) .nil)) := by
-    simpa [rhoE, commPar, interpretSchema, interpretSchemaArgs,
+    simpa [rhoE, commPar, Mettapedia.OSLF.Binding.BindingCloneFoldSubstitution.interpret,
+      Mettapedia.OSLF.Binding.FreeBindingTerms.fold,
+      Mettapedia.OSLF.Binding.FreeBindingTerms.foldArgs,
       Mettapedia.OSLF.Binding.BindingCloneAlgebra.terms,
+      Mettapedia.OSLF.Binding.BindingCloneAlgebra.Algebra.toRaw,
       Mettapedia.OSLF.Binding.BindingSubstitutionAlgebra.terms,
       Mettapedia.OSLF.Binding.FreeBindingTerms.terms,
       Mettapedia.OSLF.Binding.FreeBindingTerms.terms.familyToSyntax,
-      bind, bindArgs, liftSub] using comm
+      instantiate, instantiateArgs, bind, bindArgs, liftSub] using comm
   cases comm'
 
 /-- Every pair of processes gives an actual commutativity class equality in
@@ -53,7 +55,7 @@ theorem parallel_commutes_in_quotient
       match v with
       | .zero => left
       | .succ .zero => right
-  have h := EqClosure.ax (E := rhoE) (i := 0) contDiscard close
+  have h := EqClosure.ax_closed (E := rhoE) (i := 0) contDiscard close
   exact Quotient.sound h
 
 end Mettapedia.OSLF.Binding.RhoEquationModelControls

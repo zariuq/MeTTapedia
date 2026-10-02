@@ -52,7 +52,7 @@ namespace ConvRules
 theorem rules_numRec_typed {n : Nat} {Γ : Tower.Ctx n} :
     Typed rules Γ (.const numRecName) (liftClosed numRecType) := by
   have declared : rules.constantType numRecName = some numRecType := by decide
-  exact .const declared (Derivable.mono (stage_sub_rules _) numRecType_typed) (Tower.IsUniverse.sort _)
+  exact .const declared (Derivable.mono (stage_sub_rules _) numRecType_typed) (LevelTower.IsUniverse.sort _)
 
 /-- The substitution of the recursor's telescope by a motive, a value at zero and
 a step. -/
@@ -284,7 +284,7 @@ theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
           (numRecApp p' z' s' t') := by
   have laws := nmodel_laws v T
   have vlaws := laws.value
-  have hw : (nmodel v T).rules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+  have hw : (nmodel v T).rules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   have levels := T.levels
   obtain ⟨tp, tp'⟩ := ECand.typed _ realP
   obtain ⟨tz, -⟩ := ECand.typed _ realZ
@@ -437,11 +437,11 @@ theorem valid_numRec :
     ValidTmN (nmodel v T) .nil (.const numRecName) numRecType := by
   have laws := nmodel_laws v T
   have vlaws := laws.value
-  have hw : (nmodel v T).rules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+  have hw : (nmodel v T).rules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   obtain ⟨validT, partsT, _⟩ :=
     Derivable.validTN (ctorStage_typedSoundN v ext) numRecType_typed trivial
   have validType : ValidTyN (nmodel v T) .nil numRecType :=
-    validT.validTy (Tower.IsUniverse.sort _) (ext.isUniverse_sort _)
+    validT.validTy (LevelTower.IsUniverse.sort _) (ext.isUniverse_sort _)
   obtain ⟨ctx, validResult, _⟩ := ValidTyN.close_parts (.snoc numRecTelescope numT)
     (C := .app (.var 3) (.var 0)) validType partsT
   have typed : Typed T.R .nil (.const numRecName) numRecType := by

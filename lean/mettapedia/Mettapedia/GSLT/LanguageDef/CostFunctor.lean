@@ -1078,9 +1078,9 @@ theorem mapContractum_natural {source target : CIGSLT}
           pattern) := by
   induction pattern using Pattern.inductionOn with
   | hbvar index =>
-      simp [ContinuationRetypingPlan.mapContractum, mapPattern]
+      simp [ContinuationRetypingPlan.mapContractum_bvar, mapPattern]
   | hfvar name =>
-      simp [ContinuationRetypingPlan.mapContractum, mapPattern]
+      simp [ContinuationRetypingPlan.mapContractum_fvar, mapPattern]
   | happly constructor arguments inductionHypothesis =>
       by_cases wrapped :
           constructor ∈ source.continuationRetyping.wrappedLabels
@@ -1089,8 +1089,7 @@ theorem mapContractum_natural {source target : CIGSLT}
                 constructor ∈
               target.continuationRetyping.wrappedLabels :=
           (morphism.mapsWrappedLabelMembership constructor).2 wrapped
-        simp [ContinuationRetypingPlan.mapContractum,
-          ContinuationRetypingPlan.mapContractumList_eq_map,
+        simp [ContinuationRetypingPlan.mapContractum_apply,
           mapPattern, List.map_map, wrapped, targetWrapped]
         exact inductionHypothesis
       · have targetNotWrapped :
@@ -1101,22 +1100,20 @@ theorem mapContractum_natural {source target : CIGSLT}
           exact wrapped
             ((morphism.mapsWrappedLabelMembership constructor).1
               targetWrapped)
-        simp [ContinuationRetypingPlan.mapContractum,
-          ContinuationRetypingPlan.mapContractumList_eq_map,
+        simp [ContinuationRetypingPlan.mapContractum_apply,
           mapPattern, List.map_map, wrapped, targetNotWrapped]
         exact inductionHypothesis
   | hlambda binder body inductionHypothesis =>
-      simp [ContinuationRetypingPlan.mapContractum, mapPattern,
+      simp [ContinuationRetypingPlan.mapContractum_lambda, mapPattern,
         inductionHypothesis]
   | hmultiLambda arity binders body inductionHypothesis =>
-      simp [ContinuationRetypingPlan.mapContractum, mapPattern,
+      simp [ContinuationRetypingPlan.mapContractum_multiLambda, mapPattern,
         inductionHypothesis]
   | hsubst body replacement bodyHypothesis replacementHypothesis =>
-      simp [ContinuationRetypingPlan.mapContractum, mapPattern,
+      simp [ContinuationRetypingPlan.mapContractum_subst, mapPattern,
         bodyHypothesis, replacementHypothesis]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp [ContinuationRetypingPlan.mapContractum,
-        ContinuationRetypingPlan.mapContractumList_eq_map,
+      simp [ContinuationRetypingPlan.mapContractum_collection,
         mapPattern, List.map_map]
       exact inductionHypothesis
 
@@ -1151,7 +1148,7 @@ theorem mapTermParam_costBaseParameter {source target : CIGSLT}
           morphism.underlying.structural.structural.symbols constructor)
         (mapTermParam morphism.underlying.structural.structural.symbols
           entry.1, entry.2) := by
-  unfold costBaseParameter
+  simp only [costBaseParameter_def]
   rw [morphism.isSelectedContinuation_map constructor entry.2]
   split
   · exact mapTermParam_costWrapped
@@ -1194,8 +1191,8 @@ theorem mapGrammarRule_costBaseConstructor {source target : CIGSLT}
           morphism.underlying.structural.structural.symbols constructor) := by
   have parameters := morphism.map_costBaseParameter_list constructor
   cases constructor
-  simp only [costBaseConstructor, mapGrammarRule] at parameters ⊢
-  congr <;> simp
+  simp only [costBaseConstructor_def, mapGrammarRule] at parameters ⊢
+  congr 1 <;> simp_all [mapCollectionAlgebra, Option.map_map, Function.comp_def]
 
 theorem map_costWrappedParameter_list {source target : CIGSLT}
     (morphism : source.Morphism target) (parameters : List TermParam) :
@@ -1257,8 +1254,7 @@ theorem mapGrammarRule_costWrappedConstructor {source target : CIGSLT}
   have categoryEquality := morphism.map_costWrappedCategory constructor.category
   cases constructor
   simp only [costWrappedConstructor, mapGrammarRule] at parameters categoryEquality ⊢
-  congr 1
-  simp
+  congr 1 <;> simp [mapCollectionAlgebra, Option.map_map, Function.comp_def]
 
 /-! ## Structural action on the generated continuation signature -/
 
@@ -1375,11 +1371,13 @@ theorem map_costCoreConstructors {source target : CIGSLT}
       costCoreConstructors
         target.theory.presentation.interactingSort.1.name := by
   simp [costCoreConstructors, costSignatureUnitConstructor,
-    costSignatureProductConstructor, costSignedConstructor,
+    costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
+    costSignatureCommitConstructor, costSignedConstructor,
     costTokenStackEmptyConstructor, costTokenStackConsConstructor,
     costFundingConstructor, costContactConstructor,
-    costSignatureSortName, costTokenStackSortName,
+    costSignatureSortName, costKeySortName, costTokenStackSortName,
     costSignatureUnitConstructorName, costSignatureProductConstructorName,
+    costKeyLeafConstructorName, costKeyBranchConstructorName, costSignatureCommitConstructorName,
     costSignedConstructorName, costTokenStackEmptyConstructorName,
     costTokenStackConsConstructorName, costFundingConstructorName,
     costContactConstructorName, mapGrammarRule, mapTermParam, mapTypeExpr,

@@ -21,6 +21,60 @@ open CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open StructuralMorphism
 
+/-- A premise is a hypothesis above the line when it asks for a reduction of a
+subterm.  Freshness conditions and relation queries are side conditions. -/
+def isReductionHypothesis : Premise → Bool
+  | .congruence _ _ => true
+  | .scopedStep _ => true
+  | .forAll _ _ body => isReductionHypothesis body
+  | .freshness _ => false
+  | .relationQuery _ _ => false
+
+/-- A base rewrite has no premise requiring another reduction. Freshness and
+relation-query side conditions may still constrain its instances. -/
+def IsBaseRewrite (rewrite : RewriteRule) : Prop :=
+  ∀ premise ∈ rewrite.premises, isReductionHypothesis premise = false
+
+instance (rewrite : RewriteRule) : Decidable (IsBaseRewrite rewrite) :=
+  inferInstanceAs (Decidable (∀ premise ∈ rewrite.premises, _))
+
+/-- A premise-free rewrite is a base rewrite. -/
+theorem isBaseRewrite_of_premises_eq_nil {rewrite : RewriteRule}
+    (premiseFree : rewrite.premises = []) : IsBaseRewrite rewrite := by
+  intro premise membership
+  rw [premiseFree] at membership
+  cases membership
+
+/-- A rewrite with a reduction hypothesis is not a base rewrite. -/
+theorem not_isBaseRewrite_of_congruence {rewrite : RewriteRule}
+    {source target : Pattern}
+    (membership : Premise.congruence source target ∈ rewrite.premises) :
+    ¬ IsBaseRewrite rewrite := by
+  intro base
+  have contradiction := base _ membership
+  simp [isReductionHypothesis] at contradiction
+
+/-- A premise that asks, at the root of its rule, for a reduction of a
+subterm: the rule cannot fire until that reduction is supplied. -/
+def asksReduction : Premise → Bool
+  | .congruence _ _ => true
+  | .scopedStep _ => true
+  | _ => false
+
+/-- Asking for a reduction is a reduction hypothesis. -/
+theorem isReductionHypothesis_of_asksReduction {premise : Premise}
+    (asks : asksReduction premise = true) : isReductionHypothesis premise = true := by
+  cases premise <;> simp_all [asksReduction, isReductionHypothesis]
+
+/-- A rewrite with a premise asking for a reduction is not a base rewrite. -/
+theorem not_isBaseRewrite_of_asksReduction {rewrite : RewriteRule} {premise : Premise}
+    (membership : premise ∈ rewrite.premises) (asks : asksReduction premise = true) :
+    ¬ IsBaseRewrite rewrite := by
+  intro base
+  have none := base premise membership
+  rw [isReductionHypothesis_of_asksReduction asks] at none
+  cases none
+
 /-- The two declaration shapes that represent binary contact.  A language
 may use an ordinary binary constructor or an authored homogeneous collection
 constructor whose concrete term representation is the bare collection node. -/
@@ -63,9 +117,11 @@ def InteractionHeaded
       actual = expected ∧ 2 ≤ elements.length
   | _, _ => False
 
-/-- An exact validated operational theory with authored interaction data.
+/-- An exact validated operational theory with a selected contact site.
 The selected sort, constructor, and rewrite are subobjects of the sole
-`LanguageDef`; the representation witness only exposes their existing shape. -/
+`LanguageDef`; the representation witness only exposes their existing shape.
+The selected rewrite may be conditional. `BaseInteraction` specifies the
+additional requirement for an interactive theory. -/
 structure InteractivePresentation where
   presentation : ValidatedLanguageDef
   interactingSort : DeclaredSort presentation
@@ -78,6 +134,18 @@ structure InteractivePresentation where
   interactionHeaded :
     InteractionHeaded contactRepresentation contactConstructor.1
       interactionRewrite.1.left
+
+namespace InteractivePresentation
+
+/-- The selected interaction rewrite is a base rule. -/
+def BaseInteraction (presentation : InteractivePresentation) : Prop :=
+  IsBaseRewrite presentation.interactionRewrite.1
+
+instance (presentation : InteractivePresentation) :
+    Decidable presentation.BaseInteraction :=
+  inferInstanceAs (Decidable (IsBaseRewrite _))
+
+end InteractivePresentation
 
 /-- A structural theory map preserving the selected interaction interface.
 Because the base map preserves every declaration of the source, this is not a

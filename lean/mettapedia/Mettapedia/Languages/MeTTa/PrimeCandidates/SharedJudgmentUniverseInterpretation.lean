@@ -42,19 +42,19 @@ universe u v w w' uHost
 /-- Operations only. The native level index is unbounded; this does not
 assert that a host interpreting these operations and their laws exists. -/
 structure Operations (C : Cwf.{u, v, w, w'}) where
-  «universe» : TarskiUniverseFamily LevelExpr C
-  sortCode : (context : C.Ctx) → (level : LevelExpr) →
+  «universe» : TarskiUniverseFamily (LevelExpr Nat) C
+  sortCode : (context : C.Ctx) → (level : LevelExpr Nat) →
     C.Tm context («universe».univ context (.succ level))
-  liftCode : {context : C.Ctx} → {lower upper : LevelExpr} →
+  liftCode : {context : C.Ctx} → {lower upper : LevelExpr Nat} →
     Tower.Cumulative (.sort lower) (.sort upper) →
     C.Tm context («universe».univ context lower) →
       C.Tm context («universe».univ context upper)
-  piCode : {context : C.Ctx} → {left right : LevelExpr} →
+  piCode : {context : C.Ctx} → {left right : LevelExpr Nat} →
     (domain : C.Tm context («universe».univ context left)) →
     C.Tm (C.ext context («universe».el domain))
       («universe».univ (C.ext context («universe».el domain)) right) →
         C.Tm context («universe».univ context (.max left right))
-  sigmaCode : {context : C.Ctx} → {left right : LevelExpr} →
+  sigmaCode : {context : C.Ctx} → {left right : LevelExpr Nat} →
     (domain : C.Tm context («universe».univ context left)) →
     C.Tm (C.ext context («universe».el domain))
       («universe».univ (C.ext context («universe».el domain)) right) →
@@ -68,7 +68,7 @@ variable {assembly : Assembly} {C : Cwf.{u, v, w, w'}}
 same relation. The actual source formation is constructed below. -/
 def SortMeaning (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) : Prop :=
-  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (level : LevelExpr),
+  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (level : LevelExpr Nat),
     ContextFormation assembly.rules context.raw →
       interpretation.ty context (sortTm level)
           (operations.universe.univ (interpretation.ctx context) level) ∧
@@ -81,7 +81,7 @@ very semantic universe. General interpretation totality alone does not fix
 the semantic type to be this universe. -/
 def CodeTotal (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) : Prop :=
-  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n) (level : LevelExpr),
+  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n) (level : LevelExpr Nat),
     Judgment assembly.rules context.raw type (sortTm level) →
       ∃ code : C.Tm (interpretation.ctx context)
           (operations.universe.univ (interpretation.ctx context) level),
@@ -92,7 +92,7 @@ def CodeTotal (interpretation : SharedJudgmentInterpretation.Data assembly C)
 This neither identifies distinct code values nor supplies code totality. -/
 def CodesDecode (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) : Prop :=
-  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n) (level : LevelExpr)
+  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n) (level : LevelExpr Nat)
     (code : C.Tm (interpretation.ctx context)
       (operations.universe.univ (interpretation.ctx context) level)),
     Judgment assembly.rules context.raw type (sortTm level) →
@@ -105,7 +105,7 @@ instead of choosing an unrelated witness for the raised judgment. -/
 def CumulativeMeaning (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) : Prop :=
   ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n)
-    (lower upper : LevelExpr) (order : Tower.Cumulative (.sort lower) (.sort upper))
+    (lower upper : LevelExpr Nat) (order : Tower.Cumulative (.sort lower) (.sort upper))
     (code : C.Tm (interpretation.ctx context)
       (operations.universe.univ (interpretation.ctx context) lower)),
     Judgment assembly.rules context.raw type (sortTm lower) →
@@ -118,14 +118,14 @@ def CumulativeMeaning (interpretation : SharedJudgmentInterpretation.Data assemb
 /-- Strict decoding of the universe's own formation code. This is a
 restriction to equality of internal CwF type objects, not merely equivalence. -/
 def StrictSortDecoding (operations : Operations C) : Prop :=
-  ∀ (context : C.Ctx) (level : LevelExpr),
+  ∀ (context : C.Ctx) (level : LevelExpr Nat),
     operations.universe.el (operations.sortCode context level) =
       operations.universe.univ context level
 
 /-- Strict preservation of decoded type objects under cumulative lifting.
 It does not assert equality of the lower and upper code carriers. -/
 def StrictLiftDecoding (operations : Operations C) : Prop :=
-  ∀ (context : C.Ctx) (lower upper : LevelExpr)
+  ∀ (context : C.Ctx) (lower upper : LevelExpr Nat)
     (order : Tower.Cumulative (.sort lower) (.sort upper))
     (code : C.Tm context (operations.universe.univ context lower)),
     operations.universe.el (operations.liftCode order code) = operations.universe.el code
@@ -135,7 +135,7 @@ its displayed universe. It is not a claim about all possible semantic models
 or an identification of codes with equivalent decoded carriers. -/
 def StrictCodeUniqueness (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) : Prop :=
-  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n) (level : LevelExpr)
+  ∀ (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (type : Tower.Tm n) (level : LevelExpr Nat)
     (first second : C.Tm (interpretation.ctx context)
       (operations.universe.univ (interpretation.ctx context) level)),
     Judgment assembly.rules context.raw type (sortTm level) →
@@ -147,19 +147,19 @@ def StrictCodeUniqueness (interpretation : SharedJudgmentInterpretation.Data ass
 /-! ## Actual native formation and cumulative derivations -/
 
 theorem sort_admitted {n : Nat} {context : Tower.Ctx n}
-    (formed : ContextFormation assembly.rules context) (level : LevelExpr) :
+    (formed : ContextFormation assembly.rules context) (level : LevelExpr Nat) :
     Judgment assembly.rules context (sortTm level) (sortTm (.succ level)) :=
   ⟨formed, .headType (.sort level)⟩
 
 theorem cumulative_admitted {n : Nat} {context : Tower.Ctx n} {type : Tower.Tm n}
-    {lower upper : LevelExpr}
+    {lower upper : LevelExpr Nat}
     (admitted : Judgment assembly.rules context type (sortTm lower))
     (order : Tower.Cumulative (.sort lower) (.sort upper)) :
     Judgment assembly.rules context type (sortTm upper) :=
   ⟨admitted.context, .cumul admitted.typing order⟩
 
 /-- Composition uses the actual pointwise native level order. -/
-theorem cumulativeTrans {first middle last : LevelExpr}
+theorem cumulativeTrans {first middle last : LevelExpr Nat}
     (earlier : Tower.Cumulative (.sort first) (.sort middle))
     (later : Tower.Cumulative (.sort middle) (.sort last)) :
     Tower.Cumulative (.sort first) (.sort last) :=
@@ -168,7 +168,7 @@ theorem cumulativeTrans {first middle last : LevelExpr}
 theorem sort_has_code (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (sorts : SortMeaning interpretation operations)
     {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n}
-    (formed : ContextFormation assembly.rules context.raw) (level : LevelExpr) :
+    (formed : ContextFormation assembly.rules context.raw) (level : LevelExpr Nat) :
     Judgment assembly.rules context.raw (sortTm level) (sortTm (.succ level)) ∧
       interpretation.term context (sortTm level) (sortTm (.succ level))
         (operations.universe.univ (interpretation.ctx context) (.succ level))
@@ -179,7 +179,7 @@ theorem decoded_sort_meaning (interpretation : SharedJudgmentInterpretation.Data
     (operations : Operations C) (sorts : SortMeaning interpretation operations)
     (decode : CodesDecode interpretation operations)
     {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n}
-    (formed : ContextFormation assembly.rules context.raw) (level : LevelExpr) :
+    (formed : ContextFormation assembly.rules context.raw) (level : LevelExpr Nat) :
     interpretation.ty context (sortTm level)
       (operations.universe.el (operations.sortCode (interpretation.ctx context) level)) :=
   decode n context (sortTm level) (.succ level) _ (sort_admitted formed level)
@@ -191,7 +191,7 @@ theorem admitted_lift_identity
     (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (cumulative : CumulativeMeaning interpretation operations)
     (unique : StrictCodeUniqueness interpretation operations)
-    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {type : Tower.Tm n} {level : LevelExpr}
+    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {type : Tower.Tm n} {level : LevelExpr Nat}
     (admitted : Judgment assembly.rules context.raw type (sortTm level))
     (code : C.Tm (interpretation.ctx context)
       (operations.universe.univ (interpretation.ctx context) level))
@@ -205,7 +205,7 @@ theorem admitted_lift_composition
     (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (cumulative : CumulativeMeaning interpretation operations)
     (unique : StrictCodeUniqueness interpretation operations)
-    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {type : Tower.Tm n} {first middle last : LevelExpr}
+    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {type : Tower.Tm n} {first middle last : LevelExpr Nat}
     (earlier : Tower.Cumulative (.sort first) (.sort middle))
     (later : Tower.Cumulative (.sort middle) (.sort last))
     (admitted : Judgment assembly.rules context.raw type (sortTm first))
@@ -227,7 +227,7 @@ theorem admitted_lift_composition
 transport. Its laws are not stored in `Operations`. -/
 def substituteCode (operations : Operations C)
     (stable : operations.universe.SubstitutionStable)
-    {source target : C.Ctx} {level : LevelExpr}
+    {source target : C.Ctx} {level : LevelExpr Nat}
     (substitution : C.Sub source target)
     (code : C.Tm target (operations.universe.univ target level)) :
     C.Tm source (operations.universe.univ source level) :=
@@ -254,7 +254,7 @@ theorem substituted_code_meaning
     (typed : FormationSensitive.CtxMor assembly.rules source.raw target.raw sigma)
     (semantic : C.Sub (interpretation.ctx target) (interpretation.ctx source))
     (subMeaning : interpretation.sub source target sigma semantic)
-    {type : Tower.Tm n} {level : LevelExpr}
+    {type : Tower.Tm n} {level : LevelExpr Nat}
     (admitted : Judgment assembly.rules source.raw type (sortTm level))
     (code : C.Tm (interpretation.ctx source)
       (operations.universe.univ (interpretation.ctx source) level))
@@ -282,7 +282,7 @@ theorem admitted_lift_substitution
     (typed : FormationSensitive.CtxMor assembly.rules source.raw target.raw sigma)
     (semantic : C.Sub (interpretation.ctx target) (interpretation.ctx source))
     (subMeaning : interpretation.sub source target sigma semantic)
-    {type : Tower.Tm n} {lower upper : LevelExpr}
+    {type : Tower.Tm n} {lower upper : LevelExpr Nat}
     (order : Tower.Cumulative (.sort lower) (.sort upper))
     (admitted : Judgment assembly.rules source.raw type (sortTm lower))
     (code : C.Tm (interpretation.ctx source)
@@ -320,7 +320,7 @@ theorem cumulative_substitution_square
     (typed : FormationSensitive.CtxMor assembly.rules source.raw target.raw sigma)
     (semantic : C.Sub (interpretation.ctx target) (interpretation.ctx source))
     (subMeaning : interpretation.sub source target sigma semantic)
-    {type : Tower.Tm n} {first middle last : LevelExpr}
+    {type : Tower.Tm n} {first middle last : LevelExpr Nat}
     (earlier : Tower.Cumulative (.sort first) (.sort middle))
     (later : Tower.Cumulative (.sort middle) (.sort last))
     (admitted : Judgment assembly.rules source.raw type (sortTm first))
@@ -367,31 +367,31 @@ theorem cumulative_substitution_square
 namespace WeakeningControl
 
 /-- An actual open type code, not a closed term chosen to ignore substitution. -/
-def source (level : LevelExpr) : SharedJudgmentInterpretation.Context common 1 :=
+def source (level : LevelExpr Nat) : SharedJudgmentInterpretation.Context common 1 :=
   ⟨.snoc .nil (sortTm level), .snoc .nil (.headType (.sort level)) (.sort (.succ level))⟩
 
 /-- The added field uses the shared package's genuine native wire datatype. -/
-def target (level : LevelExpr) : SharedJudgmentInterpretation.Context common 2 :=
+def target (level : LevelExpr Nat) : SharedJudgmentInterpretation.Context common 2 :=
   .snoc (source level) NativeWireData.dataType (.sort Tower.zero)
     (HOLNativeRelatorCompatibility.wire_typing (NativeWireData.dataType_formed _)) (.sort Tower.zero)
 
 def substitution : Sub Tower.Head 1 2 := renSub wk
 
-theorem source_formed (level : LevelExpr) :
+theorem source_formed (level : LevelExpr Nat) :
     ContextFormation common.rules (source level).raw :=
   .snoc .nil (.headType (.sort level)) (.sort (.succ level))
 
-theorem target_formed (level : LevelExpr) :
+theorem target_formed (level : LevelExpr Nat) :
     ContextFormation common.rules (target level).raw :=
   .snoc (source_formed level)
     (HOLNativeRelatorCompatibility.wire_typing (NativeWireData.dataType_formed _))
     (.sort Tower.zero)
 
-theorem source_admitted (level : LevelExpr) :
+theorem source_admitted (level : LevelExpr Nat) :
     Judgment common.rules (source level).raw (.var 0) (sortTm level) :=
   ⟨source_formed level, .var 0⟩
 
-theorem substitution_typed (level : LevelExpr) :
+theorem substitution_typed (level : LevelExpr Nat) :
     FormationSensitive.CtxMor common.rules (source level).raw (target level).raw substitution := by
   intro index
   fin_cases index
@@ -404,18 +404,18 @@ field. The distinction is syntactic and does not assume a semantic model. -/
 theorem substituted_variable_ne_newest :
     subst substitution (.var 0) ≠ (.var 0 : Tower.Tm 2) := by decide
 
-theorem next_level (level : LevelExpr) :
+theorem next_level (level : LevelExpr Nat) :
     Tower.Cumulative (.sort level) (.sort (.succ level)) :=
   fun _ => Nat.le_succ _
 
-theorem raised_substitution_admitted (level : LevelExpr) :
+theorem raised_substitution_admitted (level : LevelExpr Nat) :
     Judgment common.rules (target level).raw (.var 1) (sortTm (.succ (.succ level))) :=
   (cumulative_admitted (cumulative_admitted (source_admitted level) (next_level level))
     (next_level (.succ level))).substitute (target_formed level) (substitution_typed level)
 
 /-- The source-side controls have actual proofs independently of every
 semantic predicate used in the following consequence. -/
-theorem native_control (level : LevelExpr) :
+theorem native_control (level : LevelExpr Nat) :
     ContextFormation common.rules (source level).raw ∧
       ContextFormation common.rules (target level).raw ∧
       Judgment common.rules (source level).raw (.var 0) (sortTm level) ∧
@@ -441,7 +441,7 @@ theorem semantic_control
     (decode : CodesDecode interpretation operations)
     (liftDecode : StrictLiftDecoding operations)
     (substitutes : SharedJudgmentInterpretation.TermSubstitutionStable interpretation)
-    (stable : operations.universe.SubstitutionStable) (level : LevelExpr) :
+    (stable : operations.universe.SubstitutionStable) (level : LevelExpr Nat) :
     ∃ (code : C.Tm (interpretation.ctx (source level))
         (operations.universe.univ (interpretation.ctx (source level)) level))
       (semantic : C.Sub (interpretation.ctx (target level)) (interpretation.ctx (source level))),
@@ -480,7 +480,7 @@ are already supplied. Strict uniqueness, when available, removes the choice. -/
 noncomputable def chooseCode
     (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (total : CodeTotal interpretation operations)
-    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {level : LevelExpr}
+    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {level : LevelExpr Nat}
     (term : { type : Tower.Tm n // Judgment assembly.rules context.raw type (sortTm level) }) :
     C.Tm (interpretation.ctx context)
       (operations.universe.univ (interpretation.ctx context) level) :=
@@ -489,7 +489,7 @@ noncomputable def chooseCode
 theorem chooseCode_meaning
     (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (total : CodeTotal interpretation operations)
-    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {level : LevelExpr}
+    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {level : LevelExpr Nat}
     (term : { type : Tower.Tm n // Judgment assembly.rules context.raw type (sortTm level) }) :
     interpretation.term context term.val (sortTm level)
       (operations.universe.univ (interpretation.ctx context) level)
@@ -500,7 +500,7 @@ theorem chooseCode_eq
     (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (total : CodeTotal interpretation operations)
     (unique : StrictCodeUniqueness interpretation operations)
-    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {level : LevelExpr}
+    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {level : LevelExpr Nat}
     (term : { type : Tower.Tm n // Judgment assembly.rules context.raw type (sortTm level) })
     (code : C.Tm (interpretation.ctx context)
       (operations.universe.univ (interpretation.ctx context) level))
@@ -518,7 +518,7 @@ open UniverseClosureProfiles TarskiCumulativeCodeCoherenceBoundary
 
 /-- The formation diamond is interpreted only on its independently formed
 native telescope; its raw declaration-level construction is unchanged. -/
-def formedContext (level : LevelExpr) : SharedJudgmentInterpretation.Context assembly 2 :=
+def formedContext (level : LevelExpr Nat) : SharedJudgmentInterpretation.Context assembly 2 :=
   ⟨context level, context_formed assembly.declarations level⟩
 
 /-- These two meaning clauses are for the same actual native Pi code at
@@ -529,7 +529,7 @@ No conclusion concerns interpretation classes without these exact clauses. -/
 theorem strict_code_uniqueness_incompatible
     (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (operations : Operations C) (total : CodeTotal interpretation operations)
-    (level : LevelExpr) (operator : SmallFamilyEnclosingUniverseOperator.{uHost})
+    (level : LevelExpr Nat) (operator : SmallFamilyEnclosingUniverseOperator.{uHost})
     (A : Type uHost) (B : A → Type uHost) (valuation : Nat → Nat)
     (domain : (FamilyEnclosingUniverseTower.family (tagOperator operator) A B).Code
       (LevelExpr.eval valuation level))

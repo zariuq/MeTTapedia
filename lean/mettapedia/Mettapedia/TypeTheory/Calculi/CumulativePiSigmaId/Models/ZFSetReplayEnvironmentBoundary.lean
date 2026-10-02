@@ -148,7 +148,7 @@ theorem assembled_value_functions_differ (h : CofinalInaccessibles.{u})
 value form a valid environment, and both accepted terms return the ground value. -/
 theorem valid_environment_exists (h : CofinalInaccessibles.{u}) :
     valid h (Fin.cases ∅ (fun _ => ZFSet.powerset ∅)) :=
-  ⟨⟨True.intro, ZFSetDependentProducts.Controls.power_empty_mem_two⟩, seed_mem_zero h ∅⟩
+  ⟨⟨True.intro, ZFSetDependentProducts.Controls.power_empty_mem_two⟩, seed_mem_universeSet h ∅ (0 : Nat)⟩
 
 #print axioms context_checked
 #print axioms lower_checked

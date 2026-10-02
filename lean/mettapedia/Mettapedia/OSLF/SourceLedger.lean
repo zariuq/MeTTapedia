@@ -1,3 +1,5 @@
+import Init.Data.String.Lemmas.IsEmpty
+
 /-!
 # The source-obligation ledger
 
@@ -24,7 +26,7 @@ separately: whether the *source* proves what it states.  A statement the source
 asserts without proof is not thereby a gap in this development, and it must not
 be turned into an axiom, a premise or a placeholder in order to look closed.
 
-Chapters six, seven and sixteen to twenty are inventoried below. The recorded
+Chapters six to ten and sixteen to twenty are inventoried below. The recorded
 definition, remark, proposition, theorem and corollary counts stay in
 `chapterObligationCount`; claims a chapter makes in prose are entered as section
 rows beside them.
@@ -35,7 +37,6 @@ preconditions, not rows in that denominator, and require their own certification
 namespace Mettapedia.OSLF.SourceLedger
 
 set_option autoImplicit false
-set_option maxRecDepth 400000
 
 /-- Where an obligation stands in *this* development. -/
 inductive Standing where
@@ -87,7 +88,7 @@ deriving Repr
 /-- Recorded counts of definitions, remarks, propositions, theorems and
 corollaries at the source revision. Numbered source conditions are not included. -/
 def chapterObligationCount : List (Nat × Nat) :=
-  [(6, 0), (7, 5), (16, 9), (17, 5), (18, 11), (19, 7), (20, 28)]
+  [(6, 0), (7, 5), (8, 3), (9, 7), (10, 8), (16, 9), (17, 5), (18, 11), (19, 7), (20, 28)]
 
 /-- Publication revision supplying the draft-26 obligation numbering. -/
 def sourceRevision : String := "1f7bd34b11e65d707dde4b3638d08a181e1b8028"
@@ -95,12 +96,12 @@ def sourceRevision : String := "1f7bd34b11e65d707dde4b3638d08a181e1b8028"
 /-- The compiled source carrying these chapter and section numbers. -/
 def sourceDocument : String := "FindingMind/draft26/finding_mind.pdf"
 
-/-- The denominator: sixty-five numbered obligations across chapters six,
-seven and sixteen to twenty. -/
+/-- The denominator: eighty-three numbered obligations across chapters six to
+ten and sixteen to twenty. -/
 def totalObligations : Nat :=
   (chapterObligationCount.map (·.2)).foldl (· + ·) 0
 
-theorem totalObligations_eq : totalObligations = 65 := by decide
+theorem totalObligations_eq : totalObligations = 83 := by decide
 
 /-! ## Chapter 6
 
@@ -120,10 +121,26 @@ def chapter6 : List Obligation :=
         ++ "calculus is interactive with an asymmetric site; rho is interactive "
         ++ "with a symmetric one."
       sourceProves := false
-      construction := "", provedTheorem := "", instanceWitness := ""
-      negativeControl := ""
+      construction := "From the library root: "
+        ++ "GSLT/LanguageDef/Interaction/Presentability.lean: IsBaseRewrite / "
+        ++ "IsInteractive; GSLT/LanguageDef/Continued/Presentation.lean: "
+        ++ "IsContinued. The three definitions are the rows of Chapters 8 and 9"
+      provedTheorem := "Languages/TuringMachine/NotInteractive.lean: "
+        ++ "turingMachine_not_interactive; "
+        ++ "GSLT/LanguageDef/Interaction/BaseInteractions.lean: "
+        ++ "lambdaCalc_isInteractive / rhoCalc_isInteractive / "
+        ++ "rho_parCong_not_base (the base rule apart from the context rule); "
+        ++ "GSLT/LanguageDef/Interaction/Surfaces.lean: lambda_surface_structural "
+        ++ "(the ordered site) / rho_pair_swaps (the symmetric one)"
+      instanceWitness := "Languages/TuringMachine/LanguageDef.lean: "
+        ++ "appendOne_first_step; GSLT/LanguageDef/Continued/Presentation.lean: "
+        ++ "lambda_isContinued"
+      negativeControl := "Languages/Calculator/Interaction.lean: "
+        ++ "calculator_not_interactive; "
+        ++ "GSLT/LanguageDef/Interaction/Controls/ContextualOnly.lean: "
+        ++ "contextualOnly_not_interactive"
       audited := true
-      standing := .openHere }
+      standing := .provedHere }
   , { chapter := 6, citation := "Section 6.3, the rho calculus"
       statement :=
         "Processes are 0, for(y <- x) P, x!(Q), P | Q and *x, and names are @P, "
@@ -276,88 +293,114 @@ def chapter7 : List Obligation :=
         ++ "rewrites and their closure under the term formers; the source calls "
         ++ "that subobject the adjoined graph seen semantically."
       sourceProves := false
-      construction := "Syntax/IntrinsicScopedConditionalPresheaf.lean: "
-        ++ "presheaves on the context category of the binding clone, with states, "
-        ++ "programs, events, graph and the reduction subfunctor. The corrected "
-        ++ "interface keeps the graph of individual firings distinct from its "
-        ++ "endpoint-image reduction subobject. Syntax/CategoricalEventObservations.lean "
-        ++ "proves the image is the least justified predicate when images exist; "
-        ++ "finite limits alone do not supply images, and the cartesian closure "
-        ++ "here is that of the presheaf category"
-      provedTheorem := "Syntax/IntrinsicScopedConditionalPresheaf.lean: "
-        ++ "hasFiniteLimits, monoidalClosed, programsIso, mem_reduction_iff -- "
-        ++ "membership in the reduction subfunctor is the reduction of "
-        ++ "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean, the least "
-        ++ "rule-closed relation (reduces_least), stable under substitution "
-        ++ "(reduces_substitute); Syntax/CategoricalEventObservations.lean: "
-        ++ "imageAdjunction; Syntax/PresentationEventModalComparison.lean: "
-        ++ "diamond_iff_endpoint_image"
-      instanceWitness := "Syntax/IntrinsicLambdaFourRulePresentation.lean: "
-        ++ "sourceStep_iff_reduces"
-      negativeControl := "Syntax/LambdaEventImageMultiplicity.lean: "
-        ++ "image_equality_without_event_surjectivity -- equal reduction images "
-        ++ "need not come from equal event graphs"
+      construction := "Syntax/IntrinsicScopedLocalActedPresheafSetting.lean: "
+        ++ "presheaves on the actual combined authored classifier, with finite "
+        ++ "limits, full cartesian closed structure, the predicate projection "
+        ++ "fibration and its subobject comparison. "
+        ++ "Syntax/IntrinsicScopedLocalActedYonedaStructured.lean: the "
+        ++ "structured generic program/event interpretation. "
+        ++ "Syntax/IntrinsicScopedLocalActedPresheafEvents.lean: individually "
+        ++ "retained firing events and their paired endpoint image, indexed by "
+        ++ "every context and sort. The graph is distinct from its reduction "
+        ++ "subobject; finite limits alone do not construct images"
+      provedTheorem := "Syntax/IntrinsicScopedLocalActedPresheafSetting.lean: "
+        ++ "hasFiniteLimits, closedStructure, predicateSubobjectEquiv, "
+        ++ "predicateProjection_fibered, predicateLift_factorization; "
+        ++ "Syntax/IntrinsicScopedLocalActedYonedaStructured.lean: "
+        ++ "yonedaClassifyingIso, yoneda_firing_evaluate; "
+        ++ "Syntax/IntrinsicScopedLocalActedPresheafEvents.lean: "
+        ++ "mem_genericReduction_iff, genericReduction_eq_image, "
+        ++ "generic_diamond_spec, generic_diamond_box_adjunction and "
+        ++ "generic_box_spec. The right adjoint is the past-step box, "
+        ++ "quantifying over further restrictions, not forward necessity"
+      instanceWitness := "Syntax/IntrinsicScopedLocalActedPresheafLambdaControl.lean "
+        ++ "and Syntax/IntrinsicScopedOperationalPresheafExtensionControls.lean: "
+        ++ "actual extended binder-local LamCong and the original ordered "
+        ++ "operational rule action"
+      negativeControl := "Syntax/IntrinsicScopedLocalActedPresheafMultiplicityControl.lean: "
+        ++ "two_firings_same_reduction; "
+        ++ "Syntax/PresheafEventImageComparisonControls.lean: "
+        ++ "future_reduction_box_rejects and addedStep_diamond_not_natural; "
+        ++ "Syntax/IntrinsicScopedLocalActedPresheafCoproductControl.lean: "
+        ++ "the two-summand retained-event presheaf and actual extension"
       audited := true
       standing := .provedHere }
   , { chapter := 7, citation := "Section 7.6, the classifying property"
       statement :=
-        "The structure of the previous row is the classifying theory of the "
-        ++ "presentation: models of the presentation in a category with finite "
-        ++ "limits, a chosen cartesian closed structure and a reduction subobject "
-        ++ "correspond to structure-preserving functors out of it."
+        "The classifying structure interprets the authored presentation by "
+        ++ "structure-preserving functors. Precisely: the combined context "
+        ++ "classifier C_P classifies independently defined models in targets "
+        ++ "with chosen finite products, selected binder-arity exponentials and "
+        ++ "the event-projection pullbacks. Its presheaf category T_P carries "
+        ++ "finite limits, full cartesian closure and the reduction subobject. "
+        ++ "For suitably cocomplete targets, models are classified by "
+        ++ "cocontinuous functors from T_P whose Yoneda restrictions preserve "
+        ++ "the specified structure. This qualifies the draft's unqualified "
+        ++ "description rather than asserting that an arbitrary extension "
+        ++ "preserves all finite limits, exponentials or images."
       sourceProves := false
-      construction := "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean: "
-        ++ "SubstitutionOperationalModel.presentedIsInitial is initiality among "
-        ++ "algebraic models with a substitution action, not the universal "
-        ++ "property of the semantic category among finitely complete cartesian "
-        ++ "closed categories with a reduction subobject. "
-        ++ "Syntax/IntrinsicScopedConditionalFiniteContextSemantics.lean: "
-        ++ "authoredRuleClassification proves the finite-product classifier "
-        ++ "for rule algebras over each fixed binding-equation model, including "
-        ++ "interpretation maps and ordered binder-local premise positions. "
-        ++ "Syntax/IndexedRuleFiniteListSkeleton.lean: listEquivalence "
-        ++ "represents every finite operational context in a small category "
-        ++ "without changing typed free-tree substitutions. "
-        ++ "Syntax/IntrinsicScopedConditionalRelativeLexClassification.lean: "
-        ++ "authoredRuleLexSetClassification extends that fixed-model rule "
-        ++ "classifier to the existing relative finite-limit presentation "
-        ++ "in sets, including model maps. The finite-list presentation also "
-        ++ "admits the existing relative lex equivalence in every small "
-        ++ "finitely complete target. "
-        ++ "Syntax/IntrinsicScopedConditionalFiniteContextChange.lean: "
-        ++ "pushFunctor transports the actual finite event-context category "
-        ++ "along a binding-model map; mapTerm_bind proves compatibility "
-        ++ "with simultaneous event substitution while retaining ordered "
-        ++ "premise positions. Its identity and two-stage composition laws "
-        ++ "are proved on trees, substitutions and functors. "
-        ++ "Syntax/IntrinsicScopedConditionalTotalContext.lean: "
-        ++ "authoredOperationalFibers coherently reindexes finite event "
-        ++ "contexts along the contravariant equation-model presheaf. "
-        ++ "Syntax/IntrinsicScopedConditionalClassifierContext.lean: "
-        ++ "ClassifierContext corrects the variance to place authored "
-        ++ "program and firing-tree substitutions in their intended "
-        ++ "direction. homEquiv decomposes every arrow into exactly those "
-        ++ "two components; baseProjection recovers the equation-context "
-        ++ "category, programSection is fully faithful, fiberFunctor is "
-        ++ "faithful, and constructor retains each ordered binder-local "
-        ++ "premise as a firing arrow. "
-        ++ "Syntax/IntrinsicScopedConditionalClassifierSetSemantics.lean: "
-        ++ "Valuation interprets program assignments and individually "
-        ++ "retained event variables in an independent operational model; "
-        ++ "eventContextFiberEquiv and singletonEventEquiv recover the "
-        ++ "ordered witness family and a single witness over a fixed "
-        ++ "program assignment; interpretTree_bind, fiberSemantics, "
-        ++ "transport_factor, transport_id, and "
-        ++ "transport_comp_program establish the fixed-context event fold, "
-        ++ "identity of combined semantic transport, and program-assignment "
-        ++ "composition. Full combined composition is still open. "
-        ++ "The combined binding-equation-rule classifier, its closed and "
-        ++ "finite-limit structure, and the qualified reduction observation "
-        ++ "remain open. The source states the classifying property without "
-        ++ "proving these compatibility laws"
-      provedTheorem := "", instanceWitness := "", negativeControl := ""
+      construction := "Syntax/IntrinsicScopedLocalActedClassifier.lean: C_P "
+        ++ "combines equation-context assignments and free firing trees over "
+        ++ "each rule's declared telescope; event leaves carry their "
+        ++ "substitution. Syntax/IntrinsicScopedLocalActedCategoricalModels.lean "
+        ++ "defines program and retained-event models independently of functors. "
+        ++ "Syntax/IntrinsicScopedLocalActedYonedaStructured.lean supplies the "
+        ++ "actual structured Yoneda interpretation, with represented binder "
+        ++ "powers, all constructors and event pullbacks, then recovers its "
+        ++ "model. Syntax/IntrinsicScopedLocalActedPresheafExtension.lean "
+        ++ "constructs genuine restriction and density-colimit extension. "
+        ++ "Syntax/IntrinsicScopedOperationalPresheafInterpretation.lean "
+        ++ "connects the original clone-presheaf model's programs, events, "
+        ++ "substitution and every ordered binder-local rule action. Its "
+        ++ "shared-telescope adapter is unpruned and retains full assignments"
+      provedTheorem := "Syntax/IntrinsicScopedLocalActedEquivalence.lean: "
+        ++ "classificationEquivalence, on all maps with natural unit/counit; "
+        ++ "Syntax/IntrinsicScopedLocalActedBindingRestriction.lean: "
+        ++ "bindingRestrictionIso; "
+        ++ "Syntax/IntrinsicScopedLocalActedTypeComparisonNaturality.lean: "
+        ++ "classificationSetNatIso; "
+        ++ "Syntax/IntrinsicScopedLocalActedTargetTransport.lean: "
+        ++ "targetClassificationIso; "
+        ++ "Syntax/IntrinsicScopedLocalActedTargetClassificationFold.lean: "
+        ++ "targetClassification_rep_freeFold; "
+        ++ "Syntax/IntrinsicScopedLocalActedYonedaStructured.lean: "
+        ++ "yonedaClassifyingIso, yoneda_firing_evaluate; "
+        ++ "Syntax/IntrinsicScopedLocalActedPresheafExtension.lean: "
+        ++ "CocontinuousInterpretation.classificationEquivalence, under "
+        ++ "HasColimitsOfSize and the stated colimit preservation, "
+        ++ "classificationRestrictionIso and generator_comparison; "
+        ++ "Syntax/IntrinsicScopedLocalActedPresheafEvents.lean: "
+        ++ "mem_genericReduction_iff, generic_diamond_box_adjunction; "
+        ++ "Syntax/IntrinsicScopedOperationalPresheafInterpretation.lean: "
+        ++ "extension_section_iff; the reduction comparison "
+        ++ "is epi/sectionwise onto its endpoint image, and isIso additionally "
+        ++ "requires preservation of the relevant mono"
+      instanceWitness := "Syntax/IntrinsicScopedJsonClassifiedInstance.lean "
+        ++ "and Syntax/IntrinsicScopedMonoidClassifiedInstance.lean: the actual "
+        ++ "authored carriers, equations and empty rewrite inventories; "
+        ++ "Syntax/IntrinsicScopedLambdaClassifiedInstance.lean: "
+        ++ "extension_iff_step for all four rules and ordinary contexts, "
+        ++ "including LamCong's ordered binder-local premise; "
+        ++ "Syntax/IntrinsicScopedRhoClassifiedInstance.lean: extension_iff_steps "
+        ++ "for strict COMM/ParCong and the declared book Drop profile; "
+        ++ "Syntax/IntrinsicScopedRhoExecutorClassifiedInstance.lean: simulation "
+        ++ "and reflection with successful well-sorted translation, admitted "
+        ++ "closed sources, structural congruence and target-class equality. "
+        ++ "The legacy Lambda adapter retains its five declared parameters; "
+        ++ "reduction support does not assert an executor-history bijection"
+      negativeControl := "Syntax/IntrinsicScopedLambdaClassifiedMultiplicity.lean: "
+        ++ "actual distinct quotient trees/event sections with equal endpoints, "
+        ++ "and equal doubled-graph images without first-copy event surjectivity; "
+        ++ "Syntax/IntrinsicScopedClassifiedTelescopeCoverageControl.lean: "
+        ++ "the genuinely own-telescope token firing survives while the "
+        ++ "unpruned unused-global assignment is impossible; "
+        ++ "Syntax/IntrinsicScopedClassifiedSubstitutionGapControl.lean: "
+        ++ "the underlying rule-algebra flip is not a substitution-model map; "
+        ++ "Syntax/PresheafEventImageComparisonControls.lean: the shared "
+        ++ "predicate interface exposes newly available events and failure "
+        ++ "of exact diamond transport after an additional target step"
       audited := true
-      standing := .openHere }
+      standing := .provedHere }
   , { chapter := 7, citation := "Section 7.8, rung one: JSON"
       statement :=
         "With no equations and no rewrites, a presentation is a multi-sorted "
@@ -437,8 +480,10 @@ def chapter7 : List Obligation :=
         ++ "with a name hole is reached from sending code and receiving its name "
         ++ "in one COMM, the hole filled by the quotation of the code as filled "
         ++ "when sent; output_inert -- code in flight has no step; "
-        ++ "quote_injective -- quotation identifies codes only through a single "
-        ++ "drop; self_code_through_drop -- under the name law the drop *@0 has "
+        ++ "quote_injective -- injectivity requires both codes to have no "
+        ++ "single-drop key; quote_not_injective proves the exact failure "
+        ++ "without that qualification; self_code_through_drop -- under the "
+        ++ "name law the drop *@0 has "
         ++ "the name @0 that it contains"
       instanceWitness := "Syntax/RhoPayloadExecutorComparison.lean: "
         ++ "control_received_name, control_bound_quoteDrop, control_received_drop, "
@@ -452,6 +497,774 @@ def chapter7 : List Obligation :=
         ++ "bound_quoteDrop_translated_not_admitted"
       audited := true
       standing := .provedHere }
+  ]
+
+/-! ## Chapter 8
+
+Definitions 8.1 and 8.2 and Remark 8.1 are numbered. The interaction cut of
+Section 8.2, the two claims of Section 8.3, the two non-examples and the
+distinction of Section 8.7 are entered as section rows. Paths in the rows of
+Chapters 8 to 10 are relative to the library root.
+-/
+
+/-- Chapter 8's rows: interactive theories, their category, the cut, and the
+machines that are not interactive. -/
+def chapter8 : List Obligation :=
+  [ { chapter := 8, citation := "Definition 8.1"
+      statement :=
+        "A GSLT is interactive when it carries a distinguished interacting sort "
+        ++ "of programs, a binary interaction constructor whose environment "
+        ++ "operand is of the interacting sort, and at least one base rewrite "
+        ++ "rule whose left-hand side features that constructor, generating a "
+        ++ "transition system on which bisimulation is the intended equivalence."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/InteractiveCategory.lean: InteractivePresentation / IsBaseRewrite / "
+        ++ "BaseInteraction; GSLT/LanguageDef/SemanticCategory.lean: IGSLT / baseInteraction / toGSLT. An IGSLT "
+        ++ "now requires the selected rule to be a base interaction; the structural presentation alone does not."
+      provedTheorem := "GSLT/LanguageDef/Interaction/Presentability.lean: IGSLT.isInteractive / "
+        ++ "not_step_of_rewrites_ask_reduction / not_admitsInteractivePresentation_iff. The base-rule "
+        ++ "requirement excludes a contextual-only rule system with no finite reduction derivation."
+      instanceWitness := "GSLT/LanguageDef/Interaction/BaseInteractions.lean: "
+        ++ "rhoCalc_isInteractive / lambdaCalc_isInteractive; "
+        ++ "Languages/ProcessCalculi/CCS/Interaction.lean: ccsCalc_isInteractive "
+        ++ "/ handshake_semantic_step; Languages/InteractionCategory/Interaction.lean"
+      negativeControl := "GSLT/LanguageDef/Interaction/Controls/ContextualOnly.lean: contextualOnly_not_interactive / "
+        ++ "contextualOnly_no_step / contextualOnly_not_IGSLT; Languages/Calculator/Interaction.lean: "
+        ++ "calculator_not_interactive / calculatorRewriting_isInteractive, distinguishing equational arithmetic "
+        ++ "from directed arithmetic rules."
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Definition 8.2"
+      statement :=
+        "iGSLT is the category whose objects are interactive GSLTs and whose "
+        ++ "morphisms are theory maps, sort- and operator-preserving translations "
+        ++ "respecting the equations and the rules, that are "
+        ++ "bisimulation-preserving on the interacting sort."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/SemanticCategory.lean: IGSLT.Morphism / Category IGSLT / semantics, over "
+        ++ "operator-preserving maps of declarations with reduction-bisimilarity preservation. Syntactic "
+        ++ "declaration transport does not automatically give semantic equation transport when built-in premise "
+        ++ "relations or declared algebra units are renamed."
+      provedTheorem := "GSLT/Core/FunctionalBisimulation.lean: GSLT.bisimilar_map_of_zigzag; "
+        ++ "GSLT/LanguageDef/Contexts/Structural.lean: preservesEquations_default / preservesSteps_default, with "
+        ++ "explicit equality-relation and declared-unit conditions. No theorem identifies all recorded IGSLT "
+        ++ "arrows with semantic theory homomorphisms without these conditions."
+      instanceWitness := "GSLT/LanguageDef/Interaction/Controls/ContactMorphisms.lean: "
+        ++ "collapse / collapse_identifies / collapse_ne_id; "
+        ++ "GSLT/LanguageDef/Contexts/Controls/ReductionBisimilarity.lean: "
+        ++ "toMarking. Before these the category had identities only"
+      negativeControl := "GSLT/LanguageDef/Interaction/Controls/ContactMorphisms.lean: "
+        ++ "inclusion_not_semantic (a map of declarations preserving the selected "
+        ++ "sort, contact and rule over which no morphism lies)"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 8, citation := "Remark 8.1"
+      statement :=
+        "Binding is not the point: substitution through a binder is one mode by "
+        ++ "which a datum migrates from the environment continuation into the "
+        ++ "program continuation, and CCS realises the cut with no migration."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Interaction/Migration.lean: MigrationMode "
+        ++ "/ ContractionSchema.mode / InteractionCutPresentation.migrationMode, "
+        ++ "read from the authored contractum"
+      provedTheorem := "GSLT/LanguageDef/Interaction/Migration.lean: "
+        ++ "exists_subst_of_bindsInto / "
+        ++ "ContractionSchema.program_released_of_mode_ne_binding; "
+        ++ "Languages/ProcessCalculi/CCS/Cut.lean: ccs_migrationMode; "
+        ++ "GSLT/LanguageDef/Interaction/MigrationInstances.lean: "
+        ++ "rho_migrationMode / lambda_migrationMode"
+      instanceWitness := "Languages/ProcessCalculi/CCS/Cut.lean: ccs_releases"
+      negativeControl := "GSLT/LanguageDef/Interaction/MigrationInstances.lean: "
+        ++ "lambda_residual_depends_on_argument / rho_binds_through_substitution"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Section 8.2, the interaction cut"
+      statement :=
+        "The generating rule has the shape of an interaction cut: the interaction "
+        ++ "constructor brings together two introductions, each separating a "
+        ++ "surface that must match from a continuation, and a contraction "
+        ++ "combines the continuations into residuals."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/InteractionCut.lean: "
+        ++ "InteractionCutPresentation, naming parts of the authored rule"
+      provedTheorem := "GSLT/LanguageDef/Continued/CutShape.lean: "
+        ++ "InteractionCutPresentation.operands_of_binary_left / "
+        ++ "CIGSLT.contractum_head_ne_introductions"
+      instanceWitness := "Languages/ProcessCalculi/CCS/Cut.lean: ccsInteractionCut; "
+        ++ "Languages/Calculator/Cut.lean: successorCut; "
+        ++ "Languages/ProcessCalculi/Ambient/Interaction.lean: dissolutionCut; "
+        ++ "Languages/ProcessCalculi/PiCalculus/Interaction.lean: piInteractionCut"
+      negativeControl := "GSLT/LanguageDef/Interaction/BaseInteractions.lean: "
+        ++ "mettaCalc_no_interactionCut; GSLT/LanguageDef/Continued/NotContinued.lean: "
+        ++ "deep_no_cut (a rule that looks inside an operand has no cut)"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Section 8.3, nominal and structural surfaces"
+      statement :=
+        "A surface is carried nominally, as an explicit subject that must match, "
+        ++ "or structurally, by the rigidity of a free interaction constructor, "
+        ++ "whose position is then unforgeable. The lambda calculus is the "
+        ++ "structural case; rho and CCS are nominal."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Interaction/Freeness.lean: "
+        ++ "EquationHeadsAvoid / InteractivePresentation.RigidContact"
+      provedTheorem := "GSLT/LanguageDef/Interaction/Freeness.lean: "
+        ++ "InteractivePresentation.position_invariant / equationEquiv_binary_iff"
+      instanceWitness := "GSLT/LanguageDef/Interaction/Surfaces.lean: "
+        ++ "lambda_surface_structural"
+      negativeControl := "GSLT/LanguageDef/Interaction/Surfaces.lean: "
+        ++ "rho_surface_nominal / rho_pair_swaps; "
+        ++ "Languages/ProcessCalculi/CCS/Surface.lean: ccs_surface_nominal / "
+        ++ "handshake_swaps"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Section 8.3, equations forge position"
+      statement :=
+        "An equation on the interaction constructor rewrites adjacency without "
+        ++ "firing a cut: associativity re-brackets, a unit law inserts and "
+        ++ "deletes neighbours, idempotence copies them, and "
+        ++ "associative-commutativity dissolves position. Only a free "
+        ++ "constructor admits no such move."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Interaction/Controls/EquationalContact.lean: "
+        ++ "contactWith laws, one signature and one rule with a varying list of "
+        ++ "equations"
+      provedTheorem := "GSLT/LanguageDef/Interaction/Controls/EquationalContact.lean: "
+        ++ "assoc_changes_adjacency / unit_forges_contact / idem_forges_contact / "
+        ++ "ac_changes_adjacency, each with its no-cut-fires companion"
+      instanceWitness := "GSLT/LanguageDef/Interaction/Controls/EquationalContact.lean: "
+        ++ "free_position_invariant"
+      negativeControl := "GSLT/LanguageDef/Interaction/Controls/EquationalContact.lean: "
+        ++ "collapse_forges_contact (an equation that never mentions the "
+        ++ "constructor still forges a contact: freedom from equations on the "
+        ++ "constructor alone is not rigidity)"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Non-example 8.1"
+      statement :=
+        "The Turing machine has no naive presentation as an interactive GSLT: "
+        ++ "the cut would be between automaton and tape, which are of different "
+        ++ "kinds."
+      sourceProves := false
+      construction := "Languages/TuringMachine/LanguageDef.lean: turingMachine, "
+        ++ "authored for every transition table"
+      provedTheorem := "Languages/TuringMachine/NotInteractive.lean: "
+        ++ "turingMachine_not_interactive / turingMachine_no_contact / "
+        ++ "run_is_ordered_binary_contact / run_is_not_same_sort_contact"
+      instanceWitness := "Languages/TuringMachine/LanguageDef.lean: "
+        ++ "turingMachine_validate_eq_nil / appendOne_first_step; "
+        ++ "Languages/TuringMachine/NotInteractive.lean: appendOne_semantic_step"
+      negativeControl := "Languages/ProcessCalculi/CCS/Interaction.lean: "
+        ++ "ccsCalc_isInteractive (the same criteria admit a calculus with a "
+        ++ "same-sort contact)"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Non-example 8.2"
+      statement :=
+        "Neither a Moore nor a Mealy machine has a naive presentation as an "
+        ++ "interactive GSLT, for the reason of Non-example 8.1. Under a forced "
+        ++ "reading they would occupy the null-migration and binding-migration "
+        ++ "positions respectively."
+      sourceProves := false
+      construction := "Languages/Transducers/LanguageDef.lean: transducer; "
+        ++ "GSLT/LanguageDef/Interaction/HeterogeneousCut.lean: "
+        ++ "HeterogeneousCutReading; Languages/Transducers/ForcedReading.lean: "
+        ++ "emissionReading / controlReading"
+      provedTheorem := "Languages/Transducers/NotInteractive.lean: "
+        ++ "transducer_not_interactive / transducer_no_contact; "
+        ++ "Languages/Transducers/ForcedReading.lean: moore_dataMode / mealy_dataMode "
+        ++ "/ moore_emitted_independent_of_stream / mealy_emitted_depends_on_symbol / "
+        ++ "mealy_contractum_reads_stream / feed_operands_not_both_configurations; "
+        ++ "GSLT/LanguageDef/Interaction/HeterogeneousCut.lean: "
+        ++ "HeterogeneousCutReading.rule_not_interaction (the rule read is the "
+        ++ "interaction rule of no interactive presentation of its language) / "
+        ++ "HeterogeneousCutReading.operands_not_both_of_sort / "
+        ++ "HeterogeneousCutReading.contractum_reads_environment; "
+        ++ "GSLT/LanguageDef/Interaction/Strength.lean: "
+        ++ "InteractivePresentation.not_everyRuleIsCut_of_heterogeneousReading"
+      instanceWitness := "Languages/Transducers/NotInteractive.lean: "
+        ++ "parity_semantic_step / change_semantic_step"
+      negativeControl := "Languages/Transducers/ForcedReading.lean: "
+        ++ "control_dataMode (the next control state reads the consumed symbol "
+        ++ "under both disciplines, so the null position holds for the emitted "
+        ++ "value only)"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 8, citation := "Section 8.7, presentation versus encoding"
+      statement :=
+        "A theory having an interactive presentation differs from a theory "
+        ++ "admitting an encoding into one that does: the interaction sites of "
+        ++ "an encoded machine are the sites of the target."
+      sourceProves := false
+      construction := "Languages/TuringMachine/OneSort.lean: oneSortMachine, the "
+        ++ "constructors and rules of the machine with all its sorts merged into one, "
+        ++ "authored for every transition table; Languages/TuringMachine/Hosted.lean: "
+        ++ "hostingMorphism, the map of declarations from the machine into it, as a "
+        ++ "morphism of theories. The source's own example, an encoding into rho with "
+        ++ "the tape as processes, is not formalized"
+      provedTheorem := "Languages/TuringMachine/Hosted.lean: "
+        ++ "presentation_versus_encoding (for every non-empty table the machine "
+        ++ "admits no interactive presentation, its one-sort presentation is "
+        ++ "interactive, and the map between them preserves and reflects transitions, "
+        ++ "is hosting, and is not exhausting) / hostingMorphism_hosting / "
+        ++ "hostingMorphism_not_exhausting; Languages/TuringMachine/OneSort.lean: "
+        ++ "oneSortMachine_isInteractive / oneSort_step_iff", instanceWitness := "Languages/TuringMachine/OneSort.lean: "
+        ++ "oneSortMachine_validate_eq_nil; Languages/TuringMachine/Steps.lean: "
+        ++ "step_iff_machineStep / step_sorted"
+      negativeControl := "Languages/TuringMachine/OneSort.lean: "
+        ++ "oneSortMachine_empty_not_interactive (with an empty table no rule is "
+        ++ "headed by the contact); "
+        ++ "GSLT/LanguageDef/Interaction/StrengthInstances.lean: "
+        ++ "turingMachine_second_without_first"
+      audited := true
+      standing := .provedHere }
+  ]
+
+/-! ## Chapter 9
+
+Four definitions, one proposition and two remarks are numbered. The two
+tables of Section 9.4 are entered as section rows.
+-/
+
+/-- Chapter 9's rows: sections, wrappability, continued interactive theories,
+the forgetful functor, and the tables of instances. -/
+def chapter9 : List Obligation :=
+  [ { chapter := 9, citation := "Definition 9.1"
+      statement :=
+        "An interactive GSLT is section-equipped when it comes with a computable "
+        ++ "section of the quotient of the interacting sort by structural "
+        ++ "congruence: a computable canonical-form function."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/CanonicalSection.lean: "
+        ++ "ComputableCanonicalSection, a function with two laws; "
+        ++ "GSLT/LanguageDef/EffectiveSection.lean: Effective, tracking by a "
+        ++ "computable function on injective term codes. The record alone asks "
+        ++ "nothing about how the function is obtained: "
+        ++ "ComputableCanonicalSection.ofChoice inhabits it for every theory. "
+        ++ "OSLF/MeTTaIL/PatternCodeRecursion.lean: bottomUpCode, the tracking on "
+        ++ "codes of a rewriting from the leaves up"
+      provedTheorem := "GSLT/LanguageDef/EffectiveSection.lean: "
+        ++ "Effective.computablePred (an effective section decides the static "
+        ++ "equivalence along every computable family of terms); "
+        ++ "OSLF/MeTTaIL/PatternCodeRecursion.lean: bottomUpCode_primrec / "
+        ++ "bottomUpCode_patternCode; GSLT/LanguageDef/BagNormalFormEffective.lean: "
+        ++ "normalFormCode_primrec / bagCanonicalSection_effective (the normal form "
+        ++ "of a bag, with or without a unit, is tracked by a primitive recursive "
+        ++ "function on codes)"
+      instanceWitness := "GSLT/LanguageDef/EffectiveSection.lean: "
+        ++ "lambdaCanonicalSection_effective; "
+        ++ "GSLT/LanguageDef/Continued/EffectiveInstances.lean: ccs_tracked_codes / "
+        ++ "table_sections_effective; Languages/Calculator/EffectiveSection.lean: "
+        ++ "calculatorSection_effective; "
+        ++ "Languages/ProcessCalculi/RhoCalculus/CanonicalSectionEffective.lean: "
+        ++ "rhoCanonicalSection_effective, for the section of the reflective relation"
+      negativeControl := "Languages/PartrecMachine/UndecidableEquivalence.lean: "
+        ++ "equivalence_not_computable / historyTheory_no_effective_section; "
+        ++ "Languages/PartrecMachine/HistoryIsomorphism.lean: "
+        ++ "no_effective_section_of_iso"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 9, citation := "Definition 9.2"
+      statement :=
+        "The contraction is wrappable when it is well-sorted as an operation on "
+        ++ "wrapped continuations, mapping decorated inputs to decorated outputs."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Continued/ContinuationDecoration.lean: ContinuationDecorationSlot / "
+        ++ "ContinuationDecorationProfile / Wrappable / RedexRetypable. A finite bundle selects actual authored "
+        ++ "parameter positions and opaque schema occurrences; constructor closure is independent. This "
+        ++ "certifies the generated sorting problem for a selected rule, not generalized Cost activation, "
+        ++ "no-leak or iteration."
+      provedTheorem := "ContinuationDecorationProfile.programAdditional_result / environmentAdditional_result / "
+        ++ "ofRetypingPlan_wrappable_iff / ofRetypingPlan_redexRetypable_iff; "
+        ++ "Languages/ProcessCalculi/RhoCalculus/SynchronousDecoration.lean: "
+        ++ "communicationDecoration_redexRetypable / communicationDecoration_wrappable; "
+        ++ "Languages/InteractionCategory/Decoration.lean: visibleDecoration_wrappable."
+      instanceWitness := "SynchronousDecoration.lean: communicationDecoration, wrapping the input body, message and output "
+        ++ "continuation; InteractionCategory/Decoration.lean: visibleDecoration, including the rebuilt action "
+        ++ "prefix in its declared closure."
+      negativeControl := "SynchronousDecoration.lean: decoration_separates_two_slots; InteractionCategory/Decoration.lean: "
+        ++ "decoration_separates_constructor_closure. These exclude the restrictive two-slot or non-principal "
+        ++ "profiles, not every possible continuation decoration."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 9, citation := "Definition 9.3"
+      statement :=
+        "A continued interactive GSLT is an interactive GSLT equipped with a "
+        ++ "presentation of its dynamics in interaction-cut form, a section, and "
+        ++ "wrappability. Morphisms are theory maps that are "
+        ++ "bisimulation-preserving on the interacting sort and quote-faithful."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Continued/Presentation.lean: ContinuedPresentation / IsContinued, for one selected "
+        ++ "authored cut, an algebraic section and finite continuation decoration. Continued/Effective.lean: "
+        ++ "IsEffectivelyContinued supplies code tracking for that section. These records do not quantify over a "
+        ++ "cut family covering all dynamics. ContinuedCategory.lean: CIGSLT / CIGSLT.Morphism retain the "
+        ++ "stronger reflective, hereditary Cost profile; this category is not identified with the full source "
+        ++ "model class."
+      provedTheorem := "Continued/Presentation.lean: CIGSLT.toContinuedPresentation, conditional on absence of added "
+        ++ "reflective presentations; Continued/Effective.lean: IsEffectivelyContinued.computablePred; "
+        ++ "Continued/NotContinued.lean: deep_not_continued. No equivalence with the independently specified "
+        ++ "effective, whole-dynamics source category is proved."
+      instanceWitness := "Continued/Presentation.lean: lambda_isContinued / bare_isContinued; CCS/Continued.lean: "
+        ++ "ccs_isContinued; Ambient/Continued.lean: ambient_isContinued; InteractionCategory/Continued.lean: "
+        ++ "visible_isEffectivelyContinued; Continued/InstanceTable.lean: rhoSync_isContinued, with an "
+        ++ "explicitly noncomputable ordinary-quotient section, not an effectiveness result."
+      negativeControl := "Continued/NotContinued.lean: deep_no_cut / deep_not_continued; "
+        ++ "Languages/PartrecMachine/HistoryContinued.lean: history_not_effectivelyContinued. Legacy-plan "
+        ++ "obstruction is separately isEmpty_retypingPlan_of_contractum_headed_by_program."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 9, citation := "Definition 9.4"
+      statement :=
+        "The forgetful functor sends a continued interactive GSLT to its "
+        ++ "underlying interactive GSLT and acts as the identity on the "
+        ++ "underlying theory map of a morphism."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/ContinuedCategory.lean: CIGSLT.forget, on the recorded stronger Cost category; "
+        ++ "Continued/Forget.lean: forgetUpToTheoryMap, on morphisms identified when their underlying theory "
+        ++ "maps agree. An effective category with whole-dynamics cut coverage has not been identified with "
+        ++ "these carriers."
+      provedTheorem := "GSLT/LanguageDef/Continued/Forget.lean: "
+        ++ "CIGSLT.Morphism.canonicalKeyMap_eq_of_underlying_eq (morphisms over "
+        ++ "one theory map act alike on canonical keys)"
+      instanceWitness := "GSLT/LanguageDef/Continued/Sections.lean: "
+        ++ "lambda_at_both_levels; "
+        ++ "GSLT/LanguageDef/Interaction/Controls/ContactContinued.lean: "
+        ++ "bareContinued_forget"
+      negativeControl := "GSLT/LanguageDef/Continued/Forget.lean: "
+        ++ "lambdaRenamedIdentity_over_identity (two morphisms over the identity "
+        ++ "theory map: the recorded morphism carries a datum the theory map does "
+        ++ "not determine)"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 9, citation := "Proposition 9.1"
+      statement :=
+        "The forgetful functor is faithful but neither full nor essentially "
+        ++ "surjective; hence continued interactive GSLTs form a genuine, proper "
+        ++ "subcategory of interactive GSLTs."
+      sourceProves := true
+      construction := "GSLT/LanguageDef/Continued/Forget.lean, NotFull.lean, "
+        ++ "NotEssentiallySurjective.lean"
+      provedTheorem := "Continued/Forget.lean: forgetUpToTheoryMap_faithful for the quotient by underlying theory maps, and "
+        ++ "forget_not_faithful for the richer recorded arrows. Continued/NotFull.lean: collapse_has_no_lift / "
+        ++ "forget_not_full; NotEssentiallySurjective.lean: forget_not_essSurj / deep_not_underlying, for the "
+        ++ "recorded CIGSLT category. Successor and synchronous-rho obstructions there concern its restrictive "
+        ++ "Cost plans. PartrecMachine/HistoryContinued.lean and HistoryIsomorphism.lean: "
+        ++ "history_not_effectivelyContinued / not_effectivelyContinued_of_iso under the named equality-relation "
+        ++ "condition. These are distinct categories and contracts, not the three source assertions about one "
+        ++ "independently matched category."
+      instanceWitness := "GSLT/LanguageDef/Continued/Effective.lean: "
+        ++ "lambda_isEffectivelyContinued; "
+        ++ "GSLT/LanguageDef/Continued/EffectiveInstances.lean: "
+        ++ "effectivelyContinued_rows; "
+        ++ "GSLT/LanguageDef/Interaction/Controls/ContactContinued.lean: "
+        ++ "bareContinued"
+      negativeControl := "Continued/Sections.lean: continuedPresentation_underlying_not_injective; Continued/Forget.lean: "
+        ++ "lambdaRenamedIdentity_over_identity. Added object choices and independently stored arrow data "
+        ++ "prevent interpreting this forgetful functor as a literal subcategory inclusion."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 9, citation := "Remark 9.1"
+      statement :=
+        "The lambda calculus is an interactive GSLT as such and becomes a "
+        ++ "continued one only once the added structure is chosen: continued is "
+        ++ "added structure, not a property read off the interactive GSLT."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/LambdaContinuedInteraction.lean: lambdaIGSLT / lambdaCIGSLT. The carrier is locally "
+        ++ "nameless with alpha-equivalence already erased; the source example choosing different named alpha "
+        ++ "representatives has not been constructed."
+      provedTheorem := "Continued/Sections.lean: lambda_at_both_levels / ccs_two_continuedPresentations / "
+        ++ "continuedPresentation_underlying_not_injective; EffectiveInstances.lean: "
+        ++ "ccs_two_effective_presentations. The added-structure distinction is proved on CCS, while the exact "
+        ++ "named-lambda example remains open."
+      instanceWitness := "GSLT/LanguageDef/Continued/Sections.lean: "
+        ++ "ccs_sections_differ (two sections of one theory)"
+      negativeControl := "GSLT/LanguageDef/Continued/Presentation.lean: "
+        ++ "lambda_section_unique (on the locally nameless carrier the lambda "
+        ++ "calculus has exactly one section, so the choice the remark speaks of "
+        ++ "is exhibited on CCS)"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 9, citation := "Remark 9.2"
+      statement :=
+        "The instances are ordered by how much information the contraction moves "
+        ++ "from the environment continuation into the program continuation: no "
+        ++ "migration, migration by binding, migration by spatial restructuring, "
+        ++ "and migration as interface composition."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Interaction/Migration.lean: MigrationMode "
+        ++ "with the four modes, computed from the authored contractum"
+      provedTheorem := "GSLT/LanguageDef/Continued/InstanceTable.lean: "
+        ++ "migration_spectrum"
+      instanceWitness := "Languages/ProcessCalculi/CCS/Cut.lean: ccs_migrationMode; "
+        ++ "Languages/ProcessCalculi/PiCalculus/Interaction.lean: pi_migrationMode; "
+        ++ "Languages/ProcessCalculi/Ambient/Interaction.lean: "
+        ++ "dissolution_migrationMode; Languages/InteractionCategory/Interaction.lean: "
+        ++ "silent_migrationMode / visible_migrationMode"
+      negativeControl := "Languages/ProcessCalculi/Ambient/Interaction.lean: "
+        ++ "dissolution_none_without_location (the spatial mode is read from the "
+        ++ "reduction positions of the theory); the interaction categories are "
+        ++ "null-migrating in the silent reading and interface-composing in the "
+        ++ "visible one"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 9, citation := "Table 9.1"
+      statement :=
+        "The interaction-cut data of each instance: the interaction constructor, "
+        ++ "its equations, the surfaces, the continuations and the mode of the "
+        ++ "contraction, for CCS, the interaction categories, rho and pi "
+        ++ "synchronous and asynchronous, lambda and the ambients."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Continued/InstanceTable.lean: authored cut data for the listed presentations. "
+        ++ "Synchronous rho includes the full three-payload decoration. The interaction-category presentation is "
+        ++ "a concrete operational model with silent/visible readings; no comparison with the general "
+        ++ "interaction-category model of the source is proved."
+      provedTheorem := "GSLT/LanguageDef/Continued/InstanceTable.lean: ccs_row / "
+        ++ "ccs_contact_laws / interactionCategory_silent_row / rho_row / pi_row / "
+        ++ "piSync_row / lambda_row / ambient_row"
+      instanceWitness := "Languages/ProcessCalculi/CCS/Cut.lean: ccs_releases"
+      negativeControl := "Languages/ProcessCalculi/RhoCalculus/SynchronousDecoration.lean: decoration_separates_two_slots; "
+        ++ "Languages/InteractionCategory/Decoration.lean: decoration_separates_constructor_closure. Both are "
+        ++ "controls on chosen decoration profiles, not negative source verdicts."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 9, citation := "Table 9.2"
+      statement :=
+        "Verdicts: the calculator and the three machines are GSLTs only; CCS, "
+        ++ "the interaction categories, rho and pi synchronous and asynchronous, "
+        ++ "lambda and the ambients are continued interactive."
+      sourceProves := false
+      construction := "GSLT/LanguageDef/Continued/InstanceTable.lean: distinct algebraic, effective and restrictive Cost "
+        ++ "verdicts. The asynchronous-rho row identifies a reflective CIGSLT underlying object; it does not "
+        ++ "provide an ordinary-equation IsContinued or effective witness. The synchronous ordinary-equation "
+        ++ "witness uses choice, and no computable section is inferred from it. Whole-dynamics coverage and the "
+        ++ "general interaction-category comparison remain separate obligations."
+      provedTheorem := "Continued/InstanceTable.lean: calculator_row / ccs_row / interactionCategory_silent_row / "
+        ++ "interactionCategory_visible_row / rho_row / rhoSync_row / pi_row / piSync_row / lambda_row / "
+        ++ "ambient_row / turing_row / transducer_row. Continued/EffectiveInstances.lean: the explicit "
+        ++ "effectivelyContinued_rows / table_sections_effective conjunctions; "
+        ++ "InteractionCategory/Continued.lean: visible_isEffectivelyContinued. These conjunctions do not "
+        ++ "certify every newly listed section."
+      instanceWitness := "GSLT/LanguageDef/Continued/InstanceTable.lean: "
+        ++ "transducer_forced_reading"
+      negativeControl := "SynchronousDecoration.lean: decoration_separates_two_slots; InteractionCategory/Decoration.lean: "
+        ++ "decoration_separates_constructor_closure; Continued/InstanceTable.lean: calculatorRewriting_row. The "
+        ++ "first two distinguish restrictive profiles from actual positive algebraic continuation decoration."
+      audited := true
+      standing := .constructedHere }
+  ]
+
+/-! ## Chapter 10
+
+Four definitions and four remarks are numbered. The three defects of
+Section 10.1 and the construction of Section 10.2 are entered as section rows.
+-/
+
+/-- Chapter 10's rows: the defects of the naive definition, contexts as the
+primary structure, morphisms of theories, hosting and exhausting. -/
+def chapter10 : List Obligation :=
+  [ { chapter := 10, citation := "Section 10.1, the constant map"
+      statement :=
+        "Under the naive definition the map sending every term to one term "
+        ++ "preserves bisimulation trivially, so it is a morphism from anything "
+        ++ "to anything and the category orders nothing."
+      sourceProves := true
+      construction := "GSLT/Contexts/ConstantMap.lean: GSLT.Morphism.constant, "
+        ++ "for the morphisms of GSLT/Core/GSLT.lean"
+      provedTheorem := "GSLT/Contexts/ConstantMap.lean: GSLT.nonempty_hom / "
+        ++ "GSLT.nonempty_hom_both"
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/ConstantMap.lean: constantToCCS, a static map sending terms to "
+        ++ "the inactive process and contexts to parallel composition of their holes. It preserves image "
+        ++ "bisimilarity, but this alone does not supply the transition transport now required of "
+        ++ "ContextMorphism."
+      negativeControl := "GSLT/Contexts/ConstantMap.lean: ContextMap.constant_requires_self_transition; "
+        ++ "LanguageDef/Contexts/Controls/ConstantMap.lean: constantToCCS_not_hosting. A constant map "
+        ++ "transporting a genuine source step must have a self-transition at its target value."
+      audited := true
+      standing := .provedHere }
+  , { chapter := 10, citation := "Section 10.1, an encoding is not a map of terms"
+      statement :=
+        "The canonical encoding of the lambda calculus into the pi calculus "
+        ++ "sends a term to a process parameterised by a name, and no "
+        ++ "constructor to a single operator, so requiring morphisms to be "
+        ++ "signature homomorphisms excludes the motivating example. Defined on "
+        ++ "contexts, such an encoding is expressible: the parameterisation is "
+        ++ "the interface."
+      sourceProves := true
+      construction := "GSLT/LanguageDef/Encodings/PatternShape.lean: patternShape / nodeCount; "
+        ++ "PiCalculus/ProcessContext.lean: ProcessContext. The exact parameterized lambda-to-pi motivating "
+        ++ "encoding is not formalized. The implemented pi-to-rho carrier encoding supplies related shape and "
+        ++ "context controls, with a restriction-free forward-simulation theorem and explicit failures under "
+        ++ "restriction."
+      provedTheorem := "GSLT/LanguageDef/Encodings/PatternShape.lean: "
+        ++ "patternShape_mapPattern / mapPattern_ne_of_shape_ne (a map of symbols "
+        ++ "preserves the shape of a term); "
+        ++ "Languages/ProcessCalculi/PiCalculus/EncodingNotSignatureMap.lean: "
+        ++ "encode_not_signatureMap / encode_not_igsltMorphism / "
+        ++ "no_parameter_free_translation; "
+        ++ "Languages/ProcessCalculi/PiCalculus/EncodingEquivariance.lean: "
+        ++ "ProcessContext.encode_fill / ProcessContext.encode_comp (the encoding "
+        ++ "commutes with plugging on the nose, the name parameter threaded "
+        ++ "through the context)"
+      instanceWitness := "Languages/ProcessCalculi/PiCalculus/EncodingStepRF.lean: "
+        ++ "step_preserved_rf / contextStep_preserved_rf (without restriction and "
+        ++ "replication one step is sent to one step)"
+      negativeControl := "Languages/ProcessCalculi/PiCalculus/EncodingTransitions.lean: "
+        ++ "restricted_step_not_preserved / listener_step_not_reflected / "
+        ++ "congruent_sources_separated_by_image; "
+        ++ "Languages/ProcessCalculi/PiCalculus/FullEncodingTransitions.lean: "
+        ++ "fullEncode_nu_step_not_matched / nu_nil_not_respected. This encoding "
+        ++ "is therefore not a morphism in the sense of Definition 10.1: "
+        ++ "transitions are not preserved under restriction, and its term map "
+        ++ "does not respect the static equivalence"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Section 10.1, target contexts observe too much"
+      statement :=
+        "A context of the target may observe the syntactic form of what it is "
+        ++ "handed, so bisimulation computed over all target contexts separates "
+        ++ "images that no source context separates."
+      sourceProves := true
+      construction := "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "the contact theory and its extension by a constructor Test with the "
+        ++ "rule Test(A) --> Nil"
+      provedTheorem := "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "over_observation (two constants bisimilar over all source contexts; "
+        ++ "their images bisimilar over the images of those contexts and not "
+        ++ "over all target contexts)"
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "toProbingMorphism / constants_bisimilar"
+      negativeControl := "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "images_not_bisimilar / images_not_bisimilar_targetProbe"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 10, citation := "Section 10.2, contexts as the primary structure"
+      statement :=
+        "A theory presents a symmetric multicategory of contexts: its objects "
+        ++ "are interfaces, recording the sort of a hole, its binding stage and "
+        ++ "its interaction surface; its multimorphisms are contexts with holes "
+        ++ "of given interfaces; composition is plugging; terms are the nullary "
+        ++ "contexts. Transitions are labelled by contexts, and bisimulation is "
+        ++ "taken over them."
+      sourceProves := false
+      construction := "OSLF/MeTTaIL/MultiHoleContext.lean: typed linear contexts with fill / bind / plug. "
+        ++ "GSLT/Contexts/ContextTheory.lean: context action, equations, selected operational relation and "
+        ++ "probes. LanguageDef/Contexts/Presented.lean: interfaces record type and binding stage, not an "
+        ++ "interaction-surface invariant. The symmetric laws are proved through filling; an ambient "
+        ++ "contextual-equation multicategory matching all source interfaces has not been identified."
+      provedTheorem := "OSLF/MeTTaIL/MultiHoleContext.lean: fill_bind / bind_bind / "
+        ++ "Linear.plug / exists_oneHole; GSLT/Contexts/ContextTheory.lean: "
+        ++ "fill_plug_plug / constant_fill_equiv / Probe.Bisimilar.apply; "
+        ++ "GSLT/LanguageDef/Contexts/Presented.lean: exists_oneHole_of_label; "
+        ++ "GSLT/LanguageDef/Contexts/Interacting.lean: gslt_bisimilar_iff / "
+        ++ "presentedBisimilar_of_fullProbe; "
+        ++ "GSLT/Contexts/RelativeEquivalence.lean: endoProbe_bisimilar_iff_relEquiv"
+      instanceWitness := "GSLT/LanguageDef/Contexts/TypedLabels.lean: "
+        ++ "labelOfOccurrence (the context around an occurrence in a well-sorted "
+        ++ "term is a label); GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "testLabel"
+      negativeControl := "OSLF/MeTTaIL/MultiHoleContext.lean: "
+        ++ "not_linear_of_duplicate; GSLT/LanguageDef/Interaction/Fire.lean: "
+        ++ "fill_injective"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Definition 10.1"
+      statement :=
+        "A morphism of GSLTs is a pseudofunctor of context multicategories that "
+        ++ "is bisimulation-preserving for context-labelled transitions, where "
+        ++ "the bisimulation on the target is computed only over the image of "
+        ++ "the source's contexts."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextMorphism.lean: ContextMap / ContextEquivOnImage / ContextMorphism. A morphism "
+        ++ "now requires forward transition transport and bisimilarity preservation for every source probe. "
+        ++ "Equivariance yields identity, plugging and equation laws on image fillings only; it does not "
+        ++ "identify an ambient context pseudofunctor. Contexts/TransitionProfile.lean: withRewrites / "
+        ++ "nonemptyReduction, an explicit nonempty finite-computation profile, not weak silent-action "
+        ++ "semantics."
+      provedTheorem := "ContextMap.context_resp_on_image / context_identity_on_image / context_plug_on_image / "
+        ++ "bisimilar_push_of_transitions; Contexts/TransitionProfile.lean: preservesTransitions_iff_rewrites / "
+        ++ "reflectsTransitions_iff_rewrites / preservesNonemptyReduction. LanguageDef/Contexts/Structural.lean "
+        ++ "reuses these laws for structural translations. Declaration simulation transports conditional "
+        ++ "premises and equations with explicit evaluator conditions and complete algebra metadata transport; no injectivity is needed."
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/Hosting.lean: "
+        ++ "collapseMorphism / ofReflectingIGSLTMorphism / ofIGSLTMorphism; "
+        ++ "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "toProbingMorphism; GSLT/LanguageDef/Contexts/Controls/Renaming.lean: "
+        ++ "swapMorphism; Languages/TuringMachine/Hosted.lean: hostingMorphism; "
+        ++ "GSLT/LanguageDef/Contexts/Controls/EquationTransport.lean: "
+        ++ "addCommutativity_preservesEquations (authored equations on both sides); "
+        ++ "Languages/TransitionSystem/Extension.lean: Table.inclusionMorphism (an "
+        ++ "inclusion that adds moves at one state and is a morphism for every probe, "
+        ++ "without reflecting transitions)"
+      negativeControl := "Contexts/Controls/ImageAction.lean: identity_not_on_target, a valid abstract ContextMorphism whose "
+        ++ "identity law holds only on image terms. LanguageDef/Contexts/Controls/ReductionBisimilarity.lean: "
+        ++ "reduction_bisimilarity_insufficient / toMarking_not_contextMorphism; "
+        ++ "Controls/EquationTransport.lean: collection_unit_metadata_required; Controls/TransitionProfile.lean: "
+        ++ "profiles_distinguish_cost / reply_no_macroStep."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Remark 10.1"
+      statement :=
+        "A morphism is a pair of a map on terms and a functor on contexts, with "
+        ++ "an equivariance condition up to the equivalence and preservation of "
+        ++ "transitions along the functor; the restriction of the target's "
+        ++ "observers to the image is a consequence of naming the functor. "
+        ++ "Faithfulness of the functor should be a property and not part of "
+        ++ "morphism-hood."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextMorphism.lean: static ContextMap with equivariant, plus "
+        ++ "ContextMorphism.transitions and per-probe bisimilarity preservation. Faithfulness, forward transport "
+        ++ "and backward lifting are separately named properties. An ambient functor on context classes is not "
+        ++ "inferred from the pair of image actions."
+      provedTheorem := "GSLT/Contexts/ContextMorphism.lean: "
+        ++ "ContextMap.apply_equivariant / ContextMorphism.ofTransitions; "
+        ++ "GSLT/Contexts/ImageObservation.lean: "
+        ++ "ContextMap.bisimilar_push_iff_of_transitions (a map that preserves and "
+        ++ "reflects transitions neither adds nor loses bisimilarity, as any probe "
+        ++ "sees it)"
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/Hosting.lean: "
+        ++ "collapseMorphism (a morphism that is not hosting)"
+      negativeControl := "Contexts/Controls/ImageAction.lean: identity_not_on_target; "
+        ++ "LanguageDef/Contexts/Controls/ReductionBisimilarity.lean: faithfulness_does_not_reflect; "
+        ++ "Controls/LongerRun.lean: lengthen_faithful / lengthen_not_hosting."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Definition 10.2"
+      statement :=
+        "GSLT is the category whose 0-cells are GSLTs and whose morphisms are "
+        ++ "the maps of Definition 10.1: bisimulation-preserving for the "
+        ++ "context-labelled transition relation, which is thereby a congruence."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextMorphism.lean: Category ContextTheory, with id / comp and explicit transition "
+        ++ "transport. Contextual bisimilarity is a congruence for probes closed under observer composition. "
+        ++ "This is the checked category of image-action morphisms; its identification with source "
+        ++ "pseudofunctors remains unproved."
+      provedTheorem := "GSLT/Contexts/ContextTheory.lean: Probe.Bisimilar.apply "
+        ++ "(bisimilarity as a closed probe sees it is preserved by every "
+        ++ "observer) / fullProbe_closed"
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "constants_bisimilar"
+      negativeControl := "GSLT/LanguageDef/Contexts/Controls/ReductionBisimilarity.lean: "
+        ++ "images_not_bisimilar_over_image"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Definition 10.3"
+      statement :=
+        "A morphism is hosting, faithful, when the target can run the source: "
+        ++ "the encoding reflects as well as preserves the context-labelled "
+        ++ "transition structure, so that no branching present in the source is "
+        ++ "lost in the target."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextMorphism.lean: Hosting separately requires context faithfulness, forward "
+        ++ "transition transport and backward lifting at the selected operational profile. Faithful is "
+        ++ "equivalent to ReflectsEquations for the recorded action on contexts; it does not imply backward "
+        ++ "lifting. Identification with hosting morphisms of the ambient source context category remains "
+        ++ "unproved alongside Definition 10.1."
+      provedTheorem := "ContextMap.hosting_iff / faithful_iff_reflectsEquations / Hosting.branches / Hosting.comp; "
+        ++ "Contexts/ImageObservation.lean: Hosting.bisimilar_push_iff. Invertible.lean: Inverse.hosting, under "
+        ++ "preservation of equations and reductions in both directions."
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/Hosting.lean: "
+        ++ "toProbing_hosting; GSLT/LanguageDef/Contexts/Controls/Renaming.lean: "
+        ++ "swap_hosting_exhausting; Languages/TuringMachine/Hosted.lean: "
+        ++ "hostingMorphism_hosting"
+      negativeControl := "Controls/Hosting.lean: collapse_not_hosting; Controls/ReductionBisimilarity.lean: "
+        ++ "faithfulness_does_not_reflect / toMarking_not_hosting; Controls/LongerRun.lean: lengthen_faithful / "
+        ++ "lengthen_not_hosting. Static faithfulness and per-probe bisimilarity preservation do not imply "
+        ++ "backward transition lifting."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Definition 10.4"
+      statement :=
+        "A morphism is exhausting, dense, when the target is nothing the source "
+        ++ "cannot assemble: every context of the target relevant to the image "
+        ++ "is, up to the equivalence, in the image of a context of the source."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextMorphism.lean: ContextMap.Exhausting, "
+        ++ "contexts of the target between images of interfaces being compared with "
+        ++ "images by their action on images; GSLT/Contexts/ImageObservation.lean: "
+        ++ "ContextMap.targetProbe, the probe of those contexts. The elementary action and observation results "
+        ++ "below are proved; identification with the ambient source context functor remains unproved "
+        ++ "alongside Definition 10.1."
+      provedTheorem := "GSLT/Contexts/ContextMorphism.lean: "
+        ++ "ContextMap.Exhausting.term_surjective / ContextMap.Exhausting.comp; "
+        ++ "GSLT/Contexts/ImageObservation.lean: "
+        ++ "ContextMap.Exhausting.bisimilar_targetProbe_iff (under an exhausting map, "
+        ++ "bisimilarity over the image of the source's contexts is bisimilarity over "
+        ++ "the contexts of the target) / "
+        ++ "ContextMap.Exhausting.bisimilar_targetProbe_iff_source / "
+        ++ "ContextMorphism.preserves_targetProbe; "
+        ++ "GSLT/LanguageDef/Contexts/Invertible.lean: Inverse.exhausting"
+      instanceWitness := "GSLT/Contexts/ContextMorphism.lean: "
+        ++ "ContextMap.exhausting_id; "
+        ++ "GSLT/LanguageDef/Contexts/Controls/Renaming.lean: swap_hosting_exhausting "
+        ++ "/ swap_moves_a_term / swap_bisimilar_iff (the exchange of two constants: "
+        ++ "hosting, exhausting, and not the identity)"
+      negativeControl := "GSLT/LanguageDef/Contexts/Controls/Hosting.lean: "
+        ++ "toProbing_not_exhausting / collapse_not_exhausting; "
+        ++ "GSLT/LanguageDef/Contexts/Controls/OverObservation.lean: "
+        ++ "targetProbe_sees_more (for the inclusion, which is not exhausting, the "
+        ++ "contexts of the target see more than the images of the source's "
+        ++ "contexts); Languages/TuringMachine/Hosted.lean: "
+        ++ "hostingMorphism_not_exhausting"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Remark 10.2"
+      statement :=
+        "Hosting is faithfulness of the functor on contexts and exhausting is "
+        ++ "its density. The constant map fails hosting immediately. Together "
+        ++ "the conditions induce a preorder on theories."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextMorphism.lean: ContextTheory.Embeds with strong hosting and exhausting. "
+        ++ "Contexts/Traces.lean: TraceEmbeds with the same hosting obligations. The identification of hosting "
+        ++ "with bare faithfulness is not valid for the recorded context maps; it omits operational "
+        ++ "correspondence."
+      provedTheorem := "ContextMap.hosting_iff / faithful_iff_reflectsEquations / ContextTheory.embeds_refl / embeds_trans; "
+        ++ "Contexts/Traces.lean: Hosting.preservesTraces / ContextTheory.traceEmbeds_iff_embeds / "
+        ++ "traceEmbeds_refl / traceEmbeds_trans. Under the same strong hosting contract, the embedding "
+        ++ "preorders coincide even though trace equivalence on terms is strictly coarser than bisimilarity. A "
+        ++ "separate weaker input/output trace-collapse preorder has not been constructed."
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/Hosting.lean: "
+        ++ "hosting_exhausting_separated"
+      negativeControl := "Controls/ConstantMap.lean: constantToCCS_not_hosting; Controls/LongerRun.lean: lengthen_faithful / "
+        ++ "lengthen_not_reflectsTransitions / lengthen_not_hosting / morphism_need_not_preserve_traces. This is "
+        ++ "a general-morphism counterexample, not a counterexample to equality of the strong hosting preorders. "
+        ++ "Turing completeness as a degree of a weaker trace comparison remains open."
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Remark 10.3"
+      statement :=
+        "Expressiveness is not anchored to Turing completeness, a statement "
+        ++ "about the input/output relation; Definition 10.1 replaces the "
+        ++ "yardstick with a relative property: fix a probe and ask what that "
+        ++ "probe can see."
+      sourceProves := false
+      construction := "GSLT/Contexts/ContextTheory.lean: Probe / Probe.Bisimilar / "
+        ++ "reductionProbe / fullProbe; GSLT/Contexts/Traces.lean: Probe.Path / "
+        ++ "Probe.HasTrace / Probe.TraceEquivalent; "
+        ++ "GSLT/Contexts/RelativeEquivalence.lean: endoProbe. The comparison with "
+        ++ "Turing completeness is not formalized"
+      provedTheorem := "GSLT/Contexts/ContextTheory.lean: "
+        ++ "reductionProbe_bisimilar_iff / bisimilar_toGSLT / "
+        ++ "Probe.Bisimilar.restrict; GSLT/Contexts/Traces.lean: "
+        ++ "Probe.Bisimilar.traceEquivalent (for every probe the comparison by traces "
+        ++ "is the coarser one) / reductionProbe_traceEquivalent_iff / "
+        ++ "ContextMap.traceEquivalent_push_iff_of_transitions"
+      instanceWitness := "GSLT/LanguageDef/Contexts/Controls/Branching.lean: "
+        ++ "early_late_traceEquivalent", negativeControl := "GSLT/LanguageDef/Contexts/Controls/Branching.lean: "
+        ++ "traceEquivalent_not_bisimilar (two terms with the same traces that are "
+        ++ "not bisimilar)"
+      audited := true
+      standing := .constructedHere }
+  , { chapter := 10, citation := "Remark 10.4"
+      statement :=
+        "A note on complexity: equivalence of regular languages is "
+        ++ "PSPACE-complete and the corresponding bisimulation problem is "
+        ++ "polynomial; equivalence of context-free languages is undecidable and "
+        ++ "the corresponding bisimulation problem is tractable."
+      sourceProves := false
+      construction := "", provedTheorem := "", instanceWitness := ""
+      negativeControl := ""
+      audited := true
+      standing := .openHere }
   ]
 
 /-! ## Chapter 19
@@ -899,15 +1712,23 @@ def chapter17 : List Obligation :=
       statement := "A splitting of a term is a context paired with a subterm "
         ++ "that plugs into it to give the term back."
       sourceProves := true
-      construction := "Syntax/ContextualSplitting.lean: Splitting / plug"
-      provedTheorem := "Syntax/ContextualSplitting.lean: "
+      construction := "Syntax/ContextualSplitting.lean: Splitting / plug, on the "
+        ++ "intrinsically scoped carrier. On language definitions, from the "
+        ++ "library root: GSLT/LanguageDef/Interaction/Fire.lean: Splitting / "
+        ++ "Splitting.root / Splitting.ofZipper, whose contexts have one hole by "
+        ++ "construction"
+      provedTheorem := "GSLT/LanguageDef/Interaction/Fire.lean: "
+        ++ "Splitting.context_mem_zippersAt (the fibre of plugging over a term "
+        ++ "is enumerated by its zippers). Syntax/ContextualSplitting.lean: "
         ++ "positionOfFibre_fibreOfPosition / fibreOfPosition_positionOfFibre "
-        ++ "are record-level round trips for algebraic substitution cuts. "
-        ++ "Their context field does not require exactly one hole"
-      instanceWitness := "Syntax/ContextualSplitting.lean: fire_source"
-      negativeControl := "Syntax/ContextualSplitting.lean: shape_does_not_locate"
+        ++ "are record-level round trips for algebraic substitution cuts, whose "
+        ++ "context field does not require exactly one hole"
+      instanceWitness := "Syntax/ContextualSplitting.lean: fire_source; "
+        ++ "GSLT/LanguageDef/Interaction/FireInstances.lean: handshakeFirst"
+      negativeControl := "Syntax/ContextualSplitting.lean: shape_does_not_locate; "
+        ++ "GSLT/LanguageDef/Interaction/Fire.lean: fill_injective"
       audited := true
-      standing := .constructedHere }
+      standing := .provedHere }
   , { chapter := 17, citation := "Remark 17.2"
       statement := "Dedekind's move: the pattern of identifying an object with "
         ++ "the family of its splittings."
@@ -925,15 +1746,32 @@ def chapter17 : List Obligation :=
       statement := "The bundle of available events is the subbundle of "
         ++ "splittings whose subterm matches a rule."
       sourceProves := true
-      construction := "Syntax/ContextualSplitting.lean: Fire / residual"
-      provedTheorem := "Syntax/ContextualSplitting.lean: fire_gives_a_step "
-        ++ "requires holeCount K = 1 separately. Fire as defined does not "
-        ++ "supply that condition"
-      instanceWitness := "Syntax/FireSparseness.lean: liveCut_fires"
+      construction := "Syntax/ContextualSplitting.lean: Fire / residual, for one "
+        ++ "positioned rule. On language definitions, from the library root: "
+        ++ "GSLT/LanguageDef/Interaction/Fire.lean: Splitting.ExposesRedex (the "
+        ++ "subterm matches the left side of a base rewrite in the sense of "
+        ++ "Chapter 8) / Splitting.Fires / Splitting.FiresTo (and the context is "
+        ++ "one in which rewrites fire: GSLT/LanguageDef/ReactiveContexts.lean: "
+        ++ "Reactive)"
+      provedTheorem := "GSLT/LanguageDef/ReactiveContexts.lean: "
+        ++ "step_iff_baseStep_in_context; GSLT/LanguageDef/Interaction/Fire.lean: "
+        ++ "step_iff_exists_firesTo (the reductions of a state are its available "
+        ++ "events, for every language whose rules are base rewrites or "
+        ++ "congruences) / Splitting.headed_of_exposesRedex (exposed redexes are "
+        ++ "headed by the family of the base rewrites). "
+        ++ "Syntax/ContextualSplitting.lean: fire_gives_a_step requires "
+        ++ "holeCount K = 1 separately"
+      instanceWitness := "Syntax/FireSparseness.lean: liveCut_fires; "
+        ++ "GSLT/LanguageDef/Interaction/FireInstances.lean: handshakeRoot_fires / "
+        ++ "openingInsideContent_firesTo / ambient_step_iff_exists_firesTo"
       negativeControl := "Syntax/FireSparseness.lean: deadCut_is_inert / "
-        ++ "fire_is_sparse"
+        ++ "fire_is_sparse; GSLT/LanguageDef/Interaction/FireInstances.lean: "
+        ++ "handshake_fires_iff / guarded_exposed_not_available (a redex beneath "
+        ++ "a prefix matches a base rewrite and the state cannot move) / "
+        ++ "contended_one_cut_two_events (with a contact carried by a bag one "
+        ++ "cut carries two events)"
       audited := true
-      standing := .constructedHere }
+      standing := .provedHere }
   ]
 
 /-! ## Chapter 18 -/
@@ -1149,7 +1987,12 @@ def chapter20 : List Obligation :=
         ++ "per opened constructor."
       sourceProves := true
       construction := "Framework/ObserverExtension.lean: observerExtension / "
-        ++ "instrumentRules / ObAdmissible / AdministrativeFresh"
+        ++ "instrumentRules / ObAdmissible / AdministrativeFresh. The opening rule is "
+        ++ "a cut with a nullary request, as in the source; the projection and build "
+        ++ "rules are unary formers applied to the bundle, where the source writes "
+        ++ "cuts with nullary probes (from the library root: "
+        ++ "GSLT/LanguageDef/Interaction/ObserverStrength.lean: "
+        ++ "observerExtension_not_everyRuleIsCut)"
       provedTheorem := "Framework/ObserverExtension.lean: "
         ++ "rewriteAt_eq_of_authored_head -- executable conservativity on "
         ++ "authored heads conditional on administrative freshness, not a "
@@ -1165,8 +2008,23 @@ def chapter20 : List Obligation :=
       statement := "The observer extension is still an interactive theory."
       sourceProves := true
       construction := "Framework/ObserverExtension.lean: mem_terms_of_mem / "
-        ++ "step_of_base / step_mono / openedRules_mono"
-      provedTheorem := "", instanceWitness := "", negativeControl := ""
+        ++ "step_of_base / step_mono / openedRules_mono. From the library root: "
+        ++ "GSLT/LanguageDef/Interaction/Strength.lean: the three strengths of "
+        ++ "interactive; GSLT/LanguageDef/Interaction/ObserverStrength.lean: "
+        ++ "InteractivePresentation.observed"
+      provedTheorem := "GSLT/LanguageDef/Interaction/ObserverStrength.lean: "
+        ++ "observed_isInteractive (given its validity the extension has the "
+        ++ "same contact and base interaction rule) / "
+        ++ "observerExtension_baseRewritesHeaded (its base rewrites are headed "
+        ++ "by the contact and the adjoined formers) / "
+        ++ "observerExtension_not_everyRuleIsCut (its projection and build "
+        ++ "rules are formers applied to the bundle and not cuts, so the "
+        ++ "strength fixed in Section 20.3 is not kept by this construction)"
+      instanceWitness := "Languages/ProcessCalculi/CCS/Observed.lean: "
+        ++ "observedCCS_validate_eq_nil / observedCCS_isInteractive / "
+        ++ "observedCCS_handshake_steps"
+      negativeControl := "Languages/ProcessCalculi/CCS/Observed.lean: "
+        ++ "observedCCS_loses_third_strength"
       audited := true
       standing := .constructedHere }
   , { chapter := 20, citation := "Remark 20.5"
@@ -1420,7 +2278,8 @@ def chapter20 : List Obligation :=
 
 /-- The ledger: chapters six, seven and sixteen to twenty of the pinned source. -/
 def ledger : List Obligation :=
-  chapter6 ++ chapter7 ++ chapter16 ++ chapter17 ++ chapter18 ++ chapter19 ++ chapter20
+  chapter6 ++ chapter7 ++ chapter8 ++ chapter9 ++ chapter10 ++ chapter16 ++ chapter17
+    ++ chapter18 ++ chapter19 ++ chapter20
 
 /-! ## The discipline the ledger enforces -/
 
@@ -1437,14 +2296,73 @@ def rowIntegrity (row : Obligation) : Bool :=
   | .respectedHere => !row.construction.isEmpty || !row.negativeControl.isEmpty
   | .openHere => true
 
+private theorem string_isEmpty_append (s t : String) :
+    (s ++ t).isEmpty = (s.isEmpty && t.isEmpty) := by
+  apply Bool.eq_iff_iff.mpr
+  simp [String.isEmpty_iff, String.append_eq_empty_iff]
+
+/-- Chapter 6 satisfies the ledger's named-field requirements. -/
+theorem chapter6_integrity : chapter6.all rowIntegrity = true := by
+  simp only [chapter6, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 7 satisfies the ledger's named-field requirements. -/
+theorem chapter7_integrity : chapter7.all rowIntegrity = true := by
+  simp only [chapter7, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 8 satisfies the ledger's named-field requirements. -/
+theorem chapter8_integrity : chapter8.all rowIntegrity = true := by
+  simp only [chapter8, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 9 satisfies the ledger's named-field requirements. -/
+theorem chapter9_integrity : chapter9.all rowIntegrity = true := by
+  simp only [chapter9, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 10 satisfies the ledger's named-field requirements. -/
+theorem chapter10_integrity : chapter10.all rowIntegrity = true := by
+  simp only [chapter10, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 16 satisfies the ledger's named-field requirements. -/
+theorem chapter16_integrity : chapter16.all rowIntegrity = true := by
+  simp only [chapter16, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 17 satisfies the ledger's named-field requirements. -/
+theorem chapter17_integrity : chapter17.all rowIntegrity = true := by
+  simp only [chapter17, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 18 satisfies the ledger's named-field requirements. -/
+theorem chapter18_integrity : chapter18.all rowIntegrity = true := by
+  simp only [chapter18, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 19 satisfies the ledger's named-field requirements. -/
+theorem chapter19_integrity : chapter19.all rowIntegrity = true := by
+  simp only [chapter19, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
+/-- Chapter 20 satisfies the ledger's named-field requirements. -/
+theorem chapter20_integrity : chapter20.all rowIntegrity = true := by
+  simp only [chapter20, List.all_cons, List.all_nil, rowIntegrity, string_isEmpty_append]
+  decide
+
 /-- Every row satisfies the named-field requirements for its recorded standing.
-This does not certify the mathematical adequacy of those fields. -/
-theorem ledger_integrity : ledger.all rowIntegrity = true := by decide
+The proof composes separately checked chapter metadata; it does not certify
+the mathematical adequacy of the cited evidence. -/
+theorem ledger_integrity : ledger.all rowIntegrity = true := by
+  simp only [ledger, List.all_append, chapter6_integrity, chapter7_integrity,
+    chapter8_integrity, chapter9_integrity, chapter10_integrity, chapter16_integrity, chapter17_integrity, chapter18_integrity, chapter19_integrity,
+    chapter20_integrity, Bool.and_self]
 
 /-- Rows entered so far, against the denominator. -/
 def entered : Nat := ledger.length
 
-theorem entered_eq : entered = 80 := by decide
+theorem entered_eq : entered = 110 := by decide
 
 /-- Chapter 19's numbered obligations are one proposition and six remarks; the
 remaining rows are the algorithm's own steps, which the chapter states in prose
@@ -1480,16 +2398,24 @@ def algorithmRowCitations : List String :=
   ["Section 19.4, M-FORM", "Section 19.4, M-INTRO", "Section 19.4, M-STEP",
    "Section 19.4, M-ELIM", "Section 19.6, sort slots and the equational center"]
 
-/-- The prose claims of chapters six and seven, entered as section rows. -/
+/-- The prose claims, non-examples and tables of chapters six to ten, entered
+as section rows. -/
 def sectionRowCitations : List String :=
   ["Section 6.2, the three definitions in advance", "Section 6.3, the rho calculus",
    "Section 7.4, lambda theories and not Lawvere theories",
    "Section 7.5, adjoined and not enriched",
    "Section 7.6, the classifying structure", "Section 7.6, the classifying property",
    "Section 7.8, rung one: JSON", "Section 7.9, rung two: Monoid",
-   "Section 7.10, rung three: Lambda", "Section 7.11, the rho calculus"]
+   "Section 7.10, rung three: Lambda", "Section 7.11, the rho calculus",
+   "Section 8.2, the interaction cut", "Section 8.3, nominal and structural surfaces",
+   "Section 8.3, equations forge position", "Non-example 8.1", "Non-example 8.2",
+   "Section 8.7, presentation versus encoding", "Table 9.1", "Table 9.2",
+   "Section 10.1, the constant map",
+   "Section 10.1, an encoding is not a map of terms",
+   "Section 10.1, target contexts observe too much",
+   "Section 10.2, contexts as the primary structure"]
 
-/-- Numbered rows meet the recorded sixty-five-row denominator. This
+/-- Numbered rows meet the recorded eighty-three-row denominator. This
 arithmetic does not certify exhaustive source coverage, including the separate
 conditions. -/
 theorem numbered_entered :
@@ -1497,7 +2423,7 @@ theorem numbered_entered :
       (fun row => !algorithmRowCitations.contains row.citation
         && !sectionRowCitations.contains row.citation)).length
         = totalObligations
-      ∧ totalObligations = 65 := by
+      ∧ totalObligations = 83 := by
   refine ⟨by decide, by decide⟩
 
 /-- How many rows carry each standing. -/
@@ -1506,10 +2432,23 @@ def countBy (st : Standing) : Nat :=
 
 /-- Exact counts of recorded standings, not a semantic completion certificate. -/
 theorem standing_tally :
-    countBy .provedHere = 11 ∧ countBy .constructedHere = 33
+    countBy .provedHere = 27 ∧ countBy .constructedHere = 48
       ∧ countBy .refutedHere = 0 ∧ countBy .respectedHere = 19
-      ∧ countBy .openHere = 17 := by
+      ∧ countBy .openHere = 16 := by
   refine ⟨by decide, by decide, by decide, by decide, by decide⟩
+
+/-- Every Chapter 7 row records a proof or a respected constraint.
+This is a status check on cited evidence, not a substitute for checking it. -/
+theorem chapter7_recorded_closed :
+    chapter7.all (fun row => row.standing == Standing.provedHere ||
+      row.standing == Standing.respectedHere) = true := by decide
+
+/-- Chapters 8 to 10: every row but the note on complexity records a proof, a
+construction or a respected constraint. This is a status check on cited
+evidence, not a substitute for checking it. -/
+theorem chapters8to10_recorded :
+    (chapter8 ++ chapter9 ++ chapter10).all (fun row =>
+      row.standing != Standing.openHere || row.citation == "Remark 10.4") = true := by decide
 
 /-- The tally accounts for every row. -/
 theorem tally_is_total :
@@ -1537,7 +2476,7 @@ def openUnaudited : Nat :=
 /-- Counts of recorded audit flags. Flags do not establish exhaustive absence
 of coverage or discharge the source obligations. -/
 theorem audit_coverage :
-    auditedCount = 80 ∧ openAudited = 17 ∧ openUnaudited = 0
+    auditedCount = 110 ∧ openAudited = 16 ∧ openUnaudited = 0
       ∧ openAudited + openUnaudited = countBy .openHere := by
   refine ⟨by decide, by decide, by decide, by decide⟩
 

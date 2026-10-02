@@ -45,7 +45,7 @@ Mathlib (InformationTheory.KullbackLeibler.Basic)
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.KLDivergenceBridge
 
-open MeasureTheory Real Finset
+open Real Finset
 open Mettapedia.UniversalAI.BayesianAgents
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.LikelihoodRatio
 open KnuthSkilling.Information.InformationEntropy

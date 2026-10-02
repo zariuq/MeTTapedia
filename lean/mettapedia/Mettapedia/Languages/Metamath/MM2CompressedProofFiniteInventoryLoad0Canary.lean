@@ -14,7 +14,7 @@ two-occurrence presentation. -/
 theorem load_occurrence_zero_exact :
     cReflectiveSourceWorkQueueStep .leaveInert twoRuleProgram =
       some afterLoad0 := by
-  rfl
+  decide +kernel
 
 #print axioms load_occurrence_zero_exact
 

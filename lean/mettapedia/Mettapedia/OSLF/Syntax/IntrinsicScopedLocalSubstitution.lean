@@ -19,7 +19,7 @@ open Mettapedia.OSLF.Binding.AuthoredPositionedRulePolynomial (Judgment)
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalSubstitution
   (substJudgment substValuation)
 
-universe u
+universe u v
 
 variable {S : Signature} (R : List (LocalRule S))
 
@@ -80,7 +80,8 @@ theorem Instance.subst_comp {A : BindingCloneAlgebra.Algebra.{u} S}
       [(R.get occurrence.index).2] (occurrence.toSingleton R) σ τ)
 
 /-- Base interpretation commutes with substitution of a local occurrence. -/
-theorem mapInstance_subst {A B : BindingCloneAlgebra.Algebra.{u} S}
+theorem mapInstance_subst {A : BindingCloneAlgebra.Algebra.{u} S}
+    {B : BindingCloneAlgebra.Algebra.{v} S}
     (h : FreeBindingClone.Hom A B) (occurrence : Instance R A) {Δ : Ctx S}
     (σ : Environment S A.substitution.Carrier occurrence.ambient Δ) :
     mapInstance R h (Instance.subst R occurrence σ) =

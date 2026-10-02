@@ -62,7 +62,7 @@ theorem proofMorphism :
     have fresh := proof_entry_fresh entryKnown
     apply combinedType_of_signature Execution.nativeInstance.rules
       FormationSensitiveHOLProofFamily.declarations
-    · simp [LevelInstance.rules, extendRules, combinedType, Tower.rules,
+    · simp [LevelInstance.rules, extendRules, combinedType, LevelTower.rules,
         LevelInstance.signature, Signature.typeOf_instantiateLevels, fresh]
     · simpa only [Tm.mapHead_id] using sourceKnown
   computation := by

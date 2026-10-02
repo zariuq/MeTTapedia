@@ -1,13 +1,14 @@
-import Mettapedia.OSLF.Syntax.BindingEquationalModels
+import Mettapedia.OSLF.Syntax.SemanticSchemaNaturality
+import Mettapedia.OSLF.Syntax.BindingContextualEquationInterpretation
 import Mettapedia.OSLF.Syntax.EquationalQuotient
 
 /-!
 # Interpreting authored binding equation schemas
 
-The equation schema signature has the base operators and explicitly declared
-metavariables. Its interpretation sends each metavariable occurrence to
-semantic substitution of the corresponding value in its dependency context.
-The argument fold preserves the binder contexts on every base operator.
+Equation satisfaction uses the existing contextual semantic fold, with
+separate declared dependencies, captured ambient values and ordinary schema
+variables. The argument fold retains every operator's binder context.
+Dependency-only satisfaction remains a separately named condition.
 -/
 
 set_option autoImplicit false
@@ -18,41 +19,13 @@ open Mettapedia.OSLF.Binding.FreeBindingTerms
 open Mettapedia.OSLF.Binding.BindingCloneFoldSubstitution
 open Mettapedia.OSLF.Binding.BindingEquationalModels
 
-universe u
+universe u v
 
 variable {S : Signature} {M : List (MetaArity S)}
 
-mutual
-
-/-- Interpret an equation schema in a binding-clone model. -/
-def interpretSchema (A : BindingCloneAlgebra.Algebra.{u} S)
-    (valuation : MetaValuation A M) :
-    {Γ : Ctx S} → {sort : S.Srt} →
-      Term (withMetas S M) Γ sort → A.substitution.Carrier Γ sort
-  | _, _, .var v => A.substitution.injectVar v
-  | _, _, .op (Sum.inl op) args =>
-      A.operation op (interpretSchemaArgs A valuation args)
-  | _, _, .op (Sum.inr (.mk k)) args =>
-      applyMeta A (valuation k) (interpretSchemaArgs A valuation args)
-
-/-- Interpret every argument at exactly the context opened by its binder
-list. The result is the base signature's semantic argument family. -/
-def interpretSchemaArgs (A : BindingCloneAlgebra.Algebra.{u} S)
-    (valuation : MetaValuation A M) :
-    {arity : List (List S.Srt × S.Srt)} → {Γ : Ctx S} →
-      Args (withMetas S M) arity Γ →
-      FamilyArgs S A.substitution.Carrier arity Γ
-  | _, _, .nil => .nil
-  | _, _, .cons head tail =>
-      .cons (interpretSchema A valuation head)
-        (interpretSchemaArgs A valuation tail)
-
-end
-
-/-- An equation model satisfies every authored schema under every semantic
-metavariable valuation and every semantic environment for its ordinary
-variables. -/
-def Satisfies (A : BindingCloneAlgebra.Algebra.{u} S)
+/-- The dependency-only equation condition does not quantify contextual
+metavariable bodies. It is separate from contextual satisfaction. -/
+def DependencySatisfies (A : BindingCloneAlgebra.Algebra.{u} S)
     (E : List (EqAxiom S M)) : Prop :=
   ∀ (i : Fin E.length) (valuation : MetaValuation A M)
     {Γ : Ctx S}
@@ -63,86 +36,68 @@ def Satisfies (A : BindingCloneAlgebra.Algebra.{u} S)
     A.substitution.substitute env
       (interpretSchema A valuation (E.get i).rhs)
 
-mutual
+/-- Every contextual semantic instance holds, with arbitrary captured
+bodies and independent ambient and ordinary environments. -/
+def Satisfies (A : BindingCloneAlgebra.Algebra.{u} S)
+    (E : List (EqAxiom S M)) : Prop :=
+  BindingContextualEquationInterpretation.Satisfies A E
 
-/-- Interpreting a schema with syntactic metavariable bodies agrees with
-first instantiating that authored schema and then folding the resulting base
-term into the semantic model. -/
-theorem interpretSchema_instantiate
-    (A : BindingCloneAlgebra.Algebra.{u} S)
-    (body : (k : Fin M.length) → Term S (M.get k).1 (M.get k).2) :
-    ∀ {Γ : Ctx S} {sort : S.Srt}
-      (term : Term (withMetas S M) Γ sort),
-      interpretSchema A (fun k => interpret A (body k)) term =
-        interpret A (instantiate body term)
-  | _, _, .var _ => rfl
-  | _, _, .op (Sum.inl op) args => by
-      change A.operation op
-          (interpretSchemaArgs A (fun k => interpret A (body k)) args) =
-        A.operation op (interpretArgs A (instantiateArgs body args))
-      exact congrArg (A.operation op)
-        (interpretSchemaArgs_instantiate A body args)
-  | _, _, .op (Sum.inr (.mk k)) args => by
-      change A.substitution.substitute
-          (argsEnvironment A
-            (interpretSchemaArgs A (fun k => interpret A (body k)) args))
-          (interpret A (body k)) =
-        interpret A (bind (argsToSub (instantiateArgs body args)) (body k))
-      rw [interpret_bind]
-      congr 1
-      funext sort x
-      exact interpretSchemaArgs_metaEnvironment A body args sort x
-termination_by _ _ term => 2 * termSize term
-decreasing_by
-  all_goals simp_wf
-  all_goals simp only [termSize]
-  all_goals omega
+/-- Each authored equation instance remains valid after transporting all its
+semantic metavariables and ordinary variables along a model morphism. This
+is an image statement; it does not assert that an arbitrary target
+valuation factors through the morphism. -/
+theorem mapped_dependency_equation_instance
+    {A : BindingCloneAlgebra.Algebra.{u} S}
+    {B : BindingCloneAlgebra.Algebra.{v} S}
+    (h : FreeBindingClone.Hom A B)
+    {E : List (EqAxiom S M)} (satisfies : DependencySatisfies A E)
+    (i : Fin E.length) (valuation : MetaValuation A M)
+    {Δ : Ctx S}
+    (env : BindingSubstitutionAlgebra.Environment S
+      A.substitution.Carrier (E.get i).ctx Δ) :
+    B.substitution.substitute (fun s x => h.raw.map (env s x))
+      (interpretSchema B (mapMetaValuation h valuation) (E.get i).lhs) =
+    B.substitution.substitute (fun s x => h.raw.map (env s x))
+      (interpretSchema B (mapMetaValuation h valuation) (E.get i).rhs) := by
+  exact (interpretSchema_closed_map h valuation env (E.get i).lhs).symm.trans
+    ((congrArg h.raw.map (satisfies i valuation env)).trans
+      (interpretSchema_closed_map h valuation env (E.get i).rhs))
 
-/-- The argument-vector comparison holds at every operator arity and every
-binder-extended context. -/
-theorem interpretSchemaArgs_instantiate
-    (A : BindingCloneAlgebra.Algebra.{u} S)
-    (body : (k : Fin M.length) → Term S (M.get k).1 (M.get k).2) :
-    ∀ {arity : List (List S.Srt × S.Srt)} {Γ : Ctx S}
-      (args : Args (withMetas S M) arity Γ),
-      interpretSchemaArgs A (fun k => interpret A (body k)) args =
-        interpretArgs A (instantiateArgs body args)
-  | _, _, .nil => rfl
-  | _, _, .cons head tail => by
-      exact congrArg₂ FamilyArgs.cons
-        (interpretSchema_instantiate A body head)
-        (interpretSchemaArgs_instantiate A body tail)
-termination_by _ _ args => 2 * argsSize args + 1
-decreasing_by
-  all_goals simp_wf
-  all_goals simp only [argsSize]
-  all_goals first | omega | have := termSize_pos head; omega
+/-- A contextual equation instance transports along a full binding-clone
+map, preserving both supplied environments. Only image values are claimed. -/
+theorem mapped_equation_instance
+    {A : BindingCloneAlgebra.Algebra.{u} S}
+    {B : BindingCloneAlgebra.Algebra.{v} S}
+    (h : FreeBindingClone.Hom A B)
+    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
+    (i : Fin E.length) {Θ Γ : Ctx S}
+    (body : SemanticContextualMetavariables.Valuation (M := M) A Θ)
+    (ambient : BindingSubstitutionAlgebra.Environment S A.substitution.Carrier Θ Γ)
+    (ordinary : BindingSubstitutionAlgebra.Environment S
+      A.substitution.Carrier (E.get i).ctx Γ) :
+    SemanticContextualMetavariables.interpretSchema B
+        (SemanticContextualMetavariables.mapValuation h body)
+        (fun s v => h.raw.map (ambient s v))
+        (fun s v => h.raw.map (ordinary s v)) (E.get i).lhs =
+      SemanticContextualMetavariables.interpretSchema B
+        (SemanticContextualMetavariables.mapValuation h body)
+        (fun s v => h.raw.map (ambient s v))
+        (fun s v => h.raw.map (ordinary s v)) (E.get i).rhs :=
+  (SemanticContextualMetavariables.interpretSchema_map h body ambient ordinary (E.get i).lhs).symm.trans
+    ((congrArg h.raw.map (satisfies i body ambient ordinary)).trans
+      (SemanticContextualMetavariables.interpretSchema_map h body ambient ordinary (E.get i).rhs))
 
-/-- A metavariable's interpreted argument environment agrees pointwise
-with the syntactic argument substitution after schema instantiation. -/
-theorem interpretSchemaArgs_metaEnvironment
-    (A : BindingCloneAlgebra.Algebra.{u} S)
-    (body : (k : Fin M.length) → Term S (M.get k).1 (M.get k).2) :
-    ∀ {bs : List S.Srt} {Γ : Ctx S}
-      (args : Args (withMetas S M)
-        (bs.map (fun b => ([], b))) Γ)
-      (sort : S.Srt) (x : Var bs sort),
-      argsEnvironment A
-        (interpretSchemaArgs A (fun k => interpret A (body k)) args)
-        sort x =
-      interpret A (argsToSub (instantiateArgs body args) sort x)
-  | [], _, .nil, _, x => nomatch x
-  | _ :: _, _, .cons head _tail, _, .zero => by
-      exact interpretSchema_instantiate A body head
-  | _ :: _, _, .cons _head tail, sort, .succ old =>
-      interpretSchemaArgs_metaEnvironment A body tail sort old
-termination_by _ _ args _ _ => 2 * argsSize args + 1
-decreasing_by
-  all_goals simp_wf
-  all_goals simp only [argsSize]
-  all_goals first | omega | have := termSize_pos _head; omega
+/-- The shared semantic comparison identifies the interpretations of
+every actual syntactic contextual equation instance. -/
+theorem Satisfies.interpret_instance {A : BindingCloneAlgebra.Algebra.{u} S}
+    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
+    (i : Fin E.length) {Θ Γ : Ctx S} (body : ContextualAssignment S M Θ)
+    (ambient : Sub S Θ Γ) (ordinary : Sub S (E.get i).ctx Γ) :
+    interpret A (ContextualAssignment.instantiate body ambient ordinary (E.get i).lhs) =
+      interpret A (ContextualAssignment.instantiate body ambient ordinary (E.get i).rhs) :=
+  BindingContextualEquationInterpretation.Satisfies.interpret_instance
+    satisfies i body ambient ordinary
 
-end
 
 mutual
 
@@ -154,12 +109,8 @@ theorem interpret_eqClosure
     ∀ {Γ : Ctx S} {sort : S.Srt}
       {left right : Term S Γ sort}, EqClosure E left right →
       interpret A left = interpret A right
-  | _, _, _, _, .ax i body close => by
-      rw [interpret_bind, interpret_bind]
-      rw [← interpretSchema_instantiate A body (E.get i).lhs,
-        ← interpretSchema_instantiate A body (E.get i).rhs]
-      exact satisfies i (fun k => interpret A (body k))
-        (fun s v => interpret A (close s v))
+  | _, _, _, _, .ax i body ambient ordinary =>
+      satisfies.interpret_instance i body ambient ordinary
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (interpret_eqClosure A satisfies h).symm
   | _, _, _, _, .trans h h' =>
@@ -187,35 +138,45 @@ theorem interpretArgs_eqArgs
 
 end
 
-/-- A model of the authored equations receives a well-defined
-interpretation from every context-and-sort fibre of the existing syntactic
-equation quotient. -/
+/-- The congruence generated by the equations holds in the algebra's
+interpretation of terms. Semantic satisfaction implies it; it is exactly what
+an interpretation of the equation quotient needs. -/
+def CongruenceSound (A : BindingCloneAlgebra.Algebra.{u} S) (E : List (EqAxiom S M)) : Prop :=
+  ∀ {Γ : Ctx S} {sort : S.Srt} {left right : Term S Γ sort},
+    EqClosure E left right → interpret A left = interpret A right
+
+theorem Satisfies.congruenceSound {A : BindingCloneAlgebra.Algebra.{u} S}
+    {E : List (EqAxiom S M)} (satisfies : Satisfies A E) : CongruenceSound A E :=
+  fun h => interpret_eqClosure A satisfies h
+
+/-- An algebra in which the generated congruence is sound receives a
+well-defined interpretation from every context-and-sort fibre of the
+syntactic equation quotient. -/
 def interpretQuotient
     (A : BindingCloneAlgebra.Algebra.{u} S)
-    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
+    {E : List (EqAxiom S M)} (sound : CongruenceSound A E)
     {Γ : Ctx S} {sort : S.Srt} :
     TermQ E Γ sort → A.substitution.Carrier Γ sort :=
-  Quotient.lift (interpret A)
-    (fun _ _ h => interpret_eqClosure A satisfies h)
+  Quotient.lift (interpret A) (fun _ _ h => sound h)
 
 theorem interpretQuotient_mk
     (A : BindingCloneAlgebra.Algebra.{u} S)
-    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
+    {E : List (EqAxiom S M)} (sound : CongruenceSound A E)
     {Γ : Ctx S} {sort : S.Srt} (term : Term S Γ sort) :
-    interpretQuotient A satisfies (Quotient.mk _ term) =
+    interpretQuotient A sound (Quotient.mk _ term) =
       interpret A term := rfl
 
 /-- The quotient interpretation commutes with the repository's quotient
 substitution by a syntactic environment. -/
 theorem interpretQuotient_bindQ
     (A : BindingCloneAlgebra.Algebra.{u} S)
-    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
+    {E : List (EqAxiom S M)} (sound : CongruenceSound A E)
     {Γ Δ : Ctx S} {sort : S.Srt}
     (sigma : Sub S Γ Δ) (q : TermQ E Γ sort) :
-    interpretQuotient A satisfies (bindQ (E := E) sigma q) =
+    interpretQuotient A sound (bindQ (E := E) sigma q) =
       A.substitution.substitute
         (fun s v => interpret A (sigma s v))
-        (interpretQuotient A satisfies q) := by
+        (interpretQuotient A sound q) := by
   induction q using Quotient.inductionOn with
   | _ term => exact interpret_bind A sigma term
 
@@ -223,12 +184,12 @@ theorem interpretQuotient_bindQ
 representatives agrees with this factorization everywhere. -/
 theorem interpretQuotient_unique
     (A : BindingCloneAlgebra.Algebra.{u} S)
-    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
+    {E : List (EqAxiom S M)} (sound : CongruenceSound A E)
     {Γ : Ctx S} {sort : S.Srt}
     (map : TermQ E Γ sort → A.substitution.Carrier Γ sort)
     (onTerms : ∀ term : Term S Γ sort,
       map (Quotient.mk _ term) = interpret A term) :
-    map = interpretQuotient A satisfies := by
+    map = interpretQuotient A sound := by
   funext q
   induction q using Quotient.inductionOn with
   | _ term => exact onTerms term

@@ -51,7 +51,7 @@ def base (arity : Nat) : Presentation.Tower.Tm arity :=
 def familyType : Presentation.Tower.Tm 0 :=
   .pi (base 0) (sortTm Presentation.Tower.zero)
 
-def familyTypeLevel : LevelExpr :=
+def familyTypeLevel : LevelExpr Nat :=
   .max Presentation.Tower.zero (.succ Presentation.Tower.zero)
 
 /-- Telescope containing the dependent family `B`. -/
@@ -62,7 +62,7 @@ def contextB : Presentation.Tower.Ctx 1 :=
 def sectionType : Presentation.Tower.Tm 1 :=
   .pi (base 1) (.app (.var 1) (.var 0))
 
-def sectionTypeLevel : LevelExpr :=
+def sectionTypeLevel : LevelExpr Nat :=
   .max Presentation.Tower.zero Presentation.Tower.zero
 
 /-- Telescope containing `B` and `g : (x : A) -> B x`. -/

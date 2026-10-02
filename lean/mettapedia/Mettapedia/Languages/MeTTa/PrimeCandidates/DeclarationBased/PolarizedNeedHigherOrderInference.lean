@@ -66,11 +66,11 @@ theorem passedSource_typed (expected : Request) (input : Wire) :
     ComputationTyping NativeWireData.rules signature .nil Fin.elim0 Fin.elim0
       (passedSource (Effect := Effect) expected input) (.returns (.native NativeWireData.dataType)) := by
   have formed : ComputationFormation NativeWireData.rules (.nil : Tower.Ctx 0) functionType :=
-    .nativePi ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩
-      (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩))
+    .nativePi ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩
+      (.returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩))
   have resultFormed : ComputationFormation NativeWireData.rules (.nil : Tower.Ctx 0)
       (.returns (.native NativeWireData.dataType)) :=
-    .returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩)
+    .returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩)
   simpa only [passedSource, functionType, CTy.instantiate, CTy.substitute, VTy.substitute,
     NativeWireData.dataType, subst] using
     (passAndApply_typed formed resultFormed

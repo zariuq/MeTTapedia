@@ -44,20 +44,20 @@ universe u
 /-! ## Two actual refined derivations at the same displayed universe -/
 
 /-- The family variable has its full dependent function type. -/
-def context (level : LevelExpr) : Tower.Ctx 2 :=
+def context (level : LevelExpr Nat) : Tower.Ctx 2 :=
   .snoc (.snoc .nil (sortTm level)) (.pi (.var 0) (sortTm level))
 
 /-- In the body scope, index 1 is the family and index 0 its argument. -/
 def dependentPi : Tower.Tm 2 := .pi (.var 1) (.app (.var 1) (.var 0))
 
-def lowerLevel (level : LevelExpr) : LevelExpr := .max level level
+def lowerLevel (level : LevelExpr Nat) : LevelExpr Nat := .max level level
 
-def upperLevel (level : LevelExpr) : LevelExpr := .max (.succ level) (.succ level)
+def upperLevel (level : LevelExpr Nat) : LevelExpr Nat := .max (.succ level) (.succ level)
 
-variable (signature : Signature Tower.Head) (level : LevelExpr)
+variable (signature : Signature Tower.Head) (level : LevelExpr Nat)
 
 theorem context_formed : ContextFormation (rules signature) (context level) := by
-  apply ContextFormation.snoc (u := Tower.Head.sort (.max level (.succ level)))
+  apply ContextFormation.snoc (u := LevelTower.Head.sort (.max level (.succ level)))
   · exact .snoc .nil (.headType (.sort level)) (.sort (.succ level))
   · exact .piForm (.var 0) (.sort level) (.headType (.sort level))
       (.sort (.succ level)) (.sorts level (.succ level))

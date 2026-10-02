@@ -1,4 +1,5 @@
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FinitePrecisionExpressionCertificate
+import Mettapedia.Algebra.IntervalHull
 
 /-!
 # Kernel-checked interval evaluation
@@ -126,126 +127,14 @@ theorem contains_subtract {left right : ClosedInterval} {x y : ℝ}
   simpa [subtract, sub_eq_add_neg] using
     contains_add leftMembership (contains_negate rightMembership)
 
-private theorem productLower_le_lower_lower
-    (left right : ClosedInterval) :
-    productLower left right ≤ left.lower * right.lower := by
-  simp [productLower]
-
-private theorem productLower_le_lower_upper
-    (left right : ClosedInterval) :
-    productLower left right ≤ left.lower * right.upper := by
-  simp [productLower]
-
-private theorem productLower_le_upper_lower
-    (left right : ClosedInterval) :
-    productLower left right ≤ left.upper * right.lower := by
-  simp [productLower]
-
-private theorem productLower_le_upper_upper
-    (left right : ClosedInterval) :
-    productLower left right ≤ left.upper * right.upper := by
-  simp [productLower]
-
-private theorem lower_lower_le_productUpper
-    (left right : ClosedInterval) :
-    left.lower * right.lower ≤ productUpper left right := by
-  simp [productUpper]
-
-private theorem lower_upper_le_productUpper
-    (left right : ClosedInterval) :
-    left.lower * right.upper ≤ productUpper left right := by
-  simp [productUpper]
-
-private theorem upper_lower_le_productUpper
-    (left right : ClosedInterval) :
-    left.upper * right.lower ≤ productUpper left right := by
-  simp [productUpper]
-
-private theorem upper_upper_le_productUpper
-    (left right : ClosedInterval) :
-    left.upper * right.upper ≤ productUpper left right := by
-  simp [productUpper]
-
-/-- Proposition 9's multiplication inclusion property, using the exact hull
-of the four endpoint products. -/
+/-- Proposition 9's multiplication inclusion property, through the common
+ordered-algebra endpoint theorem. -/
 theorem contains_multiply {left right : ClosedInterval} {x y : ℝ}
     (leftMembership : left.Contains x)
     (rightMembership : right.Contains y) :
     (multiply left right).Contains (x * y) := by
-  rcases leftMembership with ⟨leftLower, leftUpper⟩
-  rcases rightMembership with ⟨rightLower, rightUpper⟩
-  constructor
-  · change productLower left right ≤ x * y
-    by_cases xNonnegative : 0 ≤ x
-    · by_cases yNonnegative : 0 ≤ y
-      · by_cases lowerNonnegative : 0 ≤ left.lower
-        · exact (productLower_le_lower_lower left right).trans
-            ((mul_le_mul_of_nonneg_left rightLower lowerNonnegative).trans
-              (mul_le_mul_of_nonneg_right leftLower yNonnegative))
-        · have lowerNonpositive : left.lower ≤ 0 := le_of_not_ge lowerNonnegative
-          exact (productLower_le_lower_upper left right).trans
-            ((mul_le_mul_of_nonpos_left rightUpper lowerNonpositive).trans
-              (mul_le_mul_of_nonneg_right leftLower yNonnegative))
-      · have yNonpositive : y ≤ 0 := le_of_not_ge yNonnegative
-        have upperNonnegative : 0 ≤ left.upper := xNonnegative.trans leftUpper
-        exact (productLower_le_upper_lower left right).trans
-          ((mul_le_mul_of_nonneg_left rightLower upperNonnegative).trans
-            (mul_le_mul_of_nonpos_right leftUpper yNonpositive))
-    · have xNonpositive : x ≤ 0 := le_of_not_ge xNonnegative
-      by_cases yNonnegative : 0 ≤ y
-      · have lowerNonpositive : left.lower ≤ 0 := leftLower.trans xNonpositive
-        exact (productLower_le_lower_upper left right).trans
-          ((mul_le_mul_of_nonpos_left rightUpper lowerNonpositive).trans
-            (mul_le_mul_of_nonneg_right leftLower yNonnegative))
-      · have yNonpositive : y ≤ 0 := le_of_not_ge yNonnegative
-        by_cases upperNonpositive : left.upper ≤ 0
-        · by_cases rightUpperNonpositive : right.upper ≤ 0
-          · exact (productLower_le_upper_upper left right).trans
-              ((mul_le_mul_of_nonpos_right leftUpper rightUpperNonpositive).trans
-                (mul_le_mul_of_nonpos_left rightUpper xNonpositive))
-          · have rightUpperNonnegative : 0 ≤ right.upper :=
-              le_of_not_ge rightUpperNonpositive
-            exact (productLower_le_lower_upper left right).trans
-              ((mul_nonpos_of_nonpos_of_nonneg
-                (leftLower.trans xNonpositive) rightUpperNonnegative).trans
-                  (mul_nonneg_of_nonpos_of_nonpos xNonpositive yNonpositive))
-        · have upperNonnegative : 0 ≤ left.upper := le_of_not_ge upperNonpositive
-          exact (productLower_le_upper_lower left right).trans
-            (mul_nonpos_of_nonneg_of_nonpos upperNonnegative
-              (rightLower.trans yNonpositive)
-              |>.trans (mul_nonneg_of_nonpos_of_nonpos xNonpositive yNonpositive))
-  · change x * y ≤ productUpper left right
-    by_cases xNonnegative : 0 ≤ x
-    · by_cases yNonnegative : 0 ≤ y
-      · have upperNonnegative : 0 ≤ left.upper := xNonnegative.trans leftUpper
-        exact ((mul_le_mul_of_nonneg_right leftUpper yNonnegative).trans
-          (mul_le_mul_of_nonneg_left rightUpper upperNonnegative)).trans
-            (upper_upper_le_productUpper left right)
-      · have yNonpositive : y ≤ 0 := le_of_not_ge yNonnegative
-        by_cases lowerNonnegative : 0 ≤ left.lower
-        · exact ((mul_le_mul_of_nonpos_right leftLower yNonpositive).trans
-            (mul_le_mul_of_nonneg_left rightUpper lowerNonnegative)).trans
-              (lower_upper_le_productUpper left right)
-        · have lowerNonpositive : left.lower ≤ 0 := le_of_not_ge lowerNonnegative
-          exact (mul_nonpos_of_nonneg_of_nonpos xNonnegative yNonpositive).trans
-            ((mul_nonneg_of_nonpos_of_nonpos lowerNonpositive
-              (rightLower.trans yNonpositive)).trans
-                (lower_lower_le_productUpper left right))
-    · have xNonpositive : x ≤ 0 := le_of_not_ge xNonnegative
-      by_cases yNonnegative : 0 ≤ y
-      · by_cases upperNonpositive : left.upper ≤ 0
-        · exact ((mul_le_mul_of_nonneg_right leftUpper yNonnegative).trans
-            (mul_le_mul_of_nonpos_left rightLower upperNonpositive)).trans
-              (upper_lower_le_productUpper left right)
-        · have upperNonnegative : 0 ≤ left.upper := le_of_not_ge upperNonpositive
-          exact (mul_nonpos_of_nonpos_of_nonneg xNonpositive yNonnegative).trans
-            ((mul_nonneg upperNonnegative (yNonnegative.trans rightUpper)).trans
-              (upper_upper_le_productUpper left right))
-      · have yNonpositive : y ≤ 0 := le_of_not_ge yNonnegative
-        have lowerNonpositive : left.lower ≤ 0 := leftLower.trans xNonpositive
-        exact ((mul_le_mul_of_nonpos_right leftLower yNonpositive).trans
-          (mul_le_mul_of_nonpos_left rightLower lowerNonpositive)).trans
-            (lower_lower_le_productUpper left right)
+  simpa only [Contains, multiply, productLower, productUpper] using
+    Mettapedia.Algebra.IntervalHull.mul_mem leftMembership rightMembership
 
 theorem contains_mask {active : Bool} {interval : ClosedInterval} {value : ℝ}
     (membership : interval.Contains value) :
@@ -405,7 +294,7 @@ private def affineRealEnvironment : OneVariable → ℝ
 private def affineIntervalEnvironment : OneVariable → ClosedInterval
   | .x => intervalFrom 1 2
 
-private def affineCertificate :
+private theorem affineCertificate :
     IntervalCertificate affineRealEnvironment affineIntervalEnvironment
       affineExpression
       (.add (.multiply (.point 2) (intervalFrom 1 2)) (.point 3)) :=
@@ -440,7 +329,7 @@ private def dependencyIntervalEnvironment
 private def dependencyOutput (input : ClosedInterval) : ClosedInterval :=
   .add (.multiply (.point 2) input) (.multiply (.point (-1)) input)
 
-private def dependencyCertificate (value : ℝ) (input : ClosedInterval)
+private theorem dependencyCertificate (value : ℝ) (input : ClosedInterval)
     (membership : input.Contains value) :
     IntervalCertificate (dependencyRealEnvironment value)
       (dependencyIntervalEnvironment input) dependencyExpression

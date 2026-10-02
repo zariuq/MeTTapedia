@@ -17,7 +17,7 @@ open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.TermEncod
 
 /-- The encoding of a level expression: a tag for the former, paired with the
 encodings of its parts. -/
-def LevelExpr.encode : LevelExpr → Nat
+def LevelExpr.encode : LevelExpr Nat → Nat
   | .const c => pairing 0 c
   | .param i => pairing 1 i
   | .succ e => pairing 2 e.encode
@@ -45,7 +45,7 @@ theorem LevelExpr.encode_injective : Function.Injective LevelExpr.encode := by
           rw [iha ea, ihb eb]
       | _ => exact absurd (pairing_injective h).1 (by decide)
 
-instance LevelExpr.instCountable : Countable LevelExpr :=
+instance LevelExpr.instCountable : Countable (LevelExpr Nat) :=
   ⟨⟨LevelExpr.encode, LevelExpr.encode_injective⟩⟩
 
 end Mettapedia.TypeTheory.UniverseLevel

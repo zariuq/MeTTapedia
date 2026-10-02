@@ -23,7 +23,17 @@ def costApparatusConstructorName (name : String) : String :=
   "$cost:apparatus-constructor:" ++ name
 
 def costSignatureSortName : String := costApparatusSortName "signature"
+def costKeySortName : String := costApparatusSortName "key"
 def costTokenStackSortName : String := costApparatusSortName "token-stack"
+
+def costKeyLeafConstructorName : String :=
+  costApparatusConstructorName "key-leaf"
+
+def costKeyBranchConstructorName : String :=
+  costApparatusConstructorName "key-branch"
+
+def costSignatureCommitConstructorName : String :=
+  costApparatusConstructorName "signature-commit"
 
 def costSignatureUnitConstructorName : String :=
   costApparatusConstructorName "signature-unit"
@@ -106,9 +116,10 @@ theorem costWrappedConstructorName_ne_apparatus (wrapped apparatus : String) :
 
 /-! ## Intrinsic generated names -/
 
-/-- The two fixed apparatus sorts adjoined by Cost. -/
+/-- Exact commitment keys, monoid signatures, and ordered token stacks. -/
 inductive CostApparatusSort where
   | signature
+  | key
   | tokenStack
 deriving DecidableEq, Repr
 
@@ -116,6 +127,9 @@ deriving DecidableEq, Repr
 inductive CostApparatusConstructor where
   | signatureUnit
   | signatureProduct
+  | keyLeaf
+  | keyBranch
+  | signatureCommit
   | signed
   | tokenStackEmpty
   | tokenStackCons
@@ -144,6 +158,7 @@ namespace CostApparatusSort
 
 def suffix : CostApparatusSort → String
   | .signature => "signature"
+  | .key => "key"
   | .tokenStack => "token-stack"
 
 def render (kind : CostApparatusSort) : String :=
@@ -161,6 +176,8 @@ theorem render_injective : Function.Injective render := by
 @[simp] theorem render_signature : render .signature = costSignatureSortName :=
   rfl
 
+@[simp] theorem render_key : render .key = costKeySortName := rfl
+
 @[simp] theorem render_tokenStack :
     render .tokenStack = costTokenStackSortName := rfl
 
@@ -171,6 +188,9 @@ namespace CostApparatusConstructor
 def suffix : CostApparatusConstructor → String
   | .signatureUnit => "signature-unit"
   | .signatureProduct => "signature-product"
+  | .keyLeaf => "key-leaf"
+  | .keyBranch => "key-branch"
+  | .signatureCommit => "signature-commit"
   | .signed => "signed"
   | .tokenStackEmpty => "token-stack-empty"
   | .tokenStackCons => "token-stack-cons"
@@ -194,6 +214,13 @@ theorem render_injective : Function.Injective render := by
 
 @[simp] theorem render_signatureProduct :
     render .signatureProduct = costSignatureProductConstructorName := rfl
+
+@[simp] theorem render_keyLeaf : render .keyLeaf = costKeyLeafConstructorName := rfl
+
+@[simp] theorem render_keyBranch : render .keyBranch = costKeyBranchConstructorName := rfl
+
+@[simp] theorem render_signatureCommit :
+    render .signatureCommit = costSignatureCommitConstructorName := rfl
 
 @[simp] theorem render_signed : render .signed = costSignedConstructorName :=
   rfl

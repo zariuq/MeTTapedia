@@ -473,7 +473,7 @@ theorem childEvidenceAt_reindex (index : Fin R.length)
           (extendScope A scope f.unop))
         (eventJudgment R (mapModelEvent R Y extended oldEvent))
         (eventJudgment_mapModelEvent R Y extended oldEvent).symm) :=
-    SubstitutionModel.act_heq R Y
+    Y.toAction.act_heq
       (childEventAt_judgment R index position Y X input).symm
       (childEvidenceAt_heq_raw R index position Y X input)
       (heq_of_eq sameEnv.symm)
@@ -592,7 +592,7 @@ theorem ruleFireAt_evidence_reindex (index : Fin R.length)
   cases samePosition
   refine HEq.trans ?_
     (heq_of_eq (childEvidenceAt_reindex R index position Y f input))
-  refine SubstitutionModel.act_heq R Y rfl HEq.rfl HEq.rfl
+  refine Y.toAction.act_heq rfl HEq.rfl HEq.rfl
     (childJudgment_congr R (hInstance _) position position HEq.rfl) _ _
 
 /-- Firing an authored rule commutes with contextual substitution, including
@@ -633,7 +633,7 @@ theorem ruleFireAt_reindex (index : Fin R.length)
         (fromPositions X.unop.context f.unop)
         (eventJudgment R newEvent)
         (conclusionJudgment_bundle_reindex R index Y f input).symm) :=
-    SubstitutionModel.act_heq R Y rfl HEq.rfl HEq.rfl
+    Y.toAction.act_heq rfl HEq.rfl HEq.rfl
       hJudgment _ _
   exact modelEvent_ext R hJudgment
     ((eventEvidence_map_heq R Y f oldEvent).trans

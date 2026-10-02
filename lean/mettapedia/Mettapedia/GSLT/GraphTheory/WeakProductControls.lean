@@ -1,16 +1,21 @@
-import Mettapedia.GSLT.GraphTheory.PartialPair
+import Mettapedia.GSLT.GraphTheory.WeakProduct
+import Mettapedia.GSLT.Core.WebSemanticsControls
 
 /-!
 # Projection-coding obstruction
 
-The exact raw coding expression inside the unfinished `WeakProduct` discards
-opposite-component supports. These controls isolate that expression from the
-record's admitted injectivity field; they construct no graph model or web.
+Projection-only coding discards opposite-component supports and is not
+injective. The actual canonical weak product distinguishes those inputs,
+codes mixed supports outside the original factors, and preserves the native
+lambda identity's distinct arguments.
 -/
 
 namespace Mettapedia.GSLT.GraphTheory.WeakProductControls
 
 open Mettapedia.GSLT.Core
+
+noncomputable local instance (D₁ D₂ : GraphModel) : DecidableEq (D₁ ◇ D₂).Carrier :=
+  Classical.decEq _
 
 private def projectionCode (D₁ D₂ : GraphModel) :
     Finset (D₁.Carrier ⊕ D₂.Carrier) × (D₁.Carrier ⊕ D₂.Carrier) →
@@ -81,5 +86,50 @@ theorem source_partial_code_distinguishes_collision (D₁ D₂ : GraphModel)
 theorem source_union_is_proper (D₁ D₂ : GraphModel) (x : D₁.Carrier) (y : D₂.Carrier) :
     (PartialPair.disjointUnion D₁ D₂).Proper :=
   PartialPair.disjointUnion_proper D₁ D₂ x y
+
+/-- The canonical completion preserves the support erased by projection coding. -/
+theorem completed_mixed_support_distinguished (D₁ D₂ : GraphModel)
+    (left : D₁.Carrier) (right : D₂.Carrier) :
+    (D₁ ◇ D₂).code (∅ : Finset (D₁ ◇ D₂).Carrier) (WeakProduct.leftEmbedding D₁ D₂ left) ≠
+      (D₁ ◇ D₂).code ({WeakProduct.rightEmbedding D₁ D₂ right} : Finset (D₁ ◇ D₂).Carrier)
+        (WeakProduct.leftEmbedding D₁ D₂ left) := by
+  intro equality
+  have inputs := (D₁ ◇ D₂).coding.injective equality
+  exact Finset.empty_ne_singleton _ (congrArg Prod.fst inputs)
+
+/-- A mixed code does not collapse into the original left factor. -/
+theorem completed_mixed_code_outside_left (D₁ D₂ : GraphModel)
+    (left : D₁.Carrier) (right : D₂.Carrier) (token : D₁.Carrier) :
+    (D₁ ◇ D₂).code ({WeakProduct.rightEmbedding D₁ D₂ right} : Finset (D₁ ◇ D₂).Carrier)
+        (WeakProduct.leftEmbedding D₁ D₂ left) ≠ WeakProduct.leftEmbedding D₁ D₂ token := by
+  intro equality
+  obtain ⟨support, output, _, supports, _⟩ :=
+    (WeakProduct.code_eq_left_iff D₁ D₂ _ _ token).mp equality
+  have member : WeakProduct.rightEmbedding D₁ D₂ right ∈
+      support.map (WeakProduct.leftEmbedding D₁ D₂) :=
+    supports ▸ Finset.mem_singleton_self _
+  obtain ⟨value, _, equal⟩ := Finset.mem_map.mp member
+  exact WeakProduct.left_ne_right D₁ D₂ value right equal
+
+/-- A mixed code does not collapse into the original right factor either. -/
+theorem completed_mixed_code_outside_right (D₁ D₂ : GraphModel)
+    (left : D₁.Carrier) (right : D₂.Carrier) (token : D₂.Carrier) :
+    (D₁ ◇ D₂).code ({WeakProduct.rightEmbedding D₁ D₂ right} : Finset (D₁ ◇ D₂).Carrier)
+        (WeakProduct.leftEmbedding D₁ D₂ left) ≠ WeakProduct.rightEmbedding D₁ D₂ token := by
+  intro equality
+  obtain ⟨_, output, _, _, outputs⟩ :=
+    (WeakProduct.code_eq_right_iff D₁ D₂ _ _ token).mp equality
+  exact WeakProduct.left_ne_right D₁ D₂ left output outputs
+
+/-- The existing lambda interpreter, applied to identity, retains distinct
+arguments from the actual completed factors. -/
+theorem native_identity_distinguishes_factors (D₁ D₂ : GraphModel)
+    (left : D₁.Carrier) (right : D₂.Carrier) (environment : Env (D₁ ◇ D₂)) :
+    (D₁ ◇ D₂).apply (interpret (D₁ ◇ D₂) environment LambdaTerm.I)
+        {WeakProduct.leftEmbedding D₁ D₂ left} ≠
+      (D₁ ◇ D₂).apply (interpret (D₁ ◇ D₂) environment LambdaTerm.I)
+        {WeakProduct.rightEmbedding D₁ D₂ right} := by
+  rw [interpret_I]
+  exact (D₁ ◇ D₂).identity_distinguishes_inputs _ _ (WeakProduct.left_ne_right D₁ D₂ left right)
 
 end Mettapedia.GSLT.GraphTheory.WeakProductControls

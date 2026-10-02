@@ -290,44 +290,44 @@ variable {n : Nat}
 
 noncomputable abbrev R := packageRules
 
-def level1 : LevelExpr := .succ Tower.zero
+def level1 : LevelExpr Nat := .succ Tower.zero
 
 abbrev U1 : Tower.Tm n := sortTm level1
 
-theorem isUniverseAt (level : LevelExpr) : R.isUniverse (.sort level) :=
-  Tower.IsUniverse.sort level
+theorem isUniverseAt (level : LevelExpr Nat) : R.isUniverse (.sort level) :=
+  LevelTower.IsUniverse.sort level
 
-theorem sort_typed {Γ : Tower.Ctx n} (level : LevelExpr) :
+theorem sort_typed {Γ : Tower.Ctx n} (level : LevelExpr Nat) :
     Typing R Γ (sortTm level) (sortTm (.succ level)) :=
-  .headType (Tower.HeadTyping.sort level)
+  .headType (LevelTower.HeadTyping.sort level)
 
 theorem U0_typed {Γ : Tower.Ctx n} : Typing R Γ U0 U1 := sort_typed Tower.zero
 
 theorem raise {Γ : Tower.Ctx n} {type : Tower.Tm n} (typed : Typing R Γ type U0) :
     Typing R Γ type U1 :=
-  .cumul typed (fun valuation => by simp [LevelExpr.eval, Tower.zero, level1])
+  .cumul typed (fun valuation => by simp [LevelExpr.eval, LevelTower.zero, level1])
 
 /-- A dependent function type over a universe, formed at the join and
 lowered to that universe. -/
 theorem pi_at {Γ : Tower.Ctx n} {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)}
-    {level : LevelExpr}
+    {level : LevelExpr Nat}
     (domainTyped : Typing R Γ domain (sortTm level))
     (codomainTyped : Typing R (.snoc Γ domain) codomain (sortTm level)) :
     Typing R Γ (.pi domain codomain) (sortTm level) :=
   .cumul (.piForm domainTyped (isUniverseAt level) codomainTyped (isUniverseAt level)
-      (Tower.Join.sorts level level))
+      (LevelTower.Join.sorts level level))
     (fun valuation => by simp [LevelExpr.eval])
 
 theorem sigma_at {Γ : Tower.Ctx n} {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)}
-    {level : LevelExpr}
+    {level : LevelExpr Nat}
     (domainTyped : Typing R Γ domain (sortTm level))
     (codomainTyped : Typing R (.snoc Γ domain) codomain (sortTm level)) :
     Typing R Γ (.sigma domain codomain) (sortTm level) :=
   .cumul (.sigmaForm domainTyped (isUniverseAt level) codomainTyped (isUniverseAt level)
-      (Tower.Join.sorts level level))
+      (LevelTower.Join.sorts level level))
     (fun valuation => by simp [LevelExpr.eval])
 
-theorem id_at {Γ : Tower.Ctx n} {carrier left right : Tower.Tm n} {level : LevelExpr}
+theorem id_at {Γ : Tower.Ctx n} {carrier left right : Tower.Tm n} {level : LevelExpr Nat}
     (carrierTyped : Typing R Γ carrier (sortTm level))
     (leftTyped : Typing R Γ left carrier) (rightTyped : Typing R Γ right carrier) :
     Typing R Γ (.id carrier left right) (sortTm level) :=
@@ -459,7 +459,7 @@ theorem stepFamily_formed {n : Nat} {Γ : Tower.Ctx n} :
     Typing R (.snoc (.snoc Γ U0) (.pi (.var 0) U0)) stepFamily U0 :=
   CertifiedTransforms.stepOver_typed_cumulative (Typing.var 1)
     (Typing.appElim (B := U0) (Typing.var 1) (Typing.var 0))
-    (isUniverseAt Tower.zero) (Tower.Join.sorts _ _) lowered_zero
+    (isUniverseAt Tower.zero) (LevelTower.Join.sorts _ _) lowered_zero
 
 theorem iterType_formed : Typing R .nil iterType U1 :=
   pi_at (raise numT_typed) (pi_at U0_typed (pi_at (pi_at (raise (Typing.var 0)) U0_typed)
@@ -540,7 +540,7 @@ theorem lookup_holdsStep : R.constantType holdsStepName = some holdsStepType :=
   package_lookup (target_none_of_reader (by decide) (by decide) rfl (by decide) rfl) rfl
 
 /-- A package constant at its declared type, in any context. -/
-theorem declared_typed {name : DeclName} {type : Tower.Tm 0} {level : LevelExpr}
+theorem declared_typed {name : DeclName} {type : Tower.Tm 0} {level : LevelExpr Nat}
     (lookup : R.constantType name = some type) (formed : Typing R .nil type (sortTm level))
     {n : Nat} (Γ : Tower.Ctx n) : Typing R Γ (.const name) (liftClosed type) :=
   .const lookup formed (isUniverseAt level)
@@ -931,7 +931,7 @@ def composeTyped : TypedEquation composeEquation where
     exact CertifiedTransforms.iter_successor_typed_cumulative
       (A := .var 5) (P := .app (.var 5) (.var 0))
       (sigma_at (Typing.var 5) (Typing.appElim (B := U0) (Typing.var 5) (Typing.var 0)))
-      (isUniverseAt Tower.zero) (Tower.Join.sorts _ _) lowered_zero
+      (isUniverseAt Tower.zero) (LevelTower.Join.sorts _ _) lowered_zero
       (Typing.var 3) (Typing.var 1) (Typing.var 0) b2
 
 abbrev iterSucTelescope : Tower.Ctx 6 :=
@@ -962,7 +962,7 @@ def iterSucTyped : TypedEquation iterSucEquation where
     exact CertifiedTransforms.iter_successor_typed_cumulative
       (A := .var 4) (P := .app (.var 4) (.var 0))
       (sigma_at (Typing.var 4) (Typing.appElim (B := U0) (Typing.var 4) (Typing.var 0)))
-      (isUniverseAt Tower.zero) (Tower.Join.sorts _ _) lowered_zero
+      (isUniverseAt Tower.zero) (LevelTower.Join.sorts _ _) lowered_zero
       (Typing.var 2) (Typing.var 1) (Typing.var 0) c6
 
 /-! ### Returning the iterator at a carrier -/

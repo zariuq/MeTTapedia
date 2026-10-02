@@ -39,46 +39,46 @@ open Presentation.Declaration.ComputationAuthority
 open Presentation.Declaration.IndexedFamily
 
 /-- Universe of judgments described by one internal authority signature. -/
-def judgmentLevel : LevelExpr := .param 0
+def judgmentLevel : LevelExpr Nat := .param 0
 
 /-- The four payload families are independently universe-polymorphic.  A
 common upper level is therefore an instance of this signature, not a ceiling
 built into it. -/
-def evidenceLevel : LevelExpr := .param 1
-def obstructionLevel : LevelExpr := .param 2
-def boundaryLevel : LevelExpr := .param 3
-def frontierLevel : LevelExpr := .param 4
+def evidenceLevel : LevelExpr Nat := .param 1
+def obstructionLevel : LevelExpr Nat := .param 2
+def boundaryLevel : LevelExpr Nat := .param 3
+def frontierLevel : LevelExpr Nat := .param 4
 
 /-- The universe containing a family `J → U payload`. -/
-def familyLevel (payload : LevelExpr) : LevelExpr :=
+def familyLevel (payload : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (.succ payload)
 
 /-- The universe containing the complete outcome signature. -/
-def boundaryFrontierLevel : LevelExpr :=
+def boundaryFrontierLevel : LevelExpr Nat :=
   .max (familyLevel boundaryLevel) (familyLevel frontierLevel)
 
-def obstructionTailLevel : LevelExpr :=
+def obstructionTailLevel : LevelExpr Nat :=
   .max (familyLevel obstructionLevel) boundaryFrontierLevel
 
-def familyBundleLevel : LevelExpr :=
+def familyBundleLevel : LevelExpr Nat :=
   .max (familyLevel evidenceLevel) obstructionTailLevel
 
-def signatureLevel : LevelExpr :=
+def signatureLevel : LevelExpr Nat :=
   .max (.succ judgmentLevel) familyBundleLevel
 
 /-- A type-valued payload family over a judgment type. -/
-def familyType (payload : LevelExpr) (judgmentType : Tower.Tm n) :
+def familyType (payload : LevelExpr Nat) (judgmentType : Tower.Tm n) :
     Tower.Tm n :=
   .pi judgmentType (sortTm payload)
 
 @[simp] theorem rename_familyType (renameMap : Ren n m)
-    (payload : LevelExpr) (judgmentType : Tower.Tm n) :
+    (payload : LevelExpr Nat) (judgmentType : Tower.Tm n) :
     Presentation.rename renameMap (familyType payload judgmentType) =
       familyType payload (Presentation.rename renameMap judgmentType) :=
   rfl
 
 @[simp] theorem subst_familyType (substitution : Sub Tower.Head n m)
-    (payload : LevelExpr) (judgmentType : Tower.Tm n) :
+    (payload : LevelExpr Nat) (judgmentType : Tower.Tm n) :
     Presentation.subst substitution (familyType payload judgmentType) =
       familyType payload (Presentation.subst substitution judgmentType) :=
   rfl
@@ -86,7 +86,7 @@ def familyType (payload : LevelExpr) (judgmentType : Tower.Tm n) :
 /-- `J → U payload` is itself a type in the predicted cumulative
 universe. -/
 theorem familyType_hasType {context : Tower.Ctx n}
-    (payload : LevelExpr) {judgmentType : Tower.Tm n}
+    (payload : LevelExpr Nat) {judgmentType : Tower.Tm n}
     (judgmentTyping : Tower.HasType context judgmentType
       (sortTm judgmentLevel)) :
     Tower.HasType context (familyType payload judgmentType)
@@ -158,8 +158,8 @@ theorem outcomeSignatureType_hasType :
       (sortTm signatureLevel) := by
   unfold outcomeSignatureType signatureLevel
   apply Presentation.HasType.sigmaForm
-      (Presentation.HasType.headType (Tower.HeadTyping.sort judgmentLevel))
-      (Tower.IsUniverse.sort (.succ judgmentLevel))
+      (Presentation.HasType.headType (LevelTower.HeadTyping.sort judgmentLevel))
+      (LevelTower.IsUniverse.sort (.succ judgmentLevel))
   · exact outcomeSignatureBody_hasType
   · exact .sort familyBundleLevel
   · exact .sorts (.succ judgmentLevel) familyBundleLevel
@@ -188,10 +188,10 @@ theorem parameterSignatureValue_hasType :
 /-! ## The intrinsic indexed outcome family -/
 
 /-- Elimination may target an independently chosen universe. -/
-def motiveLevel : LevelExpr := .param 5
+def motiveLevel : LevelExpr Nat := .param 5
 
 /-- The smallest universe containing all four outcome payloads. -/
-def outcomeLevel : LevelExpr :=
+def outcomeLevel : LevelExpr Nat :=
   .max evidenceLevel
     (.max obstructionLevel (.max boundaryLevel frontierLevel))
 
@@ -752,7 +752,7 @@ theorem signatureFrontier_hasType {rules : Rules Tower.Head}
 
 theorem familyApp_hasType {rules : Rules Tower.Head}
     {context : Tower.Ctx n}
-    {payload : LevelExpr} {judgmentType family judgment : Tower.Tm n}
+    {payload : LevelExpr Nat} {judgmentType family judgment : Tower.Tm n}
     (familyTyping : Presentation.HasType rules context family
       (familyType payload judgmentType))
     (judgmentTyping : Presentation.HasType rules context judgment judgmentType) :
@@ -1109,10 +1109,10 @@ theorem outcomeJudgmentVarInSJW_hasType (payloadFamily : Tower.Tm 1) :
     (extension := .app (Presentation.rename wk payloadFamily) (.var 0))
   simpa [outcomeContextSJW, Presentation.rename, wk] using weakened
 
-def outcomeBodyLevel : LevelExpr :=
+def outcomeBodyLevel : LevelExpr Nat :=
   .max judgmentLevel (.succ outcomeLevel)
 
-def outcomeDeclarationLevel : LevelExpr :=
+def outcomeDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel outcomeBodyLevel
 
 /-- `Outcome` is a genuine family former: after a first-class signature and
@@ -1134,19 +1134,19 @@ theorem outcomeType_hasType :
   · exact .sort outcomeBodyLevel
   · exact .sorts signatureLevel outcomeBodyLevel
 
-def constructorWitnessLevel (payload : LevelExpr) : LevelExpr :=
+def constructorWitnessLevel (payload : LevelExpr Nat) : LevelExpr Nat :=
   .max payload outcomeLevel
 
-def constructorBodyLevel (payload : LevelExpr) : LevelExpr :=
+def constructorBodyLevel (payload : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (constructorWitnessLevel payload)
 
-def constructorDeclarationLevel (payload : LevelExpr) : LevelExpr :=
+def constructorDeclarationLevel (payload : LevelExpr Nat) : LevelExpr Nat :=
   .max signatureLevel (constructorBodyLevel payload)
 
 /-- Formation is uniform in the payload family.  This theorem is the
 mathematical core shared by all four authority outcomes; the named
 constructors below differ only in which projection they retain. -/
-theorem constructorAtSignatureType_hasType (payload : LevelExpr)
+theorem constructorAtSignatureType_hasType (payload : LevelExpr Nat)
     {payloadFamily : Tower.Tm 1}
     (payloadTyping : IntrinsicHasType outcomeContextS payloadFamily
       (familyType payload (signatureJudgment (.var 0)))) :
@@ -1284,10 +1284,10 @@ theorem outcomeMotiveType_asAtSignature :
 def outcomeContextSJO : Tower.Ctx 3 :=
   .snoc outcomeContextSJ (outcomeApp (.var 1) (.var 0))
 
-def outcomeMotiveInnerLevel : LevelExpr :=
+def outcomeMotiveInnerLevel : LevelExpr Nat :=
   .max outcomeLevel (.succ motiveLevel)
 
-def outcomeMotiveTypeLevel : LevelExpr :=
+def outcomeMotiveTypeLevel : LevelExpr Nat :=
   .max judgmentLevel outcomeMotiveInnerLevel
 
 /-- A motive may depend on both the judgment and the exact constructor of
@@ -1467,15 +1467,15 @@ def outcomeCaseAtSignatureType (constructor : DeclName)
         (.app (.var 2) (.var 1))
         (outcomeConstructorApp constructor (.var 3) (.var 1) (.var 0))))
 
-def outcomeCaseWitnessLevel (payload : LevelExpr) : LevelExpr :=
+def outcomeCaseWitnessLevel (payload : LevelExpr Nat) : LevelExpr Nat :=
   .max payload motiveLevel
 
-def outcomeCaseLevel (payload : LevelExpr) : LevelExpr :=
+def outcomeCaseLevel (payload : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (outcomeCaseWitnessLevel payload)
 
 /-- Every branch has one common dependent shape.  The payload projection and
 constructor typing receipt are the only branch-specific inputs. -/
-theorem outcomeCaseAtSignatureType_hasType (payload : LevelExpr)
+theorem outcomeCaseAtSignatureType_hasType (payload : LevelExpr Nat)
     {constructor : DeclName} {payloadFamily : Tower.Tm 2}
     (payloadTyping : IntrinsicHasType outcomeContextSM payloadFamily
       (familyType payload (signatureJudgment (.var 1))))
@@ -1659,10 +1659,10 @@ theorem outcomeVarInSMJO_hasType :
     decide
   simpa only [lookupEquality] using variableTyping
 
-def outcomeEliminateInnerLevel : LevelExpr :=
+def outcomeEliminateInnerLevel : LevelExpr Nat :=
   .max outcomeLevel motiveLevel
 
-def outcomeEliminateResultLevel : LevelExpr :=
+def outcomeEliminateResultLevel : LevelExpr Nat :=
   .max judgmentLevel outcomeEliminateInnerLevel
 
 /-- Once all four branches are available, elimination remains dependent on
@@ -1762,22 +1762,22 @@ theorem outcomeEliminateResultTypeInSMEROI_hasType :
   simpa [outcomeContextSME, outcomeContextSMER, outcomeContextSMERO,
     outcomeContextSMEROI, sortTm, Presentation.rename] using fourth
 
-def outcomeAfterIncompleteLevel : LevelExpr :=
+def outcomeAfterIncompleteLevel : LevelExpr Nat :=
   .max (outcomeCaseLevel frontierLevel) outcomeEliminateResultLevel
 
-def outcomeAfterOutsideLevel : LevelExpr :=
+def outcomeAfterOutsideLevel : LevelExpr Nat :=
   .max (outcomeCaseLevel boundaryLevel) outcomeAfterIncompleteLevel
 
-def outcomeAfterRefutedLevel : LevelExpr :=
+def outcomeAfterRefutedLevel : LevelExpr Nat :=
   .max (outcomeCaseLevel obstructionLevel) outcomeAfterOutsideLevel
 
-def outcomeAfterEstablishedLevel : LevelExpr :=
+def outcomeAfterEstablishedLevel : LevelExpr Nat :=
   .max (outcomeCaseLevel evidenceLevel) outcomeAfterRefutedLevel
 
-def outcomeEliminateBodyLevel : LevelExpr :=
+def outcomeEliminateBodyLevel : LevelExpr Nat :=
   .max outcomeMotiveTypeLevel outcomeAfterEstablishedLevel
 
-def outcomeEliminateDeclarationLevel : LevelExpr :=
+def outcomeEliminateDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel outcomeEliminateBodyLevel
 
 theorem outcomeEliminateBodyType_hasType :

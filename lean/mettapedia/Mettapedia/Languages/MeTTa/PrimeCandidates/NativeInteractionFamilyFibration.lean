@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionFibration
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ResourceWave
 import Mathlib.Data.List.FinRange
 
 /-!
@@ -61,6 +62,14 @@ def toMatching (separation : FamilySeparation Ground events source) :
   frame := separation.frame
   source_eq := separation.source_eq
 
+/-- The existing common resource contract admits this exact event family.
+The endpoint and purse multiplicities come from its retained matching. -/
+theorem resourceEnabled [DecidableEq Ground]
+    (separation : FamilySeparation Ground events source) :
+    (costResourceSystem Ground).StepEnables source
+      (events.map CostedEvent.resourceEntry) :=
+  separation.toMatching.resourceEnabled
+
 def target (separation : FamilySeparation Ground events source) :
     CostConfig Ground :=
   separation.toMatching.target
@@ -68,6 +77,36 @@ def target (separation : FamilySeparation Ground events source) :
 def receipt (separation : FamilySeparation Ground events source) :
     Multiset (SpendEvent Ground (CostName Ground)) :=
   separation.toMatching.receipt
+
+/-- Resource execution and the candidate's existing schedule have one
+target, including the untouched source frame. -/
+theorem resourceTarget [DecidableEq Ground]
+    (separation : FamilySeparation Ground events source) :
+    (costResourceSystem Ground).waveTarget source
+      (events.map CostedEvent.resourceEntry) = separation.target :=
+  separation.toMatching.resourceTarget
+
+/-- Every occurrence permutation also executes in the common resource
+semantics. This transports execution authority, not just a cost readout. -/
+theorem permutation_resourceFires [DecidableEq Ground]
+    (separation : FamilySeparation Ground events source)
+    {ordering : List (CostedEvent Ground)} (permutation : events.Perm ordering) :
+    (costResourceSystem Ground).Fires (ordering.map CostedEvent.resourceEntry)
+      source separation.target := by
+  rw [← separation.resourceTarget]
+  exact ((costResourceSystem Ground).step_orders_meet
+    (permutation.map CostedEvent.resourceEntry) separation.resourceEnabled).2
+
+/-- Obtain the existing candidate certificate from the actual finite
+resource-wave producer. Deferred occurrences remain in that producer's
+second list; this construction neither prunes them nor asserts closure. -/
+def ofSelectedWave [DecidableEq Ground] (source : CostConfig Ground)
+    (candidates : List (CostedEvent Ground))
+    (nonempty : (CostResourceWave.select source candidates).1 ≠ []) :
+    FamilySeparation Ground (CostResourceWave.select source candidates).1 source where
+  frame := (CostResourceWave.matching source candidates).frame
+  source_eq := (CostResourceWave.matching source candidates).source_eq
+  nonempty := nonempty
 
 @[simp] theorem receipt_card
     (separation : FamilySeparation Ground events source) :
@@ -513,6 +552,36 @@ theorem contested_has_no_family_separation :
       False := by
   intro separation
   exact contested_has_no_parallel_separation separation.toPair
+
+/-- The resource producer admits the existing same-channel family without
+introducing a channel-inequality condition. -/
+theorem selected_same_channel_workSpan :
+    (FamilySeparation.ofSelectedWave source [leftEvent, rightEvent]
+      (by decide +kernel)).schedule.workSpan = ⟨2, 1⟩ := by
+  rw [FamilySeparation.schedule_workSpan]
+  rfl
+
+/-- A resource conflict selects one firing and retains the other as an
+alternative; it does not license the original two-event family. -/
+theorem contested_selection_retains_alternative :
+    CostResourceWave.select contestedSource [leftEvent, leftCompetitor] =
+      ([leftEvent], [leftCompetitor]) ∧
+      ¬ Nonempty (FamilySeparation Ground [leftEvent, leftCompetitor] contestedSource) := by
+  refine ⟨rfl, ?_⟩
+  rintro ⟨separation⟩
+  exact contested_has_no_family_separation separation
+
+/-- Repeated equal events retain three positional occurrences in the
+selected schedule and its receipt. -/
+theorem selected_repeated_occurrences :
+    let separation := FamilySeparation.ofSelectedWave repeatedSource
+      [leftEvent, rightEvent, leftEvent] (by decide +kernel)
+    separation.schedule.workSpan = ⟨3, 1⟩ ∧ separation.receipt.card = 3 := by
+  constructor
+  · rw [FamilySeparation.schedule_workSpan]
+    rfl
+  · rw [FamilySeparation.receipt_card]
+    rfl
 
 end Examples
 

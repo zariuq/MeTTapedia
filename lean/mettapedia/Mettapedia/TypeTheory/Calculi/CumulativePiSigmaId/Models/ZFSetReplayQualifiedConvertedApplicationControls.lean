@@ -34,7 +34,7 @@ open ZFSetUniverseClosure (CofinalInaccessibles)
 
 universe u
 
-local instance : DecidableRel Tower.rules.headEq := Tower.instDecidableHeadEq
+local instance : DecidableRel Tower.rules.headEq := LevelTower.instDecidableHeadEq
 
 private abbrev ProductLevel : Tower.Head :=
   .sort (.max (.succ (.max Tower.zero (.succ Tower.zero)))
@@ -97,10 +97,10 @@ theorem converted_computed_application_returns_input
       context contextCode (valid h) context_checked (context_assembles h constants)
       ProductLevel SourceHead TargetHead SourceLevel TargetLevel
       (.head TargetHead) (.var 0) computedArgument productFormation bodyCode
-      computedArgumentCode (Tower.IsUniverse.sort _)
+      computedArgumentCode (LevelTower.IsUniverse.sort _)
       product_formation_checked body_checked computed_argument_checked
-      computed_argument_qualified (Tower.HeadTyping.sort _)
-      (Tower.HeadTyping.sort _) (Tower.IsUniverse.sort _) heads_related
+      computed_argument_qualified (LevelTower.HeadTyping.sort _)
+      (LevelTower.HeadTyping.sort _) (LevelTower.IsUniverse.sort _) heads_related
   have headInst : inst0 computedArgument (.head TargetHead) =
       (.head TargetHead : Tower.Tm 1) := rfl
   refine ⟨result, ?_, ?_, ?_⟩
@@ -202,10 +202,10 @@ theorem dependent_converted_application_returns_proof
       context contextCode (valid h) context_checked (context_assembles h constants)
       ProductLevel SourceHead TargetHead SourceLevel TargetLevel
       dependentFamily proofBody computedArgument dependentProductFormation
-      proofBodyCode computedArgumentCode (Tower.IsUniverse.sort _)
+      proofBodyCode computedArgumentCode (LevelTower.IsUniverse.sort _)
       dependent_formation_checked proof_body_checked computed_argument_checked
-      computed_argument_qualified (Tower.HeadTyping.sort _)
-      (Tower.HeadTyping.sort _) (Tower.IsUniverse.sort _) heads_related
+      computed_argument_qualified (LevelTower.HeadTyping.sort _)
+      (LevelTower.HeadTyping.sort _) (LevelTower.IsUniverse.sort _) heads_related
   refine ⟨result, ?_, ?_, ?_⟩
   · change check Tower.rules (headStepCheck Tower.rules noRootDecode) context
         (.app (.lam proofBody) computedArgument)

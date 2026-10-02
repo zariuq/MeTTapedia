@@ -134,7 +134,7 @@ def codomainCode (interpretation : SharedJudgmentInterpretation.Data assembly C)
     (universes : SharedJudgmentUniverseInterpretation.Operations C)
     (stable : universes.universe.SubstitutionStable)
     {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {domain : Tower.Tm n}
-    {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)} {lower upper : LevelExpr}
+    {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)} {lower upper : LevelExpr Nat}
     (domainCode : C.Tm (interpretation.ctx context) (universes.universe.univ (interpretation.ctx context) lower))
     (nativeCode : C.Tm (interpretation.ctx ⟨.snoc context.raw domain, extendedFormed⟩)
       (universes.universe.univ (interpretation.ctx ⟨.snoc context.raw domain, extendedFormed⟩) upper))
@@ -149,7 +149,7 @@ def decodedFamily (interpretation : SharedJudgmentInterpretation.Data assembly C
     (stable : universes.universe.SubstitutionStable)
     {n : Nat} (context : SharedJudgmentInterpretation.Context assembly n) (domain : Tower.Tm n) (codomain : Tower.Tm (n + 1))
     {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)}
-    {lower upper : LevelExpr}
+    {lower upper : LevelExpr Nat}
     (domainCode : C.Tm (interpretation.ctx context) (universes.universe.univ (interpretation.ctx context) lower))
     (nativeCode : C.Tm (interpretation.ctx ⟨.snoc context.raw domain, extendedFormed⟩)
       (universes.universe.univ (interpretation.ctx ⟨.snoc context.raw domain, extendedFormed⟩) upper))
@@ -171,7 +171,7 @@ theorem decoded_family_meaning
     (decode : SharedJudgmentUniverseInterpretation.CodesDecode interpretation universes)
     {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)}
     {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)}
-    {lower upper : LevelExpr}
+    {lower upper : LevelExpr Nat}
     (domainAdmitted : Judgment assembly.rules context domain (sortTm lower))
     (codomainAdmitted : Judgment assembly.rules (.snoc context domain) codomain (sortTm upper))
     (domainCode : C.Tm (interpretation.ctx context) (universes.universe.univ (interpretation.ctx context) lower))
@@ -212,7 +212,7 @@ def PiCodeMeaning (interpretation : SharedJudgmentInterpretation.Data assembly C
     (universes : SharedJudgmentUniverseInterpretation.Operations C) : Prop :=
   ∀ (stable : universes.universe.SubstitutionStable)
     (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (domain : Tower.Tm n) (codomain : Tower.Tm (n + 1))
-    (lower upper : LevelExpr)
+    (lower upper : LevelExpr Nat)
     {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)}
     (domainCode : C.Tm (interpretation.ctx context)
       (universes.universe.univ (interpretation.ctx context) lower))
@@ -238,7 +238,7 @@ def SigmaCodeMeaning (interpretation : SharedJudgmentInterpretation.Data assembl
     (universes : SharedJudgmentUniverseInterpretation.Operations C) : Prop :=
   ∀ (stable : universes.universe.SubstitutionStable)
     (n : Nat) (context : SharedJudgmentInterpretation.Context assembly n) (domain : Tower.Tm n) (codomain : Tower.Tm (n + 1))
-    (lower upper : LevelExpr)
+    (lower upper : LevelExpr Nat)
     {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)}
     (domainCode : C.Tm (interpretation.ctx context)
       (universes.universe.univ (interpretation.ctx context) lower))
@@ -259,7 +259,7 @@ def SigmaCodeMeaning (interpretation : SharedJudgmentInterpretation.Data assembl
           (codomainCode interpretation universes stable domainCode nativeCode comparison))
 
 theorem family_admitted_at_sorts {n : Nat} {context : Tower.Ctx n}
-    {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {lower upper : LevelExpr}
+    {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {lower upper : LevelExpr Nat}
     (domainAdmitted : Judgment assembly.rules context domain (sortTm lower))
     (codomainAdmitted : Judgment assembly.rules (.snoc context domain) codomain (sortTm upper)) :
     FamilyAdmitted assembly context domain codomain :=
@@ -267,7 +267,7 @@ theorem family_admitted_at_sorts {n : Nat} {context : Tower.Ctx n}
     codomainAdmitted, .sort upper, .sorts lower upper⟩
 
 theorem pi_admitted {n : Nat} {context : Tower.Ctx n}
-    {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {lower upper : LevelExpr}
+    {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {lower upper : LevelExpr Nat}
     (domainAdmitted : Judgment assembly.rules context domain (sortTm lower))
     (codomainAdmitted : Judgment assembly.rules (.snoc context domain) codomain (sortTm upper)) :
     Judgment assembly.rules context (.pi domain codomain) (sortTm (.max lower upper)) :=
@@ -275,7 +275,7 @@ theorem pi_admitted {n : Nat} {context : Tower.Ctx n}
     codomainAdmitted.typing (.sort upper) (.sorts lower upper)⟩
 
 theorem sigma_admitted {n : Nat} {context : Tower.Ctx n}
-    {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {lower upper : LevelExpr}
+    {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)} {lower upper : LevelExpr Nat}
     (domainAdmitted : Judgment assembly.rules context domain (sortTm lower))
     (codomainAdmitted : Judgment assembly.rules (.snoc context domain) codomain (sortTm upper)) :
     Judgment assembly.rules context (.sigma domain codomain) (sortTm (.max lower upper)) :=
@@ -292,7 +292,7 @@ variable (interpretation : SharedJudgmentInterpretation.Data assembly C)
   (coverage : ComprehensionCoverage interpretation)
   {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)}
   {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)}
-  {lower upper : LevelExpr}
+  {lower upper : LevelExpr Nat}
   (domainAdmitted : Judgment assembly.rules context domain (sortTm lower))
   (codomainAdmitted : Judgment assembly.rules (.snoc context domain) codomain (sortTm upper))
   (domainCode : C.Tm (interpretation.ctx context) (universes.universe.univ (interpretation.ctx context) lower))
@@ -382,7 +382,7 @@ theorem admitted_family_codes
     (coverage : ComprehensionCoverage interpretation)
     {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {domain : Tower.Tm n} {codomain : Tower.Tm (n + 1)}
     {extendedFormed : ContextFormation assembly.rules (.snoc context.raw domain)}
-    {lower upper : LevelExpr}
+    {lower upper : LevelExpr Nat}
     (domainAdmitted : Judgment assembly.rules context domain (sortTm lower))
     (codomainAdmitted : Judgment assembly.rules (.snoc context domain) codomain (sortTm upper)) :
     ∃ (domainCode : C.Tm (interpretation.ctx context)
@@ -415,7 +415,7 @@ theorem mismatched_code_rejected
     (universes : SharedJudgmentUniverseInterpretation.Operations C)
     (decode : SharedJudgmentUniverseInterpretation.CodesDecode interpretation universes)
     (coverage : ComprehensionCoverage interpretation)
-    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {type : Tower.Tm n} {level : LevelExpr}
+    {n : Nat} {context : SharedJudgmentInterpretation.Context assembly n} {type : Tower.Tm n} {level : LevelExpr Nat}
     (admitted : Judgment assembly.rules context type (sortTm level))
     (code : C.Tm (interpretation.ctx context) (universes.universe.univ (interpretation.ctx context) level))
     (semanticType : C.Ty (interpretation.ctx context))
@@ -468,12 +468,12 @@ open SharedJudgmentUniverseInterpretation.TaggedFormation (formedContext)
 
 /-- The dependent family's native extension carries its actual formation,
 independently of every semantic code and comparison below. -/
-def variableExtension (level : LevelExpr) : SharedJudgmentInterpretation.Context assembly 3 :=
+def variableExtension (level : LevelExpr Nat) : SharedJudgmentInterpretation.Context assembly 3 :=
   .snoc (formedContext level) (.var 1) (.sort level) (.var 1) (.sort level)
 
 /-- The actual arbitrary native family `B x`, in `A : U_l, B : Pi x : A, U_l`.
 No closed or constant codomain restriction is made. -/
-theorem variable_family_admitted (level : LevelExpr) :
+theorem variable_family_admitted (level : LevelExpr Nat) :
     Judgment assembly.rules (NativeCumulativeFormationCoherenceBoundary.context level)
         (.var 1) (sortTm level) ∧
       Judgment assembly.rules (.snoc (NativeCumulativeFormationCoherenceBoundary.context level) (.var 1))
@@ -482,7 +482,7 @@ theorem variable_family_admitted (level : LevelExpr) :
   exact ⟨⟨formed, .var 1⟩, ⟨.snoc formed (.var 1) (.sort level),
     NativeCumulativeFormationCoherenceBoundary.family_application_formed assembly.declarations level⟩⟩
 
-theorem variable_pi_sigma_admitted (level : LevelExpr) :
+theorem variable_pi_sigma_admitted (level : LevelExpr Nat) :
     Judgment assembly.rules (NativeCumulativeFormationCoherenceBoundary.context level)
         (.pi (.var 1) (.app (.var 1) (.var 0))) (sortTm (.max level level)) ∧
       Judgment assembly.rules (NativeCumulativeFormationCoherenceBoundary.context level)
@@ -499,7 +499,7 @@ theorem variable_family_codes
     (stable : universes.universe.SubstitutionStable)
     (total : SharedJudgmentUniverseInterpretation.CodeTotal interpretation universes)
     (decode : SharedJudgmentUniverseInterpretation.CodesDecode interpretation universes)
-    (coverage : ComprehensionCoverage interpretation) (level : LevelExpr) :
+    (coverage : ComprehensionCoverage interpretation) (level : LevelExpr Nat) :
     ∃ (domainCode : C.Tm (interpretation.ctx (formedContext level))
         (universes.universe.univ (interpretation.ctx (formedContext level)) level))
       (nativeCode : C.Tm (interpretation.ctx (variableExtension level))
@@ -537,7 +537,7 @@ theorem variable_constructor_coherence
     (sigmaValues : SigmaCodeMeaning interpretation universes)
     (products : SharedJudgmentTypeInterpretation.PiFormationMeaning interpretation operations.products)
     (sums : SharedJudgmentTypeInterpretation.SigmaFormationMeaning interpretation operations.sums)
-    (level : LevelExpr) :
+    (level : LevelExpr Nat) :
     let context := formedContext (assembly := assembly) level
     let nativePi : Tower.Tm 2 := .pi (.var 1) (.app (.var 1) (.var 0))
     let nativeSigma : Tower.Tm 2 := .sigma (.var 1) (.app (.var 1) (.var 0))

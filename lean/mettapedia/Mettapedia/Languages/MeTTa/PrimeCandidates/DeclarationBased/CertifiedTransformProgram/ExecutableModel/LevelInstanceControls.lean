@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.LevelInstancesSound
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Inversion
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Inversion
 
 /-!
 # One term with two instances of identity elimination
@@ -101,7 +101,7 @@ theorem mixedTerm_eraseLevels : mixedTerm.mapConst eraseLevels = mixedTermWith j
 /-- The package at carrier level one of the transport control renames into the
 package with every instance: its identity elimination to the instance `jAt 1 0`,
 and it has no computation. -/
-theorem carrierRules_renames (lr : LevelExpr) :
+theorem carrierRules_renames (lr : LevelExpr Nat) :
     RulesRenaming carrierRules objectRulesInstances
       (instanceRenaming (.succ Tower.zero) Tower.zero lr) where
   headTyping := id
@@ -208,7 +208,7 @@ theorem wholeUse_typed : Typed objectRules mixedContext (wholeUse jName) U0 := b
   exact .appElim hUse hJ
 
 /-- The transport alone is typed in the package at carrier level one. -/
-theorem transportUse_typed_at (lr : LevelExpr) :
+theorem transportUse_typed_at (lr : LevelExpr Nat) :
     Typed (objectRulesAt (.succ Tower.zero) Tower.zero lr) mixedContext (transportUse jName)
       (.var 3) :=
   Typed.weaken (transportJ_typed_at lr)
@@ -350,19 +350,19 @@ theorem mixedContext_formed_tower : CtxFormed Tower.rules mixedContext := by
     ⟨_, .sort _, .idForm u0 (.sort _) (.var 1) (.var 0)⟩) ⟨_, .sort _, .var 2⟩) consumer
 
 /-- The context of the mixed term is formed in the package at every level. -/
-theorem mixedContext_formed_at (lu lw lr : LevelExpr) :
+theorem mixedContext_formed_at (lu lw lr : LevelExpr Nat) :
     CtxFormed (objectRulesAt lu lw lr) mixedContext :=
   ctxFormed_of_sub (tower_sub_objectRulesAt lu lw lr) mixedContext_formed_tower
 
 /-- The transport value model at the valuation sending every level parameter to
 `0`. -/
-abbrev vmodel₀ : ModelS.SModel Tower.Head Nat := vmodel fun _ => 0
+abbrev vmodel₀ : ModelSN.SNModel Tower.Head Nat := vmodel fun _ => 0
 
 /-- **A closed valid term is a value of its closed type**, realized by itself, in
 the closed world. -/
-theorem closedValue {a T : Tower.Tm 0} (valid : ModelS.ValidTmS vmodel₀ .nil a T) :
+theorem closedValue {a T : Tower.Tm 0} (valid : ModelSN.ValidTmS vmodel₀ .nil a T) :
     ∃ P, DenS vmodel₀.value World.closed T P ∧ P.rel a a ∧ (P.real a).mem a := by
-  have e : ModelS.EqSubstS vmodel₀ .nil World.closed (fun i => Fin.elim0 i)
+  have e : ModelSN.EqSubstS vmodel₀ .nil World.closed (fun i => Fin.elim0 i)
       (fun i => Fin.elim0 i) (fun i => Fin.elim0 i : Sub Tower.Head 0 0) := trivial
   obtain ⟨P, den, -, -⟩ := valid.1 e
   have h := valid.2 e den
@@ -372,10 +372,10 @@ theorem closedValue {a T : Tower.Tm 0} (valid : ModelS.ValidTmS vmodel₀ .nil a
 /-- Related valuations extend by a closed valid value. -/
 theorem eqSubstS_snoc {n : Nat} {Γ : Tower.Ctx n} {A : Tower.Tm n}
     {σ : Sub Tower.Head (n + 1) 0}
-    (rest : ModelS.EqSubstS vmodel₀ Γ World.closed (tailSub σ) (tailSub σ) (tailSub σ))
+    (rest : ModelSN.EqSubstS vmodel₀ Γ World.closed (tailSub σ) (tailSub σ) (tailSub σ))
     {T : Tower.Tm 0} (entry : Presentation.subst (tailSub σ) A = T)
-    (valid : ModelS.ValidTmS vmodel₀ .nil (σ 0) T) :
-    ModelS.EqSubstS vmodel₀ (.snoc Γ A) World.closed σ σ σ := by
+    (valid : ModelSN.ValidTmS vmodel₀ .nil (σ 0) T) :
+    ModelSN.EqSubstS vmodel₀ (.snoc Γ A) World.closed σ σ σ := by
   obtain ⟨P, den, rel, mem⟩ := closedValue valid
   refine ⟨rest, P, ?_, rel, mem⟩
   rw [entry]
@@ -384,11 +384,11 @@ theorem eqSubstS_snoc {n : Nat} {Γ : Tower.Ctx n} {A : Tower.Tm n}
 /-! ### Closed values -/
 
 /-- The object package is sound for the model at the valuation `0`. -/
-abbrev objectSound₀ : ModelS.TypedSoundS objectRules vmodel₀ := vmodel_soundS_objectRules _
+abbrev objectSound₀ : ModelSN.TypedSoundS objectRules vmodel₀ := vmodel_soundS_objectRules _
 
 theorem valid_of_typed {a T : Tower.Tm 0} (typed : Typed objectRules .nil a T) :
-    ModelS.ValidTmS vmodel₀ .nil a T :=
-  ModelS.Typed.validS objectSound₀ typed trivial
+    ModelSN.ValidTmS vmodel₀ .nil a T :=
+  ModelSN.Typed.validS objectSound₀ typed trivial
 
 /-- The inner type of the constant motive: `Π e : Id num 0 y. U0`. -/
 theorem constMotiveInner_typed :
@@ -437,7 +437,7 @@ def mixedValues : Sub Tower.Head 5 0 :=
 
 /-- The values are related valuations of the context of the mixed term. -/
 theorem mixedValuation :
-    ModelS.EqSubstS vmodel₀ mixedContext World.closed mixedValues mixedValues mixedValues :=
+    ModelSN.EqSubstS vmodel₀ mixedContext World.closed mixedValues mixedValues mixedValues :=
   eqSubstS_snoc (eqSubstS_snoc (eqSubstS_snoc (eqSubstS_snoc (eqSubstS_snoc trivial rfl
     (valid_of_typed num_typedO)) rfl (valid_of_typed num_typedO)) rfl
     (valid_of_typed (.reflIntro num_typedO))) rfl (valid_of_typed zero_typedO)) rfl
@@ -448,7 +448,7 @@ theorem mixedValuation :
 /-- The lowest universe is not hereditarily total. -/
 theorem u0_not_total :
     ¬ Shape vmodel₀.value (DenS vmodel₀.value) .total World.closed (U0 : Tower.Tm 0) U0 :=
-  fun t => t.total_not_head (vmodel_laws _).value .refl (Tower.IsUniverse.sort _)
+  fun t => t.total_not_head (vmodel_laws _).value .refl (LevelTower.IsUniverse.sort _)
 
 /-- The numbers are not hereditarily total: they do not relate `0` to `1`. -/
 theorem num_pack_not_total {X : Tower.Tm 0}
@@ -480,11 +480,11 @@ theorem constMotive_zero_red :
 valid argument. -/
 theorem total_step {X A : Tower.Tm 0} {B : Tower.Tm 1}
     (t : Shape vmodel₀.value (DenS vmodel₀.value) .total World.closed X X) (shape : X = .pi A B)
-    {a : Tower.Tm 0} (valid : ModelS.ValidTmS vmodel₀ .nil a A) :
+    {a : Tower.Tm 0} (valid : ModelSN.ValidTmS vmodel₀ .nil a A) :
     Shape vmodel₀.value (DenS vmodel₀.value) .total World.closed (inst0 a B) (inst0 a B) := by
   subst shape
   obtain ⟨P, den, rel, -⟩ := closedValue valid
-  exact ModelS.total_cod (vmodel_laws _) t .refl den rel
+  exact ModelSN.total_cod (vmodel_laws _) t .refl den rel
 
 /-- **The lowest type of identity elimination is not hereditarily total**: at the
 arguments `num, 0, λ _ _. num, 0, 0, refl 0` its result is `(λ _ _. num) 0 (refl 0)`,
@@ -505,7 +505,7 @@ theorem lowestJType_not_total :
 total, nor are their codomains at the valid points of the domain. -/
 theorem sigmaNum_facts {X : Tower.Tm 0} {Y : Tower.Tm 1}
     (le : Tm.sigma X Y = .sigma U0 numT ∨
-      ModelS.SLe vmodel₀ World.closed (.sigma X Y) (.sigma U0 numT)) :
+      ModelSN.SLe vmodel₀ World.closed (.sigma X Y) (.sigma U0 numT)) :
     ¬ Shape vmodel₀.value (DenS vmodel₀.value) .total World.closed X X ∧
       ∀ {P : ValueSide.Pack vmodel₀.value 0}, DenS vmodel₀.value World.closed X P →
         ∀ {a : Tower.Tm 0}, P.Val a →
@@ -514,7 +514,7 @@ theorem sigmaNum_facts {X : Tower.Tm 0} {Y : Tower.Tm 1}
   rcases le with same | le
   · obtain ⟨rfl, rfl⟩ := Tm.sigma.inj same
     exact ⟨u0_not_total, fun _ _ _ => num_not_total⟩
-  · rcases ModelS.SLe.sigma_right laws le .refl with t | ⟨A, B, red, dom, cod⟩
+  · rcases ModelSN.SLe.sigma_right laws le .refl with t | ⟨A, B, red, dom, cod⟩
     · have parts := t.total_sigma laws.value .refl
       exact absurd parts.domShape u0_not_total
     · obtain ⟨rfl, rfl⟩ := Tm.sigma.inj
@@ -526,20 +526,20 @@ theorem sigmaNum_facts {X : Tower.Tm 0} {Y : Tower.Tm 1}
 every level**: for all levels `lu lw lr`, the term
 `(useLowest J, J U0 A (λ Z _. Z) a B p)` whose two uses are the single
 `id:eliminate` of `objectRulesAt lu lw lr` is not typed at `Σ (T : U0). B`. -/
-theorem mixedTermOne_untypable (lu lw lr : LevelExpr) :
+theorem mixedTermOne_untypable (lu lw lr : LevelExpr Nat) :
     ¬ Typed (objectRulesAt lu lw lr) mixedContext (mixedTermWith jName jName) mixedType := by
   intro typing
   have sound := vmodel_soundS_at (fun _ => 0) lu lw lr
   have laws := sound.laws
   have facts := ValueSide.DenS.facts laws.value
-  have ctx := ModelS.CtxFormed.validS sound (mixedContext_formed_at lu lw lr)
+  have ctx := ModelSN.CtxFormed.validS sound (mixedContext_formed_at lu lw lr)
   have e := mixedValuation
   have atValues : ∀ {X Y : Tower.Tm 5}, TypeLe (objectRulesAt lu lw lr) mixedContext X Y →
       Presentation.subst mixedValues X = Presentation.subst mixedValues Y ∨
-        ModelS.SLe vmodel₀ World.closed (Presentation.subst mixedValues X)
+        ModelSN.SLe vmodel₀ World.closed (Presentation.subst mixedValues X)
           (Presentation.subst mixedValues Y) := by
     intro X Y le
-    rcases ModelS.TypeLe.structural sound ctx le with same | le'
+    rcases ModelSN.TypeLe.structural sound ctx le with same | le'
     · exact .inl (congrArg _ same)
     · exact .inr (le' e)
   -- generation: the pair, the whole use, and its consumer
@@ -550,18 +550,18 @@ theorem mixedTermOne_untypable (lu lw lr : LevelExpr) :
   -- the pair's type at the values
   obtain ⟨domNotTotal, codNotTotal⟩ := sigmaNum_facts (atValues le₁)
   -- the values of the uses
-  have valid₁ := ModelS.Typed.validS sound t₁ ctx
+  have valid₁ := ModelSN.Typed.validS sound t₁ ctx
   obtain ⟨P₁, den₁, -, -⟩ := valid₁.1 e
   have val₁ : P₁.Val (Presentation.subst mixedValues (wholeUse jName)) :=
     den₁.refl_left laws.value (valid₁.2 e den₁).1
-  have validJ := ModelS.Typed.validS sound tJ ctx
+  have validJ := ModelSN.Typed.validS sound tJ ctx
   obtain ⟨PJ, denJ, -, -⟩ := validJ.1 e
   have valJ : PJ.Val (.const jName) := denJ.refl_left laws.value (validJ.2 e denJ).1
   -- the consumer's domain is not hereditarily total's escape
   have piNotTotal : ¬ Shape vmodel₀.value (DenS vmodel₀.value) .total World.closed
       (Presentation.subst mixedValues (.pi A'' B'')) (Presentation.subst mixedValues (.pi A'' B'')) := by
     intro t
-    have tc := ModelS.total_cod laws t .refl denJ valJ
+    have tc := ModelSN.total_cod laws t .refl denJ valJ
     have tc' : Shape vmodel₀.value (DenS vmodel₀.value) .total World.closed
         (Presentation.subst mixedValues (inst0 (.const jName) B''))
         (Presentation.subst mixedValues (inst0 (.const jName) B'')) := by
@@ -572,17 +572,17 @@ theorem mixedTermOne_untypable (lu lw lr : LevelExpr) :
       exact domNotTotal tc'
     · exact domNotTotal (le.total laws tc')
   -- the declared type of `id:eliminate` in the package
-  obtain ⟨TJrest, TJshape⟩ : ∃ B, elimType (Tower.Head.sort lu) (Tower.Head.sort lw) =
-      Tm.pi (.head (Tower.Head.sort lu)) B := ⟨_, rfl⟩
-  obtain ⟨J₀rest, J₀shape⟩ : ∃ B, lowestJType = Tm.pi (.head (Tower.Head.sort Tower.zero)) B :=
+  obtain ⟨TJrest, TJshape⟩ : ∃ B, elimType (LevelTower.Head.sort lu) (LevelTower.Head.sort lw) =
+      Tm.pi (.head (LevelTower.Head.sort lu)) B := ⟨_, rfl⟩
+  obtain ⟨J₀rest, J₀shape⟩ : ∃ B, lowestJType = Tm.pi (.head (LevelTower.Head.sort Tower.zero)) B :=
     ⟨_, rfl⟩
   -- stage 1: the whole use includes identity elimination's type in its lowest type
   have toLowest : Presentation.subst mixedValues A'' = lowestJType ∨
-      ModelS.SLe vmodel₀ World.closed (Presentation.subst mixedValues A'') lowestJType := by
+      ModelSN.SLe vmodel₀ World.closed (Presentation.subst mixedValues A'') lowestJType := by
     rcases atValues le₃ with same | le
     · left
       exact (Tm.pi.inj same).1.symm
-    · rcases ModelS.SLe.pi_right laws le .refl with t | ⟨A, B, red, dom, -⟩
+    · rcases ModelSN.SLe.pi_right laws le .refl with t | ⟨A, B, red, dom, -⟩
       · exact absurd t piNotTotal
       · obtain ⟨rfl, rfl⟩ := Tm.pi.inj (ValueSide.whRed_of_whnf (pi_whnf laws.value.shape _ _) red)
         obtain ⟨D, hJ, hA, d⟩ := dom (Morph.id World.closed)
@@ -591,13 +591,13 @@ theorem mixedTermOne_untypable (lu lw lr : LevelExpr) :
           rw [rename_liftClosed, subst_liftClosed, TelescopeAbstraction.liftClosed_zero]
         simp only [rename_id, lowest] at hJ hA d
         exact .inr (.shape hA hJ rfl (d.symm facts))
-  have spJ := ModelS.Typed.spineFacts sound tJ ctx (c := jName) (args := []) rfl
+  have spJ := ModelSN.Typed.spineFacts sound tJ ctx (c := jName) (args := []) rfl
     (objectRulesAt_j lu lw lr) e
-  have jIncl : ModelS.SLe vmodel₀ World.closed (elimType (.sort lu) (.sort lw)) lowestJType := by
+  have jIncl : ModelSN.SLe vmodel₀ World.closed (elimType (.sort lu) (.sort lw)) lowestJType := by
     rcases spJ with ok | t
-    · have ok' : ModelS.SLe vmodel₀ World.closed (elimType (.sort lu) (.sort lw))
+    · have ok' : ModelSN.SLe vmodel₀ World.closed (elimType (.sort lu) (.sort lw))
           (Presentation.subst mixedValues A'') := by
-        simpa only [ModelS.SpineOK, TelescopeAbstraction.liftClosed_zero, List.map_nil] using ok
+        simpa only [ModelSN.SpineOK, TelescopeAbstraction.liftClosed_zero, List.map_nil] using ok
       rcases toLowest with same | le
       · rw [same] at ok'
         exact ok'
@@ -611,7 +611,7 @@ theorem mixedTermOne_untypable (lu lw lr : LevelExpr) :
   obtain ⟨D, hLu, hZero⟩ : ∃ D, DenS vmodel₀.value World.closed (.head (.sort lu)) D ∧
       DenS vmodel₀.value World.closed (.head (.sort Tower.zero)) D := by
     rw [J₀shape] at jIncl
-    rcases ModelS.SLe.pi_right laws jIncl .refl with t | ⟨A, B, red, dom, -⟩
+    rcases ModelSN.SLe.pi_right laws jIncl .refl with t | ⟨A, B, red, dom, -⟩
     · rw [← J₀shape] at t
       exact absurd t lowestJType_not_total
     · rw [TJshape] at red
@@ -620,16 +620,16 @@ theorem mixedTermOne_untypable (lu lw lr : LevelExpr) :
       simp only [rename_id] at h₁ h₂
       exact ⟨D, h₁, h₂⟩
   -- stage 3: the transport's first argument `U0` would be a value of `U0`
-  have spT := ModelS.Typed.spineFacts sound t₂ ctx (c := jName) rfl (objectRulesAt_j lu lw lr) e
+  have spT := ModelSN.Typed.spineFacts sound t₂ ctx (c := jName) rfl (objectRulesAt_j lu lw lr) e
   rcases spT with ok | t
   · obtain ⟨A, B, red, ⟨P, den, val, -⟩, -⟩ := ok
     rw [TelescopeAbstraction.liftClosed_zero, TJshape] at red
     obtain ⟨rfl, rfl⟩ := Tm.pi.inj (ValueSide.whRed_of_whnf (pi_whnf laws.value.shape _ _) red)
     obtain rfl := ValueSide.DenS.deterministic laws.value den hLu
-    rw [ModelS.DenS.sort_inv laws (Tower.IsUniverse.sort _) hZero] at val
-    obtain ⟨Q, interp, -, -⟩ := ModelS.universeAt.den val
+    rw [ModelSN.DenS.sort_inv laws (LevelTower.IsUniverse.sort _) hZero] at val
+    obtain ⟨Q, interp, -, -⟩ := ModelSN.universeAt.den val
     exact lt_irrefl _ (ValueSide.InterpAt.univ_inv laws.value interp .refl
-      (Tower.IsUniverse.sort _)).1
+      (LevelTower.IsUniverse.sort _)).1
   · rw [subst_inst0] at t
     exact codNotTotal den₁ val₁ t
 

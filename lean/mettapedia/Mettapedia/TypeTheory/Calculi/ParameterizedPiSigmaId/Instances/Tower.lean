@@ -5,16 +5,18 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.UniversePr
 # The cumulative tower
 
 The presentation with an uninterpreted legacy ground head and explicit predicative
-universe levels satisfies every hypothesis of the normalization model: its
-levels, evaluated under any valuation, form a level model; cumulativity is a
-preorder compatible with head equality whose joins are least upper bounds;
-head equality steps preserve typing; and it declares no constants and no root
-computations.
+universe levels, over any level order, satisfies every hypothesis of the
+normalization model: its levels, evaluated under any valuation, form a level
+model; cumulativity is a preorder compatible with head equality whose joins are
+least upper bounds; head equality steps preserve typing; and it declares no
+constants and no root computations.
 
 So for this presentation, with dependent functions and pairs, identity types
-and η for functions and pairs, the consequences hold without hypotheses:
-injectivity and discrimination of type formers, preservation of typing under
-reduction, and soundness of the conversion algorithm.
+and η for functions and pairs, the consequences hold without hypotheses and at
+every level order: injectivity and discrimination of type formers, preservation
+of typing under reduction, and soundness of the conversion algorithm. The tower
+over the natural numbers is one instance; the tower over the ordinal notations
+below ε₀ is another.
 -/
 
 set_option autoImplicit false
@@ -27,13 +29,15 @@ open Mettapedia.TypeTheory.UniverseLevel
 
 namespace TowerModel
 
+variable {L : Type} [LevelOrder L]
+
 /-- The level of a head under a valuation of the level parameters. -/
-def level (valuation : Nat → Nat) : Tower.Head → Nat
-  | .legacyGround => 0
+def level (valuation : Nat → L) : LevelTower.Head L → L
+  | .legacyGround => LevelOrder.bot
   | .sort l => LevelExpr.eval valuation l
 
 /-- The tower's levels under a valuation form a level model. -/
-def levels (valuation : Nat → Nat) : LevelModel Tower.rules ℕ where
+def levels (valuation : Nat → L) : LevelModel (LevelTower.rules L) L where
   level := level valuation
   successor := by
     intro u hu
@@ -121,41 +125,41 @@ def levels (valuation : Nat → Nat) : LevelModel Tower.rules ℕ where
     | sort l => exact .inl (.sort l)
 
 /-- The tower declares no constants. -/
-def roles : Roles Tower.Head := fun _ => .rigid
+def roles : Roles (LevelTower.Head L) := fun _ => .rigid
 
 /-- The tower has no root computations. -/
-theorem shape : RootShape Tower.rules roles where
+theorem shape : RootShape (LevelTower.rules L) roles where
   spine := fun step => step.elim
   deterministic := fun step => step.elim
 
 /-- The normalization setting of the tower under a valuation. -/
-def setting (valuation : Nat → Nat) : Setting Tower.Head ℕ where
-  R := Tower.rules
+def setting (valuation : Nat → L) : Setting (LevelTower.Head L) L where
+  R := LevelTower.rules L
   roles := roles
-  E := declarative Tower.rules
+  E := declarative (LevelTower.rules L)
   levels := levels valuation
   shape := shape
   constructors := .of_no_inductive fun _ _ role => by cases role
 
-theorem laws (valuation : Nat → Nat) :
+theorem laws (valuation : Nat → L) :
     (setting valuation).E.Laws (setting valuation).R (setting valuation).roles :=
   declarative_laws roles (levels valuation)
 
-theorem constants (valuation : Nat → Nat) : SemanticConstants (setting valuation) := by
+theorem constants (valuation : Nat → L) : SemanticConstants (setting valuation) := by
   intro name type u declared
   cases declared
 
 /-- **The facts about the weak-head forms of the package's types**, from the
 normalization model, in which its declared constants are semantic. -/
-theorem facts : FormFacts Tower.rules roles :=
-  .ofSemantic (S := setting fun _ => 0) (laws _) (constants _)
+theorem facts : FormFacts (LevelTower.rules L) roles :=
+  .ofSemantic (S := setting fun _ => (LevelOrder.bot : L)) (laws _) (constants _)
 
-theorem roots : RootPreserving Tower.rules := by
+theorem roots : RootPreserving (LevelTower.rules L) := by
   intro n Γ l r A _ step
   exact step.elim
 
 /-- Head equality steps preserve typing: equal levels are cumulative both ways. -/
-theorem heads : HeadPreserving Tower.rules := by
+theorem heads : HeadPreserving (LevelTower.rules L) := by
   intro n Γ h h' A same typing
   obtain ⟨u, headTyping, le⟩ := Typed.generation typing
   cases headTyping with
@@ -167,16 +171,15 @@ theorem heads : HeadPreserving Tower.rules := by
       cases h' with
       | legacyGround => exact same.elim
       | sort r =>
-          have raise : Tower.rules.cumulative (.sort (.succ r)) (.sort (.succ l)) := by
+          have raise : (LevelTower.rules L).cumulative (.sort (.succ r)) (.sort (.succ l)) := by
             intro ν
-            show LevelExpr.eval ν r + 1 ≤ LevelExpr.eval ν l + 1
-            have := same ν
-            omega
+            show LevelOrder.succ (LevelExpr.eval ν r) ≤ LevelOrder.succ (LevelExpr.eval ν l)
+            exact LevelOrder.succ_le_succ (le_of_eq (same ν).symm)
           exact Typed.subsume (.cumul (.headType (.sort r)) raise) le
 
 /-- Cumulativity of the tower is a preorder compatible with head equality, with
 least upper bounds. -/
-theorem algebra : CumulativeAlgebra Tower.rules where
+theorem algebra : CumulativeAlgebra (LevelTower.rules L) where
   trans := by
     intro u v w first second
     cases u with
@@ -237,59 +240,71 @@ section Consequences
 
 open TowerModel
 
-variable {n : Nat} {Γ : Ctx Tower.Head n}
+variable {L : Type} [LevelOrder L] {n : Nat} {Γ : Ctx (LevelTower.Head L) n}
 
 /-- Injectivity of dependent function types in the tower. -/
-theorem Tower.pi_injective {A A' : Tm Tower.Head n} {B B' : Tm Tower.Head (n + 1)}
-    (equal : TypeEq Tower.rules Γ (.pi A B) (.pi A' B')) (formed : CtxFormed Tower.rules Γ) :
-    TypeEq Tower.rules Γ A A' ∧ TypeEq Tower.rules (.snoc Γ A) B B' :=
+theorem LevelTower.pi_injective {A A' : Tm (LevelTower.Head L) n}
+    {B B' : Tm (LevelTower.Head L) (n + 1)}
+    (equal : TypeEq (LevelTower.rules L) Γ (.pi A B) (.pi A' B'))
+    (formed : CtxFormed (LevelTower.rules L) Γ) :
+    TypeEq (LevelTower.rules L) Γ A A' ∧ TypeEq (LevelTower.rules L) (.snoc Γ A) B B' :=
   TypeEq.pi_injective TowerModel.facts equal formed
 
 /-- Injectivity of dependent pair types in the tower. -/
-theorem Tower.sigma_injective {A A' : Tm Tower.Head n} {B B' : Tm Tower.Head (n + 1)}
-    (equal : TypeEq Tower.rules Γ (.sigma A B) (.sigma A' B'))
-    (formed : CtxFormed Tower.rules Γ) :
-    TypeEq Tower.rules Γ A A' ∧ TypeEq Tower.rules (.snoc Γ A) B B' :=
+theorem LevelTower.sigma_injective {A A' : Tm (LevelTower.Head L) n}
+    {B B' : Tm (LevelTower.Head L) (n + 1)}
+    (equal : TypeEq (LevelTower.rules L) Γ (.sigma A B) (.sigma A' B'))
+    (formed : CtxFormed (LevelTower.rules L) Γ) :
+    TypeEq (LevelTower.rules L) Γ A A' ∧ TypeEq (LevelTower.rules L) (.snoc Γ A) B B' :=
   TypeEq.sigma_injective TowerModel.facts equal formed
 
 /-- Injectivity of identity types in the tower. -/
-theorem Tower.id_injective {A A' a a' b b' : Tm Tower.Head n}
-    (equal : TypeEq Tower.rules Γ (.id A a b) (.id A' a' b'))
-    (formed : CtxFormed Tower.rules Γ) :
-    TypeEq Tower.rules Γ A A' ∧ Equal Tower.rules Γ a a' A ∧ Equal Tower.rules Γ b b' A :=
+theorem LevelTower.id_injective {A A' a a' b b' : Tm (LevelTower.Head L) n}
+    (equal : TypeEq (LevelTower.rules L) Γ (.id A a b) (.id A' a' b'))
+    (formed : CtxFormed (LevelTower.rules L) Γ) :
+    TypeEq (LevelTower.rules L) Γ A A' ∧ Equal (LevelTower.rules L) Γ a a' A ∧
+      Equal (LevelTower.rules L) Γ b b' A :=
   TypeEq.id_injective TowerModel.facts equal formed
 
 /-- Injectivity of heads in the tower: equal universes have equal levels under
 every valuation. -/
-theorem Tower.head_injective {h h' : Tower.Head}
-    (equal : TypeEq Tower.rules Γ (.head h) (.head h')) (formed : CtxFormed Tower.rules Γ) :
-    HeadSame Tower.rules h h' :=
+theorem LevelTower.head_injective {h h' : LevelTower.Head L}
+    (equal : TypeEq (LevelTower.rules L) Γ (.head h) (.head h'))
+    (formed : CtxFormed (LevelTower.rules L) Γ) :
+    HeadSame (LevelTower.rules L) h h' :=
   TypeEq.head_injective TowerModel.facts equal formed
 
 /-- Type formers of the tower are distinguished by typed equality. -/
-theorem Tower.former {A B : Tm Tower.Head n} (fA : Former (setting fun _ => 0) A)
-    (fB : Former (setting fun _ => 0) B)
-    (equal : TypeEq Tower.rules Γ A B) (formed : CtxFormed Tower.rules Γ) :
+theorem LevelTower.former {A B : Tm (LevelTower.Head L) n}
+    (fA : Former (setting fun _ => (LevelOrder.bot : L)) A)
+    (fB : Former (setting fun _ => (LevelOrder.bot : L)) B)
+    (equal : TypeEq (LevelTower.rules L) Γ A B) (formed : CtxFormed (LevelTower.rules L) Γ) :
     fA.kind = fB.kind :=
-  Reducible.former (S := setting fun _ => 0) (laws _) (constants _) fA fB equal formed
+  Reducible.former (S := setting fun _ => (LevelOrder.bot : L)) (laws _) (constants _) fA fB
+    equal formed
 
 /-- Reduction of the tower preserves typing and is a typed equality. -/
-theorem Tower.reduces_preserve {t t' T : Tm Tower.Head n} (formed : CtxFormed Tower.rules Γ)
-    (red : Reduces Tower.rules t t') (typing : Typed Tower.rules Γ t T) :
-    Typed Tower.rules Γ t' T ∧ Equal Tower.rules Γ t t' T :=
-  Reduces.preserve (S := setting fun _ => 0) TowerModel.facts roots heads formed red typing
+theorem LevelTower.reduces_preserve {t t' T : Tm (LevelTower.Head L) n}
+    (formed : CtxFormed (LevelTower.rules L) Γ)
+    (red : Reduces (LevelTower.rules L) t t') (typing : Typed (LevelTower.rules L) Γ t T) :
+    Typed (LevelTower.rules L) Γ t' T ∧ Equal (LevelTower.rules L) Γ t t' T :=
+  Reduces.preserve (S := setting fun _ => (LevelOrder.bot : L)) TowerModel.facts roots heads
+    formed red typing
 
 /-- Soundness of the conversion algorithm for the tower. -/
-theorem Tower.algorithm_sound {st : AlgorithmStatement Tower.Head}
-    (derivation : Algorithm Tower.rules st) : AlgorithmSound (setting fun _ => 0) st :=
-  Algorithm.sound (S := setting fun _ => 0) TowerModel.facts roots heads algebra derivation
+theorem LevelTower.algorithm_sound {st : AlgorithmStatement (LevelTower.Head L)}
+    (derivation : Algorithm (LevelTower.rules L) st) :
+    AlgorithmSound (setting fun _ => (LevelOrder.bot : L)) st :=
+  Algorithm.sound (S := setting fun _ => (LevelOrder.bot : L)) TowerModel.facts roots heads
+    algebra derivation
 
 /-- Two terms of a type that the conversion algorithm relates are equal. -/
-theorem Tower.algorithm_compare_sound {a b T : Tm Tower.Head n}
-    (derivation : Algorithm Tower.rules (.compare Γ a b T)) (formed : CtxFormed Tower.rules Γ)
-    (ta : Typed Tower.rules Γ a T) (tb : Typed Tower.rules Γ b T) :
-    Equal Tower.rules Γ a b T :=
-  Tower.algorithm_sound derivation formed ta tb
+theorem LevelTower.algorithm_compare_sound {a b T : Tm (LevelTower.Head L) n}
+    (derivation : Algorithm (LevelTower.rules L) (.compare Γ a b T))
+    (formed : CtxFormed (LevelTower.rules L) Γ)
+    (ta : Typed (LevelTower.rules L) Γ a T) (tb : Typed (LevelTower.rules L) Γ b T) :
+    Equal (LevelTower.rules L) Γ a b T :=
+  LevelTower.algorithm_sound derivation formed ta tb
 
 end Consequences
 

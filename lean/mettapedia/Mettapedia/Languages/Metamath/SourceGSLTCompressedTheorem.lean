@@ -702,7 +702,7 @@ theorem CompressedTheoremStep.toSupportedDeclarative
     {bodyWords : List (List UInt8)}
     (step : CompressedTheoremStep before after label formula
       explicitHeaderLabels bodyWords) :
-    SupportedProvable
+    FrameDerivable
       (sourceOperationalDatabase before.toSourcePrefix)
       (sourceOperationalCallerFrame before.toSourcePrefix)
       (exprToFormula
@@ -729,7 +729,7 @@ theorem CompressedTheoremStep.toSemanticProvable
     {bodyWords : List (List UInt8)}
     (step : CompressedTheoremStep before after label formula
       explicitHeaderLabels bodyWords) :
-    Metamath.Spec.Semantic.Provable
+    Metamath.Spec.Declarative.Provable
       (dbToAxioms
         (sourceOperationalDatabase before.toSourcePrefix))
       (frameToContext
@@ -738,7 +738,7 @@ theorem CompressedTheoremStep.toSemanticProvable
         (varMapOfFrame
           (sourceOperationalCallerFrame before.toSourcePrefix))
         (operationalExpr formula)) := by
-  exact step.toSupportedDeclarative.toSemantic
+  exact step.toSupportedDeclarative.toDeclarative
 
 /-- Negative boundary: local declaration effects cannot witness compressed
 theorem verification. -/

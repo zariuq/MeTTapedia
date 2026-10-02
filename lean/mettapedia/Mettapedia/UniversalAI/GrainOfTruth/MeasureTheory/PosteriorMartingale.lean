@@ -21,12 +21,11 @@ namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale
 
 open _root_.MeasureTheory _root_.ProbabilityTheory Filter
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.MixtureMeasure
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PolicyFactorization
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorProcess
-open Mettapedia.UniversalAI.ReflectiveOracles
 open scoped ENNReal NNReal MeasureTheory
 
 /-! ## Helpers: extending a finite prefix to a trajectory -/
@@ -98,45 +97,43 @@ theorem truncate_preimage_singleton_eq_cylinderSet (t : ℕ) (p : Fin t → Step
 
 /-! ## The posterior process as an ℝ-valued adapted process -/
 
-noncomputable abbrev ξ (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+noncomputable abbrev ξ (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) : Measure Trajectory :=
-  mixtureMeasureWithPolicy O M prior envs π h_stoch
+  mixtureMeasureWithPolicy prior envs π h_stoch
 
 /-- Real-valued posterior process (for martingale theory). -/
-noncomputable def posteriorReal (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (ν_idx : EnvironmentIndex) :
+noncomputable def posteriorReal
+    (prior : PriorOverClass) (envs : ℕ → Environment) (ν_idx : EnvironmentIndex) :
     ℕ → Trajectory → ℝ :=
-  fun t traj => (posteriorWeight O M prior envs ν_idx t traj).toReal
+  fun t traj => (posteriorWeight prior envs ν_idx t traj).toReal
 
-theorem posteriorReal_adapted (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (ν_idx : EnvironmentIndex) :
-    MeasureTheory.StronglyAdapted trajectoryFiltration (posteriorReal O M prior envs ν_idx) := by
+theorem posteriorReal_adapted
+    (prior : PriorOverClass) (envs : ℕ → Environment) (ν_idx : EnvironmentIndex) :
+    MeasureTheory.StronglyAdapted trajectoryFiltration (posteriorReal prior envs ν_idx) := by
   intro t
   -- We prove measurability by “depends only on the first t steps”.
   have h_meas :
-      @Measurable Trajectory ℝ (sigmaAlgebraUpTo t) _ (posteriorReal O M prior envs ν_idx t) := by
-    refine (measurable_wrt_filtration_iff (f := posteriorReal O M prior envs ν_idx t) t).2 ?_
+      @Measurable Trajectory ℝ (sigmaAlgebraUpTo t) _ (posteriorReal prior envs ν_idx t) := by
+    refine (measurable_wrt_filtration_iff (f := posteriorReal prior envs ν_idx t) t).2 ?_
     intro traj₁ traj₂ hprefix
     have hEq :
-        posteriorWeight O M prior envs ν_idx t traj₁ =
-          posteriorWeight O M prior envs ν_idx t traj₂ :=
-      posteriorWeight_adapted O M prior envs ν_idx t traj₁ traj₂ hprefix
+        posteriorWeight prior envs ν_idx t traj₁ =
+          posteriorWeight prior envs ν_idx t traj₂ :=
+      posteriorWeight_adapted prior envs ν_idx t traj₁ traj₂ hprefix
     simpa [posteriorReal] using congrArg ENNReal.toReal hEq
   -- Convert measurability to strong measurability in the filtration σ-algebra.
   apply Measurable.stronglyMeasurable
-  change @Measurable Trajectory ℝ (sigmaAlgebraUpTo t) _ (posteriorReal O M prior envs ν_idx t)
+  change @Measurable Trajectory ℝ (sigmaAlgebraUpTo t) _ (posteriorReal prior envs ν_idx t)
   exact h_meas
 
 /-! ## A simple bound: posterior weights are ≤ 1 -/
 
-theorem bayesianPosteriorWeight_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+theorem bayesianPosteriorWeight_le_one (prior : PriorOverClass) (envs : ℕ → Environment)
     (ν_idx : EnvironmentIndex) (h : History) :
-    bayesianPosteriorWeight O M prior envs ν_idx h ≤ 1 := by
+    bayesianPosteriorWeight prior envs ν_idx h ≤ 1 := by
   classical
   set numerator : ℝ≥0∞ := prior.weight ν_idx * historyProbability (envs ν_idx) h
-  set denom : ℝ≥0∞ := mixtureProbability O M prior envs h
+  set denom : ℝ≥0∞ := mixtureProbability prior envs h
   by_cases hden : denom = 0
   · -- posterior falls back to the prior
     simp [bayesianPosteriorWeight, denom, hden]
@@ -159,68 +156,65 @@ theorem bayesianPosteriorWeight_le_one (O : Oracle) (M : ReflectiveEnvironmentCl
       exact (ENNReal.div_le_iff hden_ne0 hden_ne_top).2 (by simpa [one_mul] using h_num_le)
     simpa [bayesianPosteriorWeight, numerator, denom, hden] using hdiv_le
 
-theorem posteriorReal_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+theorem posteriorReal_le_one (prior : PriorOverClass) (envs : ℕ → Environment)
     (ν_idx : EnvironmentIndex) (t : ℕ) (traj : Trajectory) :
-    posteriorReal O M prior envs ν_idx t traj ≤ 1 := by
+    posteriorReal prior envs ν_idx t traj ≤ 1 := by
   -- Reduce to the corresponding history and use monotonicity of `ENNReal.toReal`.
   have hle :
-      posteriorWeight O M prior envs ν_idx t traj ≤ (1 : ℝ≥0∞) := by
+      posteriorWeight prior envs ν_idx t traj ≤ (1 : ℝ≥0∞) := by
     simpa [posteriorWeight] using
-      bayesianPosteriorWeight_le_one (O := O) (M := M) (prior := prior) (envs := envs)
+      bayesianPosteriorWeight_le_one (prior := prior) (envs := envs)
         (ν_idx := ν_idx) (h := trajectoryToHistory traj t)
   have hmono :
-      (posteriorWeight O M prior envs ν_idx t traj).toReal ≤ (1 : ℝ≥0∞).toReal :=
+      (posteriorWeight prior envs ν_idx t traj).toReal ≤ (1 : ℝ≥0∞).toReal :=
     ENNReal.toReal_mono (by simp) hle
   simpa [posteriorReal] using hmono
 
 /-! ## Martingale proof via set-integral characterization -/
 
-theorem posteriorReal_integrable (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem posteriorReal_integrable (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ν_idx : EnvironmentIndex) :
-    ∀ t, Integrable (posteriorReal O M prior envs ν_idx t) (ξ O M prior envs π h_stoch) := by
+    ∀ t, Integrable (posteriorReal prior envs ν_idx t) (ξ prior envs π h_stoch) := by
   intro t
-  have hadp := posteriorReal_adapted (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ν_idx)
+  have hadp := posteriorReal_adapted (prior := prior) (envs := envs) (ν_idx := ν_idx)
   have hmeas :
-      AEStronglyMeasurable (posteriorReal O M prior envs ν_idx t) (ξ O M prior envs π h_stoch) := by
+      AEStronglyMeasurable (posteriorReal prior envs ν_idx t) (ξ prior envs π h_stoch) := by
     -- `σ(t) ≤ m0`, so adaptedness upgrades to strong measurability in the ambient measurable space.
     have hsm :
-        StronglyMeasurable (posteriorReal O M prior envs ν_idx t) :=
+        StronglyMeasurable (posteriorReal prior envs ν_idx t) :=
       (hadp t).mono (sigmaAlgebraUpTo_le t)
     exact hsm.aestronglyMeasurable
   have hbound :
-      ∀ᵐ traj ∂(ξ O M prior envs π h_stoch),
-        ‖posteriorReal O M prior envs ν_idx t traj‖ ≤ (1 : ℝ) := by
+      ∀ᵐ traj ∂(ξ prior envs π h_stoch),
+        ‖posteriorReal prior envs ν_idx t traj‖ ≤ (1 : ℝ) := by
     refine Filter.Eventually.of_forall (fun traj => ?_)
-    have h0 : 0 ≤ posteriorReal O M prior envs ν_idx t traj := ENNReal.toReal_nonneg
-    have h1 : posteriorReal O M prior envs ν_idx t traj ≤ 1 :=
-      posteriorReal_le_one (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ν_idx) t traj
+    have h0 : 0 ≤ posteriorReal prior envs ν_idx t traj := ENNReal.toReal_nonneg
+    have h1 : posteriorReal prior envs ν_idx t traj ≤ 1 :=
+      posteriorReal_le_one (prior := prior) (envs := envs) (ν_idx := ν_idx) t traj
     -- Since the value is nonnegative, `‖x‖ = x`.
     simpa [Real.norm_eq_abs, abs_of_nonneg h0] using h1
   -- Bounded by an integrable constant on a finite measure space.
-  have : Integrable (fun _ : Trajectory => (1 : ℝ)) (ξ O M prior envs π h_stoch) := by
+  have : Integrable (fun _ : Trajectory => (1 : ℝ)) (ξ prior envs π h_stoch) := by
     simp
   exact this.mono' hmeas hbound
 
 /-! ## Main theorem: the posterior is a martingale under `ξ^π` -/
 
-theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem posteriorReal_martingale (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ν_idx : EnvironmentIndex) :
     MeasureTheory.Martingale
-        (posteriorReal O M prior envs ν_idx)
+        (posteriorReal prior envs ν_idx)
         trajectoryFiltration
-        (ξ O M prior envs π h_stoch) := by
+        (ξ prior envs π h_stoch) := by
   -- We use the finite-measure characterization `martingale_of_setIntegral_eq_succ`.
   refine MeasureTheory.martingale_of_setIntegral_eq_succ
-      (μ := ξ O M prior envs π h_stoch) (𝒢 := trajectoryFiltration)
-      (posteriorReal_adapted (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ν_idx))
-      (posteriorReal_integrable (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+      (μ := ξ prior envs π h_stoch) (𝒢 := trajectoryFiltration)
+      (posteriorReal_adapted (prior := prior) (envs := envs) (ν_idx := ν_idx))
+      (posteriorReal_integrable (prior := prior) (envs := envs) (π := π)
         (h_stoch := h_stoch) (ν_idx := ν_idx)) ?_
   intro t s hs
   classical
-  let μξ : Measure Trajectory := ξ O M prior envs π h_stoch
+  let μξ : Measure Trajectory := ξ prior envs π h_stoch
   let μν : Measure Trajectory := environmentMeasureWithPolicy (envs ν_idx) π (h_stoch ν_idx)
 
   -- Any `σ(t)`-measurable set is a preimage under `truncate t`.
@@ -235,7 +229,7 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
   subst hs_eq
 
   -- Since the prefix space is finite, the event decomposes into a finite disjoint union of atoms.
-  letI : DecidablePred (fun p : Fin t → Step => p ∈ w) := Classical.decPred _
+  let : DecidablePred (fun p : Fin t → Step => p ∈ w) := Classical.decPred _
   let W : Finset (Fin t → Step) := Finset.univ.filter (fun p => p ∈ w)
   have h_union :
       truncate t ⁻¹' w =
@@ -275,21 +269,21 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
       simpa [atom, Set.mem_preimage, Set.mem_singleton_iff] using h₂
     exact hp_ne (by simpa [ht₁] using ht₂)
 
-  have h_integrable_t : ∀ p ∈ W, IntegrableOn (posteriorReal O M prior envs ν_idx t) (atom p) μξ := by
+  have h_integrable_t : ∀ p ∈ W, IntegrableOn (posteriorReal prior envs ν_idx t) (atom p) μξ := by
     intro _p _hpW
-    exact (posteriorReal_integrable (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+    exact (posteriorReal_integrable (prior := prior) (envs := envs) (π := π)
       (h_stoch := h_stoch) (ν_idx := ν_idx) t).integrableOn
   have h_integrable_succ :
-      ∀ p ∈ W, IntegrableOn (posteriorReal O M prior envs ν_idx (t + 1)) (atom p) μξ := by
+      ∀ p ∈ W, IntegrableOn (posteriorReal prior envs ν_idx (t + 1)) (atom p) μξ := by
     intro _p _hpW
-    exact (posteriorReal_integrable (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+    exact (posteriorReal_integrable (prior := prior) (envs := envs) (π := π)
       (h_stoch := h_stoch) (ν_idx := ν_idx) (t + 1)).integrableOn
 
   -- Core atom equality: on each prefix-atom, the set integral matches between `t` and `t+1`.
   have h_atom_eq :
       ∀ p ∈ W,
-        (∫ ω in atom p, posteriorReal O M prior envs ν_idx t ω ∂μξ) =
-          ∫ ω in atom p, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ := by
+        (∫ ω in atom p, posteriorReal prior envs ν_idx t ω ∂μξ) =
+          ∫ ω in atom p, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ := by
     intro p _hpW
     set h : History := prefixToHistory t p
     have h_wf : h.wellFormed := by
@@ -307,8 +301,8 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
     have h_atom_meas' : MeasurableSet (atom p) := by
       simpa [atom] using (truncate_measurable t) (measurableSet_singleton p)
     have hEqOn_t :
-        Set.EqOn (posteriorReal O M prior envs ν_idx t)
-          (fun _ => (bayesianPosteriorWeight O M prior envs ν_idx h).toReal) (atom p) := by
+        Set.EqOn (posteriorReal prior envs ν_idx t)
+          (fun _ => (bayesianPosteriorWeight prior envs ν_idx h).toReal) (atom p) := by
       intro traj htraj
       have htrunc : truncate t traj = p := by
         simpa [atom, Set.mem_preimage, Set.mem_singleton_iff] using htraj
@@ -318,28 +312,28 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
       simp [posteriorReal, posteriorWeight, ht]
 
     have hInt_t :
-        (∫ ω in atom p, posteriorReal O M prior envs ν_idx t ω ∂μξ) =
-          μξ.real (atom p) * (bayesianPosteriorWeight O M prior envs ν_idx h).toReal := by
+        (∫ ω in atom p, posteriorReal prior envs ν_idx t ω ∂μξ) =
+          μξ.real (atom p) * (bayesianPosteriorWeight prior envs ν_idx h).toReal := by
       rw [MeasureTheory.setIntegral_congr_fun h_atom_meas' hEqOn_t]
       simp [smul_eq_mul]
 
     have hCancel_t :
-        bayesianPosteriorWeight O M prior envs ν_idx h * μξ (cylinderSet h) =
+        bayesianPosteriorWeight prior envs ν_idx h * μξ (cylinderSet h) =
           prior.weight ν_idx * μν (cylinderSet h) := by
       simpa [μξ, μν, ξ] using
-        (bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O := O) (M := M) (prior := prior)
+        (bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (prior := prior)
           (envs := envs) (π := π) (h_stoch := h_stoch) (ν_idx := ν_idx) (h := h) (h_wf := h_wf)
           (h_complete := h_complete))
 
     have hInt_t' :
-        (∫ ω in atom p, posteriorReal O M prior envs ν_idx t ω ∂μξ) =
+        (∫ ω in atom p, posteriorReal prior envs ν_idx t ω ∂μξ) =
           (prior.weight ν_idx).toReal * μν.real (atom p) := by
       have hCancel_t_real := congrArg ENNReal.toReal hCancel_t
       -- Convert the constant integral into a `toReal` product and cancel using `hCancel_t`.
       calc
-        (∫ ω in atom p, posteriorReal O M prior envs ν_idx t ω ∂μξ)
-            = μξ.real (atom p) * (bayesianPosteriorWeight O M prior envs ν_idx h).toReal := hInt_t
-        _ = ((bayesianPosteriorWeight O M prior envs ν_idx h) * μξ (atom p)).toReal := by
+        (∫ ω in atom p, posteriorReal prior envs ν_idx t ω ∂μξ)
+            = μξ.real (atom p) * (bayesianPosteriorWeight prior envs ν_idx h).toReal := hInt_t
+        _ = ((bayesianPosteriorWeight prior envs ν_idx h) * μξ (atom p)).toReal := by
               simp [MeasureTheory.measureReal_def, ENNReal.toReal_mul, mul_comm]
         _ = ((prior.weight ν_idx) * μν (cylinderSet h)).toReal := by
               simpa [h_atom_cyl] using hCancel_t_real
@@ -404,14 +398,14 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
           (a := (traj (historySteps h)).action) (x := (traj (historySteps h)).percept) h_wf h_complete] using this
 
     have h_ext_integrable :
-        ∀ st, IntegrableOn (posteriorReal O M prior envs ν_idx (t + 1)) (extSet st) μξ := by
+        ∀ st, IntegrableOn (posteriorReal prior envs ν_idx (t + 1)) (extSet st) μξ := by
       intro _st
-      exact (posteriorReal_integrable (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+      exact (posteriorReal_integrable (prior := prior) (envs := envs) (π := π)
         (h_stoch := h_stoch) (ν_idx := ν_idx) (t + 1)).integrableOn
 
     have h_ext_int :
         ∀ st,
-          (∫ ω in extSet st, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ) =
+          (∫ ω in extSet st, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ) =
             (prior.weight ν_idx).toReal * μν.real (extSet st) := by
       intro st
       set h' : History := h ++ [HistElem.act st.action, HistElem.per st.percept]
@@ -422,8 +416,8 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
         simpa [this] using h_complete.add (by decide : Even 2)
       have h'_meas : MeasurableSet (extSet st) := h_ext_meas st
       have hEqOn_succ :
-          Set.EqOn (posteriorReal O M prior envs ν_idx (t + 1))
-            (fun _ => (bayesianPosteriorWeight O M prior envs ν_idx h').toReal) (extSet st) := by
+          Set.EqOn (posteriorReal prior envs ν_idx (t + 1))
+            (fun _ => (bayesianPosteriorWeight prior envs ν_idx h').toReal) (extSet st) := by
         intro traj htraj
         have hstep : trajectoryToHistory traj (t + 1) = h' := by
           have ht : trajectoryToHistory traj (historySteps h') = h' := by
@@ -440,23 +434,23 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
           simpa [hsteps'] using ht
         simp [posteriorReal, posteriorWeight, h', hstep]
       have hInt_succ :
-          (∫ ω in extSet st, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ) =
-            μξ.real (extSet st) * (bayesianPosteriorWeight O M prior envs ν_idx h').toReal := by
+          (∫ ω in extSet st, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ) =
+            μξ.real (extSet st) * (bayesianPosteriorWeight prior envs ν_idx h').toReal := by
         rw [MeasureTheory.setIntegral_congr_fun h'_meas hEqOn_succ]
         simp [smul_eq_mul]
       have hCancel_succ :
-          bayesianPosteriorWeight O M prior envs ν_idx h' * μξ (cylinderSet h') =
+          bayesianPosteriorWeight prior envs ν_idx h' * μξ (cylinderSet h') =
             prior.weight ν_idx * μν (cylinderSet h') := by
         simpa [μξ, μν, ξ] using
-          (bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (O := O) (M := M) (prior := prior)
+          (bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet (prior := prior)
             (envs := envs) (π := π) (h_stoch := h_stoch) (ν_idx := ν_idx) (h := h') (h_wf := h'_wf)
             (h_complete := h'_complete))
       have hCancel_succ_real := congrArg ENNReal.toReal hCancel_succ
       -- Convert to the desired `prior.toReal * μν.real` form.
       calc
-        (∫ ω in extSet st, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ)
-            = μξ.real (extSet st) * (bayesianPosteriorWeight O M prior envs ν_idx h').toReal := hInt_succ
-        _ = ((bayesianPosteriorWeight O M prior envs ν_idx h') * μξ (cylinderSet h')).toReal := by
+        (∫ ω in extSet st, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ)
+            = μξ.real (extSet st) * (bayesianPosteriorWeight prior envs ν_idx h').toReal := hInt_succ
+        _ = ((bayesianPosteriorWeight prior envs ν_idx h') * μξ (cylinderSet h')).toReal := by
               simp [MeasureTheory.measureReal_def, ENNReal.toReal_mul, h', extSet, mul_comm]
         _ = ((prior.weight ν_idx) * μν (cylinderSet h')).toReal := by
               simpa [h', extSet] using hCancel_succ_real
@@ -464,21 +458,21 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
               simp [MeasureTheory.measureReal_def, ENNReal.toReal_mul, h', extSet]
 
     have hInt_succ_total :
-        (∫ ω in atom p, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ) =
+        (∫ ω in atom p, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ) =
           (prior.weight ν_idx).toReal * μν.real (atom p) := by
       -- Rewrite `atom p` as a cylinder and decompose into extensions.
       have h_decomp :
-          (∫ ω in cylinderSet h, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ) =
-            ∑ st : Step, ∫ ω in extSet st, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ := by
+          (∫ ω in cylinderSet h, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ) =
+            ∑ st : Step, ∫ ω in extSet st, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ := by
         rw [← h_ext_union]
         exact MeasureTheory.integral_iUnion_fintype (μ := μξ)
           (fun st => h_ext_meas st) h_ext_disj h_ext_integrable
       -- Convert each summand via `h_ext_int`, then collapse the measures using `measureReal_iUnion_fintype`.
       have hμν_sum :
           (∑ st : Step, μν.real (extSet st)) = μν.real (cylinderSet h) := by
-        haveI : MeasureTheory.IsProbabilityMeasure μν :=
+        have : MeasureTheory.IsProbabilityMeasure μν :=
           environmentMeasureWithPolicy_isProbability (μ := envs ν_idx) (π := π) (h_stoch := h_stoch ν_idx)
-        haveI : MeasureTheory.IsFiniteMeasure μν := inferInstance
+        have : MeasureTheory.IsFiniteMeasure μν := inferInstance
         have h_ne_top : ∀ st : Step, μν (extSet st) ≠ (⊤ : ℝ≥0∞) := by
           intro st
           exact measure_ne_top μν (extSet st)
@@ -486,10 +480,10 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
           MeasureTheory.measureReal_iUnion_fintype (μ := μν) (f := extSet) h_ext_disj h_ext_meas (h' := h_ne_top)
         simpa [h_ext_union] using hμν_eq.symm
       calc
-        (∫ ω in atom p, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ)
-            = ∫ ω in cylinderSet h, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ := by
+        (∫ ω in atom p, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ)
+            = ∫ ω in cylinderSet h, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ := by
                   simp [h_atom_cyl]
-        _ = ∑ st : Step, ∫ ω in extSet st, posteriorReal O M prior envs ν_idx (t + 1) ω ∂μξ := h_decomp
+        _ = ∑ st : Step, ∫ ω in extSet st, posteriorReal prior envs ν_idx (t + 1) ω ∂μξ := h_decomp
         _ = ∑ st : Step, (prior.weight ν_idx).toReal * μν.real (extSet st) := by
               refine Finset.sum_congr rfl ?_
               intro st _hst
@@ -510,9 +504,9 @@ theorem posteriorReal_martingale (O : Oracle) (M : ReflectiveEnvironmentClass O)
   -- Now sum the atom equalities over the finite decomposition of `truncate t ⁻¹' w`.
   rw [h_union]
   -- Convert both integrals to finite sums over atoms.
-  rw [MeasureTheory.integral_biUnion_finset (μ := μξ) (f := posteriorReal O M prior envs ν_idx t)
+  rw [MeasureTheory.integral_biUnion_finset (μ := μξ) (f := posteriorReal prior envs ν_idx t)
         (t := W) (s := fun p => atom p) h_atom_meas h_atom_disj h_integrable_t]
-  rw [MeasureTheory.integral_biUnion_finset (μ := μξ) (f := posteriorReal O M prior envs ν_idx (t + 1))
+  rw [MeasureTheory.integral_biUnion_finset (μ := μξ) (f := posteriorReal prior envs ν_idx (t + 1))
         (t := W) (s := fun p => atom p) h_atom_meas h_atom_disj h_integrable_succ]
   refine Finset.sum_congr rfl ?_
   intro p hpW

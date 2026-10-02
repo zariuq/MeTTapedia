@@ -48,7 +48,7 @@ structure CoherentConnection : Prop where
     NativeHOLProofQualifiedSemanticQuotient.SemanticQuotientLaws.{u}
 
   generatedOSLF :
-    ∀ (level : LevelExpr)
+    ∀ (level : LevelExpr Nat)
       (lower : ZFSetUniverseClosure.CofinalInaccessibles.{u})
       (x : ZFSetUniformListTraceTypeInterpretation.Value
         carrierCode.{u} element),

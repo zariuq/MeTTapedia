@@ -94,7 +94,7 @@ theorem valid_j : ValidTmN (nmodel v T) .nil (.const jName) Package.jType := by
   obtain ⟨w, hw, typed⟩ := (declaresJ (fun _ => 0) (E := T.E)).typed
   have sound₀ := constantFree_typedSoundN v ext
   obtain ⟨validT, partsT, _⟩ := Derivable.validTN sound₀ typed trivial
-  exact ValidTmN.transportEliminator laws (Tower.IsUniverse.sort _) (nmodel_jStep v)
+  exact ValidTmN.transportEliminator laws (LevelTower.IsUniverse.sort _) (nmodel_jStep v)
     (nmodel_coeRules v) ext.declaresJ
     (validT.validTy (sound₀.isUniverse hw) (sound₀.isUniverse' hw)) partsT
 

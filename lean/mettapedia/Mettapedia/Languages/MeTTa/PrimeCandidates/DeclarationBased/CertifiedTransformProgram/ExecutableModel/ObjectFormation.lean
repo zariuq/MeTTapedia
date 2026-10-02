@@ -1,17 +1,18 @@
-import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ObjectChurch
+import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ObjectChurchCodes
 
 /-!
 # Formation in the annotation of the object package
 
 Typings in the annotated calculus of the object package (`objectChurch`), the
-counterpart of the formation lemmas of `ExecutableModel/Typings.lean`:
+counterpart of the formation lemmas of the unannotated package's stages:
 
 * formation of dependent function, pair and identity types at a universe level,
   and the raise of `U₀` into `U₁`;
 * each declared constant the executable package's right-hand sides use, at its
   annotated declared type: the declared types have no abstraction, so their
   annotation is themselves (`objectChurch_declared`), and each is formed in the
-  empty context.
+  empty context (`cnumRecType_formed`, `cjType_formed`, `csucMoveType_formed`,
+  `ctransportType_formed`, `citerType_formed`).
 -/
 
 set_option autoImplicit false
@@ -34,10 +35,9 @@ section Terms
 
 variable {n : Nat}
 
-/-- The universe at a level. -/
-abbrev cU (l : LevelExpr) : CTm Tower.Head n := .head (.sort l)
-abbrev cU0 : CTm Tower.Head n := cU Tower.zero
-abbrev cU1 : CTm Tower.Head n := cU (.succ Tower.zero)
+/-- The universes `U₀` and `U₁`. -/
+abbrev cU0 : CTm Tower.Head n := CU Tower.zero
+abbrev cU1 : CTm Tower.Head n := CU (.succ Tower.zero)
 abbrev cnum : CTm Tower.Head n := .const numN
 abbrev cset : CTm Tower.Head n := .const setN
 abbrev czero : CTm Tower.Head n := .const zeroN
@@ -53,48 +53,38 @@ section Toolkit
 
 variable {n : Nat} {Γ : CCtx Tower.Head n}
 
-theorem cuniv_typed (l : LevelExpr) : CTyped objectChurch Γ (cU l) (cU (.succ l)) :=
-  .headType (.sort l)
-
-theorem cU0_typed : CTyped objectChurch Γ cU0 cU1 := cuniv_typed Tower.zero
+theorem cU0_typed : CTyped objectChurch Γ cU0 cU1 := CU_typed Tower.zero
 
 /-- A type of `U₀` is a type of `U₁`. -/
 theorem craise {T : CTm Tower.Head n} (typed : CTyped objectChurch Γ T cU0) :
     CTyped objectChurch Γ T cU1 :=
-  CDerivable.cumul typed (fun valuation => by simp [LevelExpr.eval, Tower.zero])
+  CDerivable.cumul typed (fun valuation => by simp [LevelExpr.eval, LevelTower.zero])
 
-theorem cpiT {D : CTm Tower.Head n} {B : CTm Tower.Head (n + 1)} {l : LevelExpr}
-    (domain : CTyped objectChurch Γ D (cU l))
-    (codomain : CTyped objectChurch (.snoc Γ D) B (cU l)) :
-    CTyped objectChurch Γ (.pi D B) (cU l) :=
+theorem cpiT {D : CTm Tower.Head n} {B : CTm Tower.Head (n + 1)} {l : LevelExpr Nat}
+    (domain : CTyped objectChurch Γ D (CU l))
+    (codomain : CTyped objectChurch (.snoc Γ D) B (CU l)) :
+    CTyped objectChurch Γ (.pi D B) (CU l) :=
   CDerivable.cumul (.piForm domain (.sort l) codomain (.sort l) (.sorts l l))
     (fun valuation => by simp [LevelExpr.eval])
 
-theorem csigmaT {D : CTm Tower.Head n} {B : CTm Tower.Head (n + 1)} {l : LevelExpr}
-    (domain : CTyped objectChurch Γ D (cU l))
-    (codomain : CTyped objectChurch (.snoc Γ D) B (cU l)) :
-    CTyped objectChurch Γ (.sigma D B) (cU l) :=
+theorem csigmaT {D : CTm Tower.Head n} {B : CTm Tower.Head (n + 1)} {l : LevelExpr Nat}
+    (domain : CTyped objectChurch Γ D (CU l))
+    (codomain : CTyped objectChurch (.snoc Γ D) B (CU l)) :
+    CTyped objectChurch Γ (.sigma D B) (CU l) :=
   CDerivable.cumul (.sigmaForm domain (.sort l) codomain (.sort l) (.sorts l l))
     (fun valuation => by simp [LevelExpr.eval])
 
-theorem cidT {C a b : CTm Tower.Head n} {l : LevelExpr}
-    (carrier : CTyped objectChurch Γ C (cU l)) (left : CTyped objectChurch Γ a C)
-    (right : CTyped objectChurch Γ b C) : CTyped objectChurch Γ (.id C a b) (cU l) :=
+theorem cidT {C a b : CTm Tower.Head n} {l : LevelExpr Nat}
+    (carrier : CTyped objectChurch Γ C (CU l)) (left : CTyped objectChurch Γ a C)
+    (right : CTyped objectChurch Γ b C) : CTyped objectChurch Γ (.id C a b) (CU l) :=
   .idForm carrier (.sort l) left right
 
-/-- A declared type without abstractions is its own annotation. -/
-theorem objectChurch_declared {c : DeclName} {T : Tm Tower.Head 0}
-    (declared : objectRules.constantType c = some T) (lf : lamFree T = true) :
-    objectChurch.constantType c = some (liftTm T) := by
-  rw [objectChurch_constantType]
-  exact elabDeclarations_lamFree objectRules.constantType declared lf
-
 /-- A declared constant at its annotated declared type. -/
-theorem cconst {c : DeclName} (T : Tm Tower.Head 0) {l : LevelExpr}
+theorem cconst {c : DeclName} (T : Tm Tower.Head 0) {l : LevelExpr Nat}
     (declared : objectRules.constantType c = some T) (lf : lamFree T = true)
-    (typed : CTyped objectChurch .nil (liftTm T) (cU l)) :
+    (typed : CTyped objectChurch .nil (liftTm T) (CU l)) :
     CTyped objectChurch Γ (.const c) (liftTm T).liftClosed :=
-  .const (objectChurch_declared declared lf) typed (.sort l)
+  const_typed declared lf typed (.sort l)
 
 end Toolkit
 
@@ -146,7 +136,7 @@ section Declared
 variable {n : Nat} {Γ : CCtx Tower.Head n}
 
 /-- The annotated type of `num-rec`. -/
-theorem numRecType_formed : CTyped objectChurch .nil (liftTm numRecType) cU1 := by
+theorem cnumRecType_formed : CTyped objectChurch .nil (liftTm numRecType) cU1 := by
   show CTyped objectChurch .nil
     (.pi (.pi cnum cU0) (.pi (.app (.var 0) czero)
       (.pi (.pi cnum (.pi (.app (.var 2) (.var 0)) (.app (.var 3) (csuc (.var 1)))))
@@ -175,10 +165,10 @@ theorem numRecType_formed : CTyped objectChurch .nil (liftTm numRecType) cU1 := 
 
 theorem cnumRec_typed :
     CTyped objectChurch Γ (.const numRecName) (liftTm numRecType).liftClosed :=
-  cconst numRecType (by decide) (by decide) numRecType_formed
+  cconst numRecType (by decide) (by decide) cnumRecType_formed
 
 /-- The annotated type of the identity eliminator. -/
-theorem jType_formed : CTyped objectChurch .nil (liftTm jType) cU1 := by
+theorem cjType_formed : CTyped objectChurch .nil (liftTm jType) cU1 := by
   show CTyped objectChurch .nil
     (.pi cU0 (.pi (.var 0)
       (.pi (.pi (.var 1) (.pi (.id (.var 2) (.var 1) (.var 0)) cU0))
@@ -212,7 +202,7 @@ theorem jType_formed : CTyped objectChurch .nil (liftTm jType) cU1 := by
     (cpiT (craise (.var 3)) tPath))))
 
 theorem cj_typed : CTyped objectChurch Γ (.const jName) (liftTm jType).liftClosed :=
-  cconst jType (by decide) (by decide) jType_formed
+  cconst jType (by decide) (by decide) cjType_formed
 
 end Declared
 
@@ -230,14 +220,14 @@ theorem ceqAt_typed {a : CTm Tower.Head n} (ta : CTyped objectChurch Γ a cnum) 
     CTyped objectChurch Γ (ceqAt a) cU0 :=
   .appElim (B := cU0) ceqAtConst_typed ta
 
-theorem sucMoveType_formed : CTyped objectChurch .nil (liftTm sucMoveType) cU0 := by
+theorem csucMoveType_formed : CTyped objectChurch .nil (liftTm sucMoveType) cU0 := by
   show CTyped objectChurch .nil
     (.pi cnum (.pi (ceqAt (.var 0)) (ceqAt (csuc (.var 1))))) cU0
   exact cpiT cnum_typed (cpiT (ceqAt_typed (.var 0)) (ceqAt_typed (csuc_typed (.var 1))))
 
 theorem csucMove_typed :
     CTyped objectChurch Γ (.const sucMoveName) (liftTm sucMoveType).liftClosed :=
-  cconst sucMoveType (by decide) (by decide) sucMoveType_formed
+  cconst sucMoveType (by decide) (by decide) csucMoveType_formed
 
 /-- The step type `Π x : A. P x → Σ y : A. P y` over the context `A, P`. -/
 theorem cstepFamily_formed {Δ : CCtx Tower.Head n} :
@@ -247,7 +237,7 @@ theorem cstepFamily_formed {Δ : CCtx Tower.Head n} :
   cpiT (.var 1) (cpiT (.appElim (B := cU0) (.var 1) (.var 0))
     (csigmaT (.var 3) (.appElim (B := cU0) (.var 3) (.var 0))))
 
-theorem transportType_formed : CTyped objectChurch .nil (liftTm transportType) cU1 := by
+theorem ctransportType_formed : CTyped objectChurch .nil (liftTm transportType) cU1 := by
   show CTyped objectChurch .nil
     (.pi cU0 (.pi (.pi (.var 0) cU0)
       (.pi (.pi (.var 1) (.var 2))
@@ -266,9 +256,9 @@ theorem transportType_formed : CTyped objectChurch .nil (liftTm transportType) c
 
 theorem ctransport_typed :
     CTyped objectChurch Γ (.const transportName) (liftTm transportType).liftClosed :=
-  cconst transportType (by decide) (by decide) transportType_formed
+  cconst transportType (by decide) (by decide) ctransportType_formed
 
-theorem iterType_formed : CTyped objectChurch .nil (liftTm iterType) cU1 := by
+theorem citerType_formed : CTyped objectChurch .nil (liftTm iterType) cU1 := by
   show CTyped objectChurch .nil
     (.pi cnum (.pi cU0 (.pi (.pi (.var 0) cU0)
       (.pi (.pi (.var 1) (.pi (.app (.var 1) (.var 0)) (.sigma (.var 3) (.app (.var 3) (.var 0)))))
@@ -282,7 +272,7 @@ theorem iterType_formed : CTyped objectChurch .nil (liftTm iterType) cU1 := by
 
 theorem citer_typed :
     CTyped objectChurch Γ (.const iterName) (liftTm iterType).liftClosed :=
-  cconst iterType (by decide) (by decide) iterType_formed
+  cconst iterType (by decide) (by decide) citerType_formed
 
 end Definitions
 

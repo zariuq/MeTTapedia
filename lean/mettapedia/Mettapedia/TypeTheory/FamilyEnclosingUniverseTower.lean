@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.TarskiUniverseEmbedding
+import Mettapedia.TypeTheory.UniverseLevel.Order
 
 /-!
 # A conditional tower of family-enclosing universes
@@ -55,6 +56,10 @@ def family (operator : SmallFamilyEnclosingUniverseOperator.{u})
 
 variable (operator : SmallFamilyEnclosingUniverseOperator.{u})
 variable (A : Type u) (B : A → Type u)
+
+/-- The levels of the family are the natural numbers, as a level order. -/
+instance : UniverseLevel.LevelOrder (family operator A B).Level :=
+  inferInstanceAs (UniverseLevel.LevelOrder Nat)
 
 /-- The first universe contains the initial family's base type. -/
 def initialBaseCode : (family operator A B).Code (0 : Nat) :=

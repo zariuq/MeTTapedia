@@ -24,7 +24,7 @@ theorem polymorphic_identity_instantiated_codomain (A : Tower.Tm n) :
 preservation theorem. The tower's Pi-conversion boundary remains an explicit
 qualification; this result does not assert that it has been discharged. -/
 theorem polymorphic_identity_beta {Γ : Tower.Ctx n} {A : Tower.Tm n}
-    {level : LevelExpr} (context : ContextFormation Tower.rules Γ)
+    {level : LevelExpr Nat} (context : ContextFormation Tower.rules Γ)
     (formed : Typing Tower.rules Γ A (sortTm level))
     (boundary : PiConversionBoundary Tower.rules) :
     Typing Tower.rules Γ (.lam (.var 0)) (.pi A (rename wk A)) := by
@@ -36,7 +36,7 @@ theorem polymorphic_identity_beta {Γ : Tower.Ctx n} {A : Tower.Tm n}
 derivation from the formed argument. This control does not require a global
 conversion boundary. -/
 theorem polymorphic_identity_beta_direct {Γ : Tower.Ctx n} {A : Tower.Tm n}
-    {level : LevelExpr} (formed : Typing Tower.rules Γ A (sortTm level)) :
+    {level : LevelExpr Nat} (formed : Typing Tower.rules Γ A (sortTm level)) :
     Typing Tower.rules Γ (.lam (.var 0)) (.pi A (rename wk A)) := by
   apply Typing.lamIntro
   · apply Typing.piForm formed (.sort level)

@@ -1,9 +1,9 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Interoperability
 
 /-!
-# MeTTa-Calculus Paper Clause Map
+# MeTTa-Calculus Paper Map
 
-Theorem-level index mapping clauses in:
+Theorem-level index mapping the equations and rules in:
 
 - `/home/zar/claude/hyperon/rho4u/metta-calculus/metta-calculus.core.tex`
 
@@ -12,25 +12,25 @@ to concrete Lean theorem names in this repository.
 
 namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus
 
-/-! ## Structural equivalence clauses (`equiv`) -/
+/-! ## Structural equivalence equations (`equiv`) -/
 
-/-- Paper clause: `P | 0 ≡ P` (left form). -/
+/-- Paper equation: `P | 0 ≡ P` (left form). -/
 theorem paper_equiv_par_nil_left (p : Proc) :
     pPar [pZero, p] ≈ₘ p := nil_left p
 
-/-- Paper clause: `P | 0 ≡ P` (right form). -/
+/-- Paper equation: `P | 0 ≡ P` (right form). -/
 theorem paper_equiv_par_nil_right (p : Proc) :
     pPar [p, pZero] ≈ₘ p := nil_right p
 
-/-- Paper clause: `P | Q ≡ Q | P`. -/
+/-- Paper equation: `P | Q ≡ Q | P`. -/
 theorem paper_equiv_par_comm (p q : Proc) :
     pPar [p, q] ≈ₘ pPar [q, p] := comm p q
 
-/-- Paper clause: associativity of parallel composition. -/
+/-- Paper equation: associativity of parallel composition. -/
 theorem paper_equiv_par_assoc (p q r : Proc) :
     pPar [pPar [p, q], r] ≈ₘ pPar [p, pPar [q, r]] := assoc p q r
 
-/-! ## Reduction clauses (`COMM`, `REFL`) -/
+/-! ## Reduction rules (`COMM`, `REFL`) -/
 
 /-- Paper `COMM` canary (positive): a concrete symmetric rendezvous step. -/
 theorem paper_comm_positive :
@@ -52,9 +52,9 @@ theorem paper_refl_negative :
     step (pReflect demoChan demoBlocked) = [] := by
   simpa using (show step (pReflect demoChan demoBlocked) = [] from by native_decide)
 
-/-! ## Shared-fragment bridge clauses -/
+/-! ## Shared-fragment bridge theorems -/
 
-/-- Shared fragment clause map:
+/-- Shared fragment map:
 successful MeTTa→ρ translation yields a canonical open-map path-bisim witness
 at the translated image. -/
 theorem paper_shared_to_rho_openmap_self {p : Proc} {rp : Proc}

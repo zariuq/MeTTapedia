@@ -164,8 +164,10 @@ theorem compile_erases {gamma : SourceContext} {delta : List (Formula gamma)}
                 (fun i => Presentation.rename wk
                   (hypotheses (i.cast (by simp [HOL.weakenHyps]))).erase) =
                 some bodyTerm.erase := by
-            simpa only [erase_liftSubTm,
-              NativeTraceLambdaSemantics.Tm.erase_rename] using bodyAttached
+            have attached := bodyAttached
+            simp only [erase_liftSubTm,
+              NativeTraceLambdaSemantics.Tm.erase_rename] at attached
+            exact attached
           simp [HOLNaturalDeductionNativeTranslation.compile, bodyAttached',
             NativeTraceLambdaSemantics.Tm.erase]
   | allE sourceArgument function inductionHypothesis =>

@@ -97,8 +97,7 @@ theorem between_final_phase_row_is_static :
                   .symbol "mm-compressed-just-completed-step"]] ++
               compressedHeapLookupReloadRows ++ compressedScannerRuleCaptureRows ++
                 compressedAssertionContinuationCaptureRows
-  simp only [List.mem_append, List.mem_cons]
-  exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+  simp only [List.mem_append, List.mem_cons, true_or, or_true]
 
 theorem completed_final_phase_row_is_static :
     (finalPhaseRow .completed).getD (.symbol "mm-missing-final-phase") ∈
@@ -118,8 +117,7 @@ theorem completed_final_phase_row_is_static :
                   .symbol "mm-compressed-just-completed-step"]] ++
               compressedHeapLookupReloadRows ++ compressedScannerRuleCaptureRows ++
                 compressedAssertionContinuationCaptureRows
-  simp only [List.mem_append, List.mem_cons]
-  exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))))
+  simp only [List.mem_append, List.mem_cons, true_or, or_true]
 
 /-- The open-prefix finalizer selects the verifier's installed incomplete
 rule, which is retained as static inventory rather than emitted by the source
@@ -158,10 +156,7 @@ theorem incomplete_prefix_rule_row_is_static :
                  compressedQuestionOpenFaultRule,
                compressedOwnedRuntimeRuleRow "save-fault" compressedSaveFaultRule] ++
                 compressedAssertionContinuationCaptureRows
-  simp only [List.mem_append, List.mem_cons]
-  exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
-    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
-      (Or.inr (Or.inl rfl))))))))))))))))))
+  simp only [List.mem_append, List.mem_cons, true_or, or_true]
 
 /-- The semantic finalizer determines a static MM2 inventory observation for
 every actual phase.  This is a selection theorem only: firing still requires
@@ -178,7 +173,7 @@ theorem classified_finalizer_row_is_static (phase : Phase) :
       refine ⟨(finalPhaseRow .completed).getD (.symbol "mm-missing-final-phase"), ?_,
         completed_final_phase_row_is_static⟩
       rfl
-  | open reversePrefix =>
+  | «open» reversePrefix =>
       exact ⟨incompletePrefixRuleRow, classified_open_row_exact reversePrefix,
         incomplete_prefix_rule_row_is_static⟩
 

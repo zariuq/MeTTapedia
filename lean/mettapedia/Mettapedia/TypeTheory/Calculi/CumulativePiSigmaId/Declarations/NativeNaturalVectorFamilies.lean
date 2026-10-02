@@ -26,9 +26,9 @@ open Presentation.Declaration
 open Presentation.Declaration.ComputationAuthority
 open Presentation.Declaration.IndexedFamily
 
-def elementLevel : LevelExpr := .param 0
-def motiveLevel : LevelExpr := .param 1
-def natLevel : LevelExpr := Tower.zero
+def elementLevel : LevelExpr Nat := .param 0
+def motiveLevel : LevelExpr Nat := .param 1
+def natLevel : LevelExpr Nat := Tower.zero
 
 def natName : DeclName := `CumulativeTower.Nat
 def zeroName : DeclName := `CumulativeTower.Nat.zero
@@ -516,9 +516,9 @@ theorem vecMotiveApp_hasType {context : Tower.Ctx n}
 
 /-! ## Declaration formation -/
 
-def natDeclarationLevel : LevelExpr := .succ natLevel
+def natDeclarationLevel : LevelExpr Nat := .succ natLevel
 
-def succDeclarationLevel : LevelExpr := .max natLevel natLevel
+def succDeclarationLevel : LevelExpr Nat := .max natLevel natLevel
 
 theorem natType_hasType :
     HasType (.nil : Tower.Ctx 0) natType
@@ -549,7 +549,7 @@ def natContextPZ : Tower.Ctx 2 :=
 def natContextPZS : Tower.Ctx 3 :=
   .snoc natContextPZ natSuccCaseType
 
-def natMotiveTypeLevel : LevelExpr :=
+def natMotiveTypeLevel : LevelExpr Nat :=
   .max natLevel (.succ motiveLevel)
 
 theorem natMotiveType_hasType :
@@ -570,10 +570,10 @@ theorem natZeroCaseType_hasType :
   · exact Presentation.HasType.var 0
   · exact zeroTm_hasType
 
-def natSuccInnerLevel : LevelExpr :=
+def natSuccInnerLevel : LevelExpr Nat :=
   .max motiveLevel motiveLevel
 
-def natSuccCaseLevel : LevelExpr :=
+def natSuccCaseLevel : LevelExpr Nat :=
   .max natLevel natSuccInnerLevel
 
 theorem natSuccCaseType_hasType :
@@ -597,7 +597,7 @@ theorem natSuccCaseType_hasType :
   · exact .sort (.max motiveLevel motiveLevel)
   · exact .sorts natLevel (.max motiveLevel motiveLevel)
 
-def natEliminateResultLevel : LevelExpr :=
+def natEliminateResultLevel : LevelExpr Nat :=
   .max natLevel motiveLevel
 
 theorem natEliminateResultType_hasType :
@@ -613,13 +613,13 @@ theorem natEliminateResultType_hasType :
   · exact .sort motiveLevel
   · exact .sorts natLevel motiveLevel
 
-def natEliminateAfterSuccLevel : LevelExpr :=
+def natEliminateAfterSuccLevel : LevelExpr Nat :=
   .max natSuccCaseLevel natEliminateResultLevel
 
-def natEliminateAfterZeroLevel : LevelExpr :=
+def natEliminateAfterZeroLevel : LevelExpr Nat :=
   .max motiveLevel natEliminateAfterSuccLevel
 
-def natEliminateDeclarationLevel : LevelExpr :=
+def natEliminateDeclarationLevel : LevelExpr Nat :=
   .max natMotiveTypeLevel natEliminateAfterZeroLevel
 
 theorem natEliminateType_hasType :
@@ -656,10 +656,10 @@ def vecContextAPZ : Tower.Ctx 3 :=
 def vecContextAPZS : Tower.Ctx 4 :=
   .snoc vecContextAPZ vecConsCaseType
 
-def vecBodyLevel : LevelExpr :=
+def vecBodyLevel : LevelExpr Nat :=
   .max natLevel (.succ elementLevel)
 
-def vecDeclarationLevel : LevelExpr :=
+def vecDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) vecBodyLevel
 
 theorem vecType_hasType :
@@ -678,7 +678,7 @@ theorem vecType_hasType :
   · exact .sort vecBodyLevel
   · exact .sorts (.succ elementLevel) vecBodyLevel
 
-def vnilDeclarationLevel : LevelExpr :=
+def vnilDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) elementLevel
 
 theorem vnilType_hasType :
@@ -694,16 +694,16 @@ theorem vnilType_hasType :
   · exact .sort elementLevel
   · exact .sorts (.succ elementLevel) elementLevel
 
-def vconsTailLevel : LevelExpr :=
+def vconsTailLevel : LevelExpr Nat :=
   .max elementLevel elementLevel
 
-def vconsHeadLevel : LevelExpr :=
+def vconsHeadLevel : LevelExpr Nat :=
   .max elementLevel vconsTailLevel
 
-def vconsBodyLevel : LevelExpr :=
+def vconsBodyLevel : LevelExpr Nat :=
   .max natLevel vconsHeadLevel
 
-def vconsDeclarationLevel : LevelExpr :=
+def vconsDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) vconsBodyLevel
 
 theorem vconsBodyType_hasType :
@@ -743,10 +743,10 @@ theorem vconsType_hasType :
   · exact .sort vconsBodyLevel
   · exact .sorts (.succ elementLevel) vconsBodyLevel
 
-def vecMotiveInnerLevel : LevelExpr :=
+def vecMotiveInnerLevel : LevelExpr Nat :=
   .max elementLevel (.succ motiveLevel)
 
-def vecMotiveTypeLevel : LevelExpr :=
+def vecMotiveTypeLevel : LevelExpr Nat :=
   .max natLevel vecMotiveInnerLevel
 
 theorem vecMotiveType_hasType :
@@ -775,16 +775,16 @@ theorem vecNilCaseType_hasType :
   · apply vnilApp_hasType
     exact Presentation.HasType.var 1
 
-def vecConsHypothesisLevel : LevelExpr :=
+def vecConsHypothesisLevel : LevelExpr Nat :=
   .max motiveLevel motiveLevel
 
-def vecConsTailLevel : LevelExpr :=
+def vecConsTailLevel : LevelExpr Nat :=
   .max elementLevel vecConsHypothesisLevel
 
-def vecConsHeadLevel : LevelExpr :=
+def vecConsHeadLevel : LevelExpr Nat :=
   .max elementLevel vecConsTailLevel
 
-def vecConsCaseLevel : LevelExpr :=
+def vecConsCaseLevel : LevelExpr Nat :=
   .max natLevel vecConsHeadLevel
 
 theorem vecConsCaseType_hasType :
@@ -827,10 +827,10 @@ theorem vecConsCaseType_hasType :
   · exact .sort vecConsHeadLevel
   · exact .sorts natLevel vecConsHeadLevel
 
-def vecEliminateInnerLevel : LevelExpr :=
+def vecEliminateInnerLevel : LevelExpr Nat :=
   .max elementLevel motiveLevel
 
-def vecEliminateResultLevel : LevelExpr :=
+def vecEliminateResultLevel : LevelExpr Nat :=
   .max natLevel vecEliminateInnerLevel
 
 theorem vecEliminateResultType_hasType :
@@ -855,16 +855,16 @@ theorem vecEliminateResultType_hasType :
   · exact .sort vecEliminateInnerLevel
   · exact .sorts natLevel vecEliminateInnerLevel
 
-def vecEliminateAfterConsLevel : LevelExpr :=
+def vecEliminateAfterConsLevel : LevelExpr Nat :=
   .max vecConsCaseLevel vecEliminateResultLevel
 
-def vecEliminateAfterNilLevel : LevelExpr :=
+def vecEliminateAfterNilLevel : LevelExpr Nat :=
   .max motiveLevel vecEliminateAfterConsLevel
 
-def vecEliminateAfterMotiveLevel : LevelExpr :=
+def vecEliminateAfterMotiveLevel : LevelExpr Nat :=
   .max vecMotiveTypeLevel vecEliminateAfterNilLevel
 
-def vecEliminateDeclarationLevel : LevelExpr :=
+def vecEliminateDeclarationLevel : LevelExpr Nat :=
   .max (.succ elementLevel) vecEliminateAfterMotiveLevel
 
 theorem vecEliminateType_hasType :
@@ -1463,7 +1463,7 @@ def untypedNatZeroEvidence :
 theorem undeclaredCase_not_hasType (type : Tower.Tm 0) :
     ¬ HasType (.nil : Tower.Ctx 0) undeclaredCase type := by
   have missing : rules.constantType undeclaredCaseName = none := by
-    simp [undeclaredCaseName, rules, extendRules, combinedType, Tower.rules,
+    simp [undeclaredCaseName, rules, extendRules, combinedType, LevelTower.rules,
       rawSignature, declarations, Signature.typeOf?, Signature.ofList,
       Signature.insert, Signature.empty, natName, zeroName, succName,
       natEliminateName, vecName, vnilName, vconsName, vecEliminateName]

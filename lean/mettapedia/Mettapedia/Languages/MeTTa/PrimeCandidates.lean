@@ -3,6 +3,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.LanguageDefAdequacy
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Specification
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DevelopmentPlan
 import Mettapedia.Languages.MeTTa.PrimeCandidates.ReductionViewCanary
+import Mettapedia.Languages.MeTTa.PrimeCandidates.NativePriorityControl
 
 /-!
 # Candidate integrations for Prime research

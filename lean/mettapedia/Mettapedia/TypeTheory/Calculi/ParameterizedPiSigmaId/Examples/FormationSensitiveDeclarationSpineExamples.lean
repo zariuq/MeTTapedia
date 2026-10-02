@@ -86,8 +86,8 @@ theorem raw_lambda_has_incomparable_function_types (context : Tower.Ctx n) :
   · exact BetaExamples.polymorphic_identity_beta_direct (.headType .legacyGround)
   · exact BetaExamples.polymorphic_identity_beta_direct (arrowGround_formed context)
   · intro conversion
-    have domains := (Tower.piConversionBoundary.components conversion).1
-    exact Tower.piConversionBoundary.headDisjoint (.symm _ _ domains)
+    have domains := (LevelTower.piConversionBoundary.components conversion).1
+    exact LevelTower.piConversionBoundary.headDisjoint (.symm _ _ domains)
 
 #print axioms identitySpine
 #print axioms recover_identity_arguments

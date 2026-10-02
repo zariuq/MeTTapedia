@@ -32,7 +32,7 @@ open ZFSetReplayQualifiedTypingControls
 open Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.ZFSetReplayMixedIdentityFamilyControls
 open Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.ZFSetReplayUniverseModel
 
-local instance : DecidableRel Tower.rules.headEq := Tower.instDecidableHeadEq
+local instance : DecidableRel Tower.rules.headEq := LevelTower.instDecidableHeadEq
 
 private abbrev familyLevel : Tower.Head :=
   .sort (.max (.succ Tower.zero) (.succ Tower.zero))

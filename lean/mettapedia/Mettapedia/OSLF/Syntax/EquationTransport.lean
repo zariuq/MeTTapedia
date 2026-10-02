@@ -4,9 +4,9 @@ import Mettapedia.OSLF.Syntax.EquationalQuotient
 /-!
 # Strict signature maps on equational theories
 
-It suffices to check the generators in their own contexts, after assigning
-their metavariables. The derived transport theorem handles arbitrary closing
-substitutions, equivalence closure, and congruence under binding arguments.
+Generator checks cover contextual metavariable bodies together with their
+ambient and ordinary environments. The derived transport theorem handles
+arbitrary context maps, equivalence closure, and congruence under binders.
 The sort map need not be injective: translated substitutions are indexed by
 variable positions, rather than by an inverse on sorts.
 
@@ -44,15 +44,16 @@ theorem SigMor.map_bind (F : SigMor S T) {Γ Γ' : Ctx S} {Δ : Ctx T}
   mapTerm_bind F (mapVar F.sortMap) ν σ (F.mapSub ν σ)
     (F.mapSub_mapVar ν σ) t
 
-/-- Only the instantiated generators, in their original mapped contexts,
-must be justified in the target theory. -/
+/-- Every contextual generator, including independent ambient and ordinary
+environments, must be justified in its mapped result context. -/
 def SigMor.RespectsEquations (F : SigMor S T)
     {M : List (MetaArity S)} {N : List (MetaArity T)}
     (E : List (EqAxiom S M)) (D : List (EqAxiom T N)) : Prop :=
-  ∀ (i : Fin E.length)
-    (body : (k : Fin M.length) → Term S (M.get k).1 (M.get k).2),
-    EqClosure D (F.onTerm (instantiate body (E.get i).lhs))
-      (F.onTerm (instantiate body (E.get i).rhs))
+  ∀ (i : Fin E.length) {Θ Γ : Ctx S}
+    (body : ContextualAssignment S M Θ) (ambient : Sub S Θ Γ)
+    (ordinary : Sub S (E.get i).ctx Γ),
+    EqClosure D (F.onTerm (ContextualAssignment.instantiate body ambient ordinary (E.get i).lhs))
+      (F.onTerm (ContextualAssignment.instantiate body ambient ordinary (E.get i).rhs))
 
 theorem eqArgs_castArity {N : List (MetaArity T)} {D : List (EqAxiom T N)}
     {as bs : List (List T.Srt × T.Srt)} {Γ : Ctx T} (h : as = bs)
@@ -70,9 +71,10 @@ theorem SigMor.eqClosure_map (F : SigMor S T)
     ∀ {Γ : Ctx S} {Δ : Ctx T} (ν : VarMap F.sortMap Γ Δ)
       {s : S.Srt} {t u : Term S Γ s}, EqClosure E t u →
       EqClosure D (mapTerm F ν t) (mapTerm F ν u)
-  | _, _, ν, _, _, _, .ax i body close => by
-      rw [F.map_bind ν close, F.map_bind ν close]
-      exact eqClosure_bind (F.mapSub ν close) (hE i body)
+  | _, _, ν, _, _, _, .ax i body ambient ordinary => by
+      have mapped := eqClosure_bind
+        (F.mapSub ν (fun _ v => Term.var v)) (hE i body ambient ordinary)
+      simpa only [← F.map_bind, bind_id] using mapped
   | _, _, _, _, _, _, .refl _ => .refl _
   | _, _, ν, _, _, _, .symm h => .symm (F.eqClosure_map hE ν h)
   | _, _, ν, _, _, _, .trans h h' =>
@@ -147,9 +149,8 @@ theorem SigMor.mapTerm_after_onTerm {U : Signature} (F : SigMor S T) (G : SigMor
 /-- Identity respects the same generators by their own axiom instances. -/
 theorem SigMor.respectsEquations_ident {M : List (MetaArity S)}
     (E : List (EqAxiom S M)) : (SigMor.ident S).RespectsEquations E E := by
-  intro i body
-  have h := EqClosure.ax (E := E) i body (fun _ x => Term.var x)
-  simp only [bind_id] at h
+  intro i Θ Γ body ambient ordinary
+  have h := EqClosure.ax (E := E) i body ambient ordinary
   simpa only [SigMor.onTerm, mapTerm_ident] using
     eqClosure_rename (mapVar (fun s : S.Srt => s)) h
 
@@ -159,8 +160,9 @@ theorem SigMor.RespectsEquations.comp {U : Signature} {F : SigMor S T} {G : SigM
     {E : List (EqAxiom S M)} {D : List (EqAxiom T N)} {H : List (EqAxiom U O)}
     (hF : F.RespectsEquations E D) (hG : G.RespectsEquations D H) :
     (F.comp G).RespectsEquations E H := by
-  intro i body
-  have h := G.eqClosure_map hG (mapVarAfter F.sortMap G.sortMap) (hF i body)
+  intro i Θ Γ body ambient ordinary
+  have h := G.eqClosure_map hG (mapVarAfter F.sortMap G.sortMap)
+    (hF i body ambient ordinary)
   simpa only [SigMor.mapTerm_after_onTerm] using h
 
 /-- The descended maps compose with the existing term action. -/
@@ -191,7 +193,7 @@ mutual
 theorem eqClosure_empty_eq {M : List (MetaArity S)} :
     ∀ {Γ : Ctx S} {s : S.Srt} {t u : Term S Γ s},
       EqClosure ([] : List (EqAxiom S M)) t u → t = u
-  | _, _, _, _, .ax i _ _ => Fin.elim0 i
+  | _, _, _, _, .ax i _ _ _ => Fin.elim0 i
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (eqClosure_empty_eq h).symm
   | _, _, _, _, .trans h h' => (eqClosure_empty_eq h).trans (eqClosure_empty_eq h')
@@ -221,10 +223,13 @@ private def noBody : (k : Fin ([] : List (MetaArity twoSig)).length) →
     Term twoSig (([] : List (MetaArity twoSig)).get k).1
       (([] : List (MetaArity twoSig)).get k).2 := fun k => k.elim0
 
-theorem constants_equated : EqClosure constantTheory ta tb := by
-  have h := EqClosure.ax (E := constantTheory) (Γ := [])
-    ⟨0, by decide⟩ noBody (fun _ x => nomatch x)
+theorem constants_equated_at {Γ : Ctx twoSig} :
+    EqClosure constantTheory (.op .a .nil : Term twoSig Γ ()) (.op .b .nil) := by
+  have h := EqClosure.ax_closed (E := constantTheory) (Γ := Γ) ⟨0, by decide⟩ noBody
+    (fun _ x => nomatch x)
   exact h
+
+theorem constants_equated : EqClosure constantTheory ta tb := constants_equated_at
 
 /-- A nonidentity map exchanges the two constant symbols. -/
 def swap : SigMor twoSig twoSig where
@@ -240,7 +245,7 @@ theorem swap_changes_term : swap.onTerm ta ≠ ta := by
 
 /-- The generator is carried to a genuinely derived equation: its symmetry. -/
 theorem swap_respects : swap.RespectsEquations constantTheory constantTheory := by
-  intro i body
+  intro i Θ Γ body ambient ordinary
   have hi : i = ⟨0, by decide⟩ := by
     apply Fin.ext
     change i.val = 0
@@ -248,7 +253,8 @@ theorem swap_respects : swap.RespectsEquations constantTheory constantTheory := 
     change i.val < 1 at hi
     omega
   subst i
-  exact EqClosure.symm constants_equated
+  change EqClosure constantTheory (.op .b .nil : Term twoSig (Γ.map swap.sortMap) ()) (.op .a .nil)
+  exact EqClosure.symm constants_equated_at
 
 theorem swapped_equation : EqClosure constantTheory (swap.onTerm ta) (swap.onTerm tb) :=
   swap.eqClosure_onTerm swap_respects constants_equated
@@ -256,7 +262,7 @@ theorem swapped_equation : EqClosure constantTheory (swap.onTerm ta) (swap.onTer
 /-- A collapsing morphism can discharge a source generator by reflexivity. -/
 theorem merge_respects : merge.RespectsEquations constantTheory
     ([] : List (EqAxiom oneSig [])) := by
-  intro i body
+  intro i Θ Γ body ambient ordinary
   have hi : i = ⟨0, by decide⟩ := by
     apply Fin.ext
     change i.val = 0
@@ -270,7 +276,8 @@ theorem merge_respects : merge.RespectsEquations constantTheory
 theorem swap_does_not_respect_empty :
     ¬ swap.RespectsEquations constantTheory ([] : List (EqAxiom twoSig [])) := by
   intro h
-  have he := eqClosure_empty_eq (h ⟨0, by decide⟩ noBody)
+  have he := eqClosure_empty_eq (h ⟨0, by decide⟩ (Θ := []) (Γ := []) (fun i => i.elim0)
+    (fun _ x => nomatch x) (fun _ x => nomatch x))
   exact ta_ne_tb he.symm
 
 /-- Preservation does not imply reflection through an operator collapse. -/

@@ -23,7 +23,7 @@ namespace Declaration
 open RussellTarski
 
 /-- Substitute universe parameters through a closed declaration entry. -/
-def Entry.instantiateLevels (theta : Nat → LevelExpr)
+def Entry.instantiateLevels (theta : Nat → LevelExpr Nat)
     (entry : Entry Tower.Head) : Entry Tower.Head where
   type := substLevelsTm theta entry.type
   value? := entry.value?.map (substLevelsTm theta)
@@ -31,7 +31,7 @@ def Entry.instantiateLevels (theta : Nat → LevelExpr)
 /-- Substitute universe parameters through all declaration entries.  Root
 computation is supplied separately because its evidence may carry more
 structure than endpoint syntax. -/
-def Signature.instantiateLevels (theta : Nat → LevelExpr)
+def Signature.instantiateLevels (theta : Nat → LevelExpr Nat)
     (source : Signature Tower.Head)
     (computation : RootComputation Tower.Head) : Signature Tower.Head where
   entries := fun name =>
@@ -39,7 +39,7 @@ def Signature.instantiateLevels (theta : Nat → LevelExpr)
   computation := computation
 
 @[simp] theorem Signature.typeOf_instantiateLevels
-    (theta : Nat → LevelExpr) (source : Signature Tower.Head)
+    (theta : Nat → LevelExpr Nat) (source : Signature Tower.Head)
     (computation : RootComputation Tower.Head) (name : DeclName) :
     (source.instantiateLevels theta computation).typeOf? name =
       (source.typeOf? name).map (substLevelsTm theta) := by
@@ -48,7 +48,7 @@ def Signature.instantiateLevels (theta : Nat → LevelExpr)
   cases lookup : source.entries name <;> simp [lookup]
 
 @[simp] theorem Signature.valueOf_instantiateLevels
-    (theta : Nat → LevelExpr) (source : Signature Tower.Head)
+    (theta : Nat → LevelExpr Nat) (source : Signature Tower.Head)
     (computation : RootComputation Tower.Head) (name : DeclName) :
     (source.instantiateLevels theta computation).valueOf? name =
       (source.valueOf? name).map (substLevelsTm theta) := by
@@ -60,7 +60,7 @@ def Signature.instantiateLevels (theta : Nat → LevelExpr)
       cases valueLookup : entry.value? <;> simp [lookup, valueLookup]
 
 theorem Signature.typeOf_instantiateLevels_iff
-    (theta : Nat → LevelExpr) (source : Signature Tower.Head)
+    (theta : Nat → LevelExpr Nat) (source : Signature Tower.Head)
     (computation : RootComputation Tower.Head) (name : DeclName)
     (targetType : Tower.Tm 0) :
     (source.instantiateLevels theta computation).typeOf? name =
@@ -74,7 +74,7 @@ theorem Signature.typeOf_instantiateLevels_iff
   | some sourceType => simp
 
 theorem Signature.valueOf_instantiateLevels_iff
-    (theta : Nat → LevelExpr) (source : Signature Tower.Head)
+    (theta : Nat → LevelExpr Nat) (source : Signature Tower.Head)
     (computation : RootComputation Tower.Head) (name : DeclName)
     (targetValue : Tower.Tm 0) :
     (source.instantiateLevels theta computation).valueOf? name =
@@ -91,7 +91,7 @@ theorem Signature.valueOf_instantiateLevels_iff
 not reconstructed from a proposition: the caller supplies the exact map from
 source root steps to steps of the instantiated computation. -/
 structure LevelInstance (source : Signature Tower.Head)
-    (theta : Nat → LevelExpr) where
+    (theta : Nat → LevelExpr Nat) where
   computation : RootComputation Tower.Head
   computationMap : ∀ {n : Nat} {left right : Tower.Tm n},
     source.computation.step left right →
@@ -100,7 +100,7 @@ structure LevelInstance (source : Signature Tower.Head)
 
 namespace LevelInstance
 
-variable {source : Signature Tower.Head} {theta : Nat → LevelExpr}
+variable {source : Signature Tower.Head} {theta : Nat → LevelExpr Nat}
 
 /-- The instantiated declaration signature. -/
 def signature (instantiation : LevelInstance source theta) :
@@ -136,7 +136,7 @@ def morphism (instantiation : LevelInstance source theta) :
       | some inherited => some inherited
       | none => instantiation.signature.typeOf? name) =
         some (substLevelsTm theta type)
-    simp [Tower.rules] at typing ⊢
+    simp [LevelTower.rules] at typing ⊢
     simpa [signature] using congrArg
       (Option.map (substLevelsTm theta)) typing
   computation := by
@@ -168,7 +168,7 @@ theorem hasType (instantiation : LevelInstance source theta)
     typing.mapHead instantiation.morphism
 
 private theorem substLevelsTm_eq_const
-    (theta : Nat → LevelExpr) {term : Tower.Tm n} {name : DeclName}
+    (theta : Nat → LevelExpr Nat) {term : Tower.Tm n} {name : DeclName}
     (equality : substLevelsTm theta term = .const name) :
     term = .const name := by
   cases term <;> simp [substLevelsTm, Tm.mapHead] at equality ⊢
@@ -235,7 +235,7 @@ theorem Signature.typeOf_instantiateLevels_param
 /-- Level instantiation need not be injective: choosing one level for every
 parameter intentionally identifies two distinct schematic universe heads. -/
 theorem constantLevelInstantiation_collapses_parameters
-    (level : LevelExpr) :
+    (level : LevelExpr Nat) :
     substLevelsTm (fun _ => level)
         (sortTm (.param 0) : Tower.Tm 0) =
       substLevelsTm (fun _ => level) (sortTm (.param 1)) := by

@@ -25,13 +25,13 @@ variable {S : Signature}
 /-- Transport a single authored axiom along equality of declarations. -/
 private theorem eqClosure_ax_of_index_eq {M : List (MetaArity S)}
     {F : List (EqAxiom S M)} (j : Fin F.length) (a : EqAxiom S M)
-    (equalAxiom : F.get j = a) {Γ : Ctx S}
-    (body : (i : Fin M.length) → Term S (M.get i).1 (M.get i).2)
-    (close : Sub S a.ctx Γ) :
-    EqClosure F (bind close (instantiate body a.lhs))
-      (bind close (instantiate body a.rhs)) := by
+    (equalAxiom : F.get j = a) {Θ Γ : Ctx S}
+    (body : ContextualAssignment S M Θ) (ambient : Sub S Θ Γ)
+    (ordinary : Sub S a.ctx Γ) :
+    EqClosure F (ContextualAssignment.instantiate body ambient ordinary a.lhs)
+      (ContextualAssignment.instantiate body ambient ordinary a.rhs) := by
   subst a
-  exact .ax j body close
+  exact .ax j body ambient ordinary
 
 mutual
 /-- Enlarging an authored axiom list preserves every derivable equation,
@@ -42,9 +42,9 @@ theorem eqClosure_of_axiom_inclusion {M : List (MetaArity S)}
       ∃ j : Fin F.length, F.get j = E.get i) :
     ∀ {Γ : Ctx S} {s : S.Srt} {t u : Term S Γ s},
       EqClosure E t u → EqClosure F t u
-  | _, _, _, _, .ax i body close => by
+  | _, _, _, _, .ax i body ambient ordinary => by
       obtain ⟨j, equalAxiom⟩ := includeAxiom i
-      exact eqClosure_ax_of_index_eq j (E.get i) equalAxiom body close
+      exact eqClosure_ax_of_index_eq j (E.get i) equalAxiom body ambient ordinary
   | _, _, _, _, .refl t => .refl t
   | _, _, _, _, .symm h => .symm (eqClosure_of_axiom_inclusion includeAxiom h)
   | _, _, _, _, .trans h h' =>

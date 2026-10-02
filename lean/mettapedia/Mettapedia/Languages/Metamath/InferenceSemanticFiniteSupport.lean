@@ -5,7 +5,7 @@ import Metamath.Spec.Equivalence
 
 The canonical declarative `Metamath.Provable` relation has an unrestricted
 `var` constructor.  The operational verifier, source GSLT, and
-`SupportedProvable` instead require every variable used by a derivation to
+`FrameDerivable` instead require every variable used by a derivation to
 have an active floating hypothesis.  Fixed-frame conservativity is false.
 
 This module factors the honest reconciliation into two reusable pieces:
@@ -22,52 +22,52 @@ dummy extension and a suitable renaming is the next, separate obligation.
 
 namespace Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 
-open Metamath
+open _root_.Metamath
 open Metamath.Spec
 open Metamath.Spec.Equivalence
-open Metamath.Spec.Bridge (MarioVR MarioFormula MarioExpr)
+open Metamath.Spec.Bridge (DeclarativeVR DeclarativeFormula DeclarativeExpr)
 
 /-! ## Type-preserving semantic renaming -/
 
 /-- Rename semantic variable references while leaving constants untouched. -/
-def renameSym (ρ : MarioVR → MarioVR) : Metamath.Sym → Metamath.Sym
+def renameSym (ρ : DeclarativeVR → DeclarativeVR) : Metamath.Sym → Metamath.Sym
   | .const c => .const c
   | .var v => .var (ρ v)
 
 /-- Pointwise renaming of a semantic expression. -/
-def renameExpr (ρ : MarioVR → MarioVR) (expression : MarioExpr) : MarioExpr :=
+def renameExpr (ρ : DeclarativeVR → DeclarativeVR) (expression : DeclarativeExpr) : DeclarativeExpr :=
   expression.map (renameSym ρ)
 
 /-- A formula's constant typecode is fixed; only its expression is renamed. -/
-def renameFormula (ρ : MarioVR → MarioVR)
-    (formula : MarioFormula) : MarioFormula :=
+def renameFormula (ρ : DeclarativeVR → DeclarativeVR)
+    (formula : DeclarativeFormula) : DeclarativeFormula :=
   (formula.1, renameExpr ρ formula.2)
 
 /-- Rename every expression produced by a substitution.  The substitution's
 domain belongs to the referenced assertion and is intentionally unchanged. -/
-def renameSubstitution (ρ : MarioVR → MarioVR)
-    (σ : MarioVR → MarioExpr) : MarioVR → MarioExpr :=
+def renameSubstitution (ρ : DeclarativeVR → DeclarativeVR)
+    (σ : DeclarativeVR → DeclarativeExpr) : DeclarativeVR → DeclarativeExpr :=
   fun v => renameExpr ρ (σ v)
 
 /-- Renaming respects the semantic typecode carried by a variable reference. -/
-def TypePreserving (ρ : MarioVR → MarioVR) : Prop :=
+def TypePreserving (ρ : DeclarativeVR → DeclarativeVR) : Prop :=
   ∀ v, (ρ v).type = v.type
 
-@[simp] theorem renameExpr_nil (ρ : MarioVR → MarioVR) :
+@[simp] theorem renameExpr_nil (ρ : DeclarativeVR → DeclarativeVR) :
     renameExpr ρ [] = [] := rfl
 
-@[simp] theorem renameExpr_const_cons (ρ : MarioVR → MarioVR)
-    (c : Metamath.CN) (tail : MarioExpr) :
+@[simp] theorem renameExpr_const_cons (ρ : DeclarativeVR → DeclarativeVR)
+    (c : Metamath.CN) (tail : DeclarativeExpr) :
     renameExpr ρ (.const c :: tail) =
       .const c :: renameExpr ρ tail := rfl
 
-@[simp] theorem renameExpr_var_cons (ρ : MarioVR → MarioVR)
-    (v : MarioVR) (tail : MarioExpr) :
+@[simp] theorem renameExpr_var_cons (ρ : DeclarativeVR → DeclarativeVR)
+    (v : DeclarativeVR) (tail : DeclarativeExpr) :
     renameExpr ρ (.var v :: tail) =
       .var (ρ v) :: renameExpr ρ tail := rfl
 
-theorem renameExpr_append (ρ : MarioVR → MarioVR)
-    (left right : MarioExpr) :
+theorem renameExpr_append (ρ : DeclarativeVR → DeclarativeVR)
+    (left right : DeclarativeExpr) :
     renameExpr ρ (left ++ right) =
       renameExpr ρ left ++ renameExpr ρ right := by
   change List.map (renameSym ρ) (List.append left right) =
@@ -77,8 +77,8 @@ theorem renameExpr_append (ρ : MarioVR → MarioVR)
 
 /-- Renaming after substitution is the same as renaming each substitution
 image first. -/
-theorem renameExpr_subst (ρ : MarioVR → MarioVR)
-    (σ : MarioVR → MarioExpr) (expression : MarioExpr) :
+theorem renameExpr_subst (ρ : DeclarativeVR → DeclarativeVR)
+    (σ : DeclarativeVR → DeclarativeExpr) (expression : DeclarativeExpr) :
     renameExpr ρ (Metamath.Expr.subst σ expression) =
       Metamath.Expr.subst (renameSubstitution ρ σ) expression := by
   induction expression with
@@ -92,8 +92,8 @@ theorem renameExpr_subst (ρ : MarioVR → MarioVR)
             renameExpr_append, ih]
 
 /-- Formula-level fusion of renaming with substitution. -/
-theorem renameFormula_subst (ρ : MarioVR → MarioVR)
-    (σ : MarioVR → MarioExpr) (formula : MarioFormula) :
+theorem renameFormula_subst (ρ : DeclarativeVR → DeclarativeVR)
+    (σ : DeclarativeVR → DeclarativeExpr) (formula : DeclarativeFormula) :
     renameFormula ρ (Metamath.Formula.subst σ formula) =
       Metamath.Formula.subst (renameSubstitution ρ σ) formula := by
   cases formula with
@@ -103,8 +103,8 @@ theorem renameFormula_subst (ρ : MarioVR → MarioVR)
 
 /-- A renamed variable formula is the variable formula of the renamed
 reference when the renaming preserves typecodes. -/
-theorem renameFormula_vhyp {ρ : MarioVR → MarioVR}
-    (htype : TypePreserving ρ) (v : MarioVR) :
+theorem renameFormula_vhyp {ρ : DeclarativeVR → DeclarativeVR}
+    (htype : TypePreserving ρ) (v : DeclarativeVR) :
     renameFormula ρ (Metamath.VR.vhyp v) =
       Metamath.VR.vhyp (ρ v) := by
   simp [renameFormula, Metamath.VR.vhyp, renameExpr, renameSym, htype v]
@@ -114,14 +114,14 @@ theorem renameFormula_vhyp {ρ : MarioVR → MarioVR}
     renameSym id symbol = symbol := by
   cases symbol <;> rfl
 
-@[simp] theorem renameExpr_id (expression : MarioExpr) :
+@[simp] theorem renameExpr_id (expression : DeclarativeExpr) :
     renameExpr id expression = expression := by
   unfold renameExpr
   induction expression with
   | nil => rfl
   | cons symbol tail ih => simp [renameSym_id, ih]
 
-@[simp] theorem renameFormula_id (formula : MarioFormula) :
+@[simp] theorem renameFormula_id (formula : DeclarativeFormula) :
     renameFormula id formula = formula := by
   cases formula
   simp [renameFormula]
@@ -131,8 +131,8 @@ theorem renameFormula_vhyp {ρ : MarioVR → MarioVR}
 
 /-- Every variable in a renamed expression comes from a variable in the
 original expression. -/
-theorem var_mem_renameExpr {ρ : MarioVR → MarioVR}
-    {renamed : MarioVR} {expression : MarioExpr}
+theorem var_mem_renameExpr {ρ : DeclarativeVR → DeclarativeVR}
+    {renamed : DeclarativeVR} {expression : DeclarativeExpr}
     (hmem : Metamath.Sym.var renamed ∈ renameExpr ρ expression) :
     ∃ original,
       Metamath.Sym.var original ∈ expression ∧ ρ original = renamed := by
@@ -146,9 +146,9 @@ theorem var_mem_renameExpr {ρ : MarioVR → MarioVR}
 /-- A morphism of caller disjointness relations preserves expression
 disjointness after renaming. -/
 theorem Expr.disjoint_rename
-    {ρ : MarioVR → MarioVR} {sourceDJ targetDJ : Metamath.DJ}
+    {ρ : DeclarativeVR → DeclarativeVR} {sourceDJ targetDJ : Metamath.DJ}
     (hdj : ∀ a b, sourceDJ a b → targetDJ (ρ a) (ρ b))
-    {left right : MarioExpr}
+    {left right : DeclarativeExpr}
     (hdisjoint : Metamath.Expr.disjoint sourceDJ left right) :
     Metamath.Expr.disjoint targetDJ
       (renameExpr ρ left) (renameExpr ρ right) := by
@@ -160,9 +160,9 @@ theorem Expr.disjoint_rename
 /-- Substitution respects transported caller disjointness after all of its
 images are renamed. -/
 theorem DJ.subst_rename
-    {ρ : MarioVR → MarioVR} {sourceDJ targetDJ axiomDJ : Metamath.DJ}
+    {ρ : DeclarativeVR → DeclarativeVR} {sourceDJ targetDJ axiomDJ : Metamath.DJ}
     (hdj : ∀ a b, sourceDJ a b → targetDJ (ρ a) (ρ b))
-    {σ : MarioVR → MarioExpr}
+    {σ : DeclarativeVR → DeclarativeExpr}
     (hsubst : Metamath.DJ.subst σ axiomDJ sourceDJ) :
     Metamath.DJ.subst (renameSubstitution ρ σ) axiomDJ targetDJ := by
   intro a b hab
@@ -173,7 +173,7 @@ theorem DJ.subst_rename
 /-- The target active frame transports the source context through `ρ` when
 all source hypotheses remain available after renaming and all source `$d`
 facts remain valid. -/
-structure ContextTransport (ρ : MarioVR → MarioVR)
+structure ContextTransport (ρ : DeclarativeVR → DeclarativeVR)
     (source : Metamath.Context) (target : Metamath.Spec.Frame) : Prop where
   hypothesis : ∀ formula ∈ source.hyps,
     renameFormula ρ formula ∈ (frameToContext target).hyps
@@ -185,21 +185,21 @@ members, together with context transport and type preservation, is sufficient
 to construct a supported derivation in the target active frame. -/
 def FiniteSupportWitness
     {Γ : Metamath.Spec.Database} {source : Metamath.Context}
-    {formula : MarioFormula}
-    (support : List MarioVR) : Prop :=
-  ∀ (ρ : MarioVR → MarioVR) (target : Metamath.Spec.Frame),
+    {formula : DeclarativeFormula}
+    (support : List DeclarativeVR) : Prop :=
+  ∀ (ρ : DeclarativeVR → DeclarativeVR) (target : Metamath.Spec.Frame),
     TypePreserving ρ →
     ContextTransport ρ source target →
     (∀ v ∈ support,
       ∃ sourceVariable : Metamath.Spec.Variable,
         findVar (varMapOfFrame target) (ρ v) = some sourceVariable) →
-    SupportedProvable Γ target (renameFormula ρ formula)
+    FrameDerivable Γ target (renameFormula ρ formula)
 
 /-- Local support is monotone in the finite support list. -/
 theorem FiniteSupportWitness.mono
     {Γ : Metamath.Spec.Database} {source : Metamath.Context}
-    {formula : MarioFormula}
-    {smaller larger : List MarioVR}
+    {formula : DeclarativeFormula}
+    {smaller larger : List DeclarativeVR}
     (hwitness : FiniteSupportWitness (Γ := Γ) (source := source)
       (formula := formula) smaller)
     (hsubset : ∀ v ∈ smaller, v ∈ larger) :
@@ -214,7 +214,7 @@ common support list, obtained by concatenation.  No choice principle is needed:
 the list itself supplies the induction order. -/
 theorem exists_common_support
     {α : Type _} (items : List α)
-    (property : α → List MarioVR → Prop)
+    (property : α → List DeclarativeVR → Prop)
     (hmono : ∀ item {smaller larger},
       property item smaller →
       (∀ v ∈ smaller, v ∈ larger) →
@@ -244,22 +244,22 @@ target active frame transports the source context and supports the listed
 images. -/
 theorem Provable.exists_finiteSupport
     {Γ : Metamath.Spec.Database} {source : Metamath.Context}
-    {formula : MarioFormula}
+    {formula : DeclarativeFormula}
     (derivation : Metamath.Provable (dbToAxioms Γ) source formula) :
-    ∃ support : List MarioVR,
+    ∃ support : List DeclarativeVR,
       FiniteSupportWitness (Γ := Γ) (source := source)
         (formula := formula) support := by
   induction derivation with
   | hyp formula hmem =>
       refine ⟨[], ?_⟩
       intro ρ target htype hcontext hsupported
-      exact SupportedProvable.hyp (renameFormula ρ formula)
+      exact Metamath.Derivable.hyp (renameFormula ρ formula)
         (hcontext.hypothesis formula hmem)
   | var v =>
       refine ⟨[v], ?_⟩
       intro ρ target htype hcontext hsupported
       rw [renameFormula_vhyp htype v]
-      exact SupportedProvable.var (ρ v) (hsupported v (by simp))
+      exact Metamath.Derivable.var (ρ v) (hsupported v (by simp))
   | @ax σ ax hax hdj hhyps hvars ih_h ih_v =>
       obtain ⟨hypSupport, hypWitness⟩ :=
         exists_common_support ax.ctx.hyps
@@ -280,19 +280,19 @@ theorem Provable.exists_finiteSupport
       refine ⟨hypSupport ++ varSupport, ?_⟩
       intro ρ target htype hcontext hsupported
       have hypSupported : ∀ hypothesis ∈ ax.ctx.hyps,
-          SupportedProvable Γ target
+          FrameDerivable Γ target
             (renameFormula ρ (Metamath.Formula.subst σ hypothesis)) := by
         intro hypothesis hmem
         exact hypWitness hypothesis hmem ρ target htype hcontext
           (fun v hv => hsupported v (List.mem_append_left varSupport hv))
       have varSupported : ∀ v ∈ ax.vars,
-          SupportedProvable Γ target
+          FrameDerivable Γ target
             (renameFormula ρ (v.type, σ v)) := by
         intro v hmem
         exact varWitness v hmem ρ target htype hcontext
           (fun v hv => hsupported v (List.mem_append_right hypSupport hv))
       rw [renameFormula_subst]
-      exact SupportedProvable.ax (renameSubstitution ρ σ) hax
+      exact Metamath.Derivable.ax (renameSubstitution ρ σ) hax
         (DJ.subst_rename hcontext.distinct hdj)
         (fun hypothesis hmem => by
           rw [← renameFormula_subst]
@@ -300,8 +300,6 @@ theorem Provable.exists_finiteSupport
         (fun v hmem => by
           simpa [renameFormula, renameSubstitution] using
             varSupported v hmem)
-        (fun v hmem =>
-          supported_wellformed (varSupported v hmem))
 
 /-! ## Positive and negative calibration -/
 
@@ -309,12 +307,12 @@ theorem Provable.exists_finiteSupport
 witness. -/
 theorem singleton_supports_var
     {Γ : Metamath.Spec.Database} {source : Metamath.Context}
-    (v : MarioVR) :
+    (v : DeclarativeVR) :
     FiniteSupportWitness (Γ := Γ) (source := source)
       (formula := Metamath.VR.vhyp v) [v] := by
   intro ρ target htype hcontext hsupported
   rw [renameFormula_vhyp htype v]
-  exact SupportedProvable.var (ρ v) (hsupported v (by simp))
+  exact Metamath.Derivable.var (ρ v) (hsupported v (by simp))
 
 def emptyDatabase : Metamath.Spec.Database := fun _ => none
 
@@ -331,8 +329,8 @@ theorem emptyContextTransport : ContextTransport id emptyContext emptyFrame := b
 
 /-- With no hypotheses, variables, or assertions, the supported relation has
 no derivations. -/
-theorem no_supported_empty {formula : MarioFormula} :
-    ¬ SupportedProvable emptyDatabase emptyFrame formula := by
+theorem no_supported_empty {formula : DeclarativeFormula} :
+    ¬ FrameDerivable emptyDatabase emptyFrame formula := by
   intro h
   cases h with
   | hyp formula hmem =>
@@ -341,13 +339,13 @@ theorem no_supported_empty {formula : MarioFormula} :
       obtain ⟨sourceVariable, hfind⟩ := hsupported
       simp [varMapOfFrame, floatList, varMapOfFrameAux, findVar,
         emptyFrame] at hfind
-  | ax σ hax hdj hhyps hvars hwf =>
+  | ax σ hax hdj hhyps hvars =>
       obtain ⟨label, frame, expression, hlookup, -, -⟩ := hax
       simp [emptyDatabase] at hlookup
 
 /-- Negative calibration: the empty list is not a sufficient support witness
 for even one unrestricted variable leaf. -/
-theorem nil_does_not_support_var (v : MarioVR) :
+theorem nil_does_not_support_var (v : DeclarativeVR) :
     ¬ FiniteSupportWitness (Γ := emptyDatabase) (source := emptyContext)
       (formula := Metamath.VR.vhyp v) [] := by
   intro hwitness
@@ -376,7 +374,7 @@ def AxiomPremiseTypecode (Γ : Metamath.Spec.Database) (t : String) : Prop :=
 
 /-- Substitution preserves the formula head. -/
 theorem formulaSubst_fst (σ : Metamath.VR → Metamath.Expr)
-    (h : MarioFormula) :
+    (h : DeclarativeFormula) :
     (Metamath.Formula.subst σ h).1 = h.1 := by
   cases h
   rfl
@@ -385,7 +383,7 @@ theorem formulaSubst_fst (σ : Metamath.VR → Metamath.Expr)
 concatenation. -/
 theorem exists_common_support_bounded
     {α : Type _} (items : List α)
-    (property : α → List MarioVR → Prop) (leafBound : MarioVR → Prop)
+    (property : α → List DeclarativeVR → Prop) (leafBound : DeclarativeVR → Prop)
     (hmono : ∀ item {smaller larger},
       property item smaller →
       (∀ v ∈ smaller, v ∈ larger) →
@@ -426,9 +424,9 @@ conclusion's own typecode or a premise typecode of some database
 axiom. -/
 theorem Provable.exists_finiteSupport_typed
     {Γ : Metamath.Spec.Database} {source : Metamath.Context}
-    {formula : MarioFormula}
+    {formula : DeclarativeFormula}
     (derivation : Metamath.Provable (dbToAxioms Γ) source formula) :
-    ∃ support : List MarioVR,
+    ∃ support : List DeclarativeVR,
       FiniteSupportWitness (Γ := Γ) (source := source)
         (formula := formula) support ∧
       ∀ v ∈ support, Metamath.VR.type v = formula.1 ∨
@@ -437,13 +435,13 @@ theorem Provable.exists_finiteSupport_typed
   | hyp formula hmem =>
       refine ⟨[], ?_, fun v hv => nomatch hv⟩
       intro ρ target htype hcontext hsupported
-      exact SupportedProvable.hyp (renameFormula ρ formula)
+      exact Metamath.Derivable.hyp (renameFormula ρ formula)
         (hcontext.hypothesis formula hmem)
   | var v =>
       refine ⟨[v], ?_, ?_⟩
       · intro ρ target htype hcontext hsupported
         rw [renameFormula_vhyp htype v]
-        exact SupportedProvable.var (ρ v) (hsupported v (by simp))
+        exact Metamath.Derivable.var (ρ v) (hsupported v (by simp))
       · intro w hw
         rcases List.mem_singleton.mp hw with rfl
         exact Or.inl rfl
@@ -481,19 +479,19 @@ theorem Provable.exists_finiteSupport_typed
       refine ⟨hypSupport ++ varSupport, ?_, ?_⟩
       · intro ρ target htype hcontext hsupported
         have hypSupported : ∀ hypothesis ∈ ax.ctx.hyps,
-            SupportedProvable Γ target
+            FrameDerivable Γ target
               (renameFormula ρ (Metamath.Formula.subst σ hypothesis)) := by
           intro hypothesis hmem
           exact hypWitness hypothesis hmem ρ target htype hcontext
             (fun v hv => hsupported v (List.mem_append_left varSupport hv))
         have varSupported : ∀ v ∈ ax.vars,
-            SupportedProvable Γ target
+            FrameDerivable Γ target
               (renameFormula ρ (Metamath.VR.type v, σ v)) := by
           intro v hmem
           exact varWitness v hmem ρ target htype hcontext
             (fun v hv => hsupported v (List.mem_append_right hypSupport hv))
         rw [renameFormula_subst]
-        exact SupportedProvable.ax (renameSubstitution ρ σ) hax
+        exact Metamath.Derivable.ax (renameSubstitution ρ σ) hax
           (DJ.subst_rename hcontext.distinct hdj)
           (fun hypothesis hmem => by
             rw [← renameFormula_subst]
@@ -501,8 +499,6 @@ theorem Provable.exists_finiteSupport_typed
           (fun v hmem => by
             simpa [renameFormula, renameSubstitution] using
               varSupported v hmem)
-          (fun v hmem =>
-            supported_wellformed (varSupported v hmem))
       · intro v hv
         rcases List.mem_append.mp hv with hleft | hright
         · exact Or.inr (hypBound v hleft)
@@ -510,9 +506,9 @@ theorem Provable.exists_finiteSupport_typed
 
 /-- Coherence: the plain extraction is recovered from the typed one. -/
 example {Γ : Metamath.Spec.Database} {source : Metamath.Context}
-    {formula : MarioFormula}
+    {formula : DeclarativeFormula}
     (derivation : Metamath.Provable (dbToAxioms Γ) source formula) :
-    ∃ support : List MarioVR,
+    ∃ support : List DeclarativeVR,
       FiniteSupportWitness (Γ := Γ) (source := source)
         (formula := formula) support :=
   (Provable.exists_finiteSupport_typed derivation).imp

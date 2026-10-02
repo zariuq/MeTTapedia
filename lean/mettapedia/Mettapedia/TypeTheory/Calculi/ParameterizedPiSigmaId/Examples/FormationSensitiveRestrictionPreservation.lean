@@ -203,8 +203,8 @@ theorem repaired_runs_preserve {context : Tower.Ctx n}
   apply judgment.steps_preserve
     (restrict_universeRegularity rules (manifest true)
       (towerUniverseRegularity.includeSignature signature))
-    ((conversionQualification true).piConversionBoundary Tower.headEq_symmetric)
-    ((conversionQualification true).sigmaConversionBoundary Tower.headEq_symmetric)
+    ((conversionQualification true).piConversionBoundary LevelTower.headEq_symmetric)
+    ((conversionQualification true).sigmaConversionBoundary LevelTower.headEq_symmetric)
     ?_ repaired_root_preservation steps
   intro n context head next u typed equality
   exact typing_transfer (include_pure true) (towerHeadPreservation (Γ := context) typed equality)

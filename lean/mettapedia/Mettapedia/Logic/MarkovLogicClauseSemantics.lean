@@ -182,6 +182,19 @@ noncomputable def worldWeight
   ∏ i : support.attach, (M.clauseData i.1).eval W
 
 omit [DecidableEq Atom] in
+/-- World weights are products over the clause identifiers in the support.
+This removes the membership-indexed active-clause variables before a concrete
+clause family is evaluated. -/
+theorem worldWeight_eq_prod
+    (M : GroundMLN Atom ClauseId)
+    (support : Finset ClauseId) (W : AtomValuation Atom) :
+    M.worldWeight support W = ∏ i ∈ support, (M.clauseData i).eval W := by
+  classical
+  exact (Finset.prod_coe_sort support.attach
+    (fun i => (M.clauseData i.1).eval W)).trans
+    (Finset.prod_attach support (fun i => (M.clauseData i).eval W))
+
+omit [DecidableEq Atom] in
 theorem worldWeight_ne_top
     (M : GroundMLN Atom ClauseId)
     (support : Finset ClauseId) (W : AtomValuation Atom) :

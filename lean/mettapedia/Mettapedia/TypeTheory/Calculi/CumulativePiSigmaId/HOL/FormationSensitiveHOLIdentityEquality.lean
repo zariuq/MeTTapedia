@@ -363,7 +363,7 @@ theorem identityStep_preserves (source : LogicalSignature Base Const) (proofName
       have carrier : Typing R Γ (typeAt source.types n type) (sortTm Tower.zero) :=
         host_typed source proofName host
           (include_typed source proofName (typeAt_formed source type Γ))
-      exact replay (.idForm carrier (host.isUniverse (Tower.IsUniverse.sort Tower.zero))
+      exact replay (.idForm carrier (host.isUniverse (LevelTower.IsUniverse.sort Tower.zero))
         leftTyped rightTyped)
 
 /-! ## Reflexivity -/
@@ -392,7 +392,7 @@ theorem refl_realizes (source : LogicalSignature Base Const) (proofName : DeclNa
       (.pi (typeAt source.types 0 type) (.id (typeAt source.types 1 type) (.var 0) (.var 0))) :=
     decodes source proofName host identity (reflexivity type) (reflexivity_represented source type)
       rfl
-  have isSort : R.isUniverse (.sort Tower.zero) := host.isUniverse (Tower.IsUniverse.sort Tower.zero)
+  have isSort : R.isUniverse (.sort Tower.zero) := host.isUniverse (LevelTower.IsUniverse.sort Tower.zero)
   have carrier : Typing R .nil (typeAt source.types 0 type) (sortTm Tower.zero) :=
     host_typed source proofName host (include_typed source proofName (typeAt_formed source type .nil))
   have shifted : Typing R (.snoc .nil (typeAt source.types 0 type)) (typeAt source.types 1 type)

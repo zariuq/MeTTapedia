@@ -69,7 +69,7 @@ theorem wire_declarations_fresh {name : DeclName} {entry : Entry Tower.Head}
     IntrinsicRelator.rules.constantType name = none := by
   cases relator : IntrinsicRelator.rawSignature.entries name with
   | none =>
-      simp [IntrinsicRelator.rules, extendRules, combinedType, Tower.rules,
+      simp [IntrinsicRelator.rules, extendRules, combinedType, LevelTower.rules,
         Signature.typeOf?, relator]
   | some prior =>
       have absent := relator_entry_wire_absent relator
@@ -266,8 +266,8 @@ theorem matched_source_typed {v k : Nat} {Effect : Type} (context : Tower.Ctx n)
       (PolarizedNeedMatchedIndex.source (Effect := Effect) expected actual)
       (.returns (.native NativeWireData.dataType)) := by
   apply ComputationTyping.bindNative
-    ⟨.sort Tower.zero, Tower.IsUniverse.sort _, dataType_formed context⟩
-    (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, dataType_formed context⟩))
+    ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, dataType_formed context⟩
+    (.returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, dataType_formed context⟩))
   · exact .call (matched_operation_formed .select) (encode_typed context _)
   · exact .call (matched_operation_formed .consume) (matched_consume_argument_typed expected (.var 0))
 
@@ -408,7 +408,7 @@ private theorem encode_spine (context : Tower.Ctx n) (wire : NativeWireData.Wire
       simp only [NativeWireData.encode]
       apply FormationSensitive.DeclarationSpine.constant
         (wire_constant_preserved ?_) (dataType_formed .nil) (.sort Tower.zero)
-      simp [NativeWireData.rules, extendRules, combinedType, Tower.rules, Signature.typeOf?,
+      simp [NativeWireData.rules, extendRules, combinedType, LevelTower.rules, Signature.typeOf?,
         NativeWireData.signature, NativeWireData.dataName, NativeWireData.applicationName,
         NativeWireData.consName, NativeWireData.nilName, NativeWireData.symbolPrefix,
         NativeWireData.stringPrefix]
@@ -416,7 +416,7 @@ private theorem encode_spine (context : Tower.Ctx n) (wire : NativeWireData.Wire
       simp only [NativeWireData.encode]
       apply FormationSensitive.DeclarationSpine.constant
         (wire_constant_preserved ?_) (dataType_formed .nil) (.sort Tower.zero)
-      simp [NativeWireData.rules, extendRules, combinedType, Tower.rules, Signature.typeOf?,
+      simp [NativeWireData.rules, extendRules, combinedType, LevelTower.rules, Signature.typeOf?,
         NativeWireData.signature, NativeWireData.dataName, NativeWireData.applicationName,
         NativeWireData.consName, NativeWireData.nilName, NativeWireData.symbolPrefix,
         NativeWireData.stringPrefix]
@@ -424,7 +424,7 @@ private theorem encode_spine (context : Tower.Ctx n) (wire : NativeWireData.Wire
       simp only [NativeWireData.encode]
       apply FormationSensitive.DeclarationSpine.constant
         (wire_constant_preserved ?_) (dataType_formed .nil) (.sort Tower.zero)
-      simp [NativeWireData.rules, extendRules, combinedType, Tower.rules, Signature.typeOf?,
+      simp [NativeWireData.rules, extendRules, combinedType, LevelTower.rules, Signature.typeOf?,
         NativeWireData.signature, NativeWireData.dataName, NativeWireData.applicationName,
         NativeWireData.consName, NativeWireData.nilName, NativeWireData.naturalPrefix]
   | application head arguments =>

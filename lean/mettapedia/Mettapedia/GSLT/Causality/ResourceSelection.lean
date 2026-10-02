@@ -173,6 +173,96 @@ theorem commit_add_frame {picked current remaining : Multiset R}
   refine ⟨le_trans available (Multiset.le_add_right _ _), ?_⟩
   exact tsub_add_eq_add_tsub available
 
+/-! ## Revalidating a complete match observation
+
+An available selected bag and a current complete match set are different
+contracts. The latter also detects newly inserted matches, including changes
+to a previously empty result. Unrelated resources need not invalidate it.
+-/
+
+/-- Revalidate the captured complete match set, then atomically consume it.
+Unlike `commit`, this checks the predicate's whole current observation. -/
+def commitAll (predicate : R → Bool) (captured current : Multiset R) :
+    Option (Multiset R) :=
+  if captured = allMatches predicate current then commit captured current else none
+
+/-- Successful complete-match publication certifies both completeness and
+the exact residual store. -/
+theorem commitAll_eq_some_iff (predicate : R → Bool)
+    (captured current remaining : Multiset R) :
+    commitAll predicate captured current = some remaining ↔
+      captured = allMatches predicate current ∧ remaining = current - captured := by
+  unfold commitAll
+  split
+  · next currentMatches =>
+      rw [commit_eq_some_iff]
+      constructor
+      · rintro ⟨_, remainingEq⟩
+        exact ⟨currentMatches, remainingEq⟩
+      · rintro ⟨_, remainingEq⟩
+        exact ⟨currentMatches ▸ allMatches_le predicate current, remainingEq⟩
+  · next changed => simp [changed]
+
+/-- Stale complete-match observations perform no partial consumption. -/
+theorem commitAll_eq_none_iff (predicate : R → Bool) (captured current : Multiset R) :
+    commitAll predicate captured current = none ↔
+      captured ≠ allMatches predicate current := by
+  unfold commitAll
+  split
+  · next currentMatches =>
+      rw [commit_eq_none_iff]
+      have available : captured ≤ current := currentMatches ▸ allMatches_le predicate current
+      constructor
+      · intro unavailable
+        exact False.elim (unavailable available)
+      · intro changed
+        exact False.elim (changed currentMatches)
+  · next changed => simp [changed]
+
+/-- A successful complete-match commit leaves no current match. -/
+theorem commitAll_leaves_no_match {predicate : R → Bool}
+    {captured current remaining : Multiset R}
+    (success : commitAll predicate captured current = some remaining) :
+    allMatches predicate remaining = 0 := by
+  obtain ⟨rfl, rfl⟩ := (commitAll_eq_some_iff _ _ _ _).mp success
+  exact allMatches_after_commit predicate current
+
+omit [DecidableEq R] in
+/-- Matching snapshots depend only on matching resources, not on a global
+revision number. -/
+theorem allMatches_add (predicate : R → Bool) (snapshot frame : Multiset R) :
+    allMatches predicate (snapshot + frame) =
+      allMatches predicate snapshot + allMatches predicate frame := by
+  simp [allMatches]
+
+/-- Changes outside the observed predicate preserve a complete-match commit. -/
+theorem commitAll_add_irrelevant_frame {predicate : R → Bool}
+    {captured current remaining : Multiset R}
+    (success : commitAll predicate captured current = some remaining)
+    (frame : Multiset R) (irrelevant : allMatches predicate frame = 0) :
+    commitAll predicate captured (current + frame) = some (remaining + frame) := by
+  obtain ⟨matchCurrent, residual⟩ := (commitAll_eq_some_iff _ _ _ _).mp success
+  apply (commitAll_eq_some_iff _ _ _ _).mpr
+  constructor
+  · rw [allMatches_add, irrelevant, add_zero]
+    exact matchCurrent
+  · exact ((commit_eq_some_iff _ _ _).mp
+      (commit_add_frame ((commit_eq_some_iff _ _ _).mpr
+        ⟨matchCurrent ▸ allMatches_le predicate current, residual⟩) frame)).2
+
+/-- A newly inserted matching occurrence invalidates the former complete
+match claim, even when every formerly selected occurrence is still present. -/
+theorem commitAll_rejects_new_matches (predicate : R → Bool)
+    (snapshot frame : Multiset R) (newMatch : allMatches predicate frame ≠ 0) :
+    commitAll predicate (allMatches predicate snapshot) (snapshot + frame) = none := by
+  apply (commitAll_eq_none_iff _ _ _).mpr
+  rw [allMatches_add]
+  intro same
+  have noNewMatches : allMatches predicate frame = 0 := by
+    apply add_left_cancel (a := allMatches predicate snapshot)
+    simpa only [add_zero] using same.symm
+  exact newMatch noNewMatches
+
 /-- Exploration gives every selected alternative its own residual snapshot.
 The alternatives do not successively consume one shared mutable store. -/
 def branches (predicate : R → Bool) (k : ℕ) (snapshot : Multiset R) :
@@ -280,3 +370,29 @@ theorem independent_takes {site₁ site₂ : Binding × ℕ}
     (selectionSystem accepts).fire_comm concurrent⟩
 
 end Mettapedia.GSLT.Causality.ResourceSelection
+
+namespace Mettapedia.GSLT.Causality.ResourceSelection.SnapshotControls
+
+def isSeven (resource : ℕ) : Bool := resource == 7
+
+/-- Inserting an unrelated atom does not invalidate the complete observation. -/
+theorem irrelevant_insertion_survives :
+    commitAll isSeven {7} ({7, 9} : Multiset ℕ) = some {9} := by
+  decide +kernel
+
+/-- An ordinary atomic take still succeeds after a new match appears. It
+does not certify that the captured take contains all current matches. -/
+theorem availability_does_not_certify_completeness :
+    commit {7} ({7, 7} : Multiset ℕ) = some {7} ∧
+      commitAll isSeven {7} ({7, 7} : Multiset ℕ) = none := by
+  decide +kernel
+
+/-- A captured absence is invalidated by an inserted matching atom. There
+are no selected atoms whose disappearance could detect this race. -/
+theorem empty_capture_detects_inserted_match :
+    commitAll isSeven 0 (0 : Multiset ℕ) = some 0 ∧
+      commitAll isSeven 0 ({7} : Multiset ℕ) = none ∧
+      commit 0 ({7} : Multiset ℕ) = some {7} := by
+  decide +kernel
+
+end Mettapedia.GSLT.Causality.ResourceSelection.SnapshotControls

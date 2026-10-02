@@ -30,7 +30,7 @@ theorem formed_declaration_judgment :
   refine ⟨.nil, ?_⟩
   exact Typing.const (R := formedDeclarationRules) (Γ := .nil)
     (name := declaredName) (type := .head .legacyGround) (u := .sort Tower.zero) rfl
-    (.headType Tower.HeadTyping.legacyGround) (Tower.IsUniverse.sort Tower.zero)
+    (.headType LevelTower.HeadTyping.legacyGround) (LevelTower.IsUniverse.sort Tower.zero)
 
 /-- The contrasting raw signature names an absent constant as the declared
 type. Its universe rules and computation are otherwise unchanged. -/

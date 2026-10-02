@@ -49,19 +49,6 @@ theorem instIntoArgs_embed {M : List (MetaArity S)}
       · exact instIntoArgs_embed assignment tail
 end
 
-/-- Reading one of two related argument lists gives related terms. The
-argument positions are the dependency context of a metavariable occurrence. -/
-theorem eqArgs_argsToSub :
-    ∀ {bs : List S.Srt} {Γ : Ctx S}
-      {args args' : Args (withMetas S N) (bs.map (fun b => ([], b))) Γ},
-      EqArgs E args args' →
-      ∀ (s : S.Srt) (v : Var bs s),
-        EqClosure E (argsToSub args s v) (argsToSub args' s v)
-  | [], _, _, _, _, _, v => nomatch v
-  | _ :: _, _, .cons _ _, .cons _ _, .cons related _rest, _, .zero => related
-  | _ :: _, _, .cons _ _, .cons _ _, .cons _related rest, _, .succ v =>
-      eqArgs_argsToSub rest _ v
-
 mutual
 /-- Pointwise equation-equivalent second-order assignments induce the same
 action on all terms, including terms under arbitrarily many binders. -/
@@ -117,20 +104,18 @@ theorem instInto_eqClosure_generators {M L : List (MetaArity S)}
     (assignment : (i : Fin M.length) →
       Term (withMetas S N) (M.get i).1 (M.get i).2)
     {F : List (EqAxiom (withMetas S M) K)}
-    (generators : ∀ (i : Fin F.length)
-      (schema : (k : Fin K.length) →
-        Term (withMetas S M) (K.get k).1 (K.get k).2),
+    (generators : ∀ (i : Fin F.length) {Θ Γ : Ctx S}
+      (schema : ContextualAssignment (withMetas S M) K Θ)
+      (ambient : Sub (withMetas S M) Θ Γ)
+      (ordinary : Sub (withMetas S M) (F.get i).ctx Γ),
       EqClosure D
-        (instInto assignment (instantiate schema (F.get i).lhs))
-        (instInto assignment (instantiate schema (F.get i).rhs))) :
+        (instInto assignment (ContextualAssignment.instantiate schema ambient ordinary (F.get i).lhs))
+        (instInto assignment (ContextualAssignment.instantiate schema ambient ordinary (F.get i).rhs))) :
     ∀ {Γ : Ctx S} {s : S.Srt}
       {left right : Term (withMetas S M) Γ s},
       EqClosure F left right →
       EqClosure D (instInto assignment left) (instInto assignment right)
-  | _, _, _, _, .ax i schema close => by
-      simp only [instInto_bind]
-      exact eqClosure_bind
-        (fun s v => instInto assignment (close s v)) (generators i schema)
+  | _, _, _, _, .ax i schema ambient ordinary => generators i schema ambient ordinary
   | _, _, _, _, .refl _ => .refl _
   | _, _, _, _, .symm related =>
       .symm (instInto_eqClosure_generators D assignment generators related)
@@ -155,12 +140,13 @@ theorem instInto_eqArgs_generators {M L : List (MetaArity S)}
     (assignment : (i : Fin M.length) →
       Term (withMetas S N) (M.get i).1 (M.get i).2)
     {F : List (EqAxiom (withMetas S M) K)}
-    (generators : ∀ (i : Fin F.length)
-      (schema : (k : Fin K.length) →
-        Term (withMetas S M) (K.get k).1 (K.get k).2),
+    (generators : ∀ (i : Fin F.length) {Θ Γ : Ctx S}
+      (schema : ContextualAssignment (withMetas S M) K Θ)
+      (ambient : Sub (withMetas S M) Θ Γ)
+      (ordinary : Sub (withMetas S M) (F.get i).ctx Γ),
       EqClosure D
-        (instInto assignment (instantiate schema (F.get i).lhs))
-        (instInto assignment (instantiate schema (F.get i).rhs))) :
+        (instInto assignment (ContextualAssignment.instantiate schema ambient ordinary (F.get i).lhs))
+        (instInto assignment (ContextualAssignment.instantiate schema ambient ordinary (F.get i).rhs))) :
     ∀ {arities : List (List S.Srt × S.Srt)} {Γ : Ctx S}
       {left right : Args (withMetas S M) arities Γ},
       EqArgs F left right →
@@ -198,7 +184,7 @@ theorem distinct_before_equation : first S sort ≠ second S sort :=
 
 theorem related_after_equation :
     EqClosure [identifyGenerators S sort] (first S sort) (second S sort) := by
-  have generated := EqClosure.ax (E := [identifyGenerators S sort])
+  have generated := EqClosure.ax_closed [identifyGenerators S sort]
     (⟨0, by decide⟩ : Fin 1)
     (fun i => Fin.elim0 i)
     (fun _ v => Term.var v)

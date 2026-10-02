@@ -187,8 +187,8 @@ theorem checkThenQualify_typed {n v k : Nat} {Effect : Type} (context : Tower.Ct
       (checkThenQualify (Effect := Effect) expected candidate)
       (.returns (.native NativeWireData.dataType)) := by
   apply ComputationTyping.bindNative
-    ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
-    (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩))
+    ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
+    (.returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩))
   · exact .call (operation_formed .check) (NativeWireData.encode_typing context _)
   · exact .call (operation_formed .qualify) (admissionArgument_typed expected (.var 0))
 

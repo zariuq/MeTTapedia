@@ -2,17 +2,16 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTran
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.RootPreservation
 
 /-!
-# Annotated templates for implication and quantifier decoding
+# Annotated templates for the decoding of proposition codes
 
-The implication and universal-quantifier decoding templates satisfy
-`TemplateTyped` (`imp_templateTyped`, `all_templateTyped`). Their elaborated
-right sides are typed in the contexts and at the types recovered from their
-left sides. Simple types over `prop`, the numbers and the sets are formed in
-the universe of proofs (`typeAt_formed`).
+The decoding templates of implication, of every quantifier instance and of every
+equation instance satisfy `TemplateTyped` (`imp_templateTyped`,
+`all_templateTyped`, `eq_templateTyped`). Their elaborated right sides are typed
+in the contexts and at the types recovered from their left sides. Simple types
+over `prop`, the numbers and the sets are formed in the universe of proofs
+(`typeAt_formed`), and their annotations are closed (`subst_liftTm_typeAt`).
 
-These are inputs to the generic schema-preservation theorem. Equality-code
-decoding, the identity eliminator and preservation for the complete object
-package are not established in this module.
+These are inputs to the generic schema-preservation theorem.
 -/
 
 set_option autoImplicit false
@@ -39,15 +38,15 @@ section Constants
 variable {n : Nat} {Γ : CCtx Tower.Head n}
 
 /-- The universe at a level, annotated. -/
-abbrev CU {n : Nat} (l : LevelExpr) : CTm Tower.Head n := .head (.sort l)
+abbrev CU {n : Nat} (l : LevelExpr Nat) : CTm Tower.Head n := .head (.sort l)
 
-theorem CU_typed (l : LevelExpr) : CTyped objectChurch Γ (CU l) (CU (.succ l)) :=
+theorem CU_typed (l : LevelExpr Nat) : CTyped objectChurch Γ (CU l) (CU (.succ l)) :=
   .headType (.sort l)
 
 /-- `max 0 0` is below `0`. -/
 theorem cumulative_max_zero :
     objectRules.cumulative (.sort (.max Tower.zero Tower.zero)) (.sort Tower.zero) := fun _ => by
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 /-- A declared type without abstractions is the annotated declared type. -/
 theorem objectChurch_declared {c : DeclName} {T : Tower.Tm 0}
@@ -202,6 +201,70 @@ theorem all_templateTyped (type : HOL.Ty SetProfile.SetBase) :
       (.app (.const holdsN) (.app (.var 1) (.var 0)))) _
     rw [← hdom] at tdom
     exact .sub (.piForm tdom (.sort _) body (.sort _) (.sorts _ _)) (.subUniv cumulative_max_zero)
+
+/-- A simple type, annotated, is closed: substitution leaves it in place. -/
+theorem subst_liftTm_typeAt {n m : Nat} (σ : CSub Tower.Head n m)
+    (type : HOL.Ty SetProfile.SetBase) :
+    (liftTm (typeAt SetProfile.types n type)).subst σ = liftTm (typeAt SetProfile.types m type) := by
+  rw [← liftClosed_liftTm_typeAt (m := n), CTm.subst_liftClosed, liftClosed_liftTm_typeAt]
+
+/-- The annotated type of `eq@A`, in any context. -/
+theorem liftClosed_liftTm_eqType {m : Nat} (type : HOL.Ty SetProfile.SetBase) :
+    (liftTm (SetProfile.eqType type)).liftClosed =
+      (.pi (liftTm (typeAt SetProfile.types m type))
+        (.pi (liftTm (typeAt SetProfile.types (m + 1) type)) (.const propN)) : CTm Tower.Head m) := by
+  rw [show SetProfile.eqType type = typeAt SetProfile.types 0 (.arr type (.arr type .prop)) from rfl,
+    liftClosed_liftTm_typeAt]
+  rfl
+
+/-- The right side of the decoding of an equation instance is typed. -/
+theorem eq_templateTyped (type : HOL.Ty SetProfile.SetBase) :
+    TemplateTyped (k := 2) objectChurch objectDecls
+      (.app (.const holdsN) (.app (.app (.const (SetProfile.eqName type)) (.var 1)) (.var 0)))
+      (.id (liftClosed (typeAt SetProfile.types 0 type)) (.var 1) (.var 0)) := by
+  refine ⟨liftCtx (.snoc (.snoc .nil (typeAt SetProfile.types 0 type))
+    (typeAt SetProfile.types 1 type)), CU Tower.zero, ?_, ?_, ?_⟩
+  · intro i
+    simp only [patternKnowledge, elaborate, objectDecls_eqName, Option.map_some,
+      Knowledge.merge, Knowledge.empty, liftClosed_liftTm_eqType, CTm.inst0, CTm.subst,
+      subst_liftTm_typeAt, liftCtx_lookup]
+    refine Fin.cases ?_ (fun j => ?_) i
+    · simp only [Fin.isValue, zero_ne_one, if_false, if_true]
+      rw [Ctx.lookup_snoc_zero, typeAt_rename]
+    · obtain rfl : j = 0 := Subsingleton.elim j 0
+      simp only [Fin.succ_zero_eq_one, Fin.isValue, if_true]
+      change some _ = some (liftTm (Presentation.rename wk (Presentation.rename wk
+        (typeAt SetProfile.types 0 type))))
+      rw [typeAt_rename, typeAt_rename]
+  · simp only [leftType, elaborate, objectDecls_holds, objectDecls_eqName, Option.map_some]
+    rfl
+  · have lf : lamFree ((Tm.id (liftClosed (typeAt SetProfile.types 0 type)) (.var 1) (.var 0)) :
+        Tower.Tm 2) = true := by
+      simp only [lamFree, Presentation.liftClosed, typeAt_rename, lamFree_typeAt, Bool.and_self]
+    rw [elabRight, elab_lamFree _ lf]
+    have hA : (liftTm (liftClosed (typeAt SetProfile.types 0 type)) : CTm Tower.Head 2) =
+        liftTm (typeAt SetProfile.types 2 type) := by
+      unfold Presentation.liftClosed
+      rw [typeAt_rename]
+    have hx : ∀ i : Fin 2, (liftCtx (.snoc (.snoc .nil (typeAt SetProfile.types 0 type))
+        (typeAt SetProfile.types 1 type))).lookup i = liftTm (typeAt SetProfile.types 2 type) := by
+      intro i
+      refine Fin.cases ?_ (fun j => ?_) i
+      · rw [liftCtx_lookup, Ctx.lookup_snoc_zero, typeAt_rename]
+      · obtain rfl : j = 0 := Subsingleton.elim j 0
+        rw [liftCtx_lookup]
+        change liftTm (Presentation.rename wk (Presentation.rename wk
+          (typeAt SetProfile.types 0 type))) = _
+        rw [typeAt_rename, typeAt_rename]
+    have t1 := CDerivable.var (P := objectChurch) (Γ := liftCtx (.snoc (.snoc .nil
+      (typeAt SetProfile.types 0 type)) (typeAt SetProfile.types 1 type))) 1
+    have t0 := CDerivable.var (P := objectChurch) (Γ := liftCtx (.snoc (.snoc .nil
+      (typeAt SetProfile.types 0 type)) (typeAt SetProfile.types 1 type))) 0
+    rw [hx] at t1 t0
+    show CTyped objectChurch _ (.id (liftTm (liftClosed (typeAt SetProfile.types 0 type)))
+      (.var 1) (.var 0)) _
+    rw [hA]
+    exact .idForm (typeAt_formed type _) (.sort _) t1 t0
 
 end Decoding
 

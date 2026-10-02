@@ -1,5 +1,5 @@
-import Mettapedia.GSLT.GraphTheory.WeakProduct
-import Mathlib.Data.Finset.Sum
+import Mettapedia.GSLT.GraphTheory.Basic
+import Mettapedia.GSLT.GraphTheory.FiniteSupportProjections
 
 /-!
 # Partial pairs and disjoint-union coding

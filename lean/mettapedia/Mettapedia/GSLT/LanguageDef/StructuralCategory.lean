@@ -89,14 +89,20 @@ def mapTermParam (symbols : LanguageDefSymbolMap) : TermParam → TermParam
   | .multiAbstractionNamed binders body type =>
       .multiAbstractionNamed binders body (mapTypeExpr symbols type)
 
-/-- Map a constructor declaration.  Declared notation and evaluation policy
-are retained; the algebraic label, result sort, and parameter sorts are mapped. -/
+/-- Rename the unit constructor reference while preserving flattening. -/
+def StructuralMorphism.mapCollectionAlgebra (constructor : String → String)
+    (algebra : CollectionAlgebra) : CollectionAlgebra :=
+  { algebra with unit := algebra.unit.map constructor }
+
+/-- Map a constructor declaration, including every declared unit reference.
+Declared notation and evaluation policy are retained. -/
 def mapGrammarRule (symbols : LanguageDefSymbolMap)
     (rule : GrammarRule) : GrammarRule :=
   { rule with
     label := symbols.constructor rule.label
     category := symbols.sort rule.category
-    params := rule.params.map (mapTermParam symbols) }
+    params := rule.params.map (mapTermParam symbols)
+    algebra? := rule.algebra?.map (StructuralMorphism.mapCollectionAlgebra symbols.constructor) }
 
 /- Structural action on the shared locally nameless term carrier.  Binder
 metadata, de Bruijn indices, collection kind, order, multiplicity, and rest
@@ -249,7 +255,9 @@ private theorem list_map_comp_of_mem {α β γ : Type*}
   cases rule
   simp only [mapGrammarRule, LanguageDefSymbolMap.id, id_eq]
   congr 1
-  exact list_map_eq_self_of_mem _ _ fun parameter _ => mapTermParam_id parameter
+  · exact list_map_eq_self_of_mem _ _ fun parameter _ => mapTermParam_id parameter
+  · rename_i algebra
+    cases algebra <;> simp [StructuralMorphism.mapCollectionAlgebra]
 
 @[simp] theorem mapGrammarRule_comp (first second : LanguageDefSymbolMap)
     (rule : GrammarRule) :
@@ -258,8 +266,10 @@ private theorem list_map_comp_of_mem {α β γ : Type*}
   cases rule
   simp only [mapGrammarRule, LanguageDefSymbolMap.comp, Function.comp_apply]
   congr 1
-  exact list_map_comp_of_mem _ _ _ _ fun parameter _ =>
-    mapTermParam_comp first second parameter
+  · exact list_map_comp_of_mem _ _ _ _ fun parameter _ =>
+      mapTermParam_comp first second parameter
+  · rename_i algebra
+    cases algebra <;> simp [StructuralMorphism.mapCollectionAlgebra, Option.map_map]
 
 @[simp] theorem mapPattern_id (pattern : Pattern) :
     mapPattern LanguageDefSymbolMap.id pattern = pattern := by

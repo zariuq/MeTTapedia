@@ -149,15 +149,15 @@ theorem conversion_observed {n : Nat} {left right : Tower.Tm n}
 theorem pi_head_separated {n : Nat} (a : Tower.Tm n) (b : Tower.Tm (n + 1))
     (head : Tower.Head) : ¬ Conv rules.headEq (.pi a b) (.head head) rules.computation := by
   intro conversion
-  exact Tower.piConversionBoundary.headDisjoint (conversion_observed conversion)
+  exact LevelTower.piConversionBoundary.headDisjoint (conversion_observed conversion)
 
 theorem sigma_head_separated {n : Nat} (a : Tower.Tm n) (b : Tower.Tm (n + 1))
     (head : Tower.Head) : ¬ Conv rules.headEq (.sigma a b) (.head head) rules.computation := by
   intro conversion
-  exact (EmptyRootConversion.sigmaConversionBoundary Tower.rules rfl Tower.headEq_symmetric).headDisjoint
+  exact (EmptyRootConversion.sigmaConversionBoundary Tower.rules rfl LevelTower.headEq_symmetric).headDisjoint
     (conversion_observed conversion)
 
-private theorem pure_sort_step {n : Nat} {level : LevelExpr} {target : Tower.Tm n}
+private theorem pure_sort_step {n : Nat} {level : LevelExpr Nat} {target : Tower.Tm n}
     (step : Step Tower.HeadEq (sortTm level) target) :
     ∃ finalLevel, target = sortTm finalLevel ∧
       ∀ valuation, LevelExpr.eval valuation finalLevel = LevelExpr.eval valuation level := by
@@ -169,7 +169,7 @@ private theorem pure_sort_step {n : Nat} {level : LevelExpr} {target : Tower.Tm 
       | sort finalLevel => exact ⟨finalLevel, rfl, fun valuation => (related valuation).symm⟩
   | root impossible => cases impossible
 
-private theorem pure_sort_path {n : Nat} {level : LevelExpr} {target : Tower.Tm n}
+private theorem pure_sort_path {n : Nat} {level : LevelExpr Nat} {target : Tower.Tm n}
     (steps : ConversionCoherence.StepStar Tower.rules (sortTm level) target) :
     ∃ finalLevel, target = sortTm finalLevel ∧
       ∀ valuation, LevelExpr.eval valuation finalLevel = LevelExpr.eval valuation level := by
@@ -181,15 +181,15 @@ private theorem pure_sort_path {n : Nat} {level : LevelExpr} {target : Tower.Tm 
       exact ⟨finalLevel, rfl, fun valuation => (finalMeaning valuation).trans (previousMeaning valuation)⟩
 
 /-- Decoder conversion adds no new equalities between universe levels. -/
-theorem sort_conversion_iff {n : Nat} (first second : LevelExpr) :
+theorem sort_conversion_iff {n : Nat} (first second : LevelExpr Nat) :
     Conv rules.headEq (sortTm (n := n) first) (sortTm second) rules.computation ↔
       ∀ valuation, LevelExpr.eval valuation first = LevelExpr.eval valuation second := by
   constructor
   · intro conversion
-    obtain ⟨common, firstPath, secondPath⟩ := Tower.churchRosser (conversion_observed conversion)
+    obtain ⟨common, firstPath, secondPath⟩ := LevelTower.churchRosser (conversion_observed conversion)
     obtain ⟨firstEnd, firstShape, firstMeaning⟩ := pure_sort_path firstPath
     obtain ⟨secondEnd, secondShape, secondMeaning⟩ := pure_sort_path secondPath
-    have ends : firstEnd = secondEnd := Tower.Head.sort.inj
+    have ends : firstEnd = secondEnd := LevelTower.Head.sort.inj
       (Tm.head.inj (firstShape.symm.trans secondShape))
     intro valuation
     exact (firstMeaning valuation).symm.trans
@@ -202,7 +202,7 @@ theorem zero_not_successor {n : Nat} :
       rules.computation := by
   intro conversion
   have impossible := (sort_conversion_iff Tower.zero (.succ Tower.zero)).mp conversion (fun _ => 0)
-  simp [LevelExpr.eval, Tower.zero] at impossible
+  simp [LevelExpr.eval, LevelTower.zero] at impossible
 
 /-- In particular, cumulativity cannot hide a sort step in a type adjustment
 whose final type is a dependent product. No Pi-injectivity premise is needed. -/

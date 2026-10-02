@@ -414,8 +414,9 @@ theorem classifyingIsoOfIso_trans {N P : Model S D} (e : M ≅ N) (e' : N ≅ P)
 models. -/
 theorem satisfies_of_iso {N : Model S D} (e : M ≅ N) {schema : List (MetaArity S)}
     (P : EquationPresentation S schema) (sat : M.Satisfies P) : N.Satisfies P := by
-  intro X i body
-  rw [← interp_transport e X.arities, ← interp_transport e X.arities, sat X i body]
+  intro X i Θ Δ body ambient ordinary
+  rw [← interp_transport e X.arities, ← interp_transport e X.arities,
+    sat X i body ambient ordinary]
 
 end Model
 

@@ -191,9 +191,9 @@ theorem vshape_set (l : Nat) {n : Nat} (ξ : World (vmodel v).reading n) :
 /-- **The sets are a type of the lowest universe**: at every world they are a
 leaf interpreted at the lowest level, and the constant is strongly
 normalizing. -/
-theorem vmodel_valid_set : ModelS.ValidTmS (vmodel v) .nil (.const setN) U0 := by
-  refine ⟨ModelS.ValidTyS.sort (Tower.IsUniverse.sort _), fun {_ _ ξ σ σ' ς} _ {P} den => ?_⟩
-  rw [ModelS.DenS.sort_inv (vmodel_laws v) (Tower.IsUniverse.sort _) den]
+theorem vmodel_valid_set : ModelSN.ValidTmS (vmodel v) .nil (.const setN) U0 := by
+  refine ⟨ModelSN.ValidTyS.sort (LevelTower.IsUniverse.sort _), fun {_ _ ξ σ σ' ς} _ {P} den => ?_⟩
+  rw [ModelSN.DenS.sort_inv (vmodel_laws v) (LevelTower.IsUniverse.sort _) den]
   refine ⟨fun {_ ξ' ρ} _ => ?_, set_sn⟩
   exact ⟨_, vinterp_set v _ ξ', vinterp_set v _ ξ', vshape_set v _ ξ'⟩
 
@@ -240,9 +240,9 @@ theorem vinterp_powType (l : Nat) {n : Nat} (ξ : World (vmodel v).reading n) :
 /-! ## `zero` and `suc` -/
 
 /-- **`zero` has shape zero and realizes it.** -/
-theorem vmodel_valid_zero : ModelS.ValidTmS (vmodel v) .nil (.const zeroN) numT := by
+theorem vmodel_valid_zero : ModelSN.ValidTmS (vmodel v) .nil (.const zeroN) numT := by
   have shape : ∀ {m : Nat}, VShape v (.const zeroN : Tower.Tm m) .zero := HasShape.zero .refl
-  refine ModelS.ValidTmS.closed (vmodel_laws v) numT_sn (D := vnumD v)
+  refine ModelSN.ValidTmS.closed (vmodel_laws v) numT_sn (D := vnumD v)
     (fun ξ => ⟨0, vinterp_num v 0 ξ⟩)
     (fun _ => ValueSide.numIndPack_rel.mpr ⟨.zero, shape, shape⟩) (fun {_} _ {r} => ?_)
   change ((ValueSide.numIndPack (vmodel v).value _).real (.const zeroN)).mem
@@ -252,8 +252,8 @@ theorem vmodel_valid_zero : ModelS.ValidTmS (vmodel v) .nil (.const zeroN) numT 
 
 /-- **`suc` sends a number of a shape to the successor shape**, and realizers
 of a shape to realizers of the successor shape. -/
-theorem vmodel_valid_suc : ModelS.ValidTmS (vmodel v) .nil (.const sucN) (.pi numT numT) := by
-  refine ModelS.ValidTmS.closed (vmodel_laws v)
+theorem vmodel_valid_suc : ModelSN.ValidTmS (vmodel v) .nil (.const sucN) (.pi numT numT) := by
+  refine ModelSN.ValidTmS.closed (vmodel_laws v)
     (SN.pi (RootShape.spineHeaded objectShape) numT_sn numT_sn)
     (D := varrowD v (vnumD v) (vnumD v))
     (fun ξ => ⟨0, vinterp_numArrow v 0 ξ⟩) (fun _ => ?_) (fun {_} _ {_} => ?_)
@@ -261,7 +261,7 @@ theorem vmodel_valid_suc : ModelS.ValidTmS (vmodel v) .nil (.const sucN) (.pi nu
     obtain ⟨s, ha, hb⟩ := ValueSide.numIndPack_rel.mp related
     exact ValueSide.numIndPack_rel.mpr ⟨.suc s, .suc .refl ha, .suc .refl hb⟩
   · show (ValueSide.PiPack.real (V := (vmodel v).value) _ _).mem _
-    rw [ModelS.PiPack.mem_real]
+    rw [ModelSN.PiPack.mem_real]
     refine ⟨const_sn fun _ _ role => ?_, fun {_ ξ' ρ} _ {a} ha {_} ρr u hu => ?_⟩
     · change objectRoles sucN = _ at role
       rw [objectRoles_suc] at role
@@ -276,7 +276,7 @@ theorem vmodel_valid_suc : ModelS.ValidTmS (vmodel v) .nil (.const sucN) (.pi nu
       exact NumReal.suc_mem objectReflects objectNumerals objectShape hu
 
 /-- **`Power` returns sets.** -/
-theorem vmodel_valid_power : ModelS.ValidTmS (vmodel v) .nil (.const powerN) powerType := by
+theorem vmodel_valid_power : ModelSN.ValidTmS (vmodel v) .nil (.const powerN) powerType := by
   have rigid : objectRoles powerN = .rigid :=
     (objectRoles_of (by decide) (by decide) (by decide) (by decide)).trans roles_power
   have stuck : ∀ arity scrutinee, objectRoles powerN = .computes arity scrutinee →
@@ -284,14 +284,14 @@ theorem vmodel_valid_power : ModelS.ValidTmS (vmodel v) .nil (.const powerN) pow
     intro _ _ role
     rw [rigid] at role
     cases role
-  refine ModelS.ValidTmS.closed (vmodel_laws v)
+  refine ModelSN.ValidTmS.closed (vmodel_laws v)
     (SN.pi (RootShape.spineHeaded objectShape) set_sn set_sn)
     (D := varrowD v (vsetD v) (vsetD v))
     (fun ξ => ⟨0, vinterp_powerType v 0 ξ⟩) (fun _ => ?_) (fun {_} _ {_} => ?_)
   · intro _ _ _ _ _ _ _ _
     trivial
   · show (ValueSide.PiPack.real (V := (vmodel v).value) _ _).mem _
-    rw [ModelS.PiPack.mem_real]
+    rw [ModelSN.PiPack.mem_real]
     refine ⟨const_sn fun _ _ role => ?_, fun {_ _ _} _ {_} _ {_} _ u hu => ?_⟩
     · rw [rigid] at role
       cases role
@@ -332,8 +332,8 @@ theorem computes2_const_sn {c : DeclName} {scrutinee : InspectTree}
 
 /-- **Addition sends numbers of two shapes to the number of the sum of the
 shapes**, and realizers to the realizer of the sum. -/
-theorem vmodel_valid_add : ModelS.ValidTmS (vmodel v) .nil (.const addN) addType := by
-  refine ModelS.ValidTmS.closed (vmodel_laws v)
+theorem vmodel_valid_add : ModelSN.ValidTmS (vmodel v) .nil (.const addN) addType := by
+  refine ModelSN.ValidTmS.closed (vmodel_laws v)
     (SN.pi (RootShape.spineHeaded objectShape) numT_sn
       (SN.pi (RootShape.spineHeaded objectShape) numT_sn numT_sn))
     (D := varrowD v (vnumD v) (varrowD v (vnumD v) (vnumD v)))
@@ -344,10 +344,10 @@ theorem vmodel_valid_add : ModelS.ValidTmS (vmodel v) .nil (.const addN) addType
     exact ValueSide.numIndPack_rel.mpr ⟨shapeAdd s t,
       vhasShape_add v (vshape_rename v ρ' ha) hc, vhasShape_add v (vshape_rename v ρ' hb) hd⟩
   · show (ValueSide.PiPack.real (V := (vmodel v).value) _ _).mem _
-    rw [ModelS.PiPack.mem_real]
+    rw [ModelSN.PiPack.mem_real]
     refine ⟨computes2_const_sn objectRoles_add, fun {_ ξ' ρ} _ {a} ha {_} ρr u hu => ?_⟩
     show (ValueSide.PiPack.real (V := (vmodel v).value) _ _).mem _
-    rw [ModelS.PiPack.mem_real]
+    rw [ModelSN.PiPack.mem_real]
     refine ⟨computes2_partial_sn objectRoles_add (KCand.sn _ hu),
       fun {_ ξ'' ρ'} _ {c} hc {_} ρr' u' hu' => ?_⟩
     obtain ⟨s, sa, -⟩ := ValueSide.numIndPack_rel.mp ha
@@ -365,8 +365,8 @@ theorem vmodel_valid_add : ModelS.ValidTmS (vmodel v) .nil (.const addN) addType
 
 /-- **The iterated power set returns sets**; its applications to realizers are
 strongly normalizing. -/
-theorem vmodel_valid_pow : ModelS.ValidTmS (vmodel v) .nil (.const powN) powType := by
-  refine ModelS.ValidTmS.closed (vmodel_laws v)
+theorem vmodel_valid_pow : ModelSN.ValidTmS (vmodel v) .nil (.const powN) powType := by
+  refine ModelSN.ValidTmS.closed (vmodel_laws v)
     (SN.pi (RootShape.spineHeaded objectShape) numT_sn
       (SN.pi (RootShape.spineHeaded objectShape) set_sn set_sn))
     (D := varrowD v (vnumD v) (varrowD v (vsetD v) (vsetD v)))
@@ -374,10 +374,10 @@ theorem vmodel_valid_pow : ModelS.ValidTmS (vmodel v) .nil (.const powN) powType
   · intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     trivial
   · show (ValueSide.PiPack.real (V := (vmodel v).value) _ _).mem _
-    rw [ModelS.PiPack.mem_real]
+    rw [ModelSN.PiPack.mem_real]
     refine ⟨computes2_const_sn objectRoles_pow, fun {_ ξ' ρ} _ {a} ha {_} ρr u hu => ?_⟩
     show (ValueSide.PiPack.real (V := (vmodel v).value) _ _).mem _
-    rw [ModelS.PiPack.mem_real]
+    rw [ModelSN.PiPack.mem_real]
     refine ⟨computes2_partial_sn objectRoles_pow (KCand.sn _ hu),
       fun {_ _ _} _ {_} _ {_} ρr' u' hu' => ?_⟩
     obtain ⟨s, sa, -⟩ := ValueSide.numIndPack_rel.mp ha

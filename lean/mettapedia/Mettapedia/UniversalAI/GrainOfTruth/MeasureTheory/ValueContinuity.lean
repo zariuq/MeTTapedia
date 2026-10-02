@@ -12,7 +12,6 @@ Thompson sampling development.
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.ValueContinuity
 
 open scoped BigOperators
-open MeasureTheory
 open Mettapedia.UniversalAI.BayesianAgents
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.TotalVariation

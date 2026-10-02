@@ -32,10 +32,10 @@ open Presentation.Declaration.ComputationAuthority
 
 /-! ## Family and constructor syntax -/
 
-def sortLevel : LevelExpr := .param 0
-def primitiveLevel : LevelExpr := .param 1
-def hypothesisLevel : LevelExpr := .param 2
-def eliminationLevel : LevelExpr := .param 3
+def sortLevel : LevelExpr Nat := .param 0
+def primitiveLevel : LevelExpr Nat := .param 1
+def hypothesisLevel : LevelExpr Nat := .param 2
+def eliminationLevel : LevelExpr Nat := .param 3
 
 def hypothesisName : DeclName := `CumulativeTower.Hypothesis
 def primitiveName : DeclName := `CumulativeTower.Hypothesis.primitive
@@ -455,7 +455,7 @@ def contextS : Tower.Ctx 1 :=
 def contextSP : Tower.Ctx 2 :=
   .snoc contextS primitiveFamilyType
 
-def primitiveFamilyTypeLevel : LevelExpr :=
+def primitiveFamilyTypeLevel : LevelExpr Nat :=
   .max sortLevel (.max sortLevel (.succ primitiveLevel))
 
 theorem primitiveFamilyType_hasType :
@@ -474,7 +474,7 @@ theorem primitiveFamilyType_hasType :
   · exact .sort (.max sortLevel (.succ primitiveLevel))
   · exact .sorts sortLevel (.max sortLevel (.succ primitiveLevel))
 
-def hypothesisIndexLevel : LevelExpr :=
+def hypothesisIndexLevel : LevelExpr Nat :=
   .max sortLevel (.max sortLevel (.succ hypothesisLevel))
 
 theorem hypothesisIndexType_hasType :
@@ -493,10 +493,10 @@ theorem hypothesisIndexType_hasType :
   · exact .sort (.max sortLevel (.succ hypothesisLevel))
   · exact .sorts sortLevel (.max sortLevel (.succ hypothesisLevel))
 
-def hypothesisAfterPrimitiveLevel : LevelExpr :=
+def hypothesisAfterPrimitiveLevel : LevelExpr Nat :=
   .max primitiveFamilyTypeLevel hypothesisIndexLevel
 
-def hypothesisDeclarationLevel : LevelExpr :=
+def hypothesisDeclarationLevel : LevelExpr Nat :=
   .max (.succ sortLevel) hypothesisAfterPrimitiveLevel
 
 theorem hypothesisType_hasType :
@@ -909,13 +909,13 @@ theorem chainApp_hasType {context : Tower.Ctx n}
 
 /-! ## Formation of constructor declarations -/
 
-def primitiveAfterSymbolLevel : LevelExpr :=
+def primitiveAfterSymbolLevel : LevelExpr Nat :=
   .max primitiveLevel hypothesisLevel
 
-def primitiveAfterTargetLevel : LevelExpr :=
+def primitiveAfterTargetLevel : LevelExpr Nat :=
   .max sortLevel primitiveAfterSymbolLevel
 
-def primitiveBodyLevel : LevelExpr :=
+def primitiveBodyLevel : LevelExpr Nat :=
   .max sortLevel primitiveAfterTargetLevel
 
 theorem primitiveBodyType_hasType :
@@ -946,10 +946,10 @@ theorem primitiveBodyType_hasType :
   · exact .sort primitiveAfterTargetLevel
   · exact .sorts sortLevel primitiveAfterTargetLevel
 
-def primitiveAfterPrimitiveLevel : LevelExpr :=
+def primitiveAfterPrimitiveLevel : LevelExpr Nat :=
   .max primitiveFamilyTypeLevel primitiveBodyLevel
 
-def primitiveDeclarationLevel : LevelExpr :=
+def primitiveDeclarationLevel : LevelExpr Nat :=
   .max (.succ sortLevel) primitiveAfterPrimitiveLevel
 
 theorem primitiveType_hasType :
@@ -968,19 +968,19 @@ theorem primitiveType_hasType :
   · exact .sort primitiveAfterPrimitiveLevel
   · exact .sorts (.succ sortLevel) primitiveAfterPrimitiveLevel
 
-def chainAfterLaterLevel : LevelExpr :=
+def chainAfterLaterLevel : LevelExpr Nat :=
   .max hypothesisLevel hypothesisLevel
 
-def chainAfterEarlierLevel : LevelExpr :=
+def chainAfterEarlierLevel : LevelExpr Nat :=
   .max hypothesisLevel chainAfterLaterLevel
 
-def chainAfterTargetLevel : LevelExpr :=
+def chainAfterTargetLevel : LevelExpr Nat :=
   .max sortLevel chainAfterEarlierLevel
 
-def chainAfterMiddleLevel : LevelExpr :=
+def chainAfterMiddleLevel : LevelExpr Nat :=
   .max sortLevel chainAfterTargetLevel
 
-def chainBodyLevel : LevelExpr :=
+def chainBodyLevel : LevelExpr Nat :=
   .max sortLevel chainAfterMiddleLevel
 
 theorem chainBodyType_hasType :
@@ -1026,10 +1026,10 @@ theorem chainBodyType_hasType :
   · exact .sort chainAfterMiddleLevel
   · exact .sorts sortLevel chainAfterMiddleLevel
 
-def chainAfterPrimitiveLevel : LevelExpr :=
+def chainAfterPrimitiveLevel : LevelExpr Nat :=
   .max primitiveFamilyTypeLevel chainBodyLevel
 
-def chainDeclarationLevel : LevelExpr :=
+def chainDeclarationLevel : LevelExpr Nat :=
   .max (.succ sortLevel) chainAfterPrimitiveLevel
 
 theorem chainType_hasType :
@@ -1050,13 +1050,13 @@ theorem chainType_hasType :
 
 /-! ## Formation of the dependent eliminator -/
 
-def motiveAfterHypothesisLevel : LevelExpr :=
+def motiveAfterHypothesisLevel : LevelExpr Nat :=
   .max hypothesisLevel (.succ eliminationLevel)
 
-def motiveAfterTargetLevel : LevelExpr :=
+def motiveAfterTargetLevel : LevelExpr Nat :=
   .max sortLevel motiveAfterHypothesisLevel
 
-def motiveDeclarationLevel : LevelExpr :=
+def motiveDeclarationLevel : LevelExpr Nat :=
   .max sortLevel motiveAfterTargetLevel
 
 theorem motiveType_hasType :
@@ -1144,13 +1144,13 @@ theorem motiveApp_hasType {context : Tower.Ctx n}
 def contextSPM : Tower.Ctx 3 :=
   .snoc contextSP motiveType
 
-def primitiveCaseAfterSymbolLevel : LevelExpr :=
+def primitiveCaseAfterSymbolLevel : LevelExpr Nat :=
   .max primitiveLevel eliminationLevel
 
-def primitiveCaseAfterTargetLevel : LevelExpr :=
+def primitiveCaseAfterTargetLevel : LevelExpr Nat :=
   .max sortLevel primitiveCaseAfterSymbolLevel
 
-def primitiveCaseLevel : LevelExpr :=
+def primitiveCaseLevel : LevelExpr Nat :=
   .max sortLevel primitiveCaseAfterTargetLevel
 
 theorem primitiveCaseType_hasType :
@@ -1189,25 +1189,25 @@ theorem primitiveCaseType_hasType :
 def contextSPMPrimitive : Tower.Ctx 4 :=
   .snoc contextSPM primitiveCaseType
 
-def chainCaseAfterLaterIHLevel : LevelExpr :=
+def chainCaseAfterLaterIHLevel : LevelExpr Nat :=
   .max eliminationLevel eliminationLevel
 
-def chainCaseAfterEarlierIHLevel : LevelExpr :=
+def chainCaseAfterEarlierIHLevel : LevelExpr Nat :=
   .max eliminationLevel chainCaseAfterLaterIHLevel
 
-def chainCaseAfterLaterLevel : LevelExpr :=
+def chainCaseAfterLaterLevel : LevelExpr Nat :=
   .max hypothesisLevel chainCaseAfterEarlierIHLevel
 
-def chainCaseAfterEarlierLevel : LevelExpr :=
+def chainCaseAfterEarlierLevel : LevelExpr Nat :=
   .max hypothesisLevel chainCaseAfterLaterLevel
 
-def chainCaseAfterTargetLevel : LevelExpr :=
+def chainCaseAfterTargetLevel : LevelExpr Nat :=
   .max sortLevel chainCaseAfterEarlierLevel
 
-def chainCaseAfterMiddleLevel : LevelExpr :=
+def chainCaseAfterMiddleLevel : LevelExpr Nat :=
   .max sortLevel chainCaseAfterTargetLevel
 
-def chainCaseLevel : LevelExpr :=
+def chainCaseLevel : LevelExpr Nat :=
   .max sortLevel chainCaseAfterMiddleLevel
 
 theorem chainCaseType_hasType :
@@ -1286,13 +1286,13 @@ theorem chainCaseType_hasType :
 def contextSPMPrimitiveChain : Tower.Ctx 5 :=
   .snoc contextSPMPrimitive chainCaseType
 
-def eliminateAfterHypothesisLevel : LevelExpr :=
+def eliminateAfterHypothesisLevel : LevelExpr Nat :=
   .max hypothesisLevel eliminationLevel
 
-def eliminateAfterTargetLevel : LevelExpr :=
+def eliminateAfterTargetLevel : LevelExpr Nat :=
   .max sortLevel eliminateAfterHypothesisLevel
 
-def eliminateResultLevel : LevelExpr :=
+def eliminateResultLevel : LevelExpr Nat :=
   .max sortLevel eliminateAfterTargetLevel
 
 theorem eliminateResultType_hasType :
@@ -1326,19 +1326,19 @@ theorem eliminateResultType_hasType :
   · exact .sort eliminateAfterTargetLevel
   · exact .sorts sortLevel eliminateAfterTargetLevel
 
-def eliminateAfterChainCaseLevel : LevelExpr :=
+def eliminateAfterChainCaseLevel : LevelExpr Nat :=
   .max chainCaseLevel eliminateResultLevel
 
-def eliminateAfterPrimitiveCaseLevel : LevelExpr :=
+def eliminateAfterPrimitiveCaseLevel : LevelExpr Nat :=
   .max primitiveCaseLevel eliminateAfterChainCaseLevel
 
-def eliminateAfterMotiveLevel : LevelExpr :=
+def eliminateAfterMotiveLevel : LevelExpr Nat :=
   .max motiveDeclarationLevel eliminateAfterPrimitiveCaseLevel
 
-def eliminateAfterPrimitiveLevel : LevelExpr :=
+def eliminateAfterPrimitiveLevel : LevelExpr Nat :=
   .max primitiveFamilyTypeLevel eliminateAfterMotiveLevel
 
-def eliminateDeclarationLevel : LevelExpr :=
+def eliminateDeclarationLevel : LevelExpr Nat :=
   .max (.succ sortLevel) eliminateAfterPrimitiveLevel
 
 theorem eliminateType_hasType :

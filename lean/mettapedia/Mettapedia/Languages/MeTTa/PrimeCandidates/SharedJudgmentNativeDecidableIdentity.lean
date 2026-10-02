@@ -236,7 +236,7 @@ theorem decidableType_formed {type : Tower.Tm n}
     Typing rules context (decidableType type) (sortTm one) :=
   .cumul (.sigmaForm (bool_typed context) (.sort zero)
     (payload_formed typeFormed.weaken (.var 0)) (.sort one) (.sorts zero one))
-    (by intro valuation; simp [LevelExpr.eval, zero, one, Tower.zero])
+    (by intro valuation; simp [LevelExpr.eval, zero, one, LevelTower.zero])
 
 def choiceBody (type : Tower.Tm n) : Tower.Tm (n + 1) :=
   arrow (payload (rename wk type) (.var 0)) (selectorPackageType (rename wk type))

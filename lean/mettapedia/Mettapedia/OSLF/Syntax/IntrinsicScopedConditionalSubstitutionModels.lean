@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalSubstitution
+import Mettapedia.OSLF.Syntax.IntrinsicScopedJudgmentAction
 import Mettapedia.OSLF.Syntax.IndexedRuleAlgebraCategory
 
 /-!
@@ -26,8 +26,9 @@ open Mettapedia.OSLF.Binding
 open Mettapedia.OSLF.Binding.BindingSubstitutionAlgebra
 open Mettapedia.OSLF.Binding.AuthoredPositionedRulePolynomial (Judgment)
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalPolynomial
+open Mettapedia.OSLF.Binding.IntrinsicScopedJudgmentAction (JudgmentAction)
 
-universe u
+universe u v
 
 variable {S : Signature} {M : List (MetaArity S)}
 variable (R : List (Rule S M))
@@ -85,6 +86,13 @@ structure Hom (X Y : SubstitutionModel R A) where
       Y.act j (evidence.toFun () j value) σ target h
 
 variable {R}
+
+/-- The contextual substitution action on the model's evidence. -/
+abbrev toAction (model : SubstitutionModel R A) : JudgmentAction A where
+  carrier := model.evidence.carrier ()
+  act := model.act
+  act_identity := model.act_identity
+  act_comp := model.act_comp
 
 @[ext] theorem Hom.ext {X Y : SubstitutionModel R A} {f g : Hom R X Y}
     (same : f.evidence = g.evidence) : f = g := by
@@ -200,7 +208,8 @@ open Mettapedia.OSLF.Binding.AuthoredPositionedRulePolynomial (mapJudgment)
 variable {A B : BindingCloneAlgebra.Algebra.{u} S}
 
 /-- A base map commutes with substituting a rule occurrence. -/
-theorem mapInstance_subst (h : FreeBindingClone.Hom A B)
+theorem mapInstance_subst {A : BindingCloneAlgebra.Algebra.{u} S}
+    {B : BindingCloneAlgebra.Algebra.{v} S} (h : FreeBindingClone.Hom A B)
     (occurrence : Instance R A) {Δ : Ctx S}
     (σ : Environment S A.substitution.Carrier occurrence.ambient Δ) :
     mapInstance R h (Instance.subst R occurrence σ) =
@@ -233,34 +242,6 @@ theorem mapInstance_subst (h : FreeBindingClone.Hom A B)
         (h.raw.map (close t v))⟩
   rw [valuationEq, closeEq]
 
-/-- A base map commutes with substituting a judgment. -/
-theorem mapJudgment_substJudgment (h : FreeBindingClone.Hom A B)
-    (j : Judgment A) {Δ : Ctx S}
-    (σ : Environment S A.substitution.Carrier j.1 Δ) :
-    mapJudgment h (substJudgment j σ) =
-      substJudgment (mapJudgment h j) (fun t v => h.raw.map (σ t v)) := by
-  obtain ⟨Γ, sort, source, target⟩ := j
-  change (⟨Δ, sort, h.raw.map (A.substitution.substitute σ source),
-      h.raw.map (A.substitution.substitute σ target)⟩ : Judgment B) =
-    ⟨Δ, sort,
-      B.substitution.substitute (fun t v => h.raw.map (σ t v)) (h.raw.map source),
-      B.substitution.substitute (fun t v => h.raw.map (σ t v)) (h.raw.map target)⟩
-  rw [h.map_substitute, h.map_substitute]
-
-theorem SubstitutionModel.act_heq (Y : SubstitutionModel R B)
-    {j₁ j₂ : Judgment B} (sameJudgment : j₁ = j₂)
-    {value₁ : Y.evidence.carrier () j₁} {value₂ : Y.evidence.carrier () j₂}
-    (sameValue : HEq value₁ value₂) {Δ : Ctx S}
-    {σ₁ : Environment S B.substitution.Carrier j₁.1 Δ}
-    {σ₂ : Environment S B.substitution.Carrier j₂.1 Δ} (sameEnv : HEq σ₁ σ₂)
-    {target₁ target₂ : Judgment B} (sameTarget : target₁ = target₂)
-    (h₁ : substJudgment j₁ σ₁ = target₁) (h₂ : substJudgment j₂ σ₂ = target₂) :
-    HEq (Y.act j₁ value₁ σ₁ target₁ h₁) (Y.act j₂ value₂ σ₂ target₂ h₂) := by
-  subst sameJudgment
-  cases sameValue
-  cases sameEnv
-  subst sameTarget
-  rfl
 
 theorem rulesAct_congr_instance
     (Y : OperationalRuleModels.Model (rules R B)) {target : Judgment B}
@@ -345,7 +326,7 @@ theorem relativeFold_substTree (h : FreeBindingClone.Hom A B)
   cases samePosition
   refine HEq.trans (heq_transport _ _) ?_
   refine HEq.trans (heq_of_eq (ih position _ _ _)) ?_
-  refine SubstitutionModel.act_heq R Y
+  refine Y.toAction.act_heq
     (mapInstance_child R h occurrence position).symm
     (heq_transport _ _).symm ?_ ?_ _ _
   · exact heq_of_eq ((liftEnvironment_map h σ _).trans
@@ -419,39 +400,38 @@ def Hom.id (X : SubstitutionOperationalModel R E) : Hom X X where
     intro j value Δ σ target hs
     rfl
 
-set_option maxHeartbeats 1000000 in
+private def composePulledAlgebraHom
+    {I J K : Unit → Type}
+    {P : IndexedPolynomial Unit I} {Q : IndexedPolynomial Unit J}
+    {T : IndexedPolynomial Unit K}
+    {α : ∀ b, I b → J b} {β : ∀ b, J b → K b}
+    (first : IndexedRulePolynomialMorphisms.Hom P Q α)
+    (second : IndexedRulePolynomialMorphisms.Hom Q T β)
+    {source : ∀ b, I b → Type} {middle : ∀ b, J b → Type}
+    {final : ∀ b, K b → Type}
+    {A : P.Algebra source} {B : Q.Algebra middle} {C : T.Algebra final}
+    (f : IndexedPolynomial.Algebra.Hom A (pullback first B))
+    (g : IndexedPolynomial.Algebra.Hom B (pullback second C)) :
+    IndexedPolynomial.Algebra.Hom A (pullback (first.comp second) C) where
+  toFun := fun b i value => g.toFun b (α b i) (f.toFun b i value)
+  commutes := by
+    intro b i layer
+    let composite : IndexedPolynomial.Algebra.Hom A
+        (pullback first (pullback second C)) :=
+      IndexedPolynomial.Algebra.Hom.comp f
+        (IndexedRuleAlgebraPullback.pullbackHom first g)
+    have commutes := composite.commutes b i layer
+    have actEq := congrArg IndexedPolynomial.Algebra.act
+      (IndexedRuleAlgebraPullback.pullback_comp first second C)
+    exact commutes.trans (congrFun (congrFun (congrFun actEq b) i)
+      (IndexedPolynomial.Extension.map P composite.toFun layer)).symm
+
 def Hom.comp {X Y Z : SubstitutionOperationalModel R E}
     (f : Hom X Y) (g : Hom Y Z) : Hom X Z where
   base := FreeBindingClone.Hom.comp f.base g.base
-  evidence :=
-    { toFun := fun _ j value =>
-        g.evidence.toFun () (mapJudgment f.base j) (f.evidence.toFun () j value)
-      commutes := by
-        intro base index layer
-        let composite : IndexedPolynomial.Algebra.Hom X.model.evidence.rules
-            (pullback (presentationMap R f.base).rules
-              (pullback (presentationMap R g.base).rules
-                Z.model.evidence.rules)) :=
-          IndexedPolynomial.Algebra.Hom.comp f.evidence
-            (IndexedRuleAlgebraPullback.pullbackHom
-              (presentationMap R f.base).rules g.evidence)
-        have h := composite.commutes base index layer
-        change composite.toFun base index
-            (X.model.evidence.rules.act base index layer) =
-          (pullback
-            (IndexedRulePolynomialMorphisms.Hom.comp
-              (presentationMap R f.base).rules
-              (presentationMap R g.base).rules)
-            Z.model.evidence.rules).act base index
-            (IndexedPolynomial.Extension.map (rules R X.base.algebra)
-              composite.toFun layer)
-        have actEq := congrArg IndexedPolynomial.Algebra.act
-          (IndexedRuleAlgebraPullback.pullback_comp
-            (presentationMap R f.base).rules (presentationMap R g.base).rules
-            Z.model.evidence.rules)
-        exact h.trans (congrFun (congrFun (congrFun actEq base) index)
-          (IndexedPolynomial.Extension.map (rules R X.base.algebra)
-            composite.toFun layer)).symm }
+  evidence := composePulledAlgebraHom
+    (presentationMap R f.base).rules (presentationMap R g.base).rules
+    f.evidence g.evidence
   preserves := by
     intro j value Δ σ target hs
     exact (congrArg (g.evidence.toFun () (mapJudgment f.base target))

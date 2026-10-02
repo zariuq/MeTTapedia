@@ -53,10 +53,10 @@ def generic (N : List (MetaArity S)) {Γ : Ctx S} {s : S.Srt}
   (M.interp N t).value (M.ctx Γ ⊗ M.family N) (snd _ _) (M.genericEnv Γ (M.family N))
 
 /-- Every value of a natural family is read off its generic value. -/
-theorem value_eq_generic (N : List (MetaArity S)) {Γ : Ctx S} {s : S.Srt}
-    (x : M.Elem N Γ s) (Z : D) (m : Z ⟶ M.family N) (ρ : M.Env Z Γ) :
+theorem value_eq_generic {C : D} {Γ : Ctx S} {s : S.Srt}
+    (x : M.ElemOver C Γ s) (Z : D) (m : Z ⟶ C) (ρ : M.Env Z Γ) :
     x.value Z m ρ =
-      lift (M.tupleEnv ρ) m ≫ x.value (M.ctx Γ ⊗ M.family N) (snd _ _) (M.genericEnv Γ (M.family N)) := by
+      lift (M.tupleEnv ρ) m ≫ x.value (M.ctx Γ ⊗ C) (snd _ _) (M.genericEnv Γ C) := by
   rw [← x.natural, lift_snd]
   congr 1
   funext γ v
@@ -89,16 +89,16 @@ def metaElemAlong {N N' : List (MetaArity S)} (f : M.family N ⟶ M.family N') {
     rw [M.tupleCtx_natural, Category.assoc, ← comp_lift_assoc]
 
 /-- Restaging a natural family along a change of metavariable stage. -/
-def restageElem {N N' : List (MetaArity S)} (f : M.family N ⟶ M.family N') {Γ : Ctx S}
-    {s : S.Srt} (x : M.Elem N' Γ s) : M.Elem N Γ s where
+def restageElem {C C' : D} (f : C ⟶ C') {Γ : Ctx S}
+    {s : S.Srt} (x : M.ElemOver C' Γ s) : M.ElemOver C Γ s where
   value := fun Z m ρ => x.value Z (m ≫ f) ρ
   natural := fun h m ρ => by rw [Category.assoc, x.natural]
 
 /-! ## Tuples of arguments -/
 
-theorem tupleArgs_recast {N N₁ N₂ : List (MetaArity S)} :
+theorem tupleArgs_recast {C : D} {N₁ N₂ : List (MetaArity S)} :
     ∀ {arity : List (List S.Srt × S.Srt)} {Γ : Ctx S}
-      (args : FamilyArgs (withMetas S N₁) (M.Elem N) arity Γ) (Z : D) (m : Z ⟶ M.family N)
+      (args : FamilyArgs (withMetas S N₁) (M.ElemOver C) arity Γ) (Z : D) (m : Z ⟶ C)
       (ρ : M.Env Z Γ),
       M.tupleArgs (recastArgs (N₂ := N₂) args) Z m ρ = M.tupleArgs args Z m ρ
   | _, _, .nil, _, _, _ => rfl
@@ -106,20 +106,20 @@ theorem tupleArgs_recast {N N₁ N₂ : List (MetaArity S)} :
       show lift _ _ = lift _ _
       rw [tupleArgs_recast tail Z m ρ]
 
-theorem tupleCtx_recast {N N₁ N₂ : List (MetaArity S)} :
+theorem tupleCtx_recast {C : D} {N₁ N₂ : List (MetaArity S)} :
     ∀ (bs : List S.Srt) {Γ : Ctx S}
-      (args : FamilyArgs (withMetas S N₁) (M.Elem N) (bs.map fun b => ([], b)) Γ) (Z : D)
-      (m : Z ⟶ M.family N) (ρ : M.Env Z Γ),
+      (args : FamilyArgs (withMetas S N₁) (M.ElemOver C) (bs.map fun b => ([], b)) Γ) (Z : D)
+      (m : Z ⟶ C) (ρ : M.Env Z Γ),
       M.tupleCtx bs (recastArgs (N₂ := N₂) args) Z m ρ = M.tupleCtx bs args Z m ρ
   | [], _, .nil, _, _, _ => rfl
   | _ :: bs, _, .cons head tail, Z, m, ρ => by
       show lift _ _ = lift _ _
       rw [tupleCtx_recast bs tail Z m ρ]
 
-theorem opElem_recast {N N₁ N₂ : List (MetaArity S)} {Γ : Ctx S} {s : S.Srt} (o : S.Op s)
-    (args : FamilyArgs (withMetas S N₁) (M.Elem N) (S.arity o) Γ) :
+theorem opElem_recast {C : D} {N₁ N₂ : List (MetaArity S)} {Γ : Ctx S} {s : S.Srt} (o : S.Op s)
+    (args : FamilyArgs (withMetas S N₁) (M.ElemOver C) (S.arity o) Γ) :
     M.opElem o (recastArgs (N₂ := N₂) args) = M.opElem o args := by
-  apply Elem.ext
+  apply ElemOver.ext
   funext Z m ρ
   change M.tupleArgs (recastArgs args) Z m ρ ≫ M.op o = M.tupleArgs args Z m ρ ≫ M.op o
   rw [M.tupleArgs_recast]
@@ -136,9 +136,9 @@ theorem tupleCtx_foldArgs (N : List (MetaArity S)) :
       rw [tupleCtx_foldArgs N bs tail Z m ρ]
       rfl
 
-theorem tupleArgs_restage {N N' : List (MetaArity S)} (f : M.family N ⟶ M.family N') :
+theorem tupleArgs_restage {C C' : D} {N' : List (MetaArity S)} (f : C ⟶ C') :
     ∀ {arity : List (List S.Srt × S.Srt)} {Γ : Ctx S}
-      (args : FamilyArgs (withMetas S N') (M.Elem N') arity Γ) (Z : D) (m : Z ⟶ M.family N)
+      (args : FamilyArgs (withMetas S N') (M.ElemOver C') arity Γ) (Z : D) (m : Z ⟶ C)
       (ρ : M.Env Z Γ),
       M.tupleArgs (FamilyArgs.map (fun x => M.restageElem f x) args) Z m ρ =
         M.tupleArgs args Z (m ≫ f) ρ
@@ -147,10 +147,10 @@ theorem tupleArgs_restage {N N' : List (MetaArity S)} (f : M.family N ⟶ M.fami
       show lift (M.curry (head.value _ ((snd _ _ ≫ m) ≫ f) _)) _ = lift _ _
       rw [tupleArgs_restage f tail Z m ρ, Category.assoc]
 
-theorem tupleCtx_restage {N N' : List (MetaArity S)} (f : M.family N ⟶ M.family N') :
+theorem tupleCtx_restage {C C' : D} {N' : List (MetaArity S)} (f : C ⟶ C') :
     ∀ (bs : List S.Srt) {Γ : Ctx S}
-      (args : FamilyArgs (withMetas S N') (M.Elem N') (bs.map fun b => ([], b)) Γ) (Z : D)
-      (m : Z ⟶ M.family N) (ρ : M.Env Z Γ),
+      (args : FamilyArgs (withMetas S N') (M.ElemOver C') (bs.map fun b => ([], b)) Γ) (Z : D)
+      (m : Z ⟶ C) (ρ : M.Env Z Γ),
       M.tupleCtx bs (FamilyArgs.map (fun x => M.restageElem f x) args) Z m ρ =
         M.tupleCtx bs args Z (m ≫ f) ρ
   | [], _, .nil, _, _, _ => rfl
@@ -206,7 +206,7 @@ def instantiateThenInterp :
         rw [folded]
         exact M.opElem_recast o _
     | .inr (.mk j), args =>
-        apply Elem.ext
+        apply ElemOver.ext
         funext Z m ρ
         change (M.interp X.arities (bind (argsToSub (instIntoArgs σ
             (FreeBindingTerms.terms.familyToSyntax _ args))) (σ j))).value Z m ρ =
@@ -230,7 +230,7 @@ def interpThenRestage :
     intro Γ s o args
     match o, args with
     | .inl o, args =>
-        apply Elem.ext
+        apply ElemOver.ext
         funext Z m ρ
         change M.tupleArgs (FreeBindingTerms.foldArgs (M.kripke Y.arities).toRaw
             (FreeBindingTerms.terms.familyToSyntax _ args)) Z (m ≫ M.assignHom σ) ρ ≫ M.op o =
@@ -245,7 +245,7 @@ def interpThenRestage :
         exact congrArg (· ≫ M.op o)
           (restaged.symm.trans (congrArg (fun a => M.tupleArgs a Z m ρ) composed))
     | .inr (.mk j), args =>
-        apply Elem.ext
+        apply ElemOver.ext
         funext Z m ρ
         change lift (M.tupleCtx (Y.arities.get j).1 (FreeBindingTerms.foldArgs
             (M.kripke Y.arities).toRaw (FreeBindingTerms.terms.familyToSyntax _ args)) Z

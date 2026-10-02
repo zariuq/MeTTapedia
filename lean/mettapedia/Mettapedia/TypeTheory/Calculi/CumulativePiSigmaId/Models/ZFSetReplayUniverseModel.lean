@@ -30,6 +30,8 @@ open ZFSetDependentProducts (sigmaSet)
 
 universe u
 
+variable {L : Type} [LevelOrder L]
+
 /-- The cumulative replay signature has no declared constants. -/
 theorem empty_constants_model (heads : Tower.Head → ZFSet.{u})
     (constants : DeclName → ZFSet.{u}) : ConstantsModel heads constants Tower.rules where
@@ -48,8 +50,8 @@ theorem successor_qualified (level : Tower.Head)
 /-- The existing internal universe hierarchy realizes all primitive closure
 obligations, without a whole-typing or certificate-coherence hypothesis. -/
 theorem universeModel (h : CofinalInaccessibles.{u}) (seed ground : ZFSet.{u})
-    (valuation : Nat → Nat) (groundTyped : ground ∈ universeSet h seed 0) :
-    UniverseModel Tower.rules (interpretHead h seed ground valuation) where
+    (valuation : Nat → L) (groundTyped : ground ∈ universeSet h seed (LevelOrder.bot : L)) :
+    UniverseModel (LevelTower.rules L) (interpretHead h seed ground valuation) where
   headTyping_mem := ZFSetReplayUniverseFormation.headTyping_membership
     h seed ground valuation groundTyped
   cumulative_subset := ZFSetReplayUniverseFormation.cumulative_subset h seed ground valuation
@@ -60,8 +62,8 @@ theorem universeModel (h : CofinalInaccessibles.{u}) (seed ground : ZFSet.{u})
       change tracePiSet A B ∈
         universeSet h seed (max (left.eval valuation) (right.eval valuation))
       exact (universeSet_closed h seed _).tracePiSet_mem
-        (universeSet_mono h seed (Nat.le_max_left _ _) domainTyped) B
-        (fun x inside => universeSet_mono h seed (Nat.le_max_right _ _) (bodyTyped x inside))
+        (universeSet_mono h seed (le_max_left _ _) domainTyped) B
+        (fun x inside => universeSet_mono h seed (le_max_right _ _) (bodyTyped x inside))
   sigma_mem := by
     intro domainLevel bodyLevel level joined A domainTyped B bodyTyped
     cases joined with
@@ -69,8 +71,8 @@ theorem universeModel (h : CofinalInaccessibles.{u}) (seed ground : ZFSet.{u})
       change sigmaSet A B ∈
         universeSet h seed (max (left.eval valuation) (right.eval valuation))
       exact (universeSet_closed h seed _).sigmaSet_mem
-        (universeSet_mono h seed (Nat.le_max_left _ _) domainTyped) B
-        (fun x inside => universeSet_mono h seed (Nat.le_max_right _ _) (bodyTyped x inside))
+        (universeSet_mono h seed (le_max_left _ _) domainTyped) B
+        (fun x inside => universeSet_mono h seed (le_max_right _ _) (bodyTyped x inside))
   identity_mem := by
     intro level isUniverse P
     cases isUniverse with

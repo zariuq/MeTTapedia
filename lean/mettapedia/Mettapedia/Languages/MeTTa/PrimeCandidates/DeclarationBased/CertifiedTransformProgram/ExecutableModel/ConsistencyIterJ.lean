@@ -72,13 +72,13 @@ theorem valid_j (v : Nat → Nat) (validType : ValidTy (model v) .nil jType)
   have laws := model_laws v
   rw [jType_eq] at validType partsType ⊢
   obtain ⟨_, validC, _⟩ := ValidTy.close_parts
-    (elimTelescope (Tower.Head.sort Tower.zero) (Tower.Head.sort Tower.zero)) (C := elimBody) validType partsType
-  refine ValidTm.close laws (elimTelescope (Tower.Head.sort Tower.zero) (Tower.Head.sort Tower.zero)) (C := elimBody)
+    (elimTelescope (LevelTower.Head.sort Tower.zero) (LevelTower.Head.sort Tower.zero)) (C := elimBody) validType partsType
+  refine ValidTm.close laws (elimTelescope (LevelTower.Head.sort Tower.zero) (LevelTower.Head.sort Tower.zero)) (C := elimBody)
     (f := .const jName) validType partsType ⟨validC, ?_⟩
   intro m ξ σ σ' e R den
   -- the full application computes to the method
   have red : ∀ τ : Sub Tower.Head 6 m, WhRed (model v).rules (model v).roles
-      (Presentation.subst τ (applyClosed (elimTelescope (Tower.Head.sort Tower.zero) (Tower.Head.sort Tower.zero)) ids
+      (Presentation.subst τ (applyClosed (elimTelescope (LevelTower.Head.sort Tower.zero) (LevelTower.Head.sort Tower.zero)) ids
         (liftClosed (.const jName)))) (τ 2) := fun τ =>
     .single (.root (model_step (modelListed 3 (by decide))
       ⟨τ 5, τ 4, τ 3, τ 2, τ 1, τ 0, rfl, rfl⟩))
@@ -90,7 +90,7 @@ theorem valid_j (v : Nat → Nat) (validType : ValidTy (model v) .nil jType)
   change Rd (σ 2) (σ' 2) at hd
   change Den (model v) ξ (.id (σ 5) (σ 4) (σ 1)) Rp at denp
   change Den (model v) ξ (.app (.app (σ 3) (σ 1)) (σ 0)) R at den
-  obtain ⟨R', motiveBase, motiveEnd⟩ := motive_same laws (Tower.IsUniverse.sort Tower.zero) denP
+  obtain ⟨R', motiveBase, motiveEnd⟩ := motive_same laws (LevelTower.IsUniverse.sort Tower.zero) denP
     (Den.refl_left laws denP hP) (fun denA => Den.id_endpoints laws denp hp denA) (p := σ 0)
   rw [Den.deterministic laws den ⟨_, motiveEnd⟩]
   rw [Den.deterministic laws dend ⟨_, motiveBase⟩] at hd

@@ -1,49 +1,41 @@
 import Mettapedia.UniversalAI.BayesianAgents
-import Mettapedia.UniversalAI.ReflectiveOracles.Basic
 
 /-!
-# Grain of Truth: Core Types
+# Countable environment classes: core types
 
-This file contains the small, dependency-light core definitions shared by the
-`GrainOfTruth` development:
+The learning results of this directory are stated for a countable family of
+environments `envs : ℕ → Environment` together with a prior on its indices.
+They use nothing else about the family: in particular no oracle and no
+computability assumption.
 
-* `EnvironmentIndex`
-* `ReflectiveEnvironmentClass`
-* `PriorOverClass`
+* `EnvironmentIndex`: the index of an environment in the family.
+* `PriorOverClass`: positive prior weights of total mass at most one.
 
-It exists to avoid circular imports between high-level “chapter structure” files
-and the more technical measure-theory or learning-theory files.
+The class of environments computable with a reflective oracle (Leike, thesis
+Chapter 7) is not defined here. Proposition 7.18 of that chapter, that the
+Bayesian mixture over the class is again a member of the class, is therefore
+not stated in this directory.
 -/
 
 namespace Mettapedia.UniversalAI.GrainOfTruth
 
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.ReflectiveOracles
 open scoped ENNReal NNReal
 
 /-- A stochastic policy is an `Agent` (assigns probabilities to actions). -/
 abbrev StochasticPolicy := Agent
 
-/-- Index into the class of reflective-oracle-computable environments.
-    Each index corresponds to a probabilistic TM with oracle access. -/
+/-- The index of an environment in a countable family `ℕ → Environment`. -/
 abbrev EnvironmentIndex := ℕ
 
-/-- The reflective environment class `M^O_refl`, parameterized by a reflective oracle `O`. -/
-structure ReflectiveEnvironmentClass (O : Oracle) where
-  /-- Enumeration of all environment indices in the class. -/
-  members : ℕ → EnvironmentIndex
-  /-- The class is countable and covers all oracle-computable environments. -/
-  covers_computable : ∀ idx : EnvironmentIndex, ∃ n, members n = idx
-
-/-- A prior distribution over the environment class.
-    Must be lower semicomputable and have total mass ≤ 1. -/
-structure PriorOverClass (O : Oracle) (M : ReflectiveEnvironmentClass O) where
+/-- A prior on the indices of a countable family of environments: every index
+has positive weight and the weights sum to at most one. -/
+structure PriorOverClass where
   /-- Prior weight for environment index `i`. -/
   weight : EnvironmentIndex → ℝ≥0∞
   /-- Total weight is at most 1 (a semimeasure). -/
   tsum_le_one : (∑' i, weight i) ≤ 1
-  /-- Each weight is positive (for grain of truth). -/
+  /-- Each weight is positive: every environment of the family is a candidate. -/
   positive : ∀ i, 0 < weight i
 
 end Mettapedia.UniversalAI.GrainOfTruth
-

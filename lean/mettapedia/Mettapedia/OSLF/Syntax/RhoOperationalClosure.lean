@@ -87,7 +87,7 @@ commutativity equation before the COMM firing. -/
 theorem parallel_input_output_communicates :
     ParallelStepModE (parT commInput commOutput) commTarget :=
   ⟨commSource, commTarget,
-    EqClosure.ax (E := rhoSourceE) 0 contUnquote
+    EqClosure.ax_closed (E := rhoSourceE) 0 contUnquote
       (closePair commInput commOutput),
     parallel_communication, EqClosure.refl _⟩
 

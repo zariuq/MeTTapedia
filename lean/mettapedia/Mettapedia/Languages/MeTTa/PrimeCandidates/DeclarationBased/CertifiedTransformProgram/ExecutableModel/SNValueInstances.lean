@@ -149,7 +149,7 @@ theorem vmodel_impMeaning (X Y : (vmodel v).reading.P) :
     (vmodel v).reading.impMeaning X Y =
       (Realizability.candidateReading (tmodelC v).toSetting starN objectRealizers).impMeaning
         X Y :=
-  ModelS.kcand_arrow objectRealizers X Y
+  ModelSN.kcand_arrow objectRealizers X Y
 
 /-- A quantifier means Girard's clause over the meanings of its carrier, as in
 the candidate reading. -/
@@ -158,7 +158,7 @@ theorem vmodel_allMeaning {k : Consistency.Kind} (K : Carrier k)
     (vmodel v).reading.allMeaning K φ =
       (Realizability.candidateReading (tmodelC v).toSetting starN objectRealizers).allMeaning
         K φ :=
-  ModelS.kcand_allMeaning objectRealizers (tmodelC v).toSetting starN numN rfl rfl
+  ModelSN.kcand_allMeaning objectRealizers (tmodelC v).toSetting starN numN rfl rfl
     objectRoles_num_ctors K φ
 
 /-! ## The pack of `num → num` -/
@@ -575,7 +575,7 @@ open Package (iterName eqAtName keepName transportName composeName returnIterNam
 /-- The recursor is valid: its declared type is typed in the stage of the
 numbers and their constructors, whose fundamental lemma gives the validity of
 the type and of its parts. -/
-theorem vmodel_valid_numRec' : ModelS.ValidTmS (vmodel v) .nil (.const numRecName) numRecType := by
+theorem vmodel_valid_numRec' : ModelSN.ValidTmS (vmodel v) .nil (.const numRecName) numRecType := by
   have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -583,24 +583,24 @@ theorem vmodel_valid_numRec' : ModelS.ValidTmS (vmodel v) .nil (.const numRecNam
       · exact vmodel_valid_num v
       · exact vmodel_valid_zero v
       · exact vmodel_valid_suc v
-  obtain ⟨validT, partsT, _⟩ := ModelS.Derivable.validS sound₀ numRecType_typed trivial
+  obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS sound₀ numRecType_typed trivial
   exact vmodel_valid_numRec v (validT.validTy (.sort _)) partsT
 
 /-- The iterator is valid: its declared type is typed in the stage of the
 numbers. -/
-theorem vmodel_valid_iter' : ModelS.ValidTmS (vmodel v) .nil (.const iterName) iterType := by
+theorem vmodel_valid_iter' : ModelSN.ValidTmS (vmodel v) .nil (.const iterName) iterType := by
   have sound₀ := vstage_soundS_of v (names := [numN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       subst mem
       obtain rfl := Option.some.inj declared
       exact vmodel_valid_num v
-  obtain ⟨validT, partsT, _⟩ := ModelS.Derivable.validS sound₀ (iterType_typed (by simp)) trivial
+  obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS sound₀ (iterType_typed (by simp)) trivial
   exact vmodel_valid_iter v (validT.validTy (.sort _)) partsT
 
 /-! ## Definitions by one equation -/
 
-theorem vmodel_valid_eqAt : ModelS.ValidTmS (vmodel v) .nil (.const eqAtName) eqAtType := by
+theorem vmodel_valid_eqAt : ModelSN.ValidTmS (vmodel v) .nil (.const eqAtName) eqAtType := by
   have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN, addN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -609,14 +609,14 @@ theorem vmodel_valid_eqAt : ModelS.ValidTmS (vmodel v) .nil (.const eqAtName) eq
       · exact vmodel_valid_zero v
       · exact vmodel_valid_suc v
       · exact vmodel_valid_add v
-  exact ModelS.ValidTmS.definition (Θ := eqAtTele) (C := U0) (rhs := eqAtRhs) sound₀
+  exact ModelSN.ValidTmS.definition (Θ := eqAtTele) (C := U0) (rhs := eqAtRhs) sound₀
     ⟨_, .sort _, eqAtType_typed⟩ eqAtBody_typed
     (fun σ => vmodel_rule v (listed 4 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
     (fun _ sns X h => KCand.definition_mem objectShape X objectRoles_eqAt
       (objectStep_definition (listed 4 (by decide)) (by decide)) sns h)
 
-theorem vmodel_valid_keep : ModelS.ValidTmS (vmodel v) .nil (.const keepName) keepType :=
-  ModelS.ValidTmS.definition (Θ := keepTele) (C := .sigma (.var 3) (.app (.var 3) (.var 0)))
+theorem vmodel_valid_keep : ModelSN.ValidTmS (vmodel v) .nil (.const keepName) keepType :=
+  ModelSN.ValidTmS.definition (Θ := keepTele) (C := .sigma (.var 3) (.app (.var 3) (.var 0)))
     (rhs := keepRhs)
     (vstage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
     ⟨_, .sort _, keepType_typed⟩ keepBody_typed
@@ -625,8 +625,8 @@ theorem vmodel_valid_keep : ModelS.ValidTmS (vmodel v) .nil (.const keepName) ke
       (objectStep_definition (listed 6 (by decide)) (by decide)) sns h)
 
 theorem vmodel_valid_transport :
-    ModelS.ValidTmS (vmodel v) .nil (.const transportName) transportType :=
-  ModelS.ValidTmS.definition (Θ := transportTelescope)
+    ModelSN.ValidTmS (vmodel v) .nil (.const transportName) transportType :=
+  ModelSN.ValidTmS.definition (Θ := transportTelescope)
     (C := .sigma (.var 5) (.app (.var 5) (.var 0))) (rhs := transportRhs)
     (vstage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
     ⟨_, .sort _, transportType_typed⟩ transportBody_typed
@@ -635,8 +635,8 @@ theorem vmodel_valid_transport :
       (objectStep_definition (listed 7 (by decide)) (by decide)) sns h)
 
 theorem vmodel_valid_compose :
-    ModelS.ValidTmS (vmodel v) .nil (.const composeName) composeType :=
-  ModelS.ValidTmS.definition (Θ := composeTelescope)
+    ModelSN.ValidTmS (vmodel v) .nil (.const composeName) composeType :=
+  ModelSN.ValidTmS.definition (Θ := composeTelescope)
     (C := .sigma (.var 5) (.app (.var 5) (.var 0))) (rhs := composeRhs)
     (vstage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
     ⟨_, .sort _, composeType_typed⟩ composeBody_typed
@@ -645,7 +645,7 @@ theorem vmodel_valid_compose :
       (objectStep_definition (listed 8 (by decide)) (by decide)) sns h)
 
 theorem vmodel_valid_returnIter :
-    ModelS.ValidTmS (vmodel v) .nil (.const returnIterName) returnIterType := by
+    ModelSN.ValidTmS (vmodel v) .nil (.const returnIterName) returnIterType := by
   have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN, iterName]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -654,7 +654,7 @@ theorem vmodel_valid_returnIter :
       · exact vmodel_valid_zero v
       · exact vmodel_valid_suc v
       · exact vmodel_valid_iter' v
-  exact ModelS.ValidTmS.definition (Θ := returnIterTele) (C := returnIterResult)
+  exact ModelSN.ValidTmS.definition (Θ := returnIterTele) (C := returnIterResult)
     (rhs := returnIterRhs) sound₀ ⟨_, .sort _, returnIterType_typed (by simp)⟩
     (returnIterBody_typed (by simp) (by simp))
     (fun σ => vmodel_rule v (listed 10 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)

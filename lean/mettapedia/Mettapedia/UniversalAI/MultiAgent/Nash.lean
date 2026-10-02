@@ -88,20 +88,17 @@ theorem nash_iff_all_best_response
   · intro h i
     exact h i
 
-/-! ## Note on Existence
+/-! ## Note on existence
 
-Nash equilibrium existence (Nash 1950) requires Kakutani's fixed-point theorem,
-which in turn requires Brouwer's fixed-point theorem. Neither is in mathlib4.
+Existence of a Nash equilibrium needs a fixed-point theorem. For games with
+two actions per player it is proved in `MultiAgent/TwoActionGames.lean`, from
+the existence of reflective oracles, which rests on Brouwer's fixed-point
+theorem for cubes (`Topology/BrouwerCube.lean`). For the policies of this
+file, in multi-agent environments, existence is not proved.
 
-**For the Grain of Truth theorem, we don't need Nash existence.**
-
-The Grain of Truth result (Leike-Taylor-Fallenstein 2016) proves that Thompson
-sampling agents *converge* to ε-Nash equilibrium. This convergence:
-1. Constructs the approximate equilibrium via learning dynamics
-2. Is stronger than bare existence (provides a computational path)
-3. Uses Bayesian reasoning, not fixed-point topology
-
-See `Mettapedia.UniversalAI.GrainOfTruth` for the convergence theorem.
+The convergence theorem of Leike, Taylor and Fallenstein does not need it: it
+concerns agents that learn, and states that they come to play ε-best responses
+(see `GrainOfTruth/Setup.lean` for the step that is formalized).
 -/
 
 end Mettapedia.UniversalAI.MultiAgent

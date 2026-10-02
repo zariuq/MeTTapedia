@@ -490,8 +490,9 @@ theorem sourceOperationalDatabase_wellFormedStrong
 /-! ## Source-owned declarative adequacy -/
 
 /-- Operational provability over the source-derived database is equivalent to
-mm-lean4's derivation-locally supported declarative semantics.  All semantic
-well-formedness premises are discharged from `sourcePrefixValid`. -/
+mm-lean4's frame derivability: declarative derivability in which every
+variable leaf is a variable of the frame.  All semantic well-formedness
+premises are discharged from `sourcePrefixValid`. -/
 theorem sourceOperationalProvable_iff_supportedDeclarative
     (source : SourcePrefix)
     (hvalid : sourcePrefixValid source = true)
@@ -500,7 +501,7 @@ theorem sourceOperationalProvable_iff_supportedDeclarative
         (sourceOperationalDatabase source)
         (sourceOperationalCallerFrame source)
         expression ↔
-      SupportedProvable
+      FrameDerivable
         (sourceOperationalDatabase source)
         (sourceOperationalCallerFrame source)
         (exprToFormula
@@ -510,11 +511,11 @@ theorem sourceOperationalProvable_iff_supportedDeclarative
     sourceOperationalDatabase_wellFormedStrong source hvalid
   have hcaller := sourceCaller_operationalWellFormed source hvalid
   constructor
-  · exact operational_to_supported hdatabase hcaller.1
-  · exact mario_to_proofValid hdatabase hcaller.2.1.2 hcaller.1
+  · exact operational_to_frameDerivable hdatabase hcaller.1
+  · exact frameDerivable_to_proofValid hdatabase hcaller.2.1.2 hcaller.1
 
-/-- Source-owned proof-occurrence trees and the supported declarative
-Metamath semantics define exactly the same proof language. -/
+/-- Source-owned proof-occurrence trees and frame derivability define exactly
+the same proof language. -/
 theorem sourceGeneratedProvesTree_nonempty_iff_supportedDeclarative
     (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
     (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
@@ -523,7 +524,7 @@ theorem sourceGeneratedProvesTree_nonempty_iff_supportedDeclarative
       formulaSymbolsRespectFrame
         (floatingVariableNames source.activeHypotheses) formula = true) :
     Nonempty (SourceGeneratedProvesTree source target formula) ↔
-      SupportedProvable
+      FrameDerivable
         (sourceOperationalDatabase source)
         (sourceOperationalCallerFrame source)
         (exprToFormula
@@ -539,8 +540,8 @@ theorem sourceGeneratedProvesTree_nonempty_iff_supportedDeclarative
       (sourceOperationalProvable_iff_supportedDeclarative
         source hvalid (operationalExpr formula))
 
-/-- Forgetting derivation-local support yields Mario Carneiro's canonical
-declarative provability theorem for every source-owned proof tree. -/
+/-- Forgetting the frame condition on variable leaves yields Mario Carneiro's
+declarative provability for every source-owned proof tree. -/
 theorem sourceGeneratedProvesTree_to_semanticProvable
     (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
     (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
@@ -550,7 +551,7 @@ theorem sourceGeneratedProvesTree_to_semanticProvable
         (floatingVariableNames source.activeHypotheses) formula = true)
     (htree : Nonempty
       (SourceGeneratedProvesTree source target formula)) :
-    Metamath.Spec.Semantic.Provable
+    Metamath.Spec.Declarative.Provable
       (dbToAxioms (sourceOperationalDatabase source))
       (frameToContext (sourceOperationalCallerFrame source))
       (exprToFormula
@@ -558,13 +559,13 @@ theorem sourceGeneratedProvesTree_to_semanticProvable
         (operationalExpr formula)) := by
   exact
     ((sourceGeneratedProvesTree_nonempty_iff_supportedDeclarative
-      source target hsource formula hrespect).mp htree).toSemantic
+      source target hsource formula hrespect).mp htree).toDeclarative
 
 /-! ## Verified implementation refinement -/
 
 /-- The verified mm-lean4 normal-proof fold accepts some exact authored label
-trace if and only if the same source-derived checker semantics has a supported
-declarative derivation.  The implementation database is related to the source
+trace if and only if the same source-derived checker semantics has a frame
+derivation.  The implementation database is related to the source
 prefix only through the independently checked projection theorem. -/
 theorem mmLean4_normalFold_exists_iff_supportedDeclarative
     (database : MMLean4Bridge.RuntimeDB)
@@ -582,7 +583,7 @@ theorem mmLean4_normalFold_exists_iff_supportedDeclarative
         labels.foldlM
             (fun state label => database.stepNormal state label) base =
           .ok (base.push formula.toRuntime)) ↔
-      SupportedProvable
+      FrameDerivable
         (sourceOperationalDatabase source)
         (sourceOperationalCallerFrame source)
         (exprToFormula
@@ -637,12 +638,12 @@ private theorem varMapOfFrameAux_index_lt
         simp only [List.length_cons]
         omega
 
-/-- The global support premise used by mm-lean4's unrestricted
-operational/declarative biconditional is impossible for every finite frame:
-there is always a fresh semantic variable index outside the frame map. -/
-theorem not_semanticFrameSupported
-    (database : Metamath.Spec.Database) (frame : Metamath.Spec.Frame) :
-    ¬SemanticFrameSupported database frame := by
+/-- The global support premise, that a frame declares every declarative
+variable, is impossible for every finite frame: there is always a fresh
+variable index outside the frame map.  Frame derivability therefore checks
+support per derivation, at each variable leaf. -/
+theorem not_semanticFrameSupported (frame : Metamath.Spec.Frame) :
+    ¬∀ reference : Metamath.VR, FrameDeclared frame reference := by
   intro hsupported
   let freshReference : Metamath.VR :=
     ⟨"", (floatList frame).length⟩

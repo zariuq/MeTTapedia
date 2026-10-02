@@ -198,7 +198,7 @@ noncomputable def identityConstructors :
   presentation := identityPresentation
   system := identitySystem
   same := fun _ _ => Iff.rfl
-  symmetric := Tower.headEq_symmetric
+  symmetric := LevelTower.headEq_symmetric
 
 theorem churchRosser : ChurchRosser identityLinearRules := identityConstructors.churchRosser
 

@@ -93,7 +93,7 @@ theorem NormalTheoremStep.toSupportedDeclarative
     {before after : SourceState} {label : String}
     {formula : ConstantHeadedFormula} {proofLabels : List String}
     (step : NormalTheoremStep before after label formula proofLabels) :
-    SupportedProvable
+    FrameDerivable
       (sourceOperationalDatabase before.toSourcePrefix)
       (sourceOperationalCallerFrame before.toSourcePrefix)
       (exprToFormula
@@ -119,7 +119,7 @@ theorem NormalTheoremStep.toSemanticProvable
     {before after : SourceState} {label : String}
     {formula : ConstantHeadedFormula} {proofLabels : List String}
     (step : NormalTheoremStep before after label formula proofLabels) :
-    Metamath.Spec.Semantic.Provable
+    Metamath.Spec.Declarative.Provable
       (dbToAxioms
         (sourceOperationalDatabase before.toSourcePrefix))
       (frameToContext
@@ -128,7 +128,7 @@ theorem NormalTheoremStep.toSemanticProvable
         (varMapOfFrame
           (sourceOperationalCallerFrame before.toSourcePrefix))
         (operationalExpr formula)) := by
-  exact step.toSupportedDeclarative.toSemantic
+  exact step.toSupportedDeclarative.toDeclarative
 
 /-- Negative boundary: local declaration payloads cannot witness a normal
 theorem transition. -/

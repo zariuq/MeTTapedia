@@ -66,7 +66,7 @@ theorem rho_collectionRule_cases {rule : GrammarRule}
       simp only [List.mem_cons, List.not_mem_nil, or_false]
         at sourceMembership
       rcases sourceMembership with rfl | rfl | rfl | rfl | rfl | rfl
-      · simp [costBaseConstructor, rhoCalc] at shape
+      · simp [costBaseConstructor_def, rhoCalc] at shape
       · rw [rho_costBaseDropConstructor_params] at shape
         simp at shape
       · rw [rho_costBaseQuoteConstructor_params] at shape
@@ -114,14 +114,18 @@ theorem rho_collectionRule_cases {rule : GrammarRule}
           TypeExpr.proc, TypeExpr.funType, TypeExpr.baseType] at shape
   · change rule ∈ [costSignatureUnitConstructor,
       costSignatureProductConstructor,
+      costKeyLeafConstructor, costKeyBranchConstructor, costSignatureCommitConstructor,
       costSignedConstructor
         rhoCIGSLT.theory.presentation.interactingSort.1.name,
       costTokenStackEmptyConstructor, costTokenStackConsConstructor,
       costFundingConstructor, costContactConstructor] at apparatus
     simp only [List.mem_cons, List.not_mem_nil, or_false] at apparatus
-    rcases apparatus with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    rcases apparatus with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     · simp [costSignatureUnitConstructor] at shape
     · simp [costSignatureProductConstructor] at shape
+    · simp [costKeyLeafConstructor] at shape
+    · simp [costKeyBranchConstructor] at shape
+    · simp [costSignatureCommitConstructor] at shape
     · simp [costSignedConstructor] at shape
     · simp [costTokenStackEmptyConstructor] at shape
     · simp [costTokenStackConsConstructor] at shape

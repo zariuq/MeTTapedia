@@ -330,6 +330,7 @@ local macro "lookup_row_simp" : tactic =>
       mkRule, congruence, typed, a, v, applyRuleUsing,
       matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
       matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
       applyBindings, PatternEqualityDecision.equal,
       PatternEqualityDecision.different,
       TptpOfficialIncludeResolutionResultCarrier.encodeResolutionError,

@@ -48,7 +48,7 @@ theorem pi_zero {context : Tower.Ctx n} {a : Tower.Tm n} {b : Tower.Tm (n + 1)}
     (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero)
       (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem implication_proposition {context : Tower.Ctx n} {p q : Tower.Tm n}
     (hp : Typing context p (.const `HOLUniformList.prop))

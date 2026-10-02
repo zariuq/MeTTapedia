@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CausalInteraction
 import Mettapedia.GSLT.Causality.ResourceReads
+import Mettapedia.GSLT.Causality.ResourceFrontier
 
 /-!
 # Guarded transactions as interaction on a bag of located atoms
@@ -335,6 +336,148 @@ theorem step_networkOf_iff (selects : Selection Location Atom Pattern Environmen
     exact ⟨command, commandEnabled,
       (fires_networkOf_iff selects command M _).mpr ⟨choice, fits, rfl⟩⟩
 
+/-! ## Current-world search executes actual guarded transactions -/
+
+/-- Every recorded resource firing is a step of the independently defined
+guarded transaction theory, including work enabled by earlier continuations. -/
+theorem fires_networkOf_multiStep (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop) :
+    ∀ (path : List (transactions selects enabled).Entry) (M N : Multiset (Location × Atom)),
+      (transactions selects enabled).Fires path M N →
+        (theory selects enabled).MultiStep (networkOf M) (networkOf N)
+  | [], M, N, fires => by
+      change N = M at fires
+      subst fires
+      exact .refl _
+  | entry :: rest, M, N, fires => by
+      apply GSLT.MultiStep.step
+      · apply (step_networkOf_iff selects enabled M _).mpr
+        exact ⟨_, rfl, entry.1, entry.2, fires.1, rfl⟩
+      · exact fires_networkOf_multiStep selects enabled rest _ N fires.2
+
+/-- Every finite guarded execution starting from a finite bag retains a
+finite bag presentation and an actual resource-firing history. The target
+network is arbitrary, so this also proves closure of the presentation. -/
+theorem multiStep_networkOf_iff (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (M : Multiset (Location × Atom)) (target : Network Location Atom) :
+    (theory selects enabled).MultiStep (networkOf M) target ↔
+      ∃ path N, target = networkOf N ∧ (transactions selects enabled).Fires path M N := by
+  constructor
+  · intro execution
+    have reflect : ∀ {source target}, (theory selects enabled).MultiStep source target →
+        ∀ M, source = networkOf M →
+          ∃ path N, target = networkOf N ∧ (transactions selects enabled).Fires path M N := by
+      intro source target execution
+      induction execution with
+      | refl source =>
+          intro M same
+          exact ⟨[], M, same, rfl⟩
+      | @step source middle target first _ ih =>
+          intro M same
+          rw [same] at first
+          obtain ⟨N, rfl, site, occurrence, fits, rfl⟩ :=
+            (step_networkOf_iff selects enabled M middle).mp first
+          obtain ⟨path, final, reached, fires⟩ := ih _ rfl
+          exact ⟨⟨site, occurrence⟩ :: path, final, reached, fits, fires⟩
+    exact reflect execution M rfl
+  · rintro ⟨path, N, rfl, fires⟩
+    exact fires_networkOf_multiStep selects enabled path M N fires
+
+/-- Exhaustion on bags is exactly quiescence of the guarded transaction
+network. It does not depend on the catalogue or on a scheduler budget. -/
+theorem normalForm_networkOf_iff (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (M : Multiset (Location × Atom)) :
+    (theory selects enabled).IsNormalForm (networkOf M) ↔
+      ∀ entry : (transactions selects enabled).Entry,
+        ¬(transactions selects enabled).Enables M entry.2 := by
+  constructor
+  · intro normal entry fits
+    exact normal ⟨_, (step_networkOf_iff selects enabled M _).mpr
+      ⟨_, rfl, entry.1, entry.2, fits, rfl⟩⟩
+  · intro exhausted ⟨target, step⟩
+    obtain ⟨N, _, site, choice, fits, _⟩ :=
+      (step_networkOf_iff selects enabled M target).mp step
+    exact exhausted ⟨site, choice⟩ fits
+
+/-- A published current-world search result is reached through actual
+transactions and is quiescent there. The catalogue must cover enabled
+choices in every reached bag; an initially complete list alone is insufficient. -/
+theorem state_emission_networkOf (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (catalogueAt : Multiset (Location × Atom) → List (transactions selects enabled).Entry)
+    (complete : (transactions selects enabled).StateCatalogueComplete catalogueAt)
+    (scheduler : Core.BranchingTemporal.Scheduler
+      (List (transactions selects enabled).Entry × Multiset (Location × Atom)))
+    (fuel : Nat) (M : Multiset (Location × Atom))
+    (event : Core.BranchingTemporal.Emission
+      (List (transactions selects enabled).Entry × Multiset (Location × Atom))
+      (List (transactions selects enabled).Entry × Multiset (Location × Atom)))
+    (member : event ∈ (Core.BranchingTemporal.run
+      ((transactions selects enabled).stateSearch catalogueAt) scheduler fuel
+      (Core.BranchingTemporal.initial [([], M)])).events) :
+    (theory selects enabled).MultiStep (networkOf M) (networkOf event.value.2) ∧
+      (theory selects enabled).IsNormalForm (networkOf event.value.2) := by
+  obtain ⟨_, fires, terminal⟩ :=
+    (transactions selects enabled).state_emitted_is_run catalogueAt complete
+      scheduler fuel M event member
+  exact ⟨fires_networkOf_multiStep selects enabled _ _ _ fires,
+    (normalForm_networkOf_iff selects enabled _).mpr terminal⟩
+
+/-- Every finite terminal execution of the original guarded theory is
+represented in the weighted handler. A complete catalogue is needed at each
+descendant world, and zero coefficients do not remove the returned history. -/
+theorem graded_return_of_guarded_execution {V : Type*} [Monoid V]
+    (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (catalogueAt : Multiset (Location × Atom) → List (transactions selects enabled).Entry)
+    (coefficient : (List (transactions selects enabled).Entry × Multiset (Location × Atom)) →
+      (transactions selects enabled).Entry → V)
+    (complete : (transactions selects enabled).StateCatalogueComplete catalogueAt)
+    (M : Multiset (Location × Atom)) (target : Network Location Atom)
+    (execution : (theory selects enabled).MultiStep (networkOf M) target)
+    (terminal : (theory selects enabled).IsNormalForm target) :
+    ∃ path N fuel value, target = networkOf N ∧
+      (.inl (path, N), value) ∈ Dynamics.WeightedBranchingResumption.contributions
+        ((transactions selects enabled).gradedStateSource catalogueAt coefficient) fuel ([], M) := by
+  obtain ⟨path, N, reached, fires⟩ :=
+    (multiStep_networkOf_iff selects enabled M target).mp execution
+  have exhausted := (normalForm_networkOf_iff selects enabled N).mp (reached ▸ terminal)
+  obtain ⟨fuel, value, present⟩ := (transactions selects enabled).graded_return_of_fires
+    catalogueAt coefficient complete fires exhausted
+  exact ⟨path, N, fuel, value, reached, present⟩
+
+/-- The shared weighted handler retains actual guarded executions in both
+completed and suspended leaves. Only a completed world carries quiescence. -/
+theorem graded_leaf_networkOf {V : Type*} [Monoid V]
+    (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (catalogueAt : Multiset (Location × Atom) → List (transactions selects enabled).Entry)
+    (coefficient : (List (transactions selects enabled).Entry × Multiset (Location × Atom)) →
+      (transactions selects enabled).Entry → V)
+    (complete : (transactions selects enabled).StateCatalogueComplete catalogueAt)
+    (M : Multiset (Location × Atom)) (fuel : Nat)
+    (leaf : ((List (transactions selects enabled).Entry × Multiset (Location × Atom)) ⊕
+      (List (transactions selects enabled).Entry × Multiset (Location × Atom))) × V)
+    (member : leaf ∈ Dynamics.WeightedBranchingResumption.contributions
+      ((transactions selects enabled).gradedStateSource catalogueAt coefficient) fuel ([], M)) :
+    Sum.elim
+      (fun done => (theory selects enabled).MultiStep (networkOf M) (networkOf done.2) ∧
+        (theory selects enabled).IsNormalForm (networkOf done.2))
+      (fun pending => (theory selects enabled).MultiStep (networkOf M) (networkOf pending.2))
+      leaf.1 := by
+  have valid := (transactions selects enabled).graded_contributions_valid catalogueAt
+    coefficient complete M fuel ([], M) rfl leaf member
+  cases located : leaf.1 with
+  | inl done =>
+      simp only [located, Sum.elim_inl] at valid ⊢
+      exact ⟨fires_networkOf_multiStep selects enabled _ _ _ valid.1,
+        (normalForm_networkOf_iff selects enabled _).mpr valid.2⟩
+  | inr pending =>
+      simp only [located, Sum.elim_inr] at valid ⊢
+      exact fires_networkOf_multiStep selects enabled _ _ _ valid
+
 /-! ## The direct communication of the MeTTa-calculus -/
 
 section DirectContact
@@ -465,6 +608,100 @@ namespace Controls
 
 open Canary
 
+/-- Exact matching fixes the complete selected atom list. -/
+private theorem exact_selection_atoms {guards : List (Guard CanaryLocation CanaryAtom)}
+    {atoms : List CanaryAtom} {environment : Unit}
+    (selected : exactSelection guards atoms environment) :
+    atoms = guards.map Guard.pattern := by
+  induction selected with
+  | nil => rfl
+  | cons head _ ih =>
+      change _ = _ at head
+      simp only [List.map_cons]
+      rw [head, ih]
+
+def mixedEntry : (transactions exactSelection Canary.enabled).Entry :=
+  ⟨⟨mixedCommand, Or.inl rfl⟩,
+    ⟨([.exec, .fact], ()), rfl, .cons rfl (.cons rfl .nil)⟩⟩
+
+def followupEntry : (transactions exactSelection Canary.enabled).Entry :=
+  ⟨⟨followupCommand, Or.inr rfl⟩,
+    ⟨([.nextExec, .answer], ()), rfl, .cons rfl (.cons rfl .nil)⟩⟩
+
+/-- Discovery uses the current world's atoms, including newly published work. -/
+def currentCandidates (M : Multiset (CanaryLocation × CanaryAtom)) :
+    List (transactions exactSelection Canary.enabled).Entry :=
+  (transactions exactSelection Canary.enabled).enabledAt [mixedEntry, followupEntry] M
+
+/-- This concrete catalogue covers every enabled command and binding choice,
+rather than relying on an uninhabited completeness premise. -/
+theorem current_candidates_complete :
+    (transactions exactSelection Canary.enabled).StateCatalogueComplete currentCandidates := by
+  rintro M ⟨⟨command, commandEnabled⟩, choice⟩ fits
+  apply List.mem_filter.mpr
+  refine ⟨?_, ((transactions exactSelection Canary.enabled).enabledB_iff M _).mpr fits⟩
+  rcases commandEnabled with rfl | rfl
+  · have selectedAtoms := exact_selection_atoms choice.2.2
+    have same : choice = mixedEntry.2 := by
+      apply Subtype.ext
+      exact Prod.ext selectedAtoms (Subsingleton.elim _ _)
+    subst same
+    simp [mixedEntry]
+  · have selectedAtoms := exact_selection_atoms choice.2.2
+    have same : choice = followupEntry.2 := by
+      apply Subtype.ext
+      exact Prod.ext selectedAtoms (Subsingleton.elim _ _)
+    subst same
+    simp [followupEntry]
+
+def initialWorld : Multiset (CanaryLocation × CanaryAtom) :=
+  {(.control, .exec), (.data, .fact)}
+
+def finishedWorld : Multiset (CanaryLocation × CanaryAtom) :=
+  {(.data, .fact), (.output, .answer), (.output, .done)}
+
+/-- The shared scheduler discovers and executes the continuation's directive.
+The fact and earlier answer persist in the completed world. -/
+theorem current_world_runs_both_transactions :
+    Core.BranchingTemporal.run
+      ((transactions exactSelection Canary.enabled).stateSearch currentCandidates)
+      Core.BranchingTemporal.Scheduler.depthFirst 3
+      (Core.BranchingTemporal.initial [([], initialWorld)]) =
+    ⟨[⟨([mixedEntry, followupEntry], finishedWorld),
+       ([mixedEntry, followupEntry], finishedWorld)⟩], []⟩ := by
+  rfl
+
+/-- The result of the actual search is a genuine guarded-transaction run and
+is quiescent in that independently defined theory. -/
+theorem discovered_world_is_guarded_execution :
+    (theory exactSelection Canary.enabled).MultiStep
+      (networkOf initialWorld) (networkOf finishedWorld) ∧
+    (theory exactSelection Canary.enabled).IsNormalForm (networkOf finishedWorld) := by
+  apply state_emission_networkOf exactSelection Canary.enabled currentCandidates
+    current_candidates_complete Core.BranchingTemporal.Scheduler.depthFirst 3 initialWorld
+    ⟨([mixedEntry, followupEntry], finishedWorld),
+      ([mixedEntry, followupEntry], finishedWorld)⟩
+  rw [current_world_runs_both_transactions]
+  exact List.mem_cons_self
+
+/-- An initial-only catalogue publishes the first continuation's world,
+which still has an actual enabled guarded transaction. -/
+theorem frozen_catalogue_publishes_nonterminal_world :
+    Core.BranchingTemporal.run
+      ((transactions exactSelection Canary.enabled).search (currentCandidates initialWorld))
+      Core.BranchingTemporal.Scheduler.depthFirst 2
+      (Core.BranchingTemporal.initial [([], initialWorld)]) =
+      ⟨[⟨([mixedEntry], (transactions exactSelection Canary.enabled).fire initialWorld mixedEntry.2),
+         ([mixedEntry], (transactions exactSelection Canary.enabled).fire initialWorld mixedEntry.2)⟩], []⟩ ∧
+    ¬ (theory exactSelection Canary.enabled).IsNormalForm
+      (networkOf ((transactions exactSelection Canary.enabled).fire initialWorld mixedEntry.2)) := by
+  constructor
+  · rfl
+  · intro normal
+    apply ((normalForm_networkOf_iff exactSelection Canary.enabled _).mp normal) followupEntry
+    unfold System.Enables
+    decide
+
 /-- Every command of the controls may fire. -/
 def always (_command : Command CanaryLocation CanaryAtom CanaryAtom Unit) : Prop := True
 
@@ -540,6 +777,15 @@ end Controls
 #print axioms snapshot_enables_iff
 #print axioms fires_networkOf_iff
 #print axioms step_networkOf_iff
+#print axioms fires_networkOf_multiStep
+#print axioms multiStep_networkOf_iff
+#print axioms normalForm_networkOf_iff
+#print axioms state_emission_networkOf
+#print axioms graded_return_of_guarded_execution
+#print axioms graded_leaf_networkOf
+#print axioms Controls.current_candidates_complete
+#print axioms Controls.discovered_world_is_guarded_execution
+#print axioms Controls.frozen_catalogue_publishes_nonterminal_world
 #print axioms contacts_sharing_a_party_conflict
 #print axioms request_steps_iff
 #print axioms coexecutible_iff_concurrent

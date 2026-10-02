@@ -149,10 +149,11 @@ theorem eraseDupsLength_eq_true_iff_nodup
   constructor
   · intro lengths
     have equal : values.eraseDups = values :=
-      (eraseDups_sublist values).eq_of_length (by simpa using lengths)
+      (eraseDups_sublist values).eq_of_length (beq_iff_eq.mp lengths)
     exact equal ▸ nodup_eraseDups values
   · intro nodup
-    simp [eraseDups_of_nodup nodup]
+    rw [eraseDups_of_nodup nodup]
+    exact beq_iff_eq.mpr rfl
 
 /-- Scan the remaining values while retaining the values already observed.
 With a lawful hash function this performs one expected-constant-time lookup

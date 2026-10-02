@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Core.Composition
 import Mettapedia.GSLT.Dynamics.QueryRevision
+import Mettapedia.GSLT.Dynamics.IndexedEventValuation
 import Mathlib.Algebra.Group.Basic
 import Mathlib.Algebra.Ring.Nat
 
@@ -27,31 +28,24 @@ open Mettapedia.GSLT.Dynamics.QueryRevision
 
 universe uGrade uLeft uRight
 
-/-- One algebra-indexed valuation of the revision events of a theory. -/
-structure Valuation (theory : Theory) where
-  Grade : Type uGrade
-  algebra : PartialMonoid Grade
-  grade : theory.Revision → Option Grade
+/-- Revision-event instance of the shared event valuation interface. -/
+abbrev Valuation (theory : Theory) :=
+  IndexedEventValuation.Valuation.{_, uGrade} theory.Revision
 
 namespace Valuation
 
 /-- Combine two independently chosen event valuations.  The resulting grade
 retains both components, and a merge succeeds only when both partial algebras
 accept it. -/
-def prod {theory : Theory}
+abbrev prod {theory : Theory}
     (left : Valuation.{uLeft} theory) (right : Valuation.{uRight} theory) :
-    Valuation theory where
-  Grade := left.Grade × right.Grade
-  algebra := left.algebra.prod right.algebra
-  grade := fun revision =>
-    (left.grade revision).bind fun leftGrade =>
-      (right.grade revision).bind fun rightGrade =>
-        some (leftGrade, rightGrade)
+    Valuation theory :=
+  IndexedEventValuation.Valuation.prod left right
 
 /-- Fold a chronological event history through its declared partial algebra. -/
-def historyGrade {theory : Theory} (valuation : Valuation theory) :
+abbrev historyGrade {theory : Theory} (valuation : Valuation theory) :
     List theory.Revision → Option valuation.Grade :=
-  valuation.algebra.foldOption valuation.grade
+  IndexedEventValuation.Valuation.historyGrade valuation
 
 @[simp] theorem historyGrade_nil {theory : Theory}
     (valuation : Valuation theory) :
@@ -75,20 +69,18 @@ theorem historyGrade_append {theory : Theory}
       (valuation.historyGrade first).bind fun left =>
         (valuation.historyGrade second).bind fun right =>
           valuation.algebra.op left right :=
-  valuation.algebra.foldOption_append valuation.grade first second
+  IndexedEventValuation.Valuation.historyGrade_append valuation first second
 
 /-- Attempt to combine the grades of two candidate concurrent events. -/
-def combine? {theory : Theory} (valuation : Valuation theory)
-    (first second : theory.Revision) : Option valuation.Grade := do
-  let firstGrade ← valuation.grade first
-  let secondGrade ← valuation.grade second
-  valuation.algebra.op firstGrade secondGrade
+abbrev combine? {theory : Theory} (valuation : Valuation theory)
+    (first second : theory.Revision) : Option valuation.Grade :=
+  IndexedEventValuation.Valuation.combine? valuation first second
 
 /-- Resource compatibility is successful composition in the selected
 valuation algebra. -/
-def Compatible {theory : Theory} (valuation : Valuation theory)
+abbrev Compatible {theory : Theory} (valuation : Valuation theory)
     (first second : theory.Revision) : Prop :=
-  (valuation.combine? first second).isSome
+  IndexedEventValuation.Valuation.Compatible valuation first second
 
 /-- Strong parallelizability requires a literal semantic square and resource
 compatibility. -/
@@ -122,38 +114,9 @@ theorem prod_compatible {theory : Theory}
     (first second : theory.Revision)
     (leftCompatible : left.Compatible first second)
     (rightCompatible : right.Compatible first second) :
-    (left.prod right).Compatible first second := by
-  cases leftFirst : left.grade first with
-  | none => simp [Compatible, combine?, leftFirst] at leftCompatible
-  | some leftFirstGrade =>
-      cases leftSecond : left.grade second with
-      | none =>
-          simp [Compatible, combine?, leftFirst, leftSecond] at leftCompatible
-      | some leftSecondGrade =>
-          cases leftMerge : left.algebra.op leftFirstGrade leftSecondGrade with
-          | none =>
-              simp [Compatible, combine?, leftFirst, leftSecond, leftMerge]
-                at leftCompatible
-          | some leftMerged =>
-              cases rightFirst : right.grade first with
-              | none =>
-                  simp [Compatible, combine?, rightFirst] at rightCompatible
-              | some rightFirstGrade =>
-                  cases rightSecond : right.grade second with
-                  | none =>
-                      simp [Compatible, combine?, rightFirst, rightSecond]
-                        at rightCompatible
-                  | some rightSecondGrade =>
-                      cases rightMerge :
-                          right.algebra.op rightFirstGrade rightSecondGrade with
-                      | none =>
-                          simp [Compatible, combine?, rightFirst, rightSecond,
-                            rightMerge] at rightCompatible
-                      | some rightMerged =>
-                          simp [Compatible, combine?, prod,
-                            Mettapedia.GSLT.PartialMonoid.prod,
-                            leftFirst, leftSecond, leftMerge,
-                            rightFirst, rightSecond, rightMerge]
+    (left.prod right).Compatible first second :=
+  IndexedEventValuation.Valuation.prod_compatible left right first second
+    leftCompatible rightCompatible
 
 end Valuation
 
@@ -161,20 +124,13 @@ end Valuation
 
 /-- Any additive monoid is a total instance of the partial composition
 interface. -/
-def additivePartialMonoid (Grade : Type uGrade) [AddMonoid Grade] :
-    PartialMonoid Grade where
-  unit := 0
-  op := fun first second => some (first + second)
-  unit_op := by simp
-  op_unit := by simp
-  op_assoc := by simp [add_assoc]
+abbrev additivePartialMonoid (Grade : Type uGrade) [AddMonoid Grade] :
+    PartialMonoid Grade := IndexedEventValuation.additivePartialMonoid Grade
 
 /-- Attach an ordinary additive grade to every event. -/
-def additive {theory : Theory} {Grade : Type uGrade} [AddMonoid Grade]
-    (grade : theory.Revision → Grade) : Valuation theory where
-  Grade := Grade
-  algebra := additivePartialMonoid Grade
-  grade := fun revision => some (grade revision)
+abbrev additive {theory : Theory} {Grade : Type uGrade} [AddMonoid Grade]
+    (grade : theory.Revision → Grade) : Valuation theory :=
+  IndexedEventValuation.additive grade
 
 @[simp] theorem additive_combine {theory : Theory}
     {Grade : Type uGrade} [AddMonoid Grade]
@@ -270,8 +226,8 @@ def exclusiveValuation : Valuation noOpTheory where
 
 theorem exclusive_events_not_compatible (first second : Bool) :
     ¬ exclusiveValuation.Compatible first second := by
-  simp [Valuation.Compatible, Valuation.combine?, exclusiveValuation,
-    exclusiveClaimAlgebra]
+  change ¬ (none : Option Bool).isSome = true
+  decide
 
 /-- Behavioral commutation alone does not grant parallel resource authority. -/
 theorem semantic_commutation_does_not_imply_resource_compatibility

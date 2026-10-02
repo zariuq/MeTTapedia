@@ -598,7 +598,7 @@ its Aczel-valued observation assembled as one reusable cospan. -/
 noncomputable def recursiveMapFusionCospan
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -651,7 +651,7 @@ proof-qualified cospan. -/
 theorem recursiveMapFusionCospan_semanticDiamonds
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -681,7 +681,7 @@ open NativeHOLRecursiveProofOperationalObservation.Controls
 /-- The noncommuting captured-functions workload inhabits the generic cospan
 with the exact retained HOL proof. -/
 noncomputable def capturedConstantCospan
-    (level : LevelExpr) {a : ZFSet.{u}}
+    (level : LevelExpr Nat) {a : ZFSet.{u}}
     (older newer : Value a element) :
     let programs := nativeListPrograms constantOlder constantNewer [olderHead]
     ProofQualifiedReachabilityCospan (reduction level 2) IntrinsicProof
@@ -704,14 +704,14 @@ noncomputable def capturedConstantCospan
       twoElement_projection_zero, twoElement_projection_one]
 
 /-- Projecting the generic cospan recovers both generated OSLF observations. -/
-theorem capturedConstantCospan_observed (level : LevelExpr)
+theorem capturedConstantCospan_observed (level : LevelExpr Nat)
     {a : ZFSet.{u}} (older newer : Value a element) :
     NoncommutingOperationalSquare level older newer := by
   exact (capturedConstantCospan level older newer).semanticDiamonds
 
 /-- Equal operational observations do not authorize an unrelated proof
 object.  This is the proof-versus-truth boundary at the cospan interface. -/
-theorem observations_do_not_qualify_identityProof (level : LevelExpr)
+theorem observations_do_not_qualify_identityProof (level : LevelExpr Nat)
     {a : ZFSet.{u}} (older newer : Value a element) :
     NoncommutingOperationalSquare level older newer /\
       ¬ RetainedMapFusionQualifies identityProof
@@ -724,7 +724,7 @@ theorem observations_do_not_qualify_identityProof (level : LevelExpr)
 proof/compiler provenance, noncommuting function orientation, and the common
 generated modal observation. -/
 theorem capturedConstantCospan_retains_proof_and_orientation
-    (level : LevelExpr) {a : ZFSet.{u}}
+    (level : LevelExpr Nat) {a : ZFSet.{u}}
     (older newer : Value a element) (different : older ≠ newer) :
     (capturedConstantCospan level older newer).evidence =
         retainedMapFusionProof /\

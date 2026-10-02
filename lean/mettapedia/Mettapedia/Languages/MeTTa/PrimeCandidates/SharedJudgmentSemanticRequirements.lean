@@ -291,7 +291,7 @@ theorem qualified_accepted_type_has_code
     (input : NIKServiceInvocation.InputAdmission request)
     {claim : (targets index).Carrier}
     (accepted : (NIKServiceInvocation.invoke request).acceptedValue = some claim)
-    {level : LevelExpr}
+    {level : LevelExpr Nat}
     (formed : Judgment assembly.rules ((data.registry.attachment index).context claim)
       ((data.registry.attachment index).nativeType claim) (sortTm level)) :
     ∃ code : C.Tm (data.interpretation.ctx (SharedJudgmentInterpretation.Context.ofJudgment formed))

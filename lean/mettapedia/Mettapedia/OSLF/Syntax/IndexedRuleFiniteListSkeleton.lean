@@ -45,6 +45,40 @@ def toContext (Γ : ListContext P) : Context P where
         rfl
       right_inv := by intro position; rfl }
 
+section Relabel
+
+variable {P}
+variable {Relabelled : Type uIndex}
+variable {Q : IndexedPolynomial.{0, uIndex, uShape, 0} Unit (fun _ => Relabelled)}
+
+/-- Relabel every listed variable along a map of judgments, keeping its
+position. -/
+def ListContext.relabel (f : Judgment → Relabelled) (Γ : ListContext P) :
+    ListContext Q where
+  length := Γ.length
+  label := fun position => f (Γ.label position)
+
+/-- A listed variable keeps its position when its judgment is relabelled. -/
+def ListContext.relabelSlot (f : Judgment → Relabelled) (Γ : ListContext P)
+    {judgment : Judgment} :
+    (toContext P Γ).slots judgment →
+      (toContext Q (Γ.relabel f)).slots (f judgment)
+  | ⟨position, ⟨equal⟩⟩ => ⟨position, ⟨congrArg f equal⟩⟩
+
+/-- Relabelling cannot merge distinct listed variables, even when it
+identifies their judgments. -/
+theorem ListContext.relabelSlot_injective (f : Judgment → Relabelled)
+    (Γ : ListContext P) (judgment : Judgment) :
+    Function.Injective (Γ.relabelSlot (Q := Q) f (judgment := judgment)) := by
+  intro first second same
+  rcases first with ⟨firstPosition, ⟨firstEqual⟩⟩
+  rcases second with ⟨secondPosition, ⟨secondEqual⟩⟩
+  have positions : firstPosition = secondPosition := congrArg Sigma.fst same
+  cases positions
+  rfl
+
+end Relabel
+
 /-- An arrow substitutes a free rule tree for each variable of the target
 finite-list context. -/
 abbrev Hom (Γ Δ : ListContext P) : Type _ :=

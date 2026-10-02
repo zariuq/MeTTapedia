@@ -89,7 +89,7 @@ end ExecutablePackage
 
 Language: the package with the code destructor `pred (all f) ⟶ f`.  Two kinds
 of statement: a typed term that is not strongly normalizing, and the model
-obstruction derived from it.  The obstruction: no model S whose realizer side
+obstruction derived from it.  The obstruction: no model SN whose realizer side
 reduces by the package with the destructor is sound for that package, even
 with its root steps read with their typing (`¬ TypedSoundS`).  Soundness in the
 untyped reading implies the typed reading, so this also refutes the untyped

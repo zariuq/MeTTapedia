@@ -133,6 +133,14 @@ theorem mem_equiv_imageWithin {B X : WellFoundedPart.{u}} {F : El Mem X → Well
   exact exists_congr fun _ => ⟨fun e => by rw [e, Equiv.apply_symm_apply],
     fun e => by rw [← e, Equiv.symm_apply_apply]⟩
 
+/-- Inclusion of carried sets is inclusion of the sets. -/
+theorem subset_symm_iff {a b : ZFSet.{u}} : Subset (ofZF a) (ofZF b) ↔ a ⊆ b := by
+  rw [subset_iff_equiv, Equiv.apply_symm_apply, Equiv.apply_symm_apply]
+
+/-- The union of a carried set is the carried union. -/
+theorem sUnion_symm (a : ZFSet.{u}) : sUnion (ofZF a) = ofZF (ZFSet.sUnion a) := by
+  rw [Equiv.eq_symm_apply, equiv_sUnion, Equiv.apply_symm_apply]
+
 /-! ## Universes through the equivalence -/
 
 /-- A well-founded set is a Grothendieck universe exactly when its `ZFSet` is a closed
@@ -204,6 +212,11 @@ theorem isGrothendieckUniverse_iff_closed (U : WellFoundedPart.{u}) :
       rw [mem_iff_equiv_mem, same]
       exact hU.replacement_mem (mem_iff_equiv_mem.mp hX) f values
 
+/-- A carried set is a Grothendieck universe exactly when the set is a closed universe. -/
+theorem isGrothendieckUniverse_symm_iff {a : ZFSet.{u}} :
+    IsGrothendieckUniverse (ofZF a) ↔ Closed a := by
+  rw [isGrothendieckUniverse_iff_closed, Equiv.apply_symm_apply]
+
 /-- The least universe is carried to the least closed universe. -/
 theorem equiv_hull (N B : WellFoundedPart.{u}) :
     toZF (hull N B) = ZFSetUniverseClosure.hull (toZF N) (toZF B) := by
@@ -232,6 +245,11 @@ noncomputable def univOf (h : CofinalInaccessibles.{u}) (N : WellFoundedPart.{u}
 theorem equiv_univOf (h : CofinalInaccessibles.{u}) (N : WellFoundedPart.{u}) :
     toZF (univOf h N) = ZFSetUniverseClosure.univOf h (toZF N) :=
   Equiv.apply_symm_apply _ _
+
+/-- The carried operation at a carried set is the carried least closed universe. -/
+theorem univOf_symm (h : CofinalInaccessibles.{u}) (a : ZFSet.{u}) :
+    univOf h (ofZF a) = ofZF (ZFSetUniverseClosure.univOf h a) := by
+  rw [univOf, Equiv.apply_symm_apply]
 
 /-- Under cofinally many inaccessibles, the carried operation satisfies the four universe
 laws. -/

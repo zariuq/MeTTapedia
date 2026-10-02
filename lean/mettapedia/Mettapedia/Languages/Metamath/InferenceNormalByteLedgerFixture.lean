@@ -120,7 +120,7 @@ def fixtureLedgerMatches : Bool :=
 #guard fixtureLedgerMatches
 
 /-- The fixture uses the parser profile required by prefix provenance. -/
-example : ModeConfig.soundDefault.prefixCertified := ⟨rfl, rfl⟩
+example : ModeConfig.sound.IsSound := ⟨rfl, rfl⟩
 
 /-! ## Source-level mutations and profile boundary -/
 
@@ -147,16 +147,16 @@ def sourceRejectedWithCode
   db.parseErrorCode?.map ParseErrorCode.toNat == some code.toNat &&
     (db.find? "th").isNone
 
-#guard sourceRejectedWithCode dvMutationSource .soundDefault
+#guard sourceRejectedWithCode dvMutationSource .sound
   .disjointVariableViolation
-#guard sourceRejectedWithCode orderMutationSource .soundDefault
+#guard sourceRejectedWithCode orderMutationSource .sound
   .typeErrorInSubstitution
-#guard sourceRejectedWithCode unknownSource .soundDefault
+#guard sourceRejectedWithCode unknownSource .sound
   .unknownStepQuestionRejected
 #guard (checkBytes unknownSource.toUTF8 .zar).error?.isNone
 #guard (checkBytes unknownSource.toUTF8 .zar).find? "th" |>.isSome
-#guard (checkBytes compressedSource.toUTF8 .soundDefault).error?.isNone
-#guard (checkBytes compressedSource.toUTF8 .soundDefault).find? "th" |>.isSome
+#guard (checkBytes compressedSource.toUTF8 .sound).error?.isNone
+#guard (checkBytes compressedSource.toUTF8 .sound).find? "th" |>.isSome
 
 /-! ## Executable false-green calibrations -/
 

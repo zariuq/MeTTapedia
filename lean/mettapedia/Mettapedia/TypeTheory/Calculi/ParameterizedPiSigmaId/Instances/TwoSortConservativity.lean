@@ -457,7 +457,7 @@ theorem towerHeadEq_of_headEq {left right : Legacy.Head}
     Tower.HeadEq left.embed right.embed := by
   subst right
   cases left <;>
-    simp [Legacy.Head.embed, Tower.HeadEq, Tower.zero,
+    simp [Legacy.Head.embed, LevelTower.HeadEq, LevelTower.zero,
       Mettapedia.TypeTheory.UniverseLevel.LevelExpr.eval]
 
 /-- Every legacy computation/equality generator maps to a tower generator. -/
@@ -505,7 +505,7 @@ theorem headEq_of_towerHeadEq {left right : Tower.Head}
     (h : Tower.HeadEq left right) :
     Legacy.HeadEq left.forget right.forget := by
   cases left <;> cases right <;>
-    simp [Tower.HeadEq, Tower.Head.forget, Legacy.HeadEq] at h ⊢
+    simp [LevelTower.HeadEq, Tower.Head.forget, Legacy.HeadEq] at h ⊢
 
 /-- Tower conversion generators project to Legacy conversion generators
 after level erasure. -/
@@ -560,7 +560,7 @@ theorem tower_zero_join_headEq :
     Tower.HeadEq
       (.sort (.max Tower.zero Tower.zero)) (.sort Tower.zero) := by
   intro v
-  simp [Tower.zero,
+  simp [LevelTower.zero,
     Mettapedia.TypeTheory.UniverseLevel.LevelExpr.eval]
 
 theorem towerZeroJoinConv : Conv Tower.HeadEq
@@ -759,7 +759,7 @@ theorem SealedHasType.forget {Γ : Tower.Ctx n} {t A : Tower.Tm n}
   | reflIntro ha iha => exact .reflIntro iha
   | @cumul n Γ t u v ht huv iht =>
       cases u <;> cases v <;>
-        simp [Tower.Cumulative] at huv
+        simp [LevelTower.Cumulative] at huv
       exact iht
   | conv ht hAB iht => exact .conv iht (Legacy.conv_of_towerConv hAB)
 
@@ -856,7 +856,7 @@ theorem embedded_sealedIdentity_hasType :
 /-- Negative: the sealed migration lane contains no universe-successor
 formation rule. -/
 theorem sealed_sort_has_no_type {n : Nat} (Γ : Tower.Ctx n) (level :
-    Mettapedia.TypeTheory.UniverseLevel.LevelExpr)
+    Mettapedia.TypeTheory.UniverseLevel.LevelExpr Nat)
     (A : Tower.Tm n) :
     ¬ Tower.SealedHasType Γ (.head (.sort level)) A := by
   intro h
@@ -879,7 +879,7 @@ theorem sealed_sort_has_no_type {n : Nat} (Γ : Tower.Ctx n) (level :
 /-- Contrast: universe-successor formation is present only in unrestricted
 Tower typing. -/
 theorem tower_sort_has_successor_type (level :
-    Mettapedia.TypeTheory.UniverseLevel.LevelExpr) :
+    Mettapedia.TypeTheory.UniverseLevel.LevelExpr Nat) :
     Tower.HasType (.nil : Tower.Ctx 0) (.head (.sort level))
       (.head (.sort (.succ level))) :=
   .headType (.sort level)
@@ -916,7 +916,7 @@ theorem towerUniverseLeak_hasType :
 because doing so would require typing the old marker as a computational
 argument. -/
 theorem sealedUniverseApplication_hasNoType {n : Nat} (Γ : Tower.Ctx n)
-    (level : Mettapedia.TypeTheory.UniverseLevel.LevelExpr)
+    (level : Mettapedia.TypeTheory.UniverseLevel.LevelExpr Nat)
     (A : Tower.Tm n) :
     ¬ Tower.SealedHasType Γ
       (.app (.lam (.head .legacyGround)) (.head (.sort level))) A := by

@@ -18,25 +18,34 @@ open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
 
 /-- `AZ` is interpreted byte by byte in one scheduled MM2 run.  A selects
 heap entry zero; Z saves the same node identity at heap entry one; terminal
-acceptance observes the unchanged single-node stack. -/
+acceptance observes the unchanged single-node stack.  The physical queue
+also consumes every reinstalled, inert continuation probe. -/
 theorem compressedAZ_run_accepts_and_save_reuses_identity :
     let final :=
-      (cReflectiveSourceWorkQueueRunN .leaveInert 20
+      (cReflectiveSourceWorkQueueRunN .leaveInert 21
         compressedAZProgram).1
     canaryAccepted ∈ final ∧
       canarySavedHeapOne ∈ final ∧
       canaryUnexpectedNodeOne ∉ final := by
   decide +kernel
 
+/-- Twenty physical scheduler steps still leave the accepting continuation
+queued; the shorter bound cannot already contain the acceptance result. -/
+theorem compressedAZ_twenty_steps_not_accepted :
+    canaryAccepted ∉
+      (cReflectiveSourceWorkQueueRunN .leaveInert 20 compressedAZProgram).1 := by
+  decide +kernel
+
 /-- Removing the source heap entry keeps the compact bytes identical but
 prevents target acceptance. -/
 theorem compressedAZ_without_heap_entry_does_not_accept :
     canaryAccepted ∉
-      (cReflectiveSourceWorkQueueRunN .leaveInert 20
+      (cReflectiveSourceWorkQueueRunN .leaveInert 21
         (compressedAZProgram.erase canaryHeapZero)).1 := by
   decide +kernel
 
 #print axioms compressedAZ_run_accepts_and_save_reuses_identity
+#print axioms compressedAZ_twenty_steps_not_accepted
 #print axioms compressedAZ_without_heap_entry_does_not_accept
 
 end Mettapedia.Languages.Metamath.MM2CompressedProofAZCanary

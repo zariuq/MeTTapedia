@@ -583,7 +583,7 @@ theorem betaCopy_converts (term : Tower.Tm n) : AuthoredConv (betaCopy term) ter
   .rel _ _ (.betaPi _ _)
 
 private theorem betaCopy_typed {context : Tower.Ctx n} {term type : Tower.Tm n}
-    {level : LevelExpr}
+    {level : LevelExpr Nat}
     (typed : Typing (rules signature) context term type)
     (typeFormed : Typing (rules signature) context type (sortTm level)) :
     Typing (rules signature) context (betaCopy term) type := by
@@ -599,7 +599,7 @@ private theorem betaCopy_typed {context : Tower.Ctx n} {term type : Tower.Tm n}
 
 /-- An actual beta conversion of a native universe code joins endpoints
 displayed at different cumulative levels, uniformly in the level expression. -/
-theorem universe_conversion_typed_join (opac : Opacity signature) (level : LevelExpr) :
+theorem universe_conversion_typed_join (opac : Opacity signature) (level : LevelExpr Nat) :
     ∃ common : Tower.Tm 0,
       NativeRelatorConversionParallel.ParStar (betaCopy (sortTm level)) common ∧
       NativeRelatorConversionParallel.ParStar (sortTm level) common ∧
@@ -708,9 +708,9 @@ def opaqueContext : Tower.Ctx 5 :=
   .snoc Intrinsic.contextAXPD (.const `CompletedPreservation.Ambient)
 
 theorem opaque_context_formed : ContextFormation (rules opaqueSignature) opaqueContext := by
-  apply ContextFormation.snoc (u := Tower.Head.sort Tower.zero)
+  apply ContextFormation.snoc (u := LevelTower.Head.sort Tower.zero)
   · exact relator_context FormationSensitiveNativeIdentity.contextAXPD_formed
-  · apply Typing.const (type := sortTm Tower.zero) (u := Tower.Head.sort (.succ Tower.zero))
+  · apply Typing.const (type := sortTm Tower.zero) (u := LevelTower.Head.sort (.succ Tower.zero))
     · decide
     · exact .headType (.sort Tower.zero)
     · exact .sort _
@@ -774,7 +774,7 @@ theorem opacity_required_for_typed_join :
   have aliasTyped : Typing (rules OpaqueRelatorExtension.Examples.unfolding) .nil
       (.const `OpaqueExtension.universeAlias : Tower.Tm 0) (sortTm (.succ Tower.zero)) := by
     apply Typing.const (type := sortTm (.succ Tower.zero))
-      (u := Tower.Head.sort (.succ (.succ Tower.zero)))
+      (u := LevelTower.Head.sort (.succ (.succ Tower.zero)))
     · decide
     · exact .headType (.sort (.succ Tower.zero))
     · exact .sort _

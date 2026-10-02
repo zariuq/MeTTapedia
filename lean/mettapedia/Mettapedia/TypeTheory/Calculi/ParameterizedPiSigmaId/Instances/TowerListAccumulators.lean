@@ -165,7 +165,7 @@ def defStage : Rules Tower.Head :=
       else if name = runFirst then some runFirstType
       else bodyStage.constantType name }
 
-variable (lv : LevelExpr)
+variable (lv : LevelExpr Nat)
 
 /-- The declared types of the package. -/
 def constantType : DeclName → Option (Tm Tower.Head 0) := fun name =>
@@ -476,13 +476,13 @@ theorem const_type_typed (headTyping : ∀ l, R.headTyping (.sort l) (.sort (.su
 end Typings
 
 theorem num_typedB {n : Nat} {Γ : Ctx Tower.Head n} : Typed bodyStage Γ (.const num) (.head u) :=
-  const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+  const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
 theorem list_typedB {n : Nat} {Γ : Ctx Tower.Head n} : Typed bodyStage Γ (.const list) (.head u) :=
-  const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+  const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
 theorem num_typedD {n : Nat} {Γ : Ctx Tower.Head n} : Typed defStage Γ (.const num) (.head u) :=
-  const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+  const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
 theorem list_typedD {n : Nat} {Γ : Ctx Tower.Head n} : Typed defStage Γ (.const list) (.head u) :=
-  const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+  const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
 
 theorem cons_typedB {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed bodyStage Γ (.const cons) (.pi (.const num) (.pi (.const list) (.const list))) :=
@@ -524,9 +524,9 @@ theorem listRecType_typed : ∃ w, Tower.IsUniverse w ∧
   have hu : listStage₂.isUniverse u := .sort _
   have hv : listStage₂.isUniverse (.sort lv) := .sort _
   have tNum : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed listStage₂ Γ (.const num) (.head u) :=
-    fun {_ _} => const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+    fun {_ _} => const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
   have tList : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed listStage₂ Γ (.const list) (.head u) :=
-    fun {_ _} => const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+    fun {_ _} => const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
   have tNil : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed listStage₂ Γ (.const nil) (.const list) :=
     fun {_ _} => .const (type := ctorType list []) rfl tList hu
   have tCons : ∀ {n : Nat} {Γ : Ctx Tower.Head n},
@@ -714,10 +714,10 @@ theorem stage_sub_rules : RulesSub (stageRules lv) (rules lv) :=
     exact RootComputation.step_unionAll (stageComputations_sub entry mem) h⟩
 
 theorem num_typedS {n : Nat} {Γ : Ctx Tower.Head n} : Typed (stageRules lv) Γ (.const num) (.head u) :=
-  const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+  const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
 theorem list_typedS {n : Nat} {Γ : Ctx Tower.Head n} :
     Typed (stageRules lv) Γ (.const list) (.head u) :=
-  const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+  const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
 
 /-- Head equality steps preserve typing in the checking package. -/
 theorem stageHeads : HeadPreserving (stageRules lv) := by
@@ -781,10 +781,10 @@ theorem stage_typesFormed : DeclaredTypesFormed (stageRules lv) := by
       (.sort _) (.sorts _ _)) (.sort _) (.sorts _ _)⟩
   split at declared
   · cases declared
-    exact ⟨_, .sort _, .headType (Tower.HeadTyping.sort _)⟩
+    exact ⟨_, .sort _, .headType (LevelTower.HeadTyping.sort _)⟩
   split at declared
   · cases declared
-    exact ⟨_, .sort _, .headType (Tower.HeadTyping.sort _)⟩
+    exact ⟨_, .sort _, .headType (LevelTower.HeadTyping.sort _)⟩
   split at declared
   · cases declared
     exact ⟨_, .sort _, tNum⟩
@@ -1088,16 +1088,16 @@ theorem declaresList :
     · simp only [consFields, List.mem_cons, Field.closed.injEq, List.not_mem_nil, or_false,
         reduceCtorEq] at closed
       subst closed
-      exact const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+      exact const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
   ctorTyped := by
     intro k fields mem
     simp only [listCtors, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at mem
     rcases mem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-    · exact ⟨_, .sort _, const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl⟩
+    · exact ⟨_, .sort _, const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl⟩
     · have tNum : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed listStage₁ Γ (.const num) (.head u) :=
-        fun {_ _} => const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+        fun {_ _} => const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
       have tList : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed listStage₁ Γ (.const list) (.head u) :=
-        fun {_ _} => const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl
+        fun {_ _} => const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl
       exact ⟨_, .sort _, .piForm tNum (.sort _) (.piForm tList (.sort _) tList (.sort _) (.sorts _ _))
         (.sort _) (.sorts _ _)⟩
   recTyped := listRecType_typed lv
@@ -1291,8 +1291,8 @@ theorem declaresRevFirst :
         (check_inert lv revFirstType (.inl rfl)) (check_reflects lv revFirstType (.inl rfl))
         (declaredRevCheck lv) freeE (fun _ => show list ≠ revOntoFirst by decide)
         (show nil ≠ revOntoFirst by decide) freeC
-        (.snoc .nil ⟨_, Tower.IsUniverse.sort _, list_typedS lv⟩)
-        ⟨_, Tower.IsUniverse.sort _, list_typedS lv⟩
+        (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, list_typedS lv⟩)
+        ⟨_, LevelTower.IsUniverse.sort _, list_typedS lv⟩
         (body := revBody nil []) trivial (checkRevNil lv)
     · exact bodyTyped_of_check (S₀ := stageSetting lv valuation)
         (f := revOntoFirst) (T := list) (k := cons) (e := revFirstEntries) (s := 0) (d := 1 + 0)
@@ -1307,11 +1307,11 @@ theorem declaresRevFirst :
           · exact show list ≠ revOntoFirst by decide
           · exact show list ≠ revOntoFirst by decide)
         (show cons ≠ revOntoFirst by decide) freeC
-        (.snoc (.snoc (.snoc (.snoc .nil ⟨_, Tower.IsUniverse.sort _, num_typedS lv⟩)
-          ⟨_, Tower.IsUniverse.sort _, list_typedS lv⟩) ⟨_, Tower.IsUniverse.sort _, list_typedS lv⟩)
-          ⟨_, Tower.IsUniverse.sort _, .piForm (list_typedS lv) (Tower.IsUniverse.sort _)
-            (list_typedS lv) (Tower.IsUniverse.sort _) (.sorts _ _)⟩)
-        ⟨_, Tower.IsUniverse.sort _, list_typedS lv⟩
+        (.snoc (.snoc (.snoc (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, num_typedS lv⟩)
+          ⟨_, LevelTower.IsUniverse.sort _, list_typedS lv⟩) ⟨_, LevelTower.IsUniverse.sort _, list_typedS lv⟩)
+          ⟨_, LevelTower.IsUniverse.sort _, .piForm (list_typedS lv) (LevelTower.IsUniverse.sort _)
+            (list_typedS lv) (LevelTower.IsUniverse.sort _) (.sorts _ _)⟩)
+        ⟨_, LevelTower.IsUniverse.sort _, list_typedS lv⟩
         (body := revBody cons consFields) (ConstFree.of_mentions rfl) (checkRevCons lv)
   rule := by
     intro k fields mem m σ as has
@@ -1366,8 +1366,8 @@ theorem declaresRunFirst :
         (check_inert lv runFirstType (.inr rfl)) (check_reflects lv runFirstType (.inr rfl))
         (declaredRunCheck lv) freeE (fun _ => show list ≠ runFirst by decide)
         (show nil ≠ runFirst by decide) freeC
-        (.snoc .nil ⟨_, Tower.IsUniverse.sort _, num_typedS lv⟩)
-        ⟨_, Tower.IsUniverse.sort _, num_typedS lv⟩
+        (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, num_typedS lv⟩)
+        ⟨_, LevelTower.IsUniverse.sort _, num_typedS lv⟩
         (body := runBody nil []) trivial (checkRunNil lv)
     · exact bodyTyped_of_check (S₀ := stageSetting lv valuation)
         (f := runFirst) (T := list) (k := cons) (e := runFirstEntries) (s := 0) (d := 1 + 0)
@@ -1382,11 +1382,11 @@ theorem declaresRunFirst :
           · exact show list ≠ runFirst by decide
           · exact show list ≠ runFirst by decide)
         (show cons ≠ runFirst by decide) freeC
-        (.snoc (.snoc (.snoc (.snoc .nil ⟨_, Tower.IsUniverse.sort _, num_typedS lv⟩)
-          ⟨_, Tower.IsUniverse.sort _, list_typedS lv⟩) ⟨_, Tower.IsUniverse.sort _, num_typedS lv⟩)
-          ⟨_, Tower.IsUniverse.sort _, .piForm (num_typedS lv) (Tower.IsUniverse.sort _)
-            (num_typedS lv) (Tower.IsUniverse.sort _) (.sorts _ _)⟩)
-        ⟨_, Tower.IsUniverse.sort _, num_typedS lv⟩
+        (.snoc (.snoc (.snoc (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, num_typedS lv⟩)
+          ⟨_, LevelTower.IsUniverse.sort _, list_typedS lv⟩) ⟨_, LevelTower.IsUniverse.sort _, num_typedS lv⟩)
+          ⟨_, LevelTower.IsUniverse.sort _, .piForm (num_typedS lv) (LevelTower.IsUniverse.sort _)
+            (num_typedS lv) (LevelTower.IsUniverse.sort _) (.sorts _ _)⟩)
+        ⟨_, LevelTower.IsUniverse.sort _, num_typedS lv⟩
         (body := runBody cons consFields) (ConstFree.of_mentions rfl) (checkRunCons lv)
   rule := by
     intro k fields mem m σ as has
@@ -1557,14 +1557,14 @@ section Equations
 
 open TowerListAccumulatorsModel
 
-variable {lv : LevelExpr} {n : Nat} {Γ : Ctx Tower.Head n}
+variable {lv : LevelExpr Nat} {n : Nat} {Γ : Ctx Tower.Head n}
 
 theorem TowerListAccumulators.list_typed : Typed (rules lv) Γ (.const list) (.head u) :=
   Derivable.mono (sub_body lv) list_typedB
 
 theorem TowerListAccumulators.nil_typed : Typed (rules lv) Γ (.const nil) (.const list) :=
   .const (type := ctorType list []) rfl
-    (const_type_typed Tower.HeadTyping.sort Tower.IsUniverse.sort rfl) (.sort _)
+    (const_type_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort rfl) (.sort _)
 
 theorem TowerListAccumulators.cons_typed {x xs : Tm Tower.Head n}
     (tx : Typed (rules lv) Γ x (.const num)) (txs : Typed (rules lv) Γ xs (.const list)) :
@@ -1707,7 +1707,7 @@ section Recursor
 
 open TowerListAccumulatorsModel
 
-variable {lv : LevelExpr} {n : Nat} {Γ : Ctx Tower.Head n}
+variable {lv : LevelExpr Nat} {n : Nat} {Γ : Ctx Tower.Head n}
 
 /-- `rev-onto`'s result family `λ xs. Π acc. list` is a family of types of the
 list recursor's universe. -/

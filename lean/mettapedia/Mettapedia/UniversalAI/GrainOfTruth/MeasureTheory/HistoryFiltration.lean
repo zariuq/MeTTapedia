@@ -1,6 +1,6 @@
 import Mettapedia.UniversalAI.BayesianAgents
 import Mettapedia.UniversalAI.InfiniteHistory
-import Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+import Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Process.Stopping
 import Mathlib.Probability.Process.Filtration
@@ -34,10 +34,10 @@ for proving Bayesian consistency.
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 
-open MeasureTheory ProbabilityTheory Finset Function Preorder  -- Match mathlib's Traj.lean opens
+open ProbabilityTheory Finset Function Preorder  -- Match mathlib's Traj.lean opens
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
-open scoped ENNReal NNReal MeasureTheory
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
+open scoped ENNReal NNReal
 
 /-! ## MeasurableSpace instances for discrete types -/
 
@@ -1019,7 +1019,7 @@ noncomputable def initialMeasureIic0WithPolicy (μ : Environment) (π : Agent) :
 theorem initialMeasureIic0WithPolicy_isProbability (μ : Environment) (π : Agent)
     (h_stoch : isStochastic μ) :
     MeasureTheory.IsProbabilityMeasure (initialMeasureIic0WithPolicy μ π) := by
-  haveI : MeasureTheory.IsProbabilityMeasure (initialStepMeasureWithPolicy μ π) :=
+  have : MeasureTheory.IsProbabilityMeasure (initialStepMeasureWithPolicy μ π) :=
     initialStepMeasureWithPolicy_isProbability μ π h_stoch
   constructor
   simp only [initialMeasureIic0WithPolicy]
@@ -1041,23 +1041,23 @@ noncomputable def environmentMeasureWithPolicy (μ : Environment) (π : Agent) (
 theorem environmentMeasureWithPolicy_isProbability (μ : Environment) (π : Agent) (h_stoch : isStochastic μ) :
     MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) := by
   simp [environmentMeasureWithPolicy]
-  haveI : MeasureTheory.IsProbabilityMeasure (initialMeasureIic0WithPolicy μ π) :=
+  have : MeasureTheory.IsProbabilityMeasure (initialMeasureIic0WithPolicy μ π) :=
     initialMeasureIic0WithPolicy_isProbability μ π h_stoch
-  haveI : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernelWithPolicy μ π n) :=
+  have : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernelWithPolicy μ π n) :=
     fun n => transitionKernelWithPolicy_isMarkov μ π n h_stoch
   infer_instance
 
 /-- The policy-driven environment measure is σ-finite. -/
 instance environmentMeasureWithPolicy_sigmaFinite (μ : Environment) (π : Agent) (h_stoch : isStochastic μ) :
     MeasureTheory.SigmaFinite (environmentMeasureWithPolicy μ π h_stoch) := by
-  haveI : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
+  have : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
     environmentMeasureWithPolicy_isProbability μ π h_stoch
   infer_instance
 
 /-- The policy-driven environment measure of `univ` is `1`. -/
 theorem environmentMeasureWithPolicy_univ_eq_one (μ : Environment) (π : Agent) (h_stoch : isStochastic μ) :
     environmentMeasureWithPolicy μ π h_stoch Set.univ = 1 := by
-  haveI : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
+  have : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
     environmentMeasureWithPolicy_isProbability μ π h_stoch
   exact MeasureTheory.measure_univ
 
@@ -1071,7 +1071,7 @@ noncomputable def initialMeasureIic0 (μ : Environment) :
     and measurable equivalences preserve the measure of univ. -/
 theorem initialMeasureIic0_isProbability (μ : Environment) (h_stoch : isStochastic μ) :
     MeasureTheory.IsProbabilityMeasure (initialMeasureIic0 μ) := by
-  haveI : MeasureTheory.IsProbabilityMeasure (initialStepMeasure μ) :=
+  have : MeasureTheory.IsProbabilityMeasure (initialStepMeasure μ) :=
     initialStepMeasure_isProbability μ h_stoch
   constructor
   simp only [initialMeasureIic0]
@@ -1113,10 +1113,10 @@ theorem environmentMeasure_isProbability (μ : Environment) (h_stoch : isStochas
     MeasureTheory.IsProbabilityMeasure (environmentMeasure μ h_stoch) := by
   simp [environmentMeasure]
   -- Provides: IsProbabilityMeasure (initialMeasureIic0 μ) from earlier instance
-  haveI : MeasureTheory.IsProbabilityMeasure (initialMeasureIic0 μ) :=
+  have : MeasureTheory.IsProbabilityMeasure (initialMeasureIic0 μ) :=
     initialMeasureIic0_isProbability μ h_stoch
   -- The transition kernels are Markov (from transitionKernel_isMarkov)
-  haveI : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernel μ n) :=
+  have : ∀ n, ProbabilityTheory.IsMarkovKernel (transitionKernel μ n) :=
     fun n => transitionKernel_isMarkov μ n h_stoch
   -- Kernel.traj is a Markov kernel (Mathlib instance at Traj.lean:517)
   -- Composition of Markov kernel with probability measure is probability measure
@@ -1126,7 +1126,7 @@ theorem environmentMeasure_isProbability (μ : Environment) (h_stoch : isStochas
 /-- The environment measure is σ-finite (follows from being a probability measure). -/
 instance environmentMeasure_sigmaFinite (μ : Environment) (h_stoch : isStochastic μ) :
     MeasureTheory.SigmaFinite (environmentMeasure μ h_stoch) := by
-  haveI : MeasureTheory.IsProbabilityMeasure (environmentMeasure μ h_stoch) :=
+  have : MeasureTheory.IsProbabilityMeasure (environmentMeasure μ h_stoch) :=
     environmentMeasure_isProbability μ h_stoch
   infer_instance
 
@@ -1134,7 +1134,7 @@ instance environmentMeasure_sigmaFinite (μ : Environment) (h_stoch : isStochast
     Follows immediately from being a probability measure. -/
 theorem environmentMeasure_univ_eq_one (μ : Environment) (h_stoch : isStochastic μ) :
     environmentMeasure μ h_stoch Set.univ = 1 := by
-  haveI : MeasureTheory.IsProbabilityMeasure (environmentMeasure μ h_stoch) :=
+  have : MeasureTheory.IsProbabilityMeasure (environmentMeasure μ h_stoch) :=
     environmentMeasure_isProbability μ h_stoch
   exact MeasureTheory.measure_univ
 
@@ -1167,7 +1167,7 @@ theorem environmentMeasureWithPolicy_step0_singleton (μ : Environment) (π : Ag
   have h_map :
       (environmentMeasureWithPolicy μ π h_stoch).map (frestrictLe (π := StepFamily) 0) =
         initialMeasureIic0WithPolicy μ π := by
-    haveI : ∀ n, IsMarkovKernel (transitionKernelWithPolicy μ π n) :=
+    have : ∀ n, IsMarkovKernel (transitionKernelWithPolicy μ π n) :=
       fun n => transitionKernelWithPolicy_isMarkov μ π n h_stoch
     have hf : Measurable (frestrictLe (π := StepFamily) 0) :=
       measurable_frestrictLe (X := StepFamily) 0
@@ -1258,7 +1258,7 @@ theorem environmentMeasure_step0_singleton (μ : Environment) (h_stoch : isStoch
       (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) 0) =
         initialMeasureIic0 μ := by
     -- Map the IT measure down to the `Iic 0` prefix. This is exactly the initial measure.
-    haveI : ∀ n, IsMarkovKernel (transitionKernel μ n) :=
+    have : ∀ n, IsMarkovKernel (transitionKernel μ n) :=
       fun n => transitionKernel_isMarkov μ n h_stoch
     have hf : Measurable (frestrictLe (π := StepFamily) 0) := measurable_frestrictLe (X := StepFamily) 0
     simp [environmentMeasure]
@@ -1465,7 +1465,7 @@ theorem cylinderSetAt_measurable (t : ℕ) (h : History) :
     exact hfin.measurableSet
   · -- Show equality: {traj | trajectoryToHistory traj t = h} = (truncate t)⁻¹' targetSet
     ext traj
-    simp only [Set.mem_setOf_eq, Set.mem_preimage, targetSet]
+    simp only [Set.mem_ofPred_eq, Set.mem_preimage, targetSet]
     rw [← prefixToHistory_eq_trajectoryToHistory]
 
 /-- Cylinder sets are measurable.
@@ -1478,7 +1478,7 @@ theorem cylinderSet_measurable (h : History) :
   have h_union : {traj | ∃ t, trajectoryToHistory traj t = h} =
       ⋃ t : ℕ, cylinderSetAt t h := by
     ext traj
-    simp only [Set.mem_setOf_eq, Set.mem_iUnion, cylinderSetAt]
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion, cylinderSetAt]
   rw [h_union]
   exact MeasurableSet.iUnion (fun t => cylinderSetAt_measurable t h)
 
@@ -1545,7 +1545,7 @@ theorem cylinderSetAt_cons_cons (a : Action) (x : Percept) (rest' : History) (t 
     cylinderSetAt (t + 1) (HistElem.act a :: HistElem.per x :: rest') =
       {traj | traj 0 = Step.mk a x ∧ trajectoryToHistory (shiftTrajectory traj) t = rest'} := by
   ext traj
-  simp only [cylinderSetAt, Set.mem_setOf_eq]
+  simp only [cylinderSetAt, Set.mem_ofPred_eq]
   constructor
   · intro h_eq
     -- trajectoryToHistory traj (t+1) = [act a, per x, rest']
@@ -1586,7 +1586,7 @@ theorem shiftTrajectory_preimage_cylinderSet (rest' : History) :
     shiftTrajectory ⁻¹' cylinderSet rest' =
       {traj | ∃ t, trajectoryToHistory (shiftTrajectory traj) t = rest'} := by
   ext traj
-  simp only [Set.mem_preimage, cylinderSet, Set.mem_setOf_eq]
+  simp only [Set.mem_preimage, cylinderSet, Set.mem_ofPred_eq]
 
 /-! ## Helper Lemmas for Chain Rule -/
 
@@ -1621,7 +1621,7 @@ theorem historySteps_append_pair (a : Action) (x : Percept) (rest' : History) :
 theorem cylinderSet_eq_cylinderSetAt' (h : History) (_hw : h.wellFormed) :
     cylinderSet h = cylinderSetAt (historySteps h) h := by
   ext traj
-  simp only [cylinderSet, cylinderSetAt, Set.mem_setOf_eq]
+  simp only [cylinderSet, cylinderSetAt, Set.mem_ofPred_eq]
   constructor
   · -- (→) If trajectoryToHistory traj t = h for some t, then t = historySteps h
     intro ⟨t, ht⟩
@@ -1712,7 +1712,7 @@ theorem cylinderSet_append_eq_inter (pfx : History) (a : Action) (x : Percept)
   rw [h_steps_ext]
   -- Now prove: cylinderSetAt (n+1) ext = cylinderSetAt n pfx ∩ {traj | traj n = Step.mk a x}
   ext traj
-  simp only [cylinderSetAt, Set.mem_inter_iff, Set.mem_setOf_eq]
+  simp only [cylinderSetAt, Set.mem_inter_iff, Set.mem_ofPred_eq]
   constructor
   · intro h
     -- trajectoryToHistory traj (n+1) = ext implies trajectoryToHistory traj n = pfx
@@ -1806,7 +1806,7 @@ theorem IT_product_factorization (μ : Environment) (h_stoch : isStochastic μ)
     -- cylinderSet [] = Set.univ
     have h_cyl_empty : cylinderSet ([] : History) = Set.univ := by
       ext traj
-      simp only [cylinderSet, Set.mem_setOf_eq, Set.mem_univ, iff_true]
+      simp only [cylinderSet, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
       exact ⟨0, trajectoryToHistory_zero traj⟩
     simp only [historySteps, List.length_nil, Nat.zero_div] at hn ⊢
     -- Goal: environmentMeasure μ h_stoch (cylinderSet [] ∩ {traj | traj 0 = s}) =
@@ -1957,7 +1957,7 @@ theorem IT_product_factorization (μ : Environment) (h_stoch : isStochastic μ)
         exact ⟨hpfx_mem, hs_mem⟩
 
     -- Rewrite the goal to a statement about singleton cylinder events in the IT prefix spaces.
-    haveI : ∀ m, IsMarkovKernel (transitionKernel μ m) :=
+    have : ∀ m, IsMarkovKernel (transitionKernel μ m) :=
       fun m => transitionKernel_isMarkov μ m h_stoch
 
     have h_meas_n : Measurable (frestrictLe (π := StepFamily) n) :=
@@ -2084,7 +2084,7 @@ theorem IT_product_factorization (μ : Environment) (h_stoch : isStochastic μ)
               simpa [Set.mem_preimage, Set.mem_singleton_iff] using hy
             have hy'' : e y = x1 := by
               simpa [e, MeasurableEquiv.coe_IicProdIoc] using hy'
-            have : y = e.symm x1 := (e.apply_eq_iff_eq_symm_apply).1 hy''
+            have : y = e.symm x1 := (e.eq_symm_apply).2 hy''
             simpa [Set.mem_singleton_iff, hx1_symm] using this
           · intro hy
             have : y = (x0, z) := by simpa [Set.mem_singleton_iff] using hy
@@ -2240,7 +2240,7 @@ theorem IT_product_factorizationWithPolicy (μ : Environment) (π : Agent) (h_st
     subst h_pfx_empty
     have h_cyl_empty : cylinderSet ([] : History) = Set.univ := by
       ext traj
-      simp only [cylinderSet, Set.mem_setOf_eq, Set.mem_univ, iff_true]
+      simp only [cylinderSet, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
       exact ⟨0, trajectoryToHistory_zero traj⟩
     simp only [historySteps, List.length_nil, Nat.zero_div] at hn ⊢
     simp only [h_cyl_empty, Set.univ_inter]
@@ -2370,7 +2370,7 @@ theorem IT_product_factorizationWithPolicy (μ : Environment) (π : Agent) (h_st
         exact ⟨hpfx_mem, hs_mem⟩
 
     -- Rewrite the goal to a statement about singleton cylinder events in the IT prefix spaces.
-    haveI : ∀ m, IsMarkovKernel (transitionKernelWithPolicy μ π m) :=
+    have : ∀ m, IsMarkovKernel (transitionKernelWithPolicy μ π m) :=
       fun m => transitionKernelWithPolicy_isMarkov μ π m h_stoch
 
     have h_meas_n : Measurable (frestrictLe (π := StepFamily) n) :=
@@ -2491,7 +2491,7 @@ theorem IT_product_factorizationWithPolicy (μ : Environment) (π : Agent) (h_st
               simpa [Set.mem_preimage, Set.mem_singleton_iff] using hy
             have hy'' : e y = x1 := by
               simpa [e, MeasurableEquiv.coe_IicProdIoc] using hy'
-            have : y = e.symm x1 := (e.apply_eq_iff_eq_symm_apply).1 hy''
+            have : y = e.symm x1 := (e.eq_symm_apply).2 hy''
             simpa [Set.mem_singleton_iff, hx1_symm] using this
           · intro hy
             have : y = (x0, z) := by simpa [Set.mem_singleton_iff] using hy
@@ -2815,7 +2815,7 @@ The proof of historyProbability_eq_measure proceeds by showing:
 /-- The cylinder set for empty history is the full trajectory space. -/
 theorem cylinderSet_empty : cylinderSet ([] : History) = Set.univ := by
   ext traj
-  simp only [cylinderSet, Set.mem_setOf_eq, Set.mem_univ, iff_true]
+  simp only [cylinderSet, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
   exact ⟨0, trajectoryToHistory_zero traj⟩
 
 /-- historyProbability of empty history is 1. -/
@@ -2866,7 +2866,7 @@ def historyPrefixSet (h : History) (hw : h.wellFormed) : Set (Fin (historySteps 
 theorem cylinderSetAt_eq_preimage (t : ℕ) (h : History) :
     cylinderSetAt t h = truncate t ⁻¹' {p | prefixToHistory t p = h} := by
   ext traj
-  simp only [cylinderSetAt, Set.mem_preimage, Set.mem_setOf_eq]
+  simp only [cylinderSetAt, Set.mem_preimage, Set.mem_ofPred_eq]
   rw [prefixToHistory_eq_trajectoryToHistory]
 
 /-- For a well-formed history of length 2t, cylinderSetAt t h equals cylinderSet h.
@@ -2874,7 +2874,7 @@ theorem cylinderSetAt_eq_preimage (t : ℕ) (h : History) :
 theorem cylinderSet_eq_cylinderSetAt (h : History) (_hw : h.wellFormed) :
     cylinderSet h = cylinderSetAt (historySteps h) h := by
   ext traj
-  simp only [cylinderSet, cylinderSetAt, Set.mem_setOf_eq]
+  simp only [cylinderSet, cylinderSetAt, Set.mem_ofPred_eq]
   constructor
   · -- (→) If trajectoryToHistory traj t = h for some t, then t = historySteps h
     intro ⟨t, ht⟩
@@ -3013,7 +3013,7 @@ theorem measurable_wrt_filtration_iff (f : Trajectory → ℝ) (t : ℕ) :
       exact (Set.toFinite T).measurableSet
     · -- truncate t ⁻¹' T = f⁻¹' B
       ext traj
-      simp only [Set.mem_preimage, T, Set.mem_setOf_eq]
+      simp only [Set.mem_preimage, T, Set.mem_ofPred_eq]
       constructor
       · intro ⟨traj', h_trunc_eq, hfB'⟩
         -- f traj = f traj' because truncate t traj = truncate t traj'

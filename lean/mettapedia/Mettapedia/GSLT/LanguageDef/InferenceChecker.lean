@@ -51,12 +51,14 @@ def patternHasNoCollectionRest : Pattern → Bool
   | .collection _ elements rest =>
       rest.isNone && patternsHaveNoCollectionRest elements
 termination_by pattern => sizeOf pattern
+decreasing_by all_goals sizeOf_pattern_dec
 
 def patternsHaveNoCollectionRest : List Pattern → Bool
   | [] => true
   | pattern :: patterns =>
       patternHasNoCollectionRest pattern && patternsHaveNoCollectionRest patterns
 termination_by patterns => sizeOf patterns
+decreasing_by all_goals sizeOf_pattern_dec
 end
 
 -- Free schema metavariable occurrences annotated with their ambient binder
@@ -77,6 +79,7 @@ def patternMetavariableOccurrencesAt (depth : Nat) : Pattern → List (String ×
   | .collection _ elements _ =>
       patternsMetavariableOccurrencesAt depth elements
 termination_by pattern => sizeOf pattern
+decreasing_by all_goals sizeOf_pattern_dec
 
 def patternsMetavariableOccurrencesAt (depth : Nat) :
     List Pattern → List (String × Nat)
@@ -85,6 +88,7 @@ def patternsMetavariableOccurrencesAt (depth : Nat) :
       patternMetavariableOccurrencesAt depth pattern ++
         patternsMetavariableOccurrencesAt depth patterns
 termination_by patterns => sizeOf patterns
+decreasing_by all_goals sizeOf_pattern_dec
 end
 
 /-- Metavariable occurrence extraction preserves list concatenation.  This
@@ -223,6 +227,7 @@ def fixedConstructorsValid (language : LanguageDef) : Pattern → Bool
         fixedConstructorsValid language replacement
   | .collection _ elements _ => fixedConstructorListsValid language elements
 termination_by pattern => sizeOf pattern
+decreasing_by all_goals sizeOf_pattern_dec
 
 def fixedConstructorListsValid (language : LanguageDef) : List Pattern → Bool
   | [] => true
@@ -230,6 +235,7 @@ def fixedConstructorListsValid (language : LanguageDef) : List Pattern → Bool
       fixedConstructorsValid language pattern &&
         fixedConstructorListsValid language patterns
 termination_by patterns => sizeOf patterns
+decreasing_by all_goals sizeOf_pattern_dec
 end
 
 /-- Fail-closed lookup of one declared outer judgment shape. -/
@@ -594,6 +600,7 @@ def instantiateSchemaAt? (formals : List (String × Nat))
           let results ← instantiateSchemasAt? formals arguments depth schemas
           some (.collection collectionType results none)
 termination_by schema => sizeOf schema
+decreasing_by all_goals sizeOf_pattern_dec
 
 def instantiateSchemasAt? (formals : List (String × Nat))
     (arguments : List Pattern) (depth : Nat) :
@@ -604,6 +611,7 @@ def instantiateSchemasAt? (formals : List (String × Nat))
       let results ← instantiateSchemasAt? formals arguments depth schemas
       some (result :: results)
 termination_by schemas => sizeOf schemas
+decreasing_by all_goals sizeOf_pattern_dec
 
 end
 
@@ -640,6 +648,7 @@ theorem instantiateSchemasAt?_length_eq
               subst results
               simp [instantiateSchemasAt?_length_eq htail]
 termination_by sizeOf schemas
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-! Ground schemas are closed under every argument environment.  This is the
 reusable fact boundary: a generated ground rule needs no metavariable replay,
@@ -683,6 +692,7 @@ theorem instantiateSchemaAt?_eq_self_of_ground
             instantiateSchemasAt?_eq_self_of_ground formals arguments depth
               schemas ground.1]
 termination_by sizeOf schema
+decreasing_by all_goals sizeOf_pattern_dec
 
 theorem instantiateSchemasAt?_eq_self_of_ground
     (formals : List (String × Nat)) (arguments : List Pattern)
@@ -698,6 +708,7 @@ theorem instantiateSchemasAt?_eq_self_of_ground
         instantiateSchemasAt?_eq_self_of_ground formals arguments depth
           schemas ground.2]
 termination_by sizeOf schemas
+decreasing_by all_goals sizeOf_pattern_dec
 
 end
 
@@ -830,6 +841,7 @@ theorem instantiateSchemaAt?_sound {formals : List (String × Nat)}
               subst result
               exact .collection (instantiateSchemasAt?_sound hitems)
 termination_by sizeOf schema
+decreasing_by all_goals sizeOf_pattern_dec
 
 theorem instantiateSchemasAt?_sound {formals : List (String × Nat)}
     {arguments : List Pattern} {depth : Nat} {schemas results : List Pattern}
@@ -854,6 +866,7 @@ theorem instantiateSchemasAt?_sound {formals : List (String × Nat)}
               exact .cons (instantiateSchemaAt?_sound hhead)
                 (instantiateSchemasAt?_sound htail)
 termination_by sizeOf schemas
+decreasing_by all_goals sizeOf_pattern_dec
 
 end
 
@@ -1393,6 +1406,7 @@ theorem Derivation.sound_of_ruleApplications
       exact ruleSound ruleInstance _ _ application
         (DerivationList.all_meaning meaning ruleSound children)
 termination_by sizeOf derivation
+decreasing_by all_goals (subst_vars; simp only [Derivation.byRule.sizeOf_spec]; omega)
 
 /-- Ordered derivation lists satisfy an interpretation pointwise. -/
 theorem DerivationList.all_meaning
@@ -1412,9 +1426,7 @@ theorem DerivationList.all_meaning
           Derivation.sound_of_ruleApplications meaning ruleSound head
       · exact DerivationList.all_meaning meaning ruleSound tail premise membership
 termination_by sizeOf derivations
-
-decreasing_by
-  all_goals simp_all <;> omega
+decreasing_by all_goals (subst_vars; simp only [DerivationList.cons.sizeOf_spec]; omega)
 
 end
 
@@ -1537,6 +1549,7 @@ def checkRaw (definition : ValidatedCalculusLanguageDef) :
           decide (conclusion = goal) &&
             checkRawChildren definition premises children
 termination_by _ proof => sizeOf proof
+decreasing_by all_goals (simp only [RawProof.node.sizeOf_spec]; omega)
 
 def checkRawChildren (definition : ValidatedCalculusLanguageDef) :
     List Pattern → List RawProof → Bool
@@ -1546,6 +1559,7 @@ def checkRawChildren (definition : ValidatedCalculusLanguageDef) :
         checkRawChildren definition premises children
   | _, _ => false
 termination_by _ children => sizeOf children
+decreasing_by all_goals (simp only [List.cons.sizeOf_spec]; omega)
 
 end
 
@@ -1635,6 +1649,7 @@ theorem checkRaw_soundness {definition : ValidatedCalculusLanguageDef}
           rcases checkRawChildren_sound hchildren with ⟨childrenDerivation⟩
           exact ⟨Derivation.byRule ruleInstance happ childrenDerivation⟩
 termination_by sizeOf proof
+decreasing_by all_goals (subst_vars; simp only [RawProof.node.sizeOf_spec]; omega)
 
 theorem checkRawChildren_sound {definition : ValidatedCalculusLanguageDef}
     {premises : List Pattern} {proofs : List RawProof}
@@ -1654,6 +1669,7 @@ theorem checkRawChildren_sound {definition : ValidatedCalculusLanguageDef}
           rcases checkRawChildren_sound hcheck.2 with ⟨tail⟩
           exact ⟨.cons head tail⟩
 termination_by sizeOf proofs
+decreasing_by all_goals (subst_vars; simp only [List.cons.sizeOf_spec]; omega)
 
 end
 
@@ -1755,6 +1771,7 @@ theorem checkRaw_exists_derivation_with_exact_erasure
           refine ⟨Derivation.byRule ruleInstance happlication childDerivations, ?_⟩
           simp [Derivation.erase, herasure]
 termination_by sizeOf proof
+decreasing_by all_goals (subst_vars; simp only [RawProof.node.sizeOf_spec]; omega)
 
 theorem checkRawChildren_exists_derivations_with_exact_erasure
     {definition : ValidatedCalculusLanguageDef} {premises : List Pattern}
@@ -1779,6 +1796,7 @@ theorem checkRawChildren_exists_derivations_with_exact_erasure
           refine ⟨.cons head tail, ?_⟩
           simp [DerivationList.erase, hhead, htail]
 termination_by sizeOf proofs
+decreasing_by all_goals (subst_vars; simp only [List.cons.sizeOf_spec]; omega)
 
 end
 

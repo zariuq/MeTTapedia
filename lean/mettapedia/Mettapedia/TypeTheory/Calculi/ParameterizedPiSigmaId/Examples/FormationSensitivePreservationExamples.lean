@@ -46,7 +46,7 @@ theorem actual_bodies_checked (name : DeclName) (body : Tower.Tm 0)
           cases lookup
           have known : rules.constantType aliasName = some (sortTm Tower.zero) := by decide
           exact ⟨sortTm Tower.zero, by decide,
-            .const known (.headType (Tower.HeadTyping.sort Tower.zero)) (Tower.IsUniverse.sort _)⟩
+            .const known (.headType (LevelTower.HeadTyping.sort Tower.zero)) (LevelTower.IsUniverse.sort _)⟩
       · next second =>
           split at lookup
           · simp at lookup
@@ -64,7 +64,7 @@ theorem actual_runs_preserve {Γ : Tower.Ctx n} {source target type : Tower.Tm n
     (steps : ConversionCoherence.StepStar rules source target) : Judgment rules Γ target type :=
   ConstantExpansion.Checked.steps_preserve Tower.rules rfl entries (entries.length + 1)
     (ConstantExpansion.Checked.Ordered.expansion_checked entries entries_ordered)
-    towerUniverseRegularity towerHeadPreservation Tower.headEq_symmetric
+    towerUniverseRegularity towerHeadPreservation LevelTower.headEq_symmetric
     actual_bodies_checked judgment steps
 
 def packedType : Tower.Tm n := .sigma (sortTm Tower.zero) (.var 0)
@@ -152,7 +152,7 @@ theorem source_typed : Judgment rules (.nil : Tower.Ctx 0) (.const name) ground 
 theorem body_not_typed {Γ : Tower.Ctx n} : ¬ Typing rules Γ body ground := by
   intro typing
   obtain ⟨A, B, u, formed, universeWitness, inner, adjustment⟩ := typing.lamGeneration
-  have boundary := qualification.piConversionBoundary Tower.headEq_symmetric
+  have boundary := qualification.piConversionBoundary LevelTower.headEq_symmetric
   exact boundary.headDisjoint
     (adjustment.toConvOfSourceDisjointHeads (fun _ => boundary.headDisjoint))
 

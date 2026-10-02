@@ -40,7 +40,7 @@ private def changedBytesChangeIdentity (bytes : ByteArray) : Bool :=
   | _, _ => false
 
 private def finalTargetIsPresentAndNotFresh (bytes : ByteArray) : Bool :=
-  let database := Metamath.Verify.checkBytes bytes .soundDefault
+  let database := Metamath.Verify.checkBytes bytes .sound
   database.error?.isNone &&
     (database.find? "th1").isSome &&
     (projectForMode (some "th1") database).isNone
@@ -92,7 +92,7 @@ private def rejectedReaderInputRejects (bytes : ByteArray) : Bool :=
   | _ => false
 
 private def dvViolationRejects (bytes : ByteArray) : Bool :=
-  let database := Metamath.Verify.checkBytes bytes .soundDefault
+  let database := Metamath.Verify.checkBytes bytes .sound
   database.parseErrorCode?.map Metamath.Verify.ParseErrorCode.toNat ==
       some Metamath.Verify.ParseErrorCode.disjointVariableViolation.toNat &&
     (database.find? "th").isNone

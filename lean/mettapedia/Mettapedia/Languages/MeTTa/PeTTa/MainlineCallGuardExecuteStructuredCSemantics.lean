@@ -1104,6 +1104,36 @@ theorem handler_of_readHandler {name : String} {arguments : List Pattern}
     handler name arguments environment receipt = some step := by
   simp [handler, read]
 
+/-- A successful projection reads the loaded state without changing it. -/
+theorem handler_projection_exact (projection : Projection) (control : ExecuteControl)
+    (value environment receipt : Pattern)
+    (projected : projection.value? control = some value)
+    (stored : lookup? environment (identifier "state") = some (stateValue control)) :
+    handler projection.externalName [stateValue control] environment receipt =
+      some ⟨.value value, environment, externalReceipt projection.externalName receipt⟩ :=
+  handler_of_readHandler
+    (readHandler_projection_exact projection control value environment receipt projected stored)
+
+/-- A successful frame query reads the loaded state without changing it. -/
+theorem handler_frameQuery_exact (query : FrameQuery) (control : ExecuteControl)
+    (value environment receipt : Pattern)
+    (queried : query.value? control = some value)
+    (stored : lookup? environment (identifier "state") = some (stateValue control)) :
+    handler query.externalName [stateValue control] environment receipt =
+      some ⟨.value value, environment, externalReceipt query.externalName receipt⟩ :=
+  handler_of_readHandler
+    (readHandler_frameQuery_exact query control value environment receipt queried stored)
+
+/-- A successful decision retains its environment and records its external call. -/
+theorem handler_decision_exact (decision : Decision) (arguments : List Pattern)
+    (answer : Bool) (environment receipt : Pattern)
+    (decided : decision.decide? arguments = some answer) :
+    handler decision.externalName arguments environment receipt =
+      some ⟨.value (boolValue answer), environment,
+        externalReceipt decision.externalName receipt⟩ :=
+  handler_of_readHandler
+    (readHandler_decision_exact decision arguments answer environment receipt decided)
+
 theorem readHandler_delta_none (delta : Delta) (arguments : List Pattern)
     (environment receipt : Pattern) :
     readHandler delta.externalName arguments environment receipt = none := by

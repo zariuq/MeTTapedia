@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalEventOrbit
+import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalSubstitutionModels
 import Mettapedia.OSLF.Syntax.MonoidEquationRung
 import Mettapedia.OSLF.Syntax.IndexedRuleFiniteContextSemantics
 

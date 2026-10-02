@@ -47,7 +47,7 @@ namespace Intrinsic
 
 /-- `Rel A B` is the proof-relevant family `A -> B -> U evidenceLevel`.
 The evidence universe is explicit and independent of the endpoint levels. -/
-def Rel (source target : Tower.Tm n) (evidenceLevel : LevelExpr) :
+def Rel (source target : Tower.Tm n) (evidenceLevel : LevelExpr Nat) :
     Tower.Tm n :=
   .pi source
     (.pi (Presentation.rename wk target) (sortTm evidenceLevel))
@@ -76,7 +76,7 @@ def Chain (middle earlier later source target : Tower.Tm n) : Tower.Tm n :=
         (.var 0) (Presentation.rename wk target)))
 
 @[simp] theorem rename_Rel (renameMap : Ren n m)
-    (source target : Tower.Tm n) (evidenceLevel : LevelExpr) :
+    (source target : Tower.Tm n) (evidenceLevel : LevelExpr Nat) :
     Presentation.rename renameMap (Rel source target evidenceLevel) =
       Rel (Presentation.rename renameMap source)
         (Presentation.rename renameMap target) evidenceLevel := by
@@ -86,7 +86,7 @@ def Chain (middle earlier later source target : Tower.Tm n) : Tower.Tm n :=
   rfl
 
 @[simp] theorem subst_Rel (substitution : Sub Tower.Head n m)
-    (source target : Tower.Tm n) (evidenceLevel : LevelExpr) :
+    (source target : Tower.Tm n) (evidenceLevel : LevelExpr Nat) :
     Presentation.subst substitution (Rel source target evidenceLevel) =
       Rel (Presentation.subst substitution source)
         (Presentation.subst substitution target) evidenceLevel := by
@@ -157,7 +157,7 @@ def Chain (middle earlier later source target : Tower.Tm n) : Tower.Tm n :=
 /-- Formation of the internal proof-relevant relation former. -/
 theorem Rel_hasType {Gamma : Tower.Ctx n}
     {source target : Tower.Tm n}
-    {sourceLevel targetLevel evidenceLevel : LevelExpr}
+    {sourceLevel targetLevel evidenceLevel : LevelExpr Nat}
     (sourceTyping : Tower.HasType Gamma source (sortTm sourceLevel))
     (targetTyping : Tower.HasType Gamma target (sortTm targetLevel)) :
     Tower.HasType Gamma (Rel source target evidenceLevel)
@@ -165,25 +165,25 @@ theorem Rel_hasType {Gamma : Tower.Ctx n}
         (.max sourceLevel (.max targetLevel (.succ evidenceLevel)))) := by
   unfold Rel
   apply Presentation.HasType.piForm sourceTyping
-    (Tower.IsUniverse.sort sourceLevel)
+    (LevelTower.IsUniverse.sort sourceLevel)
   · apply Presentation.HasType.piForm
       (by
         simpa [sortTm, Presentation.rename] using targetTyping.weaken)
-      (Tower.IsUniverse.sort targetLevel)
+      (LevelTower.IsUniverse.sort targetLevel)
     · exact Presentation.HasType.headType
-        (Tower.HeadTyping.sort evidenceLevel)
-    · exact Tower.IsUniverse.sort (.succ evidenceLevel)
-    · exact Tower.Join.sorts targetLevel (.succ evidenceLevel)
-  · exact Tower.IsUniverse.sort
+        (LevelTower.HeadTyping.sort evidenceLevel)
+    · exact LevelTower.IsUniverse.sort (.succ evidenceLevel)
+    · exact LevelTower.Join.sorts targetLevel (.succ evidenceLevel)
+  · exact LevelTower.IsUniverse.sort
       (.max targetLevel (.succ evidenceLevel))
-  · exact Tower.Join.sorts sourceLevel
+  · exact LevelTower.Join.sorts sourceLevel
       (.max targetLevel (.succ evidenceLevel))
 
 /-- Applying a well-typed internal relation yields an evidence type at the
 declared evidence level. -/
 theorem applyRel_hasType {Gamma : Tower.Ctx n}
     {sourceType targetType relation source target : Tower.Tm n}
-    {evidenceLevel : LevelExpr}
+    {evidenceLevel : LevelExpr Nat}
     (relationTyping : Tower.HasType Gamma relation
       (Rel sourceType targetType evidenceLevel))
     (sourceTyping : Tower.HasType Gamma source sourceType)
@@ -222,24 +222,24 @@ theorem applyRel_hasType {Gamma : Tower.Ctx n}
 
 /-- Formation of the proof pair used inside `Chain`. -/
 theorem evidenceProduct_hasType {Gamma : Tower.Ctx n}
-    {left right : Tower.Tm n} {leftLevel rightLevel : LevelExpr}
+    {left right : Tower.Tm n} {leftLevel rightLevel : LevelExpr Nat}
     (leftTyping : Tower.HasType Gamma left (sortTm leftLevel))
     (rightTyping : Tower.HasType Gamma right (sortTm rightLevel)) :
     Tower.HasType Gamma (evidenceProduct left right)
       (sortTm (.max leftLevel rightLevel)) := by
   unfold evidenceProduct
   apply Presentation.HasType.sigmaForm leftTyping
-    (Tower.IsUniverse.sort leftLevel)
+    (LevelTower.IsUniverse.sort leftLevel)
   · simpa [sortTm, Presentation.rename] using rightTyping.weaken
-  · exact Tower.IsUniverse.sort rightLevel
-  · exact Tower.Join.sorts leftLevel rightLevel
+  · exact LevelTower.IsUniverse.sort rightLevel
+  · exact LevelTower.Join.sorts leftLevel rightLevel
 
 /-- Formation of genuine relational composition.  The result level exposes
 all three contributors: the middle fibre and the two evidence fibres. -/
 theorem Chain_hasType {Gamma : Tower.Ctx n}
     {sourceType middleType targetType : Tower.Tm n}
     {earlier later source target : Tower.Tm n}
-    {middleLevel earlierLevel laterLevel : LevelExpr}
+    {middleLevel earlierLevel laterLevel : LevelExpr Nat}
     (middleTyping : Tower.HasType Gamma middleType (sortTm middleLevel))
     (earlierTyping : Tower.HasType Gamma earlier
       (Rel sourceType middleType earlierLevel))
@@ -282,10 +282,10 @@ theorem Chain_hasType {Gamma : Tower.Ctx n}
     applyRel_hasType laterTyping' middleVariable targetTyping'
   unfold Chain
   apply Presentation.HasType.sigmaForm middleTyping
-    (Tower.IsUniverse.sort middleLevel)
+    (LevelTower.IsUniverse.sort middleLevel)
   · exact evidenceProduct_hasType earlierEvidence laterEvidence
-  · exact Tower.IsUniverse.sort (.max earlierLevel laterLevel)
-  · exact Tower.Join.sorts middleLevel (.max earlierLevel laterLevel)
+  · exact LevelTower.IsUniverse.sort (.max earlierLevel laterLevel)
+  · exact LevelTower.Join.sorts middleLevel (.max earlierLevel laterLevel)
 
 end Intrinsic
 

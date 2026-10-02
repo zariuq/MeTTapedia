@@ -1,5 +1,6 @@
 import Mettapedia.Languages.Metamath.GroundedSemantics
 import Mettapedia.Languages.Metamath.LanguageDefDSL
+import Mettapedia.OSLF.MeTTaIL.PlainRuleValidation
 
 /-!
 # Metamath Bridge Conformance Checks
@@ -58,6 +59,19 @@ example (rt : RuntimeState) (label : String) :
 
 example :
     LanguageDef.validate metamathLanguageDef = [] := by
-  native_decide
+  apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
+  · rfl
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
+  · intro rewrite membership
+    apply LanguageDef.validateRewrite_eq_nil_of_plainRewriteOk
+    have rows : metamathLanguageDef.rewrites.all
+        (LanguageDef.plainRewriteOk metamathLanguageDef) = true := by
+      decide +kernel
+    exact List.all_eq_true.mp rows rewrite membership
 
 end Mettapedia.Languages.Metamath.BridgeConformance

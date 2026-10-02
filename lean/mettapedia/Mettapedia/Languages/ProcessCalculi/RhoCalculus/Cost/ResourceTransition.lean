@@ -17,8 +17,10 @@ funded executions.  No injectivity of composition is required or claimed;
 ordered emissions and proof-carrying causal receipts remain the operational
 evidence, while signature totals are derived observations.
 
-This is the grading category for the concrete funded semantics.  It does not
-yet claim a category-graded monad for arbitrary result types.
+This is the grading category for the concrete funded semantics. Pairing its
+paths with returned values gives the parameterized monad constructed below,
+with a discrete type of pre/post state indices. It is not an endofunctor on
+language presentations.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
@@ -30,7 +32,7 @@ universe u
 namespace CostPath
 
 /-- Well-formedness evidence carried at the source of a concrete path. -/
-def sourceWellFormed
+theorem sourceWellFormed
     {nextId components finalId finalComponents}
     (path : CostPath nextId components finalId finalComponents) :
     TraceComponentsWellFormed components :=
@@ -39,7 +41,7 @@ def sourceWellFormed
   | .fire supported _ _ _ _ => supported
 
 /-- Producer-bound evidence carried at the source of a concrete path. -/
-def sourceBefore
+theorem sourceBefore
     {nextId components finalId finalComponents}
     (path : CostPath nextId components finalId finalComponents) :
     TraceComponentsBefore nextId components :=
@@ -48,7 +50,7 @@ def sourceBefore
   | .fire _ bounded _ _ _ => bounded
 
 /-- Well-formedness evidence at the final state of a concrete path. -/
-def finalWellFormed
+theorem finalWellFormed
     {nextId components finalId finalComponents}
     (path : CostPath nextId components finalId finalComponents) :
     TraceComponentsWellFormed finalComponents :=
@@ -57,7 +59,7 @@ def finalWellFormed
   | .fire _ _ _ _ rest => rest.finalWellFormed
 
 /-- Producer-bound evidence at the final state of a concrete path. -/
-def finalBefore
+theorem finalBefore
     {nextId components finalId finalComponents}
     (path : CostPath nextId components finalId finalComponents) :
     TraceComponentsBefore finalId finalComponents :=

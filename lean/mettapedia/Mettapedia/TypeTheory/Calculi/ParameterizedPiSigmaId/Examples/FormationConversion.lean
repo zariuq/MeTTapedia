@@ -30,18 +30,18 @@ variable {n : Nat}
 
 def polymorphicIdentity : Tower.Tm n := .lam (.lam (.var 0))
 
-def polymorphicIdentityType (level : LevelExpr) : Tower.Tm n :=
+def polymorphicIdentityType (level : LevelExpr Nat) : Tower.Tm n :=
   .pi (sortTm level) (.pi (.var 0) (.var 1))
 
-def identityLevel (level : LevelExpr) : LevelExpr :=
+def identityLevel (level : LevelExpr Nat) : LevelExpr Nat :=
   .max (.succ level) (.max level level)
 
-theorem polymorphicIdentityType_formed (Γ : Tower.Ctx n) (level : LevelExpr) :
+theorem polymorphicIdentityType_formed (Γ : Tower.Ctx n) (level : LevelExpr Nat) :
     Typing Tower.rules Γ (polymorphicIdentityType level)
       (sortTm (identityLevel level)) := by
-  apply Typing.piForm (.headType (Tower.HeadTyping.sort level))
-    (Tower.IsUniverse.sort _)
-  · apply Typing.piForm (Typing.var 0) (Tower.IsUniverse.sort level)
+  apply Typing.piForm (.headType (LevelTower.HeadTyping.sort level))
+    (LevelTower.IsUniverse.sort _)
+  · apply Typing.piForm (Typing.var 0) (LevelTower.IsUniverse.sort level)
     · exact Typing.var 1
     · exact .sort level
     · exact .sorts level level
@@ -50,7 +50,7 @@ theorem polymorphicIdentityType_formed (Γ : Tower.Ctx n) (level : LevelExpr) :
 
 /-- Type-level dependency is used in the actual admitted term, not merely
 described by a semantic family outside the syntax. -/
-theorem polymorphicIdentity_typed (Γ : Tower.Ctx n) (level : LevelExpr) :
+theorem polymorphicIdentity_typed (Γ : Tower.Ctx n) (level : LevelExpr Nat) :
     Typing Tower.rules Γ polymorphicIdentity (polymorphicIdentityType level) := by
   apply Typing.lamIntro (polymorphicIdentityType_formed Γ level) (.sort _)
   apply Typing.lamIntro
@@ -60,7 +60,7 @@ theorem polymorphicIdentity_typed (Γ : Tower.Ctx n) (level : LevelExpr) :
   · exact .var 0
 
 theorem polymorphicIdentity_specializes {Γ : Tower.Ctx n}
-    {A argument : Tower.Tm n} {level : LevelExpr}
+    {A argument : Tower.Tm n} {level : LevelExpr Nat}
     (formed : Typing Tower.rules Γ A (sortTm level))
     (typed : Typing Tower.rules Γ argument A) :
     Typing Tower.rules Γ (.app (.app polymorphicIdentity A) argument) A := by

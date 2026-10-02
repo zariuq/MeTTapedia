@@ -22,12 +22,12 @@ open ContinuationRetypingPlan
 
 /-! ## Core apparatus declarations -/
 
-def costCoreSortSuffixes : List String := ["signature", "token-stack"]
+def costCoreSortSuffixes : List String := ["signature", "key", "token-stack"]
 
 /-- Intrinsic enumeration of the apparatus sorts rendered by
 `costCoreSortSuffixes`. -/
 def costCoreSortKinds : List CostApparatusSort :=
-  [.signature, .tokenStack]
+  [.signature, .key, .tokenStack]
 
 @[simp]
 theorem costCoreSortKinds_suffixes :
@@ -57,6 +57,27 @@ def costSignatureProductConstructor : GrammarRule where
   params :=
     [.simple "left" (.base costSignatureSortName),
       .simple "right" (.base costSignatureSortName)]
+  syntaxPattern := []
+
+/-- Exact keys have a finite tree grammar independently of signature product. -/
+def costKeyLeafConstructor : GrammarRule where
+  label := costKeyLeafConstructorName
+  category := costKeySortName
+  params := []
+  syntaxPattern := []
+
+def costKeyBranchConstructor : GrammarRule where
+  label := costKeyBranchConstructorName
+  category := costKeySortName
+  params := [.simple "left" (.base costKeySortName),
+    .simple "right" (.base costKeySortName)]
+  syntaxPattern := []
+
+/-- A committed key is a signature generator, rather than the monoid unit. -/
+def costSignatureCommitConstructor : GrammarRule where
+  label := costSignatureCommitConstructorName
+  category := costSignatureSortName
+  params := [.simple "key" (.base costKeySortName)]
   syntaxPattern := []
 
 def costSignedConstructor (interactingSort : String) : GrammarRule where
@@ -141,12 +162,12 @@ theorem costFundingStack_not_wrappedContinuation :
   exact costWrappedSortName_ne_apparatus "token-stack" sortEquality.symm
 
 def costCoreConstructorSuffixes : List String :=
-  ["signature-unit", "signature-product", "signed",
+  ["signature-unit", "signature-product", "key-leaf", "key-branch", "signature-commit", "signed",
     "token-stack-empty", "token-stack-cons", "funding", "contact"]
 
 /-- Intrinsic enumeration of the fixed Cost apparatus constructors. -/
 def costCoreConstructorKinds : List CostApparatusConstructor :=
-  [.signatureUnit, .signatureProduct, .signed,
+  [.signatureUnit, .signatureProduct, .keyLeaf, .keyBranch, .signatureCommit, .signed,
     .tokenStackEmpty, .tokenStackCons, .funding, .contact]
 
 @[simp]
@@ -160,14 +181,29 @@ def CostApparatusConstructor.grammarRule (interactingSort : String) :
     CostApparatusConstructor → GrammarRule
   | .signatureUnit => costSignatureUnitConstructor
   | .signatureProduct => costSignatureProductConstructor
+  | .keyLeaf => costKeyLeafConstructor
+  | .keyBranch => costKeyBranchConstructor
+  | .signatureCommit => costSignatureCommitConstructor
   | .signed => costSignedConstructor interactingSort
   | .tokenStackEmpty => costTokenStackEmptyConstructor
   | .tokenStackCons => costTokenStackConsConstructor
   | .funding => costFundingConstructor
   | .contact => costContactConstructor
 
+/-- Apparatus rows never present an implicit collection carrier. -/
+theorem CostApparatusConstructor.grammarRule_notBare (interactingSort : String)
+    (kind : CostApparatusConstructor) :
+    ¬ WellSorted.UsesBareCollection (kind.grammarRule interactingSort) := by
+  cases kind <;>
+    simp [CostApparatusConstructor.grammarRule, WellSorted.UsesBareCollection,
+      costSignatureUnitConstructor, costSignatureProductConstructor,
+      costKeyLeafConstructor, costKeyBranchConstructor, costSignatureCommitConstructor,
+      costSignedConstructor, costTokenStackEmptyConstructor, costTokenStackConsConstructor,
+      costFundingConstructor, costContactConstructor]
+
 def costCoreConstructors (interactingSort : String) : List GrammarRule :=
   [costSignatureUnitConstructor, costSignatureProductConstructor,
+    costKeyLeafConstructor, costKeyBranchConstructor, costSignatureCommitConstructor,
     costSignedConstructor interactingSort, costTokenStackEmptyConstructor,
     costTokenStackConsConstructor, costFundingConstructor,
     costContactConstructor]
@@ -224,10 +260,12 @@ theorem costCoreConstructorLabels (source : CIGSLT) :
         costCoreConstructorSuffixes.map costApparatusConstructorName := by
   simp [costCoreLanguage, costCoreConstructors, costCoreConstructorSuffixes,
     costSignatureUnitConstructor, costSignatureProductConstructor,
+    costKeyLeafConstructor, costKeyBranchConstructor, costSignatureCommitConstructor,
     costSignedConstructor, costTokenStackEmptyConstructor,
     costTokenStackConsConstructor, costFundingConstructor,
     costContactConstructor, costSignatureUnitConstructorName,
-    costSignatureProductConstructorName, costSignedConstructorName,
+    costSignatureProductConstructorName, costKeyLeafConstructorName,
+    costKeyBranchConstructorName, costSignatureCommitConstructorName, costSignedConstructorName,
     costTokenStackEmptyConstructorName, costTokenStackConsConstructorName,
     costFundingConstructorName, costContactConstructorName]
 
@@ -264,12 +302,13 @@ private theorem costCoreTerm_category_mem (source : CIGSLT)
   · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at apparatusMembership
     rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality <;> subst term <;>
+      equality | equality | equality | equality | equality | equality <;> subst term <;>
       simp [costCoreSortSuffixes, costSignatureUnitConstructor,
-        costSignatureProductConstructor, costSignedConstructor,
+        costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
+        costSignatureCommitConstructor, costSignedConstructor,
         costTokenStackEmptyConstructor, costTokenStackConsConstructor,
         costFundingConstructor, costContactConstructor,
-        costSignatureSortName, costTokenStackSortName]
+        costSignatureSortName, costKeySortName, costTokenStackSortName]
 
 private theorem costCoreTerm_parameter_baseName_mem (source : CIGSLT)
     (term : GrammarRule) (termMembership : term ∈ source.costCoreLanguage.terms)
@@ -288,6 +327,10 @@ private theorem costCoreTerm_parameter_baseName_mem (source : CIGSLT)
           costCoreSortSuffixes.map costApparatusSortName :=
       List.mem_append_right _ (by
         simp [costCoreSortSuffixes, costSignatureSortName])
+    have keyMembership : costKeySortName ∈
+        source.continuationRetyping.generatedLanguage.typeNames ++
+          costCoreSortSuffixes.map costApparatusSortName :=
+      List.mem_append_right _ (by simp [costCoreSortSuffixes, costKeySortName])
     have stackMembership : costTokenStackSortName ∈
         source.continuationRetyping.generatedLanguage.typeNames ++
           costCoreSortSuffixes.map costApparatusSortName :=
@@ -311,84 +354,23 @@ private theorem costCoreTerm_parameter_baseName_mem (source : CIGSLT)
         List.mem_map.mpr
           ⟨source.theory.presentation.interactingSort.1,
             source.theory.presentation.interactingSort.2, rfl⟩, rfl⟩
-    simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false]
-      at apparatusMembership
-    rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality
-    · subst term
-      simp [costSignatureUnitConstructor] at parameterMembership
-    · subst term
-      simp [costSignatureProductConstructor] at parameterMembership
-      rcases parameterMembership with equality | equality
-      · subst parameter
-        have nameEquality : name = costSignatureSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact signatureMembership
-      · subst parameter
-        have nameEquality : name = costSignatureSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact signatureMembership
-    · subst term
-      simp [costSignedConstructor] at parameterMembership
-      rcases parameterMembership with equality | equality
-      · subst parameter
-        have nameEquality : name =
-            costBaseSortName
-              source.theory.presentation.interactingSort.1.name := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact interactingMembership
-      · subst parameter
-        have nameEquality : name = costSignatureSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact signatureMembership
-    · subst term
-      simp [costTokenStackEmptyConstructor] at parameterMembership
-    · subst term
-      simp [costTokenStackConsConstructor] at parameterMembership
-      rcases parameterMembership with equality | equality
-      · subst parameter
-        have nameEquality : name = costSignatureSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact signatureMembership
-      · subst parameter
-        have nameEquality : name = costTokenStackSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact stackMembership
-    · subst term
-      simp [costFundingConstructor] at parameterMembership
-      subst parameter
-      have nameEquality : name = costTokenStackSortName := by
-        simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-          List.mem_singleton] using nameMembership
+    rw [costCoreConstructors_eq_typed] at apparatusMembership
+    obtain ⟨kind, _, rfl⟩ := List.mem_map.mp apparatusMembership
+    cases kind <;>
+      simp only [CostApparatusConstructor.grammarRule, costSignatureUnitConstructor,
+        costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
+        costSignatureCommitConstructor, costSignedConstructor,
+        costTokenStackEmptyConstructor, costTokenStackConsConstructor,
+        costFundingConstructor, costContactConstructor,
+        List.mem_cons, List.not_mem_nil, or_false] at parameterMembership
+    all_goals
+      first
+      | obtain rfl := parameterMembership
+      | rcases parameterMembership with rfl | rfl
+    all_goals
+      simp only [TermParam.typeExpr, TypeExpr.baseNames, List.mem_singleton] at nameMembership
       subst name
-      exact stackMembership
-    · subst term
-      simp [costContactConstructor] at parameterMembership
-      rcases parameterMembership with equality | equality
-      · subst parameter
-        have nameEquality : name = costWrappedSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact wrappedMembership
-      · subst parameter
-        have nameEquality : name = costWrappedSortName := by
-          simpa only [TermParam.typeExpr, TypeExpr.baseNames,
-            List.mem_singleton] using nameMembership
-        subst name
-        exact wrappedMembership
+      assumption
 
 theorem costCoreTerm_syntaxPattern_eq_nil (source : CIGSLT)
     (term : GrammarRule) (termMembership : term ∈ source.costCoreLanguage.terms) :
@@ -400,7 +382,7 @@ theorem costCoreTerm_syntaxPattern_eq_nil (source : CIGSLT)
   · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at apparatusMembership
     rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality <;> subst term <;> rfl
+      equality | equality | equality | equality | equality | equality <;> subst term <;> rfl
 
 /-- The generic signature/wrapper/ordered-stack core passes the ordinary
 language validation gate. -/
@@ -486,7 +468,7 @@ theorem exists_declaredCostConstructor_of_mem (source : CIGSLT)
     costCoreConstructors source.theory.presentation.interactingSort.1.name at membership
   simp only [List.mem_append] at membership
   rcases membership with generatedMembership | apparatusMembership
-  · dsimp only [ContinuationRetypingPlan.generatedLanguage] at generatedMembership
+  · rw [ContinuationRetypingPlan.generatedLanguage_terms] at generatedMembership
     simp only [List.mem_append] at generatedMembership
     rcases generatedMembership with baseMembership | wrappedMembership
     · rcases List.mem_map.mp baseMembership with
@@ -503,9 +485,12 @@ theorem exists_declaredCostConstructor_of_mem (source : CIGSLT)
   · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil,
       or_false] at apparatusMembership
     rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality <;> subst rule
+      equality | equality | equality | equality | equality | equality <;> subst rule
     · exact ⟨⟨.apparatus .signatureUnit, True.intro⟩, rfl⟩
     · exact ⟨⟨.apparatus .signatureProduct, True.intro⟩, rfl⟩
+    · exact ⟨⟨.apparatus .keyLeaf, True.intro⟩, rfl⟩
+    · exact ⟨⟨.apparatus .keyBranch, True.intro⟩, rfl⟩
+    · exact ⟨⟨.apparatus .signatureCommit, True.intro⟩, rfl⟩
     · exact ⟨⟨.apparatus .signed, True.intro⟩, rfl⟩
     · exact ⟨⟨.apparatus .tokenStackEmpty, True.intro⟩, rfl⟩
     · exact ⟨⟨.apparatus .tokenStackCons, True.intro⟩, rfl⟩
@@ -644,28 +629,17 @@ theorem no_core_unwrapper (source : CIGSLT) :
         ∃ parameter ∈ constructor.params,
           TermParam.typeExpr parameter = .base costWrappedSortName := by
   rintro ⟨constructor, membership, categoryEquality, _parameter⟩
-  simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false]
-    at membership
-  rcases membership with equality | equality | equality | equality | equality |
-      equality | equality <;> subst constructor
-  · exact (costBaseSortName_ne_apparatus
-      source.theory.presentation.interactingSort.1.name "signature")
-        categoryEquality.symm
-  · exact (costBaseSortName_ne_apparatus
-      source.theory.presentation.interactingSort.1.name "signature")
-        categoryEquality.symm
-  · exact (costBaseSortName_ne_wrapped
-      source.theory.presentation.interactingSort.1.name) categoryEquality.symm
-  · exact (costBaseSortName_ne_apparatus
-      source.theory.presentation.interactingSort.1.name "token-stack")
-        categoryEquality.symm
-  · exact (costBaseSortName_ne_apparatus
-      source.theory.presentation.interactingSort.1.name "token-stack")
-        categoryEquality.symm
-  · exact (costBaseSortName_ne_wrapped
-      source.theory.presentation.interactingSort.1.name) categoryEquality.symm
-  · exact (costBaseSortName_ne_wrapped
-      source.theory.presentation.interactingSort.1.name) categoryEquality.symm
+  rw [costCoreConstructors_eq_typed] at membership
+  obtain ⟨kind, _, rfl⟩ := List.mem_map.mp membership
+  cases kind <;> first
+    | exact (costBaseSortName_ne_apparatus
+        source.theory.presentation.interactingSort.1.name "signature") categoryEquality.symm
+    | exact (costBaseSortName_ne_apparatus
+        source.theory.presentation.interactingSort.1.name "key") categoryEquality.symm
+    | exact (costBaseSortName_ne_apparatus
+        source.theory.presentation.interactingSort.1.name "token-stack") categoryEquality.symm
+    | exact (costBaseSortName_ne_wrapped
+        source.theory.presentation.interactingSort.1.name) categoryEquality.symm
 
 end CIGSLT
 

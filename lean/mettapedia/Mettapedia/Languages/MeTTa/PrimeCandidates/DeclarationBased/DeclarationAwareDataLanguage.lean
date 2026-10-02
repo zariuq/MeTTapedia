@@ -187,7 +187,7 @@ inductions use these facts without repeatedly unfolding the whole table. -/
       simp [encodeDeclName, fixedConstructorsValid,
         fixedConstructorListsValid, fixed_encodeNat, ih]
 
-@[simp] theorem fixed_encodeLevel (level : LevelExpr) :
+@[simp] theorem fixed_encodeLevel (level : LevelExpr Nat) :
     fixedConstructorsValid language (encodeLevel level) = true := by
   induction level with
   | const value =>

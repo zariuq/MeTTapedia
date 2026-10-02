@@ -62,9 +62,9 @@ def arrow (domain codomain : Tower.Tm n) : Tower.Tm n :=
 
 /-! ## The explicit polymorphic composition schema -/
 
-def alpha : LevelExpr := .param 0
-def beta : LevelExpr := .param 1
-def gamma : LevelExpr := .param 2
+def alpha : LevelExpr Nat := .param 0
+def beta : LevelExpr Nat := .param 1
+def gamma : LevelExpr Nat := .param 2
 
 /-- Context after the explicit binder `A : U alpha`. -/
 def composeCtxA : Tower.Ctx 1 :=
@@ -115,14 +115,14 @@ def composeCtxABCFGX : Tower.Ctx 6 :=
   decide
 
 /-- The level of the monomorphic composition body type. -/
-def composeBodyLevel : LevelExpr :=
+def composeBodyLevel : LevelExpr Nat :=
   .max (.max alpha beta)
     (.max (.max beta gamma) (.max alpha gamma))
 
 /-- The closed schema type at three supplied levels.  Its first three products
 are the lexical type binders `A : U levelA`, `B : U levelB`, and
 `C : U levelC`. -/
-def composeSchemaTypeAt (levelA levelB levelC : LevelExpr) : Tower.Tm 0 :=
+def composeSchemaTypeAt (levelA levelB levelC : LevelExpr Nat) : Tower.Tm 0 :=
   .pi (sortTm levelA)
     (.pi (sortTm levelB)
       (.pi (sortTm levelC) composeBodyType))
@@ -137,13 +137,13 @@ def composeSchemaTerm : Tower.Tm 0 :=
   .lam (.lam (.lam composeBodyTerm))
 
 /-- The universe level containing the closed composition schema type. -/
-def composeSchemaLevel : LevelExpr :=
+def composeSchemaLevel : LevelExpr Nat :=
   .max (.succ alpha)
     (.max (.succ beta) (.max (.succ gamma) composeBodyLevel))
 
 /-- Instantiating the schema's level parameters is literal level substitution
 through the explicit target type. -/
-@[simp] theorem composeSchemaType_substLevels (theta : Nat → LevelExpr) :
+@[simp] theorem composeSchemaType_substLevels (theta : Nat → LevelExpr Nat) :
     RussellTarski.substLevelsTm theta composeSchemaType =
       composeSchemaTypeAt (theta 0) (theta 1) (theta 2) := by
   rfl
@@ -292,9 +292,9 @@ the generic tower has no rule assigning arbitrary constants a universe. -/
 theorem typed_term_ne_const {Gamma : Tower.Ctx n} {term type : Tower.Tm n}
     (typing : Tower.HasType Gamma term type) (name : DeclName) :
     term ≠ .const name := by
-  induction typing <;> simp_all [Tower.rules]
+  induction typing <;> simp_all [LevelTower.rules]
 
-theorem matcher_constant_has_no_tower_type (name : DeclName) (level : LevelExpr) :
+theorem matcher_constant_has_no_tower_type (name : DeclName) (level : LevelExpr Nat) :
     ¬ Tower.HasType (.nil : Tower.Ctx 0) (.const name) (sortTm level) := by
   intro typing
   exact typed_term_ne_const typing name rfl
@@ -302,7 +302,7 @@ theorem matcher_constant_has_no_tower_type (name : DeclName) (level : LevelExpr)
 /-! ## A nondegenerate higher-order map: Church lists -/
 
 /-- Result-universe parameter for the Church-list example. -/
-def foldLevel : LevelExpr := .param 2
+def foldLevel : LevelExpr Nat := .param 2
 
 /-- The body obtained by instantiating a Church list at a result type:
 `R -> (A -> R -> R) -> R`. -/
@@ -322,7 +322,7 @@ def churchListBody (element : Tower.Tm n) : Tower.Tm (n + 1) :=
 genuine higher-order encoding rather than a primitive or identity-container
 masquerade:
 `Pi (R : U resultLevel), R -> (A -> R -> R) -> R`. -/
-def churchList (element : Tower.Tm n) (resultLevel : LevelExpr) : Tower.Tm n :=
+def churchList (element : Tower.Tm n) (resultLevel : LevelExpr Nat) : Tower.Tm n :=
   .pi (sortTm resultLevel) (churchListBody element)
 
 /-- Opening the result-type binder computes the advertised fold signature. -/
@@ -417,20 +417,20 @@ def churchMapCtxABFXsRZC : Tower.Ctx 7 :=
 
 /-! ### Independent formation of the Church-list types -/
 
-def churchStepLevel (elementLevel resultLevel : LevelExpr) : LevelExpr :=
+def churchStepLevel (elementLevel resultLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max elementLevel (.max resultLevel resultLevel)
 
-def churchBodyLevel (elementLevel resultLevel : LevelExpr) : LevelExpr :=
+def churchBodyLevel (elementLevel resultLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max resultLevel (.max (churchStepLevel elementLevel resultLevel) resultLevel)
 
-def churchListLevel (elementLevel resultLevel : LevelExpr) : LevelExpr :=
+def churchListLevel (elementLevel resultLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max (.succ resultLevel) (churchBodyLevel elementLevel resultLevel)
 
 /-- Generic formation for a Church list whose element type is a lexical
 context variable.  This is the reusable schema case needed after additional
 function and list binders have shifted the original type parameter. -/
 theorem churchList_var_hasType {Gamma : Tower.Ctx n} (i : Fin n)
-    (elementLevel : LevelExpr)
+    (elementLevel : LevelExpr Nat)
     (lookupElement : Ctx.lookup Gamma i = sortTm elementLevel) :
     Tower.HasType Gamma (churchList (.var i) foldLevel)
       (sortTm (churchListLevel elementLevel foldLevel)) := by
@@ -495,15 +495,15 @@ theorem churchListB_hasType :
 
 /-! ### Independent formation of the map signature -/
 
-def churchMapFunctionLevel : LevelExpr := .max alpha beta
+def churchMapFunctionLevel : LevelExpr Nat := .max alpha beta
 
-def churchMapInnerLevel : LevelExpr :=
+def churchMapInnerLevel : LevelExpr Nat :=
   .max (churchListLevel alpha foldLevel) (churchListLevel beta foldLevel)
 
-def churchMapBodyLevel : LevelExpr :=
+def churchMapBodyLevel : LevelExpr Nat :=
   .max churchMapFunctionLevel churchMapInnerLevel
 
-def churchMapSchemaLevel : LevelExpr :=
+def churchMapSchemaLevel : LevelExpr Nat :=
   .max (.succ alpha) (.max (.succ beta) churchMapBodyLevel)
 
 theorem churchMapFunction_hasType :

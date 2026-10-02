@@ -64,7 +64,7 @@ def fixtureSource : String := fixturePrefix ++ fixtureSuffix
 
 def initialParserState : Metamath.Verify.ParserState :=
   { (default : Metamath.Verify.ParserState) with
-    db := { (default : RuntimeDB) with config := .soundDefault } }
+    db := { (default : RuntimeDB) with config := .sound } }
 
 /-- The actual live state obtained by parsing the exact source prefix. -/
 def prefixState : Metamath.Verify.ParserState :=
@@ -98,7 +98,7 @@ def axYZObjectMatches : Bool :=
 #guard (projectForFreshTarget? prefixDB "th").isSome
 
 def fullFixtureDB : RuntimeDB :=
-  Metamath.Verify.checkBytes fixtureSource.toUTF8 .soundDefault
+  Metamath.Verify.checkBytes fixtureSource.toUTF8 .sound
 
 #guard fullFixtureDB.error?.isNone
 #guard (fullFixtureDB.find? "th").isSome

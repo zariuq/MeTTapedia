@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.InferenceControl
+import Mettapedia.GSLT.Core.DemandExecution
 import Mettapedia.Machines.BranchLocalNeed.ExecutionMachine
 
 /-!
@@ -108,8 +108,43 @@ theorem generated_transition_clock
       initial.work.transitions + occurrence.trace.length :=
   Steps.transitions_eq spec (generated_has_steps spec generated)
 
-/-- A controlled reference answer retains a replayable rich-machine path.  The
-path includes the causal receipt world and work account at its endpoint. -/
+/-- An emitted occurrence in any sound retained frontier has a replayable
+rich-machine path. The endpoint includes its receipt world and work account. -/
+theorem emission_has_steps_of_sound
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {initial :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {snapshot : Mettapedia.GSLT.Core.BranchingTemporal.Snapshot
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat)}
+    (sound : snapshot.Sound (occurrenceSystem spec) [WorkOccurrence.root initial])
+    {event : Emission
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat)}
+    (member : event ∈ snapshot.events) :
+    Steps spec event.origin.trace.length initial event.origin.state ∧
+      haltedOutcome event.origin.state = some event.value.1 ∧
+      event.value.2 = event.origin.trace := by
+  have eventValid := sound.2 event member
+  have path := generated_has_steps spec eventValid.1
+  have emitted := eventValid.2
+  change (haltedOutcome event.origin.state).map
+    (fun answer => (answer, event.origin.trace)) = some event.value at emitted
+  cases observed : haltedOutcome event.origin.state with
+  | none =>
+      rw [observed] at emitted
+      contradiction
+  | some answer =>
+      rw [observed] at emitted
+      have valueEquality : event.value = (answer, event.origin.trace) :=
+        (Option.some.inj emitted).symm
+      exact ⟨path, by simp [valueEquality],
+        by simp [valueEquality]⟩
+
+/-- A controlled reference answer retains its ordinary machine derivation.
+This is the initial-frontier specialization of the retained-frontier law. -/
 theorem controlled_emission_has_steps
     (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
     {Memory : Type*}
@@ -132,27 +167,77 @@ theorem controlled_emission_has_steps
     Steps spec event.origin.trace.length initial event.origin.state ∧
       haltedOutcome event.origin.state = some event.value.1 ∧
       event.value.2 = event.origin.trace := by
-  have runSound := Mettapedia.GSLT.Core.InferenceControl.Snapshot.sound_run
-    (occurrenceSystem spec) controller
-    (roots := [WorkOccurrence.root initial])
-    (snapshot := Mettapedia.GSLT.Core.InferenceControl.Snapshot.initial controller
-      [WorkOccurrence.root initial])
-    (initial_sound (occurrenceSystem spec) [WorkOccurrence.root initial]) fuel
-  have eventValid := runSound.2 event member
-  have path := generated_has_steps spec eventValid.1
-  have emitted := eventValid.2
-  change (haltedOutcome event.origin.state).map
-    (fun answer => (answer, event.origin.trace)) = some event.value at emitted
-  cases observed : haltedOutcome event.origin.state with
-  | none =>
-      rw [observed] at emitted
-      contradiction
-  | some answer =>
-      rw [observed] at emitted
-      have valueEquality : event.value = (answer, event.origin.trace) :=
-        (Option.some.inj emitted).symm
-      exact ⟨path, by simp [valueEquality],
-        by simp [valueEquality]⟩
+  exact emission_has_steps_of_sound spec
+    (Mettapedia.GSLT.Core.InferenceControl.Snapshot.sound_run
+      (occurrenceSystem spec) controller
+      (initial_sound (occurrenceSystem spec) [WorkOccurrence.root initial]) fuel)
+    member
+
+/-- Authored controllers and answer goals may resume any sound captured
+frontier. Neither the demand nor its fuel allowance can authorize a new answer.
+The proof does not restart execution from the original query. -/
+theorem demanded_emission_has_steps
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {Memory : Type*}
+    (controller : Controller
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Memory)
+    (goal : List (Produced Value StableFault RetryableFault × List Nat) → Bool)
+    (fuel : Nat)
+    {initial :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Memory}
+    (sound : snapshot.search.Sound (occurrenceSystem spec) [WorkOccurrence.root initial])
+    {event : Emission
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat)}
+    (member : event ∈
+      (Mettapedia.GSLT.Core.DemandExecution.run
+        (occurrenceSystem spec) controller goal fuel snapshot).search.events) :
+    Steps spec event.origin.trace.length initial event.origin.state ∧
+      haltedOutcome event.origin.state = some event.value.1 ∧
+      event.value.2 = event.origin.trace := by
+  exact emission_has_steps_of_sound spec
+    (Mettapedia.GSLT.Core.DemandExecution.run_sound
+      (occurrenceSystem spec) controller goal fuel sound) member
+
+/-- Unfinished work remains an actual machine state with its cumulative
+transition clock. Changing demand or resuming with another controller does
+not turn the residual into an answer list or reset its meter. -/
+theorem demanded_frontier_has_steps_and_cost
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {Memory : Type*}
+    (controller : Controller
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Memory)
+    (goal : List (Produced Value StableFault RetryableFault × List Nat) → Bool)
+    (fuel : Nat)
+    {initial :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Memory}
+    (sound : snapshot.search.Sound (occurrenceSystem spec) [WorkOccurrence.root initial])
+    {occurrence : WorkOccurrence
+      (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)}
+    (member : occurrence ∈
+      (Mettapedia.GSLT.Core.DemandExecution.run
+        (occurrenceSystem spec) controller goal fuel snapshot).search.frontier) :
+    Steps spec occurrence.trace.length initial occurrence.state ∧
+      occurrence.state.work.transitions =
+        initial.work.transitions + occurrence.trace.length := by
+  have generated :=
+    (Mettapedia.GSLT.Core.DemandExecution.run_sound
+      (occurrenceSystem spec) controller goal fuel sound).1 occurrence member
+  exact ⟨generated_has_steps spec generated,
+    generated_transition_clock spec generated⟩
 
 end Reference
 
@@ -226,6 +311,34 @@ theorem occurrence_successors_erase
   intro entry _
   rcases entry with ⟨state, index⟩
   rfl
+
+/-- The receipt-erased executor realizes every demanded breadth-first prefix
+exactly, including answer order, duplicate occurrences and the whole residual.
+This follows from the independent one-step implementations, not from defining
+one executor as the other. -/
+theorem demanded_breadthFirst_run_erases
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (goal : List (Produced Value StableFault RetryableFault × List Nat) → Bool)
+    (fuel : Nat)
+    (snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Unit) :
+    (Mettapedia.GSLT.Core.DemandExecution.run (Reference.occurrenceSystem spec)
+        (Controller.fixed Scheduler.breadthFirst) goal fuel snapshot).mapNodes
+        eraseOccurrence =
+      Mettapedia.GSLT.Core.DemandExecution.run (coreOccurrenceSystem spec)
+        (Controller.fixed Scheduler.breadthFirst) goal fuel
+        (snapshot.mapNodes eraseOccurrence) := by
+  apply Mettapedia.GSLT.Core.DemandExecution.run_mapNodes
+  intro state
+  apply Mettapedia.GSLT.Core.InferenceControl.Snapshot.tick_mapNodes
+  · exact occurrence_emit_erases spec
+  · exact occurrence_successors_erase spec
+  · intro memory nodes; rfl
+  · intro memory pending generated
+    simp only [Controller.fixed, Scheduler.breadthFirst, List.map_append]
+  · intro memory node emission generated; rfl
 
 end Erasure
 

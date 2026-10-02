@@ -92,12 +92,12 @@ theorem vmotive_related {w : Tower.Head} (hw : (vmodel v).rules.isUniverse w) {m
     (denP : ValueSide.DenS (vmodel v).value ξ (.pi numT (.head w)) RP) {P P' : Tower.Tm m}
     (related : RP.rel P P') {a b : Tower.Tm m} {sh : NumShape}
     (left : VShape v a sh) (right : VShape v b sh) :
-    (ModelS.universeAt (vmodel v) ((vmodel v).levels.level w) ξ).rel (.app P a)
+    (ModelSN.universeAt (vmodel v) ((vmodel v).levels.level w) ξ).rel (.app P a)
       (.app P' b) := by
-  obtain ⟨RU, denU, types⟩ := ModelS.DenS.pi_app_exists (vmodel_laws v) denP related
+  obtain ⟨RU, denU, types⟩ := ModelSN.DenS.pi_app_exists (vmodel_laws v) denP related
     fun den => vnum_rel v left right den
   have denU' : ValueSide.DenS (vmodel v).value ξ (.head w) RU := denU
-  rwa [ModelS.DenS.sort_inv (vmodel_laws v) hw denU'] at types
+  rwa [ModelSN.DenS.sort_inv (vmodel_laws v) hw denU'] at types
 
 /-- At numbers with a common shape, the motive has one denotation. -/
 theorem vmotive_den {w : Tower.Head} (hw : (vmodel v).rules.isUniverse w) {m : Nat}
@@ -108,7 +108,7 @@ theorem vmotive_den {w : Tower.Head} (hw : (vmodel v).rules.isUniverse w) {m : N
     ∃ R, ValueSide.DenS (vmodel v).value ξ (.app P a) R ∧
       ValueSide.DenS (vmodel v).value ξ (.app P b) R := by
   obtain ⟨R, first, second, -⟩ :=
-    ModelS.universeAt.den (vmotive_related v hw denP relP left right)
+    ModelSN.universeAt.den (vmotive_related v hw denP relP left right)
   exact ⟨R, ⟨_, first⟩, ⟨_, second⟩⟩
 
 /-- A step related to another at `Π n : num. P n → P (suc n)`, applied to
@@ -123,10 +123,10 @@ theorem vstep_related {m : Nat} {ξ : World (vmodel v).reading m}
     {R : ValueSide.Pack (vmodel v).value m}
     (denSuc : ValueSide.DenS (vmodel v).value ξ (.app P (sucNative a)) R) :
     R.rel (.app (.app s a) h) (.app (.app s' b) h') := by
-  obtain ⟨R₁, den₁, related₁⟩ := ModelS.DenS.pi_app_exists (vmodel_laws v) denS relS
+  obtain ⟨R₁, den₁, related₁⟩ := ModelSN.DenS.pi_app_exists (vmodel_laws v) denS relS
     fun den => vnum_rel v left right den
   rw [vinst0_stepCod] at den₁
-  obtain ⟨R₂, den₂, related₂⟩ := ModelS.DenS.pi_app_exists (vmodel_laws v) den₁ related₁ values
+  obtain ⟨R₂, den₂, related₂⟩ := ModelSN.DenS.pi_app_exists (vmodel_laws v) den₁ related₁ values
   rw [vinst0_sucMotive] at den₂
   rw [ValueSide.DenS.deterministic (vmodel_valueLaws v) denSuc den₂]
   exact related₂
@@ -275,9 +275,9 @@ theorem vnumRec_real {w : Tower.Head} (hw : (vmodel v).rules.isUniverse w) {m r 
                 (vnumRec_suc_step v P z s c))
               (vstep_related v denS relS hc hc values denSuc)
           rw [ValueSide.DenS.real_eq_of_rel laws denT value]
-          obtain ⟨R₁, den₁, -⟩ := ModelS.DenS.pi_app_exists (vmodel_laws v) denS relS
+          obtain ⟨R₁, den₁, -⟩ := ModelSN.DenS.pi_app_exists (vmodel_laws v) denS relS
             fun d => vnum_rel v hc hc d
-          have first := ModelS.DenS.pi_app_real (vmodel_laws v) denS
+          have first := ModelSN.DenS.pi_app_real (vmodel_laws v) denS
             ((RS.real s).rename ρ realS) (fun d => vnum_val v hc d)
             (fun d => (vnum_real v hc d).mpr hb) den₁
           rw [vinst0_stepCod] at den₁
@@ -286,7 +286,7 @@ theorem vnumRec_real {w : Tower.Head} (hw : (vmodel v).rules.isUniverse w) {m r 
               (.app (Presentation.rename wk P) (sucNative (Presentation.rename wk c)))) R := by
             rw [vinst0_sucMotive]
             exact denSuc
-          exact ModelS.DenS.pi_app_real (vmodel_laws v) den₁ first (fun den' => values den')
+          exact ModelSN.DenS.pi_app_real (vmodel_laws v) den₁ first (fun den' => values den')
             (fun den' => hr'.2 ⟨c, _, hc, den'⟩) denSuc'
     obtain ⟨R, denW, -⟩ := vmotive_den v hw denP relP
       (ValueSide.hasShape_shapeTerm (V := (vmodel v).value) (.suc sh'))
@@ -300,13 +300,13 @@ universe** in the transport value model: large elimination of the numbers. The
 validity of the type and of its parts are hypotheses, which the fundamental
 lemma of a smaller stage provides. -/
 theorem valid_numRecS_at (w : Tower.Head) (hw : (vmodel v).rules.isUniverse w)
-    (validType : ModelS.ValidTyS (vmodel v) .nil (numRecTypeAt w))
-    (partsType : ModelS.StructuredS (vmodel v) .nil (numRecTypeAt w)) :
-    ModelS.ValidTmS (vmodel v) .nil (.const numRecName) (numRecTypeAt w) := by
+    (validType : ModelSN.ValidTyS (vmodel v) .nil (numRecTypeAt w))
+    (partsType : ModelSN.StructuredS (vmodel v) .nil (numRecTypeAt w)) :
+    ModelSN.ValidTmS (vmodel v) .nil (.const numRecName) (numRecTypeAt w) := by
   have laws := vmodel_valueLaws v
-  obtain ⟨_, validResult, _⟩ := ModelS.ValidTyS.close_parts (.snoc (numRecTelescopeAt w) numT)
+  obtain ⟨_, validResult, _⟩ := ModelSN.ValidTyS.close_parts (.snoc (numRecTelescopeAt w) numT)
     (C := .app (.var 3) (.var 0)) validType partsType
-  refine ModelS.ValidTmS.close (vmodel_laws v) (.snoc (numRecTelescopeAt w) numT)
+  refine ModelSN.ValidTmS.close (vmodel_laws v) (.snoc (numRecTelescopeAt w) numT)
     (C := .app (.var 3) (.var 0)) (f := .const numRecName) validType partsType
     ⟨validResult, fun {_ _ ξ σ σ' ς} e {P} den => ?_⟩
   obtain ⟨⟨⟨⟨-, RP, denP, relP, realP⟩, RZ, denZ, relZ, realZ⟩, RS, denS, relS, realS⟩,
@@ -339,10 +339,10 @@ theorem valid_numRecS_at (w : Tower.Head) (hw : (vmodel v).rules.isUniverse w)
 instance of `valid_numRecS_at` at the lowest universe. The validity of its
 declared type and of that type's parts are hypotheses, which the fundamental
 lemma of a smaller stage provides. -/
-theorem vmodel_valid_numRec (validType : ModelS.ValidTyS (vmodel v) .nil numRecType)
-    (partsType : ModelS.StructuredS (vmodel v) .nil numRecType) :
-    ModelS.ValidTmS (vmodel v) .nil (.const numRecName) numRecType :=
-  valid_numRecS_at v (.sort Tower.zero) (Tower.IsUniverse.sort _) validType partsType
+theorem vmodel_valid_numRec (validType : ModelSN.ValidTyS (vmodel v) .nil numRecType)
+    (partsType : ModelSN.StructuredS (vmodel v) .nil numRecType) :
+    ModelSN.ValidTmS (vmodel v) .nil (.const numRecName) numRecType :=
+  valid_numRecS_at v (.sort Tower.zero) (LevelTower.IsUniverse.sort _) validType partsType
 
 end CodeModel
 

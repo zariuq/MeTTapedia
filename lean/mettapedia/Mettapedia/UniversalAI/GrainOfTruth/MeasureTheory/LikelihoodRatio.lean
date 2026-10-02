@@ -49,12 +49,12 @@ decrease our belief in P (on average), never increase it.
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.LikelihoodRatio
 
-open MeasureTheory ProbabilityTheory Real
+open ProbabilityTheory Real
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PolicyFactorization
-open scoped ENNReal NNReal MeasureTheory
+open scoped ENNReal NNReal
 
 /-! ## Support Condition
 
@@ -765,7 +765,7 @@ theorem conditional_stepLogLikelihood (ν ν_star : Environment) (h : History) (
             intro h_le
             have : P x = 0 := le_antisymm h_le ENNReal.toReal_nonneg
             exact h this
-          push_neg at this
+          push Not at this
           exact this
         by_cases h_Q_zero : Q x = 0
         · -- Q x = 0 case: By the support condition, P x > 0 implies Q x > 0
@@ -779,7 +779,7 @@ theorem conditional_stepLogLikelihood (ν ν_star : Environment) (h : History) (
               intro h_le
               have : Q x = 0 := le_antisymm h_le ENNReal.toReal_nonneg
               exact h_Q_zero this
-            push_neg at this
+            push Not at this
             exact this
           have h_ratio_pos : 0 < Q x / P x := div_pos h_Q_pos h_pos
           have h_log_ineq := Real.log_le_sub_one_of_pos h_ratio_pos
@@ -832,8 +832,8 @@ theorem logLikelihoodRatio_integrable (ν ν_star : Environment) (t : ℕ)
     MeasureTheory.Integrable (logLikelihoodRatio ν ν_star t) (environmentMeasure ν_star h_stoch) := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasure ν_star h_stoch
-  haveI : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  have : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
 
   -- `logLikelihoodRatio ν ν_star t` depends only on the first `t` steps, hence has finite range and
   -- is bounded, therefore integrable on a finite measure space.
@@ -942,7 +942,7 @@ theorem truncate_preimage_singleton_eq_cylinderSetAt (t : ℕ) (pfx : Fin t → 
   · intro htraj
     -- Apply `historyToFinPrefix` to recover the truncation.
     have ht : trajectoryToHistory traj t = prefixToHistory t pfx := by
-      simpa [cylinderSetAt, Set.mem_setOf_eq] using htraj
+      simpa [cylinderSetAt, Set.mem_ofPred_eq] using htraj
     have ht' := congrArg (fun h => historyToFinPrefix t h) ht
     have : truncate t traj = pfx := by
       simpa [historyToFinPrefix_trajectoryToHistory, historyToFinPrefix_prefixToHistory] using ht'
@@ -982,8 +982,8 @@ theorem stepLogLikelihoodProcess_integrable (ν ν_star : Environment) (t : ℕ)
       (environmentMeasure ν_star h_stoch) := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasure ν_star h_stoch
-  haveI : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  have : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
 
   -- Measurability: `stepLogLikelihoodProcess` is measurable w.r.t. `sigmaAlgebraUpTo (t+1)`.
   have h_meas_sigma :
@@ -1060,8 +1060,8 @@ theorem setIntegral_stepLogLikelihoodProcess_atom_le_zero (ν ν_star : Environm
         stepLogLikelihoodProcess ν ν_star t traj ∂(environmentMeasure ν_star h_stoch)) ≤ 0 := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasure ν_star h_stoch
-  haveI : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  have : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
 
   -- Rewrite the atom as a time-`t` cylinder.
   have h_atom :
@@ -1096,7 +1096,7 @@ theorem setIntegral_stepLogLikelihoodProcess_atom_le_zero (ν ν_star : Environm
     have h_single : MeasurableSet ({st} : Set Step) := measurableSet_singleton st
     have h_eval : Measurable fun traj : Trajectory => traj t := measurable_pi_apply t
     have h_evt : MeasurableSet ({traj : Trajectory | traj t = st}) := by
-      simpa [Set.preimage, Set.mem_setOf_eq] using h_eval h_single
+      simpa [Set.preimage, Set.mem_ofPred_eq] using h_eval h_single
     exact h_cyl.inter h_evt
 
   have h_stepSet_pairwise : Pairwise fun st₁ st₂ => Disjoint (stepSet st₁) (stepSet st₂) := by
@@ -1314,8 +1314,8 @@ theorem setIntegral_stepLogLikelihoodProcess_le_zero (ν ν_star : Environment) 
     (∫ traj in s, stepLogLikelihoodProcess ν ν_star t traj ∂(environmentMeasure ν_star h_stoch)) ≤ 0 := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasure ν_star h_stoch
-  haveI : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  have : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
 
   -- Represent `s` as a preimage under `truncate`.
   rcases (by
@@ -1421,8 +1421,8 @@ theorem logLikelihoodRatio_supermartingale (ν ν_star : Environment)
       (environmentMeasure ν_star h_stoch) := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasure ν_star h_stoch
-  haveI : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  have : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
   -- Prove the supermartingale property via the set integral characterization.
   refine MeasureTheory.supermartingale_of_setIntegral_succ_le (𝒢 := trajectoryFiltration) (μ := μ) ?_ ?_ ?_
   · -- Adapted
@@ -1508,8 +1508,8 @@ theorem logLikelihoodRatio_ae_tendsto_limitProcess_of_eLpNorm_bdd (ν ν_star : 
             (environmentMeasure ν_star h_stoch) traj)) := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasure ν_star h_stoch
-  haveI : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  have : MeasureTheory.IsProbabilityMeasure μ := environmentMeasure_isProbability ν_star h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
 
   let f : ℕ → Trajectory → ℝ := fun t traj => -logLikelihoodRatio ν ν_star t traj
 
@@ -1569,7 +1569,7 @@ theorem likelihoodRatio_converges_to_zero_of_logLikelihoodRatio_diverges' (ν ν
       (historyProbability ν_star (trajectoryToHistory traj t)).toReal > 0 := by
     filter_upwards [h_eventually_le] with t ht
     by_contra h_not_pos
-    push_neg at h_not_pos
+    push Not at h_not_pos
     -- p_star ≤ 0, but p_star ≥ 0 always, so p_star = 0
     have h_zero : (historyProbability ν_star (trajectoryToHistory traj t)).toReal = 0 :=
       le_antisymm h_not_pos ENNReal.toReal_nonneg
@@ -1596,7 +1596,7 @@ theorem likelihoodRatio_converges_to_zero_of_logLikelihoodRatio_diverges' (ν ν
     -- We have p_star > 0, so we just need p_ν > 0
     have h_p_nu_pos : (historyProbability ν (trajectoryToHistory traj t)).toReal > 0 := by
       by_contra h_not_pos
-      push_neg at h_not_pos
+      push Not at h_not_pos
       -- p_ν ≤ 0, but p_ν ≥ 0 always, so p_ν = 0
       have h_p_nu_zero : (historyProbability ν (trajectoryToHistory traj t)).toReal = 0 :=
         le_antisymm h_not_pos ENNReal.toReal_nonneg
@@ -1686,7 +1686,7 @@ theorem eventually_historyProbability_toReal_pos_of_logLikelihoodRatio_tendsto_a
   have h_eventually_le : ∀ᶠ t in Filter.atTop, logLikelihoodRatio ν ν_star t traj ≤ -1 := h (-1)
   filter_upwards [h_eventually_le] with t ht
   by_contra h_not_pos
-  push_neg at h_not_pos
+  push Not at h_not_pos
   have h_zero :
       (historyProbability ν_star (trajectoryToHistory traj t)).toReal = 0 :=
     le_antisymm h_not_pos ENNReal.toReal_nonneg
@@ -1806,7 +1806,7 @@ theorem ae_forall_historyProbability_toReal_pos (μ : Environment) (pi : Agent) 
       have : ({traj | historyProbability μ (trajectoryToHistory traj t) ≠ 0} : Set Trajectory) ∈
           MeasureTheory.ae μT := by
         refine (MeasureTheory.mem_ae_iff).2 ?_
-        simpa [Set.compl_setOf, not_not] using h_each t
+        simpa [Set.compl_ofPred, not_not] using h_each t
       simpa using (show ∀ᵐ traj ∂μT, historyProbability μ (trajectoryToHistory traj t) ≠ 0 from this)
     filter_upwards [h_ne0] with traj htraj_ne0
     have h_ne_top :

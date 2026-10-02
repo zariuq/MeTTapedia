@@ -23,79 +23,6 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
 /-! ## Agreement of the derived and theorem-oriented canonicalizers -/
 
-private theorem charListCode_agreement (characters : List Char) :
-    PatternCode.charListCode characters = Canonical.charListCode characters := by
-  induction characters with
-  | nil => rfl
-  | cons character characters inductionHypothesis =>
-      simp [PatternCode.charListCode, Canonical.charListCode, inductionHypothesis]
-
-private theorem stringCode_agreement (value : String) :
-    PatternCode.stringCode value = Canonical.stringCode value := by
-  exact charListCode_agreement value.toList
-
-private theorem stringListCode_agreement (values : List String) :
-    PatternCode.stringListCode values = Canonical.stringListCode values := by
-  induction values with
-  | nil => rfl
-  | cons value values inductionHypothesis =>
-      simp [PatternCode.stringListCode, Canonical.stringListCode,
-        stringCode_agreement, inductionHypothesis]
-
-private theorem optionStringCode_agreement (value : Option String) :
-    PatternCode.optionStringCode value = Canonical.optionStringCode value := by
-  cases value <;>
-    simp [PatternCode.optionStringCode, Canonical.optionStringCode, stringCode_agreement]
-
-private theorem collectionCode_agreement (collectionType : CollType) :
-    PatternCode.collectionCode collectionType = Canonical.collectionCode collectionType := by
-  cases collectionType <;> rfl
-
-mutual
-  private theorem patternCode_agreement (pattern : Pattern) :
-      PatternCode.patternCode pattern = Canonical.patternCode pattern := by
-    cases pattern with
-    | bvar index => rfl
-    | fvar name =>
-        simp [PatternCode.patternCode, Canonical.patternCode, stringCode_agreement]
-    | apply constructor arguments =>
-        simp [PatternCode.patternCode, Canonical.patternCode, stringCode_agreement,
-          patternListCode_agreement arguments]
-    | lambda binderName body =>
-        simp [PatternCode.patternCode, Canonical.patternCode,
-          optionStringCode_agreement, patternCode_agreement body]
-    | multiLambda arity binderNames body =>
-        simp [PatternCode.patternCode, Canonical.patternCode,
-          stringListCode_agreement, patternCode_agreement body]
-    | subst body replacement =>
-        simp [PatternCode.patternCode, Canonical.patternCode,
-          patternCode_agreement body, patternCode_agreement replacement]
-    | collection collectionType elements rest =>
-        simp [PatternCode.patternCode, Canonical.patternCode,
-          collectionCode_agreement, patternListCode_agreement elements,
-          optionStringCode_agreement]
-  termination_by sizeOf pattern
-  decreasing_by
-    all_goals simp_wf
-    all_goals omega
-
-  private theorem patternListCode_agreement (patterns : List Pattern) :
-      PatternCode.patternListCode patterns = Canonical.patternListCode patterns := by
-    cases patterns with
-    | nil => rfl
-    | cons pattern patterns =>
-        simp [PatternCode.patternListCode, Canonical.patternListCode,
-          patternCode_agreement pattern, patternListCode_agreement patterns]
-  termination_by sizeOf patterns
-  decreasing_by
-    all_goals simp_wf
-    all_goals omega
-end
-
-private theorem sortPatterns_agreement (patterns : List Pattern) :
-    PatternCode.sortPatterns patterns = Canonical.sortPatterns patterns := by
-  simp [PatternCode.sortPatterns, Canonical.sortPatterns, patternCode_agreement]
-
 private theorem parallelSplice_agreement (pattern : Pattern) :
     ReflectiveCanonical.parallelSplice rhoReflectivePresentation pattern =
       Canonical.bagSplice pattern := by
@@ -128,7 +55,7 @@ private theorem normalizeParallelElements_agreement (patterns : List Pattern) :
         apply List.flatMap_congr
         intro pattern membership
         exact parallelSplice_agreement pattern]
-  exact sortPatterns_agreement _
+  rfl
 
 private theorem collapseParallel_agreement (patterns : List Pattern) :
     ReflectiveCanonical.collapseParallel rhoReflectivePresentation patterns =

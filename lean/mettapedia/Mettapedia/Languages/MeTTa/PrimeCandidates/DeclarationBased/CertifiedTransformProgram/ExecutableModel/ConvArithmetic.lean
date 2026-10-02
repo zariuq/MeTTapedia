@@ -233,9 +233,9 @@ theorem valid_add : ValidTmN (nmodel v T) .nil (.const addN) addType := by
   obtain ⟨validT, partsT, _⟩ := Derivable.validTN (numStage_typedSoundN v ext)
     (addType_typed (names := [numN]) (List.mem_cons_self ..)) trivial
   refine ValidTmN.close laws (.snoc (.snoc .nil numT) numT) (C := numT) (f := .const addN)
-    (validT.validTy (Tower.IsUniverse.sort _) ext.isUniverse_zero) partsT (ext.typed rules_add_typed)
+    (validT.validTy (LevelTower.IsUniverse.sort _) ext.isUniverse_zero) partsT (ext.typed rules_add_typed)
     (fun args short => .inr (.inr ⟨addN, args, 2, .inr ⟨_, ext.roles_add⟩, short, rfl⟩))
-    ⟨ValidTyN.liftClosed ((valid_num v ext).validTy (Tower.IsUniverse.sort _)
+    ⟨ValidTyN.liftClosed ((valid_num v ext).validTy (LevelTower.IsUniverse.sort _)
       ext.isUniverse_zero) _, fun {m r ξ σ σ' Δ ς ς'} e {P} den => ?_⟩
   obtain ⟨⟨-, RA, denA, hx, rx⟩, RB, denB, hy, ry⟩ := e
   change DenN (nmodel v T) ξ numT RA at denA
@@ -325,9 +325,9 @@ theorem valid_pow : ValidTmN (nmodel v T) .nil (.const powN) powType := by
     (powType_typed (names := [numN, setN]) (List.mem_cons_self ..)
       (List.mem_cons_of_mem _ (List.mem_cons_self ..))) trivial
   refine ValidTmN.close laws (.snoc (.snoc .nil numT) setT) (C := setT) (f := .const powN)
-    (validT.validTy (Tower.IsUniverse.sort _) ext.isUniverse_zero) partsT (ext.typed rules_pow_typed)
+    (validT.validTy (LevelTower.IsUniverse.sort _) ext.isUniverse_zero) partsT (ext.typed rules_pow_typed)
     (fun args short => .inr (.inr ⟨powN, args, 2, .inr ⟨_, ext.roles_pow⟩, short, rfl⟩))
-    ⟨ValidTyN.liftClosed ((valid_set v ext).validTy (Tower.IsUniverse.sort _)
+    ⟨ValidTyN.liftClosed ((valid_set v ext).validTy (LevelTower.IsUniverse.sort _)
       ext.isUniverse_zero) _, fun {m r ξ σ σ' Δ ς ς'} e {P} den => ?_⟩
   obtain ⟨⟨-, RA, denA, hk, rk⟩, RB, denB, -, rX⟩ := e
   change DenN (nmodel v T) ξ numT RA at denA

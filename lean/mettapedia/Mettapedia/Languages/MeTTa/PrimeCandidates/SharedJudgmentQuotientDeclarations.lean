@@ -197,20 +197,20 @@ namespace Controls
 
 open SharedJudgmentDeclarationInterpretation.Controls (naturalInstance natural_admitted)
 
-theorem natural_selected (payload : Nat) (levels : Nat → LevelExpr) :
+theorem natural_selected (payload : Nat) (levels : Nat → LevelExpr Nat) :
     (declarations common).meaning (naturalInstance payload levels) =
       some (closedMeaning (naturalInstance payload levels) (natural_admitted payload levels)) :=
   selected_of_admitted _ _
 
 /-- The chosen formation level cannot change the literal's native value
 class. The actual constructor and its admitted code establish this equation. -/
-theorem natural_value_class (payload : Nat) (levels : Nat → LevelExpr) :
+theorem natural_value_class (payload : Nat) (levels : Nat → LevelExpr Nat) :
     (closedMeaning (naturalInstance payload levels) (natural_admitted payload levels)).value.val =
       QTerm.mk (QuotientDeclarations.Controls.naturalConstant payload) := by
   apply Quotient.sound
   exact ⟨.refl _, .refl _⟩
 
-theorem natural_lookup_iff (first second : Nat) (levels : Nat → LevelExpr) :
+theorem natural_lookup_iff (first second : Nat) (levels : Nat → LevelExpr Nat) :
     (declarations common).meaning (naturalInstance first levels) =
       some (closedMeaning (naturalInstance second levels) (natural_admitted second levels)) ↔
       first = second := by

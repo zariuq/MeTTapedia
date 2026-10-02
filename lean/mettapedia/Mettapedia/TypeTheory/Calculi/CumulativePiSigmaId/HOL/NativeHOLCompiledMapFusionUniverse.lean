@@ -44,9 +44,10 @@ theorem sourceType_small (h : CofinalInaccessibles.{u}) (a : ZFSet.{u})
     (level : Nat) (type : HOL.Ty BaseSort) :
     typeCode a type ∈ universeSet h (integrationSeed a) level := by
   apply typeCode_mem (universeSet_closed h (integrationSeed a) level)
-  · exact universeSet_mono h (integrationSeed a) (Nat.zero_le level)
-      (ZFSetIndexedClosure.seed_contains_parameter h a)
-  · exact ZFSetTraceUniverseInterpretation.indices_mem_level h a level
+  · exact universeSet_mono h (integrationSeed a) (Nat.zero_le level) (by
+      rw [universeSet_nat_zero]
+      exact ZFSetIndexedClosure.seed_contains_parameter h a)
+  · exact ZFSetInterpretation.indices_mem_level h a level
 
 /-- Every proof-hypothesis family in the compiler's semantic telescope is a
 bottom-universe code. -/

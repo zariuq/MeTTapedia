@@ -67,7 +67,7 @@ theorem constantSpine (host : (rules source proofName).Morphism R (fun head => h
     host_typed source proofName host
       (include_typed source proofName (typeAt_formed source type .nil))
   have spine := DeclarationSpine.constant (Γ := Γ) lookup formed
-    (host.isUniverse (Tower.IsUniverse.sort Tower.zero))
+    (host.isUniverse (LevelTower.IsUniverse.sort Tower.zero))
   simpa only [liftClosed, typeAt_rename] using spine
 
 /-- The proof family roots a declaration spine at `prop → Type` in the host. -/
@@ -82,7 +82,7 @@ theorem proofSpine (host : (rules source proofName).Morphism R (fun head => head
     simpa only [Tm.mapHead_id] using host.constantType lookup
   exact DeclarationSpine.constant (Γ := Γ) hostLookup
     (host_typed source proofName host (proofType_formed source proofName))
-    (host.isUniverse (Tower.IsUniverse.sort (.max Tower.zero (.succ Tower.zero))))
+    (host.isUniverse (LevelTower.IsUniverse.sort (.max Tower.zero (.succ Tower.zero))))
 
 end Host
 
@@ -124,10 +124,10 @@ theorem pi_zero_at (host : (rules source proofName).Morphism R (fun head => head
     (codomainTyped : Typing R (.snoc Γ domain) codomain (sortTm Tower.zero)) :
     Typing R Γ (.pi domain codomain) (sortTm Tower.zero) :=
   Typing.cumul
-    (.piForm domainTyped (host.isUniverse (Tower.IsUniverse.sort Tower.zero)) codomainTyped
-      (host.isUniverse (Tower.IsUniverse.sort Tower.zero))
-      (host.join (Tower.Join.sorts Tower.zero Tower.zero)))
-    (host.cumulative (fun valuation => by simp [LevelExpr.eval, Tower.zero]))
+    (.piForm domainTyped (host.isUniverse (LevelTower.IsUniverse.sort Tower.zero)) codomainTyped
+      (host.isUniverse (LevelTower.IsUniverse.sort Tower.zero))
+      (host.join (LevelTower.Join.sorts Tower.zero Tower.zero)))
+    (host.cumulative (fun valuation => by simp [LevelExpr.eval, LevelTower.zero]))
 
 /-- The proof family at a proposition of the host is a small type. -/
 theorem proof_formed_at (host : (rules source proofName).Morphism R (fun head => head))

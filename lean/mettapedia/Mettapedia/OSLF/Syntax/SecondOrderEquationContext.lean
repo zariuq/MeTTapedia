@@ -31,15 +31,15 @@ structure EquationPresentation (schema : List (MetaArity S)) where
     List (EqAxiom (withMetas S X.arities) schema)
   generator_substitute :
     ∀ {X Y : Object S} (substitution : X ⟶ Y)
-      (index : Fin (axioms Y).length)
-      (body : (k : Fin schema.length) →
-        Term (withMetas S Y.arities)
-          (schema.get k).1 (schema.get k).2),
+      (index : Fin (axioms Y).length) {Θ Γ : Ctx S}
+      (body : ContextualAssignment (withMetas S Y.arities) schema Θ)
+      (ambient : Sub (withMetas S Y.arities) Θ Γ)
+      (ordinary : Sub (withMetas S Y.arities) ((axioms Y).get index).ctx Γ),
       EqClosure (axioms X)
         (instInto substitution
-          (instantiate body ((axioms Y).get index).lhs))
+          (ContextualAssignment.instantiate body ambient ordinary ((axioms Y).get index).lhs))
         (instInto substitution
-          (instantiate body ((axioms Y).get index).rhs))
+          (ContextualAssignment.instantiate body ambient ordinary ((axioms Y).get index).rhs))
 
 variable {S} {schema : List (MetaArity S)}
 
@@ -150,21 +150,42 @@ def contextualPresentation (S : Signature) {Γ : Ctx S} {sort : S.Srt}
     (left right : Term S Γ sort) : EquationPresentation S [] where
   axioms := contextualAxioms S left right
   generator_substitute := by
-    intro X Y substitution index body
+    intro X Y substitution index Θ Δ body ambient ordinary
     have zero : index.val = 0 := by
       have bound := index.isLt
       simp only [contextualAxioms, List.length_singleton] at bound
       omega
     have sameIndex : index = ⟨0, by simp [contextualAxioms]⟩ := Fin.ext zero
     subst index
-    have generated := EqClosure.ax
-      (E := contextualAxioms S left right X)
+    have generated := EqClosure.ax_closed
+      (contextualAxioms S left right X)
       (⟨0, by simp [contextualAxioms]⟩ :
         Fin (contextualAxioms S left right X).length)
       (fun i => Fin.elim0 i)
-      (fun _ v => Term.var v)
-    simpa [contextualAxioms, instantiate_embed, instInto_embed, bind_id]
-      using generated
+      (fun s v => instInto substitution (ordinary s v))
+    change EqClosure (contextualAxioms S left right X)
+      (instInto substitution (ContextualAssignment.instantiate body ambient ordinary
+        (embed (M := []) (embed (M := Y.arities) left))))
+      (instInto substitution (ContextualAssignment.instantiate body ambient ordinary
+        (embed (M := []) (embed (M := Y.arities) right))))
+    rw [ContextualAssignment.instantiate_embed (S := withMetas S Y.arities) (M := [])
+      body ambient ordinary (embed (M := Y.arities) left),
+      ContextualAssignment.instantiate_embed (S := withMetas S Y.arities) (M := [])
+        body ambient ordinary (embed (M := Y.arities) right)]
+    have mappedLeft := (instInto_bind (S := S) substitution ordinary
+      (embed (M := Y.arities) left)).trans
+        (congrArg (bind (fun s v => instInto substitution (ordinary s v)))
+          (instInto_embed (S := S) substitution left))
+    have mappedRight := (instInto_bind (S := S) substitution ordinary
+      (embed (M := Y.arities) right)).trans
+        (congrArg (bind (fun s v => instInto substitution (ordinary s v)))
+          (instInto_embed (S := S) substitution right))
+    have law : EqClosure (contextualAxioms S left right X)
+        (bind (fun s v => instInto substitution (ordinary s v)) (embed (M := X.arities) left))
+        (bind (fun s v => instInto substitution (ordinary s v)) (embed (M := X.arities) right)) := by
+      simpa [contextualAxioms, instantiate_embed] using generated
+    exact Eq.mp (congrArg₂ (EqClosure (contextualAxioms S left right X))
+      mappedLeft.symm mappedRight.symm) law
 
 /-- A base-signature equation with an explicitly retained variable context.
 Schema metavariables belong to the more general `EquationPresentation` layer. -/
@@ -275,7 +296,7 @@ def baseEquationPresentation {S : Signature}
     (equations : List (BaseEquation S)) : EquationPresentation S [] where
   axioms := baseEquationAxioms equations
   generator_substitute := by
-    intro X Y substitution index body
+    intro X Y substitution index Θ Δ body ambient
     let sourceIndex : Fin equations.length :=
       ⟨index.val, by simpa [baseEquationAxioms] using index.isLt⟩
     let targetIndex : Fin (baseEquationAxioms equations X).length :=
@@ -292,15 +313,44 @@ def baseEquationPresentation {S : Signature}
       change (equations.map (·.inContext X))[sourceIndex.val] =
         (equations[sourceIndex.val]).inContext X
       simp
-    have generated := EqClosure.ax
-      (E := baseEquationAxioms equations X)
-      targetIndex
-      (fun i => Fin.elim0 i)
-      (fun _ v => Term.var v)
     rw [sourceGet]
+    intro ordinary
+    have generated : ∀ env : Sub (withMetas S X.arities)
+        ((baseEquationAxioms equations X).get targetIndex).ctx Δ,
+        EqClosure (baseEquationAxioms equations X)
+          (bind env (instantiate (M := []) (fun i => Fin.elim0 i)
+            ((baseEquationAxioms equations X).get targetIndex).lhs))
+          (bind env (instantiate (M := []) (fun i => Fin.elim0 i)
+            ((baseEquationAxioms equations X).get targetIndex).rhs)) :=
+      fun env => EqClosure.ax_closed (baseEquationAxioms equations X) targetIndex
+        (fun i => Fin.elim0 i) env
     rw [targetGet] at generated
-    simpa [BaseEquation.inContext, instantiate_embed, instInto_embed,
-      bind_id] using generated
+    change EqClosure (baseEquationAxioms equations X)
+      (instInto substitution (ContextualAssignment.instantiate body ambient ordinary
+        (embed (M := []) (embed (M := Y.arities) (equations.get sourceIndex).left))))
+      (instInto substitution (ContextualAssignment.instantiate body ambient ordinary
+        (embed (M := []) (embed (M := Y.arities) (equations.get sourceIndex).right))))
+    rw [ContextualAssignment.instantiate_embed (S := withMetas S Y.arities) (M := [])
+      body ambient ordinary (embed (M := Y.arities) (equations.get sourceIndex).left),
+      ContextualAssignment.instantiate_embed (S := withMetas S Y.arities) (M := [])
+        body ambient ordinary (embed (M := Y.arities) (equations.get sourceIndex).right)]
+    have mappedLeft := (instInto_bind (S := S) substitution ordinary
+      (embed (M := Y.arities) (equations.get sourceIndex).left)).trans
+        (congrArg (bind (fun s v => instInto substitution (ordinary s v)))
+          (instInto_embed (S := S) substitution (equations.get sourceIndex).left))
+    have mappedRight := (instInto_bind (S := S) substitution ordinary
+      (embed (M := Y.arities) (equations.get sourceIndex).right)).trans
+        (congrArg (bind (fun s v => instInto substitution (ordinary s v)))
+          (instInto_embed (S := S) substitution (equations.get sourceIndex).right))
+    have law : EqClosure (baseEquationAxioms equations X)
+        (bind (fun s v => instInto substitution (ordinary s v))
+          (embed (M := X.arities) (equations.get sourceIndex).left))
+        (bind (fun s v => instInto substitution (ordinary s v))
+          (embed (M := X.arities) (equations.get sourceIndex).right)) := by
+      simpa [BaseEquation.inContext, instantiate_embed] using
+        generated (fun s v => instInto substitution (ordinary s v))
+    exact Eq.mp (congrArg₂ (EqClosure (baseEquationAxioms equations X))
+      mappedLeft.symm mappedRight.symm) law
 
 /-- Existing authored equation lists with no schema metavariables enter the
 second-order quotient through an exact, position-preserving conversion. -/

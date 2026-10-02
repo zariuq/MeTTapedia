@@ -101,25 +101,24 @@ theorem elem_eq_of_generic {M : Model S D} {X : List (MetaArity S)} {Γ : Ctx S}
     {x y : M.Elem X Γ s}
     (h : x.value (M.ctx Γ ⊗ M.family X) (snd _ _) (M.genericEnv Γ (M.family X)) =
       y.value (M.ctx Γ ⊗ M.family X) (snd _ _) (M.genericEnv Γ (M.family X))) : x = y := by
-  apply Model.Elem.ext
+  apply Model.ElemOver.ext
   funext Z m ρ
-  rw [M.value_eq_generic X x, M.value_eq_generic X y, h]
+  rw [M.value_eq_generic x, M.value_eq_generic y, h]
 
 /-- **A preserving functor that identifies equation-related assignments has a
 model of the presentation.** -/
 theorem satisfies_of_respects {schema : List (MetaArity S)} (P : EquationPresentation S schema)
     (respects : ∀ {X Y : SecondOrderContext.Object S} {σ τ : X ⟶ Y}, P.homRel σ τ → F.map σ = F.map τ) :
     hF.toModel.Satisfies P := by
-  intro X i body
-  have related : P.homRel (termArrow (instantiate body ((P.axioms X).get i).lhs))
-      (termArrow (instantiate body ((P.axioms X).get i).rhs)) := by
+  intro X i Θ Δ body ambient ordinary
+  have related : P.homRel
+      (termArrow (ContextualAssignment.instantiate body ambient ordinary ((P.axioms X).get i).lhs))
+      (termArrow (ContextualAssignment.instantiate body ambient ordinary ((P.axioms X).get i).rhs)) := by
     intro k
     rcases k with ⟨n, bound⟩
     change n < 1 at bound
     obtain rfl : n = 0 := by omega
-    have axiom_instance := EqClosure.ax (E := P.axioms X) i body (fun _ v => Term.var v)
-    rw [bind_id, bind_id] at axiom_instance
-    exact axiom_instance
+    exact EqClosure.ax (E := P.axioms X) i body ambient ordinary
   have equal := respects related
   rw [hF.map_termArrow, hF.map_termArrow] at equal
   have curried := (cancel_epi (hF.famIso X.arities).hom).mp equal

@@ -60,9 +60,91 @@ def applyWrites (lookup : Key → Option Value) : List (Key × Value) → Key �
   | [] => lookup
   | (key, value) :: rest => applyWrites (Function.update lookup key (some value)) rest
 
+/-- A retained batch followed by another batch is one ordered write list. -/
+theorem applyWrites_append (lookup : Key → Option Value)
+    (first second : List (Key × Value)) :
+    applyWrites lookup (first ++ second) =
+      applyWrites (applyWrites lookup first) second := by
+  induction first generalizing lookup with
+  | nil => rfl
+  | cons row rest ih =>
+      simpa only [List.cons_append, applyWrites] using
+        ih (Function.update lookup row.1 (some row.2))
+
+/-- Writes cannot change a lookup outside their actual key support. -/
+theorem applyWrites_lookup_of_not_mem (lookup : Key → Option Value)
+    (writes : List (Key × Value)) (key : Key)
+    (outside : key ∉ writes.map Prod.fst) :
+    applyWrites lookup writes key = lookup key := by
+  induction writes generalizing lookup with
+  | nil => rfl
+  | cons row rest ih =>
+      have different : key ≠ row.1 := by
+        intro same
+        exact outside (by simp [same])
+      have tailOutside : key ∉ rest.map Prod.fst := by
+        intro member
+        exact outside (by simp [member])
+      simpa only [applyWrites, Function.update_of_ne different] using
+        ih (Function.update lookup row.1 (some row.2)) tailOutside
+
+/-- An independent single write commutes with a complete retained batch,
+including repeated writes within that batch. -/
+theorem applyWrites_update_of_not_mem (lookup : Key → Option Value)
+    (writes : List (Key × Value)) (key : Key) (value : Value)
+    (outside : key ∉ writes.map Prod.fst) :
+    applyWrites (Function.update lookup key (some value)) writes =
+      Function.update (applyWrites lookup writes) key (some value) := by
+  induction writes generalizing lookup with
+  | nil => rfl
+  | cons row rest ih =>
+      have different : key ≠ row.1 := by
+        intro same
+        exact outside (by simp [same])
+      have tailOutside : key ∉ rest.map Prod.fst := by
+        intro member
+        exact outside (by simp [member])
+      simp only [applyWrites]
+      rw [Function.update_comm different]
+      exact ih (Function.update lookup row.1 (some row.2)) tailOutside
+
+/-- Disjoint binding writes commute as maps. Read dependencies and retained
+metadata have separate obligations; this law alone does not join worlds. -/
+theorem applyWrites_commute (lookup : Key → Option Value)
+    (first second : List (Key × Value))
+    (disjoint : List.Disjoint (first.map Prod.fst) (second.map Prod.fst)) :
+    applyWrites (applyWrites lookup first) second =
+      applyWrites (applyWrites lookup second) first := by
+  induction first generalizing lookup with
+  | nil => rfl
+  | cons row rest ih =>
+      have outside : row.1 ∉ second.map Prod.fst :=
+        List.disjoint_left.mp disjoint (by simp)
+      have tailDisjoint : List.Disjoint (rest.map Prod.fst) (second.map Prod.fst) := by
+        apply List.disjoint_left.mpr
+        intro key member
+        exact List.disjoint_left.mp disjoint (by simp [member])
+      change applyWrites (applyWrites (Function.update lookup row.1 (some row.2)) rest)
+          second = applyWrites (Function.update (applyWrites lookup second) row.1
+          (some row.2)) rest
+      rw [ih _ tailDisjoint, applyWrites_update_of_not_mem lookup second
+        row.1 row.2 outside]
+
 def applyPatch (environment : Environment Key Value Metadata)
     (patch : Patch Key Value Metadata) : Environment Key Value Metadata :=
   ⟨applyWrites environment.get patch.writes, patch.metadata⟩
+
+/-- Full patches commute when their map supports are disjoint and their
+resulting metadata agrees. Different metadata cannot be silently discarded. -/
+theorem applyPatch_commute_of_common_metadata
+    (environment : Environment Key Value Metadata) (first second : Patch Key Value Metadata)
+    (disjoint : List.Disjoint (first.writes.map Prod.fst) (second.writes.map Prod.fst))
+    (sameMetadata : first.metadata = second.metadata) :
+    applyPatch (applyPatch environment first) second =
+      applyPatch (applyPatch environment second) first := by
+  unfold applyPatch
+  rw [applyWrites_commute environment.get first.writes second.writes disjoint,
+    sameMetadata]
 
 /-- Each reference insertion is checked before exposing its updated state.
 The caller decides whether to publish a successfully completed whole batch. -/
@@ -339,6 +421,32 @@ they do not verify the native unifier or its resource bounds.
 -/
 
 namespace Examples
+
+/-- Independent child deltas retain their final local writes. Repeated writes
+within one child do not require deduplication or reordering. -/
+theorem independent_patch_orders_agree :
+    let base : Environment Nat Nat Nat := ⟨fun _ => none, 23⟩
+    let first : Patch Nat Nat Nat := ⟨[(0, 7), (0, 8)], 23⟩
+    let second : Patch Nat Nat Nat := ⟨[(1, 9)], 23⟩
+    applyPatch (applyPatch base first) second = applyPatch (applyPatch base second) first ∧
+      (applyPatch (applyPatch base first) second).get 0 = some 8 ∧
+      (applyPatch (applyPatch base first) second).get 1 = some 9 := by
+  refine ⟨applyPatch_commute_of_common_metadata _ _ _ (by simp) rfl, ?_, ?_⟩ <;> rfl
+
+/-- Even disjoint map writes cannot authorize a full-world join when each
+child carries different resulting authority metadata. -/
+theorem disjoint_writes_do_not_join_different_metadata :
+    let base : Environment Nat Nat Nat := ⟨fun _ => none, 0⟩
+    let first : Patch Nat Nat Nat := ⟨[(0, 7)], 7⟩
+    let second : Patch Nat Nat Nat := ⟨[(1, 9)], 9⟩
+    List.Disjoint (first.writes.map Prod.fst) (second.writes.map Prod.fst) ∧
+      (applyPatch (applyPatch base first) second).get =
+        (applyPatch (applyPatch base second) first).get ∧
+      applyPatch (applyPatch base first) second ≠ applyPatch (applyPatch base second) first := by
+  refine ⟨by simp, applyWrites_commute _ _ _ (by simp), ?_⟩
+  intro same
+  have metadata := congrArg Environment.metadata same
+  exact (by decide : (9 : Nat) ≠ 7) metadata
 
 inductive Term where
   | atom (name : Nat)

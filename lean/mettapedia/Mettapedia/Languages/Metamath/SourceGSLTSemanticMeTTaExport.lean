@@ -50,7 +50,7 @@ private def readCheckedDatabase (sourcePath : String) : IO Metamath.Verify.DB :=
   let sourceBytes ← IO.FS.readBinFile sourcePath
   pure <|
     Metamath.Verify.checkBytes sourceBytes
-      Metamath.Verify.ModeConfig.soundDefault
+      Metamath.Verify.ModeConfig.sound
 
 private def renderReference
     (revision digest sourcePath : String) : IO (Except String String) := do

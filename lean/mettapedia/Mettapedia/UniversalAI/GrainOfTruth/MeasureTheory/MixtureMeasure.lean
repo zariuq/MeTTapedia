@@ -13,12 +13,11 @@ absolute-continuity fact `μ^π ≪ ξ^π` whenever the prior assigns positive w
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.MixtureMeasure
 
-open MeasureTheory ProbabilityTheory
+open ProbabilityTheory
 open Mettapedia.UniversalAI.BayesianAgents
 open Mettapedia.UniversalAI.GrainOfTruth
-open Mettapedia.UniversalAI.ReflectiveOracles
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
-open scoped ENNReal NNReal MeasureTheory
+open scoped ENNReal NNReal
 
 /-! ## Mixture Measure -/
 
@@ -28,38 +27,37 @@ We assume `h_stoch` for every environment in the (countable) class, so that each
 `environmentMeasureWithPolicy (envs i) π` is a probability measure.
 
 The resulting mixture has total mass `∑' i, prior.weight i ≤ 1`, so `ξ^π` is a finite measure. -/
-noncomputable def mixtureMeasureWithPolicy (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+noncomputable def mixtureMeasureWithPolicy
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) : MeasureTheory.Measure Trajectory :=
   MeasureTheory.Measure.sum fun i : EnvironmentIndex =>
     (prior.weight i) • environmentMeasureWithPolicy (envs i) π (h_stoch i)
 
-theorem mixtureMeasureWithPolicy_univ (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem mixtureMeasureWithPolicy_univ (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) :
-    mixtureMeasureWithPolicy O M prior envs π h_stoch Set.univ = ∑' i, prior.weight i := by
+    mixtureMeasureWithPolicy prior envs π h_stoch Set.univ = ∑' i, prior.weight i := by
   classical
   -- Unfold the `Measure.sum` and use that each component is a probability measure.
   simp [mixtureMeasureWithPolicy, environmentMeasureWithPolicy_univ_eq_one,
     MeasureTheory.Measure.smul_apply, smul_eq_mul, mul_one]
 
-instance mixtureMeasureWithPolicy_isFinite (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+instance mixtureMeasureWithPolicy_isFinite
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) :
-    MeasureTheory.IsFiniteMeasure (mixtureMeasureWithPolicy O M prior envs π h_stoch) := by
+    MeasureTheory.IsFiniteMeasure (mixtureMeasureWithPolicy prior envs π h_stoch) := by
   constructor
-  have hle : mixtureMeasureWithPolicy O M prior envs π h_stoch Set.univ ≤ (1 : ℝ≥0∞) := by
+  have hle : mixtureMeasureWithPolicy prior envs π h_stoch Set.univ ≤ (1 : ℝ≥0∞) := by
     simpa [mixtureMeasureWithPolicy_univ] using prior.tsum_le_one
   exact lt_of_le_of_lt hle ENNReal.one_lt_top
 
 /-! ## Absolute Continuity of Components -/
 
-theorem environmentMeasureWithPolicy_absolutelyContinuous_mixture (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem environmentMeasureWithPolicy_absolutelyContinuous_mixture
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (i : EnvironmentIndex) :
     MeasureTheory.Measure.AbsolutelyContinuous
         (environmentMeasureWithPolicy (envs i) π (h_stoch i))
-        (mixtureMeasureWithPolicy O M prior envs π h_stoch) := by
+        (mixtureMeasureWithPolicy prior envs π h_stoch) := by
   -- `μ ≪ c • μ` for `c ≠ 0`, and `c • μ` is a summand of the mixture.
   have h0 :
       MeasureTheory.Measure.AbsolutelyContinuous
@@ -70,7 +68,7 @@ theorem environmentMeasureWithPolicy_absolutelyContinuous_mixture (O : Oracle) (
   have h1 :
       MeasureTheory.Measure.AbsolutelyContinuous
         ((prior.weight i) • environmentMeasureWithPolicy (envs i) π (h_stoch i))
-        (mixtureMeasureWithPolicy O M prior envs π h_stoch) := by
+        (mixtureMeasureWithPolicy prior envs π h_stoch) := by
     -- `ν ≪ μs i` implies `ν ≪ Measure.sum μs`.
     simpa [mixtureMeasureWithPolicy] using
       (MeasureTheory.Measure.absolutelyContinuous_sum_right (μs := fun j : EnvironmentIndex =>

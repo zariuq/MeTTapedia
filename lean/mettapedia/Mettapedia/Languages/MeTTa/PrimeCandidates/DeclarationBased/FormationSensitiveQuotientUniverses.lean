@@ -43,53 +43,53 @@ abbrev NativeContext (signature : Declaration.Signature Tower.Head) :=
 
 /-- The native universe has its next universe as its formed annotation. -/
 def universeType (context : Context (OpaqueRelatorExtension.rules signature))
-    (level : LevelExpr) : TypeOver context where
+    (level : LevelExpr Nat) : TypeOver context where
   code := sortTm level
   level := .sort (.succ level)
   universeWitness := .sort _
   formed := .headType (.sort level)
 
-def univ (context : NativeContext signature) (level : LevelExpr) : Ty context :=
+def univ (context : NativeContext signature) (level : LevelExpr Nat) : Ty context :=
   QType.mk (universeType context.as level)
 
-abbrev Code (context : NativeContext signature) (level : LevelExpr) :=
+abbrev Code (context : NativeContext signature) (level : LevelExpr Nat) :=
   QuotientCwf.Tm context (univ context level)
 
-def rawCode {context : NativeContext signature} {level : LevelExpr}
+def rawCode {context : NativeContext signature} {level : LevelExpr Nat}
     (code : Code context level) : Term context.as (universeType context.as level) :=
   termRepresentative (universeType context.as level) code.val code.property
 
-theorem rawCode_class {context : NativeContext signature} {level : LevelExpr}
+theorem rawCode_class {context : NativeContext signature} {level : LevelExpr Nat}
     (code : Code context level) : QTerm.mk (rawCode code) = code.val :=
   termRepresentative_class _ code.val code.property
 
 /-- Native admission of a universe term is the formation proof of its
 decoded type. No evaluation or proposition-truth test is substituted for it. -/
 def decodedType {context : Context (OpaqueRelatorExtension.rules signature)}
-    {level : LevelExpr} (code : Term context (universeType context level)) :
+    {level : LevelExpr Nat} (code : Term context (universeType context level)) :
     TypeOver context where
   code := code.code
   level := .sort level
   universeWitness := .sort level
   formed := code.typed
 
-def decode {context : NativeContext signature} {level : LevelExpr}
+def decode {context : NativeContext signature} {level : LevelExpr Nat}
     (code : Code context level) : Ty context := QType.mk (decodedType (rawCode code))
 
 /-- Decoding is independent of the selected admitted representative. -/
-theorem decode_representative {context : NativeContext signature} {level : LevelExpr}
+theorem decode_representative {context : NativeContext signature} {level : LevelExpr Nat}
     (code : Code context level) (raw : Term context.as (universeType context.as level))
     (same : QTerm.mk raw = code.val) : decode code = QType.mk (decodedType raw) := by
   apply (QType.mk_eq_iff _ _).mpr
   exact ((QTerm.mk_eq_iff (rawCode code) raw).mp
     ((rawCode_class code).trans same.symm)).2
 
-def ofFormed {context : NativeContext signature} (level : LevelExpr)
+def ofFormed {context : NativeContext signature} (level : LevelExpr Nat)
     (type : Tower.Tm context.as.arity)
     (formed : Typing (OpaqueRelatorExtension.rules signature) context.as.raw type (sortTm level)) :
     Code context level := ⟨QTerm.mk (⟨type, formed⟩ : Term context.as (universeType context.as level)), rfl⟩
 
-theorem decode_ofFormed {context : NativeContext signature} (level : LevelExpr)
+theorem decode_ofFormed {context : NativeContext signature} (level : LevelExpr Nat)
     (type : Tower.Tm context.as.arity)
     (formed : Typing (OpaqueRelatorExtension.rules signature) context.as.raw type (sortTm level)) :
     decode (ofFormed level type formed) =
@@ -98,7 +98,7 @@ theorem decode_ofFormed {context : NativeContext signature} (level : LevelExpr)
 
 /-- Every admitted type at a specified universe is represented by an actual
 code in that universe. The level witness is not guessed from a quotient. -/
-theorem code_coverage {context : NativeContext signature} {level : LevelExpr}
+theorem code_coverage {context : NativeContext signature} {level : LevelExpr Nat}
     (type : TypeOver context.as) (atLevel : type.level = .sort level) :
     ∃ code : Code context level, decode code = QType.mk type := by
   have formed : Typing (OpaqueRelatorExtension.rules signature) context.as.raw
@@ -113,7 +113,7 @@ theorem code_coverage {context : NativeContext signature} {level : LevelExpr}
 /-- Code coverage is exactly membership at the requested level; mere
 membership somewhere in the hierarchy does not supply that admission. -/
 theorem code_exists_iff_atUniverse {context : NativeContext signature}
-    (level : LevelExpr) (type : Ty context) :
+    (level : LevelExpr Nat) (type : Ty context) :
     (∃ code : Code context level, decode code = type) ↔ type.AtUniverse (.sort level) := by
   constructor
   · rintro ⟨code, rfl⟩
@@ -135,7 +135,7 @@ theorem every_type_has_code {context : NativeContext signature} (type : Ty conte
 
 /-- Within a fixed universe, decoding reflects this model's authored code
 conversion. This is not an injectivity claim about every semantic model. -/
-theorem decode_injective {context : NativeContext signature} {level : LevelExpr} :
+theorem decode_injective {context : NativeContext signature} {level : LevelExpr Nat} :
     Function.Injective (@decode signature context level) := by
   intro first second same
   have converted := (QType.mk_eq_iff _ _).mp same
@@ -144,7 +144,7 @@ theorem decode_injective {context : NativeContext signature} {level : LevelExpr}
   exact Subtype.ext ((rawCode_class first).symm.trans
     (codeSame.trans (rawCode_class second)))
 
-theorem formed_codes_equal_iff {context : NativeContext signature} {level : LevelExpr}
+theorem formed_codes_equal_iff {context : NativeContext signature} {level : LevelExpr Nat}
     {first second : Tower.Tm context.as.arity}
     (firstFormed : Typing (OpaqueRelatorExtension.rules signature) context.as.raw first (sortTm level))
     (secondFormed : Typing (OpaqueRelatorExtension.rules signature) context.as.raw second (sortTm level)) :
@@ -158,30 +158,30 @@ theorem formed_codes_equal_iff {context : NativeContext signature} {level : Leve
     exact Subtype.ext ((QTerm.mk_eq_iff _ _).mpr ⟨.refl _, converted⟩)
 
 def hierarchy (signature : Declaration.Signature Tower.Head) :
-    TarskiUniverseFamily LevelExpr (cwf (OpaqueRelatorExtension.rules signature)) where
+    TarskiUniverseFamily (LevelExpr Nat) (cwf (OpaqueRelatorExtension.rules signature)) where
   univ := univ
   el := decode
 
 theorem universeType_reindex {source target : Context (OpaqueRelatorExtension.rules signature)}
-    (level : LevelExpr) (morphism : source ⟶ target) :
+    (level : LevelExpr Nat) (morphism : source ⟶ target) :
     (universeType target level).reindex morphism = universeType source level := rfl
 
-theorem univ_sub {source target : NativeContext signature} (level : LevelExpr)
+theorem univ_sub {source target : NativeContext signature} (level : LevelExpr Nat)
     (morphism : source ⟶ target) : tySub (univ target level) morphism = univ source level := by
   induction morphism using Quot.inductionOn with
   | h raw => rfl
 
 /-- Reindex the code through the same typed contextual action as all terms. -/
-def reindex {source target : NativeContext signature} {level : LevelExpr}
+def reindex {source target : NativeContext signature} {level : LevelExpr Nat}
     (code : Code target level) (morphism : source ⟶ target) : Code source level :=
   ⟨totalSub code.val morphism, (totalSub_type code.val morphism).trans
     ((congrArg (fun type => tySub type morphism) code.property).trans (univ_sub level morphism))⟩
 
-theorem reindex_class {source target : NativeContext signature} {level : LevelExpr}
+theorem reindex_class {source target : NativeContext signature} {level : LevelExpr Nat}
     (code : Code target level) (morphism : source ⟶ target) :
     (reindex code morphism).val = totalSub code.val morphism := rfl
 
-theorem decode_sub {source target : NativeContext signature} {level : LevelExpr}
+theorem decode_sub {source target : NativeContext signature} {level : LevelExpr Nat}
     (code : Code target level) (morphism : source ⟶ target) :
     decode (reindex code morphism) = tySub (decode code) morphism := by
   induction morphism using Quot.inductionOn with
@@ -212,14 +212,14 @@ theorem substitutionStable (signature : Declaration.Signature Tower.Head) :
 
 /-- This is the authored semantic order on level expressions, not a
 runtime budget or a new universe axiom. -/
-def Below (lower upper : LevelExpr) : Prop :=
+def Below (lower upper : LevelExpr Nat) : Prop :=
   Tower.Cumulative (.sort lower) (.sort upper)
 
-def liftCode {context : NativeContext signature} {lower upper : LevelExpr}
+def liftCode {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (below : Below lower upper) (code : Code context lower) : Code context upper :=
   ofFormed upper (rawCode code).code (.cumul (rawCode code).typed below)
 
-theorem decode_liftCode {context : NativeContext signature} {lower upper : LevelExpr}
+theorem decode_liftCode {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (below : Below lower upper) (code : Code context lower) :
     decode (liftCode below code) = decode code := by
   exact (decode_ofFormed upper (rawCode code).code (.cumul (rawCode code).typed below)).trans
@@ -235,41 +235,41 @@ def cumulative (signature : Declaration.Signature Tower.Head) :
     exact decode_liftCode below code
 
 /-- The next universe contains a code for the current native universe. -/
-def sortCode (context : NativeContext signature) (level : LevelExpr) :
+def sortCode (context : NativeContext signature) (level : LevelExpr Nat) :
     Code context (.succ level) := ofFormed (.succ level) (sortTm level) (.headType (.sort level))
 
-theorem decode_sortCode (context : NativeContext signature) (level : LevelExpr) :
+theorem decode_sortCode (context : NativeContext signature) (level : LevelExpr Nat) :
     decode (sortCode context level) = univ context level :=
   decode_ofFormed (.succ level) (sortTm level) (.headType (.sort level))
 
-theorem lift_sub {source target : NativeContext signature} {lower upper : LevelExpr}
+theorem lift_sub {source target : NativeContext signature} {lower upper : LevelExpr Nat}
     (below : Below lower upper) (code : Code target lower) (morphism : source ⟶ target) :
     reindex (liftCode below code) morphism = liftCode below (reindex code morphism) := by
   apply decode_injective
   rw [decode_sub, decode_liftCode, decode_liftCode, decode_sub]
 
-theorem sort_sub {source target : NativeContext signature} (level : LevelExpr)
+theorem sort_sub {source target : NativeContext signature} (level : LevelExpr Nat)
     (morphism : source ⟶ target) :
     reindex (sortCode target level) morphism = sortCode source level := by
   apply decode_injective
   rw [decode_sub, decode_sortCode, decode_sortCode, univ_sub]
 
-theorem reindex_id {context : NativeContext signature} {level : LevelExpr}
+theorem reindex_id {context : NativeContext signature} {level : LevelExpr Nat}
     (code : Code context level) : reindex code (𝟙 context) = code := by
   apply Subtype.ext
   exact totalSub_id code.val
 
-theorem reindex_comp {first middle last : NativeContext signature} {level : LevelExpr}
+theorem reindex_comp {first middle last : NativeContext signature} {level : LevelExpr Nat}
     (code : Code last level) (earlier : first ⟶ middle) (later : middle ⟶ last) :
     reindex code (earlier ≫ later) = reindex (reindex code later) earlier := by
   apply Subtype.ext
   exact totalSub_comp code.val earlier later
 
-theorem lift_refl {context : NativeContext signature} {level : LevelExpr}
+theorem lift_refl {context : NativeContext signature} {level : LevelExpr Nat}
     (below : Below level level) (code : Code context level) : liftCode below code = code :=
   decode_injective (decode_liftCode below code)
 
-theorem lift_trans {context : NativeContext signature} {first middle last : LevelExpr}
+theorem lift_trans {context : NativeContext signature} {first middle last : LevelExpr Nat}
     (earlier : Below first middle) (later : Below middle last)
     (composed : Below first last) (code : Code context first) :
     liftCode later (liftCode earlier code) = liftCode composed code := by
@@ -278,7 +278,7 @@ theorem lift_trans {context : NativeContext signature} {first middle last : Leve
 
 /-- Raising an admitted code is lossless at the selected conversion-class
 view. This does not reconstruct its finer raw syntax or proof provenance. -/
-theorem lift_injective {context : NativeContext signature} {lower upper : LevelExpr}
+theorem lift_injective {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (below : Below lower upper) : Function.Injective (@liftCode signature context lower upper below) := by
   intro first second same
   apply decode_injective
@@ -288,7 +288,7 @@ theorem lift_injective {context : NativeContext signature} {lower upper : LevelE
 /-- A downward move exists exactly when the decoded type is admitted at
 the requested smaller universe. An upper-level code alone does not supply
 the missing lower-level formation evidence. -/
-theorem descends_iff_atUniverse {context : NativeContext signature} {lower upper : LevelExpr}
+theorem descends_iff_atUniverse {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (below : Below lower upper) (code : Code context upper) :
     (∃ lowerCode : Code context lower, liftCode below lowerCode = code) ↔
       (decode code).AtUniverse (.sort lower) := by
@@ -300,7 +300,7 @@ theorem descends_iff_atUniverse {context : NativeContext signature} {lower upper
     obtain ⟨lowerCode, same⟩ := (code_exists_iff_atUniverse lower (decode code)).mpr admitted
     exact ⟨lowerCode, decode_injective ((decode_liftCode below lowerCode).trans same)⟩
 
-private theorem parallel_sort_meaning {n : Nat} {level : LevelExpr} {target : Tower.Tm n}
+private theorem parallel_sort_meaning {n : Nat} {level : LevelExpr Nat} {target : Tower.Tm n}
     (steps : NativeRelatorConversionParallel.ParStar (sortTm level) target) :
     ∃ finalLevel, target = sortTm finalLevel ∧
       ∀ valuation, LevelExpr.eval valuation finalLevel = LevelExpr.eval valuation level := by
@@ -319,7 +319,7 @@ private theorem parallel_sort_meaning {n : Nat} {level : LevelExpr} {target : To
 /-- The existing common-reduct theorem for opaque native extensions
 separates universes with different valuation meanings. -/
 theorem sort_conversion_iff (opacity : OpaqueRelatorExtension.Opacity signature)
-    {n : Nat} (first second : LevelExpr) :
+    {n : Nat} (first second : LevelExpr Nat) :
     Conv (OpaqueRelatorExtension.rules signature).headEq
         (sortTm (n := n) first) (sortTm second)
         (OpaqueRelatorExtension.rules signature).computation ↔
@@ -331,7 +331,7 @@ theorem sort_conversion_iff (opacity : OpaqueRelatorExtension.Opacity signature)
         ((OpaqueRelatorExtension.conversion_iff opacity).mp converted)
     obtain ⟨firstEnd, firstShape, firstMeaning⟩ := parallel_sort_meaning firstSteps
     obtain ⟨secondEnd, secondShape, secondMeaning⟩ := parallel_sort_meaning secondSteps
-    have ends : firstEnd = secondEnd := Tower.Head.sort.inj
+    have ends : firstEnd = secondEnd := LevelTower.Head.sort.inj
       (Presentation.Tm.head.inj (firstShape.symm.trans secondShape))
     intro valuation
     exact (firstMeaning valuation).symm.trans
@@ -340,13 +340,13 @@ theorem sort_conversion_iff (opacity : OpaqueRelatorExtension.Opacity signature)
     exact .rel _ _ (.head same)
 
 theorem universes_equal_iff (opacity : OpaqueRelatorExtension.Opacity signature)
-    (context : NativeContext signature) (first second : LevelExpr) :
+    (context : NativeContext signature) (first second : LevelExpr Nat) :
     univ context first = univ context second ↔
       ∀ valuation, LevelExpr.eval valuation first = LevelExpr.eval valuation second :=
   (QType.mk_eq_iff _ _).trans (sort_conversion_iff opacity first second)
 
 theorem universe_successor_distinct (opacity : OpaqueRelatorExtension.Opacity signature)
-    (context : NativeContext signature) (level : LevelExpr) :
+    (context : NativeContext signature) (level : LevelExpr Nat) :
     univ context level ≠ univ context (.succ level) := by
   intro same
   have impossible := (universes_equal_iff opacity context level (.succ level)).mp same (fun _ => 0)

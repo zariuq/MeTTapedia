@@ -385,18 +385,18 @@ theorem labeledLanguageDefEngineTraceWitness_labels_authored
   rcases hTrace with ⟨trace, labels, _hHead, _hLast, hRedLbl⟩
   exact labeledReducesAlong_labels_authored hRedLbl
 
-example : hasRewriteByName "BeginLower" = true := by native_decide
-example : hasRewriteByName "CompileLinearizeDone" = true := by native_decide
-example : hasRewriteByName "DefinitelyMissingRule" = false := by native_decide
+example : hasRewriteByName "BeginLower" = true := by decide +kernel
+example : hasRewriteByName "CompileLinearizeDone" = true := by decide +kernel
+example : hasRewriteByName "DefinitelyMissingRule" = false := by decide +kernel
 
 example : DeclaredRewriteLabel "BeginLower" := by
-  exact (authoredRewriteLabel_iff_hasRewriteByName_true "BeginLower").2 (by native_decide)
+  exact (authoredRewriteLabel_iff_hasRewriteByName_true "BeginLower").2 (by decide +kernel)
 
 example : ¬ DeclaredRewriteLabel "DefinitelyMissingRule" := by
   intro h
   have hTrue : hasRewriteByName "DefinitelyMissingRule" = true :=
     (authoredRewriteLabel_iff_hasRewriteByName_true "DefinitelyMissingRule").1 h
-  have hFalse : hasRewriteByName "DefinitelyMissingRule" = false := by native_decide
+  have hFalse : hasRewriteByName "DefinitelyMissingRule" = false := by decide +kernel
   exact Bool.false_ne_true (hFalse.trans hTrue)
 
 example (rt : RuntimeState) :

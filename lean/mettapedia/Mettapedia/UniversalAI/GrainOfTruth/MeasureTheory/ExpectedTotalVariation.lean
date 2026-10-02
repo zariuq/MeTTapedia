@@ -1,4 +1,4 @@
-import Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+import Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 import Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.MixtureMeasure
 import Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorConcentration
 import Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale
@@ -11,7 +11,7 @@ import Mathlib.Topology.Algebra.InfiniteSum.Order
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 
 /-!
-# Expected Total Variation Distance (Leike, Thesis Ch. 5)
+# Expected Total Variation Distance (Leike, thesis, Definition 5.26 and Lemma 5.27)
 
 This file starts the “learning theory” layer used in Leike’s asymptotic-optimality proof for
 Thompson sampling:
@@ -26,18 +26,17 @@ and renormalizing the finite-dimensional marginals.
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.ExpectedTotalVariation
 
 open scoped BigOperators
-open MeasureTheory ProbabilityTheory
+open ProbabilityTheory
 
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.MixtureMeasure
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PrefixMeasure
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.TotalVariation
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.ValueContinuity
-open Mettapedia.UniversalAI.ReflectiveOracles
 
-open scoped ENNReal NNReal MeasureTheory
+open scoped ENNReal NNReal
 
 /-! ## Generic conditioning on finite prefix spaces -/
 
@@ -216,7 +215,7 @@ theorem measureReal_headSet_mul_conditionalTailMeasure_singleton (t m : ℕ)
   have hENN_real := congrArg ENNReal.toReal hENN
   have hμ_ne_top : μ (headSet t m p) ≠ ∞ :=
     MeasureTheory.measure_ne_top μ (headSet t m p)
-  haveI : MeasureTheory.IsFiniteMeasure (conditionalTailMeasure (t := t) (m := m) μ p) := inferInstance
+  have : MeasureTheory.IsFiniteMeasure (conditionalTailMeasure (t := t) (m := m) μ p) := inferInstance
   have hcond_ne_top :
       conditionalTailMeasure (t := t) (m := m) μ p ({q} : Set (Fin m → Step)) ≠ ∞ :=
     MeasureTheory.measure_ne_top (conditionalTailMeasure (t := t) (m := m) μ p) ({q} : Set (Fin m → Step))
@@ -262,16 +261,16 @@ noncomputable def D_m (t m : ℕ) (ρ ξ : MeasureTheory.Measure (Fin (t + m) �
     (conditionalTailMeasure (t := t) (m := m) ρ p)
     (conditionalTailMeasure (t := t) (m := m) ξ p)
 
-noncomputable def prefixMeasureMixtureWithPolicy (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+noncomputable def prefixMeasureMixtureWithPolicy
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (n : ℕ) :
     MeasureTheory.Measure (Fin n → Step) :=
-  (mixtureMeasureWithPolicy O M prior envs π h_stoch).map (truncate n)
+  (mixtureMeasureWithPolicy prior envs π h_stoch).map (truncate n)
 
-instance prefixMeasureMixtureWithPolicy_isFinite (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+instance prefixMeasureMixtureWithPolicy_isFinite
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (n : ℕ) :
-    MeasureTheory.IsFiniteMeasure (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch n) := by
+    MeasureTheory.IsFiniteMeasure (prefixMeasureMixtureWithPolicy prior envs π h_stoch n) := by
   dsimp [prefixMeasureMixtureWithPolicy]
   infer_instance
 
@@ -292,29 +291,29 @@ theorem prefixMeasureWithPolicy_map_headPrefix (μ : Environment) (π : Agent) (
     (MeasureTheory.Measure.map_map (μ := environmentMeasureWithPolicy μ π h_stoch)
       (hg := headPrefix_measurable (t := t) (m := m)) (hf := truncate_measurable (t + m)))
 
-theorem prefixMeasureMixtureWithPolicy_map_headPrefix (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem prefixMeasureMixtureWithPolicy_map_headPrefix
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (t m : ℕ) :
-    (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)).map (headPrefix (t := t) (m := m)) =
-      prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t := by
+    (prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)).map (headPrefix (t := t) (m := m)) =
+      prefixMeasureMixtureWithPolicy prior envs π h_stoch t := by
   classical
   have hcomp :
       (headPrefix (t := t) (m := m) ∘ truncate (t + m)) = truncate t := by
     funext traj
     simpa using (headPrefix_truncate (t := t) (m := m) traj)
   simpa [prefixMeasureMixtureWithPolicy, hcomp] using
-    (MeasureTheory.Measure.map_map (μ := mixtureMeasureWithPolicy O M prior envs π h_stoch)
+    (MeasureTheory.Measure.map_map (μ := mixtureMeasureWithPolicy prior envs π h_stoch)
       (hg := headPrefix_measurable (t := t) (m := m)) (hf := truncate_measurable (t + m)))
 
 /-! ### Posterior cancellation on prefix atoms -/
 
-theorem bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ν_idx : EnvironmentIndex) (t : ℕ)
     (p : Fin t → Step) :
-    bayesianPosteriorWeight O M prior envs ν_idx (prefixToHistory t p) *
-        prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t ({p} : Set (Fin t → Step)) =
+    bayesianPosteriorWeight prior envs ν_idx (prefixToHistory t p) *
+        prefixMeasureMixtureWithPolicy prior envs π h_stoch t ({p} : Set (Fin t → Step)) =
       prior.weight ν_idx *
         prefixMeasureWithPolicy (envs ν_idx) π (h_stoch ν_idx) t ({p} : Set (Fin t → Step)) := by
   classical
@@ -334,25 +333,23 @@ theorem bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton (O 
   simpa [prefixMeasureMixtureWithPolicy, prefixMeasureWithPolicy, MeasureTheory.Measure.map_apply, truncate_measurable,
     h_pre, h] using
     (Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PolicyFactorization.bayesianPosteriorWeight_mul_mixtureMeasureWithPolicy_cylinderSet
-        (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) (ν_idx := ν_idx) (h := h)
+        (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) (ν_idx := ν_idx) (h := h)
         (h_wf := h_wf) (h_complete := h_complete))
 
-noncomputable def D_m_env (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+noncomputable def D_m_env (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (t m : ℕ) (p : Fin t → Step) : ℝ :=
   D_m (t := t) (m := m)
     (prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) (t + m))
-    (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m))
+    (prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m))
     p
 
-noncomputable def F_m (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+noncomputable def F_m (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (t m : ℕ) (p : Fin t → Step) : ℝ :=
   ∑' ρ_idx : EnvironmentIndex,
-    (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-      D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+    (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+      D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
 
 /-! ## Basic bounds for `D_m` and `F_m` -/
@@ -372,74 +369,70 @@ theorem D_m_le_one (t m : ℕ) (ρ ξ : MeasureTheory.Measure (Fin (t + m) → S
       (μ := conditionalTailMeasure (t := t) (m := m) ρ p)
       (ν := conditionalTailMeasure (t := t) (m := m) ξ p))
 
-theorem D_m_env_nonneg (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem D_m_env_nonneg (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (t m : ℕ) (p : Fin t → Step) :
-    0 ≤ D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+    0 ≤ D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p := by
   simpa [D_m_env] using
     (D_m_nonneg (t := t) (m := m)
       (ρ := prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) (t + m))
-      (ξ := prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)) p)
+      (ξ := prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)) p)
 
-theorem D_m_env_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem D_m_env_le_one (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (t m : ℕ) (p : Fin t → Step) :
-    D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+    D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p ≤ 1 := by
   classical
   -- Both prefix measures are probability measures, hence finite.
-  haveI : MeasureTheory.IsFiniteMeasure (prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) (t + m)) :=
+  have : MeasureTheory.IsFiniteMeasure (prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) (t + m)) :=
     inferInstance
-  haveI :
-      MeasureTheory.IsFiniteMeasure (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)) :=
+  have :
+      MeasureTheory.IsFiniteMeasure (prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)) :=
     inferInstance
   simpa [D_m_env] using
     (D_m_le_one (t := t) (m := m)
       (ρ := prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) (t + m))
-      (ξ := prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)) p)
+      (ξ := prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)) p)
 
-theorem F_m_nonneg (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem F_m_nonneg (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (t m : ℕ) (p : Fin t → Step) :
-    0 ≤ F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p := by
+    0 ≤ F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p := by
   classical
   dsimp [F_m]
   refine tsum_nonneg ?_
   intro ρ_idx
   refine mul_nonneg ?_ ?_
   · exact ENNReal.toReal_nonneg
-  · exact D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+  · exact D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
       ρ_idx t m p
 
-theorem F_m_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem F_m_le_one (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (t m : ℕ) (p : Fin t → Step) :
-    F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ≤ 1 := by
+    F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ≤ 1 := by
   classical
   -- Abbreviate the posterior weights (ENNReal and Real).
   let wENN : EnvironmentIndex → ℝ≥0∞ :=
-    fun ρ_idx => bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)
+    fun ρ_idx => bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)
   let w : EnvironmentIndex → ℝ :=
     fun ρ_idx => (wENN ρ_idx).toReal
 
   -- The posterior weights always sum to ≤ 1 (fallback to the prior when the mixture probability is 0).
   have hsumENN_le_one : (∑' ρ_idx, wENN ρ_idx) ≤ 1 := by
     classical
-    by_cases hden : mixtureProbability O M prior envs (prefixToHistory t p) = 0
+    by_cases hden : mixtureProbability prior envs (prefixToHistory t p) = 0
     · have h_eq : (∑' ρ_idx, wENN ρ_idx) = ∑' ρ_idx, prior.weight ρ_idx := by
         refine tsum_congr fun ρ_idx => ?_
-        simp [wENN, FixedPoint.bayesianPosteriorWeight, hden]
+        simp [wENN, BayesianPosterior.bayesianPosteriorWeight, hden]
       simpa [h_eq] using prior.tsum_le_one
     · have hden_pos :
-          mixtureProbability O M prior envs (prefixToHistory t p) > 0 :=
+          mixtureProbability prior envs (prefixToHistory t p) > 0 :=
         lt_of_le_of_ne zero_le (Ne.symm hden)
       have h_sum : (∑' ρ_idx, wENN ρ_idx) = 1 :=
-        bayesianPosterior_sum_one O M prior envs (prefixToHistory t p) hden_pos
+        bayesianPosterior_sum_one prior envs (prefixToHistory t p) hden_pos
       exact le_of_eq h_sum
 
   have hsumENN_ne_top : (∑' ρ_idx, wENN ρ_idx) ≠ ∞ :=
@@ -465,7 +458,7 @@ theorem F_m_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
   let f : EnvironmentIndex → ℝ :=
     fun ρ_idx =>
       w ρ_idx *
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p
 
   have hSummable_f : Summable f := by
@@ -473,13 +466,13 @@ theorem F_m_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
     · intro ρ_idx
       refine mul_nonneg ?_ ?_
       · exact ENNReal.toReal_nonneg
-      · exact D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      · exact D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p
     · intro ρ_idx
       have hw : 0 ≤ w ρ_idx := ENNReal.toReal_nonneg
-      have hD : D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      have hD : D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                   ρ_idx t m p ≤ 1 :=
-        D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p
       simpa [f, mul_assoc] using (mul_le_mul_of_nonneg_left hD hw)
 
@@ -487,9 +480,9 @@ theorem F_m_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
     intro ρ_idx
     have hw : 0 ≤ w ρ_idx := ENNReal.toReal_nonneg
     have hD :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     simpa [f, mul_assoc] using (mul_le_mul_of_nonneg_left hD hw)
 
@@ -497,7 +490,7 @@ theorem F_m_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
     hSummable_f.tsum_le_tsum h_termwise hSummable_w
 
   -- Conclude `F_m ≤ 1` by the weight-sum bound.
-  have : F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ≤
+  have : F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ≤
       ∑' ρ_idx, w ρ_idx := by
     simpa [F_m, f, w, wENN] using h_tsum_le
   exact this.trans hsum_w_le_one
@@ -522,7 +515,7 @@ theorem abs_integral_rewardSum_sub_integral_rewardSum_le_two_mul_D_m (t m : ℕ)
   -- `t * l1DistanceReal = (2*t) * ((1/2) * l1DistanceReal)` and `(1/2) * l1DistanceReal` is `tvDistanceReal`.
   simpa [D_m, tvDistanceReal, mul_assoc, mul_left_comm, mul_comm] using h
 
-/-! ## Leike Lemma 5.28: swapping posterior weights into component expectations -/
+/-! ## Hutter (2005), Lemma 5.28(ii): swapping posterior weights into component expectations -/
 
 section LeikeExpectation
 
@@ -539,80 +532,80 @@ private theorem integrable_of_pointwise_norm_le_const {α : Type*} [MeasurableSp
     MeasureTheory.integrable_const (μ := μ) (c := B)
   exact hconst.mono' hmeas hbound
 
-theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (t m : ℕ) :
     (∫ p : Fin t → Step,
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
-              ρ_idx t m p ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+              ρ_idx t m p ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
       =
       (prior.weight ρ_idx).toReal *
         (∫ p : Fin t → Step,
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ∂(prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t)) := by
   classical
   let μξ : MeasureTheory.Measure (Fin t → Step) :=
-    prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t
+    prefixMeasureMixtureWithPolicy prior envs π h_stoch t
   let μρ : MeasureTheory.Measure (Fin t → Step) :=
     prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t
-  haveI : MeasureTheory.IsFiniteMeasure μξ := inferInstance
-  haveI : MeasureTheory.IsFiniteMeasure μρ := by
+  have : MeasureTheory.IsFiniteMeasure μξ := inferInstance
+  have : MeasureTheory.IsFiniteMeasure μρ := by
     infer_instance
 
   -- Integrability (both functions are bounded by `1`).
   have hInt_left :
       MeasureTheory.Integrable
           (fun p : Fin t → Step =>
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p)
           μξ := by
     refine integrable_of_pointwise_norm_le_const (μ := μξ) (B := (1 : ℝ))
       (f := fun p : Fin t → Step =>
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p) ?_
     intro p
     have hwENN :
-        bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
+        bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
       Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-        (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
-    have hw : (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal ≤ 1 := by
+        (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
+    have hw : (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal ≤ 1 := by
       simpa using (ENNReal.toReal_mono (by simp) hwENN)
     have hD :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     have hnonneg :
         0 ≤
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p :=
       mul_nonneg ENNReal.toReal_nonneg
-        (D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p)
     have hmul :
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ≤ 1 := by
       calc
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ≤ 1 * 1 := by
               refine mul_le_mul hw hD ?_ ?_
-              · exact D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+              · exact D_m_env_nonneg (prior := prior) (envs := envs) (π := π)
                   (h_stoch := h_stoch) ρ_idx t m p
               · linarith
         _ = 1 := by ring
     have hnorm :
-        ‖(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        ‖(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p‖ =
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p := by
       simpa [Real.norm_eq_abs] using (abs_of_nonneg hnonneg)
     simpa [hnorm] using hmul
@@ -620,72 +613,72 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : Ref
   have hInt_right :
       MeasureTheory.Integrable
           (fun p : Fin t → Step =>
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p)
           μρ := by
     refine integrable_of_pointwise_norm_le_const (μ := μρ) (B := (1 : ℝ))
       (f := fun p : Fin t → Step =>
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p) ?_
     intro p
     have hnonneg :
         0 ≤
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p :=
-      D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     have hle :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     simpa [Real.norm_eq_abs, abs_of_nonneg hnonneg] using hle
 
   -- Expand both integrals as finite sums over singletons and use the cancellation lemma termwise.
   have h_left_sum :
       (∫ p : Fin t → Step,
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ∂μξ)
         =
         ∑ p : Fin t → Step,
           μξ.real {p} *
-            ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p) := by
     simpa [μξ, smul_eq_mul, mul_assoc, mul_left_comm, mul_comm] using
       (MeasureTheory.integral_fintype (μ := μξ)
         (f := fun p : Fin t → Step =>
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p) hInt_left)
 
   have h_right_sum :
       (∫ p : Fin t → Step,
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ∂μρ)
         =
         ∑ p : Fin t → Step,
           μρ.real {p} *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p := by
     simpa [μρ, smul_eq_mul] using
       (MeasureTheory.integral_fintype (μ := μρ)
         (f := fun p : Fin t → Step =>
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p) hInt_right)
 
   -- Use the singleton cancellation lemma to rewrite each term of the left sum.
   have h_term :
       ∀ p : Fin t → Step,
-        μξ.real {p} * (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal =
+        μξ.real {p} * (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal =
           (prior.weight ρ_idx).toReal * μρ.real {p} := by
     intro p
     have hENN :
-        bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) * μξ {p} =
+        bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) * μξ {p} =
           prior.weight ρ_idx * μρ {p} := by
       simpa [μξ, μρ] using
-        (bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton (O := O) (M := M) (prior := prior)
+        (bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton (prior := prior)
           (envs := envs) (π := π) (h_stoch := h_stoch) (ν_idx := ρ_idx) (t := t) p)
     have hENN_real := congrArg ENNReal.toReal hENN
     -- Convert `toReal` of products into products of `toReal`.
@@ -693,11 +686,11 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : Ref
       MeasureTheory.measure_ne_top μξ ({p} : Set (Fin t → Step))
     have hμρ_ne_top : μρ {p} ≠ ∞ :=
       MeasureTheory.measure_ne_top μρ ({p} : Set (Fin t → Step))
-    have hw_ne_top : bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≠ ∞ := by
+    have hw_ne_top : bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≠ ∞ := by
       have hle :
-          bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
+          bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
         Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-          (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
+          (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
       exact (lt_of_le_of_lt hle ENNReal.one_lt_top).ne
     have hprior_ne_top : prior.weight ρ_idx ≠ ∞ := by
       have hle : prior.weight ρ_idx ≤ ∑' i, prior.weight i :=
@@ -709,7 +702,7 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : Ref
     -- `μ.real {p} = (μ {p}).toReal`.
     -- `ENNReal.toReal_mul` needs both factors to be finite.
     have :
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal * (μξ {p}).toReal =
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal * (μξ {p}).toReal =
           (prior.weight ρ_idx).toReal * (μρ {p}).toReal := by
       simpa [ENNReal.toReal_mul, hw_ne_top, hμξ_ne_top, hprior_ne_top, hμρ_ne_top, mul_comm, mul_left_comm, mul_assoc]
         using hENN_real
@@ -718,24 +711,24 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : Ref
   -- Put everything together.
   calc
     (∫ p : Fin t → Step,
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ∂μξ)
         =
       ∑ p : Fin t → Step,
         μξ.real {p} *
-          ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p) := h_left_sum
     _ =
       ∑ p : Fin t → Step,
         ((prior.weight ρ_idx).toReal * μρ.real {p}) *
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p := by
         refine Finset.sum_congr rfl ?_
         intro p hp
         have := congrArg (fun r : ℝ => r *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p) (h_term p)
         -- simplify the multiplication rearrangement
         simpa [mul_assoc, mul_left_comm, mul_comm] using this
@@ -743,14 +736,14 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : Ref
       (prior.weight ρ_idx).toReal *
         ∑ p : Fin t → Step,
           μρ.real {p} *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p := by
         -- factor out the constant
         simp [Finset.mul_sum, mul_left_comm, mul_comm]
     _ =
       (prior.weight ρ_idx).toReal *
         (∫ p : Fin t → Step,
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ∂μρ) := by
         simp [h_right_sum]
 
@@ -760,68 +753,68 @@ posterior weights into component expectations.
 This is the finite-prefix version of Leike’s “expectation swap” step:
 
 `E_{ξ^π}[F_m^π(h_{<t})] = ∑_ρ w(ρ) · E_{ρ^π}[D_m(ρ^π, ξ^π | h_{<t})]`. -/
-theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (t m : ℕ) :
     (∫ p : Fin t → Step,
-        F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
-          ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+        F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
+          ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
       =
       ∑' ρ_idx : EnvironmentIndex,
         (prior.weight ρ_idx).toReal *
           (∫ p : Fin t → Step,
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ∂(prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t)) := by
   classical
   let μξ : MeasureTheory.Measure (Fin t → Step) :=
-    prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t
-  haveI : MeasureTheory.IsFiniteMeasure μξ := inferInstance
+    prefixMeasureMixtureWithPolicy prior envs π h_stoch t
+  have : MeasureTheory.IsFiniteMeasure μξ := inferInstance
 
   -- `F_m` is integrable since it is bounded by `1`.
   have hInt_F :
       MeasureTheory.Integrable
         (fun p : Fin t → Step =>
-          F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p)
+          F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p)
         μξ := by
     refine integrable_of_pointwise_norm_le_const (μ := μξ) (B := (1 : ℝ))
       (f := fun p : Fin t → Step =>
-        F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p) ?_
+        F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p) ?_
     intro p
     have h0 :
         0 ≤
-          F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p :=
-      F_m_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
+          F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p :=
+      F_m_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
     have hle :
-        F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ≤ 1 :=
-      F_m_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
+        F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ≤ 1 :=
+      F_m_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
     simpa [Real.norm_eq_abs, abs_of_nonneg h0] using hle
 
   -- Summability for swapping `∑ p` and `∑' ρ`.
   have hSummable_g :
       ∀ p : Fin t → Step,
         Summable fun ρ_idx : EnvironmentIndex =>
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p := by
     intro p
     -- Posterior weights on this prefix.
     let wENN : EnvironmentIndex → ℝ≥0∞ :=
-      fun ρ_idx => bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)
+      fun ρ_idx => bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)
     let w : EnvironmentIndex → ℝ := fun ρ_idx => (wENN ρ_idx).toReal
 
     -- The posterior weights always sum to ≤ 1 (fallback to prior if the mixture mass is 0).
     have hsumENN_le_one : (∑' ρ_idx, wENN ρ_idx) ≤ 1 := by
       classical
-      by_cases hden : mixtureProbability O M prior envs (prefixToHistory t p) = 0
+      by_cases hden : mixtureProbability prior envs (prefixToHistory t p) = 0
       · have h_eq : (∑' ρ_idx, wENN ρ_idx) = ∑' ρ_idx, prior.weight ρ_idx := by
           refine tsum_congr fun ρ_idx => ?_
-          simp [wENN, FixedPoint.bayesianPosteriorWeight, hden]
+          simp [wENN, BayesianPosterior.bayesianPosteriorWeight, hden]
         simpa [h_eq] using prior.tsum_le_one
       · have hden_pos :
-            mixtureProbability O M prior envs (prefixToHistory t p) > 0 :=
+            mixtureProbability prior envs (prefixToHistory t p) > 0 :=
           lt_of_le_of_ne zero_le (Ne.symm hden)
         have h_sum : (∑' ρ_idx, wENN ρ_idx) = 1 :=
-          bayesianPosterior_sum_one O M prior envs (prefixToHistory t p) hden_pos
+          bayesianPosterior_sum_one prior envs (prefixToHistory t p) hden_pos
         exact le_of_eq h_sum
 
     have hsumENN_ne_top : (∑' ρ_idx, wENN ρ_idx) ≠ ∞ :=
@@ -834,21 +827,21 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
     let g : EnvironmentIndex → ℝ :=
       fun ρ_idx =>
         w ρ_idx *
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p
     have hSummable_g' : Summable g := by
       refine Summable.of_nonneg_of_le ?_ ?_ (hSummable_w.mul_right (1 : ℝ))
       · intro ρ_idx
         refine mul_nonneg ?_ ?_
         · exact ENNReal.toReal_nonneg
-        · exact D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+        · exact D_m_env_nonneg (prior := prior) (envs := envs) (π := π)
             (h_stoch := h_stoch) ρ_idx t m p
       · intro ρ_idx
         have hw : 0 ≤ w ρ_idx := ENNReal.toReal_nonneg
         have hD :
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ≤ 1 :=
-          D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p
         simpa [g, w, wENN, mul_assoc] using (mul_le_mul_of_nonneg_left hD hw)
 
@@ -858,23 +851,23 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
   -- Rewrite the integral of `F_m` as a finite sum over singleton atoms.
   have hInt_as_sum :
       (∫ p : Fin t → Step,
-          F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ∂μξ)
+          F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ∂μξ)
         =
         ∑ p : Fin t → Step,
           μξ.real {p} *
-            F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p := by
+            F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p := by
     simpa [smul_eq_mul, μξ] using
       (MeasureTheory.integral_fintype (μ := μξ)
         (f := fun p : Fin t → Step =>
-          F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p)
+          F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p)
         hInt_F)
 
   -- Swap `∑ p` and `∑' ρ` using `Summable.tsum_finsetSum`.
   let f : (Fin t → Step) → EnvironmentIndex → ℝ :=
     fun p ρ_idx =>
       μξ.real {p} *
-        ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p)
 
   have hf : ∀ p ∈ (Finset.univ : Finset (Fin t → Step)), Summable (f p) := by
@@ -895,55 +888,55 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
       ∀ ρ_idx : EnvironmentIndex,
         MeasureTheory.Integrable
           (fun p : Fin t → Step =>
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p)
           μξ := by
     intro ρ_idx
     refine integrable_of_pointwise_norm_le_const (μ := μξ) (B := (1 : ℝ))
       (f := fun p : Fin t → Step =>
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p) ?_
     intro p
     have hwENN :
-        bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
+        bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
       Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-        (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
-    have hw : (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal ≤ 1 := by
+        (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
+    have hw : (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal ≤ 1 := by
       simpa using (ENNReal.toReal_mono (by simp) hwENN)
     have hD :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     have hnonneg :
         0 ≤
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p :=
       mul_nonneg ENNReal.toReal_nonneg
-        (D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p)
     have hmul :
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ≤ 1 := by
       calc
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ≤ 1 * 1 := by
               refine mul_le_mul hw hD ?_ ?_
-              · exact D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+              · exact D_m_env_nonneg (prior := prior) (envs := envs) (π := π)
                   (h_stoch := h_stoch) ρ_idx t m p
               · linarith
         _ = 1 := by ring
     have hnorm :
-        ‖(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        ‖(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p‖ =
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p := by
       simpa [Real.norm_eq_abs] using (abs_of_nonneg hnonneg)
     simpa [hnorm] using hmul
@@ -952,28 +945,28 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
       ∀ ρ_idx : EnvironmentIndex,
         (∑ p : Fin t → Step, f p ρ_idx) =
           (∫ p : Fin t → Step,
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-                D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+                D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                   ρ_idx t m p ∂μξ) := by
     intro ρ_idx
     have hInt_term := h_integrable_term ρ_idx
     -- `integral_fintype` gives exactly the singleton-atom expansion.
     have :
         (∫ p : Fin t → Step,
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ∂μξ)
           =
           ∑ p : Fin t → Step,
             μξ.real {p} *
-              ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-                D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+              ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+                D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                   ρ_idx t m p) := by
       simpa [smul_eq_mul, μξ, mul_assoc, mul_left_comm, mul_comm] using
         (MeasureTheory.integral_fintype (μ := μξ)
           (f := fun p : Fin t → Step =>
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p)
           hInt_term)
     -- The RHS is exactly `∑ p, f p ρ_idx`.
@@ -982,11 +975,11 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
   -- Assemble the chain of rewrites.
   calc
     (∫ p : Fin t → Step,
-        F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ∂μξ)
+        F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p ∂μξ)
         =
       ∑ p : Fin t → Step,
         μξ.real {p} *
-          F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p := hInt_as_sum
+          F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p := hInt_as_sum
     _ =
       ∑ p : Fin t → Step,
         ∑' ρ_idx : EnvironmentIndex, f p ρ_idx := by
@@ -997,8 +990,8 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
         -- `μξ.real {p} * tsum g = tsum (μξ.real {p} * g)`
         simpa [mul_assoc, mul_left_comm, mul_comm] using
           (tsum_mul_left (f := fun ρ_idx : EnvironmentIndex =>
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-                D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+                D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                   ρ_idx t m p)
             (a := μξ.real {p})).symm
     _ =
@@ -1006,8 +999,8 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
     _ =
       ∑' ρ_idx : EnvironmentIndex,
         (∫ p : Fin t → Step,
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ∂μξ) := by
         refine tsum_congr ?_
         intro ρ_idx
@@ -1016,34 +1009,34 @@ theorem integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O 
       ∑' ρ_idx : EnvironmentIndex,
         (prior.weight ρ_idx).toReal *
           (∫ p : Fin t → Step,
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ∂(prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t)) := by
         refine tsum_congr ?_
         intro ρ_idx
         -- Lemma 5.28.
         simpa [μξ] using
-          (integral_posteriorWeight_toReal_mul_D_m_env_prefix (O := O) (M := M) (prior := prior) (envs := envs)
+          (integral_posteriorWeight_toReal_mul_D_m_env_prefix (prior := prior) (envs := envs)
             (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (t := t) (m := m))
 
 /-- Real-valued version of the posterior cancellation on singleton prefixes:
 `w_t(ρ) * ξ_t({p}) = w(ρ) * ρ_t({p})`, with all weights coerced to `ℝ`. -/
-theorem bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_singleton (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_singleton
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ρ_idx : EnvironmentIndex) (t : ℕ)
     (p : Fin t → Step) :
-    (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t).real ({p} : Set (Fin t → Step)) *
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal
+    (prefixMeasureMixtureWithPolicy prior envs π h_stoch t).real ({p} : Set (Fin t → Step)) *
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal
       =
       (prior.weight ρ_idx).toReal *
         (prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t).real ({p} : Set (Fin t → Step)) := by
   classical
-  set μξ : MeasureTheory.Measure (Fin t → Step) := prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t
+  set μξ : MeasureTheory.Measure (Fin t → Step) := prefixMeasureMixtureWithPolicy prior envs π h_stoch t
   set μρ : MeasureTheory.Measure (Fin t → Step) := prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t
   have hENN :
-      bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) * μξ ({p} : Set (Fin t → Step)) =
+      bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) * μξ ({p} : Set (Fin t → Step)) =
         prior.weight ρ_idx * μρ ({p} : Set (Fin t → Step)) := by
     simpa [μξ, μρ] using
-      (bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton (O := O) (M := M) (prior := prior)
+      (bayesianPosteriorWeight_mul_prefixMeasureMixtureWithPolicy_singleton (prior := prior)
         (envs := envs) (π := π) (h_stoch := h_stoch) (ν_idx := ρ_idx) (t := t) p)
   have hENN_real := congrArg ENNReal.toReal hENN
   have hμξ_ne_top : μξ ({p} : Set (Fin t → Step)) ≠ ∞ :=
@@ -1051,11 +1044,11 @@ theorem bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_s
   have hμρ_ne_top : μρ ({p} : Set (Fin t → Step)) ≠ ∞ :=
     MeasureTheory.measure_ne_top μρ ({p} : Set (Fin t → Step))
   have hw_ne_top :
-      bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≠ ∞ := by
+      bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≠ ∞ := by
     have hle :
-        bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
+        bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
       Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-        (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
+        (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
     exact (lt_of_le_of_lt hle ENNReal.one_lt_top).ne
   have hprior_ne_top : prior.weight ρ_idx ≠ ∞ := by
     have hle : prior.weight ρ_idx ≤ ∑' i, prior.weight i :=
@@ -1065,12 +1058,12 @@ theorem bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_s
     exact (lt_of_le_of_lt hle1 ENNReal.one_lt_top).ne
   have :
       (μξ ({p} : Set (Fin t → Step))).toReal *
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal
         =
         (μρ ({p} : Set (Fin t → Step))).toReal * (prior.weight ρ_idx).toReal := by
     -- Convert `toReal` of products into products of `toReal` and rearrange.
     have h :
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
             (μξ ({p} : Set (Fin t → Step))).toReal
           =
           (prior.weight ρ_idx).toReal * (μρ ({p} : Set (Fin t → Step))).toReal := by
@@ -1078,9 +1071,9 @@ theorem bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_s
         mul_comm] using hENN_real
     calc
       (μξ ({p} : Set (Fin t → Step))).toReal *
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal
           =
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
             (μξ ({p} : Set (Fin t → Step))).toReal := by
             simp [mul_comm]
       _ = (prior.weight ρ_idx).toReal * (μρ ({p} : Set (Fin t → Step))).toReal := h
@@ -1107,14 +1100,14 @@ theorem prefixMeasureWithPolicy_real_headSet (μ : Environment) (π : Agent) (h_
   simpa [MeasureTheory.Measure.map_apply, hHead, headPrefix_measurable, MeasureTheory.measureReal_def]
     using hReal
 
-theorem prefixMeasureMixtureWithPolicy_real_headSet (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem prefixMeasureMixtureWithPolicy_real_headSet
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (t m : ℕ) (p : Fin t → Step) :
-    (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)).real (headSet t m p) =
-      (prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t).real ({p} : Set (Fin t → Step)) := by
+    (prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)).real (headSet t m p) =
+      (prefixMeasureMixtureWithPolicy prior envs π h_stoch t).real ({p} : Set (Fin t → Step)) := by
   classical
   have hmap :=
-    prefixMeasureMixtureWithPolicy_map_headPrefix (O := O) (M := M) (prior := prior) (envs := envs)
+    prefixMeasureMixtureWithPolicy_map_headPrefix (prior := prior) (envs := envs)
       (π := π) (h_stoch := h_stoch) (t := t) (m := m)
   have hENN :=
     congrArg (fun ν : MeasureTheory.Measure (Fin t → Step) => ν ({p} : Set (Fin t → Step))) hmap
@@ -1128,85 +1121,85 @@ theorem prefixMeasureMixtureWithPolicy_real_headSet (O : Oracle) (M : Reflective
 
 /-- Key identity behind “expected TV vanishes”: the weighted TV distance can be rewritten as an
 expectation of posterior-weight increments. -/
-theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_diff (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_diff
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ρ_idx : EnvironmentIndex) (t m : ℕ) :
     (∫ p : Fin t → Step,
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
-              ρ_idx t m p ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+              ρ_idx t m p ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
       =
       (1 / 2 : ℝ) *
         (∫ r : Fin (t + m) → Step,
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m))) := by
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m))) := by
   classical
-  let μξ_t : MeasureTheory.Measure (Fin t → Step) := prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t
+  let μξ_t : MeasureTheory.Measure (Fin t → Step) := prefixMeasureMixtureWithPolicy prior envs π h_stoch t
   let μξ_tm : MeasureTheory.Measure (Fin (t + m) → Step) :=
-    prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)
+    prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)
   let μρ_t : MeasureTheory.Measure (Fin t → Step) := prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t
   let μρ_tm : MeasureTheory.Measure (Fin (t + m) → Step) :=
     prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) (t + m)
-  haveI : MeasureTheory.IsFiniteMeasure μξ_t := inferInstance
-  haveI : MeasureTheory.IsFiniteMeasure μξ_tm := inferInstance
-  haveI : MeasureTheory.IsFiniteMeasure μρ_t := by infer_instance
-  haveI : MeasureTheory.IsFiniteMeasure μρ_tm := by infer_instance
+  have : MeasureTheory.IsFiniteMeasure μξ_t := inferInstance
+  have : MeasureTheory.IsFiniteMeasure μξ_tm := inferInstance
+  have : MeasureTheory.IsFiniteMeasure μρ_t := by infer_instance
+  have : MeasureTheory.IsFiniteMeasure μρ_tm := by infer_instance
 
   -- Integrability of both sides (bounded by a constant on a finite measure space).
   have hInt_left :
       MeasureTheory.Integrable
         (fun p : Fin t → Step =>
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p)
         μξ_t := by
     -- Same bound as in Lemma 5.28.
     refine integrable_of_pointwise_norm_le_const (μ := μξ_t) (B := (1 : ℝ))
       (f := fun p : Fin t → Step =>
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p) ?_
     intro p
     have hwENN :
-        bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
+        bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p) ≤ (1 : ℝ≥0∞) :=
       Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-        (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
-    have hw : (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal ≤ 1 := by
+        (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory t p)
+    have hw : (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal ≤ 1 := by
       simpa using (ENNReal.toReal_mono (by simp) hwENN)
     have hD :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     have hnonneg :
         0 ≤
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p :=
       mul_nonneg ENNReal.toReal_nonneg
-        (D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p)
     have hmul :
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ≤ 1 := by
       calc
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ≤ 1 * 1 := by
               refine mul_le_mul hw hD ?_ ?_
-              · exact D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+              · exact D_m_env_nonneg (prior := prior) (envs := envs) (π := π)
                   (h_stoch := h_stoch) ρ_idx t m p
               · linarith
         _ = 1 := by ring
     have hnorm :
-        ‖(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        ‖(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p‖ =
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p := by
       simpa [Real.norm_eq_abs] using (abs_of_nonneg hnonneg)
     simpa [hnorm] using hmul
@@ -1214,61 +1207,61 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
   have hInt_right :
       MeasureTheory.Integrable
         (fun r : Fin (t + m) → Step =>
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|)
         μξ_tm := by
     refine integrable_of_pointwise_norm_le_const (μ := μξ_tm) (B := (2 : ℝ))
       (f := fun r : Fin (t + m) → Step =>
-        |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-            (bayesianPosteriorWeight O M prior envs ρ_idx
+        |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+            (bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|) ?_
     intro r
     have hw1 :
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal ≤ 1 := by
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal ≤ 1 := by
       have hle :
-          bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r) ≤ (1 : ℝ≥0∞) :=
+          bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r) ≤ (1 : ℝ≥0∞) :=
         Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-          (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory (t + m) r)
+          (prior := prior) (envs := envs) (ν_idx := ρ_idx) (h := prefixToHistory (t + m) r)
       simpa using (ENNReal.toReal_mono (by simp) hle)
     have hw2 :
-        (bayesianPosteriorWeight O M prior envs ρ_idx
+        (bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal ≤ 1 := by
       have hle :
-          bayesianPosteriorWeight O M prior envs ρ_idx
+          bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory t (headPrefix (t := t) (m := m) r)) ≤ (1 : ℝ≥0∞) :=
         Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale.bayesianPosteriorWeight_le_one
-          (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx)
+          (prior := prior) (envs := envs) (ν_idx := ρ_idx)
           (h := prefixToHistory t (headPrefix (t := t) (m := m) r))
       simpa using (ENNReal.toReal_mono (by simp) hle)
     -- crude bound `|a - b| ≤ |a| + |b| ≤ 2`
-    have : |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-            (bayesianPosteriorWeight O M prior envs ρ_idx
+    have : |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+            (bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| ≤ 2 := by
       have h_abs :
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
             ≤
-            |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal| +
-              |(bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal| +
+              |(bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| := by
         simpa using
           (abs_sub_le
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal
             0
-            (bayesianPosteriorWeight O M prior envs ρ_idx
+            (bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal)
-      have h1' : |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal| ≤ 1 := by
-        have h0 : 0 ≤ (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal :=
+      have h1' : |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal| ≤ 1 := by
+        have h0 : 0 ≤ (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal :=
           ENNReal.toReal_nonneg
         simpa [abs_of_nonneg h0] using hw1
       have h2' :
-          |(bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx
             (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| ≤ 1 := by
         have h0 :
             0 ≤
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal :=
           ENNReal.toReal_nonneg
         simpa [abs_of_nonneg h0] using hw2
@@ -1279,39 +1272,39 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
   -- Expand the integrals as sums over singleton atoms.
   have h_left_sum :
       (∫ p : Fin t → Step,
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p ∂μξ_t)
         =
         ∑ p : Fin t → Step,
           μξ_t.real ({p} : Set (Fin t → Step)) *
-            ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p) := by
     simpa [smul_eq_mul, μξ_t] using
       (MeasureTheory.integral_fintype (μ := μξ_t)
         (f := fun p : Fin t → Step =>
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p)
         hInt_left)
 
   have h_right_sum :
       (∫ r : Fin (t + m) → Step,
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| ∂μξ_tm)
         =
         ∑ r : Fin (t + m) → Step,
           μξ_tm.real ({r} : Set (Fin (t + m) → Step)) *
-            |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| := by
     simpa [smul_eq_mul, μξ_tm] using
       (MeasureTheory.integral_fintype (μ := μξ_tm)
         (f := fun r : Fin (t + m) → Step =>
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|)
         hInt_right)
 
@@ -1319,16 +1312,16 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
   have h_pointwise :
       ∀ p : Fin t → Step,
         μξ_t.real ({p} : Set (Fin t → Step)) *
-            ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p)
           =
           (1 / 2 : ℝ) *
             ∑ q : Fin m → Step,
               μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-                |(bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal| := by
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal| := by
     intro p
     -- Expand `D_m_env` as `1/2 * ∑ |P - Q|`.
     let P : MeasureTheory.Measure (Fin m → Step) :=
@@ -1336,7 +1329,7 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
     let Q : MeasureTheory.Measure (Fin m → Step) :=
       conditionalTailMeasure (t := t) (m := m) μξ_tm p
     have hD :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p = (1 / 2 : ℝ) * ∑ q : Fin m → Step, |P.real ({q} : Set (Fin m → Step)) - Q.real ({q} : Set (Fin m → Step))| := by
       simp [D_m_env, D_m, tvDistanceReal, l1DistanceReal, P, Q, μρ_tm, μξ_tm]
 
@@ -1369,55 +1362,55 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
       have h2 :
           μξ_tm.real (headSet t m p) = μξ_t.real ({p} : Set (Fin t → Step)) := by
         simpa [μξ_tm, μξ_t] using
-          prefixMeasureMixtureWithPolicy_real_headSet (O := O) (M := M) (prior := prior) (envs := envs)
+          prefixMeasureMixtureWithPolicy_real_headSet (prior := prior) (envs := envs)
             (π := π) (h_stoch := h_stoch) (t := t) (m := m) p
       simpa [h2] using h1
 
     -- Posterior cancellation for `{p}` and `{append p q}`.
     have hW_t :
         μξ_t.real ({p} : Set (Fin t → Step)) *
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal
           =
           (prior.weight ρ_idx).toReal * μρ_t.real ({p} : Set (Fin t → Step)) := by
       simpa [μξ_t, μρ_t, mul_assoc, mul_left_comm, mul_comm] using
-        (bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_singleton (O := O) (M := M)
+        (bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_singleton
           (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (t := t) p)
 
     have hW_tm (q : Fin m → Step) :
         μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-            (bayesianPosteriorWeight O M prior envs ρ_idx
+            (bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal
           =
           (prior.weight ρ_idx).toReal *
             μρ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) := by
       simpa [μξ_tm, μρ_tm, mul_assoc, mul_left_comm, mul_comm] using
-        (bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_singleton (O := O) (M := M)
+        (bayesianPosteriorWeight_toReal_mul_prefixMeasureMixtureWithPolicy_real_singleton
           (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (t := t + m)
           (appendPrefix (t := t) (m := m) p q))
 
     -- Now rewrite the weighted distance termwise using the cancellation identities.
     have h_atom (q : Fin m → Step) :
         μξ_t.real ({p} : Set (Fin t → Step)) *
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
               (P.real ({q} : Set (Fin m → Step)) - Q.real ({q} : Set (Fin m → Step)))
           =
           μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-            ((bayesianPosteriorWeight O M prior envs ρ_idx
+            ((bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal) := by
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal) := by
       -- Expand the LHS into `... * P - ... * Q` and rewrite each piece.
       have hP' :
           μξ_t.real ({p} : Set (Fin t → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
                 P.real ({q} : Set (Fin m → Step))
             =
             μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal := by
         -- LHS = `w(ρ).toReal * μρ_tm{append p q}` = RHS by `hW_tm`.
         calc
           μξ_t.real ({p} : Set (Fin t → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
                 P.real ({q} : Set (Fin m → Step))
               =
               (prior.weight ρ_idx).toReal * μρ_t.real ({p} : Set (Fin t → Step)) *
@@ -1431,58 +1424,58 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
                   simp [mul_assoc, hP q]
           _ =
               μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal := by
                   -- rewrite using `hW_tm`
                   simpa [mul_assoc, mul_left_comm, mul_comm] using (hW_tm q).symm
       have hQ' :
           μξ_t.real ({p} : Set (Fin t → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
                 Q.real ({q} : Set (Fin m → Step))
             =
             μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal := by
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal := by
         -- `μξ_t.real{p} * Q.real{q} = μξ_tm.real{append p q}`.
         simp [mul_assoc, mul_comm, hQ q]
       -- Combine `hP'` and `hQ'`.
       calc
         μξ_t.real ({p} : Set (Fin t → Step)) *
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
               (P.real ({q} : Set (Fin m → Step)) - Q.real ({q} : Set (Fin m → Step)))
             =
           (μξ_t.real ({p} : Set (Fin t → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
                 P.real ({q} : Set (Fin m → Step))) -
             (μξ_t.real ({p} : Set (Fin t → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
                 Q.real ({q} : Set (Fin m → Step))) := by
             ring
         _ =
           (μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal) -
             (μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal) := by
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal) := by
             simp [hP', hQ']
         _ =
           μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-            ((bayesianPosteriorWeight O M prior envs ρ_idx
+            ((bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal) := by
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal) := by
             ring
 
     -- Move from the signed identity to absolute values, then sum.
     have h_abs (q : Fin m → Step) :
         μξ_t.real ({p} : Set (Fin t → Step)) *
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
               |P.real ({q} : Set (Fin m → Step)) - Q.real ({q} : Set (Fin m → Step))|
           =
           μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-            |(bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal| := by
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal| := by
       have hμξ_nonneg : 0 ≤ μξ_t.real ({p} : Set (Fin t → Step)) := MeasureTheory.measureReal_nonneg
-      have hw_nonneg : 0 ≤ (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal :=
+      have hw_nonneg : 0 ≤ (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal :=
         ENNReal.toReal_nonneg
       have hμξtm_nonneg :
           0 ≤ μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) :=
@@ -1496,14 +1489,14 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
     -- LHS: `μξ_t.real{p} * (posterior_t * D)` where `D = 1/2 * ∑ |...|`.
     calc
       μξ_t.real ({p} : Set (Fin t → Step)) *
-          ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p)
           =
         (1 / 2 : ℝ) *
           ∑ q : Fin m → Step,
             μξ_t.real ({p} : Set (Fin t → Step)) *
-              (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
+              (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
                 |P.real ({q} : Set (Fin m → Step)) - Q.real ({q} : Set (Fin m → Step))| := by
             -- unfold `D_m_env` and distribute
             simp [hD, Finset.mul_sum, mul_assoc, mul_left_comm, mul_comm]
@@ -1511,9 +1504,9 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
         (1 / 2 : ℝ) *
           ∑ q : Fin m → Step,
             μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal| := by
+                (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal| := by
             congr 1
             refine Finset.sum_congr rfl ?_
             intro q _hq
@@ -1534,41 +1527,41 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
           (1 / 2 : ℝ) *
             ∑ q : Fin m → Step,
               μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-                |(bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal|)
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal|)
         =
         (1 / 2 : ℝ) *
           ∑ r : Fin (t + m) → Step,
             μξ_tm.real ({r} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| := by
     -- Rewrite the RHS sum using the equivalence `e` to a sum over pairs `(p,q)`.
     have hR :
         (∑ r : Fin (t + m) → Step,
             μξ_tm.real ({r} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|)
           =
           ∑ pq : (Fin t → Step) × (Fin m → Step),
             μξ_tm.real ({appendPrefix (t := t) (m := m) pq.1 pq.2} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) pq.1 pq.2))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t pq.1)).toReal| := by
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t pq.1)).toReal| := by
       -- Change variables `r ↦ (headPrefix r, tailPrefix r)` in the `Fintype.sum`.
       simpa [e] using
         (Fintype.sum_equiv e (fun r : Fin (t + m) → Step =>
           μξ_tm.real ({r} : Set (Fin (t + m) → Step)) *
-            |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|)
           (fun pq : (Fin t → Step) × (Fin m → Step) =>
             μξ_tm.real ({appendPrefix (t := t) (m := m) pq.1 pq.2} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) pq.1 pq.2))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t pq.1)).toReal|)
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t pq.1)).toReal|)
           (fun r => by
             simp [e, appendPrefix_headPrefix_tailPrefix]))
     -- Now expand the pair-sum as an iterated sum.
@@ -1576,16 +1569,16 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
     have hPair :
         (∑ pq : (Fin t → Step) × (Fin m → Step),
             μξ_tm.real ({appendPrefix (t := t) (m := m) pq.1 pq.2} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) pq.1 pq.2))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t pq.1)).toReal|)
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t pq.1)).toReal|)
           =
           ∑ p : Fin t → Step,
             ∑ q : Fin m → Step,
               μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-                |(bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal| := by
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal| := by
       -- `Fintype` sum over a product is nested sums.
       classical
       simp [Fintype.sum_prod_type]
@@ -1597,55 +1590,55 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
           (1 / 2 : ℝ) *
             ∑ q : Fin m → Step,
               μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-                |(bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal|)
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal|)
           =
           (1 / 2 : ℝ) *
             ∑ p : Fin t → Step,
               ∑ q : Fin m → Step,
                 μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-                  |(bayesianPosteriorWeight O M prior envs ρ_idx
+                  |(bayesianPosteriorWeight prior envs ρ_idx
                       (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                    (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal| := by
+                    (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal| := by
             simp [Finset.mul_sum]
       _ =
           (1 / 2 : ℝ) *
             ∑ pq : (Fin t → Step) × (Fin m → Step),
               μξ_tm.real ({appendPrefix (t := t) (m := m) pq.1 pq.2} : Set (Fin (t + m) → Step)) *
-                |(bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) pq.1 pq.2))).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t pq.1)).toReal| := by
+                  (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t pq.1)).toReal| := by
             simpa using congrArg (fun S : ℝ => (1 / 2 : ℝ) * S) hPair.symm
       _ =
           (1 / 2 : ℝ) *
             ∑ r : Fin (t + m) → Step,
               μξ_tm.real ({r} : Set (Fin (t + m) → Step)) *
-                |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                  (bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                  (bayesianPosteriorWeight prior envs ρ_idx
                     (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| := by
             simp [hR]
 
   -- Final assembly.
   calc
     (∫ p : Fin t → Step,
-        (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p ∂μξ_t)
         =
       ∑ p : Fin t → Step,
         μξ_t.real ({p} : Set (Fin t → Step)) *
-          ((bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          ((bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p) := h_left_sum
     _ =
       ∑ p : Fin t → Step,
         (1 / 2 : ℝ) *
           ∑ q : Fin m → Step,
             μξ_tm.real ({appendPrefix (t := t) (m := m) p q} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory (t + m) (appendPrefix (t := t) (m := m) p q))).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal| := by
+                (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal| := by
         refine Finset.sum_congr rfl ?_
         intro p hp
         simpa [μξ_t, μξ_tm] using h_pointwise p
@@ -1653,24 +1646,24 @@ theorem integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_
       (1 / 2 : ℝ) *
         ∑ r : Fin (t + m) → Step,
             μξ_tm.real ({r} : Set (Fin (t + m) → Step)) *
-              |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+              |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| := by
         simpa using h_swap_sum
     _ =
       (1 / 2 : ℝ) *
         (∫ r : Fin (t + m) → Step,
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal| ∂μξ_tm) := by
         simp [h_right_sum]
     _ =
       (1 / 2 : ℝ) *
         (∫ r : Fin (t + m) → Step,
-          |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-              (bayesianPosteriorWeight O M prior envs ρ_idx
+          |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+              (bayesianPosteriorWeight prior envs ρ_idx
                 (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m))) := by
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m))) := by
         rfl
 
 /-! ## Expected posterior increments vanish -/
@@ -1682,45 +1675,45 @@ open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale
 
 /-- On the mixture trajectory space `ξ^π`, the expected absolute increment of the posterior process
 over a fixed lag `m` tends to `0`. -/
-theorem tendsto_integral_abs_posteriorReal_sub_shift (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem tendsto_integral_abs_posteriorReal_sub_shift
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (m : ℕ) :
     Tendsto
         (fun t =>
           ∫ traj,
-            |posteriorReal O M prior envs ρ_idx (t + m) traj -
-                posteriorReal O M prior envs ρ_idx t traj|
-            ∂(mixtureMeasureWithPolicy O M prior envs π h_stoch))
+            |posteriorReal prior envs ρ_idx (t + m) traj -
+                posteriorReal prior envs ρ_idx t traj|
+            ∂(mixtureMeasureWithPolicy prior envs π h_stoch))
         atTop (nhds 0) := by
   classical
   -- Work with the `ξ` abbreviation so we can reuse the martingale convergence lemma.
-  let μ : MeasureTheory.Measure Trajectory := ξ O M prior envs π h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := by infer_instance
+  let μ : MeasureTheory.Measure Trajectory := ξ prior envs π h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := by infer_instance
 
   have h_ae_tendsto :
       ∀ᵐ traj ∂μ,
         Tendsto (fun t =>
-          ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-              posteriorReal O M prior envs ρ_idx t traj‖) atTop (nhds 0) := by
+          ‖posteriorReal prior envs ρ_idx (t + m) traj -
+              posteriorReal prior envs ρ_idx t traj‖) atTop (nhds 0) := by
     have h_conv :
         ∀ᵐ traj ∂μ,
-          Tendsto (fun t => posteriorReal O M prior envs ρ_idx t traj) atTop
+          Tendsto (fun t => posteriorReal prior envs ρ_idx t traj) atTop
             (nhds
-              (trajectoryFiltration.limitProcess (posteriorReal O M prior envs ρ_idx) μ traj)) := by
+              (trajectoryFiltration.limitProcess (posteriorReal prior envs ρ_idx) μ traj)) := by
       simpa [μ] using
-        (posteriorReal_ae_tendsto_limitProcess (O := O) (M := M) (prior := prior) (envs := envs) (pi := π)
+        (posteriorReal_ae_tendsto_limitProcess (prior := prior) (envs := envs) (pi := π)
           (h_stoch := h_stoch) (ν_idx := ρ_idx))
     filter_upwards [h_conv] with traj htraj
     have h_shift :
-        Tendsto (fun t => posteriorReal O M prior envs ρ_idx (t + m) traj) atTop
+        Tendsto (fun t => posteriorReal prior envs ρ_idx (t + m) traj) atTop
           (nhds
-            (trajectoryFiltration.limitProcess (posteriorReal O M prior envs ρ_idx) μ traj)) :=
+            (trajectoryFiltration.limitProcess (posteriorReal prior envs ρ_idx) μ traj)) :=
       (tendsto_add_atTop_iff_nat m).2 htraj
     have h_sub :
         Tendsto (fun t =>
-            posteriorReal O M prior envs ρ_idx (t + m) traj -
-              posteriorReal O M prior envs ρ_idx t traj) atTop (nhds 0) := by
+            posteriorReal prior envs ρ_idx (t + m) traj -
+              posteriorReal prior envs ρ_idx t traj) atTop (nhds 0) := by
       simpa using (h_shift.sub htraj)
     simpa using h_sub.norm
 
@@ -1728,17 +1721,17 @@ theorem tendsto_integral_abs_posteriorReal_sub_shift (O : Oracle) (M : Reflectiv
       ∀ t : ℕ,
         MeasureTheory.AEStronglyMeasurable
           (fun traj =>
-            ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-                posteriorReal O M prior envs ρ_idx t traj‖)
+            ‖posteriorReal prior envs ρ_idx (t + m) traj -
+                posteriorReal prior envs ρ_idx t traj‖)
           μ := by
     intro t
-    have hInt₁ : MeasureTheory.Integrable (posteriorReal O M prior envs ρ_idx (t + m)) μ := by
+    have hInt₁ : MeasureTheory.Integrable (posteriorReal prior envs ρ_idx (t + m)) μ := by
       simpa [μ] using
-        (posteriorReal_integrable (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+        (posteriorReal_integrable (prior := prior) (envs := envs) (π := π)
           (h_stoch := h_stoch) (ν_idx := ρ_idx) (t := t + m))
-    have hInt₂ : MeasureTheory.Integrable (posteriorReal O M prior envs ρ_idx t) μ := by
+    have hInt₂ : MeasureTheory.Integrable (posteriorReal prior envs ρ_idx t) μ := by
       simpa [μ] using
-        (posteriorReal_integrable (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+        (posteriorReal_integrable (prior := prior) (envs := envs) (π := π)
           (h_stoch := h_stoch) (ν_idx := ρ_idx) (t := t))
     exact (hInt₁.aestronglyMeasurable.sub hInt₂.aestronglyMeasurable).norm
 
@@ -1746,40 +1739,40 @@ theorem tendsto_integral_abs_posteriorReal_sub_shift (O : Oracle) (M : Reflectiv
       ∀ t : ℕ,
         ∀ᵐ traj ∂μ,
           ‖(fun traj =>
-              ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-                  posteriorReal O M prior envs ρ_idx t traj‖) traj‖
+              ‖posteriorReal prior envs ρ_idx (t + m) traj -
+                  posteriorReal prior envs ρ_idx t traj‖) traj‖
             ≤ (fun _ : Trajectory => (2 : ℝ)) traj := by
     intro t
     refine Filter.Eventually.of_forall (fun traj => ?_)
-    have hle_tm : posteriorReal O M prior envs ρ_idx (t + m) traj ≤ 1 :=
-      posteriorReal_le_one (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (t := t + m) traj
-    have hle_t : posteriorReal O M prior envs ρ_idx t traj ≤ 1 :=
-      posteriorReal_le_one (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ρ_idx) (t := t) traj
-    have h0_tm : 0 ≤ posteriorReal O M prior envs ρ_idx (t + m) traj := ENNReal.toReal_nonneg
-    have h0_t : 0 ≤ posteriorReal O M prior envs ρ_idx t traj := ENNReal.toReal_nonneg
+    have hle_tm : posteriorReal prior envs ρ_idx (t + m) traj ≤ 1 :=
+      posteriorReal_le_one (prior := prior) (envs := envs) (ν_idx := ρ_idx) (t := t + m) traj
+    have hle_t : posteriorReal prior envs ρ_idx t traj ≤ 1 :=
+      posteriorReal_le_one (prior := prior) (envs := envs) (ν_idx := ρ_idx) (t := t) traj
+    have h0_tm : 0 ≤ posteriorReal prior envs ρ_idx (t + m) traj := ENNReal.toReal_nonneg
+    have h0_t : 0 ≤ posteriorReal prior envs ρ_idx t traj := ENNReal.toReal_nonneg
     have h_triangle :
-        ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-              posteriorReal O M prior envs ρ_idx t traj‖
-          ≤ ‖posteriorReal O M prior envs ρ_idx (t + m) traj‖ +
-              ‖posteriorReal O M prior envs ρ_idx t traj‖ := by
-      simpa [sub_eq_add_neg] using norm_add_le (posteriorReal O M prior envs ρ_idx (t + m) traj)
-        (-posteriorReal O M prior envs ρ_idx t traj)
-    have h_sum_le : ‖posteriorReal O M prior envs ρ_idx (t + m) traj‖ +
-          ‖posteriorReal O M prior envs ρ_idx t traj‖ ≤ 2 := by
+        ‖posteriorReal prior envs ρ_idx (t + m) traj -
+              posteriorReal prior envs ρ_idx t traj‖
+          ≤ ‖posteriorReal prior envs ρ_idx (t + m) traj‖ +
+              ‖posteriorReal prior envs ρ_idx t traj‖ := by
+      simpa [sub_eq_add_neg] using norm_add_le (posteriorReal prior envs ρ_idx (t + m) traj)
+        (-posteriorReal prior envs ρ_idx t traj)
+    have h_sum_le : ‖posteriorReal prior envs ρ_idx (t + m) traj‖ +
+          ‖posteriorReal prior envs ρ_idx t traj‖ ≤ 2 := by
       -- both posterior values are nonnegative and ≤ 1
-      have hnorm_tm : ‖posteriorReal O M prior envs ρ_idx (t + m) traj‖ = posteriorReal O M prior envs ρ_idx (t + m) traj := by
+      have hnorm_tm : ‖posteriorReal prior envs ρ_idx (t + m) traj‖ = posteriorReal prior envs ρ_idx (t + m) traj := by
         simp [Real.norm_eq_abs, abs_of_nonneg h0_tm]
-      have hnorm_t : ‖posteriorReal O M prior envs ρ_idx t traj‖ = posteriorReal O M prior envs ρ_idx t traj := by
+      have hnorm_t : ‖posteriorReal prior envs ρ_idx t traj‖ = posteriorReal prior envs ρ_idx t traj := by
         simp [Real.norm_eq_abs, abs_of_nonneg h0_t]
       calc
-        ‖posteriorReal O M prior envs ρ_idx (t + m) traj‖ + ‖posteriorReal O M prior envs ρ_idx t traj‖
-            = posteriorReal O M prior envs ρ_idx (t + m) traj + posteriorReal O M prior envs ρ_idx t traj := by
+        ‖posteriorReal prior envs ρ_idx (t + m) traj‖ + ‖posteriorReal prior envs ρ_idx t traj‖
+            = posteriorReal prior envs ρ_idx (t + m) traj + posteriorReal prior envs ρ_idx t traj := by
                 simp [hnorm_tm, hnorm_t]
         _ ≤ (1 : ℝ) + 1 := add_le_add hle_tm hle_t
         _ = 2 := by ring
     have h_le_two :
-        ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-              posteriorReal O M prior envs ρ_idx t traj‖ ≤ 2 :=
+        ‖posteriorReal prior envs ρ_idx (t + m) traj -
+              posteriorReal prior envs ρ_idx t traj‖ ≤ 2 :=
       le_trans h_triangle h_sum_le
     -- `‖‖x‖‖ = ‖x‖`
     simpa [norm_norm] using h_le_two
@@ -1791,15 +1784,15 @@ theorem tendsto_integral_abs_posteriorReal_sub_shift (O : Oracle) (M : Reflectiv
       Tendsto
           (fun t =>
             ∫ traj,
-              ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-                  posteriorReal O M prior envs ρ_idx t traj‖
+              ‖posteriorReal prior envs ρ_idx (t + m) traj -
+                  posteriorReal prior envs ρ_idx t traj‖
               ∂μ)
           atTop (nhds 0) := by
     simpa using
       (MeasureTheory.tendsto_integral_of_dominated_convergence (μ := μ)
         (F := fun t traj =>
-          ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-              posteriorReal O M prior envs ρ_idx t traj‖)
+          ‖posteriorReal prior envs ρ_idx (t + m) traj -
+              posteriorReal prior envs ρ_idx t traj‖)
         (f := fun _ : Trajectory => (0 : ℝ))
         (bound := fun _ : Trajectory => (2 : ℝ)) h_meas h_bound_int h_bound h_ae_tendsto)
 
@@ -1807,14 +1800,14 @@ theorem tendsto_integral_abs_posteriorReal_sub_shift (O : Oracle) (M : Reflectiv
   have h_eq :
       (fun t =>
           ∫ traj,
-            |posteriorReal O M prior envs ρ_idx (t + m) traj -
-                posteriorReal O M prior envs ρ_idx t traj|
-            ∂(mixtureMeasureWithPolicy O M prior envs π h_stoch))
+            |posteriorReal prior envs ρ_idx (t + m) traj -
+                posteriorReal prior envs ρ_idx t traj|
+            ∂(mixtureMeasureWithPolicy prior envs π h_stoch))
         =
         (fun t =>
           ∫ traj,
-            ‖posteriorReal O M prior envs ρ_idx (t + m) traj -
-                posteriorReal O M prior envs ρ_idx t traj‖
+            ‖posteriorReal prior envs ρ_idx (t + m) traj -
+                posteriorReal prior envs ρ_idx t traj‖
             ∂μ) := by
     funext t
     simp [μ, ξ, Real.norm_eq_abs]
@@ -1823,53 +1816,53 @@ theorem tendsto_integral_abs_posteriorReal_sub_shift (O : Oracle) (M : Reflectiv
 /-- The RHS prefix integral from
 `integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_diff` is just an
 expectation of posterior increments on the trajectory space, hence also tends to `0`. -/
-theorem tendsto_integral_abs_diff_bayesianPosteriorWeight_prefix (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem tendsto_integral_abs_diff_bayesianPosteriorWeight_prefix
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (m : ℕ) :
     Tendsto
         (fun t =>
           ∫ r : Fin (t + m) → Step,
-            |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)))
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)))
         atTop (nhds 0) := by
   classical
   have h_traj :=
-    tendsto_integral_abs_posteriorReal_sub_shift (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+    tendsto_integral_abs_posteriorReal_sub_shift (prior := prior) (envs := envs) (π := π)
       (h_stoch := h_stoch) (ρ_idx := ρ_idx) (m := m)
 
   -- Identify the prefix marginal integral with the corresponding trajectory expectation.
   have h_eq :
       (fun t =>
           ∫ r : Fin (t + m) → Step,
-            |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)))
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)))
         =
         (fun t =>
           ∫ traj,
-            |posteriorReal O M prior envs ρ_idx (t + m) traj -
-                posteriorReal O M prior envs ρ_idx t traj|
-            ∂(mixtureMeasureWithPolicy O M prior envs π h_stoch)) := by
+            |posteriorReal prior envs ρ_idx (t + m) traj -
+                posteriorReal prior envs ρ_idx t traj|
+            ∂(mixtureMeasureWithPolicy prior envs π h_stoch)) := by
     funext t
     let f : (Fin (t + m) → Step) → ℝ :=
       fun r =>
-        |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-            (bayesianPosteriorWeight O M prior envs ρ_idx
+        |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+            (bayesianPosteriorWeight prior envs ρ_idx
               (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
     have hφ :
-        AEMeasurable (truncate (t + m)) (mixtureMeasureWithPolicy O M prior envs π h_stoch) :=
+        AEMeasurable (truncate (t + m)) (mixtureMeasureWithPolicy prior envs π h_stoch) :=
       (truncate_measurable (t + m)).aemeasurable
     have hfm :
         MeasureTheory.AEStronglyMeasurable f
-          ((mixtureMeasureWithPolicy O M prior envs π h_stoch).map (truncate (t + m))) :=
+          ((mixtureMeasureWithPolicy prior envs π h_stoch).map (truncate (t + m))) :=
       (measurable_of_countable f).aestronglyMeasurable
     -- `integral_map` identifies the prefix integral with the trajectory expectation.
     have hmap :=
-      MeasureTheory.integral_map (μ := mixtureMeasureWithPolicy O M prior envs π h_stoch) (φ := truncate (t + m)) hφ
+      MeasureTheory.integral_map (μ := mixtureMeasureWithPolicy prior envs π h_stoch) (φ := truncate (t + m)) hφ
         hfm
     -- Rewrite the pulled-back integrand into the posterior increment form.
     simpa [prefixMeasureMixtureWithPolicy, f, posteriorReal, PosteriorProcess.posteriorWeight,
@@ -1879,117 +1872,117 @@ theorem tendsto_integral_abs_diff_bayesianPosteriorWeight_prefix (O : Oracle) (M
 
 /-- For each `ρ`, the mixed expected conditional TV term (the LHS of
 `integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_diff`) tends to `0`. -/
-theorem tendsto_integral_posteriorWeight_toReal_mul_D_m_env_prefix (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem tendsto_integral_posteriorWeight_toReal_mul_D_m_env_prefix
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ρ_idx : EnvironmentIndex) (m : ℕ) :
     Tendsto
         (fun t =>
           ∫ p : Fin t → Step,
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-                D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+                D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                   ρ_idx t m p
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
         atTop (nhds 0) := by
   classical
   have h_rhs :=
-    tendsto_integral_abs_diff_bayesianPosteriorWeight_prefix (O := O) (M := M) (prior := prior) (envs := envs)
+    tendsto_integral_abs_diff_bayesianPosteriorWeight_prefix (prior := prior) (envs := envs)
       (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (m := m)
   have h_mul :
       Tendsto
           (fun t =>
             (1 / 2 : ℝ) *
               (∫ r : Fin (t + m) → Step,
-                |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                    (bayesianPosteriorWeight O M prior envs ρ_idx
+                |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                    (bayesianPosteriorWeight prior envs ρ_idx
                       (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
-                ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m))))
+                ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m))))
           atTop (nhds 0) := by
     simpa [mul_zero] using (tendsto_const_nhds.mul h_rhs)
   have h_eq :
       (fun t =>
         ∫ p : Fin t → Step,
-          (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p
-          ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+          ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
         =
       (fun t =>
         (1 / 2 : ℝ) *
           (∫ r : Fin (t + m) → Step,
-            |(bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
-                (bayesianPosteriorWeight O M prior envs ρ_idx
+            |(bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory (t + m) r)).toReal -
+                (bayesianPosteriorWeight prior envs ρ_idx
                   (prefixToHistory t (headPrefix (t := t) (m := m) r))).toReal|
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch (t + m)))) := by
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch (t + m)))) := by
     funext t
     simpa using
-      (integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_diff (O := O) (M := M)
+      (integral_posteriorWeight_toReal_mul_D_m_env_prefix_eq_half_integral_abs_diff
         (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (t := t) (m := m))
   simpa [h_eq] using h_mul
 
-private theorem integral_D_m_env_prefix_le_one (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+private theorem integral_D_m_env_prefix_le_one
+    (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i))
     (ρ_idx : EnvironmentIndex) (t m : ℕ) :
     (∫ p : Fin t → Step,
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p
         ∂(prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t)) ≤ 1 := by
   classical
   let μρ : MeasureTheory.Measure (Fin t → Step) := prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t
-  haveI : MeasureTheory.IsFiniteMeasure μρ := by infer_instance
-  haveI : MeasureTheory.IsProbabilityMeasure μρ := by infer_instance
+  have : MeasureTheory.IsFiniteMeasure μρ := by infer_instance
+  have : MeasureTheory.IsProbabilityMeasure μρ := by infer_instance
   -- Integrability since the integrand is bounded by `1`.
   have hInt :
       MeasureTheory.Integrable
         (fun p : Fin t → Step =>
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p) μρ := by
     refine integrable_of_pointwise_norm_le_const (μ := μρ) (B := (1 : ℝ))
       (f := fun p : Fin t → Step =>
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p) ?_
     intro p
     have h0 :
         0 ≤
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p :=
-      D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     have hle :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     simpa [Real.norm_eq_abs, abs_of_nonneg h0] using hle
 
   have h_sum :
       (∫ p : Fin t → Step,
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ∂μρ)
         =
         ∑ p : Fin t → Step,
           μρ.real {p} *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p := by
     simpa [smul_eq_mul] using
       (MeasureTheory.integral_fintype (μ := μρ)
         (f := fun p : Fin t → Step =>
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p) hInt)
 
   have h_le :
       (∑ p : Fin t → Step,
           μρ.real {p} *
-            D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
               ρ_idx t m p)
         ≤ ∑ p : Fin t → Step, μρ.real {p} * (1 : ℝ) := by
     refine Finset.sum_le_sum ?_
     intro p hp
     have hμ0 : 0 ≤ μρ.real {p} := MeasureTheory.measureReal_nonneg
     have hD :
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p ≤ 1 :=
-      D_m_env_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+      D_m_env_le_one (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
         ρ_idx t m p
     simpa using (mul_le_mul_of_nonneg_left hD hμ0)
 
@@ -1999,25 +1992,24 @@ private theorem integral_D_m_env_prefix_le_one (O : Oracle) (M : ReflectiveEnvir
 
   calc
     (∫ p : Fin t → Step,
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p ∂μρ)
         = ∑ p : Fin t → Step,
             μρ.real {p} *
-              D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+              D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                 ρ_idx t m p := h_sum
     _ ≤ ∑ p : Fin t → Step, μρ.real {p} * (1 : ℝ) := h_le
     _ = 1 := h_sum_one
 
 /-- Leike’s “expected TV vanishes” statement: the expected `F_m` term under the mixture prefix marginal
 tends to `0`. -/
-theorem tendsto_integral_F_m_prefix (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (π : Agent)
+theorem tendsto_integral_F_m_prefix (prior : PriorOverClass) (envs : ℕ → Environment) (π : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (m : ℕ) :
     Tendsto
         (fun t =>
           ∫ p : Fin t → Step,
-            F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+            F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
         atTop (nhds 0) := by
   classical
   -- Use the series expansion from `integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix`
@@ -2025,7 +2017,7 @@ theorem tendsto_integral_F_m_prefix (O : Oracle) (M : ReflectiveEnvironmentClass
   let f : ℕ → EnvironmentIndex → ℝ := fun t ρ_idx =>
     (prior.weight ρ_idx).toReal *
       (∫ p : Fin t → Step,
-        D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p
         ∂(prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t))
   let bound : EnvironmentIndex → ℝ := fun ρ_idx => (prior.weight ρ_idx).toReal
@@ -2038,20 +2030,20 @@ theorem tendsto_integral_F_m_prefix (O : Oracle) (M : ReflectiveEnvironmentClass
   have h_term : ∀ ρ_idx : EnvironmentIndex, Tendsto (fun t => f t ρ_idx) atTop (nhds 0) := by
     intro ρ_idx
     have hI :=
-      tendsto_integral_posteriorWeight_toReal_mul_D_m_env_prefix (O := O) (M := M) (prior := prior) (envs := envs)
+      tendsto_integral_posteriorWeight_toReal_mul_D_m_env_prefix (prior := prior) (envs := envs)
         (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (m := m)
     have hEq :
         (fun t =>
           ∫ p : Fin t → Step,
-            (bayesianPosteriorWeight O M prior envs ρ_idx (prefixToHistory t p)).toReal *
-                D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+            (bayesianPosteriorWeight prior envs ρ_idx (prefixToHistory t p)).toReal *
+                D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
                   ρ_idx t m p
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
           =
         (fun t => f t ρ_idx) := by
       funext t
       simpa [f] using
-        (integral_posteriorWeight_toReal_mul_D_m_env_prefix (O := O) (M := M) (prior := prior) (envs := envs)
+        (integral_posteriorWeight_toReal_mul_D_m_env_prefix (prior := prior) (envs := envs)
           (π := π) (h_stoch := h_stoch) (ρ_idx := ρ_idx) (t := t) (m := m))
     simpa [hEq] using hI
 
@@ -2060,14 +2052,14 @@ theorem tendsto_integral_F_m_prefix (O : Oracle) (M : ReflectiveEnvironmentClass
     intro t ρ_idx
     have hw : 0 ≤ (prior.weight ρ_idx).toReal := ENNReal.toReal_nonneg
     have hInt_le : (∫ p : Fin t → Step,
-          D_m_env (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+          D_m_env (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
             ρ_idx t m p
           ∂(prefixMeasureWithPolicy (envs ρ_idx) π (h_stoch ρ_idx) t)) ≤ 1 :=
-      integral_D_m_env_prefix_le_one (O := O) (M := M) (prior := prior) (envs := envs) (π := π)
+      integral_D_m_env_prefix_le_one (prior := prior) (envs := envs) (π := π)
         (h_stoch := h_stoch) (ρ_idx := ρ_idx) (t := t) (m := m)
     have h_prod_nonneg : 0 ≤ f t ρ_idx :=
       mul_nonneg hw (MeasureTheory.integral_nonneg (fun p =>
-        D_m_env_nonneg (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
+        D_m_env_nonneg (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch)
           ρ_idx t m p))
     have h_le : f t ρ_idx ≤ bound ρ_idx := by
       simpa [f, bound, mul_one] using (mul_le_mul_of_nonneg_left hInt_le hw)
@@ -2082,13 +2074,13 @@ theorem tendsto_integral_F_m_prefix (O : Oracle) (M : ReflectiveEnvironmentClass
   have h_series :
       (fun t =>
           ∫ p : Fin t → Step,
-            F_m (O := O) (M := M) (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
-            ∂(prefixMeasureMixtureWithPolicy O M prior envs π h_stoch t))
+            F_m (prior := prior) (envs := envs) (π := π) (h_stoch := h_stoch) t m p
+            ∂(prefixMeasureMixtureWithPolicy prior envs π h_stoch t))
         =
       (fun t => ∑' ρ_idx : EnvironmentIndex, f t ρ_idx) := by
     funext t
     simpa [f] using
-      (integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (O := O) (M := M) (prior := prior)
+      (integral_F_m_prefix_eq_tsum_prior_toReal_mul_integral_D_m_env_prefix (prior := prior)
         (envs := envs) (π := π) (h_stoch := h_stoch) (t := t) (m := m))
 
   have : Tendsto (fun t => ∑' ρ_idx : EnvironmentIndex, f t ρ_idx) atTop (nhds 0) := by

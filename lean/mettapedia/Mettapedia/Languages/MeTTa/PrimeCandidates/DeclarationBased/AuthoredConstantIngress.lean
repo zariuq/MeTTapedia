@@ -184,7 +184,7 @@ it is a possible boundary consumer of the same source occurrence later. -/
 theorem occurrence_constructs_hosted_typing
     (host : FormationHost) {name : DeclName} {entry : Entry Tower.Head}
     (occurrence : SourceOccurrence host.source name entry) :
-    exists level : LevelExpr,
+    exists level : LevelExpr Nat,
       Nonempty (HostedFormedTyping host
         { arity := 0
           context := .nil

@@ -66,7 +66,7 @@ theorem convertChecked {context : Tower.Ctx n} {term sourceType targetType : Tow
     (isUniverse : IntrinsicRelator.rules.isUniverse sortHead)
     {code : Code n} (checked : check code sourceType targetType = true) :
     FormationSensitive.Judgment IntrinsicRelator.rules context term targetType := by
-  letI : DecidableRel IntrinsicRelator.rules.headEq := Tower.instDecidableHeadEq
+  letI : DecidableRel IntrinsicRelator.rules.headEq := LevelTower.instDecidableHeadEq
   exact source.convertChecked NativeRelatorRootConversionCode.rootDecoder
     targetFormed isUniverse checked
 

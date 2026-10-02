@@ -75,27 +75,27 @@ section Toolkit
 variable {allowed : DeclName → Bool} {n : Nat} {Γ : Tower.Ctx n}
 
 /-- A type of one universe is a type of every universe above it. -/
-theorem raiseTo {T : Tower.Tm n} {a b : LevelExpr}
+theorem raiseTo {T : Tower.Tm n} {a b : LevelExpr Nat}
     (typed : Typed (stage allowed) Γ T (sortTm a))
     (le : ∀ ν, LevelExpr.eval ν a ≤ LevelExpr.eval ν b) :
     Typed (stage allowed) Γ T (sortTm b) :=
   .cumul typed le
 
 /-- The numbers are a type of every universe. -/
-theorem numT_typedAt {names : List DeclName} (mem : numN ∈ names) (level : LevelExpr) :
+theorem numT_typedAt {names : List DeclName} (mem : numN ∈ names) (level : LevelExpr Nat) :
     Typed (stage (allowedIn names)) Γ numT (sortTm level) :=
   raiseTo (numT_typed mem) fun _ => Nat.zero_le _
 
 end Toolkit
 
 /-- A level is at most its successor. -/
-theorem le_succ_eval (ν : Nat → Nat) (a : LevelExpr) :
+theorem le_succ_eval (ν : Nat → Nat) (a : LevelExpr Nat) :
     LevelExpr.eval ν a ≤ LevelExpr.eval ν (.succ a) :=
   Nat.le_succ _
 
 /-- **The recursor's type with its motive into `U lw` is typed** in the stage of
 the numbers and their constructors, at `U (lw + 1)`. -/
-theorem numRecTypeAt_typed (lw : LevelExpr) :
+theorem numRecTypeAt_typed (lw : LevelExpr Nat) :
     Typed ctorStage .nil (numRecTypeAt (.sort lw)) (sortTm (.succ lw)) := by
   have numMem : numN ∈ [numN, zeroN, sucN] := by simp
   have zeroMem : zeroN ∈ [numN, zeroN, sucN] := by simp
@@ -139,29 +139,29 @@ theorem numRecTypeAt_typed (lw : LevelExpr) :
 
 /-- The universe of the iterator's type with its carrier in `U lk` and its family
 into `U ll`. -/
-abbrev iterLevel (lk ll : LevelExpr) : LevelExpr := .max (.succ lk) (.succ ll)
+abbrev iterLevel (lk ll : LevelExpr Nat) : LevelExpr Nat := .max (.succ lk) (.succ ll)
 
 /-- The universe of the iterator's step with its carrier in `U lk` and its family
 into `U ll`. -/
-abbrev stepLevel (lk ll : LevelExpr) : LevelExpr := .max lk ll
+abbrev stepLevel (lk ll : LevelExpr Nat) : LevelExpr Nat := .max lk ll
 
-theorem lk_le_step (ν : Nat → Nat) (lk ll : LevelExpr) :
+theorem lk_le_step (ν : Nat → Nat) (lk ll : LevelExpr Nat) :
     LevelExpr.eval ν lk ≤ LevelExpr.eval ν (stepLevel lk ll) :=
   le_max_left _ _
 
-theorem ll_le_step (ν : Nat → Nat) (lk ll : LevelExpr) :
+theorem ll_le_step (ν : Nat → Nat) (lk ll : LevelExpr Nat) :
     LevelExpr.eval ν ll ≤ LevelExpr.eval ν (stepLevel lk ll) :=
   le_max_right _ _
 
-theorem succ_lk_le_iter (ν : Nat → Nat) (lk ll : LevelExpr) :
+theorem succ_lk_le_iter (ν : Nat → Nat) (lk ll : LevelExpr Nat) :
     LevelExpr.eval ν (.succ lk) ≤ LevelExpr.eval ν (iterLevel lk ll) :=
   le_max_left _ _
 
-theorem succ_ll_le_iter (ν : Nat → Nat) (lk ll : LevelExpr) :
+theorem succ_ll_le_iter (ν : Nat → Nat) (lk ll : LevelExpr Nat) :
     LevelExpr.eval ν (.succ ll) ≤ LevelExpr.eval ν (iterLevel lk ll) :=
   le_max_right _ _
 
-theorem step_le_iter (ν : Nat → Nat) (lk ll : LevelExpr) :
+theorem step_le_iter (ν : Nat → Nat) (lk ll : LevelExpr Nat) :
     LevelExpr.eval ν (stepLevel lk ll) ≤ LevelExpr.eval ν (iterLevel lk ll) :=
   max_le ((le_succ_eval ν lk).trans (succ_lk_le_iter ν lk ll))
     ((le_succ_eval ν ll).trans (succ_ll_le_iter ν lk ll))
@@ -170,7 +170,7 @@ theorem step_le_iter (ν : Nat → Nat) (lk ll : LevelExpr) :
 `A : U lk` and a family `P : A → U ll`, is a type of the universe of their
 join. -/
 theorem stepFamily_typedAt {allowed : DeclName → Bool} {n : Nat} {Γ : Tower.Ctx n}
-    (lk ll : LevelExpr) :
+    (lk ll : LevelExpr Nat) :
     Typed (stage allowed) (.snoc (.snoc Γ (.head (.sort lk))) (.pi (.var 0) (.head (.sort ll))))
       stepFamily (sortTm (stepLevel lk ll)) := by
   have carrier : ∀ {m : Nat} {Δ : Tower.Ctx m} {A : Tower.Tm m},
@@ -184,7 +184,7 @@ theorem stepFamily_typedAt {allowed : DeclName → Bool} {n : Nat} {Γ : Tower.C
 
 /-- **The iterator's type with its carrier in `U lk` and its family into `U ll`
 is typed** in the stage of the numbers. -/
-theorem iterTypeAt_typed (lk ll : LevelExpr) :
+theorem iterTypeAt_typed (lk ll : LevelExpr Nat) :
     Typed numStage .nil (iterTypeAt (.sort lk) (.sort ll)) (sortTm (iterLevel lk ll)) := by
   have numMem : numN ∈ [numN] := by simp
   have carrier : ∀ {m : Nat} {Δ : Tower.Ctx m} {A : Tower.Tm m},

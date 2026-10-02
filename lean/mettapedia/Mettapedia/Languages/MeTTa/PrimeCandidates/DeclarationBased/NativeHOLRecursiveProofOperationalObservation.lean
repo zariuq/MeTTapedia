@@ -229,7 +229,7 @@ literal here; presentations with nontrivial equations use the same interface
 with a substantive invariance proof. -/
 def semanticObservation {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (environment : context.Environment)
+    (level : LevelExpr Nat) (environment : context.Environment)
     (property : Value a sequence -> Prop) :
     EquationPredicate (reduction level n).closure :=
   invariantPredicate (reduction level n).closure
@@ -243,7 +243,7 @@ def semanticObservation {n : Nat} {a : ZFSet.{u}}
 interface when authored equations are nontrivial. -/
 def quotientObservation {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (environment : context.Environment)
+    (level : LevelExpr Nat) (environment : context.Environment)
     (property : Value a sequence -> Prop) :
     Quotient (reduction level n).closure.equations -> Prop :=
   descendPredicate (reduction level n).closure
@@ -251,7 +251,7 @@ def quotientObservation {n : Nat} {a : ZFSet.{u}}
 
 @[simp] theorem quotientObservation_mk {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (environment : context.Environment)
+    (level : LevelExpr Nat) (environment : context.Environment)
     (property : Value a sequence -> Prop) (term : Tower.Tm n) :
     quotientObservation level environment property
         (Quotient.mk (reduction level n).closure.equations term) =
@@ -260,7 +260,7 @@ def quotientObservation {n : Nat} {a : ZFSet.{u}}
 
 theorem semanticObservation_mono {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (environment : context.Environment)
+    (level : LevelExpr Nat) (environment : context.Environment)
     {first second : Value a sequence -> Prop}
     (implication : ∀ value, first value -> second value) :
     semanticObservation level environment first ≤
@@ -274,7 +274,7 @@ it to the fused endpoint; native beta/iota execution then exposes that same
 endpoint after both programs as a GSLT diamond observation. -/
 theorem recursive_proof_fusion_observed {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (f g : Tower.Tm n)
+    (level : LevelExpr Nat) (f g : Tower.Tm n)
     (fMeaning gMeaning : FunctionMeaning a context)
     (fDenotes : NativeHOLTraceDisplayedTerms.Denotes a context f fMeaning)
     (gDenotes : NativeHOLTraceDisplayedTerms.Denotes a context g gMeaning)
@@ -309,7 +309,7 @@ theorem recursive_proof_fusion_observed {n : Nat} {a : ZFSet.{u}}
 predicate frame, rather than over a raw predicate on syntax. -/
 theorem recursive_proof_fusion_semantic_observed {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (f g : Tower.Tm n)
+    (level : LevelExpr Nat) (f g : Tower.Tm n)
     (fMeaning gMeaning : FunctionMeaning a context)
     (fDenotes : NativeHOLTraceDisplayedTerms.Denotes a context f fMeaning)
     (gDenotes : NativeHOLTraceDisplayedTerms.Denotes a context g gMeaning)
@@ -337,7 +337,7 @@ theorem recursive_proof_fusion_semantic_observed {n : Nat} {a : ZFSet.{u}}
 manufacture an observation whose semantic property is false. -/
 theorem false_semantic_observation_unreachable {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (environment : context.Environment)
+    (level : LevelExpr Nat) (environment : context.Environment)
     (source : Tower.Tm n) :
     ¬ semanticDiamond (reduction level n).closure
         (semanticObservation level environment
@@ -436,7 +436,7 @@ theorem observes_singleton_iff {a : ZFSet.{u}} (x : Value a element)
 /-- A nonempty end-to-end control: the actual recursively compiled HOL proof
 transports singleton identity-map fusion, and native beta/iota execution makes
 the same Aczel list value visible through both GSLT diamonds. -/
-theorem singleton_identity_fusion_observed (level : LevelExpr)
+theorem singleton_identity_fusion_observed (level : LevelExpr Nat)
     {a : ZFSet.{u}} (x : Value a element) :
     Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltDiamond
         (reduction level 1).closure
@@ -464,7 +464,7 @@ theorem singleton_identity_fusion_observed (level : LevelExpr)
       headMeaning, elementContext]
 
 /-- The nonempty control through the generated OSLF semantic frame. -/
-theorem singleton_identity_fusion_semantic_observed (level : LevelExpr)
+theorem singleton_identity_fusion_semantic_observed (level : LevelExpr Nat)
     {a : ZFSet.{u}} (x : Value a element) :
     semanticDiamond (reduction level 1).closure
         (semanticObservation level (elementEnvironment x)
@@ -598,7 +598,7 @@ theorem captured_constants_do_not_commute {a : ZFSet.{u}}
 /-- The strongest positive control in this module: the two functions do not
 commute, so observing the older singleton confirms that both the compiled HOL
 statement and the native `compose` program use `f (g x)`, not `g (f x)`. -/
-theorem noncommuting_fusion_semantic_observed (level : LevelExpr)
+theorem noncommuting_fusion_semantic_observed (level : LevelExpr Nat)
     {a : ZFSet.{u}} (older newer : Value a element) :
     semanticDiamond (reduction level 2).closure
         (semanticObservation level (twoElementEnvironment older newer)

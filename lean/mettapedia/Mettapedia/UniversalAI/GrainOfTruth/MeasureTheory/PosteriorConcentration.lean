@@ -17,15 +17,14 @@ for the *convergence* lemmas (martingale convergence / Blackwell–Dubins-style 
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorConcentration
 
-open MeasureTheory ProbabilityTheory Real Filter
+open ProbabilityTheory Real Filter
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.LikelihoodRatio
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.MixtureMeasure
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorMartingale
-open Mettapedia.UniversalAI.ReflectiveOracles
-open scoped ENNReal NNReal MeasureTheory
+open scoped ENNReal NNReal
 
 export Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorProcess
   (posteriorWeight posteriorWeight_adapted posteriorWeight_via_likelihoodRatio)
@@ -36,39 +35,39 @@ export Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorProcess
 mixture measure `ξ^π`.
 
 This is the “bounded martingale convergence” backbone used in Leike-style arguments. -/
-theorem posteriorReal_ae_tendsto_limitProcess (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorReal_ae_tendsto_limitProcess
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (h_stoch : ∀ i : EnvironmentIndex, isStochastic (envs i)) (ν_idx : EnvironmentIndex) :
-    ∀ᵐ traj ∂(ξ O M prior envs pi h_stoch),
-      Tendsto (fun t => posteriorReal O M prior envs ν_idx t traj) atTop
-        (nhds (trajectoryFiltration.limitProcess (posteriorReal O M prior envs ν_idx)
-          (ξ O M prior envs pi h_stoch) traj)) := by
+    ∀ᵐ traj ∂(ξ prior envs pi h_stoch),
+      Tendsto (fun t => posteriorReal prior envs ν_idx t traj) atTop
+        (nhds (trajectoryFiltration.limitProcess (posteriorReal prior envs ν_idx)
+          (ξ prior envs pi h_stoch) traj)) := by
   classical
-  let μ : MeasureTheory.Measure Trajectory := ξ O M prior envs pi h_stoch
-  haveI : MeasureTheory.IsFiniteMeasure μ := inferInstance
+  let μ : MeasureTheory.Measure Trajectory := ξ prior envs pi h_stoch
+  have : MeasureTheory.IsFiniteMeasure μ := inferInstance
 
   have hM :
-      MeasureTheory.Martingale (posteriorReal O M prior envs ν_idx) trajectoryFiltration μ := by
+      MeasureTheory.Martingale (posteriorReal prior envs ν_idx) trajectoryFiltration μ := by
     simpa [μ] using
-      (posteriorReal_martingale (O := O) (M := M) (prior := prior) (envs := envs) pi h_stoch ν_idx)
-  have hSub : MeasureTheory.Submartingale (posteriorReal O M prior envs ν_idx) trajectoryFiltration μ :=
+      (posteriorReal_martingale (prior := prior) (envs := envs) pi h_stoch ν_idx)
+  have hSub : MeasureTheory.Submartingale (posteriorReal prior envs ν_idx) trajectoryFiltration μ :=
     hM.submartingale
 
-  have hbdd : ∀ t, MeasureTheory.eLpNorm (posteriorReal O M prior envs ν_idx t) 1 μ ≤ (1 : ENNReal) := by
+  have hbdd : ∀ t, MeasureTheory.eLpNorm (posteriorReal prior envs ν_idx t) 1 μ ≤ (1 : ENNReal) := by
     intro t
     have hbound :
-        ∀ᵐ traj ∂μ, ‖posteriorReal O M prior envs ν_idx t traj‖ ≤ (1 : ℝ) := by
+        ∀ᵐ traj ∂μ, ‖posteriorReal prior envs ν_idx t traj‖ ≤ (1 : ℝ) := by
       refine Eventually.of_forall (fun traj => ?_)
-      have h0 : 0 ≤ posteriorReal O M prior envs ν_idx t traj := ENNReal.toReal_nonneg
-      have h1 : posteriorReal O M prior envs ν_idx t traj ≤ 1 :=
-        posteriorReal_le_one (O := O) (M := M) (prior := prior) (envs := envs) (ν_idx := ν_idx) t traj
+      have h0 : 0 ≤ posteriorReal prior envs ν_idx t traj := ENNReal.toReal_nonneg
+      have h1 : posteriorReal prior envs ν_idx t traj ≤ 1 :=
+        posteriorReal_le_one (prior := prior) (envs := envs) (ν_idx := ν_idx) t traj
       simpa [Real.norm_eq_abs, abs_of_nonneg h0] using h1
     have hLp :
-        MeasureTheory.eLpNorm (posteriorReal O M prior envs ν_idx t) 1 μ ≤ μ Set.univ := by
+        MeasureTheory.eLpNorm (posteriorReal prior envs ν_idx t) 1 μ ≤ μ Set.univ := by
       -- `eLpNorm_le_of_ae_bound` specializes to an `L¹` bound by the mass of the space.
       simpa using
         (MeasureTheory.eLpNorm_le_of_ae_bound (μ := μ) (p := (1 : ℝ≥0∞))
-          (f := posteriorReal O M prior envs ν_idx t) (C := (1 : ℝ)) hbound)
+          (f := posteriorReal prior envs ν_idx t) (C := (1 : ℝ)) hbound)
     have hμ : μ Set.univ ≤ (1 : ℝ≥0∞) := by
       -- The mixture has total mass `∑' i, prior.weight i ≤ 1`.
       simpa [μ, ξ, mixtureMeasureWithPolicy_univ] using prior.tsum_le_one
@@ -78,8 +77,8 @@ theorem posteriorReal_ae_tendsto_limitProcess (O : Oracle) (M : ReflectiveEnviro
 
 /-- A dominated-convergence hypothesis ensuring that we can swap `t → ∞` with the countable sum
 over environment indices for the weighted likelihood ratios along a fixed trajectory. -/
-def DominatedLikelihoodRatioSeries (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment) (ν_star_idx : EnvironmentIndex)
+def DominatedLikelihoodRatioSeries
+    (prior : PriorOverClass) (envs : ℕ → Environment) (ν_star_idx : EnvironmentIndex)
     (traj : Trajectory) : Prop :=
   ∃ bound : EnvironmentIndex → ℝ,
     Summable bound ∧
@@ -92,16 +91,16 @@ def DominatedLikelihoodRatioSeries (O : Oracle) (M : ReflectiveEnvironmentClass 
 tends to `-∞`) under the on-policy trajectory measure, and the weighted likelihood-ratio series is
 dominated in the sense of `DominatedLikelihoodRatioSeries`, then the posterior weight on the true
 environment tends to `1` almost surely under the true environment measure. -/
-theorem posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_ident : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       IdentifiableWithPolicy (envs i) (envs ν_star_idx) pi h_stoch)
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
       Tendsto (fun t =>
-        (posteriorWeight O M prior envs ν_star_idx t traj).toReal) atTop (nhds 1) := by
+        (posteriorWeight prior envs ν_star_idx t traj).toReal) atTop (nhds 1) := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch
 
@@ -308,7 +307,7 @@ theorem posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy (O : Oracl
 
   -- Finally, rewrite posteriorWeight via likelihood ratios and take limits.
   have h_eventually_posterior_eq :
-      (fun t => (posteriorWeight O M prior envs ν_star_idx t traj).toReal)
+      (fun t => (posteriorWeight prior envs ν_star_idx t traj).toReal)
         =ᶠ[atTop] fun t =>
           ((prior.weight ν_star_idx * likelihoodRatio (envs ν_star_idx) (envs ν_star_idx) t traj) /
               (∑' i, prior.weight i * likelihoodRatio (envs i) (envs ν_star_idx) t traj)).toReal := by
@@ -318,17 +317,17 @@ theorem posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy (O : Oracl
     have h_hist_ne0 :
         historyProbability (envs ν_star_idx) (trajectoryToHistory traj t) ≠ 0 :=
       ne_of_gt h_hist_posENN
-    have h_mix_pos : mixtureProbability O M prior envs (trajectoryToHistory traj t) > 0 := by
+    have h_mix_pos : mixtureProbability prior envs (trajectoryToHistory traj t) > 0 := by
       have h_term_pos : 0 < prior.weight ν_star_idx * historyProbability (envs ν_star_idx) (trajectoryToHistory traj t) :=
         (ENNReal.mul_pos_iff).2 ⟨prior.positive ν_star_idx, h_hist_posENN⟩
       have h_term_le :
           prior.weight ν_star_idx * historyProbability (envs ν_star_idx) (trajectoryToHistory traj t) ≤
-            mixtureProbability O M prior envs (trajectoryToHistory traj t) := by
+            mixtureProbability prior envs (trajectoryToHistory traj t) := by
         simpa [mixtureProbability] using (ENNReal.le_tsum ν_star_idx)
       exact lt_of_lt_of_le h_term_pos h_term_le
     -- Convert the ENNReal equality to its `toReal` version.
     exact congrArg ENNReal.toReal
-      (posteriorWeight_via_likelihoodRatio (O := O) (M := M) (prior := prior) (envs := envs)
+      (posteriorWeight_via_likelihoodRatio (prior := prior) (envs := envs)
         (ν_star_idx := ν_star_idx) (ν_idx := ν_star_idx) (t := t) (traj := traj) h_mix_pos h_hist_ne0)
 
   have h_posterior_toReal_tendsto :
@@ -363,34 +362,34 @@ theorem posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy (O : Oracl
 
 /-- `posteriorReal` is just `(posteriorWeight ...).toReal`, so posterior concentration can also be
 stated as `posteriorReal → 1`. -/
-theorem posteriorReal_true_ae_tendsto_one_of_identifiableWithPolicy (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorReal_true_ae_tendsto_one_of_identifiableWithPolicy
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_ident : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       IdentifiableWithPolicy (envs i) (envs ν_star_idx) pi h_stoch)
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      Tendsto (fun t => posteriorReal O M prior envs ν_star_idx t traj) atTop (nhds 1) := by
+      Tendsto (fun t => posteriorReal prior envs ν_star_idx t traj) atTop (nhds 1) := by
   simpa [posteriorReal] using
-    (posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy (O := O) (M := M)
+    (posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy
       (prior := prior) (envs := envs) (pi := pi) (ν_star_idx := ν_star_idx) (h_stoch := h_stoch)
       h_ident h_dom)
 
 /-- Variant of `posteriorWeight_true_ae_tendsto_one_of_identifiableWithPolicy` that takes the
 likelihood-ratio limits for wrong environments as a direct hypothesis, avoiding the log-likelihood
 packaging. -/
-theorem posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_lr : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
         Tendsto (fun t => (likelihoodRatio (envs i) (envs ν_star_idx) t traj).toReal) atTop (nhds 0))
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
       Tendsto (fun t =>
-        (posteriorWeight O M prior envs ν_star_idx t traj).toReal) atTop (nhds 1) := by
+        (posteriorWeight prior envs ν_star_idx t traj).toReal) atTop (nhds 1) := by
   classical
   let μ : MeasureTheory.Measure Trajectory := environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch
 
@@ -581,7 +580,7 @@ theorem posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
 
   -- Finally, rewrite posteriorWeight via likelihood ratios and take limits.
   have h_eventually_posterior_eq :
-      (fun t => (posteriorWeight O M prior envs ν_star_idx t traj).toReal)
+      (fun t => (posteriorWeight prior envs ν_star_idx t traj).toReal)
         =ᶠ[atTop] fun t =>
           ((prior.weight ν_star_idx * likelihoodRatio (envs ν_star_idx) (envs ν_star_idx) t traj) /
               (∑' i, prior.weight i * likelihoodRatio (envs i) (envs ν_star_idx) t traj)).toReal := by
@@ -591,17 +590,17 @@ theorem posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
     have h_hist_ne0 :
         historyProbability (envs ν_star_idx) (trajectoryToHistory traj t) ≠ 0 :=
       ne_of_gt h_hist_posENN
-    have h_mix_pos : mixtureProbability O M prior envs (trajectoryToHistory traj t) > 0 := by
+    have h_mix_pos : mixtureProbability prior envs (trajectoryToHistory traj t) > 0 := by
       have h_term_pos : 0 < prior.weight ν_star_idx * historyProbability (envs ν_star_idx) (trajectoryToHistory traj t) :=
         (ENNReal.mul_pos_iff).2 ⟨prior.positive ν_star_idx, h_hist_posENN⟩
       have h_term_le :
           prior.weight ν_star_idx * historyProbability (envs ν_star_idx) (trajectoryToHistory traj t) ≤
-            mixtureProbability O M prior envs (trajectoryToHistory traj t) := by
+            mixtureProbability prior envs (trajectoryToHistory traj t) := by
         simpa [mixtureProbability] using (ENNReal.le_tsum ν_star_idx)
       exact lt_of_lt_of_le h_term_pos h_term_le
     -- Convert the ENNReal equality to its `toReal` version.
     exact congrArg ENNReal.toReal
-      (posteriorWeight_via_likelihoodRatio (O := O) (M := M) (prior := prior) (envs := envs)
+      (posteriorWeight_via_likelihoodRatio (prior := prior) (envs := envs)
         (ν_star_idx := ν_star_idx) (ν_idx := ν_star_idx) (t := t) (traj := traj) h_mix_pos h_hist_ne0)
 
   have h_posterior_toReal_tendsto :
@@ -635,35 +634,35 @@ theorem posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
   exact h_posterior_toReal_tendsto.congr' h_eventually_posterior_eq.symm
 
 /-- Likelihood-ratio variant of `posteriorReal_true_ae_tendsto_one_of_identifiableWithPolicy`. -/
-theorem posteriorReal_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorReal_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_lr : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
         Tendsto (fun t => (likelihoodRatio (envs i) (envs ν_star_idx) t traj).toReal) atTop (nhds 0))
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      Tendsto (fun t => posteriorReal O M prior envs ν_star_idx t traj) atTop (nhds 1) := by
+      Tendsto (fun t => posteriorReal prior envs ν_star_idx t traj) atTop (nhds 1) := by
   simpa [posteriorReal] using
-    (posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero (O := O) (M := M)
+    (posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
       (prior := prior) (envs := envs) (pi := pi) (ν_star_idx := ν_star_idx) (h_stoch := h_stoch)
       (h_lr := h_lr) (h_dom := h_dom))
 
 /-- A convenient Leike-style sufficient condition for posterior concentration:
 if every wrong environment has a uniform geometric bound `stepLR ≤ r < 1` eventually along true
 on-policy trajectories, then the posterior on the true environment tends to `1`. -/
-theorem posteriorReal_true_ae_tendsto_one_of_eventually_stepLikelihoodRatio_le (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorReal_true_ae_tendsto_one_of_eventually_stepLikelihoodRatio_le
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_step : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       ∃ r : ℝ≥0∞, r < 1 ∧
         ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
           ∀ᶠ t in atTop, stepLikelihoodRatio (envs i) (envs ν_star_idx) t traj ≤ r)
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      Tendsto (fun t => posteriorReal O M prior envs ν_star_idx t traj) atTop (nhds 1) := by
+      Tendsto (fun t => posteriorReal prior envs ν_star_idx t traj) atTop (nhds 1) := by
   have h_lr : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
         Tendsto (fun t => (likelihoodRatio (envs i) (envs ν_star_idx) t traj).toReal) atTop (nhds 0) := by
@@ -672,22 +671,22 @@ theorem posteriorReal_true_ae_tendsto_one_of_eventually_stepLikelihoodRatio_le (
     simpa using
       (likelihoodRatio_converges_to_zero_of_eventually_stepLikelihoodRatio_le
         (ν := envs i) (ν_star := envs ν_star_idx) (pi := pi) (h_stoch := h_stoch) hr h_step_i)
-  exact posteriorReal_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero (O := O) (M := M)
+  exact posteriorReal_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
     (prior := prior) (envs := envs) (pi := pi) (ν_star_idx := ν_star_idx) (h_stoch := h_stoch)
     (h_lr := h_lr) (h_dom := h_dom)
 
 /-- A convenient sufficient condition for posterior concentration: every wrong environment is
 refutable by a finite prefix on almost every true on-policy trajectory. -/
-theorem posteriorWeight_true_ae_tendsto_one_of_refutableWithPolicy (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorWeight_true_ae_tendsto_one_of_refutableWithPolicy
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_ref : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       RefutableWithPolicy (envs i) (envs ν_star_idx) pi h_stoch)
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
       Tendsto (fun t =>
-        (posteriorWeight O M prior envs ν_star_idx t traj).toReal) atTop (nhds 1) := by
+        (posteriorWeight prior envs ν_star_idx t traj).toReal) atTop (nhds 1) := by
   have h_lr :
       ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
         ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
@@ -696,22 +695,22 @@ theorem posteriorWeight_true_ae_tendsto_one_of_refutableWithPolicy (O : Oracle)
     simpa using
       (likelihoodRatio_converges_to_zero_of_refutableWithPolicy (ν := envs i) (ν_star := envs ν_star_idx) (pi := pi)
         (h_stoch := h_stoch) (h_ref := h_ref i hi))
-  exact posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero (O := O) (M := M)
+  exact posteriorWeight_true_ae_tendsto_one_of_likelihoodRatio_converges_to_zero
     (prior := prior) (envs := envs) (pi := pi) (ν_star_idx := ν_star_idx) (h_stoch := h_stoch)
     (h_lr := h_lr) (h_dom := h_dom)
 
 /-- `posteriorReal` version of `posteriorWeight_true_ae_tendsto_one_of_refutableWithPolicy`. -/
-theorem posteriorReal_true_ae_tendsto_one_of_refutableWithPolicy (O : Oracle)
-    (M : ReflectiveEnvironmentClass O) (prior : PriorOverClass O M) (envs : ℕ → Environment) (pi : Agent)
+theorem posteriorReal_true_ae_tendsto_one_of_refutableWithPolicy
+    (prior : PriorOverClass) (envs : ℕ → Environment) (pi : Agent)
     (ν_star_idx : EnvironmentIndex) (h_stoch : isStochastic (envs ν_star_idx))
     (h_ref : ∀ i : EnvironmentIndex, i ≠ ν_star_idx →
       RefutableWithPolicy (envs i) (envs ν_star_idx) pi h_stoch)
     (h_dom : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      DominatedLikelihoodRatioSeries O M prior envs ν_star_idx traj) :
+      DominatedLikelihoodRatioSeries prior envs ν_star_idx traj) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) pi h_stoch),
-      Tendsto (fun t => posteriorReal O M prior envs ν_star_idx t traj) atTop (nhds 1) := by
+      Tendsto (fun t => posteriorReal prior envs ν_star_idx t traj) atTop (nhds 1) := by
   simpa [posteriorReal] using
-    (posteriorWeight_true_ae_tendsto_one_of_refutableWithPolicy (O := O) (M := M) (prior := prior)
+    (posteriorWeight_true_ae_tendsto_one_of_refutableWithPolicy (prior := prior)
       (envs := envs) (pi := pi) (ν_star_idx := ν_star_idx) (h_stoch := h_stoch)
       (h_ref := h_ref) (h_dom := h_dom))
 

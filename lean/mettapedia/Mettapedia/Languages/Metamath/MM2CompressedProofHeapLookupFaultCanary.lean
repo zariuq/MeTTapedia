@@ -21,14 +21,29 @@ open Mettapedia.Languages.ProcessCalculi.MORK
 /-- When compact index one is the first-free heap frontier, the same decoded
 `B` reaches an explicit fault along one state-threaded path. -/
 theorem lookup_one_at_frontier_faults_continuously :
-    CReflectiveReachable .leaveInert 5 lookupFaultProgram
+    CReflectiveReachable .leaveInert 7 lookupFaultProgram
       lookupFaultAfterFault :=
   .step lookup_fault_terminal_selected
-    (.step lookup_fault_probe_selected
-      (.step lookup_fault_advance_selected
-        (.step lookup_fault_proof_probe_selected
-          (.step lookup_frontier_fault_selected .refl))))
+    (.step lookup_fault_initial_proof_probe_selected
+      (.step lookup_fault_probe_selected
+        (.step lookup_fault_assertion_probe_selected
+          (.step lookup_fault_advance_selected
+            (.step lookup_fault_proof_probe_selected
+              (.step lookup_frontier_fault_selected .refl))))))
+
+/-- Five transitions reach the first-free cursor only after consuming the
+three inert cursor-zero handlers; the frontier fault is still queued. -/
+theorem lookup_one_five_steps_not_faulted :
+    missingOneFault ∉
+      (ReflectiveComputable.cReflectiveSourceWorkQueueRunN .leaveInert 5
+        lookupFaultProgram).1 := by
+  simp only [ReflectiveComputable.cReflectiveSourceWorkQueueRunN,
+    lookup_fault_terminal_selected, lookup_fault_initial_proof_probe_selected,
+    lookup_fault_probe_selected, lookup_fault_assertion_probe_selected,
+    lookup_fault_advance_selected]
+  decide +kernel
 
 #print axioms lookup_one_at_frontier_faults_continuously
+#print axioms lookup_one_five_steps_not_faulted
 
 end Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultCanary

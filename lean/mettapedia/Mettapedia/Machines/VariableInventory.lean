@@ -264,6 +264,42 @@ theorem firstOccurrences_sublist (input : List (Entry Key Payload)) (seen : List
       · exact List.Sublist.cons entry (ih seen)
       · exact List.Sublist.cons_cons entry (ih (seen ++ [entry.1]))
 
+/-- A retained key was present in the input and was not already seen.
+This characterizes the inventory independently of its insertion algorithm. -/
+theorem mem_firstOccurrences_keys (input : List (Entry Key Payload))
+    (seen : List Key) (key : Key) :
+    key ∈ (firstOccurrences seen input).map Prod.fst ↔
+      key ∈ input.map Prod.fst ∧ key ∉ seen := by
+  have selected := scan_none_iff (firstOccurrences seen input) key
+  rw [scan_firstOccurrences] at selected
+  by_cases old : key ∈ seen
+  · rw [if_pos old] at selected
+    have missing := selected.mp rfl
+    exact ⟨fun present => False.elim (missing present),
+      fun present => False.elim (present.2 old)⟩
+  · simp only [if_neg old] at selected
+    exact ⟨fun present => ⟨by
+      by_contra absent
+      exact (selected.mp ((scan_none_iff input key).mpr absent)) present, old⟩,
+      fun present => by
+        by_contra absent
+        exact ((scan_none_iff input key).mp (selected.mpr absent)) present.1⟩
+
+/-- First appearances have unique keys even when input payloads disagree.
+The discarded duplicates do not impose any equality on those payloads. -/
+theorem firstOccurrences_keys_nodup (input : List (Entry Key Payload)) (seen : List Key) :
+    ((firstOccurrences seen input).map Prod.fst).Nodup := by
+  induction input generalizing seen with
+  | nil => exact List.nodup_nil
+  | cons entry rest ih =>
+    rw [firstOccurrences]
+    split
+    · exact ih seen
+    · simp only [List.map_cons, List.nodup_cons]
+      exact ⟨fun present =>
+        ((mem_firstOccurrences_keys rest (seen ++ [entry.1]) entry.1).mp present).2
+          (by simp), ih (seen ++ [entry.1])⟩
+
 /-- Payload copying/transformation keeps the same position authority when
 keys and order are unchanged. The returned value is transformed from the
 current entry, not retained in the proposal cache. -/

@@ -50,18 +50,103 @@ section Steps
 
 variable {n : Nat}
 
+/-- The left side of the equation of `eqAt`, elaborated. -/
+theorem eqAt_elabLeft : elabLeft objectDecls (applyClosed eqAtTele ids (.const eqAtName)) =
+    (ceqAt (.var 0) : CTm Tower.Head 1) := by
+  decide
+
+/-- The right side of the equation of `eqAt`, elaborated. -/
+theorem eqAt_elabRight :
+    elabRight objectDecls (applyClosed eqAtTele ids (.const eqAtName)) eqAtRhs =
+      (.id cnum (cadd czero (.var 0)) (.var 0) : CTm Tower.Head 1) := by
+  decide
+
 /-- The equation of `eqAt`, as an annotated root step. -/
 theorem ceqAt_step (t : CTm Tower.Head n) :
     objectChurch.computation.step (ceqAt t) (.id cnum (cadd czero t) t) := by
   have s := objectChurch_step_of_spec
     (List.getElem_mem (l := computationSpecs) (n := 4) (by decide))
     (L := applyClosed eqAtTele ids (.const eqAtName)) (R := eqAtRhs) rfl (fun _ => t)
-  have eL : elabLeft objectDecls (applyClosed eqAtTele ids (.const eqAtName)) =
-      (ceqAt (.var 0) : CTm Tower.Head 1) := by decide
-  have eR : elabRight objectDecls (applyClosed eqAtTele ids (.const eqAtName)) eqAtRhs =
-      (.id cnum (cadd czero (.var 0)) (.var 0) : CTm Tower.Head 1) := by decide
-  rw [eL, eR] at s
+  rw [eqAt_elabLeft, eqAt_elabRight] at s
   exact s
+
+/-- **The equation of `eqAt` is admitted where its argument is a number**, by every package
+with the object package's root computation. -/
+theorem ceqAt_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {Γ : CCtx Tower.Head n}
+    {t : CTm Tower.Head n} (typed : CTyped Q Γ t cnum)
+    (same : Q.computation = objectChurch.computation := by rfl) :
+    Q.Admits Γ (ceqAt t) (.id cnum (cadd czero t) t) := by
+  have a := objectChurch_admits_of_mor same
+    (List.getElem_mem (l := computationSpecs) (n := 4) (by decide))
+    (L := applyClosed eqAtTele ids (.const eqAtName)) (R := eqAtRhs) rfl (Γ := Γ)
+    (fun _ => t) (Θ := .snoc .nil cnum) (by decide) (by decide) (fun i => by
+      obtain rfl : i = 0 := Subsingleton.elim i 0
+      exact typed)
+  rw [eqAt_elabLeft, eqAt_elabRight] at a
+  exact a
+
+/-! The shapes of the two equations of addition. -/
+
+theorem addZero_knowledge : ∀ i, patternKnowledge objectDecls none
+    (applyClosed (ofEntries addEntries 2) (patternSub 1 0 0 zeroN) (.const addN)) i =
+      some ((CCtx.snoc .nil cnum : CCtx Tower.Head 1).lookup i) := by
+  decide
+
+theorem addZero_elabLeft : elabLeft objectDecls
+    (applyClosed (ofEntries addEntries 2) (patternSub 1 0 0 zeroN) (.const addN)) =
+      (cadd (.var 0) czero : CTm Tower.Head 1) := by
+  decide
+
+theorem addZero_elabRight : elabRight objectDecls
+    (applyClosed (ofEntries addEntries 2) (patternSub 1 0 0 zeroN) (.const addN))
+    (Presentation.subst (hypSub addN addEntries 1 0 []) (addBody zeroN [])) =
+      (.var 0 : CTm Tower.Head 1) := by
+  decide
+
+theorem addSuc_knowledge : ∀ i, patternKnowledge objectDecls none
+    (applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN)) i =
+      some ((CCtx.snoc (.snoc .nil cnum) cnum : CCtx Tower.Head 2).lookup i) := by
+  decide
+
+theorem addSuc_elabLeft : elabLeft objectDecls
+    (applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN)) =
+      (cadd (.var 1) (csuc (.var 0)) : CTm Tower.Head 2) := by
+  decide
+
+theorem addSuc_elabRight : elabRight objectDecls
+    (applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN))
+    (Presentation.subst (hypSub addN addEntries 1 0 [.recursive]) (addBody sucN [.recursive])) =
+      (csuc (cadd (.var 1) (.var 0)) : CTm Tower.Head 2) := by
+  decide
+
+/-- The zero equation of addition, as an annotated root step. -/
+theorem caddZero_step (t : CTm Tower.Head n) :
+    objectChurch.computation.step (cadd t czero) t := by
+  have s := objectChurch_step_of_spec
+    (List.getElem_mem (l := computationSpecs) (n := 1) (by decide))
+    (L := applyClosed (ofEntries addEntries 2) (patternSub 1 0 0 zeroN) (.const addN))
+    (R := Presentation.subst (hypSub addN addEntries 1 0 []) (addBody zeroN []))
+    (show recursionSchema addN ctors addEntries 1 0 addBody _ _ from
+      ⟨zeroN, [], List.mem_cons_self .., rfl⟩) ![t]
+  rw [addZero_elabLeft, addZero_elabRight] at s
+  exact s
+
+/-- **The zero equation of addition is admitted where its first summand is a number.** -/
+theorem caddZero_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {Γ : CCtx Tower.Head n}
+    {t : CTm Tower.Head n} (typed : CTyped Q Γ t cnum)
+    (same : Q.computation = objectChurch.computation := by rfl) :
+    Q.Admits Γ (cadd t czero) t := by
+  have a := objectChurch_admits_of_mor same
+    (List.getElem_mem (l := computationSpecs) (n := 1) (by decide))
+    (L := applyClosed (ofEntries addEntries 2) (patternSub 1 0 0 zeroN) (.const addN))
+    (R := Presentation.subst (hypSub addN addEntries 1 0 []) (addBody zeroN []))
+    (show recursionSchema addN ctors addEntries 1 0 addBody _ _ from
+      ⟨zeroN, [], List.mem_cons_self .., rfl⟩) (Γ := Γ) ![t] addZero_knowledge (by decide)
+    (fun i => by
+      obtain rfl : i = (0 : Fin 1) := Subsingleton.elim (α := Fin 1) i 0
+      exact typed)
+  rw [addZero_elabLeft, addZero_elabRight] at a
+  exact a
 
 /-- The successor equation of addition, as an annotated root step. -/
 theorem caddSuc_step (a b : CTm Tower.Head n) :
@@ -72,14 +157,26 @@ theorem caddSuc_step (a b : CTm Tower.Head n) :
     (R := Presentation.subst (hypSub addN addEntries 1 0 [.recursive]) (addBody sucN [.recursive]))
     (show recursionSchema addN ctors addEntries 1 0 addBody _ _ from
       ⟨sucN, [.recursive], List.mem_cons_of_mem _ (List.mem_cons_self ..), rfl⟩) ![b, a]
-  have eL : elabLeft objectDecls
-      (applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN)) =
-      (cadd (.var 1) (csuc (.var 0)) : CTm Tower.Head 2) := by decide
-  have eR : elabRight objectDecls
-      (applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN))
-      (Presentation.subst (hypSub addN addEntries 1 0 [.recursive]) (addBody sucN [.recursive])) =
-      (csuc (cadd (.var 1) (.var 0)) : CTm Tower.Head 2) := by decide
-  rw [eL, eR] at s
+  rw [addSuc_elabLeft, addSuc_elabRight] at s
+  exact s
+
+/-- **The successor equation of addition is admitted where its summands are numbers.** -/
+theorem caddSuc_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {Γ : CCtx Tower.Head n}
+    {a b : CTm Tower.Head n} (ta : CTyped Q Γ a cnum) (tb : CTyped Q Γ b cnum)
+    (same : Q.computation = objectChurch.computation := by rfl) :
+    Q.Admits Γ (cadd a (csuc b)) (csuc (cadd a b)) := by
+  have s := objectChurch_admits_of_mor same
+    (List.getElem_mem (l := computationSpecs) (n := 1) (by decide))
+    (L := applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN))
+    (R := Presentation.subst (hypSub addN addEntries 1 0 [.recursive]) (addBody sucN [.recursive]))
+    (show recursionSchema addN ctors addEntries 1 0 addBody _ _ from
+      ⟨sucN, [.recursive], List.mem_cons_of_mem _ (List.mem_cons_self ..), rfl⟩) (Γ := Γ)
+    ![b, a] addSuc_knowledge (by decide) (fun i => by
+      refine Fin.cases ?_ (fun j => ?_) i
+      · exact tb
+      · obtain rfl : j = 0 := Subsingleton.elim j 0
+        exact ta)
+  rw [addSuc_elabLeft, addSuc_elabRight] at s
   exact s
 
 end Steps
@@ -89,10 +186,10 @@ end Steps
 /-- Two β-steps of an annotated family of types. -/
 theorem cbetaTwo {n : Nat} {Γ : CCtx Tower.Head n} {A : CTm Tower.Head n}
     {B : CTm Tower.Head (n + 1)} {M : CTm Tower.Head (n + 2)} {a b : CTm Tower.Head n}
-    {l : LevelExpr}
-    (formed : CTyped objectChurch Γ (.pi A (.pi B cU0)) (cU l))
-    (formed₂ : CTyped objectChurch (.snoc Γ A) (.pi B cU0) (cU l))
-    (formedB : CTyped objectChurch (.snoc Γ A) B (cU l))
+    {l : LevelExpr Nat}
+    (formed : CTyped objectChurch Γ (.pi A (.pi B cU0)) (CU l))
+    (formed₂ : CTyped objectChurch (.snoc Γ A) (.pi B cU0) (CU l))
+    (formedB : CTyped objectChurch (.snoc Γ A) B (CU l))
     (body : CTyped objectChurch (.snoc (.snoc Γ A) B) M cU0)
     (ta : CTyped objectChurch Γ a A) (tb : CTyped objectChurch Γ b (CTm.inst0 a B)) :
     CEqual objectChurch Γ (.app (.app (.lam A (.lam B M)) a) b)
@@ -103,7 +200,7 @@ theorem cbetaTwo {n : Nat} {Γ : CCtx Tower.Head n} {A : CTm Tower.Head n}
   have e₂ : CEqual objectChurch Γ (.app (.app (.lam A (.lam B M)) a) b)
       (.app (CTm.inst0 a (.lam B M)) b) (CTm.inst0 b cU0) :=
     CDerivable.appCong (A := CTm.inst0 a B) (B := cU0) e₁ (.refl tb)
-  have formedInst : CTyped objectChurch Γ (.pi (CTm.inst0 a B) cU0) (cU l) :=
+  have formedInst : CTyped objectChurch Γ (.pi (CTm.inst0 a B) cU0) (CU l) :=
     CTyped.instantiate formed₂ ta
   have bodyInst : CTyped objectChurch (.snoc Γ (CTm.inst0 a B))
       (M.subst (CTm.liftSub (CTm.subst0 a))) cU0 :=
@@ -201,6 +298,44 @@ abbrev cJType {n : Nat} : CTm Tower.Head n :=
         (.pi (.var 3) (.pi (.id (.var 4) (.var 3) (.var 0))
           (.app (.app (.var 3) (.var 1)) (.var 0)))))))
 
+/-- The family of the motive's second argument, `Id num (add 0 n) y`, is a type. -/
+theorem cSucMotive_family : CTyped objectChurch (.snoc cEqAtTele cnum)
+    (.id cnum (cadd czero (.var 2)) (.var 0)) cU0 :=
+  cidT cnum_typed (cadd_typed czero_typed (.var 2)) (.var 0)
+
+/-- The type of the motive at a number is a type. -/
+theorem cSucMotive_familyType : CTyped objectChurch (.snoc cEqAtTele cnum)
+    (.pi (.id cnum (cadd czero (.var 2)) (.var 0)) cU0) cU1 :=
+  cpiT (craise cSucMotive_family) cU0_typed
+
+/-- The eliminator's motive type at `num` and `add 0 n` is a type. -/
+theorem cSucMotive_type : CTyped objectChurch cEqAtTele
+    (.pi cnum (.pi (.id cnum (cadd czero (.var 2)) (.var 0)) cU0)) cU1 :=
+  cpiT (craise cnum_typed) cSucMotive_familyType
+
+/-- The body of the motive, `Id num (suc (add 0 n)) (suc y)`, is a type. -/
+theorem cSucMotive_body : CTyped objectChurch
+    (.snoc (.snoc cEqAtTele cnum) (.id cnum (cadd czero (.var 2)) (.var 0)))
+    (.id cnum (csuc (cadd czero (.var 3))) (csuc (.var 1))) cU0 :=
+  cidT cnum_typed (csuc_typed (cadd_typed czero_typed (.var 3))) (csuc_typed (.var 1))
+
+/-- **The motive of the successor move is typed** at the eliminator's motive type, over
+`n : num, e : eqAt n`. -/
+theorem cSucMotive_typed : CTyped objectChurch cEqAtTele cSucMotive
+    (.pi cnum (.pi (.id cnum (cadd czero (.var 2)) (.var 0)) cU0)) :=
+  .lamIntro cnum_typed (.sort _) cSucMotive_type (.sort _)
+    (.lamIntro cSucMotive_family (.sort _) cSucMotive_familyType (.sort _) cSucMotive_body)
+
+/-- **The reflexivity case of the successor move is typed** at the motive at the base point
+`add 0 n` and its reflexivity, by two β-steps of the motive. -/
+theorem cSucReflCase_typed : CTyped objectChurch cEqAtTele (.refl (csuc (cadd czero (.var 1))))
+    (.app (.app cSucMotive (cadd czero (.var 1))) (.refl (cadd czero (.var 1)))) :=
+  .conv (.reflIntro (csuc_typed (cadd_typed czero_typed (.var 1))))
+    (.symm (cbetaTwo cSucMotive_type cSucMotive_familyType (craise cSucMotive_family)
+      cSucMotive_body (cadd_typed czero_typed (.var 1))
+      (.reflIntro (cadd_typed czero_typed (.var 1)))))
+    (.sort Tower.zero)
+
 theorem sucMove_template :
     TemplateTyped objectChurch objectDecls (applyClosed eqAtTelescope ids (.const sucMoveName))
       sucMoveRhs := by
@@ -216,34 +351,18 @@ theorem sucMove_template :
     (ceqAt (csuc (.var 1)))
   have point : CTyped objectChurch cEqAtTele (cadd czero (.var 1)) cnum :=
     cadd_typed czero_typed (.var 1)
-  -- the motive, typed at the eliminator's motive type
-  have formedB : CTyped objectChurch (.snoc cEqAtTele cnum)
-      (.id cnum (cadd czero (.var 2)) (.var 0)) cU0 :=
-    cidT cnum_typed (cadd_typed czero_typed (.var 2)) (.var 0)
-  have formed₂ : CTyped objectChurch (.snoc cEqAtTele cnum)
-      (.pi (.id cnum (cadd czero (.var 2)) (.var 0)) cU0) cU1 :=
-    cpiT (craise formedB) cU0_typed
-  have formed : CTyped objectChurch cEqAtTele
-      (.pi cnum (.pi (.id cnum (cadd czero (.var 2)) (.var 0)) cU0)) cU1 :=
-    cpiT (craise cnum_typed) formed₂
-  have bodyM : CTyped objectChurch
-      (.snoc (.snoc cEqAtTele cnum) (.id cnum (cadd czero (.var 2)) (.var 0)))
-      (.id cnum (csuc (cadd czero (.var 3))) (csuc (.var 1))) cU0 :=
-    cidT cnum_typed (csuc_typed (cadd_typed czero_typed (.var 3))) (csuc_typed (.var 1))
-  have motiveTyped : CTyped objectChurch cEqAtTele cSucMotive
-      (.pi cnum (.pi (.id cnum (cadd czero (.var 2)) (.var 0)) cU0)) :=
-    .lamIntro cnum_typed (.sort _) formed (.sort _)
-      (.lamIntro formedB (.sort _) formed₂ (.sort _) bodyM)
-  -- the reflexivity case, retyped by β
-  have reflCase : CTyped objectChurch cEqAtTele (.refl (csuc (cadd czero (.var 1))))
-      (.app (.app cSucMotive (cadd czero (.var 1))) (.refl (cadd czero (.var 1)))) :=
-    .conv (.reflIntro (csuc_typed point))
-      (.symm (cbetaTwo formed formed₂ (craise formedB) bodyM point (.reflIntro point)))
-      (.sort Tower.zero)
+  -- the motive, typed at the eliminator's motive type, and the reflexivity case
+  have formedB := cSucMotive_family
+  have formed₂ := cSucMotive_familyType
+  have formed := cSucMotive_type
+  have bodyM := cSucMotive_body
+  have motiveTyped := cSucMotive_typed
+  have reflCase := cSucReflCase_typed
   -- the evidence, retyped by the equation of `eqAt`
   have eAt : CEqual objectChurch cEqAtTele (ceqAt (.var 1))
       (.id cnum (cadd czero (.var 1)) (.var 1)) cU0 :=
-    .root (ceqAt_step _) (ceqAt_typed (.var 1)) (cidT cnum_typed point (.var 1))
+    .rootAdmitted (ceqAt_step _) (ceqAt_admits (.var 1)) (ceqAt_typed (.var 1))
+      (cidT cnum_typed point (.var 1))
   have path : CTyped objectChurch cEqAtTele (.var 0) (.id cnum (cadd czero (.var 1)) (.var 1)) :=
     .conv (.var 0) eAt (.sort Tower.zero)
   -- the eliminator
@@ -258,11 +377,13 @@ theorem sucMove_template :
   have βend := cbetaTwo formed formed₂ (craise formedB) bodyM (CDerivable.var 1) path
   have eqAtSuc : CEqual objectChurch cEqAtTele (ceqAt (csuc (.var 1)))
       (.id cnum (cadd czero (csuc (.var 1))) (csuc (.var 1))) cU0 :=
-    .root (ceqAt_step _) (ceqAt_typed (csuc_typed (.var 1)))
+    .rootAdmitted (ceqAt_step _) (ceqAt_admits (csuc_typed (.var 1)))
+      (ceqAt_typed (csuc_typed (.var 1)))
       (cidT cnum_typed (cadd_typed czero_typed (csuc_typed (.var 1))) (csuc_typed (.var 1)))
   have addSuc : CEqual objectChurch cEqAtTele (cadd czero (csuc (.var 1)))
       (csuc (cadd czero (.var 1))) cnum :=
-    .root (caddSuc_step _ _) (cadd_typed czero_typed (csuc_typed (.var 1))) (csuc_typed point)
+    .rootAdmitted (caddSuc_step _ _) (caddSuc_admits czero_typed (.var 1))
+      (cadd_typed czero_typed (csuc_typed (.var 1))) (csuc_typed point)
   have idEq : CEqual objectChurch cEqAtTele
       (.id cnum (cadd czero (csuc (.var 1))) (csuc (.var 1)))
       (.id cnum (csuc (cadd czero (.var 1))) (csuc (.var 1))) cU0 :=
@@ -323,7 +444,7 @@ theorem returnIter_template :
         (.lam (.pi (.var 2) (.pi (.app (.var 2) (.var 0)) (.sigma (.var 4) (.app (.var 4) (.var 0)))))
           (.lam (.var 3) (.lam (.app (.var 3) (.var 0))
             (.app (.app (.app (.app (.app (.app (.const iterName) (.var 3)) (.var 5)) (.var 4))
-              (.var 2)) (.var 1)) (.var 0))))))) : CTm Tower.Head 1) := by decide
+              (.var 2)) (.var 1)) (.var 0)))))) : CTm Tower.Head 1) := by decide
   rw [e]
   let c1 : CCtx Tower.Head 1 := .snoc .nil cU0
   let c2 : CCtx Tower.Head 2 := .snoc c1 (.pi (.var 0) cU0)

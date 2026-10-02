@@ -298,7 +298,7 @@ theorem nested_extensionality_connected :
 
 /-- The exact connected claim instantiated by the actual HOTG/operational
 singleton. -/
-abbrev HOTGOperationalClaim (level : LevelExpr)
+abbrev HOTGOperationalClaim (level : LevelExpr Nat)
     (lower : ZFSetUniverseClosure.CofinalInaccessibles.{u})
     (x : ZFSetUniformListTraceTypeInterpretation.Value
       carrierCode.{u} element) : Prop :=
@@ -340,7 +340,7 @@ abbrev HOTGOperationalClaim (level : LevelExpr)
 
 /-- The actual HOTG/operational singleton is the nontrivial instance of this
 qualified mathematical boundary. -/
-theorem hotg_operational_instance (level : LevelExpr)
+theorem hotg_operational_instance (level : LevelExpr Nat)
     (lower : ZFSetUniverseClosure.CofinalInaccessibles.{u})
     (x : ZFSetUniformListTraceTypeInterpretation.Value
       carrierCode.{u} element) : HOTGOperationalClaim level lower x :=
@@ -384,7 +384,7 @@ structure QualifiedConnectedPackage : Prop where
         NativeHOLRecursiveProofNIKQualification.Controls.identityClaim
 
   distinctProofDoesNotQualify :
-    ∀ (level : LevelExpr) {n : Nat}
+    ∀ (level : LevelExpr Nat) {n : Nat}
       (programs : NativeHOLProofQualifiedOperationalCospan.MapFusionPrograms n),
       ¬ NativeHOLProofFamilyOperationalQualification.CompiledProofQualifies
           (NativeHOLProofFamilyOperationalQualification.MapFusion.specification
@@ -397,7 +397,7 @@ structure QualifiedConnectedPackage : Prop where
   changedAssumptionsRejected : ChangedAssumptionsRejected
 
   hotgOperational :
-    ∀ (level : LevelExpr)
+    ∀ (level : LevelExpr Nat)
       (lower : ZFSetUniverseClosure.CofinalInaccessibles.{u})
       (x : ZFSetUniformListTraceTypeInterpretation.Value
         carrierCode.{u} element),

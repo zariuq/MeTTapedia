@@ -34,10 +34,10 @@ open Mettapedia.Logic.ModalMuCalculus
 
 universe uValue uCandidate uNode uAnswer uMemory uState uAct
 
-/-! ## Graded clauses use Mathlib's commutative-semiring hierarchy -/
+/-! ## Graded clauses use Mathlib's semiring hierarchy -/
 
 /-- A small graded-clause language.  `observe` is the candidate-sensitive
-atom; the two connectives use the standard commutative-semiring operations. -/
+atom; the two connectives use addition and ordered multiplication. -/
 inductive WeighClause (Value : Type uValue) (Candidate : Type uCandidate) where
   | scalar (value : Value)
   | observe (value : Candidate → Value)
@@ -46,7 +46,7 @@ inductive WeighClause (Value : Type uValue) (Candidate : Type uCandidate) where
 
 namespace WeighClause
 
-def eval [CommSemiring Value] (candidate : Candidate) :
+def eval [Semiring Value] (candidate : Candidate) :
     WeighClause Value Candidate → Value
   | .scalar value => value
   | .observe value => value candidate
@@ -67,7 +67,7 @@ theorem crisp_false_rejects (candidate : Candidate) :
 
 /-- A one-state grade is simply one clause evaluated at each candidate; no
 temporal state or controller memory is required. -/
-def oneStateGrade [CommSemiring Value]
+def oneStateGrade [Semiring Value]
     (clause : WeighClause Value Candidate) : Candidate → Value :=
   fun candidate => eval candidate clause
 

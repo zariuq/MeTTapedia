@@ -1006,7 +1006,7 @@ theorem demands_length {Ground : Type u} {source target : CostConfig Ground}
 
 /-- Initialization plus step preservation computes a safety witness for the
 complete target of a declarative path. -/
-def preserves_binderSafe
+theorem preserves_binderSafe
     {Ground : Type u} {source target : CostConfig Ground}
     (path : CostStepPath source target) : source.BinderSafe → target.BinderSafe :=
   match path with

@@ -123,37 +123,49 @@ end Legacy
 
 /-! ## The cumulative tower presentation -/
 
-namespace Tower
+/-! ### The tower over a level order
+
+An opaque legacy ground head plus one predicative universe for every level expression
+over the level order `L`. -/
+
+namespace LevelTower
 
 open Mettapedia.TypeTheory.UniverseLevel
 
-/-- The future tower has an opaque legacy ground head plus explicit
-predicative universe levels. -/
-inductive Head where
+/-- The heads of the tower: an opaque legacy ground head plus explicit predicative
+universe levels. -/
+inductive Head (L : Type) where
   | legacyGround
-  | sort : LevelExpr → Head
+  | sort : LevelExpr L → Head L
   deriving DecidableEq, Repr
 
-abbrev Tm (n : Nat) := Presentation.Tm Head n
-abbrev Ctx (n : Nat) := Presentation.Ctx Head n
+abbrev Tm (L : Type) (n : Nat) := Presentation.Tm (Head L) n
+abbrev Ctx (L : Type) (n : Nat) := Presentation.Ctx (Head L) n
 
-def zero : LevelExpr := .const 0
+variable {L : Type}
 
-inductive HeadTyping : Head → Head → Prop where
+/-- The least level, as a level expression. -/
+def zero [LevelOrder L] : LevelExpr L := .const LevelOrder.bot
+
+/-- The least level evaluates to the least level. -/
+@[simp] theorem eval_zero [LevelOrder L] (v : Nat → L) :
+    LevelExpr.eval v (zero : LevelExpr L) = LevelOrder.bot := rfl
+
+inductive HeadTyping [LevelOrder L] : Head L → Head L → Prop where
   | legacyGround : HeadTyping .legacyGround (.sort zero)
-  | sort (level : LevelExpr) : HeadTyping (.sort level) (.sort (.succ level))
+  | sort (level : LevelExpr L) : HeadTyping (.sort level) (.sort (.succ level))
 
-inductive IsUniverse : Head → Prop where
-  | sort (level : LevelExpr) : IsUniverse (.sort level)
+inductive IsUniverse : Head L → Prop where
+  | sort (level : LevelExpr L) : IsUniverse (.sort level)
 
 /-- Pi, Sigma, and identity formation live in the maximum input
 universe.  Semantic level conversion may subsequently canonicalize it. -/
-inductive Join : Head → Head → Head → Prop where
-  | sorts (left right : LevelExpr) :
+inductive Join : Head L → Head L → Head L → Prop where
+  | sorts (left right : LevelExpr L) :
       Join (.sort left) (.sort right) (.sort (.max left right))
 
 /-- Cumulativity is semantic order of explicit levels. -/
-def Cumulative : Head → Head → Prop
+def Cumulative [LevelOrder L] : Head L → Head L → Prop
   | .sort left, .sort right =>
       ∀ v, LevelExpr.eval v left ≤ LevelExpr.eval v right
   | _, _ => False
@@ -161,29 +173,52 @@ def Cumulative : Head → Head → Prop
 /-- Universe heads are convertible exactly when their explicit levels
 denote the same value under every valuation.  The opaque ground head only
 converts to itself. -/
-def HeadEq : Head → Head → Prop
+def HeadEq [LevelOrder L] : Head L → Head L → Prop
   | .legacyGround, .legacyGround => True
   | .sort left, .sort right =>
       ∀ v, LevelExpr.eval v left = LevelExpr.eval v right
   | _, _ => False
 
-instance instDecidableCumulative (left right : Head) :
+instance instDecidableCumulative [LevelOrder L] (left right : Head L) :
     Decidable (Cumulative left right) := by
   unfold Cumulative
   split <;> infer_instance
 
-instance instDecidableHeadEq (left right : Head) :
+instance instDecidableHeadEq [LevelOrder L] (left right : Head L) :
     Decidable (HeadEq left right) := by
   unfold HeadEq
   split <;> infer_instance
 
-def rules : Rules Head where
+/-- The rules of the tower over the level order `L`. -/
+def rules (L : Type) [LevelOrder L] : Rules (Head L) where
   headTyping := HeadTyping
   isUniverse := IsUniverse
   join := Join
   cumulative := Cumulative
   headEq := HeadEq
 
+abbrev HasType [LevelOrder L] {n : Nat} := @Presentation.HasType (Head L) (rules L) n
+
+end LevelTower
+
+/-! ### The tower over the natural numbers
+
+The finite levels: the instance of the tower at the natural numbers. -/
+
+namespace Tower
+
+open Mettapedia.TypeTheory.UniverseLevel
+
+abbrev Head := LevelTower.Head Nat
+abbrev Tm (n : Nat) := LevelTower.Tm Nat n
+abbrev Ctx (n : Nat) := LevelTower.Ctx Nat n
+abbrev zero : LevelExpr Nat := LevelTower.zero
+abbrev HeadTyping : Head → Head → Prop := LevelTower.HeadTyping
+abbrev IsUniverse : Head → Prop := LevelTower.IsUniverse
+abbrev Join : Head → Head → Head → Prop := LevelTower.Join
+abbrev Cumulative : Head → Head → Prop := LevelTower.Cumulative
+abbrev HeadEq : Head → Head → Prop := LevelTower.HeadEq
+abbrev rules : Rules Head := LevelTower.rules Nat
 abbrev HasType {n : Nat} := @Presentation.HasType Head rules n
 
 end Tower
@@ -191,7 +226,7 @@ end Tower
 /-- The tower universe term at an explicit level.  This constructor belongs
 to the shared cumulative presentation rather than to any particular schema
 elaboration. -/
-def sortTm (level : LevelExpr) : Tower.Tm n := .head (.sort level)
+def sortTm (level : LevelExpr Nat) : Tower.Tm n := .head (.sort level)
 
 /-! ## The migration map and executable boundary witnesses -/
 
@@ -277,7 +312,7 @@ example : ¬ Legacy.HeadTyping .marker candidate := by
 
 /-- Positive tower witness: every explicit sort inhabits its successor. -/
 example (level :
-    Mettapedia.TypeTheory.UniverseLevel.LevelExpr) :
+    Mettapedia.TypeTheory.UniverseLevel.LevelExpr Nat) :
     Tower.HasType (.nil : Tower.Ctx 0)
       (.head (.sort level)) (.head (.sort (.succ level))) :=
   .headType (.sort level)

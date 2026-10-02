@@ -66,7 +66,8 @@ def lambdaExecutionProfile :
 
 /-- The lambda presentation as an iGSLT. -/
 def lambdaIGSLT : IGSLT :=
-  ⟨lambdaInteractivePresentation, lambdaExecutionProfile⟩
+  ⟨lambdaInteractivePresentation, lambdaExecutionProfile,
+    isBaseRewrite_of_premises_eq_nil rfl⟩
 
 /-- The abstraction side of beta is introduced by `Lam`; its body is the
 selected program continuation. -/
@@ -225,9 +226,9 @@ theorem lambdaContextualSection_toCanonical :
 
 /-- Substitution is covered directly, so beta needs no residual constructor
 in the hereditary continuation closure. -/
-def lambdaContinuationRetyping :
-    ContinuationRetypingPlan lambdaInteractionCut where
-  residualCovered := trivial
+theorem lambdaContinuationRetyping :
+    ContinuationRetypingPlan lambdaInteractionCut :=
+  ⟨trivial⟩
 
 /-- Lambda's identity open canonicalizer preserves the exact non-principal
 constructor fragment selected by its interaction cut. -/
@@ -269,7 +270,7 @@ theorem lambda_costBaseApplication_params :
     (costBaseConstructor lambdaInteractionCut lambdaCalc.terms[0]).params =
       [.simple "f" (.base (costBaseSortName "Term")),
         .simple "a" (.base costWrappedSortName)] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation,
     lambdaCalc, lambdaIGSLT, lambdaInteractivePresentation, lambdaTermSort,
     lambdaValidatedLanguageDef, lambdaInteractionCut, lambdaProgramOperand,
     lambdaEnvironmentOperand, lambdaApplicationConstructor,
@@ -282,7 +283,7 @@ theorem lambda_costBaseAbstraction_params :
     (costBaseConstructor lambdaInteractionCut lambdaCalc.terms[1]).params =
       [.abstraction "body"
         (.arrow (.base costWrappedSortName) (.base costWrappedSortName))] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation,
     lambdaCalc, lambdaIGSLT, lambdaInteractivePresentation, lambdaTermSort,
     lambdaValidatedLanguageDef, lambdaInteractionCut, lambdaProgramOperand,
     lambdaEnvironmentOperand, lambdaApplicationConstructor,
@@ -296,7 +297,7 @@ theorem lambdaContinuationRetyping_redexRetypable :
     lambdaContinuationRetyping.RedexRetypable := by
   unfold ContinuationRetypingPlan.RedexRetypable
   simp [lambdaIGSLT, lambdaInteractivePresentation, lambdaBetaRewrite,
-    lambdaTermSort, lambdaValidatedLanguageDef, lambdaCalc, mapPattern,
+    lambdaTermSort, lambdaValidatedLanguageDef, lambdaCalc,
     costBaseLanguageDefSymbolMap, TypeDecl.plain]
   apply HasType.constructor
       (rule := costBaseConstructor lambdaInteractionCut lambdaCalc.terms[0])

@@ -18,6 +18,7 @@ open CategoryTheory
 open Mettapedia.OSLF.Binding
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalJudgmentCategory
 open Mettapedia.OSLF.Binding.IntrinsicScopedLocalPolynomial
+open Mettapedia.OSLF.Binding.IntrinsicScopedLocalSubstitutionModel
 open Mettapedia.OSLF.Binding.IntrinsicScopedLocalActedFree
 open Mettapedia.OSLF.Binding.IndexedRuleFiniteListSkeleton
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalEventOrbit

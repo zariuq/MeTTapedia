@@ -53,7 +53,7 @@ end Structural
 the length is definitionally the ambient arity. -/
 inductive LevelSpine : Nat → Type where
   | nil : LevelSpine 0
-  | snoc {n : Nat} : LevelSpine n → LevelExpr → LevelSpine (n + 1)
+  | snoc {n : Nat} : LevelSpine n → LevelExpr Nat → LevelSpine (n + 1)
 
 def encodeLevelSpine : {n : Nat} → LevelSpine n → Pattern
   | _, .nil => .apply "prime-level-spine-nil" []
@@ -175,7 +175,7 @@ inductive StructuralContextFormation :
     {n : Nat} → Tower.Ctx n → LevelSpine n → Type where
   | nil : StructuralContextFormation (.nil : Tower.Ctx 0) .nil
   | snoc {n : Nat} {context : Tower.Ctx n} {type : Tower.Tm n}
-      {levels : LevelSpine n} {level : LevelExpr} :
+      {levels : LevelSpine n} {level : LevelExpr Nat} :
       StructuralContextFormation context levels →
       Structural.StructuralTyping context type (.head (.sort level)) →
       StructuralContextFormation (.snoc context type) (.snoc levels level)
@@ -327,7 +327,7 @@ private theorem contextFormationTarget_valid :
     DeclarationAwareDataLanguage.definition,
     DeclarationAwareDataLanguage.constructorArities,
     DeclarationAwareDataLanguage.kernelDataType,
-    encodeTowerHead, Tower.zero, encodeLevel, encodeNat,
+    encodeTowerHead, LevelTower.zero, encodeLevel, encodeNat,
     encodeCtx, CalculusLanguageDef.ruleIds,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     CalculusLanguageDef.conversionDeclarationValid, CalculusLanguageDef.lookupJudgment?,
@@ -644,7 +644,7 @@ def contextNilRaw : RawProof :=
   .node { ruleId := contextNilRule.id, arguments := [] } []
 
 def contextSnocRaw {n : Nat} (context : Tower.Ctx n)
-    (levels : LevelSpine n) (type : Tower.Tm n) (level : LevelExpr)
+    (levels : LevelSpine n) (type : Tower.Tm n) (level : LevelExpr Nat)
     (contextPremise typePremise : RawProof) : RawProof :=
   .node
     { ruleId := contextSnocRule.id
@@ -685,7 +685,7 @@ private theorem instantiateContextNilRule :
 
 private theorem instantiateContextSnocRule {n : Nat}
     (context : Tower.Ctx n) (levels : LevelSpine n)
-    (type : Tower.Tm n) (level : LevelExpr) :
+    (type : Tower.Tm n) (level : LevelExpr Nat) :
     instantiateRule? contextFormationExtension.target
         { ruleId := contextSnocRule.id
           arguments :=

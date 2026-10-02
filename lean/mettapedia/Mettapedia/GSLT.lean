@@ -119,6 +119,11 @@ import Mettapedia.GSLT.Dynamics.EffectTraceInterleaving
 import Mettapedia.GSLT.Dynamics.ServiceEffectProtocol
 import Mettapedia.GSLT.Dynamics.ServiceResumption
 import Mettapedia.GSLT.GraphTheory.Basic
+import Mettapedia.GSLT.GraphTheory.Solvability
+import Mettapedia.GSLT.GraphTheory.SolvabilityControls
+import Mettapedia.GSLT.GraphTheory.Genericity
+import Mettapedia.GSLT.GraphTheory.SensibleTheories
+import Mettapedia.GSLT.GraphTheory.SensibleTheoriesControls
 import Mettapedia.GSLT.GraphTheory.Interpretation
 import Mettapedia.GSLT.GraphTheory.InterpretationControls
 import Mettapedia.GSLT.GraphTheory.InterpretationTransport
@@ -127,6 +132,12 @@ import Mettapedia.GSLT.GraphTheory.BohmTree
 import Mettapedia.GSLT.GraphTheory.HeadSearchControls
 import Mettapedia.GSLT.GraphTheory.BohmObservations
 import Mettapedia.GSLT.GraphTheory.BohmObservationControls
+import Mettapedia.GSLT.GraphTheory.HeadSearchAdequacy
+import Mettapedia.GSLT.GraphTheory.BohmSearchApproximation
+import Mettapedia.GSLT.GraphTheory.BohmTreeSemantics
+import Mettapedia.GSLT.GraphTheory.BohmSearchControls
+import Mettapedia.GSLT.GraphTheory.BohmTreeGenericity
+import Mettapedia.GSLT.GraphTheory.BohmTreeGenericityControls
 import Mettapedia.GSLT.GraphTheory.WeakProduct
 import Mettapedia.GSLT.GraphTheory.PartialPair
 import Mettapedia.GSLT.GraphTheory.PartialPairCompletionStep
@@ -346,6 +357,9 @@ import Mettapedia.GSLT.LanguageDef.RFC8259ParserPackHeightBound
 import Mettapedia.GSLT.LanguageDef.RFC8259ValueSemantics
 import Mettapedia.GSLT.LanguageDef.JSONParserPackNTT
 import Mettapedia.GSLT.LanguageDef.JSONValueLanguageDefWire
+import Mettapedia.GSLT.LanguageDef.RegexCharacterInterpretation
+import Mettapedia.GSLT.LanguageDef.RegexAuthoredControls
+import Mettapedia.GSLT.LanguageDef.RegexObservationTable
 import Mettapedia.GSLT.LanguageDef.NIKRevisionAlignedComposition
 import Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
 import Mettapedia.GSLT.LanguageDef.NIKRepresentedRouteObservation

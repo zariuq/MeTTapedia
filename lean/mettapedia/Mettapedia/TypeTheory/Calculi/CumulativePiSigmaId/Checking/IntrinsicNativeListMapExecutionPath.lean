@@ -32,23 +32,23 @@ open Mettapedia.GSLT.IndexedOperational
 variable {n m : Nat}
 
 /-- A finite, proof-relevant beta/iota execution in the native List GSLT. -/
-abbrev PathReduces (level : LevelExpr) (left right : Tower.Tm n) :=
+abbrev PathReduces (level : LevelExpr Nat) (left right : Tower.Tm n) :=
   ExecutionPath (reduction level n) left right
 
 namespace PathReduces
 
 /-- Forgetting occurrence identity recovers ordinary finite reachability. -/
-theorem erase {level : LevelExpr} {left right : Tower.Tm n}
+theorem erase {level : LevelExpr Nat} {left right : Tower.Tm n}
     (path : PathReduces level left right) : Reduces level left right :=
   executionPathToMultiStep path
 
-def trans {level : LevelExpr} {first middle last : Tower.Tm n}
+def trans {level : LevelExpr Nat} {first middle last : Tower.Tm n}
     (earlier : PathReduces level first middle)
     (later : PathReduces level middle last) :
     PathReduces level first last :=
   earlier.append later
 
-def appFun {level : LevelExpr} :
+def appFun {level : LevelExpr Nat} :
     {left right : Tower.Tm n} → PathReduces level left right →
       (argument : Tower.Tm n) →
         PathReduces level (.app left argument) (.app right argument)
@@ -56,7 +56,7 @@ def appFun {level : LevelExpr} :
   | _, _, .cons step rest, argument =>
       .cons ⟨.congAppFun step.down⟩ (appFun rest argument)
 
-def appArg {level : LevelExpr} :
+def appArg {level : LevelExpr Nat} :
     {left right : Tower.Tm n} → PathReduces level left right →
       (function : Tower.Tm n) →
         PathReduces level (.app function left) (.app function right)
@@ -64,7 +64,7 @@ def appArg {level : LevelExpr} :
   | _, _, .cons step rest, function =>
       .cons ⟨.congAppArg step.down⟩ (appArg rest function)
 
-def substitute {level : LevelExpr} :
+def substitute {level : LevelExpr Nat} :
     {left right : Tower.Tm n} → PathReduces level left right →
       (sigma : Sub Tower.Head n m) →
         PathReduces level (subst sigma left) (subst sigma right)
@@ -72,14 +72,14 @@ def substitute {level : LevelExpr} :
   | _, _, .cons step rest, sigma =>
       .cons ⟨step.down.substitute sigma⟩ (substitute rest sigma)
 
-def beta (level : LevelExpr) (body : Tower.Tm (n + 1))
+def beta (level : LevelExpr Nat) (body : Tower.Tm (n + 1))
     (argument : Tower.Tm n) :
     PathReduces level (.app (.lam body) argument) (inst0 argument body) :=
   .cons ⟨.betaPi body argument⟩ (.refl _)
 
 /-- Reindex only the endpoints of a retained path.  The path and all of its
 step occurrences are unchanged. -/
-def castEndpoints {level : LevelExpr}
+def castEndpoints {level : LevelExpr Nat}
     {left right left' right' : Tower.Tm n}
     (path : PathReduces level left right)
     (leftEqual : left = left') (rightEqual : right = right') :
@@ -88,7 +88,7 @@ def castEndpoints {level : LevelExpr}
   subst right'
   exact path
 
-@[simp] theorem castEndpoints_length {level : LevelExpr}
+@[simp] theorem castEndpoints_length {level : LevelExpr Nat}
     {left right left' right' : Tower.Tm n}
     (path : PathReduces level left right)
     (leftEqual : left = left') (rightEqual : right = right') :
@@ -97,21 +97,21 @@ def castEndpoints {level : LevelExpr}
   subst right'
   rfl
 
-@[simp] theorem erase_trans {level : LevelExpr}
+@[simp] theorem erase_trans {level : LevelExpr Nat}
     {first middle last : Tower.Tm n}
     (earlier : PathReduces level first middle)
     (later : PathReduces level middle last) :
     erase (earlier.trans later) = (earlier.erase).trans later.erase := by
   apply Subsingleton.elim
 
-@[simp] theorem trans_length {level : LevelExpr}
+@[simp] theorem trans_length {level : LevelExpr Nat}
     {first middle last : Tower.Tm n}
     (earlier : PathReduces level first middle)
     (later : PathReduces level middle last) :
     (earlier.trans later).length = earlier.length + later.length := by
   exact Mettapedia.GSLT.Ultrainfinite.Route.length_append earlier later
 
-@[simp] theorem appFun_length {level : LevelExpr}
+@[simp] theorem appFun_length {level : LevelExpr Nat}
     {left right : Tower.Tm n} (path : PathReduces level left right)
     (argument : Tower.Tm n) :
     (path.appFun argument).length = path.length := by
@@ -121,7 +121,7 @@ def castEndpoints {level : LevelExpr}
       simp only [appFun, Mettapedia.GSLT.Ultrainfinite.Route.length,
         inductionHypothesis]
 
-@[simp] theorem appArg_length {level : LevelExpr}
+@[simp] theorem appArg_length {level : LevelExpr Nat}
     {left right : Tower.Tm n} (path : PathReduces level left right)
     (function : Tower.Tm n) :
     (path.appArg function).length = path.length := by
@@ -131,7 +131,7 @@ def castEndpoints {level : LevelExpr}
       simp only [appArg, Mettapedia.GSLT.Ultrainfinite.Route.length,
         inductionHypothesis]
 
-@[simp] theorem beta_length (level : LevelExpr)
+@[simp] theorem beta_length (level : LevelExpr Nat)
     (body : Tower.Tm (n + 1)) (argument : Tower.Tm n) :
     (beta level body argument).length = 1 := by
   rfl
@@ -139,14 +139,14 @@ def castEndpoints {level : LevelExpr}
 /-- A retained execution path together with its exact primitive-step count.
 Keeping this evidence beside the path prevents endpoint transports from
 obscuring costs in later dependent constructions. -/
-structure Measured (level : LevelExpr) (left right : Tower.Tm n)
+structure Measured (level : LevelExpr Nat) (left right : Tower.Tm n)
     (steps : Nat) where
   path : PathReduces level left right
   length_eq : path.length = steps
 
 namespace Measured
 
-def trans {level : LevelExpr} {first middle last : Tower.Tm n}
+def trans {level : LevelExpr Nat} {first middle last : Tower.Tm n}
     {earlierSteps laterSteps : Nat}
     (earlier : Measured level first middle earlierSteps)
     (later : Measured level middle last laterSteps) :
@@ -155,21 +155,21 @@ def trans {level : LevelExpr} {first middle last : Tower.Tm n}
   length_eq := by
     rw [PathReduces.trans_length, earlier.length_eq, later.length_eq]
 
-def appFun {level : LevelExpr} {left right : Tower.Tm n} {steps : Nat}
+def appFun {level : LevelExpr Nat} {left right : Tower.Tm n} {steps : Nat}
     (path : Measured level left right steps) (argument : Tower.Tm n) :
     Measured level (.app left argument) (.app right argument) steps where
   path := path.path.appFun argument
   length_eq := by
     rw [PathReduces.appFun_length, path.length_eq]
 
-def appArg {level : LevelExpr} {left right : Tower.Tm n} {steps : Nat}
+def appArg {level : LevelExpr Nat} {left right : Tower.Tm n} {steps : Nat}
     (path : Measured level left right steps) (function : Tower.Tm n) :
     Measured level (.app function left) (.app function right) steps where
   path := path.path.appArg function
   length_eq := by
     rw [PathReduces.appArg_length, path.length_eq]
 
-def castEndpoints {level : LevelExpr}
+def castEndpoints {level : LevelExpr Nat}
     {left right left' right' : Tower.Tm n} {steps : Nat}
     (path : Measured level left right steps)
     (leftEqual : left = left') (rightEqual : right = right') :
@@ -179,13 +179,13 @@ def castEndpoints {level : LevelExpr}
     rw [PathReduces.castEndpoints_length, path.length_eq]
 
 /-- Reindex the arithmetic presentation of an already measured path. -/
-def castSteps {level : LevelExpr} {left right : Tower.Tm n}
+def castSteps {level : LevelExpr Nat} {left right : Tower.Tm n}
     {steps steps' : Nat} (path : Measured level left right steps)
     (equal : steps = steps') : Measured level left right steps' := by
   subst steps'
   exact path
 
-def beta (level : LevelExpr) (body : Tower.Tm (n + 1))
+def beta (level : LevelExpr Nat) (body : Tower.Tm (n + 1))
     (argument : Tower.Tm n) :
     Measured level (.app (.lam body) argument) (inst0 argument body) 1 where
   path := PathReduces.beta level body argument
@@ -222,7 +222,7 @@ private theorem fin_five (n : Nat) : (5 : Fin (n + 6)) =
   change 5 % (n + 6) = 0 + 1 + 1 + 1 + 1 + 1
   exact Nat.mod_eq_of_lt (by omega)
 
-private def branch_beta_measured (level : LevelExpr)
+private def branch_beta_measured (level : LevelExpr Nat)
     (target function head tail result : Tower.Tm n) :
     PathReduces.Measured level
       (.app (.app (.app (branch target function) head) tail) result)
@@ -249,19 +249,19 @@ private def branch_beta_measured (level : LevelExpr)
       -Fin.succ_zero_eq_one', -Fin.succ_one_eq_two']
   simp [subst_rename, subst0, rename]
 
-def branch_beta_path (level : LevelExpr)
+def branch_beta_path (level : LevelExpr Nat)
     (target function head tail result : Tower.Tm n) :
     PathReduces level
       (.app (.app (.app (branch target function) head) tail) result)
       (Intrinsic.consApp target (.app function head) result) :=
   (branch_beta_measured level target function head tail result).path
 
-@[simp] theorem branch_beta_path_length (level : LevelExpr)
+@[simp] theorem branch_beta_path_length (level : LevelExpr Nat)
     (target function head tail result : Tower.Tm n) :
     (branch_beta_path level target function head tail result).length = 3 := by
   exact (branch_beta_measured level target function head tail result).length_eq
 
-private def applyMap_beta_measured (level : LevelExpr)
+private def applyMap_beta_measured (level : LevelExpr Nat)
     (source target function xs : Tower.Tm n) :
     PathReduces.Measured level (applyMap source target function xs)
       (mapped source target function xs) 4 := by
@@ -305,18 +305,18 @@ private def applyMap_beta_measured (level : LevelExpr)
   dsimp [Fin.induction, Intrinsic.elementSchemaSubstitution, consSub, Fin.cases]
   simp [Fin.induction.go, rename_comp, rename]
 
-def applyMap_beta_path (level : LevelExpr)
+def applyMap_beta_path (level : LevelExpr Nat)
     (source target function xs : Tower.Tm n) :
     PathReduces level (applyMap source target function xs)
       (mapped source target function xs) :=
   (applyMap_beta_measured level source target function xs).path
 
-@[simp] theorem applyMap_beta_path_length (level : LevelExpr)
+@[simp] theorem applyMap_beta_path_length (level : LevelExpr Nat)
     (source target function xs : Tower.Tm n) :
     (applyMap_beta_path level source target function xs).length = 4 := by
   exact (applyMap_beta_measured level source target function xs).length_eq
 
-private def mapped_nil_measured (level : LevelExpr)
+private def mapped_nil_measured (level : LevelExpr Nat)
     (source target function : Tower.Tm n) :
     PathReduces.Measured level
       (mapped source target function (Intrinsic.nilApp source))
@@ -324,7 +324,7 @@ private def mapped_nil_measured (level : LevelExpr)
   path := .cons ⟨.root (.declared ⟨.nil _ _ _ _⟩)⟩ (.refl _)
   length_eq := rfl
 
-private def mapped_cons_measured (level : LevelExpr)
+private def mapped_cons_measured (level : LevelExpr Nat)
     (source target function head tail : Tower.Tm n) :
     PathReduces.Measured level
       (mapped source target function (Intrinsic.consApp source head tail))
@@ -339,14 +339,14 @@ private def mapped_cons_measured (level : LevelExpr)
     rw [(branch_beta_measured level target function head tail
       (mapped source target function tail)).length_eq]
 
-def mapped_nil_path (level : LevelExpr)
+def mapped_nil_path (level : LevelExpr Nat)
     (source target function : Tower.Tm n) :
     PathReduces level
       (mapped source target function (Intrinsic.nilApp source))
       (Intrinsic.nilApp target) :=
   (mapped_nil_measured level source target function).path
 
-def mapped_cons_path (level : LevelExpr)
+def mapped_cons_path (level : LevelExpr Nat)
     (source target function head tail : Tower.Tm n) :
     PathReduces level
       (mapped source target function (Intrinsic.consApp source head tail))
@@ -354,18 +354,18 @@ def mapped_cons_path (level : LevelExpr)
         (mapped source target function tail)) :=
   (mapped_cons_measured level source target function head tail).path
 
-@[simp] theorem mapped_nil_path_length (level : LevelExpr)
+@[simp] theorem mapped_nil_path_length (level : LevelExpr Nat)
     (source target function : Tower.Tm n) :
     (mapped_nil_path level source target function).length = 1 := by
   exact (mapped_nil_measured level source target function).length_eq
 
-@[simp] theorem mapped_cons_path_length (level : LevelExpr)
+@[simp] theorem mapped_cons_path_length (level : LevelExpr Nat)
     (source target function head tail : Tower.Tm n) :
     (mapped_cons_path level source target function head tail).length = 4 := by
   exact (mapped_cons_measured level source target function head tail).length_eq
 
 /-- The recursive native map path retains every declared iota and beta step. -/
-private def mapped_encode_measured (level : LevelExpr)
+private def mapped_encode_measured (level : LevelExpr Nat)
     (source target function : Tower.Tm n) :
     (xs : List (Tower.Tm n)) →
       PathReduces.Measured level
@@ -381,19 +381,19 @@ private def mapped_encode_measured (level : LevelExpr)
               (.app (.app (.const Intrinsic.consName) target)
                 (.app function head)))) (by simp; omega)
 
-def mapped_encode_path (level : LevelExpr)
+def mapped_encode_path (level : LevelExpr Nat)
     (source target function : Tower.Tm n) (xs : List (Tower.Tm n)) :
     PathReduces level (mapped source target function (encode source xs))
       (encode target (xs.map (fun x => .app function x))) :=
   (mapped_encode_measured level source target function xs).path
 
-@[simp] theorem mapped_encode_path_length (level : LevelExpr)
+@[simp] theorem mapped_encode_path_length (level : LevelExpr Nat)
     (source target function : Tower.Tm n) (xs : List (Tower.Tm n)) :
     (mapped_encode_path level source target function xs).length =
       4 * xs.length + 1 := by
   exact (mapped_encode_measured level source target function xs).length_eq
 
-private def applyMap_encode_measured (level : LevelExpr)
+private def applyMap_encode_measured (level : LevelExpr Nat)
     (source target function : Tower.Tm n) (xs : List (Tower.Tm n)) :
     PathReduces.Measured level
       (applyMap source target function (encode source xs))
@@ -404,19 +404,19 @@ private def applyMap_encode_measured (level : LevelExpr)
       (encode source xs)).trans
         (mapped_encode_measured level source target function xs)) (by omega)
 
-def applyMap_encode_path (level : LevelExpr)
+def applyMap_encode_path (level : LevelExpr Nat)
     (source target function : Tower.Tm n) (xs : List (Tower.Tm n)) :
     PathReduces level (applyMap source target function (encode source xs))
       (encode target (xs.map (fun x => .app function x))) :=
   (applyMap_encode_measured level source target function xs).path
 
-@[simp] theorem applyMap_encode_path_length (level : LevelExpr)
+@[simp] theorem applyMap_encode_path_length (level : LevelExpr Nat)
     (source target function : Tower.Tm n) (xs : List (Tower.Tm n)) :
     (applyMap_encode_path level source target function xs).length =
       4 * xs.length + 5 := by
   exact (applyMap_encode_measured level source target function xs).length_eq
 
-def encode_pointwise_path (level : LevelExpr) (element : Tower.Tm n)
+def encode_pointwise_path (level : LevelExpr Nat) (element : Tower.Tm n)
     (f g : Tower.Tm n → Tower.Tm n) :
     (xs : List (Tower.Tm n)) →
     (∀ x ∈ xs, PathReduces level (f x) (g x)) →
@@ -428,7 +428,7 @@ def encode_pointwise_path (level : LevelExpr) (element : Tower.Tm n)
         ((encode_pointwise_path level element f g tail
           (fun x member => pointwise x (List.mem_cons_of_mem _ member))).appArg _)
 
-private def compose_beta_measured (level : LevelExpr) (f g x : Tower.Tm n) :
+private def compose_beta_measured (level : LevelExpr Nat) (f g x : Tower.Tm n) :
     PathReduces.Measured level (.app (compose f g) x)
       (.app f (.app g x)) 1 :=
   PathReduces.Measured.castEndpoints
@@ -438,16 +438,16 @@ private def compose_beta_measured (level : LevelExpr) (f g x : Tower.Tm n) :
     (by simp only [inst0, subst, subst_rename, subst0_succ,
         subst0_zero, wk, subst_vars])
 
-def compose_beta_path (level : LevelExpr) (f g x : Tower.Tm n) :
+def compose_beta_path (level : LevelExpr Nat) (f g x : Tower.Tm n) :
     PathReduces level (.app (compose f g) x) (.app f (.app g x)) :=
   (compose_beta_measured level f g x).path
 
-@[simp] theorem compose_beta_path_length (level : LevelExpr)
+@[simp] theorem compose_beta_path_length (level : LevelExpr Nat)
     (f g x : Tower.Tm n) :
     (compose_beta_path level f g x).length = 1 := by
   exact (compose_beta_measured level f g x).length_eq
 
-private def encode_pointwise_measured (level : LevelExpr)
+private def encode_pointwise_measured (level : LevelExpr Nat)
     (element : Tower.Tm n) (f g : Tower.Tm n → Tower.Tm n) :
     (xs : List (Tower.Tm n)) →
     (∀ x ∈ xs, PathReduces.Measured level (f x) (g x) 1) →
@@ -467,7 +467,7 @@ private def encode_pointwise_measured (level : LevelExpr)
 
 /-- The two map programs, their common constructor spine, and the exact cost
 of both retained executions. -/
-private def fusion_common_output_measured (level : LevelExpr)
+private def fusion_common_output_measured (level : LevelExpr Nat)
     (a b c f g : Tower.Tm n) (xs : List (Tower.Tm n)) :
     PathReduces.Measured level
         (applyMap b c f (applyMap a b g (encode a xs)))
@@ -498,7 +498,7 @@ private def fusion_common_output_measured (level : LevelExpr)
 
 /-- Both actual map programs converge while retaining their distinct ordered
 primitive-step histories. -/
-def fusion_common_output_paths (level : LevelExpr)
+def fusion_common_output_paths (level : LevelExpr Nat)
     (a b c f g : Tower.Tm n) (xs : List (Tower.Tm n)) :
     PathReduces level
         (applyMap b c f (applyMap a b g (encode a xs)))
@@ -511,7 +511,7 @@ def fusion_common_output_paths (level : LevelExpr)
 
 /-- Erasing the proof-relevant fusion paths gives the prior
 proposition-valued reachability pair. -/
-theorem fusion_paths_erase (level : LevelExpr)
+theorem fusion_paths_erase (level : LevelExpr Nat)
     (a b c f g : Tower.Tm n) (xs : List (Tower.Tm n)) :
     Reduces level
         (applyMap b c f (applyMap a b g (encode a xs)))
@@ -523,7 +523,7 @@ theorem fusion_paths_erase (level : LevelExpr)
     (fusion_common_output_paths level a b c f g xs).2.erase⟩
 
 /-- The exact work of both retained executions, for every finite input. -/
-theorem fusion_common_output_path_lengths (level : LevelExpr)
+theorem fusion_common_output_path_lengths (level : LevelExpr Nat)
     (a b c f g : Tower.Tm n) (xs : List (Tower.Tm n)) :
     (fusion_common_output_paths level a b c f g xs).1.length =
         8 * xs.length + 10 ∧
@@ -535,7 +535,7 @@ theorem fusion_common_output_path_lengths (level : LevelExpr)
 /-- On the smallest nonempty workload, the unfused program retains eighteen
 primitive beta/iota occurrences while the fused program retains ten.  Equal
 endpoints therefore do not erase the cost distinction. -/
-theorem singleton_fusion_path_lengths (level : LevelExpr)
+theorem singleton_fusion_path_lengths (level : LevelExpr Nat)
     (a b c f g x : Tower.Tm n) :
     (fusion_common_output_paths level a b c f g [x]).1.length = 18 ∧
       (fusion_common_output_paths level a b c f g [x]).2.length = 10 := by

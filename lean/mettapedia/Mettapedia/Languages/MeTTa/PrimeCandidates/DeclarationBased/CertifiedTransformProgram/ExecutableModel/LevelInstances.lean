@@ -74,43 +74,43 @@ namespace CodeModel
 
 /-- **The instance of identity elimination** at carrier level `lu` and motive
 level `lw`: `id:eliminate` followed by the spellings of the two levels. -/
-def jAt (lu lw : LevelExpr) : DeclName := appendLevel (appendLevel jName lu) lw
+def jAt (lu lw : LevelExpr Nat) : DeclName := appendLevel (appendLevel jName lu) lw
 
 /-- **The instance of the recursor of the numbers** with its motive at level
 `lr`: `num-rec` followed by the spelling of the level. -/
-def numRecAt (lr : LevelExpr) : DeclName := appendLevel numRecName lr
+def numRecAt (lr : LevelExpr Nat) : DeclName := appendLevel numRecName lr
 
 /-- The instances of identity elimination are distinct for distinct levels. -/
-theorem jAt_inj {lu lw lu' lw' : LevelExpr} (same : jAt lu lw = jAt lu' lw') :
+theorem jAt_inj {lu lw lu' lw' : LevelExpr Nat} (same : jAt lu lw = jAt lu' lw') :
     lu = lu' ∧ lw = lw' := by
   obtain ⟨rfl, inner⟩ := appendLevel_inj same
   obtain ⟨rfl, -⟩ := appendLevel_inj inner
   exact ⟨rfl, rfl⟩
 
 /-- The instances of the recursor are distinct for distinct levels. -/
-theorem numRecAt_inj {lr lr' : LevelExpr} (same : numRecAt lr = numRecAt lr') : lr = lr' :=
+theorem numRecAt_inj {lr lr' : LevelExpr Nat} (same : numRecAt lr = numRecAt lr') : lr = lr' :=
   (appendLevel_inj same).1
 
 /-- No instance of identity elimination is an instance of the recursor. -/
-theorem jAt_ne_numRecAt (lu lw lr : LevelExpr) : jAt lu lw ≠ numRecAt lr := by
+theorem jAt_ne_numRecAt (lu lw lr : LevelExpr Nat) : jAt lu lw ≠ numRecAt lr := by
   intro same
   obtain ⟨-, inner⟩ := appendLevel_inj same
   exact appendLevel_ne_str jName lu .anonymous "num-rec" inner
 
-theorem jAt_ne_jName (lu lw : LevelExpr) : jAt lu lw ≠ jName :=
+theorem jAt_ne_jName (lu lw : LevelExpr Nat) : jAt lu lw ≠ jName :=
   appendLevel_ne_str _ lw .anonymous "id:eliminate"
 
-theorem numRecAt_ne_numRecName (lr : LevelExpr) : numRecAt lr ≠ numRecName :=
+theorem numRecAt_ne_numRecName (lr : LevelExpr Nat) : numRecAt lr ≠ numRecName :=
   appendLevel_ne_str _ lr .anonymous "num-rec"
 
-theorem jAt_ne_numRecName (lu lw : LevelExpr) : jAt lu lw ≠ numRecName :=
+theorem jAt_ne_numRecName (lu lw : LevelExpr Nat) : jAt lu lw ≠ numRecName :=
   appendLevel_ne_str _ lw .anonymous "num-rec"
 
-theorem numRecAt_ne_jName (lr : LevelExpr) : numRecAt lr ≠ jName :=
+theorem numRecAt_ne_jName (lr : LevelExpr Nat) : numRecAt lr ≠ jName :=
   appendLevel_ne_str _ lr .anonymous "id:eliminate"
 
 /-- The levels of an instance of identity elimination, read from its name. -/
-def jLevels? (name : DeclName) : Option (LevelExpr × LevelExpr) :=
+def jLevels? (name : DeclName) : Option (LevelExpr Nat × LevelExpr Nat) :=
   match readLevel name with
   | some (lw, q) =>
       match readLevel q with
@@ -119,18 +119,18 @@ def jLevels? (name : DeclName) : Option (LevelExpr × LevelExpr) :=
   | none => none
 
 /-- The level of an instance of the recursor, read from its name. -/
-def numRecLevel? (name : DeclName) : Option LevelExpr :=
+def numRecLevel? (name : DeclName) : Option (LevelExpr Nat) :=
   match readLevel name with
   | some (lr, q) => if q = numRecName then some lr else none
   | none => none
 
-@[simp] theorem jLevels?_jAt (lu lw : LevelExpr) : jLevels? (jAt lu lw) = some (lu, lw) := by
+@[simp] theorem jLevels?_jAt (lu lw : LevelExpr Nat) : jLevels? (jAt lu lw) = some (lu, lw) := by
   simp only [jLevels?, jAt, readLevel_appendLevel, if_pos]
 
-@[simp] theorem numRecLevel?_numRecAt (lr : LevelExpr) : numRecLevel? (numRecAt lr) = some lr := by
+@[simp] theorem numRecLevel?_numRecAt (lr : LevelExpr Nat) : numRecLevel? (numRecAt lr) = some lr := by
   simp only [numRecLevel?, numRecAt, readLevel_appendLevel, if_pos]
 
-theorem jLevels?_eq_some {name : DeclName} {lu lw : LevelExpr}
+theorem jLevels?_eq_some {name : DeclName} {lu lw : LevelExpr Nat}
     (found : jLevels? name = some (lu, lw)) : name = jAt lu lw := by
   unfold jLevels? at found
   split at found
@@ -146,7 +146,7 @@ theorem jLevels?_eq_some {name : DeclName} {lu lw : LevelExpr}
     next => cases found
   next => cases found
 
-theorem numRecLevel?_eq_some {name : DeclName} {lr : LevelExpr}
+theorem numRecLevel?_eq_some {name : DeclName} {lr : LevelExpr Nat}
     (found : numRecLevel? name = some lr) : name = numRecAt lr := by
   unfold numRecLevel? at found
   split at found
@@ -167,11 +167,11 @@ theorem numRecLevel?_of_readLevel {name : DeclName} (none_ : readLevel name = no
     numRecLevel? name = none := by
   simp only [numRecLevel?, none_]
 
-@[simp] theorem jLevels?_numRecAt (lr : LevelExpr) : jLevels? (numRecAt lr) = none := by
+@[simp] theorem jLevels?_numRecAt (lr : LevelExpr Nat) : jLevels? (numRecAt lr) = none := by
   simp only [jLevels?, numRecAt, readLevel_appendLevel]
   rfl
 
-@[simp] theorem numRecLevel?_jAt (lu lw : LevelExpr) : numRecLevel? (jAt lu lw) = none := by
+@[simp] theorem numRecLevel?_jAt (lu lw : LevelExpr Nat) : numRecLevel? (jAt lu lw) = none := by
   simp only [numRecLevel?, jAt, readLevel_appendLevel]
   exact if_neg (appendLevel_ne_str jName lu .anonymous "num-rec")
 
@@ -199,18 +199,18 @@ theorem readLevel_of_declared {name : DeclName} {type : Tower.Tm 0}
   | str p s => rfl
   | num p k => rw [objectRules_constantType_num] at declared; cases declared
 
-theorem appendLevel_num (p : DeclName) (e : LevelExpr) : ∃ q k, appendLevel p e = .num q k := by
+theorem appendLevel_num (p : DeclName) (e : LevelExpr Nat) : ∃ q k, appendLevel p e = .num q k := by
   cases e <;> exact ⟨_, _, rfl⟩
 
 /-- **The object package declares no instance of identity elimination.** -/
-theorem objectRules_jAt (lu lw : LevelExpr) : objectRules.constantType (jAt lu lw) = none := by
+theorem objectRules_jAt (lu lw : LevelExpr Nat) : objectRules.constantType (jAt lu lw) = none := by
   obtain ⟨q, k, e⟩ := appendLevel_num (appendLevel jName lu) lw
   unfold jAt
   rw [e]
   exact objectRules_constantType_num q k
 
 /-- **The object package declares no instance of the recursor.** -/
-theorem objectRules_numRecAt (lr : LevelExpr) : objectRules.constantType (numRecAt lr) = none := by
+theorem objectRules_numRecAt (lr : LevelExpr Nat) : objectRules.constantType (numRecAt lr) = none := by
   obtain ⟨q, k, e⟩ := appendLevel_num numRecName lr
   unfold numRecAt
   rw [e]
@@ -219,7 +219,7 @@ theorem objectRules_numRecAt (lr : LevelExpr) : objectRules.constantType (numRec
 /-- **Every name the object package declares is distinct from every instance of
 identity elimination.** -/
 theorem declared_ne_jAt {name : DeclName} {type : Tower.Tm 0}
-    (declared : objectRules.constantType name = some type) (lu lw : LevelExpr) :
+    (declared : objectRules.constantType name = some type) (lu lw : LevelExpr Nat) :
     name ≠ jAt lu lw := fun same => by
   rw [same, objectRules_jAt] at declared
   cases declared
@@ -227,7 +227,7 @@ theorem declared_ne_jAt {name : DeclName} {type : Tower.Tm 0}
 /-- **Every name the object package declares is distinct from every instance of the
 recursor.** -/
 theorem declared_ne_numRecAt {name : DeclName} {type : Tower.Tm 0}
-    (declared : objectRules.constantType name = some type) (lr : LevelExpr) :
+    (declared : objectRules.constantType name = some type) (lr : LevelExpr Nat) :
     name ≠ numRecAt lr := fun same => by
   rw [same, objectRules_numRecAt] at declared
   cases declared
@@ -270,13 +270,13 @@ def objectRulesInstances : Rules Tower.Head :=
     computation := RootComputation.union objectRules.computation instanceComputation }
 
 /-- The instance `jAt lu lw` is declared at `elimType (U lu) (U lw)`. -/
-theorem objectRulesInstances_j (lu lw : LevelExpr) :
+theorem objectRulesInstances_j (lu lw : LevelExpr Nat) :
     objectRulesInstances.constantType (jAt lu lw) = some (elimType (.sort lu) (.sort lw)) := by
   change instanceTypes (jAt lu lw) = _
   simp only [instanceTypes, jLevels?_jAt]
 
 /-- The instance `numRecAt lr` is declared with its motive into `U lr`. -/
-theorem objectRulesInstances_numRec (lr : LevelExpr) :
+theorem objectRulesInstances_numRec (lr : LevelExpr Nat) :
     objectRulesInstances.constantType (numRecAt lr) = some (numRecTypeAt (.sort lr)) := by
   change instanceTypes (numRecAt lr) = _
   simp only [instanceTypes, jLevels?_numRecAt, numRecLevel?_numRecAt]
@@ -628,10 +628,10 @@ def eraseLevels (name : DeclName) : DeclName :=
       | some _ => numRecName
       | none => name
 
-@[simp] theorem eraseLevels_jAt (lu lw : LevelExpr) : eraseLevels (jAt lu lw) = jName := by
+@[simp] theorem eraseLevels_jAt (lu lw : LevelExpr Nat) : eraseLevels (jAt lu lw) = jName := by
   simp only [eraseLevels, jLevels?_jAt]
 
-@[simp] theorem eraseLevels_numRecAt (lr : LevelExpr) : eraseLevels (numRecAt lr) = numRecName := by
+@[simp] theorem eraseLevels_numRecAt (lr : LevelExpr Nat) : eraseLevels (numRecAt lr) = numRecName := by
   simp only [eraseLevels, jLevels?_numRecAt, numRecLevel?_numRecAt]
 
 theorem eraseLevels_of_readLevel {name : DeclName} (plain : readLevel name = none) :
@@ -695,12 +695,12 @@ theorem objectRulesInstances_type_erased {name : DeclName} {type : Tower.Tm 0}
 /-- **Instantiating the package at every level**: identity elimination to its
 instance at `lu lw`, the recursor to its instance at `lr`, every other name to
 itself. -/
-def instanceRenaming (lu lw lr : LevelExpr) (name : DeclName) : DeclName :=
+def instanceRenaming (lu lw lr : LevelExpr Nat) (name : DeclName) : DeclName :=
   if name = jName then jAt lu lw else if name = numRecName then numRecAt lr else name
 
 section Instantiate
 
-variable (lu lw lr : LevelExpr)
+variable (lu lw lr : LevelExpr Nat)
 
 @[simp] theorem instanceRenaming_j : instanceRenaming lu lw lr jName = jAt lu lw := by
   simp only [instanceRenaming, if_pos]
@@ -892,12 +892,12 @@ theorem objectRoles_numRecName :
     objectRoles numRecName = .computes 4 (.split 3 .constructor fun _ => .leaf) :=
   (objectRoles_of (by decide) (by decide) (by decide) (by decide)).trans roles_numRec
 
-theorem instanceRoles_jAt (lu lw : LevelExpr) :
+theorem instanceRoles_jAt (lu lw : LevelExpr Nat) :
     instanceRoles (jAt lu lw) = .computes 6 (.split 5 .constructor fun _ => .leaf) := by
   simp only [instanceRoles, eraseLevels_jAt]
   exact objectRoles_jName
 
-theorem instanceRoles_numRecAt (lr : LevelExpr) :
+theorem instanceRoles_numRecAt (lr : LevelExpr Nat) :
     instanceRoles (numRecAt lr) = .computes 4 (.split 3 .constructor fun _ => .leaf) := by
   simp only [instanceRoles, eraseLevels_numRecAt]
   exact objectRoles_numRecName

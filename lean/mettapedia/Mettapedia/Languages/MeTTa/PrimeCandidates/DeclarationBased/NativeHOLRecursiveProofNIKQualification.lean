@@ -215,7 +215,7 @@ theorem retained_acceptance_compiles_connected (a : ZFSet.{u}) :
 /-- The operational observation furnished by the retained proof, separated
 as a proposition so the same NIK qualification can be instantiated at any
 trace carrier and two captured element values. -/
-def NoncommutingOperationalSquare (level : LevelExpr) {a : ZFSet.{u}}
+def NoncommutingOperationalSquare (level : LevelExpr Nat) {a : ZFSet.{u}}
     (older newer : Value a element) : Prop :=
   semanticDiamond (reduction level 2).closure
       (semanticObservation level (twoElementEnvironment older newer)
@@ -236,7 +236,7 @@ compiler emits the already interpreted native proof; two captured native
 functions demonstrably do not commute; and OSLF observes both programs at
 the same Aczel endpoint with the source theorem's composition orientation. -/
 theorem retained_map_fusion_qualifies_noncommuting_observation
-    (level : LevelExpr) {a : ZFSet.{u}}
+    (level : LevelExpr Nat) {a : ZFSet.{u}}
     (older newer : Value a element) (different : older ≠ newer) :
     intrinsicKernel.decide HOLLeibnizMapFusionNative.closedClaim
         retainedMapFusionProof = true ∧

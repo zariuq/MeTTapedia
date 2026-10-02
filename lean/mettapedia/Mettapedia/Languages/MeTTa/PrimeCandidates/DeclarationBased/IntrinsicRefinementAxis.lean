@@ -22,8 +22,8 @@ open Presentation.Declaration
 open Presentation.Declaration.ComputationAuthority
 open Presentation.Declaration.IndexedFamily
 
-def refinementAxisLevel : LevelExpr := Tower.zero
-def refinementAxisMotiveLevel : LevelExpr := .param 17
+def refinementAxisLevel : LevelExpr Nat := Tower.zero
+def refinementAxisMotiveLevel : LevelExpr Nat := .param 17
 
 def refinementAxisName : DeclName := `CumulativeTower.Authority.RefinementAxis
 def refinementAxisBudgetName : DeclName :=
@@ -305,20 +305,20 @@ def refinementAxisContextPB : Tower.Ctx 2 :=
 def refinementAxisContextPBA : Tower.Ctx 3 :=
   .snoc refinementAxisContextPB refinementAxisAuthorityCaseType
 
-def refinementAxisMotiveTypeLevel : LevelExpr :=
+def refinementAxisMotiveTypeLevel : LevelExpr Nat :=
   .max refinementAxisLevel (.succ refinementAxisMotiveLevel)
 
-def refinementAxisEliminateResultLevel : LevelExpr :=
+def refinementAxisEliminateResultLevel : LevelExpr Nat :=
   .max refinementAxisLevel refinementAxisMotiveLevel
 
-def refinementAxisEliminateAfterAuthorityLevel : LevelExpr :=
+def refinementAxisEliminateAfterAuthorityLevel : LevelExpr Nat :=
   .max refinementAxisMotiveLevel refinementAxisEliminateResultLevel
 
-def refinementAxisEliminateAfterBudgetLevel : LevelExpr :=
+def refinementAxisEliminateAfterBudgetLevel : LevelExpr Nat :=
   .max refinementAxisMotiveLevel
     refinementAxisEliminateAfterAuthorityLevel
 
-def refinementAxisEliminateDeclarationLevel : LevelExpr :=
+def refinementAxisEliminateDeclarationLevel : LevelExpr Nat :=
   .max refinementAxisMotiveTypeLevel
     refinementAxisEliminateAfterBudgetLevel
 
@@ -326,7 +326,7 @@ theorem refinementAxisType_hasType :
     RefinementAxisHasType (.nil : Tower.Ctx 0) refinementAxisType
       (sortTm (.succ refinementAxisLevel)) := by
   exact Presentation.HasType.headType
-    (Tower.HeadTyping.sort refinementAxisLevel)
+    (LevelTower.HeadTyping.sort refinementAxisLevel)
 
 theorem refinementAxisTm_hasType {context : Tower.Ctx n} :
     RefinementAxisHasType context refinementAxisTm
@@ -355,11 +355,11 @@ theorem refinementAxisMotiveType_hasType :
   unfold refinementAxisMotiveType refinementAxisMotiveTypeLevel
   apply Presentation.HasType.piForm
   · exact refinementAxisTm_hasType
-  · exact Tower.IsUniverse.sort refinementAxisLevel
+  · exact LevelTower.IsUniverse.sort refinementAxisLevel
   · exact Presentation.HasType.headType
-      (Tower.HeadTyping.sort refinementAxisMotiveLevel)
-  · exact Tower.IsUniverse.sort (.succ refinementAxisMotiveLevel)
-  · exact Tower.Join.sorts refinementAxisLevel
+      (LevelTower.HeadTyping.sort refinementAxisMotiveLevel)
+  · exact LevelTower.IsUniverse.sort (.succ refinementAxisMotiveLevel)
+  · exact LevelTower.Join.sorts refinementAxisLevel
       (.succ refinementAxisMotiveLevel)
 
 theorem refinementAxisBudgetCaseType_hasType :
@@ -402,7 +402,7 @@ theorem refinementAxisEliminateResultType_hasType :
     refinementAxisEliminateResultLevel
   apply Presentation.HasType.piForm
   · exact refinementAxisTm_hasType
-  · exact Tower.IsUniverse.sort refinementAxisLevel
+  · exact LevelTower.IsUniverse.sort refinementAxisLevel
   · have motiveTyping :
         RefinementAxisHasType
           (.snoc
@@ -439,8 +439,8 @@ theorem refinementAxisEliminateResultType_hasType :
         (0 : Fin 4))
     have result := Presentation.HasType.appElim motiveTyping axisTyping
     simpa [sortTm, Presentation.inst0, Presentation.subst] using result
-  · exact Tower.IsUniverse.sort refinementAxisMotiveLevel
-  · exact Tower.Join.sorts refinementAxisLevel refinementAxisMotiveLevel
+  · exact LevelTower.IsUniverse.sort refinementAxisMotiveLevel
+  · exact LevelTower.Join.sorts refinementAxisLevel refinementAxisMotiveLevel
 
 theorem refinementAxisEliminateType_hasType :
     RefinementAxisHasType (.nil : Tower.Ctx 0)
@@ -452,23 +452,23 @@ theorem refinementAxisEliminateType_hasType :
     refinementAxisEliminateAfterAuthorityLevel
   apply Presentation.HasType.piForm
   · exact refinementAxisMotiveType_hasType
-  · exact Tower.IsUniverse.sort refinementAxisMotiveTypeLevel
+  · exact LevelTower.IsUniverse.sort refinementAxisMotiveTypeLevel
   · apply Presentation.HasType.piForm
     · exact refinementAxisBudgetCaseType_hasType
-    · exact Tower.IsUniverse.sort refinementAxisMotiveLevel
+    · exact LevelTower.IsUniverse.sort refinementAxisMotiveLevel
     · apply Presentation.HasType.piForm
       · exact refinementAxisAuthorityCaseType_hasType
-      · exact Tower.IsUniverse.sort refinementAxisMotiveLevel
+      · exact LevelTower.IsUniverse.sort refinementAxisMotiveLevel
       · exact refinementAxisEliminateResultType_hasType
-      · exact Tower.IsUniverse.sort refinementAxisEliminateResultLevel
-      · exact Tower.Join.sorts refinementAxisMotiveLevel
+      · exact LevelTower.IsUniverse.sort refinementAxisEliminateResultLevel
+      · exact LevelTower.Join.sorts refinementAxisMotiveLevel
           refinementAxisEliminateResultLevel
-    · exact Tower.IsUniverse.sort
+    · exact LevelTower.IsUniverse.sort
         refinementAxisEliminateAfterAuthorityLevel
-    · exact Tower.Join.sorts refinementAxisMotiveLevel
+    · exact LevelTower.Join.sorts refinementAxisMotiveLevel
         refinementAxisEliminateAfterAuthorityLevel
-  · exact Tower.IsUniverse.sort refinementAxisEliminateAfterBudgetLevel
-  · exact Tower.Join.sorts refinementAxisMotiveTypeLevel
+  · exact LevelTower.IsUniverse.sort refinementAxisEliminateAfterBudgetLevel
+  · exact LevelTower.Join.sorts refinementAxisMotiveTypeLevel
       refinementAxisEliminateAfterBudgetLevel
 
 @[simp] theorem rawRefinementAxisSignature_valueOf_none (name : DeclName) :

@@ -93,7 +93,7 @@ private theorem pi_zero {n : Nat} {gamma : Tower.Ctx n}
   apply Typing.cumul (.piForm ha (.sort Tower.zero) hb (.sort Tower.zero)
     (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 /-- The type-indexed operator's own dependent declaration is independently formed. -/
 theorem universal_type_formed : Typing rules .nil universalType

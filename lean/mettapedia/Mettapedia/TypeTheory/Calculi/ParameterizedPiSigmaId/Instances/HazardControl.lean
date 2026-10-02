@@ -1,13 +1,13 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.Hazards
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.Tower
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Fundamental
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.CodeConstants
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Fundamental
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.CodeConstants
 
 /-!
 # The normalization model rejects a code destructor
 
 A trusted destructor `pred (all f) ⟶ f` of the quantifier over codes gives a typed code that
-is not strongly normalizing. So no model S whose realizer side is the package with the
+is not strongly normalizing. So no model SN whose realizer side is the package with the
 destructor is sound for it: soundness makes every term typed in a formed context strongly
 normalizing, and the loop `Ω = pred ω ω`, with `ω = all (λx. pred x x)`, is typed in the
 empty context (`not_soundS`).
@@ -17,11 +17,11 @@ decoding is strongly normalizing, and nothing more is asked of it. The code `ω`
 decoding unfolds to `Π (x : prop). holds (pred x x)`, where `pred x x` is stuck on the
 variable. A realizer of a meaning of `prop → prop → prop` sends two realizers of codes to a
 realizer of codes, so the destructor would send `ω` and `ω` to `pred ω ω = Ω`, which is not
-strongly normalizing (`pred_not_real`). Hence in any model S whose value side reads `prop`
+strongly normalizing (`pred_not_real`). Hence in any model SN whose value side reads `prop`
 as its type of codes the destructor is not a valid term of its declared type
 (`pred_not_valid`).
 
-Every other obligation can be met. The package has a model S, over the skeleton-free value
+Every other obligation can be met. The package has a model SN, over the skeleton-free value
 side, whose value side computes the destructor, keeps the decoder rigid and reads
 implication and the quantifier as constructors, and whose realizer side is the package
 under its own reduction. Its laws hold, its codes are read, every root step of the package
@@ -46,13 +46,13 @@ open TelescopeAbstraction (subst_empty)
 
 /-! ## No sound model -/
 
-/-- **No model S is sound for a code destructor.** A model whose realizer side is
+/-- **No model SN is sound for a code destructor.** A model whose realizer side is
 the package with the destructor would make the typed loop `Ω` strongly
 normalizing. -/
-theorem not_soundS {L : Type} [UniverseLevel.LevelOrder L] (M : ModelS.SModel Tower.Head L)
-    (realizers : M.realizers.rules = withDestructor) : ¬ ModelS.TypedSoundS withDestructor M := by
+theorem not_soundS {L : Type} [UniverseLevel.LevelOrder L] (M : ModelSN.SNModel Tower.Head L)
+    (realizers : M.realizers.rules = withDestructor) : ¬ ModelSN.TypedSoundS withDestructor M := by
   intro sound
-  have sn := (ModelS.Typed.sn sound .nil (Omega_typed (Γ := .nil))).1
+  have sn := (ModelSN.Typed.sn sound .nil (Omega_typed (Γ := .nil))).1
   rw [realizers] at sn
   exact Omega_not_sn sn
 
@@ -248,16 +248,16 @@ theorem pred_not_real (S : Consistency.Setting Tower.Head) (star : DeclName)
   have code := codes_mem_omega T realizers (n := 0)
   exact not_codes_mem_Omega T realizers (real T.sn idRen omega code T.sn idRen omega code)
 
-/-- **The destructor is not a valid term of its declared type** in any model S
+/-- **The destructor is not a valid term of its declared type** in any model SN
 whose realizer side is the package with the destructor and whose value side
 reads `prop` as its type of codes. The type `prop → prop → prop` is interpreted
 by the pack of its carrier; with the daimon as the value of both arguments, a
 realizer of that pack sends two realizers of codes to a realizer of codes,
 while `ω` realizes a code and `pred ω ω` does not. -/
 theorem pred_not_valid {L : Type} [UniverseLevel.LevelOrder L]
-    (M : ModelS.SModel Tower.Head L) (laws : M.Laws)
+    (M : ModelSN.SNModel Tower.Head L) (laws : M.Laws)
     (realizers : M.realizers.rules = withDestructor) (prop : codes.prop = M.prop) :
-    ¬ ModelS.ValidTmS M .nil (.const predName) predType := by
+    ¬ ModelSN.ValidTmS M .nil (.const predName) predType := by
   intro valid
   have form : predType = (Carrier.arr .prop (.arr .prop .prop) : Carrier .gen).term M.toModel := by
     rw [show predType = .pi (.const codes.prop) (.pi (.const codes.prop) (.const codes.prop))
@@ -275,10 +275,10 @@ theorem pred_not_valid {L : Type} [UniverseLevel.LevelOrder L]
     .neutral .refl .star
   have starVal : (ValueSide.propPack M.value World.closed).Val (.const M.star) :=
     ⟨_, daimon, daimon⟩
-  obtain ⟨-, outer⟩ := (ModelS.PiPack.mem_real _).mp real
+  obtain ⟨-, outer⟩ := (ModelSN.PiPack.mem_real _).mp real
   have first := outer (Morph.id World.closed) (a := .const M.star) starVal idRen omega
     (codes_mem_omega M.realizers realizers)
-  obtain ⟨-, inner⟩ := (ModelS.PiPack.mem_real _).mp first
+  obtain ⟨-, inner⟩ := (ModelSN.PiPack.mem_real _).mp first
   exact not_codes_mem_Omega M.realizers realizers (inner (Morph.id World.closed)
     (a := .const M.star) starVal idRen omega (codes_mem_omega M.realizers realizers))
 
@@ -494,7 +494,7 @@ theorem valueRoles_declared : ConstructorsDeclared valueRoles where
 
 /-- The normalization model of the package with the destructor: its value side, the
 daimon and its realizer side, with the tower's levels. -/
-def destructorModel : ModelS.SModel Tower.Head Nat where
+def destructorModel : ModelSN.SNModel Tower.Head Nat where
   toModel := valueModel
   star := daimonName
   realizers := realizerSide
@@ -532,7 +532,7 @@ theorem destructorModel_codesRead : CodesRead valueModel codes where
   eq := fun found => by cases found
 
 /-- The package's codes are read by the model. -/
-theorem destructorModel_codesReadS : ModelS.CodesReadS destructorModel codes where
+theorem destructorModel_codesReadS : ModelSN.CodesReadS destructorModel codes where
   read := destructorModel_codesRead
   decoders := rfl
   propStuck := fun _ _ role => nomatch role.symm.trans realizerRoles_prop
@@ -542,8 +542,8 @@ theorem destructorModel_codesReadS : ModelS.CodesReadS destructorModel codes whe
 the destructor's step, which the value side computes. -/
 theorem destructorModel_root {n : Nat} {l r : Tower.Tm n}
     (step : withDestructor.computation.step l r) :
-    ModelS.RootSemanticS destructorModel l r := by
-  refine ModelS.ModelRootS.semantic destructorModel_laws
+    ModelSN.RootSemanticS destructorModel l r := by
+  refine ModelSN.ModelRootS.semantic destructorModel_laws
     destructorModel_codesRead.decodes ?_
   rcases step with (step | step) | step
   · exact step.elim
@@ -554,7 +554,7 @@ theorem destructorModel_root {n : Nat} {l r : Tower.Tm n}
 its declared type in the model. -/
 theorem destructorModel_constant {name : DeclName} {type : Tower.Tm 0}
     (notPred : name ≠ predName) (declared : withDestructor.constantType name = some type) :
-    ModelS.ValidTmS destructorModel .nil (.const name) type := by
+    ModelSN.ValidTmS destructorModel .nil (.const name) type := by
   change (if name = predName then some predType else
     (codes.codeType name).orElse (fun _ => none)) = some type at declared
   rw [if_neg notPred] at declared
@@ -565,14 +565,14 @@ theorem destructorModel_constant {name : DeclName} {type : Tower.Tm 0}
   | some T =>
       rw [code] at declared
       cases declared
-      exact ModelS.valid_codeS destructorModel_laws destructorModel_codesReadS code
+      exact ModelSN.valid_codeS destructorModel_laws destructorModel_codesReadS code
 
 /-- **Soundness comes down to the destructor.** The package with the destructor
 is sound for the model exactly when the destructor is a valid term of its
 declared type. -/
 theorem destructorModel_soundS_iff :
-    ModelS.TypedSoundS withDestructor destructorModel ↔
-      ModelS.ValidTmS destructorModel .nil (.const predName) predType := by
+    ModelSN.TypedSoundS withDestructor destructorModel ↔
+      ModelSN.ValidTmS destructorModel .nil (.const predName) predType := by
   refine ⟨fun sound => sound.constants constantType_pred, fun valid => ?_⟩
   refine
     { laws := destructorModel_laws
@@ -593,7 +593,7 @@ theorem destructorModel_soundS_iff :
 /-- **The model is not sound for the package, and the destructor's obligation is
 where it fails.** -/
 theorem destructorModel_not_soundS :
-    ¬ ModelS.TypedSoundS withDestructor destructorModel :=
+    ¬ ModelSN.TypedSoundS withDestructor destructorModel :=
   fun sound => pred_not_valid destructorModel destructorModel_laws rfl rfl
     (destructorModel_soundS_iff.mp sound)
 

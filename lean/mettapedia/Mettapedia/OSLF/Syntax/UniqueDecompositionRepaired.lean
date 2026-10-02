@@ -67,7 +67,7 @@ theorem parComm (a b : Term psig [] PSrt.proc) :
     EqClosure ac1 (parT a b) (parT b a) := by
   have h : EqClosure ac1 (bind (sub2 a b) (instantiate emptyBody commAx.lhs))
       (bind (sub2 a b) (instantiate emptyBody commAx.rhs)) :=
-    EqClosure.ax (E := ac1) (Γ := ([] : Ctx psig)) ⟨0, by decide⟩ emptyBody (sub2 a b)
+    EqClosure.ax_closed ac1 (Γ := ([] : Ctx psig)) ⟨0, by decide⟩ emptyBody (sub2 a b)
   simpa only [commAx, instantiate, instantiateArgs, bind, bindArgs, liftSub,
     sub2, parT] using h
 
@@ -75,7 +75,7 @@ theorem parAssoc (a b c : Term psig [] PSrt.proc) :
     EqClosure ac1 (parT (parT a b) c) (parT a (parT b c)) := by
   have h : EqClosure ac1 (bind (sub3 a b c) (instantiate emptyBody assocAx.lhs))
       (bind (sub3 a b c) (instantiate emptyBody assocAx.rhs)) :=
-    EqClosure.ax (E := ac1) (Γ := ([] : Ctx psig)) ⟨1, by decide⟩ emptyBody (sub3 a b c)
+    EqClosure.ax_closed ac1 (Γ := ([] : Ctx psig)) ⟨1, by decide⟩ emptyBody (sub3 a b c)
   simpa only [assocAx, instantiate, instantiateArgs, bind, bindArgs, liftSub,
     sub3, parT] using h
 
@@ -83,7 +83,7 @@ theorem parUnitR (a : Term psig [] PSrt.proc) :
     EqClosure ac1 (parT a nulT) a := by
   have h : EqClosure ac1 (bind (sub1 a) (instantiate emptyBody unitAx.lhs))
       (bind (sub1 a) (instantiate emptyBody unitAx.rhs)) :=
-    EqClosure.ax (E := ac1) (Γ := ([] : Ctx psig)) ⟨2, by decide⟩ emptyBody (sub1 a)
+    EqClosure.ax_closed ac1 (Γ := ([] : Ctx psig)) ⟨2, by decide⟩ emptyBody (sub1 a)
   simpa only [unitAx, instantiate, instantiateArgs, bind, bindArgs, liftSub,
     sub1, parT, nulT] using h
 

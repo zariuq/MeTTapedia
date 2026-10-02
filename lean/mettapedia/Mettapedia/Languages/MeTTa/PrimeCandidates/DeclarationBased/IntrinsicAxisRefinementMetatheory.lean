@@ -25,8 +25,8 @@ open Presentation.Declaration
 open Presentation.Declaration.ComputationAuthority
 open Presentation.Declaration.IndexedFamily
 
-def axisRefinementLevel : LevelExpr := outcomeLevel
-def axisRefinementMotiveLevel : LevelExpr := .param 18
+def axisRefinementLevel : LevelExpr Nat := outcomeLevel
+def axisRefinementMotiveLevel : LevelExpr Nat := .param 18
 
 def axisRefinementName : DeclName := `CumulativeTower.Authority.Refines
 def axisEstablishedName : DeclName :=
@@ -1841,7 +1841,7 @@ theorem axisRefinementAfterVar_hasType :
       (outcomeApp (.var 4) (.var 2)) := by
   exact Presentation.HasType.var 0
 
-def axisRefinementBodyLevel : LevelExpr :=
+def axisRefinementBodyLevel : LevelExpr Nat :=
   .max refinementAxisLevel
     (.max judgmentLevel
       (.max outcomeLevel
@@ -1854,48 +1854,48 @@ theorem axisRefinementBodyType_hasType :
     axisRefinementContextS
   apply Presentation.HasType.piForm
   · exact refinementAxisTm_hasAxisRefinementType
-  · exact Tower.IsUniverse.sort refinementAxisLevel
+  · exact LevelTower.IsUniverse.sort refinementAxisLevel
   · apply Presentation.HasType.piForm
     · exact signatureJudgment_hasType
         axisRefinementSignatureVarInSA_hasType
-    · exact Tower.IsUniverse.sort judgmentLevel
+    · exact LevelTower.IsUniverse.sort judgmentLevel
     · apply Presentation.HasType.piForm
       · apply outcomeApp_hasTypeWith
         · exact includeOutcomeInAxisRefinement outcomeConstant_hasType
         · exact Presentation.HasType.var 2
         · exact Presentation.HasType.var 0
-      · exact Tower.IsUniverse.sort outcomeLevel
+      · exact LevelTower.IsUniverse.sort outcomeLevel
       · apply Presentation.HasType.piForm
         · apply outcomeApp_hasTypeWith
           · exact includeOutcomeInAxisRefinement outcomeConstant_hasType
           · exact Presentation.HasType.var 3
           · exact Presentation.HasType.var 1
-        · exact Tower.IsUniverse.sort outcomeLevel
+        · exact LevelTower.IsUniverse.sort outcomeLevel
         · exact Presentation.HasType.headType
-            (Tower.HeadTyping.sort axisRefinementLevel)
-        · exact Tower.IsUniverse.sort (.succ axisRefinementLevel)
-        · exact Tower.Join.sorts outcomeLevel
+            (LevelTower.HeadTyping.sort axisRefinementLevel)
+        · exact LevelTower.IsUniverse.sort (.succ axisRefinementLevel)
+        · exact LevelTower.Join.sorts outcomeLevel
             (.succ axisRefinementLevel)
-      · exact Tower.IsUniverse.sort
+      · exact LevelTower.IsUniverse.sort
           (.max outcomeLevel (.succ axisRefinementLevel))
-      · exact Tower.Join.sorts outcomeLevel
+      · exact LevelTower.Join.sorts outcomeLevel
           (.max outcomeLevel (.succ axisRefinementLevel))
-    · exact Tower.IsUniverse.sort
+    · exact LevelTower.IsUniverse.sort
         (.max outcomeLevel
           (.max outcomeLevel (.succ axisRefinementLevel)))
-    · exact Tower.Join.sorts judgmentLevel
+    · exact LevelTower.Join.sorts judgmentLevel
         (.max outcomeLevel
           (.max outcomeLevel (.succ axisRefinementLevel)))
-  · exact Tower.IsUniverse.sort
+  · exact LevelTower.IsUniverse.sort
       (.max judgmentLevel
         (.max outcomeLevel
           (.max outcomeLevel (.succ axisRefinementLevel))))
-  · exact Tower.Join.sorts refinementAxisLevel
+  · exact LevelTower.Join.sorts refinementAxisLevel
       (.max judgmentLevel
         (.max outcomeLevel
           (.max outcomeLevel (.succ axisRefinementLevel))))
 
-def axisRefinementDeclarationLevel : LevelExpr :=
+def axisRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel axisRefinementBodyLevel
 
 theorem axisRefinementType_hasType :
@@ -1904,10 +1904,10 @@ theorem axisRefinementType_hasType :
   unfold axisRefinementType axisRefinementDeclarationLevel
   apply Presentation.HasType.piForm
       outcomeSignatureType_hasAxisRefinementType
-      (Tower.IsUniverse.sort signatureLevel)
+      (LevelTower.IsUniverse.sort signatureLevel)
   · exact axisRefinementBodyType_hasType
-  · exact Tower.IsUniverse.sort axisRefinementBodyLevel
-  · exact Tower.Join.sorts signatureLevel axisRefinementBodyLevel
+  · exact LevelTower.IsUniverse.sort axisRefinementBodyLevel
+  · exact LevelTower.Join.sorts signatureLevel axisRefinementBodyLevel
 
 /-! ### Formation of fixed-axis constructors -/
 
@@ -2071,15 +2071,15 @@ def fixedAxisBinaryContextSJWW
       (Presentation.rename wk (Presentation.rename wk afterFamily))
       (.var 1))
 
-def fixedAxisBinaryAfterLevel (afterLevel : LevelExpr) : LevelExpr :=
+def fixedAxisBinaryAfterLevel (afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max afterLevel axisRefinementLevel
 
 def fixedAxisBinaryBeforeLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max beforeLevel (fixedAxisBinaryAfterLevel afterLevel)
 
 def fixedAxisBinaryBodyLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (fixedAxisBinaryBeforeLevel beforeLevel afterLevel)
 
 @[simp] theorem fixedAxis_wk_wk_wk_zero :
@@ -2095,7 +2095,7 @@ def fixedAxisBinaryBodyLevel
   decide
 
 theorem fixedAxisBinaryAtSignatureType_hasType
-    (beforeLevel afterLevel : LevelExpr)
+    (beforeLevel afterLevel : LevelExpr Nat)
     {axis : Tower.Tm 1}
     {beforeConstructor afterConstructor : DeclName}
     {beforeFamily afterFamily : Tower.Tm 1}
@@ -2251,14 +2251,14 @@ def fixedAxisUnaryContextSJW (payloadFamily : Tower.Tm 1) :
     (.snoc axisRefinementContextS (signatureJudgment (.var 0)))
     (.app (Presentation.rename wk payloadFamily) (.var 0))
 
-def fixedAxisUnaryWitnessLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def fixedAxisUnaryWitnessLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max payloadLevel axisRefinementLevel
 
-def fixedAxisUnaryBodyLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def fixedAxisUnaryBodyLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (fixedAxisUnaryWitnessLevel payloadLevel)
 
 theorem fixedAxisUnaryAtSignatureType_hasType
-    (payloadLevel : LevelExpr)
+    (payloadLevel : LevelExpr Nat)
     {axis : Tower.Tm 1} {outcomeConstructor : DeclName}
     {payloadFamily : Tower.Tm 1}
     (payloadFamilyTyping : AxisRefinementHasType axisRefinementContextS
@@ -2300,7 +2300,7 @@ theorem fixedAxisUnaryAtSignatureType_hasType
   · exact .sorts judgmentLevel (fixedAxisUnaryWitnessLevel payloadLevel)
 
 theorem closeAxisRefinementBody_hasType
-    {body : Tower.Tm 1} {bodyLevel : LevelExpr}
+    {body : Tower.Tm 1} {bodyLevel : LevelExpr Nat}
     (bodyTyping : AxisRefinementHasType axisRefinementContextS body
       (sortTm bodyLevel)) :
     AxisRefinementHasType (.nil : Tower.Ctx 0)
@@ -2376,7 +2376,7 @@ theorem budgetOutsideRefinementBodyType_hasType :
       · exact Presentation.HasType.var 1
       · exact Presentation.HasType.var 0
 
-def budgetOutsideRefinementDeclarationLevel : LevelExpr :=
+def budgetOutsideRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel (fixedAxisUnaryBodyLevel boundaryLevel)
 
 theorem budgetOutsideRefinementType_hasType :
@@ -2462,7 +2462,7 @@ theorem budgetIncompleteEstablishedRefinementBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetIncompleteEstablishedRefinementDeclarationLevel : LevelExpr :=
+def budgetIncompleteEstablishedRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (fixedAxisBinaryBodyLevel frontierLevel evidenceLevel)
 
@@ -2548,7 +2548,7 @@ theorem budgetIncompleteRefutedRefinementBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetIncompleteRefutedRefinementDeclarationLevel : LevelExpr :=
+def budgetIncompleteRefutedRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (fixedAxisBinaryBodyLevel frontierLevel obstructionLevel)
 
@@ -2631,7 +2631,7 @@ theorem authorityOutsideRefinementBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def authorityOutsideRefinementDeclarationLevel : LevelExpr :=
+def authorityOutsideRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (fixedAxisBinaryBodyLevel boundaryLevel boundaryLevel)
 
@@ -2718,7 +2718,7 @@ theorem authorityOutsideEstablishedRefinementBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def authorityOutsideEstablishedRefinementDeclarationLevel : LevelExpr :=
+def authorityOutsideEstablishedRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (fixedAxisBinaryBodyLevel boundaryLevel evidenceLevel)
 
@@ -2805,7 +2805,7 @@ theorem authorityOutsideRefutedRefinementBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def authorityOutsideRefutedRefinementDeclarationLevel : LevelExpr :=
+def authorityOutsideRefutedRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (fixedAxisBinaryBodyLevel boundaryLevel obstructionLevel)
 
@@ -2892,7 +2892,7 @@ theorem authorityOutsideIncompleteRefinementBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def authorityOutsideIncompleteRefinementDeclarationLevel : LevelExpr :=
+def authorityOutsideIncompleteRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (fixedAxisBinaryBodyLevel boundaryLevel frontierLevel)
 
@@ -3116,19 +3116,19 @@ def axisBinaryContextSAJWW
         (Presentation.rename wk (Presentation.rename wk afterFamily)))
       (.var 1))
 
-def axisBinaryAfterLevel (afterLevel : LevelExpr) : LevelExpr :=
+def axisBinaryAfterLevel (afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max afterLevel axisRefinementLevel
 
 def axisBinaryBeforeLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max beforeLevel (axisBinaryAfterLevel afterLevel)
 
 def axisBinaryJudgmentLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (axisBinaryBeforeLevel beforeLevel afterLevel)
 
 def axisBinaryBodyLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max refinementAxisLevel
     (axisBinaryJudgmentLevel beforeLevel afterLevel)
 
@@ -3149,7 +3149,7 @@ def axisBinaryBodyLevel
   decide
 
 theorem axisBinaryAtSignatureType_hasType
-    (beforeLevel afterLevel : LevelExpr)
+    (beforeLevel afterLevel : LevelExpr Nat)
     {beforeConstructor afterConstructor : DeclName}
     {beforeFamily afterFamily : Tower.Tm 1}
     (beforeFamilyTyping : AxisRefinementHasType axisRefinementContextS
@@ -3290,7 +3290,7 @@ theorem axisEstablishedBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def axisEstablishedDeclarationLevel : LevelExpr :=
+def axisEstablishedDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel (axisBinaryBodyLevel evidenceLevel evidenceLevel)
 
 theorem axisEstablishedType_hasType :
@@ -3369,7 +3369,7 @@ theorem axisRefutedBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def axisRefutedDeclarationLevel : LevelExpr :=
+def axisRefutedDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (axisBinaryBodyLevel obstructionLevel obstructionLevel)
 
@@ -3447,7 +3447,7 @@ theorem axisIncompleteBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def axisIncompleteDeclarationLevel : LevelExpr :=
+def axisIncompleteDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel (axisBinaryBodyLevel frontierLevel frontierLevel)
 
 theorem axisIncompleteType_hasType :
@@ -3486,19 +3486,19 @@ theorem axisRefinementMotiveType_asAtSignature :
       axisRefinementMotiveAtSignatureType (.var 0) := by
   decide
 
-def axisRefinementMotiveRelationLevel : LevelExpr :=
+def axisRefinementMotiveRelationLevel : LevelExpr Nat :=
   .max axisRefinementLevel (.succ axisRefinementMotiveLevel)
 
-def axisRefinementMotiveAfterLevel : LevelExpr :=
+def axisRefinementMotiveAfterLevel : LevelExpr Nat :=
   .max outcomeLevel axisRefinementMotiveRelationLevel
 
-def axisRefinementMotiveBeforeLevel : LevelExpr :=
+def axisRefinementMotiveBeforeLevel : LevelExpr Nat :=
   .max outcomeLevel axisRefinementMotiveAfterLevel
 
-def axisRefinementMotiveJudgmentLevel : LevelExpr :=
+def axisRefinementMotiveJudgmentLevel : LevelExpr Nat :=
   .max judgmentLevel axisRefinementMotiveBeforeLevel
 
-def axisRefinementMotiveTypeLevel : LevelExpr :=
+def axisRefinementMotiveTypeLevel : LevelExpr Nat :=
   .max refinementAxisLevel axisRefinementMotiveJudgmentLevel
 
 theorem axisRefinementMotiveType_hasType :
@@ -3724,24 +3724,24 @@ def axisBinaryCaseAtSignatureType
             (axisNamedBinaryConstructorApp relationConstructor
               (.var 5) (.var 3) (.var 2) (.var 1) (.var 0))))))
 
-def axisBinaryCaseAfterLevel (afterLevel : LevelExpr) : LevelExpr :=
+def axisBinaryCaseAfterLevel (afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max afterLevel axisRefinementMotiveLevel
 
 def axisBinaryCaseBeforeLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max beforeLevel (axisBinaryCaseAfterLevel afterLevel)
 
 def axisBinaryCaseJudgmentLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (axisBinaryCaseBeforeLevel beforeLevel afterLevel)
 
 def axisBinaryCaseLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max refinementAxisLevel
     (axisBinaryCaseJudgmentLevel beforeLevel afterLevel)
 
 theorem axisBinaryCaseAtSignatureType_hasType
-    (beforeLevel afterLevel : LevelExpr)
+    (beforeLevel afterLevel : LevelExpr Nat)
     {relationConstructor beforeConstructor afterConstructor : DeclName}
     {beforeFamily afterFamily : Tower.Tm 2}
     (beforeFamilyTyping : AxisRefinementHasType axisRefinementContextSM
@@ -3855,20 +3855,20 @@ def fixedAxisBinaryCaseAtSignatureType
           (axisNamedFixedBinaryConstructorApp relationConstructor
             (.var 4) (.var 2) (.var 1) (.var 0)))))
 
-def fixedAxisBinaryCaseAfterLevel (afterLevel : LevelExpr) : LevelExpr :=
+def fixedAxisBinaryCaseAfterLevel (afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max afterLevel axisRefinementMotiveLevel
 
 def fixedAxisBinaryCaseBeforeLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max beforeLevel (fixedAxisBinaryCaseAfterLevel afterLevel)
 
 def fixedAxisBinaryCaseLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel
     (fixedAxisBinaryCaseBeforeLevel beforeLevel afterLevel)
 
 theorem fixedAxisBinaryCaseAtSignatureType_hasType
-    (beforeLevel afterLevel : LevelExpr)
+    (beforeLevel afterLevel : LevelExpr Nat)
     {axis : Tower.Tm 2}
     {relationConstructor beforeConstructor afterConstructor : DeclName}
     {beforeFamily afterFamily : Tower.Tm 2}
@@ -3956,14 +3956,14 @@ def fixedAxisUnaryCaseAtSignatureType
         (axisNamedFixedUnaryConstructorApp relationConstructor
           (.var 3) (.var 1) (.var 0))))
 
-def fixedAxisUnaryCaseWitnessLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def fixedAxisUnaryCaseWitnessLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max payloadLevel axisRefinementMotiveLevel
 
-def fixedAxisUnaryCaseLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def fixedAxisUnaryCaseLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (fixedAxisUnaryCaseWitnessLevel payloadLevel)
 
 theorem fixedAxisUnaryCaseAtSignatureType_hasType
-    (payloadLevel : LevelExpr)
+    (payloadLevel : LevelExpr Nat)
     {axis : Tower.Tm 2}
     {relationConstructor outcomeConstructor : DeclName}
     {payloadFamily : Tower.Tm 2}
@@ -4686,19 +4686,19 @@ def axisEliminatorResultContextAJBAR : Tower.Ctx 17 :=
     (axisRefinementApp (.var 15) (.var 3) (.var 2)
       (.var 1) (.var 0))
 
-def axisRefinementEliminateRelationLevel : LevelExpr :=
+def axisRefinementEliminateRelationLevel : LevelExpr Nat :=
   .max axisRefinementLevel axisRefinementMotiveLevel
 
-def axisRefinementEliminateAfterLevel : LevelExpr :=
+def axisRefinementEliminateAfterLevel : LevelExpr Nat :=
   .max outcomeLevel axisRefinementEliminateRelationLevel
 
-def axisRefinementEliminateBeforeLevel : LevelExpr :=
+def axisRefinementEliminateBeforeLevel : LevelExpr Nat :=
   .max outcomeLevel axisRefinementEliminateAfterLevel
 
-def axisRefinementEliminateJudgmentLevel : LevelExpr :=
+def axisRefinementEliminateJudgmentLevel : LevelExpr Nat :=
   .max judgmentLevel axisRefinementEliminateBeforeLevel
 
-def axisRefinementEliminateResultLevel : LevelExpr :=
+def axisRefinementEliminateResultLevel : LevelExpr Nat :=
   .max refinementAxisLevel axisRefinementEliminateJudgmentLevel
 
 theorem axisRefinementMotiveVarInEliminateResult_hasType :
@@ -4772,50 +4772,50 @@ theorem axisRefinementEliminateResultType_hasType :
   · exact .sorts refinementAxisLevel
       axisRefinementEliminateJudgmentLevel
 
-def afterAuthorityOutsideIncompleteLevel : LevelExpr :=
+def afterAuthorityOutsideIncompleteLevel : LevelExpr Nat :=
   .max (fixedAxisBinaryCaseLevel boundaryLevel frontierLevel)
     axisRefinementEliminateResultLevel
 
-def afterAuthorityOutsideRefutedLevel : LevelExpr :=
+def afterAuthorityOutsideRefutedLevel : LevelExpr Nat :=
   .max (fixedAxisBinaryCaseLevel boundaryLevel obstructionLevel)
     afterAuthorityOutsideIncompleteLevel
 
-def afterAuthorityOutsideEstablishedLevel : LevelExpr :=
+def afterAuthorityOutsideEstablishedLevel : LevelExpr Nat :=
   .max (fixedAxisBinaryCaseLevel boundaryLevel evidenceLevel)
     afterAuthorityOutsideRefutedLevel
 
-def afterAuthorityOutsideLevel : LevelExpr :=
+def afterAuthorityOutsideLevel : LevelExpr Nat :=
   .max (fixedAxisBinaryCaseLevel boundaryLevel boundaryLevel)
     afterAuthorityOutsideEstablishedLevel
 
-def afterBudgetIncompleteRefutedLevel : LevelExpr :=
+def afterBudgetIncompleteRefutedLevel : LevelExpr Nat :=
   .max (fixedAxisBinaryCaseLevel frontierLevel obstructionLevel)
     afterAuthorityOutsideLevel
 
-def afterBudgetIncompleteEstablishedLevel : LevelExpr :=
+def afterBudgetIncompleteEstablishedLevel : LevelExpr Nat :=
   .max (fixedAxisBinaryCaseLevel frontierLevel evidenceLevel)
     afterBudgetIncompleteRefutedLevel
 
-def afterBudgetOutsideLevel : LevelExpr :=
+def afterBudgetOutsideLevel : LevelExpr Nat :=
   .max (fixedAxisUnaryCaseLevel boundaryLevel)
     afterBudgetIncompleteEstablishedLevel
 
-def afterAxisIncompleteLevel : LevelExpr :=
+def afterAxisIncompleteLevel : LevelExpr Nat :=
   .max (axisBinaryCaseLevel frontierLevel frontierLevel)
     afterBudgetOutsideLevel
 
-def afterAxisRefutedLevel : LevelExpr :=
+def afterAxisRefutedLevel : LevelExpr Nat :=
   .max (axisBinaryCaseLevel obstructionLevel obstructionLevel)
     afterAxisIncompleteLevel
 
-def afterAxisEstablishedLevel : LevelExpr :=
+def afterAxisEstablishedLevel : LevelExpr Nat :=
   .max (axisBinaryCaseLevel evidenceLevel evidenceLevel)
     afterAxisRefutedLevel
 
-def axisRefinementEliminateBodyLevel : LevelExpr :=
+def axisRefinementEliminateBodyLevel : LevelExpr Nat :=
   .max axisRefinementMotiveTypeLevel afterAxisEstablishedLevel
 
-def axisRefinementEliminateDeclarationLevel : LevelExpr :=
+def axisRefinementEliminateDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel axisRefinementEliminateBodyLevel
 
 theorem axisRefinementEliminateBodyType_hasType :

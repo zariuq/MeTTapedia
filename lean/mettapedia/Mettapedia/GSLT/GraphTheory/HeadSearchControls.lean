@@ -35,11 +35,70 @@ theorem reduction_changes_bounded_tree :
     intro h
     cases h
 
-/-- Exact counterexample to the existing admitted bounded beta-invariance law. -/
+/-- Exact counterexample to unqualified fixed-budget beta invariance. -/
 theorem bounded_beta_equality_fails :
     let argument := LambdaTerm.app LambdaTerm.I (.app LambdaTerm.I LambdaTerm.I)
     bohmTree 1 (.app (.lam (.var 0)) argument) ≠
       bohmTree 1 (argument.subst 0 (.var 0)) :=
   reduction_changes_bounded_tree.2
+
+/-! ### Fixed-budget equality is not a congruence
+
+`λx. I x` needs one head step more than `I`. Alone, both are observed
+identically at every depth. In a context that leaves exactly enough fuel for
+`I`, the extra step exhausts the budget. So equality of the fixed-budget
+observations is closed neither under application nor under substitution.
+-/
+
+private theorem bohmTree_succ_eq {d fuel : Nat} {t hnf : LambdaTerm} {numLams head : Nat}
+    {arguments : List LambdaTerm} (search : toHNF fuel t = some hnf)
+    (enough : fuel ≤ (d + 1) * (d + 1 + 1) + 1)
+    (headForm : extractHNF hnf = some (numLams, head, arguments)) :
+    bohmTree (d + 1) t = .node numLams head (arguments.map (bohmTree d)) := by
+  simp only [bohmTree, toHNF_result_stable search enough, headForm]
+
+/-- `I` and `λx. I x` have the same fixed-budget observation at every depth. -/
+theorem searchTreeEqual_identity_expansion :
+    SearchTreeEqual LambdaTerm.I (.lam (.app LambdaTerm.I (.var 0))) := by
+  intro n
+  cases n with
+  | zero => rfl
+  | succ d =>
+      have positive : 0 < (d + 1) * (d + 1 + 1) := Nat.mul_pos (Nat.succ_pos d) (Nat.succ_pos _)
+      rw [bohmTree_succ_eq (show toHNF 1 LambdaTerm.I = some LambdaTerm.I from rfl) (by omega)
+          (show extractHNF LambdaTerm.I = some (1, 0, []) from rfl),
+        bohmTree_succ_eq
+          (show toHNF 2 (.lam (.app LambdaTerm.I (.var 0))) = some LambdaTerm.I from rfl)
+          (by omega) (show extractHNF LambdaTerm.I = some (1, 0, []) from rfl)]
+
+/-- Fixed-budget equality is not closed under application to an argument. -/
+theorem searchTreeEqual_not_app_left_congruence :
+    ¬∀ function function' argument : LambdaTerm, SearchTreeEqual function function' →
+      SearchTreeEqual (.app function argument) (.app function' argument) := by
+  intro congruence
+  have observed := congruence _ _ (.app LambdaTerm.I LambdaTerm.I)
+    searchTreeEqual_identity_expansion 1
+  change (BohmTree.node 1 0 [] : BohmTree) = .bot at observed
+  cases observed
+
+/-- Fixed-budget equality is not closed under application of a function. -/
+theorem searchTreeEqual_not_app_right_congruence :
+    ¬∀ function argument argument' : LambdaTerm, SearchTreeEqual argument argument' →
+      SearchTreeEqual (.app function argument) (.app function argument') := by
+  intro congruence
+  have observed := congruence (.lam (.app LambdaTerm.I (.var 0))) _ _
+    searchTreeEqual_identity_expansion 1
+  change (BohmTree.node 1 0 [] : BohmTree) = .bot at observed
+  cases observed
+
+/-- Fixed-budget equality is not closed under substitution. -/
+theorem searchTreeEqual_not_subst_congruence :
+    ¬∀ body argument argument' : LambdaTerm, SearchTreeEqual argument argument' →
+      SearchTreeEqual (argument.subst 0 body) (argument'.subst 0 body) := by
+  intro congruence
+  have observed := congruence (.app LambdaTerm.I (.app LambdaTerm.I (.var 0))) _ _
+    searchTreeEqual_identity_expansion 1
+  change (BohmTree.node 1 0 [] : BohmTree) = .bot at observed
+  cases observed
 
 end Mettapedia.GSLT.GraphTheory

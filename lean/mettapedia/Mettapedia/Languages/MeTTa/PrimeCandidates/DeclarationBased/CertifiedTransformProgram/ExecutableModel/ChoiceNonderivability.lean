@@ -485,7 +485,7 @@ section WitnessChoice
 
 variable {n : Nat} {Γ : Tower.Ctx n}
 
-theorem sigmaO {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr}
+theorem sigmaO {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (hA : Typed objectRules Γ A (sortTm level))
     (hB : Typed objectRules (.snoc Γ A) B (sortTm level)) :
     Typed objectRules Γ (.sigma A B) (sortTm level) :=

@@ -34,7 +34,7 @@ structure Template where
   context : Tower.Ctx arity
   contextWellFormed : Declaration.ContextWellFormed Tower.rules context
   body : Tower.Tm arity
-  level : LevelExpr
+  level : LevelExpr Nat
   bodyTyping : Tower.HasType context body (sortTm level)
 
 abbrev TemplateSignature (count : Nat) := Fin count → Template
@@ -49,14 +49,14 @@ inductive Code {count : Nat} (templates : TemplateSignature count) :
   | template {n : Nat} (name : Fin count)
       (arguments : Sub Tower.Head (templates name).arity n) : Code templates n
   | ground {n : Nat} : Code templates n
-  | univ {n : Nat} (level : LevelExpr) : Code templates n
+  | univ {n : Nat} (level : LevelExpr Nat) : Code templates n
   | pi {n : Nat} : Code templates n → Code templates (n + 1) → Code templates n
   | sigma {n : Nat} :
       Code templates n → Code templates (n + 1) → Code templates n
   | id {n : Nat} :
       Code templates n → Tower.Tm n → Tower.Tm n → Code templates n
   | lift {n : Nat} :
-      LevelExpr → LevelExpr → Code templates n → Code templates n
+      LevelExpr Nat → LevelExpr Nat → Code templates n → Code templates n
 
 /-- Decode a contextual template occurrence by applying its stored
 substitution; all generated constructors remain structural. -/
@@ -183,34 +183,34 @@ instantiation beneath dependent binders. -/
 /-- Formation of contextual codes.  A template is admitted only through a
 typed substitution from its declaration telescope. -/
 inductive HasCode {templates : TemplateSignature count} :
-    Tower.Ctx n → Code templates n → LevelExpr → Prop where
+    Tower.Ctx n → Code templates n → LevelExpr Nat → Prop where
   | template {Gamma : Tower.Ctx n} {name : Fin count}
       {arguments : Sub Tower.Head (templates name).arity n} :
       CtxMor Tower.rules (templates name).context Gamma arguments →
       HasCode Gamma (.template name arguments) (templates name).level
   | ground {Gamma : Tower.Ctx n} : HasCode Gamma .ground Tower.zero
-  | univ {Gamma : Tower.Ctx n} (level : LevelExpr) :
+  | univ {Gamma : Tower.Ctx n} (level : LevelExpr Nat) :
       HasCode Gamma (.univ level) (.succ level)
   | pi {Gamma : Tower.Ctx n} {domain : Code templates n}
       {codomain : Code templates (n + 1)}
-      {domainLevel codomainLevel : LevelExpr} :
+      {domainLevel codomainLevel : LevelExpr Nat} :
       HasCode Gamma domain domainLevel →
       HasCode (.snoc Gamma (decode domain)) codomain codomainLevel →
       HasCode Gamma (.pi domain codomain) (.max domainLevel codomainLevel)
   | sigma {Gamma : Tower.Ctx n} {domain : Code templates n}
       {codomain : Code templates (n + 1)}
-      {domainLevel codomainLevel : LevelExpr} :
+      {domainLevel codomainLevel : LevelExpr Nat} :
       HasCode Gamma domain domainLevel →
       HasCode (.snoc Gamma (decode domain)) codomain codomainLevel →
       HasCode Gamma (.sigma domain codomain) (.max domainLevel codomainLevel)
   | id {Gamma : Tower.Ctx n} {type : Code templates n}
-      {left right : Tower.Tm n} {level : LevelExpr} :
+      {left right : Tower.Tm n} {level : LevelExpr Nat} :
       HasCode Gamma type level →
       Tower.HasType Gamma left (decode type) →
       Tower.HasType Gamma right (decode type) →
       HasCode Gamma (.id type left right) level
   | lift {Gamma : Tower.Ctx n} {code : Code templates n}
-      {source target : LevelExpr} :
+      {source target : LevelExpr Nat} :
       HasCode Gamma code source →
       Tower.Cumulative (.sort source) (.sort target) →
       HasCode Gamma (.lift source target code) target
@@ -218,7 +218,7 @@ inductive HasCode {templates : TemplateSignature count} :
 /-- Contextual code formation is stable under every typed term
 substitution. -/
 theorem HasCode.substitute {templates : TemplateSignature count}
-    {Gamma : Tower.Ctx n} {code : Code templates n} {level : LevelExpr}
+    {Gamma : Tower.Ctx n} {code : Code templates n} {level : LevelExpr Nat}
     (formation : HasCode Gamma code level)
     {Delta : Tower.Ctx m} {substitution : Sub Tower.Head n m}
     (typed : CtxMor Tower.rules Gamma Delta substitution) :
@@ -245,7 +245,7 @@ theorem HasCode.substitute {templates : TemplateSignature count}
 /-- Every formed contextual code decodes to an independently well-typed
 Russell type. -/
 theorem HasCode.decode_hasType {templates : TemplateSignature count}
-    {Gamma : Tower.Ctx n} {code : Code templates n} {level : LevelExpr}
+    {Gamma : Tower.Ctx n} {code : Code templates n} {level : LevelExpr Nat}
     (formation : HasCode Gamma code level) :
     Tower.HasType Gamma (decode code) (sortTm level) := by
   induction formation with
@@ -266,7 +266,7 @@ theorem HasCode.decode_hasType {templates : TemplateSignature count}
 theorem template_level_unique {templates : TemplateSignature count}
     {Gamma : Tower.Ctx n} {name : Fin count}
     {arguments : Sub Tower.Head (templates name).arity n}
-    {level : LevelExpr}
+    {level : LevelExpr Nat}
     (formation : @HasCode count templates n Gamma
       (@Code.template count templates n name arguments) level) :
     level = (templates name).level := by
@@ -351,7 +351,7 @@ def generatedEquiv (n : Nat) : Code noTemplates n ≃ RussellTarski.Code n where
     _ = RussellTarski.decode (toGenerated code) := decode_ofGenerated _
 
 def HasCode.ofGenerated {Gamma : Tower.Ctx n}
-    {code : RussellTarski.Code n} {level : LevelExpr}
+    {code : RussellTarski.Code n} {level : LevelExpr Nat}
     (formation : RussellTarski.HasCode Gamma code level) :
     Contextual.HasCode Gamma (ofGenerated code) level := by
   induction formation with
@@ -369,7 +369,7 @@ def HasCode.ofGenerated {Gamma : Tower.Ctx n}
   | lift codeFormation order ihCode => exact .lift ihCode order
 
 def HasCode.toGenerated {Gamma : Tower.Ctx n}
-    {code : Code noTemplates n} {level : LevelExpr}
+    {code : Code noTemplates n} {level : LevelExpr Nat}
     (formation : Contextual.HasCode Gamma code level) :
     RussellTarski.HasCode Gamma (toGenerated code) level := by
   induction formation with
@@ -390,7 +390,7 @@ def HasCode.toGenerated {Gamma : Tower.Ctx n}
   | lift codeFormation order ihCode => exact .lift ihCode order
 
 theorem generated_hasCode_iff {Gamma : Tower.Ctx n}
-    (code : RussellTarski.Code n) (level : LevelExpr) :
+    (code : RussellTarski.Code n) (level : LevelExpr Nat) :
     Contextual.HasCode Gamma (ofGenerated code) level ↔
       RussellTarski.HasCode Gamma code level := by
   constructor
@@ -400,8 +400,8 @@ theorem generated_hasCode_iff {Gamma : Tower.Ctx n}
 
 /-! ## A genuine open type-family template -/
 
-def familyDomainLevel : LevelExpr := .param 20
-def familyCodomainLevel : LevelExpr := .param 21
+def familyDomainLevel : LevelExpr Nat := .param 20
+def familyCodomainLevel : LevelExpr Nat := .param 21
 
 def familyContextA : Tower.Ctx 1 :=
   .snoc .nil (sortTm familyDomainLevel)

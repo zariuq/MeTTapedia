@@ -154,15 +154,21 @@ def presentation (A : BindingCloneAlgebra.Algebra.{u} S) :
   Judgment _ := Judgment A
   rules := rules R A
 
+/-- A base interpretation translates the rule polynomial, keeping the
+selected rule and every premise position. -/
+def rulesMap {A : BindingCloneAlgebra.Algebra.{u} S} {B : BindingCloneAlgebra.Algebra.{v} S}
+    (h : FreeBindingClone.Hom A B) :
+    IndexedRulePolynomialMorphisms.Hom (rules R A) (rules R B) (fun _ => mapJudgment h) where
+  onShape := fun _ _ shape => mapShape R h shape
+  onPosition := fun _ _ shape => Equiv.refl
+    (Fin (R.get shape.1.index).2.premises.length)
+  onNext := fun _ _ shape position => mapInstance_child R h shape.1 position
+
 /-- A base interpretation preserves the selected rule and every premise. -/
 def presentationMap {A B : BindingCloneAlgebra.Algebra.{u} S}
     (h : FreeBindingClone.Hom A B) : presentation R A ⟶ presentation R B where
   judgment _ := mapJudgment h
-  rules := {
-    onShape := fun _ _ shape => mapShape R h shape
-    onPosition := fun _ _ shape => Equiv.refl
-      (Fin (R.get shape.1.index).2.premises.length)
-    onNext := fun _ _ shape position => mapInstance_child R h shape.1 position }
+  rules := rulesMap R h
 
 theorem presentationMap_id (A : BindingCloneAlgebra.Algebra.{u} S) :
     presentationMap R (FreeBindingClone.Hom.id A) = 𝟙 (presentation R A) := rfl

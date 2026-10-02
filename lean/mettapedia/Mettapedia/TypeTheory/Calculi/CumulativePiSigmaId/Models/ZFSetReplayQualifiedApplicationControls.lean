@@ -628,7 +628,7 @@ theorem computed_pair_invalid_input_values_differ (h : CofinalInaccessibles.{u})
     noConversionCheck (upperApplicationCode 1) (upper_application_checked 1)
   have lowerInside : (programMeaning h 0 1).value env ∈ universeSet h ∅ 0 := by
     rw [lowerInput]
-    exact seed_mem_zero h ∅
+    exact seed_mem_universeSet h ∅ (0 : Nat)
   have upperInside : (programMeaning h 1 1).value env ∈ universeSet h ∅ 1 := by
     rw [upperInput]
     exact universeSet_mem_next h ∅ 0
@@ -652,7 +652,7 @@ theorem computed_pair_invalid_input_values_differ (h : CofinalInaccessibles.{u})
   rw [lowerValue, upperValue, lowerInput, upperInput]
   intro equal
   have first := (ZFSet.pair_inj.mp equal).1
-  have member := seed_mem_zero h (∅ : ZFSet.{u})
+  have member := seed_mem_universeSet h (∅ : ZFSet.{u}) (0 : Nat)
   rw [← first] at member
   exact ZFSet.notMem_empty _ member
 

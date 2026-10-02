@@ -73,17 +73,17 @@ theorem structural_arguments_compile
   exact (proofs index).canonicalTreeRaw_accepted
 
 /-- Native variable indices are newest-first; application order is oldest-first. -/
-def assignment (level : LevelExpr) : Sub Tower.Head 2 0 :=
+def assignment (level : LevelExpr Nat) : Sub Tower.Head 2 0 :=
   consSub (sortTm level)
     (consSub (sortTm (.succ level)) (renSub Fin.elim0))
 
 /-- Concrete proof syntax for both actual arguments. -/
-def certificates (level : LevelExpr) : Fin 2 → RawProof :=
+def certificates (level : LevelExpr Nat) : Fin 2 → RawProof :=
   Fin.cases (DeclarationAwareStructuralTyping.sortRaw .nil level)
     (Fin.cases (DeclarationAwareStructuralTyping.sortRaw .nil (.succ level)) Fin.elim0)
 
 /-- The second domain is the value of the first argument, not its universe. -/
-theorem arguments_accepted (level : LevelExpr) :
+theorem arguments_accepted (level : LevelExpr Nat) :
     checkArguments (checkArgument .nil)
       (identityContext (.succ (.succ level)))
       (assignment level) (certificates level) = true := by
@@ -102,7 +102,7 @@ theorem arguments_accepted (level : LevelExpr) :
   simp only [older, newest, Bool.and_self]
 
 /-- This typed substitution is earned by the executable evidence fold. -/
-theorem assignment_typed (level : LevelExpr) :
+theorem assignment_typed (level : LevelExpr Nat) :
     Presentation.CtxMor Tower.rules
       (identityContext (.succ (.succ level))) .nil (assignment level) :=
   checkArguments_sound (checkArgument .nil) (checkArgument_sound .nil)
@@ -110,7 +110,7 @@ theorem assignment_typed (level : LevelExpr) :
 
 /-- One accepted argument sequence supplies typing, its actual result, and
 the directed beta execution of the same dependent program. -/
-theorem identity_application_checked (level : LevelExpr) :
+theorem identity_application_checked (level : LevelExpr Nat) :
     Tower.HasType .nil
       (.app (.app (identityTerm (.succ (.succ level))) (sortTm (.succ level)))
         (sortTm level)) (sortTm (.succ level)) ∧
@@ -124,9 +124,9 @@ theorem identity_application_checked (level : LevelExpr) :
   convert (checked_application_beta (checkArgument .nil) (checkArgument_sound .nil)
     bodyTyped (arguments_accepted level)) using 1 <;> rfl
 
-private def zero : LevelExpr := .const 0
-private def one : LevelExpr := .succ zero
-private def two : LevelExpr := .succ one
+private def zero : LevelExpr Nat := .const 0
+private def one : LevelExpr Nat := .succ zero
+private def two : LevelExpr Nat := .succ one
 
 /-- A valid sort proof at U2 cannot certify that U1 inhabits itself. -/
 theorem universe_self_certificate_rejected (proof : RawProof) :

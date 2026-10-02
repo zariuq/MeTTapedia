@@ -99,6 +99,7 @@ def matchArgs : List Pattern → List Pattern → List Bindings
         mergeBindings hb tb
   | _, _ => []
 termination_by pats => sizeOf pats
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Multiset matching: find all ways to match pattern elements against term elements.
     If `restVar` is `some v`, unmatched term elements are bound to `v` as a collection.
@@ -115,6 +116,7 @@ def matchBag : List Pattern → Option String → CollType → List Pattern → 
         (matchBag prest restVar ct remaining).filterMap fun restB =>
           mergeBindings hb restB
 termination_by ppats => sizeOf ppats
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Match a concrete term against a pattern, producing all valid binding sets.
 
@@ -155,6 +157,7 @@ def matchPattern (pat term : Pattern) : List Bindings :=
         mergeBindings b1 b2
   | _, _ => []
 termination_by sizeOf pat
+decreasing_by all_goals sizeOf_pattern_dec
 end
 
 /-! ## Matching with a declared binding equivalence
@@ -190,6 +193,7 @@ mutual
             mergeBindingsWith equivalent headBindings tailBindings
     | _, _ => []
   termination_by patterns => sizeOf patterns
+  decreasing_by all_goals sizeOf_pattern_dec
 
   /-- Multiset matching with a declared repeated-binding equivalence. -/
   def matchBagWith (equivalent : Pattern → Pattern → Bool) :
@@ -206,6 +210,7 @@ mutual
               fun tailBindings =>
                 mergeBindingsWith equivalent headBindings tailBindings
   termination_by patterns => sizeOf patterns
+  decreasing_by all_goals sizeOf_pattern_dec
 
   /-- Match a concrete term while using `equivalent` only to validate values
   assigned to repeated metavariables. -/
@@ -248,6 +253,7 @@ mutual
               mergeBindingsWith equivalent bodyBindings replacementBindings
     | _, _ => []
   termination_by sizeOf pattern
+  decreasing_by all_goals sizeOf_pattern_dec
 end
 
 /-! ## Applying Bindings to RHS -/
@@ -285,6 +291,7 @@ def applyBindings (bindings : Bindings) (rhs : Pattern) : Pattern :=
       | none => ([], none)
     .collection ct (elems' ++ restElems) unresolvedRest
 termination_by sizeOf rhs
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-! ## Checked binding application
 
@@ -322,6 +329,7 @@ private def applyBindingsCore? (bindings : Bindings) (rhs : Pattern) : Option Pa
                 none
           | _ => none
 termination_by sizeOf rhs
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Apply bindings to an output pattern, failing on duplicate binding names, an
 unbound metavariable, or an unresolved/ill-shaped collection-rest binding.
@@ -1135,26 +1143,26 @@ theorem applyBindingsScoped_eq_applyBindings (lhs : Pattern) (bindings : Binding
       | some rv =>
           simp only [restSplice]
           cases found : bindings.find? (fun entry => entry.1 == rv) with
-          | none => simp [found]
+          | none => simp
           | some entry =>
               obtain ⟨entryName, entryValue⟩ := entry
               cases entryValue with
               | collection boundCt relems boundRest =>
                   cases boundRest with
-                  | some _ => simp [found]
+                  | some _ => simp
                   | none =>
                       by_cases sameKind : boundCt = ct
                       · subst sameKind
                         cases hdc : captureDepth rv 0 lhs with
-                        | none => simp [found, hdc]
+                        | none => simp
                         | some dc =>
                             have hdd : dc = d := by
                               simp only [hdc, beq_iff_eq] at h
                               exact h.2
                             subst hdd
-                            simp [found, hdc, map_liftBVars_zero]
-                      · simp [found, sameKind]
-              | _ => simp [found]
+                            simp [map_liftBVars_zero]
+                      · simp [sameKind]
+              | _ => simp
 
 theorem applyBindingsScopedList_eq_applyBindingsMap (lhs : Pattern)
     (bindings : Bindings) :
@@ -1215,7 +1223,7 @@ theorem captureDepth_of_binderFree : ∀ (name : String) (d : Nat) (p : Pattern)
           | none => simp at h
           | some restVar =>
               by_cases same : restVar = name
-              · simp only [same, beq_self_eq_true, if_pos rfl] at h
+              · simp only [same, beq_self_eq_true] at h
                 injection h with h'
                 exact h'.symm
               · simp only [beq_iff_eq, if_neg same] at h
@@ -1306,18 +1314,18 @@ theorem applyBindingsScoped_zero_of_binderFree (lhs : Pattern)
       | some rv =>
           simp only [restSplice]
           cases found : bindings.find? (fun entry => entry.1 == rv) with
-          | none => simp [found]
+          | none => simp
           | some entry =>
               obtain ⟨entryName, entryValue⟩ := entry
               cases entryValue with
               | collection boundCt relems boundRest =>
                   cases boundRest with
-                  | some _ => simp [found]
+                  | some _ => simp
                   | none =>
                       cases hdc : captureDepth rv 0 lhs with
-                      | none => simp [found, hdc]
-                      | some dc => simp [found, hdc, Nat.zero_sub, map_liftBVars_zero]
-              | _ => simp [found]
+                      | none => simp
+                      | some dc => simp [map_liftBVars_zero]
+              | _ => simp
 
 theorem applyBindingsScopedList_zero_of_binderFreeList (lhs : Pattern)
     (bindings : Bindings) : ∀ (ps : List Pattern), binderFreeList ps = true →

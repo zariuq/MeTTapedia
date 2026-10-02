@@ -1,4 +1,4 @@
-import Mettapedia.TypeTheory.UniverseLevel.Order
+import Mettapedia.TypeTheory.UniverseLevel.Offsets
 
 /-!
 # Ordinal notations below ε₀ as universe levels
@@ -20,6 +20,8 @@ every normal form below `ω ^ e` accessible whenever `e` is, and structural indu
 normal forms finishes.
 
 The successor adds one at the end of a normal form; it is the least level strictly above.
+The predecessor removes one from a finite last term, so it is computed whether a level is
+a successor: the levels have predecessors, and `ω` is a limit.
 
 Positive examples: finite levels lie below `ω`, `ω` below its successor, `max`
 computes, and the table of interpretations reads finite levels below `ω`. Negative
@@ -207,6 +209,11 @@ def succ : Cnf → Cnf
   | oadd zero n a => oadd zero (n + 1) a
   | oadd (oadd e' n' a') n a => oadd (oadd e' n' a') n (succ a)
 
+/-- The successor of a numeral is the next numeral. -/
+theorem succ_ofNat : ∀ n : Nat, succ (ofNat n) = ofNat (n + 1)
+  | 0 => rfl
+  | _ + 1 => rfl
+
 /-- Numerals are normal forms. -/
 theorem nf_ofNat : ∀ n : Nat, NF (ofNat n)
   | 0 => .zero
@@ -271,6 +278,65 @@ theorem succ_le_of_lt : ∀ {x y : Cnf}, NF x → NF y → cmp x y = .lt → cmp
       · rw [hn]; exact nofun
       · rw [hn]
         exact succ_le_of_lt hx.snd hy.snd ha
+
+/-! ## The predecessor -/
+
+/-- The predecessor of a successor tree: a finite last term shrinks by one, or disappears
+when it is `1`. Trees whose last term is not finite have none. -/
+def pred? : Cnf → Option Cnf
+  | zero => none
+  | oadd zero 0 a => some a
+  | oadd zero (n + 1) a => some (oadd zero n a)
+  | oadd (oadd e' n' a') n a => (pred? a).map (oadd (oadd e' n' a') n)
+
+/-- The predecessor of a successor is the tree itself. -/
+theorem pred?_succ : ∀ x : Cnf, pred? (succ x) = some x
+  | zero => rfl
+  | oadd zero _ _ => rfl
+  | oadd (oadd e' n' a') n a => by
+    show (pred? (succ a)).map (oadd (oadd e' n' a') n) = some (oadd (oadd e' n' a') n a)
+    rw [pred?_succ a]
+    rfl
+
+/-- A normal form with a predecessor is the successor of it. -/
+theorem eq_succ_of_pred?_eq_some : ∀ {x p : Cnf}, NF x → pred? x = some p → x = succ p
+  | zero, _, _, h => nomatch h
+  | oadd zero 0 a, p, hx, h => by
+    obtain rfl : a = p := Option.some.inj h
+    obtain rfl := eq_zero_of_lt_omegaPow_zero hx.lt
+    rfl
+  | oadd zero (n + 1) a, p, _, h => by
+    obtain rfl : oadd zero n a = p := Option.some.inj h
+    rfl
+  | oadd (oadd e' n' a') n a, p, hx, h => by
+    have h' : (pred? a).map (oadd (oadd e' n' a') n) = some p := h
+    cases hq : pred? a with
+    | none => rw [hq] at h'; exact nomatch h'
+    | some q =>
+      rw [hq] at h'
+      obtain rfl : oadd (oadd e' n' a') n q = p := Option.some.inj h'
+      rw [eq_succ_of_pred?_eq_some hx.snd hq]
+      rfl
+
+/-- The predecessor of a normal form is a normal form. -/
+theorem nf_of_pred?_eq_some : ∀ {x p : Cnf}, NF x → pred? x = some p → NF p
+  | zero, _, _, h => nomatch h
+  | oadd zero 0 a, p, hx, h => by
+    obtain rfl : a = p := Option.some.inj h
+    exact hx.snd
+  | oadd zero (n + 1) a, p, hx, h => by
+    obtain rfl : oadd zero n a = p := Option.some.inj h
+    exact .oadd n hx.fst hx.snd hx.lt
+  | oadd (oadd e' n' a') n a, p, hx, h => by
+    have h' : (pred? a).map (oadd (oadd e' n' a') n) = some p := h
+    cases hq : pred? a with
+    | none => rw [hq] at h'; exact nomatch h'
+    | some q =>
+      rw [hq] at h'
+      obtain rfl : oadd (oadd e' n' a') n q = p := Option.some.inj h'
+      have ha : a = succ q := eq_succ_of_pred?_eq_some hx.snd hq
+      refine .oadd n hx.fst (nf_of_pred?_eq_some hx.snd hq) ?_
+      exact cmp_lt_trans (by rw [ha]; exact cmp_succ q) hx.lt
 
 /-! ## Well-foundedness -/
 
@@ -444,10 +510,68 @@ instance : LevelOrder Level where
   lt_succ := lt_succ
   succ_le_of_lt := succ_le_of_lt
 
+/-- The predecessor of a successor level; `none` at the least level and at limits. -/
+def pred? (x : Level) : Option Level :=
+  match h : Cnf.pred? x.1 with
+  | some p => some ⟨p, nf_of_pred?_eq_some x.2 h⟩
+  | none => none
+
+/-- A level has the predecessor `p` exactly when it is the successor of `p`. -/
+theorem pred?_eq_some {x p : Level} : pred? x = some p ↔ x = succ p := by
+  unfold pred?
+  split
+  · rename_i q hq
+    constructor
+    · intro h
+      obtain rfl : (⟨q, nf_of_pred?_eq_some x.2 hq⟩ : Level) = p := Option.some.inj h
+      exact ext (eq_succ_of_pred?_eq_some x.2 hq)
+    · intro h
+      subst h
+      have hqp : q = p.1 := Option.some.inj (hq.symm.trans (Cnf.pred?_succ p.1))
+      exact congrArg some (ext hqp)
+  · rename_i hnone
+    constructor
+    · intro h
+      exact nomatch h
+    · intro h
+      subst h
+      rw [show (succ p).1 = Cnf.succ p.1 from rfl, Cnf.pred?_succ] at hnone
+      exact nomatch hnone
+
+/-- Levels below ε₀ have predecessors. -/
+instance : PredLevelOrder Level where
+  pred? := pred?
+  pred?_eq_some := pred?_eq_some
+
+/-- The successor of a numeral is the next numeral. -/
+theorem succ_ofNat (n : Nat) : succ (ofNat n) = ofNat (n + 1) :=
+  ext (Cnf.succ_ofNat n)
+
+/-- The finite levels of the level order are the numerals. -/
+theorem levelOrder_ofNat : ∀ n : Nat, (LevelOrder.ofNat n : Level) = ofNat n
+  | 0 => rfl
+  | n + 1 => by
+    rw [LevelOrder.ofNat_succ, levelOrder_ofNat n]
+    exact succ_ofNat n
+
 /-- Every finite level lies below `ω`. -/
 theorem ofNat_lt_omega : ∀ n : Nat, ofNat n < omega
   | 0 => rfl
   | _ + 1 => rfl
+
+/-- Every level below `ω` lies below a finite level. -/
+theorem exists_lt_ofNat_of_lt_omega {β : Level} (hβ : β < omega) : ∃ n : Nat, β < ofNat n := by
+  obtain ⟨x, hx⟩ := β
+  cases x with
+  | zero => exact ⟨1, rfl⟩
+  | oadd e k a =>
+    have he : cmp e (omegaPow Cnf.zero) = .lt := oadd_lt_omegaPow.mp (lt_def.mp hβ)
+    obtain rfl := eq_zero_of_lt_omegaPow_zero he
+    obtain rfl := eq_zero_of_lt_omegaPow_zero hx.lt
+    refine ⟨k + 2, lt_def.mpr ?_⟩
+    show cmp (Cnf.oadd Cnf.zero k Cnf.zero) (Cnf.oadd Cnf.zero (k + 1) Cnf.zero) = .lt
+    rw [cmp_oadd, Nat.compare_eq_lt.mpr (Nat.lt_succ_self k)]
+    rfl
 
 /-- `ω` is the successor of no level: it is a limit. -/
 theorem succ_ne_omega (x : Level) : succ x ≠ omega := by
@@ -459,6 +583,10 @@ theorem succ_ne_omega (x : Level) : succ x ≠ omega := by
   | ⟨.oadd (.oadd _ _ _) _ .zero, _⟩ => exact nomatch h'
   | ⟨.oadd (.oadd _ _ _) _ (.oadd .zero _ _), _⟩ => exact nomatch h'
   | ⟨.oadd (.oadd _ _ _) _ (.oadd (.oadd _ _ _) _ _), _⟩ => exact nomatch h'
+
+/-- `ω` is a limit level. -/
+theorem isLimit_omega : LevelOrder.IsLimit omega :=
+  ⟨ofNat_lt_omega 0, fun p => succ_ne_omega p⟩
 
 end Level
 
@@ -482,6 +610,13 @@ example : LevelOrder.succ (ofNat 3) = ofNat 4 := by decide
 
 /-- The larger of `3` and `ω` is `ω`. -/
 example : max (ofNat 3) omega = omega := by decide
+
+/-- The predecessor of `ω + 1` is `ω`, and of `4` is `3`. -/
+example : PredLevelOrder.pred? (succ omega) = some omega ∧
+    PredLevelOrder.pred? (ofNat 4) = some (ofNat 3) := by decide
+
+/-- `ω` has no predecessor, and neither has `0`. -/
+example : PredLevelOrder.pred? omega = none ∧ PredLevelOrder.pred? zero = none := by decide
 
 /-- The table of interpretations over levels below ε₀ reads a finite level below `ω` by
 its interpretation. -/

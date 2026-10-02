@@ -55,10 +55,8 @@ def historyCollector (Ground : Type uGround) :
 
 /-- Sequential WorkSpan valuation of one retained wave history. -/
 def historyWorkSpan {Ground : Type uGround} :
-    List (WaveEvent Ground) → WorkSpan
-  | [] => 0
-  | event :: rest =>
-      WorkSpan.sequential event.workSpan (historyWorkSpan rest)
+    List (WaveEvent Ground) → WorkSpan := fun events =>
+  WorkSpan.sequentialAll (events.map WaveEvent.workSpan)
 
 @[simp] theorem historyWorkSpan_nil {Ground : Type uGround} :
     historyWorkSpan ([] : List (WaveEvent Ground)) = 0 :=
@@ -75,12 +73,7 @@ theorem historyWorkSpan_append {Ground : Type uGround}
     (first second : List (WaveEvent Ground)) :
     historyWorkSpan (first ++ second) =
       WorkSpan.sequential (historyWorkSpan first) (historyWorkSpan second) := by
-  induction first with
-  | nil => simp
-  | cons event rest inductionHypothesis =>
-      simp only [List.cons_append, historyWorkSpan_cons]
-      rw [inductionHypothesis]
-      exact (WorkSpan.sequential_assoc _ _ _).symm
+  simp only [historyWorkSpan, List.map_append, WorkSpan.sequentialAll_append]
 
 /-- The observation discipline keeps exact history in `S` and reads
 `WorkSpan` only as `V`. -/

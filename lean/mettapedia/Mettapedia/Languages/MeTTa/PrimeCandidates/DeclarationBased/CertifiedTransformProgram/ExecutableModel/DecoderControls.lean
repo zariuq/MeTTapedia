@@ -36,16 +36,16 @@ of proofs: a neutral type headed by the decoder, compared as a spine. -/
 theorem holds_var_compared :
     Algorithmic objectRules objectRoles (.terms (.snoc .nil (.const propN))
       (.app (.const holdsN) (.var 0)) (.app (.const holdsN) (.var 0)) U0) := by
-  have hu : objectRules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+  have hu : objectRules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   have typed : Typed objectRules (.snoc .nil (.const propN)) (.var 0) (.const propN) := .var 0
   have holdsT : Typed objectRules (.snoc .nil (.const propN)) (.app (.const holdsN) (.var 0)) U0 :=
     .appElim holds_typedO typed
   have isU0 : IsType objectRules (.snoc .nil (.const propN)) U0 :=
-    ⟨_, Tower.IsUniverse.sort _, U0_typedU tower_sub_objectRules⟩
+    ⟨_, LevelTower.IsUniverse.sort _, U0_typedU tower_sub_objectRules⟩
   have isProp : IsType objectRules (.snoc .nil (.const propN)) (.const propN) :=
     ⟨_, hu, prop_typedO⟩
   have isPi : IsType objectRules (.snoc .nil (.const propN)) (.pi (.const propN) U0) :=
-    ⟨_, Tower.IsUniverse.sort _, piO (raiseO prop_typedO) U0_typedO⟩
+    ⟨_, LevelTower.IsUniverse.sort _, piO (raiseO prop_typedO) U0_typedO⟩
   have neutral : Neutral objectRoles (.app (.const holdsN) (.var 0) : Tower.Tm 1) :=
     Neutral.stuck_single (before := []) (after := []) objectRoles_holds rfl (.var 0)
   have codes : Algorithmic objectRules objectRoles

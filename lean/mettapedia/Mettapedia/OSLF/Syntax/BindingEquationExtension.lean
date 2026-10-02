@@ -40,25 +40,23 @@ theorem axiomInclusion_trans {E F G : List (EqAxiom S M)}
   obtain ⟨k, hk⟩ := later j
   exact ⟨k, hk.trans hj⟩
 
-/-- Satisfaction is monotone when equations are forgotten. -/
+/-- Contextual satisfaction is monotone when equations are forgotten;
+the bodies and both semantic environments are retained. -/
 theorem satisfies_of_inclusion {E F : List (EqAxiom S M)}
     (includeAxiom : AxiomInclusion E F)
     (A : Mettapedia.OSLF.Binding.BindingCloneAlgebra.Algebra.{u} S)
     (satisfies : Satisfies A F) : Satisfies A E := by
-  intro i valuation Γ env
+  intro i Θ Γ valuation ambient ordinary
   obtain ⟨j, equalAxiom⟩ := includeAxiom i
   let P : EqAxiom S M → Prop := fun a =>
-    ∀ {Δ : Ctx S}
-      (assignment : Mettapedia.OSLF.Binding.BindingSubstitutionAlgebra.Environment S
-        A.substitution.Carrier a.ctx Δ),
-      A.substitution.substitute assignment
-        (interpretSchema A valuation a.lhs) =
-      A.substitution.substitute assignment
-        (interpretSchema A valuation a.rhs)
+    ∀ (assignment : Mettapedia.OSLF.Binding.BindingSubstitutionAlgebra.Environment S
+        A.substitution.Carrier a.ctx Γ),
+      SemanticContextualMetavariables.interpretSchema A valuation ambient assignment a.lhs =
+        SemanticContextualMetavariables.interpretSchema A valuation ambient assignment a.rhs
   have hF : P (F.get j) := by
-    intro Δ assignment
-    exact satisfies j valuation assignment
-  exact (Eq.mp (congrArg P equalAxiom) hF) env
+    intro assignment
+    exact satisfies j valuation ambient assignment
+  exact (Eq.mp (congrArg P equalAxiom) hF) ordinary
 
 /-- The model of the larger equation set, viewed as a model of the smaller
 one, has exactly the same carrier and algebraic operations. -/
@@ -103,7 +101,7 @@ theorem comparisonHom_mk {E F : List (EqAxiom S M)}
       (BindingEquationQuotientModel.algebra F)
       (satisfies_of_inclusion includeAxiom
         (BindingEquationQuotientModel.algebra F)
-        (BindingEquationQuotientModel.algebra_satisfies F))
+        (BindingEquationQuotientModel.algebra_satisfies F)).congruenceSound
       (Quotient.mk _ term : TermQ E Γ sort) =
     (Quotient.mk _ term : TermQ F Γ sort)
   rw [interpretQuotient_mk]

@@ -25,7 +25,7 @@ open NativeIndexedFamilies
 
 
 abbrev rules := SharedJudgmentNativeBooleanRegion.rules
-abbrev theta : Nat → LevelExpr := fun _ => SharedJudgmentNativeBooleanRegion.one
+abbrev theta : Nat → LevelExpr Nat := fun _ => SharedJudgmentNativeBooleanRegion.one
 abbrev levelContext {k : Nat} (context : Tower.Ctx k) := substLevelsCtx theta context
 abbrev levelTerm {k : Nat} (term : Tower.Tm k) := substLevelsTm theta term
 
@@ -49,7 +49,7 @@ theorem native_lookup {name : DeclName} {type : Tower.Tm 0}
   rfl
 
 theorem nativeSpine (context : Tower.Ctx n) {name : DeclName} {type : Tower.Tm 0}
-    {level : LevelExpr} (known : IntrinsicRelator.rules.constantType name = some type)
+    {level : LevelExpr Nat} (known : IntrinsicRelator.rules.constantType name = some type)
     (formed : Typing IntrinsicRelator.rules .nil type (sortTm level)) :
     DeclarationSpine rules context (.const name) (liftClosed (levelTerm type)) :=
   .constant (native_lookup known) (includeNative formed) (.sort (LevelExpr.subst theta level))

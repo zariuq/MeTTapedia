@@ -33,12 +33,12 @@ open RelationalInternalLanguage
 
 namespace Intrinsic
 
-def leftEvidenceLevel : LevelExpr := .param 3
-def rightEvidenceLevel : LevelExpr := .param 4
+def leftEvidenceLevel : LevelExpr Nat := .param 3
+def rightEvidenceLevel : LevelExpr Nat := .param 4
 
 /-- The result fibre must retain the middle value as well as both premise
 derivations. -/
-def resultEvidenceLevel : LevelExpr :=
+def resultEvidenceLevel : LevelExpr Nat :=
   .max beta (.max leftEvidenceLevel rightEvidenceLevel)
 
 /-- `(Rel A B) -> (Rel B C) -> Rel A C` in the lexical type context
@@ -145,19 +145,19 @@ def chainCtxABCQRXZ : Tower.Ctx 7 :=
     Ctx.lookup chainCtxABCQRXZ 0 = (.var 4 : Tower.Tm 7) := by
   decide
 
-def leftRelationLevel : LevelExpr :=
+def leftRelationLevel : LevelExpr Nat :=
   .max alpha (.max beta (.succ leftEvidenceLevel))
 
-def rightRelationLevel : LevelExpr :=
+def rightRelationLevel : LevelExpr Nat :=
   .max beta (.max gamma (.succ rightEvidenceLevel))
 
-def resultRelationLevel : LevelExpr :=
+def resultRelationLevel : LevelExpr Nat :=
   .max alpha (.max gamma (.succ resultEvidenceLevel))
 
-def chainBodyLevel : LevelExpr :=
+def chainBodyLevel : LevelExpr Nat :=
   .max leftRelationLevel (.max rightRelationLevel resultRelationLevel)
 
-def chainSchemaLevel : LevelExpr :=
+def chainSchemaLevel : LevelExpr Nat :=
   .max (.succ alpha)
     (.max (.succ beta) (.max (.succ gamma) chainBodyLevel))
 

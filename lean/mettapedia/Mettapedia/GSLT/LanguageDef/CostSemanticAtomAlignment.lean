@@ -3738,7 +3738,7 @@ namespace CostStaticAtomEvaluationBridge
 
 /-- Reverse an evaluation bridge by reversing its proof-relevant frame
 alignment and exchanging the two endpoint factorizations. -/
-def symm
+theorem symm
     {source : CIGSLT} {leftColor rightColor : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {leftOccurrences rightOccurrences : List CostRegionOccurrence}
@@ -4251,7 +4251,7 @@ structure CostStaticCanonicalAtomRestorationEvaluationBridge
 namespace CostStaticCanonicalAtomRestorationEvaluationBridge
 
 /-- Reverse a common-restoration evaluation bridge. -/
-def symm
+theorem symm
     {source : CIGSLT} {leftColor rightColor : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {leftOccurrences rightOccurrences : List CostRegionOccurrence}
@@ -4479,7 +4479,7 @@ structure CostStaticCanonicalAtomEvaluationBridge
 namespace CostStaticCanonicalAtomEvaluationBridge
 
 /-- Reverse a canonical semantic-atom evaluation bridge. -/
-def symm
+theorem symm
     {source : CIGSLT} {leftColor rightColor : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {leftOccurrences rightOccurrences : List CostRegionOccurrence}

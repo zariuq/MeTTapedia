@@ -17,7 +17,7 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 mutual
   /-- Intrinsic typing of the exact compact pattern indexed by a semantic
   tree.  No checker or declaration search is rerun. -/
-  def CostSemanticTree.originalTyped {source : CIGSLT}
+  theorem CostSemanticTree.originalTyped {source : CIGSLT}
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       (tree : CostSemanticTree source targetFree available outer pattern type) :
@@ -50,7 +50,7 @@ mutual
     all_goals omega
 
   /-- Intrinsic typing of a semantic constructor-argument spine. -/
-  def CostSemanticArgumentTrees.originalTyped {source : CIGSLT}
+  theorem CostSemanticArgumentTrees.originalTyped {source : CIGSLT}
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {arguments : List Pattern}
       {parameters : List TermParam}
@@ -68,7 +68,7 @@ mutual
     all_goals omega
 
   /-- Intrinsic typing of a semantic collection-element spine. -/
-  def CostSemanticElementTrees.originalTyped {source : CIGSLT}
+  theorem CostSemanticElementTrees.originalTyped {source : CIGSLT}
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {elements : List Pattern}
       {elementType : TypeExpr}

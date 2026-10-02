@@ -70,7 +70,7 @@ structure FormedTypingQuery where
   levels : LevelSpine arity
   subject : Tower.Tm arity
   type : Tower.Tm arity
-  level : LevelExpr
+  level : LevelExpr Nat
 
 /-- The context-formation premise selected by a formed query. -/
 def FormedTypingQuery.contextClaim (query : FormedTypingQuery) :
@@ -258,7 +258,7 @@ private theorem formedTypingTarget_valid :
     DeclarationAwareDataLanguage.constructorArities,
     DeclarationAwareDataLanguage.kernelDataType,
     TypeDecl.plain,
-    encodeTowerHead, Tower.zero, encodeLevel, encodeNat, encodeCtx,
+    encodeTowerHead, LevelTower.zero, encodeLevel, encodeNat, encodeCtx,
     CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
     CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
     CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
@@ -1086,7 +1086,7 @@ namespace Examples
 
 open DeclarationAwareStructuralTyping
 
-private abbrev simplePiLevel : LevelExpr :=
+private abbrev simplePiLevel : LevelExpr Nat :=
   .max (.succ Tower.zero) (.succ Tower.zero)
 
 def simplePiQuery : FormedTypingQuery where

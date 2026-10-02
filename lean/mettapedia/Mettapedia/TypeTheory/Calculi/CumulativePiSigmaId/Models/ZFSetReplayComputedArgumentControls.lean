@@ -39,7 +39,7 @@ def program : Nat → Tower.Tm 1
   | 0 => .var 0
   | depth + 1 => .app (.lam (.var 0)) (program depth)
 
-def identityCode (level : LevelExpr) : Replay 1 :=
+def identityCode (level : LevelExpr Nat) : Replay 1 :=
   .lamIntro (.sort (.max (.succ level) (.succ level)))
     (.piForm (.sort (.succ level)) (.sort (.succ level)) .headType .headType) .var
 
@@ -102,7 +102,7 @@ variable. Checking does not silently normalize the supplied derivation. -/
 theorem forged_computed_argument_rejected (depth : Nat) : check Tower.rules noConversionCheck context
     (program (depth + 1)) (.head one) (.cumul zero (Code.var : Replay 1)) = false := rfl
 
-private theorem identity_step_trace (level : LevelExpr) (argument : Tower.Tm 1)
+private theorem identity_step_trace (level : LevelExpr Nat) (argument : Tower.Tm 1)
     (argumentCode terminal : Replay 1)
     (trace : BetaToVariable argument (.head (.sort level)) argumentCode 0 terminal) :
     BetaToVariable (.app (.lam (.var 0)) argument) (.head (.sort level))
@@ -267,7 +267,7 @@ theorem invalid_input_distinguishes (h : CofinalInaccessibles.{u}) :
   obtain ⟨_, lower, upper⟩ := invalid_input_values h
   rw [lower, upper]
   intro equal
-  have member := seed_mem_zero h (∅ : ZFSet.{u})
+  have member := seed_mem_universeSet h (∅ : ZFSet.{u}) (0 : Nat)
   rw [← equal] at member
   exact ZFSet.notMem_empty _ member
 

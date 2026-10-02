@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.SNValueInstances
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Identity
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Identity
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ValueSide.TransportReadout
 
 /-!
@@ -47,7 +47,7 @@ variable (v : Nat → Nat)
 
 /-- **The tower is sound for the model**: its universe rules are the model's, and
 it has no constants and no computations. -/
-theorem vtower_soundS : ModelS.TypedSoundS Tower.rules (vmodel v) where
+theorem vtower_soundS : ModelSN.TypedSoundS Tower.rules (vmodel v) where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
@@ -96,33 +96,33 @@ theorem objectRoles_j :
 motive universe `w`** in the transport value model, when its type is valid with
 valid parts. There is no premise on the level of `u`. -/
 theorem vmodel_valid_j_at {u w : Tower.Head} (hw : (vmodel v).rules.isUniverse w)
-    (validType : ModelS.ValidTyS (vmodel v) .nil (elimType u w))
-    (partsType : ModelS.StructuredS (vmodel v) .nil (elimType u w)) :
-    ModelS.ValidTmS (vmodel v) .nil (.const jName) (elimType u w) :=
-  ModelS.ValidTmS.transportEliminator (vmodel_laws v) hw (vmodel_j_rootStep v)
+    (validType : ModelSN.ValidTyS (vmodel v) .nil (elimType u w))
+    (partsType : ModelSN.StructuredS (vmodel v) .nil (elimType u w)) :
+    ModelSN.ValidTmS (vmodel v) .nil (.const jName) (elimType u w) :=
+  ModelSN.ValidTmS.transportEliminator (vmodel_laws v) hw (vmodel_j_rootStep v)
     (vmodel_coeRules v) objectRoles_j objectStep_j validType partsType
 
 /-- **Identity elimination is valid at every pair of universes of the tower**:
 carrier `U lu` and motive `U lw`, for all level expressions `lu` and `lw`. The
 eliminator's type is typed in the tower without constants, whose soundness gives
 the validity of the type and of its parts. -/
-theorem vmodel_valid_j_sorts (lu lw : LevelExpr) :
-    ModelS.ValidTmS (vmodel v) .nil (.const jName) (elimType (.sort lu) (.sort lw)) := by
+theorem vmodel_valid_j_sorts (lu lw : LevelExpr Nat) :
+    ModelSN.ValidTmS (vmodel v) .nil (.const jName) (elimType (.sort lu) (.sort lw)) := by
   obtain ⟨w, hw, typed⟩ := TowerEliminatorModel.elimType_typed lu lw
-  obtain ⟨validT, partsT, _⟩ := ModelS.Derivable.validS (vtower_soundS v) typed trivial
-  exact vmodel_valid_j_at v (Tower.IsUniverse.sort lw) (validT.validTy hw) partsT
+  obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS (vtower_soundS v) typed trivial
+  exact vmodel_valid_j_at v (LevelTower.IsUniverse.sort lw) (validT.validTy hw) partsT
 
 /-- The declared eliminator of the package, at the lowest universes, is
 valid. -/
-theorem vmodel_valid_j : ModelS.ValidTmS (vmodel v) .nil (.const jName) Package.jType :=
+theorem vmodel_valid_j : ModelSN.ValidTmS (vmodel v) .nil (.const jName) Package.jType :=
   vmodel_valid_j_sorts v Tower.zero Tower.zero
 
 /-! ## Large elimination of the numbers -/
 
 /-- **Large elimination of the numbers**: the recursor with its motive into every
 universe of the tower is valid in the transport value model. -/
-theorem valid_numRecS_sorts (lw : LevelExpr) :
-    ModelS.ValidTmS (vmodel v) .nil (.const numRecName) (numRecTypeAt (.sort lw)) := by
+theorem valid_numRecS_sorts (lw : LevelExpr Nat) :
+    ModelSN.ValidTmS (vmodel v) .nil (.const numRecName) (numRecTypeAt (.sort lw)) := by
   have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -130,24 +130,24 @@ theorem valid_numRecS_sorts (lw : LevelExpr) :
       · exact vmodel_valid_num v
       · exact vmodel_valid_zero v
       · exact vmodel_valid_suc v
-  obtain ⟨validT, partsT, _⟩ := ModelS.Derivable.validS sound₀ (numRecTypeAt_typed lw) trivial
-  exact valid_numRecS_at v (.sort lw) (Tower.IsUniverse.sort lw)
-    (validT.validTy (Tower.IsUniverse.sort _)) partsT
+  obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS sound₀ (numRecTypeAt_typed lw) trivial
+  exact valid_numRecS_at v (.sort lw) (LevelTower.IsUniverse.sort lw)
+    (validT.validTy (LevelTower.IsUniverse.sort _)) partsT
 
 /-! ## The iterator at large families -/
 
 /-- **The iterator is valid at large families**: with its carrier in any
 universe `U lk` and its family into any universe `U ll` of the tower. -/
-theorem vmodel_valid_iter_sorts (lk ll : LevelExpr) :
-    ModelS.ValidTmS (vmodel v) .nil (.const iterName) (iterTypeAt (.sort lk) (.sort ll)) := by
+theorem vmodel_valid_iter_sorts (lk ll : LevelExpr Nat) :
+    ModelSN.ValidTmS (vmodel v) .nil (.const iterName) (iterTypeAt (.sort lk) (.sort ll)) := by
   have sound₀ := vstage_soundS_of v (names := [numN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       subst mem
       obtain rfl := Option.some.inj declared
       exact vmodel_valid_num v
-  obtain ⟨validT, partsT, _⟩ := ModelS.Derivable.validS sound₀ (iterTypeAt_typed lk ll) trivial
-  exact vmodel_valid_iter_at v (.sort lk) (.sort ll) (validT.validTy (Tower.IsUniverse.sort _))
+  obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS sound₀ (iterTypeAt_typed lk ll) trivial
+  exact vmodel_valid_iter_at v (.sort lk) (.sort ll) (validT.validTy (LevelTower.IsUniverse.sort _))
     partsT
 
 end CodeModel

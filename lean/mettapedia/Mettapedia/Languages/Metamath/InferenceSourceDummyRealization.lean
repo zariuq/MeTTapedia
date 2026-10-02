@@ -39,7 +39,7 @@ Main results:
   valid, ready, bound-short source state, a finite-support witness over
   the caller frame with declared support typecodes and base-supported
   conclusion yields a constructed plan, its gate acceptance, and
-  `SupportedProvable` over the successor's caller frame.
+  `FrameDerivable` over the successor's caller frame.
 * `provable_toSupported_sourceAccepted` — the Provable-form corollary:
   the typed extraction `Provable.exists_finiteSupport_typed` bounds
   every support-leaf typecode by the conclusion's typecode or a
@@ -310,13 +310,13 @@ theorem supported_transport_sourceRealized
     (hopt : OptionalFloatSequence
       (sourceOperationalCallerFrame state.toSourcePrefix)
       (decls.map DummyDecl.spec))
-    {formula : Metamath.Spec.Bridge.MarioFormula}
-    (hsupported : SupportedProvable Γ
+    {formula : Metamath.Spec.Bridge.DeclarativeFormula}
+    (hsupported : FrameDerivable Γ
       (sourceOperationalCallerFrame state.toSourcePrefix) formula) :
-    SupportedProvable Γ
+    FrameDerivable Γ
       (sourceOperationalCallerFrame after.toSourcePrefix) formula := by
   rw [declareDummies?_callerFrame hseq haccept]
-  exact SupportedProvable.extendFloats hopt hsupported
+  exact FrameDerivable.extendFloats hopt hsupported
 
 /-! ## Calibration -/
 
@@ -621,7 +621,7 @@ theorem stateBounded_step {state after : SourceState} {bound i : Nat}
 /-- The supply plan for a support list: positionally typed, freshly
 named and labeled. -/
 def supplyPlan (bound : Nat) :
-    List Metamath.Spec.Bridge.MarioVR → Nat → List DummyDecl
+    List Metamath.Spec.Bridge.DeclarativeVR → Nat → List DummyDecl
   | [], _ => []
   | v :: rest, i =>
       ⟨supplyLabel bound i, Metamath.VR.type v, supplyName bound i⟩ ::
@@ -631,7 +631,7 @@ def supplyPlan (bound : Nat) :
 declared constants cover the support typecodes, the striped supply plan
 is accepted end to end. -/
 theorem supplyPlan_accepts (bound : Nat) :
-    ∀ (support : List Metamath.Spec.Bridge.MarioVR)
+    ∀ (support : List Metamath.Spec.Bridge.DeclarativeVR)
       (state : SourceState) (i : Nat),
       sourceStateValid state = true →
       state.pendingBlockCompletions = 0 →
@@ -683,7 +683,7 @@ open Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 
 /-- The supply plan is positionally typed along its support. -/
 theorem supplyPlan_typedAlong (bound : Nat) :
-    ∀ (support : List Metamath.Spec.Bridge.MarioVR) (i : Nat),
+    ∀ (support : List Metamath.Spec.Bridge.DeclarativeVR) (i : Nat),
       TypedAlong support ((supplyPlan bound support i).map DummyDecl.spec)
   | [], _ => .nil
   | _ :: rest, i => .cons rfl (supplyPlan_typedAlong bound rest (i + 1))
@@ -692,7 +692,7 @@ theorem supplyPlan_typedAlong (bound : Nat) :
 frame whose variable names are either bound-short or earlier supply
 names, and whose essential symbols are all bound-short. -/
 theorem supplyPlan_spec_optionalSequence (bound : Nat) :
-    ∀ (support : List Metamath.Spec.Bridge.MarioVR) (i : Nat)
+    ∀ (support : List Metamath.Spec.Bridge.DeclarativeVR) (i : Nat)
       (fr : Metamath.Spec.Frame),
       (∀ w ∈ fr.vars, w.v.length ≤ bound ∨
         ∃ j, j < i ∧ w.v = supplyName bound j) →
@@ -825,8 +825,8 @@ theorem witness_toSupported_sourceAccepted
     (hvalid : sourceStateValid state = true)
     (hready : state.pendingBlockCompletions = 0)
     (hbound : ∀ s ∈ state.objectNames, s.length ≤ bound)
-    {support : List Metamath.Spec.Bridge.MarioVR}
-    {formula : Metamath.Spec.Bridge.MarioFormula}
+    {support : List Metamath.Spec.Bridge.DeclarativeVR}
+    {formula : Metamath.Spec.Bridge.DeclarativeFormula}
     (hwitness : FiniteSupportWitness (Γ := Γ)
       (source := frameToContext
         (sourceOperationalCallerFrame state.toSourcePrefix))
@@ -840,7 +840,7 @@ theorem witness_toSupported_sourceAccepted
     ∃ plan after,
       DummyDeclSequence state plan ∧
       declareDummies? state plan = some after ∧
-      SupportedProvable Γ
+      FrameDerivable Γ
         (sourceOperationalCallerFrame after.toSourcePrefix) formula := by
   obtain ⟨hseq, after, hafter⟩ := supplyPlan_accepts bound support state 0
     hvalid hready
@@ -872,7 +872,7 @@ theorem provable_toSupported_sourceAccepted
     (hvalid : sourceStateValid state = true)
     (hready : state.pendingBlockCompletions = 0)
     (hbound : ∀ s ∈ state.objectNames, s.length ≤ bound)
-    {formula : Metamath.Spec.Bridge.MarioFormula}
+    {formula : Metamath.Spec.Bridge.DeclarativeFormula}
     (hdbTypes : ∀ t, AxiomPremiseTypecode Γ t →
       t ∈ state.declaredConstants)
     (hconclType : formula.1 ∈ state.declaredConstants)
@@ -886,7 +886,7 @@ theorem provable_toSupported_sourceAccepted
     ∃ plan after,
       DummyDeclSequence state plan ∧
       declareDummies? state plan = some after ∧
-      SupportedProvable Γ
+      FrameDerivable Γ
         (sourceOperationalCallerFrame after.toSourcePrefix) formula := by
   obtain ⟨support, hwitness, htyped⟩ :=
     Provable.exists_finiteSupport_typed h

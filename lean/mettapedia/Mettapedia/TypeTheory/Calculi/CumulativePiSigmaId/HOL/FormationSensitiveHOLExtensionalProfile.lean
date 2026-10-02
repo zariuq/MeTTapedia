@@ -92,7 +92,7 @@ theorem pi_zero {n : Nat} {context : Tower.Ctx n}
     (.piForm domainTyped (.sort Tower.zero) codomainTyped (.sort Tower.zero)
       (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem proposition_formed {n : Nat} (context : Tower.Ctx n) :
     Typing baseRules context (liftClosed proposition) (sortTm Tower.zero) := by
@@ -330,7 +330,7 @@ theorem functionExtensionalityType_formed :
         functionsFormed (.sort Tower.zero)
         (.sorts (.succ Tower.zero) Tower.zero))
     intro valuation
-    simp [LevelExpr.eval, Tower.zero]
+    simp [LevelExpr.eval, LevelTower.zero]
   have complete : Typing baseRules .nil
       (.pi (sortTm Tower.zero)
         (.pi (sortTm Tower.zero)
@@ -344,7 +344,7 @@ theorem functionExtensionalityType_formed :
         overCodomain (.sort (.succ Tower.zero))
         (.sorts (.succ Tower.zero) (.succ Tower.zero)))
     intro valuation
-    simp [LevelExpr.eval, Tower.zero]
+    simp [LevelExpr.eval, LevelTower.zero]
   simpa only [functionExtensionalityType, withDomain, withTypes, functionType,
     withFunction, otherType, withOther] using complete
 

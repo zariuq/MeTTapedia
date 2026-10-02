@@ -33,7 +33,7 @@ open ZFSetUniverseClosure (CofinalInaccessibles)
 
 universe u
 
-local instance : DecidableRel Tower.rules.headEq := Tower.instDecidableHeadEq
+local instance : DecidableRel Tower.rules.headEq := LevelTower.instDecidableHeadEq
 
 abbrev SourceHead : Tower.Head := .sort (.succ Tower.zero)
 abbrev TargetHead : Tower.Head :=
@@ -106,7 +106,7 @@ theorem computed_argument_head_converted (h : CofinalInaccessibles.{u})
       context contextCode (valid h) context_checked (context_assembles h constants)
       computedArgument computedArgumentCode SourceHead TargetHead
       SourceLevel TargetLevel computed_argument_checked computed_argument_qualified
-      (Tower.HeadTyping.sort _) (Tower.HeadTyping.sort _) (Tower.IsUniverse.sort _)
+      (LevelTower.HeadTyping.sort _) (LevelTower.HeadTyping.sort _) (LevelTower.IsUniverse.sort _)
       heads_related
   exact ⟨meaning, checked, assembled, membership⟩
 

@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Causality.Mazurkiewicz
 import Mettapedia.Algebra.WorkSpan
+import Mettapedia.GSLT.Scope.ConsumerDescent
 
 /-!
 # Which costs are properties of the trace, and which of the schedule
@@ -18,7 +19,9 @@ the particular interleaving, and a scheduler is free to change it.
 * `grid_stateCost_not_descends` — charge the *same* occurrences by the state
   they fire in, and descent fails: the two routes of a single tile cost
   different amounts. A state-dependent cost is a schedule observation, not a
-  trace invariant, and must not be reported as work.
+  trace invariant. It can still measure work actually spent in that schedule;
+  transferring an exact total or a bound to another schedule needs a separate
+  preservation or bounding law.
 * `grid_siteWord_order_not_trace` recalls that an ordered record of sites is
   also a schedule observation; together the two controls bracket exactly what
   a commutative, occurrence-identity-keyed cost buys.
@@ -39,10 +42,28 @@ open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionEvent
 open Mettapedia.GSLT.Causality.OccurrenceHistory
 open Mettapedia.GSLT.Causality.Mazurkiewicz
+open Mettapedia.GSLT.Core.NonFactorization
 
 universe uSite uEvent
 
 variable {theory : GSLT}
+
+/-- Trace-invariance is the existing recovery-function criterion for the
+actual diamond quotient. No representative or extra descent law is chosen. -/
+theorem valuation_factors_trace_iff
+    {P : InteractionPresentation.{uSite, uEvent} theory}
+    (indep : SiteIndependence P) {A : Type*} [AddMonoid A]
+    (valuation : OccurrenceValuation P A) :
+    (∀ source target : theory.Term,
+      Factors (mkTrace (P := P) (indep := indep) (s := source) (t := target))
+        valuation.onPath) ↔ Descends indep valuation := by
+  constructor
+  · intro factors source target first second related
+    exact (factors source target).constantOnFibers first second (mkTrace_sound related)
+  · intro descends source target
+    exact (Mettapedia.GSLT.Scope.function_descends_iff
+      (diamondSetoid indep source target) valuation.onPath).mpr
+        (fun _ _ related => descends _ _ related)
 
 /-- Charge every occurrence by its site alone. -/
 def siteCostValuation (P : InteractionPresentation.{uSite, uEvent} theory)
@@ -60,7 +81,7 @@ theorem siteCostValuation_onPath
   | refl => simp [OccurrenceValuation.onPath]
   | cons o rest ih =>
       simp only [OccurrenceValuation.onPath, ih]
-      simp [bagValuation, siteCostValuation, Multiset.map_add, Multiset.sum_add]
+      simp [bagValuation, siteCostValuation]
 
 /-- **Every commutative site cost is a trace invariant.** -/
 theorem siteCostValuation_descends
@@ -71,6 +92,16 @@ theorem siteCostValuation_descends
   intro src tl
   rw [siteCostValuation_onPath, siteCostValuation_onPath,
     bagValuation_tile_invariant indep tl]
+
+/-- The trace view determines every commutative site-cost observation. -/
+theorem siteCostValuation_factors_trace
+    {P : InteractionPresentation.{uSite, uEvent} theory}
+    (indep : SiteIndependence P) {A : Type*} [AddCommMonoid A] (cost : P.Site → A)
+    (source target : theory.Term) :
+    Factors (mkTrace (P := P) (indep := indep) (s := source) (t := target))
+      (siteCostValuation P cost).onPath :=
+  (valuation_factors_trace_iff indep (siteCostValuation P cost)).mpr
+    (siteCostValuation_descends indep cost) source target
 
 /-- Work: one unit per occurrence. -/
 def workValuation (P : InteractionPresentation.{uSite, uEvent} theory) :
@@ -99,6 +130,16 @@ theorem grid_stateCost_not_descends : ¬ Descends gridIndep gridStateCost := by
   have := ((descends_iff_tile_invariant gridIndep gridStateCost).1 h) gridTile
   revert this
   decide
+
+/-- The same trace can cost two or six units, so the trace view cannot
+reconstruct this measured schedule cost. -/
+theorem grid_stateCost_not_factors_trace :
+    ¬ Factors
+      (mkTrace (P := gridPresentation) (indep := gridIndep)
+        (s := gridOrigin) (t := (true, true)))
+      gridStateCost.onPath :=
+  NonTrivialFiber.not_factors
+    ⟨gridTile.path, gridTile.pathSwap', mkTrace_sound (.swap gridTile), by decide⟩
 
 /-- **Positive control**: on the same tile, work is `2` along both routes. -/
 theorem grid_work_both_routes :

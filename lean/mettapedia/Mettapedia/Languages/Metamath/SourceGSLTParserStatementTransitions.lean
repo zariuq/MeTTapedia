@@ -1658,13 +1658,13 @@ private def singletonDisjointSource : String :=
 private def binaryDisjointSource : String :=
   "$v x y $. $d x y $."
 
-#guard (checkBytes emptyDisjointSource.toUTF8 .soundDefault).parseErrorCode? =
+#guard (checkBytes emptyDisjointSource.toUTF8 .sound).parseErrorCode? =
   some .disjointStatementTooShort
 
 #guard (checkBytes singletonDisjointSource.toUTF8
-    .soundDefault).parseErrorCode? =
+    .sound).parseErrorCode? =
   some .disjointStatementTooShort
 
-#guard (checkBytes binaryDisjointSource.toUTF8 .soundDefault).error?.isNone
+#guard (checkBytes binaryDisjointSource.toUTF8 .sound).error?.isNone
 
 end Mettapedia.Languages.Metamath.SourceGSLTParserPrefixBisimulation

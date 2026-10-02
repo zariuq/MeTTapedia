@@ -71,13 +71,13 @@ theorem rigid_types_refl {c : DeclName} (rigid : objectRoles c = .rigid)
     (declared : objectRules.constantType c = some U0) :
     Algorithmic objectRules objectRoles (.types Δ (.const c) (.const c)) := by
   have typing : Typed objectRules Δ (.const c) U0 := constU0 tower_sub_objectRules declared
-  have isC : IsType objectRules Δ (.const c) := ⟨_, Tower.IsUniverse.sort _, typing⟩
+  have isC : IsType objectRules Δ (.const c) := ⟨_, LevelTower.IsUniverse.sort _, typing⟩
   have isU : IsType objectRules Δ U0 :=
-    ⟨_, Tower.IsUniverse.sort _, U0_typedU tower_sub_objectRules⟩
+    ⟨_, LevelTower.IsUniverse.sort _, U0_typedU tower_sub_objectRules⟩
   have neutral : Neutral objectRoles (.const c : Tower.Tm m) := .rigid (args := []) rigid
   exact .types (RedTy.refl isC) (RedTy.refl isC) (.inr (.inr (.inr (.inr (.inl neutral)))))
     (.inr (.inr (.inr (.inr (.inl neutral)))))
-    (.neutralTypes neutral neutral (Tower.IsUniverse.sort _)
+    (.neutralTypes neutral neutral (LevelTower.IsUniverse.sort _)
       (.spinesW (.const declared typing) (RedTy.refl isU) (.inl ⟨_, rfl⟩)))
 
 /-- **A simple type of the profile is algorithmically equal to itself as a type**
@@ -90,7 +90,7 @@ theorem typeAt_types_refl : ∀ (type : HOL.Ty SetProfile.SetBase) {m : Nat} {Δ
   | .prop, _, _, _ => rigid_types_refl objectRoles_prop declared_prop
   | .base .set, _, _, _ => rigid_types_refl objectRoles_set rfl
   | .base .num, _, Δ, _ => by
-      have isNum : IsType objectRules Δ numT := ⟨_, Tower.IsUniverse.sort _, num_typedO⟩
+      have isNum : IsType objectRules Δ numT := ⟨_, LevelTower.IsUniverse.sort _, num_typedO⟩
       exact .types (RedTy.refl isNum) (RedTy.refl isNum)
         (.inr (.inr (.inr (.inr (.inr ⟨_, _, objectRoles_num, rfl⟩)))))
         (.inr (.inr (.inr (.inr (.inr ⟨_, _, objectRoles_num, rfl⟩)))))
@@ -101,10 +101,10 @@ theorem typeAt_types_refl : ∀ (type : HOL.Ty SetProfile.SetBase) {m : Nat} {Δ
         fun type => typeAt_typed tower_sub_objectRules declared_prop declared_num rfl type
       have isA :
           IsType objectRules Δ (FormationSensitiveHOLInterface.typeAt SetProfile.types m a) :=
-        ⟨_, Tower.IsUniverse.sort _, typeT a⟩
+        ⟨_, LevelTower.IsUniverse.sort _, typeT a⟩
       have isArr : IsType objectRules Δ
           (FormationSensitiveHOLInterface.typeAt SetProfile.types m (.arr a b)) :=
-        ⟨_, Tower.IsUniverse.sort _, piU0 tower_sub_objectRules (typeT a) (typeT b)⟩
+        ⟨_, LevelTower.IsUniverse.sort _, piU0 tower_sub_objectRules (typeT a) (typeT b)⟩
       exact .types (RedTy.refl isArr) (RedTy.refl isArr) (.inr (.inl ⟨_, _, rfl⟩))
         (.inr (.inl ⟨_, _, rfl⟩))
         (.pi isA (typeAt_types_refl a formed) (typeAt_types_refl b (.snoc formed isA)))
@@ -141,7 +141,7 @@ include facts
 theorem pi_not_below_prop (formed : CtxFormed objectRules Δ) {A : Tower.Tm m}
     {B : Tower.Tm (m + 1)} (isPi : IsType objectRules Δ (.pi A B))
     (le : TypeLe objectRules Δ (.pi A B) (.const propN)) : False := by
-  have isProp : IsType objectRules Δ (.const propN) := ⟨_, Tower.IsUniverse.sort _, prop_typedO⟩
+  have isProp : IsType objectRules Δ (.const propN) := ⟨_, LevelTower.IsUniverse.sort _, prop_typedO⟩
   obtain ⟨A', B', e, -, -⟩ := Below.pi_source (S := objectSetting) facts
     (TypeLe.toBelow le isProp) formed (IsType.refl isPi)
   have neutral := (facts.forms e formed (.inr (.inr (.inr (.inr (.inl prop_neutral)))))
@@ -190,7 +190,7 @@ theorem ctorSpine_saturated (formed : CtxFormed objectRules Δ) {k : DeclName}
     (typing : Typed objectRules Δ (appSpine (.const k) args) (.const propN))
     (role : objectRoles k = .constructor a) : args.length = a := by
   have univ := tower_sub_objectRules
-  have hu : objectRules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+  have hu : objectRules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   have propT : ∀ {k : Nat} {Θ : Tower.Ctx k}, Typed objectRules Θ (.const propN) U0 :=
     prop_typedO
   have typeT : ∀ (type : HOL.Ty SetProfile.SetBase) {k : Nat} {Θ : Tower.Ctx k},
@@ -386,7 +386,7 @@ theorem spine_decodings (formed : CtxFormed objectRules Δ) {t u U : Tower.Tm m}
     (compared : ∃ V, RedTy objectRules objectRoles Δ V U ∧ ArgumentsCompared Δ t u V) :
     Algorithmic objectRules objectRoles
       (.terms Δ (.app (.const holdsN) t) (.app (.const holdsN) u) U0) := by
-  have hu : objectRules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+  have hu : objectRules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   have isU0 : IsType objectRules Δ U0 := universe_isType (S := objectSetting) hu
   have typeT : ∀ (type : HOL.Ty SetProfile.SetBase) {k : Nat} {Θ : Tower.Ctx k},
       Typed objectRules Θ (FormationSensitiveHOLInterface.typeAt SetProfile.types k type) U0 :=

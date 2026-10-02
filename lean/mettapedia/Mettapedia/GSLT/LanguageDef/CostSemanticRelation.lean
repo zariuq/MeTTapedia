@@ -493,10 +493,10 @@ theorem CostSemanticTree.Rel.normalize_pattern_eq
       rightChildren head children headEq childrenEq
     unfold CostSemanticBoundaryTrees.normalizedValues
     simp only [CostSemanticBoundaryTrees.normalize]
-    rw [TypedCostRegionBoundaryTable.Values.cons.injEq]
-    refine ⟨?_, childrenEq⟩
-    apply Subtype.ext
-    exact headEq
+    apply congrArg₂ TypedCostRegionBoundaryTable.Values.cons
+    · apply Subtype.ext
+      exact headEq
+    · exact childrenEq
 
 /-- A semantic edge receives one identical proof-relevant normal form, not
 merely the same erased compact pattern. -/

@@ -87,8 +87,8 @@ theorem representativeArgs_substitute
 
 /-- Full binding-clone model structure descends to the equation quotient.
 This establishes substitution compatibility of all base operators. A separate
-theorem must still prove satisfaction of each authored axiom for all semantic
-metavariable valuations. -/
+theorem proves satisfaction of each authored axiom for arbitrary contextual
+semantic bodies and both supplied environments. -/
 noncomputable abbrev algebra (E : List (EqAxiom S M)) :
     Mettapedia.OSLF.Binding.BindingCloneAlgebra.Algebra S where
   substitution := BindingEquationQuotientSubstitution.algebra E
@@ -198,41 +198,59 @@ theorem interpretSchema_eq_mk (E : List (EqAxiom S M))
     (instantiate (valuationBodies E valuation) term)
   exact first.trans (second.trans third)
 
-/-- The actual equation quotient satisfies every authored equation for
-arbitrary semantic metavariable values and arbitrary semantic assignments of
-the axiom's ordinary variables. -/
+/-- Select a representative of each semantic body in its complete
+dependency-plus-ambient context. -/
+noncomputable def contextualValuationBodies (E : List (EqAxiom S M))
+    {Θ : Ctx S} (valuation : SemanticContextualMetavariables.Valuation (M := M) (algebra E) Θ) :
+    ContextualAssignment S M Θ :=
+  fun i => Quotient.out (valuation i)
+
+/-- The existing contextual semantic fold in the quotient is the equation
+class of its actual syntactic contextual instance. Both semantic environments
+and all captured body values are arbitrary. -/
+theorem interpretContextualSchema_eq_mk (E : List (EqAxiom S M))
+    {Θ Ξ Γ : Ctx S}
+    (valuation : SemanticContextualMetavariables.Valuation (M := M) (algebra E) Θ)
+    (ambient : Environment S (TermQ E) Θ Γ)
+    (ordinary : Environment S (TermQ E) Ξ Γ)
+    {sort : S.Srt} (term : Term (withMetas S M) Ξ sort) :
+    SemanticContextualMetavariables.interpretSchema (algebra E) valuation ambient ordinary term =
+      (Quotient.mk _ (ContextualAssignment.instantiate
+        (contextualValuationBodies E valuation)
+        (representativeEnv E ambient) (representativeEnv E ordinary) term) :
+          TermQ E Γ sort) := by
+  have bodies : BindingContextualEquationInterpretation.interpretAssignment (algebra E)
+      (contextualValuationBodies E valuation) = valuation := by
+    funext i
+    change BindingCloneFoldSubstitution.interpret (algebra E) (Quotient.out (valuation i)) = valuation i
+    rw [interpret_eq_mk]
+    exact Quotient.out_eq _
+  have ambientValues : BindingContextualEquationInterpretation.interpretEnvironment (algebra E)
+      (representativeEnv E ambient) = ambient := by
+    funext s v
+    change BindingCloneFoldSubstitution.interpret (algebra E) (representativeEnv E ambient s v) = ambient s v
+    rw [interpret_eq_mk]
+    exact mk_representativeEnv E ambient s v
+  have ordinaryValues : BindingContextualEquationInterpretation.interpretEnvironment (algebra E)
+      (representativeEnv E ordinary) = ordinary := by
+    funext s v
+    change BindingCloneFoldSubstitution.interpret (algebra E) (representativeEnv E ordinary s v) = ordinary s v
+    rw [interpret_eq_mk]
+    exact mk_representativeEnv E ordinary s v
+  have comparison := BindingContextualEquationInterpretation.interpret_instantiate (algebra E)
+    (contextualValuationBodies E valuation)
+    (representativeEnv E ambient) (representativeEnv E ordinary) term
+  rw [bodies, ambientValues, ordinaryValues, interpret_eq_mk] at comparison
+  exact comparison.symm
+
+/-- The actual equation quotient satisfies every authored equation at
+arbitrary contextual semantic bodies and independent semantic environments. -/
 theorem algebra_satisfies (E : List (EqAxiom S M)) :
     BindingEquationInterpretation.Satisfies (algebra E) E := by
-  intro i valuation Γ env
-  let body := valuationBodies E valuation
-  let close := representativeEnv E env
-  have close_agree : ∀ s v,
-      (Quotient.mk _ (close s v) : TermQ E Γ s) = env s v := by
-    intro s v
-    exact mk_representativeEnv E env s v
-  have left_eval :
-      (algebra E).substitution.substitute env
-        (BindingEquationInterpretation.interpretSchema (algebra E)
-          valuation (E.get i).lhs) =
-      (Quotient.mk _ (bind close (instantiate body (E.get i).lhs)) :
-        TermQ E Γ (E.get i).sort) := by
-    rw [interpretSchema_eq_mk]
-    change substitute E env
-      (Quotient.mk _ (instantiate body (E.get i).lhs)) = _
-    rw [substitute_eq_bindQ E env close close_agree]
-    rfl
-  have right_eval :
-      (algebra E).substitution.substitute env
-        (BindingEquationInterpretation.interpretSchema (algebra E)
-          valuation (E.get i).rhs) =
-      (Quotient.mk _ (bind close (instantiate body (E.get i).rhs)) :
-        TermQ E Γ (E.get i).sort) := by
-    rw [interpretSchema_eq_mk]
-    change substitute E env
-      (Quotient.mk _ (instantiate body (E.get i).rhs)) = _
-    rw [substitute_eq_bindQ E env close close_agree]
-    rfl
-  exact left_eval.trans
-    ((Quotient.sound (EqClosure.ax i body close)).trans right_eval.symm)
+  intro i Θ Γ valuation ambient ordinary
+  exact (interpretContextualSchema_eq_mk E valuation ambient ordinary (E.get i).lhs).trans
+    ((Quotient.sound (EqClosure.ax i (contextualValuationBodies E valuation)
+      (representativeEnv E ambient) (representativeEnv E ordinary))).trans
+        (interpretContextualSchema_eq_mk E valuation ambient ordinary (E.get i).rhs).symm)
 
 end Mettapedia.OSLF.Binding.BindingEquationQuotientModel

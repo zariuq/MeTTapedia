@@ -342,7 +342,7 @@ universe u
 /-- The path pair induced by the fields of one concrete native map-fusion
 program.  This is definitionally the same program pair used by the endpoint
 qualification relation. -/
-def programPaths {n : Nat} (level : LevelExpr)
+def programPaths {n : Nat} (level : LevelExpr Nat)
     (programs : NativeHOLProofQualifiedOperationalCospan.MapFusionPrograms n) :
     PathReduces level programs.unfused programs.common ×
       PathReduces level programs.fused programs.common :=
@@ -351,7 +351,7 @@ def programPaths {n : Nat} (level : LevelExpr)
 
 /-- Exact work is inherited from the proof-relevant beta/iota construction,
 not recomputed from an external cost model. -/
-theorem programPath_lengths {n : Nat} (level : LevelExpr)
+theorem programPath_lengths {n : Nat} (level : LevelExpr Nat)
     (programs : NativeHOLProofQualifiedOperationalCospan.MapFusionPrograms n) :
     (programPaths level programs).1.length = 8 * programs.inputs.length + 10 /\
       (programPaths level programs).2.length =
@@ -364,7 +364,7 @@ observation, and both actual native executions in one object. -/
 noncomputable def recursiveExecutionCospan
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -408,7 +408,7 @@ the proof-family evidence. -/
 theorem recursiveExecutionCospan_retains_source
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -432,7 +432,7 @@ proof-family and Aczel layers do not collapse it. -/
 theorem recursiveExecutionCospan_path_lengths
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -461,7 +461,7 @@ including the empty list. -/
 theorem recursiveExecutionCospan_exact_histories_differ
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -498,7 +498,7 @@ observations as its proposition-valued projection. -/
 theorem recursiveExecutionCospan_semanticDiamonds
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)

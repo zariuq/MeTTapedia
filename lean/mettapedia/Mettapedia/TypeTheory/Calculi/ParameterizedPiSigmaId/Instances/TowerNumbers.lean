@@ -56,7 +56,7 @@ theorem zero_ne_succ : zero ≠ succ := by decide
 theorem zero_ne_numRec : zero ≠ numRec := by decide
 theorem succ_ne_numRec : succ ≠ numRec := by decide
 
-variable (lv : LevelExpr)
+variable (lv : LevelExpr Nat)
 
 /-- The declared types. -/
 def constantType : DeclName → Option (Tm Tower.Head 0) := fun name =>
@@ -177,7 +177,7 @@ theorem num_typed (declaredNum : R.constantType num = some (.head u)) {n : Nat}
   .const declaredNum (.headType (headTyping _)) (isUniverse _)
 
 omit isUniverse in
-theorem head_typed {n : Nat} {Γ : Ctx Tower.Head n} (l : LevelExpr) :
+theorem head_typed {n : Nat} {Γ : Ctx Tower.Head n} (l : LevelExpr Nat) :
     Typed R Γ (.head (.sort l)) (.head (.sort (.succ l))) :=
   .headType (headTyping l)
 
@@ -185,12 +185,12 @@ end Typing
 
 /-- The constructor types are typed at the first stage. -/
 theorem ctorType_zero_typed : Typed (rules₁) .nil (ctorType num []) (.head u) :=
-  num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort (by simp [rules₁])
+  num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort (by simp [rules₁])
 
 theorem ctorType_succ_typed :
     Typed (rules₁) .nil (ctorType num [.recursive]) (.head (.sort (.max (.const 0) (.const 0)))) :=
-  .piForm (num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort (by simp [rules₁])) (.sort _)
-    (num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort (by simp [rules₁])) (.sort _)
+  .piForm (num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort (by simp [rules₁])) (.sort _)
+    (num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort (by simp [rules₁])) (.sort _)
     (.sorts _ _)
 
 /-- The recursor's type is typed at the second stage. -/
@@ -204,7 +204,7 @@ theorem recType_typed : ∃ w, Tower.IsUniverse w ∧
   have hu : rules₂.isUniverse u := .sort _
   have hv : rules₂.isUniverse (.sort lv) := .sort _
   have tNum : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed rules₂ Γ (.const num) (.head u) :=
-    fun {_ _} => num_typed Tower.HeadTyping.sort Tower.IsUniverse.sort declaredNum
+    fun {_ _} => num_typed LevelTower.HeadTyping.sort LevelTower.IsUniverse.sort declaredNum
   have tZero : ∀ {n : Nat} {Γ : Ctx Tower.Head n}, Typed rules₂ Γ (.const zero) (.const num) :=
     fun {_ _} => .const declaredZero tNum hu
   have tSucc : ∀ {n : Nat} {Γ : Ctx Tower.Head n},
@@ -213,7 +213,7 @@ theorem recType_typed : ∃ w, Tower.IsUniverse w ∧
   -- the motive's type
   have tE0 : Typed rules₂ .nil (.pi (.const num) (.head (.sort lv)))
       (.head (.sort (.max (.const 0) (.succ lv)))) :=
-    .piForm tNum hu (head_typed Tower.HeadTyping.sort lv) (.sort _) (.sorts _ _)
+    .piForm tNum hu (head_typed LevelTower.HeadTyping.sort lv) (.sort _) (.sorts _ _)
   -- the case of zero
   let Γ₁ : Ctx Tower.Head 1 := .snoc .nil (.pi (.const num) (.head (.sort lv)))
   have tP₁ : Typed rules₂ Γ₁ (.var 0) (.pi (.const num) (.head (.sort lv))) := .var 0
@@ -428,7 +428,7 @@ end TowerNumbersModel
 
 /-! ## Consequences for the tower with natural numbers -/
 
-theorem TowerNumbersModel.setting_roles_num (lv : LevelExpr) (valuation : Nat → Nat) :
+theorem TowerNumbersModel.setting_roles_num (lv : LevelExpr Nat) (valuation : Nat → Nat) :
     (TowerNumbersModel.setting lv valuation).roles TowerNumbersModel.num =
       .inductive TowerNumbersModel.ctors :=
   TowerNumbersModel.roles_num
@@ -437,7 +437,7 @@ section Consequences
 
 open TowerNumbersModel
 
-variable {lv : LevelExpr} {n : Nat} {Γ : Ctx Tower.Head n}
+variable {lv : LevelExpr Nat} {n : Nat} {Γ : Ctx Tower.Head n}
 
 /-- Zero is not a successor. -/
 theorem TowerNumbers.zero_ne_succ (formed : CtxFormed (rules lv) Γ) {a : Tm Tower.Head n} :

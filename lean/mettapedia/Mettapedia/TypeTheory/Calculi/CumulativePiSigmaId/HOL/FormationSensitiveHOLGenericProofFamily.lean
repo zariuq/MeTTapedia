@@ -313,7 +313,7 @@ theorem pi_zero (source : LogicalSignature Base Const) (proofName : DeclName)
   apply Typing.cumul (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero)
     (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem implication_proposition (source : LogicalSignature Base Const)
     (proofName : DeclName) {n : Nat} {gamma : Tower.Ctx n} {p q : Tower.Tm n}

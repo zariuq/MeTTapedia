@@ -190,7 +190,7 @@ theorem pi_zero {n : Nat} {Γ : Tower.Ctx n} {A : Tower.Tm n} {B : Tower.Tm (n +
   apply FormationSensitive.Typing.cumul
     (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero) (.sorts _ _))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem proposition_typed {n : Nat} (Γ : Tower.Ctx n) :
     Typing Γ (.const `HOLUniformList.prop) (sortTm Tower.zero) :=

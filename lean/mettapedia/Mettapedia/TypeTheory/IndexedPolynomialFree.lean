@@ -245,6 +245,14 @@ theorem join_assoc {base : Base} {index : Index base}
   rw [bind_assoc, bind_assoc]
   rfl
 
+/-- Transporting a leaf along an index equality commutes with embedding it. -/
+theorem pure_transport {base : Base} {first second : Index base}
+    (equal : first = second) (hole : holes base first) :
+    equal ▸ (pure polynomial hole : polynomial.Free holes base first) =
+      pure polynomial (equal ▸ hole : holes base second) := by
+  cases equal
+  rfl
+
 end Free
 
 #print axioms Free.fold_unique

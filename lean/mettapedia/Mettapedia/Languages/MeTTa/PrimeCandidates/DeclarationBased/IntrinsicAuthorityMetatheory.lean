@@ -30,8 +30,8 @@ open Presentation.Declaration.IndexedFamily
 
 /-! ## A native empty family -/
 
-def emptyLevel : LevelExpr := .param 13
-def emptyMotiveLevel : LevelExpr := .param 14
+def emptyLevel : LevelExpr Nat := .param 13
+def emptyMotiveLevel : LevelExpr Nat := .param 14
 
 def emptyName : DeclName := `CumulativeTower.Empty
 def emptyEliminateName : DeclName := `CumulativeTower.Empty.eliminate
@@ -119,7 +119,7 @@ private theorem declaredEmptyConstant_hasType
   · by_cases isEmpty : name = emptyName
     · subst name
       simp [receiptRules, runRules, outcomeRules, extendRules, combinedType,
-        Tower.rules, rawReceiptSignature, receiptDeclarations,
+        LevelTower.rules, rawReceiptSignature, receiptDeclarations,
         rawRunSignature, runDeclarations, rawOutcomeSignature,
         outcomeDeclarations, emptyName, receiptName, receiptMakeName,
         receiptEliminateName, runName, runOkName, runFaultName,
@@ -130,7 +130,7 @@ private theorem declaredEmptyConstant_hasType
     by_cases isEliminate : name = emptyEliminateName
     · subst name
       simp [receiptRules, runRules, outcomeRules, extendRules, combinedType,
-        Tower.rules, rawReceiptSignature, receiptDeclarations,
+        LevelTower.rules, rawReceiptSignature, receiptDeclarations,
         rawRunSignature, runDeclarations, rawOutcomeSignature,
         outcomeDeclarations, emptyEliminateName, receiptName,
         receiptMakeName, receiptEliminateName, runName, runOkName,
@@ -152,10 +152,10 @@ theorem emptyEliminateConstant_hasType {context : Tower.Ctx n} :
       (liftClosed emptyEliminateType) :=
   declaredEmptyConstant_hasType typeOf_emptyEliminate
 
-def emptyEliminateBodyLevel : LevelExpr :=
+def emptyEliminateBodyLevel : LevelExpr Nat :=
   .max emptyLevel emptyMotiveLevel
 
-def emptyEliminateDeclarationLevel : LevelExpr :=
+def emptyEliminateDeclarationLevel : LevelExpr Nat :=
   .max (.succ emptyMotiveLevel) emptyEliminateBodyLevel
 
 def emptyContextX : Tower.Ctx 1 :=
@@ -164,7 +164,7 @@ def emptyContextX : Tower.Ctx 1 :=
 theorem emptyType_hasType :
     EmptyHasType (.nil : Tower.Ctx 0) emptyType
       (sortTm (.succ emptyLevel)) := by
-  exact Presentation.HasType.headType (Tower.HeadTyping.sort emptyLevel)
+  exact Presentation.HasType.headType (LevelTower.HeadTyping.sort emptyLevel)
 
 theorem emptyEliminateBodyType_hasType :
     EmptyHasType emptyContextX emptyEliminateBodyType
@@ -174,10 +174,10 @@ theorem emptyEliminateBodyType_hasType :
   · simpa [emptyType, liftClosed, sortTm, Presentation.rename] using
       (emptyConstant_hasType (context :=
         (.snoc (.nil : Tower.Ctx 0) (sortTm emptyMotiveLevel))))
-  · exact Tower.IsUniverse.sort emptyLevel
+  · exact LevelTower.IsUniverse.sort emptyLevel
   · exact Presentation.HasType.var 1
-  · exact Tower.IsUniverse.sort emptyMotiveLevel
-  · exact Tower.Join.sorts emptyLevel emptyMotiveLevel
+  · exact LevelTower.IsUniverse.sort emptyMotiveLevel
+  · exact LevelTower.Join.sorts emptyLevel emptyMotiveLevel
 
 theorem emptyEliminateType_hasType :
     EmptyHasType (.nil : Tower.Ctx 0) emptyEliminateType
@@ -185,11 +185,11 @@ theorem emptyEliminateType_hasType :
   unfold emptyEliminateType emptyEliminateDeclarationLevel
   apply Presentation.HasType.piForm
       (Presentation.HasType.headType
-        (Tower.HeadTyping.sort emptyMotiveLevel))
-      (Tower.IsUniverse.sort (.succ emptyMotiveLevel))
+        (LevelTower.HeadTyping.sort emptyMotiveLevel))
+      (LevelTower.IsUniverse.sort (.succ emptyMotiveLevel))
   · exact emptyEliminateBodyType_hasType
-  · exact Tower.IsUniverse.sort emptyEliminateBodyLevel
-  · exact Tower.Join.sorts (.succ emptyMotiveLevel)
+  · exact LevelTower.IsUniverse.sort emptyEliminateBodyLevel
+  · exact LevelTower.Join.sorts (.succ emptyMotiveLevel)
       emptyEliminateBodyLevel
 
 @[simp] theorem rawEmptySignature_valueOf_none (name : DeclName) :
@@ -238,7 +238,7 @@ theorem rawEmptySignature_fresh {name : DeclName}
   by_cases isEmpty : name = emptyName
   · subst name
     simp [receiptRules, runRules, outcomeRules, extendRules, combinedType,
-      Tower.rules, rawReceiptSignature, receiptDeclarations,
+      LevelTower.rules, rawReceiptSignature, receiptDeclarations,
       rawRunSignature, runDeclarations, rawOutcomeSignature,
       outcomeDeclarations, emptyName, receiptName, receiptMakeName,
       receiptEliminateName, runName, runOkName, runFaultName,
@@ -249,7 +249,7 @@ theorem rawEmptySignature_fresh {name : DeclName}
   by_cases isEliminate : name = emptyEliminateName
   · subst name
     simp [receiptRules, runRules, outcomeRules, extendRules, combinedType,
-      Tower.rules, rawReceiptSignature, receiptDeclarations,
+      LevelTower.rules, rawReceiptSignature, receiptDeclarations,
       rawRunSignature, runDeclarations, rawOutcomeSignature,
       outcomeDeclarations, emptyEliminateName, receiptName,
       receiptMakeName, receiptEliminateName, runName, runOkName,
@@ -337,30 +337,30 @@ theorem empty_has_no_constructor
 
 /-- The meaning assigned to a judgment may inhabit a universe independent of
 the positive and negative evidence families. -/
-def authorityHoldsLevel : LevelExpr := .param 15
+def authorityHoldsLevel : LevelExpr Nat := .param 15
 
-def authorityEvidenceTailLevel : LevelExpr :=
+def authorityEvidenceTailLevel : LevelExpr Nat :=
   .max evidenceLevel authorityHoldsLevel
 
-def authorityEvidenceSoundLevel : LevelExpr :=
+def authorityEvidenceSoundLevel : LevelExpr Nat :=
   .max judgmentLevel authorityEvidenceTailLevel
 
-def authorityObstructionEmptyLevel : LevelExpr :=
+def authorityObstructionEmptyLevel : LevelExpr Nat :=
   .max authorityHoldsLevel emptyLevel
 
-def authorityObstructionTailLevel : LevelExpr :=
+def authorityObstructionTailLevel : LevelExpr Nat :=
   .max obstructionLevel authorityObstructionEmptyLevel
 
-def authorityObstructionSoundLevel : LevelExpr :=
+def authorityObstructionSoundLevel : LevelExpr Nat :=
   .max judgmentLevel authorityObstructionTailLevel
 
-def authoritySoundnessBundleLevel : LevelExpr :=
+def authoritySoundnessBundleLevel : LevelExpr Nat :=
   .max authorityEvidenceSoundLevel authorityObstructionSoundLevel
 
-def authorityBodyLevel : LevelExpr :=
+def authorityBodyLevel : LevelExpr Nat :=
   .max (familyLevel authorityHoldsLevel) authoritySoundnessBundleLevel
 
-def authoritySignatureLevel : LevelExpr :=
+def authoritySignatureLevel : LevelExpr Nat :=
   .max signatureLevel authorityBodyLevel
 
 /-- A meaning family for the judgments exposed by one outcome signature. -/
@@ -586,17 +586,17 @@ theorem authoritySignatureVar_hasType :
   simpa only [lookupEquality] using variableTyping
 
 theorem familyType_hasEmptyType {context : Tower.Ctx n}
-    (payload : LevelExpr) {judgmentType : Tower.Tm n}
+    (payload : LevelExpr Nat) {judgmentType : Tower.Tm n}
     (judgmentTyping : EmptyHasType context judgmentType
       (sortTm judgmentLevel)) :
     EmptyHasType context (familyType payload judgmentType)
       (sortTm (familyLevel payload)) := by
   unfold familyType familyLevel
   apply Presentation.HasType.piForm judgmentTyping
-      (Tower.IsUniverse.sort judgmentLevel)
-  · exact Presentation.HasType.headType (Tower.HeadTyping.sort payload)
-  · exact Tower.IsUniverse.sort (.succ payload)
-  · exact Tower.Join.sorts judgmentLevel (.succ payload)
+      (LevelTower.IsUniverse.sort judgmentLevel)
+  · exact Presentation.HasType.headType (LevelTower.HeadTyping.sort payload)
+  · exact LevelTower.IsUniverse.sort (.succ payload)
+  · exact LevelTower.Join.sorts judgmentLevel (.succ payload)
 
 theorem authorityHoldsFamilyType_hasType :
     EmptyHasType authorityContextS
@@ -615,20 +615,20 @@ theorem authorityEvidenceSoundType_hasType :
   apply Presentation.HasType.piForm
   · exact signatureJudgment_hasType
       (Presentation.HasType.var 1)
-  · exact Tower.IsUniverse.sort judgmentLevel
+  · exact LevelTower.IsUniverse.sort judgmentLevel
   · apply Presentation.HasType.piForm
     · apply familyApp_hasType
       · exact signatureEvidence_hasType
           (Presentation.HasType.var 2)
       · exact Presentation.HasType.var 0
-    · exact Tower.IsUniverse.sort evidenceLevel
+    · exact LevelTower.IsUniverse.sort evidenceLevel
     · apply familyApp_hasType
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 1
-    · exact Tower.IsUniverse.sort authorityHoldsLevel
-    · exact Tower.Join.sorts evidenceLevel authorityHoldsLevel
-  · exact Tower.IsUniverse.sort authorityEvidenceTailLevel
-  · exact Tower.Join.sorts judgmentLevel authorityEvidenceTailLevel
+    · exact LevelTower.IsUniverse.sort authorityHoldsLevel
+    · exact LevelTower.Join.sorts evidenceLevel authorityHoldsLevel
+  · exact LevelTower.IsUniverse.sort authorityEvidenceTailLevel
+  · exact LevelTower.Join.sorts judgmentLevel authorityEvidenceTailLevel
 
 theorem authorityObstructionSoundType_hasType :
     EmptyHasType authorityContextSHE
@@ -640,27 +640,27 @@ theorem authorityObstructionSoundType_hasType :
   apply Presentation.HasType.piForm
   · exact signatureJudgment_hasType
       (Presentation.HasType.var 2)
-  · exact Tower.IsUniverse.sort judgmentLevel
+  · exact LevelTower.IsUniverse.sort judgmentLevel
   · apply Presentation.HasType.piForm
     · apply familyApp_hasType
       · exact signatureObstruction_hasType
           (Presentation.HasType.var 3)
       · exact Presentation.HasType.var 0
-    · exact Tower.IsUniverse.sort obstructionLevel
+    · exact LevelTower.IsUniverse.sort obstructionLevel
     · apply Presentation.HasType.piForm
       · apply familyApp_hasType
         · exact Presentation.HasType.var 3
         · exact Presentation.HasType.var 1
-      · exact Tower.IsUniverse.sort authorityHoldsLevel
+      · exact LevelTower.IsUniverse.sort authorityHoldsLevel
       · simpa [emptyType, liftClosed, sortTm, Presentation.rename] using
           (emptyConstant_hasType (context := _))
-      · exact Tower.IsUniverse.sort emptyLevel
-      · exact Tower.Join.sorts authorityHoldsLevel emptyLevel
-    · exact Tower.IsUniverse.sort authorityObstructionEmptyLevel
-    · exact Tower.Join.sorts obstructionLevel
+      · exact LevelTower.IsUniverse.sort emptyLevel
+      · exact LevelTower.Join.sorts authorityHoldsLevel emptyLevel
+    · exact LevelTower.IsUniverse.sort authorityObstructionEmptyLevel
+    · exact LevelTower.Join.sorts obstructionLevel
         authorityObstructionEmptyLevel
-  · exact Tower.IsUniverse.sort authorityObstructionTailLevel
-  · exact Tower.Join.sorts judgmentLevel authorityObstructionTailLevel
+  · exact LevelTower.IsUniverse.sort authorityObstructionTailLevel
+  · exact LevelTower.Join.sorts judgmentLevel authorityObstructionTailLevel
 
 theorem authoritySignatureBody_hasType :
     EmptyHasType authorityContextS authoritySignatureBody
@@ -668,16 +668,16 @@ theorem authoritySignatureBody_hasType :
   unfold authoritySignatureBody authorityBodyLevel
     authoritySoundnessBundleLevel
   apply Presentation.HasType.sigmaForm authorityHoldsFamilyType_hasType
-      (Tower.IsUniverse.sort (familyLevel authorityHoldsLevel))
+      (LevelTower.IsUniverse.sort (familyLevel authorityHoldsLevel))
   · apply Presentation.HasType.sigmaForm
         authorityEvidenceSoundType_hasType
-        (Tower.IsUniverse.sort authorityEvidenceSoundLevel)
+        (LevelTower.IsUniverse.sort authorityEvidenceSoundLevel)
     · exact authorityObstructionSoundType_hasType
-    · exact Tower.IsUniverse.sort authorityObstructionSoundLevel
-    · exact Tower.Join.sorts authorityEvidenceSoundLevel
+    · exact LevelTower.IsUniverse.sort authorityObstructionSoundLevel
+    · exact LevelTower.Join.sorts authorityEvidenceSoundLevel
         authorityObstructionSoundLevel
-  · exact Tower.IsUniverse.sort authoritySoundnessBundleLevel
-  · exact Tower.Join.sorts (familyLevel authorityHoldsLevel)
+  · exact LevelTower.IsUniverse.sort authoritySoundnessBundleLevel
+  · exact LevelTower.Join.sorts (familyLevel authorityHoldsLevel)
       authoritySoundnessBundleLevel
 
 theorem authoritySignatureType_hasType :
@@ -685,10 +685,10 @@ theorem authoritySignatureType_hasType :
       (sortTm authoritySignatureLevel) := by
   unfold authoritySignatureType authoritySignatureLevel
   apply Presentation.HasType.sigmaForm outcomeSignatureType_hasEmptyType
-      (Tower.IsUniverse.sort signatureLevel)
+      (LevelTower.IsUniverse.sort signatureLevel)
   · exact authoritySignatureBody_hasType
-  · exact Tower.IsUniverse.sort authorityBodyLevel
-  · exact Tower.Join.sorts signatureLevel authorityBodyLevel
+  · exact LevelTower.IsUniverse.sort authorityBodyLevel
+  · exact LevelTower.Join.sorts signatureLevel authorityBodyLevel
 
 /-- Positive control: independently typed authority components assemble into
 one first-class value. -/

@@ -22,7 +22,7 @@ theorem emptyBytes_preferred_refinedTraceAgreement
     (EngineRefinedTraceWitness emptyBytes label f ↔ ImplAccepts emptyBytes label f) ∧
       (EngineRefinedTraceWitness emptyBytes label f ↔ SpecAccepts emptyBytes f) ∧
       (SpecAccepts emptyBytes f → ∃ start finish, LanguageDefAccepts start finish) := by
-  have hSuccess : (checkBytesDB emptyBytes).error? = none := by native_decide
+  have hSuccess : (checkBytesDB emptyBytes).error? = none := by decide +kernel
   exact preferred_refinedTraceAgreement emptyBytes label f hSuccess hDisjoint
 
 /-- Preferred refined-trace agreement specialized to the minimal-axiom
@@ -33,7 +33,9 @@ theorem minimalAxiomBytes_preferred_refinedTraceAgreement
     (EngineRefinedTraceWitness minimalAxiomBytes label f ↔ ImplAccepts minimalAxiomBytes label f) ∧
       (EngineRefinedTraceWitness minimalAxiomBytes label f ↔ SpecAccepts minimalAxiomBytes f) ∧
       (SpecAccepts minimalAxiomBytes f → ∃ start finish, LanguageDefAccepts start finish) := by
-  have hSuccess : (checkBytesDB minimalAxiomBytes).error? = none := by native_decide
+  have hSuccess : (checkBytesDB minimalAxiomBytes).error? = none := by
+    rw [minimalAxiomBytes_parsedDB_eq]
+    rfl
   exact preferred_refinedTraceAgreement minimalAxiomBytes label f hSuccess hDisjoint
 
 end Mettapedia.Languages.Metamath.RefinedTraceAgreementFixtures

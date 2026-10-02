@@ -46,6 +46,7 @@ def openBVar (k : Nat) (u : Pattern) : Pattern → Pattern
   | .collection ct elems rest =>
     .collection ct (elems.map (openBVar k u)) rest
 termination_by p => sizeOf p
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Replace `FVar x` with `BVar k` (abstracting a free variable). -/
 def closeFVar (k : Nat) (x : String) : Pattern → Pattern
@@ -58,6 +59,7 @@ def closeFVar (k : Nat) (x : String) : Pattern → Pattern
   | .collection ct elems rest =>
     .collection ct (elems.map (closeFVar k x)) rest
 termination_by p => sizeOf p
+decreasing_by all_goals sizeOf_pattern_dec
 
 mutual
 /-- Shift bound variable indices >= `cutoff` by `shift`.
@@ -122,6 +124,7 @@ def instantiateBVarAt (depth : Nat) (replacement : Pattern) : Pattern → Patter
       .collection collectionType
         (elems.map (instantiateBVarAt depth replacement)) rest
 termination_by body => sizeOf body
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Execute the binder-eliminating substitution represented by
 `Pattern.subst body replacement`. -/
@@ -160,6 +163,7 @@ def dropBVarAt? (cutoff : Nat) : Pattern → Option Pattern
       pure (.collection collectionType
         (← elems.mapM (dropBVarAt? cutoff)) rest)
 termination_by pattern => sizeOf pattern
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Eliminate the innermost unused binder. -/
 def dropBVar? (body : Pattern) : Option Pattern :=
@@ -565,6 +569,7 @@ private def unliftBVars (cutoff shift : Nat) : Pattern → Pattern
   | .collection collectionType elements rest =>
       .collection collectionType (elements.map (unliftBVars cutoff shift)) rest
 termination_by pattern => sizeOf pattern
+decreasing_by all_goals sizeOf_pattern_dec
 
 private theorem unliftBVars_liftBVars (cutoff shift : Nat) :
     ∀ pattern, unliftBVars cutoff shift (liftBVars cutoff shift pattern) =
@@ -760,6 +765,7 @@ def applySubst (env : SubstEnv) : Pattern → Pattern
   | .collection ct elements rest =>
     .collection ct (elements.map (applySubst env)) rest
 termination_by p => sizeOf p
+decreasing_by all_goals sizeOf_pattern_dec
 
 section BinderEliminationScopeFixtures
 
@@ -828,6 +834,7 @@ def freeVars : Pattern → List String
   | .subst body replacement => freeVars body ++ freeVars replacement
   | .collection _ elements _ => elements.flatMap freeVars
 termination_by p => sizeOf p
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- Check if a variable is fresh in a pattern -/
 def isFresh (x : String) (p : Pattern) : Bool :=

@@ -39,10 +39,6 @@ import Mettapedia.Computability.KolmogorovComplexity.Prefix
 import Mettapedia.Computability.KolmogorovComplexity.PrefixComplexity
 import Mettapedia.Computability.KolmogorovComplexity.SelfDelimitingCode
 import Mettapedia.Computability.KolmogorovComplexity.Uncomputability
--- `OracleTM.lean` is intentionally omitted: it defines legacy names that
--- collide with the canonical `OracleTMReal` module.
-import Mettapedia.Computability.OracleTMReal
-import Mettapedia.Computability.OracleTMRefined
 import Mettapedia.Computability.PNP.ABDecisionListRoute
 import Mettapedia.Computability.PNP.ABVisibleState
 import Mettapedia.Computability.PNP.AffineColumnFamily
@@ -116,7 +112,12 @@ import Mettapedia.Computability.PNP.TwoUniversalRhsIrrelevance
 import Mettapedia.Computability.PNP.VisiblePostSwitchData
 import Mettapedia.Computability.PNP.WeightAsymmetryObstruction
 import Mettapedia.Computability.PNP.WeightedFiberNeutralityObstruction
+import Mettapedia.Computability.BoundedTapeRuns
 import Mettapedia.Computability.ProbabilisticTM
+import Mettapedia.Computability.ProbabilisticTMBoundary
+import Mettapedia.Computability.ProbabilisticPrefixExperiment
+import Mettapedia.Computability.ProbabilisticPrefixConsistency
 import Mettapedia.Computability.ProbabilisticTMRefined
 import Mettapedia.Computability.ToPartrecCodeEncoding
 import Mettapedia.Computability.HaltingGate
+import Mettapedia.Computability.RegularLanguages

@@ -10,7 +10,7 @@ namespace StructuralTypingReplay
 
 namespace IdentifyingAssumptions
 
-private def zero : LevelExpr := .const 0
+private def zero : LevelExpr Nat := .const 0
 
 def source : Tower.Ctx 3 := .snoc (.snoc (.snoc .nil (sortTm zero)) (sortTm zero)) (.var 1)
 

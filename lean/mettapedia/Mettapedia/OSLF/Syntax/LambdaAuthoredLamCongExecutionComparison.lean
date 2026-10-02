@@ -101,7 +101,7 @@ theorem lam_match_recovers_intrinsic {Γ : Ctx sig}
     (body : Term sig (.term :: Γ) .term) :
     matchRuleAt lamCongRule lamSpec Γ.length (encodeTerm (lamT body)) =
       [initial body] := by
-  simp [matchRuleAt, lamCongRule, matchAt, matchArgsAt,
+  simp [matchRuleAt, matchRuleWithAt, lamCongRule, matchAtWith, matchArgsAtWith,
     lamT, encodeTerm, encodeArgs, wrapBinders, capture?, assign, lookup,
     initial, lamSpec, arguments?, dependencies?, occurrenceDeclared,
     sitePattern?, occurrenceAt?, recover_contextual]
@@ -111,7 +111,7 @@ theorem premise_source_is_body {Γ : Ctx sig}
     (body : Term sig (.term :: Γ) .term) :
     instantiateAt? lamCongRule lamSpec Γ.length (.premise 0 0 0) [] 1
       (initial body) localStep.source = some (encodeTerm body) := by
-  simp [instantiateAt?, localStep, initial, lookup,
+  simp [instantiateAt?, instantiateWith?, localStep, initial, lookup,
     source_arguments, instantiate_contextual]
 
 /-- The selected target of a scoped premise is captured with the same
@@ -128,7 +128,7 @@ theorem premise_target_recovers {Γ : Ctx sig}
       some (completed body target) := by
     simp [capture?, hdeps, target_arguments, recover_contextual,
       assign, lookup, initial, completed]
-  simpa [localStep, matchAt] using congrArg Option.toList captured
+  simpa [localStep, matchAt, matchAtWith] using congrArg Option.toList captured
 
 /-- Once the premise supplies its target, the actual authored right-hand
 side reconstructs the enclosing lambda at the original ambient context. -/
@@ -139,9 +139,9 @@ theorem reduct_is_lam {Γ : Ctx sig}
   have inner : instantiateAt? lamCongRule lamSpec Γ.length .right
       [0, 0] 1 (completed body target) (.fvar "C") =
       some (encodeTerm target) := by
-    simp [instantiateAt?, completed, lookup, right_arguments,
+    simp [instantiateAt?, instantiateWith?, completed, lookup, right_arguments,
       instantiate_contextual]
-  simp [reduct?, lamCongRule, instantiateAt?, instantiateArgsAt?,
+  simp [reduct?, lamCongRule, instantiateAt?, instantiateWith?, instantiateArgsWith?,
     completed, lookup, lamSpec, arguments?, dependencies?,
     occurrenceDeclared, sitePattern?, occurrenceAt?,
     instantiate_contextual, lamT, encodeTerm, encodeArgs, wrapBinders]
@@ -204,7 +204,7 @@ theorem lamCong_rejects_beta_source {Evidence : Type}
     (argument : Term sig Γ .term) :
     applyRuleWithOracle oracle RelationEnv.empty language Γ.length
       lamCongRule (encodeTerm (appT (lamT body) argument)) = [] := by
-  simp [applyRuleWithOracle, lamCongRule, matchRuleAt, matchAt,
+  simp [applyRuleWithOracle, lamCongRule, matchRuleAt, matchRuleWithAt, matchAtWith,
     appT, encodeTerm, encodeArgs]
 
 /-- At fuel one, the only authored firing of an intrinsic beta source is

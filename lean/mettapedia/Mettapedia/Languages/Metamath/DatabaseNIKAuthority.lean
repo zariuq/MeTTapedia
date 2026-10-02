@@ -33,7 +33,7 @@ open Mettapedia.Languages.Metamath.InferenceSourceAdmission
 
 def verifiedB (sourceBytes : ByteArray) : Bool :=
   let database := Metamath.Verify.checkBytes sourceBytes
-    Metamath.Verify.ModeConfig.soundDefault
+    Metamath.Verify.ModeConfig.sound
   database.error?.isNone && database.incompleteProofs.isEmpty
 
 /-- Exact executable scope: accepted syntax and proof checking, with no `?`
@@ -45,7 +45,7 @@ theorem verified_iff (sourceBytes : ByteArray) :
     Verified sourceBytes <->
       let database :=
         Metamath.Verify.checkBytes sourceBytes
-          Metamath.Verify.ModeConfig.soundDefault
+          Metamath.Verify.ModeConfig.sound
       database.error? = none /\ database.incompleteProofs.isEmpty = true := by
   simp [Verified, verifiedB, Bool.and_eq_true, Option.isNone_iff_eq_none]
 
@@ -56,10 +56,10 @@ newly inserted theorem. -/
 def StoredAssertionsHaveOrigins (sourceBytes : ByteArray) : Prop :=
   let database :=
     Metamath.Verify.checkBytes sourceBytes
-      Metamath.Verify.ModeConfig.soundDefault
+      Metamath.Verify.ModeConfig.sound
   forall name formula frame label,
     database.find? name = some (.assert formula frame label) ->
-      Metamath.PrefixWitnessCheckBytes.StrongNewAssertCertificate
+      Metamath.PrefixProvability.Checker.StrongNewAssertCertificate
         name formula frame label
 
 theorem verified_implies_storedAssertionsHaveOrigins
@@ -68,14 +68,14 @@ theorem verified_implies_storedAssertionsHaveOrigins
   intro verified
   have success :
       (Metamath.Verify.checkBytes sourceBytes
-        Metamath.Verify.ModeConfig.soundDefault).error? =
+        Metamath.Verify.ModeConfig.sound).error? =
         none :=
     (verified_iff sourceBytes).mp verified |>.1
   intro name formula frame label found
   exact
-    Metamath.PrefixWitnessCheckBytes.checkBytes_new_assert_strong_classified
-      sourceBytes Metamath.Verify.ModeConfig.soundDefault
-      Metamath.Verify.ModeConfig.soundDefault_prefixCertified
+    Metamath.PrefixProvability.Checker.checkBytes_new_assert_strong_classified
+      sourceBytes Metamath.Verify.ModeConfig.sound
+      Metamath.Verify.ModeConfig.isSound_sound
       name formula frame label success found
 
 def checker : Checker ByteArray Unit where
@@ -127,7 +127,7 @@ structure CompiledKnowledgeArtifactV1 (sourceBytes : ByteArray) where
   definitionGenerated :
     projectForMode none
       (Metamath.Verify.checkBytes sourceBytes
-        Metamath.Verify.ModeConfig.soundDefault) = some definition
+        Metamath.Verify.ModeConfig.sound) = some definition
   checked : CheckedGSLT
   checkedSourceEq :
     checked.source = generatedKnowledgeSourceV1 sourceBytes definition
@@ -142,7 +142,7 @@ def compileKnowledgeArtifactV1? (sourceBytes : ByteArray) :
   if hVerified : verifiedB sourceBytes then
     let database :=
       Metamath.Verify.checkBytes sourceBytes
-        Metamath.Verify.ModeConfig.soundDefault
+        Metamath.Verify.ModeConfig.sound
     match hDefinition : projectForMode none database with
     | none => none
     | some definition =>
@@ -170,7 +170,7 @@ def knowledgeCompilationObservationV1 (sourceBytes : ByteArray) :
     Option CalculusLanguageDef :=
   (projectForMode none
     (Metamath.Verify.checkBytes sourceBytes
-      Metamath.Verify.ModeConfig.soundDefault)).map
+      Metamath.Verify.ModeConfig.sound)).map
         (fun definition => definition.1)
 
 theorem CompiledKnowledgeArtifactV1.preservesCompilationObservation

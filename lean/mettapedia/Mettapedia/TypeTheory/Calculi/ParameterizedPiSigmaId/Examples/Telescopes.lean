@@ -8,23 +8,23 @@ open Mettapedia.TypeTheory.UniverseLevel
 namespace Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation
 namespace TelescopeAbstraction
 
-def identityContext (level : LevelExpr) : Tower.Ctx 2 :=
+def identityContext (level : LevelExpr Nat) : Tower.Ctx 2 :=
   .snoc (.snoc .nil (sortTm level)) (.var 0)
 
 /-- An actual dependent identity body, not a theorem-existence replacement. -/
-def identityType (level : LevelExpr) : Tower.Tm 0 :=
+def identityType (level : LevelExpr Nat) : Tower.Tm 0 :=
   closeType (identityContext level) (.var 1)
 
-def identityTerm (level : LevelExpr) : Tower.Tm 0 :=
+def identityTerm (level : LevelExpr Nat) : Tower.Tm 0 :=
   closeTerm (identityContext level) (.var 0)
 
-theorem identity_typed (level : LevelExpr) :
+theorem identity_typed (level : LevelExpr Nat) :
     Tower.HasType .nil (identityTerm level) (identityType level) := by
   apply close_typed
   simpa [identityContext, Ctx.lookup_snoc_zero, rename, wk] using
     (HasType.var (R := Tower.rules) (Γ := identityContext level) 0)
 
-theorem identity_type_formed (level : LevelExpr) :
+theorem identity_type_formed (level : LevelExpr Nat) :
     Tower.HasType .nil (identityType level)
       (sortTm (.max (.succ level) (.max level level))) := by
   apply HasType.piForm (u := .sort (.succ level)) (v := .sort (.max level level))
@@ -39,9 +39,9 @@ theorem identity_type_formed (level : LevelExpr) :
   · exact .sort _
   · exact .sorts _ _
 
-private def zero : LevelExpr := .const 0
-private def one : LevelExpr := .succ zero
-private def two : LevelExpr := .succ one
+private def zero : LevelExpr Nat := .const 0
+private def one : LevelExpr Nat := .succ zero
+private def two : LevelExpr Nat := .succ one
 
 private def specialization : Sub Tower.Head 2 0 :=
   consSub (sortTm zero) (consSub (sortTm one) (renSub Fin.elim0))

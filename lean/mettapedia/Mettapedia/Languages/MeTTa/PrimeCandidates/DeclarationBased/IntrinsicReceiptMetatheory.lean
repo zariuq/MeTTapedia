@@ -34,27 +34,27 @@ open Presentation.Declaration.IndexedFamily
 /-! ## First-class receipt signatures -/
 
 /-- Requested budgets are independent of actual costs. -/
-def receiptBudgetLevel : LevelExpr := .param 8
+def receiptBudgetLevel : LevelExpr Nat := .param 8
 
 /-- Actual costs may inhabit a universe independent of budgets. -/
-def receiptCostLevel : LevelExpr := .param 9
+def receiptCostLevel : LevelExpr Nat := .param 9
 
 /-- Provenance is retained as data rather than reconstructed from outcomes. -/
-def receiptProvenanceLevel : LevelExpr := .param 10
+def receiptProvenanceLevel : LevelExpr Nat := .param 10
 
 /-- Authority identities are first-class and need not be natural numbers. -/
-def receiptKeyLevel : LevelExpr := .param 11
+def receiptKeyLevel : LevelExpr Nat := .param 11
 
 /-- Receipt elimination may target an independently selected universe. -/
-def receiptMotiveLevel : LevelExpr := .param 12
+def receiptMotiveLevel : LevelExpr Nat := .param 12
 
-def receiptKeyTailLevel : LevelExpr :=
+def receiptKeyTailLevel : LevelExpr Nat :=
   .max (.succ receiptProvenanceLevel) (.succ receiptKeyLevel)
 
-def receiptCostTailLevel : LevelExpr :=
+def receiptCostTailLevel : LevelExpr Nat :=
   .max (.succ receiptCostLevel) receiptKeyTailLevel
 
-def receiptResourceBundleLevel : LevelExpr :=
+def receiptResourceBundleLevel : LevelExpr Nat :=
   .max (.succ receiptBudgetLevel) receiptCostTailLevel
 
 /-- In context `runSignature`, the remaining components are ordinary types:
@@ -70,7 +70,7 @@ then adds resource and identity types without privileging an implementation. -/
 def receiptSignatureType : Tower.Tm 0 :=
   .sigma runSignatureType receiptSignatureBody
 
-def receiptSignatureLevel : LevelExpr :=
+def receiptSignatureLevel : LevelExpr Nat :=
   .max runSignatureLevel receiptResourceBundleLevel
 
 theorem receiptSignatureBody_hasType :
@@ -80,25 +80,25 @@ theorem receiptSignatureBody_hasType :
     receiptCostTailLevel receiptKeyTailLevel
   apply Presentation.HasType.sigmaForm
       (Presentation.HasType.headType
-        (Tower.HeadTyping.sort receiptBudgetLevel))
-      (Tower.IsUniverse.sort (.succ receiptBudgetLevel))
+        (LevelTower.HeadTyping.sort receiptBudgetLevel))
+      (LevelTower.IsUniverse.sort (.succ receiptBudgetLevel))
   · apply Presentation.HasType.sigmaForm
         (Presentation.HasType.headType
-          (Tower.HeadTyping.sort receiptCostLevel))
-        (Tower.IsUniverse.sort (.succ receiptCostLevel))
+          (LevelTower.HeadTyping.sort receiptCostLevel))
+        (LevelTower.IsUniverse.sort (.succ receiptCostLevel))
     · apply Presentation.HasType.sigmaForm
           (Presentation.HasType.headType
-            (Tower.HeadTyping.sort receiptProvenanceLevel))
-          (Tower.IsUniverse.sort (.succ receiptProvenanceLevel))
+            (LevelTower.HeadTyping.sort receiptProvenanceLevel))
+          (LevelTower.IsUniverse.sort (.succ receiptProvenanceLevel))
       · exact Presentation.HasType.headType
-          (Tower.HeadTyping.sort receiptKeyLevel)
-      · exact Tower.IsUniverse.sort (.succ receiptKeyLevel)
-      · exact Tower.Join.sorts (.succ receiptProvenanceLevel)
+          (LevelTower.HeadTyping.sort receiptKeyLevel)
+      · exact LevelTower.IsUniverse.sort (.succ receiptKeyLevel)
+      · exact LevelTower.Join.sorts (.succ receiptProvenanceLevel)
           (.succ receiptKeyLevel)
-    · exact Tower.IsUniverse.sort receiptKeyTailLevel
-    · exact Tower.Join.sorts (.succ receiptCostLevel) receiptKeyTailLevel
-  · exact Tower.IsUniverse.sort receiptCostTailLevel
-  · exact Tower.Join.sorts (.succ receiptBudgetLevel) receiptCostTailLevel
+    · exact LevelTower.IsUniverse.sort receiptKeyTailLevel
+    · exact LevelTower.Join.sorts (.succ receiptCostLevel) receiptKeyTailLevel
+  · exact LevelTower.IsUniverse.sort receiptCostTailLevel
+  · exact LevelTower.Join.sorts (.succ receiptBudgetLevel) receiptCostTailLevel
 
 theorem receiptSignatureType_hasType :
     RunHasType (.nil : Tower.Ctx 0) receiptSignatureType
@@ -307,7 +307,7 @@ def receiptName : DeclName := `CumulativeTower.Authority.Receipt
 def receiptMakeName : DeclName := `CumulativeTower.Authority.Receipt.make
 def receiptEliminateName : DeclName := `CumulativeTower.Authority.Receipt.eliminate
 
-def receiptLevel : LevelExpr :=
+def receiptLevel : LevelExpr Nat :=
   .max judgmentLevel
     (.max runLevel
       (.max receiptBudgetLevel
@@ -728,7 +728,7 @@ constructor's six fields and make its dependent indices auditable. -/
   rfl
 
 @[simp] theorem subst_sortTm (substitution : Sub Tower.Head n m)
-    (level : LevelExpr) :
+    (level : LevelExpr Nat) :
     Presentation.subst substitution (sortTm level) = sortTm level := by
   rfl
 
@@ -1169,7 +1169,7 @@ private theorem declaredReceiptConstant_hasType
   apply combinedType_of_signature
   · by_cases isReceipt : name = receiptName
     · subst name
-      simp [runRules, outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [runRules, outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawRunSignature, runDeclarations, rawOutcomeSignature,
         outcomeDeclarations, receiptName, runName, runOkName, runFaultName,
         runEliminateName, outcomeName, establishedName, refutedName,
@@ -1178,7 +1178,7 @@ private theorem declaredReceiptConstant_hasType
         Signature.empty]
     by_cases isMake : name = receiptMakeName
     · subst name
-      simp [runRules, outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [runRules, outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawRunSignature, runDeclarations, rawOutcomeSignature,
         outcomeDeclarations, receiptMakeName, runName, runOkName,
         runFaultName, runEliminateName, outcomeName, establishedName,
@@ -1187,7 +1187,7 @@ private theorem declaredReceiptConstant_hasType
         Signature.insert, Signature.empty]
     by_cases isEliminate : name = receiptEliminateName
     · subst name
-      simp [runRules, outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [runRules, outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawRunSignature, runDeclarations, rawOutcomeSignature,
         outcomeDeclarations, receiptEliminateName, runName, runOkName,
         runFaultName, runEliminateName, outcomeName, establishedName,
@@ -1440,16 +1440,16 @@ theorem receiptSignatureVar_hasType :
     decide
   simpa only [lookupEquality] using variableTyping
 
-def receiptJudgmentTailLevel : LevelExpr :=
+def receiptJudgmentTailLevel : LevelExpr Nat :=
   .max judgmentLevel (.succ receiptLevel)
 
-def receiptBudgetTailDeclarationLevel : LevelExpr :=
+def receiptBudgetTailDeclarationLevel : LevelExpr Nat :=
   .max receiptBudgetLevel receiptJudgmentTailLevel
 
-def receiptKeyTailDeclarationLevel : LevelExpr :=
+def receiptKeyTailDeclarationLevel : LevelExpr Nat :=
   .max receiptKeyLevel receiptBudgetTailDeclarationLevel
 
-def receiptDeclarationLevel : LevelExpr :=
+def receiptDeclarationLevel : LevelExpr Nat :=
   .max receiptSignatureLevel receiptKeyTailDeclarationLevel
 
 theorem receiptType_hasType :
@@ -1483,25 +1483,25 @@ theorem receiptType_hasType :
   · exact .sort receiptKeyTailDeclarationLevel
   · exact .sorts receiptSignatureLevel receiptKeyTailDeclarationLevel
 
-def receiptMakeResultLevel : LevelExpr :=
+def receiptMakeResultLevel : LevelExpr Nat :=
   .max runLevel receiptLevel
 
-def receiptMakeProvenanceTailLevel : LevelExpr :=
+def receiptMakeProvenanceTailLevel : LevelExpr Nat :=
   .max receiptProvenanceLevel receiptMakeResultLevel
 
-def receiptMakeCostTailLevel : LevelExpr :=
+def receiptMakeCostTailLevel : LevelExpr Nat :=
   .max receiptCostLevel receiptMakeProvenanceTailLevel
 
-def receiptMakeJudgmentTailLevel : LevelExpr :=
+def receiptMakeJudgmentTailLevel : LevelExpr Nat :=
   .max judgmentLevel receiptMakeCostTailLevel
 
-def receiptMakeBudgetTailLevel : LevelExpr :=
+def receiptMakeBudgetTailLevel : LevelExpr Nat :=
   .max receiptBudgetLevel receiptMakeJudgmentTailLevel
 
-def receiptMakeKeyTailLevel : LevelExpr :=
+def receiptMakeKeyTailLevel : LevelExpr Nat :=
   .max receiptKeyLevel receiptMakeBudgetTailLevel
 
-def receiptMakeDeclarationLevel : LevelExpr :=
+def receiptMakeDeclarationLevel : LevelExpr Nat :=
   .max receiptSignatureLevel receiptMakeKeyTailLevel
 
 theorem receiptMakeBodyType_hasType :
@@ -1613,16 +1613,16 @@ def receiptContextSKBJR : Tower.Ctx 5 :=
   .snoc receiptContextSKBJ
     (receiptApp (.var 3) (.var 2) (.var 1) (.var 0))
 
-def receiptMotiveInnerLevel : LevelExpr :=
+def receiptMotiveInnerLevel : LevelExpr Nat :=
   .max receiptLevel (.succ receiptMotiveLevel)
 
-def receiptMotiveJudgmentTailLevel : LevelExpr :=
+def receiptMotiveJudgmentTailLevel : LevelExpr Nat :=
   .max judgmentLevel receiptMotiveInnerLevel
 
-def receiptMotiveBudgetTailLevel : LevelExpr :=
+def receiptMotiveBudgetTailLevel : LevelExpr Nat :=
   .max receiptBudgetLevel receiptMotiveJudgmentTailLevel
 
-def receiptMotiveTypeLevel : LevelExpr :=
+def receiptMotiveTypeLevel : LevelExpr Nat :=
   .max receiptKeyLevel receiptMotiveBudgetTailLevel
 
 theorem receiptMotiveType_hasType :
@@ -1762,22 +1762,22 @@ theorem receiptMotiveVarInSM_hasType :
     decide
   simpa only [lookupEquality] using variableTyping
 
-def receiptMakeCaseResultLevel : LevelExpr :=
+def receiptMakeCaseResultLevel : LevelExpr Nat :=
   .max runLevel receiptMotiveLevel
 
-def receiptMakeCaseProvenanceTailLevel : LevelExpr :=
+def receiptMakeCaseProvenanceTailLevel : LevelExpr Nat :=
   .max receiptProvenanceLevel receiptMakeCaseResultLevel
 
-def receiptMakeCaseCostTailLevel : LevelExpr :=
+def receiptMakeCaseCostTailLevel : LevelExpr Nat :=
   .max receiptCostLevel receiptMakeCaseProvenanceTailLevel
 
-def receiptMakeCaseJudgmentTailLevel : LevelExpr :=
+def receiptMakeCaseJudgmentTailLevel : LevelExpr Nat :=
   .max judgmentLevel receiptMakeCaseCostTailLevel
 
-def receiptMakeCaseBudgetTailLevel : LevelExpr :=
+def receiptMakeCaseBudgetTailLevel : LevelExpr Nat :=
   .max receiptBudgetLevel receiptMakeCaseJudgmentTailLevel
 
-def receiptMakeCaseLevel : LevelExpr :=
+def receiptMakeCaseLevel : LevelExpr Nat :=
   .max receiptKeyLevel receiptMakeCaseBudgetTailLevel
 
 theorem receiptMakeCaseType_hasType :
@@ -1840,16 +1840,16 @@ theorem receiptMakeCaseType_hasType :
   · exact .sort receiptMakeCaseBudgetTailLevel
   · exact .sorts receiptKeyLevel receiptMakeCaseBudgetTailLevel
 
-def receiptEliminateInnerLevel : LevelExpr :=
+def receiptEliminateInnerLevel : LevelExpr Nat :=
   .max receiptLevel receiptMotiveLevel
 
-def receiptEliminateJudgmentTailLevel : LevelExpr :=
+def receiptEliminateJudgmentTailLevel : LevelExpr Nat :=
   .max judgmentLevel receiptEliminateInnerLevel
 
-def receiptEliminateBudgetTailLevel : LevelExpr :=
+def receiptEliminateBudgetTailLevel : LevelExpr Nat :=
   .max receiptBudgetLevel receiptEliminateJudgmentTailLevel
 
-def receiptEliminateResultLevel : LevelExpr :=
+def receiptEliminateResultLevel : LevelExpr Nat :=
   .max receiptKeyLevel receiptEliminateBudgetTailLevel
 
 theorem receiptEliminateResultType_hasType :
@@ -1903,13 +1903,13 @@ theorem receiptEliminateResultTypeInSMC_hasType :
     receiptEliminateResultType_hasType.weaken
       (extension := receiptMakeCaseType)
 
-def receiptEliminateAfterCaseLevel : LevelExpr :=
+def receiptEliminateAfterCaseLevel : LevelExpr Nat :=
   .max receiptMakeCaseLevel receiptEliminateResultLevel
 
-def receiptEliminateBodyLevel : LevelExpr :=
+def receiptEliminateBodyLevel : LevelExpr Nat :=
   .max receiptMotiveTypeLevel receiptEliminateAfterCaseLevel
 
-def receiptEliminateDeclarationLevel : LevelExpr :=
+def receiptEliminateDeclarationLevel : LevelExpr Nat :=
   .max receiptSignatureLevel receiptEliminateBodyLevel
 
 theorem receiptEliminateBodyType_hasType :
@@ -1998,7 +1998,7 @@ theorem rawReceiptSignature_fresh {name : DeclName}
     runRules.constantType name = none := by
   by_cases isReceipt : name = receiptName
   · subst name
-    simp [runRules, outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [runRules, outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawRunSignature, runDeclarations, rawOutcomeSignature,
       outcomeDeclarations, receiptName, runName, runOkName, runFaultName,
       runEliminateName, outcomeName, establishedName, refutedName,
@@ -2007,7 +2007,7 @@ theorem rawReceiptSignature_fresh {name : DeclName}
       Signature.empty]
   by_cases isMake : name = receiptMakeName
   · subst name
-    simp [runRules, outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [runRules, outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawRunSignature, runDeclarations, rawOutcomeSignature,
       outcomeDeclarations, receiptMakeName, runName, runOkName,
       runFaultName, runEliminateName, outcomeName, establishedName,
@@ -2016,7 +2016,7 @@ theorem rawReceiptSignature_fresh {name : DeclName}
       Signature.insert, Signature.empty]
   by_cases isEliminate : name = receiptEliminateName
   · subst name
-    simp [runRules, outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [runRules, outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawRunSignature, runDeclarations, rawOutcomeSignature,
       outcomeDeclarations, receiptEliminateName, runName, runOkName,
       runFaultName, runEliminateName, outcomeName, establishedName,

@@ -115,7 +115,7 @@ theorem instance_is_the_redex_pair :
 
 /-- **The equation holds of that pair**, as an instance of the authored axiom. -/
 theorem subst_evaluates : EqClosure patE redexTerm contractum := by
-  have h := EqClosure.ax (E := patE) (Γ := []) ⟨0, by decide⟩ bodies emptySub
+  have h := EqClosure.ax_closed (E := patE) (Γ := []) ⟨0, by decide⟩ bodies emptySub
   exact h
 
 /-! ## Agreement with the existing evaluation

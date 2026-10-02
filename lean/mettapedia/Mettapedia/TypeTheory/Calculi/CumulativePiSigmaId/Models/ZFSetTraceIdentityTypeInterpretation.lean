@@ -112,7 +112,7 @@ theorem declaration_value_typed (ground : ZFSet.{u}) (valuation : Nat → Nat)
 /-- The declaration schema can be specialized in syntax or in the model's
 valuation, with literal agreement of the resulting function codes. -/
 theorem instantiated_declaration_interpretation (ground : ZFSet.{u})
-    (valuation : Nat → Nat) (theta : Nat → LevelExpr) (constants : DeclName → ZFSet.{u}) :
+    (valuation : Nat → Nat) (theta : Nat → LevelExpr Nat) (constants : DeclName → ZFSet.{u}) :
     interpret (interpretHead h seed ground valuation) constants
       (RussellTarski.substLevelsTm theta identityEliminateType)
       ((supported_mapHead (RussellTarski.substLevelsHead theta) identityEliminateType).trans

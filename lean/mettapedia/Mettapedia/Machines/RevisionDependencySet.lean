@@ -1,4 +1,5 @@
 import Mettapedia.Machines.RevisionedOccurrenceStore
+import Mettapedia.Machines.BindingPublication
 import Mathlib.Data.Finset.Image
 
 /-!
@@ -62,6 +63,46 @@ theorem agreesOn_trans [DecidableEq StoreId] {support : Finset StoreId}
     AgreesOn support first third := by
   intro store member
   exact (firstSecond store member).trans (secondThird store member)
+
+/-- Complete query results can be revision values in the same captured-read
+interface. Filtering retains row order and multiplicity; `Row` may carry a
+physical occurrence identity as well as a payload. -/
+def matchingRows {Query Row : Type} (accepts : Query → Row → Bool)
+    (rows : List Row) : RevisionEnvironment Query (List Row) where
+  current query := rows.filter (accepts query)
+
+theorem matchingRows_append {Query Row : Type}
+    (accepts : Query → Row → Bool) (rows added : List Row) (query : Query) :
+    (matchingRows accepts (rows ++ added)).current query =
+      (matchingRows accepts rows).current query ++
+        (matchingRows accepts added).current query :=
+  List.filter_append rows added
+
+/-- Inserting rows outside every consulted query leaves their complete
+readouts unchanged. No global store-revision equality is needed. -/
+theorem matchingRows_agrees_of_nonmatching_append {Query Row : Type}
+    [DecidableEq Query] (accepts : Query → Row → Bool)
+    (rows added : List Row) (support : Finset Query)
+    (outside : ∀ query ∈ support, ∀ row ∈ added, accepts query row = false) :
+    AgreesOn support (matchingRows accepts rows)
+      (matchingRows accepts (rows ++ added)) := by
+  intro query consulted
+  have empty : added.filter (accepts query) = [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro row member
+    simp [outside query consulted row member]
+  simp only [matchingRows, List.filter_append, empty, List.append_nil]
+
+/-- A newly matching occurrence changes the complete query result even if
+all previously selected row identities and payloads remain present. -/
+theorem matchingRows_ne_after_matching_append {Query Row : Type}
+    (accepts : Query → Row → Bool) (rows : List Row) (query : Query)
+    (row : Row) (matching : accepts query row = true) :
+    (matchingRows accepts (rows ++ [row])).current query ≠
+      (matchingRows accepts rows).current query := by
+  intro equal
+  have sameLength := congrArg List.length equal
+  simp [matchingRows, List.filter_append, matching] at sameLength
 
 end RevisionEnvironment
 
@@ -183,6 +224,258 @@ theorem not_validAt_update_of_mem
 
 end RevisionDependencySet
 
+/-! ## Captured read views and sticky invalidation -/
+
+/-- A lookup that disagreed with the value captured at admission. `Revision`
+may be an optional binding, so absence is retained as an ordinary value. -/
+structure CapturedReadMismatch (StoreId Revision : Type) where
+  store : StoreId
+  expected : Revision
+  actual : Revision
+deriving DecidableEq
+
+/-- A complete admitted environment and the names actually consulted in it.
+The first observed mismatch is retained even if the live environment is later
+restored. Values referred to by a binding keep their own occurrence contracts. -/
+structure CapturedReadView (StoreId Revision : Type) where
+  captured : RevisionEnvironment StoreId Revision
+  consulted : List StoreId
+  firstMismatch : Option (CapturedReadMismatch StoreId Revision)
+  captureComplete : Bool
+
+namespace CapturedReadView
+
+variable {StoreId Revision : Type}
+variable [DecidableEq StoreId] [DecidableEq Revision]
+
+/-- Admit a new view without claiming that it has consulted any store yet. -/
+def admit (environment : RevisionEnvironment StoreId Revision) :
+    CapturedReadView StoreId Revision :=
+  ⟨environment, [], none, true⟩
+
+/-- The ordinary revision-scoped identity of a captured binding. Position zero
+names the binding itself; the binding's referenced store has separate positions. -/
+def bindingOccurrence (view : CapturedReadView StoreId Revision)
+    (store : StoreId) : StoreOccurrenceId StoreId Revision :=
+  ⟨⟨store, view.captured.current store⟩, 0⟩
+
+/-- Consultation uses the existing finite dependency contract. Repeated reads
+of one binding impose one validity obligation. -/
+def dependencies (view : CapturedReadView StoreId Revision) :
+    RevisionDependencySet StoreId Revision :=
+  view.consulted.toFinset.image view.bindingOccurrence
+
+theorem valid_dependencies_iff (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) :
+    RevisionDependencySet.ValidAt live view.dependencies ↔
+      RevisionEnvironment.AgreesOn view.consulted.toFinset live view.captured := by
+  constructor
+  · intro valid store member
+    exact valid (view.bindingOccurrence store)
+      (Finset.mem_image.mpr ⟨store, member, rfl⟩)
+  · intro agrees occurrence member
+    obtain ⟨store, storeMember, rfl⟩ := Finset.mem_image.mp member
+    exact agrees store storeMember
+
+/-- Only names actually consulted occur in the validity support. -/
+theorem dependencies_storeSupport (view : CapturedReadView StoreId Revision) :
+    view.dependencies.storeSupport = view.consulted.toFinset := by
+  ext store
+  simp only [RevisionDependencySet.storeSupport, dependencies, Finset.mem_image]
+  constructor
+  · rintro ⟨occurrence, ⟨observed, observedMember, rfl⟩, rfl⟩
+    exact observedMember
+  · intro member
+    exact ⟨view.bindingOccurrence store, ⟨store, member, rfl⟩, rfl⟩
+
+/-- Detect a changed binding without replacing its captured value. -/
+def mismatchAt (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    Option (CapturedReadMismatch StoreId Revision) :=
+  if live.current store = view.captured.current store then none
+  else some ⟨store, view.captured.current store, live.current store⟩
+
+omit [DecidableEq StoreId] in
+@[simp] theorem mismatchAt_eq_none_iff
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    view.mismatchAt live store = none ↔
+      live.current store = view.captured.current store := by
+  simp [mismatchAt]
+
+/-- The first mismatch in consultation order. -/
+def firstCurrentMismatch (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) :
+    List StoreId → Option (CapturedReadMismatch StoreId Revision)
+  | [] => none
+  | store :: rest => (view.mismatchAt live store).or
+      (view.firstCurrentMismatch live rest)
+
+omit [DecidableEq StoreId] in
+theorem firstCurrentMismatch_eq_none_iff
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (stores : List StoreId) :
+    view.firstCurrentMismatch live stores = none ↔
+      ∀ store ∈ stores, live.current store = view.captured.current store := by
+  induction stores with
+  | nil => simp [firstCurrentMismatch]
+  | cons store rest inductionHypothesis =>
+    simp [firstCurrentMismatch, inductionHypothesis]
+
+/-- Record a read and retain an already observed mismatch. Returning the
+captured value is separate from permission to publish the resulting work. -/
+def consult (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    CapturedReadView StoreId Revision where
+  captured := view.captured
+  consulted := if store ∈ view.consulted then view.consulted
+    else view.consulted ++ [store]
+  firstMismatch := view.firstMismatch.or (view.mismatchAt live store)
+  captureComplete := view.captureComplete
+
+@[simp] theorem consult_preserves_captured
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    (view.consult live store).captured = view.captured := rfl
+
+theorem mem_consulted_consult_iff (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (read observed : StoreId) :
+    observed ∈ (view.consult live read).consulted ↔
+      observed ∈ view.consulted ∨ observed = read := by
+  by_cases member : read ∈ view.consulted
+  · simp [consult, member]
+    exact fun equality => equality ▸ member
+  · simp [consult, member]
+
+/-- A lookup returns the admitted value, including an admitted absence. -/
+def read (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    Revision × CapturedReadView StoreId Revision :=
+  (view.captured.current store, view.consult live store)
+
+@[simp] theorem read_returns_captured (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    (view.read live store).1 = view.captured.current store := rfl
+
+/-- Resume validation inspects every consulted binding, without rebasing any. -/
+def validate (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) :
+    CapturedReadView StoreId Revision :=
+  { view with firstMismatch :=
+      Option.or view.firstMismatch (view.firstCurrentMismatch live view.consulted) }
+
+/-- Publication requires both absence of an earlier observed mismatch and
+current validity of the actual finite dependency set. -/
+def CanPublish (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) : Prop :=
+  view.captureComplete = true ∧ view.firstMismatch = none ∧
+    RevisionDependencySet.ValidAt live view.dependencies
+
+/-- Both capture completeness and validation are checked before publication. -/
+def accepted (view : CapturedReadView StoreId Revision) : Bool :=
+  view.captureComplete && view.firstMismatch.isNone
+
+theorem validate_accepted_iff_canPublish
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) :
+    (view.validate live).accepted = true ↔ view.CanPublish live := by
+  simp only [accepted, Bool.and_eq_true, Option.isNone_iff_eq_none,
+    validate, Option.or_eq_none_iff, CanPublish,
+    firstCurrentMismatch_eq_none_iff, valid_dependencies_iff,
+    RevisionEnvironment.AgreesOn, List.mem_toFinset]
+
+/-- A recorded mismatch cannot be erased by consultation or later restoration. -/
+theorem consult_preserves_mismatch
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId)
+    (mismatch : CapturedReadMismatch StoreId Revision)
+    (recorded : view.firstMismatch = some mismatch) :
+    (view.consult live store).firstMismatch = some mismatch := by
+  simp [consult, recorded]
+
+omit [DecidableEq StoreId] in
+theorem validate_preserves_mismatch
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision)
+    (mismatch : CapturedReadMismatch StoreId Revision)
+    (recorded : view.firstMismatch = some mismatch) :
+    (view.validate live).firstMismatch = some mismatch := by
+  simp [validate, recorded]
+
+/-- Changing an unconsulted binding preserves publication eligibility. -/
+theorem canPublish_update_iff_of_not_consulted
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId)
+    (revision : Revision) (unconsulted : store ∉ view.consulted) :
+    view.CanPublish (live.update store revision) ↔ view.CanPublish live := by
+  unfold CanPublish
+  rw [RevisionDependencySet.validAt_update_iff_of_not_mem_storeSupport]
+  simpa [dependencies_storeSupport] using unconsulted
+
+/-- A complete finite binding delta outside the consulted keys preserves
+publication eligibility. The delta uses the independently specified binding
+publication map; choice metadata and other world components are not erased. -/
+theorem canPublish_applyWrites_iff {Value : Type} [DecidableEq Value]
+    (view : CapturedReadView StoreId (Option Value))
+    (live : RevisionEnvironment StoreId (Option Value)) (writes : List (StoreId × Value))
+    (outside : List.Disjoint view.consulted (writes.map Prod.fst)) :
+    view.CanPublish ⟨BindingPublication.applyWrites live.current writes⟩ ↔
+      view.CanPublish live := by
+  unfold CanPublish
+  rw [RevisionDependencySet.validAt_iff_of_agreesOn_storeSupport
+    (dependencies := view.dependencies)]
+  rw [dependencies_storeSupport]
+  intro key member
+  exact BindingPublication.applyWrites_lookup_of_not_mem live.current writes key
+    (List.disjoint_left.mp outside (by simpa using member))
+
+/-- Complete-match and absence reads use the ordinary finite dependency
+contract. Rows appended outside every consulted predicate cannot invalidate
+the publication of this view. -/
+theorem canPublish_nonmatching_append_iff {Row : Type} [DecidableEq Row]
+    (accepts : StoreId → Row → Bool) (rows added : List Row)
+    (view : CapturedReadView StoreId (List Row))
+    (outside : ∀ query ∈ view.consulted.toFinset,
+      ∀ row ∈ added, accepts query row = false) :
+    view.CanPublish (RevisionEnvironment.matchingRows accepts (rows ++ added)) ↔
+      view.CanPublish (RevisionEnvironment.matchingRows accepts rows) := by
+  unfold CanPublish
+  rw [RevisionDependencySet.validAt_iff_of_agreesOn_storeSupport
+    (dependencies := view.dependencies)]
+  rw [dependencies_storeSupport]
+  exact RevisionEnvironment.agreesOn_symm
+    (RevisionEnvironment.matchingRows_agrees_of_nonmatching_append
+      accepts rows added view.consulted.toFinset outside)
+
+/-- A phantom matching row invalidates a captured complete read. This
+includes a captured absence, whose result list was empty. Merely retaining
+the previously selected rows does not justify publication. -/
+theorem matching_append_invalidates_complete_read {Row : Type}
+    [DecidableEq Row] (accepts : StoreId → Row → Bool) (rows : List Row)
+    (query : StoreId) (row : Row) (matching : accepts query row = true) :
+    ¬ ((admit (RevisionEnvironment.matchingRows accepts rows)).consult
+        (RevisionEnvironment.matchingRows accepts rows) query).CanPublish
+      (RevisionEnvironment.matchingRows accepts (rows ++ [row])) := by
+  intro allowed
+  have agrees := (valid_dependencies_iff _ _).mp allowed.2.2
+  have same := agrees query (by simp [consult, admit])
+  exact RevisionEnvironment.matchingRows_ne_after_matching_append
+    accepts rows query row matching (by simpa [consult, admit] using same)
+
+/-- Nested admission inherits the complete captured environment. It does not
+replace an absent binding by a newer live one. Parent publication obligations
+remain with the parent. -/
+def nested (view : CapturedReadView StoreId Revision) :
+    CapturedReadView StoreId Revision :=
+  { admit view.captured with captureComplete := view.captureComplete }
+
+@[simp] theorem nested_returns_parent_value
+    (view : CapturedReadView StoreId Revision)
+    (live : RevisionEnvironment StoreId Revision) (store : StoreId) :
+    (view.nested.read live store).1 = view.captured.current store := rfl
+
+end CapturedReadView
+
 /-! ## Positive and negative controls -/
 
 namespace RevisionDependencySetCanary
@@ -230,6 +523,152 @@ example : ¬ RevisionDependencySet.ValidAt
   · decide
 
 end RevisionDependencySetCanary
+
+namespace CapturedReadViewCanary
+
+open RevisionDependencySetCanary (Store)
+
+def bindings : RevisionEnvironment Store (Option Nat) where
+  current
+    | .evidence => some 7
+    | .model => none
+    | .unrelated => some 99
+
+def admitted : CapturedReadView Store (Option Nat) := CapturedReadView.admit bindings
+
+def observed : CapturedReadView Store (Option Nat) :=
+  (admitted.consult bindings .evidence).consult bindings .model
+
+/-- A captured absence remains absent during evaluation, despite insertion. -/
+theorem insertion_does_not_rebind :
+    (admitted.read (bindings.update .model (some 3)) .model).1 = none := rfl
+
+/-- A captured value remains available during evaluation, despite removal. -/
+theorem removal_does_not_rebind :
+    (admitted.read (bindings.update .evidence none) .evidence).1 = some 7 := rfl
+
+theorem unchanged_reads_can_publish : observed.CanPublish bindings := by
+  apply (CapturedReadView.validate_accepted_iff_canPublish observed bindings).mp
+  rfl
+
+theorem unrelated_change_can_publish :
+    observed.CanPublish (bindings.update .unrelated (some 100)) := by
+  rw [CapturedReadView.canPublish_update_iff_of_not_consulted]
+  · exact unchanged_reads_can_publish
+  · decide
+
+/-- Repeated independent writes preserve both the captured present binding
+and the captured absence. -/
+theorem independent_delta_can_publish :
+    observed.CanPublish ⟨BindingPublication.applyWrites bindings.current
+      [(Store.unrelated, 100), (Store.unrelated, 101)]⟩ := by
+  apply (CapturedReadView.canPublish_applyWrites_iff observed bindings _ ?_).mpr
+    unchanged_reads_can_publish
+  simp [observed, admitted, CapturedReadView.consult, CapturedReadView.admit]
+
+theorem insertion_invalidates_consulted_absence :
+    ¬ observed.CanPublish (bindings.update .model (some 3)) := by
+  intro permitted
+  have accepted := (CapturedReadView.validate_accepted_iff_canPublish observed
+    (bindings.update .model (some 3))).mpr permitted
+  change false = true at accepted
+  contradiction
+
+/-- Disjoint child write sets can still conflict with a captured read. The
+second delta replaces an absence consulted by the first child. -/
+theorem disjoint_write_sets_do_not_preserve_consulted_absence :
+    List.Disjoint
+        ([(Store.unrelated, (100 : Nat))].map Prod.fst)
+        ([(Store.model, (3 : Nat))].map Prod.fst) ∧
+      ¬ observed.CanPublish ⟨BindingPublication.applyWrites bindings.current
+        [(Store.model, 3)]⟩ := by
+  refine ⟨by simp, ?_⟩
+  exact insertion_invalidates_consulted_absence
+
+theorem removal_invalidates_consulted_binding :
+    ¬ observed.CanPublish (bindings.update .evidence none) := by
+  intro permitted
+  have accepted := (CapturedReadView.validate_accepted_iff_canPublish observed
+    (bindings.update .evidence none)).mpr permitted
+  change false = true at accepted
+  contradiction
+
+def sawReplacement : CapturedReadView Store (Option Nat) :=
+  admitted.consult (bindings.update .evidence (some 8)) .evidence
+
+/-- Restoration does not erase the fact that a read already saw a mismatch. -/
+theorem restored_binding_does_not_clear_mismatch :
+    (sawReplacement.validate bindings).firstMismatch =
+      some ⟨Store.evidence, some 7, some 8⟩ := rfl
+
+theorem restored_binding_cannot_publish : ¬ sawReplacement.CanPublish bindings := by
+  intro permitted
+  have mismatch := permitted.2.1
+  change some (⟨Store.evidence, some 7, some 8⟩ :
+    CapturedReadMismatch Store (Option Nat)) = none at mismatch
+  contradiction
+
+/-- A nested admission inherits absence from the parent's complete world. -/
+theorem nested_absence_is_inherited :
+    (admitted.nested.read (bindings.update .model (some 3)) .model).1 = none := rfl
+
+/-- A dropped capture obligation cannot acquire publication permission merely
+because the bindings which were recorded happen to match. -/
+theorem incomplete_capture_cannot_publish :
+    ¬ ({ observed with captureComplete := false }).CanPublish bindings := by
+  intro permitted
+  exact Bool.false_ne_true permitted.1
+
+theorem nested_incomplete_capture_stays_incomplete :
+    ({ observed with captureComplete := false }).nested.captureComplete = false := rfl
+
+/-- Rows carry an occurrence number separately from their value. -/
+def queryRows : List (Nat × Nat) := [(0, 7), (1, 8)]
+
+def acceptsValue (query : Nat) (row : Nat × Nat) : Bool := row.2 == query
+
+def observedQuery (query : Nat) : CapturedReadView Nat (List (Nat × Nat)) :=
+  let environment := RevisionEnvironment.matchingRows acceptsValue queryRows
+  (CapturedReadView.admit environment).consult environment query
+
+theorem unchanged_query_can_publish (query : Nat) :
+    (observedQuery query).CanPublish
+      (RevisionEnvironment.matchingRows acceptsValue queryRows) := by
+  apply (CapturedReadView.validate_accepted_iff_canPublish _ _).mp
+  simp [observedQuery, CapturedReadView.validate, CapturedReadView.accepted,
+    CapturedReadView.consult, CapturedReadView.admit,
+    CapturedReadView.mismatchAt, CapturedReadView.firstCurrentMismatch]
+
+/-- A write outside the consulted predicate need not serialize this reader. -/
+theorem nonmatching_insertion_can_publish :
+    (observedQuery 7).CanPublish
+      (RevisionEnvironment.matchingRows acceptsValue (queryRows ++ [(2, 8)])) := by
+  apply (CapturedReadView.canPublish_nonmatching_append_iff
+    acceptsValue queryRows [(2, 8)] (observedQuery 7) ?_).mpr
+      (unchanged_query_can_publish 7)
+  simp [observedQuery, CapturedReadView.consult, CapturedReadView.admit,
+    acceptsValue]
+
+/-- An equal payload is still a new matching physical occurrence. -/
+theorem duplicate_payload_invalidates_complete_query :
+    ¬ (observedQuery 7).CanPublish
+      (RevisionEnvironment.matchingRows acceptsValue (queryRows ++ [(2, 7)])) := by
+  exact CapturedReadView.matching_append_invalidates_complete_read
+    acceptsValue queryRows 7 (2, 7) (by decide)
+
+/-- The same read contract detects insertion into a previously empty result. -/
+theorem matching_insertion_invalidates_absence :
+    ¬ (observedQuery 9).CanPublish
+      (RevisionEnvironment.matchingRows acceptsValue (queryRows ++ [(3, 9)])) := by
+  exact CapturedReadView.matching_append_invalidates_complete_read
+    acceptsValue queryRows 9 (3, 9) (by decide)
+
+example : (RevisionEnvironment.matchingRows acceptsValue queryRows).current 9 = [] := rfl
+
+example : (RevisionEnvironment.matchingRows acceptsValue
+    (queryRows ++ [(2, 7)])).current 7 = [(0, 7), (2, 7)] := rfl
+
+end CapturedReadViewCanary
 
 #print axioms RevisionDependencySet.validAt_iff_of_agreesOn_storeSupport
 #print axioms RevisionDependencySet.validAt_update_iff_of_not_mem_storeSupport

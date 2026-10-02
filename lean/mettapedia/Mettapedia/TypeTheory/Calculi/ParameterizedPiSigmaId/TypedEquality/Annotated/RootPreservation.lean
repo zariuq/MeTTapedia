@@ -25,6 +25,12 @@ typed instance of a first-order left side
 Every step of the proof follows the elaboration of the left side: the head
 constant's declared type, then the domain of each dependent function type it
 synthesizes, which the argument's typing matches by injectivity.
+
+A left side with reflexivity positions, such as the identity eliminator's
+`J A x P d y (refl a)`, types its right side only under those equations: the
+right side is typed at the instances that satisfy them (`TemplateTypedEq`), and
+such a schema preserves typing too (`SchemaPreserving.of_templateTypedEq`). A
+template typed without equations is one (`TemplateTyped.templateTypedEq`).
 -/
 
 set_option autoImplicit false
@@ -46,6 +52,29 @@ def CRootPreserving (P : ChurchRules R) : Prop :=
   ∀ {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n}, CCtxFormed P Γ →
     P.computation.step l r → CTyped P Γ l A → CTyped P Γ r A
 
+/-- **The typing of a root step's left side gives the premises of the step**, in formed
+contexts: the package admits a step of a typed term in the term's context. -/
+def CRootPremised (P : ChurchRules R) : Prop :=
+  ∀ {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n}, CCtxFormed P Γ →
+    P.computation.step l r → CTyped P Γ l A → P.Admits Γ l r
+
+/-- **Root steps of typed terms are equalities**, in formed contexts. -/
+def CRootAdmitted (P : ChurchRules R) : Prop :=
+  ∀ {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n}, CCtxFormed P Γ →
+    P.computation.step l r → CTyped P Γ l A → CEqual P Γ l r A
+
+/-- Root steps that preserve typing, and whose premises follow from the typing of their left
+sides, are equalities. -/
+theorem CRootPreserving.admitted {P : ChurchRules R} (preserving : CRootPreserving P)
+    (premised : CRootPremised P) : CRootAdmitted P :=
+  fun formed step typing =>
+    .rootAdmitted step (premised formed step typing) typing (preserving formed step typing)
+
+/-- The steps of a package that requires no premises are premised. -/
+theorem ChurchRules.PremiseFree.premised {P : ChurchRules R} (free : P.PremiseFree) :
+    CRootPremised P :=
+  fun _ step _ => free.admits step
+
 /-- The instances of an annotated schema preserve typing. -/
 def SchemaPreserving (P : ChurchRules R) {k : Nat} (left right : CTm Head k) : Prop :=
   ∀ {n : Nat} {Γ : CCtx Head n} {σ : CSub Head k n} {A : CTm Head n}, CCtxFormed P Γ →
@@ -66,28 +95,29 @@ theorem ChurchRules.ofSchemas_rootPreserving (S : SchemaFamily Head)
       obtain ⟨L, R', hS, rfl, rfl⟩ := rule
       exact schemas hS formed typing
 
-/-! ## The equations of reflexivity positions -/
+/-! ## Templates typed under the equations of their reflexivity positions -/
 
-/-- The equations the reflexivity positions of a first-order left side impose:
-the point of a reflexivity proof checked against `Id A x y` equals `x` and `y`
-at `A`, as triples (point, endpoint, carrier). -/
-def patternEquations (decls : DeclName → Option (CTm Head 0)) :
-    {k : Nat} → Option (CTm Head k) → Tm Head k → List (CTm Head k × CTm Head k × CTm Head k)
-  | _, _, .app f a =>
-      patternEquations decls none f ++
-        patternEquations decls
-          (match (elaborate decls Knowledge.empty none none f).2 with
-            | some (.pi D _) => some D
-            | _ => none) a
-  | _, expected, .refl a =>
-      (match expected with
-        | some (.id A x y) => [(liftTm a, x, A), (liftTm a, y, A)]
-        | _ => []) ++
-      patternEquations decls
-        (match expected with
-          | some (.id A _ _) => some A
-          | _ => none) a
-  | _, _, _ => []
+/-- **The elaborated right side of a schema is typed at the instances that satisfy
+the equations of its reflexivity positions**: every substitution into a formed
+context that types the metavariables as the left side's positions require, and
+under which the point of each reflexivity position equals its endpoints
+(`patternEquations`), types the instance of the right side at the instance of the
+type the left side synthesizes. -/
+def TemplateTypedEq (P : ChurchRules R) (decls : DeclName → Option (CTm Head 0)) {k : Nat}
+    (L R' : Tm Head k) : Prop :=
+  ∃ (Θ : CCtx Head k) (T : CTm Head k),
+    (∀ i, patternKnowledge decls none L i = some (Θ.lookup i)) ∧ leftType decls L = some T ∧
+      ∀ {n : Nat} {Γ : CCtx Head n} {σ : CSub Head k n}, CCtxFormed P Γ → CSubstMor P Θ Γ σ →
+        (∀ e ∈ patternEquations decls none L,
+          CEqual P Γ (e.1.subst σ) (e.2.1.subst σ) (e.2.2.subst σ)) →
+        CTyped P Γ ((elabRight decls L R').subst σ) (T.subst σ)
+
+/-- A template typed without equations is typed at every instance. -/
+theorem TemplateTyped.templateTypedEq {P : ChurchRules R} {decls : DeclName → Option (CTm Head 0)}
+    {k : Nat} {L R' : Tm Head k} (typed : TemplateTyped P decls L R') :
+    TemplateTypedEq P decls L R' := by
+  obtain ⟨Θ, T, know, left, right⟩ := typed
+  exact ⟨Θ, T, know, left, fun _ mor _ => right.substitute mor⟩
 
 /-! ## Elaboration of first-order terms -/
 
@@ -285,7 +315,40 @@ theorem SchemaPreserving.of_templateTyped {k : Nat} {L R' : Tm Head k}
   have mor : CSubstMor P Θ Γ σ := fun i => know i _ (hK i)
   exact .sub (CTyped.substitute tR mor) (syn T hT notRefl)
 
+/-- **A schema whose elaborated right side is typed under the equations of its
+reflexivity positions preserves typing**: the typing of an instance of the left
+side puts the metavariables at the types of the right side's context, satisfies
+the equations, and puts the right side's type below the instance's. -/
+theorem SchemaPreserving.of_templateTypedEq {k : Nat} {L R' : Tm Head k}
+    (fo : firstOrder L = true) (notRefl : ∀ a, L ≠ .refl a)
+    (typed : TemplateTypedEq P P.constantType L R') :
+    SchemaPreserving P (elabLeft P.constantType L) (elabRight P.constantType L R') := by
+  intro n Γ σ A formed typing
+  obtain ⟨Θ, T, hK, hT, tR⟩ := typed
+  rw [elabLeft_firstOrder P.constantType fo] at typing
+  obtain ⟨know, syn, eqs⟩ :=
+    pattern_inv facts levels L fo none σ formed typing (fun _ h => by cases h)
+  exact .sub (tR formed (fun i => know i _ (hK i)) eqs) (syn T hT notRefl)
+
 end Inversion
+
+/-- **The steps of a package annotated from schemas are premised**, given the injectivity
+and no-confusion of its type formers: pattern inversion reads the premises of a step, the
+typings of the instances of its metavariables and the equations of its reflexivity
+positions, off the typing of its left side. -/
+theorem ChurchRules.ofSchemas_rootPremised (S : SchemaFamily Head)
+    (present : Presents R.computation S) (firstOrderLeft : FirstOrderFamily S)
+    (facts : CFormerFacts (ChurchRules.ofSchemas R S present)) (levels : LevelModel R L) :
+    CRootPremised (ChurchRules.ofSchemas R S present) := by
+  intro n Γ l r A formed step typing
+  cases step with
+  | instantiate rule σ =>
+      obtain ⟨L', R', hS, rfl, rfl⟩ := rule
+      have fo := (firstOrderLeft hS).1
+      rw [elabLeft_firstOrder (elabDeclarations R.constantType) fo] at typing
+      obtain ⟨know, -, eqs⟩ :=
+        pattern_inv facts levels L' fo none σ formed typing (fun _ h => by cases h)
+      exact CSchemaRequires.admits id hS σ know eqs
 
 end Annotated
 end TypedEquality

@@ -162,6 +162,117 @@ theorem parallel_le_sequential (left right : WorkSpan) :
   · rfl
   · exact max_le (Nat.le_add_right _ _) (Nat.le_add_left _ _)
 
+/-- Fold the independent composition over a finite family of branch receipts.
+Each branch may itself retain a parallel critical path. Independence and the
+accuracy of the input receipts are obligations of the execution model. -/
+def parallelAll (branches : List WorkSpan) : WorkSpan :=
+  branches.foldr parallel 0
+
+/-- Sequential execution of a finite family of receipts. In a fixed worker
+assignment, successive slices on the same worker use this composition. -/
+def sequentialAll (stages : List WorkSpan) : WorkSpan :=
+  stages.foldr sequential 0
+
+@[simp] theorem sequentialAll_nil : sequentialAll [] = 0 := rfl
+
+@[simp] theorem sequentialAll_cons (head : WorkSpan) (tail : List WorkSpan) :
+    sequentialAll (head :: tail) = sequential head (sequentialAll tail) := rfl
+
+theorem sequentialAll_append (first second : List WorkSpan) :
+    sequentialAll (first ++ second) =
+      sequential (sequentialAll first) (sequentialAll second) := by
+  induction first with
+  | nil => simp
+  | cons head tail ih =>
+      simp only [List.cons_append, sequentialAll_cons, ih, sequential_assoc]
+
+@[simp] theorem sequentialAll_work (stages : List WorkSpan) :
+    (sequentialAll stages).work = (stages.map WorkSpan.work).sum := by
+  induction stages with
+  | nil => rfl
+  | cons head tail ih =>
+      change head.work + (sequentialAll tail).work = head.work + (tail.map WorkSpan.work).sum
+      rw [ih]
+
+@[simp] theorem sequentialAll_span (stages : List WorkSpan) :
+    (sequentialAll stages).span = (stages.map WorkSpan.span).sum := by
+  induction stages with
+  | nil => rfl
+  | cons head tail ih =>
+      change head.span + (sequentialAll tail).span = head.span + (tail.map WorkSpan.span).sum
+      rw [ih]
+
+@[simp] theorem parallelAll_nil : parallelAll [] = 0 := rfl
+
+@[simp] theorem parallelAll_cons (head : WorkSpan) (tail : List WorkSpan) :
+    parallelAll (head :: tail) = parallel head (parallelAll tail) := rfl
+
+theorem parallelAll_append (first second : List WorkSpan) :
+    parallelAll (first ++ second) = parallel (parallelAll first) (parallelAll second) := by
+  induction first with
+  | nil => simp
+  | cons head tail ih =>
+      simp only [List.cons_append, parallelAll_cons, ih, parallel_assoc]
+
+@[simp] theorem parallelAll_work (branches : List WorkSpan) :
+    (parallelAll branches).work = (branches.map WorkSpan.work).sum := by
+  induction branches with
+  | nil => rfl
+  | cons head tail ih =>
+      change head.work + (parallelAll tail).work = head.work + (tail.map WorkSpan.work).sum
+      rw [ih]
+
+@[simp] theorem parallelAll_span (branches : List WorkSpan) :
+    (parallelAll branches).span = (branches.map WorkSpan.span).foldr max 0 := by
+  induction branches with
+  | nil => rfl
+  | cons head tail ih =>
+      change max head.span (parallelAll tail).span =
+        max head.span ((tail.map WorkSpan.span).foldr max 0)
+      rw [ih]
+
+/-- Publication order cannot change this declared cost readout. Semantic
+coefficients and result order may have different, noncommutative laws. -/
+theorem parallelAll_perm {first second : List WorkSpan} (order : first.Perm second) :
+    parallelAll first = parallelAll second := by
+  induction order with
+  | nil => rfl
+  | cons head order ih => simp only [parallelAll_cons, ih]
+  | swap first second tail =>
+      simp only [parallelAll_cons]
+      rw [← parallel_assoc, parallel_comm second first, parallel_assoc]
+  | trans first second ihFirst ihSecond => exact ihFirst.trans ihSecond
+
+/-- A fork retains its shared prefix once, followed by the independent
+children and the join suffix. This is a causal cost construction, not an
+authorization to execute branches independently. -/
+def forkJoin (before : WorkSpan) (children : List WorkSpan) (after : WorkSpan) : WorkSpan :=
+  sequential before (sequential (parallelAll children) after)
+
+@[simp] theorem forkJoin_work (before after : WorkSpan) (children : List WorkSpan) :
+    (forkJoin before children after).work =
+      before.work + (children.map WorkSpan.work).sum + after.work := by
+  simp [forkJoin, sequential, Nat.add_assoc]
+
+@[simp] theorem forkJoin_span (before after : WorkSpan) (children : List WorkSpan) :
+    (forkJoin before children after).span =
+      before.span + (children.map WorkSpan.span).foldr max 0 + after.span := by
+  simp [forkJoin, sequential, Nat.add_assoc]
+
+/-- Positive control: an already parallel child retains its smaller span,
+and a common prefix is charged once. -/
+theorem nested_forkJoin_control :
+    forkJoin ⟨3, 3⟩ [parallel ⟨5, 5⟩ ⟨5, 5⟩, ⟨7, 7⟩] ⟨2, 2⟩ = ⟨22, 12⟩ := by
+  decide
+
+/-- Negative control: copying the shared prefix into each child changes
+both the reported work and the critical path. -/
+theorem repeated_prefix_changes_cost :
+    forkJoin ⟨3, 3⟩ [⟨5, 5⟩, ⟨7, 7⟩] ⟨2, 2⟩ ≠
+      forkJoin ⟨3, 3⟩ [sequential ⟨3, 3⟩ ⟨5, 5⟩,
+        sequential ⟨3, 3⟩ ⟨7, 7⟩] ⟨2, 2⟩ := by
+  decide
+
 /-- Positive example: two unit jobs have work two and parallel span one. -/
 example : parallel ⟨1, 1⟩ ⟨1, 1⟩ = ⟨2, 1⟩ := rfl
 

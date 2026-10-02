@@ -228,7 +228,7 @@ theorem continuous_shannonEntropyFin {α : Type*} [Fintype α] :
     Continuous (fun p : Prob α => shannonEntropyFin α p) := by
   classical
   unfold shannonEntropyFin
-  apply continuous_finset_sum
+  apply continuous_finsetSum
   intro a _
   -- `p ↦ p.val a` is continuous, and `negMulLog` is continuous.
   exact continuous_negMulLog.comp (continuous_apply a |>.comp continuous_subtype_val)
@@ -308,7 +308,7 @@ theorem shannon1948_uniqueness (E : Shannon1948Entropy) :
     have hn0' : Fintype.card α = 0 := by
       have : n = 0 := Nat.eq_zero_of_not_pos hn0
       simpa [n] using this
-    haveI : IsEmpty α := (Fintype.card_eq_zero_iff.mp hn0')
+    have : IsEmpty α := (Fintype.card_eq_zero_iff.mp hn0')
     have hsum0 : (∑ a : α, p.1 a) = (0 : ℝ) := by
       simp
     have : (0 : ℝ) = 1 := by
@@ -874,7 +874,7 @@ theorem shannon1948_uniqueness (E : Shannon1948Entropy) :
           have hsum :
               Tendsto (fun N : ℕ => (∑ j : Fin n, (⌊p'.1 j * (N + 1 : ℝ)⌋₊ : ℝ) / (N + 1 : ℝ)))
                 atTop (𝓝 (∑ j : Fin n, p'.1 j)) := by
-            -- Rewrite the `Fintype` sum as a `Finset.univ` sum and apply `tendsto_finset_sum`.
+            -- Rewrite the `Fintype` sum as a `Finset.univ` sum and apply `tendsto_finsetSum`.
             have hsum' :
                 Tendsto
                     (fun N : ℕ =>
@@ -882,7 +882,7 @@ theorem shannon1948_uniqueness (E : Shannon1948Entropy) :
                         (⌊p'.1 j * (N + 1 : ℝ)⌋₊ : ℝ) / (N + 1 : ℝ))
                     atTop
                     (𝓝 (Finset.sum (Finset.univ : Finset (Fin n)) fun j => p'.1 j)) := by
-              refine tendsto_finset_sum _ ?_
+              refine tendsto_finsetSum _ ?_
               intro j _
               have hp0j : 0 ≤ p'.1 j := (ProbVec.nonneg (p := p') j)
               have hreal :=

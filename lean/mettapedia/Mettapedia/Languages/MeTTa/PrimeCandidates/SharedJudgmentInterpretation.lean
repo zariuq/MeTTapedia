@@ -722,7 +722,7 @@ theorem empty_raw_not_admitted_total (context : C.Ctx) :
   intro total
   have admitted : Judgment assembly.rules .nil (sortTm Tower.zero)
       (sortTm (.succ Tower.zero)) :=
-    ⟨.nil, .headType (Tower.HeadTyping.sort Tower.zero)⟩
+    ⟨.nil, .headType (LevelTower.HeadTyping.sort Tower.zero)⟩
   obtain ⟨_, typeMeaning, _⟩ := total 0 .nil _ _ admitted
   exact typeMeaning.elim
 

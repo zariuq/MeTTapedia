@@ -281,7 +281,7 @@ open NativeHOLProofQualifiedOperationalCospan.MapFusionPrograms
 
 /-- The operational reading of the map-fusion theorem.  The theorem requested
 from NIK, the compiler output, and the program endpoints must all agree. -/
-def specification {n : Nat} (level : LevelExpr) :
+def specification {n : Nat} (level : LevelExpr Nat) :
     OperationalSpecification (reduction level n) :=
   fun claim native left right =>
     claim = HOLLeibnizMapFusionNative.closedClaim ∧
@@ -293,7 +293,7 @@ def specification {n : Nat} (level : LevelExpr) :
 qualifier.  Its NIK check fixes the requested claim, and determinism of the
 compiler fixes the native witness. -/
 theorem qualification_of_retained {n : Nat} {a : ZFSet.{u}}
-    (level : LevelExpr) (proof : IntrinsicProof)
+    (level : LevelExpr Nat) (proof : IntrinsicProof)
     (left right : Tower.Tm n)
     (qualified : RetainedMapFusionQualifies proof left right) :
     CompiledProofQualifies (specification (n := n) level)
@@ -312,7 +312,7 @@ No execution or observation witness is rebuilt. -/
 noncomputable def recursiveCospan
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -345,7 +345,7 @@ not merely its conclusion or a separately reconstructed inhabitant. -/
 theorem recursiveCospan_retains_source
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -369,7 +369,7 @@ observations as the underlying map-fusion execution. -/
 theorem recursiveCospan_semanticDiamonds
     {n : Nat} {a : ZFSet.{u}}
     {context : NativeTraceLambdaSemantics.Context.{u} n}
-    (level : LevelExpr) (first second : Tower.Tm n)
+    (level : LevelExpr Nat) (first second : Tower.Tm n)
     (firstMeaning secondMeaning : FunctionMeaning a context)
     (firstDenotes : NativeHOLTraceDisplayedTerms.Denotes a context
       first firstMeaning)
@@ -440,7 +440,7 @@ theorem supported_family_and_conjunction_boundary (a : ZFSet.{u})
 /-- A connected proof of a different theorem cannot satisfy the map-fusion
 operational specification. -/
 theorem identity_evidence_does_not_qualify_mapFusion
-    (level : LevelExpr) (a : ZFSet.{u}) {n : Nat}
+    (level : LevelExpr Nat) (a : ZFSet.{u}) {n : Nat}
     (programs : NativeHOLProofQualifiedOperationalCospan.MapFusionPrograms n) :
     ¬ CompiledProofQualifies (MapFusion.specification level)
       (ConnectedIntrinsicEvidence.ofIntrinsic a identityProof)

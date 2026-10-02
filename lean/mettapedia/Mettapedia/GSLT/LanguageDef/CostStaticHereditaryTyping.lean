@@ -92,7 +92,7 @@ mutual
                 CostStaticColor.hereditaryConstructorImage source .base
                   (costBaseConstructor source.cut rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
+            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasTypeWithConstructors.constructor targetAllowed
@@ -203,7 +203,7 @@ mutual
                 CostStaticColor.hereditaryConstructorImage source .base
                   (costBaseConstructor source.cut rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
+            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasTypeWithConstructors.collectionConstructor
@@ -1031,7 +1031,8 @@ mutual
             localLaw
           intro child membership
           apply entriesSupported child
-          simp only [TypedCostRegionBoundaryTable.entries, List.mem_cons]
+          simp only [CostRegionBoundaryEvidence.TypedCostRegionBoundaryTable.entries_cons,
+            List.mem_cons]
           exact Or.inr membership
   termination_by trees.weight
   decreasing_by

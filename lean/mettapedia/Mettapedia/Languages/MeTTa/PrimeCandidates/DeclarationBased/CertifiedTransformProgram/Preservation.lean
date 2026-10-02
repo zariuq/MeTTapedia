@@ -123,7 +123,7 @@ theorem typed {n : Nat} {Γ : Tower.Ctx n} {term type : Tower.Tm n}
   simpa only [Ctx.mapHead_id, Tm.mapHead_id] using typing.mapHead host.fromPackage
 
 /-- A package declaration roots a declaration spine in the host. -/
-theorem declaredSpine {name : DeclName} {type : Tower.Tm 0} {level : LevelExpr}
+theorem declaredSpine {name : DeclName} {type : Tower.Tm 0} {level : LevelExpr Nat}
     (known : R.constantType name = some type) (formed : Typing R .nil type (sortTm level))
     {n : Nat} (Γ : Tower.Ctx n) :
     DeclarationSpine host.rules Γ (.const name) (liftClosed type) :=
@@ -233,7 +233,7 @@ end Native
 preserves typing when its right side is typed at the declared result in the
 declared telescope. -/
 theorem variableEquation_preserves {k : Nat} (telescope : Tower.Ctx k) (result right : Tower.Tm k)
-    {name : DeclName} {level : LevelExpr}
+    {name : DeclName} {level : LevelExpr Nat}
     (known : R.constantType name = some (closeType telescope result))
     (formedType : Typing R .nil (closeType telescope result) (sortTm level))
     (rightTyped : Typing R telescope right result)

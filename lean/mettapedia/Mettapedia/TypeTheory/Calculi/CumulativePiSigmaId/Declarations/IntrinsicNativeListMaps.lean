@@ -26,7 +26,7 @@ open RussellTarski
 
 /-! ## Level-instantiated native List declarations -/
 
-def sameLevelSubstitution (level : LevelExpr) : Nat → LevelExpr :=
+def sameLevelSubstitution (level : LevelExpr Nat) : Nat → LevelExpr Nat :=
   fun _ => level
 
 /-- Iota evidence is natural in the universe-head carrier: level
@@ -44,7 +44,7 @@ def mapIotaEvidence
 
 /-- Instantiate both List declaration levels at one chosen universe.  The
 same proof-relevant iota family supplies computation after instantiation. -/
-def listLevelInstance (level : LevelExpr) :
+def listLevelInstance (level : LevelExpr Nat) :
     LevelInstance Intrinsic.rawSignature (sameLevelSubstitution level) where
   computation := Intrinsic.iotaComputation
   computationMap := by
@@ -53,56 +53,56 @@ def listLevelInstance (level : LevelExpr) :
     exact ⟨mapIotaEvidence
       (substLevelsHead (sameLevelSubstitution level)) evidence⟩
 
-def listSignatureAt (level : LevelExpr) : Signature Tower.Head :=
+def listSignatureAt (level : LevelExpr Nat) : Signature Tower.Head :=
   (listLevelInstance level).signature
 
-def listRulesAt (level : LevelExpr) : Rules Tower.Head :=
+def listRulesAt (level : LevelExpr Nat) : Rules Tower.Head :=
   (listLevelInstance level).rules
 
-abbrev HasTypeAt (level : LevelExpr) {n : Nat} :=
+abbrev HasTypeAt (level : LevelExpr Nat) {n : Nat} :=
   @Presentation.HasType Tower.Head (listRulesAt level) n
 
-def listTypeAt (level : LevelExpr) : Tower.Tm 0 :=
+def listTypeAt (level : LevelExpr Nat) : Tower.Tm 0 :=
   substLevelsTm (sameLevelSubstitution level) Intrinsic.listType
 
-def nilTypeAt (level : LevelExpr) : Tower.Tm 0 :=
+def nilTypeAt (level : LevelExpr Nat) : Tower.Tm 0 :=
   substLevelsTm (sameLevelSubstitution level) Intrinsic.nilType
 
-def consTypeAt (level : LevelExpr) : Tower.Tm 0 :=
+def consTypeAt (level : LevelExpr Nat) : Tower.Tm 0 :=
   substLevelsTm (sameLevelSubstitution level) Intrinsic.consType
 
-def eliminateTypeAt (level : LevelExpr) : Tower.Tm 0 :=
+def eliminateTypeAt (level : LevelExpr Nat) : Tower.Tm 0 :=
   substLevelsTm (sameLevelSubstitution level) Intrinsic.eliminateType
 
-@[simp] theorem typeOfAt_list (level : LevelExpr) :
+@[simp] theorem typeOfAt_list (level : LevelExpr Nat) :
     (listSignatureAt level).typeOf? Intrinsic.listName =
       some (listTypeAt level) := by
   simp [listSignatureAt, LevelInstance.signature, listTypeAt,
     Intrinsic.typeOf_list]
 
-@[simp] theorem typeOfAt_nil (level : LevelExpr) :
+@[simp] theorem typeOfAt_nil (level : LevelExpr Nat) :
     (listSignatureAt level).typeOf? Intrinsic.nilName =
       some (nilTypeAt level) := by
   simp [listSignatureAt, LevelInstance.signature, nilTypeAt,
     Intrinsic.typeOf_nil]
 
-@[simp] theorem typeOfAt_cons (level : LevelExpr) :
+@[simp] theorem typeOfAt_cons (level : LevelExpr Nat) :
     (listSignatureAt level).typeOf? Intrinsic.consName =
       some (consTypeAt level) := by
   simp [listSignatureAt, LevelInstance.signature, consTypeAt,
     Intrinsic.typeOf_cons]
 
-@[simp] theorem typeOfAt_eliminate (level : LevelExpr) :
+@[simp] theorem typeOfAt_eliminate (level : LevelExpr Nat) :
     (listSignatureAt level).typeOf? Intrinsic.eliminateName =
       some (eliminateTypeAt level) := by
   simp [listSignatureAt, LevelInstance.signature, eliminateTypeAt,
     Intrinsic.typeOf_eliminate]
 
-def listSignatureAt_formed (level : LevelExpr) :
+def listSignatureAt_formed (level : LevelExpr Nat) :
     (listSignatureAt level).Formed Tower.rules :=
   (listLevelInstance level).formed Intrinsic.rawSignature_formed
 
-theorem listConstant_hasTypeAt (level : LevelExpr)
+theorem listConstant_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} :
     HasTypeAt level context (.const Intrinsic.listName)
       (liftClosed (listTypeAt level)) := by
@@ -113,7 +113,7 @@ theorem listConstant_hasTypeAt (level : LevelExpr)
   · rfl
   · exact typeOfAt_list level
 
-theorem nilConstant_hasTypeAt (level : LevelExpr)
+theorem nilConstant_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} :
     HasTypeAt level context (.const Intrinsic.nilName)
       (liftClosed (nilTypeAt level)) := by
@@ -124,7 +124,7 @@ theorem nilConstant_hasTypeAt (level : LevelExpr)
   · rfl
   · exact typeOfAt_nil level
 
-theorem consConstant_hasTypeAt (level : LevelExpr)
+theorem consConstant_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} :
     HasTypeAt level context (.const Intrinsic.consName)
       (liftClosed (consTypeAt level)) := by
@@ -135,7 +135,7 @@ theorem consConstant_hasTypeAt (level : LevelExpr)
   · rfl
   · exact typeOfAt_cons level
 
-theorem eliminateConstant_hasTypeAt (level : LevelExpr)
+theorem eliminateConstant_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} :
     HasTypeAt level context (.const Intrinsic.eliminateName)
       (liftClosed (eliminateTypeAt level)) := by
@@ -146,7 +146,7 @@ theorem eliminateConstant_hasTypeAt (level : LevelExpr)
   · rfl
   · exact typeOfAt_eliminate level
 
-theorem listApp_hasTypeAt (level : LevelExpr)
+theorem listApp_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} {element : Tower.Tm n}
     (elementTyping : HasTypeAt level context element (sortTm level)) :
     HasTypeAt level context (Intrinsic.listApp element)
@@ -159,7 +159,7 @@ theorem listApp_hasTypeAt (level : LevelExpr)
     Presentation.rename, Presentation.inst0, Presentation.subst] using
     application
 
-theorem nilApp_hasTypeAt (level : LevelExpr)
+theorem nilApp_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} {element : Tower.Tm n}
     (elementTyping : HasTypeAt level context element (sortTm level)) :
     HasTypeAt level context (Intrinsic.nilApp element)
@@ -173,7 +173,7 @@ theorem nilApp_hasTypeAt (level : LevelExpr)
     Presentation.inst0, Presentation.subst, Presentation.subst0,
     Presentation.liftRen, Presentation.liftSub] using application
 
-theorem consApp_hasTypeAt (level : LevelExpr)
+theorem consApp_hasTypeAt (level : LevelExpr Nat)
     {context : Tower.Ctx n} {element head tail : Tower.Tm n}
     (elementTyping : HasTypeAt level context element (sortTm level))
     (headTyping : HasTypeAt level context head element)
@@ -218,51 +218,51 @@ theorem consApp_hasTypeAt (level : LevelExpr)
 
 /-- The closed, level-polymorphic type of native List map at one instantiated
 universe: `Pi A B, (A -> B) -> List A -> List B`. -/
-def nativeMapType (level : LevelExpr) : Tower.Tm 0 :=
+def nativeMapType (level : LevelExpr Nat) : Tower.Tm 0 :=
   .pi (sortTm level)
     (.pi (sortTm level)
       (.pi (arrow (.var 1) (.var 0))
         (.pi (Intrinsic.listApp (.var 2))
           (Intrinsic.listApp (.var 2)))))
 
-def nativeMapResultLevel (level : LevelExpr) : LevelExpr :=
+def nativeMapResultLevel (level : LevelExpr Nat) : LevelExpr Nat :=
   .max level level
 
-def nativeMapAfterFunctionLevel (level : LevelExpr) : LevelExpr :=
+def nativeMapAfterFunctionLevel (level : LevelExpr Nat) : LevelExpr Nat :=
   .max (.max level level) (nativeMapResultLevel level)
 
-def nativeMapAfterTargetLevel (level : LevelExpr) : LevelExpr :=
+def nativeMapAfterTargetLevel (level : LevelExpr Nat) : LevelExpr Nat :=
   .max (.succ level) (nativeMapAfterFunctionLevel level)
 
-def nativeMapDeclarationLevel (level : LevelExpr) : LevelExpr :=
+def nativeMapDeclarationLevel (level : LevelExpr Nat) : LevelExpr Nat :=
   .max (.succ level) (nativeMapAfterTargetLevel level)
 
-def mapContextA (level : LevelExpr) : Tower.Ctx 1 :=
+def mapContextA (level : LevelExpr Nat) : Tower.Ctx 1 :=
   .snoc .nil (sortTm level)
 
-def mapContextAB (level : LevelExpr) : Tower.Ctx 2 :=
+def mapContextAB (level : LevelExpr Nat) : Tower.Ctx 2 :=
   .snoc (mapContextA level) (sortTm level)
 
-def mapContextABF (level : LevelExpr) : Tower.Ctx 3 :=
+def mapContextABF (level : LevelExpr Nat) : Tower.Ctx 3 :=
   .snoc (mapContextAB level) (arrow (.var 1) (.var 0))
 
-def mapContextABFXs (level : LevelExpr) : Tower.Ctx 4 :=
+def mapContextABFXs (level : LevelExpr Nat) : Tower.Ctx 4 :=
   .snoc (mapContextABF level) (Intrinsic.listApp (.var 2))
 
-@[simp] theorem map_lookup_A (level : LevelExpr) :
+@[simp] theorem map_lookup_A (level : LevelExpr Nat) :
     (mapContextABFXs level).lookup 3 = (sortTm level : Tower.Tm 4) := by
   rfl
 
-@[simp] theorem map_lookup_B (level : LevelExpr) :
+@[simp] theorem map_lookup_B (level : LevelExpr Nat) :
     (mapContextABFXs level).lookup 2 = (sortTm level : Tower.Tm 4) := by
   rfl
 
-@[simp] theorem map_lookup_f (level : LevelExpr) :
+@[simp] theorem map_lookup_f (level : LevelExpr Nat) :
     (mapContextABFXs level).lookup 1 =
       arrow (.var 3) (.var 2) := by
   rfl
 
-@[simp] theorem map_lookup_xs (level : LevelExpr) :
+@[simp] theorem map_lookup_xs (level : LevelExpr Nat) :
     (mapContextABFXs level).lookup 0 =
       Intrinsic.listApp (.var 3) := by
   rfl
@@ -295,26 +295,26 @@ def nativeMapBody : Tower.Tm 4 :=
 def nativeMapTerm : Tower.Tm 0 :=
   .lam (.lam (.lam (.lam nativeMapBody)))
 
-theorem map_A_hasTypeAt (level : LevelExpr) :
+theorem map_A_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) (.var 3) (sortTm level) := by
   simpa only [map_lookup_A] using
     (Presentation.HasType.var (R := listRulesAt level)
       (Γ := mapContextABFXs level) (3 : Fin 4))
 
-theorem map_B_hasTypeAt (level : LevelExpr) :
+theorem map_B_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) (.var 2) (sortTm level) := by
   simpa only [map_lookup_B] using
     (Presentation.HasType.var (R := listRulesAt level)
       (Γ := mapContextABFXs level) (2 : Fin 4))
 
-theorem map_f_hasTypeAt (level : LevelExpr) :
+theorem map_f_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) (.var 1)
       (arrow (.var 3) (.var 2)) := by
   simpa only [map_lookup_f] using
     (Presentation.HasType.var (R := listRulesAt level)
       (Γ := mapContextABFXs level) (1 : Fin 4))
 
-theorem map_xs_hasTypeAt (level : LevelExpr) :
+theorem map_xs_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) (.var 0)
       (Intrinsic.listApp (.var 3)) := by
   simpa only [map_lookup_xs] using
@@ -323,7 +323,7 @@ theorem map_xs_hasTypeAt (level : LevelExpr) :
 
 /-- Formation of the native map type follows from the same instantiated List
 signature used by the program; no semantic host List appears in the proof. -/
-theorem nativeMapType_hasTypeAt (level : LevelExpr) :
+theorem nativeMapType_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (.nil : Tower.Ctx 0) (nativeMapType level)
       (sortTm (nativeMapDeclarationLevel level)) := by
   unfold nativeMapType nativeMapDeclarationLevel nativeMapAfterTargetLevel
@@ -363,7 +363,7 @@ theorem nativeMapType_hasTypeAt (level : LevelExpr) :
       (.max (.succ level)
         (.max (.max level level) (.max level level)))
 
-theorem nativeMapMotive_hasTypeAt (level : LevelExpr) :
+theorem nativeMapMotive_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) nativeMapMotive
       (.pi (Intrinsic.listApp (.var 3)) (sortTm level)) := by
   unfold nativeMapMotive
@@ -371,12 +371,12 @@ theorem nativeMapMotive_hasTypeAt (level : LevelExpr) :
   apply listApp_hasTypeAt
   exact Presentation.HasType.var 3
 
-theorem nativeMapNilCase_hasTypeAt (level : LevelExpr) :
+theorem nativeMapNilCase_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) nativeMapNilCase
       (Intrinsic.listApp (.var 2)) := by
   exact nilApp_hasTypeAt level (map_B_hasTypeAt level)
 
-theorem nativeMapConsCase_hasTypeAt (level : LevelExpr) :
+theorem nativeMapConsCase_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) nativeMapConsCase
       nativeMapConsCaseType := by
   unfold nativeMapConsCase nativeMapConsCaseType
@@ -409,14 +409,14 @@ theorem nativeMapConsCase_hasTypeAt (level : LevelExpr) :
 
 /-- Repeated opening after level instantiation.  These operations isolate
 the generic de Bruijn algebra from the particular map program. -/
-def instantiateTwoAt (level : LevelExpr)
+def instantiateTwoAt (level : LevelExpr Nat)
     (element motive : Tower.Tm n) (body : Tower.Tm 2) : Tower.Tm n :=
   Presentation.subst (subst0 motive)
     (Presentation.subst (liftSub (subst0 element))
       (Presentation.rename (liftRen (liftRen Fin.elim0))
         (body.mapHead (substLevelsHead (sameLevelSubstitution level)))))
 
-def instantiateThreeAt (level : LevelExpr)
+def instantiateThreeAt (level : LevelExpr Nat)
     (element motive nilCase : Tower.Tm n)
     (body : Tower.Tm 3) : Tower.Tm n :=
   Presentation.subst (subst0 nilCase)
@@ -427,7 +427,7 @@ def instantiateThreeAt (level : LevelExpr)
           (body.mapHead
             (substLevelsHead (sameLevelSubstitution level))))))
 
-def instantiateFourAt (level : LevelExpr)
+def instantiateFourAt (level : LevelExpr Nat)
     (element motive nilCase consCase : Tower.Tm n)
     (body : Tower.Tm 4) : Tower.Tm n :=
   Presentation.subst (subst0 consCase)
@@ -440,7 +440,7 @@ def instantiateFourAt (level : LevelExpr)
             (body.mapHead
               (substLevelsHead (sameLevelSubstitution level)))))))
 
-theorem instantiateTwoAt_eq_subst (level : LevelExpr)
+theorem instantiateTwoAt_eq_subst (level : LevelExpr Nat)
     (element motive : Tower.Tm n) (body : Tower.Tm 2) :
     instantiateTwoAt level element motive body =
       Presentation.subst
@@ -450,7 +450,7 @@ theorem instantiateTwoAt_eq_subst (level : LevelExpr)
   exact Intrinsic.instantiateTwo_eq_subst element motive
     (body.mapHead (substLevelsHead (sameLevelSubstitution level)))
 
-theorem instantiateThreeAt_eq_subst (level : LevelExpr)
+theorem instantiateThreeAt_eq_subst (level : LevelExpr Nat)
     (element motive nilCase : Tower.Tm n) (body : Tower.Tm 3) :
     instantiateThreeAt level element motive nilCase body =
       Presentation.subst
@@ -460,7 +460,7 @@ theorem instantiateThreeAt_eq_subst (level : LevelExpr)
   exact Intrinsic.instantiateThree_eq_subst element motive nilCase
     (body.mapHead (substLevelsHead (sameLevelSubstitution level)))
 
-theorem instantiateFourAt_eq_subst (level : LevelExpr)
+theorem instantiateFourAt_eq_subst (level : LevelExpr Nat)
     (element motive nilCase consCase : Tower.Tm n)
     (body : Tower.Tm 4) :
     instantiateFourAt level element motive nilCase consCase body =
@@ -471,42 +471,42 @@ theorem instantiateFourAt_eq_subst (level : LevelExpr)
   exact Intrinsic.instantiateFour_eq_subst element motive nilCase consCase
     (body.mapHead (substLevelsHead (sameLevelSubstitution level)))
 
-@[simp] theorem mapHead_nilCaseType (level : LevelExpr) :
+@[simp] theorem mapHead_nilCaseType (level : LevelExpr Nat) :
     Intrinsic.nilCaseType.mapHead
         (substLevelsHead (sameLevelSubstitution level)) =
       Intrinsic.nilCaseType := by
   rfl
 
-@[simp] theorem mapHead_consCaseType (level : LevelExpr) :
+@[simp] theorem mapHead_consCaseType (level : LevelExpr Nat) :
     Intrinsic.consCaseType.mapHead
         (substLevelsHead (sameLevelSubstitution level)) =
       Intrinsic.consCaseType := by
   rfl
 
-@[simp] theorem mapHead_eliminateResultType (level : LevelExpr) :
+@[simp] theorem mapHead_eliminateResultType (level : LevelExpr Nat) :
     Intrinsic.eliminateResultType.mapHead
         (substLevelsHead (sameLevelSubstitution level)) =
       Intrinsic.eliminateResultType := by
   rfl
 
-def nativeMapNilExpected (level : LevelExpr) : Tower.Tm 4 :=
+def nativeMapNilExpected (level : LevelExpr Nat) : Tower.Tm 4 :=
   instantiateTwoAt level (.var 3) nativeMapMotive Intrinsic.nilCaseType
 
-def nativeMapConsExpected (level : LevelExpr) : Tower.Tm 4 :=
+def nativeMapConsExpected (level : LevelExpr Nat) : Tower.Tm 4 :=
   instantiateThreeAt level (.var 3) nativeMapMotive nativeMapNilCase
     Intrinsic.consCaseType
 
-def nativeMapResultType (level : LevelExpr) : Tower.Tm 4 :=
+def nativeMapResultType (level : LevelExpr Nat) : Tower.Tm 4 :=
   instantiateFourAt level (.var 3) nativeMapMotive nativeMapNilCase
     nativeMapConsCase Intrinsic.eliminateResultType
 
-@[simp] theorem nativeMapNilExpected_eq (level : LevelExpr) :
+@[simp] theorem nativeMapNilExpected_eq (level : LevelExpr Nat) :
     nativeMapNilExpected level =
       .app nativeMapMotive (Intrinsic.nilApp (.var 3)) := by
   rw [nativeMapNilExpected, instantiateTwoAt_eq_subst,
     mapHead_nilCaseType, Intrinsic.subst_nilCaseType_motiveSchema]
 
-@[simp] theorem nativeMapResultType_eq (level : LevelExpr) :
+@[simp] theorem nativeMapResultType_eq (level : LevelExpr Nat) :
     nativeMapResultType level =
       .pi (Intrinsic.listApp (.var 3))
         (.app (Presentation.rename wk nativeMapMotive) (.var 0)) := by
@@ -517,7 +517,7 @@ def nativeMapResultType (level : LevelExpr) : Tower.Tm 4 :=
 /-- A constant motive beta-reduces to its closed-over target in every
 declaration-aware calculus. -/
 theorem constantMotive_beta
-    (level : LevelExpr) (target argument : Tower.Tm n) :
+    (level : LevelExpr Nat) (target argument : Tower.Tm n) :
     Conv (listRulesAt level).headEq
       (.app (.lam (Presentation.rename wk target)) argument)
       target (listRulesAt level).computation := by
@@ -536,7 +536,7 @@ theorem constantMotive_beta
 
 /-- The specialized constant motive used by map, stated without any numeral
 arithmetic in the de Bruijn indices. -/
-theorem listMotive_beta (level : LevelExpr)
+theorem listMotive_beta (level : LevelExpr Nat)
     (argument : Tower.Tm n) (index : Fin n) :
     Conv (listRulesAt level).headEq
       (.app (.lam (Intrinsic.listApp (.var index.succ))) argument)
@@ -548,7 +548,7 @@ theorem listMotive_beta (level : LevelExpr)
         (root := (listRulesAt level).computation)
         (Intrinsic.listApp (.var index.succ)) argument))
 
-theorem nativeMapMotive_beta (level : LevelExpr)
+theorem nativeMapMotive_beta (level : LevelExpr Nat)
     (argument : Tower.Tm 4) :
     Conv (listRulesAt level).headEq
       (.app nativeMapMotive argument)
@@ -564,13 +564,13 @@ def nativeMapConsRedexType : Tower.Tm 4 :=
         (.app (.lam (Intrinsic.listApp (.var 6)))
           (Intrinsic.consApp (.var 6) (.var 2) (.var 1)))))
 
-@[simp] theorem nativeMapConsExpected_eq (level : LevelExpr) :
+@[simp] theorem nativeMapConsExpected_eq (level : LevelExpr Nat) :
     nativeMapConsExpected level = nativeMapConsRedexType := by
   rw [nativeMapConsExpected, instantiateThreeAt_eq_subst,
     mapHead_consCaseType]
   rfl
 
-theorem nativeMapConsCase_hasExpectedTypeAt (level : LevelExpr) :
+theorem nativeMapConsCase_hasExpectedTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) nativeMapConsCase
       (nativeMapConsExpected level) := by
   rw [nativeMapConsExpected_eq]
@@ -659,7 +659,7 @@ theorem nativeMapConsCase_hasExpectedTypeAt (level : LevelExpr) :
       (5 : Fin 7)
   exact Relation.EqvGen.symm _ _ resultBeta
 
-theorem nativeMapBody_hasTypeAt (level : LevelExpr) :
+theorem nativeMapBody_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (mapContextABFXs level) nativeMapBody
       (Intrinsic.listApp (.var 2)) := by
   unfold nativeMapBody
@@ -711,7 +711,7 @@ theorem nativeMapBody_hasTypeAt (level : LevelExpr) :
 /-- The intrinsic program itself inhabits the native map type.  In
 particular, this is not the semantic `List.map` reintroduced as a constant:
 the term is four lambdas followed by the declared List eliminator. -/
-theorem nativeMapTerm_hasTypeAt (level : LevelExpr) :
+theorem nativeMapTerm_hasTypeAt (level : LevelExpr Nat) :
     HasTypeAt level (.nil : Tower.Ctx 0) nativeMapTerm
       (nativeMapType level) := by
   unfold nativeMapTerm nativeMapType

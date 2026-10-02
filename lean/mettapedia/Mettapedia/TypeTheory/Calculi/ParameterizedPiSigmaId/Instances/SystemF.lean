@@ -58,21 +58,38 @@ namespace SystemF
 /-- The name of the quantifier over codes. -/
 def allProp : DeclName := `SystemF.allProp
 
-/-- The proposition codes of System F: a type `prop` of codes, the decoder `holds`,
-implication, and one quantifier `allProp` whose carrier is `prop` itself. There are no
-equation codes. -/
-def codes : Codes Tower.Head where
-  proofs := .sort Tower.zero
-  prop := `SystemF.prop
-  holds := `SystemF.holds
-  imp := `SystemF.imp
-  quantifiers := fun name => [(allProp, .const `SystemF.prop)].lookup name
+/-- The name of the type of codes. -/
+def propName : DeclName := `SystemF.prop
+
+/-- The name of the decoder. -/
+def holdsName : DeclName := `SystemF.holds
+
+/-- The name of implication. -/
+def impName : DeclName := `SystemF.imp
+
+/-- The proposition codes of System F over the tower of a level order: a type `prop` of
+codes, the decoder `holds`, implication, and one quantifier `allProp` whose carrier is `prop`
+itself. Proofs live in the lowest universe. There are no equation codes. -/
+def codesOver (Lev : Type) [UniverseLevel.LevelOrder Lev] : Codes (LevelTower.Head Lev) where
+  proofs := .sort LevelTower.zero
+  prop := propName
+  holds := holdsName
+  imp := impName
+  quantifiers := fun name => [(allProp, .const propName)].lookup name
   equations := fun _ => none
   identity := false
 
+/-- The rule package `(codesOver Lev).extend (LevelTower.rules Lev)`: the cumulative tower
+over a level order, extended by the System F codes and their decoding. -/
+abbrev rulesOver (Lev : Type) [UniverseLevel.LevelOrder Lev] : Rules (LevelTower.Head Lev) :=
+  (codesOver Lev).extend (LevelTower.rules Lev)
+
+/-- The proposition codes of System F over the tower with natural-number levels. -/
+abbrev codes : Codes Tower.Head := codesOver Nat
+
 /-- The rule package `codes.extend Tower.rules`: the cumulative tower extended by the
 System F codes and their decoding. -/
-abbrev rules : Rules Tower.Head := codes.extend Tower.rules
+abbrev rules : Rules Tower.Head := rulesOver Nat
 
 /-- The quantifier applied to a family of codes. -/
 abbrev allOf {n : Nat} (f : Tower.Tm n) : Tower.Tm n := .app (.const allProp) f
@@ -563,48 +580,48 @@ section Typing
 variable {n : Nat} {Δ : Tower.Ctx n}
 
 theorem typed_U0 : Typed rules Δ U0 (.head (.sort (.succ Tower.zero))) :=
-  .headType (Tower.HeadTyping.sort _)
+  .headType (LevelTower.HeadTyping.sort _)
 
 /-- A dependent function type between types of the lowest universe is in the lowest
 universe. -/
 theorem typed_pi {A : Tower.Tm n} {B : Tower.Tm (n + 1)} (domain : Typed rules Δ A U0)
     (codomain : Typed rules (.snoc Δ A) B U0) : Typed rules Δ (.pi A B) U0 :=
-  Derivable.cumul (.piForm domain (Tower.IsUniverse.sort _) codomain (Tower.IsUniverse.sort _)
-    (Tower.Join.sorts _ _)) cumulative_max_zero
+  Derivable.cumul (.piForm domain (LevelTower.IsUniverse.sort _) codomain (LevelTower.IsUniverse.sort _)
+    (LevelTower.Join.sorts _ _)) cumulative_max_zero
 
 theorem equal_pi {A A' : Tower.Tm n} {B B' : Tower.Tm (n + 1)}
     (domain : Equal rules Δ A A' U0) (codomain : Equal rules (.snoc Δ A) B B' U0) :
     Equal rules Δ (.pi A B) (.pi A' B') U0 :=
-  Derivable.cumulEq (.piCong domain (Tower.IsUniverse.sort _) codomain
-    (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)) cumulative_max_zero
+  Derivable.cumulEq (.piCong domain (LevelTower.IsUniverse.sort _) codomain
+    (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)) cumulative_max_zero
 
 /-- Conversion along an equality of types in the lowest universe. -/
 theorem typed_conv {t A B : Tower.Tm n} (typing : Typed rules Δ t A)
     (equal : Equal rules Δ A B U0) : Typed rules Δ t B :=
-  .conv typing equal (Tower.IsUniverse.sort _)
+  .conv typing equal (LevelTower.IsUniverse.sort _)
 
 /-- The declared types of the code constants are formed in the empty context, so the
 constants are typed in every context. -/
 theorem typed_prop : Typed rules Δ codes.propT U0 :=
   .const (codes.extend_constantType_of_code Tower.rules codes.codeType_prop) typed_U0
-    (Tower.IsUniverse.sort _)
+    (LevelTower.IsUniverse.sort _)
 
 theorem typed_holds : Typed rules Δ (.const codes.holds) (.pi codes.propT U0) :=
   .const (codes.extend_constantType_of_code Tower.rules (codes.codeType_holds (by decide)))
-    (.piForm typed_prop (Tower.IsUniverse.sort _) typed_U0 (Tower.IsUniverse.sort _)
-      (Tower.Join.sorts _ _))
-    (Tower.IsUniverse.sort _)
+    (.piForm typed_prop (LevelTower.IsUniverse.sort _) typed_U0 (LevelTower.IsUniverse.sort _)
+      (LevelTower.Join.sorts _ _))
+    (LevelTower.IsUniverse.sort _)
 
 theorem typed_imp :
     Typed rules Δ (.const codes.imp) (.pi codes.propT (.pi codes.propT codes.propT)) :=
   .const (codes.extend_constantType_of_code Tower.rules (codes.codeType_imp (by decide)))
-    (typed_pi typed_prop (typed_pi typed_prop typed_prop)) (Tower.IsUniverse.sort _)
+    (typed_pi typed_prop (typed_pi typed_prop typed_prop)) (LevelTower.IsUniverse.sort _)
 
 theorem typed_allProp :
     Typed rules Δ (.const allProp) (.pi (.pi codes.propT codes.propT) codes.propT) :=
   .const (codes.extend_constantType_of_code Tower.rules
       (codes.codeType_all (a := allProp) (A := .const codes.prop) (by decide) rfl))
-    (typed_pi (typed_pi typed_prop typed_prop) typed_prop) (Tower.IsUniverse.sort _)
+    (typed_pi (typed_pi typed_prop typed_prop) typed_prop) (LevelTower.IsUniverse.sort _)
 
 theorem typed_holdsOf {c : Tower.Tm n} (code : Typed rules Δ c codes.propT) :
     Typed rules Δ (codes.holdsOf c) U0 :=
@@ -621,7 +638,7 @@ theorem typed_allOf {f : Tower.Tm n} (family : Typed rules Δ f (.pi codes.propT
 theorem typed_family {B : Tower.Tm (n + 1)}
     (body : Typed rules (.snoc Δ codes.propT) B codes.propT) :
     Typed rules Δ (.lam B) (.pi codes.propT codes.propT) :=
-  .lamIntro (typed_pi typed_prop typed_prop) (Tower.IsUniverse.sort _) body
+  .lamIntro (typed_pi typed_prop typed_prop) (LevelTower.IsUniverse.sort _) body
 
 /-- The code read for unbound variables is a code. -/
 theorem typed_bottom : Typed rules Δ bottom codes.propT :=
@@ -660,7 +677,7 @@ theorem equal_holdsOf_allOf_lam {B : Tower.Tm (n + 1)}
   have lifted : Typed rules (.snoc (.snoc Δ codes.propT) codes.propT)
       (rename (liftRen wk) B) codes.propT :=
     body.rename (CtxRen.snoc (fun _ => rfl) codes.propT)
-  have beta := Derivable.betaPi (typed_pi typed_prop typed_prop) (Tower.IsUniverse.sort _)
+  have beta := Derivable.betaPi (typed_pi typed_prop typed_prop) (LevelTower.IsUniverse.sort _)
     lifted (.var 0)
   rw [inst0_var_rename_liftRen_wk] at beta
   exact beta
@@ -761,7 +778,7 @@ theorem typed_trTm {k : Nat} {Γ : Context} {M : Term} {τ : Ty}
       have codomain := typed_trTy τ₂ (typed_varOf_true L Γ)
       exact typed_conv
         (.lamIntro (typed_pi (typed_holdsOf domain) (typed_holdsOf codomain.weaken))
-          (Tower.IsUniverse.sort _) body)
+          (LevelTower.IsUniverse.sort _) body)
         (.symm (equal_holdsOf_impOf domain codomain))
   | @app k Γ M N τ₁ τ₂ _ _ ihM ihN =>
       intro L carries
@@ -778,7 +795,7 @@ theorem typed_trTm {k : Nat} {Γ : Context} {M : Term} {τ : Ty}
       have codomain :=
         typed_trTy τ (L := true :: L) (typed_varOf_true_snoc (typed_varOf_true L Γ))
       exact typed_conv
-        (.lamIntro (typed_pi typed_prop (typed_holdsOf codomain)) (Tower.IsUniverse.sort _) body)
+        (.lamIntro (typed_pi typed_prop (typed_holdsOf codomain)) (LevelTower.IsUniverse.sort _) body)
         (.symm (equal_holdsOf_allOf_lam codomain))
   | @tapp k Γ M τ σ _ _ ih =>
       intro L carries

@@ -951,6 +951,31 @@ theorem substTree_comp (A : BindingCloneAlgebra.Algebra.{u} S)
     _ directChild directOnce)) ?_
   exact substTree_congr R A (children position) liftComp rfl _ _
 
+/-! ## Judgments under a binding-clone map -/
+
+section JudgmentMaps
+
+universe uSource uTarget
+
+open Mettapedia.OSLF.Binding.AuthoredPositionedRulePolynomial (mapJudgment)
+
+/-- A base map commutes with substituting a judgment. -/
+theorem mapJudgment_substJudgment {A : BindingCloneAlgebra.Algebra.{uSource} S}
+    {B : BindingCloneAlgebra.Algebra.{uTarget} S} (h : FreeBindingClone.Hom A B)
+    (j : Judgment A) {Δ : Ctx S}
+    (σ : Environment S A.substitution.Carrier j.1 Δ) :
+    mapJudgment h (substJudgment j σ) =
+      substJudgment (mapJudgment h j) (fun t v => h.raw.map (σ t v)) := by
+  obtain ⟨Γ, sort, source, target⟩ := j
+  change (⟨Δ, sort, h.raw.map (A.substitution.substitute σ source),
+      h.raw.map (A.substitution.substitute σ target)⟩ : Judgment B) =
+    ⟨Δ, sort,
+      B.substitution.substitute (fun t v => h.raw.map (σ t v)) (h.raw.map source),
+      B.substitution.substitute (fun t v => h.raw.map (σ t v)) (h.raw.map target)⟩
+  rw [h.map_substitute, h.map_substitute]
+
+end JudgmentMaps
+
 #print axioms substitute_interpretSchema
 #print axioms interpretSchema_postAmbient
 #print axioms conclusionJudgment_subst

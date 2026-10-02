@@ -38,11 +38,11 @@ noncomputable section
 
 variable {signature : Declaration.Signature Tower.Head}
 
-theorem code_membership {context : NativeContext signature} {level : LevelExpr}
+theorem code_membership {context : NativeContext signature} {level : LevelExpr Nat}
     (code : Code context level) : (decode code).AtUniverse (.sort level) :=
   (code_exists_iff_atUniverse level (decode code)).mp ⟨code, rfl⟩
 
-def piCode {context : NativeContext signature} {lower upper : LevelExpr}
+def piCode {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (domain : Code context lower)
     (codomain : Code (QuotientCwf.ext context (decode domain)) upper) :
     Code context (.max lower upper) :=
@@ -50,7 +50,7 @@ def piCode {context : NativeContext signature} {lower upper : LevelExpr}
     (QuotientProducts.pi (decode domain) (decode codomain))).mpr
       (QuotientProducts.pi_atUniverse (code_membership domain) (code_membership codomain)))
 
-theorem decode_piCode {context : NativeContext signature} {lower upper : LevelExpr}
+theorem decode_piCode {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (domain : Code context lower)
     (codomain : Code (QuotientCwf.ext context (decode domain)) upper) :
     decode (piCode domain codomain) = QuotientProducts.pi (decode domain) (decode codomain) :=
@@ -58,7 +58,7 @@ theorem decode_piCode {context : NativeContext signature} {lower upper : LevelEx
     (QuotientProducts.pi (decode domain) (decode codomain))).mpr
       (QuotientProducts.pi_atUniverse (code_membership domain) (code_membership codomain)))
 
-def sigmaCode {context : NativeContext signature} {lower upper : LevelExpr}
+def sigmaCode {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (domain : Code context lower)
     (codomain : Code (QuotientCwf.ext context (decode domain)) upper) :
     Code context (.max lower upper) :=
@@ -66,7 +66,7 @@ def sigmaCode {context : NativeContext signature} {lower upper : LevelExpr}
     (QuotientProducts.sigma (decode domain) (decode codomain))).mpr
       (QuotientProducts.sigma_atUniverse (code_membership domain) (code_membership codomain)))
 
-theorem decode_sigmaCode {context : NativeContext signature} {lower upper : LevelExpr}
+theorem decode_sigmaCode {context : NativeContext signature} {lower upper : LevelExpr Nat}
     (domain : Code context lower)
     (codomain : Code (QuotientCwf.ext context (decode domain)) upper) :
     decode (sigmaCode domain codomain) = QuotientProducts.sigma (decode domain) (decode codomain) :=
@@ -90,7 +90,7 @@ def betaSums (signature : Declaration.Signature Tower.Head) :
   fst_pair := (QuotientProducts.sigma_beta signature).1
   snd_pair := (QuotientProducts.sigma_beta signature).2
 
-private theorem max_self_below (level : LevelExpr) : Below (.max level level) level := by
+private theorem max_self_below (level : LevelExpr Nat) : Below (.max level level) level := by
   intro valuation
   simp only [LevelExpr.eval, max_self]
   exact Nat.le_refl _

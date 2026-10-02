@@ -339,11 +339,11 @@ theorem sortPatterns_eq_of_perm {left right : List Pattern}
     sortPatterns left = sortPatterns right := by
   let relation : Pattern → Pattern → Prop :=
     fun first second => patternCode first ≤ patternCode second
-  letI : Std.Total relation :=
+  let : Std.Total relation :=
     ⟨fun first second => Nat.le_total (patternCode first) (patternCode second)⟩
-  letI : IsTrans Pattern relation :=
+  let : IsTrans Pattern relation :=
     ⟨fun _ _ _ firstLe secondLe => Nat.le_trans firstLe secondLe⟩
-  letI : Std.Antisymm relation :=
+  let : Std.Antisymm relation :=
     ⟨fun first second firstLe secondLe =>
       patternCode_injective (Nat.le_antisymm firstLe secondLe)⟩
   apply List.Perm.eq_of_pairwise' (r := relation)

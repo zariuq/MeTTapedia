@@ -365,7 +365,7 @@ include facts in
 ends in a type equal to the numbers, which is not the rigid type of codes. -/
 theorem num_not_below_prop (formed : CtxFormed objectRules Δ)
     (le : TypeLe objectRules Δ numT (.const propN)) : False := by
-  have numType : IsType objectRules Δ numT := ⟨_, Tower.IsUniverse.sort _, num_typedO⟩
+  have numType : IsType objectRules Δ numT := ⟨_, LevelTower.IsUniverse.sort _, num_typedO⟩
   have e := RealizerSide.typeLe_inductive (T := objectDeclarativeSide facts) (I := numN) formed
     objectRoles_num le numType.refl
   have neutral : Neutral objectRoles (.const propN : Tower.Tm n) :=
@@ -392,7 +392,7 @@ theorem objectRules_decodes (formed : CtxFormed objectRules Δ) {k : DeclName}
     ∃ D, objectRules.computation.step (.app (.const holdsN) (appSpine (.const k) args)) D ∧
       IsTypeForm objectRoles D ∧ Typed objectRules Δ D U0 := by
   have univ := tower_sub_objectRules
-  have hu : objectRules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+  have hu : objectRules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   have propT : ∀ {m : Nat} {Γ : Tower.Ctx m}, Typed objectRules Γ (.const propN) U0 :=
     prop_typedO
   have typeT : ∀ (type : HOL.Ty SetProfile.SetBase) {m : Nat} {Γ : Tower.Ctx m},
@@ -541,7 +541,7 @@ theorem objectCodesRead :
   typed := objectRules_code_typed
   decoderRoles := objectDecoderRoles
   propRigid := objectRoles_prop
-  proofs := Tower.IsUniverse.sort _
+  proofs := LevelTower.IsUniverse.sort _
   holds := holdsE
   decodes := fun formed typing role => objectRules_decodes facts formed typing role
 

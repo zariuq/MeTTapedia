@@ -343,7 +343,7 @@ def SourceExecFact.toExecFact? (sef : SourceExecFact) : Option ExecFact :=
 /-! ## Abstract scheduler key -/
 
 /-- A scheduler key assigns a lexicographic ordering to exec facts.
-    In the real runtime, this is the serialized PathMap path (shortlex byte order).
+    In the real runtime, this is the serialized PathMap path (byte lexicographic order).
     We abstract it as a `List ℕ` to avoid committing to byte-level details. -/
 class SchedulerKey (α : Type) where
   key : α → List ℕ

@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Dynamics.InteractionEventValuation
 import Mettapedia.Machines.BranchLocalNeed.InteractionAuthority
+import Mettapedia.GSLT.Core.CostedOperational
 
 /-!
 # Cost of occurrence-authenticated reference Need paths
@@ -19,6 +20,66 @@ open Mettapedia.Machines.BranchLocalNeed.NeedInteractionAuthority
 
 variable {Origin Local Resume Rule Value StableFault RetryableFault Effect :
   Type*}
+
+open Mettapedia.GSLT
+open Mettapedia.GSLT.IndexedOperational
+
+/-- The reference transition metric is the existing constant writer grading.
+It counts authentic machine transitions, not the other runtime event kinds. -/
+abbrev transitionSpend
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect) :=
+  WriterGSLT.constGrading (machineTheory spec) (Multiplicative.ofAdd (1 : Nat))
+
+/-- Forgetting the meter preserves and reflects the actual reference machine's
+steps. The generic writer cover supplies both directions. -/
+def transitionMeterErasure
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    SemanticCoveredTranslation
+      ((machineTheory spec).spendLift (transitionSpend spec)) (machineTheory spec) :=
+  spendErasureCover (transitionSpend spec)
+    (WriterGSLT.constGrading_total _)
+
+theorem metered_step_iff
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (source target : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (before after : Nat) :
+    ((machineTheory spec).spendLift (transitionSpend spec)).Step
+      (source, Multiplicative.ofAdd before) (target, Multiplicative.ofAdd after) ↔
+      (machineTheory spec).Step source target ∧ after = before + 1 := by
+  change (∃ grade, ((machineTheory spec).Step source target ∧
+    grade = Multiplicative.ofAdd (1 : Nat)) ∧
+    Multiplicative.ofAdd after = Multiplicative.ofAdd before * grade) ↔ _
+  constructor
+  · rintro ⟨grade, ⟨step, rfl⟩, accumulated⟩
+    exact ⟨step, congrArg Multiplicative.toAdd accumulated⟩
+  · rintro ⟨step, accumulated⟩
+    exact ⟨Multiplicative.ofAdd 1, ⟨step, rfl⟩,
+      congrArg Multiplicative.ofAdd accumulated⟩
+
+/-- The meter cannot change a cost-blind behavioural observation of this
+machine. Cost inspection itself requires a richer observation than erasure. -/
+theorem metered_bisimilar_iff
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (source target : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (before after : Nat) :
+    ((machineTheory spec).spendLift (transitionSpend spec)).Bisimilar
+      (source, Multiplicative.ofAdd before) (target, Multiplicative.ofAdd after) ↔
+      (machineTheory spec).Bisimilar source target :=
+  WriterGSLT.spendLift_bisimilar_iff (transitionSpend spec)
+    (WriterGSLT.constGrading_total _) _ _
+
+/-- When the meter begins at the existing clock, an actual metered step keeps
+them aligned. No independent transition count is assigned to the evaluator. -/
+theorem metered_step_preserves_clock
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (source target : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (before after : Nat)
+    (aligned : before = source.work.transitions)
+    (metered : ((machineTheory spec).spendLift (transitionSpend spec)).Step
+      (source, Multiplicative.ofAdd before) (target, Multiplicative.ofAdd after)) :
+    after = target.work.transitions := by
+  obtain ⟨⟨occurrence⟩, accumulated⟩ := (metered_step_iff spec source target before after).mp metered
+  rw [accumulated, aligned, step_increments_transition spec source target (occurrence.mem spec)]
 
 /-- The reference transition counter is exactly the length of every
 occurrence-authenticated interaction path. -/
@@ -84,6 +145,18 @@ theorem one_step_grade_and_clock :
         oneStepPath = some 1 ∧
       next.work.transitions = start.work.transitions + 1 := by
   exact eventCount_matches_workClock demoSpec oneStepPath
+
+theorem metered_transition_advances :
+    ((machineTheory demoSpec).spendLift (transitionSpend demoSpec)).Step
+      (start, Multiplicative.ofAdd 4) (next, Multiplicative.ofAdd 5) :=
+  (metered_step_iff demoSpec start next 4 5).mpr ⟨⟨firstOccurrence⟩, rfl⟩
+
+theorem transition_does_not_reset_meter :
+    ¬((machineTheory demoSpec).spendLift (transitionSpend demoSpec)).Step
+      (start, Multiplicative.ofAdd 4) (next, Multiplicative.ofAdd 1) := by
+  rw [metered_step_iff]
+  rintro ⟨_, impossible⟩
+  omega
 
 end Canary
 

@@ -135,7 +135,7 @@ theorem validateRulePatterns_noPremises_eq_nil
     LanguageDef.validateRulePatterns context knownConstructors typeContext []
       left right = [] := by
   unfold LanguageDef.validateRulePatterns
-  simp only [List.flatMap_nil, List.append_nil, List.all_cons,
+  simp only [List.flatMap_nil, List.append_nil,
     List.all_nil, Bool.and_true, leftScoped, rightScoped, if_true,
     List.nil_append, List.append_eq_nil_iff]
   refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
@@ -199,6 +199,36 @@ theorem rightFvar_mem_left_of_validateRulePatterns_noPremises_eq_nil
   by_contra missingLeft
   simp [notConstructor] at danglingComponent
   exact missingLeft (by simpa using danglingComponent)
+
+/-- In a validated premise-free rewrite, every right-hand metavariable is
+supplied by its authored redex. -/
+theorem rightFvar_mem_left_of_validatedRewrite_noPremises
+    (language : LanguageDef) (valid : language.validate = [])
+    (rewrite : RewriteRule) (membership : rewrite ∈ language.rewrites)
+    (premisesEmpty : rewrite.premises = []) (name : String)
+    (rightMembership : name ∈ LanguageDef.patternFvarNames [] rewrite.right) :
+    name ∈ LanguageDef.patternFvarNames [] rewrite.left := by
+  have rewriteClean := validateRewrite_eq_nil_of_validate_eq_nil
+    language valid rewrite membership
+  have patternClean := validateRulePatterns_eq_nil_of_validateRewrite_eq_nil
+    language rewrite rewriteClean
+  rw [premisesEmpty] at patternClean
+  exact rightFvar_mem_left_of_validateRulePatterns_noPremises_eq_nil
+    s!"rewrite {rewrite.name}" (language.terms.map (·.label))
+    rewrite.typeContext rewrite.left rewrite.right patternClean name rightMembership
+
+/-- Variable coverage of the selected contraction follows from source
+validation before any generated Cost language is constructed. -/
+theorem InteractionCutPresentation.rightFvar_mem_left {theory : IGSLT}
+    (cut : InteractionCutPresentation theory) (name : String)
+    (membership : name ∈ theory.presentation.interactionRewrite.1.right.freeFvarNames) :
+    name ∈ theory.presentation.interactionRewrite.1.left.freeFvarNames := by
+  simpa only [patternFvarNames_nil] using
+    rightFvar_mem_left_of_validatedRewrite_noPremises
+      theory.presentation.presentation.language theory.presentation.presentation.valid
+      theory.presentation.interactionRewrite.1 cut.interactionRewrite_mem
+      cut.interactionPremisesEmpty name
+      (by simpa only [patternFvarNames_nil] using membership)
 
 /-- In a validated premise-free equation, every right-hand metavariable is
 supplied by the left-hand pattern. -/
@@ -284,97 +314,23 @@ end StructuralMorphism
 
 namespace ContinuationRetypingPlan
 
-mutual
-  /-- Contractum retyping changes constructor and sort copies, never the
-  authored rule's metavariable names. -/
-  @[simp]
-  theorem mapContractum_freeFvarNames
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (pattern : Pattern) :
-      (plan.mapContractum pattern).freeFvarNames = pattern.freeFvarNames := by
-    cases pattern with
-    | bvar index => simp [mapContractum, Pattern.freeFvarNames]
-    | fvar name => simp [mapContractum, Pattern.freeFvarNames]
-    | apply constructor arguments =>
-        simpa [mapContractum, Pattern.freeFvarNames] using
-          mapContractumList_freeFvarNames plan arguments
-    | lambda binder body =>
-        simpa [mapContractum, Pattern.freeFvarNames] using
-          mapContractum_freeFvarNames plan body
-    | multiLambda arity binders body =>
-        simpa [mapContractum, Pattern.freeFvarNames] using
-          mapContractum_freeFvarNames plan body
-    | subst body replacement =>
-        simp [mapContractum, Pattern.freeFvarNames,
-          mapContractum_freeFvarNames plan body,
-          mapContractum_freeFvarNames plan replacement]
-    | collection collectionType elements rest =>
-        simpa [mapContractum, Pattern.freeFvarNames] using
-          mapContractumList_freeFvarNames plan elements
+/-- Contractum retyping changes constructor and sort copies, never the
+authored rule's metavariable names. -/
+@[simp]
+theorem mapContractum_freeFvarNames
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) (pattern : Pattern) :
+    (plan.mapContractum pattern).freeFvarNames = pattern.freeFvarNames :=
+  StructuralMorphism.mapPattern_freeFvarNames _ pattern
 
-  @[simp]
-  theorem mapContractumList_freeFvarNames
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (patterns : List Pattern) :
-      (plan.mapContractumList patterns).flatMap Pattern.freeFvarNames =
-        patterns.flatMap Pattern.freeFvarNames := by
-    cases patterns with
-    | nil => rfl
-    | cons pattern patterns =>
-        simp only [mapContractumList, List.flatMap_cons,
-          mapContractum_freeFvarNames plan pattern,
-          mapContractumList_freeFvarNames plan patterns]
-end
-
-mutual
-  /-- Contractum retyping also preserves binder metadata exactly. -/
-  @[simp]
-  theorem mapContractum_patternBinderNames
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (pattern : Pattern) :
-      LanguageDef.patternBinderNames (plan.mapContractum pattern) =
-        LanguageDef.patternBinderNames pattern := by
-    cases pattern with
-    | bvar index => simp [mapContractum, LanguageDef.patternBinderNames]
-    | fvar name => simp [mapContractum, LanguageDef.patternBinderNames]
-    | apply constructor arguments =>
-        simpa [mapContractum, LanguageDef.patternBinderNames] using
-          mapContractumList_patternBinderNames plan arguments
-    | lambda binder body =>
-        cases binder <;>
-          simp [mapContractum, LanguageDef.patternBinderNames,
-            mapContractum_patternBinderNames plan body]
-    | multiLambda arity binders body =>
-        simp [mapContractum, LanguageDef.patternBinderNames,
-          mapContractum_patternBinderNames plan body]
-    | subst body replacement =>
-        simp [mapContractum, LanguageDef.patternBinderNames,
-          mapContractum_patternBinderNames plan body,
-          mapContractum_patternBinderNames plan replacement]
-    | collection collectionType elements rest =>
-        simpa [mapContractum, LanguageDef.patternBinderNames] using
-          mapContractumList_patternBinderNames plan elements
-
-  @[simp]
-  theorem mapContractumList_patternBinderNames
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (patterns : List Pattern) :
-      (plan.mapContractumList patterns).attach.flatMap
-          (fun entry => LanguageDef.patternBinderNames entry.1) =
-        patterns.attach.flatMap
-          (fun entry => LanguageDef.patternBinderNames entry.1) := by
-    rw [Mettapedia.GSLT.LanguageDef.attach_flatMap_value,
-      Mettapedia.GSLT.LanguageDef.attach_flatMap_value]
-    cases patterns with
-    | nil => rfl
-    | cons pattern patterns =>
-        have tailEquality :=
-          mapContractumList_patternBinderNames plan patterns
-        rw [Mettapedia.GSLT.LanguageDef.attach_flatMap_value,
-          Mettapedia.GSLT.LanguageDef.attach_flatMap_value] at tailEquality
-        simp only [mapContractumList, List.flatMap_cons,
-          mapContractum_patternBinderNames plan pattern, tailEquality]
-end
+/-- Contractum retyping also preserves binder metadata exactly. -/
+@[simp]
+theorem mapContractum_patternBinderNames
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) (pattern : Pattern) :
+    LanguageDef.patternBinderNames (plan.mapContractum pattern) =
+      LanguageDef.patternBinderNames pattern :=
+  StructuralMorphism.mapPattern_patternBinderNames _ pattern
 
 end ContinuationRetypingPlan
 
@@ -1240,7 +1196,8 @@ theorem lookup_costRetypedSourceContext (source : CIGSLT) (name : String) :
     lookupTypeContext source.costRetypedSourceContext
         (costSourceSchemaName name) =
       source.continuationRetyping.generatedFreeContext name := by
-  unfold costRetypedSourceContext ContinuationRetypingPlan.generatedFreeContext
+  unfold costRetypedSourceContext
+  rw [ContinuationRetypingPlan.generatedFreeContext_apply]
   simpa using
     (lookupTypeContext_map_injective
       source.theory.presentation.interactionRewrite.1.typeContext
@@ -1587,7 +1544,6 @@ theorem costWholeRedex_context_avoids_constructorLabels (source : CIGSLT)
   exact source.generatedSchemaName_not_mem_costCoreLabels entry.1
     (source.costWholeRedex_contextName_generated entry membership)
 
-set_option maxHeartbeats 1000000 in
 theorem costWholeRedex_rightFvar_mem_left (source : CIGSLT)
     (name : String)
     (membership :
@@ -1598,29 +1554,11 @@ theorem costWholeRedex_rightFvar_mem_left (source : CIGSLT)
   simp only [List.mem_append, List.mem_map, List.mem_cons] at membership
   rcases membership with ⟨sourceName, sourceRightMembership, equality⟩ |
       equality
-  · have selectedRewriteClean := validateRewrite_eq_nil_of_validate_eq_nil
-      source.theory.presentation.presentation.language
-      source.theory.presentation.presentation.valid
-      source.theory.presentation.interactionRewrite.1
-      source.cut.interactionRewrite_mem
-    have selectedPatternsClean :=
-      validateRulePatterns_eq_nil_of_validateRewrite_eq_nil
-        source.theory.presentation.presentation.language
-        source.theory.presentation.interactionRewrite.1
-        selectedRewriteClean
-    rw [source.cut.interactionPremisesEmpty] at selectedPatternsClean
-    have sourceLeftMembership :=
-      rightFvar_mem_left_of_validateRulePatterns_noPremises_eq_nil
-        s!"rewrite {source.theory.presentation.interactionRewrite.1.name}"
-        (source.theory.presentation.presentation.language.terms.map
-          (·.label))
-        source.theory.presentation.interactionRewrite.1.typeContext
-        source.theory.presentation.interactionRewrite.1.left
-        source.theory.presentation.interactionRewrite.1.right
-        selectedPatternsClean sourceName (by simpa using sourceRightMembership)
+  · have sourceLeftMembership := source.cut.rightFvar_mem_left
+      sourceName sourceRightMembership
     rw [patternFvarNames_nil, source.costWholeRedexSource_freeFvarNames]
     apply List.mem_append_left
-    exact List.mem_map.mpr ⟨sourceName, by simpa using sourceLeftMembership,
+    exact List.mem_map.mpr ⟨sourceName, by simpa only [patternFvarNames_nil] using sourceLeftMembership,
       equality⟩
   · rw [patternFvarNames_nil, source.costWholeRedexSource_freeFvarNames]
     apply List.mem_append_right
@@ -1905,7 +1843,6 @@ theorem costWholeRedexTypeContext_baseName_mem (source : CIGSLT)
       subst name
       exact source.costTokenStackSortName_mem_costWhole
 
-set_option maxHeartbeats 1000000 in
 theorem costWholeRedexRewrite_validate (source : CIGSLT) :
     source.costWholeLanguage.validateRewrite
       source.costWholeRedexRewrite = [] := by

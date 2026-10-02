@@ -120,12 +120,11 @@ end Realization
 
 /-- Replace only controller memory in a resumable snapshot.  Events and the
 live frontier remain definitionally unchanged. -/
-def compressSnapshot
+abbrev compressSnapshot
     (readout : Memory -> View)
     (snapshot : InferenceControl.Snapshot Node Answer Memory) :
-    InferenceControl.Snapshot Node Answer View where
-  search := snapshot.search
-  memory := readout snapshot.memory
+    InferenceControl.Snapshot Node Answer View :=
+  snapshot.mapMemory readout
 
 @[simp] theorem compressSnapshot_search
     (readout : Memory -> View)
@@ -164,7 +163,7 @@ theorem compressSnapshot_tick
         snapshot.search.frontier with
   | nil => rfl
   | cons node pending =>
-      simp only [compressSnapshot]
+      simp only [compressSnapshot, InferenceControl.Snapshot.mapMemory]
       rw [realization.compile_advance_agrees snapshot.memory node
         (system.emit node) (system.successors node)]
 

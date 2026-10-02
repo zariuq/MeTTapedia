@@ -51,7 +51,7 @@ theorem missingFieldSignature_notFormed :
     (codomain := .const familyName)
   · simp [missingFieldSignature, Signature.ofList, Signature.insert,
       Signature.typeOf?, constructorName, familyName, constructorType]
-  · simp [extendRules, combinedType, Tower.rules, missingFieldSignature,
+  · simp [extendRules, combinedType, LevelTower.rules, missingFieldSignature,
       Signature.ofList, Signature.insert, Signature.typeOf?, Signature.empty,
       missingName, constructorName, familyName]
 

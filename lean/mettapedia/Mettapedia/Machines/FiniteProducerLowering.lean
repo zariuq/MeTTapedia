@@ -83,7 +83,20 @@ def bind {A B : Type u} (execution : Execution A) (next : A → Execution B) : E
 
 theorem bind_done_single {A B : Type u} (a : A) (next : A → Execution B) :
     bind (.done [a] []) next = next a := by
-  cases result : next a <;> simp [bind, traverseAlternatives, alternatives, result]
+    cases result : next a <;> simp [bind, traverseAlternatives, alternatives, result]
+
+theorem traverse_identity {A : Type u} (answers : List A) :
+    traverseAlternatives (fun a => done [a] []) answers = done answers [] := by
+  induction answers with
+  | nil => rfl
+  | cons a answers ih => simp [traverseAlternatives, alternatives, ih]
+
+/-- A continuation which only returns its private received value adds neither
+events nor occurrences. Forwarding retains divergence as well. The native
+admission must separately establish privacy and preserve its matching scope. -/
+theorem bind_identity {A : Type u} (execution : Execution A) :
+    bind execution (fun a => done [a] []) = execution := by
+  cases execution <;> simp [bind, traverse_identity]
 
 end Execution
 

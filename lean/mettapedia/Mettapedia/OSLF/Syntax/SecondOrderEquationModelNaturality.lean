@@ -286,6 +286,16 @@ noncomputable def authoredEquationModelPresheaf (S : Signature)
     exact authoredEquationModelMap_comp S equations
       second.unop first.unop
 
+/-- Forget equation satisfaction while retaining the complete binding clone
+and every substitution-preserving model map. -/
+def forgetEquations (equations : List (EqAxiom S M)) :
+    FreeBindingEquationModel.Model equations ⥤
+      BindingCloneAlgebra.Algebra.{0} S where
+  obj model := model.algebra
+  map interpretation := interpretation
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
 end Mettapedia.OSLF.Binding.SecondOrderContext
 
 #print axioms Mettapedia.OSLF.Binding.SecondOrderContext.substituteTermClass_bindQ

@@ -103,7 +103,7 @@ theorem laws (J : DeclName) (u v : Tower.Head) (valuation : Nat → Nat) :
 
 section Typing
 
-variable (lu lv : LevelExpr)
+variable (lu lv : LevelExpr Nat)
 
 /-- The eliminator's declared type is typed in the tower, using no constants. -/
 theorem elimType_typed : ∃ w, Tower.IsUniverse w ∧
@@ -168,7 +168,7 @@ end Typing
 
 section Hypotheses
 
-variable (J : DeclName) (lu lv : LevelExpr) (valuation : Nat → Nat)
+variable (J : DeclName) (lu lv : LevelExpr Nat) (valuation : Nat → Nat)
 
 theorem constantFree_sub :
     RulesSub Tower.rules (constantFreeRules (rules J (.sort lu) (.sort lv))) :=
@@ -247,7 +247,7 @@ section Consequences
 
 open TowerEliminatorModel
 
-variable {J : DeclName} {lu lv : LevelExpr} {n : Nat}
+variable {J : DeclName} {lu lv : LevelExpr Nat} {n : Nat}
   {Γ : Ctx Tower.Head n}
 
 /-- The eliminator is a semantic constant of the model. -/

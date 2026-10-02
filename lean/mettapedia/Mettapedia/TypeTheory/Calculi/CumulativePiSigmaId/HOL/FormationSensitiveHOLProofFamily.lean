@@ -179,7 +179,7 @@ theorem pi_zero {n : Nat} {gamma : Tower.Ctx n}
   apply Typing.cumul (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero)
     (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem implication_proposition {n : Nat} {gamma : Tower.Ctx n} {p q : Tower.Tm n}
     (hp : Typing rules gamma p (.const `HOLUniformList.prop))

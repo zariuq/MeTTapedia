@@ -63,7 +63,7 @@ structure TypedConversionQuery where
   source : Tower.Tm arity
   target : Tower.Tm arity
   type : Tower.Tm arity
-  level : LevelExpr
+  level : LevelExpr Nat
 
 /-- The source endpoint as an ordinary formed-typing query. -/
 def TypedConversionQuery.sourceQuery (query : TypedConversionQuery) :
@@ -253,7 +253,7 @@ private theorem typedConversionTarget_valid :
     DeclarationAwareDataLanguage.definition,
     DeclarationAwareDataLanguage.constructorArities,
     DeclarationAwareDataLanguage.kernelDataType,
-    TypeDecl.plain, encodeTowerHead, Tower.zero, encodeLevel, encodeNat,
+    TypeDecl.plain, encodeTowerHead, LevelTower.zero, encodeLevel, encodeNat,
     encodeCtx, CalculusLanguageDef.ruleIds,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     CalculusLanguageDef.conversionDeclarationValid,
@@ -738,8 +738,8 @@ theorem checkedConversionDerivation_endpoints_eq
 
 namespace NativeExamples
 
-private abbrev levelOne : LevelExpr := .succ Tower.zero
-private abbrev levelTwo : LevelExpr := .succ levelOne
+private abbrev levelOne : LevelExpr Nat := .succ Tower.zero
+private abbrev levelTwo : LevelExpr Nat := .succ levelOne
 
 open SyntacticTypedConversion.TowerExamples
 

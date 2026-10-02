@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.LevelInstances
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.SNValuePackage
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ConsistencyLevels
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.ModelS.Renaming
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Renaming
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.Consistency.Renaming
 
 /-!
@@ -64,7 +64,7 @@ transport at its universes, an instance of the recursor by large elimination, an
 every other constant as in the object package. -/
 theorem vmodel_valid_instances {name : DeclName} {type : Tower.Tm 0}
     (declared : objectRulesInstances.constantType name = some type) :
-    ModelS.ValidTmS (vmodel v) .nil (.const (eraseLevels name)) (type.mapConst eraseLevels) := by
+    ModelSN.ValidTmS (vmodel v) .nil (.const (eraseLevels name)) (type.mapConst eraseLevels) := by
   rw [objectRulesInstances_type_erased declared]
   rcases objectRulesInstances_declared_cases declared with
     ⟨lu, lw, rfl, rfl⟩ | ⟨lr, rfl, rfl⟩ | ⟨-, -, declared'⟩
@@ -81,8 +81,8 @@ of an instance as the step of its constant in the package at the instance's
 levels, at its typed instances. -/
 theorem vmodel_root_instances {n : Nat} {l r : Tower.Tm n}
     (step : objectRulesInstances.computation.step l r) :
-    ModelS.RootSemanticS (vmodel v) (l.mapConst eraseLevels) (r.mapConst eraseLevels) ∨
-      ModelS.TypedRootSR objectRulesInstances (vmodel v) eraseLevels l r := by
+    ModelSN.RootSemanticS (vmodel v) (l.mapConst eraseLevels) (r.mapConst eraseLevels) ∨
+      ModelSN.TypedRootSR objectRulesInstances (vmodel v) eraseLevels l r := by
   have erased := objectRulesInstances_eraseLevels step
   rcases step with step | ⟨⟨lu, lw, h⟩ | ⟨lr, h⟩⟩
   · obtain ⟨c, args, rfl, plain⟩ := objectRules_step_head step
@@ -113,7 +113,7 @@ theorem vmodel_root_instances {n : Nat} {l r : Tower.Tm n}
 /-- **The package with every instance is sound for the transport value model
 through erasing levels.** -/
 theorem vmodel_soundSR_instances :
-    ModelS.TypedSoundSR objectRulesInstances (vmodel v) eraseLevels where
+    ModelSN.TypedSoundSR objectRulesInstances (vmodel v) eraseLevels where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
@@ -134,7 +134,7 @@ package's own reduction, and so is its type. -/
 theorem objectRulesInstances_sn {n : Nat} {Γ : Tower.Ctx n} {t A : Tower.Tm n}
     (formed : CtxFormed objectRulesInstances Γ) (typed : Typed objectRulesInstances Γ t A) :
     SN objectRulesInstances t ∧ SN objectRulesInstances A :=
-  have erased := ModelS.Typed.snR (vmodel_soundSR_instances fun _ => 0) formed typed
+  have erased := ModelSN.Typed.snR (vmodel_soundSR_instances fun _ => 0) formed typed
   ⟨SN.of_mapConst objectRulesInstances_eraseLevels erased.1,
     SN.of_mapConst objectRulesInstances_eraseLevels erased.2⟩
 
@@ -145,7 +145,7 @@ theorem objectRulesInstances_equal_sn {n : Nat} {Γ : Tower.Ctx n} {a b A : Towe
     (formed : CtxFormed objectRulesInstances Γ)
     (equal : Derivable objectRulesInstances (.equality Γ a b A)) :
     SN objectRulesInstances a ∧ SN objectRulesInstances b ∧ SN objectRulesInstances A :=
-  have erased := ModelS.Equal.snR (vmodel_soundSR_instances fun _ => 0) formed equal
+  have erased := ModelSN.Equal.snR (vmodel_soundSR_instances fun _ => 0) formed equal
   ⟨SN.of_mapConst objectRulesInstances_eraseLevels erased.1,
     SN.of_mapConst objectRulesInstances_eraseLevels erased.2.1,
     SN.of_mapConst objectRulesInstances_eraseLevels erased.2.2⟩

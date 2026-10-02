@@ -45,7 +45,7 @@ in the record. -/
 structure Instance where
   name : DeclName
   schema : Entry Tower.Head
-  levels : Nat → LevelExpr
+  levels : Nat → LevelExpr Nat
 
 def Instance.entry (slot : Instance) : Entry Tower.Head :=
   slot.schema.instantiateLevels slot.levels
@@ -300,7 +300,7 @@ open NativeWireDataDenotation
 
 /-- Every literal in the existing infinite natural-name family has an
 actual installed entry. Its payload is not decoded to define meaning. -/
-def naturalInstance (payload : Nat) (levels : Nat → LevelExpr) : Instance :=
+def naturalInstance (payload : Nat) (levels : Nat → LevelExpr Nat) : Instance :=
   ⟨.num NativeWireData.naturalPrefix payload, ⟨NativeWireData.dataType, none⟩, levels⟩
 
 private theorem natural_wire_entry (payload : Nat) :
@@ -317,7 +317,7 @@ private theorem natural_common_type (payload : Nat) :
     (HOLNativeRelatorCompatibility.signature_extends_wire.typeOf (by
       simp only [Signature.typeOf?, natural_wire_entry, Option.map_some]))
 
-theorem natural_admitted (payload : Nat) (levels : Nat → LevelExpr) :
+theorem natural_admitted (payload : Nat) (levels : Nat → LevelExpr Nat) :
     (naturalInstance payload levels).Admitted common := by
   refine ⟨⟨?_, natural_common_type payload⟩, Tower.zero, .nil, ?_⟩
   · exact HOLNativeRelatorCompatibility.signature_extends_wire.entries (natural_wire_entry payload)
@@ -380,7 +380,7 @@ theorem natural_head_agreement : ClosedHeadAgreement (naturalData Value.natural)
 
 /-- Empty-source semantic substitution does not interpret the unrelated
 mixed-context fields. The declaration's nontrivial carrier remains Value. -/
-theorem natural_in_formed_context (payload : Nat) (levels : Nat → LevelExpr)
+theorem natural_in_formed_context (payload : Nat) (levels : Nat → LevelExpr Nat)
     {n : Nat} (context : SharedJudgmentInterpretation.Context common n)
     (formed : ContextFormation common.rules context.raw) :
     Judgment common.rules context.raw (.const (.num NativeWireData.naturalPrefix payload))
@@ -449,10 +449,10 @@ theorem actual_natural_family_qualified :
 
 /-- An actual schema instantiation changes the declaration's type code.
 This raw slot does not assert that the schema was installed in the target. -/
-def dataInstance (level : LevelExpr) : Instance :=
+def dataInstance (level : LevelExpr Nat) : Instance :=
   ⟨NativeWireData.dataName, ⟨sortTm (.param 0), none⟩, fun _ => level⟩
 
-theorem data_instance_entry (level : LevelExpr) :
+theorem data_instance_entry (level : LevelExpr Nat) :
     (dataInstance level).entry = ⟨sortTm level, none⟩ := rfl
 
 private theorem data_wire_entry :

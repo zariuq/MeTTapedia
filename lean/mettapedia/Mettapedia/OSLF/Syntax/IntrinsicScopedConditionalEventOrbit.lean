@@ -1,5 +1,4 @@
-import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalJudgmentCategory
-import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalSubstitutionModels
+import Mettapedia.OSLF.Syntax.IntrinsicScopedJudgmentAction
 
 /-!
 # Free contextual substitution on event generators
@@ -19,6 +18,9 @@ open Mettapedia.OSLF.Binding
 open Mettapedia.OSLF.Binding.AuthoredPositionedRulePolynomial (Judgment)
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalSubstitution
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalJudgmentCategory
+open Mettapedia.OSLF.Binding.IntrinsicScopedJudgmentAction (JudgmentAction)
+
+universe v
 
 variable {S : Signature}
 variable (A : BindingCloneAlgebra.Algebra.{0} S)
@@ -105,258 +107,106 @@ noncomputable def Orbit.substitute {sort : S.Srt} {state : State A sort}
   event.map A Seed
     (substitutionArrow A (state.asJudgment A) σ)
 
-/-- A target substitution model interprets a generator use by applying its
-actual evidence action to the assigned original witness. -/
-def Orbit.interpret
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
-    {sort : S.Srt}
+/-- A substitution action interprets a generator use by acting on the
+assigned original witness along the recorded arrow. -/
+def Orbit.interpret (action : JudgmentAction.{0, v} A) {sort : S.Srt}
     (assigned : ∀ state : State A sort,
-      Seed sort state → model.evidence.carrier () (state.asJudgment A))
+      Seed sort state → action.carrier (state.asJudgment A))
     {state : State A sort} (event : Orbit A Seed state) :
-    model.evidence.carrier () (state.asJudgment A) :=
-  model.act (event.original.asJudgment A)
-    (assigned event.original event.seed)
-    event.arrow.environment (state.asJudgment A)
-    (Map.as_substitution A event.arrow)
+    action.carrier (state.asJudgment A) :=
+  action.actArrow event.arrow (assigned event.original event.seed)
 
 /-- Bare generators interpret as their assigned evidence, with no hidden
 change of source, target, or event identity. -/
-theorem Orbit.interpret_unit
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
-    {sort : S.Srt}
+theorem Orbit.interpret_unit (action : JudgmentAction.{0, v} A) {sort : S.Srt}
     (assigned : ∀ state : State A sort,
-      Seed sort state → model.evidence.carrier () (state.asJudgment A))
-    {state : State A sort}
-    (seed : Seed sort state) :
-    (Orbit.unit A Seed seed).interpret A Seed model assigned =
-      assigned state seed := by
-  change model.act (state.asJudgment A) (assigned state seed)
-      (fun _ var => A.substitution.injectVar var)
-      (state.asJudgment A) _ = assigned state seed
-  exact model.act_identity (state.asJudgment A)
-    (assigned state seed) _
+      Seed sort state → action.carrier (state.asJudgment A))
+    {state : State A sort} (seed : Seed sort state) :
+    (Orbit.unit A Seed seed).interpret A Seed action assigned =
+      assigned state seed :=
+  action.actArrow_id state (assigned state seed)
 
 /-- Interpreting an event generator after another contextual substitution
-agrees with applying the target model's actual substitution action. -/
-theorem Orbit.interpret_map
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
-    {sort : S.Srt}
+agrees with applying the substitution action. -/
+theorem Orbit.interpret_map (action : JudgmentAction.{0, v} A) {sort : S.Srt}
     (assigned : ∀ state : State A sort,
-      Seed sort state → model.evidence.carrier () (state.asJudgment A))
+      Seed sort state → action.carrier (state.asJudgment A))
     {first second : State A sort}
     (event : Orbit A Seed first) (f : first ⟶ second) :
-    (event.map A Seed f).interpret A Seed model assigned =
-      model.act (first.asJudgment A)
-        (event.interpret A Seed model assigned)
-        f.environment (second.asJudgment A)
-        (Map.as_substitution A f) := by
-  let j₀ := event.original.asJudgment A
-  let j₁ := first.asJudgment A
-  let j₂ := second.asJudgment A
-  let σ := event.arrow.environment
-  let τ := f.environment
-  let τ₀ := castEnv (Map.as_substitution A event.arrow) τ
-  let ρ := fun s v => A.substitution.substitute τ₀ (σ s v)
-  let w := assigned event.original event.seed
-  have h₁ : substJudgment j₀ σ = j₁ :=
-    Map.as_substitution A event.arrow
-  have h₂ : substJudgment j₁ τ = j₂ := Map.as_substitution A f
-  have hSecond : substJudgment (substJudgment j₀ σ) τ₀ = j₂ :=
-    (substJudgment_castEnv h₁ τ).trans h₂
-  have hDirect : substJudgment j₀ ρ = j₂ :=
-    (substJudgment_comp j₀ σ τ₀).symm.trans hSecond
-  have envEq : τ₀ = τ := eq_of_heq (castEnv_heq h₁ τ)
-  have compEnvEq : ρ = (event.arrow ≫ f).environment := by
-    funext s v
-    exact congrArg (fun env => A.substitution.substitute env (σ s v)) envEq
-  have directToComposite : HEq
-      (model.act j₀ w ρ j₂ hDirect)
-      (model.act j₀ w (event.arrow ≫ f).environment j₂
-        (Map.as_substitution A (event.arrow ≫ f))) :=
-    SubstitutionModel.act_heq R model rfl HEq.rfl
-      (heq_of_eq compEnvEq) rfl hDirect
-      (Map.as_substitution A (event.arrow ≫ f))
-  have innerToChosen : HEq
-      (model.act j₀ w σ (substJudgment j₀ σ) rfl)
-      (model.act j₀ w σ j₁ h₁) :=
-    SubstitutionModel.act_heq R model rfl HEq.rfl HEq.rfl
-      h₁ rfl h₁
-  have twiceToSemantic : HEq
-      (model.act (substJudgment j₀ σ)
-        (model.act j₀ w σ (substJudgment j₀ σ) rfl)
-        τ₀ j₂ hSecond)
-      (model.act j₁ (model.act j₀ w σ j₁ h₁) τ j₂ h₂) :=
-    SubstitutionModel.act_heq R model h₁ innerToChosen
-      (castEnv_heq h₁ τ) rfl hSecond h₂
-  have compLaw := model.act_comp j₀ w σ τ₀ j₂ hSecond hDirect
-  exact eq_of_heq
-    (directToComposite.symm.trans
-      ((heq_of_eq compLaw.symm).trans twiceToSemantic))
-
-/-- The target model's evidence action composes along the contextual
-judgment category, including its endpoint proof transports. -/
-theorem model_act_comp_map
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
-    {sort : S.Srt} {first middle last : State A sort}
-    (one : first ⟶ middle) (two : middle ⟶ last)
-    (value : model.evidence.carrier () (first.asJudgment A)) :
-    model.act (first.asJudgment A) value
-        (one ≫ two).environment (last.asJudgment A)
-        (Map.as_substitution A (one ≫ two)) =
-      model.act (middle.asJudgment A)
-        (model.act (first.asJudgment A) value one.environment
-          (middle.asJudgment A) (Map.as_substitution A one))
-        two.environment (last.asJudgment A)
-        (Map.as_substitution A two) := by
-  let Seeds : (s : S.Srt) → State A s → Type :=
-    fun _ state => model.evidence.carrier () (state.asJudgment A)
-  let assigned : ∀ state : State A sort,
-      Seeds sort state → model.evidence.carrier () (state.asJudgment A) :=
-    fun _ evidence => evidence
-  let event : Orbit A Seeds first := Orbit.unit A Seeds value
-  have unitEq : event.interpret A Seeds model assigned = value :=
-    Orbit.interpret_unit A Seeds model assigned value
-  have oneEq := Orbit.interpret_map A Seeds model assigned event one
-  have twoEq := Orbit.interpret_map A Seeds model assigned
-    (event.map A Seeds one) two
-  have joinedEq := Orbit.interpret_map A Seeds model assigned event
-    (one ≫ two)
-  calc
-    model.act (first.asJudgment A) value
-        (one ≫ two).environment (last.asJudgment A)
-        (Map.as_substitution A (one ≫ two)) =
-      (event.map A Seeds (one ≫ two)).interpret A Seeds model assigned := by
-        rw [joinedEq, unitEq]
-    _ = ((event.map A Seeds one).map A Seeds two).interpret
-        A Seeds model assigned := by
-          rw [event.map_comp A Seeds one two]
-    _ = model.act (middle.asJudgment A)
-        ((event.map A Seeds one).interpret A Seeds model assigned)
-        two.environment (last.asJudgment A)
-        (Map.as_substitution A two) := twoEq
-    _ = model.act (middle.asJudgment A)
-        (model.act (first.asJudgment A) value one.environment
-          (middle.asJudgment A) (Map.as_substitution A one))
-        two.environment (last.asJudgment A)
-        (Map.as_substitution A two) := by rw [oneEq, unitEq]
-
-/-- The actual evidence action of any substitution-operational model is a
-functor on contextual endpoint judgments of each sort. -/
-noncomputable def modelAction
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A) (sort : S.Srt) :
-    State A sort ⥤ Type where
-  obj state := model.evidence.carrier () (state.asJudgment A)
-  map substitution := TypeCat.ofHom (fun evidence =>
-    model.act _ evidence substitution.environment _
-      (Map.as_substitution A substitution))
-  map_id state := by
-    apply TypeCat.Hom.ext
-    apply TypeCat.Fun.ext
-    funext evidence
-    exact model.act_identity (state.asJudgment A) evidence
-      (Map.as_substitution A (𝟙 state))
-  map_comp one two := by
-    apply TypeCat.Hom.ext
-    apply TypeCat.Fun.ext
-    funext evidence
-    exact model_act_comp_map A model one two evidence
+    (event.map A Seed f).interpret A Seed action assigned =
+      action.actArrow f (event.interpret A Seed action assigned) :=
+  action.actArrow_comp event.arrow f (assigned event.original event.seed)
 
 /-- Generator interpretation is a natural transformation from the free
-substitution action to the target model's actual event action. -/
-noncomputable def freeActionInterpretation
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
+substitution action to the target's action. -/
+noncomputable def freeActionInterpretation (action : JudgmentAction.{0, 0} A)
     (sort : S.Srt)
     (assigned : ∀ state : State A sort,
-      Seed sort state → model.evidence.carrier () (state.asJudgment A)) :
-    freeAction A Seed sort ⟶ modelAction A model sort where
+      Seed sort state → action.carrier (state.asJudgment A)) :
+    freeAction A Seed sort ⟶ action.functor sort where
   app state := TypeCat.ofHom (fun event =>
-    event.interpret A Seed model assigned)
+    event.interpret A Seed action assigned)
   naturality := by
     intro first second substitution
     apply TypeCat.Hom.ext
     apply TypeCat.Fun.ext
     funext event
-    exact Orbit.interpret_map A Seed model assigned event substitution
+    exact Orbit.interpret_map A Seed action assigned event substitution
 
 /-- A natural interpretation of substituted event generators is determined
 by its values on bare generators. -/
-noncomputable def generatorAssignment
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A) (sort : S.Srt)
-    (η : freeAction A Seed sort ⟶ modelAction A model sort) :
+noncomputable def generatorAssignment (action : JudgmentAction.{0, 0} A)
+    (sort : S.Srt) (η : freeAction A Seed sort ⟶ action.functor sort) :
     ∀ state : State A sort,
-      Seed sort state → model.evidence.carrier () (state.asJudgment A) :=
+      Seed sort state → action.carrier (state.asJudgment A) :=
   fun state seed => η.app state (Orbit.unit A Seed seed)
 
 /-- Extending an assignment and then reading its bare generators returns
 that exact assignment. -/
-theorem generatorAssignment_extend
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
+theorem generatorAssignment_extend (action : JudgmentAction.{0, 0} A)
     (sort : S.Srt)
     (assigned : ∀ state : State A sort,
-      Seed sort state → model.evidence.carrier () (state.asJudgment A)) :
-    generatorAssignment A Seed model sort
-        (freeActionInterpretation A Seed model sort assigned) =
+      Seed sort state → action.carrier (state.asJudgment A)) :
+    generatorAssignment A Seed action sort
+        (freeActionInterpretation A Seed action sort assigned) =
       assigned := by
   funext state seed
-  exact Orbit.interpret_unit A Seed model assigned seed
+  exact Orbit.interpret_unit A Seed action assigned seed
 
-/-- Naturality forces every substituted generator to use the model's
-substitution action, so values on bare generators determine the map. -/
+/-- Naturality forces every substituted generator to use the substitution
+action, so values on bare generators determine the map. -/
 theorem freeActionInterpretation_generatorAssignment
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A)
-    (sort : S.Srt)
-    (η : freeAction A Seed sort ⟶ modelAction A model sort) :
-    freeActionInterpretation A Seed model sort
-        (generatorAssignment A Seed model sort η) = η := by
+    (action : JudgmentAction.{0, 0} A) (sort : S.Srt)
+    (η : freeAction A Seed sort ⟶ action.functor sort) :
+    freeActionInterpretation A Seed action sort
+        (generatorAssignment A Seed action sort η) = η := by
   apply NatTrans.ext
   funext state
   apply TypeCat.Hom.ext
   apply TypeCat.Fun.ext
   funext event
   change Orbit A Seed state at event
-  change event.interpret A Seed model
-      (generatorAssignment A Seed model sort η) = η.app state event
+  change event.interpret A Seed action
+      (generatorAssignment A Seed action sort η) = η.app state event
   have natural := η.naturality_apply event.arrow
     (Orbit.unit A Seed event.seed)
   change η.app state
       ((Orbit.unit A Seed event.seed).map A Seed event.arrow) =
-    model.act (event.original.asJudgment A)
-      (η.app event.original (Orbit.unit A Seed event.seed))
-      event.arrow.environment (state.asJudgment A)
-      (Map.as_substitution A event.arrow) at natural
+    action.actArrow event.arrow
+      (η.app event.original (Orbit.unit A Seed event.seed)) at natural
   rw [Orbit.unit_map] at natural
   exact natural.symm
 
 /-- The free event action is characterized by arbitrary assignments of
-bare generators to evidence in any substitution-operational model. -/
-noncomputable def freeActionUniversal
-    {M : List (MetaArity S)}
-    {R : List (IntrinsicScopedConditionalPolynomial.Rule S M)}
-    (model : SubstitutionModel R A) (sort : S.Srt) :
+bare generators to evidence of any substitution action. -/
+noncomputable def freeActionUniversal (action : JudgmentAction.{0, 0} A)
+    (sort : S.Srt) :
     (∀ state : State A sort,
-        Seed sort state → model.evidence.carrier () (state.asJudgment A)) ≃
-      (freeAction A Seed sort ⟶ modelAction A model sort) where
-  toFun := freeActionInterpretation A Seed model sort
-  invFun := generatorAssignment A Seed model sort
-  left_inv := generatorAssignment_extend A Seed model sort
-  right_inv := freeActionInterpretation_generatorAssignment A Seed model sort
+        Seed sort state → action.carrier (state.asJudgment A)) ≃
+      (freeAction A Seed sort ⟶ action.functor sort) where
+  toFun := freeActionInterpretation A Seed action sort
+  invFun := generatorAssignment A Seed action sort
+  left_inv := generatorAssignment_extend A Seed action sort
+  right_inv := freeActionInterpretation_generatorAssignment A Seed action sort
 
 end Mettapedia.OSLF.Binding.IntrinsicScopedConditionalEventOrbit

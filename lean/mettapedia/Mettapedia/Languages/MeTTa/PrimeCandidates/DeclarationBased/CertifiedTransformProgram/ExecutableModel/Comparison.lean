@@ -309,7 +309,7 @@ def constructors : ConstructorPresentation rules where
   presentation := presentation
   system := system
   same := fun _ _ => Iff.rfl
-  symmetric := Tower.headEq_symmetric
+  symmetric := LevelTower.headEq_symmetric
 
 /-! ## Church–Rosser and conservativity -/
 

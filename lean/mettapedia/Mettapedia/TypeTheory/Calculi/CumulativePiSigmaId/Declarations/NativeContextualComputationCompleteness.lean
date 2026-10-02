@@ -567,7 +567,7 @@ private theorem introduction_complete {n : Nat} {context : Tower.Ctx n} {context
 
 private theorem successor_heads_equal {left right : Tower.Head} (equal : Tower.HeadEq left right) :
     Tower.HeadEq (TowerDecisions.headTarget right) (TowerDecisions.headTarget left) := by
-  cases left <;> cases right <;> simp only [Tower.HeadEq, TowerDecisions.headTarget] at equal ⊢
+  cases left <;> cases right <;> simp only [LevelTower.HeadEq, TowerDecisions.headTarget] at equal ⊢
   · simp
   · intro valuation
     exact congrArg Nat.succ (equal valuation).symm

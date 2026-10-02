@@ -94,7 +94,7 @@ theorem direct_domain_has_empty_input
     (h : Mettapedia.Logic.HOL.Embedding.ZFSetUniverseClosure.CofinalInaccessibles.{u}) :
     (∅ : ZFSet.{u}) ∈
       Mettapedia.TypeTheory.UniverseLevel.ZFSetInterpretation.universeSet h ∅ 0 :=
-  Mettapedia.TypeTheory.UniverseLevel.ZFSetInterpretation.seed_mem_zero h ∅
+  Mettapedia.TypeTheory.UniverseLevel.ZFSetInterpretation.seed_mem_universeSet h ∅ (0 : Nat)
 
 /-- The argument is computed by constructing a dependent proof-carrying
 pair, then eliminating its first projection. It is not a context variable. -/

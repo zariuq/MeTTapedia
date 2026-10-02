@@ -20,7 +20,7 @@ theorem towerUniverseRegularity : UniverseRegularity Tower.rules where
     exact .sort _
   cumulative_target := by
     intro u v order
-    cases u <;> cases v <;> simp only [Tower.rules, Tower.Cumulative] at order
+    cases u <;> cases v <;> simp only [LevelTower.rules, LevelTower.Cumulative] at order
     exact .sort _
   universe_typed := by
     intro u universeWitness

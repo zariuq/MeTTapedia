@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Group.Basic
+import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mettapedia.GSLT.Core.Composition
 
 /-!
@@ -72,6 +73,22 @@ theorem historyGrade_append {Event : Type uEvent}
           valuation.algebra.op left right :=
   valuation.algebra.foldOption_append valuation.grade first second
 
+/-- Partial resource composition of two actual events. -/
+def combine? {Event : Type uEvent} (valuation : Valuation Event)
+    (first second : Event) : Option valuation.Grade := do
+  let firstGrade ← valuation.grade first
+  let secondGrade ← valuation.grade second
+  valuation.algebra.op firstGrade secondGrade
+
+def Compatible {Event : Type uEvent} (valuation : Valuation Event)
+    (first second : Event) : Prop := (valuation.combine? first second).isSome
+
+/-- Pairwise composition is the two-event case of the same chronological fold. -/
+theorem combine_eq_historyGrade {Event : Type uEvent} (valuation : Valuation Event)
+    (first second : Event) :
+    valuation.combine? first second = valuation.historyGrade [first, second] := by
+  simp [combine?, historyGrade_cons, historyGrade_nil, valuation.algebra.op_unit]
+
 /-- Product valuation is exactly the product of the two independent history
 valuations.  In particular, neither coordinate may silently stand in for a
 failure of the other. -/
@@ -92,6 +109,20 @@ theorem prod_historyGrade {Event : Type uEvent}
         cases hLeftTail : left.historyGrade events <;>
         cases hRightTail : right.historyGrade events <;>
         simp [PartialMonoid.prod]
+
+/-- Every resource coordinate must accept before their product accepts. -/
+theorem prod_compatible {Event : Type uEvent}
+    (left : Valuation.{uEvent, uLeft} Event) (right : Valuation.{uEvent, uRight} Event)
+    (first second : Event)
+    (leftCompatible : left.Compatible first second)
+    (rightCompatible : right.Compatible first second) :
+    (left.prod right).Compatible first second := by
+  change ((left.prod right).combine? first second).isSome = true
+  rw [combine_eq_historyGrade, prod_historyGrade]
+  rw [← combine_eq_historyGrade, ← combine_eq_historyGrade]
+  obtain ⟨leftGrade, leftEquation⟩ := Option.isSome_iff_exists.mp leftCompatible
+  obtain ⟨rightGrade, rightEquation⟩ := Option.isSome_iff_exists.mp rightCompatible
+  simp [leftEquation, rightEquation]
 
 /-- A total valuation cannot reject an event or a composition of grades. -/
 structure IsTotal {Event : Type uEvent} (valuation : Valuation Event) : Prop where
@@ -178,6 +209,26 @@ abbrev chronological {Event : Type uEvent} {Item : Type uGrade}
   Grade := List Item
   algebra := chronologicalListPartialMonoid Item
   grade := fun event => some [item event]
+
+/-- An additive valuation computes the ordered sum of the actual event grades. -/
+@[simp] theorem additive_historyGrade {Event : Type uEvent} {Grade : Type uGrade}
+    [AddMonoid Grade] (grade : Event → Grade) (events : List Event) :
+    (additive grade).historyGrade events = some ((events.map grade).sum) := by
+  induction events with
+  | nil => rfl
+  | cons event events ih =>
+      rw [Valuation.historyGrade_cons, ih]
+      rfl
+
+/-- A chronological valuation keeps every event in order, including repetitions. -/
+@[simp] theorem chronological_historyGrade {Event : Type uEvent} {Item : Type uGrade}
+    (item : Event → Item) (events : List Event) :
+    (chronological item).historyGrade events = some (events.map item) := by
+  induction events with
+  | nil => rfl
+  | cons event events ih =>
+      rw [Valuation.historyGrade_cons, ih]
+      rfl
 
 theorem additive_isTotal {Event : Type uEvent} {Grade : Type uGrade}
     [AddMonoid Grade] (grade : Event -> Grade) :

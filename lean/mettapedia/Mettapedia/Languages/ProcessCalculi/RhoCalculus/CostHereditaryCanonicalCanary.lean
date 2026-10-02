@@ -803,7 +803,7 @@ theorem rhoCutOrder_boundary_source_semanticAtom_coalescence :
           (costRegionSourceVariableName "0") = some (.base "Name") := by
     rw [TypedCostRegionBoundaryTable.sourceFreeContext_sourceVariable]
     simp [rhoCutOrderFree, WellSorted.FreeTypeContext.ofList,
-      decodeCostStaticTypeExpr, costBaseSortName_ne_wrapped,
+      decodeCostStaticTypeExpr, CostStaticTypeImage.decode, costBaseSortName_ne_wrapped,
       rhoCutOrderName_ne_interactingSort]
   have rightSourceType :
       (rightEnvironment.atomValue rightSlot).key.sourceType = .base "Name" := by
@@ -873,7 +873,7 @@ theorem rhoCutOrder_boundary_source_semanticAtom_coalescence :
           (.base "Name")) := by
     simp [TypedCostRegionBoundaryTable.mappedFreeContext,
       rhoCutOrderFree, WellSorted.FreeTypeContext.ofList,
-      decodeCostStaticTypeExpr, costBaseSortName_ne_wrapped,
+      decodeCostStaticTypeExpr, CostStaticTypeImage.decode, costBaseSortName_ne_wrapped,
       rhoCutOrderName_ne_interactingSort]
   have rightTargetType :
       (rightEnvironment.atomValue rightSlot).key.targetType =
@@ -1804,7 +1804,7 @@ theorem rhoCutOrderRightNode_normalizeHereditary :
 /-- The two local hereditary evaluator results factor through the generic
 proof-relevant semantic-atom square.  Exact evaluator equality is not stored
 in this certificate; it is derived from the mapped-frame alignment. -/
-noncomputable def rhoCutOrderStaticEvaluationBridge :
+theorem rhoCutOrderStaticEvaluationBridge :
     CostStaticAtomEvaluationBridge rhoCutOrderSemanticFrameAlignment 0
       (rhoHereditaryStaticNormalizer rhoCutOrderLeftNode
         (rhoCutOrderLeftChildren.normalizeValues

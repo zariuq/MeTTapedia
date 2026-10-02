@@ -4,7 +4,8 @@ import Mettapedia.OSLF.Syntax.BindingEquationQuotientModel
 # The free binding-clone model of an authored equation presentation
 
 An equation model is a binding clone satisfying every authored axiom under
-every semantic metavariable value and variable assignment. The existing
+arbitrary contextual semantic bodies and independent ambient and ordinary
+environments. The existing
 syntactic equation quotient is such a model. Its interpretation into any
 other model is the unique binding-clone morphism, including preservation of
 full quotient-valued simultaneous substitution and every binder-aware
@@ -28,7 +29,7 @@ universe u
 variable {S : Signature} {M : List (MetaArity S)}
 
 /-- A binding-clone algebra satisfying an authored equation presentation
-under all semantic valuations. -/
+under all contextual semantic bodies and both semantic environments. -/
 structure Model (E : List (EqAxiom S M)) where
   algebra : BindingCloneAlgebra.Algebra.{u} S
   satisfies : BindingEquationInterpretation.Satisfies algebra E
@@ -59,65 +60,69 @@ noncomputable abbrev presented (E : List (EqAxiom S M)) : Model E where
 
 variable {E : List (EqAxiom S M)}
 
+section Sound
+
+open BindingEquationInterpretation (CongruenceSound)
+
+variable (A : BindingCloneAlgebra.Algebra.{u} S) (sound : CongruenceSound A E)
+
 /-- The quotient interpretation of an arbitrary equation class can be read
 from any representative. -/
-theorem interpretQuotient_out
-    (A : Model.{u} E)
-    {Γ : Ctx S} {sort : S.Srt} (q : TermQ E Γ sort) :
-    interpretQuotient A.algebra A.satisfies q =
-      BindingCloneFoldSubstitution.interpret A.algebra (Quotient.out q) := by
-  have h := interpretQuotient_mk A.algebra A.satisfies (Quotient.out q)
+theorem interpretQuotient_out {Γ : Ctx S} {sort : S.Srt} (q : TermQ E Γ sort) :
+    interpretQuotient A sound q =
+      BindingCloneFoldSubstitution.interpret A (Quotient.out q) := by
+  have h := interpretQuotient_mk A sound (Quotient.out q)
   rw [Quotient.out_eq] at h
   exact h
 
-theorem interpretArgs_representativeArgs
-    (A : Model.{u} E) :
+theorem interpretArgs_representativeArgs :
     ∀ {arity : List (List S.Srt × S.Srt)} {Γ : Ctx S}
       (args : FamilyArgs S (TermQ E) arity Γ),
-      BindingCloneFoldSubstitution.interpretArgs A.algebra
+      BindingCloneFoldSubstitution.interpretArgs A
         (BindingEquationQuotientModel.representativeArgs E args) =
-      FamilyArgs.map (interpretQuotient A.algebra A.satisfies) args
+      FamilyArgs.map (interpretQuotient A sound) args
   | _, _, .nil => rfl
   | _, _, .cons head tail =>
       congrArg₂ FamilyArgs.cons
-        (interpretQuotient_out A head).symm
-        (interpretArgs_representativeArgs A tail)
+        (interpretQuotient_out A sound head).symm
+        (interpretArgs_representativeArgs tail)
 
-/-- The quotient interpretation is a full binding-clone morphism. -/
-noncomputable def interpretHom (A : Model.{u} E) :
-    FreeBindingClone.Hom (presented E).algebra A.algebra where
+/-- An algebra in which the generated congruence is sound receives a
+binding-clone morphism from the presented quotient. -/
+noncomputable def quotientHom :
+    FreeBindingClone.Hom (presented E).algebra A where
   raw :=
-    { map := interpretQuotient A.algebra A.satisfies
+    { map := interpretQuotient A sound
       map_variable := by intro Γ sort v; rfl
       map_operation := by
         intro Γ sort op args
-        change interpretQuotient A.algebra A.satisfies
+        change interpretQuotient A sound
             (Quotient.mk _
               (Term.op op
                 (BindingEquationQuotientModel.representativeArgs E args))) =
-          A.algebra.operation op
-            (FamilyArgs.map
-              (interpretQuotient A.algebra A.satisfies) args)
+          A.operation op (FamilyArgs.map (interpretQuotient A sound) args)
         rw [interpretQuotient_mk]
-        change A.algebra.operation op
-            (BindingCloneFoldSubstitution.interpretArgs A.algebra
+        change A.operation op
+            (BindingCloneFoldSubstitution.interpretArgs A
               (BindingEquationQuotientModel.representativeArgs E args)) = _
-        exact congrArg (A.algebra.operation op)
-          (interpretArgs_representativeArgs A args) }
+        exact congrArg (A.operation op) (interpretArgs_representativeArgs A sound args) }
   map_substitute := by
     intro Γ Δ sort env q
-    change interpretQuotient A.algebra A.satisfies
-        (substitute E env q) =
-      A.algebra.substitution.substitute
-        (fun s v => interpretQuotient A.algebra A.satisfies (env s v))
-        (interpretQuotient A.algebra A.satisfies q)
-    rw [substitute_eq_bindQ E env
-      (representativeEnv E env)
-      (mk_representativeEnv E env) q]
+    change interpretQuotient A sound (substitute E env q) =
+      A.substitution.substitute (fun s v => interpretQuotient A sound (env s v))
+        (interpretQuotient A sound q)
+    rw [substitute_eq_bindQ E env (representativeEnv E env) (mk_representativeEnv E env) q]
     rw [interpretQuotient_bindQ]
     congr 1
     funext s v
-    exact (interpretQuotient_out A (env s v)).symm
+    exact (interpretQuotient_out A sound (env s v)).symm
+
+end Sound
+
+/-- The quotient interpretation is a full binding-clone morphism. -/
+noncomputable def interpretHom (A : Model.{u} E) :
+    FreeBindingClone.Hom (presented E).algebra A.algebra :=
+  quotientHom A.algebra A.satisfies.congruenceSound
 
 /-- Any binding-clone morphism from the presented quotient agrees on every
 representative with the unique raw-term fold, hence with `interpretHom`. -/
@@ -137,7 +142,7 @@ theorem hom_unique (A : Model.{u} E)
           A.algebra => f.raw.map term) fromTerms
       change h.raw.map (Quotient.mk _ term) =
         BindingCloneFoldSubstitution.interpret A.algebra term at onTerm
-      exact onTerm.trans (interpretQuotient_mk A.algebra A.satisfies term).symm
+      exact onTerm.trans (interpretQuotient_mk A.algebra A.satisfies.congruenceSound term).symm
 
 /-- The presented quotient is initial among binding-clone models satisfying
 the authored equations. -/

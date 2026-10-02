@@ -196,7 +196,7 @@ def programs : NativeHOLProofQualifiedOperationalCospan.MapFusionPrograms 3 :=
 
 /-- The observation is equality with the actual HOTG list result, interpreted
 in the same trace-coded carrier used by the recursive compiler. -/
-noncomputable def observation (level : LevelExpr)
+noncomputable def observation (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :=
   semanticObservation level (operationEnvironment lower x)
@@ -205,7 +205,7 @@ noncomputable def observation (level : LevelExpr)
 /-- One object now retains the source induction proof, exact compiler output,
 formation-sensitive dependent typing, Aczel-trace denotation, both native
 execution paths, and the common equation-invariant HOTG observation. -/
-noncomputable def executionCospan (level : LevelExpr)
+noncomputable def executionCospan (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     ProofQualifiedExecutionCospan (reduction level 3)
@@ -223,7 +223,7 @@ noncomputable def executionCospan (level : LevelExpr)
 
 /-- The operational object retains the original HOL induction tree, not only
 its conclusion or an extensionally equal replacement proof. -/
-theorem execution_retains_source (level : LevelExpr)
+theorem execution_retains_source (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     (executionCospan level lower x).evidence.proof = retainedMapFusionProof :=
@@ -236,7 +236,7 @@ theorem execution_retains_source (level : LevelExpr)
 
 /-- Endpoint qualification pins the evidence to the exact recursively emitted
 closed native proof. -/
-theorem execution_retains_native_compilation (level : LevelExpr)
+theorem execution_retains_native_compilation (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     (executionCospan level lower x).evidence.native =
@@ -245,7 +245,7 @@ theorem execution_retains_native_compilation (level : LevelExpr)
 
 /-- For the singleton input, the unfused and fused native executions take
 eighteen and ten primitive beta/iota steps respectively. -/
-theorem execution_path_lengths (level : LevelExpr)
+theorem execution_path_lengths (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     (executionCospan level lower x).leftPath.length = 18 ∧
@@ -262,7 +262,7 @@ theorem execution_path_lengths (level : LevelExpr)
 
 /-- The common extensional result does not collapse chronological
 provenance. -/
-theorem execution_histories_differ (level : LevelExpr)
+theorem execution_histories_differ (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     ofDiscipline
@@ -280,7 +280,7 @@ theorem execution_histories_differ (level : LevelExpr)
 
 /-- Both programs satisfy the same generated possibility observation on the
 equation class of their common result. -/
-theorem execution_semantic_diamonds (level : LevelExpr)
+theorem execution_semantic_diamonds (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     Mettapedia.OSLF.Framework.GSLTTypeSynthesis.semanticDiamond
@@ -294,7 +294,7 @@ theorem execution_semantic_diamonds (level : LevelExpr)
 /-- The common HOTG result is exposed at the quotient level used by generated
 modal logic.  This statement continues to make sense when a later
 presentation replaces syntactic equality by nontrivial authored equations. -/
-theorem execution_quotient_result_observed (level : LevelExpr)
+theorem execution_quotient_result_observed (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     Mettapedia.OSLF.Framework.GSLTTypeSynthesis.descendPredicate
@@ -308,7 +308,7 @@ theorem execution_quotient_result_observed (level : LevelExpr)
 /-- The literal commuting instance, stated without identifying the two
 execution histories.  The dependent consumer and the operational cospan both
 originate in the same retained source proof and actual HOTG specialization. -/
-theorem connected_hotg_map_fusion (level : LevelExpr)
+theorem connected_hotg_map_fusion (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     (executionCospan level lower x).evidence.proof = retainedMapFusionProof ∧
@@ -360,7 +360,7 @@ theorem connected_proof_value_small
 
 /-- Negative boundary: the modal observation is equation-invariant, but exact
 history still distinguishes the two executions. -/
-theorem common_modal_result_does_not_identify_history (level : LevelExpr)
+theorem common_modal_result_does_not_identify_history (level : LevelExpr Nat)
     (lower : CofinalInaccessibles.{u})
     (x : Value carrierCode.{u} element) :
     (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.semanticDiamond

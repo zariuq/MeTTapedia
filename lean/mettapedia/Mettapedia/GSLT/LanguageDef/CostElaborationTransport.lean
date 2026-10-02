@@ -1276,7 +1276,7 @@ namespace CostStaticPlanLift
 
 /-- Forget a plan edge's proof-relevant authored occurrence and recover the
 ordinary source equation generator. -/
-def erasesToSourceGenerator {source : CIGSLT}
+theorem erasesToSourceGenerator {source : CIGSLT}
     (staticLift : CostStaticPlanLift source)
     {first second : CostStaticPlanDecoration source}
     {sourceBoundaries targetBoundaries :

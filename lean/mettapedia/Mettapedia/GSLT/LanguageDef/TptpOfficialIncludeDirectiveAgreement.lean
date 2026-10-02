@@ -187,7 +187,7 @@ local macro "include_row_simp" : tactic =>
       congruence, typed, a, v, applyRuleUsing,
       matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
       matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-      applyBindings])
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, applyBindings])
 
 theorem name_lower_eventuallyExact (lexeme : Pattern) :
     EventuallyExact

@@ -254,7 +254,7 @@ theorem object_liftableForms : LiftableForms objectSetting where
     obtain ⟨rfl, -⟩ := objectRoles_inductive role
     obtain ⟨type, u, declared, -, -, le⟩ := Typed.generation typing
     obtain rfl : type = U0 := Option.some.inj (declared.symm.trans declared_num)
-    have hu0 : objectRules.isUniverse (.sort Tower.zero) := Tower.IsUniverse.sort _
+    have hu0 : objectRules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
     have isA : IsType objectRules Γ A := Typed.isType (S := objectSetting) typing formed
     have isU0 : IsType objectRules Γ U0 := universe_isType (S := objectSetting) hu0
     obtain ⟨v, hv, eA, -⟩ := Below.universe_source (S := objectSetting) facts

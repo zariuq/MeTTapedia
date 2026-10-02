@@ -105,20 +105,20 @@ theorem Tower.check_iff_typed {t E : Tm Tower.Head n} (fragment : Bidirectional 
 /-- The universes at levels 0 and 1 are distinct types. -/
 theorem universe₀_ne_universe₁ (formed : CtxFormed Tower.rules Γ) :
     ¬ TypeEq Tower.rules Γ universe₀ universe₁ := fun e => by
-  rcases Tower.head_injective e formed with same | same
+  rcases LevelTower.head_injective e formed with same | same
   · cases same
   · have := same (fun _ => 0)
-    simp [LevelExpr.eval, Tower.zero] at this
+    simp [LevelExpr.eval, LevelTower.zero] at this
 
 /-- `𝒰₁` is not usable at `𝒰₀`. -/
 theorem universe₁_not_below_universe₀ (formed : CtxFormed Tower.rules Γ) :
     ¬ Below Tower.rules Γ universe₁ universe₀ := fun le => by
   obtain ⟨v, _, eV, c⟩ := (Below.universe_iff (S := setting fun _ => 0) TowerModel.facts
-    algebra formed (Tower.IsUniverse.sort _)).1 le
+    algebra formed (LevelTower.IsUniverse.sort _)).1 le
   have raise : Tower.rules.cumulative (.sort (.succ Tower.zero)) (.sort Tower.zero) :=
-    algebra.same_right c (HeadSame.symm (levels fun _ => 0) (Tower.head_injective eV formed))
+    algebra.same_right c (HeadSame.symm (levels fun _ => 0) (LevelTower.head_injective eV formed))
   have := raise (fun _ => 0)
-  simp [LevelExpr.eval, Tower.zero] at this
+  simp [LevelExpr.eval, LevelTower.zero] at this
 
 /-! ## A pair at the next universe -/
 
@@ -126,32 +126,32 @@ theorem universe₁_not_below_universe₀ (formed : CtxFormed Tower.rules Γ) :
 abbrev elementContext : Ctx Tower.Head 2 := .snoc (.snoc .nil universe₀) (.var 0)
 
 theorem elementContext_formed : CtxFormed Tower.rules elementContext :=
-  .snoc (.snoc .nil ⟨_, Tower.IsUniverse.sort _, .headType (Tower.HeadTyping.sort _)⟩)
-    ⟨_, Tower.IsUniverse.sort _, .var 0⟩
+  .snoc (.snoc .nil ⟨_, LevelTower.IsUniverse.sort _, .headType (LevelTower.HeadTyping.sort _)⟩)
+    ⟨_, LevelTower.IsUniverse.sort _, .var 0⟩
 
 /-- The type `Σ (Y : 𝒰). Y` of pairs of a type of a universe and an element. -/
 abbrev pointedAt (U : Tm Tower.Head n) : Tm Tower.Head n := .sigma U (.var 0)
 
 theorem pointedAt₀_typed :
     Typed Tower.rules Γ (pointedAt universe₀) (.head (.sort (.max (.succ Tower.zero) Tower.zero))) :=
-  .sigmaForm (.headType (Tower.HeadTyping.sort _)) (Tower.IsUniverse.sort _) (.var 0)
-    (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)
+  .sigmaForm (.headType (LevelTower.HeadTyping.sort _)) (LevelTower.IsUniverse.sort _) (.var 0)
+    (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)
 
 theorem pointedAt₁_typed :
     Typed Tower.rules Γ (pointedAt universe₁)
       (.head (.sort (.max (.succ (.succ Tower.zero)) (.succ Tower.zero)))) :=
-  .sigmaForm (.headType (Tower.HeadTyping.sort _)) (Tower.IsUniverse.sort _) (.var 0)
-    (Tower.IsUniverse.sort _) (Tower.Join.sorts _ _)
+  .sigmaForm (.headType (LevelTower.HeadTyping.sort _)) (LevelTower.IsUniverse.sort _) (.var 0)
+    (LevelTower.IsUniverse.sort _) (LevelTower.Join.sorts _ _)
 
 /-- A small type and one of its elements. -/
 theorem pair_typed :
     Typed Tower.rules elementContext (.pair (.var 1) (.var 0)) (pointedAt universe₀) :=
-  .pairIntro pointedAt₀_typed (Tower.IsUniverse.sort _) (.var 1) (.var 0)
+  .pairIntro pointedAt₀_typed (LevelTower.IsUniverse.sort _) (.var 1) (.var 0)
 
 /-- `Σ (Y : 𝒰₀). Y` is usable at `Σ (Y : 𝒰₁). Y`. -/
 theorem pointed_below : Below Tower.rules Γ (pointedAt universe₀) (pointedAt universe₁) :=
-  .subSigma pointedAt₀_typed (Tower.IsUniverse.sort _) pointedAt₁_typed (Tower.IsUniverse.sort _)
-    (.subUniv (fun _ => Nat.le_succ _)) (.subEqual (.refl (.var 0)) (Tower.IsUniverse.sort _))
+  .subSigma pointedAt₀_typed (LevelTower.IsUniverse.sort _) pointedAt₁_typed (LevelTower.IsUniverse.sort _)
+    (.subUniv (fun _ => Nat.le_succ _)) (.subEqual (.refl (.var 0)) (LevelTower.IsUniverse.sort _))
 
 /-- So the pair is a pair of a type of `𝒰₁` and an element. -/
 theorem pair_typed_at_next_universe :
@@ -162,17 +162,17 @@ theorem pair_typed_at_next_universe :
 theorem pointed_not_below (formed : CtxFormed Tower.rules Γ) :
     ¬ Below Tower.rules Γ (pointedAt universe₁) (pointedAt universe₀) := fun le => by
   obtain ⟨_, _, eT, leA, _⟩ := (Below.sigma_iff (S := setting fun _ => 0) TowerModel.facts
-    formed ⟨_, Tower.IsUniverse.sort _, pointedAt₁_typed⟩).1 le
-  obtain ⟨eA, _⟩ := Tower.sigma_injective eT formed
+    formed ⟨_, LevelTower.IsUniverse.sort _, pointedAt₁_typed⟩).1 le
+  obtain ⟨eA, _⟩ := LevelTower.sigma_injective eT formed
   exact universe₁_not_below_universe₀ formed (.subTrans leA (TypeEq.below (TypeEq.symm eA)))
 
 /-! ## Invariant domains -/
 
-theorem piUniverse_typed {n : Nat} {Γ : Ctx Tower.Head n} (level : LevelExpr) :
+theorem piUniverse_typed {n : Nat} {Γ : Ctx Tower.Head n} (level : LevelExpr Nat) :
     IsType Tower.rules Γ (.pi (.head (.sort level)) universe₀) :=
-  ⟨_, Tower.IsUniverse.sort _, .piForm (.headType (Tower.HeadTyping.sort _))
-    (Tower.IsUniverse.sort _) (.headType (Tower.HeadTyping.sort _)) (Tower.IsUniverse.sort _)
-    (Tower.Join.sorts _ _)⟩
+  ⟨_, LevelTower.IsUniverse.sort _, .piForm (.headType (LevelTower.HeadTyping.sort _))
+    (LevelTower.IsUniverse.sort _) (.headType (LevelTower.HeadTyping.sort _)) (LevelTower.IsUniverse.sort _)
+    (LevelTower.Join.sorts _ _)⟩
 
 /-- A function of small types is not a function of all types of `𝒰₁`: the
 domain is not covariant. -/
@@ -180,7 +180,7 @@ theorem domain_raise_refused (formed : CtxFormed Tower.rules Γ) :
     ¬ Below Tower.rules Γ (.pi universe₀ universe₀) (.pi universe₁ universe₀) := fun le => by
   obtain ⟨_, _, eT, eA, _⟩ := (Below.pi_iff (S := setting fun _ => 0) TowerModel.facts
     formed (piUniverse_typed _)).1 le
-  obtain ⟨e₁, _⟩ := Tower.pi_injective eT formed
+  obtain ⟨e₁, _⟩ := LevelTower.pi_injective eT formed
   exact universe₀_ne_universe₁ formed (TypeEq.trans (levels fun _ => 0) eA (TypeEq.symm e₁))
 
 /-- A function of all types of `𝒰₁` is not a function of the small types,
@@ -189,7 +189,7 @@ theorem domain_contravariance_refused (formed : CtxFormed Tower.rules Γ) :
     ¬ Below Tower.rules Γ (.pi universe₁ universe₀) (.pi universe₀ universe₀) := fun le => by
   obtain ⟨_, _, eT, eA, _⟩ := (Below.pi_iff (S := setting fun _ => 0) TowerModel.facts
     formed (piUniverse_typed _)).1 le
-  obtain ⟨e₀, _⟩ := Tower.pi_injective eT formed
+  obtain ⟨e₀, _⟩ := LevelTower.pi_injective eT formed
   exact universe₀_ne_universe₁ formed (TypeEq.trans (levels fun _ => 0) e₀ (TypeEq.symm eA))
 
 /-! ## Reflexivity at raised carriers -/
@@ -198,7 +198,7 @@ theorem domain_contravariance_refused (formed : CtxFormed Tower.rules Γ) :
 abbrev typeContext : Ctx Tower.Head 1 := .snoc .nil universe₀
 
 theorem typeContext_formed : CtxFormed Tower.rules typeContext :=
-  .snoc .nil ⟨_, Tower.IsUniverse.sort _, .headType (Tower.HeadTyping.sort _)⟩
+  .snoc .nil ⟨_, LevelTower.IsUniverse.sort _, .headType (LevelTower.HeadTyping.sort _)⟩
 
 /-- `refl X` proves `X = X` at the carrier `𝒰₀` and at the raised carrier `𝒰₁`. -/
 theorem refl_type_at_both_carriers :
@@ -211,7 +211,7 @@ carrier. -/
 theorem raised_carrier_ne :
     ¬ TypeEq Tower.rules typeContext (.id universe₀ (.var 0) (.var 0))
       (.id universe₁ (.var 0) (.var 0)) := fun e =>
-  universe₀_ne_universe₁ typeContext_formed (Tower.id_injective e typeContext_formed).1
+  universe₀_ne_universe₁ typeContext_formed (LevelTower.id_injective e typeContext_formed).1
 
 /-- They have no common upper bound. -/
 theorem raised_carriers_apart :
@@ -244,9 +244,9 @@ theorem refl_family_at_both_carriers :
 theorem raised_function_carrier_ne :
     ¬ TypeEq Tower.rules familyContext (.id (.pi (.var 1) universe₀) (.var 0) (.var 0))
       (.id (.pi (.var 1) universe₁) (.var 0) (.var 0)) := fun e => by
-  obtain ⟨eC, _⟩ := Tower.id_injective e familyContext_formed
-  obtain ⟨_, eB⟩ := Tower.pi_injective eC familyContext_formed
-  exact universe₀_ne_universe₁ (.snoc familyContext_formed ⟨_, Tower.IsUniverse.sort _, .var 1⟩)
+  obtain ⟨eC, _⟩ := LevelTower.id_injective e familyContext_formed
+  obtain ⟨_, eB⟩ := LevelTower.pi_injective eC familyContext_formed
+  exact universe₀_ne_universe₁ (.snoc familyContext_formed ⟨_, LevelTower.IsUniverse.sort _, .var 1⟩)
     eB
 
 /-- So `refl F` has no least type either. -/

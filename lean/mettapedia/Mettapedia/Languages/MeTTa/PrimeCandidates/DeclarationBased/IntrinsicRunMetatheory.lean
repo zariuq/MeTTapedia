@@ -33,10 +33,10 @@ open Presentation.Declaration.IndexedFamily
 
 /-- Operational failure may live at a universe independent of every semantic
 outcome payload. -/
-def runFailureLevel : LevelExpr := .param 6
+def runFailureLevel : LevelExpr Nat := .param 6
 
 /-- Run elimination may target an independently selected universe. -/
-def runMotiveLevel : LevelExpr := .param 7
+def runMotiveLevel : LevelExpr Nat := .param 7
 
 /-- In context `outcomeSignature`, the remaining run-signature component is
 the judgment-indexed operational-failure family. -/
@@ -49,7 +49,7 @@ signature without duplicating it. -/
 def runSignatureType : Tower.Tm 0 :=
   .sigma outcomeSignatureType runSignatureBody
 
-def runSignatureLevel : LevelExpr :=
+def runSignatureLevel : LevelExpr Nat :=
   .max signatureLevel (familyLevel runFailureLevel)
 
 theorem runSignatureBody_hasType :
@@ -198,7 +198,7 @@ def runOkName : DeclName := `CumulativeTower.Authority.Run.ok
 def runFaultName : DeclName := `CumulativeTower.Authority.Run.fault
 def runEliminateName : DeclName := `CumulativeTower.Authority.Run.eliminate
 
-def runLevel : LevelExpr := .max outcomeLevel runFailureLevel
+def runLevel : LevelExpr Nat := .max outcomeLevel runFailureLevel
 
 def runApp (signature judgment : Tower.Tm n) : Tower.Tm n :=
   .app (.app (.const runName) signature) judgment
@@ -393,7 +393,7 @@ private theorem declaredRunConstant_hasType
   apply combinedType_of_signature
   · by_cases isRun : name = runName
     · subst name
-      simp [outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawOutcomeSignature,
         outcomeDeclarations, runName, outcomeName, establishedName,
         refutedName, outsideFragmentName, incompleteName,
@@ -401,7 +401,7 @@ private theorem declaredRunConstant_hasType
         Signature.insert, Signature.empty]
     by_cases isOk : name = runOkName
     · subst name
-      simp [outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawOutcomeSignature,
         outcomeDeclarations, runOkName, outcomeName, establishedName,
         refutedName, outsideFragmentName, incompleteName,
@@ -409,7 +409,7 @@ private theorem declaredRunConstant_hasType
         Signature.insert, Signature.empty]
     by_cases isFault : name = runFaultName
     · subst name
-      simp [outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawOutcomeSignature,
         outcomeDeclarations, runFaultName, outcomeName, establishedName,
         refutedName, outsideFragmentName, incompleteName,
@@ -417,7 +417,7 @@ private theorem declaredRunConstant_hasType
         Signature.insert, Signature.empty]
     by_cases isEliminate : name = runEliminateName
     · subst name
-      simp [outcomeRules, extendRules, combinedType, Tower.rules,
+      simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
         rawOutcomeSignature,
         outcomeDeclarations, runEliminateName, outcomeName, establishedName,
         refutedName, outsideFragmentName, incompleteName,
@@ -663,10 +663,10 @@ theorem runJudgmentVar_hasType :
     RunHasType runContextRJ (.var 0) (runJudgment (.var 1)) := by
   exact Presentation.HasType.var 0
 
-def runBodyLevel : LevelExpr :=
+def runBodyLevel : LevelExpr Nat :=
   .max judgmentLevel (.succ runLevel)
 
-def runDeclarationLevel : LevelExpr :=
+def runDeclarationLevel : LevelExpr Nat :=
   .max runSignatureLevel runBodyLevel
 
 theorem runType_hasType :
@@ -686,13 +686,13 @@ theorem runType_hasType :
   · exact .sort runBodyLevel
   · exact .sorts runSignatureLevel runBodyLevel
 
-def runOkWitnessLevel : LevelExpr :=
+def runOkWitnessLevel : LevelExpr Nat :=
   .max outcomeLevel runLevel
 
-def runOkBodyLevel : LevelExpr :=
+def runOkBodyLevel : LevelExpr Nat :=
   .max judgmentLevel runOkWitnessLevel
 
-def runOkDeclarationLevel : LevelExpr :=
+def runOkDeclarationLevel : LevelExpr Nat :=
   .max runSignatureLevel runOkBodyLevel
 
 theorem runOkBodyType_hasType :
@@ -726,13 +726,13 @@ theorem runOkType_hasType :
   · exact .sort runOkBodyLevel
   · exact .sorts runSignatureLevel runOkBodyLevel
 
-def runFaultWitnessLevel : LevelExpr :=
+def runFaultWitnessLevel : LevelExpr Nat :=
   .max runFailureLevel runLevel
 
-def runFaultBodyLevel : LevelExpr :=
+def runFaultBodyLevel : LevelExpr Nat :=
   .max judgmentLevel runFaultWitnessLevel
 
-def runFaultDeclarationLevel : LevelExpr :=
+def runFaultDeclarationLevel : LevelExpr Nat :=
   .max runSignatureLevel runFaultBodyLevel
 
 theorem runFaultBodyType_hasType :
@@ -781,10 +781,10 @@ theorem runMotiveType_asAtSignature :
 def runContextRJR : Tower.Ctx 3 :=
   .snoc runContextRJ (runApp (.var 1) (.var 0))
 
-def runMotiveInnerLevel : LevelExpr :=
+def runMotiveInnerLevel : LevelExpr Nat :=
   .max runLevel (.succ runMotiveLevel)
 
-def runMotiveTypeLevel : LevelExpr :=
+def runMotiveTypeLevel : LevelExpr Nat :=
   .max judgmentLevel runMotiveInnerLevel
 
 theorem runMotiveType_hasType :
@@ -907,10 +907,10 @@ theorem runFaultCaseVariables :
   · exact Presentation.HasType.var 1
   · exact Presentation.HasType.var 0
 
-def runOkCaseWitnessLevel : LevelExpr :=
+def runOkCaseWitnessLevel : LevelExpr Nat :=
   .max outcomeLevel runMotiveLevel
 
-def runOkCaseLevel : LevelExpr :=
+def runOkCaseLevel : LevelExpr Nat :=
   .max judgmentLevel runOkCaseWitnessLevel
 
 theorem runOkCaseType_hasType :
@@ -935,10 +935,10 @@ theorem runOkCaseType_hasType :
   · exact .sort runOkCaseWitnessLevel
   · exact .sorts judgmentLevel runOkCaseWitnessLevel
 
-def runFaultCaseWitnessLevel : LevelExpr :=
+def runFaultCaseWitnessLevel : LevelExpr Nat :=
   .max runFailureLevel runMotiveLevel
 
-def runFaultCaseLevel : LevelExpr :=
+def runFaultCaseLevel : LevelExpr Nat :=
   .max judgmentLevel runFaultCaseWitnessLevel
 
 theorem runFaultCaseType_hasType :
@@ -963,10 +963,10 @@ theorem runFaultCaseType_hasType :
   · exact .sort runFaultCaseWitnessLevel
   · exact .sorts judgmentLevel runFaultCaseWitnessLevel
 
-def runEliminateInnerLevel : LevelExpr :=
+def runEliminateInnerLevel : LevelExpr Nat :=
   .max runLevel runMotiveLevel
 
-def runEliminateResultLevel : LevelExpr :=
+def runEliminateResultLevel : LevelExpr Nat :=
   .max judgmentLevel runEliminateInnerLevel
 
 theorem runEliminateResultType_hasType :
@@ -1016,16 +1016,16 @@ theorem runEliminateResultTypeInRMKF_hasType :
   simpa [runContextRMK, runContextRMKF, sortTm,
     Presentation.rename] using second
 
-def runAfterFaultLevel : LevelExpr :=
+def runAfterFaultLevel : LevelExpr Nat :=
   .max runFaultCaseLevel runEliminateResultLevel
 
-def runAfterOkLevel : LevelExpr :=
+def runAfterOkLevel : LevelExpr Nat :=
   .max runOkCaseLevel runAfterFaultLevel
 
-def runEliminateBodyLevel : LevelExpr :=
+def runEliminateBodyLevel : LevelExpr Nat :=
   .max runMotiveTypeLevel runAfterOkLevel
 
-def runEliminateDeclarationLevel : LevelExpr :=
+def runEliminateDeclarationLevel : LevelExpr Nat :=
   .max runSignatureLevel runEliminateBodyLevel
 
 theorem runEliminateBodyType_hasType :
@@ -1130,28 +1130,28 @@ theorem rawRunSignature_fresh {name : DeclName}
     outcomeRules.constantType name = none := by
   by_cases isRun : name = runName
   · subst name
-    simp [outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawOutcomeSignature, outcomeDeclarations, runName, outcomeName,
       establishedName, refutedName, outsideFragmentName, incompleteName,
       outcomeEliminateName, Signature.typeOf?, Signature.ofList,
       Signature.insert, Signature.empty]
   by_cases isOk : name = runOkName
   · subst name
-    simp [outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawOutcomeSignature, outcomeDeclarations, runOkName, outcomeName,
       establishedName, refutedName, outsideFragmentName, incompleteName,
       outcomeEliminateName, Signature.typeOf?, Signature.ofList,
       Signature.insert, Signature.empty]
   by_cases isFault : name = runFaultName
   · subst name
-    simp [outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawOutcomeSignature, outcomeDeclarations, runFaultName, outcomeName,
       establishedName, refutedName, outsideFragmentName, incompleteName,
       outcomeEliminateName, Signature.typeOf?, Signature.ofList,
       Signature.insert, Signature.empty]
   by_cases isEliminate : name = runEliminateName
   · subst name
-    simp [outcomeRules, extendRules, combinedType, Tower.rules,
+    simp [outcomeRules, extendRules, combinedType, LevelTower.rules,
       rawOutcomeSignature, outcomeDeclarations, runEliminateName,
       outcomeName, establishedName, refutedName, outsideFragmentName,
       incompleteName, outcomeEliminateName, Signature.typeOf?,

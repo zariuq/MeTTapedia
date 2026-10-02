@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalEventOrbit
+import Mettapedia.OSLF.Syntax.IntrinsicScopedConditionalSubstitutionModels
 import Mettapedia.TypeTheory.IndexedPolynomialFree
 
 /-!
@@ -66,12 +67,6 @@ private theorem orbit_map_eqToHom {sort : S.Srt}
     event.map A Seed (eqToHom equal) = equal ▸ event := by
   cases equal
   exact event.map_id A Seed
-
-private theorem cast_heq {Index : Type} {F : Index → Type}
-    {first second : Index} (equal : first = second) (value : F first) :
-    HEq (equal ▸ value) value := by
-  cases equal
-  rfl
 
 private theorem ofJudgment_heq {first second : Judgment A}
     (equal : first = second) :
@@ -154,7 +149,7 @@ theorem mapHole_comp_heq (judgment : Judgment A)
           Orbit.map_comp A Seed hole (first ≫ second)
             (eqToHom stateEq)]
       _ = hole.map A Seed direct := by rw [arrows]
-  exact (cast_heq stateEq
+  exact (eqRec_heq stateEq
     ((hole.map A Seed first).map A Seed second)).symm.trans
       (heq_of_eq transported)
 
@@ -196,7 +191,7 @@ theorem mapHole_identity (judgment : Judgment A)
     heq_transport (F := fun j => Holes A Seed j) h mapped
   have secondStep : HEq mapped hole := by
     change HEq (stateEq ▸ hole) hole
-    exact cast_heq stateEq hole
+    exact eqRec_heq stateEq hole
   exact eq_of_heq (firstStep.trans secondStep)
 
 /-- Substitution of complete free trees acts on rule occurrences and on
@@ -330,14 +325,6 @@ theorem substitute_heq
   subst sameTarget
   rfl
 
-private theorem pure_cast {first second : Judgment A}
-    (equal : first = second) (hole : Holes A Seed first) :
-    equal ▸ (IndexedPolynomial.Free.pure (rules R A) hole :
-      Tree R A Seed first) =
-      IndexedPolynomial.Free.pure (rules R A) (equal ▸ hole) := by
-  cases equal
-  rfl
-
 /-- The identity environment fixes every event leaf and every scoped rule
 node of the free tree. -/
 theorem substitute_identity (judgment : Judgment A)
@@ -366,7 +353,7 @@ theorem substitute_identity (judgment : Judgment A)
           (IndexedPolynomial.Free.pure (rules R A) hole)
           (fun _ v => A.substitution.injectVar v) j h =
         IndexedPolynomial.Free.pure (rules R A) hole
-      rw [substitute_pure, pure_cast,
+      rw [substitute_pure, IndexedPolynomial.Free.pure_transport (rules R A),
         mapHole_identity A Seed j hole h]
   | inr shape =>
       change (position : Fin (R.get shape.1.index).premises.length) →
@@ -464,7 +451,7 @@ theorem substitute_comp (judgment : Judgment A)
       rw [substitute_pure R A Seed j hole
         (fun s v => A.substitution.substitute τ (σ s v))
         target hDirect]
-      rw [pure_cast, pure_cast]
+      rw [IndexedPolynomial.Free.pure_transport (rules R A), IndexedPolynomial.Free.pure_transport (rules R A)]
       have holeEq : HEq
           (mapHole A Seed (substJudgment j σ)
             (mapHole A Seed j hole σ) τ)
@@ -476,13 +463,13 @@ theorem substitute_comp (judgment : Judgment A)
             (mapHole A Seed j hole σ) τ)
           (mapHole A Seed (substJudgment j σ)
             (mapHole A Seed j hole σ) τ) :=
-        cast_heq hSecond _
+        eqRec_heq hSecond _
       have rightCast : HEq
           (hDirect ▸ mapHole A Seed j hole
             (fun s v => A.substitution.substitute τ (σ s v)))
           (mapHole A Seed j hole
             (fun s v => A.substitution.substitute τ (σ s v))) :=
-        cast_heq hDirect _
+        eqRec_heq hDirect _
       exact congrArg (IndexedPolynomial.Free.pure (rules R A))
         (eq_of_heq (leftCast.trans (holeEq.trans rightCast.symm)))
   | inr shape =>
@@ -638,28 +625,28 @@ theorem substitute_pureAt {sort : S.Srt}
       (event₀.map A Seed f₀)
       (event.map A Seed f) :=
     orbit_map_heq A Seed e₀ targetEq
-      (cast_heq e₀.symm event) arrowEq
+      (eqRec_heq e₀.symm event) arrowEq
   change substitute R A Seed j₀
       (IndexedPolynomial.Free.pure (rules R A)
         event₀) f.environment j₁ h =
     IndexedPolynomial.Free.pure (rules R A)
       event₁
   rw [substitute_pure R A Seed j₀ event₀ f.environment j₁ h,
-    pure_cast]
+    IndexedPolynomial.Free.pure_transport (rules R A)]
   apply congrArg (IndexedPolynomial.Free.pure (rules R A))
   have castLeft : HEq
       (h ▸ mapHole A Seed j₀ event₀ f.environment)
       (mapHole A Seed j₀ event₀ f.environment) :=
-    cast_heq h _
+    eqRec_heq h _
   have castRight : HEq event₁ (event.map A Seed f) :=
-    cast_heq e₁.symm (event.map A Seed f)
+    eqRec_heq e₁.symm (event.map A Seed f)
   exact eq_of_heq
     (castLeft.trans (leafEq.trans castRight.symm))
 
 /-- The syntactic use of an event variable is natural in contextual
 substitution; naturality is the proved one-leaf action equation. -/
 noncomputable def pureOrbitNat (sort : S.Srt) :
-    freeAction A Seed sort ⟶ modelAction A (freeModel R A Seed) sort where
+    freeAction A Seed sort ⟶ (freeModel R A Seed).toAction.functor sort where
   app state := TypeCat.ofHom (pureAt R A Seed)
   naturality := by
     intro first second f
@@ -673,7 +660,7 @@ action over each contextual judgment category. -/
 noncomputable def modelActionHom
     {X Y : SubstitutionModel R A}
     (h : SubstitutionModel.Hom R X Y) (sort : S.Srt) :
-    modelAction A X sort ⟶ modelAction A Y sort where
+    X.toAction.functor sort ⟶ Y.toAction.functor sort where
   app state := TypeCat.ofHom (h.evidence.toFun () (state.asJudgment A))
   naturality := by
     intro first second f
@@ -694,7 +681,7 @@ def decodeHole
     (judgment : Judgment A) (hole : Holes A Seed judgment) :
     model.evidence.carrier () judgment :=
   (State.as_of A judgment) ▸
-    hole.interpret A Seed model (assigned judgment.2.1)
+    hole.interpret A Seed model.toAction (assigned judgment.2.1)
 
 /-- Decoding a substituted event variable applies the target model's
 substitution action to the decoded original witness. -/
@@ -713,8 +700,8 @@ theorem decodeHole_map
   let first := ofJudgment A judgment
   let second := ofJudgment A (substJudgment judgment σ)
   let f := substitutionArrow A judgment σ
-  let original := hole.interpret A Seed model (assigned judgment.2.1)
-  have orbitLaw := Orbit.interpret_map A Seed model
+  let original := hole.interpret A Seed model.toAction (assigned judgment.2.1)
+  have orbitLaw := Orbit.interpret_map A Seed model.toAction
     (assigned judgment.2.1) hole f
   have sourceEq : first.asJudgment A = judgment := State.as_of A judgment
   have targetEq : second.asJudgment A = substJudgment judgment σ :=
@@ -722,17 +709,17 @@ theorem decodeHole_map
   have casts : HEq
       (h ▸ decodeHole R A Seed model assigned
         (substJudgment judgment σ) (mapHole A Seed judgment hole σ))
-      ((mapHole A Seed judgment hole σ).interpret A Seed model
+      ((mapHole A Seed judgment hole σ).interpret A Seed model.toAction
         (assigned judgment.2.1)) :=
-    (cast_heq h _).trans (cast_heq targetEq _)
+    (eqRec_heq h _).trans (eqRec_heq targetEq _)
   have acted : HEq
       (model.act (first.asJudgment A) original f.environment
         (second.asJudgment A) (Map.as_substitution A f))
       (model.act judgment
         (decodeHole R A Seed model assigned judgment hole)
         σ target h) :=
-    SubstitutionModel.act_heq R model sourceEq
-      (cast_heq sourceEq original).symm HEq.rfl
+    model.toAction.act_heq sourceEq
+      (eqRec_heq sourceEq original).symm HEq.rfl
       (targetEq.trans h) (Map.as_substitution A f) h
   exact eq_of_heq (casts.trans ((heq_of_eq orbitLaw).trans acted))
 
@@ -761,8 +748,8 @@ private theorem orbit_interpret_cast
       Seed sort state → model.evidence.carrier () (state.asJudgment A))
     {sort : S.Srt} {first second : State A sort}
     (equal : first = second) (event : Orbit A Seed first) :
-    HEq ((equal ▸ event).interpret A Seed model (assigned sort))
-      (event.interpret A Seed model (assigned sort)) := by
+    HEq ((equal ▸ event).interpret A Seed model.toAction (assigned sort))
+      (event.interpret A Seed model.toAction (assigned sort)) := by
   cases equal
   rfl
 
@@ -782,17 +769,17 @@ theorem interpret_generator
   have firstCast : HEq
       (decodeHole R A Seed model assigned (state.asJudgment A)
         (e ▸ Orbit.unit A Seed seed))
-      ((e ▸ Orbit.unit A Seed seed).interpret A Seed model
+      ((e ▸ Orbit.unit A Seed seed).interpret A Seed model.toAction
         (assigned sort)) :=
-    cast_heq (State.as_of A (state.asJudgment A)) _
+    eqRec_heq (State.as_of A (state.asJudgment A)) _
   have secondCast : HEq
-      ((e ▸ Orbit.unit A Seed seed).interpret A Seed model
+      ((e ▸ Orbit.unit A Seed seed).interpret A Seed model.toAction
         (assigned sort))
-      ((Orbit.unit A Seed seed).interpret A Seed model
+      ((Orbit.unit A Seed seed).interpret A Seed model.toAction
         (assigned sort)) :=
     orbit_interpret_cast R A Seed model assigned e _
   exact eq_of_heq ((firstCast.trans secondCast).trans
-    (heq_of_eq (Orbit.interpret_unit A Seed model
+    (heq_of_eq (Orbit.interpret_unit A Seed model.toAction
       (assigned sort) seed)))
 
 theorem interpret_node
@@ -939,20 +926,20 @@ theorem hom_pureAt
     {sort : S.Srt} {state : State A sort}
     (event : Orbit A Seed state) :
     h.evidence.toFun () (state.asJudgment A) (pureAt R A Seed event) =
-      event.interpret A Seed model
+      event.interpret A Seed model.toAction
         (assignmentOfHom R A Seed model h sort) := by
-  let η : freeAction A Seed sort ⟶ modelAction A model sort :=
+  let η : freeAction A Seed sort ⟶ model.toAction.functor sort :=
     pureOrbitNat R A Seed sort ≫ modelActionHom R A h sort
-  have assignedEq : generatorAssignment A Seed model sort η =
+  have assignedEq : generatorAssignment A Seed model.toAction sort η =
       assignmentOfHom R A Seed model h sort := by
     funext original seed
     rfl
   have uniqueness :=
-    freeActionInterpretation_generatorAssignment A Seed model sort η
+    freeActionInterpretation_generatorAssignment A Seed model.toAction sort η
   have valueEq := congrArg (fun θ : freeAction A Seed sort ⟶
-      modelAction A model sort => θ.app state event) uniqueness
-  change event.interpret A Seed model
-      (generatorAssignment A Seed model sort η) =
+      model.toAction.functor sort => θ.app state event) uniqueness
+  change event.interpret A Seed model.toAction
+      (generatorAssignment A Seed model.toAction sort η) =
     h.evidence.toFun () (state.asJudgment A)
       (pureAt R A Seed event) at valueEq
   rw [assignedEq] at valueEq
@@ -975,12 +962,13 @@ theorem pureAt_onJudgment (judgment : Judgment A)
       (IndexedPolynomial.Free.pure (rules R A) mapped :
         Tree R A Seed (state.asJudgment A)) =
     IndexedPolynomial.Free.pure (rules R A) hole
-  rw [pure_cast R A Seed secondCast mapped]
+  refine (IndexedPolynomial.Free.pure_transport (rules R A)
+    (holes := fun _ j => Holes A Seed j) secondCast mapped).trans ?_
   apply congrArg (IndexedPolynomial.Free.pure (rules R A))
   have castOne : HEq (secondCast ▸ mapped) mapped :=
-    cast_heq secondCast mapped
+    eqRec_heq secondCast mapped
   have castTwo : HEq mapped hole :=
-    cast_heq firstCast hole
+    eqRec_heq firstCast hole
   exact eq_of_heq (castOne.trans castTwo)
 
 private theorem hom_transport

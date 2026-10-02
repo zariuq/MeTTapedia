@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.Syntax.CategoricalBindingEquationSatisfaction
 import Mettapedia.OSLF.Syntax.CategoricalBindingFunctor
 import Mettapedia.OSLF.Syntax.SecondOrderEquationUniversal
 
@@ -31,13 +32,6 @@ namespace Model
 
 variable {S : Signature} (M : Model S D)
 
-/-- Every instance of every axiom holds in the model. -/
-def SatisfiesAxioms (N : List (MetaArity S)) {schema : List (MetaArity S)}
-    (E : List (EqAxiom (withMetas S N) schema)) : Prop :=
-  ∀ (i : Fin E.length)
-    (body : (k : Fin schema.length) → Term (withMetas S N) (schema.get k).1 (schema.get k).2),
-    M.interp N (instantiate body (E.get i).lhs) = M.interp N (instantiate body (E.get i).rhs)
-
 section Closure
 
 variable {N : List (MetaArity S)} {schema : List (MetaArity S)}
@@ -50,10 +44,7 @@ theory. -/
 theorem interp_eqClosure (sat : M.SatisfiesAxioms N E) :
     ∀ {Γ : Ctx S} {s : S.Srt} {t u : Term (withMetas S N) Γ s},
       EqClosure E t u → M.interp N t = M.interp N u
-  | _, _, _, _, .ax i body close => by
-      unfold interp
-      rw [BindingCloneFoldSubstitution.interpret_bind, BindingCloneFoldSubstitution.interpret_bind]
-      exact congrArg _ (sat i body)
+  | _, _, _, _, .ax i body ambient ordinary => sat i body ambient ordinary
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (interp_eqClosure sat h).symm
   | _, _, _, _, .trans h₁ h₂ => (interp_eqClosure sat h₁).trans (interp_eqClosure sat h₂)
@@ -72,11 +63,6 @@ theorem interpArgs_eqArgs (sat : M.SatisfiesAxioms N E) :
 end
 
 end Closure
-
-/-- A model satisfies an equation presentation when it satisfies its axioms at
-every metavariable context. -/
-def Satisfies {schema : List (MetaArity S)} (P : EquationPresentation S schema) : Prop :=
-  ∀ X : Object S, M.SatisfiesAxioms X.arities (P.axioms X)
 
 variable {schema : List (MetaArity S)} (P : EquationPresentation S schema)
 

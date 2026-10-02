@@ -110,7 +110,7 @@ theorem sigma_projects_of_eq {context : NativeContext signature}
 
 /-- The supplied level admission constructs an actual universe term. The
 incidental level of a different representative is irrelevant. -/
-def codeOfType {context : NativeContext signature} (level : LevelExpr)
+def codeOfType {context : NativeContext signature} (level : LevelExpr Nat)
     (type : TypeOver context) (atLevel : type.level = .sort level) :
     QuotientUniverses.Code ((quotientProjection _).obj context) level :=
   QuotientUniverses.ofFormed level type.code (by
@@ -118,7 +118,7 @@ def codeOfType {context : NativeContext signature} (level : LevelExpr)
     rw [atLevel] at formed
     exact formed)
 
-theorem decode_codeOfType {context : NativeContext signature} (level : LevelExpr)
+theorem decode_codeOfType {context : NativeContext signature} (level : LevelExpr Nat)
     (type : TypeOver context) (atLevel : type.level = .sort level) :
     QuotientUniverses.decode (codeOfType level type atLevel) = QType.mk type :=
   (QuotientUniverses.decode_ofFormed level type.code _).trans
@@ -126,7 +126,7 @@ theorem decode_codeOfType {context : NativeContext signature} (level : LevelExpr
 
 /-- The code's decoded binder and the actual submitted native binder are
 connected by the existing comparison isomorphism. -/
-def codePresentation {context : NativeContext signature} (level : LevelExpr)
+def codePresentation {context : NativeContext signature} (level : LevelExpr Nat)
     (type : TypeOver context) (atLevel : type.level = .sort level) :
     QuotientCwf.ext ((quotientProjection _).obj context)
       (QuotientUniverses.decode (codeOfType level type atLevel)) ≅
@@ -135,27 +135,27 @@ def codePresentation {context : NativeContext signature} (level : LevelExpr)
     (decode_codeOfType level type atLevel)) ≪≫ QuotientCwf.extPresentation context type
 
 theorem nativePi_level {context : NativeContext signature} (domain : TypeOver context)
-    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr}
+    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr Nat}
     (domainAt : domain.level = .sort lower) (codomainAt : codomain.level = .sort upper) :
     (nativePi domain codomain).level = .sort (.max lower upper) := by
-  have lowerEq := Tower.Head.sort.inj ((nativeLevel_spec domain).symm.trans domainAt)
-  have upperEq := Tower.Head.sort.inj ((nativeLevel_spec codomain).symm.trans codomainAt)
-  change Tower.Head.sort (.max (nativeLevel domain) (nativeLevel codomain)) = _
+  have lowerEq := LevelTower.Head.sort.inj ((nativeLevel_spec domain).symm.trans domainAt)
+  have upperEq := LevelTower.Head.sort.inj ((nativeLevel_spec codomain).symm.trans codomainAt)
+  change LevelTower.Head.sort (.max (nativeLevel domain) (nativeLevel codomain)) = _
   rw [lowerEq, upperEq]
 
 theorem nativeSigma_level {context : NativeContext signature} (domain : TypeOver context)
-    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr}
+    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr Nat}
     (domainAt : domain.level = .sort lower) (codomainAt : codomain.level = .sort upper) :
     (nativeSigma domain codomain).level = .sort (.max lower upper) := by
-  have lowerEq := Tower.Head.sort.inj ((nativeLevel_spec domain).symm.trans domainAt)
-  have upperEq := Tower.Head.sort.inj ((nativeLevel_spec codomain).symm.trans codomainAt)
-  change Tower.Head.sort (.max (nativeLevel domain) (nativeLevel codomain)) = _
+  have lowerEq := LevelTower.Head.sort.inj ((nativeLevel_spec domain).symm.trans domainAt)
+  have upperEq := LevelTower.Head.sort.inj ((nativeLevel_spec codomain).symm.trans codomainAt)
+  change LevelTower.Head.sort (.max (nativeLevel domain) (nativeLevel codomain)) = _
   rw [lowerEq, upperEq]
 
 /-- Mixed-level Pi code agreement in the fixed result universe. The
 codomain is reindexed through the actual code/binder comparison. -/
 theorem piCode_projects {context : NativeContext signature} (domain : TypeOver context)
-    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr}
+    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr Nat}
     (domainAt : domain.level = .sort lower) (codomainAt : codomain.level = .sort upper) :
     QuotientUniverseProducts.piCode (codeOfType lower domain domainAt)
       (QuotientUniverses.reindex (codeOfType upper codomain codomainAt)
@@ -170,7 +170,7 @@ theorem piCode_projects {context : NativeContext signature} (domain : TypeOver c
       (nativePi_level domain codomain domainAt codomainAt)).symm
 
 theorem sigmaCode_projects {context : NativeContext signature} (domain : TypeOver context)
-    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr}
+    (codomain : TypeOver (extend context domain)) {lower upper : LevelExpr Nat}
     (domainAt : domain.level = .sort lower) (codomainAt : codomain.level = .sort upper) :
     QuotientUniverseProducts.sigmaCode (codeOfType lower domain domainAt)
       (QuotientUniverses.reindex (codeOfType upper codomain codomainAt)

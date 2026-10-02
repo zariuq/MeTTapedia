@@ -18,7 +18,7 @@ formalization), we use a **`Prop`-valued oracle abstraction** that:
 2. Allows concrete implementations (`metta-il-rust`, SWI PeTTa) to supply the oracle instance
    as a separate trust boundary.
 3. Theorems about `MeTTaEvalG oracle ...` are universally quantified over any oracle satisfying
-   the stated contracts — matching the "oracle" pattern in `Computability/OracleTM.lean`.
+   the stated contracts.
 
 ## Architecture
 

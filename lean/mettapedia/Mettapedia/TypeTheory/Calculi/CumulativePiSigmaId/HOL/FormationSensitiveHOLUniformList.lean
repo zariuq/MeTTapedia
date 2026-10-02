@@ -111,7 +111,7 @@ private theorem pi_zero {n : Nat} {gamma : Tower.Ctx n}
   apply Typing.cumul (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero)
     (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem universal_type_formed : Typing rules .nil universalType
     (sortTm (.max (.succ Tower.zero) Tower.zero)) := by

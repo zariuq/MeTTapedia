@@ -19,7 +19,9 @@ open Mettapedia.GSLT.LanguageDef
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.Metamath.MM2CompressedByteScannerGSLT
 open Mettapedia.Languages.Metamath.MM2CompressedProofAssertionBridgePredecessorOrigin
+open Mettapedia.Languages.Metamath.MM2CompressedProofAssertionBridgeDrain
 open Mettapedia.Languages.Metamath.MM2CompressedProofAssertionContinuous
+open Mettapedia.Languages.Metamath.MM2CompressedProofAssertionRejoinCapability
 open Mettapedia.Languages.Metamath.MM2CompressedProofAssertionSourceBoundary
 open Mettapedia.Languages.Metamath.MM2CompressedProofContinuousRepresentation
 open Mettapedia.Languages.Metamath.MM2CompressedProofDecoratedAssertionBridgeOrigin
@@ -29,6 +31,7 @@ open Mettapedia.Languages.Metamath.MM2CompressedProofDecoratedDirectAssertionFra
 open Mettapedia.Languages.Metamath.MM2CompressedProofDecoratedDirectAssertionSurface
 open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
 open Mettapedia.Languages.Metamath.MM2CompressedProofOccurrenceLedger
+open Mettapedia.Languages.Metamath.MM2CompressedProofNormalBridgeCapability
 open Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivation
 open Mettapedia.Languages.Metamath.MM2CompressedProofPhysicalAssertionBridgeDrain
 open Mettapedia.Languages.Metamath.MM2CompressedProofPhysicalAssertionBridgeSchedule
@@ -86,7 +89,8 @@ private theorem key_ne_reload_of_head
     morkSupportKey row ≠ morkSupportKey reload := by
   rcases (compressedDynamicRowHead?_eq_some_iff row head).mp headExact with
     ⟨tail, rowShape⟩
-  exact morkSupportKey_expression_symbol_head_ne_any_arity_of_shapes head
+  exact morkSupportKey_expression_symbol_head_ne_any_arity_of_shapes
+    (left := row) (right := reload) head
     reloadHead ⟨tail, rowShape⟩ reloadShape headPositive (by decide) headBound
     (by decide) different
 
@@ -98,7 +102,8 @@ private theorem key_ne_reload_of_exec
     morkSupportKey row ≠ morkSupportKey reload := by
   obtain ⟨location, input, output, shape⟩ :=
     extractSupportedSourceExecFact_exec_shape decoded
-  exact morkSupportKey_expression_symbol_head_ne_any_arity_of_shapes "exec"
+  exact morkSupportKey_expression_symbol_head_ne_any_arity_of_shapes
+    (left := row) (right := reload) "exec"
     reloadHead ⟨[location, input, output], shape⟩ reloadShape (by decide)
     (by decide) (by decide) (by decide) (by decide)
 
@@ -132,19 +137,36 @@ private theorem scheduler_key_ne_reload
     (reload : Atom)
     (reloadShape : ∃ tail, reload = .expression (.symbol reloadHead :: tail)) :
     morkSupportKey row ≠ morkSupportKey reload := by
-  simp only [decoratedDirectAssertionSchedulerFrame, List.mem_cons,
-    List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl
-  · exact key_ne_reload_of_exec reload reloadShape
+  rcases List.mem_cons.mp member with proof | member
+  · intro keyEqual
+    exact key_ne_reload_of_exec (row := compressedProofStepDirective.atom)
+      (directive := compressedProofStepDirective) reload reloadShape
       extract_compressedProofStepRule_exact
-  · exact key_ne_reload_of_exec reload reloadShape
-      (by
-        rw [decoratedCursorAssertionDirective_atom_exact]
-        exact extract_decoratedCursorAssertionRule_exact)
-  · exact key_ne_reload_of_exec reload reloadShape
+      ((congrArg morkSupportKey proof).symm.trans keyEqual)
+  rcases List.mem_cons.mp member with cursor | member
+  · intro keyEqual
+    exact key_ne_reload_of_exec
+      (row := decoratedCursorAssertionDirective.atom)
+      (directive := decoratedCursorAssertionDirective) reload reloadShape
+      ((congrArg extractSupportedSourceExecFact
+        decoratedCursorAssertionDirective_atom_exact).trans
+          extract_decoratedCursorAssertionRule_exact)
+      ((congrArg morkSupportKey cursor).symm.trans keyEqual)
+  rcases List.mem_cons.mp member with fault | member
+  · intro keyEqual
+    exact key_ne_reload_of_exec
+      (row := compressedHeapLookupFaultDirective.atom)
+      (directive := compressedHeapLookupFaultDirective) reload reloadShape
       extract_compressedHeapLookupFaultRule_exact
-  · exact key_ne_reload_of_exec reload reloadShape
+      ((congrArg morkSupportKey fault).symm.trans keyEqual)
+  rcases List.mem_cons.mp member with advance | member
+  · intro keyEqual
+    exact key_ne_reload_of_exec
+      (row := compressedHeapLookupAdvanceDirective.atom)
+      (directive := compressedHeapLookupAdvanceDirective) reload reloadShape
       extract_compressedHeapLookupAdvanceRule_exact
+      ((congrArg morkSupportKey advance).symm.trans keyEqual)
+  exact (List.not_mem_nil member).elim
 
 private theorem canonical_key_ne_reload
     (context : DirectAssertionContext) {row : Atom}
@@ -156,11 +178,12 @@ private theorem canonical_key_ne_reload
       member with matched | scheduled
   rcases (mem_decoratedDirectAssertionMatchSlice_iff context row).mp matched
       with directive | data
-  · subst row
-    exact key_ne_reload_of_exec reload reloadShape
-      (by
-        rw [decoratedDirectAssertionDirective_atom_exact]
-        exact extract_decoratedDirectAssertionRule_exact)
+  · intro keyEqual
+    exact key_ne_reload_of_exec
+      (row := decoratedDirectAssertionDirective.atom)
+      (directive := decoratedDirectAssertionDirective) reload reloadShape
+      decoratedDirectAssertionDirective_decodes
+      ((congrArg morkSupportKey directive).symm.trans keyEqual)
   · exact dataSlice_key_ne_reload context data reload reloadShape
   · exact scheduler_key_ne_reload scheduled reload reloadShape
 
@@ -198,15 +221,21 @@ private theorem capture_key_ne_reload
     (reload : Atom)
     (reloadShape : ∃ tail, reload = .expression (.symbol reloadHead :: tail)) :
     morkSupportKey row ≠ morkSupportKey reload := by
-  simp only [normalHandoffBridgeCaptureRows, List.mem_cons, List.not_mem_nil,
-    or_false] at member
-  rcases member with rfl | rfl
-  · exact key_ne_reload_of_head reload reloadShape
+  rcases List.mem_cons.mp member with loader | member
+  · intro keyEqual
+    exact key_ne_reload_of_head
+      (row := compressedNormalHandoffLoaderCaptureRow) reload reloadShape
       "mm-internal-compressed-normal-handoff-loader"
       rfl (by decide) (by decide) (by decide)
-  · exact key_ne_reload_of_head reload reloadShape
+      ((congrArg morkSupportKey loader).symm.trans keyEqual)
+  rcases List.mem_cons.mp member with finish | member
+  · intro keyEqual
+    exact key_ne_reload_of_head
+      (row := compressedNormalHandoffFinishCaptureRow) reload reloadShape
       "mm-internal-compressed-normal-handoff-finish"
       rfl (by decide) (by decide) (by decide)
+      ((congrArg morkSupportKey finish).symm.trans keyEqual)
+  exact (List.not_mem_nil member).elim
 
 theorem source_ready_row_key_ne_reload
     {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
@@ -308,6 +337,8 @@ private theorem published_head_key_ne_reload
     (inherited : ruleTemplateVariablesInherited
       decoratedDirectAssertionDirective.rule.input
       (.expression (.symbol head :: tail)) = true)
+    (headPositive : 0 < (morkUtf8Bytes head).length)
+    (headBound : (morkUtf8Bytes head).length < 64)
     (different : head ≠ reloadHead)
     {atom : Atom}
     (instantiated : instantiateRuleTemplateAtom?
@@ -316,9 +347,10 @@ private theorem published_head_key_ne_reload
     morkSupportKey atom ≠ morkSupportKey reload := by
   obtain ⟨atomTail, atomShape⟩ := instantiated_symbol_shape substitution head
     tail inherited instantiated
-  exact morkSupportKey_expression_symbol_head_ne_any_arity_of_shapes head
-    reloadHead ⟨atomTail, atomShape⟩ reloadShape (by decide) (by decide)
-    (by decide) (by decide) different
+  exact morkSupportKey_expression_symbol_head_ne_any_arity_of_shapes
+    (left := atom) (right := reload) head
+    reloadHead ⟨atomTail, atomShape⟩ reloadShape headPositive (by decide)
+    headBound (by decide) different
 
 private theorem physicalMatcherRow_rejoin_exact
     {space : List Atom}
@@ -390,11 +422,7 @@ theorem source_launch_reload_additions_reflect
       decoratedDirectAssertionDirective.rule.input
       (physicalDecoratedAssertionMatcherRows space)
       decoratedDirectAssertionDirective.rule.tmpl := by
-  intro sink sinkMember
-  let space := @sourceDecoratedAssertionBridgeReadySpace source target context
-    state ledger scanner index cursor assertion
-  let reload := sourceAssertionReloadRow context state scanner index cursor
-    assertion
+  intro space reload sink sinkMember
   have reloadShape := sourceAssertionReloadRow_shape context state scanner
     index cursor assertion
   rw [decoratedDirectAssertionDirective_sinks_exact] at sinkMember
@@ -407,15 +435,15 @@ theorem source_launch_reload_additions_reflect
   · intro substitution _ atom instantiated keyEqual
     exact (published_head_key_ne_reload reload reloadShape substitution
       "mm-compressed-assertion-context" _ directAssertionContextTemplate_inherited
-      (by decide) instantiated keyEqual).elim
+      (by decide) (by decide) (by decide) instantiated keyEqual).elim
   · intro substitution _ atom instantiated keyEqual
     exact (published_head_key_ne_reload reload reloadShape substitution
       "mm-normal-control" _ directAssertionNormalControlTemplate_inherited
-      (by decide) instantiated keyEqual).elim
+      (by decide) (by decide) (by decide) instantiated keyEqual).elim
   · intro substitution _ atom instantiated keyEqual
     exact (published_head_key_ne_reload reload reloadShape substitution
       "mm-linked-row" _ directAssertionNormalLabelTemplate_inherited
-      (by decide) instantiated keyEqual).elim
+      (by decide) (by decide) (by decide) instantiated keyEqual).elim
   · intro substitution substitutionMember atom instantiated keyEqual
     have atomExact := physicalMatcherRow_reload_exact
       (directAssertionContextAtBoundary context state scanner index cursor

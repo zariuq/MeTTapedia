@@ -112,10 +112,10 @@ theorem representedBy_costBase
       · exact (usesBareCollection_costBaseConstructor_iff
           source.cut constructor).not.mpr notBare
       · simpa [costBaseSchemaPattern, mapPatternSchemaNames,
-          costBaseConstructor, costBaseLanguageDefSymbolMap] using
+          costBaseConstructor_def, costBaseLanguageDefSymbolMap] using
             congrArg costBaseConstructorName labelEquality
       · simpa [costBaseSchemaPattern, mapPatternSchemaNames,
-          costBaseConstructor] using arityEquality
+          costBaseConstructor_def] using arityEquality
   | collection collectionType elements rest =>
       rcases represented with ⟨parameterName, elementType, parameterShape⟩
       simp only [costBaseSchemaPattern, mapPattern, mapPatternSchemaNames]
@@ -126,7 +126,7 @@ theorem representedBy_costBase
         else costBaseTypeExpr elementType, ?_⟩
       by_cases selected :
         isSelectedContinuation source.cut constructor 0 = true <;>
-        simp [costBaseConstructor, parameterShape, costBaseParameter,
+        simp [costBaseConstructor_def, parameterShape, costBaseParameter_def,
           selected, mapParameterType, costWrappedTypeExpr, costBaseTypeExpr]
   | bvar index => simp [RepresentedBy] at represented
   | fvar name => simp [RepresentedBy] at represented
@@ -169,7 +169,7 @@ def costBaseOperand (source : CIGSLT)
           some (.base costWrappedSortName)
         rw [costBaseConstructor_parameter source.cut constructor.1
           continuation.index continuation.inBounds]
-        simp only [costBaseParameter, selectedContinuation, if_true]
+        simp only [costBaseParameter_def, selectedContinuation, if_true]
         exact continuationResult?_mapParameterType_costWrapped
           source.theory.presentation.interactingSort.1.name
           continuation.toConstructorParameter.parameter
@@ -435,7 +435,7 @@ private theorem costBaseParameter_simple_shape
     ∃ mappedType,
       costBaseParameter cut constructor (.simple name type, index) =
         .simple name mappedType := by
-  unfold costBaseParameter
+  simp only [costBaseParameter_def]
   split <;> exact ⟨_, rfl⟩
 
 private theorem costBaseParameter_collection_shape
@@ -446,7 +446,7 @@ private theorem costBaseParameter_collection_shape
       costBaseParameter cut constructor
           (.simple name (.collection collectionType elementType), index) =
         .simple name (.collection collectionType mappedElementType) := by
-  unfold costBaseParameter
+  simp only [costBaseParameter_def]
   split <;> exact ⟨_, rfl⟩
 
 private theorem coreContactRepresentation_costBaseConstructor
@@ -463,7 +463,7 @@ private theorem coreContactRepresentation_costBaseConstructor
   by_cases categoryEquality : category = sortName
   · subst category
     simp only [coreContactRepresentation?] at represented
-    simp only [costBaseConstructor, coreContactRepresentation?]
+    simp only [costBaseConstructor_def, coreContactRepresentation?]
     cases parameters with
     | nil => simp at represented
     | cons first rest =>
@@ -548,7 +548,7 @@ private theorem CutSourceShape.costBase
   cases shape with
   | binary binaryContact =>
       simpa [costBaseCoreContact, costBaseDeclaredConstructor,
-        costBaseConstructor, costBaseSchemaPattern,
+        costBaseConstructor_def, costBaseSchemaPattern,
         costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames,
         mapPatternListSchemaNames_eq_map] using
         (CutSourceShape.binary
@@ -660,7 +660,7 @@ theorem costBaseDeclaredConstructor_injective (source : CIGSLT) :
   apply ContinuationRetypingPlan.authoredConstructorLabel_injective
     source.theory.presentation.presentation
   apply costBaseConstructorName_injective
-  simpa [costBaseDeclaredConstructor, costBaseConstructor] using
+  simpa [costBaseDeclaredConstructor, costBaseConstructor_def] using
     congrArg
       (fun constructor : DeclaredConstructor source.costWholePresentation =>
         constructor.1.label) equality
@@ -1076,7 +1076,7 @@ theorem costEnvironmentOperand_category (source : CIGSLT) :
 /-- The generated interaction has the canonical hereditary continuation plan:
 every constructor except the retained program and environment introductions
 receives a wrapped copy at the next Cost layer. -/
-def costContinuationRetyping (source : CIGSLT) :
+theorem costContinuationRetyping (source : CIGSLT) :
     ContinuationRetypingPlan source.costInteractionCut where
   residualCovered := by
     change (show DeclaredConstructor
@@ -1091,7 +1091,7 @@ def costContinuationRetyping (source : CIGSLT) :
       rw [costInteractionCut_program_constructor] at labelEquality
       apply costBaseConstructorName_ne_apparatus
         source.cut.program.constructor.1.label "contact"
-      simpa [costBaseDeclaredConstructor, costBaseConstructor,
+      simpa [costBaseDeclaredConstructor, costBaseConstructor_def,
         costWholeContactConstructor, costContactConstructor,
         costContactConstructorName] using labelEquality.symm
     · intro equality
@@ -1100,7 +1100,7 @@ def costContinuationRetyping (source : CIGSLT) :
       rw [costInteractionCut_environment_constructor] at labelEquality
       apply costBaseConstructorName_ne_apparatus
         source.cut.environment.constructor.1.label "contact"
-      simpa [costBaseDeclaredConstructor, costBaseConstructor,
+      simpa [costBaseDeclaredConstructor, costBaseConstructor_def,
         costWholeContactConstructor, costContactConstructor,
         costContactConstructorName] using labelEquality.symm
 

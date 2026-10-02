@@ -12,7 +12,7 @@ parser.
 The include-aware IO driver and compressed proof actions are separate
 obligations. The normal ledger is not sufficient for corpora whose theorems
 use compressed proofs. A later whole-input soundness theorem must also require
-a `prefixCertified` parser configuration. No theorem in this module infers
+a `IsSound` parser configuration. No theorem in this module infers
 erased proof tokens from a final database.
 -/
 

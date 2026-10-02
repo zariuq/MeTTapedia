@@ -31,20 +31,20 @@ open Presentation.FormationCheckedTelescopePrograms
 open CheckedTelescopeInstantiation
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
-def zero : LevelExpr := .const 0
-def one : LevelExpr := .succ zero
-def two : LevelExpr := .succ one
+def zero : LevelExpr Nat := .const 0
+def one : LevelExpr Nat := .succ zero
+def two : LevelExpr Nat := .succ one
 
 /-- Oldest-first: A : U, x : A, y : A, e : Id A x y. -/
-def proofContext (level : LevelExpr) : Tower.Ctx 4 :=
+def proofContext (level : LevelExpr Nat) : Tower.Ctx 4 :=
   .snoc (.snoc (identityContext level) (.var 1))
     (.id (.var 2) (.var 1) (.var 0))
 
 /-- The program is a genuine four-binder lambda abstraction. -/
-def proofProgram (level : LevelExpr) : Tower.Tm 0 :=
+def proofProgram (level : LevelExpr Nat) : Tower.Tm 0 :=
   closeTerm (proofContext level) (.var 0)
 
-theorem proof_context_formed (level : LevelExpr) :
+theorem proof_context_formed (level : LevelExpr Nat) :
     ContextFormation Tower.rules (proofContext level) := by
   have contextPrefix : ContextFormation Tower.rules (identityContext level) :=
     .snoc (.snoc .nil (.headType (.sort level)) (.sort (.succ level)))

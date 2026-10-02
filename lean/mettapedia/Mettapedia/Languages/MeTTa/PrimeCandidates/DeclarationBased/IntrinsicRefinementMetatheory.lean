@@ -30,8 +30,8 @@ open Presentation.Declaration.IndexedFamily
 
 /-! ## Fixed-authority budget refinement -/
 
-def budgetRefinementLevel : LevelExpr := outcomeLevel
-def budgetRefinementMotiveLevel : LevelExpr := .param 16
+def budgetRefinementLevel : LevelExpr Nat := outcomeLevel
+def budgetRefinementMotiveLevel : LevelExpr Nat := .param 16
 
 def budgetRefinementName : DeclName :=
   `CumulativeTower.Authority.BudgetRefines
@@ -1537,36 +1537,36 @@ theorem budgetRefinementBodyType_hasType :
   unfold budgetRefinementBodyType budgetContextS
   apply Presentation.HasType.piForm
   · exact signatureJudgment_hasType budgetSignatureVar_hasType
-  · exact Tower.IsUniverse.sort judgmentLevel
+  · exact LevelTower.IsUniverse.sort judgmentLevel
   · apply Presentation.HasType.piForm
     · apply outcomeApp_hasTypeWith
       · exact includeOutcomeInBudgetRefinement outcomeConstant_hasType
       · exact Presentation.HasType.var 1
       · exact Presentation.HasType.var 0
-    · exact Tower.IsUniverse.sort outcomeLevel
+    · exact LevelTower.IsUniverse.sort outcomeLevel
     · apply Presentation.HasType.piForm
       · apply outcomeApp_hasTypeWith
         · exact includeOutcomeInBudgetRefinement outcomeConstant_hasType
         · exact Presentation.HasType.var 2
         · exact Presentation.HasType.var 1
-      · exact Tower.IsUniverse.sort outcomeLevel
+      · exact LevelTower.IsUniverse.sort outcomeLevel
       · exact Presentation.HasType.headType
-          (Tower.HeadTyping.sort budgetRefinementLevel)
-      · exact Tower.IsUniverse.sort (.succ budgetRefinementLevel)
-      · exact Tower.Join.sorts outcomeLevel
+          (LevelTower.HeadTyping.sort budgetRefinementLevel)
+      · exact LevelTower.IsUniverse.sort (.succ budgetRefinementLevel)
+      · exact LevelTower.Join.sorts outcomeLevel
           (.succ budgetRefinementLevel)
-    · exact Tower.IsUniverse.sort
+    · exact LevelTower.IsUniverse.sort
         (.max outcomeLevel (.succ budgetRefinementLevel))
-    · exact Tower.Join.sorts outcomeLevel
+    · exact LevelTower.Join.sorts outcomeLevel
         (.max outcomeLevel (.succ budgetRefinementLevel))
-  · exact Tower.IsUniverse.sort
+  · exact LevelTower.IsUniverse.sort
       (.max outcomeLevel
         (.max outcomeLevel (.succ budgetRefinementLevel)))
-  · exact Tower.Join.sorts judgmentLevel
+  · exact LevelTower.Join.sorts judgmentLevel
       (.max outcomeLevel
         (.max outcomeLevel (.succ budgetRefinementLevel)))
 
-def budgetRefinementDeclarationLevel : LevelExpr :=
+def budgetRefinementDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (.max judgmentLevel
       (.max outcomeLevel
@@ -1578,13 +1578,13 @@ theorem budgetRefinementType_hasType :
   unfold budgetRefinementType budgetRefinementDeclarationLevel
   apply Presentation.HasType.piForm
       outcomeSignatureType_hasBudgetRefinementType
-      (Tower.IsUniverse.sort signatureLevel)
+      (LevelTower.IsUniverse.sort signatureLevel)
   · exact budgetRefinementBodyType_hasType
-  · exact Tower.IsUniverse.sort
+  · exact LevelTower.IsUniverse.sort
       (.max judgmentLevel
         (.max outcomeLevel
           (.max outcomeLevel (.succ budgetRefinementLevel))))
-  · exact Tower.Join.sorts signatureLevel
+  · exact LevelTower.Join.sorts signatureLevel
       (.max judgmentLevel
         (.max outcomeLevel
           (.max outcomeLevel (.succ budgetRefinementLevel))))
@@ -1602,15 +1602,15 @@ def budgetBinaryContextSJWW (beforeFamily afterFamily : Tower.Tm 1) :
       (Presentation.rename wk (Presentation.rename wk afterFamily))
       (.var 1))
 
-def budgetBinaryAfterLevel (afterLevel : LevelExpr) : LevelExpr :=
+def budgetBinaryAfterLevel (afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max afterLevel budgetRefinementLevel
 
-def budgetBinaryBeforeLevel (beforeLevel afterLevel : LevelExpr) :
-    LevelExpr :=
+def budgetBinaryBeforeLevel (beforeLevel afterLevel : LevelExpr Nat) :
+    LevelExpr Nat :=
   .max beforeLevel (budgetBinaryAfterLevel afterLevel)
 
-def budgetBinaryBodyLevel (beforeLevel afterLevel : LevelExpr) :
-    LevelExpr :=
+def budgetBinaryBodyLevel (beforeLevel afterLevel : LevelExpr Nat) :
+    LevelExpr Nat :=
   .max judgmentLevel (budgetBinaryBeforeLevel beforeLevel afterLevel)
 
 @[simp] theorem budget_wk_wk_zero :
@@ -1626,7 +1626,7 @@ def budgetBinaryBodyLevel (beforeLevel afterLevel : LevelExpr) :
   decide
 
 theorem budgetBinaryAtSignatureType_hasType
-    (beforeLevel afterLevel : LevelExpr)
+    (beforeLevel afterLevel : LevelExpr Nat)
     {beforeConstructor afterConstructor : DeclName}
     {beforeFamily afterFamily : Tower.Tm 1}
     (beforeFamilyTyping : BudgetRefinementHasType budgetContextS
@@ -1709,7 +1709,7 @@ theorem budgetEstablishedBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetEstablishedDeclarationLevel : LevelExpr :=
+def budgetEstablishedDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (budgetBinaryBodyLevel evidenceLevel evidenceLevel)
 
@@ -1752,7 +1752,7 @@ theorem budgetRefutedBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetRefutedDeclarationLevel : LevelExpr :=
+def budgetRefutedDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (budgetBinaryBodyLevel obstructionLevel obstructionLevel)
 
@@ -1794,7 +1794,7 @@ theorem budgetIncompleteBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetIncompleteDeclarationLevel : LevelExpr :=
+def budgetIncompleteDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (budgetBinaryBodyLevel frontierLevel frontierLevel)
 
@@ -1837,7 +1837,7 @@ theorem budgetIncompleteEstablishedBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetIncompleteEstablishedDeclarationLevel : LevelExpr :=
+def budgetIncompleteEstablishedDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (budgetBinaryBodyLevel frontierLevel evidenceLevel)
 
@@ -1882,7 +1882,7 @@ theorem budgetIncompleteRefutedBodyType_hasType :
       · exact Presentation.HasType.var 2
       · exact Presentation.HasType.var 0
 
-def budgetIncompleteRefutedDeclarationLevel : LevelExpr :=
+def budgetIncompleteRefutedDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel
     (budgetBinaryBodyLevel frontierLevel obstructionLevel)
 
@@ -1906,13 +1906,13 @@ def budgetUnaryContextSJW (payloadFamily : Tower.Tm 1) : Tower.Ctx 3 :=
   .snoc budgetContextSJ
     (.app (Presentation.rename wk payloadFamily) (.var 0))
 
-def budgetUnaryWitnessLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def budgetUnaryWitnessLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max payloadLevel budgetRefinementLevel
 
-def budgetUnaryBodyLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def budgetUnaryBodyLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (budgetUnaryWitnessLevel payloadLevel)
 
-theorem budgetUnaryAtSignatureType_hasType (payloadLevel : LevelExpr)
+theorem budgetUnaryAtSignatureType_hasType (payloadLevel : LevelExpr Nat)
     {outcomeConstructor : DeclName} {payloadFamily : Tower.Tm 1}
     (payloadFamilyTyping : BudgetRefinementHasType budgetContextS
       payloadFamily
@@ -1974,7 +1974,7 @@ theorem budgetOutsideFragmentBodyType_hasType :
       · exact Presentation.HasType.var 1
       · exact Presentation.HasType.var 0
 
-def budgetOutsideFragmentDeclarationLevel : LevelExpr :=
+def budgetOutsideFragmentDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel (budgetUnaryBodyLevel boundaryLevel)
 
 theorem budgetOutsideFragmentType_hasType :
@@ -2012,16 +2012,16 @@ theorem budgetRefinementMotiveType_asAtSignature :
       budgetRefinementMotiveAtSignatureType (.var 0) := by
   decide
 
-def budgetRefinementMotiveRelationLevel : LevelExpr :=
+def budgetRefinementMotiveRelationLevel : LevelExpr Nat :=
   .max budgetRefinementLevel (.succ budgetRefinementMotiveLevel)
 
-def budgetRefinementMotiveAfterLevel : LevelExpr :=
+def budgetRefinementMotiveAfterLevel : LevelExpr Nat :=
   .max outcomeLevel budgetRefinementMotiveRelationLevel
 
-def budgetRefinementMotiveBeforeLevel : LevelExpr :=
+def budgetRefinementMotiveBeforeLevel : LevelExpr Nat :=
   .max outcomeLevel budgetRefinementMotiveAfterLevel
 
-def budgetRefinementMotiveTypeLevel : LevelExpr :=
+def budgetRefinementMotiveTypeLevel : LevelExpr Nat :=
   .max judgmentLevel budgetRefinementMotiveBeforeLevel
 
 theorem budgetRefinementMotiveType_hasType :
@@ -2205,19 +2205,19 @@ def budgetBinaryCaseAtSignatureType
           (namedBudgetBinaryConstructorApp relationConstructor
             (.var 4) (.var 2) (.var 1) (.var 0)))))
 
-def budgetBinaryCaseAfterLevel (afterLevel : LevelExpr) : LevelExpr :=
+def budgetBinaryCaseAfterLevel (afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max afterLevel budgetRefinementMotiveLevel
 
 def budgetBinaryCaseBeforeLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max beforeLevel (budgetBinaryCaseAfterLevel afterLevel)
 
 def budgetBinaryCaseLevel
-    (beforeLevel afterLevel : LevelExpr) : LevelExpr :=
+    (beforeLevel afterLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (budgetBinaryCaseBeforeLevel beforeLevel afterLevel)
 
 theorem budgetBinaryCaseAtSignatureType_hasType
-    (beforeLevel afterLevel : LevelExpr)
+    (beforeLevel afterLevel : LevelExpr Nat)
     {relationConstructor beforeConstructor afterConstructor : DeclName}
     {beforeFamily afterFamily : Tower.Tm 2}
     (beforeFamilyTyping : BudgetRefinementHasType budgetContextSM
@@ -2500,13 +2500,13 @@ def budgetUnaryCaseAtSignatureType
         (namedBudgetUnaryConstructorApp relationConstructor
           (.var 3) (.var 1) (.var 0))))
 
-def budgetUnaryCaseWitnessLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def budgetUnaryCaseWitnessLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max payloadLevel budgetRefinementMotiveLevel
 
-def budgetUnaryCaseLevel (payloadLevel : LevelExpr) : LevelExpr :=
+def budgetUnaryCaseLevel (payloadLevel : LevelExpr Nat) : LevelExpr Nat :=
   .max judgmentLevel (budgetUnaryCaseWitnessLevel payloadLevel)
 
-theorem budgetUnaryCaseAtSignatureType_hasType (payloadLevel : LevelExpr)
+theorem budgetUnaryCaseAtSignatureType_hasType (payloadLevel : LevelExpr Nat)
     {relationConstructor outcomeConstructor : DeclName}
     {payloadFamily : Tower.Tm 2}
     (payloadFamilyTyping : BudgetRefinementHasType budgetContextSM
@@ -2613,16 +2613,16 @@ def budgetContextSMJBAR : Tower.Ctx 6 :=
   .snoc budgetContextSMJBA
     (budgetRefinementApp (.var 4) (.var 2) (.var 1) (.var 0))
 
-def budgetRefinementEliminateRelationLevel : LevelExpr :=
+def budgetRefinementEliminateRelationLevel : LevelExpr Nat :=
   .max budgetRefinementLevel budgetRefinementMotiveLevel
 
-def budgetRefinementEliminateAfterLevel : LevelExpr :=
+def budgetRefinementEliminateAfterLevel : LevelExpr Nat :=
   .max outcomeLevel budgetRefinementEliminateRelationLevel
 
-def budgetRefinementEliminateBeforeLevel : LevelExpr :=
+def budgetRefinementEliminateBeforeLevel : LevelExpr Nat :=
   .max outcomeLevel budgetRefinementEliminateAfterLevel
 
-def budgetRefinementEliminateResultLevel : LevelExpr :=
+def budgetRefinementEliminateResultLevel : LevelExpr Nat :=
   .max judgmentLevel budgetRefinementEliminateBeforeLevel
 
 theorem budgetRefinementMotiveAtSignature_afterFourWeakenings :
@@ -2826,33 +2826,33 @@ theorem budgetRefinementResultAfterSix_hasType :
     budgetRefinementResultAfterSix, sortTm,
     Presentation.rename] using sixth
 
-def budgetAfterIncompleteRefutedLevel : LevelExpr :=
+def budgetAfterIncompleteRefutedLevel : LevelExpr Nat :=
   .max (budgetBinaryCaseLevel frontierLevel obstructionLevel)
     budgetRefinementEliminateResultLevel
 
-def budgetAfterIncompleteEstablishedLevel : LevelExpr :=
+def budgetAfterIncompleteEstablishedLevel : LevelExpr Nat :=
   .max (budgetBinaryCaseLevel frontierLevel evidenceLevel)
     budgetAfterIncompleteRefutedLevel
 
-def budgetAfterIncompleteLevel : LevelExpr :=
+def budgetAfterIncompleteLevel : LevelExpr Nat :=
   .max (budgetBinaryCaseLevel frontierLevel frontierLevel)
     budgetAfterIncompleteEstablishedLevel
 
-def budgetAfterOutsideLevel : LevelExpr :=
+def budgetAfterOutsideLevel : LevelExpr Nat :=
   .max (budgetUnaryCaseLevel boundaryLevel) budgetAfterIncompleteLevel
 
-def budgetAfterRefutedLevel : LevelExpr :=
+def budgetAfterRefutedLevel : LevelExpr Nat :=
   .max (budgetBinaryCaseLevel obstructionLevel obstructionLevel)
     budgetAfterOutsideLevel
 
-def budgetAfterEstablishedLevel : LevelExpr :=
+def budgetAfterEstablishedLevel : LevelExpr Nat :=
   .max (budgetBinaryCaseLevel evidenceLevel evidenceLevel)
     budgetAfterRefutedLevel
 
-def budgetRefinementEliminateBodyLevel : LevelExpr :=
+def budgetRefinementEliminateBodyLevel : LevelExpr Nat :=
   .max budgetRefinementMotiveTypeLevel budgetAfterEstablishedLevel
 
-def budgetRefinementEliminateDeclarationLevel : LevelExpr :=
+def budgetRefinementEliminateDeclarationLevel : LevelExpr Nat :=
   .max signatureLevel budgetRefinementEliminateBodyLevel
 
 theorem budgetRefinementEliminateBodyType_hasType :

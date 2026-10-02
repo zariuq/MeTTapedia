@@ -86,27 +86,15 @@ existing WorkSpan observation. -/
 
 /-- Exact chronology is itself a total valuation.  It retains each wave,
 including endpoints, occurrence receipt, and operational proof. -/
-def chronologyValuation (Ground : Type uGround) :
-    DeclaredValuation.{uGround, uGround} Ground where
-  Grade := List (WaveEvent Ground)
-  algebra := chronologicalListPartialMonoid (WaveEvent Ground)
-  grade := fun event => some [event]
+abbrev chronologyValuation (Ground : Type uGround) :
+    DeclaredValuation.{uGround, uGround} Ground :=
+  IndexedEventValuation.chronological id
 
 /-- Folding the chronological valuation returns the exact input history. -/
 @[simp] theorem chronology_historyGrade {Ground : Type uGround}
     (events : List (WaveEvent Ground)) :
     (chronologyValuation Ground).historyGrade events = some events := by
-  induction events with
-  | nil => rfl
-  | cons event events inductionHypothesis =>
-      simp only [IndexedEventValuation.Valuation.historyGrade_cons]
-      change
-        (some [event]).bind (fun head : List (WaveEvent Ground) =>
-          ((chronologyValuation Ground).historyGrade events).bind
-            fun tail : List (WaveEvent Ground) => some (head ++ tail)) =
-          some (event :: events)
-      rw [inductionHypothesis]
-      rfl
+  rw [IndexedEventValuation.chronological_historyGrade, List.map_id]
 
 /-- Exact chronological valuation of a schedule recovers its complete wave
 history, rather than merely its scalar or vector readout. -/
@@ -119,14 +107,10 @@ history, rather than merely its scalar or vector readout. -/
 
 /-- Pair WorkSpan with any independently declared valuation.  Product
 acceptance is componentwise, so failure on either axis remains visible. -/
-def withWorkSpan {Ground : Type uGround}
+abbrev withWorkSpan {Ground : Type uGround}
     (valuation : DeclaredValuation.{uGround, uGrade} Ground) :
-    DeclaredValuation Ground where
-  Grade := WorkSpan × valuation.Grade
-  algebra := (workSpanValuation Ground).algebra.prod valuation.algebra
-  grade := fun event =>
-    ((workSpanValuation Ground).grade event).bind fun workSpan =>
-      (valuation.grade event).bind fun grade => some (workSpan, grade)
+    DeclaredValuation Ground :=
+  (workSpanValuation Ground).prod valuation
 
 /-- The product valuation computes WorkSpan and the additional declared axis
 without converting either into the other. -/
@@ -137,24 +121,8 @@ theorem scheduleGrade_withWorkSpan {Ground : Type uGround}
     scheduleGrade (withWorkSpan valuation) schedule =
       (scheduleGrade valuation schedule).bind fun grade =>
         some (schedule.workSpan, grade) := by
-  have productGrade :=
-    IndexedEventValuation.Valuation.prod_historyGrade
-      (workSpanValuation Ground) valuation (Schedule.events schedule)
-  change
-    scheduleGrade (withWorkSpan valuation) schedule =
-      (scheduleGrade valuation schedule).bind fun grade =>
-        some (schedule.workSpan, grade)
-  change
-    (withWorkSpan valuation).historyGrade (Schedule.events schedule) = _
-  rw [show
-    (withWorkSpan valuation).historyGrade (Schedule.events schedule) =
-      ((workSpanValuation Ground).historyGrade
-          (Schedule.events schedule)).bind fun workSpan =>
-        (valuation.historyGrade (Schedule.events schedule)).bind fun grade =>
-          some (workSpan, grade) by
-      simpa [withWorkSpan, workSpanValuation,
-        WorkSpanObservation.valuation,
-        IndexedEventValuation.Valuation.prod] using productGrade]
+  change (withWorkSpan valuation).historyGrade (Schedule.events schedule) = _
+  rw [IndexedEventValuation.Valuation.prod_historyGrade]
   have workSpanEquation := scheduleGrade_workSpan schedule
   change
     (workSpanValuation Ground).historyGrade (Schedule.events schedule) =

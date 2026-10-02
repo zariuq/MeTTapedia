@@ -51,7 +51,7 @@ def main (arguments : List String) : IO UInt32 := do
       let sourceBytes ← IO.FS.readBinFile sourcePath
       let database :=
         Metamath.Verify.checkBytes sourceBytes
-          Metamath.Verify.ModeConfig.soundDefault
+          Metamath.Verify.ModeConfig.sound
       if hMatches : runtimeSourceMatches database = true then
         have _certificate :
             Nonempty (RuntimeAnchoredNativeSourceCertificate database) :=

@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.Syntax.BindingEquationInterpretation
+import Mettapedia.OSLF.Syntax.BindingSchemaInterpretation
 
 /-!
 # Naturality of authored binding schemas
@@ -150,27 +150,6 @@ theorem interpretSchema_closed_map {A : BindingCloneAlgebra.Algebra.{u} S}
         (interpretSchema B (mapMetaValuation h valuation) term) := by
   rw [h.map_substitute, interpretSchema_map]
 
-/-- Each authored equation instance remains valid after transporting all its
-semantic metavariables and ordinary variables along a model morphism. This
-is an image statement; it does not assert that an arbitrary target
-valuation factors through the morphism. -/
-theorem mapped_equation_instance
-    {A : BindingCloneAlgebra.Algebra.{u} S}
-    {B : BindingCloneAlgebra.Algebra.{v} S}
-    (h : FreeBindingClone.Hom A B)
-    {E : List (EqAxiom S M)} (satisfies : Satisfies A E)
-    (i : Fin E.length) (valuation : MetaValuation A M)
-    {Δ : Ctx S}
-    (env : BindingSubstitutionAlgebra.Environment S
-      A.substitution.Carrier (E.get i).ctx Δ) :
-    B.substitution.substitute (fun s x => h.raw.map (env s x))
-      (interpretSchema B (mapMetaValuation h valuation) (E.get i).lhs) =
-    B.substitution.substitute (fun s x => h.raw.map (env s x))
-      (interpretSchema B (mapMetaValuation h valuation) (E.get i).rhs) := by
-  exact (interpretSchema_closed_map h valuation env (E.get i).lhs).symm.trans
-    ((congrArg h.raw.map (satisfies i valuation env)).trans
-      (interpretSchema_closed_map h valuation env (E.get i).rhs))
-
 /-- Every positioned authored rewrite has natural semantic endpoints. Its
 selected position remains separate data: equality of endpoint values does
 not determine which occurrence fired. -/
@@ -198,7 +177,6 @@ theorem positionedRewrite_endpoints_map
 #print axioms interpretSchema_map
 #print axioms interpretSchemaArgs_map
 #print axioms interpretSchema_closed_map
-#print axioms mapped_equation_instance
 #print axioms positionedRewrite_endpoints_map
 
 end Mettapedia.OSLF.Binding.BindingEquationInterpretation

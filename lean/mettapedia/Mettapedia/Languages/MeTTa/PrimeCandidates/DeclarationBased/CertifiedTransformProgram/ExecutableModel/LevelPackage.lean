@@ -71,7 +71,7 @@ theorem objectRules_declared_numRec :
 /-- **The object package at every level**: identity elimination declared at
 carrier `U lu` and motive `U lw`, the recursor with its motive into `U lr`, and
 every other constant, and the computation, as in the object package. -/
-def objectRulesAt (lu lw lr : LevelExpr) : Rules Tower.Head :=
+def objectRulesAt (lu lw lr : LevelExpr Nat) : Rules Tower.Head :=
   { objectRules with
     constantType := fun name =>
       if name = jName then some (elimType (.sort lu) (.sort lw))
@@ -80,7 +80,7 @@ def objectRulesAt (lu lw lr : LevelExpr) : Rules Tower.Head :=
 
 section At
 
-variable (lu lw lr : LevelExpr)
+variable (lu lw lr : LevelExpr Nat)
 
 /-- Identity elimination is declared at `elimType (U lu) (U lw)`. -/
 theorem objectRulesAt_j :

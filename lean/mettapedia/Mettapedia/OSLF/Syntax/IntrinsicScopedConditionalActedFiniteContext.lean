@@ -348,12 +348,12 @@ theorem decodeHole_exact
   rcases judgment with ⟨context, sort, source, target⟩
   let state : State A sort := ⟨context, source, target⟩
   change (Orbit.unit A (seeds R A Δ) (state := state) slot).interpret
-      A (seeds R A Δ) (freeModel R A (seeds R A Γ))
+      A (seeds R A Δ) (freeModel R A (seeds R A Γ)).toAction
       (oldArrow R A f sort) =
     embed R A Γ ⟨context, sort, source, target⟩
       (f ⟨context, sort, source, target⟩ slot)
   exact Orbit.interpret_unit (state := state) A (seeds R A Δ)
-    (freeModel R A (seeds R A Γ)) (oldArrow R A f sort) slot
+    (freeModel R A (seeds R A Γ)).toAction (oldArrow R A f sort) slot
 
 /-- The previous exact-leaf category maps into the substitution-closed
 event context category without changing its event-variable positions. -/

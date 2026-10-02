@@ -166,7 +166,7 @@ theorem Omega_not_sn {n : Nat} : ¬ SN withDestructor (Omega : Tower.Tm n) :=
 
 section Typing
 
-open Tower
+open Tower LevelTower
 
 abbrev R₀ : Rules Tower.Head := withDestructor
 
@@ -441,7 +441,7 @@ theorem liftClosed_recType {n : Nat} : (liftClosed recType : Tower.Tm n) = recTy
 
 section RecursorTyping
 
-open Tower Mettapedia.TypeTheory.UniverseLevel
+open Tower LevelTower Mettapedia.TypeTheory.UniverseLevel
 
 abbrev R₁ : Rules Tower.Head := withRecursor recType
 
@@ -467,7 +467,7 @@ theorem prop_typed₁ {n : Nat} {Γ : Tower.Ctx n} : Typed R₁ Γ (codes.propT 
 theorem propArrow_typed₁ {n : Nat} {Γ : Tower.Ctx n} :
     Typed R₁ Γ (.pi codes.propT codes.propT : Tower.Tm n) U0 :=
   .sub (.piForm prop_typed₁ (IsUniverse.sort _) prop_typed₁ (IsUniverse.sort _) (Join.sorts _ _))
-    (.subUniv fun v => by simp [LevelExpr.eval, Tower.zero])
+    (.subUniv fun v => by simp [LevelExpr.eval, LevelTower.zero])
 
 theorem predicate_typed₁ {n : Nat} {Γ : Tower.Ctx n} :
     Typed R₁ Γ (.pi codes.propT U0 : Tower.Tm n)

@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Dynamics.StoreReachability
+import Mettapedia.Logic.LP.FiniteDependencyClosure
 import Mathlib.Data.Finset.Union
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
@@ -16,10 +17,16 @@ Transfer and fork change owner labels without changing the reachable graph.
 The storage bound concerns the transitive footprint and byte weights: a bound
 on the number of roots alone cannot bound memory, as the chain example shows.
 
-This is a sequential finite-heap contract.  It does not implement an allocator,
+This is a sequential finite-heap contract. It does not implement an allocator,
 concurrent marker, foreign finalizer, or a discovery procedure for runtime roots.
-The collector uses mathematical reachability to select a finite subset; a runtime
-tracer must separately compute that subset and enumerate every strong root.
+The executable census reuses finite dependency closure and agrees with rooted
+reachability. A runtime tracer must separately realize that computation and
+enumerate every strong root.
+
+Copied residuals additionally need an injective address relocation, with
+payloads and outgoing references transported together. These conditions imply
+preservation and reflection of complete paths and aliases; owner retagging
+alone cannot certify a copied continuation.
 -/
 
 set_option autoImplicit false
@@ -141,6 +148,83 @@ noncomputable def footprint (h : Heap Address Value)
   simp only [footprint, Finset.mem_filter]
   exact ⟨And.right, fun live => ⟨live_allocated h roots live, live⟩⟩
 
+/-- Lookup-derived outgoing addresses. An absent address has no outgoing
+references; the reference-closed heap contract rules out absent descendants. -/
+def Heap.dependencies (h : Heap Address Value) (a : Address) : Finset Address :=
+  ((h.lookup a).map Cell.references).getD ∅
+
+omit [DecidableEq Address] in
+theorem Heap.dependencies_closed (h : Heap Address Value) {a : Address}
+    (allocated : a ∈ h.allocated) : h.dependencies a ⊆ h.allocated := by
+  obtain ⟨cell, found⟩ := (h.allocated_iff a).mp allocated
+  simp only [Heap.dependencies, found, Option.map_some, Option.getD_some]
+  exact h.closed a cell found
+
+/-- Executable transitive census over the already supplied finite heap. The
+ambient address type may be infinite and the reference graph may contain
+cycles. Physical runtime-root discovery remains a separate obligation. -/
+def census (h : Heap Address Value) (roots : Roots Owner Address) : Finset Address :=
+  Mettapedia.Logic.LP.FiniteDependencyClosure.within
+    h.dependencies h.allocated (rootAddresses roots)
+
+/-- Exactness of the computed census, against the independent inductive
+reachability judgment. Root validity prevents a missing root from being
+silently removed by the finite-carrier restriction. -/
+theorem mem_census_iff_live (h : Heap Address Value) (roots : Roots Owner Address)
+    (valid : ValidRoots h roots) (a : Address) :
+    a ∈ census h roots ↔ Live h roots a := by
+  have rootsAllocated : rootAddresses roots ⊆ h.allocated := by
+    intro address member
+    obtain ⟨pair, present, rfl⟩ := Finset.mem_image.mp member
+    exact valid pair present
+  constructor
+  · have included : census h roots ⊆ footprint h roots := by
+      apply Mettapedia.Logic.LP.FiniteDependencyClosure.within_least
+      · intro address member
+        exact (mem_footprint h roots address).mpr (.root ⟨rootsAllocated member, member⟩)
+      · intro address member child reference
+        have live := (mem_footprint h roots address).mp member
+        obtain ⟨cell, found⟩ := (h.allocated_iff address).mp
+          (live_allocated h roots live)
+        simp only [Heap.dependencies, found, Option.map_some, Option.getD_some] at reference
+        exact (mem_footprint h roots child).mpr (live_step h roots live found reference)
+    exact fun member => (mem_footprint h roots a).mp (included member)
+  · intro live
+    induction live with
+    | root root =>
+        exact Mettapedia.Logic.LP.FiniteDependencyClosure.roots_subset_within
+          h.dependencies h.allocated (rootAddresses roots) rootsAllocated root.2
+    | @step parent child _ edge ih =>
+        obtain ⟨cell, found, reference⟩ := edge
+        apply Mettapedia.Logic.LP.FiniteDependencyClosure.within_closed
+          h.dependencies h.allocated (rootAddresses roots)
+          (fun _ => h.dependencies_closed) ih
+        simp only [Heap.dependencies, found, Option.map_some, Option.getD_some]
+        exact reference
+
+theorem census_eq_footprint (h : Heap Address Value) (roots : Roots Owner Address)
+    (valid : ValidRoots h roots) : census h roots = footprint h roots := by
+  ext address
+  rw [mem_census_iff_live h roots valid, mem_footprint]
+
+/-- Several owners retain the union of their transitive footprints, counting
+each shared allocation address only once. -/
+theorem footprint_union [DecidableEq Owner] (h : Heap Address Value)
+    (first second : Roots Owner Address) :
+    footprint h (first ∪ second) = footprint h first ∪ footprint h second := by
+  classical
+  ext address
+  rw [Finset.mem_union, mem_footprint, mem_footprint, mem_footprint]
+  constructor
+  · intro combined
+    obtain ⟨pair, member, live⟩ := (live_iff_root h _ address).mp combined
+    rcases Finset.mem_union.mp member with left | right
+    · exact Or.inl (live_mono h (Finset.singleton_subset_iff.mpr left) live)
+    · exact Or.inr (live_mono h (Finset.singleton_subset_iff.mpr right) live)
+  · rintro (left | right)
+    · exact live_mono h Finset.subset_union_left left
+    · exact live_mono h Finset.subset_union_right right
+
 theorem footprint_mono (h : Heap Address Value) {roots more : Roots Owner Address}
     (subset : roots ⊆ more) : footprint h roots ⊆ footprint h more := by
   intro a member
@@ -260,6 +344,212 @@ theorem aliases_collect (h : Heap Address Value) (roots : Roots Owner Address)
   unfold Aliases
   rw [walk_collect h roots ha, walk_collect h roots hb]
 
+/-! ## Relocation into independent storage -/
+
+section Relocation
+
+universe uDestinationValue
+variable {DestinationAddress : Type} {DestinationValue : Type uDestinationValue}
+variable [DecidableEq DestinationAddress] [DecidableEq Owner]
+
+/-- Complete cell transport keeps reference identity separate from payload
+interpretation. Incoming aliases are retained by the injective address map. -/
+def Cell.relocate (address : Address → DestinationAddress)
+    (payload : Value → DestinationValue) (cell : Cell Address Value) :
+    Cell DestinationAddress DestinationValue :=
+  ⟨payload cell.value, cell.references.image address, cell.bytes⟩
+
+/-- A checked copy agrees at every relocated source address. Destination
+storage outside that image is allowed. Root discovery and admission of the
+host's semantic authority remain separate runtime obligations. -/
+structure Relocation (source : Heap Address Value)
+    (destination : Heap DestinationAddress DestinationValue) where
+  address : Address → DestinationAddress
+  payload : Value → DestinationValue
+  injective : Function.Injective address
+  lookup_eq : ∀ a, destination.lookup (address a) =
+    (source.lookup a).map (Cell.relocate address payload)
+
+def Relocation.roots {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address) :
+    Roots Owner DestinationAddress :=
+  roots.image fun pair => (pair.1, copy.address pair.2)
+
+theorem Relocation.rootAddresses {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address) :
+    rootAddresses (copy.roots roots) = (rootAddresses roots).image copy.address := by
+  simp only [Mettapedia.Machines.ResourceOwnership.rootAddresses, Relocation.roots,
+    Finset.image_image]
+  rfl
+
+omit [DecidableEq Address] in
+theorem Relocation.allocated_iff {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (a : Address) :
+    copy.address a ∈ destination.allocated ↔ a ∈ source.allocated := by
+  rw [destination.allocated_iff, source.allocated_iff, copy.lookup_eq]
+  cases found : source.lookup a with
+  | none => simp
+  | some cell => simp
+
+omit [DecidableEq Address] in
+theorem Relocation.valid_roots {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (valid : ValidRoots source roots) : ValidRoots destination (copy.roots roots) := by
+  intro pair member
+  obtain ⟨original, present, rfl⟩ := Finset.mem_image.mp member
+  exact (copy.allocated_iff original.2).mpr (valid original present)
+
+private theorem Relocation.root_forward {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address) (a : Address)
+    (root : (source.toStore roots).root a) :
+    (destination.toStore (copy.roots roots)).root (copy.address a) := by
+  refine ⟨(copy.allocated_iff a).mpr root.1, ?_⟩
+  rw [copy.rootAddresses]
+  exact Finset.mem_image.mpr ⟨a, root.2, rfl⟩
+
+private theorem Relocation.root_reflect {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (a : DestinationAddress) (root : (destination.toStore (copy.roots roots)).root a) :
+    ∃ original, (source.toStore roots).root original ∧ copy.address original = a := by
+  have rooted := root.2
+  rw [copy.rootAddresses] at rooted
+  obtain ⟨original, present, same⟩ := Finset.mem_image.mp rooted
+  exact ⟨original, ⟨(copy.allocated_iff original).mp (same ▸ root.1), present⟩, same⟩
+
+private theorem Relocation.edge_forward {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address) (a b : Address)
+    (edge : (source.toStore roots).pointsTo a b) :
+    (destination.toStore (copy.roots roots)).pointsTo (copy.address a) (copy.address b) := by
+  obtain ⟨cell, found, reference⟩ := edge
+  refine ⟨cell.relocate copy.address copy.payload, ?_, ?_⟩
+  · rw [copy.lookup_eq, found]
+    rfl
+  · exact Finset.mem_image.mpr ⟨b, reference, rfl⟩
+
+private theorem Relocation.edge_reflect {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (a : Address) (b : DestinationAddress)
+    (edge : (destination.toStore (copy.roots roots)).pointsTo (copy.address a) b) :
+    ∃ original, (source.toStore roots).pointsTo a original ∧ copy.address original = b := by
+  obtain ⟨cell, found, reference⟩ := edge
+  rw [copy.lookup_eq] at found
+  cases originalFound : source.lookup a with
+  | none => simp [originalFound] at found
+  | some original =>
+      have same : original.relocate copy.address copy.payload = cell :=
+        Option.some.inj (by simpa only [originalFound, Option.map_some] using found)
+      rw [← same] at reference
+      obtain ⟨child, present, equal⟩ := Finset.mem_image.mp reference
+      exact ⟨child, ⟨original, originalFound, present⟩, equal⟩
+
+/-- Every destination-live resource comes from an actual source path. No
+extra reachability is introduced by copying into a larger destination heap. -/
+theorem Relocation.live_iff {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (a : DestinationAddress) :
+    Live destination (copy.roots roots) a ↔
+      ∃ original, Live source roots original ∧ copy.address original = a := by
+  constructor
+  · exact fun live => live.reflect copy.address (copy.root_reflect roots) (copy.edge_reflect roots)
+  · rintro ⟨original, live, rfl⟩
+    exact live.map copy.address (copy.root_forward roots) (copy.edge_forward roots)
+
+theorem Relocation.footprint_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address) :
+    footprint destination (copy.roots roots) = (footprint source roots).image copy.address := by
+  ext a
+  rw [mem_footprint, copy.live_iff, Finset.mem_image]
+  simp only [mem_footprint]
+
+theorem Relocation.census_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (valid : ValidRoots source roots) :
+    census destination (copy.roots roots) = (census source roots).image copy.address := by
+  rw [census_eq_footprint _ _ (copy.valid_roots roots valid), census_eq_footprint _ _ valid,
+    copy.footprint_eq]
+
+/-- Path interpretation uses destination lookup, rather than continuing to
+borrow cells from the source heap. Ordered reference paths remain ordered. -/
+theorem Relocation.walk_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (a : Address) (path : List Address) :
+    walk destination (copy.address a) (path.map copy.address) =
+      (walk source a path).map fun pair =>
+        (copy.address pair.1, pair.2.relocate copy.address copy.payload) := by
+  induction path generalizing a with
+  | nil =>
+      simp only [List.map_nil, walk, copy.lookup_eq, Option.map_map]
+      rfl
+  | cons b rest ih =>
+      simp only [List.map_cons, walk, copy.lookup_eq]
+      cases found : source.lookup a with
+      | none => rfl
+      | some cell =>
+          simp only [Option.map_some, Option.bind_some, Cell.relocate]
+          have membership : copy.address b ∈ cell.references.image copy.address ↔
+              b ∈ cell.references := by
+            constructor
+            · intro member
+              obtain ⟨original, present, equal⟩ := Finset.mem_image.mp member
+              exact copy.injective equal ▸ present
+            · intro member
+              exact Finset.mem_image.mpr ⟨b, member, rfl⟩
+          simp only [membership]
+          by_cases present : b ∈ cell.references
+          · simp only [if_pos present]
+            exact ih b
+          · simp only [if_neg present, Option.map_none]
+
+/-- An injective copy preserves and reflects alias identity; equal payloads
+at different addresses are not silently identified. -/
+theorem Relocation.aliases_iff {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (a b : Address) (left right : List Address) :
+    Aliases destination (copy.address a) (left.map copy.address)
+      (copy.address b) (right.map copy.address) ↔ Aliases source a left b right := by
+  have pathAddress (start : Address) (path : List Address) :
+      (walk destination (copy.address start) (path.map copy.address)).map Prod.fst =
+        ((walk source start path).map Prod.fst).map copy.address := by
+    rw [copy.walk_eq]
+    simp only [Option.map_map]
+    rfl
+  unfold Aliases
+  rw [pathAddress, pathAddress]
+  constructor
+  · rintro ⟨endpoint, first, second⟩
+    obtain ⟨original, originalFirst, same⟩ := Option.map_eq_some_iff.mp first
+    obtain ⟨other, originalSecond, otherSame⟩ := Option.map_eq_some_iff.mp second
+    have equal : other = original := copy.injective (otherSame.trans same.symm)
+    exact ⟨original, originalFirst, equal ▸ originalSecond⟩
+  · rintro ⟨endpoint, first, second⟩
+    exact ⟨copy.address endpoint, by rw [first]; rfl, by rw [second]; rfl⟩
+
+/-- Collection in the destination still preserves every transferred live
+path. Its reads no longer depend on the source's physical lifetime. -/
+theorem Relocation.walk_collect_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (a : Address) (live : Live source roots a) (path : List Address) :
+    walk (collect destination (copy.roots roots)) (copy.address a) (path.map copy.address) =
+      (walk source a path).map fun pair =>
+        (copy.address pair.1, pair.2.relocate copy.address copy.payload) := by
+  rw [walk_collect destination (copy.roots roots)
+    ((copy.live_iff roots _).mpr ⟨a, live, rfl⟩)]
+  exact copy.walk_eq a path
+
+end Relocation
+
 /-! ## Owner lifecycle -/
 
 variable [DecidableEq Owner]
@@ -355,6 +645,80 @@ theorem live_fork_iff (h : Heap Address Value) (roots : Roots Owner Address)
     Live h (fork roots source destination) a ↔ Live h roots a :=
   live_congr_rootAddresses h _ _ (rootAddresses_fork roots source destination) a
 
+/-- Releasing the old owner after an exclusive transfer leaves every
+transferred root intact. The owner identities must actually differ. -/
+theorem release_transferred_source (roots : Roots Owner Address) (source destination : Owner)
+    (different : destination ≠ source) (owned : ∀ pair ∈ roots, pair.1 = source) :
+    release (transfer roots source destination) source = transfer roots source destination := by
+  ext pair
+  rw [show release (transfer roots source destination) source =
+    cancel (transfer roots source destination) {source} from rfl, mem_cancel]
+  constructor
+  · exact And.left
+  · intro member
+    refine ⟨member, ?_⟩
+    obtain ⟨original, present, rfl⟩ := Finset.mem_image.mp member
+    simp only [retag, owned original present, if_true, Finset.mem_singleton]
+    exact different
+
+section RelocationLifecycle
+
+universe uDestinationValue
+variable {DestinationAddress : Type} {DestinationValue : Type uDestinationValue}
+variable [DecidableEq DestinationAddress]
+
+/-- Logical owner transfer commutes with address relocation. A copied
+snapshot uses its destination roots, rather than borrowing source ownership. -/
+theorem Relocation.roots_transfer {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (originalOwner nextOwner : Owner) :
+    copy.roots (transfer roots originalOwner nextOwner) =
+      transfer (copy.roots roots) originalOwner nextOwner := by
+  simp only [Relocation.roots, transfer, Finset.image_image]
+  rfl
+
+omit [DecidableEq Address] in
+/-- Cancellation retains the same owner boundary after an address copy.
+It cannot remove a destination root merely because its address has changed. -/
+theorem Relocation.roots_cancel {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (dead : Finset Owner) :
+    copy.roots (cancel roots dead) = cancel (copy.roots roots) dead := by
+  ext pair
+  change pair ∈ (cancel roots dead).image (fun original =>
+    (original.1, copy.address original.2)) ↔ pair ∈ cancel (copy.roots roots) dead
+  rw [mem_cancel]
+  constructor
+  · intro member
+    obtain ⟨original, present, rfl⟩ := Finset.mem_image.mp member
+    have retained := (mem_cancel roots dead original).mp present
+    exact ⟨Finset.mem_image.mpr ⟨original, retained.1, rfl⟩, retained.2⟩
+  · rintro ⟨member, surviving⟩
+    obtain ⟨original, present, rfl⟩ := Finset.mem_image.mp member
+    exact Finset.mem_image.mpr ⟨original,
+      (mem_cancel roots dead original).mpr ⟨present, surviving⟩, rfl⟩
+
+/-- Retiring the source owner cannot remove a copied live path from the
+independently rooted destination. -/
+theorem Relocation.live_after_source_retirement {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (originalOwner nextOwner : Owner) (different : nextOwner ≠ originalOwner)
+    (owned : ∀ pair ∈ roots, pair.1 = originalOwner)
+    (a : Address) (live : Live source roots a) :
+    Live destination (release (transfer (copy.roots roots) originalOwner nextOwner)
+      originalOwner) (copy.address a) := by
+  rw [release_transferred_source _ originalOwner nextOwner different]
+  · exact (live_transfer_iff destination (copy.roots roots) originalOwner nextOwner _).mpr
+      ((copy.live_iff roots _).mpr ⟨a, live, rfl⟩)
+  · intro pair member
+    obtain ⟨original, present, rfl⟩ := Finset.mem_image.mp member
+    exact owned original present
+
+end RelocationLifecycle
+
 /-! ## Transitive memory bounds -/
 
 def cellBytes (h : Heap Address Value) (a : Address) : Nat :=
@@ -366,6 +730,69 @@ def allocatedBytes (h : Heap Address Value) : Nat :=
 noncomputable def retainedBytes (h : Heap Address Value)
     (roots : Roots Owner Address) : Nat :=
   ∑ a ∈ footprint h roots, cellBytes h a
+
+/-- Executable byte account of the deduplicated transitive census. The chosen
+cell byte profile can count live payload or retained allocation capacity; the
+two profiles must be named separately by a runtime adapter. -/
+def censusBytes (h : Heap Address Value) (roots : Roots Owner Address) : Nat :=
+  ∑ a ∈ census h roots, cellBytes h a
+
+omit [DecidableEq Owner] in
+theorem censusBytes_eq_retainedBytes (h : Heap Address Value)
+    (roots : Roots Owner Address) (valid : ValidRoots h roots) :
+    censusBytes h roots = retainedBytes h roots := by
+  rw [censusBytes, census_eq_footprint h roots valid]
+  rfl
+
+section RelocationStorage
+
+universe uDestinationValue
+variable {DestinationAddress : Type} {DestinationValue : Type uDestinationValue}
+variable [DecidableEq DestinationAddress]
+
+omit [DecidableEq Address] [DecidableEq Owner] in
+theorem Relocation.cellBytes_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (a : Address) :
+    cellBytes destination (copy.address a) = cellBytes source a := by
+  unfold cellBytes
+  rw [copy.lookup_eq]
+  cases source.lookup a <;> rfl
+
+/-- Injectivity and transported byte weights count every retained resource
+once, including shared cycles. Copying work itself has a separate charge. -/
+theorem Relocation.retainedBytes_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address) :
+    retainedBytes destination (copy.roots roots) = retainedBytes source roots := by
+  unfold retainedBytes
+  rw [copy.footprint_eq, Finset.sum_image]
+  · apply Finset.sum_congr rfl
+    intro a _
+    exact copy.cellBytes_eq a
+  · intro a _ b _ same
+    exact copy.injective same
+
+theorem Relocation.censusBytes_eq {source : Heap Address Value}
+    {destination : Heap DestinationAddress DestinationValue}
+    (copy : Relocation source destination) (roots : Roots Owner Address)
+    (valid : ValidRoots source roots) :
+    censusBytes destination (copy.roots roots) = censusBytes source roots := by
+  rw [censusBytes_eq_retainedBytes _ _ (copy.valid_roots roots valid),
+    censusBytes_eq_retainedBytes _ _ valid, copy.retainedBytes_eq]
+
+end RelocationStorage
+
+/-- Adding per-owner byte accounts overcounts exactly their shared footprint.
+The combined account retains sharing rather than charging each reference. -/
+theorem retainedBytes_union_overlap (h : Heap Address Value)
+    (first second : Roots Owner Address) :
+    retainedBytes h first + retainedBytes h second =
+      retainedBytes h (first ∪ second) +
+        ∑ a ∈ footprint h first ∩ footprint h second, cellBytes h a := by
+  classical
+  rw [retainedBytes, retainedBytes, retainedBytes, footprint_union]
+  exact Finset.sum_union_inter.symm
 
 omit [DecidableEq Owner] in
 theorem retainedBytes_mono (h : Heap Address Value) {roots more : Roots Owner Address}
@@ -445,6 +872,18 @@ def cyclicHeap : Heap (Fin 3) Nat where
 
 def siblingRoots : Roots Nat (Fin 3) := {(0, 0), (1, 2)}
 
+/-- Cycles terminate in the existing finite closure algorithm; shared
+descendants count once in the complete census. -/
+theorem cyclic_census_and_bytes :
+    census cyclicHeap siblingRoots = {0, 1, 2} ∧
+      censusBytes cyclicHeap siblingRoots = 48 := by decide
+
+/-- Two owners of the same cycle do not create two physical copies. -/
+theorem per_owner_census_overcounts_shared_cycle :
+    censusBytes cyclicHeap ({(0, 1)} : Roots Nat (Fin 3)) +
+      censusBytes cyclicHeap ({(1, 2)} : Roots Nat (Fin 3)) = 64 ∧
+      censusBytes cyclicHeap ({(0, 1), (1, 2)} : Roots Nat (Fin 3)) = 32 := by decide
+
 theorem two_paths_share_cyclic_endpoint : Aliases cyclicHeap 0 [1, 2] 2 [] := by
   refine ⟨2, ?_, ?_⟩ <;> decide
 
@@ -452,6 +891,82 @@ theorem failed_paths_are_not_aliases : ¬ Aliases cyclicHeap 0 [0] 2 [0] := by
   rintro ⟨endpoint, left, _⟩
   have failed : walk cyclicHeap 0 [0] = none := by decide
   simp [failed] at left
+
+/-- A real copy shifts every address, changes the payload representation
+and leaves an unrelated self-referencing destination allocation at zero. -/
+def relocationAddress (a : Fin 3) : Fin 4 := ⟨a.val + 1, by omega⟩
+
+def copiedCell (a : Fin 4) : Cell (Fin 4) Nat where
+  value := a.val + 109
+  references := if a = 0 then {0} else if a = 1 then {2} else if a = 2 then {3} else {2}
+  bytes := 16
+
+def copiedHeap : Heap (Fin 4) Nat where
+  lookup a := some (copiedCell a)
+  allocated := Finset.univ
+  allocated_iff a := by simp
+  closed _ _ _ b _ := Finset.mem_univ b
+
+def shiftedCopy : Relocation cyclicHeap copiedHeap where
+  address := relocationAddress
+  payload n := n + 100
+  injective := by
+    intro a b same
+    apply Fin.ext
+    have values := congrArg Fin.val same
+    change a.val + 1 = b.val + 1 at values
+    omega
+  lookup_eq := by decide +kernel
+
+/-- The extra destination cell is outside the copied footprint, while
+every cyclic descendant is retained and counted once. -/
+theorem relocated_census_and_bytes :
+    shiftedCopy.roots siblingRoots = {(0, 1), (1, 3)} ∧
+      census copiedHeap (shiftedCopy.roots siblingRoots) = {1, 2, 3} ∧
+      censusBytes copiedHeap (shiftedCopy.roots siblingRoots) = 48 := by decide
+
+theorem relocated_paths_keep_shared_endpoint :
+    Aliases copiedHeap (relocationAddress 0) ([1, 2].map relocationAddress)
+      (relocationAddress 2) (([] : List (Fin 3)).map relocationAddress) :=
+  (shiftedCopy.aliases_iff 0 2 [1, 2] []).mpr two_paths_share_cyclic_endpoint
+
+/-- Copying values and retagging roots while keeping the old references
+produces a different graph, despite equal payloads at every new address. -/
+def unrelocatedReferencesCell (a : Fin 4) : Cell (Fin 4) Nat :=
+  { copiedCell a with references :=
+    if a = 0 then {0} else if a = 1 then {1} else if a = 2 then {2} else {1} }
+
+def unrelocatedReferencesHeap : Heap (Fin 4) Nat where
+  lookup a := some (unrelocatedReferencesCell a)
+  allocated := Finset.univ
+  allocated_iff a := by simp
+  closed _ _ _ b _ := Finset.mem_univ b
+
+theorem copied_payloads_do_not_certify_references :
+    (unrelocatedReferencesHeap.lookup 1).map Cell.value = (copiedHeap.lookup 1).map Cell.value ∧
+      walk unrelocatedReferencesHeap 1 [2, 3] = none ∧
+      walk copiedHeap 1 [2, 3] = some (3, copiedCell 3) := by decide
+
+theorem copied_cycle_survives_source_retirement :
+    Live copiedHeap
+      (release (transfer (shiftedCopy.roots ({(0, 0)} : Roots Nat (Fin 3))) 0 7) 0)
+      (relocationAddress 1) := by
+  have owned : ∀ pair ∈ ({(0, 0)} : Roots Nat (Fin 3)), pair.1 = 0 := by
+    intro pair member
+    exact congrArg Prod.fst (Finset.mem_singleton.mp member)
+  exact shiftedCopy.live_after_source_retirement ({(0, 0)} : Roots Nat (Fin 3)) 0 7
+    (by decide) owned 1
+    (live_step cyclicHeap ({(0, 0)} : Roots Nat (Fin 3)) (a := 0) (b := 1)
+      (live_of_root cyclicHeap ({(0, 0)} : Roots Nat (Fin 3))
+        (owner := 0) (a := 0) (by decide) (by decide)) rfl (by decide))
+
+/-- Reusing the source owner identity does not authorize retiring it: the
+release then removes the transferred roots too. -/
+theorem retiring_same_owner_loses_copy :
+    release (transfer ({(0, 1)} : Roots Nat (Fin 4)) 0 0) 0 = ∅ ∧
+      ¬ Live copiedHeap (release (transfer ({(0, 1)} : Roots Nat (Fin 4)) 0 0) 0) 2 := by
+  have cleared : release (transfer ({(0, 1)} : Roots Nat (Fin 4)) 0 0) 0 = ∅ := by decide
+  exact ⟨cleared, cleared ▸ not_live_empty copiedHeap 2⟩
 
 /-- The second branch protects a descendant shared with the released branch. -/
 theorem shared_cycle_survives_sibling_release :
@@ -527,6 +1042,15 @@ def chainHeap (last : Nat) : Heap Nat Nat where
     next _ => cases found
 
 def oneRoot : Roots Unit Nat := {((), 0)}
+
+/-- Filtering an invalid root can return an empty census. Such a result
+cannot satisfy the validity premise of the exact accounting theorem. -/
+theorem missing_root_does_not_qualify :
+    census (chainHeap 0) ({((), 7)} : Roots Unit Nat) = ∅ ∧
+      ¬ ValidRoots (chainHeap 0) ({((), 7)} : Roots Unit Nat) := by
+  constructor
+  · decide
+  · simp [ValidRoots, chainHeap]
 
 theorem chain_reachable (last a : Nat) (within : a ≤ last) :
     Live (chainHeap last) oneRoot a := by

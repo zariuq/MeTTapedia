@@ -16,7 +16,7 @@ interaction cut and is not an execution policy.
 
 namespace Mettapedia.GSLT.LanguageDef
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -257,7 +257,7 @@ theorem mapTermParam_costClosure_costBaseParameter
       costBaseParameter source.costInteractionCut
         (costBaseConstructor source.cut rule)
         (costBaseParameter source.cut rule (parameter, index), index) := by
-  unfold costBaseParameter
+  simp only [costBaseParameter_def]
   rw [source.isSelectedContinuation_costBase rule membership index]
   split
   · change
@@ -335,10 +335,9 @@ theorem costClosureConstructorName_environment (source : CIGSLT) :
         source.costInteractionCut.environment.constructor.1.label := by
   simp [costClosureConstructorName]
 
-/-- A retained program or environment introduction maps to its exact base
-copy at the next Cost layer. -/
-@[simp]
-theorem mapGrammarRule_costClosure_costBaseConstructor_of_principal
+/-- A retained principal introduction has the typing profile of its next
+base copy.  The declaration's algebra metadata is not part of a typing map. -/
+theorem costClosure_costBaseConstructor_typingProfile_of_principal
     (source : CIGSLT) (rule : GrammarRule)
     (membership :
       rule ∈ source.theory.presentation.presentation.language.terms)
@@ -347,10 +346,12 @@ theorem mapGrammarRule_costClosure_costBaseConstructor_of_principal
           source.costInteractionCut.program.constructor.1 ∨
         costBaseConstructor source.cut rule =
           source.costInteractionCut.environment.constructor.1) :
-    mapGrammarRule source.costClosureSymbols
-        (costBaseConstructor source.cut rule) =
-      costBaseConstructor source.costInteractionCut
-        (costBaseConstructor source.cut rule) := by
+    let current := costBaseConstructor source.cut rule
+    let target := costBaseConstructor source.costInteractionCut current
+    target.label = source.costClosureSymbols.constructor current.label ∧
+      target.category = source.costClosureSymbols.sort current.category ∧
+      target.params = current.params.map
+        (mapTermParam source.costClosureSymbols) := by
   have parametersMap := source.map_costClosure_costBaseConstructor_params
     rule membership
   have labelMap :
@@ -363,69 +364,43 @@ theorem mapGrammarRule_costClosure_costBaseConstructor_of_principal
       exact source.costClosureConstructorName_program
     · rw [environment]
       exact source.costClosureConstructorName_environment
-  cases rule with
-  | mk label category parameters syntaxPattern evalPolicy algebra =>
-      change
-        ({ label := source.costClosureConstructorName
-              (costBaseConstructor source.cut
-                ⟨label, category, parameters, syntaxPattern,
-                  evalPolicy, algebra⟩).label
-           category := source.costClosureSortName
-              (costBaseConstructor source.cut
-                ⟨label, category, parameters, syntaxPattern,
-                  evalPolicy, algebra⟩).category
-           params := (costBaseConstructor source.cut
-              ⟨label, category, parameters, syntaxPattern,
-                evalPolicy, algebra⟩).params.map
-                (mapTermParam source.costClosureSymbols)
-           syntaxPattern := (costBaseConstructor source.cut
-              ⟨label, category, parameters, syntaxPattern,
-                evalPolicy, algebra⟩).syntaxPattern
-           evalPolicy? := (costBaseConstructor source.cut
-              ⟨label, category, parameters, syntaxPattern,
-                evalPolicy, algebra⟩).evalPolicy?
-           algebra? := (costBaseConstructor source.cut
-              ⟨label, category, parameters, syntaxPattern,
-                evalPolicy, algebra⟩).algebra? } : GrammarRule) =
-          costBaseConstructor source.costInteractionCut
-            (costBaseConstructor source.cut
-              ⟨label, category, parameters, syntaxPattern,
-                evalPolicy, algebra⟩)
-      rw [labelMap, parametersMap]
-      rfl
+  refine ⟨labelMap.symm, ?_, parametersMap.symm⟩
+  rfl
 
-/-- The retained program introduction maps to its exact next-layer base
-copy. -/
-@[simp]
-theorem mapGrammarRule_costClosure_program (source : CIGSLT) :
-    mapGrammarRule source.costClosureSymbols
-        source.costInteractionCut.program.constructor.1 =
-      costBaseConstructor source.costInteractionCut
-        source.costInteractionCut.program.constructor.1 := by
+/-- The retained program introduction has its next base copy's typing
+profile. -/
+theorem costClosure_program_typingProfile (source : CIGSLT) :
+    let current := source.costInteractionCut.program.constructor.1
+    let target := costBaseConstructor source.costInteractionCut current
+    target.label = source.costClosureSymbols.constructor current.label ∧
+      target.category = source.costClosureSymbols.sort current.category ∧
+      target.params = current.params.map
+        (mapTermParam source.costClosureSymbols) := by
   have equality :
       source.costInteractionCut.program.constructor.1 =
         costBaseConstructor source.cut source.cut.program.constructor.1 :=
     congrArg Subtype.val source.costInteractionCut_program_constructor
   rw [equality]
-  exact source.mapGrammarRule_costClosure_costBaseConstructor_of_principal
+  exact source.costClosure_costBaseConstructor_typingProfile_of_principal
     source.cut.program.constructor.1 source.cut.program.constructor.2
       (Or.inl equality.symm)
 
-/-- The retained environment introduction maps to its exact next-layer base
-copy. -/
-@[simp]
-theorem mapGrammarRule_costClosure_environment (source : CIGSLT) :
-    mapGrammarRule source.costClosureSymbols
-        source.costInteractionCut.environment.constructor.1 =
-      costBaseConstructor source.costInteractionCut
-        source.costInteractionCut.environment.constructor.1 := by
+/-- The retained environment introduction has its next base copy's typing
+profile. -/
+theorem costClosure_environment_typingProfile (source : CIGSLT) :
+    let current := source.costInteractionCut.environment.constructor.1
+    let target := costBaseConstructor source.costInteractionCut current
+    target.label = source.costClosureSymbols.constructor current.label ∧
+      target.category = source.costClosureSymbols.sort current.category ∧
+      target.params = current.params.map
+        (mapTermParam source.costClosureSymbols) := by
   have equality :
       source.costInteractionCut.environment.constructor.1 =
         costBaseConstructor source.cut
           source.cut.environment.constructor.1 :=
     congrArg Subtype.val source.costInteractionCut_environment_constructor
   rw [equality]
-  exact source.mapGrammarRule_costClosure_costBaseConstructor_of_principal
+  exact source.costClosure_costBaseConstructor_typingProfile_of_principal
     source.cut.environment.constructor.1
       source.cut.environment.constructor.2 (Or.inr equality.symm)
 
@@ -455,7 +430,7 @@ theorem costCoreTerm_evalPolicy_eq_none (source : CIGSLT)
   dsimp only [costCoreLanguage] at membership
   simp only [List.mem_append] at membership
   rcases membership with generatedMembership | apparatusMembership
-  · dsimp only [ContinuationRetypingPlan.generatedLanguage] at generatedMembership
+  · rw [ContinuationRetypingPlan.generatedLanguage_terms] at generatedMembership
     simp only [List.mem_append] at generatedMembership
     rcases generatedMembership with baseMembership | wrappedMembership
     · rcases List.mem_map.mp baseMembership with
@@ -464,64 +439,48 @@ theorem costCoreTerm_evalPolicy_eq_none (source : CIGSLT)
     · rcases List.mem_map.mp wrappedMembership with
         ⟨constructor, _constructorMembership, rfl⟩
       rfl
-  · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil,
-      or_false] at apparatusMembership
-    rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality <;> subst term <;> rfl
+  · rw [costCoreConstructors_eq_typed] at apparatusMembership
+    obtain ⟨kind, _, rfl⟩ := List.mem_map.mp apparatusMembership
+    cases kind <;> rfl
 
-/-- Every non-principal declaration maps to the exact wrapped copy selected
-by the next continuation plan. -/
-theorem mapGrammarRule_costClosure_of_nonprincipal (source : CIGSLT)
+/-- A non-principal declaration has the typing profile of its hereditary
+wrapped copy.  Algebra annotations may refer to a different constructor
+fiber, so no equality of complete declarations is asserted. -/
+theorem costClosure_nonprincipal_typingProfile (source : CIGSLT)
     (constructor :
       DeclaredConstructor source.costIGSLT.presentation.presentation)
     (notProgram : constructor ≠
       source.costInteractionCut.program.constructor)
     (notEnvironment : constructor ≠
       source.costInteractionCut.environment.constructor) :
-    mapGrammarRule source.costClosureSymbols constructor.1 =
-      costWrappedConstructor (theory := source.costIGSLT) constructor.1 := by
+    let target := costWrappedConstructor (theory := source.costIGSLT)
+      constructor.1
+    target.label = source.costClosureSymbols.constructor constructor.1.label ∧
+      target.category = source.costClosureSymbols.sort constructor.1.category ∧
+      target.params = constructor.1.params.map
+        (mapTermParam source.costClosureSymbols) := by
   have labelMap := source.costClosureConstructorName_of_nonprincipalAuthored
     constructor notProgram notEnvironment
-  have syntaxPattern := costCoreTerm_syntaxPattern_eq_nil source constructor.1
-    (by exact constructor.2)
-  have evalPolicy := source.costCoreTerm_evalPolicy_eq_none constructor.1
-    (by exact constructor.2)
-  rcases constructor with ⟨⟨label, category, parameters, syntaxItems,
-    policy, algebra⟩, membership⟩
-  simp only at labelMap syntaxPattern evalPolicy
-  have parametersMap :
-      parameters.map (mapTermParam source.costClosureSymbols) =
-        parameters.map
-          (mapParameterType (costWrappedTypeExpr costWrappedSortName)) := by
-    apply List.map_congr_left
-    intro parameter _membership
-    exact source.mapTermParam_costClosureSymbols parameter
-  change
-    ({ label := source.costClosureConstructorName label
-       category := source.costClosureSortName category
-       params := parameters.map (mapTermParam source.costClosureSymbols)
-       syntaxPattern := syntaxItems
-       evalPolicy? := policy
-       algebra? := algebra } : GrammarRule) =
-      { label := costWrappedConstructorName label
-        category := if category = costWrappedSortName then
-          costWrappedSortName else costBaseSortName category
-        params := parameters.map
-          (mapParameterType (costWrappedTypeExpr costWrappedSortName))
-        syntaxPattern := []
-        evalPolicy? := none
-        algebra? := algebra }
-  rw [labelMap, parametersMap, syntaxPattern, evalPolicy]
-  rfl
+  refine ⟨labelMap.symm, ?_, ?_⟩
+  · rfl
+  · change constructor.1.params.map
+        (mapParameterType (costWrappedTypeExpr costWrappedSortName)) =
+      constructor.1.params.map (mapTermParam source.costClosureSymbols)
+    exact List.map_congr_left fun parameter _ =>
+      (source.mapTermParam_costClosureSymbols parameter).symm
 
-/-- Every complete Cost constructor maps into the exact next continuation
-signature: the two retained introductions use base copies, and every other
-constructor uses the hereditary wrapped copy. -/
-theorem mapGrammarRule_costClosure_mem_generated
+/-- Every complete Cost declaration has an actual declaration in the next
+continuation signature with the required typing profile.  The two principal
+introductions use base copies; all other declarations use wrapped copies. -/
+theorem costClosure_typingProfile_mem_generated
     (source : CIGSLT) (rule : GrammarRule)
     (membership : rule ∈ source.costWholeLanguage.terms) :
-    mapGrammarRule source.costClosureSymbols rule ∈
-      source.costContinuationRetyping.generatedLanguage.terms := by
+    ∃ target, target ∈
+        source.costContinuationRetyping.generatedLanguage.terms ∧
+      target.label = source.costClosureSymbols.constructor rule.label ∧
+      target.category = source.costClosureSymbols.sort rule.category ∧
+      target.params = rule.params.map
+        (mapTermParam source.costClosureSymbols) := by
   let authored :
       DeclaredConstructor source.costIGSLT.presentation.presentation :=
     ⟨rule, membership⟩
@@ -530,43 +489,43 @@ theorem mapGrammarRule_costClosure_mem_generated
   · have ruleEquality := congrArg Subtype.val program
     change rule =
       source.costInteractionCut.program.constructor.1 at ruleEquality
-    rw [ruleEquality, source.mapGrammarRule_costClosure_program]
-    exact source.costContinuationRetyping.costBaseConstructor_mem_generated
-      source.costInteractionCut.program.constructor.1
-        source.costInteractionCut.program.constructor.2
+    rw [ruleEquality]
+    exact ⟨_,
+      source.costContinuationRetyping.costBaseConstructor_mem_generated
+        source.costInteractionCut.program.constructor.1
+          source.costInteractionCut.program.constructor.2,
+      source.costClosure_program_typingProfile⟩
   · by_cases environment :
         authored = source.costInteractionCut.environment.constructor
     · have ruleEquality := congrArg Subtype.val environment
       change rule =
         source.costInteractionCut.environment.constructor.1 at ruleEquality
-      rw [ruleEquality, source.mapGrammarRule_costClosure_environment]
-      exact source.costContinuationRetyping.costBaseConstructor_mem_generated
-        source.costInteractionCut.environment.constructor.1
-          source.costInteractionCut.environment.constructor.2
-    · change mapGrammarRule source.costClosureSymbols authored.1 ∈
-        source.costContinuationRetyping.generatedLanguage.terms
-      rw [source.mapGrammarRule_costClosure_of_nonprincipal authored
-        program environment]
-      exact
+      rw [ruleEquality]
+      exact ⟨_,
+        source.costContinuationRetyping.costBaseConstructor_mem_generated
+          source.costInteractionCut.environment.constructor.1
+            source.costInteractionCut.environment.constructor.2,
+        source.costClosure_environment_typingProfile⟩
+    · exact ⟨_,
         source.costContinuationRetyping.costWrappedConstructor_mem_generated
           authored
             ((source.costContinuationRetyping.mem_wrappedConstructors_iff
-              authored).2 ⟨program, environment⟩)
+              authored).2 ⟨program, environment⟩),
+        source.costClosure_nonprincipal_typingProfile authored
+          program environment⟩
 
-/-- Repeated Cost has a single declaration-derived typing map from the
-complete current language into the exact signature used to validate the next
-layer.  This map is reusable by redex, contractum, and reflective retyping
-proofs. -/
+/-- Repeated Cost has a declaration-derived typing map into the next layer.
+It transports sorts and constructor parameter profiles, which suffice for
+redex, contractum and reflective retyping.  Equational transport is a
+separate contract. -/
 def costClosureTyping (source : CIGSLT) :
     TypingMorphism source.costWholePresentation
       source.costContinuationRetyping.generatedPresentation where
   symbols := source.costClosureSymbols
   mapsTypes declaration membership :=
     source.mapTypeDecl_costClosure_mem_generated declaration membership
-  mapsTerms rule membership := by
-    refine ⟨mapGrammarRule source.costClosureSymbols rule,
-      source.mapGrammarRule_costClosure_mem_generated rule membership,
-      ?_, ?_, ?_⟩ <;> rfl
+  mapsTerms rule membership :=
+    source.costClosure_typingProfile_mem_generated rule membership
 
 /-- On every authored constructor, the finite wrapped-label choice used by
 the next contractum translation is exactly the closure constructor action.
@@ -646,66 +605,64 @@ mutual
     | bvar lookup => rfl
     | fvar lookup => rfl
     | @constructor bound rule arguments membership notBare argumentsTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum, mapPattern]
-        rw [mapContractumList_eq_mapPattern_of_arguments argumentsTyped]
+        simp only [ContinuationRetypingPlan.mapContractum_apply, mapPattern]
+        rw [map_mapContractum_eq_mapPattern_of_arguments argumentsTyped]
         rw [source.costClosureConstructorChoice rule membership]
         simp only [costClosureSymbols, mapPatternList_eq_map]
     | lambda bodyTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum, mapPattern]
+        simp only [ContinuationRetypingPlan.mapContractum_lambda, mapPattern]
         rw [mapContractum_eq_mapPattern_of_hasType bodyTyped]
     | multiLambda bodyTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum, mapPattern]
+        simp only [ContinuationRetypingPlan.mapContractum_multiLambda, mapPattern]
         rw [mapContractum_eq_mapPattern_of_hasType bodyTyped]
     | subst bodyTyped replacementTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum, mapPattern]
+        simp only [ContinuationRetypingPlan.mapContractum_subst, mapPattern]
         rw [mapContractum_eq_mapPattern_of_hasType bodyTyped,
           mapContractum_eq_mapPattern_of_hasType replacementTyped]
     | collection elementsTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum, mapPattern]
-        rw [mapContractumList_eq_mapPattern_of_elements elementsTyped]
+        simp only [ContinuationRetypingPlan.mapContractum_collection, mapPattern]
+        rw [map_mapContractum_eq_mapPattern_of_elements elementsTyped]
         simp only [mapPatternList_eq_map]
     | collectionConstructor membership shape elementsTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum, mapPattern]
-        rw [mapContractumList_eq_mapPattern_of_elements elementsTyped]
+        simp only [ContinuationRetypingPlan.mapContractum_apply, mapPattern]
+        rw [map_mapContractum_eq_mapPattern_of_elements elementsTyped]
         simp only [mapPatternList_eq_map]
 
   /-- Ordered-argument companion to
   `mapContractum_eq_mapPattern_of_hasType`. -/
-  theorem mapContractumList_eq_mapPattern_of_arguments
+  theorem map_mapContractum_eq_mapPattern_of_arguments
       {source : CIGSLT}
       {free : FreeTypeContext} {bound : List TypeExpr}
       {arguments : List Pattern} {parameters : List TermParam}
       (typed :
         ArgumentsHaveTypes source.costWholeLanguage free bound
           arguments parameters) :
-      source.costContinuationRetyping.mapContractumList arguments =
+      arguments.map source.costContinuationRetyping.mapContractum =
         arguments.map (mapPattern source.costClosureSymbols) := by
     cases typed with
     | nil => rfl
     | cons representation parameterType argumentTyped argumentsTyped =>
-        simp only [ContinuationRetypingPlan.mapContractumList,
-          List.map_cons]
+        simp only [List.map_cons]
         rw [mapContractum_eq_mapPattern_of_hasType argumentTyped,
-          mapContractumList_eq_mapPattern_of_arguments argumentsTyped]
+          map_mapContractum_eq_mapPattern_of_arguments argumentsTyped]
 
   /-- Collection-element companion to
   `mapContractum_eq_mapPattern_of_hasType`. -/
-  theorem mapContractumList_eq_mapPattern_of_elements
+  theorem map_mapContractum_eq_mapPattern_of_elements
       {source : CIGSLT}
       {free : FreeTypeContext} {bound : List TypeExpr}
       {elements : List Pattern} {elementType : TypeExpr}
       (typed :
         ElementsHaveType source.costWholeLanguage free bound
           elements elementType) :
-      source.costContinuationRetyping.mapContractumList elements =
+      elements.map source.costContinuationRetyping.mapContractum =
         elements.map (mapPattern source.costClosureSymbols) := by
     cases typed with
     | nil => rfl
     | cons elementTyped elementsTyped =>
-        simp only [ContinuationRetypingPlan.mapContractumList,
-          List.map_cons]
+        simp only [List.map_cons]
         rw [mapContractum_eq_mapPattern_of_hasType elementTyped,
-          mapContractumList_eq_mapPattern_of_elements elementsTyped]
+          map_mapContractum_eq_mapPattern_of_elements elementsTyped]
 end
 
 /-- On a transported source metavariable, closure-mapping the current
@@ -734,7 +691,7 @@ theorem costClosureMappedFreeContext_source
     source.costInteractionCut_environment_continuationVariable_name]
   rw [CIGSLT.costWholeRedexTypeContext, lookupTypeContext_append,
     source.lookup_costRetypedSourceContext]
-  unfold ContinuationRetypingPlan.generatedFreeContext
+  rw [ContinuationRetypingPlan.generatedFreeContext_apply]
   generalize lookup : lookupTypeContext
     source.theory.presentation.interactionRewrite.1.typeContext name = found
   cases found with
@@ -920,7 +877,7 @@ mutual
                     (mapPattern costBaseLanguageDefSymbolMap))
                   rule.params :=
               argumentsTyped
-            dsimp only [ContinuationRetypingPlan.generatedLanguage] at membership
+            rw [ContinuationRetypingPlan.generatedLanguage_terms] at membership
             simp only [List.mem_append, List.mem_map] at membership
             rcases membership with
               ⟨sourceRule, sourceMembership, ruleEquality⟩ |
@@ -962,7 +919,7 @@ mutual
                       sourceRule sourceMembership]
                     exact targetArguments)
               simpa only [mapPattern, mapPatternList_eq_map, List.map_map,
-                Function.comp_def, costBaseConstructor,
+                Function.comp_def, costBaseConstructor_def,
                 costBaseLanguageDefSymbolMap, mapTypeExpr,
                 costClosureSymbols, costClosureSortName,
                 costBaseSortName_ne_wrapped, if_false] using target
@@ -1276,7 +1233,7 @@ private theorem costBaseConstructor_params_eq_map_of_notSelected
       simpa using rightBounds
     rw [costBaseConstructor_parameter cut rule index sourceBounds,
       List.getElem_map]
-    unfold costBaseParameter
+    simp only [costBaseParameter_def]
     rw [notSelected index]
     simp
 
@@ -1374,7 +1331,7 @@ theorem costClosureSigned_hasType (source : CIGSLT) {body : Pattern}
         exact .cons trivial rfl bodyTyped
           (.cons trivial rfl
             (costClosureSignatureVariable_hasType source) .nil))
-  simpa [rule, costBaseConstructor, costSignedConstructor] using target
+  simpa [rule, costBaseConstructor_def, costSignedConstructor] using target
 
 /-- The next Cost layer types the apparatus cell that restores the consumed
 signature to the residual token stack. -/
@@ -1413,7 +1370,7 @@ theorem costClosureTokenStackCons_hasType (source : CIGSLT) :
           (costClosureSignatureVariable_hasType source)
           (.cons trivial rfl
             (costClosureStackTailVariable_hasType source) .nil))
-  simpa [rule, costBaseConstructor, costTokenStackConsConstructor] using
+  simpa [rule, costBaseConstructor_def, costTokenStackConsConstructor] using
     target
 
 /-- The next Cost layer types a funding apparatus around a typed token
@@ -1449,7 +1406,7 @@ theorem costClosureFunding_hasType (source : CIGSLT) {stack : Pattern}
       (by
         rw [parameters]
         exact .cons trivial rfl stackTyped .nil)
-  simpa [rule, costBaseConstructor, costFundingConstructor] using target
+  simpa [rule, costBaseConstructor_def, costFundingConstructor] using target
 
 /-- The next Cost layer types the outer contact apparatus from two wrapped
 operands. -/
@@ -1493,7 +1450,7 @@ theorem costClosureContact_hasType (source : CIGSLT)
         rw [parameters]
         exact .cons trivial rfl leftTyped
           (.cons trivial rfl rightTyped .nil))
-  simpa [rule, costBaseConstructor, costContactConstructor] using target
+  simpa [rule, costBaseConstructor_def, costContactConstructor] using target
 
 /-- The generated Cost redex is well-sorted after a second Cost
 transformation.  Its prior interaction core uses the restricted base-image
@@ -1961,7 +1918,7 @@ generator invariance comes from proof-relevant endpoint alignment and compact
 chooser coherence.  Contextuality and preservation of the next wrapped
 constructor fibre remain separate whole-executor obligations because neither
 follows from the local equation law. -/
-def Cost.CompactOpenNormalizer.Laws.ofStaticKernel
+theorem Cost.CompactOpenNormalizer.Laws.ofStaticKernel
     {source : CIGSLT} (kernel : CostStaticNormalizationKernel source)
     (typed : CostTypedStaticRegionNormalizerLaws source kernel.normalize)
     (contextual : CostContextualOpenLawsFor source
@@ -2093,7 +2050,7 @@ structure Cost.ReferenceCompactOpenNormalizer.Laws (source : CIGSLT) : Prop
 
 /-- The established compact-executor object law is the specialization of the
 generic object law to `costNormalizeOpen`. -/
-def Cost.ReferenceCompactOpenNormalizer.Laws.toCompactOpenNormalizerLaws
+theorem Cost.ReferenceCompactOpenNormalizer.Laws.toCompactOpenNormalizerLaws
     {source : CIGSLT} (laws : Cost.ReferenceCompactOpenNormalizer.Laws source) :
     Cost.CompactOpenNormalizer.Laws source source.costNormalizeOpen where
   toCostOpenSectionLawsFor :=

@@ -97,21 +97,21 @@ theorem raw_assoc {Γ : Ctx sig}
     EqClosure monoidE (mulT (mulT a b) c) (mulT a (mulT b c)) := by
   simpa [monoidE, assoc, schemaMul, x, y, z, threeClose,
     instantiate, instantiateArgs, bind, bindArgs, liftSub, mulT] using
-    (EqClosure.ax (E := monoidE) (i := ⟨0, by decide⟩)
+    (EqClosure.ax_closed monoidE (i := ⟨0, by decide⟩)
       (fun i => Fin.elim0 i) (threeClose a b c))
 
 theorem raw_left_unit {Γ : Ctx sig} (a : Term sig Γ .element) :
     EqClosure monoidE (mulT unitT a) a := by
   simpa [monoidE, leftUnit, schemaMul, schemaUnit, u, oneClose,
     instantiate, instantiateArgs, bind, bindArgs, liftSub, mulT, unitT] using
-    (EqClosure.ax (E := monoidE) (i := ⟨1, by decide⟩)
+    (EqClosure.ax_closed monoidE (i := ⟨1, by decide⟩)
       (fun i => Fin.elim0 i) (oneClose a))
 
 theorem raw_right_unit {Γ : Ctx sig} (a : Term sig Γ .element) :
     EqClosure monoidE (mulT a unitT) a := by
   simpa [monoidE, rightUnit, schemaMul, schemaUnit, u, oneClose,
     instantiate, instantiateArgs, bind, bindArgs, liftSub, mulT, unitT] using
-    (EqClosure.ax (E := monoidE) (i := ⟨2, by decide⟩)
+    (EqClosure.ax_closed monoidE (i := ⟨2, by decide⟩)
       (fun i => Fin.elim0 i) (oneClose a))
 
 /-- Every sorted context has an equation-class monoid operation. -/
@@ -225,7 +225,9 @@ mutual
 theorem word_eqClosure : ∀ {Γ : Ctx sig} {sort : Srt}
     {left right : Term sig Γ sort},
     EqClosure monoidE left right → word left = word right
-  | _, _, _, _, .ax i body close => word_axiom i body close
+  | _, _, _, _, .ax i body ambient close => by
+      simp only [ContextualAssignment.instantiate_noMetas (S := sig)]
+      exact word_axiom i (fun k => Fin.elim0 k) close
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (word_eqClosure h).symm
   | _, _, _, _, .trans h h' => (word_eqClosure h).trans (word_eqClosure h')

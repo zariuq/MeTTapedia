@@ -316,7 +316,7 @@ private def reverseHead {value : Tower.Head} {target : Tower.Tm n}
     (receipt : Receipt (.head value) target) : Receipt target (.head value) := by
   cases receipt with
   | head _ => exact .head _
-  | headRel equality => exact .headRel (Tower.headEq_symmetric.symm _ _ equality)
+  | headRel equality => exact .headRel (LevelTower.headEq_symmetric.symm _ _ equality)
 
 /-- Compute a native parallel diamond from the two selected finite derivations.
 Recursion is on the common source syntax; conversion guards are never searched. -/

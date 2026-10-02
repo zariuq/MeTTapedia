@@ -65,20 +65,20 @@ variable (v : Nat → Nat)
 /-- **Every root step of the package at every level is validated by the model**:
 identity elimination's linear rule at its typed instances, at
 `elimType (U lu) (U lw)`, and every other step semantically. -/
-theorem vmodel_root_at (lu lw lr : LevelExpr) {n : Nat} {l r : Tower.Tm n}
+theorem vmodel_root_at (lu lw lr : LevelExpr Nat) {n : Nat} {l r : Tower.Tm n}
     (step : (objectRulesAt lu lw lr).computation.step l r) :
-    ModelS.RootSemanticS (vmodel v) l r ∨ ModelS.TypedRootS (objectRulesAt lu lw lr) (vmodel v) l r := by
+    ModelSN.RootSemanticS (vmodel v) l r ∨ ModelSN.TypedRootS (objectRulesAt lu lw lr) (vmodel v) l r := by
   rcases step with step | step
   · exact vstage_root v (allowed := fun _ => true)
-      (fun _ => ⟨.sort lu, .sort lw, Tower.IsUniverse.sort lw, objectRulesAt_j lu lw lr⟩) step
-  · exact .inl (ModelS.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inr step))
+      (fun _ => ⟨.sort lu, .sort lw, LevelTower.IsUniverse.sort lw, objectRulesAt_j lu lw lr⟩) step
+  · exact .inl (ModelSN.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inr step))
 
 /-- **Every declared constant of the package at every level is valid**: identity
 elimination by transport, the recursor by large elimination, and every other
 constant as in the object package. -/
-theorem vmodel_valid_at (lu lw lr : LevelExpr) {name : DeclName} {type : Tower.Tm 0}
+theorem vmodel_valid_at (lu lw lr : LevelExpr Nat) {name : DeclName} {type : Tower.Tm 0}
     (declared : (objectRulesAt lu lw lr).constantType name = some type) :
-    ModelS.ValidTmS (vmodel v) .nil (.const name) type := by
+    ModelSN.ValidTmS (vmodel v) .nil (.const name) type := by
   by_cases hj : name = jName
   · subst hj
     rw [objectRulesAt_j] at declared
@@ -94,8 +94,8 @@ theorem vmodel_valid_at (lu lw lr : LevelExpr) {name : DeclName} {type : Tower.T
 
 /-- **The object package at every level is sound for the transport value
 model.** -/
-theorem vmodel_soundS_at (lu lw lr : LevelExpr) :
-    ModelS.TypedSoundS (objectRulesAt lu lw lr) (vmodel v) where
+theorem vmodel_soundS_at (lu lw lr : LevelExpr Nat) :
+    ModelSN.TypedSoundS (objectRulesAt lu lw lr) (vmodel v) where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
@@ -113,19 +113,19 @@ open CodeModel in
 /-- **Strong normalization of the object package at every level.** Every term
 typed in a formed context of the package is strongly normalizing under the
 package's own reduction, and so is its type. -/
-theorem objectRulesAt_sn (lu lw lr : LevelExpr) {n : Nat} {Γ : Tower.Ctx n} {t A : Tower.Tm n}
+theorem objectRulesAt_sn (lu lw lr : LevelExpr Nat) {n : Nat} {Γ : Tower.Ctx n} {t A : Tower.Tm n}
     (formed : CtxFormed (objectRulesAt lu lw lr) Γ) (typed : Typed (objectRulesAt lu lw lr) Γ t A) :
     SN (objectRulesAt lu lw lr) t ∧ SN (objectRulesAt lu lw lr) A :=
-  ModelS.Typed.sn (vmodel_soundS_at (fun _ => 0) lu lw lr) formed typed
+  ModelSN.Typed.sn (vmodel_soundS_at (fun _ => 0) lu lw lr) formed typed
 
 open CodeModel in
 /-- Both sides of a derivable equality of the object package at every level, in
 a formed context, are strongly normalizing, and so is their type. -/
-theorem objectRulesAt_equal_sn (lu lw lr : LevelExpr) {n : Nat} {Γ : Tower.Ctx n}
+theorem objectRulesAt_equal_sn (lu lw lr : LevelExpr Nat) {n : Nat} {Γ : Tower.Ctx n}
     {a b A : Tower.Tm n} (formed : CtxFormed (objectRulesAt lu lw lr) Γ)
     (equal : Derivable (objectRulesAt lu lw lr) (.equality Γ a b A)) :
     SN (objectRulesAt lu lw lr) a ∧ SN (objectRulesAt lu lw lr) b ∧ SN (objectRulesAt lu lw lr) A :=
-  ModelS.Equal.sn (vmodel_soundS_at (fun _ => 0) lu lw lr) formed equal
+  ModelSN.Equal.sn (vmodel_soundS_at (fun _ => 0) lu lw lr) formed equal
 
 open CodeModel in
 /-- **Strong normalization of the language's declaration**: the package at the
@@ -149,7 +149,7 @@ private theorem ctxFormed_mono {R' R : Rules Tower.Head} (sub : RulesSub R' R) :
 /-- A control package whose declarations are the package's is contained in
 it. -/
 theorem controlRules_sub_objectRulesAt {types : DeclName → Option (Tower.Tm 0)}
-    {names : List DeclName} {lu lw lr : LevelExpr}
+    {names : List DeclName} {lu lw lr : LevelExpr Nat}
     (sameTypes : ∀ {name : DeclName} {type : Tower.Tm 0}, types name = some type →
       (objectRulesAt lu lw lr).constantType name = some type) :
     RulesSub (controlRules types names) (objectRulesAt lu lw lr) where
@@ -163,7 +163,7 @@ theorem controlRules_sub_objectRulesAt {types : DeclName → Option (Tower.Tm 0)
 
 /-- The declaration of identity elimination at carrier `U1` and motive `U0` is
 the package's at carrier level one. -/
-theorem carrierTypes_at (lr : LevelExpr) {name : DeclName} {type : Tower.Tm 0}
+theorem carrierTypes_at (lr : LevelExpr Nat) {name : DeclName} {type : Tower.Tm 0}
     (declared : carrierTypes name = some type) :
     (objectRulesAt (.succ Tower.zero) Tower.zero lr).constantType name = some type := by
   unfold carrierTypes at declared
@@ -194,7 +194,7 @@ theorem largeTypes_at {name : DeclName} {type : Tower.Tm 0} (declared : largeTyp
 
 section Transport
 
-variable (lr : LevelExpr)
+variable (lr : LevelExpr Nat)
 
 /-- **The transport client is typed in the package at carrier level one**:
 `J U0 X (λ Z _. Z) d Y p : Y` in the context `X Y : U0, p : Id U0 X Y, d : X`. -/
@@ -262,10 +262,10 @@ theorem largeMotiveJ_sn_at :
 
 section Lower
 
-variable (lu lw lr : LevelExpr) {n : Nat} {Γ : Tower.Ctx n}
+variable (lu lw lr : LevelExpr Nat) {n : Nat} {Γ : Tower.Ctx n}
 
 /-- A dependent function type between types of one universe is a type of it. -/
-private theorem piAt {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr}
+private theorem piAt {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {level : LevelExpr Nat}
     (hA : Typed (objectRulesAt lu lw lr) Γ A (sortTm level))
     (hB : Typed (objectRulesAt lu lw lr) (.snoc Γ A) B (sortTm level)) :
     Typed (objectRulesAt lu lw lr) Γ (.pi A B) (sortTm level) :=
@@ -341,16 +341,16 @@ theorem numTransportJ_untypable : ¬ Typed objectRules .nil numTransportJ numT :
   intro typed
   have laws := vmodel_valueLaws (fun _ => 0)
   let empty : Sub Tower.Head 0 0 := fun i => Fin.elim0 i
-  rcases ModelS.Typed.spineFacts (vmodel_soundS_objectRules fun _ => 0) typed trivial rfl
+  rcases ModelSN.Typed.spineFacts (vmodel_soundS_objectRules fun _ => 0) typed trivial rfl
       objectRules_declared_j (ξ := Consistency.World.closed) (σ := empty) (σ' := empty)
       (ς := empty) trivial with ok | total
   · -- the first argument, `U0`, would be a value of the lowest universe
     obtain ⟨A, B, red, ⟨P, den, val, -⟩, -⟩ := ok
     rw [TelescopeAbstraction.liftClosed_zero, Package.jType_eq] at red
     cases ValueSide.whRed_of_whnf (pi_whnf laws.shape _ _) red
-    rw [ModelS.DenS.sort_inv (vmodel_laws fun _ => 0) (Tower.IsUniverse.sort _) den] at val
-    obtain ⟨Q, interp, -, -⟩ := ModelS.universeAt.den val
-    exact lt_irrefl _ (ValueSide.InterpAt.univ_inv laws interp .refl (Tower.IsUniverse.sort _)).1
+    rw [ModelSN.DenS.sort_inv (vmodel_laws fun _ => 0) (LevelTower.IsUniverse.sort _) den] at val
+    obtain ⟨Q, interp, -, -⟩ := ModelSN.universeAt.den val
+    exact lt_irrefl _ (ValueSide.InterpAt.univ_inv laws interp .refl (LevelTower.IsUniverse.sort _)).1
   · -- the numbers would relate `0` to `1`
     have related := total.total_rel (ValueSide.DenS.facts laws) (ValueSide.DenS.num laws _)
       (.const zeroN) (.app (.const sucN) (.const zeroN))

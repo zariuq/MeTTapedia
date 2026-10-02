@@ -144,7 +144,7 @@ theorem conversion_iff (left right : Tower.Tm n) :
   qualification.conversion_iff left right
 
 theorem pi_boundary : PiConversionBoundary rules :=
-  qualification.piConversionBoundary Tower.headEq_symmetric
+  qualification.piConversionBoundary LevelTower.headEq_symmetric
 
 theorem universes : UniverseRegularity rules where
   head_target := towerUniverseRegularity.head_target
@@ -158,7 +158,7 @@ theorem beta_preserves {Γ : Tower.Ctx n} {body : Tower.Tm (n + 1)}
     {argument displayed : Tower.Tm n}
     (judgment : Judgment rules Γ (.app (.lam body) argument) displayed) :
     Judgment rules Γ (inst0 argument body) displayed :=
-  qualification.betaPi Tower.headEq_symmetric universes judgment
+  qualification.betaPi LevelTower.headEq_symmetric universes judgment
 
 private theorem base_typed {Γ : Tower.Ctx n} {term type : Tower.Tm n}
     (typing : Typing Tower.rules Γ term type) : Typing rules Γ term type := by
@@ -177,8 +177,8 @@ theorem alias_conversion :
 theorem alias_formed (Γ : Tower.Ctx n) :
     Typing rules Γ (.const secondAliasName) (sortTm Tower.zero) := by
   have known : rules.constantType secondAliasName = some (sortTm Tower.zero) := by decide
-  exact .const known (.headType (Tower.HeadTyping.sort Tower.zero))
-    (Tower.IsUniverse.sort _)
+  exact .const known (.headType (LevelTower.HeadTyping.sort Tower.zero))
+    (LevelTower.IsUniverse.sort _)
 
 theorem value_at_alias (Γ : Tower.Ctx n) :
     Typing rules Γ (.const valueName) (.const secondAliasName) :=
@@ -264,7 +264,7 @@ theorem alias_not_pi (domain : Tower.Tm n) (codomain : Tower.Tm (n + 1)) :
 for any proposed constant bodies. -/
 theorem collapse_has_no_qualification :
     ¬ Nonempty (Qualification FormationSensitive.Examples.ConversionCollapse.rules) :=
-  no_qualification_of_pi_head Tower.headEq_symmetric
+  no_qualification_of_pi_head LevelTower.headEq_symmetric
     (Relation.EqvGen.symm _ _
       (FormationSensitive.Examples.ConversionCollapse.ground_converts_endomorphism (n := 0)))
 
@@ -293,7 +293,7 @@ theorem ordered_qualifier_rejects_loop :
 
 theorem loop_typed : Judgment rules (.nil : Tower.Ctx 0) (.const name) ground := by
   have known : rules.constantType name = some ground := by decide
-  exact ⟨.nil, .const known (.headType Tower.HeadTyping.legacyGround) (.sort _)⟩
+  exact ⟨.nil, .const known (.headType LevelTower.HeadTyping.legacyGround) (.sort _)⟩
 
 theorem loop_step :
     Step rules.headEq (.const name : Tower.Tm 0) (.const name) rules.computation := by

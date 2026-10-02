@@ -29,7 +29,7 @@ namespace Declaration.LevelInstance
 
 open RussellTarski
 
-variable {theta : Nat → LevelExpr} {signature : Signature Tower.Head} {n m : Nat}
+variable {theta : Nat → LevelExpr Nat} {signature : Signature Tower.Head} {n m : Nat}
 
 theorem refinedTyping (instantiation : LevelInstance signature theta)
     {context : Tower.Ctx n} {term type : Tower.Tm n}

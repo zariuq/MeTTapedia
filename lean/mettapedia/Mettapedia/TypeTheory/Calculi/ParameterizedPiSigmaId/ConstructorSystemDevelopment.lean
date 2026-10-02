@@ -1,5 +1,6 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.AlgebraicParallelSubstitution
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.SigmaConversionBoundary
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.WeakHead
 
 /-!
 # Confluence of definitions by constructor patterns
@@ -2187,6 +2188,145 @@ theorem identity_not_head {n : Nat} {carrier left right : Tm Head n} {head : Hea
   cases secondShape
 
 end ConstructorPresentation
+
+/-! ## A constant that does not occur -/
+
+/-- Whether the constant `c` occurs in `t`. -/
+def mentionsConst (c : DeclName) : {n : Nat} → Tm Head n → Bool
+  | _, .var _ => false
+  | _, .const name => name == c
+  | _, .head _ => false
+  | _, .pi domain codomain => mentionsConst c domain || mentionsConst c codomain
+  | _, .sigma domain codomain => mentionsConst c domain || mentionsConst c codomain
+  | _, .id carrier left right =>
+      mentionsConst c carrier || mentionsConst c left || mentionsConst c right
+  | _, .lam body => mentionsConst c body
+  | _, .app function argument => mentionsConst c function || mentionsConst c argument
+  | _, .pair first second => mentionsConst c first || mentionsConst c second
+  | _, .fst term => mentionsConst c term
+  | _, .snd term => mentionsConst c term
+  | _, .refl term => mentionsConst c term
+
+/-- A pattern remains a pattern when one constant that does not occur in it
+becomes defined. -/
+theorem Pattern.of_absent {defined : DeclName → Prop} {c : DeclName} {m : Nat} {flag : Bool}
+    {term : Tm Head m} (pattern : Pattern defined flag term)
+    (absent : mentionsConst c term = false) :
+    Pattern (fun name => defined name ∨ name = c) flag term := by
+  induction pattern with
+  | var index => exact .var index
+  | const constructor =>
+      exact .const fun isDefined => isDefined.elim constructor
+        (by simpa only [mentionsConst, beq_eq_false_iff_ne] using absent)
+  | app _ _ functionIH argumentIH =>
+      simp only [mentionsConst, Bool.or_eq_false_iff] at absent
+      exact .app (functionIH absent.1) (argumentIH absent.2)
+  | refl _ ih => exact .refl (ih absent)
+
+/-- A pattern for one defined-name predicate is a pattern for any predicate
+with the same defined names. -/
+theorem Pattern.congr {defined defined' : DeclName → Prop}
+    (same : ∀ name, defined name ↔ defined' name) {m : Nat} {flag : Bool} {term : Tm Head m}
+    (pattern : Pattern defined flag term) : Pattern defined' flag term :=
+  match pattern with
+  | .var index => .var index
+  | .const constructor => .const fun h => constructor ((same _).mpr h)
+  | .app function argument =>
+      .app (Pattern.congr same function) (Pattern.congr same argument)
+  | .refl inner => .refl (Pattern.congr same inner)
+
+theorem defined_or_cons (defined : DeclName → Prop) (c : DeclName) (cs : List DeclName)
+    (name : DeclName) :
+    ((defined name ∨ name = c) ∨ name ∈ cs) ↔ (defined name ∨ name ∈ c :: cs) :=
+  Iff.intro
+    (fun h => h.elim
+      (fun h => h.elim Or.inl fun same => Or.inr (List.mem_cons.mpr (Or.inl same)))
+      fun mem => Or.inr (List.mem_cons.mpr (Or.inr mem)))
+    (fun h => h.elim (fun h => Or.inl (Or.inl h)) fun mem =>
+      (List.mem_cons.mp mem).elim (fun same => Or.inl (Or.inr same)) Or.inr)
+
+/-- A pattern remains a pattern when every constant of a list, none of which
+occurs in the pattern, becomes defined. -/
+theorem Pattern.of_list {defined : DeclName → Prop} {m : Nat} {flag : Bool} {term : Tm Head m}
+    (pattern : Pattern defined flag term) :
+    ∀ (names : List DeclName), (∀ c ∈ names, mentionsConst c term = false) →
+      Pattern (fun name => defined name ∨ name ∈ names) flag term
+  | [], _ =>
+      Pattern.congr (fun _ =>
+        ⟨fun h => Or.inl h, fun h => h.elim id (fun mem => nomatch mem)⟩) pattern
+  | c :: cs, absent =>
+      Pattern.congr (fun name => defined_or_cons defined c cs name)
+        (Pattern.of_list (Pattern.of_absent pattern (absent c List.mem_cons_self)) cs
+          (fun c' mem => absent c' (List.mem_cons_of_mem c mem)))
+
+/-- A left side remains a left side when one constant that does not occur in
+it becomes defined. -/
+theorem LeftSide.of_absent {defined : DeclName → Prop} {c : DeclName} {m : Nat}
+    {term : Tm Head m} {name : DeclName} {count : Nat}
+    (side : LeftSide defined term name count) (absent : mentionsConst c term = false) :
+    LeftSide (fun name => defined name ∨ name = c) term name count := by
+  induction side with
+  | const name => exact .const name
+  | app _ argument ih =>
+      simp only [mentionsConst, Bool.or_eq_false_iff] at absent
+      exact .app (ih absent.1) (Pattern.of_absent argument absent.2)
+
+/-- A left side for one defined-name predicate is a left side for any
+predicate with the same defined names. -/
+theorem LeftSide.congr {defined defined' : DeclName → Prop}
+    (same : ∀ name, defined name ↔ defined' name) {m : Nat} {term : Tm Head m}
+    {name : DeclName} {count : Nat} (side : LeftSide defined term name count) :
+    LeftSide defined' term name count :=
+  match side with
+  | .const name => .const name
+  | .app function argument =>
+      .app (LeftSide.congr same function) (Pattern.congr same argument)
+
+/-- A left side remains a left side when every constant of a list, none of
+which occurs in it, becomes defined. -/
+theorem LeftSide.of_list {defined : DeclName → Prop} {m : Nat} {term : Tm Head m}
+    {name : DeclName} {count : Nat} (side : LeftSide defined term name count) :
+    ∀ (names : List DeclName), (∀ c ∈ names, mentionsConst c term = false) →
+      LeftSide (fun name => defined name ∨ name ∈ names) term name count
+  | [], _ =>
+      LeftSide.congr (fun _ =>
+        ⟨fun h => Or.inl h, fun h => h.elim id (fun mem => nomatch mem)⟩) side
+  | c :: cs, absent =>
+      LeftSide.congr (fun name => defined_or_cons defined c cs name)
+        (LeftSide.of_list (LeftSide.of_absent side (absent c List.mem_cons_self)) cs
+          (fun c' mem => absent c' (List.mem_cons_of_mem c mem)))
+
+open TypedEquality.Normalization (appSpine appSpine_concat)
+
+/-- The head of a constant spine, and the number of arguments. -/
+theorem spineHead_appSpine_const {n : Nat} (c : DeclName) (args : List (Tm Head n)) :
+    spineHead (appSpine (.const c) args) = some (c, args.length) := by
+  induction args using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton args _ ih =>
+      simp only [appSpine_concat, spineHead, ih, Option.map_some, List.length_append,
+        List.length_singleton]
+
+/-- Root steps of a constructor presentation are deterministic: a common
+source is a common instance of two left sides, and the equations determine
+the contract. -/
+theorem root_deterministic {rules : Rules Head} (equations : ConstructorPresentation rules)
+    {n : Nat} {t u u' : Tm Head n} (step : rules.computation.step t u)
+    (step' : rules.computation.step t u') : u = u' := by
+  obtain ⟨_, _, right, σ, rule, source, target⟩ := equations.presentation.cover step
+  obtain ⟨_, _, right', σ', rule', source', target'⟩ := equations.presentation.cover step'
+  have joined := equations.system.determined
+    ((equations.same _ _).mp rule) ((equations.same _ _).mp rule') σ σ'
+    (source.trans source'.symm) (fun term => term)
+  exact target.symm.trans (joined.trans target')
+
+/-- A root step of a constructor presentation is headed by a defined constant. -/
+theorem computation_head {rules : Rules Head} (equations : ConstructorPresentation rules)
+    {n : Nat} {t u : Tm Head n} (step : rules.computation.step t u) :
+    ∃ name count, equations.system.defined name ∧ spineHead t = some (name, count) := by
+  obtain ⟨_, left, right, σ, rule, rfl, _⟩ := equations.presentation.cover step
+  obtain ⟨name, defined, _, side⟩ := equations.system.left ((equations.same left right).mp rule)
+  exact ⟨name, _, defined, spineHead_subst_leftSide side σ⟩
 
 /-! ## Axiom audit -/
 

@@ -55,7 +55,7 @@ theorem rules_iter_typed {n : Nat} {Γ : Tower.Ctx n} :
     Typed rules Γ (.const iterName) (liftClosed iterType) := by
   have declared : rules.constantType iterName = some iterType := by decide
   exact .const declared (Derivable.mono (stage_sub_rules _)
-    (iterType_typed (names := [numN]) (List.mem_cons_self ..))) (Tower.IsUniverse.sort _)
+    (iterType_typed (names := [numN]) (List.mem_cons_self ..))) (LevelTower.IsUniverse.sort _)
 
 /-- The telescope of the iterator: the count, the carrier, the family, the step,
 the value and its evidence. -/
@@ -324,7 +324,7 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
   obtain ⟨validT, partsT, _⟩ := Derivable.validTN (numStage_typedSoundN v ext)
     (iterType_typed (names := [numN]) (List.mem_cons_self ..)) trivial
   have validType : ValidTyN (nmodel v T) .nil iterType :=
-    validT.validTy (Tower.IsUniverse.sort _) (ext.isUniverse_sort _)
+    validT.validTy (LevelTower.IsUniverse.sort _) (ext.isUniverse_sort _)
   obtain ⟨ctx, validResult, _⟩ := ValidTyN.close_parts iterTele (C := iterResult) validType partsT
   have typedIter : Typed T.R .nil (.const iterName) iterType := by
     have h := ext.typed (rules_iter_typed (Γ := .nil))

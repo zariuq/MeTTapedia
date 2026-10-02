@@ -132,36 +132,37 @@ theorem outputCountArgs_bind_positive : ∀ {Γ Δ : Ctx sig} (sigma : Sub sig �
 end
 
 /-- ACU equations preserve the number of output occurrences in every scope. -/
-theorem outputCount_axiom : ∀ (i : Fin rhoE.length) {Γ : Ctx sig}
-    (body : (k : Fin metas.length) → Term sig (metas.get k).1 (metas.get k).2)
+theorem outputCount_axiom : ∀ (i : Fin rhoE.length) {Θ Γ : Ctx sig}
+    (body : ContextualAssignment sig metas Θ)
+    (ambient : Sub sig Θ Γ)
     (close : Sub sig (rhoE.get i).ctx Γ),
-    outputCount (bind close (instantiate body (rhoE.get i).lhs)) =
-      outputCount (bind close (instantiate body (rhoE.get i).rhs))
-  | ⟨0, _⟩, _, body, close => by
-      show outputCount (bind close (instantiate body commPar.lhs)) =
-        outputCount (bind close (instantiate body commPar.rhs))
-      simp only [commPar, instantiate, instantiateArgs, bind, bindArgs, liftSub,
+    outputCount (ContextualAssignment.instantiate body ambient close (rhoE.get i).lhs) =
+      outputCount (ContextualAssignment.instantiate body ambient close (rhoE.get i).rhs)
+  | ⟨0, _⟩, _, _, body, ambient, close => by
+      show outputCount (ContextualAssignment.instantiate body ambient close commPar.lhs) =
+        outputCount (ContextualAssignment.instantiate body ambient close commPar.rhs)
+      simp only [commPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs, liftSub,
         outputCount, outputCountArgs, outputHeadCount]
       omega
-  | ⟨1, _⟩, _, body, close => by
-      show outputCount (bind close (instantiate body assocPar.lhs)) =
-        outputCount (bind close (instantiate body assocPar.rhs))
-      simp only [assocPar, instantiate, instantiateArgs, bind, bindArgs, liftSub,
+  | ⟨1, _⟩, _, _, body, ambient, close => by
+      show outputCount (ContextualAssignment.instantiate body ambient close assocPar.lhs) =
+        outputCount (ContextualAssignment.instantiate body ambient close assocPar.rhs)
+      simp only [assocPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs, liftSub,
         outputCount, outputCountArgs, outputHeadCount]
       omega
-  | ⟨2, _⟩, _, body, close => by
-      show outputCount (bind close (instantiate body rightUnitPar.lhs)) =
-        outputCount (bind close (instantiate body rightUnitPar.rhs))
-      simp only [rightUnitPar, instantiate, instantiateArgs, bind, bindArgs, liftSub,
+  | ⟨2, _⟩, _, _, body, ambient, close => by
+      show outputCount (ContextualAssignment.instantiate body ambient close rightUnitPar.lhs) =
+        outputCount (ContextualAssignment.instantiate body ambient close rightUnitPar.rhs)
+      simp only [rightUnitPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs, liftSub,
         outputCount, outputCountArgs, outputHeadCount]
       omega
-  | ⟨_ + 3, h⟩, _, _, _ => by simp [rhoE] at h
+  | ⟨_ + 3, h⟩, _, _, _, _, _ => by simp [rhoE] at h
 
 mutual
 /-- The output count descends to the authored structural congruence. -/
 theorem outputCount_eqClosure : ∀ {Γ : Ctx sig} {s : Srt}
     {t u : Term sig Γ s}, EqClosure rhoE t u → outputCount t = outputCount u
-  | _, _, _, _, .ax i body close => outputCount_axiom i body close
+  | _, _, _, _, .ax i body ambient ordinary => outputCount_axiom i body ambient ordinary
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (outputCount_eqClosure h).symm
   | _, _, _, _, .trans h h' => (outputCount_eqClosure h).trans (outputCount_eqClosure h')
@@ -274,7 +275,7 @@ theorem quote_drop_equation (name : Term sig [] Srt.nm) :
       (Term.op (S := sig) (Γ := []) Op.quo
         (.cons (Term.op (S := sig) (Γ := []) Op.drp (.cons name .nil)) .nil))
       name :=
-  EqClosure.ax (E := rhoSourceE) 3 contDiscard
+  EqClosure.ax_closed (E := rhoSourceE) 3 contDiscard
     (fun _ v => match v with | .zero => name)
 
 /-- Extending the rule list retains every communication step with the full
@@ -443,31 +444,32 @@ theorem rhoACUWithDrop_not_operationally_conservative :
 
 /-- The name-sorted reflection equation also preserves output count. Thus
 adding it cannot turn a pure drop/quote source into a COMM redex. -/
-theorem outputCount_source_axiom : ∀ (i : Fin rhoSourceE.length) {Γ : Ctx sig}
-    (body : (k : Fin metas.length) → Term sig (metas.get k).1 (metas.get k).2)
+theorem outputCount_source_axiom : ∀ (i : Fin rhoSourceE.length) {Θ Γ : Ctx sig}
+    (body : ContextualAssignment sig metas Θ)
+    (ambient : Sub sig Θ Γ)
     (close : Sub sig (rhoSourceE.get i).ctx Γ),
-    outputCount (bind close (instantiate body (rhoSourceE.get i).lhs)) =
-      outputCount (bind close (instantiate body (rhoSourceE.get i).rhs))
-  | ⟨0, _⟩, _, body, close =>
-      outputCount_axiom ⟨0, by decide⟩ body close
-  | ⟨1, _⟩, _, body, close =>
-      outputCount_axiom ⟨1, by decide⟩ body close
-  | ⟨2, _⟩, _, body, close =>
-      outputCount_axiom ⟨2, by decide⟩ body close
-  | ⟨3, _⟩, _, body, close => by
-      show outputCount (bind close (instantiate body quoteDrop.lhs)) =
-        outputCount (bind close (instantiate body quoteDrop.rhs))
-      simp only [quoteDrop, instantiate, instantiateArgs, bind, bindArgs, liftSub,
+    outputCount (ContextualAssignment.instantiate body ambient close (rhoSourceE.get i).lhs) =
+      outputCount (ContextualAssignment.instantiate body ambient close (rhoSourceE.get i).rhs)
+  | ⟨0, _⟩, _, _, body, ambient, close =>
+      outputCount_axiom ⟨0, by decide⟩ body ambient close
+  | ⟨1, _⟩, _, _, body, ambient, close =>
+      outputCount_axiom ⟨1, by decide⟩ body ambient close
+  | ⟨2, _⟩, _, _, body, ambient, close =>
+      outputCount_axiom ⟨2, by decide⟩ body ambient close
+  | ⟨3, _⟩, _, _, body, ambient, close => by
+      show outputCount (ContextualAssignment.instantiate body ambient close quoteDrop.lhs) =
+        outputCount (ContextualAssignment.instantiate body ambient close quoteDrop.rhs)
+      simp only [quoteDrop, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs, liftSub,
         outputCount, outputCountArgs, outputHeadCount]
       omega
-  | ⟨_ + 4, h⟩, _, _, _ => by simp [rhoSourceE] at h
+  | ⟨_ + 4, h⟩, _, _, _, _, _ => by simp [rhoSourceE] at h
 
 mutual
 /-- Output count remains invariant under the complete Chapter 7 equations,
 including congruence through input binders. -/
 theorem outputCount_source_eqClosure : ∀ {Γ : Ctx sig} {s : Srt}
     {t u : Term sig Γ s}, EqClosure rhoSourceE t u → outputCount t = outputCount u
-  | _, _, _, _, .ax i body close => outputCount_source_axiom i body close
+  | _, _, _, _, .ax i body ambient ordinary => outputCount_source_axiom i body ambient ordinary
   | _, _, _, _, .refl _ => rfl
   | _, _, _, _, .symm h => (outputCount_source_eqClosure h).symm
   | _, _, _, _, .trans h h' =>

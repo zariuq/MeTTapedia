@@ -13,10 +13,9 @@ length `t+m` into a head of length `t` and a tail of length `m`.
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PrefixMeasure
 
-open MeasureTheory ProbabilityTheory
+open ProbabilityTheory
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.BayesianAgents
-open scoped MeasureTheory
 
 /-! ## Prefix measure `μ^π ∘ truncate t` -/
 
@@ -27,7 +26,7 @@ noncomputable def prefixMeasureWithPolicy (μ : Environment) (π : Agent) (h_sto
 instance prefixMeasureWithPolicy_isProbability (μ : Environment) (π : Agent) (h_stoch : isStochastic μ) (t : ℕ) :
     MeasureTheory.IsProbabilityMeasure (prefixMeasureWithPolicy μ π h_stoch t) := by
   classical
-  haveI : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
+  have : MeasureTheory.IsProbabilityMeasure (environmentMeasureWithPolicy μ π h_stoch) :=
     environmentMeasureWithPolicy_isProbability μ π h_stoch
   constructor
   simp [prefixMeasureWithPolicy, MeasureTheory.Measure.map_apply, truncate_measurable]

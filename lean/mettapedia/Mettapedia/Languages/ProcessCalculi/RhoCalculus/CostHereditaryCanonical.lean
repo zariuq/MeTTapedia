@@ -659,7 +659,7 @@ theorem normalizeHereditaryWithInventory_pattern
 equality of two rho hereditary static evaluations.  Both evaluators already
 factor definitionally through their selected canonical frame; this theorem
 records that factorization without exposing either boundary-table index. -/
-def normalizeHereditaryWithInventoryEvaluationBridge
+theorem normalizeHereditaryWithInventoryEvaluationBridge
     {leftColor rightColor : CostStaticColor}
     {targetFree : FreeTypeContext}
     (leftNode : CostStaticRegionNode rhoCIGSLT leftColor targetFree)
@@ -773,7 +773,7 @@ def normalizeHereditaryWithInventoryPackedBridgeOfCommonEquality
 /-- The local rho evaluator factors through a common-restoration atom cospan.
 Unlike the stronger frame bridge, this permits distinct proof-relevant atoms
 whose restored compact values coincide. -/
-def normalizeHereditaryWithInventoryRestorationEvaluationBridge
+theorem normalizeHereditaryWithInventoryRestorationEvaluationBridge
     {leftColor rightColor : CostStaticColor}
     {targetFree : FreeTypeContext}
     (leftNode : CostStaticRegionNode rhoCIGSLT leftColor targetFree)
@@ -998,7 +998,7 @@ theorem semanticCanonicalizedSourceTerm_equationSetoid
         (semanticCanonicalizedSourceTerm node environment)
         (node.reifiedSourceTerm environment) := by
   apply Relation.EqvGen.rel _ _
-  unfold CostStaticSourceTerm.generator
+  unfold ContinuationDecorationProfile.StaticSourceTerm.generator
   apply
     ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext
       .hole (declaration := rhoReflectivePresentation.toReflectivePresentationDecl)

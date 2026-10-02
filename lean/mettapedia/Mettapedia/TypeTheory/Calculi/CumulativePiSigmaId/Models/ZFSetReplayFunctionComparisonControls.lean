@@ -149,7 +149,7 @@ theorem internal_identities_differ (h : CofinalInaccessibles.{u}) : identity h 0
   have upper : traceApp (identity h 1) (universeSet h ∅ 0) = universeSet h ∅ 0 :=
     traceApp_graph_beta _ (universeSet_mem_next h ∅ 0)
   rw [lower, upper] at observed
-  have member := seed_mem_zero h (∅ : ZFSet.{u})
+  have member := seed_mem_universeSet h (∅ : ZFSet.{u}) (0 : Nat)
   rw [← observed] at member
   exact ZFSet.notMem_empty _ member
 
@@ -397,7 +397,7 @@ theorem changed_identity_typed (h : CofinalInaccessibles.{u}) :
   refine ⟨graph _ _, ZFSetDependentProducts.graph_mem_piSet ?_, rfl⟩
   intro z hz
   split
-  · exact universeSet_subset_next h ∅ 0 (seed_mem_zero h ∅)
+  · exact universeSet_subset_next h ∅ 0 (seed_mem_universeSet h ∅ (0 : Nat))
   · exact hz
 
 theorem changed_identity_agrees_below (h : CofinalInaccessibles.{u})
@@ -423,7 +423,7 @@ theorem upper_identities_differ (h : CofinalInaccessibles.{u}) :
     change traceApp (traceLam (graph _ _)) _ = _
     rw [traceApp_graph_beta _ (universeSet_mem_next h ∅ 0), if_pos rfl]
   rw [left, right] at observed
-  have member := seed_mem_zero h (∅ : ZFSet.{u})
+  have member := seed_mem_universeSet h (∅ : ZFSet.{u}) (0 : Nat)
   rw [observed] at member
   exact ZFSet.notMem_empty _ member
 

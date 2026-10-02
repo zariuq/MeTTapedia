@@ -75,7 +75,7 @@ variable (contract : Contract.{uIndex, uArtifact, uEvidence} targets)
   (input : NIKServiceInvocation.InputAdmission request)
   {claim : (targets index).Carrier}
   (accepted : (NIKServiceInvocation.invoke request).acceptedValue = some claim)
-  {level : LevelExpr}
+  {level : LevelExpr Nat}
   (typeAdmitted : Judgment assembly.rules ((registry.attachment index).context claim)
     ((registry.attachment index).nativeType claim) (sortTm level))
 

@@ -57,30 +57,36 @@ def twoRuleRow0 : Atom :=
 def twoRuleRow1 : Atom :=
   twoRulePresentation.rows[1]'(by decide)
 
-/-- Exact state after loading occurrence zero. -/
+/-- Exact state after staging occurrence zero as verifier-owned code. -/
 def afterLoad0 : List Atom :=
   [sourceCompressedRuleFinishRule, twoRuleRow0, twoRuleRow1,
     twoRulePresentation.endRow, sourceCompressedRuleLoadRule,
-    canaryOpaqueRule, canaryLoading 1]
+    compressedDispatchRuleRow canaryOpaqueRule, canaryLoading 1]
 
-/-- Exact state after loading occurrence one. -/
+/-- Exact state after staging occurrence one without activating either rule. -/
 def afterLoad1 : List Atom :=
   [sourceCompressedRuleFinishRule, twoRuleRow0, twoRuleRow1,
-    twoRulePresentation.endRow, canaryOpaqueRule,
-    sourceCompressedRuleLoadRule, secondOpaqueRule, canaryLoading 2]
+    twoRulePresentation.endRow, compressedDispatchRuleRow canaryOpaqueRule,
+    sourceCompressedRuleLoadRule, compressedDispatchRuleRow secondOpaqueRule,
+    canaryLoading 2]
 
 /-- Once no inventory row remains, scheduling the self-reloading load rule
 removes that administrative shell without changing the loaded inventory. -/
 def afterLoadExhausted : List Atom :=
   [sourceCompressedRuleFinishRule, twoRuleRow0, twoRuleRow1,
-    twoRulePresentation.endRow, canaryOpaqueRule, secondOpaqueRule,
+    twoRulePresentation.endRow, compressedDispatchRuleRow canaryOpaqueRule,
+    compressedDispatchRuleRow secondOpaqueRule,
     canaryLoading 2]
 
-/-- Exact state after the terminal cursor releases the header. -/
+/-- The terminal cursor releases the header and owner-bound dispatch request;
+the opaque inventory remains staged rather than prematurely executable. -/
 def afterFinish : List Atom :=
   [twoRuleRow0, twoRuleRow1, twoRulePresentation.endRow,
-    canaryOpaqueRule, secondOpaqueRule, sourceCompressedRuleFinishRule,
-    canaryHeaderControl]
+    compressedDispatchRuleRow canaryOpaqueRule,
+    compressedDispatchRuleRow secondOpaqueRule,
+    sourceCompressedRuleFinishRule, canaryHeaderControl,
+    .expression [.symbol "mm-reload-compressed-dispatch", canarySource,
+      canaryProofOwner]]
 
 /-- The abstract two-occurrence loader has a genuine proof-relevant path to
 its exact terminal state. -/

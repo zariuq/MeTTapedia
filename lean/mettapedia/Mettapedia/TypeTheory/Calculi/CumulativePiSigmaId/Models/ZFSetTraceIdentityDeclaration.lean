@@ -46,7 +46,8 @@ theorem declarationLevel_agrees (valuation : Nat → Nat) :
     NativeIndexedFamilies.Intrinsic.identityMotiveInnerLevel,
     NativeIndexedFamilies.Intrinsic.elementLevel,
     NativeIndexedFamilies.Intrinsic.motiveLevel,
-    Mettapedia.TypeTheory.UniverseLevel.LevelExpr.eval, declarationLevel]
+    Mettapedia.TypeTheory.UniverseLevel.LevelExpr.eval,
+    Mettapedia.TypeTheory.UniverseLevel.nat_succ, declarationLevel]
   omega
 
 theorem carrier_below (i j : Nat) : i ≤ declarationLevel i j :=

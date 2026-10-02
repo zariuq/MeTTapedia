@@ -71,7 +71,7 @@ instance : ∀ u v w, Decidable (Tower.rules.join u v w) :=
   fun u v w => inferInstanceAs (Decidable (Tower.Join u v w))
 
 instance : ∀ u v, Decidable (Tower.rules.cumulative u v) :=
-  fun u v => Tower.instDecidableCumulative u v
+  fun u v => LevelTower.instDecidableCumulative u v
 
 /-- Declaration extension inherits these same constructive primitive
 decisions; it neither reinterprets universe rules nor admits conversions. -/
@@ -89,16 +89,16 @@ instance (signature : Declaration.Signature Tower.Head) :
 
 instance (signature : Declaration.Signature Tower.Head) :
     ∀ u v, Decidable ((Declaration.extendRules Tower.rules signature).cumulative u v) :=
-  fun u v => Tower.instDecidableCumulative u v
+  fun u v => LevelTower.instDecidableCumulative u v
 
 end TowerDecisions
 
 namespace DependentPack
 
-private def zero : LevelExpr := .const 0
-private def one : LevelExpr := .succ zero
-private def pairLevel : LevelExpr := .max zero zero
-private def functionLevel : LevelExpr := .max zero pairLevel
+private def zero : LevelExpr Nat := .const 0
+private def one : LevelExpr Nat := .succ zero
+private def pairLevel : LevelExpr Nat := .max zero zero
+private def functionLevel : LevelExpr Nat := .max zero pairLevel
 
 def signature : Declaration.Signature Tower.Head :=
   Declaration.Signature.ofList

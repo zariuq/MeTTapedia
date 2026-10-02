@@ -149,7 +149,7 @@ theorem beta_match_recovers_intrinsic {Γ : Ctx sig}
       (encodeTerm (appT (lamT body) argument)) =
         [matched body argument] := by
   rw [(encode_beta_endpoints body argument).1]
-  simp [matchRuleAt, matchAt, matchArgsAt, capture?, assign, lookup,
+  simp [matchRuleAt, matchRuleWithAt, matchAtWith, matchArgsAtWith, capture?, assign, lookup,
     betaRule, betaSpec, matched, arguments?, dependencies?,
     occurrenceDeclared, sitePattern?, occurrenceAt?,
     recover_body, recover_argument]
@@ -169,7 +169,7 @@ theorem beta_reduct_from_values {Γ : Ctx sig}
       some (encodeTerm (inst body argument)) := by
   have bodyEq := supplied_body_at_rhs body
   have argumentEq := supplied_argument_at_rhs argument
-  simp [reduct?, instantiateAt?, betaRule, betaSpec,
+  simp [reduct?, instantiateAt?, instantiateWith?, betaRule, betaSpec,
     arguments?, dependencies?, occurrenceDeclared,
     sitePattern?, occurrenceAt?, bodyEq, argumentEq,
     hbody, hargument, encode_inst]
@@ -260,7 +260,7 @@ theorem authored_beta_firing_has_tree {Evidence : Type}
 theorem authored_beta_rejects_variable :
     applyRuleWithOracle (Evidence := Unit) (fun _ _ => [])
       RelationEnv.empty language 1 betaRule (.bvar 0) = [] := by
-  simp [applyRuleWithOracle, matchRuleAt, matchAt, betaRule]
+  simp [applyRuleWithOracle, matchRuleAt, matchRuleWithAt, matchAtWith, betaRule]
 
 #print axioms beta_reduct_matches_intrinsic
 #print axioms beta_match_recovers_intrinsic

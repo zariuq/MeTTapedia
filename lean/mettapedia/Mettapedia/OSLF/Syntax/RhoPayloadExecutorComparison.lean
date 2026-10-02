@@ -821,7 +821,7 @@ theorem readback_sc {Γ : Ctx sig} {s : Srt} {t u : Term sig Γ s}
     (motive_1 := fun t u _ => StructuralCongruence (readback t) (readback u))
     (motive_2 := fun as as' _ => ArgsSC as as')
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ h
-  · intro i Γ body close
+  · intro i Θ Γ body ambient close
     fin_cases i
     · exact StructuralCongruence.par_comm _ _
     · exact StructuralCongruence.par_assoc _ _ _

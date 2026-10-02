@@ -200,7 +200,8 @@ local macro "classification_row_simp" : tactic =>
       formulaOrigin, resolvedFormula, mkRule, congruence, typed, a, v,
       applyRuleUsing, matchPatternForRule_eq_syntactic, premisesUsing,
       premiseStepUsing, matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      applyBindings])
 
 theorem name_lower_eventuallyExact (lexeme : Pattern) :
     EventuallyExact
@@ -380,7 +381,8 @@ private theorem apply_inspectFormulaRule_family_exact (fuel : Nat)
   simp only [locatedFormulaInput, a] at initialMatch
   rw [initialMatch]
   simp [inspectBindings, premisesUsing, decodeFormula, annotatedFormula, a, v,
-    applyBindingsForRule, applyBindings]
+    applyBindingsForRule, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+    applyBindings]
 
 @[simp] private theorem apply_inspectFormulaRule_mismatch (fuel : Nat)
     (ruleName ruleWrapper ruleAnnotated bodyType inputWrapper inputAnnotated :

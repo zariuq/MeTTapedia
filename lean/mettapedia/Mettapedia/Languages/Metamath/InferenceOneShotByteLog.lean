@@ -92,7 +92,7 @@ def feedLogged (base : Nat) (bytes : ByteArray) (i : Nat)
     (scan : ParserState.FeedState) (state : ParserState) : FeedRun :=
   if _h : i < bytes.size then
     let c := bytes[i]
-    if isWhitespace c then
+    if state.db.config.isWhitespace c then
       match scan with
       | .ws =>
           feedLogged base bytes (i + 1) .ws
@@ -302,7 +302,9 @@ def stopWithConsumed (state : ParserState) (error : Error)
 The indices fix the input cursor, scan state, live parser state, final parser
 state, and complete chronological call list.  In token branches the raw
 `TokenCall.after` precedes the line update retained by the continuation or
-early-stop constructor.
+early-stop constructor.  A byte separates tokens when the live state's mode
+classifies it as whitespace (`ModeConfig.isWhitespace`), the test used by
+`ParserState.feed`.
 -/
 inductive FeedTrace :
     (base : Nat) → (bytes : ByteArray) → (cursor : Nat) →
@@ -324,13 +326,13 @@ inductive FeedTrace :
               (ByteSliceT.mk (oldBytes ++ bytes) start)) } : ParserState) []
   | whitespaceWs (base bytes cursor before final calls)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = true)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = true)
       (rest : FeedTrace base bytes (cursor + 1) .ws
         (before.updateLine (base + cursor) bytes[cursor]!) final calls) :
       FeedTrace base bytes cursor .ws before final calls
   | currentStop (base bytes cursor start before error previousConsumed)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = true)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = true)
       (herror :
         (afterCurrentLine base bytes start cursor before).db.error? =
           some ⟨error, previousConsumed⟩) :
@@ -340,7 +342,7 @@ inductive FeedTrace :
         [currentCall base bytes start cursor before]
   | currentContinue (base bytes cursor start before final calls)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = true)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = true)
       (herror :
         (afterCurrentLine base bytes start cursor before).db.error? = none)
       (rest : FeedTrace base bytes (cursor + 1) .ws
@@ -350,7 +352,7 @@ inductive FeedTrace :
   | carriedStop
       (base bytes cursor oldBase start oldBytes before error previousConsumed)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = true)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = true)
       (herror :
         (afterCarriedLine oldBase oldBytes start base bytes cursor before).db.error? =
           some ⟨error, previousConsumed⟩) :
@@ -362,7 +364,7 @@ inductive FeedTrace :
   | carriedContinue
       (base bytes cursor oldBase start oldBytes before final calls)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = true)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = true)
       (herror :
         (afterCarriedLine oldBase oldBytes start base bytes cursor before).db.error? =
           none)
@@ -374,13 +376,13 @@ inductive FeedTrace :
         (carriedCall oldBase oldBytes start base bytes cursor before :: calls)
   | nonWhitespaceWs (base bytes cursor before final calls)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = false)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = false)
       (rest : FeedTrace base bytes (cursor + 1) (.token (.this cursor))
         before final calls) :
       FeedTrace base bytes cursor .ws before final calls
   | nonWhitespaceToken (base bytes cursor oldToken before final calls)
       (hcursor : cursor < bytes.size)
-      (hspace : isWhitespace bytes[cursor] = false)
+      (hspace : before.db.config.isWhitespace bytes[cursor] = false)
       (rest : FeedTrace base bytes (cursor + 1) (.token oldToken)
         before final calls) :
       FeedTrace base bytes cursor (.token oldToken) before final calls
@@ -398,7 +400,7 @@ def feedLogged (base : Nat) (bytes : ByteArray) (cursor : Nat)
     (scan : ParserState.FeedState) (before : ParserState) :
     FeedRun base bytes cursor scan before :=
   if hcursor : cursor < bytes.size then
-    if hspace : isWhitespace bytes[cursor] then
+    if hspace : before.db.config.isWhitespace bytes[cursor] then
       match scan with
       | .ws =>
           let rest := feedLogged base bytes (cursor + 1) .ws
@@ -440,8 +442,8 @@ def feedLogged (base : Nat) (bytes : ByteArray) (cursor : Nat)
                 trace := .carriedContinue base bytes cursor oldBase start oldBytes
                   before rest.final rest.calls hcursor hspace herror rest.trace }
     else
-      have hspaceFalse : isWhitespace bytes[cursor] = false := by
-        cases h : isWhitespace bytes[cursor] <;> simp_all
+      have hspaceFalse : before.db.config.isWhitespace bytes[cursor] = false := by
+        cases h : before.db.config.isWhitespace bytes[cursor] <;> simp_all
       match scan with
       | .ws =>
           let rest := feedLogged base bytes (cursor + 1)

@@ -24,9 +24,9 @@ namespace TowerExamples
 
 open SyntacticContextual.TowerExamples
 
-private abbrev levelOne : LevelExpr := .succ Tower.zero
-private abbrev levelTwo : LevelExpr := .succ levelOne
-private abbrev levelThree : LevelExpr := .succ levelTwo
+private abbrev levelOne : LevelExpr Nat := .succ Tower.zero
+private abbrev levelTwo : LevelExpr Nat := .succ levelOne
+private abbrev levelThree : LevelExpr Nat := .succ levelTwo
 
 /-- The dependent constant family `U1` over one `U1` variable. -/
 def identityCodomain : TypeOver (extendContext empty universeOne) :=
@@ -102,7 +102,7 @@ theorem universeOne_ne_universeTwo : universeOne ≠ universeTwo := by
   intro equality
   have codeEquality := congrArg TypeOver.code equality
   have headEquality := Tm.head.inj codeEquality
-  have levelEquality := Tower.Head.sort.inj headEquality
+  have levelEquality := LevelTower.Head.sort.inj headEquality
   cases levelEquality
 
 /-- Negative control: judgmental conversion cannot cross distinct type

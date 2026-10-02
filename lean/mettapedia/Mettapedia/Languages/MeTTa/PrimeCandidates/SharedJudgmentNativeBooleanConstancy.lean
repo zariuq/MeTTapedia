@@ -159,7 +159,7 @@ theorem weakAt_typed (side : Bool) {context : Tower.Ctx n}
     (rightTyped : Typing rules context right boolTm) :
     Typing rules context (weakAt side right) (weakType side right) := by
   have cases : Typing rules context (weakAt side right) (inst0 right (weakType side (.var 0))) := by
-    apply cases_typed (level := zero) (by intro valuation; simp [zero, two, one, Tower.zero, LevelExpr.eval])
+    apply cases_typed (level := zero) (by intro valuation; simp [zero, two, one, LevelTower.zero, LevelExpr.eval])
       (weakType_formed side (.snoc formed (bool_typed context) (.sort zero)) (.var 0)) _ _ rightTyped
     · cases side
       · exact sameConstancy_typed false formed
@@ -280,7 +280,7 @@ theorem regionAt_typed {context : Tower.Ctx n}
     (leftTyped : Typing rules context left boolTm) :
     Typing rules context (regionAt left) (basedUniquenessType left) := by
   have result := cases_typed (level := zero)
-    (by intro valuation; simp [zero, two, one, Tower.zero, LevelExpr.eval])
+    (by intro valuation; simp [zero, two, one, LevelTower.zero, LevelExpr.eval])
     (basedUniquenessType_formed (context := .snoc context boolTm) (.var 0))
     (onFalse := basedUniqueness false) (onTrue := basedUniqueness true)
     (by simpa only [basedUniquenessType_inst, point, Bool.false_eq_true, ↓reduceIte] using basedUniqueness_typed false formed)

@@ -54,20 +54,20 @@ private theorem fin_five (n : Nat) : (5 : Fin (n + 6)) =
 /-- The executable beta/iota rules, at the chosen declaration level.  Native
 universe-head equality is intentionally absent: it is a semantic conversion
 service rather than a member of the finite computation inventory. -/
-def reduction (level : LevelExpr) (n : Nat) : Mettapedia.GSLT.GSLT :=
+def reduction (level : LevelExpr Nat) (n : Nat) : Mettapedia.GSLT.GSLT :=
   equalityGSLT (Tower.Tm n)
     (StepCore (listRulesAt level).computation (fun _ _ => False))
 
 /-- The corresponding full native relation, when semantic universe-head
 equality is required in addition to executable beta/iota computation. -/
-def fullReduction (level : LevelExpr) (n : Nat) : Mettapedia.GSLT.GSLT :=
+def fullReduction (level : LevelExpr Nat) (n : Nat) : Mettapedia.GSLT.GSLT :=
   equalityGSLT (Tower.Tm n)
     (StepCore (listRulesAt level).computation (listRulesAt level).headEq)
 
-abbrev Reduces (level : LevelExpr) (left right : Tower.Tm n) :=
+abbrev Reduces (level : LevelExpr Nat) (left right : Tower.Tm n) :=
   (reduction level n).MultiStep left right
 
-theorem Reduces.trans {level : LevelExpr} {a b c : Tower.Tm n}
+theorem Reduces.trans {level : LevelExpr Nat} {a b c : Tower.Tm n}
     (first : Reduces level a b) (second : Reduces level b c) :
     Reduces level a c := by
   refine @Mettapedia.GSLT.GSLT.MultiStep.rec (reduction level n)
@@ -75,28 +75,28 @@ theorem Reduces.trans {level : LevelExpr} {a b c : Tower.Tm n}
     (fun _ _ path => path)
     (fun {_ _ _} edge _ ih c path => .step edge (ih c path)) a b first c second
 
-theorem Reduces.appFun {level : LevelExpr} {a b : Tower.Tm n}
+theorem Reduces.appFun {level : LevelExpr Nat} {a b : Tower.Tm n}
     (path : Reduces level a b) (argument : Tower.Tm n) :
     Reduces level (.app a argument) (.app b argument) := by
   refine @Mettapedia.GSLT.GSLT.MultiStep.rec (reduction level n)
     (fun a b _ => Reduces level (.app a argument) (.app b argument))
     (fun _ => .refl _) (fun {_ _ _} edge _ ih => .step (.congAppFun edge) ih) a b path
 
-theorem Reduces.appArg {level : LevelExpr} {a b : Tower.Tm n}
+theorem Reduces.appArg {level : LevelExpr Nat} {a b : Tower.Tm n}
     (path : Reduces level a b) (function : Tower.Tm n) :
     Reduces level (.app function a) (.app function b) := by
   refine @Mettapedia.GSLT.GSLT.MultiStep.rec (reduction level n)
     (fun a b _ => Reduces level (.app function a) (.app function b))
     (fun _ => .refl _) (fun {_ _ _} edge _ ih => .step (.congAppArg edge) ih) a b path
 
-theorem Reduces.substitute {level : LevelExpr} {a b : Tower.Tm n}
+theorem Reduces.substitute {level : LevelExpr Nat} {a b : Tower.Tm n}
     (path : Reduces level a b) (sigma : Sub Tower.Head n m) :
     Reduces level (subst sigma a) (subst sigma b) := by
   refine @Mettapedia.GSLT.GSLT.MultiStep.rec (reduction level n)
     (fun a b _ => Reduces level (subst sigma a) (subst sigma b))
     (fun _ => .refl _) (fun {_ _ _} edge _ ih => .step (edge.substitute sigma) ih) a b path
 
-theorem Reduces.beta (level : LevelExpr) (body : Tower.Tm (n + 1))
+theorem Reduces.beta (level : LevelExpr Nat) (body : Tower.Tm (n + 1))
     (argument : Tower.Tm n) :
     Reduces level (.app (.lam body) argument) (inst0 argument body) :=
   .step (.betaPi body argument) (.refl _)
@@ -133,7 +133,7 @@ def mapped (source target function xs : Tower.Tm n) : Tower.Tm n :=
 def applyMap (source target function xs : Tower.Tm n) : Tower.Tm n :=
   .app (.app (.app (.app (liftClosed nativeMapTerm) source) target) function) xs
 
-theorem branch_beta (level : LevelExpr) (target function head tail result : Tower.Tm n) :
+theorem branch_beta (level : LevelExpr Nat) (target function head tail result : Tower.Tm n) :
     Reduces level (.app (.app (.app (branch target function) head) tail) result)
       (Intrinsic.consApp target (.app function head) result) := by
   unfold branch
@@ -148,7 +148,7 @@ theorem branch_beta (level : LevelExpr) (target function head tail result : Towe
     -Fin.succ_zero_eq_one', -Fin.succ_one_eq_two']
   simp [subst_rename, subst0, rename]
 
-theorem applyMap_beta (level : LevelExpr) (source target function xs : Tower.Tm n) :
+theorem applyMap_beta (level : LevelExpr Nat) (source target function xs : Tower.Tm n) :
     Reduces level (applyMap source target function xs) (mapped source target function xs) := by
   unfold applyMap nativeMapTerm liftClosed
   dsimp [rename]
@@ -178,13 +178,13 @@ theorem applyMap_beta (level : LevelExpr) (source target function xs : Tower.Tm 
   dsimp [Fin.induction, Intrinsic.elementSchemaSubstitution, consSub, Fin.cases]
   simp [Fin.induction.go, rename_comp, rename]
 
-theorem mapped_nil (level : LevelExpr) (source target function : Tower.Tm n) :
+theorem mapped_nil (level : LevelExpr Nat) (source target function : Tower.Tm n) :
     Reduces level (mapped source target function (Intrinsic.nilApp source))
       (Intrinsic.nilApp target) := by
   apply Mettapedia.GSLT.GSLT.MultiStep.step _ (.refl _)
   exact .root (.declared ⟨.nil _ _ _ _⟩)
 
-theorem mapped_cons (level : LevelExpr) (source target function head tail : Tower.Tm n) :
+theorem mapped_cons (level : LevelExpr Nat) (source target function head tail : Tower.Tm n) :
     Reduces level (mapped source target function (Intrinsic.consApp source head tail))
       (Intrinsic.consApp target (.app function head) (mapped source target function tail)) := by
   refine .step (.root (.declared ⟨.cons _ _ _ _ _ _⟩)) ?_
@@ -192,7 +192,7 @@ theorem mapped_cons (level : LevelExpr) (source target function head tail : Towe
 
 /-- Recursion follows the declared cons equation, followed by ordinary beta
 steps. The mapped head is retained as an application, not evaluated by Lean. -/
-theorem mapped_encode (level : LevelExpr) (source target function : Tower.Tm n)
+theorem mapped_encode (level : LevelExpr Nat) (source target function : Tower.Tm n)
     (xs : List (Tower.Tm n)) :
     Reduces level (mapped source target function (encode source xs))
       (encode target (xs.map (fun x => .app function x))) := by
@@ -202,14 +202,14 @@ theorem mapped_encode (level : LevelExpr) (source target function : Tower.Tm n)
       exact (mapped_cons level source target function head (encode source tail)).trans
         (ih.appArg (.app (.app (.const Intrinsic.consName) target) (.app function head)))
 
-theorem applyMap_encode (level : LevelExpr) (source target function : Tower.Tm n)
+theorem applyMap_encode (level : LevelExpr Nat) (source target function : Tower.Tm n)
     (xs : List (Tower.Tm n)) :
     Reduces level (applyMap source target function (encode source xs))
       (encode target (xs.map (fun x => .app function x))) :=
   (applyMap_beta level source target function (encode source xs)).trans
     (mapped_encode level source target function xs)
 
-theorem encode_pointwise (level : LevelExpr) (element : Tower.Tm n)
+theorem encode_pointwise (level : LevelExpr Nat) (element : Tower.Tm n)
     (f g : Tower.Tm n → Tower.Tm n) (xs : List (Tower.Tm n))
     (pointwise : ∀ x ∈ xs, Reduces level (f x) (g x)) :
     Reduces level (encode element (xs.map f)) (encode element (xs.map g)) := by
@@ -225,7 +225,7 @@ uses native beta rather than an extra map-fusion rewrite rule. -/
 def compose (f g : Tower.Tm n) : Tower.Tm n :=
   .lam (.app (rename wk f) (.app (rename wk g) (.var 0)))
 
-theorem compose_beta (level : LevelExpr) (f g x : Tower.Tm n) :
+theorem compose_beta (level : LevelExpr Nat) (f g x : Tower.Tm n) :
     Reduces level (.app (compose f g) x) (.app f (.app g x)) := by
   simpa only [compose, inst0, subst, subst_rename, subst0_succ,
     subst0_zero, wk, subst_vars] using Reduces.beta level
@@ -233,7 +233,7 @@ theorem compose_beta (level : LevelExpr) (f g x : Tower.Tm n) :
 
 /-- Both actual programs reach the same constructor observation. This is
 directed execution, not simply the symmetric closure of conversion. -/
-theorem fusion_common_output (level : LevelExpr)
+theorem fusion_common_output (level : LevelExpr Nat)
     (a b c f g : Tower.Tm n) (xs : List (Tower.Tm n)) :
     Reduces level (applyMap b c f (applyMap a b g (encode a xs)))
         (encode c (xs.map (fun x => .app f (.app g x)))) ∧
@@ -251,7 +251,7 @@ theorem fusion_common_output (level : LevelExpr)
 /-- The generated observation of finite computation is exact in both
 directions: it does not add a target not reachable by the native rules.
 This relational GSLT construction is not the separate textual rule parser. -/
-theorem finite_observation_iff (level : LevelExpr)
+theorem finite_observation_iff (level : LevelExpr Nat)
     (predicate : Tower.Tm n → Prop) (source : Tower.Tm n) :
     gsltDiamond (reduction level n).closure predicate source ↔
       ∃ target, Reduces level source target ∧ predicate target := by
@@ -264,7 +264,7 @@ theorem finite_observation_iff (level : LevelExpr)
   · rintro ⟨target, path, accepted⟩
     exact ⟨target, ⟨target, path, rfl⟩, accepted⟩
 
-theorem map_observed (level : LevelExpr) (source target function : Tower.Tm n)
+theorem map_observed (level : LevelExpr Nat) (source target function : Tower.Tm n)
     (xs : List (Tower.Tm n)) :
     gsltDiamond (reduction level n).closure
       (fun output => output = encode target (xs.map (fun x => .app function x)))
@@ -275,7 +275,7 @@ theorem map_observed (level : LevelExpr) (source target function : Tower.Tm n)
 /-- Any chosen observation of the common output can be consumed after either
 native program. This claims existential finite execution, not identical
 traces, cost, all executions, or effectful fusion. -/
-theorem fusion_observed (level : LevelExpr)
+theorem fusion_observed (level : LevelExpr Nat)
     (a b c f g : Tower.Tm n) (xs : List (Tower.Tm n))
     (predicate : Tower.Tm n → Prop)
     (accepted : predicate (encode c (xs.map (fun x => .app f (.app g x))))) :

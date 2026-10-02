@@ -275,8 +275,8 @@ def greedyPrefix (chosen : ℕ → Arm) : ℕ → Finset Arm
 
 def IsMarginalGreedyRun
     (model : PortfolioModel Generation Arm Target)
-    (generation : Generation) (chosen : ℕ → Arm) : Prop :=
-  ∀ step,
+    (generation : Generation) (chosen : ℕ → Arm) (rounds : ℕ) : Prop :=
+  ∀ step < rounds,
     IsMarginalGreedyStep model generation
       (greedyPrefix chosen step) (chosen step)
 
@@ -288,9 +288,9 @@ theorem greedyPrefix_gap_le_geometric
     (generation : Generation) (chosen : ℕ → Arm)
     (comparator : Finset Arm)
     (hbudget : 0 < model.armBudget)
-    (hrun : IsMarginalGreedyRun model generation chosen)
     (hcomparator : Feasible model comparator)
-    (rounds : ℕ) :
+    (rounds : ℕ)
+    (hrun : IsMarginalGreedyRun model generation chosen rounds) :
     (verifiedUnionCoverage model generation comparator : ℝ) -
         (verifiedUnionCoverage model generation
           (greedyPrefix chosen rounds) : ℝ) ≤
@@ -311,7 +311,9 @@ theorem greedyPrefix_gap_le_geometric
       have hstep :=
         greedyStep_gap_le_factor
           model generation (greedyPrefix chosen rounds) comparator
-          (chosen rounds) hbudget (hrun rounds) hcomparator
+          (chosen rounds) hbudget (hrun rounds (Nat.lt_succ_self _)) hcomparator
+      have hprefix : IsMarginalGreedyRun model generation chosen rounds :=
+        fun step before => hrun step (Nat.lt_trans before (Nat.lt_succ_self _))
       calc
         (verifiedUnionCoverage model generation comparator : ℝ) -
               (verifiedUnionCoverage model generation
@@ -324,7 +326,7 @@ theorem greedyPrefix_gap_le_geometric
         _ ≤ factor *
               (factor ^ rounds *
                 (verifiedUnionCoverage model generation comparator : ℝ)) :=
-          mul_le_mul_of_nonneg_left ih hfactor
+          mul_le_mul_of_nonneg_left (ih hprefix) hfactor
         _ = factor ^ (rounds + 1) *
               (verifiedUnionCoverage model generation comparator : ℝ) := by
           rw [pow_succ]
@@ -338,16 +340,16 @@ theorem greedyPrefix_coverage_ge_finiteFactor
     (generation : Generation) (chosen : ℕ → Arm)
     (comparator : Finset Arm)
     (hbudget : 0 < model.armBudget)
-    (hrun : IsMarginalGreedyRun model generation chosen)
     (hcomparator : Feasible model comparator)
-    (rounds : ℕ) :
+    (rounds : ℕ)
+    (hrun : IsMarginalGreedyRun model generation chosen rounds) :
     (1 - ((((model.armBudget : ℝ) - 1) / model.armBudget) ^ rounds)) *
         (verifiedUnionCoverage model generation comparator : ℝ) ≤
       (verifiedUnionCoverage model generation
         (greedyPrefix chosen rounds) : ℝ) := by
   have hgap :=
     greedyPrefix_gap_le_geometric
-      model generation chosen comparator hbudget hrun hcomparator rounds
+      model generation chosen comparator hbudget hcomparator rounds hrun
   linarith
 
 end ExactCoverage

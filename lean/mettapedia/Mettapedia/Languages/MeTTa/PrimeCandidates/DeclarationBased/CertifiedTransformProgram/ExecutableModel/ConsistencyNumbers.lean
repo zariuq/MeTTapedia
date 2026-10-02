@@ -45,9 +45,9 @@ open Package (numRecName U0 numT numRecType numRecApp numRecTelescope)
 namespace CodeModel
 
 /-- Every universe of the tower is a universe of the model. -/
-private theorem sort_isUniverse (v : Nat → Nat) (u : LevelExpr) :
+private theorem sort_isUniverse (v : Nat → Nat) (u : LevelExpr Nat) :
     (model v).rules.isUniverse (.sort u) :=
-  Tower.IsUniverse.sort u
+  LevelTower.IsUniverse.sort u
 
 /-- The numbers relate, at every level and world, the terms with one numeral. -/
 private theorem interp_num (v : Nat → Nat) (l : Nat) {n : Nat} (ξ : World (model v).reading n) :

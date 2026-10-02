@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.Syntax.SecondOrderEquationUniversal
+import Mettapedia.OSLF.Syntax.SecondOrderContextCategory
 import Mettapedia.OSLF.Syntax.SemanticSchemaNaturality
 import Mettapedia.OSLF.Syntax.SignatureMorphismMetas
 

@@ -29,14 +29,14 @@ theorem TypedCostRegionBoundaryTable.entries_map
     (table : TypedCostRegionBoundaryTable source color targetFree
       occurrences) :
     (TypedCostRegionBoundaryTable.map morphism scope color table).entries =
-      table.entries.map fun boundary => boundary.map morphism scope := by
+      table.entries.map fun boundary => TypedCostRegionBoundary.map morphism scope boundary := by
   induction table with
   | nil => rfl
   | cons boundary content tail inductionHypothesis =>
-      change boundary.map morphism scope ::
+      change TypedCostRegionBoundary.map morphism scope boundary ::
           (TypedCostRegionBoundaryTable.map morphism scope color tail).entries =
-        boundary.map morphism scope ::
-          (tail.entries.map fun entry => entry.map morphism scope)
+        TypedCostRegionBoundary.map morphism scope boundary ::
+          (tail.entries.map fun entry => TypedCostRegionBoundary.map morphism scope entry)
       rw [inductionHypothesis]
 
 /-- The empty boundary table displays no occurrence. -/
@@ -44,8 +44,7 @@ theorem TypedCostRegionBoundaryTable.entries_map
 theorem TypedCostRegionBoundaryTable.entries_nil
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext} :
-    (TypedCostRegionBoundaryTable.nil (source := source) (color := color)
-      (targetFree := targetFree)).entries = [] :=
+    (.nil : TypedCostRegionBoundaryTable source color targetFree []).entries = [] :=
   rfl
 
 /-- Mapping a plan decoration maps its displayed boundary occurrences

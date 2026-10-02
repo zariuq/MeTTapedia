@@ -95,16 +95,19 @@ def sigma03_complement_pi03 {P : ℕ → Prop} (h : Sigma03Predicate P) :
     Pi03Predicate (fun n => ¬P n) := {
   approx := fun n m k j => !h.approx n m k j
   approx_computable := by
-    sorry  -- Follows from h.approx_computable and bool negation
-  converges := by sorry
+    exact bool_not_computable.comp h.approx_computable
+  converges := fun n => by
+    simp [h.converges n]
 }
 
 /-- Complement of Π⁰₃ is Σ⁰₃ -/
 def pi03_complement_sigma03 {P : ℕ → Prop} (h : Pi03Predicate P) :
     Sigma03Predicate (fun n => ¬P n) := {
   approx := fun n m k j => !h.approx n m k j
-  approx_computable := by sorry
-  converges := by sorry
+  approx_computable := by
+    exact bool_not_computable.comp h.approx_computable
+  converges := fun n => by
+    simp [h.converges n]
 }
 
 end Mettapedia.Computability.ArithmeticalHierarchy

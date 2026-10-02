@@ -129,7 +129,7 @@ theorem beta_match_recovers {Γ : Ctx sig}
     matchRuleAt betaRule betaSpec Γ.length (encode (app (lam body) argument)) =
       [matched body argument] := by
   rw [(encode_beta_endpoints body argument).1, beta_view]
-  simp [matchRuleAt, matchAt, matchArgsAt, capture?, assign, lookup,
+  simp [matchRuleAt, matchRuleWithAt, matchAtWith, matchArgsAtWith, capture?, assign, lookup,
     betaSpec, matched, arguments?, dependencies?, occurrenceDeclared,
     sitePattern?, occurrenceAt?, recover_body, recover_argument]
 
@@ -138,7 +138,7 @@ theorem beta_reduct_correct {Γ : Ctx sig}
     reduct? betaRule betaSpec Γ.length (matched body argument) =
       some (encode (inst body argument)) := by
   rw [beta_view]
-  simp [reduct?, instantiateAt?, betaSpec, matched, lookup, arguments?, dependencies?,
+  simp [reduct?, instantiateAt?, instantiateWith?, betaSpec, matched, lookup, arguments?, dependencies?,
     occurrenceDeclared, sitePattern?, occurrenceAt?, instantiate_body,
     instantiate_argument, encode_inst]
 

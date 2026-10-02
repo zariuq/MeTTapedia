@@ -8,7 +8,7 @@ import Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 through optional hypotheses of an extended frame.  This module cashes the
 promise: every canonical declarative derivation
 (`Metamath.Provable`, whose `var` rule is unrestricted) becomes a
-frame-supported derivation (`SupportedProvable`) over the active frame
+frame-supported derivation (`FrameDerivable`) over the active frame
 extended with finitely many freshly named optional floating hypotheses —
 provided only that the conclusion itself lives over the base frame.
 
@@ -17,7 +17,7 @@ finite-extension closure of the unrestricted relation.  It does **not** say
 that the manufactured names were already declared by a fixed source prefix:
 an accepted source transition additionally needs declared `$c` typecodes,
 declared `$v` names, and globally fresh `$f` labels.  Fixed-source parser and
-checker adequacy therefore remains anchored on `SupportedProvable`; the later
+checker adequacy therefore remains anchored on `FrameDerivable`; the later
 raw-source composition must supply those source-state facts rather than infer
 them from frame-local freshness.
 
@@ -40,13 +40,13 @@ transport is by identity, and the conclusion is returned *unrenamed*.
 Positive calibration: `semanticProvable_toSupported_extended` applied to
 the support boundary's counterexample.
 Negative calibration: the boundary theorem
-`not_supportedProvable_target` shows the extension is genuinely needed.
+`not_frameDerivable_target` shows the extension is genuinely needed.
 -/
 
 namespace Mettapedia.Languages.Metamath.InferenceDummyAllocation
 
 open Metamath.Spec.Equivalence
-open Metamath.Spec.Bridge (MarioVR MarioFormula MarioExpr)
+open Metamath.Spec.Bridge (DeclarativeVR DeclarativeFormula DeclarativeExpr)
 open Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding
 open Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 
@@ -62,7 +62,7 @@ theorem find?_none_of_all {α : Type _} {p : α → Bool} :
 
 /-- Any pair stored in a variable map can be recovered through `findVar`. -/
 theorem findVar_isSome_of_pair_mem {vm : VarMap}
-    {entry : Metamath.Spec.Variable × MarioVR} (hmem : entry ∈ vm) :
+    {entry : Metamath.Spec.Variable × DeclarativeVR} (hmem : entry ∈ vm) :
     ∃ w, findVar vm entry.2 = some w := by
   induction vm with
   | nil => exact nomatch hmem
@@ -84,7 +84,7 @@ theorem findVar_isSome_of_pair_mem {vm : VarMap}
 
 /-- A successful `findVR` result denotes a stored pair. -/
 theorem entry_of_findVR_some {vm : VarMap} {x : Metamath.Spec.Variable}
-    {a : MarioVR} (h : findVR vm x = some a) :
+    {a : DeclarativeVR} (h : findVR vm x = some a) :
     ∃ entry ∈ vm, entry.2 = a := by
   unfold findVR at h
   cases hfind : vm.find? (fun p => p.1 = x) with
@@ -95,7 +95,7 @@ theorem entry_of_findVR_some {vm : VarMap} {x : Metamath.Spec.Variable}
 
 /-- Variables reachable through `findVR` are reachable through `findVar`. -/
 theorem findVar_isSome_of_findVR_some {vm : VarMap}
-    {x : Metamath.Spec.Variable} {a : MarioVR}
+    {x : Metamath.Spec.Variable} {a : DeclarativeVR}
     (h : findVR vm x = some a) :
     ∃ w, findVar vm a = some w := by
   obtain ⟨entry, hmem, hsnd⟩ := entry_of_findVR_some h
@@ -105,13 +105,13 @@ theorem findVar_isSome_of_findVR_some {vm : VarMap}
 /-! ## Every variable the base context mentions is frame-declared -/
 
 /-- Variables of a converted expression are images of the variable map. -/
-theorem declared_of_mem_exprToMarioExpr {vm : VarMap}
-    {e : Metamath.Spec.Expr} {vr : MarioVR}
-    (hmem : Metamath.Sym.var vr ∈ exprToMarioExpr vm e) :
+theorem declared_of_mem_exprToDeclarativeExpr {vm : VarMap}
+    {e : Metamath.Spec.Expr} {vr : DeclarativeVR}
+    (hmem : Metamath.Sym.var vr ∈ exprToDeclarativeExpr vm e) :
     ∃ w, findVar vm vr = some w := by
-  unfold exprToMarioExpr at hmem
+  unfold exprToDeclarativeExpr at hmem
   rcases List.mem_map.mp hmem with ⟨s, hs, himg⟩
-  simp only [toMarioSym] at himg
+  simp only [toDeclarativeSym] at himg
   cases hfind : findVR vm ⟨s⟩ with
   | none => rw [hfind] at himg; exact nomatch himg
   | some a =>
@@ -125,9 +125,9 @@ theorem declared_of_mem_exprToMarioExpr {vm : VarMap}
 /-- Every variable occurring in a base-context hypothesis is declared in
 the base frame's variable map. -/
 theorem hyp_vars_declared {fr : Metamath.Spec.Frame}
-    {formula : MarioFormula}
+    {formula : DeclarativeFormula}
     (hmem : formula ∈ (frameToContext fr).hyps)
-    {vr : MarioVR} (hvr : Metamath.Sym.var vr ∈ formula.2) :
+    {vr : DeclarativeVR} (hvr : Metamath.Sym.var vr ∈ formula.2) :
     ∃ w, findVar (varMapOfFrame fr) vr = some w := by
   rw [frameToContext_hyps] at hmem
   rcases List.mem_map.mp hmem with ⟨h₀, hh₀, himg⟩
@@ -141,7 +141,7 @@ theorem hyp_vars_declared {fr : Metamath.Spec.Frame}
       have hvrW' : findVR (varMapOfFrame fr) w = some vrW := hvrW
       have hform : formula = (c.c, [Metamath.Sym.var vrW]) := by
         rw [← himg]
-        simp only [hypToMarioFormula]
+        simp only [hypToDeclarativeFormula]
         rw [hvrW']
       rw [hform] at hvr
       have : vr = vrW := by
@@ -155,19 +155,19 @@ theorem hyp_vars_declared {fr : Metamath.Spec.Frame}
         rw [← himg]
         rfl
       have : Metamath.Sym.var vr ∈
-          exprToMarioExpr (varMapOfFrame fr) e := by
+          exprToDeclarativeExpr (varMapOfFrame fr) e := by
         have h2 := congrArg Prod.snd hform
         rw [h2] at hvr
         exact hvr
-      exact declared_of_mem_exprToMarioExpr this
+      exact declared_of_mem_exprToDeclarativeExpr this
 
 /-- Both members of every base-context `$d` pair are frame-declared. -/
-theorem dj_vars_declared {fr : Metamath.Spec.Frame} {a b : MarioVR}
+theorem dj_vars_declared {fr : Metamath.Spec.Frame} {a b : DeclarativeVR}
     (hab : (frameToContext fr).dj a b) :
     (∃ w, findVar (varMapOfFrame fr) a = some w) ∧
       (∃ w, findVar (varMapOfFrame fr) b = some w) := by
   obtain ⟨-, hor⟩ := hab
-  have handle : ∀ {x y : MarioVR},
+  have handle : ∀ {x y : DeclarativeVR},
       (x, y) ∈ (fr.dv.filterMap fun p =>
         match findVR (varMapOfFrame fr) p.1,
               findVR (varMapOfFrame fr) p.2 with
@@ -199,20 +199,20 @@ variable (fr : Metamath.Spec.Frame)
 
 /-- Position of the first occurrence in a list (own definition, so its
 equations are exactly what the proofs use). -/
-def posOf : List MarioVR → MarioVR → Nat
+def posOf : List DeclarativeVR → DeclarativeVR → Nat
   | [], _ => 0
   | a :: l, v => if a = v then 0 else posOf l v + 1
 
 /-- The ghost renaming: frame-declared variables are fixed; every other
 variable is sent to the dummy slot reserved for its first occurrence in
 the support list, preserving its typecode. -/
-def ghostRename (support : List MarioVR) (base : Nat) :
-    MarioVR → MarioVR :=
+def ghostRename (support : List DeclarativeVR) (base : Nat) :
+    DeclarativeVR → DeclarativeVR :=
   fun v =>
     if (findVar (varMapOfFrame fr) v).isSome then v
     else ⟨v.type, base + posOf support v⟩
 
-theorem ghostRename_typePreserving (support : List MarioVR) (base : Nat) :
+theorem ghostRename_typePreserving (support : List DeclarativeVR) (base : Nat) :
     TypePreserving (ghostRename fr support base) := by
   intro v
   unfold ghostRename
@@ -220,22 +220,22 @@ theorem ghostRename_typePreserving (support : List MarioVR) (base : Nat) :
   · rw [if_pos h]
   · rw [if_neg h]
 
-theorem ghostRename_declared {support : List MarioVR} {base : Nat}
-    {v : MarioVR} {w : Metamath.Spec.Variable}
+theorem ghostRename_declared {support : List DeclarativeVR} {base : Nat}
+    {v : DeclarativeVR} {w : Metamath.Spec.Variable}
     (h : findVar (varMapOfFrame fr) v = some w) :
     ghostRename fr support base v = v := by
   unfold ghostRename
   rw [if_pos (by rw [h]; rfl)]
 
-theorem ghostRename_ghost {support : List MarioVR} {base : Nat}
-    {v : MarioVR} (h : findVar (varMapOfFrame fr) v = none) :
+theorem ghostRename_ghost {support : List DeclarativeVR} {base : Nat}
+    {v : DeclarativeVR} (h : findVar (varMapOfFrame fr) v = none) :
     ghostRename fr support base v = ⟨v.type, base + posOf support v⟩ := by
   simp [ghostRename, h]
 
 /-- Renaming is the identity on any expression whose variables are all
 frame-declared. -/
-theorem renameExpr_id_of_declared {support : List MarioVR} {base : Nat} :
-    ∀ {e : MarioExpr},
+theorem renameExpr_id_of_declared {support : List DeclarativeVR} {base : Nat} :
+    ∀ {e : DeclarativeExpr},
       (∀ vr, Metamath.Sym.var vr ∈ e →
         ∃ w, findVar (varMapOfFrame fr) vr = some w) →
       renameExpr (ghostRename fr support base) e = e
@@ -300,13 +300,13 @@ theorem dummyName_not_used {l : List String} {bound i : Nat}
 
 /-- One optional floating declaration per support slot: the typecode is
 the leaf's semantic typecode, the variable name is the slot's dummy. -/
-def allocate (bound : Nat) : List MarioVR → Nat →
+def allocate (bound : Nat) : List DeclarativeVR → Nat →
     List (Metamath.Spec.Constant × Metamath.Spec.Variable)
   | [], _ => []
   | v :: rest, i => (⟨v.type⟩, ⟨dummyName bound i⟩) :: allocate bound rest (i + 1)
 
 theorem allocate_length (bound : Nat) :
-    ∀ (support : List MarioVR) (i : Nat),
+    ∀ (support : List DeclarativeVR) (i : Nat),
       (allocate bound support i).length = support.length
   | [], _ => rfl
   | _ :: rest, i => by
@@ -315,7 +315,7 @@ theorem allocate_length (bound : Nat) :
 /-- Every variable name the allocation introduces is a dummy of slot
 `≥ i`. -/
 theorem allocate_names (bound : Nat) :
-    ∀ {support : List MarioVR} {i : Nat} {c : Metamath.Spec.Constant}
+    ∀ {support : List DeclarativeVR} {i : Nat} {c : Metamath.Spec.Constant}
       {v : Metamath.Spec.Variable},
       (c, v) ∈ allocate bound support i →
       ∃ j, i ≤ j ∧ v = ⟨dummyName bound j⟩
@@ -399,7 +399,7 @@ theorem optionalFresh_of_bounded {fr : Metamath.Spec.Frame}
 /-- The allocation is a valid optional-float sequence from any frame whose
 used strings respect the bound. -/
 theorem allocate_sequence (bound : Nat) :
-    ∀ (support : List MarioVR) (fr : Metamath.Spec.Frame) (i : Nat),
+    ∀ (support : List DeclarativeVR) (fr : Metamath.Spec.Frame) (i : Nat),
       NamesBounded fr bound i →
       OptionalFloatSequence fr (allocate bound support i)
   | [], fr, i, _ => .nil fr
@@ -413,7 +413,7 @@ theorem allocate_sequence (bound : Nat) :
 /-- Index window of an auxiliary variable map segment. -/
 theorem varMapOfFrameAux_index_bound :
     ∀ {l : List (Metamath.Spec.Constant × Metamath.Spec.Variable)}
-      {n : Nat} {entry : Metamath.Spec.Variable × MarioVR},
+      {n : Nat} {entry : Metamath.Spec.Variable × DeclarativeVR},
       entry ∈ varMapOfFrameAux n l →
       n ≤ entry.2.i ∧ entry.2.i < n + l.length
   | (c, v) :: rest, n, entry, h => by
@@ -428,7 +428,7 @@ theorem varMapOfFrameAux_index_bound :
 /-- The dummy VR of the first occurrence of a support leaf is found at its
 allocated slot. -/
 theorem findVar_allocate (bound : Nat) :
-    ∀ (support : List MarioVR) (v : MarioVR), v ∈ support → ∀ (n i : Nat),
+    ∀ (support : List DeclarativeVR) (v : DeclarativeVR), v ∈ support → ∀ (n i : Nat),
       findVar (varMapOfFrameAux n (allocate bound support i))
         ⟨v.type, n + posOf support v⟩ =
         some ⟨dummyName bound (i + posOf support v)⟩
@@ -449,7 +449,7 @@ theorem findVar_allocate (bound : Nat) :
         unfold findVar at ih ⊢
         unfold allocate varMapOfFrameAux
         simp only [List.find?]
-        have hne : (decide ((⟨v₀.type, n⟩ : MarioVR) =
+        have hne : (decide ((⟨v₀.type, n⟩ : DeclarativeVR) =
             ⟨v.type, n + (posOf rest v + 1)⟩)) = false := by
           refine decide_eq_false fun heq => ?_
           have := congrArg Metamath.VR.i heq
@@ -468,7 +468,7 @@ theorem frameToContext_hyps_extendFloats
     {declarations :
       List (Metamath.Spec.Constant × Metamath.Spec.Variable)}
     (hseq : OptionalFloatSequence fr declarations)
-    {g : MarioFormula} (hg : g ∈ (frameToContext fr).hyps) :
+    {g : DeclarativeFormula} (hg : g ∈ (frameToContext fr).hyps) :
     g ∈ (frameToContext (extendFloats fr declarations)).hyps := by
   induction hseq with
   | nil => exact hg
@@ -502,13 +502,13 @@ operations required to realize that semantic extension in a fixed source
 prefix. -/
 theorem semanticProvable_toSupported_extended
     {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}
-    {formula : MarioFormula}
+    {formula : DeclarativeFormula}
     (hconcl : ∀ vr, Metamath.Sym.var vr ∈ formula.2 →
       ∃ w, findVar (varMapOfFrame fr) vr = some w)
     (h : Metamath.Provable (dbToAxioms Γ) (frameToContext fr) formula) :
     ∃ declarations,
       OptionalFloatSequence fr declarations ∧
-      SupportedProvable Γ (extendFloats fr declarations) formula := by
+      FrameDerivable Γ (extendFloats fr declarations) formula := by
   classical
   obtain ⟨support, hwitness⟩ := Provable.exists_finiteSupport h
   set bound := maxLength (usedStrings fr) with hbound
@@ -525,18 +525,18 @@ theorem semanticProvable_toSupported_extended
       varMapOfFrame fr ++ varMapOfFrameAux base declarations := by
     rw [htarget, varMapOfFrame_extendFloats]
   -- Every base-declared variable keeps its lookup in the target.
-  have hstable : ∀ {v : MarioVR} {w : Metamath.Spec.Variable},
+  have hstable : ∀ {v : DeclarativeVR} {w : Metamath.Spec.Variable},
       findVar (varMapOfFrame fr) v = some w →
       findVar (varMapOfFrame target) v = some w := by
     intro v w hv
     rw [hvm]
     exact findVar_append_of_some hv
   -- Context transport: ρ is the identity on everything the context mentions.
-  have hyps_stable : ∀ {g : MarioFormula},
+  have hyps_stable : ∀ {g : DeclarativeFormula},
       g ∈ (frameToContext fr).hyps →
       g ∈ (frameToContext target).hyps :=
     fun hg => frameToContext_hyps_extendFloats hseq hg
-  have dj_stable : ∀ {a b : MarioVR},
+  have dj_stable : ∀ {a b : DeclarativeVR},
       (frameToContext fr).dj a b →
       (frameToContext target).dj a b :=
     fun hab => frameToContext_dj_le_extendFloats hseq _ _ hab
@@ -571,7 +571,7 @@ theorem semanticProvable_toSupported_extended
         rw [hvm]
         have hprefix : (varMapOfFrame fr).find?
             (fun p => p.2 =
-              (⟨v.type, base + posOf support v⟩ : MarioVR)) = none := by
+              (⟨v.type, base + posOf support v⟩ : DeclarativeVR)) = none := by
           refine find?_none_of_all fun entry hentry => ?_
           refine decide_eq_false fun heq => ?_
           have hb := varMapOfFrameAux_index_bound
@@ -596,7 +596,7 @@ theorem semanticProvable_toSupported_extended
 
 /-! ## Calibration against the support boundary -/
 
-open Mettapedia.Languages.Metamath.InferenceSupportedProvableBoundary in
+open _root_.Metamath.Spec.FixedFrameCounterexample in
 /-- Positive: the boundary counterexample's unrestricted derivation of
 `|- c` over the empty frame transports into some finite optional
 extension — the constructive general form of the hand-built repair
@@ -604,12 +604,12 @@ witness. -/
 example :
     ∃ declarations,
       OptionalFloatSequence
-        InferenceSupportedProvableBoundary.emptyFrame declarations ∧
-      SupportedProvable counterexampleDatabase
-        (extendFloats InferenceSupportedProvableBoundary.emptyFrame
+        _root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame declarations ∧
+      FrameDerivable counterexampleDatabase
+        (extendFloats _root_.Metamath.Spec.FixedFrameCounterexample.emptyFrame
           declarations)
-        InferenceSupportedProvableBoundary.target := by
-  refine semanticProvable_toSupported_extended ?_ semantic_provable_target
+        _root_.Metamath.Spec.FixedFrameCounterexample.target := by
+  refine semanticProvable_toSupported_extended ?_ declarative_provable_target
   intro vr hvr
   have heq := List.mem_singleton.mp hvr
   exact Metamath.Sym.noConfusion heq
@@ -627,11 +627,11 @@ manufactured by the source-state layer rather than by `dummyName`. -/
 each slot's typecode is the corresponding support leaf's semantic
 typecode.  Names are unconstrained. -/
 inductive TypedAlong :
-    List MarioVR →
+    List DeclarativeVR →
       List (Metamath.Spec.Constant × Metamath.Spec.Variable) → Prop
   | nil : TypedAlong [] []
-  | cons {v : MarioVR} {c : Metamath.Spec.Constant}
-      {x : Metamath.Spec.Variable} {support : List MarioVR}
+  | cons {v : DeclarativeVR} {c : Metamath.Spec.Constant}
+      {x : Metamath.Spec.Variable} {support : List DeclarativeVR}
       {decls : List (Metamath.Spec.Constant × Metamath.Spec.Variable)}
       (htype : c.c = v.type)
       (htail : TypedAlong support decls) :
@@ -640,7 +640,7 @@ inductive TypedAlong :
 /-- The manufactured allocation is positionally typed (the special
 case). -/
 theorem allocate_typedAlong (bound : Nat) :
-    ∀ (support : List MarioVR) (i : Nat),
+    ∀ (support : List DeclarativeVR) (i : Nat),
       TypedAlong support (allocate bound support i)
   | [], _ => .nil
   | _ :: rest, i => .cons rfl (allocate_typedAlong bound rest (i + 1))
@@ -648,10 +648,10 @@ theorem allocate_typedAlong (bound : Nat) :
 /-- Positional lookup: the first occurrence of a support leaf is found at
 its slot in **any** positionally typed declaration list — names are
 irrelevant to the variable-map lookup. -/
-theorem findVar_typedAlong {support : List MarioVR}
+theorem findVar_typedAlong {support : List DeclarativeVR}
     {decls : List (Metamath.Spec.Constant × Metamath.Spec.Variable)}
     (htyped : TypedAlong support decls) :
-    ∀ {v : MarioVR}, v ∈ support → ∀ (n : Nat),
+    ∀ {v : DeclarativeVR}, v ∈ support → ∀ (n : Nat),
       ∃ w, findVar (varMapOfFrameAux n decls)
         ⟨v.type, n + posOf support v⟩ = some w := by
   induction htyped with
@@ -678,7 +678,7 @@ theorem findVar_typedAlong {support : List MarioVR}
         unfold findVar at hw ⊢
         unfold varMapOfFrameAux
         simp only [List.find?]
-        have hne : (decide ((⟨c.c, n⟩ : MarioVR) =
+        have hne : (decide ((⟨c.c, n⟩ : DeclarativeVR) =
             ⟨v.type, n + (posOf support v + 1)⟩)) = false := by
           refine decide_eq_false fun heq => ?_
           have := congrArg Metamath.VR.i heq
@@ -697,7 +697,7 @@ The renaming and transport assembly is the same as above; only the
 lookup of ghost images changes, through `findVar_typedAlong`. -/
 theorem witness_toSupported_typedPlan
     {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}
-    {formula : MarioFormula} {support : List MarioVR}
+    {formula : DeclarativeFormula} {support : List DeclarativeVR}
     (hwitness : FiniteSupportWitness (Γ := Γ)
       (source := frameToContext fr) (formula := formula) support)
     (hconcl : ∀ vr, Metamath.Sym.var vr ∈ formula.2 →
@@ -705,7 +705,7 @@ theorem witness_toSupported_typedPlan
     {decls : List (Metamath.Spec.Constant × Metamath.Spec.Variable)}
     (htyped : TypedAlong support decls)
     (hseq : OptionalFloatSequence fr decls) :
-    SupportedProvable Γ (extendFloats fr decls) formula := by
+    FrameDerivable Γ (extendFloats fr decls) formula := by
   classical
   set base := (floatList fr).length with hbase
   set ρ := ghostRename fr support base with hρ
@@ -713,17 +713,17 @@ theorem witness_toSupported_typedPlan
   have hvm : varMapOfFrame target =
       varMapOfFrame fr ++ varMapOfFrameAux base decls := by
     rw [htarget, varMapOfFrame_extendFloats]
-  have hstable : ∀ {v : MarioVR} {w : Metamath.Spec.Variable},
+  have hstable : ∀ {v : DeclarativeVR} {w : Metamath.Spec.Variable},
       findVar (varMapOfFrame fr) v = some w →
       findVar (varMapOfFrame target) v = some w := by
     intro v w hv
     rw [hvm]
     exact findVar_append_of_some hv
-  have hyps_stable : ∀ {g : MarioFormula},
+  have hyps_stable : ∀ {g : DeclarativeFormula},
       g ∈ (frameToContext fr).hyps →
       g ∈ (frameToContext target).hyps :=
     fun hg => frameToContext_hyps_extendFloats hseq hg
-  have dj_stable : ∀ {a b : MarioVR},
+  have dj_stable : ∀ {a b : DeclarativeVR},
       (frameToContext fr).dj a b →
       (frameToContext target).dj a b :=
     fun hab => frameToContext_dj_le_extendFloats hseq _ _ hab
@@ -758,7 +758,7 @@ theorem witness_toSupported_typedPlan
         rw [hvm]
         have hprefix : (varMapOfFrame fr).find?
             (fun p => p.2 =
-              (⟨v.type, base + posOf support v⟩ : MarioVR)) = none := by
+              (⟨v.type, base + posOf support v⟩ : DeclarativeVR)) = none := by
           refine find?_none_of_all fun entry hentry => ?_
           refine decide_eq_false fun heq => ?_
           have hb := varMapOfFrameAux_index_bound
@@ -784,13 +784,13 @@ theorem witness_toSupported_typedPlan
 name-free generalization at the `allocate` plan — the generalization is
 genuinely stronger, not a restatement. -/
 example {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}
-    {formula : MarioFormula}
+    {formula : DeclarativeFormula}
     (hconcl : ∀ vr, Metamath.Sym.var vr ∈ formula.2 →
       ∃ w, findVar (varMapOfFrame fr) vr = some w)
     (h : Metamath.Provable (dbToAxioms Γ) (frameToContext fr) formula) :
     ∃ declarations,
       OptionalFloatSequence fr declarations ∧
-      SupportedProvable Γ (extendFloats fr declarations) formula := by
+      FrameDerivable Γ (extendFloats fr declarations) formula := by
   classical
   obtain ⟨support, hwitness⟩ := Provable.exists_finiteSupport h
   set bound := maxLength (usedStrings fr) with hbound

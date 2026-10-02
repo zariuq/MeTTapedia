@@ -22,6 +22,17 @@ their domain:
 
 Every annotated rule erases to a rule of `Derivable` (`CDerivable.erase`), so
 annotated derivations erase to derivations of the rule package.
+
+**Premises of root steps.** A package may attach to each of its root steps a list
+of premises, typings and typed equalities in the context of the step
+(`CRootComputation.requires`), and the rule for root steps (`CDerivable.root`)
+asks for a derivation of each. This is the form of a computation rule whose
+premises type the arguments of its redex: `rec P z s zero ≡ z` under `P`, `z` and
+`s` typed. Such premises are what a model can use: an induction over a derivation
+has a hypothesis for each premise of the rule, and has none for the typings of the
+arguments of a redex that inversion recovers from the typing of the redex. By
+default a step requires no premises (`ChurchRules.PremiseFree`), and its rule is
+then `CDerivable.rootFree`.
 -/
 
 set_option autoImplicit false
@@ -32,14 +43,49 @@ namespace Annotated
 
 variable {Head : Type}
 
+/-- A premise of a root step, in the context of the step: a typing or a typed
+equality. -/
+inductive CPremise (Head : Type) (n : Nat) : Type where
+  | typing (term type : CTm Head n)
+  | equality (left right type : CTm Head n)
+
+/-- Renaming of a premise. -/
+def CPremise.rename {n m : Nat} (ρ : Ren n m) : CPremise Head n → CPremise Head m
+  | .typing t T => .typing (t.rename ρ) (T.rename ρ)
+  | .equality a b T => .equality (a.rename ρ) (b.rename ρ) (T.rename ρ)
+
+/-- Substitution into a premise. -/
+def CPremise.subst {n m : Nat} (σ : CSub Head n m) : CPremise Head n → CPremise Head m
+  | .typing t T => .typing (t.subst σ) (T.subst σ)
+  | .equality a b T => .equality (a.subst σ) (b.subst σ) (T.subst σ)
+
 /-- Declaration-specific root computation of annotated terms, stable under
-renaming and substitution. -/
+renaming and substitution, with the premises its steps require.
+
+`requires l r premises`: the judgment admits the step from `l` to `r` under the
+typings and equalities `premises`, read in the context of the step
+(`CDerivable.root`). The premises of a step rename and substitute with it. By
+default a step requires no premises. -/
 structure CRootComputation (Head : Type) where
   step : {n : Nat} → CTm Head n → CTm Head n → Prop
   rename : ∀ {n m : Nat} (ρ : Ren n m) {l r : CTm Head n}, step l r →
     step (l.rename ρ) (r.rename ρ)
   substitute : ∀ {n m : Nat} (σ : CSub Head n m) {l r : CTm Head n}, step l r →
     step (l.subst σ) (r.subst σ)
+  requires : {n : Nat} → CTm Head n → CTm Head n → List (CPremise Head n) → Prop :=
+    fun _ _ premises => premises = []
+  requires_rename : ∀ {n m : Nat} (ρ : Ren n m) {l r : CTm Head n}
+      {premises : List (CPremise Head n)}, requires l r premises →
+      requires (l.rename ρ) (r.rename ρ) (premises.map (CPremise.rename ρ)) := by
+    intro _ _ _ _ _ _ none
+    subst none
+    rfl
+  requires_substitute : ∀ {n m : Nat} (σ : CSub Head n m) {l r : CTm Head n}
+      {premises : List (CPremise Head n)}, requires l r premises →
+      requires (l.subst σ) (r.subst σ) (premises.map (CPremise.subst σ)) := by
+    intro _ _ _ _ _ _ none
+    subst none
+    rfl
 
 /-- No root computation. -/
 def CRootComputation.empty : CRootComputation Head where
@@ -70,6 +116,11 @@ inductive CStatement (Head : Type) : Type where
   | typing {n : Nat} (context : CCtx Head n) (term type : CTm Head n)
   | equality {n : Nat} (context : CCtx Head n) (left right type : CTm Head n)
   | sub {n : Nat} (context : CCtx Head n) (lower upper : CTm Head n)
+
+/-- The statement a premise makes in a context. -/
+def CPremise.statement {n : Nat} (Γ : CCtx Head n) : CPremise Head n → CStatement Head
+  | .typing t T => .typing Γ t T
+  | .equality a b T => .equality Γ a b T
 
 variable {R : Rules Head}
 
@@ -203,9 +254,12 @@ inductive CDerivable (P : ChurchRules R) : CStatement Head → Prop
       CDerivable P (.typing Γ (.sigma A B) (.head u)) → R.isUniverse u →
       CDerivable P (.typing Γ a A) → CDerivable P (.typing Γ b (CTm.inst0 a B)) →
       CDerivable P (.equality Γ (.snd (.pair a b)) b (CTm.inst0 a B))
-  /-- A declared annotated root computation between two terms of one type. -/
-  | root {n : Nat} {Γ : CCtx Head n} {left right A : CTm Head n} :
-      P.computation.step left right →
+  /-- A declared annotated root computation between two terms of one type, under
+  the premises the package attaches to the step. -/
+  | root {n : Nat} {Γ : CCtx Head n} {left right A : CTm Head n}
+      {premises : List (CPremise Head n)} :
+      P.computation.step left right → P.computation.requires left right premises →
+      (∀ premise ∈ premises, CDerivable P (premise.statement Γ)) →
       CDerivable P (.typing Γ left A) → CDerivable P (.typing Γ right A) →
       CDerivable P (.equality Γ left right A)
   -- Eta
@@ -260,6 +314,58 @@ theorem CDerivable.cumulEq {P : ChurchRules R} {n : Nat} {Γ : CCtx Head n} {A B
     {u v : Head} (equal : CEqual P Γ A B (.head u)) (c : R.cumulative u v) :
     CEqual P Γ A B (.head v) :=
   .subEq equal (.subUniv c)
+
+/-! ## Admitted steps -/
+
+/-- **A package admits a step in a context** when the premises it attaches to the step
+are derivable there: some list of premises required of the step from `left` to `right`
+has every member derivable in `Γ`. -/
+def ChurchRules.Admits (P : ChurchRules R) {n : Nat} (Γ : CCtx Head n)
+    (left right : CTm Head n) : Prop :=
+  ∃ premises, P.computation.requires left right premises ∧
+    ∀ premise ∈ premises, CDerivable P (premise.statement Γ)
+
+/-- **The rule for an admitted root step**: a step between two terms of one type, admitted
+in their context, is an equality at the type. -/
+theorem CDerivable.rootAdmitted {P : ChurchRules R} {n : Nat} {Γ : CCtx Head n}
+    {left right A : CTm Head n} (step : P.computation.step left right)
+    (admits : P.Admits Γ left right) (typedLeft : CTyped P Γ left A)
+    (typedRight : CTyped P Γ right A) : CEqual P Γ left right A := by
+  obtain ⟨_, requires, derivable⟩ := admits
+  exact .root step requires derivable typedLeft typedRight
+
+/-- **A package whose root steps require no premises.** -/
+def ChurchRules.PremiseFree (P : ChurchRules R) : Prop :=
+  ∀ {n : Nat} {l r : CTm Head n}, P.computation.step l r → P.computation.requires l r []
+
+/-- A package whose steps require no premises admits each of them in every context. -/
+theorem ChurchRules.PremiseFree.admits {P : ChurchRules R} (free : P.PremiseFree) {n : Nat}
+    {Γ : CCtx Head n} {l r : CTm Head n} (step : P.computation.step l r) : P.Admits Γ l r :=
+  ⟨[], free step, fun _ member => absurd member List.not_mem_nil⟩
+
+/-- **The package without its premises**: the same declared constants and root steps, each
+step requiring no premises. -/
+def ChurchRules.withoutPremises (P : ChurchRules R) : ChurchRules R where
+  constantType := P.constantType
+  computation :=
+    { step := P.computation.step
+      rename := P.computation.rename
+      substitute := P.computation.substitute }
+  erase_constantType := P.erase_constantType
+  erase_step := P.erase_step
+
+theorem ChurchRules.withoutPremises_premiseFree (P : ChurchRules R) :
+    P.withoutPremises.PremiseFree :=
+  fun _ => rfl
+
+/-- **The rule for a root step that requires no premises**: a step between two terms
+of one type is an equality at it. -/
+theorem CDerivable.rootFree {P : ChurchRules R} {n : Nat} {Γ : CCtx Head n}
+    {left right A : CTm Head n} (step : P.computation.step left right)
+    (typedLeft : CTyped P Γ left A) (typedRight : CTyped P Γ right A)
+    (free : P.computation.requires left right [] := by exact rfl) :
+    CEqual P Γ left right A :=
+  .root step free (fun _ member => absurd member List.not_mem_nil) typedLeft typedRight
 
 /-! ## Erasure of derivations -/
 
@@ -333,7 +439,7 @@ theorem CDerivable.erase {P : ChurchRules R} {statement : CStatement Head}
   | betaSnd _ hu _ _ ihS iha ihb =>
       simp only [CStatement.erase, CTm.erase, CTm.erase_inst0] at ihS iha ihb ⊢
       exact .betaSnd ihS hu iha ihb
-  | root step _ _ ihL ihR => exact .root (P.erase_step step) ihL ihR
+  | root step _ _ _ _ _ ihL ihR => exact .root (P.erase_step step) ihL ihR
   | etaPi _ _ _ ihF ihG ihBody =>
       simp only [CStatement.erase, CTm.erase, CTm.erase_rename] at ihF ihG ihBody ⊢
       exact .etaPi ihF ihG ihBody

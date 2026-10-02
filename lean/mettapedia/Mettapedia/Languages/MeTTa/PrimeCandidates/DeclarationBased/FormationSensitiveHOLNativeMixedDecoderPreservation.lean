@@ -34,7 +34,7 @@ theorem pi_zero {n : Nat} {gamma : Tower.Ctx n}
     (.piForm domain (.sort Tower.zero) codomain (.sort Tower.zero)
       (.sorts Tower.zero Tower.zero))
   intro valuation
-  simp [LevelExpr.eval, Tower.zero]
+  simp [LevelExpr.eval, LevelTower.zero]
 
 theorem proof_formed {n : Nat} {gamma : Tower.Ctx n} {p : Tower.Tm n}
     (typed : FormationSensitive.Typing jointRules gamma p (.const `HOLUniformList.prop)) :

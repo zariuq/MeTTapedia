@@ -43,10 +43,10 @@ inductive MmClaim where
   | includesCorrespondenceProof
   | specPathHoldsSpecsAndEquivalence
   | verifyPathImplementsVerifier
-  | kernelCleanProvesSoundnessAndCompleteness
+  | kernelCorrectnessProvesSoundnessAndCompleteness
   | parserCorrectnessProvesInvariants
   | parserEquivalenceIsCanonicalEntryPoint
-  | prefixWitnessCertifiesPerEventProvenance
+  | prefixProvabilityCertifiesPerEventProvenance
   | errorCodeSemanticsCertifiesTotalErrors
   | declarativeSpecHostsMarioSpecification
   | parserEquivalenceExamplesProvideUsageExamples
@@ -59,11 +59,11 @@ inductive MmClaim where
   | statusAxiomsAreZero
   | statusBuildIsGreen
   | statusDefaultSuitePasses
-  | statusSmallSuitePasses
+  | statusReferenceDifferential
   | correctnessHasEndToEndTheorems
   | correctnessHasDiagnosticContract
-  | mainClaimNormalModeAcceptance
-  | mainClaimAnyModeAcceptance
+  | mainClaimNormalFormatAdequacy
+  | mainClaimAnyFormatAdequacy
   | mainClaimPrefixProvenance
   | mainClaimErrorCertification
   | mainClaimParserBridge
@@ -73,14 +73,15 @@ inductive MmClaim where
   | verifierReportsFirstError
   | includeFailuresAreEnvironmentErrors
   | modesAreDistinctSpecifications
-  | formalTheoremsCoverCheckBytes
-  | includeExpansionIsTrustedPreprocessing
+  | formalTheoremsCoverCheckBytesAndCheck
+  | includeAwareExecutableIsSinglePass
   | parserEquivalenceIsReviewEntryModule
   | reviewStepReadParserEquivalence
   | reviewStepTraceDischargeChain
   | reviewStepRunBuildAndTests
   | executablesIncludeVerifierAndValidator
   | buildTargetsExecutablePair
+  | reproductionNamesSpecificationSuite
   deriving Repr, DecidableEq, BEq
 
 def renderMmClaim : MmClaim → String
@@ -107,8 +108,8 @@ def renderMmClaim : MmClaim → String
       mkPresPos (properNameNP "`Metamath/Verify.lean`")
         (complV2 (mkV2 (regV "implement"))
           (linDetCN theDefArt (linUseN verifier_N)))
-  | .kernelCleanProvesSoundnessAndCompleteness =>
-      mkPresPos (properNameNP "`Metamath/KernelClean.lean`")
+  | .kernelCorrectnessProvesSoundnessAndCompleteness =>
+      mkPresPos (properNameNP "`Metamath/KernelCorrectness.lean`")
         (complV2 (mkV2 (regV "prove"))
           (properNameNP "kernel soundness and completeness"))
   | .parserCorrectnessProvesInvariants =>
@@ -118,14 +119,14 @@ def renderMmClaim : MmClaim → String
   | .parserEquivalenceIsCanonicalEntryPoint =>
       mkPresPos (properNameNP "`Metamath/ParserEquivalence.lean`")
         (copulaNP (properNameNP "the canonical review entry point"))
-  | .prefixWitnessCertifiesPerEventProvenance =>
-      mkPresPos (properNameNP "`Metamath/PrefixWitnessCheckBytes.lean`")
+  | .prefixProvabilityCertifiesPerEventProvenance =>
+      mkPresPos (properNameNP "`Metamath/PrefixProvability/Checker.lean`")
         (complV2 (mkV2 (regV "certify"))
           (properNameNP "prefix provenance per accepted event"))
   | .errorCodeSemanticsCertifiesTotalErrors =>
       mkPresPos (properNameNP "`Metamath/ErrorCodeSemantics.lean`")
         (complV2 (mkV2 (regV "certify"))
-          (properNameNP "total error code semantics for 55 codes"))
+          (properNameNP "evidence-payload agreement for every `ParseErrorCode` constructor"))
   | .declarativeSpecHostsMarioSpecification =>
       mkPresPos (properNameNP "`Metamath/DeclarativeSpec.lean`")
         (complV2 (mkV2 (regV "host"))
@@ -147,26 +148,26 @@ def renderMmClaim : MmClaim → String
   | .toolchainPinsLeanVersion =>
       mkPresPos (properNameNP "The toolchain")
         (complV2 (mkV2 (regV "pin"))
-          (properNameNP "Lean 4.27.0"))
+          (properNameNP "Lean 4.33.1"))
   | .toolchainPinsBatteriesVersion =>
       mkPresPos (properNameNP "The toolchain")
         (complV2 (mkV2 (regV "pin"))
-          (properNameNP "Batteries v4.27.0-rc1"))
+          (properNameNP "Batteries commit `4488d40`"))
   | .statusSorriesAreZero =>
       mkPresPos (properNameNP "Sorries" .AgP3Pl)
         (copulaNP (properNameNP "0"))
   | .statusAxiomsAreZero =>
-      mkPresPos (properNameNP "Axioms" .AgP3Pl)
-        (copulaNP (properNameNP "0"))
+      mkPresPos (properNameNP "Project-declared axioms" .AgP3Pl)
+        (copulaNP (properNameNP "0; headline theorems use Lean's standard axioms"))
   | .statusBuildIsGreen =>
       mkPresPos (properNameNP "Build status")
-        (copulaNP (properNameNP "129 jobs with 0 errors"))
+        (copulaNP (properNameNP "successful on the pinned toolchain"))
   | .statusDefaultSuitePasses =>
-      mkPresPos (properNameNP "The default test suite")
-        (copulaNP (properNameNP "151 of 151"))
-  | .statusSmallSuitePasses =>
-      mkPresPos (properNameNP "The small-only test suite")
-        (copulaNP (properNameNP "141 of 141"))
+      mkPresPos (properNameNP "The default `zar` specification suite")
+        (copulaNP (properNameNP "187 of 187"))
+  | .statusReferenceDifferential =>
+      mkPresPos (properNameNP "The fail-closed reference differential")
+        (copulaNP (properNameNP "an attempt of all 187 registered databases, with process failures separate from verdicts"))
   | .correctnessHasEndToEndTheorems =>
       mkPresPos (properNameNP "The development")
         (complV2 (mkV2 (regV "include"))
@@ -176,27 +177,27 @@ def renderMmClaim : MmClaim → String
         (complV2 (mkV2 (regV "include"))
           (linDetCN aIndefArt
             (linAdjCN (linPositA (regA "formal")) (linUseN contract_N))))
-  | .mainClaimNormalModeAcceptance =>
-      mkPresPos (properNameNP "`verify_parser_acceptance_iff_spec_provable`")
-        (copulaNP (properNameNP "the normal-mode acceptance biconditional"))
-  | .mainClaimAnyModeAcceptance =>
-      mkPresPos (properNameNP "`verify_parser_acceptance_any_mode_iff_spec_provable`")
-        (copulaNP (properNameNP "the any-mode acceptance biconditional"))
+  | .mainClaimNormalFormatAdequacy =>
+      mkPresPos (properNameNP "`proofChecker_normal_iff_frameDerivable_in_parsedDB`")
+        (copulaNP (properNameNP "the fixed-final-database normal-proof adequacy biconditional"))
+  | .mainClaimAnyFormatAdequacy =>
+      mkPresPos (properNameNP "`proofChecker_anyFormat_iff_frameDerivable_in_parsedDB`")
+        (copulaNP (properNameNP "the fixed-final-database any-format adequacy biconditional"))
   | .mainClaimPrefixProvenance =>
-      mkPresPos (properNameNP "`checkBytes_done_finishProofEvent_certified`")
+      mkPresPos (properNameNP "`checkBytes_new_assert_strong_classified`")
         (copulaNP (properNameNP "the per-event prefix provenance theorem"))
   | .mainClaimErrorCertification =>
       mkPresPos (properNameNP "`checkBytes_parseErrorCode?_fullyCertified`")
         (copulaNP (properNameNP "the total error certification theorem"))
   | .mainClaimParserBridge =>
-      mkPresPos (properNameNP "`parser_operational_iff_semantic_total`")
-        (copulaNP (properNameNP "the parser-specialized semantic bridge"))
+      mkPresPos (properNameNP "`parser_operational_to_frameDerivable_total` and `parser_frameDerivable_to_operational_total`")
+        (copulaNP (properNameNP "the parser-specialized bridge to frame derivability"))
   | .parserSuccessDischargesStructuralPremises =>
       mkPresPos (properNameNP "Parser success")
         (complV2 (mkV2 (regV "discharge"))
           (properNameNP "WellFormedDatabaseStrong, FloatVarNoDup, and FrameVarsDisjointConsts"))
   | .parserBridgeComposesFromSuccess =>
-      mkPresPos (properNameNP "`parser_operational_iff_semantic`")
+      mkPresPos (properNameNP "`proofChecker_normal_iff_frameDerivable_in_parsedDB`")
         (complV2 (mkV2 (regV "compose"))
           (properNameNP "the full bridge from `checkBytes` success"))
   | .diagnosticsTaxonomyIsDocumented =>
@@ -212,24 +213,24 @@ def renderMmClaim : MmClaim → String
   | .modesAreDistinctSpecifications =>
       mkPresPos (properNameNP "Verifier modes" .AgP3Pl)
         (copulaNP (properNameNP "distinct specifications"))
-  | .formalTheoremsCoverCheckBytes =>
+  | .formalTheoremsCoverCheckBytesAndCheck =>
       mkPresPos (properNameNP "Formal theorems" .AgP3Pl)
         (complV2 (mkV2 (regV "cover"))
-          (properNameNP "`checkBytes` on expanded `ByteArray` input"))
-  | .includeExpansionIsTrustedPreprocessing =>
-      mkPresPos (properNameNP "Include expansion")
-        (copulaNP (properNameNP "a trusted preprocessing layer"))
+          (properNameNP "both the pure `checkBytes` lane and the include-aware `check` implementation"))
+  | .includeAwareExecutableIsSinglePass =>
+      mkPresPos (properNameNP "The active executable frontend")
+        (copulaNP (properNameNP "single-pass and include-aware"))
   | .parserEquivalenceIsReviewEntryModule =>
       mkPresPos (properNameNP "`Metamath/ParserEquivalence.lean`")
         (copulaNP (properNameNP "the review entry module for the composed chain"))
   | .reviewStepReadParserEquivalence =>
       mkPresPos (properNameNP "Reviewers" .AgP3Pl)
         (complV2 (mkV2 (regV "read"))
-          (properNameNP "the theorem statements in `Metamath/ParserEquivalence.lean`"))
+          (properNameNP "the theorem statements in `Metamath/SourceCompleteness.lean` and `Metamath/ParserEquivalence.lean`"))
   | .reviewStepTraceDischargeChain =>
       mkPresPos (properNameNP "Reviewers" .AgP3Pl)
         (complV2 (mkV2 (regV "trace"))
-          (properNameNP "`parser_toDatabase_wellFormed_strong -> parser_operational_iff_semantic -> operational_iff_semantic`"))
+          (properNameNP "`parser_toDatabase_wellFormed_strong -> parser_frameDerivable_to_operational -> frameDerivable_to_proofValid`"))
   | .reviewStepRunBuildAndTests =>
       mkPresPos (properNameNP "Reviewers" .AgP3Pl)
         (complV2 (mkV2 (regV "run"))
@@ -240,6 +241,10 @@ def renderMmClaim : MmClaim → String
   | .buildTargetsExecutablePair =>
       mkPresPos (properNameNP "The executable build target")
         (copulaNP (properNameNP "`lake build mm-lean4 validateDB`"))
+  | .reproductionNamesSpecificationSuite =>
+      mkPresPos (properNameNP "`METAMATH_TEST`")
+        (copulaNP (properNameNP
+          "a checkout of https://github.com/zariuq/metamath-test, branch `unit-tests`"))
 
 def allMmClaims : List MmClaim :=
   [ .formalizesMetamathVerifierInLean4
@@ -247,10 +252,10 @@ def allMmClaims : List MmClaim :=
   , .includesCorrespondenceProof
   , .specPathHoldsSpecsAndEquivalence
   , .verifyPathImplementsVerifier
-  , .kernelCleanProvesSoundnessAndCompleteness
+  , .kernelCorrectnessProvesSoundnessAndCompleteness
   , .parserCorrectnessProvesInvariants
   , .parserEquivalenceIsCanonicalEntryPoint
-  , .prefixWitnessCertifiesPerEventProvenance
+  , .prefixProvabilityCertifiesPerEventProvenance
   , .errorCodeSemanticsCertifiesTotalErrors
   , .declarativeSpecHostsMarioSpecification
   , .parserEquivalenceExamplesProvideUsageExamples
@@ -263,11 +268,11 @@ def allMmClaims : List MmClaim :=
   , .statusAxiomsAreZero
   , .statusBuildIsGreen
   , .statusDefaultSuitePasses
-  , .statusSmallSuitePasses
+  , .statusReferenceDifferential
   , .correctnessHasEndToEndTheorems
   , .correctnessHasDiagnosticContract
-  , .mainClaimNormalModeAcceptance
-  , .mainClaimAnyModeAcceptance
+  , .mainClaimNormalFormatAdequacy
+  , .mainClaimAnyFormatAdequacy
   , .mainClaimPrefixProvenance
   , .mainClaimErrorCertification
   , .mainClaimParserBridge
@@ -277,14 +282,15 @@ def allMmClaims : List MmClaim :=
   , .verifierReportsFirstError
   , .includeFailuresAreEnvironmentErrors
   , .modesAreDistinctSpecifications
-  , .formalTheoremsCoverCheckBytes
-  , .includeExpansionIsTrustedPreprocessing
+  , .formalTheoremsCoverCheckBytesAndCheck
+  , .includeAwareExecutableIsSinglePass
   , .parserEquivalenceIsReviewEntryModule
   , .reviewStepReadParserEquivalence
   , .reviewStepTraceDischargeChain
   , .reviewStepRunBuildAndTests
   , .executablesIncludeVerifierAndValidator
   , .buildTargetsExecutablePair
+  , .reproductionNamesSpecificationSuite
   ]
 
 def parseMmClaimLine? (line : String) : Option MmClaim :=
@@ -384,10 +390,10 @@ def mmLean4ReadmeBlocks : List ReadmeBlock :=
   , .heading 3 (renderMmHeading .core)
   , .fileRef "Metamath/Spec/" (renderMmClaim .specPathHoldsSpecsAndEquivalence)
   , .fileRef "Metamath/Verify.lean" (renderMmClaim .verifyPathImplementsVerifier)
-  , .fileRef "Metamath/KernelClean.lean" (renderMmClaim .kernelCleanProvesSoundnessAndCompleteness)
+  , .fileRef "Metamath/KernelCorrectness.lean" (renderMmClaim .kernelCorrectnessProvesSoundnessAndCompleteness)
   , .fileRef "Metamath/ParserCorrectness.lean" (renderMmClaim .parserCorrectnessProvesInvariants)
   , .fileRef "Metamath/ParserEquivalence.lean" (renderMmClaim .parserEquivalenceIsCanonicalEntryPoint)
-  , .fileRef "Metamath/PrefixWitnessCheckBytes.lean" (renderMmClaim .prefixWitnessCertifiesPerEventProvenance)
+  , .fileRef "Metamath/PrefixProvability/Checker.lean" (renderMmClaim .prefixProvabilityCertifiesPerEventProvenance)
   , .fileRef "Metamath/ErrorCodeSemantics.lean" (renderMmClaim .errorCodeSemanticsCertifiesTotalErrors)
   , .fileRef "Metamath/DeclarativeSpec.lean" (renderMmClaim .declarativeSpecHostsMarioSpecification)
   , .heading 3 (renderMmHeading .nonCore)
@@ -406,7 +412,7 @@ def mmLean4ReadmeBlocks : List ReadmeBlock :=
       , claimBullet .statusAxiomsAreZero
       , claimBullet .statusBuildIsGreen
       , claimBullet .statusDefaultSuitePasses
-      , claimBullet .statusSmallSuitePasses
+      , claimBullet .statusReferenceDifferential
       ]
   , .codeBlock "bash" "rg -n \"sorry\" Metamath/"
   , .heading 2 (renderMmHeading .correctness)
@@ -416,8 +422,8 @@ def mmLean4ReadmeBlocks : List ReadmeBlock :=
       ]
   , .heading 3 (renderMmHeading .mainClaims)
   , .claimBullets
-      [ claimBullet .mainClaimNormalModeAcceptance
-      , claimBullet .mainClaimAnyModeAcceptance
+      [ claimBullet .mainClaimNormalFormatAdequacy
+      , claimBullet .mainClaimAnyFormatAdequacy
       , claimBullet .mainClaimPrefixProvenance
       , claimBullet .mainClaimErrorCertification
       , claimBullet .mainClaimParserBridge
@@ -428,7 +434,7 @@ def mmLean4ReadmeBlocks : List ReadmeBlock :=
       , renderMmClaim .parserBridgeComposesFromSuccess
       ]
   , .codeBlock ""
-      "h_success : (checkBytes bytes).error? = none\n  -> parser_construction_wf_scoped\n  -> parser_toDatabase_wellFormed_strong\n  -> floatVarNoDup_of_uniqueFloatVars\n  -> frameVarsDisjointConsts_of_toFrame\n  -> operational_iff_semantic"
+      "h_success : (checkBytes bytes).error? = none\n  -> parser_construction_wf_scoped\n  -> parser_toDatabase_wellFormed_strong\n  -> floatVarNoDup_of_uniqueFloatVars\n  -> frameVarsDisjointConsts_of_toFrame\n  -> operational_to_frameDerivable, frameDerivable_to_proofValid"
   , .heading 2 (renderMmHeading .diagnostics)
   , .claimBullets
       [ claimBullet .diagnosticsTaxonomyIsDocumented
@@ -438,13 +444,14 @@ def mmLean4ReadmeBlocks : List ReadmeBlock :=
       ]
   , .heading 2 (renderMmHeading .trustBoundary)
   , .claimBullets
-      [ claimBullet .formalTheoremsCoverCheckBytes
-      , claimBullet .includeExpansionIsTrustedPreprocessing
+      [ claimBullet .formalTheoremsCoverCheckBytesAndCheck
+      , claimBullet .includeAwareExecutableIsSinglePass
       , claimBullet .parserEquivalenceIsReviewEntryModule
       ]
   , .heading 2 (renderMmHeading .reproduction)
+  , .paragraph [renderMmClaim .reproductionNamesSpecificationSuite]
   , .codeBlock "bash"
-      "lake build\ncd ../metamath-test && ./run-testsuite-all ./test-mm-lean4"
+      "ROOT=\"$(pwd)\"\nlake build\nMM_LEAN4=\"$ROOT/.lake/build/bin/mm-lean4\" sh scripts/cli_honesty.sh\n(cd \"$METAMATH_TEST\" && MM_LEAN4=\"$ROOT/.lake/build/bin/mm-lean4\" ./run-testsuite-all ./test-mm-lean4)"
   , .heading 2 (renderMmHeading .quickReviewChecklist)
   , .claimBullets
       [ claimBullet .reviewStepReadParserEquivalence
@@ -497,16 +504,18 @@ def selectedStructuredMmLines : List String :=
 def mmLean4HardAuditPasses : Bool :=
   mmLean4ReadmeBlocks.all (blockPassesHardAuditWith parseMmClaimLine? parseMmHeadingLine?)
 
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 theorem mmLean4_hard_audit :
     mmLean4HardAuditPasses = true := by
-  native_decide
+  decide
 
 def mmLean4HeadingImageCheck : Bool :=
   headingRenderImageCheck parseMmHeadingLine? renderMmHeading mmLean4ReadmeBlocks
 
 theorem mmLean4_heading_images :
     mmLean4HeadingImageCheck = true := by
-  native_decide
+  decide
 
 theorem mmLean4_heading_image_witness
     {lvl : Nat} {txt : String}

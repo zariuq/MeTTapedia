@@ -32,16 +32,12 @@ variable {A B : BindingCloneAlgebra.Algebra.{0} S}
 /-- A base interpretation changes a variable's contextual judgment while
 keeping its finite-list position and multiplicity. -/
 def pushContext (h : FreeBindingClone.Hom A B)
-    (Γ : ListContext (rules R A)) : ListContext (rules R B) where
-  length := Γ.length
-  label := fun position => mapJudgment h (Γ.label position)
+    (Γ : ListContext (rules R A)) : ListContext (rules R B) :=
+  Γ.relabel (mapJudgment h)
 
 theorem pushContext_id (A : BindingCloneAlgebra.Algebra.{0} S)
     (Γ : ListContext (rules R A)) :
-    pushContext R (FreeBindingClone.Hom.id A) Γ = Γ := by
-  cases Γ with
-  | mk length label =>
-      congr 1
+    pushContext R (FreeBindingClone.Hom.id A) Γ = Γ := rfl
 
 theorem pushContext_comp {C : BindingCloneAlgebra.Algebra.{0} S}
     (first : FreeBindingClone.Hom A B)
@@ -134,22 +130,15 @@ def pushSlot (h : FreeBindingClone.Hom A B)
     (Γ : ListContext (rules R A)) {judgment : Judgment A} :
     (toContext (rules R A) Γ).slots judgment →
       (toContext (rules R B) (pushContext R h Γ)).slots
-        (mapJudgment h judgment)
-  | ⟨position, ⟨equal⟩⟩ =>
-      ⟨position, ⟨congrArg (mapJudgment h) equal⟩⟩
+        (mapJudgment h judgment) :=
+  Γ.relabelSlot (mapJudgment h)
 
 /-- Even when a model map identifies two program judgments, it cannot
 identify different occurrences from the same source event context. -/
 theorem pushSlot_injective (h : FreeBindingClone.Hom A B)
     (Γ : ListContext (rules R A)) (judgment : Judgment A) :
-    Function.Injective (pushSlot R h Γ (judgment := judgment)) := by
-  intro first second same
-  rcases first with ⟨firstPosition, ⟨firstEqual⟩⟩
-  rcases second with ⟨secondPosition, ⟨secondEqual⟩⟩
-  have positions : firstPosition = secondPosition :=
-    congrArg Sigma.fst same
-  cases positions
-  rfl
+    Function.Injective (pushSlot R h Γ (judgment := judgment)) :=
+  Γ.relabelSlot_injective (mapJudgment h) judgment
 
 /-- Translate an authored firing term together with the event variables
 already in its finite context. The rule map preserves premise positions. -/

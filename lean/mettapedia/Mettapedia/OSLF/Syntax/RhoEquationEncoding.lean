@@ -26,36 +26,37 @@ set_option autoImplicit false
 /-- Each intrinsic source equation is respected by the actual authored
 structural congruence, for every substitution of its variables. -/
 theorem sourceAxiom_encoded_SC : ∀ (i : Fin rhoSourceE.length)
-    {Γ : Ctx sig}
-    (body : (k : Fin metas.length) → Term sig (metas.get k).1 (metas.get k).2)
+    {Θ Γ : Ctx sig}
+    (body : ContextualAssignment sig metas Θ)
+    (ambient : Sub sig Θ Γ)
     (close : Sub sig (rhoSourceE.get i).ctx Γ),
     StructuralCongruence
-      (encodeTerm (bind close (instantiate body (rhoSourceE.get i).lhs)))
-      (encodeTerm (bind close (instantiate body (rhoSourceE.get i).rhs)))
-  | ⟨0, _⟩, _, body, close => by
-      simpa [rhoSourceE, commPar, instantiate, instantiateArgs,
+      (encodeTerm (ContextualAssignment.instantiate body ambient close (rhoSourceE.get i).lhs))
+      (encodeTerm (ContextualAssignment.instantiate body ambient close (rhoSourceE.get i).rhs))
+  | ⟨0, _⟩, _, _, body, ambient, close => by
+      simpa [rhoSourceE, commPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         bind, bindArgs, liftSub, encodeTerm, encodeArgs, wrapBinders]
         using StructuralCongruence.par_comm
           (encodeTerm (close Srt.pr Var.zero))
           (encodeTerm (close Srt.pr (Var.succ Var.zero)))
-  | ⟨1, _⟩, _, body, close => by
-      simpa [rhoSourceE, assocPar, instantiate, instantiateArgs,
+  | ⟨1, _⟩, _, _, body, ambient, close => by
+      simpa [rhoSourceE, assocPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         bind, bindArgs, liftSub, encodeTerm, encodeArgs, wrapBinders]
         using StructuralCongruence.par_assoc
           (encodeTerm (close Srt.pr Var.zero))
           (encodeTerm (close Srt.pr (Var.succ Var.zero)))
           (encodeTerm (close Srt.pr (Var.succ (Var.succ Var.zero))))
-  | ⟨2, _⟩, _, body, close => by
-      simpa [rhoSourceE, rightUnitPar, instantiate, instantiateArgs,
+  | ⟨2, _⟩, _, _, body, ambient, close => by
+      simpa [rhoSourceE, rightUnitPar, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         bind, bindArgs, liftSub, encodeTerm, encodeArgs, wrapBinders]
         using StructuralCongruence.par_nil_right
           (encodeTerm (close Srt.pr Var.zero))
-  | ⟨3, _⟩, _, body, close => by
-      simpa [rhoSourceE, quoteDrop, instantiate, instantiateArgs,
+  | ⟨3, _⟩, _, _, body, ambient, close => by
+      simpa [rhoSourceE, quoteDrop, ContextualAssignment.instantiate, ContextualAssignment.instantiateArgs,
         bind, bindArgs, liftSub, encodeTerm, encodeArgs, wrapBinders]
         using StructuralCongruence.quote_drop
           (encodeTerm (close Srt.nm Var.zero))
-  | ⟨_ + 4, h⟩, _, _, _ => by simp [rhoSourceE] at h
+  | ⟨_ + 4, h⟩, _, _, _, _, _ => by simp [rhoSourceE] at h
 
 /-- Pointwise structural congruence remains valid under the encoded binder list. -/
 theorem wrapBinders_SC (bs : List Srt) {left right : Pattern}
@@ -72,7 +73,7 @@ including congruence below input binders. -/
 theorem eqClosure_encoded_SC : ∀ {Γ : Ctx sig} {s : Srt}
     {left right : Term sig Γ s}, EqClosure rhoSourceE left right →
       StructuralCongruence (encodeTerm left) (encodeTerm right)
-  | _, _, _, _, .ax i body close => sourceAxiom_encoded_SC i body close
+  | _, _, _, _, .ax i body ambient ordinary => sourceAxiom_encoded_SC i body ambient ordinary
   | _, _, _, _, .refl t => .refl _
   | _, _, _, _, .symm h => .symm _ _ (eqClosure_encoded_SC h)
   | _, _, _, _, .trans h h' =>
@@ -212,7 +213,7 @@ theorem crossingQuote_equation_repair :
       (Term.op (S := sig) (Γ := [Srt.nm]) Op.quo
         (.cons (.op Op.drp (.cons (.var Var.zero) .nil)) .nil))
       (.var Var.zero) :=
-    EqClosure.ax (E := rhoSourceE) (Γ := [Srt.nm]) 3 contDiscard
+    EqClosure.ax_closed (E := rhoSourceE) (Γ := [Srt.nm]) 3 contDiscard
       (fun _ v => .var v)
   have processEquation : EqClosure rhoSourceE
       (Term.op (S := sig) (Γ := [Srt.nm]) Op.drp

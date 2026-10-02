@@ -23,8 +23,8 @@ namespace TowerExamples
 
 open SyntacticContextual.TowerExamples
 
-private abbrev levelOne : LevelExpr := .succ Tower.zero
-private abbrev levelTwo : LevelExpr := .succ levelOne
+private abbrev levelOne : LevelExpr Nat := .succ Tower.zero
+private abbrev levelTwo : LevelExpr Nat := .succ levelOne
 private abbrev retainedTower :=
   SyntacticJudgmentalPi.TowerExamples.retainedTower
 

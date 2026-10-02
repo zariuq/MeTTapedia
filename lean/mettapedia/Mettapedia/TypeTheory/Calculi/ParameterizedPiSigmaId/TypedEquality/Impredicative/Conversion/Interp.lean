@@ -33,7 +33,7 @@ Read clause by clause, the interpretation realizes
 * a proof of the decoding `holds c` of a code `c` meaning `X` by `X` itself
   (`NInterp.holds_real`).
 
-Nothing of model S is copied: every statement is the value side's, read at the
+Nothing of model SN is copied: every statement is the value side's, read at the
 value model of the conversion model.
 -/
 

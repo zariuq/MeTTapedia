@@ -105,14 +105,14 @@ def decodeDeclName? : Pattern → Option Lean.Name
   | num pre component ih =>
       simp [encodeDeclName, decodeDeclName?, ih]
 
-def encodeLevel : LevelExpr → Pattern
+def encodeLevel : LevelExpr Nat → Pattern
   | .const value => .apply "prime-level-const" [encodeNat value]
   | .param index => .apply "prime-level-param" [encodeNat index]
   | .succ level => .apply "prime-level-succ" [encodeLevel level]
   | .max left right =>
       .apply "prime-level-max" [encodeLevel left, encodeLevel right]
 
-def decodeLevel? : Pattern → Option LevelExpr
+def decodeLevel? : Pattern → Option (LevelExpr Nat)
   | .apply "prime-level-const" [value] => do
       pure (.const (← decodeNat? value))
   | .apply "prime-level-param" [index] => do
@@ -123,7 +123,7 @@ def decodeLevel? : Pattern → Option LevelExpr
       pure (.max (← decodeLevel? left) (← decodeLevel? right))
   | _ => none
 
-@[simp] theorem decodeLevel?_encodeLevel (level : LevelExpr) :
+@[simp] theorem decodeLevel?_encodeLevel (level : LevelExpr Nat) :
     decodeLevel? (encodeLevel level) = some level := by
   induction level with
   | const value => simp [encodeLevel, decodeLevel?]
@@ -378,7 +378,7 @@ theorem encodeDeclName_canonical (name : Lean.Name) :
       simp [encodeDeclName, Pattern.hasCanonicalBinderMetadata,
         Pattern.hasCanonicalBinderMetadataList, ih, encodeNat_canonical]
 
-theorem encodeLevel_ground (level : LevelExpr) :
+theorem encodeLevel_ground (level : LevelExpr Nat) :
     (encodeLevel level).isGroundAt 0 = true := by
   induction level with
   | const value =>
@@ -393,7 +393,7 @@ theorem encodeLevel_ground (level : LevelExpr) :
       simp [encodeLevel, Pattern.isGroundAt, Pattern.isGroundListAt,
         leftIH, rightIH]
 
-theorem encodeLevel_canonical (level : LevelExpr) :
+theorem encodeLevel_canonical (level : LevelExpr Nat) :
     (encodeLevel level).hasCanonicalBinderMetadata = true := by
   induction level with
   | const value =>
@@ -537,7 +537,7 @@ theorem encodeNat_argumentValid (value : Nat) :
     argumentValidAt 0 (encodeNat value) = true := by
   simp [argumentValidAt, encodeNat_ground, encodeNat_canonical]
 
-theorem encodeLevel_argumentValid (level : LevelExpr) :
+theorem encodeLevel_argumentValid (level : LevelExpr Nat) :
     argumentValidAt 0 (encodeLevel level) = true := by
   simp [argumentValidAt, encodeLevel_ground, encodeLevel_canonical]
 

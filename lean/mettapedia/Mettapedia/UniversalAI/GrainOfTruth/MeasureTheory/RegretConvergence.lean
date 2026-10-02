@@ -34,14 +34,13 @@ because π(ν | h) → 0 for all ν ≠ ν* and regrets are bounded.
 
 namespace Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.RegretConvergence
 
-open MeasureTheory ProbabilityTheory Real
+open ProbabilityTheory Real
 open Mettapedia.UniversalAI.BayesianAgents
-open Mettapedia.UniversalAI.GrainOfTruth.FixedPoint
+open Mettapedia.UniversalAI.GrainOfTruth.BayesianPosterior
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.HistoryFiltration
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.LikelihoodRatio
 open Mettapedia.UniversalAI.GrainOfTruth.MeasureTheory.PosteriorConcentration
-open Mettapedia.UniversalAI.ReflectiveOracles
-open scoped ENNReal NNReal MeasureTheory
+open scoped ENNReal NNReal
 
 /-! ## Expected Regret on Trajectories
 
@@ -50,19 +49,17 @@ We define expected regret as a function on trajectories.
 
 /-- Expected regret over the posterior at time t.
     This is Σ_ν π(ν | h_t) · Regret(ν, agent). -/
-noncomputable def expectedRegretOnTrajectory (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+noncomputable def expectedRegretOnTrajectory (prior : PriorOverClass) (envs : ℕ → Environment)
     (agent : Agent) (γ : DiscountFactor) (t : ℕ) (horizon : ℕ) : Trajectory → ℝ :=
   fun traj =>
     let h := trajectoryToHistory traj t
-    ∑' ν_idx, (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal *
+    ∑' ν_idx, (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal *
               regret (envs ν_idx) agent γ h horizon
 
 /-- Expected regret is non-negative. -/
-theorem expectedRegretOnTrajectory_nonneg (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+theorem expectedRegretOnTrajectory_nonneg (prior : PriorOverClass) (envs : ℕ → Environment)
     (agent : Agent) (γ : DiscountFactor) (t : ℕ) (horizon : ℕ) (traj : Trajectory) :
-    0 ≤ expectedRegretOnTrajectory O M prior envs agent γ t horizon traj := by
+    0 ≤ expectedRegretOnTrajectory prior envs agent γ t horizon traj := by
   apply tsum_nonneg
   intro ν_idx
   apply mul_nonneg
@@ -100,8 +97,8 @@ The main theorem: posterior concentration implies regret goes to zero.
     2. First term = 0 sinceagent is optimal for ν*
     3. Second term → 0 since π(ν|h) → 0 for all ν ≠ ν* and regrets are bounded
     4. By dominated convergence: sum → 0 -/
-theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+theorem consistency_implies_expected_regret_convergence
+    (prior : PriorOverClass) (envs : ℕ → Environment)
     (agent : Agent) (γ : DiscountFactor) (horizon : ℕ)
     (ν_star_idx : EnvironmentIndex)
     (h_grain : 0 < prior.weight ν_star_idx)
@@ -110,23 +107,23 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
       regret (envs ν_star_idx) agent γ h horizon = 0)
     (h_consistency : ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) agent h_stoch),
       Filter.Tendsto
-        (fun t => (PosteriorConcentration.posteriorWeight O M prior envs ν_star_idx t traj).toReal)
+        (fun t => (PosteriorConcentration.posteriorWeight prior envs ν_star_idx t traj).toReal)
         Filter.atTop (nhds 1)) :
     ∀ᵐ traj ∂(environmentMeasureWithPolicy (envs ν_star_idx) agent h_stoch),
       Filter.Tendsto
-        (fun t => expectedRegretOnTrajectory O M prior envs agent γ t horizon traj)
+        (fun t => expectedRegretOnTrajectory prior envs agent γ t horizon traj)
         Filter.atTop (nhds 0) := by
   filter_upwards [h_consistency] with traj htraj
   -- Squeeze: 0 ≤ expectedRegret ≤ horizon * (1 - posterior_true)
-  have h_nonneg : ∀ t, 0 ≤ expectedRegretOnTrajectory O M prior envs agent γ t horizon traj := by
+  have h_nonneg : ∀ t, 0 ≤ expectedRegretOnTrajectory prior envs agent γ t horizon traj := by
     intro t
-    exact expectedRegretOnTrajectory_nonneg O M prior envs agent γ t horizon traj
+    exact expectedRegretOnTrajectory_nonneg prior envs agent γ t horizon traj
 
   have h_upper :
       ∀ t,
-        expectedRegretOnTrajectory O M prior envs agent γ t horizon traj ≤
+        expectedRegretOnTrajectory prior envs agent γ t horizon traj ≤
           (horizon : ℝ) *
-            (1 - (PosteriorConcentration.posteriorWeight O M prior envs ν_star_idx t traj).toReal) := by
+            (1 - (PosteriorConcentration.posteriorWeight prior envs ν_star_idx t traj).toReal) := by
     classical
     intro t
     set h : History := trajectoryToHistory traj t
@@ -136,7 +133,7 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
 
     -- Notation for posterior weights at this `(t, traj)`.
     let wENN : EnvironmentIndex → ℝ≥0∞ :=
-      fun ν_idx => PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj
+      fun ν_idx => PosteriorConcentration.posteriorWeight prior envs ν_idx t traj
     let w : EnvironmentIndex → ℝ :=
       fun ν_idx => (wENN ν_idx).toReal
     let u : EnvironmentIndex → ℝ :=
@@ -150,7 +147,7 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
     -- and ≤ 1 when `mixtureProbability = 0` due to the fallback to the prior).
     have hsumENN_le_one : (∑' ν_idx, wENN ν_idx) ≤ 1 := by
       classical
-      set denom : ℝ≥0∞ := mixtureProbability O M prior envs h
+      set denom : ℝ≥0∞ := mixtureProbability prior envs h
       by_cases hden : denom = 0
       · -- posterior falls back to the prior
         have h_eq : (∑' ν_idx, wENN ν_idx) = ∑' ν_idx, prior.weight ν_idx := by
@@ -162,10 +159,10 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
         have hden_pos : denom > 0 := by
           exact lt_of_le_of_ne zero_le (Ne.symm hden)
         have h_sum_one :
-            (∑' ν_idx, bayesianPosteriorWeight O M prior envs ν_idx h) = 1 :=
-          bayesianPosterior_sum_one O M prior envs h hden_pos
+            (∑' ν_idx, bayesianPosteriorWeight prior envs ν_idx h) = 1 :=
+          bayesianPosterior_sum_one prior envs h hden_pos
         -- rewrite `wENN` as `bayesianPosteriorWeight`
-        have h_eq : (∑' ν_idx, wENN ν_idx) = ∑' ν_idx, bayesianPosteriorWeight O M prior envs ν_idx h := by
+        have h_eq : (∑' ν_idx, wENN ν_idx) = ∑' ν_idx, bayesianPosteriorWeight prior envs ν_idx h := by
           simp [wENN, PosteriorConcentration.posteriorWeight, h]
         simp [h_eq, h_sum_one]
 
@@ -291,7 +288,7 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
               simpa using (tsum_mul_right (f := fun ν_idx => u ν_idx) (a := (horizon : ℝ)))
 
     -- Put everything together.
-    have : expectedRegretOnTrajectory O M prior envs agent γ t horizon traj ≤
+    have : expectedRegretOnTrajectory prior envs agent γ t horizon traj ≤
           (∑' ν_idx, u ν_idx) * (horizon : ℝ) := by
       -- unfold expectedRegretOnTrajectory and use `h_tsum_le`
       simpa [expectedRegretOnTrajectory, PosteriorConcentration.posteriorWeight, h, wENN, w] using
@@ -311,17 +308,17 @@ theorem consistency_implies_expected_regret_convergence (O : Oracle) (M : Reflec
       Filter.Tendsto
         (fun t =>
           (horizon : ℝ) *
-            (1 - (PosteriorConcentration.posteriorWeight O M prior envs ν_star_idx t traj).toReal))
+            (1 - (PosteriorConcentration.posteriorWeight prior envs ν_star_idx t traj).toReal))
         Filter.atTop (nhds 0) := by
     have h1 : Filter.Tendsto (fun t =>
-        (PosteriorConcentration.posteriorWeight O M prior envs ν_star_idx t traj).toReal)
+        (PosteriorConcentration.posteriorWeight prior envs ν_star_idx t traj).toReal)
         Filter.atTop (nhds 1) := htraj
     have hsub : Filter.Tendsto (fun t =>
-        1 - (PosteriorConcentration.posteriorWeight O M prior envs ν_star_idx t traj).toReal)
+        1 - (PosteriorConcentration.posteriorWeight prior envs ν_star_idx t traj).toReal)
         Filter.atTop (nhds (1 - 1)) :=
       (tendsto_const_nhds.sub h1)
     have hsub0 : Filter.Tendsto (fun t =>
-        1 - (PosteriorConcentration.posteriorWeight O M prior envs ν_star_idx t traj).toReal)
+        1 - (PosteriorConcentration.posteriorWeight prior envs ν_star_idx t traj).toReal)
         Filter.atTop (nhds 0) := by simpa using hsub
     simpa [mul_comm, mul_left_comm, mul_assoc] using (tendsto_const_nhds.mul hsub0)
 
@@ -336,19 +333,18 @@ Convert the convergence result to the ε-best response form.
 
     If expected regret → 0 a.s., then for all ε > 0, eventually
     the expected regret is less than ε. -/
-theorem expected_regret_to_epsilon_bound (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+theorem expected_regret_to_epsilon_bound (prior : PriorOverClass) (envs : ℕ → Environment)
     (agent : Agent) (γ : DiscountFactor) (horizon : ℕ)
     (ν_star_idx : EnvironmentIndex)
     (h_stoch : isStochastic (envs ν_star_idx))
     (h_regret_convergence : ∀ᵐ traj ∂(environmentMeasure (envs ν_star_idx) h_stoch),
       Filter.Tendsto
-        (fun t => expectedRegretOnTrajectory O M prior envs agent γ t horizon traj)
+        (fun t => expectedRegretOnTrajectory prior envs agent γ t horizon traj)
         Filter.atTop (nhds 0))
     (ε : ℝ) (hε : ε > 0) :
     ∀ᵐ traj ∂(environmentMeasure (envs ν_star_idx) h_stoch),
       ∃ t₀ : ℕ, ∀ t ≥ t₀,
-        expectedRegretOnTrajectory O M prior envs agent γ t horizon traj < ε := by
+        expectedRegretOnTrajectory prior envs agent γ t horizon traj < ε := by
   -- Follows directly from the definition of Filter.Tendsto and Metric.tendsto_atTop
   filter_upwards [h_regret_convergence] with traj htraj
   -- Use Metric.tendsto_atTop: Tendsto f atTop (nhds a) ↔ ∀ ε > 0, ∃ N, ∀ n ≥ N, dist (f n) a < ε
@@ -360,39 +356,39 @@ theorem expected_regret_to_epsilon_bound (O : Oracle) (M : ReflectiveEnvironment
   -- dist (f t) 0 < ε means |f t - 0| < ε, which means |f t| < ε
   simp only [Real.dist_0_eq_abs] at ht₀
   -- Since expected regret is non-negative, |f t| = f t
-  have h_nonneg := expectedRegretOnTrajectory_nonneg O M prior envs agent γ t horizon traj
+  have h_nonneg := expectedRegretOnTrajectory_nonneg prior envs agent γ t horizon traj
   rwa [abs_of_nonneg h_nonneg] at ht₀
 
 /-- Expected regret less than ε implies ε-best response (on average). -/
 theorem small_expectedRegretOnTrajectory_implies_exists_small_regret
-    (O : Oracle) (M : ReflectiveEnvironmentClass O)
-    (prior : PriorOverClass O M) (envs : ℕ → Environment)
+    
+    (prior : PriorOverClass) (envs : ℕ → Environment)
     (agent : Agent) (γ : DiscountFactor) (ε : ℝ) (t horizon : ℕ) (traj : Trajectory)
     (_hε : 0 < ε)
-    (h_mix_pos : mixtureProbability O M prior envs (trajectoryToHistory traj t) > 0)
-    (h_small : expectedRegretOnTrajectory O M prior envs agent γ t horizon traj < ε) :
+    (h_mix_pos : mixtureProbability prior envs (trajectoryToHistory traj t) > 0)
+    (h_small : expectedRegretOnTrajectory prior envs agent γ t horizon traj < ε) :
     ∃ ν_idx : EnvironmentIndex,
       regret (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon < ε := by
   classical
-  have hsum : ∑' i, PosteriorConcentration.posteriorWeight O M prior envs i t traj = 1 := by
+  have hsum : ∑' i, PosteriorConcentration.posteriorWeight prior envs i t traj = 1 := by
     simpa [PosteriorConcentration.posteriorWeight] using
-      (bayesianPosterior_sum_one O M prior envs (trajectoryToHistory traj t) h_mix_pos)
+      (bayesianPosterior_sum_one prior envs (trajectoryToHistory traj t) h_mix_pos)
 
   have hsum_toReal :
-      ∑' i, (PosteriorConcentration.posteriorWeight O M prior envs i t traj).toReal = 1 := by
+      ∑' i, (PosteriorConcentration.posteriorWeight prior envs i t traj).toReal = 1 := by
     have hsum_ne_top :
-        (∑' i, PosteriorConcentration.posteriorWeight O M prior envs i t traj) ≠ ∞ := by
+        (∑' i, PosteriorConcentration.posteriorWeight prior envs i t traj) ≠ ∞ := by
       simp [hsum]
     have h_ne_top :
-        ∀ i, PosteriorConcentration.posteriorWeight O M prior envs i t traj ≠ ∞ :=
+        ∀ i, PosteriorConcentration.posteriorWeight prior envs i t traj ≠ ∞ :=
       fun i => ENNReal.ne_top_of_tsum_ne_top hsum_ne_top i
     calc
-      (∑' i, (PosteriorConcentration.posteriorWeight O M prior envs i t traj).toReal)
-          = (∑' i, PosteriorConcentration.posteriorWeight O M prior envs i t traj).toReal := by
+      (∑' i, (PosteriorConcentration.posteriorWeight prior envs i t traj).toReal)
+          = (∑' i, PosteriorConcentration.posteriorWeight prior envs i t traj).toReal := by
               symm
               simpa using
                 (ENNReal.tsum_toReal_eq (f := fun i =>
-                  PosteriorConcentration.posteriorWeight O M prior envs i t traj) h_ne_top)
+                  PosteriorConcentration.posteriorWeight prior envs i t traj) h_ne_top)
       _ = 1 := by simp [hsum]
 
   by_contra hno
@@ -409,69 +405,69 @@ theorem small_expectedRegretOnTrajectory_implies_exists_small_regret
     intro ν_idx
     exact regret_nonneg (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon
 
-  have h_lower : ε ≤ expectedRegretOnTrajectory O M prior envs agent γ t horizon traj := by
+  have h_lower : ε ≤ expectedRegretOnTrajectory prior envs agent γ t horizon traj := by
     have h_termwise :
         ∀ ν_idx,
-          (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal * ε ≤
-            (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal *
+          (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal * ε ≤
+            (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal *
               regret (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon := by
       intro ν_idx
-      have hwt : 0 ≤ (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal :=
+      have hwt : 0 ≤ (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal :=
         ENNReal.toReal_nonneg
       exact mul_le_mul_of_nonneg_left (hge ν_idx) hwt
 
     have hsum_mul :
-        (∑' ν_idx, (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal * ε) =
-          (∑' ν_idx, (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal) *
+        (∑' ν_idx, (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal * ε) =
+          (∑' ν_idx, (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal) *
             ε := by
       -- `tsum_mul_right` is in the root namespace for rings.
       simpa [mul_comm, mul_left_comm, mul_assoc] using
         (tsum_mul_right (f := fun ν_idx =>
-          (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal) (a := ε))
+          (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal) (a := ε))
 
     calc
       ε = 1 * ε := by simp
-      _ = (∑' ν_idx, (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal) *
+      _ = (∑' ν_idx, (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal) *
               ε := by simp [hsum_toReal]
-      _ = (∑' ν_idx, (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal *
+      _ = (∑' ν_idx, (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal *
               ε) := by simp [hsum_mul]
       _ ≤ (∑' ν_idx,
-            (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal *
+            (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal *
               regret (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon) := by
             -- Use the order lemma for `tsum` (requires summability of both sides).
             have hsum_ne_top :
-                (∑' i, PosteriorConcentration.posteriorWeight O M prior envs i t traj) ≠ ∞ := by
+                (∑' i, PosteriorConcentration.posteriorWeight prior envs i t traj) ≠ ∞ := by
               simp [hsum]
             have hSummable_w :
                 Summable (fun ν_idx =>
-                  (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal) :=
+                  (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal) :=
               ENNReal.summable_toReal hsum_ne_top
             have hSummable_f :
                 Summable (fun ν_idx =>
-                  (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal * ε) :=
+                  (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal * ε) :=
               hSummable_w.mul_right ε
             have hSummable_major :
                 Summable (fun ν_idx =>
-                  (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal *
+                  (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal *
                     (horizon : ℝ)) :=
               hSummable_w.mul_right (horizon : ℝ)
             have hSummable_g :
                 Summable (fun ν_idx =>
-                  (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal *
+                  (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal *
                     regret (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon) := by
               refine Summable.of_nonneg_of_le ?_ ?_ hSummable_major
               · intro ν_idx
                 exact mul_nonneg ENNReal.toReal_nonneg (hnonneg ν_idx)
               · intro ν_idx
                 have hwt :
-                    0 ≤ (PosteriorConcentration.posteriorWeight O M prior envs ν_idx t traj).toReal :=
+                    0 ≤ (PosteriorConcentration.posteriorWeight prior envs ν_idx t traj).toReal :=
                   ENNReal.toReal_nonneg
                 have hregle :
                     regret (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon ≤ horizon :=
                   regret_bounded (envs ν_idx) agent γ (trajectoryToHistory traj t) horizon
                 exact mul_le_mul_of_nonneg_left hregle hwt
             exact hSummable_f.tsum_le_tsum (fun ν_idx => h_termwise ν_idx) hSummable_g
-      _ = expectedRegretOnTrajectory O M prior envs agent γ t horizon traj := by
+      _ = expectedRegretOnTrajectory prior envs agent γ t horizon traj := by
             simp [expectedRegretOnTrajectory]
 
   exact (not_lt_of_ge h_lower) h_small

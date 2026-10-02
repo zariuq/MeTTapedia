@@ -293,6 +293,9 @@ theorem materialize_category_ne_name
       cases kind
       · exact (costBaseSortName_ne_apparatus "Name" "signature").symm
       · exact (costBaseSortName_ne_apparatus "Name" "signature").symm
+      · exact (costBaseSortName_ne_apparatus "Name" "key").symm
+      · exact (costBaseSortName_ne_apparatus "Name" "key").symm
+      · exact (costBaseSortName_ne_apparatus "Name" "signature").symm
       · exact (costBaseSortName_ne_wrapped "Name").symm
       · exact (costBaseSortName_ne_apparatus "Name" "token-stack").symm
       · exact (costBaseSortName_ne_apparatus "Name" "token-stack").symm

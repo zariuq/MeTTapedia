@@ -578,7 +578,7 @@ theorem sucStep_shifted_typed {Γ : Tower.Ctx n} :
   Typing.conv (sucStep_typed Γ)
     (CertifiedTransforms.stepOver_typed_cumulative numT_typed
       (Typing.appElim (B := U0) shiftedEqAt_typed (Typing.var 0))
-      (isUniverseAt Tower.zero) (Tower.Join.sorts _ _) lowered_zero)
+      (isUniverseAt Tower.zero) (LevelTower.Join.sorts _ _) lowered_zero)
     (isUniverseAt Tower.zero) (.symm _ _ (Runs.conv shifted_step_runs))
 
 /-- The call the runtime rejects is typed, and its run reaches the same value. -/

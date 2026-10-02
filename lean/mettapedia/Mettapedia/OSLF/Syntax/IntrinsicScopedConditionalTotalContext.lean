@@ -41,16 +41,6 @@ noncomputable def operationalFibers :
 finite list of contextual event variables over that interpretation. -/
 abbrev TotalContext := Grothendieck (operationalFibers R)
 
-/-- Forget equation satisfaction while retaining the complete binding clone
-and every substitution-preserving model map. -/
-def forgetEquations (equations : List (EqAxiom S M)) :
-    FreeBindingEquationModel.Model equations ⥤
-      BindingCloneAlgebra.Algebra.{0} S where
-  obj model := model.algebra
-  map interpretation := interpretation
-  map_id _ := rfl
-  map_comp _ _ := rfl
-
 /-- Over an authored equation context, event variables are contextual
 judgments in its actual equation-class binding model. A contextual
 assignment reindexes the complete free rule trees. -/

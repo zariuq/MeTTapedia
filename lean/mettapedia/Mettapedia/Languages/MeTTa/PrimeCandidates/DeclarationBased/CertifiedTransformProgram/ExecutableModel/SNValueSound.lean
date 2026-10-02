@@ -14,7 +14,7 @@ root step of the executable package is validated:
   its typed instances (`vmodel_jRoot_typed`): the typing facts of the redex's
   spine make its path a valid path from the base point to the endpoint, and the
   transport of the method along the motive is then related to the method
-  (`ModelS.TypedRootS.transport`).
+  (`ModelSN.TypedRootS.transport`).
 
 So every stage of the package whose constants are valid is sound with typed
 root steps (`vstage_typedSoundS`), and so is the program's codes over it
@@ -68,8 +68,8 @@ the two sides of the linear rule are validly equal. -/
 theorem vmodel_jRoot_typed_at {R : Rules Tower.Head} {u w : Tower.Head}
     (hw : (vmodel v).rules.isUniverse w) (declared : R.constantType jName = some (elimType u w))
     {n : Nat} {a₀ a₁ a₂ a₃ a₄ z : Tower.Tm n} :
-    ModelS.TypedRootS R (vmodel v) (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) a₃ :=
-  ModelS.TypedRootS.transport (vmodel_laws v) hw declared (vmodel_j_rootStep v)
+    ModelSN.TypedRootS R (vmodel v) (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) a₃ :=
+  ModelSN.TypedRootS.transport (vmodel_laws v) hw declared (vmodel_j_rootStep v)
     (vmodel_coeRules v)
 
 /-- The typed root step of identity elimination, for a package that declares it
@@ -77,8 +77,8 @@ at the lowest universes. -/
 theorem vmodel_jRoot_typed {R : Rules Tower.Head}
     (declared : R.constantType jName = some Package.jType) {n : Nat}
     {a₀ a₁ a₂ a₃ a₄ z : Tower.Tm n} :
-    ModelS.TypedRootS R (vmodel v) (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) a₃ :=
-  vmodel_jRoot_typed_at v (Tower.IsUniverse.sort _) (declared.trans (by rw [jType_eq]))
+    ModelSN.TypedRootS R (vmodel v) (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) a₃ :=
+  vmodel_jRoot_typed_at v (LevelTower.IsUniverse.sort _) (declared.trans (by rw [jType_eq]))
 
 /-- **Every root step of a stage is validated by the model**: a computation other
 than identity elimination is a step of the model's reduction, and identity
@@ -88,13 +88,13 @@ theorem vstage_root {allowed : DeclName → Bool} {R : Rules Tower.Head}
     (declaredJ : allowed jName = true → ∃ u w, (vmodel v).rules.isUniverse w ∧
       R.constantType jName = some (elimType u w))
     {n : Nat} {l r : Tower.Tm n} (step : (stage allowed).computation.step l r) :
-    ModelS.RootSemanticS (vmodel v) l r ∨ ModelS.TypedRootS R (vmodel v) l r := by
+    ModelSN.RootSemanticS (vmodel v) l r ∨ ModelSN.TypedRootS R (vmodel v) l r := by
   change (RootComputation.unionAll (computations.filter fun entry => allowed entry.1)).step l r
     at step
   obtain ⟨entry, mem, h⟩ := RootComputation.unionAll_step step
   obtain ⟨listedIn, allowedIn⟩ := List.mem_filter.mp mem
-  have semantic : (vmodel v).rules.computation.step l r → ModelS.RootSemanticS (vmodel v) l r :=
-    fun s => ModelS.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inl s)
+  have semantic : (vmodel v).rules.computation.step l r → ModelSN.RootSemanticS (vmodel v) l r :=
+    fun s => ModelSN.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inl s)
   simp only [computations, List.mem_cons, List.not_mem_nil, or_false] at listedIn
   rcases listedIn with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   · exact .inl (semantic (tmodel_step v (tmodelListed v 0 (by decide)) h))
@@ -118,8 +118,8 @@ theorem vstage_root {allowed : DeclName → Bool} {R : Rules Tower.Head}
 steps.** -/
 theorem vstage_typedSoundS {allowed : DeclName → Bool}
     (constants : ∀ {name : DeclName} {type : Tower.Tm 0}, allowed name = true →
-      allTypes name = some type → ModelS.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelS.TypedSoundS (stage allowed) (vmodel v) where
+      allTypes name = some type → ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (stage allowed) (vmodel v) where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
@@ -127,7 +127,7 @@ theorem vstage_typedSoundS {allowed : DeclName → Bool}
   cumulative := id
   headEq := id
   root := vstage_root v fun allowedJ => by
-    refine ⟨.sort Tower.zero, .sort Tower.zero, Tower.IsUniverse.sort _, ?_⟩
+    refine ⟨.sort Tower.zero, .sort Tower.zero, LevelTower.IsUniverse.sort _, ?_⟩
     change (if allowed jName then allTypes jName else none) = some Package.jType
     rw [if_pos allowedJ]
     exact allTypes_j
@@ -141,8 +141,8 @@ theorem vstage_typedSoundS {allowed : DeclName → Bool}
 with typed root steps. -/
 theorem vstage_typedSoundS_of {names : List DeclName}
     (constants : ∀ name ∈ names, ∀ {type : Tower.Tm 0}, allTypes name = some type →
-      ModelS.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelS.TypedSoundS (stage (allowedIn names)) (vmodel v) :=
+      ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (stage (allowedIn names)) (vmodel v) :=
   vstage_typedSoundS v fun {name _} allowed declared =>
     constants name (by simpa [allowedIn] using allowed) declared
 
@@ -151,8 +151,8 @@ the model with typed root steps**: the decodings are coherent, and the stage's
 root steps are validated. -/
 theorem vcodes_typedSoundS {allowed : DeclName → Bool}
     (constants : ∀ {name : DeclName} {type : Tower.Tm 0}, allowed name = true →
-      allTypes name = some type → ModelS.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelS.TypedSoundS (programCodes.extend (stage allowed)) (vmodel v) where
+      allTypes name = some type → ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (programCodes.extend (stage allowed)) (vmodel v) where
   laws := vmodel_laws v
   headTyping := id
   isUniverse := id
@@ -163,12 +163,12 @@ theorem vcodes_typedSoundS {allowed : DeclName → Bool}
     intro n l r step
     rcases step with step | step
     · refine vstage_root v
-        (fun allowedJ => ⟨.sort Tower.zero, .sort Tower.zero, Tower.IsUniverse.sort _, ?_⟩) step
+        (fun allowedJ => ⟨.sort Tower.zero, .sort Tower.zero, LevelTower.IsUniverse.sort _, ?_⟩) step
       change (programCodes.codeType jName).orElse
         (fun _ => if allowed jName then allTypes jName else none) = some Package.jType
       rw [codeType_j, if_pos allowedJ]
       exact allTypes_j
-    · exact .inl (ModelS.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inr step))
+    · exact .inl (ModelSN.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inr step))
   constants := by
     intro name type declared
     change (programCodes.codeType name).orElse
@@ -177,7 +177,7 @@ theorem vcodes_typedSoundS {allowed : DeclName → Bool}
     | some T =>
         rw [code] at declared
         cases declared
-        exact ModelS.valid_codeS (vmodel_laws v) (vprogramCodes_readS v) code
+        exact ModelSN.valid_codeS (vmodel_laws v) (vprogramCodes_readS v) code
     | none =>
         rw [code] at declared
         change (if allowed name then allTypes name else none) = some type at declared
@@ -190,7 +190,7 @@ theorem vcodes_typedSoundS {allowed : DeclName → Bool}
 in the stage of the numbers, addition, identity elimination and `eqAt`, which
 is sound with typed root steps. -/
 theorem vmodel_valid_sucMove :
-    ModelS.ValidTmS (vmodel v) .nil (.const sucMoveName) sucMoveType := by
+    ModelSN.ValidTmS (vmodel v) .nil (.const sucMoveName) sucMoveType := by
   have sound₀ := vstage_typedSoundS_of v (names := [numN, zeroN, sucN, addN, jName, eqAtName])
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -201,7 +201,7 @@ theorem vmodel_valid_sucMove :
       · exact vmodel_valid_add v
       · exact vmodel_valid_j v
       · exact vmodel_valid_eqAt v
-  exact ModelS.ValidTmS.definition (Θ := eqAtTelescope)
+  exact ModelSN.ValidTmS.definition (Θ := eqAtTelescope)
     (C := Package.eqAtApp (SetProfile.sucNative (.var 1))) (rhs := sucMoveRhs) sound₀
     ⟨_, .sort _, sucMoveType_typed (by simp) (by simp) (by simp)⟩
     (sucMoveBody_typed (by simp) (by simp) (by simp) (by simp) (by simp) (by simp))
@@ -212,7 +212,7 @@ theorem vmodel_valid_sucMove :
 /-- **`sucStep` is valid**: its right-hand side is typed in the stage with
 `sucMove` and the transport, which is sound with typed root steps. -/
 theorem vmodel_valid_sucStep :
-    ModelS.ValidTmS (vmodel v) .nil (.const sucStepName) sucStepType := by
+    ModelSN.ValidTmS (vmodel v) .nil (.const sucStepName) sucStepType := by
   have sound₀ := vstage_typedSoundS_of v
     (names := [numN, zeroN, sucN, addN, jName, eqAtName, sucMoveName, transportName])
     fun name mem type declared => by
@@ -227,7 +227,7 @@ theorem vmodel_valid_sucStep :
       · exact vmodel_valid_eqAt v
       · exact vmodel_valid_sucMove v
       · exact vmodel_valid_transport v
-  exact ModelS.ValidTmS.definition (Θ := eqAtTelescope)
+  exact ModelSN.ValidTmS.definition (Θ := eqAtTelescope)
     (C := .sigma numT (Package.eqAtApp (.var 0))) (rhs := sucStepRhs) sound₀
     ⟨_, .sort _, sucStepType_typed⟩ sucStepBody_typed
     (fun σ => vmodel_rule v (listed 11 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
@@ -241,7 +241,7 @@ declared type in the model**, identity elimination and the definitions through
 it included. -/
 theorem vmodel_valid_declared {name : DeclName} {type : Tower.Tm 0}
     (declared : allTypes name = some type) :
-    ModelS.ValidTmS (vmodel v) .nil (.const name) type := by
+    ModelSN.ValidTmS (vmodel v) .nil (.const name) type := by
   have mem := mem_of_lookup declared
   simp only [declarations, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at mem
   rcases mem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
@@ -269,7 +269,7 @@ theorem vmodel_valid_declared {name : DeclName} {type : Tower.Tm 0}
 skeleton-free value side, with its root steps read with their typing**: the
 program's codes over the whole executable package, identity elimination
 included. -/
-theorem vmodel_soundS_objectRules : ModelS.TypedSoundS objectRules (vmodel v) :=
+theorem vmodel_soundS_objectRules : ModelSN.TypedSoundS objectRules (vmodel v) :=
   vcodes_typedSoundS v fun {_ _} _ declared => vmodel_valid_declared v declared
 
 end CodeModel
@@ -284,7 +284,7 @@ the package's own reduction, and so is its type. -/
 theorem objectRules_sn_values {n : Nat} {Γ : Tower.Ctx n} {t A : Tower.Tm n}
     (formed : CtxFormed objectRules Γ) (typed : Typed objectRules Γ t A) :
     SN objectRules t ∧ SN objectRules A :=
-  ModelS.Typed.sn (vmodel_soundS_objectRules fun _ => 0) formed typed
+  ModelSN.Typed.sn (vmodel_soundS_objectRules fun _ => 0) formed typed
 
 open CodeModel in
 /-- Both sides of a derivable equality of the object package in a formed context
@@ -293,7 +293,7 @@ side. -/
 theorem objectRules_equal_sn_values {n : Nat} {Γ : Tower.Ctx n} {a b A : Tower.Tm n}
     (formed : CtxFormed objectRules Γ) (equal : Derivable objectRules (.equality Γ a b A)) :
     SN objectRules a ∧ SN objectRules b ∧ SN objectRules A :=
-  ModelS.Equal.sn (vmodel_soundS_objectRules fun _ => 0) formed equal
+  ModelSN.Equal.sn (vmodel_soundS_objectRules fun _ => 0) formed equal
 
 open CodeModel in
 /-- **Strong normalization of the object package.** Every term typed in a
@@ -330,19 +330,19 @@ theorem vmodel_jRoot_valid {n : Nat} {Γ : Tower.Ctx n} {a₀ a₁ a₂ a₃ a�
     (formed : CtxFormed objectRules Γ)
     (typedL : Typed objectRules Γ (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) A)
     (typedR : Typed objectRules Γ a₃ A) :
-    ModelS.ValidEqS (vmodel v) Γ (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) a₃ A :=
-  (ModelS.Derivable.validTS (vmodel_soundS_objectRules v)
+    ModelSN.ValidEqS (vmodel v) Γ (appSpine (.const jName) [a₀, a₁, a₂, a₃, a₄, .refl z]) a₃ A :=
+  (ModelSN.Derivable.validTS (vmodel_soundS_objectRules v)
     (.root (objectStep_jRefl a₀ a₁ a₂ a₃ a₄ z) typedL typedR)
-    (ModelS.CtxFormed.validS (vmodel_soundS_objectRules v) formed)).1
+    (ModelSN.CtxFormed.validS (vmodel_soundS_objectRules v) formed)).1
 
 /-- **The untypable redex has no typing facts.** At `mismatchJ`, where the linear
 rule's untyped root obligation fails (`vmodel_jRoot_not_semantic`), the typing
 facts of its spine would validate the rule, so they fail. -/
 theorem mismatchJ_not_spineFacts :
-    ¬ ModelS.SpineFacts objectRules (vmodel v) .nil mismatchJ U0 := fun facts =>
+    ¬ ModelSN.SpineFacts objectRules (vmodel v) .nil mismatchJ U0 := fun facts =>
   vmodel_mismatchJ_not_equal v
-    (ModelS.ValidEqS.transportStep (vmodel_laws v) (u := .sort Tower.zero)
-      (w := .sort Tower.zero) (Tower.IsUniverse.sort _) objectRules_declared_j
+    (ModelSN.ValidEqS.transportStep (vmodel_laws v) (u := .sort Tower.zero)
+      (w := .sort Tower.zero) (LevelTower.IsUniverse.sort _) objectRules_declared_j
       (vmodel_j_rootStep v) (vmodel_coeRules v) facts (vmodel_mismatchJ_valid v)
       (vmodel_valid_num v))
 
@@ -350,7 +350,7 @@ theorem mismatchJ_not_spineFacts :
 the typing facts of its spines, which `mismatchJ` has not. -/
 theorem mismatchJ_untypable : ¬ Typed objectRules .nil (mismatchJ : Tower.Tm 0) U0 :=
   fun typed => mismatchJ_not_spineFacts (fun _ => 0)
-    (ModelS.Typed.spineFacts (vmodel_soundS_objectRules fun _ => 0) typed trivial)
+    (ModelSN.Typed.spineFacts (vmodel_soundS_objectRules fun _ => 0) typed trivial)
 
 end CodeModel
 

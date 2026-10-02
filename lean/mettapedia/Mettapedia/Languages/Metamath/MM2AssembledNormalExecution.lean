@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Metamath.MM2TransformationCanary
+import Mettapedia.Languages.ProcessCalculi.MORK.CheckedAtomReplay
 
 /-!
 # Assembled normal-proof execution for the Metamath-to-MM2 transformation
@@ -187,6 +188,46 @@ def authoredNormalVerifierRunInvariantCheck : Nat → List Atom → Bool
         | none => true
         | some next => authoredNormalVerifierRunInvariantCheck fuel next
 
+private def normalReplaySpec : CheckedAtomReplay.Spec where
+  step := cReflectiveSourceWorkQueueStep .leaveInert
+  run := cReflectiveSourceWorkQueueRunN .leaveInert
+  runZero := by intro space; rfl
+  runStep := by
+    intro fuel used space next final moved tail
+    simp only [cReflectiveSourceWorkQueueRunN, moved, tail]
+  runStop := by
+    intro space stop fuel
+    cases fuel <;> simp only [cReflectiveSourceWorkQueueRunN, stop]
+  check := normalProofMachineInvariantCheck
+  checkRun := normalProofMachineRunInvariantCheck
+  checkZero := by intro space here; exact here
+  checkStep := by
+    intro fuel space next here moved tail
+    simp only [normalProofMachineRunInvariantCheck, here, moved, tail, Bool.true_and]
+  checkStop := by
+    intro space here stop fuel
+    cases fuel <;> simp only [normalProofMachineRunInvariantCheck, here, stop, Bool.true_and]
+
+private def authoredReplaySpec : CheckedAtomReplay.Spec where
+  step := cReflectiveSourceWorkQueueStep .leaveInert
+  run := cReflectiveSourceWorkQueueRunN .leaveInert
+  runZero := by intro space; rfl
+  runStep := by
+    intro fuel used space next final moved tail
+    simp only [cReflectiveSourceWorkQueueRunN, moved, tail]
+  runStop := by
+    intro space stop fuel
+    cases fuel <;> simp only [cReflectiveSourceWorkQueueRunN, stop]
+  check := authoredNormalVerifierInvariantCheck
+  checkRun := authoredNormalVerifierRunInvariantCheck
+  checkZero := by intro space here; exact here
+  checkStep := by
+    intro fuel space next here moved tail
+    simp only [authoredNormalVerifierRunInvariantCheck, here, moved, tail, Bool.true_and]
+  checkStop := by
+    intro space here stop fuel
+    cases fuel <;> simp only [authoredNormalVerifierRunInvariantCheck, here, stop, Bool.true_and]
+
 /-- Successful replay of the combined inventory invariant constructs one
 continuous adequate trace against the authored support-valued MM2 semantics. -/
 def authoredNormalVerifierAdequateTraceOfCheck
@@ -229,9 +270,12 @@ def normalProofMachineAdequateTraceOfCheck
           simp only [moved] at accepted
           exact .step currentInvariant moved (induction next accepted.2)
 
+set_option maxHeartbeats 0 in
+kernel_atom_replay hypothesisReplay using normalReplaySpec for 35 from hypothesisCanaryProgram
+
 theorem hypothesisCanary_run_invariant_check :
     normalProofMachineRunInvariantCheck 35 hypothesisCanaryProgram = true := by
-  decide +kernel
+  exact hypothesisReplay.invariant
 
 /-- The entire positive hypothesis canary is now one continuous concrete run
 whose every transition realizes an authored support-valued MM2 step. -/
@@ -290,6 +334,7 @@ observation in the real assembled space. -/
 theorem hypothesisCanary_target_accepts :
     TargetAcceptsWithin hypothesisCanaryProgram acceptedFact 35 := by
   unfold TargetAcceptsWithin
+  rw [hypothesisReplay.run]
   decide +kernel
 
 /-- The positive canary therefore has an explicit continuous target run from
@@ -306,14 +351,21 @@ def hypothesisCanary_nativeTypeTraceWitness :
     TargetNativeTypeTraceWitness hypothesisCanaryProgram acceptedFact 35 :=
   targetAcceptsWithin_nativeTypeTraceWitness hypothesisCanary_target_accepts
 
+set_option maxHeartbeats 0 in
+kernel_atom_run severedHypothesisReplay using normalReplaySpec for 35 from severedProgram
+
 /-- Removing the source hypothesis row while retaining the identical dynamic
 proof input cannot manufacture the terminal observation. -/
 theorem severedHypothesisCanary_does_not_accept :
     ¬ TargetAcceptsWithin severedProgram acceptedFact 35 := by
   unfold TargetAcceptsWithin
+  rw [severedHypothesisReplay.run]
   decide +kernel
 
 /-! ## One assembled assertion application -/
+
+set_option maxHeartbeats 0 in
+kernel_atom_replay assertionReplay using normalReplaySpec for 160 from assertionCanaryProgram
 
 /-- The bounded assertion canary executes one hypothesis step and one genuine
 assertion application in the same assembled program.  In particular, the
@@ -322,6 +374,7 @@ step; no phase-local space is reconstructed between them. -/
 theorem assertionCanary_target_accepts :
     TargetAcceptsWithin assertionCanaryProgram assertionAcceptedFact 160 := by
   unfold TargetAcceptsWithin
+  rw [assertionReplay.run]
   decide +kernel
 
 /-- The same 160-step assembled assertion run retains duplicate freedom and
@@ -330,7 +383,7 @@ replayable instance of the source-relative closure obligation; it does not
 claim that hostile spaces containing forged verifier-internal rows are safe. -/
 theorem assertionCanary_run_invariant_check :
     normalProofMachineRunInvariantCheck 160 assertionCanaryProgram = true := by
-  decide +kernel
+  exact assertionReplay.invariant
 
 /-- The complete assertion canary is one continuous concrete run adequate to
 the authored support-valued MM2 GSLT, including the intermediate stack cell
@@ -364,11 +417,15 @@ def assertionCanary_nativeTypeTraceWitness :
       160 :=
   targetAcceptsWithin_nativeTypeTraceWitness assertionCanary_target_accepts
 
+set_option maxHeartbeats 0 in
+kernel_atom_run severedAssertionReplay using normalReplaySpec for 160 from assertionSeveredProgram
+
 /-- Removing the assertion lookup and execution rows while keeping the same
 hypothesis and submitted proof cannot manufacture assertion acceptance. -/
 theorem severedAssertionCanary_does_not_accept :
     ¬ TargetAcceptsWithin assertionSeveredProgram assertionAcceptedFact 160 := by
   unfold TargetAcceptsWithin
+  rw [severedAssertionReplay.run]
   decide +kernel
 
 /-! ## Ordered theorem event joined to the normal machine -/
@@ -416,12 +473,38 @@ noncomputable def orderedTheoremNormalJoinProgram : List Atom :=
 def orderedJoinAdmission : Atom :=
   sourceTheoremAdmittedAtom orderedJoinOwner 0 orderedJoinStatement (natAtom 0)
 
+def orderedJoinActionRelease : Atom :=
+  sourceTheoremActionReleaseAtom orderedJoinOwner 0 1 orderedJoinStatement
+    (natAtom 0)
+
+set_option maxHeartbeats 0 in
+kernel_atom_replay orderedJoinReplay using authoredReplaySpec for 70 from orderedTheoremNormalJoinProgram
+
+theorem orderedTheoremNormalJoin_run_exact :
+    cReflectiveSourceWorkQueueRunN .leaveInert 70
+      orderedTheoremNormalJoinProgram = (orderedJoinReplay.final, 43) :=
+  orderedJoinReplay.run
+
+theorem orderedTheoremNormalJoin_stopped_at_release :
+    cReflectiveSourceWorkQueueStep .leaveInert orderedJoinReplay.final = none := by
+  decide +kernel
+
 /-- The ordered dispatcher, prepared-row gate, normal hypothesis machine,
-terminal bridge, and conditional commit form one continuous scheduled run. -/
-theorem orderedTheoremNormalJoin_target_admits :
-    TargetAcceptsWithin orderedTheoremNormalJoinProgram orderedJoinAdmission
+terminal bridge, and proof-qualified action release form one continuous run.
+The subsequent source-state mutation stage is not part of this slice. -/
+theorem orderedTheoremNormalJoin_target_releases_action :
+    TargetAcceptsWithin orderedTheoremNormalJoinProgram orderedJoinActionRelease
       70 := by
   unfold TargetAcceptsWithin
+  rw [orderedJoinReplay.run]
+  decide +kernel
+
+/-- Proof completion alone cannot publish admission at this slice boundary. -/
+theorem orderedTheoremNormalJoin_does_not_admit :
+    ¬ TargetAcceptsWithin orderedTheoremNormalJoinProgram orderedJoinAdmission
+      70 := by
+  unfold TargetAcceptsWithin
+  rw [orderedJoinReplay.run]
   decide +kernel
 
 /-- Every state visited by the ordered-event plus normal-proof canary retains
@@ -429,11 +512,11 @@ the exact executable inventory generated from the authored verifier slice. -/
 theorem orderedTheoremNormalJoin_run_invariant_check :
     authoredNormalVerifierRunInvariantCheck 70
       orderedTheoremNormalJoinProgram = true := by
-  decide +kernel
+  exact orderedJoinReplay.invariant
 
-/-- The complete ordered theorem canary is one state-threaded concrete run
+/-- The ordered-event normal-proof slice is one state-threaded concrete run
 adequate to the authored support-valued MM2 GSLT.  This joins source dispatch,
-normal proof execution, terminal success, and conditional commit without
+normal proof execution, terminal success, and action release without
 reconstructing a phase-local space. -/
 noncomputable def orderedTheoremNormalJoin_adequateTrace :
     CReflectiveAdequateTrace .leaveInert 70
@@ -451,17 +534,17 @@ noncomputable def orderedTheoremNormalJoin_supportNativeTypeTrace :
         orderedTheoremNormalJoinProgram).1.toFinset :=
   orderedTheoremNormalJoin_adequateTrace.toSupportNativeTypeTrace
 
-/-- Ordered source dispatch, normal proof execution, and conditional theorem
-commit coexist in one OSLF-classified executable trace. -/
+/-- Ordered source dispatch, normal proof execution, and proof-qualified
+action release coexist in one OSLF-classified executable trace. -/
 noncomputable def orderedTheoremNormalJoin_nativeTypeTraceWitness :
     TargetNativeTypeTraceWitness orderedTheoremNormalJoinProgram
-      orderedJoinAdmission 70 :=
+      orderedJoinActionRelease 70 :=
   targetAcceptsWithin_nativeTypeTraceWitness
-    orderedTheoremNormalJoin_target_admits
+    orderedTheoremNormalJoin_target_releases_action
 
-/-- Removing only the decoder-derived prepared row leaves the same source
-event, proof rows, hypothesis lookup, and verifier rules, but cannot admit the
-theorem. -/
+/-- Without the decoder-derived prepared theorem bundle, the same source
+event, proof input, hypothesis lookup, and verifier rules cannot release its
+post-proof action. -/
 noncomputable def orderedTheoremNormalJoinWithoutPreparedProgram : List Atom :=
   (transformNormalVerifierSlice authoredMetamathVerifierGSLT
       ordinaryMM2Target).program ++
@@ -472,10 +555,21 @@ noncomputable def orderedTheoremNormalJoinWithoutPreparedProgram : List Atom :=
       (theoremObligationProofInput orderedJoinObligation) ++
     hypothesisLookupRows orderedJoinOwner hypothesisCanaryState
 
+set_option maxHeartbeats 0 in
+kernel_atom_run unpreparedOrderedJoinReplay using authoredReplaySpec for 70 from orderedTheoremNormalJoinWithoutPreparedProgram
+
+theorem orderedTheoremNormalJoin_without_prepared_does_not_release_action :
+    ¬ TargetAcceptsWithin orderedTheoremNormalJoinWithoutPreparedProgram
+      orderedJoinActionRelease 70 := by
+  unfold TargetAcceptsWithin
+  rw [unpreparedOrderedJoinReplay.run]
+  decide +kernel
+
 theorem orderedTheoremNormalJoin_without_prepared_does_not_admit :
     ¬ TargetAcceptsWithin orderedTheoremNormalJoinWithoutPreparedProgram
       orderedJoinAdmission 70 := by
   unfold TargetAcceptsWithin
+  rw [unpreparedOrderedJoinReplay.run]
   decide +kernel
 
 /-! ## Conditional theorem availability -/
@@ -537,6 +631,9 @@ noncomputable def invalidThenReferenceProgram : List Atom :=
       stateAfterInvalidFirst laterReferenceObligation ++
     hypothesisLookupRows conditionalOwner hypothesisCanaryState
 
+set_option maxHeartbeats 0 in
+kernel_atom_run invalidThenReferenceReplay using authoredReplaySpec for 160 from invalidThenReferenceProgram
+
 /-- An invalid earlier theorem cannot become executable merely because the
 later theorem names it.  In the one assembled run, its assertion header is
 never published, source control never advances to the later statement, and
@@ -548,6 +645,7 @@ theorem invalid_earlier_theorem_cannot_authorize_later_reference :
     assertionHeaderRow conditionalOwner 0 invalidFirstAssertion ∉ final ∧
       sourceControlAtom conditionalOwner 1 ∉ final ∧
       sourceCurrentAtom conditionalOwner 1 2 laterReferenceStatement ∉ final := by
+  simp only [invalidThenReferenceReplay.run]
   decide +kernel
 
 #print axioms cReflectiveSourceWorkQueueRunN_reachable
@@ -578,11 +676,15 @@ theorem invalid_earlier_theorem_cannot_authorize_later_reference :
 #print axioms assertionCanary_has_reachable_terminal
 #print axioms assertionCanary_nativeTypeTraceWitness
 #print axioms severedAssertionCanary_does_not_accept
-#print axioms orderedTheoremNormalJoin_target_admits
+#print axioms orderedTheoremNormalJoin_run_exact
+#print axioms orderedTheoremNormalJoin_stopped_at_release
+#print axioms orderedTheoremNormalJoin_target_releases_action
+#print axioms orderedTheoremNormalJoin_does_not_admit
 #print axioms orderedTheoremNormalJoin_run_invariant_check
 #print axioms orderedTheoremNormalJoin_adequateTrace
 #print axioms orderedTheoremNormalJoin_supportNativeTypeTrace
 #print axioms orderedTheoremNormalJoin_nativeTypeTraceWitness
+#print axioms orderedTheoremNormalJoin_without_prepared_does_not_release_action
 #print axioms orderedTheoremNormalJoin_without_prepared_does_not_admit
 #print axioms invalid_earlier_theorem_cannot_authorize_later_reference
 

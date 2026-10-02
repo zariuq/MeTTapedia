@@ -211,7 +211,7 @@ theorem steps_preserve (entries : List (DeclName × Entry Tower.Head))
       (Signature.ofList entries))
     (root_preservation entries ordered nativeSafe typed) steps
 
-local instance : DecidableRel IntrinsicRelator.rules.headEq := Tower.instDecidableHeadEq
+local instance : DecidableRel IntrinsicRelator.rules.headEq := LevelTower.instDecidableHeadEq
 
 namespace Admission
 

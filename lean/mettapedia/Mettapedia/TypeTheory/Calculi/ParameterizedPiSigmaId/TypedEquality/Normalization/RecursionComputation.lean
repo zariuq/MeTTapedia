@@ -9,6 +9,10 @@ under renaming and substitution. Its steps occur at full applications of `f`
 whose scrutinee is a constructor form, and they are deterministic when the
 constructors have distinct names.
 
+The left side of an equation is an instance of itself: matching the pattern of
+a constructor at its own fields (`patternFields`) gives the identity
+substitution (`matchSub_pattern`).
+
 Root computations combine: the union of the root computations of distinct
 computing constants is a root computation, deterministic when each part is.
 -/
@@ -81,6 +85,94 @@ theorem subst_replaceScrut {m k s : Nat} (τ : Sub Head m k) (x : Tm Head m) :
       · show Presentation.subst τ (replaceScrut s x d (tailSub σ) i) =
           replaceScrut s (Presentation.subst τ x) d (tailSub fun i => Presentation.subst τ (σ i)) i
         exact congrFun (subst_replaceScrut τ x d (tailSub σ)) i
+
+/-! ## The pattern at its own fields -/
+
+/-- There is one field variable for each field. -/
+theorem length_fieldVars (s : Nat) : ∀ a : Nat, (fieldVars (Head := Head) s a).length = a
+  | 0 => rfl
+  | a + 1 => by simp [fieldVars, length_fieldVars s a]
+
+/-- The field variables, oldest first. -/
+theorem fieldVars_getD (s : Nat) :
+    ∀ (a l : Nat) (hl : l < a),
+      (fieldVars (Head := Head) s a).getD l defaultTm = .var ⟨a - 1 - l, by omega⟩
+  | 0, _, hl => absurd hl (Nat.not_lt_zero _)
+  | a + 1, l, hl => by
+      rw [List.getD_eq_getElem?_getD]
+      simp only [fieldVars]
+      rcases Nat.lt_or_ge l a with h | h
+      · rw [List.getElem?_append_left (by simp [length_fieldVars s a, h]), List.getElem?_map]
+        have ih := fieldVars_getD s a l h
+        rw [List.getD_eq_getElem?_getD] at ih
+        have hsome : (fieldVars (Head := Head) s a)[l]? = some (.var ⟨a - 1 - l, by omega⟩) := by
+          rw [List.getElem?_eq_getElem (by simp [length_fieldVars s a, h])] at ih ⊢
+          simp only [Option.getD_some] at ih
+          rw [ih]
+        rw [hsome]
+        simp only [Option.map_some, Option.getD_some, Presentation.rename, wk, Tm.var.injEq]
+        ext
+        simp only [Fin.val_succ]
+        omega
+      · have hl' : l = a := by omega
+        subst hl'
+        rw [List.getElem?_append_right (by simp [length_fieldVars s l])]
+        simp [length_fieldVars s l]
+
+/-- An extended substitution below the extension reads the extension. -/
+theorem extendSub_lt {n m : Nat} (ρ : Sub Head n m) (values : Nat → Tm Head m) :
+    ∀ (b i : Nat) (hi : i < b), extendSub ρ values b ⟨i, by omega⟩ = values (b - 1 - i)
+  | 0, _, hi => absurd hi (Nat.not_lt_zero _)
+  | b + 1, 0, _ => by simp [extendSub]
+  | b + 1, i + 1, hi => by
+      show extendSub ρ values b ⟨i, by omega⟩ = _
+      rw [extendSub_lt ρ values b i (by omega)]
+      congr 1
+      omega
+
+/-- The fields of the pattern of a constructor, in the context of an equation. -/
+def patternFields (s a : Nat) : (d : Nat) → List (Tm Head (s + a + d))
+  | 0 => fieldVars s a
+  | d + 1 => (patternFields s a d).map (Presentation.rename wk)
+
+/-- The pattern of a constructor has one field term for each field. -/
+theorem length_patternFields (s a : Nat) :
+    ∀ d : Nat, (patternFields (Head := Head) s a d).length = a
+  | 0 => length_fieldVars s a
+  | d + 1 => by simp [patternFields, length_patternFields s a d]
+
+/-- **The match of the pattern at its own fields is the identity.** -/
+theorem matchSub_pattern (s a : Nat) (k : DeclName) :
+    ∀ d : Nat, matchSub s a (patternFields (Head := Head) s a d) d (patternSub s a d k) = ids
+  | 0 => by
+      funext ι
+      show extendSub (fun i : Fin s => (.var ⟨i.val + a, by omega⟩ : Tm Head (s + a)))
+        (fun l => (fieldVars s a).getD l defaultTm) a ι = .var ι
+      rcases Nat.lt_or_ge ι.val a with h | h
+      · have e : ι = ⟨ι.val, by omega⟩ := rfl
+        rw [e, extendSub_lt _ _ a ι.val h, fieldVars_getD s a _ (by omega)]
+        congr 1
+        ext
+        simp only
+        omega
+      · have e : ι = ⟨(⟨ι.val - a, by omega⟩ : Fin s).val + a, by omega⟩ :=
+          Fin.ext (by simp only; omega)
+        rw [e, extendSub_ge]
+  | d + 1 => by
+      funext ι
+      refine Fin.cases ?_ (fun j => ?_) ι
+      · rfl
+      · show matchSub s a (patternFields s a (d + 1)) d
+            (fun i => Presentation.rename wk (patternSub s a d k i)) j = .var j.succ
+        have hfun : (Presentation.subst (renSub wk) :
+            Tm Head (s + a + d) → Tm Head (s + a + d + 1)) = Presentation.rename wk :=
+          funext (subst_renSub wk)
+        have nat := subst_matchSub (Head := Head) (s := s) (a := a) (renSub wk)
+          (patternFields s a d) d (patternSub s a d k)
+        rw [hfun, matchSub_pattern s a k d] at nat
+        rw [show patternFields (Head := Head) s a (d + 1) =
+          (patternFields s a d).map (Presentation.rename wk) from rfl, ← nat]
+        rfl
 
 /-- The arguments of an application to a telescope determine the
 substitution. -/

@@ -169,17 +169,17 @@ private theorem nil_lookup : rules.constantType nilName = some dataType := by de
 
 private theorem symbol_lookup (value : String) :
     rules.constantType (.str symbolPrefix value) = some dataType := by
-  simp [rules, extendRules, combinedType, Tower.rules, Signature.typeOf?, signature,
+  simp [rules, extendRules, combinedType, LevelTower.rules, Signature.typeOf?, signature,
     dataName, applicationName, consName, nilName, symbolPrefix, stringPrefix]
 
 private theorem string_lookup (value : String) :
     rules.constantType (.str stringPrefix value) = some dataType := by
-  simp [rules, extendRules, combinedType, Tower.rules, Signature.typeOf?, signature,
+  simp [rules, extendRules, combinedType, LevelTower.rules, Signature.typeOf?, signature,
     dataName, applicationName, consName, nilName, symbolPrefix, stringPrefix]
 
 private theorem natural_lookup (value : Nat) :
     rules.constantType (.num naturalPrefix value) = some dataType := by
-  simp [rules, extendRules, combinedType, Tower.rules, Signature.typeOf?, signature,
+  simp [rules, extendRules, combinedType, LevelTower.rules, Signature.typeOf?, signature,
     dataName, applicationName, consName, nilName, naturalPrefix]
 
 theorem dataType_formed {n : Nat} (context : Tower.Ctx n) :

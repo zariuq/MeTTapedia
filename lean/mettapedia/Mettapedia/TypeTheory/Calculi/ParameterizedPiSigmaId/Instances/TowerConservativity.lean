@@ -21,7 +21,7 @@ section Tower
 
 open TowerModel
 
-theorem Tower.churchRosser : ConversionCoherence.ChurchRosser Tower.rules :=
+theorem LevelTower.churchRosser : ConversionCoherence.ChurchRosser Tower.rules :=
   EmptyRootConversion.churchRosser Tower.rules rfl
     ⟨fun _ _ same => (levels fun _ => 0).headEq_symm same⟩
 
@@ -30,7 +30,7 @@ theorem Tower.conv_toEqual {n : Nat} {Γ : Ctx Tower.Head n} (formed : CtxFormed
     {a b T : Tm Tower.Head n} (conversion : Conv Tower.rules.headEq a b Tower.rules.computation)
     (ta : Typed Tower.rules Γ a T) (tb : Typed Tower.rules Γ b T) :
     Equal Tower.rules Γ a b T :=
-  Conv.toEqual (S := setting fun _ => 0) facts roots heads Tower.churchRosser
+  Conv.toEqual (S := setting fun _ => 0) facts roots heads LevelTower.churchRosser
     formed conversion ta tb
 
 /-- In the tower, every formation-sensitive typing derivation in a formed
@@ -39,7 +39,7 @@ theorem Tower.formationSensitive_toTyped {n : Nat} {Γ : Ctx Tower.Head n}
     {t A : Tm Tower.Head n} (typing : FormationSensitive.Typing Tower.rules Γ t A)
     (formed : CtxFormed Tower.rules Γ) : Typed Tower.rules Γ t A :=
   FormationSensitive.Typing.toTyped (S := setting fun _ => 0) facts roots heads
-    Tower.churchRosser typing formed
+    LevelTower.churchRosser typing formed
 
 end Tower
 

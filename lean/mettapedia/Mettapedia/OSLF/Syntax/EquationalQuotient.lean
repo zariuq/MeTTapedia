@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.Syntax.PositionEnumeration
+import Mettapedia.OSLF.Syntax.ContextualMetavariableAssignment
 
 /-!
 # Equations as a first-class component
@@ -41,9 +42,10 @@ mutual
 theorem eqClosure_rename {M : List (MetaArity S)} {E : List (EqAxiom S M)} :
     ∀ {Γ Δ : Ctx S} (rho : Ren S Γ Δ) {s : S.Srt} {t u : Term S Γ s},
       EqClosure E t u → EqClosure E (rename rho t) (rename rho u)
-  | _, _, rho, _, _, _, .ax i body close => by
-      rw [rename_bind, rename_bind]
-      exact .ax i body (fun s v => rename rho (close s v))
+  | _, _, rho, _, _, _, .ax i body ambient ordinary => by
+      rw [ContextualAssignment.rename_instantiate, ContextualAssignment.rename_instantiate]
+      exact .ax i body (fun s v => rename rho (ambient s v))
+        (fun s v => rename rho (ordinary s v))
   | _, _, _, _, _, _, .refl _ => .refl _
   | _, _, rho, _, _, _, .symm h => .symm (eqClosure_rename rho h)
   | _, _, rho, _, _, _, .trans h h' =>
@@ -65,9 +67,10 @@ mutual
 theorem eqClosure_bind {M : List (MetaArity S)} {E : List (EqAxiom S M)} :
     ∀ {Γ Δ : Ctx S} (sigma : Sub S Γ Δ) {s : S.Srt} {t u : Term S Γ s},
       EqClosure E t u → EqClosure E (bind sigma t) (bind sigma u)
-  | _, _, sigma, _, _, _, .ax i body close => by
-      rw [bind_comp, bind_comp]
-      exact .ax i body (fun s v => bind sigma (close s v))
+  | _, _, sigma, _, _, _, .ax i body ambient ordinary => by
+      rw [ContextualAssignment.bind_instantiate, ContextualAssignment.bind_instantiate]
+      exact .ax i body (fun s v => bind sigma (ambient s v))
+        (fun s v => bind sigma (ordinary s v))
   | _, _, _, _, _, _, .refl _ => .refl _
   | _, _, sigma, _, _, _, .symm h => .symm (eqClosure_bind sigma h)
   | _, _, sigma, _, _, _, .trans h h' =>
@@ -120,6 +123,19 @@ theorem eqArgs_bindArgs_pointwise {M : List (MetaArity S)} {E : List (EqAxiom S 
           (eqClosure_liftSub sigma sigma' h bs) hd)
         (eqArgs_bindArgs_pointwise sigma sigma' h tl)
 end
+
+/-- Reading one of two related argument lists gives related terms. The
+argument positions are the dependency context of a metavariable occurrence. -/
+theorem eqArgs_argsToSub {M : List (MetaArity S)} (E : List (EqAxiom S M)) :
+    ∀ {bs : List S.Srt} {Γ : Ctx S}
+      {args args' : Args S (bs.map (fun b => ([], b))) Γ},
+      EqArgs E args args' →
+      ∀ (s : S.Srt) (v : Var bs s),
+        EqClosure E (argsToSub args s v) (argsToSub args' s v)
+  | [], _, _, _, _, _, v => nomatch v
+  | _ :: _, _, .cons _ _, .cons _ _, .cons related _rest, _, .zero => related
+  | _ :: _, _, .cons _ _, .cons _ _, .cons _related rest, _, .succ v =>
+      eqArgs_argsToSub E rest _ v
 
 /-- **Plugging descends.**  Equal contexts with equal terms in their holes plug
 to equal terms, so a factorisation is a construction on equation classes. -/
@@ -249,7 +265,7 @@ theorem hole1_eq_hole2 : EqClosure dupE hole1 hole2 := by
         (instantiate noBody dupAxiom.lhs))
       (bind (fun _ _ => Term.var (Var.zero : Var [Srt2.tm] Srt2.tm))
         (instantiate noBody dupAxiom.rhs)) :=
-    EqClosure.ax (E := dupE) ⟨0, by decide⟩ noBody
+    EqClosure.ax_closed dupE ⟨0, by decide⟩ noBody
       (fun _ _ => Term.var (Var.zero : Var [Srt2.tm] Srt2.tm))
   simpa only [dupAxiom, hole1, hole2, instantiate, instantiateArgs, bind, bindArgs,
     liftSub] using h
@@ -348,7 +364,9 @@ mutual
 /-- **Occurrence counts are invariants of the structural theory.** -/
 theorem countVar_ac : ∀ {Γ : Ctx psig} {c : SrtP} (x : Var Γ c) {s : SrtP}
     {t u : Term psig Γ s}, EqClosure acE t u → countVar x t = countVar x u
-  | _, _, x, _, _, _, .ax i body close => ax_counts i x body close
+  | _, _, x, _, _, _, .ax i body ambient ordinary => by
+      simp only [ContextualAssignment.instantiate_noMetas]
+      exact ax_counts i x (fun k => Fin.elim0 k) ordinary
   | _, _, _, _, _, _, .refl _ => rfl
   | _, _, x, _, _, _, .symm h => (countVar_ac x h).symm
   | _, _, x, _, _, _, .trans h h' => (countVar_ac x h).trans (countVar_ac x h')

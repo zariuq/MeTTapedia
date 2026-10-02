@@ -98,6 +98,18 @@ structure Snapshot (Node Answer : Type*) where
   frontier : List Node
 deriving DecidableEq, Repr
 
+/-- Transport producing nodes while retaining the ordered answer occurrences. -/
+def Emission.mapOrigin {Node NextNode Answer : Type*} (mapping : Node → NextNode)
+    (event : Emission Node Answer) : Emission NextNode Answer :=
+  ⟨mapping event.origin, event.value⟩
+
+/-- A realization may erase private state, but neither frontier entries nor
+answer occurrences are deduplicated by this transport. -/
+def Snapshot.mapNodes {Node NextNode Answer : Type*} (mapping : Node → NextNode)
+    (snapshot : Snapshot Node Answer) : Snapshot NextNode Answer where
+  events := snapshot.events.map (Emission.mapOrigin mapping)
+  frontier := snapshot.frontier.map mapping
+
 def initial {Node Answer : Type*} (roots : List Node) : Snapshot Node Answer :=
   ⟨[], roots⟩
 
@@ -120,6 +132,32 @@ def tick {Node Answer : Type*} (system : BranchingSystem Node Answer)
   | node :: pending =>
       { events := snapshot.events ++ eventFor node (system.emit node)
         frontier := scheduler.integrate pending (system.successors node) }
+
+/-- Ordered one-step realization requires both the complete successor list
+and the scheduler's choices to commute. Forward reachability alone does not
+justify an equality of resumable observations. -/
+theorem tick_mapNodes {Node NextNode Answer : Type*}
+    (mapping : Node → NextNode)
+    (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+    (first : Scheduler Node) (second : Scheduler NextNode)
+    (emits : ∀ node, source.emit node = target.emit (mapping node))
+    (successors : ∀ node,
+      (source.successors node).map mapping = target.successors (mapping node))
+    (reorders : ∀ nodes,
+      (first.reorder nodes).map mapping = second.reorder (nodes.map mapping))
+    (integrates : ∀ pending generated,
+      (first.integrate pending generated).map mapping =
+        second.integrate (pending.map mapping) (generated.map mapping))
+    (snapshot : Snapshot Node Answer) :
+    (tick source first snapshot).mapNodes mapping =
+      tick target second (snapshot.mapNodes mapping) := by
+  cases ordered : first.reorder snapshot.frontier with
+  | nil => simp [tick, Snapshot.mapNodes, ← reorders, ordered]
+  | cons node pending =>
+      simp only [tick, Snapshot.mapNodes, ← reorders, ordered, List.map_cons]
+      rw [integrates, successors, ← emits]
+      cases emitted : source.emit node <;>
+        simp [eventFor, Emission.mapOrigin, List.map_append]
 
 /-- Observe `fuel` scheduler steps. -/
 def run {Node Answer : Type*} (system : BranchingSystem Node Answer)

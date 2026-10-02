@@ -515,7 +515,7 @@ noncomputable def linearConstructors :
   presentation := linearPresentation
   system := linearSystem
   same := fun _ _ => Iff.rfl
-  symmetric := Tower.headEq_symmetric
+  symmetric := LevelTower.headEq_symmetric
 
 /-- The linearized program's conversion is Church–Rosser. -/
 theorem churchRosser : ChurchRosser linearRules := linearConstructors.churchRosser

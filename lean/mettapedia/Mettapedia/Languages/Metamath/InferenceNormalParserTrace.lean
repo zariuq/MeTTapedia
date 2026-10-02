@@ -1,5 +1,5 @@
 import Mettapedia.Languages.Metamath.MMLean4Bridge
-import Metamath.ParserAnyModeEquivalence
+import Metamath.ParserAnyFormatEquivalence
 
 /-!
 # Exact extraction of normal Metamath parser traces
@@ -30,7 +30,7 @@ open Metamath.PrefixProvenance
     finishProof_prefix_characterization stepNormal_preserves_label
     stepNormal_preserves_ptp)
 open Metamath.PrefixTraceCompressed (feedProof_success_go_ok)
-open Metamath.ParserAnyModeEquivalence (finishProof_success_stack_conditions)
+open Metamath.ParserAnyFormatEquivalence (finishProof_success_stack_conditions)
 
 /-- Exact source order of labels submitted in a normal proof. -/
 def submittedNormalLabels (firstToken : ByteSlice)

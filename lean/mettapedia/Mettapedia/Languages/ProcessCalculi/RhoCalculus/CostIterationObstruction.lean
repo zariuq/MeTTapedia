@@ -375,7 +375,7 @@ private theorem emptyParallel_typed
     · exact nextBaseParallelRule_params configuration
     · exact .nil [] _
   simpa [sourceSort, CostStaticColor.mapLangSort, CostStaticColor.symbols, costBaseStaticSymbols,
-    costBaseLanguageDefSymbolMap, costBaseConstructor] using typed
+    costBaseLanguageDefSymbolMap, costBaseConstructor_def] using typed
 
 private def emptyParallel
     (configuration : RhoCostLayerConfiguration) :

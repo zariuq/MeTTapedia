@@ -147,7 +147,7 @@ private theorem legacyGroundRule_validV1 :
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, legacyGroundRule,
-    hasTypePattern, tmHeadPattern, encodeTowerHead, Tower.zero,
+    hasTypePattern, tmHeadPattern, encodeTowerHead, LevelTower.zero,
     encodeLevel, encodeNat]
   decide
 
@@ -284,7 +284,7 @@ inductive StructuralTyping : {n : Nat} →
   | legacyGround {n : Nat} (context : Tower.Ctx n) :
       StructuralTyping context (.head .legacyGround)
         (.head (.sort Tower.zero))
-  | sort {n : Nat} (context : Tower.Ctx n) (level : LevelExpr) :
+  | sort {n : Nat} (context : Tower.Ctx n) (level : LevelExpr Nat) :
       StructuralTyping context (.head (.sort level))
         (.head (.sort (.succ level)))
   | reflIntro {n : Nat} {context : Tower.Ctx n}
@@ -293,7 +293,7 @@ inductive StructuralTyping : {n : Nat} →
       StructuralTyping context (.refl term) (.id type term term)
   | piForm {n : Nat} {context : Tower.Ctx n}
       {domain : Tower.Tm n} {body : Tower.Tm (n + 1)}
-      {domainLevel bodyLevel : LevelExpr} :
+      {domainLevel bodyLevel : LevelExpr Nat} :
       StructuralTyping context domain
         (.head (.sort domainLevel)) →
       StructuralTyping (.snoc context domain) body
@@ -377,7 +377,7 @@ theorem surface_injective : Function.Injective surface := by
 Dependent premises may then be checked or constructed in this new world
 without replaying context formation inside the eventual hot artifact. -/
 def extendContext (formed : FormedTypingClaim)
-    {domain : Tower.Tm formed.claim.arity} {level : LevelExpr}
+    {domain : Tower.Tm formed.claim.arity} {level : LevelExpr Nat}
     (domainEvidence :
       StructuralTyping formed.claim.context domain (.head (.sort level))) :
     ContextWellFormed Tower.rules (.snoc formed.claim.context domain) :=
@@ -720,7 +720,7 @@ def structuralSemantics :
                         instantiateSchemas?, instantiateSchemasAt?,
                         lookupArgumentAt?, hasTypePattern, tmHeadPattern,
                         encodeTowerHead, encodeLevel, encodeNat,
-                        Tower.zero] at instantiated
+                        LevelTower.zero] at instantiated
                       rcases instantiated with ⟨_, rfl, rfl⟩
                       intro claim equality
                       rcases claim with ⟨n, contextValue, subject, type⟩
@@ -969,7 +969,7 @@ def legacyGroundRaw {n : Nat} (context : Tower.Ctx n) : RawProof :=
       [encodeNat n, encodeCtx towerHeadCodec context]) []
 
 def sortRaw {n : Nat} (context : Tower.Ctx n)
-    (level : LevelExpr) : RawProof :=
+    (level : LevelExpr Nat) : RawProof :=
   .node
     (ruleInstance "prime-structural-sort"
       [encodeNat n, encodeCtx towerHeadCodec context, encodeLevel level]) []
@@ -984,7 +984,7 @@ def reflRaw {n : Nat} (context : Tower.Ctx n)
 
 def piFormRaw {n : Nat} (context : Tower.Ctx n)
     (domain : Tower.Tm n) (body : Tower.Tm (n + 1))
-    (domainLevel bodyLevel : LevelExpr)
+    (domainLevel bodyLevel : LevelExpr Nat)
     (domainPremise bodyPremise : RawProof) : RawProof :=
   .node
     (ruleInstance "prime-structural-pi-form"
@@ -1021,7 +1021,7 @@ private theorem instantiateLegacyPattern
     reflRule, piFormRule, argumentsValidAt, arityValid, contextValid,
     RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchemasAt?, instantiateSchema?, instantiateSchemaAt?,
-    lookupArgumentAt?, hasTypePattern, tmHeadPattern, Tower.zero,
+    lookupArgumentAt?, hasTypePattern, tmHeadPattern, LevelTower.zero,
     encodeTowerHead, encodeLevel, encodeNat]
 
 private theorem instantiateSortPattern
@@ -1102,11 +1102,11 @@ private theorem legacyGround_accepted {n : Nat} (context : Tower.Ctx n) :
     (encodeCtx towerHeadCodec context) (encodeNat_argumentValid n)
     (encodeTowerCtx_argumentValid context)]
   simp [claimPattern, encodeTypingClaim, encodeTm, towerHeadCodec,
-    encodeTowerHead, Tower.zero, encodeLevel, hasTypePattern,
+    encodeTowerHead, LevelTower.zero, encodeLevel, hasTypePattern,
     tmHeadPattern, checkRawChildren]
 
 private theorem sort_accepted {n : Nat} (context : Tower.Ctx n)
-    (level : LevelExpr) :
+    (level : LevelExpr Nat) :
     checkRaw checked
         (claimPattern context (.head (.sort level))
           (.head (.sort (.succ level))))
@@ -1138,7 +1138,7 @@ private theorem refl_accepted {n : Nat} (context : Tower.Ctx n)
 
 private theorem piForm_accepted {n : Nat} (context : Tower.Ctx n)
     (domain : Tower.Tm n) (body : Tower.Tm (n + 1))
-    (domainLevel bodyLevel : LevelExpr)
+    (domainLevel bodyLevel : LevelExpr Nat)
     (domainPremise bodyPremise : RawProof)
     (domainAccepted :
       checkRaw checked
@@ -1337,7 +1337,7 @@ theorem StructuralTyping.canonicalTreeRaw_accepted
         (encodeCtx towerHeadCodec context) (encodeNat_argumentValid _)
         (encodeTowerCtx_argumentValid context)]
       simp [claimPattern, encodeTypingClaim, encodeTm, towerHeadCodec,
-        encodeTowerHead, Tower.zero, encodeLevel, hasTypePattern,
+        encodeTowerHead, LevelTower.zero, encodeLevel, hasTypePattern,
         tmHeadPattern,
         Mettapedia.GSLT.LanguageDef.CanonicalInferenceDerivation.checkCanonicalRawChildren]
   | sort context level =>

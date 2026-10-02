@@ -109,7 +109,7 @@ structure TypedCostStaticAtom (source : CIGSLT) (color : CostStaticColor)
 namespace TypedCostStaticAtom
 
 /-- Ordinary typing projected from the single reflective target fibre. -/
-def normalTyped {source : CIGSLT} {color : CostStaticColor}
+theorem normalTyped {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (atom : TypedCostStaticAtom source color targetFree) :
     WellSorted.HasType source.costWholeLanguage targetFree
@@ -118,21 +118,21 @@ def normalTyped {source : CIGSLT} {color : CostStaticColor}
 
 /-- Canonical binder metadata projected from the single reflective target
 fibre. -/
-def normalCanonicalBinderMetadata {source : CIGSLT}
+theorem normalCanonicalBinderMetadata {source : CIGSLT}
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
     (atom : TypedCostStaticAtom source color targetFree) :
     atom.key.normal.hasCanonicalBinderMetadata = true :=
   atom.normalWellSorted.1.2.1
 
 /-- Object admissibility projected from the single reflective target fibre. -/
-def normalObject {source : CIGSLT} {color : CostStaticColor}
+theorem normalObject {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (atom : TypedCostStaticAtom source color targetFree) :
     WellSorted.isObjectPattern atom.key.normal = true :=
   atom.normalWellSorted.1.2.2.1
 
 /-- Quote-scope safety projected from the single reflective target fibre. -/
-def normalReflectiveScopeSafe {source : CIGSLT} {color : CostStaticColor}
+theorem normalReflectiveScopeSafe {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (atom : TypedCostStaticAtom source color targetFree) :
     ReflectiveWellSorted.ReflectiveScopeSafeAt

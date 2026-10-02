@@ -353,7 +353,62 @@ private theorem eval_hard_p (a : GroundAtom UWPred UWPerson)
 
 /-! ### World-weight factorization -/
 
-set_option maxHeartbeats 3200000 in
+private noncomputable def uwcse_clauseFactor
+    (W : AtomValuation (GroundAtom UWPred UWPerson)) : UWClauseId → ENNReal
+  | .advStudent_33 => if W a33 = true ∧ W s335 = false then 0 else 1
+  | .advStudent_34 => if W a34 = true ∧ W s335 = false then 0 else 1
+  | .advStudent_43 => if W a43 = true ∧ W s429 = false then 0 else 1
+  | .advStudent_44 => if W a44 = true ∧ W s429 = false then 0 else 1
+  | .advProf_33 => if W a33 = true ∧ W p335 = false then 0 else 1
+  | .advProf_34 => if W a34 = true ∧ W p429 = false then 0 else 1
+  | .advProf_43 => if W a43 = true ∧ W p335 = false then 0 else 1
+  | .advProf_44 => if W a44 = true ∧ W p429 = false then 0 else 1
+  | .mutExcl_3 => if W s335 = true ∧ W p335 = true then 0 else 1
+  | .mutExcl_4 => if W s429 = true ∧ W p429 = true then 0 else 1
+  | .noSelf_3 => if W a33 = true then 0 else 1
+  | .noSelf_4 => if W a44 = true then 0 else 1
+  | .evStudent429 => if W s429 = false then 0 else 1
+  | .evProfessor335 => if W p335 = false then 0 else 1
+
+private theorem uwcse_clauseFactor_eq
+    (W : AtomValuation (GroundAtom UWPred UWPerson)) (i : UWClauseId) :
+    (uwcseGroundMLN.clauseData i).eval W = uwcse_clauseFactor W i := by
+  cases i with
+  | advStudent_33 => exact eval_hard_np a33 s335 W
+  | advStudent_34 => exact eval_hard_np a34 s335 W
+  | advStudent_43 => exact eval_hard_np a43 s429 W
+  | advStudent_44 => exact eval_hard_np a44 s429 W
+  | advProf_33 => exact eval_hard_np a33 p335 W
+  | advProf_34 => exact eval_hard_np a34 p429 W
+  | advProf_43 => exact eval_hard_np a43 p335 W
+  | advProf_44 => exact eval_hard_np a44 p429 W
+  | mutExcl_3 => exact eval_hard_nn s335 p335 W
+  | mutExcl_4 => exact eval_hard_nn s429 p429 W
+  | noSelf_3 => exact eval_hard_n a33 W
+  | noSelf_4 => exact eval_hard_n a44 W
+  | evStudent429 => exact eval_hard_p s429 W
+  | evProfessor335 => exact eval_hard_p p335 W
+
+private theorem uwcse_prod_factors (f : UWClauseId → ENNReal) :
+    (∏ i ∈ uwcseFullSupport, f i) =
+      f .advStudent_33 *
+      (f .advStudent_34 *
+      (f .advStudent_43 *
+      (f .advStudent_44 *
+      (f .advProf_33 *
+      (f .advProf_34 *
+      (f .advProf_43 *
+      (f .advProf_44 *
+      (f .mutExcl_3 *
+      (f .mutExcl_4 *
+      (f .noSelf_3 *
+      (f .noSelf_4 *
+      (f .evStudent429 *
+      f .evProfessor335)))))))))))) := by
+  rw [uwcseFullSupport_eq]
+  repeat rw [Finset.prod_insert (by decide)]
+  rw [Finset.prod_singleton]
+
 /-- For all-hard MLN, the world weight is either 0 (any clause violated) or 1.
 Each clause contributes `if clause_violated then 0 else 1`.
 
@@ -381,47 +436,13 @@ theorem uwcse_worldWeight_fullSupport_eq
       ((if W s429 = false then 0 else 1) *
       (if W p335 = false then 0 else 1))))))))))))) := by
   classical
-  unfold GroundMLN.worldWeight
-  rw [uwcseFullSupport_eq]
-  let s : Finset UWClauseId :=
-    {.advStudent_33, .advStudent_34, .advStudent_43, .advStudent_44,
-     .advProf_33, .advProf_34, .advProf_43, .advProf_44,
-     .mutExcl_3, .mutExcl_4, .noSelf_3, .noSelf_4,
-     .evStudent429, .evProfessor335}
-  have hsort :
-      (∏ i : s.attach,
-          (uwcseGroundMLN.clauseData i.1).eval W) =
-        ∏ i ∈ s.attach, (uwcseGroundMLN.clauseData i.1).eval W :=
-    Finset.prod_coe_sort s.attach
-      (fun i => (uwcseGroundMLN.clauseData i.1).eval W)
-  rw [hsort]
-  have hattach :
-      (∏ i ∈ s.attach, (uwcseGroundMLN.clauseData i.1).eval W) =
-        ∏ i ∈ s, (uwcseGroundMLN.clauseData i).eval W :=
-    Finset.prod_attach s (fun i => (uwcseGroundMLN.clauseData i).eval W)
-  rw [hattach]
-  rw [show s = ({.advStudent_33, .advStudent_34, .advStudent_43, .advStudent_44,
-       .advProf_33, .advProf_34, .advProf_43, .advProf_44,
-       .mutExcl_3, .mutExcl_4, .noSelf_3, .noSelf_4,
-       .evStudent429, .evProfessor335} : Finset UWClauseId) from rfl]
-  repeat rw [Finset.prod_insert (by decide)]
-  rw [Finset.prod_singleton]
-  -- Each clause eval unfolds to an if-then-else via helpers
-  simp only [uwcseGroundMLN]
-  congr 1; · exact eval_hard_np a33 s335 W
-  congr 1; · exact eval_hard_np a34 s335 W
-  congr 1; · exact eval_hard_np a43 s429 W
-  congr 1; · exact eval_hard_np a44 s429 W
-  congr 1; · exact eval_hard_np a33 p335 W
-  congr 1; · exact eval_hard_np a34 p429 W
-  congr 1; · exact eval_hard_np a43 p335 W
-  congr 1; · exact eval_hard_np a44 p429 W
-  congr 1; · exact eval_hard_nn s335 p335 W
-  congr 1; · exact eval_hard_nn s429 p429 W
-  congr 1; · exact eval_hard_n a33 W
-  congr 1; · exact eval_hard_n a44 W
-  congr 1; · exact eval_hard_p s429 W
-  exact eval_hard_p p335 W
+  rw [GroundMLN.worldWeight_eq_prod]
+  calc
+    _ = ∏ i ∈ uwcseFullSupport, uwcse_clauseFactor W i :=
+      Finset.prod_congr rfl (fun i _ => uwcse_clauseFactor_eq W i)
+    _ = _ := by
+      rw [uwcse_prod_factors]
+      rfl
 
 /-! ### Mass theorems -/
 

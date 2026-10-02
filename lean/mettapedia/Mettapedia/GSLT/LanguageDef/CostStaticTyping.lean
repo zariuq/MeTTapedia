@@ -651,11 +651,11 @@ theorem costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
     (costBaseConstructor cut rule).params =
       rule.params.map (mapTermParam costBaseStaticSymbols) := by
   apply List.ext_getElem
-  · simp [costBaseConstructor]
+  · simp [costBaseConstructor_def]
   · intro index leftBound rightBound
     rw [costBaseConstructor_parameter cut rule index (by
       simpa [costBaseConstructor] using leftBound)]
-    simp [List.getElem_map, costBaseParameter,
+    simp [List.getElem_map, costBaseParameter_def,
       isSelectedContinuation_eq_false_of_mem_wrappedLabelsFor plan rule
         membership wrapped index]
 
@@ -1516,7 +1516,7 @@ mutual
                 ((usesBareCollection_costBaseConstructor_iff cut rule).mp
                   targetBare)
             simpa [mapPattern, CostStaticColor.symbolsOf,
-              costBaseConstructor, costBaseStaticSymbols,
+              costBaseConstructor_def, costBaseStaticSymbols,
               costBaseLanguageDefSymbolMap, mapTypeExpr] using
               (WellSorted.HasType.constructor
                 (plan.costBaseConstructor_mem_generated rule membership)
@@ -1617,7 +1617,7 @@ mutual
                 CostStaticColor.symbolsOf, mapParameterType,
                 costBaseTypeExpr]
             simpa [mapPattern, CostStaticColor.symbolsOf,
-              costBaseConstructor, costBaseStaticSymbols,
+              costBaseConstructor_def, costBaseStaticSymbols,
               costBaseLanguageDefSymbolMap, mapTypeExpr] using
               (WellSorted.HasType.collectionConstructor
                 (plan.costBaseConstructor_mem_generated rule membership)
@@ -1763,7 +1763,7 @@ mutual
               exact notBare
                 ((usesBareCollection_costBaseConstructor_iff source.cut rule).mp
                   targetBare)
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
+            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasType.constructor
@@ -1861,7 +1861,7 @@ mutual
                 mapTermParam_costBaseStaticSymbols,
                 CostStaticColor.symbols, mapParameterType,
                 costBaseTypeExpr]
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
+            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasType.collectionConstructor
@@ -2160,7 +2160,7 @@ mutual
                 (argumentsTyped := targetArguments)
                 targetQuoted targetArgumentsSafe
             simpa [targetTyped, mapPattern, CostStaticColor.symbols,
-              costBaseConstructor, costBaseStaticSymbols,
+              costBaseConstructor_def, costBaseStaticSymbols,
               costBaseLanguageDefSymbolMap, mapTypeExpr] using
                 Exists.intro targetTyped targetSafe
         | wrapped =>
@@ -2289,7 +2289,7 @@ mutual
                 (argumentsTyped := targetArguments)
                 targetOrdinary targetArgumentsSafe
             simpa [targetTyped, mapPattern, CostStaticColor.symbols,
-              costBaseConstructor, costBaseStaticSymbols,
+              costBaseConstructor_def, costBaseStaticSymbols,
               costBaseLanguageDefSymbolMap, mapTypeExpr] using
                 Exists.intro targetTyped targetSafe
         | wrapped =>
@@ -2474,7 +2474,7 @@ mutual
                 mappedElementsSafe
             simpa [targetTyped, mapPattern, mapPatternList_eq_map,
               CostStaticColor.symbols,
-              costBaseConstructor, costBaseStaticSymbols,
+              costBaseConstructor_def, costBaseStaticSymbols,
               costBaseLanguageDefSymbolMap, mapTypeExpr] using
                 Exists.intro targetTyped targetSafe
         | wrapped =>

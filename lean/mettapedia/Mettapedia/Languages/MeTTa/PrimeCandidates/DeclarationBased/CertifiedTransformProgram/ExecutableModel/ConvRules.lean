@@ -140,7 +140,7 @@ theorem rules_numArrow_typed : Typed rules Γ (.pi numT numT) U0 :=
 
 /-- The identity function of the numbers. -/
 theorem rules_idNum_typed : Typed rules Γ (.lam (.var 0)) (.pi numT numT) :=
-  .lamIntro rules_numArrow_typed (Tower.IsUniverse.sort _) (Derivable.var 0)
+  .lamIntro rules_numArrow_typed (LevelTower.IsUniverse.sort _) (Derivable.var 0)
 
 end Typings
 
@@ -174,7 +174,7 @@ theorem zero_realizes_zero (v : Nat → Nat) :
   have hz : Typed rules (.nil : Tower.Ctx 0) (.const zeroN) numT := rules_zero_typed
   exact (nmodel_num_real v (rulesSide_num v) (nmodel_num_interp v 0 World.closed) .refl
     (.zero .refl) .nil numT _ _).mpr
-      (.inr ⟨RedTy.refl ⟨_, Tower.IsUniverse.sort _, rules_numT_typed⟩, .refl hz, .refl hz,
+      (.inr ⟨RedTy.refl ⟨_, LevelTower.IsUniverse.sort _, rules_numT_typed⟩, .refl hz, .refl hz,
         .refl hz⟩)
 
 /-- **The value `zero` is not realized by `zero` with `suc zero`**: `suc zero` is
@@ -320,7 +320,7 @@ theorem U0_interp {n : Nat} (ξ : World (nmodel v (rulesSide v)).reading n) :
     NInterp (nmodel v (rulesSide v)) 1 ξ U0
       (ValueSide.universePack (nmodel v (rulesSide v)).value
         (NInterp (nmodel v (rulesSide v)) 0) ξ) :=
-  ValueSide.InterpAt.sort (Tower.IsUniverse.sort _) Nat.zero_lt_one ξ
+  ValueSide.InterpAt.sort (LevelTower.IsUniverse.sort _) Nat.zero_lt_one ξ
 
 /-- **The lowest universe is interpreted by no pack at level zero**: a universe
 is interpreted only above its level. -/
@@ -328,7 +328,7 @@ theorem U0_not_interp_zero {n : Nat} (ξ : World (nmodel v (rulesSide v)).readin
     (P : NPack (nmodel v (rulesSide v)) n) : ¬ NInterp (nmodel v (rulesSide v)) 0 ξ U0 P := by
   intro interp
   exact Nat.not_lt_zero _
-    (ValueSide.InterpAt.univ_inv (nmodel_laws v _).value interp .refl (Tower.IsUniverse.sort _)).1
+    (ValueSide.InterpAt.univ_inv (nmodel_laws v _).value interp .refl (LevelTower.IsUniverse.sort _)).1
 
 /-- **A numeral is interpreted by no pack**: `zero` is a weak-head normal
 constructor, and no clause of the interpretation reads a constructor. -/
@@ -375,7 +375,7 @@ theorem U0_star_not_zero {n : Nat} (ξ : World (nmodel v (rulesSide v)).reading 
 /-- The proofs of `Id num 0 0` in context: typings in the realizer side. -/
 theorem rules_idZero_typed :
     Typed rules (.nil : Tower.Ctx 0) (.id numT (.const zeroN) (.const zeroN)) U0 :=
-  .idForm rules_numT_typed (Tower.IsUniverse.sort _) rules_zero_typed rules_zero_typed
+  .idForm rules_numT_typed (LevelTower.IsUniverse.sort _) rules_zero_typed rules_zero_typed
 
 /-- **An identity type with related endpoints is realized by reflexivity**: the
 proofs of `Id num 0 0` are realized by `refl 0`. -/
@@ -385,7 +385,7 @@ theorem idZeroZero_real (t : Tower.Tm 0) :
         (.refl (.const zeroN)) (.refl (.const zeroN)) := by
   have hr : Typed rules (.nil : Tower.Ctx 0) (.refl (.const zeroN))
       (.id numT (.const zeroN) (.const zeroN)) := .reflIntro rules_zero_typed
-  exact .inr ⟨⟨_, _, _, RedTy.refl ⟨_, Tower.IsUniverse.sort _, rules_idZero_typed⟩⟩,
+  exact .inr ⟨⟨_, _, _, RedTy.refl ⟨_, LevelTower.IsUniverse.sort _, rules_idZero_typed⟩⟩,
     ⟨_, .refl hr⟩, ⟨_, .refl hr⟩, .refl hr,
     ValueSide.numIndPack_rel.mpr ⟨.zero, .zero .refl, .zero .refl⟩⟩
 
@@ -417,14 +417,14 @@ theorem holdsImp_star_not_univ (l : Nat) {n : Nat} (ξ : World (nmodel v (rulesS
   intro h
   obtain ⟨P, -, -, shape⟩ := h (Consistency.Morph.id ξ)
   rw [rename_id, rename_id] at shape
-  exact ValueSide.Shape.holds_not_univ (nmodel_laws v _).value (Tower.IsUniverse.sort _) shape
+  exact ValueSide.Shape.holds_not_univ (nmodel_laws v _).value (LevelTower.IsUniverse.sort _) shape
 
 /-- **At a dependent function type, the function space of the realizer side
 relates the identity function**, for every candidate. -/
 theorem idNum_arrow (X : ECand (rulesSide v)) :
     ((ecandAlgebra (rulesSide v)).arrow X X).rel .nil (.pi numT (Presentation.rename wk numT))
       (.lam (.var 0)) (.lam (.var 0)) :=
-  lam_var_arrow X (Tower.IsUniverse.sort _) rules_numT_typed
+  lam_var_arrow X (LevelTower.IsUniverse.sort _) rules_numT_typed
 
 /-- **At a type variable the function space is `bot`**: a type variable reduces to
 no dependent function type, so without a decoding step reaching one, the

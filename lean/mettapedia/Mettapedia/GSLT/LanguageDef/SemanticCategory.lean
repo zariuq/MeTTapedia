@@ -16,16 +16,17 @@ This module derives a behavioral `GSLT` from the one authored
   schemas and their recursive congruence premises;
 * the exposed GSLT step is saturated by static equivalence at both ends.
 
-The semantic category adds exactly the behavioral obligation that cannot
-follow from a bare structural map: preservation of bisimilarity.  The entire
-closed carrier is derived from the structural declaration map.
+The semantic category requires the selected interaction rule to be a base
+rule. Its morphisms add the behavioral obligation that cannot follow from
+a bare structural map: preservation of bisimilarity. The entire closed
+carrier is derived from the structural declaration map.
 The term map itself remains `mapPattern`; no arbitrary callback or second
 syntax is admitted.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -183,12 +184,15 @@ structure ExecutionProfile (presentation : ValidatedLanguageDef) where
   admitted : LanguageDef.FlowAdmitted relationModes
   exactLanguage : admitted.lang = presentation.language
 
-/-- An iGSLT is the semantic view of one exact interactive presentation.
+/-- An iGSLT is the semantic view of one exact presentation with a base
+interaction rule.
 This wrapper changes the morphism notion without duplicating declaration
 data: objects still point to the sole authored `LanguageDef`. -/
 structure IGSLT where
   presentation : InteractivePresentation
   executionProfile : ExecutionProfile presentation.presentation
+  /-- The selected interaction rule has no reduction hypothesis. -/
+  baseInteraction : presentation.BaseInteraction
 
 namespace IGSLT
 
@@ -204,10 +208,10 @@ def mapClosedTerm {source target : IGSLT}
     ClosedTermWellSorted.map structural.structural
       structural.mapsInteractingSort term.2⟩
 
-/-- A paper-aligned iGSLT morphism: an exact interaction-preserving theory
-map whose induced structural term translation preserves behavioral
-bisimilarity.  Closed-carrier obligations are theorems of the declaration
-map. -/
+/-- An interaction-preserving declaration map whose induced structural term
+translation preserves behavioral bisimilarity. Closed-carrier obligations
+follow from the declaration map; semantic equation transport remains a
+separate condition. -/
 structure Morphism (source target : IGSLT) where
   structural : InteractiveMorphism source.presentation target.presentation
   preservesBisim : ∀ {left right : source.presentation.Term},
@@ -317,7 +321,7 @@ theorem mapTerm_comp {first second third : IGSLT}
 
 end Morphism
 
-/-- iGSLTs and their paper-aligned morphisms form a Mathlib category. -/
+/-- iGSLTs and their recorded morphisms form a Mathlib category. -/
 instance : CategoryTheory.Category IGSLT where
   Hom := Morphism
   id := Morphism.id
@@ -347,7 +351,7 @@ def forgetStructural : CategoryTheory.Functor IGSLT InteractivePresentation wher
     apply InteractiveMorphism.ext
     rfl
 
-/-- The semantic functor from paper-aligned iGSLTs to behavioral GSLTs. -/
+/-- The semantic functor from the recorded iGSLT category to behavioral GSLTs. -/
 def semantics : CategoryTheory.Functor IGSLT GSLT where
   obj theory := theory.toGSLT
   map morphism :=
@@ -378,6 +382,7 @@ def rhoExecutionProfile : ExecutionProfile rhoValidatedLanguageDef where
 /-- The strict-core rho presentation regarded as an iGSLT object, using the
 empty relation-mode profile admitted by its exact authored definition. -/
 def rhoIGSLT : IGSLT :=
-  ⟨rhoInteractivePresentation, rhoExecutionProfile⟩
+  ⟨rhoInteractivePresentation, rhoExecutionProfile,
+    isBaseRewrite_of_premises_eq_nil rfl⟩
 
 end Mettapedia.GSLT.LanguageDef

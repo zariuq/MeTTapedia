@@ -48,7 +48,7 @@ def mapCombinedEvidence (map : Tower.Head → Tower.Head) {left right : Tower.Tm
 
 /-- All five existing root schemas are mapped by construction. There is no
 new root-preservation assumption on this native signature. -/
-def nativeInstance (theta : Nat → LevelExpr) :
+def nativeInstance (theta : Nat → LevelExpr Nat) :
     LevelInstance IntrinsicRelator.rawSignature theta where
   computation := IntrinsicRelator.combinedProofRelevantIotaComputation.support
   computationMap := by
@@ -56,38 +56,38 @@ def nativeInstance (theta : Nat → LevelExpr) :
     rcases root with ⟨evidence⟩
     exact ⟨mapCombinedEvidence (substLevelsHead theta) evidence⟩
 
-def nativeRules (theta : Nat → LevelExpr) : Rules Tower.Head :=
+def nativeRules (theta : Nat → LevelExpr Nat) : Rules Tower.Head :=
   (nativeInstance theta).rules
 
 /-- The extension's entries undergo the same level substitution. Its roots
 are empty; transport from a source extension is licensed only by opacity. -/
-def extensionSignature (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+def extensionSignature (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     Signature Tower.Head := signature.instantiateLevels theta RootComputation.empty
 
-def rules (theta : Nat → LevelExpr) (signature : Signature Tower.Head) : Rules Tower.Head :=
+def rules (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) : Rules Tower.Head :=
   extendRules (nativeRules theta) (extensionSignature theta signature)
 
-theorem native_lookup (theta : Nat → LevelExpr) (name : DeclName) :
+theorem native_lookup (theta : Nat → LevelExpr Nat) (name : DeclName) :
     (nativeRules theta).constantType name =
       (IntrinsicRelator.rules.constantType name).map (substLevelsTm theta) := by
   change combinedType Tower.rules (nativeInstance theta).signature name =
     (combinedType Tower.rules IntrinsicRelator.rawSignature name).map _
-  simp only [combinedType, Tower.rules, LevelInstance.signature,
+  simp only [combinedType, LevelTower.rules, LevelInstance.signature,
     Signature.typeOf_instantiateLevels]
 
-def opaqueInstance (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+def opaqueInstance (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature) : LevelInstance signature theta where
   computation := RootComputation.empty
   computationMap := fun root => (opacity.roots root).elim
 
-theorem morphism (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem morphism (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature) :
     (OpaqueRelatorExtension.rules signature).Morphism (rules theta signature)
       (substLevelsHead theta) :=
   (opaqueInstance theta opacity).extendMorphism (nativeInstance theta).morphism
     (native_lookup theta)
 
-theorem source_judgment (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem source_judgment (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature)
     {context : Tower.Ctx n} {term type : Tower.Tm n}
     (judgment : Judgment (OpaqueRelatorExtension.rules signature) context term type) :
@@ -95,7 +95,7 @@ theorem source_judgment (theta : Nat → LevelExpr) {signature : Signature Tower
       (substLevelsTm theta term) (substLevelsTm theta type) :=
   judgment.mapHead (morphism theta opacity)
 
-theorem source_substitution (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem source_substitution (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature)
     {context : Tower.Ctx n} {replacement : Tower.Ctx m}
     {substitution : Sub Tower.Head n m}
@@ -105,13 +105,13 @@ theorem source_substitution (theta : Nat → LevelExpr) {signature : Signature T
       (substLevelsCtx theta replacement) (fun index => substLevelsTm theta (substitution index)) :=
   typed.mapHead (morphism theta opacity)
 
-theorem native_values_none (theta : Nat → LevelExpr) (name : DeclName) :
+theorem native_values_none (theta : Nat → LevelExpr Nat) (name : DeclName) :
     (nativeInstance theta).signature.valueOf? name = none := by
   rw [LevelInstance.signature, Signature.valueOf_instantiateLevels,
     IntrinsicRelator.rawSignature_valueOf_none]
   rfl
 
-theorem extension_values_none (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem extension_values_none (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature) (name : DeclName) :
     (extensionSignature theta signature).valueOf? name = none := by
   rw [extensionSignature, Signature.valueOf_instantiateLevels, opacity.values]
@@ -119,7 +119,7 @@ theorem extension_values_none (theta : Nat → LevelExpr) {signature : Signature
 
 /-- Instantiation changes declaration types but neither invents nor deletes
 any of the five authored native root computations. -/
-theorem native_root_iff (theta : Nat → LevelExpr) {left right : Tower.Tm n} :
+theorem native_root_iff (theta : Nat → LevelExpr Nat) {left right : Tower.Tm n} :
     (nativeRules theta).computation.step left right ↔
       IntrinsicRelator.rules.computation.step left right := by
   constructor
@@ -134,7 +134,7 @@ theorem native_root_iff (theta : Nat → LevelExpr) {left right : Tower.Tm n} :
     | delta known => rw [IntrinsicRelator.rawSignature_valueOf_none] at known; cases known
     | declared root => exact .declared root
 
-theorem root_iff (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem root_iff (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature) {left right : Tower.Tm n} :
     (rules theta signature).computation.step left right ↔
       IntrinsicRelator.rules.computation.step left right := by
@@ -147,7 +147,7 @@ theorem root_iff (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
   · intro root
     exact .inherited ((native_root_iff theta).mpr root)
 
-theorem conversion_iff (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem conversion_iff (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature) {left right : Tower.Tm n} :
     Conv (rules theta signature).headEq left right (rules theta signature).computation ↔
       Conv IntrinsicRelator.rules.headEq left right IntrinsicRelator.rules.computation := by
@@ -161,12 +161,12 @@ theorem conversion_iff (theta : Nat → LevelExpr) {signature : Signature Tower.
       (targetEq := (rules theta signature).headEq) (fun head => head) (fun equal => equal)
       (by intro k a b root; simpa only [Tm.mapHead_id] using (root_iff theta opacity).mpr root)
 
-theorem universes (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem universes (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     UniverseRegularity (rules theta signature) :=
   (towerUniverseRegularity.includeSignature (nativeInstance theta).signature).includeSignature
     (extensionSignature theta signature)
 
-theorem pi_boundary (theta : Nat → LevelExpr) {signature : Signature Tower.Head}
+theorem pi_boundary (theta : Nat → LevelExpr Nat) {signature : Signature Tower.Head}
     (opacity : OpaqueRelatorExtension.Opacity signature) : PiConversionBoundary (rules theta signature) where
   components := by
     intro k A A' B B' conversion
@@ -178,16 +178,16 @@ theorem pi_boundary (theta : Nat → LevelExpr) {signature : Signature Tower.Hea
     NativeRelatorConversionParallel.nativePiConversionBoundary.headDisjoint
       ((conversion_iff theta opacity).mp conversion)
 
-def parametersContext (theta : Nat → LevelExpr) : Tower.Ctx 4 :=
+def parametersContext (theta : Nat → LevelExpr Nat) : Tower.Ctx 4 :=
   substLevelsCtx theta contextAXPD
 
-def eliminationContext (theta : Nat → LevelExpr) : Tower.Ctx 6 :=
+def eliminationContext (theta : Nat → LevelExpr Nat) : Tower.Ctx 6 :=
   substLevelsCtx theta contextAXPDYQ
 
-def declarationType (theta : Nat → LevelExpr) : Tower.Tm 0 :=
+def declarationType (theta : Nat → LevelExpr Nat) : Tower.Tm 0 :=
   substLevelsTm theta identityEliminateType
 
-theorem declaration_lookup (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem declaration_lookup (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     (rules theta signature).constantType identityEliminateName = some (declarationType theta) := by
   change combinedType (nativeRules theta) (extensionSignature theta signature)
     identityEliminateName = some (declarationType theta)
@@ -198,14 +198,14 @@ theorem declaration_lookup (theta : Nat → LevelExpr) (signature : Signature To
   rw [known]
   rfl
 
-theorem declaration_formed (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem declaration_formed (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     Typing (rules theta signature) .nil (declarationType theta)
       (sortTm (LevelExpr.subst theta identityEliminateDeclarationLevel)) :=
   ((nativeInstance theta).refinedTyping
     FormationSensitiveNativeIdentity.identityEliminateType_hasType).includeSignature
       (extensionSignature theta signature)
 
-theorem parameters_formed (theta : Nat → LevelExpr) (signature : Signature Tower.Head) :
+theorem parameters_formed (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head) :
     ContextFormation (rules theta signature) (parametersContext theta) := by
   change ContextFormation (extendRules (nativeRules theta) (extensionSignature theta signature))
     (substLevelsCtx theta contextAXPD)
@@ -213,7 +213,7 @@ theorem parameters_formed (theta : Nat → LevelExpr) (signature : Signature Tow
     ((nativeInstance theta).refinedContext FormationSensitiveNativeIdentity.contextAXPD_formed).mapHead
       (includeMorphism (nativeRules theta) (extensionSignature theta signature))
 
-theorem declaration_judgment (theta : Nat → LevelExpr) (signature : Signature Tower.Head)
+theorem declaration_judgment (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head)
     {context : Tower.Ctx n} (formed : ContextFormation (rules theta signature) context) :
     Judgment (rules theta signature) context (.const identityEliminateName)
       (liftClosed (declarationType theta)) :=
@@ -223,13 +223,13 @@ theorem declaration_judgment (theta : Nat → LevelExpr) (signature : Signature 
 
 /-- Admission is a typed substitution into the instantiated declaration
 telescope, not a premise asserting that its J application is typable. -/
-def Parameters (theta : Nat → LevelExpr) (signature : Signature Tower.Head)
+def Parameters (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head)
     (context : Tower.Ctx n) (type left motive method : Tower.Tm n) : Prop :=
   ContextFormation (rules theta signature) context ∧
     FormationSensitive.CtxMor (rules theta signature) (parametersContext theta) context
       (identitySchemaSubstitution type left motive method)
 
-variable {theta : Nat → LevelExpr} {signature : Signature Tower.Head}
+variable {theta : Nat → LevelExpr Nat} {signature : Signature Tower.Head}
 variable {context : Tower.Ctx n} {type left motive method : Tower.Tm n}
 
 theorem parameters_type (parameters : Parameters theta signature context type left motive method) :
@@ -301,7 +301,7 @@ theorem reflexivity_judgment
 
 /-- The original iota schema still computes to the chosen method, at every
 level instance. No evaluation strategy or additional equality rule is used. -/
-theorem beta (theta : Nat → LevelExpr) (signature : Signature Tower.Head)
+theorem beta (theta : Nat → LevelExpr Nat) (signature : Signature Tower.Head)
     (type left motive method : Tower.Tm n) :
     (rules theta signature).computation.step
       (identityEliminateApp type left motive method left (.refl left)) method :=
@@ -522,7 +522,7 @@ theorem ofBody_beta_substitution (formed : ContextFormation (rules theta signatu
 
 /-- Mapping levels before or after an admitted term substitution gives the
 same term and type, and both ways are qualified by the refined judgment. -/
-theorem source_substitution_square (theta : Nat → LevelExpr)
+theorem source_substitution_square (theta : Nat → LevelExpr Nat)
     (opacity : OpaqueRelatorExtension.Opacity signature)
     {context : Tower.Ctx n} {replacement : Tower.Ctx m}
     {term type : Tower.Tm n} {substitution : Sub Tower.Head n m}
@@ -540,7 +540,7 @@ theorem source_substitution_square (theta : Nat → LevelExpr)
   ⟨source_judgment theta opacity (source.substitute formed typed),
     Tm.mapHead_subst _ _ _, Tm.mapHead_subst _ _ _⟩
 
-theorem mapped_parameters (theta : Nat → LevelExpr)
+theorem mapped_parameters (theta : Nat → LevelExpr Nat)
     (opacity : OpaqueRelatorExtension.Opacity signature)
     (parameters : FormationSensitiveBasedIdentity.Parameters signature context type left motive method) :
     Parameters theta signature (substLevelsCtx theta context)
@@ -558,17 +558,17 @@ theorem mapped_parameters (theta : Nat → LevelExpr)
 
 /-- Setting the two declaration levels does not identify them, and leaves
 other parameters of the combined native signature untouched. -/
-def atLevels (element motive : LevelExpr) : Nat → LevelExpr
+def atLevels (element motive : LevelExpr Nat) : Nat → LevelExpr Nat
   | 0 => element
   | 1 => motive
   | index + 2 => .param (index + 2)
 
-@[simp] theorem atLevels_element (element motive : LevelExpr) : atLevels element motive 0 = element := rfl
-@[simp] theorem atLevels_motive (element motive : LevelExpr) : atLevels element motive 1 = motive := rfl
-@[simp] theorem atLevels_later (element motive : LevelExpr) (index : Nat) :
+@[simp] theorem atLevels_element (element motive : LevelExpr Nat) : atLevels element motive 0 = element := rfl
+@[simp] theorem atLevels_motive (element motive : LevelExpr Nat) : atLevels element motive 1 = motive := rfl
+@[simp] theorem atLevels_later (element motive : LevelExpr Nat) (index : Nat) :
     atLevels element motive (index + 2) = .param (index + 2) := rfl
 
-theorem levels_term_comp (later earlier : Nat → LevelExpr) (term : Tower.Tm n) :
+theorem levels_term_comp (later earlier : Nat → LevelExpr Nat) (term : Tower.Tm n) :
     substLevelsTm later (substLevelsTm earlier term) =
       substLevelsTm (fun index => LevelExpr.subst later (earlier index)) term := by
   unfold substLevelsTm
@@ -577,9 +577,9 @@ theorem levels_term_comp (later earlier : Nat → LevelExpr) (term : Tower.Tm n)
   funext head
   cases head with
   | legacyGround => rfl
-  | sort level => exact congrArg Tower.Head.sort (LevelExpr.subst_subst later earlier level)
+  | sort level => exact congrArg LevelTower.Head.sort (LevelExpr.subst_subst later earlier level)
 
-theorem levels_context_comp (later earlier : Nat → LevelExpr) (context : Tower.Ctx n) :
+theorem levels_context_comp (later earlier : Nat → LevelExpr Nat) (context : Tower.Ctx n) :
     substLevelsCtx later (substLevelsCtx earlier context) =
       substLevelsCtx (fun index => LevelExpr.subst later (earlier index)) context := by
   unfold substLevelsCtx
@@ -588,9 +588,9 @@ theorem levels_context_comp (later earlier : Nat → LevelExpr) (context : Tower
   funext head
   cases head with
   | legacyGround => rfl
-  | sort level => exact congrArg Tower.Head.sort (LevelExpr.subst_subst later earlier level)
+  | sort level => exact congrArg LevelTower.Head.sort (LevelExpr.subst_subst later earlier level)
 
-theorem declaration_comp (later earlier : Nat → LevelExpr) :
+theorem declaration_comp (later earlier : Nat → LevelExpr Nat) :
     substLevelsTm later (declarationType earlier) =
       declarationType (fun index => LevelExpr.subst later (earlier index)) :=
   levels_term_comp later earlier identityEliminateType
@@ -606,26 +606,26 @@ open FormationSensitiveContextual
 
 /-- The domain itself is a universe. The motive universe is strictly above
 its formation level, so the two instantiated J parameters are not identified. -/
-def higherLevels (level : LevelExpr) : Nat → LevelExpr :=
+def higherLevels (level : LevelExpr Nat) : Nat → LevelExpr Nat :=
   atLevels (.succ level) (.succ (.succ level))
 
-def higherBody (level : LevelExpr) : Tower.Tm (n + 2) :=
+def higherBody (level : LevelExpr Nat) : Tower.Tm (n + 2) :=
   .id (.id (sortTm level) (.head .legacyGround) (.var 1)) (.var 0) (.var 0)
 
-def higherSource (level : LevelExpr) : Tower.Tm n :=
+def higherSource (level : LevelExpr Nat) : Tower.Tm n :=
   identityEliminateApp (sortTm level) (.head .legacyGround)
     (.lam (.lam (higherBody level))) (.refl (.refl (.head .legacyGround)))
     (.head .legacyGround) (.refl (.head .legacyGround))
 
-def higherResultType (level : LevelExpr) : Tower.Tm n :=
+def higherResultType (level : LevelExpr Nat) : Tower.Tm n :=
   .id (.id (sortTm level) (.head .legacyGround) (.head .legacyGround))
     (.refl (.head .legacyGround)) (.refl (.head .legacyGround))
 
-theorem higher_left_typed (level : LevelExpr) (signature : Signature Tower.Head) (context : Tower.Ctx n) :
+theorem higher_left_typed (level : LevelExpr Nat) (signature : Signature Tower.Head) (context : Tower.Ctx n) :
     Typing (rules (higherLevels level) signature) context (.head .legacyGround) (sortTm level) :=
   .cumul (.headType .legacyGround) (fun _ => Nat.zero_le _)
 
-theorem higher_body_formed (level : LevelExpr) (signature : Signature Tower.Head)
+theorem higher_body_formed (level : LevelExpr Nat) (signature : Signature Tower.Head)
     (context : Tower.Ctx n) :
     Typing (rules (higherLevels level) signature)
       (FormationSensitiveBasedIdentity.basedContext context (sortTm level) (.head .legacyGround))
@@ -640,7 +640,7 @@ theorem higher_body_formed (level : LevelExpr) (signature : Signature Tower.Head
 /-- A genuinely endpoint- and path-dependent motive at arbitrarily large
 levels is admitted in every formed target context, not only a mapped source
 context or a closed example. -/
-theorem higher_beta_crown (level : LevelExpr) (signature : Signature Tower.Head)
+theorem higher_beta_crown (level : LevelExpr Nat) (signature : Signature Tower.Head)
     {context : Tower.Ctx n} (formed : ContextFormation (rules (higherLevels level) signature) context) :
     Judgment (rules (higherLevels level) signature) context (higherSource level) (higherResultType level) ∧
       Judgment (rules (higherLevels level) signature) context (.refl (.refl (.head .legacyGround)))
@@ -663,7 +663,7 @@ theorem higher_requires_new_environment (signature : Signature Tower.Head)
   ⟨(higher_beta_crown elementLevel signature .nil).1,
     QuotientIdentity.LevelBoundary.no_j_on_own_element_universe opacity _ _ _ _ _ _⟩
 
-theorem higher_wrong_result (level : LevelExpr) (signature : Signature Tower.Head)
+theorem higher_wrong_result (level : LevelExpr Nat) (signature : Signature Tower.Head)
     (opacity : OpaqueRelatorExtension.Opacity signature) :
     ¬ (rules (higherLevels level) signature).computation.step
       (higherSource level : Tower.Tm n) (.refl (.head .legacyGround)) := by
@@ -672,7 +672,7 @@ theorem higher_wrong_result (level : LevelExpr) (signature : Signature Tower.Hea
     ((root_iff _ opacity).mp root)).2.2
   cases result
 
-theorem higher_levels_distinct (level : LevelExpr) :
+theorem higher_levels_distinct (level : LevelExpr Nat) :
     (∀ valuation, LevelExpr.eval valuation (higherLevels level 0) <
       LevelExpr.eval valuation (higherLevels level 1)) ∧
       higherLevels level 2 = .param 2 :=
@@ -697,7 +697,7 @@ theorem higher_declaration_differs :
 
 /-- The old mixed HOL/List/wire J, including its path-dependent family,
 really transports through the signature morphism. -/
-theorem mixed_j_transport (theta : Nat → LevelExpr) (wire : NativeWireData.Wire) :
+theorem mixed_j_transport (theta : Nat → LevelExpr Nat) (wire : NativeWireData.Wire) :
     let input := QuotientIdentity.Controls.mixedInput wire
     Judgment (rules theta HOLNativeRelatorCompatibility.signature)
       (substLevelsCtx theta input.basedContext.raw)
@@ -708,7 +708,7 @@ theorem mixed_j_transport (theta : Nat → LevelExpr) (wire : NativeWireData.Wir
 /-- The target substitution here is a real weakening into an extra formed
 wire-Data binder of the common environment. Its type and term squares use
 the same declaration map as the transported J operation. -/
-theorem mixed_weakening_transport (theta : Nat → LevelExpr) (wire : NativeWireData.Wire) :
+theorem mixed_weakening_transport (theta : Nat → LevelExpr Nat) (wire : NativeWireData.Wire) :
     let input := QuotientIdentity.Controls.mixedInput wire
     let substitution := projectionHom Common.context Common.wireType
     Judgment (rules theta HOLNativeRelatorCompatibility.signature)

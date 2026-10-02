@@ -79,7 +79,7 @@ theorem map_rule (sourceSymbols : LanguageDefSymbolMap)
     mapGrammarRule (symbols sourceSymbols) (rule code carrier) =
       rule code (sourceSymbols.sort carrier) := by
   cases code <;>
-    simp only [mapGrammarRule, symbols, rule, mapLabel_label, List.map_nil]
+    simp only [mapGrammarRule, symbols, rule, mapLabel_label, List.map_nil, Option.map_none]
 
 /-- A mapped authored carrier name remains an authored carrier name. -/
 theorem mapped_typeName_mem

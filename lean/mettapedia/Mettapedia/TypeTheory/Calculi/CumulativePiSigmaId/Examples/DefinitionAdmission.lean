@@ -38,7 +38,7 @@ theorem missingIdentitySignature_notFormed :
   apply Signature.notFormedOfMissingPiDomain
     (name := identityName) (missingName := missingName) (codomain := .const missingName)
   · simp [missingIdentitySignature, identityType]
-  · simp [extendRules, combinedType, Tower.rules, missingIdentitySignature,
+  · simp [extendRules, combinedType, LevelTower.rules, missingIdentitySignature,
       Signature.typeOf?, Signature.insert, Signature.empty, identityName, missingName]
 
 private def aliasName : DeclName := `DefinitionAdmission.UniverseAlias
@@ -101,7 +101,7 @@ theorem unfolded_at_larger_displayed_universe (context : Tower.Ctx n) :
         (show transparentSignature.typeOf? aliasName = some declaredType by
           simp [transparentSignature])
     · intro valuation
-      simp [Tower.zero, LevelExpr.eval]
+      simp [LevelTower.zero, LevelExpr.eval]
 
 #print axioms missingIdentity_body_rawTyped
 #print axioms missingIdentitySignature_notFormed

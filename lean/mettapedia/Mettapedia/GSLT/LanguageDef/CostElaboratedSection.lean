@@ -275,7 +275,7 @@ namespace Cost.SemanticSection.ReferenceErasureSemiconj
 /-- Exact compact normalization agreement is optional additional structure.
 It follows on the compact-coherent subcategory, but is deliberately not part
 of the general cost layer object because the rho cost-layer iteration overlap refutes it. -/
-def ofCompactCoherent {source : CIGSLT}
+theorem ofCompactCoherent {source : CIGSLT}
     (laws : Cost.ElaboratedSection.Laws source)
     (coherent : CompactCostNormalizationCoherent source) :
     Cost.SemanticSection.ReferenceErasureSemiconj

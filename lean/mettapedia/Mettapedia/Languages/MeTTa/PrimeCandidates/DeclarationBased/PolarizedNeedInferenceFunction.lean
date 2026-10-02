@@ -56,8 +56,8 @@ theorem checkThenQualifyAt_typed (context : Tower.Ctx n)
       (checkThenQualifyAt (Effect := Effect) expected candidateData)
       (.returns (.native NativeWireData.dataType)) := by
   apply ComputationTyping.bindNative
-    ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
-    (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩))
+    ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
+    (.returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩))
   · exact .call (operation_formed .check) argument
   · exact .call (operation_formed .qualify) (admissionArgument_typed expected (.var 0))
 
@@ -67,8 +67,8 @@ theorem checkFunction_typed (context : Tower.Ctx n)
     ComputationTyping NativeWireData.rules signature context valueTypes needTypes
       (checkFunction (Effect := Effect) expected) functionType := by
   apply ComputationTyping.nativeLambda
-    ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
-    (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩))
+    ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed context⟩
+    (.returns (.native ⟨.sort Tower.zero, LevelTower.IsUniverse.sort _, NativeWireData.dataType_formed _⟩))
   exact checkThenQualifyAt_typed _ _ _ expected (.var 0)
 
 theorem thunked_checkFunction_typed (context : Tower.Ctx n)

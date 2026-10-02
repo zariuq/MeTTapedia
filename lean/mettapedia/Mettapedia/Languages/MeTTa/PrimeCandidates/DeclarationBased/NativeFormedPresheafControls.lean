@@ -46,17 +46,17 @@ theorem no_observation_retraction :
 
 /-- The represented source includes a genuinely type-dependent program at
 every cumulative level, not just the nondependent simple fragment. -/
-def polymorphicType (context : Context Tower.rules) (level : LevelExpr) : TypeOver context :=
+def polymorphicType (context : Context Tower.rules) (level : LevelExpr Nat) : TypeOver context :=
   ⟨FormationSensitive.Examples.polymorphicIdentityType level,
     .sort (FormationSensitive.Examples.identityLevel level), .sort _,
     FormationSensitive.Examples.polymorphicIdentityType_formed context.raw level⟩
 
-def polymorphicTerm (context : Context Tower.rules) (level : LevelExpr) :
+def polymorphicTerm (context : Context Tower.rules) (level : LevelExpr Nat) :
     Term context (polymorphicType context level) :=
   ⟨FormationSensitive.Examples.polymorphicIdentity,
     FormationSensitive.Examples.polymorphicIdentity_typed context.raw level⟩
 
-theorem polymorphic_specialization (context : Context Tower.rules) (level : LevelExpr)
+theorem polymorphic_specialization (context : Context Tower.rules) (level : LevelExpr Nat)
     {Δ : Context Tower.rules} (σ : Hom Δ context) :
     (CwfYoneda.decodeTerm (asCwf Tower.rules) (polymorphicType context level) σ
       ((termEquiv _ (polymorphicTerm context level)).val

@@ -2,7 +2,7 @@ import Mettapedia.OSLF.Framework.GSLTEvidence
 import Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-!
-# Rho Calculus BinaryWorldModel Instance
+# A BinaryWorldModel of rho-pattern samples
 
 The Rho calculus — L. Gregory Meredith's running example GSLT in
 "Computation, Causality, and Consciousness" (2026) — instantiates
@@ -10,8 +10,8 @@ the WM evidence framework.
 
 ## Construction
 
-- **State**: `Multiset Pattern` (a process ensemble; parallel composition
-  = multiset union, which is an `AddCommMonoid`)
+- **State**: `Multiset Pattern` (an ensemble of pattern samples, pooled by
+  multiset union, which is an `AddCommMonoid`)
 - **Query**: `RhoQuery` (a decidable property of patterns)
 - **BinaryEvidence**: count of satisfying/refuting processes in the ensemble
 
@@ -21,13 +21,14 @@ evidence(W₁, q) + evidence(W₂, q)` instantiated for the Rho calculus.
 
 ## What This Means
 
-Every GSLT with parallel composition (every process calculus) has a
-natural BinaryWorldModel over it.  The WM evidence framework is the canonical
-Bayesian counting layer for any GSLT — not just the WM posterior-state
-calculus.  This is the first step toward the universal theorem:
-
-  WM evidence extraction is the canonical sufficient-statistic functor
-  from GSLTs to evidence profiles.
+This counts properties of sampled syntax. It does not use rho reduction,
+validate that a pattern is a process, or observe interactions between the
+samples. Consequently, pooling samples must not be identified with running
+their parallel composition. The latter can enable communications absent from
+either sample in isolation. `RhoContextualWorldModel` supplies the operational
+connection, and `RhoScoreWorldModel.parallel_evidence_not_additive` proves the
+boundary with a performer and its cue. A probabilistic or sufficient-statistic
+interpretation would require additional hypotheses.
 
 ## References
 
@@ -46,8 +47,8 @@ open Mettapedia.PLN.Evidence.EvidenceClass
 
 /-! ## Process Ensemble -/
 
-/-- A Rho process ensemble: a multiset of process patterns.
-    Parallel composition corresponds to multiset union.
+/-- A Rho-pattern ensemble: a multiset of syntactic samples.
+    Sample pooling corresponds to multiset union.
     `Multiset` is already an `AddCommMonoid` via Mathlib
     (add = union, zero = empty). -/
 abbrev RhoEnsemble := Multiset Pattern
@@ -104,12 +105,11 @@ instance : EvidenceType RhoEnsemble where
 
     Process ensembles (multisets of patterns) queried by decidable
     properties.  BinaryEvidence extraction counts satisfying/refuting
-    processes, and is additive over parallel composition (ensemble union).
+    patterns, and is additive over sample pooling (ensemble union).
 
     This instantiates the WM evidence framework for L. Gregory Meredith's
-    running example GSLT.  The same construction works for any process
-    calculus with parallel composition — the Rho calculus is the first
-    concrete instance on the path to the universal theorem.
+    running example GSLT. The counting construction works for any carrier;
+    connecting its queries to operational behavior is a separate obligation.
 
     Reference: L. Gregory Meredith, "Computation, Causality, and
     Consciousness" (2026), §1.2. -/
@@ -124,9 +124,9 @@ noncomputable instance rhoWorldModel :
 /-- The Rho calculus as a GSLTEvidenceAssignment over BinaryEvidence.
 
     This is the V = BinaryEvidence specialization of the general framework.
-    Replacing V with ℂ would give L. Gregory Meredith's weight map
-    (quantum amplitudes).  The additive structure is the same in both
-    cases — the difference is only in the value monoid. -/
+    A different value monoid requires an independently specified contribution
+    map and interpretation; additivity alone does not supply amplitude or
+    probability semantics. -/
 noncomputable def rhoGSLTEvidence :
     GSLTEvidenceAssignment RhoEnsemble RhoQuery BinaryEvidence where
   extract := rhoEvidence

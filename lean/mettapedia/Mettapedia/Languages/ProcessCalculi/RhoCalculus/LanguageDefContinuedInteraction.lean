@@ -120,7 +120,7 @@ theorem rho_costBaseParallelConstructor_params :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[3]).params =
       [.simple "ps"
         (.collection .hashBag (.base (costBaseSortName "Proc")))] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation,
     rhoCalc, mapParameterType, costBaseTypeExpr,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,
@@ -214,7 +214,7 @@ theorem rho_costBaseOutputConstructor_params :
 theorem rho_costBaseQuoteConstructor_params :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[2]).params =
       [.simple "p" (.base (costBaseSortName "Proc"))] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation,
     rhoCalc, mapParameterType, costBaseTypeExpr,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,
@@ -224,7 +224,7 @@ theorem rho_costBaseQuoteConstructor_params :
 theorem rho_costBaseDropConstructor_params :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[1]).params =
       [.simple "n" (.base (costBaseSortName "Name"))] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation,
     rhoCalc, mapParameterType, costBaseTypeExpr,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,
@@ -721,7 +721,7 @@ theorem rho_input_continuation_retyped :
       some (.abstraction "p"
         (.arrow (.base (costBaseSortName "Name"))
           (.base costWrappedSortName))) := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation, rhoCalc,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation, rhoCalc,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,
     rhoInteractionCut_program_continuation_index,
@@ -738,7 +738,7 @@ sort; continuation retyping does not seal or re-sort interaction subjects. -/
 theorem rho_input_subject_not_retyped :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[5]).params[0]? =
       some (.simple "n" (.base (costBaseSortName "Name"))) := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation, rhoCalc,
+  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation, rhoCalc,
     rhoInteractionCut_program_constructor_value,
     rhoInteractionCut_environment_constructor_value,
     rhoInteractionCut_program_continuation_index,

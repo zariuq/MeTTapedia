@@ -38,8 +38,8 @@ theorem scoped_instance (X : Object patSig)
   change EqClosure [liftEquation X substAxiom]
     (instantiate valuation (liftSchema X substLhs))
     (instantiate valuation (liftSchema X substRhs))
-  have generated := EqClosure.ax
-    (E := [liftEquation X substAxiom]) (⟨0, by decide⟩ : Fin 1)
+  have generated := EqClosure.ax_closed
+    [liftEquation X substAxiom] (⟨0, by decide⟩ : Fin 1)
     valuation (fun _ v => Term.var v)
   simpa [substAxiom, liftEquation, bind_id] using generated
 

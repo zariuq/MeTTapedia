@@ -86,7 +86,7 @@ private theorem hypothesisCanaryVocabulary_valid :
       HypothesisView.label, HypothesisView.formula,
       Metamath.Verify.Sym.value] using sortedNodup
 
-def hypothesisCanaryGates : SourceProjectionGates exampleSourcePrefix where
+theorem hypothesisCanaryGates : SourceProjectionGates exampleSourcePrefix where
   prefixValid := by decide
   vocabularyValid := hypothesisCanaryVocabulary_valid
   ruleIdsDisjoint := by decide +kernel
@@ -107,7 +107,7 @@ def hypothesisCanarySource : AdmittedSourceScope where
   language := hypothesisCanaryLanguage
   languageGenerated := hypothesisCanaryLanguage_generated
 
-def severedGates : SourceProjectionGates initialState.toSourcePrefix where
+theorem severedGates : SourceProjectionGates initialState.toSourcePrefix where
   prefixValid := by decide
   vocabularyValid := by
     simp [initialState, sourcePrefixVocabulary, SourceState.toSourcePrefix,
@@ -217,7 +217,7 @@ private theorem assertionCanaryVocabulary_valid :
       stringsOfHypothesis, stringsOfFormula, HypothesisView.label,
       HypothesisView.formula, Metamath.Verify.Sym.value] using sortedNodup
 
-def assertionCanaryGates :
+theorem assertionCanaryGates :
     SourceProjectionGates assertionCanaryState.toSourcePrefix where
   prefixValid := sourcePrefixValid_of_sourceStateValid
     assertionCanaryState assertionCanaryState_valid
@@ -342,7 +342,7 @@ private theorem essentialCanaryVocabulary_valid :
       HypothesisView.label, HypothesisView.formula,
       Metamath.Verify.Sym.value] using sortedNodup
 
-def essentialCanaryGates :
+theorem essentialCanaryGates :
     SourceProjectionGates essentialCanaryState.toSourcePrefix where
   prefixValid := sourcePrefixValid_of_sourceStateValid
     essentialCanaryState essentialCanaryState_valid
@@ -525,14 +525,14 @@ private theorem dvMissingCallerVocabulary_valid :
       sortedErasedVocabularyValid dvMissingCallerVocabularyRaw allowed
         sortedNodup
 
-def dvCanaryGates :
+theorem dvCanaryGates :
     SourceProjectionGates dvCanaryState.toSourcePrefix where
   prefixValid := sourcePrefixValid_of_sourceStateValid
     dvCanaryState dvCanaryState_valid
   vocabularyValid := dvCanaryVocabulary_valid
   ruleIdsDisjoint := by decide +kernel
 
-def dvMissingCallerGates :
+theorem dvMissingCallerGates :
     SourceProjectionGates dvMissingCallerState.toSourcePrefix where
   prefixValid := sourcePrefixValid_of_sourceStateValid
     dvMissingCallerState dvMissingCallerState_valid

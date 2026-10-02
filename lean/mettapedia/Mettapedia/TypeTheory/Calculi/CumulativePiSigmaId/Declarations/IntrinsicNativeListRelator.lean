@@ -125,7 +125,7 @@ def consRelType : Tower.Tm 0 :=
 
 /-! ## Dependent elimination -/
 
-def eliminationLevel : LevelExpr := .param 2
+def eliminationLevel : LevelExpr Nat := .param 2
 
 /-- In context `A,B,R`, motives depend on both List indices and on the exact
 proof-relevant `mapRel` inhabitant. -/
@@ -508,7 +508,7 @@ def contextABR : Tower.Ctx 3 :=
 def contextABRXs : Tower.Ctx 4 :=
   .snoc contextABR (Intrinsic.listApp (.var 2))
 
-def relationTypeLevel : LevelExpr :=
+def relationTypeLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel
     (.max Intrinsic.elementLevel (.succ Intrinsic.motiveLevel))
 
@@ -529,17 +529,17 @@ theorem relationType_hasType :
   · exact .sorts Intrinsic.elementLevel
       (.max Intrinsic.elementLevel (.succ Intrinsic.motiveLevel))
 
-def familyIndicesLevel : LevelExpr :=
+def familyIndicesLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel
     (.max Intrinsic.elementLevel (.succ Intrinsic.motiveLevel))
 
-def familyAfterRelationLevel : LevelExpr :=
+def familyAfterRelationLevel : LevelExpr Nat :=
   .max relationTypeLevel familyIndicesLevel
 
-def familyAfterTargetLevel : LevelExpr :=
+def familyAfterTargetLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) familyAfterRelationLevel
 
-def familyDeclarationLevel : LevelExpr :=
+def familyDeclarationLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) familyAfterTargetLevel
 
 /-- The five-argument relation lifting is itself a formed family type. -/
@@ -1284,13 +1284,13 @@ def contextABRPZ : Tower.Ctx 5 :=
 def contextABRPZS : Tower.Ctx 6 :=
   .snoc contextABRPZ consCaseType
 
-def motiveAfterEvidenceLevel : LevelExpr :=
+def motiveAfterEvidenceLevel : LevelExpr Nat :=
   .max Intrinsic.motiveLevel (.succ eliminationLevel)
 
-def motiveAfterTargetListLevel : LevelExpr :=
+def motiveAfterTargetListLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel motiveAfterEvidenceLevel
 
-def motiveTypeLevel : LevelExpr :=
+def motiveTypeLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel motiveAfterTargetListLevel
 
 theorem motiveType_hasType :
@@ -1336,25 +1336,25 @@ theorem nilCaseType_hasType :
     · exact Presentation.HasType.var 2
     · exact Presentation.HasType.var 1
 
-def consCaseAfterRecursiveLevel : LevelExpr :=
+def consCaseAfterRecursiveLevel : LevelExpr Nat :=
   .max eliminationLevel eliminationLevel
 
-def consCaseAfterTailEvidenceLevel : LevelExpr :=
+def consCaseAfterTailEvidenceLevel : LevelExpr Nat :=
   .max Intrinsic.motiveLevel consCaseAfterRecursiveLevel
 
-def consCaseAfterHeadEvidenceLevel : LevelExpr :=
+def consCaseAfterHeadEvidenceLevel : LevelExpr Nat :=
   .max Intrinsic.motiveLevel consCaseAfterTailEvidenceLevel
 
-def consCaseAfterTargetTailLevel : LevelExpr :=
+def consCaseAfterTargetTailLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consCaseAfterHeadEvidenceLevel
 
-def consCaseAfterSourceTailLevel : LevelExpr :=
+def consCaseAfterSourceTailLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consCaseAfterTargetTailLevel
 
-def consCaseAfterTargetHeadLevel : LevelExpr :=
+def consCaseAfterTargetHeadLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consCaseAfterSourceTailLevel
 
-def consCaseLevel : LevelExpr :=
+def consCaseLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consCaseAfterTargetHeadLevel
 
 theorem consCaseType_hasType :
@@ -1443,13 +1443,13 @@ theorem consCaseType_hasType :
   · exact .sort consCaseAfterTargetHeadLevel
   · exact .sorts Intrinsic.elementLevel consCaseAfterTargetHeadLevel
 
-def eliminateAfterEvidenceLevel : LevelExpr :=
+def eliminateAfterEvidenceLevel : LevelExpr Nat :=
   .max Intrinsic.motiveLevel eliminationLevel
 
-def eliminateAfterTargetListLevel : LevelExpr :=
+def eliminateAfterTargetListLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel eliminateAfterEvidenceLevel
 
-def eliminateResultLevel : LevelExpr :=
+def eliminateResultLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel eliminateAfterTargetListLevel
 
 theorem eliminateResultType_hasType :
@@ -1487,22 +1487,22 @@ theorem eliminateResultType_hasType :
   · exact .sort eliminateAfterTargetListLevel
   · exact .sorts Intrinsic.elementLevel eliminateAfterTargetListLevel
 
-def eliminateAfterConsCaseLevel : LevelExpr :=
+def eliminateAfterConsCaseLevel : LevelExpr Nat :=
   .max consCaseLevel eliminateResultLevel
 
-def eliminateAfterNilCaseLevel : LevelExpr :=
+def eliminateAfterNilCaseLevel : LevelExpr Nat :=
   .max eliminationLevel eliminateAfterConsCaseLevel
 
-def eliminateAfterMotiveLevel : LevelExpr :=
+def eliminateAfterMotiveLevel : LevelExpr Nat :=
   .max motiveTypeLevel eliminateAfterNilCaseLevel
 
-def eliminateAfterRelationLevel : LevelExpr :=
+def eliminateAfterRelationLevel : LevelExpr Nat :=
   .max relationTypeLevel eliminateAfterMotiveLevel
 
-def eliminateAfterTargetLevel : LevelExpr :=
+def eliminateAfterTargetLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) eliminateAfterRelationLevel
 
-def eliminateDeclarationLevel : LevelExpr :=
+def eliminateDeclarationLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) eliminateAfterTargetLevel
 
 theorem eliminateType_hasType :
@@ -1544,13 +1544,13 @@ theorem eliminateType_hasType :
   · exact .sort eliminateAfterTargetLevel
   · exact .sorts (.succ Intrinsic.elementLevel) eliminateAfterTargetLevel
 
-def nilRelAfterRelationLevel : LevelExpr :=
+def nilRelAfterRelationLevel : LevelExpr Nat :=
   .max relationTypeLevel Intrinsic.motiveLevel
 
-def nilRelAfterTargetLevel : LevelExpr :=
+def nilRelAfterTargetLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) nilRelAfterRelationLevel
 
-def nilRelDeclarationLevel : LevelExpr :=
+def nilRelDeclarationLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) nilRelAfterTargetLevel
 
 theorem nilRelType_hasType :
@@ -1583,22 +1583,22 @@ theorem nilRelType_hasType :
   · exact .sort nilRelAfterTargetLevel
   · exact .sorts (.succ Intrinsic.elementLevel) nilRelAfterTargetLevel
 
-def consRelAfterTailEvidenceLevel : LevelExpr :=
+def consRelAfterTailEvidenceLevel : LevelExpr Nat :=
   .max Intrinsic.motiveLevel Intrinsic.motiveLevel
 
-def consRelAfterHeadEvidenceLevel : LevelExpr :=
+def consRelAfterHeadEvidenceLevel : LevelExpr Nat :=
   .max Intrinsic.motiveLevel consRelAfterTailEvidenceLevel
 
-def consRelAfterTargetTailLevel : LevelExpr :=
+def consRelAfterTargetTailLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consRelAfterHeadEvidenceLevel
 
-def consRelAfterSourceTailLevel : LevelExpr :=
+def consRelAfterSourceTailLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consRelAfterTargetTailLevel
 
-def consRelAfterTargetHeadLevel : LevelExpr :=
+def consRelAfterTargetHeadLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consRelAfterSourceTailLevel
 
-def consRelBodyLevel : LevelExpr :=
+def consRelBodyLevel : LevelExpr Nat :=
   .max Intrinsic.elementLevel consRelAfterTargetHeadLevel
 
 /-- Every constructor field is formed in its exact telescope.  The recursive
@@ -1669,13 +1669,13 @@ theorem consRelBodyType_hasType :
   · exact .sort consRelAfterTargetHeadLevel
   · exact .sorts Intrinsic.elementLevel consRelAfterTargetHeadLevel
 
-def consRelAfterRelationLevel : LevelExpr :=
+def consRelAfterRelationLevel : LevelExpr Nat :=
   .max relationTypeLevel consRelBodyLevel
 
-def consRelAfterOuterTargetLevel : LevelExpr :=
+def consRelAfterOuterTargetLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) consRelAfterRelationLevel
 
-def consRelDeclarationLevel : LevelExpr :=
+def consRelDeclarationLevel : LevelExpr Nat :=
   .max (.succ Intrinsic.elementLevel) consRelAfterOuterTargetLevel
 
 theorem consRelType_hasType :

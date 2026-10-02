@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Causality.ResourceGrouping
 import Mettapedia.GSLT.Core.BranchingTemporal
+import Mettapedia.GSLT.Dynamics.WeightedBranchingResumption
 
 /-!
 # The search of a resource system as a branching process
@@ -34,11 +35,24 @@ namespace System
 
 variable {R : Type uRes} [DecidableEq R] (S : System.{uRes, uRule} R) (catalogue : List S.Entry)
 
-/-- The search as a branching process. -/
-def search : BranchingSystem (List S.Entry × Multiset R) (List S.Entry × Multiset R) where
-  emit := fun node => if (S.enabledAt catalogue node.2).isEmpty then some node else none
+/-- Resource search rediscovers candidates at each reached bag. Terminal
+publication is based on that bag, and each child retains its firing history. -/
+def stateSearch (catalogueAt : Multiset R → List S.Entry) :
+    BranchingSystem (List S.Entry × Multiset R) (List S.Entry × Multiset R) where
+  emit := fun node =>
+    if (S.enabledAt (catalogueAt node.2) node.2).isEmpty then some node else none
   successors := fun node =>
-    (S.enabledAt catalogue node.2).map fun entry => (node.1 ++ [entry], S.fire node.2 entry.2)
+    (S.enabledAt (catalogueAt node.2) node.2).map fun entry =>
+      (node.1 ++ [entry], S.fire node.2 entry.2)
+
+/-- Fixed-catalogue search is an instance of current-world discovery. -/
+def search : BranchingSystem (List S.Entry × Multiset R) (List S.Entry × Multiset R) :=
+  S.stateSearch (fun _ => catalogue)
+
+/-- Candidate discovery includes every enabled event at each world. A finite
+list is a genuine obligation; no existence of such a catalogue is assumed. -/
+def StateCatalogueComplete (catalogueAt : Multiset R → List S.Entry) : Prop :=
+  ∀ (M : Multiset R) (entry : S.Entry), S.Enables M entry.2 → entry ∈ catalogueAt M
 
 theorem fires_append : ∀ (path : List S.Entry) {M X : Multiset R} {entry : S.Entry},
     S.Fires path M X → S.Enables X entry.2 → S.Fires (path ++ [entry]) M (S.fire X entry.2)
@@ -48,41 +62,314 @@ theorem fires_append : ∀ (path : List S.Entry) {M X : Multiset R} {entry : S.E
       exact ⟨enabled, rfl⟩
   | _ :: rest, _, _, _, fires, enabled => ⟨fires.1, fires_append rest fires.2 enabled⟩
 
-/-- Every node of the search is a run of catalogued instances from the root. -/
-theorem generated_fires {M : Multiset R} {node : List S.Entry × Multiset R}
-    (generated : Generated (S.search catalogue) [([], M)] node) :
-    S.Fires node.1 M node.2 ∧ ∀ entry ∈ node.1, entry ∈ catalogue := by
+/-- Discovery may change along a run; every generated node still records
+exactly a sequence of enabled firings from its root. -/
+theorem state_generated_fires (catalogueAt : Multiset R → List S.Entry)
+    {M : Multiset R} {node : List S.Entry × Multiset R}
+    (generated : Generated (S.stateSearch catalogueAt) [([], M)] node) :
+    S.Fires node.1 M node.2 := by
   induction generated with
   | root member =>
       rw [List.mem_singleton.mp member]
-      exact ⟨rfl, by simp⟩
+      rfl
   | successor _ childMember ih =>
       obtain ⟨entry, enabledMember, rfl⟩ := List.mem_map.mp childMember
-      obtain ⟨inCatalogue, enabled⟩ := List.mem_filter.mp enabledMember
-      refine ⟨S.fires_append _ ih.1 ((S.enabledB_iff _ entry).mp enabled), ?_⟩
-      intro other member
-      rcases List.mem_append.mp member with earlier | last
-      · exact ih.2 other earlier
-      · rw [List.mem_singleton.mp last]
-        exact inCatalogue
+      exact S.fires_append _ ih ((S.enabledB_iff _ entry).mp
+        (List.mem_filter.mp enabledMember).2)
 
-/-- Every run of catalogued instances is a node of the search. -/
-theorem generated_of_fires {M : Multiset R} : ∀ (rest : List S.Entry) (path : List S.Entry)
-    (X N : Multiset R), Generated (S.search catalogue) [([], M)] (path, X) →
-      (∀ entry ∈ rest, entry ∈ catalogue) → S.Fires rest X N →
-        Generated (S.search catalogue) [([], M)] (path ++ rest, N)
+/-- Every discovered path is a generated node. The discovery condition is
+needed only for the entries of that path when enabled. -/
+theorem state_generated_of_fires (catalogueAt : Multiset R → List S.Entry)
+    {M : Multiset R} : ∀ (rest : List S.Entry) (path : List S.Entry) (X N : Multiset R),
+    Generated (S.stateSearch catalogueAt) [([], M)] (path, X) →
+    (∀ (current : Multiset R) (entry : S.Entry), entry ∈ rest →
+      S.Enables current entry.2 → entry ∈ catalogueAt current) →
+    S.Fires rest X N → Generated (S.stateSearch catalogueAt) [([], M)] (path ++ rest, N)
   | [], path, X, N, generated, _, fires => by
       change N = X at fires
       subst fires
       simpa using generated
-  | entry :: rest, path, X, N, generated, catalogued, fires => by
-      have child : Generated (S.search catalogue) [([], M)] (path ++ [entry], S.fire X entry.2) :=
+  | entry :: rest, path, X, N, generated, discovered, fires => by
+      have child : Generated (S.stateSearch catalogueAt) [([], M)]
+          (path ++ [entry], S.fire X entry.2) :=
         .successor generated (List.mem_map.mpr ⟨entry,
-          List.mem_filter.mpr ⟨catalogued entry List.mem_cons_self,
+          List.mem_filter.mpr ⟨discovered X entry List.mem_cons_self fires.1,
             (S.enabledB_iff X entry).mpr fires.1⟩, rfl⟩)
-      have := generated_of_fires rest (path ++ [entry]) _ N child
-        (fun other member => catalogued other (List.mem_cons_of_mem _ member)) fires.2
-      simpa using this
+      have reached := state_generated_of_fires catalogueAt rest (path ++ [entry]) _ N child
+        (fun current other member enabled =>
+          discovered current other (List.mem_cons_of_mem _ member) enabled) fires.2
+      simpa using reached
+
+/-- Under full current-world discovery, an empty candidate list is equivalent
+to semantic exhaustion, independently of any scheduler's budget. -/
+theorem state_catalogue_empty_iff (catalogueAt : Multiset R → List S.Entry)
+    (complete : S.StateCatalogueComplete catalogueAt) (M : Multiset R) :
+    S.enabledAt (catalogueAt M) M = [] ↔ ∀ entry : S.Entry, ¬S.Enables M entry.2 := by
+  constructor
+  · intro empty entry enabled
+    have member := List.mem_filter.mpr
+      ⟨complete M entry enabled, (S.enabledB_iff M entry).mpr enabled⟩
+    change entry ∈ S.enabledAt (catalogueAt M) M at member
+    rw [empty] at member
+    cases member
+  · intro exhausted
+    apply List.eq_nil_iff_forall_not_mem.mpr
+    intro entry member
+    exact exhausted entry ((S.enabledB_iff M entry).mp (List.mem_filter.mp member).2)
+
+/-- Every published snapshot world is an enabled run. Catalogue completeness
+makes its terminal observation a statement about the resource system itself. -/
+theorem state_emitted_is_run (catalogueAt : Multiset R → List S.Entry)
+    (complete : S.StateCatalogueComplete catalogueAt)
+    (scheduler : Scheduler (List S.Entry × Multiset R)) (fuel : Nat) (M : Multiset R)
+    (event : Emission (List S.Entry × Multiset R) (List S.Entry × Multiset R))
+    (member : event ∈ (run (S.stateSearch catalogueAt) scheduler fuel
+      (initial [([], M)])).events) :
+    event.value = event.origin ∧ S.Fires event.value.1 M event.value.2 ∧
+      ∀ entry : S.Entry, ¬S.Enables event.value.2 entry.2 := by
+  obtain ⟨generated, emits⟩ :=
+    (sound_run (S.stateSearch catalogueAt) scheduler (initial_sound _ _) fuel).2 event member
+  unfold stateSearch at emits
+  simp only at emits
+  split at emits
+  · next empty =>
+      have same : event.origin = event.value := Option.some.inj emits
+      rw [← same]
+      exact ⟨rfl, S.state_generated_fires catalogueAt generated,
+        (S.state_catalogue_empty_iff catalogueAt complete _).mp (List.isEmpty_iff.mp empty)⟩
+  · cases emits
+
+/-- A fair scheduler publishes every finite terminal resource run, including
+entries discovered only in descendant worlds. -/
+theorem fair_emits_state_run (catalogueAt : Multiset R → List S.Entry)
+    (complete : S.StateCatalogueComplete catalogueAt)
+    (scheduler : Scheduler (List S.Entry × Multiset R)) (M : Multiset R)
+    (fair : FairFrom (S.stateSearch catalogueAt) scheduler [([], M)])
+    {path : List S.Entry} {N : Multiset R} (fires : S.Fires path M N)
+    (terminal : ∀ entry : S.Entry, ¬S.Enables N entry.2) :
+    ∃ fuel, (⟨(path, N), (path, N)⟩ : Emission _ _) ∈
+      (run (S.stateSearch catalogueAt) scheduler fuel (initial [([], M)])).events := by
+  have generated := S.state_generated_of_fires catalogueAt path [] M N
+    (.root List.mem_cons_self) (fun current entry _ enabled => complete current entry enabled) fires
+  simp only [List.nil_append] at generated
+  refine fair_emits_reachable _ scheduler _ fair generated ?_
+  have empty := (S.state_catalogue_empty_iff catalogueAt complete N).mpr terminal
+  simp [stateSearch, empty]
+
+/-- Breadth-first scheduling supplies the needed occurrence-level fairness. -/
+theorem breadthFirst_emits_state_run [DecidableEq S.Entry]
+    (catalogueAt : Multiset R → List S.Entry) (complete : S.StateCatalogueComplete catalogueAt)
+    (M : Multiset R) {path : List S.Entry} {N : Multiset R}
+    (fires : S.Fires path M N) (terminal : ∀ entry : S.Entry, ¬S.Enables N entry.2) :
+    ∃ fuel, (⟨(path, N), (path, N)⟩ : Emission _ _) ∈
+      (run (S.stateSearch catalogueAt) Scheduler.breadthFirst fuel (initial [([], M)])).events :=
+  S.fair_emits_state_run catalogueAt complete _ M (breadthFirst_fair _ _) fires terminal
+
+/-! ## The same resource worlds in the common weighted resumption handler -/
+
+/-- Weight each actual candidate once. Catalogue positions remain separate,
+even when two entries, successor worlds or coefficients have equal values. -/
+def gradedSuccessors {V : Type*} (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (node : List S.Entry × Multiset R) :
+    List ((List S.Entry × Multiset R) × V) :=
+  (S.enabledAt (catalogueAt node.2) node.2).map fun entry =>
+    ((node.1 ++ [entry], S.fire node.2 entry.2), coefficient node entry)
+
+/-- Resource search instantiates the existing occurrence-sensitive coalgebra.
+The return rule is the same terminal observation as ordinary search. -/
+def gradedStateSource {V : Type*} (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V) :
+    Dynamics.WeightedBranchingResumption.Coalgebra
+      (List S.Entry × Multiset R) (List S.Entry × Multiset R) V :=
+  fun node => if (S.enabledAt (catalogueAt node.2) node.2).isEmpty then .inl node
+    else .inr (S.gradedSuccessors catalogueAt coefficient node)
+
+/-- Erasure recovers the independently defined ordinary successor list,
+including duplicate and zero-weight occurrences, in its original order. -/
+theorem graded_successors_erasure {V : Type*}
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (node : List S.Entry × Multiset R) :
+    (S.gradedSuccessors catalogueAt coefficient node).map Prod.fst =
+      (S.stateSearch catalogueAt).successors node := by
+  simp only [gradedSuccessors, stateSearch, List.map_map, Function.comp_def]
+
+/-- A weight authorizes no new transition: every weighted successor is the
+firing of an actually enabled catalogue entry with its authored coefficient. -/
+theorem graded_successor_iff {V : Type*} (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (before after : List S.Entry × Multiset R) (value : V) :
+    (after, value) ∈ S.gradedSuccessors catalogueAt coefficient before ↔
+      ∃ entry, entry ∈ catalogueAt before.2 ∧ S.Enables before.2 entry.2 ∧
+        after = (before.1 ++ [entry], S.fire before.2 entry.2) ∧
+        value = coefficient before entry := by
+  simp only [gradedSuccessors, enabledAt, List.mem_map, List.mem_filter, Prod.mk.injEq]
+  constructor
+  · rintro ⟨entry, ⟨member, fits⟩, reached, weighted⟩
+    exact ⟨entry, member, (S.enabledB_iff _ _).mp fits, reached.symm, weighted.symm⟩
+  · rintro ⟨entry, member, fits, reached, weighted⟩
+    exact ⟨entry, ⟨member, (S.enabledB_iff _ _).mpr fits⟩, reached.symm, weighted.symm⟩
+
+/-- The free handler and its independent direct frontier algorithm agree for
+the actual resource-world instance. -/
+theorem graded_handler_agrees {V : Type*} [Monoid V]
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (fuel : Nat) (node : List S.Entry × Multiset R) :
+    Dynamics.WeightedResumption.interpret Dynamics.WeightedBranchingResumption.catalogue
+      (Dynamics.WeightedBranchingResumption.cut
+        (S.gradedStateSource catalogueAt coefficient) fuel node) =
+      Dynamics.WeightedBranchingResumption.contributions
+        (S.gradedStateSource catalogueAt coefficient) fuel node :=
+  Dynamics.WeightedBranchingResumption.interpret_cut _ _ _
+
+/-- A split run preserves the coefficient in multiplication order and the
+complete unfinished world. Completed worlds are not restarted. -/
+theorem graded_resume_exact {V : Type*} [Monoid V]
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (first second : Nat) (node : List S.Entry × Multiset R) :
+    Dynamics.WeightedBranchingResumption.contributions
+      (S.gradedStateSource catalogueAt coefficient) (first + second) node =
+      Dynamics.WeightedResumption.sequence
+        (Dynamics.WeightedBranchingResumption.contributions
+          (S.gradedStateSource catalogueAt coefficient) first node)
+        (fun leaf => match leaf with
+          | .inl done => [(.inl done, (1 : V))]
+          | .inr pending => Dynamics.WeightedBranchingResumption.contributions
+              (S.gradedStateSource catalogueAt coefficient) second pending) :=
+  by
+    rw [Dynamics.WeightedBranchingResumption.contributions_add]
+    apply congrArg (Dynamics.WeightedResumption.sequence
+      (Dynamics.WeightedBranchingResumption.contributions
+        (S.gradedStateSource catalogueAt coefficient) first node))
+    funext leaf
+    cases leaf <;> rfl
+
+/-- Settled publication is exactly semantic exhaustion when current-world
+discovery is complete. A weight does not affect that closure condition. -/
+theorem graded_state_return_iff {V : Type*}
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (complete : S.StateCatalogueComplete catalogueAt)
+    (before after : List S.Entry × Multiset R) :
+    S.gradedStateSource catalogueAt coefficient before = .inl after ↔
+      before = after ∧ ∀ entry : S.Entry, ¬S.Enables before.2 entry.2 := by
+  constructor
+  · intro returned
+    unfold gradedStateSource at returned
+    split at returned
+    · next empty =>
+        exact ⟨Sum.inl.inj returned,
+          (S.state_catalogue_empty_iff catalogueAt complete _).mp (List.isEmpty_iff.mp empty)⟩
+    · cases returned
+  · rintro ⟨rfl, terminal⟩
+    have empty := (S.state_catalogue_empty_iff catalogueAt complete _).mpr terminal
+    simp [gradedStateSource, empty]
+
+/-- Every leaf of a weighted cut retains an actual enabled run. Only returned
+leaves certify quiescence; pending leaves keep their complete unfinished run. -/
+theorem graded_contributions_valid {V : Type*} [Monoid V]
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (complete : S.StateCatalogueComplete catalogueAt)
+    (M : Multiset R) (fuel : Nat) (before : List S.Entry × Multiset R)
+    (fires : S.Fires before.1 M before.2)
+    (leaf : ((List S.Entry × Multiset R) ⊕ (List S.Entry × Multiset R)) × V)
+    (member : leaf ∈ Dynamics.WeightedBranchingResumption.contributions
+      (S.gradedStateSource catalogueAt coefficient) fuel before) :
+    Sum.elim
+      (fun done => S.Fires done.1 M done.2 ∧
+        ∀ entry : S.Entry, ¬S.Enables done.2 entry.2)
+      (fun pending => S.Fires pending.1 M pending.2) leaf.1 := by
+  apply Dynamics.WeightedBranchingResumption.contributions_invariant
+    (S.gradedStateSource catalogueAt coefficient)
+    (fun current => S.Fires current.1 M current.2)
+    (fun done => S.Fires done.1 M done.2 ∧
+      ∀ entry : S.Entry, ¬S.Enables done.2 entry.2)
+    ?_ ?_ fuel before fires leaf member
+  · intro current done valid returned
+    obtain ⟨rfl, terminal⟩ :=
+      (S.graded_state_return_iff catalogueAt coefficient complete current done).mp returned
+    exact ⟨valid, terminal⟩
+  · intro current alternatives valid branches next nextMember
+    unfold gradedStateSource at branches
+    split at branches
+    · cases branches
+    · rw [← Sum.inr.inj branches] at nextMember
+      obtain ⟨entry, _, enabled, reached, _⟩ :=
+        (S.graded_successor_iff catalogueAt coefficient current next.1 next.2).mp nextMember
+      rw [reached]
+      exact S.fires_append _ valid enabled
+
+/-- Every finite terminal run contributes a returned occurrence at some cut,
+including a run whose authored coefficient is zero. This retains its ordered
+firing history; it does not identify commuting histories or assert nonzero
+aggregate support. -/
+theorem graded_return_of_fires {V : Type*} [Monoid V]
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (complete : S.StateCatalogueComplete catalogueAt)
+    {M N : Multiset R} {path : List S.Entry}
+    (fires : S.Fires path M N) (terminal : ∀ entry : S.Entry, ¬S.Enables N entry.2) :
+    ∃ fuel value, (.inl (path, N), value) ∈
+      Dynamics.WeightedBranchingResumption.contributions
+        (S.gradedStateSource catalogueAt coefficient) fuel ([], M) := by
+  let step := fun before after : List S.Entry × Multiset R =>
+    after ∈ (S.stateSearch catalogueAt).successors before
+  have admitted : ∀ before after, step before after →
+      ∃ alternatives value, S.gradedStateSource catalogueAt coefficient before =
+        .inr alternatives ∧ (after, value) ∈ alternatives := by
+    intro before after member
+    obtain ⟨entry, enabledMember, reached⟩ := List.mem_map.mp member
+    have notEmpty : (S.enabledAt (catalogueAt before.2) before.2).isEmpty = false := by
+      cases empty : S.enabledAt (catalogueAt before.2) before.2 with
+      | nil => simp [empty] at enabledMember
+      | cons head rest => rfl
+    refine ⟨S.gradedSuccessors catalogueAt coefficient before, coefficient before entry,
+      by simp [gradedStateSource, notEmpty], ?_⟩
+    apply (S.graded_successor_iff catalogueAt coefficient before after _).mpr
+    exact ⟨entry, (List.mem_filter.mp enabledMember).1,
+      (S.enabledB_iff _ _).mp (List.mem_filter.mp enabledMember).2, reached.symm, rfl⟩
+  have generated := S.state_generated_of_fires catalogueAt path [] M N
+    (.root List.mem_cons_self) (fun current entry _ enabled => complete current entry enabled)
+    fires
+  have reachable : Relation.ReflTransGen step ([], M) (path, N) := by
+    have reachableGenerated : ∀ node, Generated (S.stateSearch catalogueAt) [([], M)] node →
+        Relation.ReflTransGen step ([], M) node := by
+      intro node valid
+      induction valid with
+      | root member => rw [List.mem_singleton.mp member]
+      | successor _ member ih => exact ih.tail member
+    simpa using reachableGenerated _ generated
+  exact Dynamics.WeightedBranchingResumption.contributions_return_of_reachable
+    (S.gradedStateSource catalogueAt coefficient) step admitted reachable (path, N)
+    ((S.graded_state_return_iff catalogueAt coefficient complete (path, N) (path, N)).mpr
+      ⟨rfl, terminal⟩)
+
+/-- Every node of fixed-catalogue search is a run of its catalogued instances. -/
+theorem generated_fires {M : Multiset R} {node : List S.Entry × Multiset R}
+    (generated : Generated (S.search catalogue) [([], M)] node) :
+    S.Fires node.1 M node.2 ∧ ∀ entry ∈ node.1, entry ∈ catalogue := by
+  refine ⟨S.state_generated_fires (fun _ => catalogue) generated, ?_⟩
+  induction generated with
+  | root member => rw [List.mem_singleton.mp member]; simp
+  | successor _ childMember ih =>
+      obtain ⟨entry, enabledMember, rfl⟩ := List.mem_map.mp childMember
+      intro other member
+      rcases List.mem_append.mp member with earlier | last
+      · exact ih other earlier
+      · rw [List.mem_singleton.mp last]
+        exact (List.mem_filter.mp enabledMember).1
+
+/-- Every fixed-catalogue run is generated by the same current-world search. -/
+theorem generated_of_fires {M : Multiset R} (rest : List S.Entry) (path : List S.Entry)
+    (X N : Multiset R) (generated : Generated (S.search catalogue) [([], M)] (path, X))
+    (catalogued : ∀ entry ∈ rest, entry ∈ catalogue) (fires : S.Fires rest X N) :
+    Generated (S.search catalogue) [([], M)] (path ++ rest, N) :=
+  S.state_generated_of_fires (fun _ => catalogue) rest path X N generated
+    (fun _ entry member _ => catalogued entry member) fires
 
 /-- **Every emitted answer is a maximal run, with its firings.** -/
 theorem emitted_is_run (scheduler : Scheduler (List S.Entry × Multiset R)) (fuel : ℕ)
@@ -92,7 +379,7 @@ theorem emitted_is_run (scheduler : Scheduler (List S.Entry × Multiset R)) (fue
       S.enabledAt catalogue event.value.2 = [] ∧ ∀ entry ∈ event.value.1, entry ∈ catalogue := by
   have sound := (sound_run (S.search catalogue) scheduler (initial_sound _ _) fuel).2 event member
   obtain ⟨generated, emits⟩ := sound
-  unfold search at emits
+  unfold search stateSearch at emits
   simp only at emits
   split at emits
   · next empty =>
@@ -113,7 +400,7 @@ theorem fair_emits_run (scheduler : Scheduler (List S.Entry × Multiset R)) (M :
     catalogued fires
   simp only [List.nil_append] at generated
   refine fair_emits_reachable _ scheduler _ fair generated ?_
-  simp [search, terminal]
+  simp [search, stateSearch, terminal]
 
 /-- **Breadth-first scheduling emits every maximal run.** -/
 theorem breadthFirst_emits_run [DecidableEq S.Entry] (M : Multiset R) {path : List S.Entry}
@@ -309,7 +596,7 @@ private theorem depthFirst_frontier : ∀ fuel : ℕ, ∃ pending,
       refine ⟨(List.replicate fuel loopEntry ++ [stopEntry], looping.fire start stopEntry.2) ::
         pending, ?_⟩
       rw [run, current]
-      simp only [tick, Scheduler.depthFirst, System.search, start_enabled]
+      simp only [tick, Scheduler.depthFirst, System.search, System.stateSearch, start_enabled]
       simp only [List.isEmpty_cons, Bool.false_eq_true, if_false, List.map_cons, List.map_nil,
         List.cons_append, List.nil_append, loop_keeps_start]
       rw [List.replicate_succ']
@@ -334,6 +621,102 @@ theorem breadthFirst_emits_stop :
 
 end FrontierControls
 
+/-! ## Current-world discovery and retained suspended work -/
+
+namespace CurrentWorldControls
+
+inductive Token where
+  | first
+  | follow
+  | done
+  deriving DecidableEq
+
+/-- The first firing creates the resource enabling the second firing. -/
+def chain : System Token where
+  Site := Unit
+  Instance := fun _ => Bool
+  consume := fun next => if next then {Token.follow} else {Token.first}
+  read := fun _ => 0
+  produce := fun next => if next then {Token.done} else {Token.follow}
+
+instance : DecidableEq chain.Entry :=
+  inferInstanceAs (DecidableEq (Σ _ : Unit, Bool))
+
+def first : chain.Entry := ⟨(), false⟩
+def follow : chain.Entry := ⟨(), true⟩
+
+def discover (M : Multiset Token) : List chain.Entry :=
+  chain.enabledAt [first, follow] M
+
+theorem discovery_complete : chain.StateCatalogueComplete discover := by
+  intro M entry enabled
+  obtain ⟨⟨⟩, next⟩ := entry
+  apply List.mem_filter.mpr
+  refine ⟨?_, (chain.enabledB_iff M _).mpr enabled⟩
+  cases next <;> simp [first, follow]
+
+theorem successor_discovery_changes :
+    discover {Token.first} = [first] ∧
+      discover (chain.fire {Token.first} first.2) = [follow] := by decide
+
+/-- Both firings and their terminal world are published, including the
+descendant's newly enabled event absent from the initial discovery. -/
+theorem discovers_descendant_work :
+    run (chain.stateSearch discover) Scheduler.depthFirst 3
+      (initial [([], {Token.first})]) =
+    ⟨[⟨([first, follow], {Token.done}), ([first, follow], {Token.done})⟩], []⟩ := by decide
+
+/-- Stopping before publication retains the complete terminal world and its
+history as pending work. A later tick publishes it. -/
+theorem suspension_retains_world :
+    run (chain.stateSearch discover) Scheduler.depthFirst 2
+      (initial [([], {Token.first})]) = ⟨[], [([first, follow], {Token.done})]⟩ ∧
+    run (chain.stateSearch discover) Scheduler.depthFirst 1
+      (run (chain.stateSearch discover) Scheduler.depthFirst 2
+        (initial [([], {Token.first})])) =
+      run (chain.stateSearch discover) Scheduler.depthFirst 3
+        (initial [([], {Token.first})]) := by
+  constructor
+  · decide
+  · exact (run_add _ _ 2 1 _).symm
+
+/-- Freezing the initial catalogue publishes an intermediate world even
+though the resource system still has an enabled event there. -/
+theorem frozen_initial_catalogue_closes_too_early :
+    run (chain.search (discover {Token.first})) Scheduler.depthFirst 2
+      (initial [([], {Token.first})]) =
+      ⟨[⟨([first], {Token.follow}), ([first], {Token.follow})⟩], []⟩ ∧
+      chain.Enables {Token.follow} follow.2 := by
+  constructor
+  · decide
+  · unfold System.Enables
+    decide
+
+def grade (_node : List chain.Entry × Multiset Token) (entry : chain.Entry) : Nat :=
+  bif entry.2 then 5 else 3
+
+/-- A pause owns the newly created follow-up work and the first coefficient. -/
+theorem graded_pause_keeps_world_and_coefficient :
+    Dynamics.WeightedBranchingResumption.contributions
+      (chain.gradedStateSource discover grade) 1 ([], {Token.first}) =
+      [(.inr ([first], {Token.follow}), 3)] := by decide +kernel
+
+/-- The descendant's coefficient composes in the common handler, with the
+whole terminal world and its ordered firing history retained. -/
+theorem graded_descendant_work :
+    Dynamics.WeightedBranchingResumption.contributions
+      (chain.gradedStateSource discover grade) 3 ([], {Token.first}) =
+      [(.inl ([first, follow], {Token.done}), 15)] := by decide +kernel
+
+/-- A zero semantic coefficient retains the authorized world occurrence;
+coefficient erasure and a nonzero-support filter are different observations. -/
+theorem zero_grade_keeps_authorized_world :
+    Dynamics.WeightedBranchingResumption.contributions
+      (chain.gradedStateSource discover (fun _ _ => (0 : Nat))) 3 ([], {Token.first}) =
+      [(.inl ([first, follow], {Token.done}), 0)] := by decide +kernel
+
+end CurrentWorldControls
+
 #print axioms System.generated_fires
 #print axioms System.emitted_is_run
 #print axioms System.fair_emits_run
@@ -342,5 +725,18 @@ end FrontierControls
 #print axioms System.every_scheduler_emits_runs
 #print axioms FrontierControls.depthFirst_starves
 #print axioms FrontierControls.breadthFirst_emits_stop
+#print axioms System.state_emitted_is_run
+#print axioms System.fair_emits_state_run
+#print axioms System.graded_successors_erasure
+#print axioms System.graded_successor_iff
+#print axioms System.graded_handler_agrees
+#print axioms System.graded_resume_exact
+#print axioms System.graded_state_return_iff
+#print axioms System.graded_contributions_valid
+#print axioms System.graded_return_of_fires
+#print axioms CurrentWorldControls.discovery_complete
+#print axioms CurrentWorldControls.frozen_initial_catalogue_closes_too_early
+#print axioms CurrentWorldControls.graded_descendant_work
+#print axioms CurrentWorldControls.zero_grade_keeps_authorized_world
 
 end Mettapedia.GSLT.Causality.ResourceInteraction

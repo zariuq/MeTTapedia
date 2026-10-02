@@ -23,23 +23,23 @@ set_option autoImplicit false
 namespace Mettapedia.TypeTheory.UniverseLevel
 
 /-- The spelling of a level expression after a name, in postfix order. -/
-def appendLevel : Lean.Name → LevelExpr → Lean.Name
+def appendLevel : Lean.Name → LevelExpr Nat → Lean.Name
   | p, .const n => .num (.num p n) 0
   | p, .param n => .num (.num p n) 1
   | p, .succ e => .num (appendLevel p e) 2
   | p, .max a b => .num (appendLevel (appendLevel p a) b) 3
 
 /-- Every spelling ends in a numeric component. -/
-theorem appendLevel_ne_str (p : Lean.Name) (e : LevelExpr) (q : Lean.Name) (s : String) :
+theorem appendLevel_ne_str (p : Lean.Name) (e : LevelExpr Nat) (q : Lean.Name) (s : String) :
     appendLevel p e ≠ .str q s := by
   cases e <;> exact Lean.Name.noConfusion
 
-theorem appendLevel_ne_anonymous (p : Lean.Name) (e : LevelExpr) :
+theorem appendLevel_ne_anonymous (p : Lean.Name) (e : LevelExpr Nat) :
     appendLevel p e ≠ .anonymous := by
   cases e <;> exact Lean.Name.noConfusion
 
 /-- **The spelling is injective**, in the level and in the name it extends. -/
-theorem appendLevel_inj : ∀ {e e' : LevelExpr} {p p' : Lean.Name},
+theorem appendLevel_inj : ∀ {e e' : LevelExpr Nat} {p p' : Lean.Name},
     appendLevel p e = appendLevel p' e' → e = e' ∧ p = p'
   | .const n, .const n', p, p', h => by
       simp only [appendLevel, Lean.Name.num.injEq, and_true] at h
@@ -79,7 +79,7 @@ def componentCount : Lean.Name → Nat
 
 /-- The spelled level expression at the end of a name and the name before it, read
 in at most `fuel` nested steps. -/
-def readLevelAux : Nat → Lean.Name → Option (LevelExpr × Lean.Name)
+def readLevelAux : Nat → Lean.Name → Option (LevelExpr Nat × Lean.Name)
   | 0, _ => none
   | _ + 1, .num (.num p n) 0 => some (.const n, p)
   | _ + 1, .num (.num p n) 1 => some (.param n, p)
@@ -97,18 +97,18 @@ def readLevelAux : Nat → Lean.Name → Option (LevelExpr × Lean.Name)
   | _ + 1, _ => none
 
 /-- **The spelled level expression at the end of a name**, and the name it extends. -/
-def readLevel (name : Lean.Name) : Option (LevelExpr × Lean.Name) :=
+def readLevel (name : Lean.Name) : Option (LevelExpr Nat × Lean.Name) :=
   readLevelAux (componentCount name) name
 
 /-- The nesting depth of a level expression. -/
-def LevelExpr.depth : LevelExpr → Nat
+def LevelExpr.depth : LevelExpr Nat → Nat
   | .const _ => 1
   | .param _ => 1
   | .succ e => e.depth + 1
   | .max a b => Max.max a.depth b.depth + 1
 
 theorem componentCount_appendLevel (p : Lean.Name) :
-    ∀ e : LevelExpr, componentCount p + e.depth ≤ componentCount (appendLevel p e)
+    ∀ e : LevelExpr Nat, componentCount p + e.depth ≤ componentCount (appendLevel p e)
   | .const _ => by simp only [appendLevel, componentCount, LevelExpr.depth]; omega
   | .param _ => by simp only [appendLevel, componentCount, LevelExpr.depth]; omega
   | .succ e => by
@@ -123,7 +123,7 @@ theorem componentCount_appendLevel (p : Lean.Name) :
 
 /-- With enough fuel the reading recovers a spelling and the name it extends. -/
 theorem readLevelAux_appendLevel :
-    ∀ (e : LevelExpr) (p : Lean.Name) (fuel : Nat), e.depth ≤ fuel →
+    ∀ (e : LevelExpr Nat) (p : Lean.Name) (fuel : Nat), e.depth ≤ fuel →
       readLevelAux fuel (appendLevel p e) = some (e, p)
   | .const _, _, _ + 1, _ => rfl
   | .param _, _, _ + 1, _ => rfl
@@ -143,14 +143,14 @@ theorem readLevelAux_appendLevel :
   | .max _ _, _, 0, enough => absurd enough (Nat.not_succ_le_zero _)
 
 /-- **The reading recovers every spelling.** -/
-theorem readLevel_appendLevel (p : Lean.Name) (e : LevelExpr) :
+theorem readLevel_appendLevel (p : Lean.Name) (e : LevelExpr Nat) :
     readLevel (appendLevel p e) = some (e, p) :=
   readLevelAux_appendLevel e p _
     (Nat.le_trans (Nat.le_add_left _ _) (componentCount_appendLevel p e))
 
 /-- The reading returns only spellings. -/
 theorem readLevelAux_sound :
-    ∀ (fuel : Nat) (name : Lean.Name) {p : Lean.Name} {e : LevelExpr},
+    ∀ (fuel : Nat) (name : Lean.Name) {p : Lean.Name} {e : LevelExpr Nat},
       readLevelAux fuel name = some (e, p) → name = appendLevel p e
   | 0, _, _, _, found => by cases found
   | _ + 1, .anonymous, _, _, found => by cases found
@@ -198,7 +198,7 @@ theorem readLevelAux_sound :
   | _ + 1, .num _ (_ + 4), _, _, found => by simp [readLevelAux] at found
 
 /-- **The reading returns only spellings.** -/
-theorem readLevel_sound {name p : Lean.Name} {e : LevelExpr}
+theorem readLevel_sound {name p : Lean.Name} {e : LevelExpr Nat}
     (found : readLevel name = some (e, p)) : name = appendLevel p e :=
   readLevelAux_sound _ _ found
 
@@ -208,7 +208,7 @@ theorem readLevel_str (q : Lean.Name) (s : String) : readLevel (.str q s) = none
 theorem readLevel_anonymous : readLevel .anonymous = none := rfl
 
 /-- The reading of a name, as a statement about spellings. -/
-theorem readLevel_eq_some_iff {name p : Lean.Name} {e : LevelExpr} :
+theorem readLevel_eq_some_iff {name p : Lean.Name} {e : LevelExpr Nat} :
     readLevel name = some (e, p) ↔ name = appendLevel p e :=
   ⟨readLevel_sound, fun h => h ▸ readLevel_appendLevel p e⟩
 

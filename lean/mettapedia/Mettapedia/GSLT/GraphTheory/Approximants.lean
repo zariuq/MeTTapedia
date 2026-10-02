@@ -1,20 +1,30 @@
 import Mettapedia.GSLT.GraphTheory.BohmTree
 
 /-!
-# Approximants and the Approximation Theorem
+# Syntactic approximants of finite tree observations
 
-This file formalizes finite approximations of Böhm trees, following Barendregt
+Lambda terms extended with ⊥, their approximation order, and the reading of a
+finite tree observation as such a term, following Barendregt
 "The Lambda Calculus" Chapter 10.1.
+
+The approximation theorem, which relates a term to the approximants of its
+Böhm tree, is not proved here. The trees read back in this file are the
+fixed-budget observations `bohmTree`, not the exact observations of
+`BohmObservations`.
 
 ## Main Definitions
 
 * `ApproxTerm` - Lambda terms extended with ⊥ (bottom)
 * `approxLE` - Ordering on approximants (⊥ ⊑ everything)
+* `BohmTree.toApproxTerm` - The approximant read off a finite tree
+* `nthApprox` - The approximant of the fixed-budget observation of a term
 
 ## Key Results
 
 * `shift_preserves_approxLE` - Shifting preserves approximation ordering
 * `subst_preserves_approxLE` - Substitution preserves approximation ordering
+* `BohmTree.approxEqual_imp_equal` - A finite tree is determined by its
+  approximants at all depths
 
 ## References
 
@@ -115,10 +125,10 @@ def ApproxTerm.subst : Nat → ApproxTerm → ApproxTerm → ApproxTerm
   | n, s, .lam t => .lam (subst (n + 1) (s.shift 1 0) t)
   | n, s, .app t u => .app (subst n s t) (subst n s u)
 
-/-! ## Key Lemma: Substitution preserves approximation
+/-! ## Substitution preserves approximation
 
-This is the crucial lemma for proving that Böhm equality is preserved by
-substitution, which is needed for the application congruence theorems.
+A syntactic fact about approximants. It does not by itself give a
+substitution or application congruence for tree observations of terms.
 -/
 
 /-- Substitution preserves the approximation ordering.
@@ -455,8 +465,9 @@ lemma BohmTree.sizeOf_node_gt_args (k hv : Nat) (args : List BohmTree) :
     sizeOf args < sizeOf (BohmTree.node k hv args) := by
   decreasing_trivial
 
-/-- The approximation theorem: if two Böhm trees have equal approximants at ALL depths,
-    they are equal. This is the fundamental connection between approximants and Böhm trees.
+/-- A finite tree is determined by its approximants: two finite trees with equal
+    approximants at ALL depths are equal. This is injectivity of the reading of
+    finite trees as approximants, not the approximation theorem for terms.
 
     Note: A single depth is NOT sufficient for injectivity!
     For example, at depth 0, all args become `.bot`, so different trees can have equal approximants.
@@ -516,82 +527,39 @@ decreasing_by
     BohmTree.sizeOf_node_gt_args k₁ hv₁ args₁
   omega
 
-/-- The n-th approximant of a lambda term -/
+/-- The n-th approximant of the fixed-budget observation of a lambda term -/
 def nthApprox (n : Nat) (t : LambdaTerm) : ApproxTerm :=
   (bohmTree n t).toApproxTerm n
 
-/-- If two terms have equal Böhm trees at all depths, their approximants are equal -/
-theorem bohmEqual_imp_approxEqual {t s : LambdaTerm}
-    (h : ∀ n, bohmTree n t = bohmTree n s) (n : Nat) :
+/-- Terms with equal fixed-budget observations at all depths have equal approximants -/
+theorem searchTreeEqual_imp_approxEqual {t s : LambdaTerm}
+    (h : SearchTreeEqual t s) (n : Nat) :
     nthApprox n t = nthApprox n s := by
   unfold nthApprox
   rw [h n]
 
-/-! ## Shift Preserves Böhm Equality
+/-! ## Shift preserves equality of fixed-budget observations
 
-Shifting (de Bruijn index renaming) preserves Böhm equality because it doesn't
-change the computational behavior of terms - only renames free variables.
+Shifting (de Bruijn index renaming) does not change the computational behavior
+of terms; it only renames free variables.
 -/
 
-/-- Shifting preserves Böhm equality.
-    If s and s' have equal Böhm trees at all depths, so do their shifted versions.
+/-- Shifting preserves equality of the bounded tree observations.
+    If the search observations agree at every depth, their shifted versions do too.
 
     Key insight: shift is a syntactic operation that doesn't affect reduction behavior.
     The HNF structure (lambdas, head variable, args) is preserved by consistent renaming. -/
-theorem shift_preserves_bohmEqual (s s' : LambdaTerm) (d c : Nat)
+theorem shift_preserves_searchTreeEqual (s s' : LambdaTerm) (d c : Nat)
     (h : ∀ n, bohmTree n s = bohmTree n s') :
     ∀ m, bohmTree m (s.shift d c) = bohmTree m (s'.shift d c) :=
   -- Proved in BohmTree.lean using bohmTree_shift
-  shift_preserves_bohmEqual' s s' d c h
+  shift_preserves_searchTreeEqual' s s' d c h
 
-/-! ## Substitution Lemma for Böhm Equality
-
-The key lemma for proving application congruence: substitution preserves Böhm equality.
+/-!
+Substitution congruence belongs to exact mathematical Böhm observations, not
+to fixed-budget evaluator equality. No substitution law for the latter is
+assumed here. The syntactic approximation-order substitution laws above do
+not depend on a Böhm-tree congruence theorem.
 -/
-
-/-- Substitution preserves Böhm equality.
-    If s and s' have equal Böhm trees, then body[s/x] and body[s'/x] have equal Böhm trees.
-
-    Here s.subst 0 body = subst 0 s body = "substitute s for var 0 in body".
-
-    This is the key lemma for proving bohmTree_congAppRight.
-
-    Proof by induction on body structure, using shift_preserves_bohmEqual for lambdas. -/
-theorem subst_preserves_bohmEqual (body : LambdaTerm) (s s' : LambdaTerm)
-    (h : ∀ n, bohmTree n s = bohmTree n s') :
-    ∀ m, bohmTree m (s.subst 0 body) = bohmTree m (s'.subst 0 body) := by
-  intro m
-  induction body generalizing m with
-  | var n =>
-    -- s.subst 0 (.var n) = subst 0 s (.var n)
-    -- If n = 0: return s
-    -- If n > 0: return .var (n-1)
-    simp only [LambdaTerm.subst]
-    split
-    · -- n == 0: return s (or s')
-      exact h m
-    · split
-      · -- n > 0: return .var (n-1), same for both
-        rfl
-      · -- n < 0: impossible for Nat, return .var n
-        rfl
-  | lam body' ih =>
-    -- s.subst 0 (.lam body') = .lam ((s.shift 1 0).subst 1 body')
-    -- But our theorem is for level 0 substitution. We need generalization.
-    simp only [LambdaTerm.subst]
-    -- Goal: bohmTree m (.lam ((s.shift 1 0).subst 1 body'))
-    --     = bohmTree m (.lam ((s'.shift 1 0).subst 1 body'))
-    -- By bohmTree_congLam, it suffices to show the bodies are Böhm-equal
-    -- But (s.shift 1 0).subst 1 body' is a level-1 substitution, not level-0
-    -- We need to generalize this theorem to arbitrary levels
-    sorry
-  | app body₁ body₂ ih₁ ih₂ =>
-    -- s.subst 0 (.app body₁ body₂) = .app (s.subst 0 body₁) (s.subst 0 body₂)
-    simp only [LambdaTerm.subst]
-    -- By ih₁ and ih₂, the parts are Böhm-equal
-    -- Need: bohmTree congruence for applications
-    -- This creates a circular dependency with bohmTree_congAppLeft/Right
-    -- The resolution requires proving these simultaneously or using a different approach
-    sorry
 
 end Mettapedia.GSLT.GraphTheory

@@ -157,7 +157,7 @@ theorem lambda_values_not_equal (h : CofinalInaccessibles.{u})
       ZFSetTraceProducts.traceApp_graph_beta _ (universeSet_mem_next h ∅ 0)]
     rfl
   rw [lower, upper] at observed
-  have member := seed_mem_zero h (∅ : ZFSet.{u})
+  have member := seed_mem_universeSet h (∅ : ZFSet.{u}) (0 : Nat)
   rw [← observed] at member
   exact ZFSet.notMem_empty _ member
 

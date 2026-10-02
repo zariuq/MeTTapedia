@@ -267,7 +267,7 @@ noncomputable def rhoHereditaryCostLayer_ofBuiltProvider
       rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path)
 
 /-- The cost layer object laws from the built provider alone. -/
-noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofBuiltProvider
+theorem rhoHereditaryCompactOpenNormalizerLaws_ofBuiltProvider
     (built : ∀ color,
       RhoCanonicalStaticPair.HasBuiltSemanticCut color) :
     Cost.CompactOpenNormalizer.Laws rhoCIGSLT

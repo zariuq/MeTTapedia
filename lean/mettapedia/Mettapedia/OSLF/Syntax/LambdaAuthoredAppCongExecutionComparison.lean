@@ -88,7 +88,7 @@ theorem appL_match {Γ : Ctx sig}
     matchRuleAt appCongLRule appCongLSpec Γ.length
       (encodeTerm (appT function argument)) =
       [captured function argument] := by
-  simp [matchRuleAt, appCongLRule, matchAt, matchArgsAt,
+  simp [matchRuleAt, matchRuleWithAt, appCongLRule, matchAtWith, matchArgsAtWith,
     appT, encodeTerm, encodeArgs, wrapBinders, capture?, assign, lookup,
     captured, appCongLSpec, arguments?, dependencies?, occurrenceDeclared,
     sitePattern?, occurrenceAt?, recover_root, rootValue]
@@ -98,7 +98,7 @@ theorem appR_match {Γ : Ctx sig}
     matchRuleAt appCongRRule appCongRSpec Γ.length
       (encodeTerm (appT function argument)) =
       [captured function argument] := by
-  simp [matchRuleAt, appCongRRule, matchAt, matchArgsAt,
+  simp [matchRuleAt, matchRuleWithAt, appCongRRule, matchAtWith, matchArgsAtWith,
     appT, encodeTerm, encodeArgs, wrapBinders, capture?, assign, lookup,
     captured, appCongRSpec, arguments?, dependencies?, occurrenceDeclared,
     sitePattern?, occurrenceAt?, recover_root, rootValue]
@@ -109,7 +109,7 @@ theorem appL_source {Γ : Ctx sig}
     instantiateAt? appCongLRule appCongLSpec Γ.length
       (.premise 0 0 0) [] 0 (captured function argument)
       appCongLStep.source = some (encodeTerm function) := by
-  simp [instantiateAt?, appCongLStep, captured, lookup,
+  simp [instantiateAt?, instantiateWith?, appCongLStep, captured, lookup,
     source_argumentsL, instantiate_root]
 
 /-- The right rule asks for the argument step in the caller's context. -/
@@ -118,7 +118,7 @@ theorem appR_source {Γ : Ctx sig}
     instantiateAt? appCongRRule appCongRSpec Γ.length
       (.premise 0 0 0) [] 0 (captured function argument)
       appCongRStep.source = some (encodeTerm argument) := by
-  simp [instantiateAt?, appCongRStep, captured, lookup,
+  simp [instantiateAt?, instantiateWith?, appCongRStep, captured, lookup,
     source_argumentsR, instantiate_root]
 
 /-- A selected function target adds a new root value without changing the
@@ -131,7 +131,7 @@ theorem appL_target {Γ : Ctx sig}
       [completedL function argument target] := by
   have hdeps : dependencies? appCongLSpec "G" = some [] := by
     decide +kernel
-  simp [appCongLStep, matchAt, capture?, hdeps,
+  simp [appCongLStep, matchAt, matchAtWith, capture?, hdeps,
     target_argumentsL, recover_root, assign, lookup,
     completedL, captured]
 
@@ -143,7 +143,7 @@ theorem appR_target {Γ : Ctx sig}
       [completedR function argument target] := by
   have hdeps : dependencies? appCongRSpec "B" = some [] := by
     decide +kernel
-  simp [appCongRStep, matchAt, capture?, hdeps,
+  simp [appCongRStep, matchAt, matchAtWith, capture?, hdeps,
     target_argumentsR, recover_root, assign, lookup,
     completedR, captured]
 
@@ -154,7 +154,7 @@ theorem appL_reduct {Γ : Ctx sig}
     reduct? appCongLRule appCongLSpec Γ.length
       (completedL function argument target) =
       some (encodeTerm (appT target argument)) := by
-  simp [reduct?, instantiateAt?, instantiateArgsAt?,
+  simp [reduct?, instantiateAt?, instantiateWith?, instantiateArgsWith?,
     appCongLRule, appCongLSpec, arguments?, dependencies?,
     occurrenceDeclared, sitePattern?, occurrenceAt?,
     completedL, captured, lookup, instantiate_root,
@@ -165,7 +165,7 @@ theorem appR_reduct {Γ : Ctx sig}
     reduct? appCongRRule appCongRSpec Γ.length
       (completedR function argument target) =
       some (encodeTerm (appT function target)) := by
-  simp [reduct?, instantiateAt?, instantiateArgsAt?,
+  simp [reduct?, instantiateAt?, instantiateWith?, instantiateArgsWith?,
     appCongRRule, appCongRSpec, arguments?, dependencies?,
     occurrenceDeclared, sitePattern?, occurrenceAt?,
     completedR, captured, lookup, instantiate_root,

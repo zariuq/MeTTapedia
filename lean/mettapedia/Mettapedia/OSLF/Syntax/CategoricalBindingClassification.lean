@@ -174,7 +174,7 @@ interpretation. -/
 theorem classifying_meaning {X : Object S} {Γ : Ctx S} {s : S.Srt}
     (t : Term (withMetas S X.arities) Γ s) :
     M.classifyingData.meaning t = transElem M.classifyingModelIso (M.interp X.arities t) := by
-  apply Elem.ext
+  apply ElemOver.ext
   funext Z m ρ
   change lift (M.classifyingModel.tupleEnv ρ)
       (m ≫ (M.classifyingData.famIso X.arities).inv ≫ M.assignHom (termArrow t)) ≫

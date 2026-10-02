@@ -46,30 +46,31 @@ namespace TowerControls
 open Normalization (LevelModel HeadSame WhStep)
 open UniverseLevel (LevelExpr)
 
-/-- The tower of universes without declarations, annotated. -/
-def P₀ : ChurchRules Tower.rules := ChurchRules.empty Tower.rules (fun _ => rfl)
+/-- The tower of universes over a level order, without declarations, annotated. -/
+def P₀ {L : Type} [UniverseLevel.LevelOrder L] : ChurchRules (LevelTower.rules L) :=
+  ChurchRules.empty (LevelTower.rules L) (fun _ => rfl)
 
 /-- The universe at a level. -/
-abbrev U {n : Nat} (l : LevelExpr) : CTm Tower.Head n := .head (.sort l)
+abbrev U {n : Nat} (l : LevelExpr Nat) : CTm Tower.Head n := .head (.sort l)
 
 /-- Level zero and level one. -/
-abbrev l0 : LevelExpr := .const 0
-abbrev l1 : LevelExpr := .succ (.const 0)
+abbrev l0 : LevelExpr Nat := .const 0
+abbrev l1 : LevelExpr Nat := .succ (.const 0)
 
 /-- The identity on the universe at a level. -/
-abbrev idU {n : Nat} (l : LevelExpr) : CTm Tower.Head n := .lam (U l) (.var 0)
+abbrev idU {n : Nat} (l : LevelExpr Nat) : CTm Tower.Head n := .lam (U l) (.var 0)
 
 section Typings
 
 variable {n : Nat} {Γ : CCtx Tower.Head n}
 
-theorem univ_typed (l : LevelExpr) : CTyped P₀ Γ (U l) (U (.succ l)) := .headType (.sort l)
+theorem univ_typed (l : LevelExpr Nat) : CTyped P₀ Γ (U l) (U (.succ l)) := .headType (.sort l)
 
-theorem piUU_typed (l : LevelExpr) :
+theorem piUU_typed (l : LevelExpr Nat) :
     CTyped P₀ Γ (.pi (U l) (U l)) (U (.max (.succ l) (.succ l))) :=
   .piForm (univ_typed l) (.sort _) (univ_typed l) (.sort _) (.sorts _ _)
 
-theorem idU_typed (l : LevelExpr) : CTyped P₀ Γ (idU l) (.pi (U l) (U l)) :=
+theorem idU_typed (l : LevelExpr Nat) : CTyped P₀ Γ (idU l) (.pi (U l) (U l)) :=
   .lamIntro (univ_typed l) (.sort _) (piUU_typed l) (.sort _) (.var 0)
 
 end Typings
@@ -113,10 +114,10 @@ theorem domainStep :
 abbrev Γ₂ : CCtx Tower.Head 2 := .snoc (.snoc .nil (U l0)) (.var 0)
 
 /-- `(λ (f : U → U). x) (λ (y : U). y)` with `U` the universe at `l`. -/
-abbrev betaAt (l : LevelExpr) : CTm Tower.Head 2 :=
+abbrev betaAt (l : LevelExpr Nat) : CTm Tower.Head 2 :=
   .app (.lam (.pi (U l) (U l)) (.var 1)) (idU l)
 
-theorem betaAt_equal (l : LevelExpr) : CEqual P₀ Γ₂ (betaAt l) (.var 0) (.var 1) :=
+theorem betaAt_equal (l : LevelExpr Nat) : CEqual P₀ Γ₂ (betaAt l) (.var 0) (.var 1) :=
   .betaPi (B := .var 2) (u := .sort (.max (.max (.succ l) (.succ l)) l0))
     (.piForm (piUU_typed l) (.sort _) (.var 2) (.sort _) (.sorts _ _)) (.sort _) (.var 1)
     (idU_typed l)
@@ -127,9 +128,9 @@ theorem beta_coherent :
   ⟨rfl, .trans (betaAt_equal l0) (.symm (betaAt_equal l1))⟩
 
 /-- `(x, λ (y : U). y).1` with `U` the universe at `l`. -/
-abbrev fstAt (l : LevelExpr) : CTm Tower.Head 2 := .fst (.pair (.var 0) (idU l))
+abbrev fstAt (l : LevelExpr Nat) : CTm Tower.Head 2 := .fst (.pair (.var 0) (idU l))
 
-theorem fstAt_equal (l : LevelExpr) : CEqual P₀ Γ₂ (fstAt l) (.var 0) (.var 1) :=
+theorem fstAt_equal (l : LevelExpr Nat) : CEqual P₀ Γ₂ (fstAt l) (.var 0) (.var 1) :=
   .betaFst (B := .pi (U l) (U l)) (u := .sort (.max l0 (.max (.succ l) (.succ l))))
     (.sigmaForm (.var 1) (.sort _) (piUU_typed l) (.sort _) (.sorts _ _)) (.sort _) (.var 0)
     (idU_typed l)
@@ -255,7 +256,7 @@ theorem etaSigma_coherent :
 
 /-- **The identities on `U₀` and on `U₁` have no common type**, given
 injectivity and no-confusion of the type formers. -/
-theorem idU_no_common_type (facts : CFormerFacts P₀) {n : Nat} {Γ : CCtx Tower.Head n}
+theorem idU_no_common_type (facts : CFormerFacts (P₀ (L := Nat))) {n : Nat} {Γ : CCtx Tower.Head n}
     (formed : CCtxFormed P₀ Γ) {T : CTm Tower.Head n} (t₀ : CTyped P₀ Γ (idU l0) T)
     (t₁ : CTyped P₀ Γ (idU l1) T) : False := by
   have levels := Normalization.TowerModel.levels (fun _ => 0)
@@ -274,7 +275,7 @@ theorem idU_no_common_type (facts : CFormerFacts P₀) {n : Nat} {Γ : CCtx Towe
   · exact absurd (same fun _ => 0) (by decide)
 
 /-- The identities on `U₀` and on `U₁` are equal at no type. -/
-theorem idU_not_equal (facts : CFormerFacts P₀) {n : Nat} {Γ : CCtx Tower.Head n}
+theorem idU_not_equal (facts : CFormerFacts (P₀ (L := Nat))) {n : Nat} {Γ : CCtx Tower.Head n}
     (formed : CCtxFormed P₀ Γ) (T : CTm Tower.Head n) :
     ¬ CEqual P₀ Γ (idU l0) (idU l1) T := fun equal => by
   obtain ⟨t₀, t₁⟩ := CEqual.typed (Normalization.TowerModel.levels (fun _ => 0)) equal formed

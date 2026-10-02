@@ -548,6 +548,24 @@ end
 instance : DecidableEq Pattern := decEqPattern
 instance : BEq Pattern := ⟨fun a b => decide (a = b)⟩
 
+/-- Proves a decreasing goal `sizeOf a < sizeOf b` of a recursion over `Pattern`
+or `List Pattern` measured by `sizeOf`.  It substitutes pending equations,
+rewrites with the constructors' size equations only, uses
+`List.sizeOf_lt_of_mem` when the recursive argument is a list member, and
+closes the arithmetic with `omega`.  The default `decreasing_tactic` runs the
+full simplifier instead, whose ordered-monoid lemmas make the termination
+proof depend on `Classical.choice`. -/
+macro "sizeOf_pattern_dec" : tactic =>
+  `(tactic| (
+    subst_vars
+    (try simp only [Pattern.bvar.sizeOf_spec, Pattern.fvar.sizeOf_spec,
+      Pattern.apply.sizeOf_spec, Pattern.lambda.sizeOf_spec,
+      Pattern.multiLambda.sizeOf_spec, Pattern.subst.sizeOf_spec,
+      Pattern.collection.sizeOf_spec, List.cons.sizeOf_spec]) <;>
+      first
+      | omega
+      | (have := List.sizeOf_lt_of_mem ‹_›; omega)))
+
 namespace Pattern
 
 /-- Backward-compatible alias used by legacy process-calculus files. -/
@@ -739,11 +757,7 @@ theorem Pattern.inductionOn {motive : Pattern → Prop}
     hcollection ct elems rest (fun q _hq =>
       inductionOn q hbvar hfvar happly hlambda hmultiLambda hsubst hcollection)
 termination_by sizeOf p
-decreasing_by
-  all_goals simp_wf
-  all_goals first
-    | (have h := List.sizeOf_lt_of_mem _hq; omega)
-    | omega
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-! ## Premises -/
 
@@ -1247,6 +1261,7 @@ def freeFvarNames : Pattern → List String
   | .subst body replacement => freeFvarNames body ++ freeFvarNames replacement
   | .collection _ elems rest =>
       elems.flatMap freeFvarNames ++ rest.toList
+decreasing_by all_goals sizeOf_pattern_dec
 
 mutual
 
@@ -1345,6 +1360,7 @@ def eraseBinderMetadata : Pattern → Pattern
       .subst body.eraseBinderMetadata replacement.eraseBinderMetadata
   | .collection kind elements rest =>
       .collection kind (elements.map eraseBinderMetadata) rest
+decreasing_by all_goals sizeOf_pattern_dec
 
 /-- The Boolean canonical-metadata predicate is pointwise on lists. -/
 theorem hasCanonicalBinderMetadataList_eq_true_iff (patterns : List Pattern) :
@@ -1733,7 +1749,8 @@ private def validateSyntaxPatternOp
       validateSyntaxPatternItems ctx bound inner
 termination_by sizeOf op
 decreasing_by
-  all_goals simp_wf
+  all_goals simp only [SyntaxPatternOp.sep.sizeOf_spec, SyntaxPatternOp.map.sizeOf_spec,
+    SyntaxPatternOp.opt.sizeOf_spec, Option.some.sizeOf_spec]
   all_goals omega
 
 private def validateSyntaxPatternItem
@@ -1749,7 +1766,8 @@ private def validateSyntaxPatternItem
   | .op op => validateSyntaxPatternOp ctx bound op
 termination_by sizeOf item
 decreasing_by
-  all_goals simp_wf
+  all_goals simp only [SyntaxItem.op.sizeOf_spec]
+  all_goals omega
 
 private def validateSyntaxPatternItems
     (ctx : String)
@@ -1762,7 +1780,7 @@ private def validateSyntaxPatternItems
         validateSyntaxPatternItems ctx bound rest
 termination_by sizeOf items
 decreasing_by
-  all_goals simp_wf
+  all_goals simp only [List.cons.sizeOf_spec]
   all_goals omega
 
 end
@@ -1938,6 +1956,7 @@ def patternBinderNames : Pattern → List String
   | .subst a b => patternBinderNames a ++ patternBinderNames b
   | .collection _ elems _ =>
       elems.attach.flatMap (fun ⟨q, _⟩ => patternBinderNames q)
+decreasing_by all_goals sizeOf_pattern_dec
 
 def premisePatterns : Premise → List Pattern
   | .freshness fc => [fc.term]
@@ -3846,6 +3865,7 @@ def LanguageDef.nullaryFvarCollisions (lang : LanguageDef) : List String :=
     | .multiLambda _ _ body => patNames bound body
     | .subst a b => patNames bound a ++ patNames bound b
     | .collection _ elems _ => elems.attach.flatMap (fun ⟨p, _⟩ => patNames bound p)
+    decreasing_by all_goals sizeOf_pattern_dec
   let rec premiseNames (bound : List String) : Premise → List String
     | .freshness fc => patNames bound fc.term
     | .congruence left right => patNames bound left ++ patNames bound right

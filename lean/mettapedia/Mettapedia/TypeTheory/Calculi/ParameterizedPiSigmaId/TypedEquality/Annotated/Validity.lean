@@ -344,7 +344,7 @@ theorem CDerivable.presupposed {P : ChurchRules R} (levels : LevelModel R L)
           (CIsType.instantiateEq ⟨v, hv, tB⟩ (.fstElim (.pairIntro tS hu ta tb))
             (.betaFst tS hu ta tb)),
         tb, ⟨v, hv, CTyped.instantiate tB ta⟩⟩
-  | root _ tl tr ihL _ => exact fun formed => ⟨tl, tr, ihL formed⟩
+  | root _ _ _ tl tr _ ihL _ => exact fun formed => ⟨tl, tr, ihL formed⟩
   | etaPi tf tg _ ihF _ _ => exact fun formed => ⟨tf, tg, ihF formed⟩
   | etaSigma tp tq _ _ ihP _ _ _ => exact fun formed => ⟨tp, tq, ihP formed⟩
   | subEqual _ hu ih =>

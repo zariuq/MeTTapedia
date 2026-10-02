@@ -18,6 +18,7 @@ open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
 open Mettapedia.Languages.Metamath.MM2DataEncoding
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
+open Mettapedia.Languages.ProcessCalculi.MORK.WQComputable
 
 def scopeOwner : Atom := .symbol "compressed-lookup-scope"
 def proofOwner : Atom := .symbol "compressed-lookup-proof"
@@ -90,8 +91,16 @@ def lookupHitAfterProofProbe : List Atom :=
   cFireReflectiveSourceExecFact lookupHitAfterTerminal
     compressedProofStepDirective
 
-def lookupHitAfterAdvance : List Atom :=
+def lookupHitAfterFaultProbe : List Atom :=
   cFireReflectiveSourceExecFact lookupHitAfterProofProbe
+    compressedHeapLookupFaultDirective
+
+def lookupHitAfterAssertionProbe : List Atom :=
+  cFireReflectiveSourceExecFact lookupHitAfterFaultProbe
+    compressedAssertionLaunchDirective
+
+def lookupHitAfterAdvance : List Atom :=
+  cFireReflectiveSourceExecFact lookupHitAfterAssertionProbe
     compressedHeapLookupAdvanceDirective
 
 def lookupHitAfterResolve : List Atom :=
@@ -101,12 +110,20 @@ def lookupHitAfterResolve : List Atom :=
 def lookupFaultAfterTerminal : List Atom :=
   cFireReflectiveSourceExecFact lookupFaultProgram compressedTerminalDirective
 
-def lookupFaultAfterProbe : List Atom :=
+def lookupFaultAfterInitialProofProbe : List Atom :=
   cFireReflectiveSourceExecFact lookupFaultAfterTerminal
+    compressedProofStepDirective
+
+def lookupFaultAfterProbe : List Atom :=
+  cFireReflectiveSourceExecFact lookupFaultAfterInitialProofProbe
     compressedHeapLookupFaultDirective
 
-def lookupFaultAfterAdvance : List Atom :=
+def lookupFaultAfterAssertionProbe : List Atom :=
   cFireReflectiveSourceExecFact lookupFaultAfterProbe
+    compressedAssertionLaunchDirective
+
+def lookupFaultAfterAdvance : List Atom :=
+  cFireReflectiveSourceExecFact lookupFaultAfterAssertionProbe
     compressedHeapLookupAdvanceDirective
 
 def lookupFaultAfterProofProbe : List Atom :=
@@ -116,5 +133,17 @@ def lookupFaultAfterProofProbe : List Atom :=
 def lookupFaultAfterFault : List Atom :=
   cFireReflectiveSourceExecFact lookupFaultAfterProofProbe
     compressedHeapLookupFaultDirective
+
+theorem lookup_hit_after_terminal_supported_exact :
+    cSupportedSourceExecFacts lookupHitAfterTerminal =
+      [compressedProofStepDirective, compressedHeapLookupAdvanceDirective,
+       compressedAssertionLaunchDirective, compressedHeapLookupFaultDirective] := by
+  rfl
+
+theorem lookup_fault_after_terminal_supported_exact :
+    cSupportedSourceExecFacts lookupFaultAfterTerminal =
+      [compressedHeapLookupAdvanceDirective, compressedHeapLookupFaultDirective,
+       compressedProofStepDirective, compressedAssertionLaunchDirective] := by
+  rfl
 
 end Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupCanary

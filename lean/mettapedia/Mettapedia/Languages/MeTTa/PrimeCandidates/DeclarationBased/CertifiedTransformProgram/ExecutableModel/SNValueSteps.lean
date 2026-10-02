@@ -209,7 +209,7 @@ that shape.** -/
 theorem vnumIndPack_real {m : Nat} {a : Tower.Tm m} {s : NumShape} (shape : VShape v a s) :
     (ValueSide.numIndPack (vmodel v).value m).real a = VNumReal s := by
   rw [ValueSide.numIndPack_real_of_shape (vmodel_valueLaws v) shape]
-  exact ModelS.kcand_ctorReal_num objectRealizers objectRoles_num_ctors s
+  exact ModelSN.kcand_ctorReal_num objectRealizers objectRoles_num_ctors s
 
 /-- A number with a shape is a valid value of the numbers. -/
 theorem vnum_val {m : Nat} {ξ : World (vmodel v).reading m} {a : Tower.Tm m} {sh : NumShape}
