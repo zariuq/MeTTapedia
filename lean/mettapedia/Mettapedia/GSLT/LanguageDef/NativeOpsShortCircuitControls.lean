@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.NativeOpsShortCircuitCorrespondence
 import Mettapedia.GSLT.LanguageDef.NativeOpsGuardedExpressionControls
+import Mettapedia.GSLT.LanguageDef.NativeOpsCFunctionComposition
 
 /-! Controls for actual branch lowering, skipped reads, refusals and private scopes. -/
 
@@ -326,5 +327,597 @@ theorem ghost_empty_branch_changes_private_map {World : Type} (state : TargetSta
   · intro same
     have impossible := congrArg (fun value : TargetBlockOutcome World => value.frame.temporaries 7) same
     cases impossible
+
+/-- A catalogued Boolean action remains an actual call in the selected arm. -/
+def observedBool : External :=
+  ⟨⟨"probe", [], .bool⟩, "probe", .effect, none⟩
+
+def cProbeExpression (continueValue : Bool) : NativeC.CExpr :=
+  .binary (if continueValue then .and else .or)
+    (.identifier "left".toList) (.call "probe".toList [])
+
+def cProbeOutput (identity : Nat) (continueValue : Bool) : NativeLowering.Expression :=
+  shortCircuitOutput continueValue
+    ⟨[], .temporary identity .bool, ⟨identity⟩⟩
+    ⟨[.call (some (.temporary (identity + 2) .bool)) (.external "probe") []],
+      .temporary (identity + 2) .bool, ⟨identity + 2⟩⟩
+
+theorem c_probe_actual_admission (identity : Nat) (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary identity .bool)] 2
+      (cProbeExpression continueValue) ⟨identity⟩ [observedBool] =
+      some (cProbeOutput identity continueValue) := by
+  cases continueValue <;> rfl
+
+def cScalarProbeOutput (type : NativeType) (identity : Nat)
+    (continueValue : Bool) : NativeLowering.Expression :=
+  shortCircuitOutput continueValue
+    ⟨[.temporary (identity + 1) .bool
+        (.binary (.compare .ne) (.temporary identity type) (.zero type))],
+      .temporary (identity + 1) .bool, ⟨identity + 1⟩⟩
+    ⟨[.call (some (.temporary (identity + 3) .bool)) (.external "probe") []],
+      .temporary (identity + 3) .bool, ⟨identity + 3⟩⟩
+
+theorem c_scalar_probe_actual_admission (type : NativeType) (identity : Nat)
+    (continueValue : Bool)
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary identity type) =
+      some (.binary (.compare .ne) (.temporary identity type) (.zero type))) :
+    NativeC.primitiveExpression? [("left".toList, .temporary identity type)] 2
+      (cProbeExpression continueValue) ⟨identity⟩ [observedBool] =
+      some (cScalarProbeOutput type identity continueValue) := by
+  cases type <;> simp only [NativeLowering.scalarConditionOperation?, Atom.type,
+    reduceCtorEq, Option.some.injEq] at admitted
+  all_goals cases continueValue <;> rfl
+
+theorem c_word_logical_operand_admitted (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 .word)] 2
+      (cProbeExpression continueValue) ⟨0⟩ [observedBool] =
+      some (cScalarProbeOutput .word 0 continueValue) :=
+  c_scalar_probe_actual_admission .word 0 continueValue rfl
+
+theorem c_byte_logical_operand_admitted (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 .byte)] 2
+      (cProbeExpression continueValue) ⟨0⟩ [observedBool] =
+      some (cScalarProbeOutput .byte 0 continueValue) :=
+  c_scalar_probe_actual_admission .byte 0 continueValue rfl
+
+theorem c_pointer_logical_operand_admitted (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 (.ref .bool))] 2
+      (cProbeExpression continueValue) ⟨0⟩ [observedBool] =
+      some (cScalarProbeOutput (.ref .bool) 0 continueValue) :=
+  c_scalar_probe_actual_admission (.ref .bool) 0 continueValue rfl
+
+theorem c_compound_logical_operand_refused (name : String) (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 (.named name))] 2
+      (cProbeExpression continueValue) ⟨0⟩ [observedBool] = none := by
+  cases continueValue <;> rfl
+
+theorem c_array_logical_operand_refused (element : NativeType) (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 (.array element))] 2
+      (cProbeExpression continueValue) ⟨0⟩ [observedBool] = none := by
+  cases continueValue <;> rfl
+
+theorem c_logical_word_return_refused (continueValue : Bool) :
+    NativeC.primitiveStatement? [("left".toList, .temporary 0 .word)] .word 3
+      (.return (some (cProbeExpression continueValue))) ⟨0⟩ [observedBool] = none := by
+  cases continueValue <;> rfl
+
+theorem c_unknown_logical_call_refused (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 .bool)] 2
+      (cProbeExpression continueValue) ⟨0⟩ [] = none := by
+  cases continueValue <;> rfl
+
+theorem c_ambiguous_logical_call_refused (continueValue : Bool) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 .bool)] 2
+      (cProbeExpression continueValue) ⟨0⟩ [observedBool, observedBool] = none := by
+  cases continueValue <;> rfl
+
+def cProbeHeader : Header := ⟨"logical", [⟨"left", .bool⟩], .bool⟩
+
+def cProbeRepresentation : NativeC.Representation :=
+  ⟨"Logical", ⟨[], [], [], [observedBool]⟩, []⟩
+
+def cProbeText (continueValue : Bool) : String :=
+  if continueValue then "bool logical(bool left) { return left && probe(); }"
+  else "bool logical(bool left) { return left || probe(); }"
+
+def cProbeTokens (continueValue : Bool) : List NativeC.Token :=
+  [.identifier "bool".toList, .identifier "logical".toList, .punctuation "(".toList,
+    .identifier "bool".toList, .identifier "left".toList, .punctuation ")".toList,
+    .punctuation "{".toList, .identifier "return".toList, .identifier "left".toList,
+    .punctuation (if continueValue then "&&".toList else "||".toList),
+    .identifier "probe".toList, .punctuation "(".toList, .punctuation ")".toList,
+    .punctuation ";".toList, .punctuation "}".toList]
+
+def cProbeFunction (continueValue : Bool) : NativeC.CFunction :=
+  ⟨⟨"bool".toList, 0⟩, "logical".toList, [⟨⟨"bool".toList, 0⟩, "left".toList⟩],
+    [.return (some (cProbeExpression continueValue))]⟩
+
+theorem c_probe_text_lexed (continueValue : Bool) :
+    NativeC.lex (cProbeText continueValue).toList = .ok (cProbeTokens continueValue) := by
+  cases continueValue <;> cbv
+
+theorem c_probe_tokens_parsed (continueValue : Bool) :
+    NativeC.function? (2 * (cProbeTokens continueValue).length + 4) ["bool".toList]
+      (NativeC.ordinaryFunctionTokens (cProbeTokens continueValue)) =
+      some (cProbeFunction continueValue, []) := by
+  cases continueValue <;> rfl
+
+theorem c_probe_full_text_admitted (continueValue : Bool) :
+    NativeC.primitiveFunctionText? cProbeRepresentation ["bool".toList]
+      cProbeHeader [] (cProbeText continueValue).toList =
+      some ⟨cProbeHeader,
+        NativeC.primitiveParameterCapture cProbeHeader.parameters ++
+          (cProbeOutput 1 continueValue).code ++ [.return (cProbeOutput 1 continueValue).result],
+        3⟩ := by
+  rw [NativeC.primitive_function_text_of_parts cProbeRepresentation ["bool".toList]
+    cProbeHeader [] _ _ _ (c_probe_text_lexed continueValue) (c_probe_tokens_parsed continueValue)]
+  cases continueValue <;> rfl
+
+def cScalarProbeText (name : String) (pointer continueValue : Bool) : String :=
+  "bool logical(" ++ name ++ (if pointer then " *" else " ") ++
+    "left) { return left " ++ (if continueValue then "&&" else "||") ++ " probe(); }"
+
+def cScalarProbeTokens (name : NativeC.Name) (pointer continueValue : Bool) : List NativeC.Token :=
+  [.identifier "bool".toList, .identifier "logical".toList, .punctuation "(".toList,
+    .identifier name] ++ (if pointer then [.punctuation "*".toList] else []) ++
+    [.identifier "left".toList, .punctuation ")".toList, .punctuation "{".toList,
+      .identifier "return".toList, .identifier "left".toList,
+      .punctuation (if continueValue then "&&".toList else "||".toList),
+      .identifier "probe".toList, .punctuation "(".toList, .punctuation ")".toList,
+      .punctuation ";".toList, .punctuation "}".toList]
+
+def cScalarProbeFunction (name : NativeC.Name) (pointer continueValue : Bool) : NativeC.CFunction :=
+  ⟨⟨"bool".toList, 0⟩, "logical".toList,
+    [⟨⟨name, if pointer then 1 else 0⟩, "left".toList⟩],
+    [.return (some (cProbeExpression continueValue))]⟩
+
+theorem c_scalar_probe_word_tokens_parsed (continueValue : Bool) :
+    NativeC.function? (2 * (cScalarProbeTokens "uint64_t".toList false continueValue).length + 4)
+      ["bool".toList, "uint64_t".toList]
+      (NativeC.ordinaryFunctionTokens (cScalarProbeTokens "uint64_t".toList false continueValue)) =
+      some (cScalarProbeFunction "uint64_t".toList false continueValue, []) := by
+  cases continueValue <;> rfl
+
+theorem c_scalar_probe_byte_tokens_parsed (continueValue : Bool) :
+    NativeC.function? (2 * (cScalarProbeTokens "uint8_t".toList false continueValue).length + 4)
+      ["bool".toList, "uint8_t".toList]
+      (NativeC.ordinaryFunctionTokens (cScalarProbeTokens "uint8_t".toList false continueValue)) =
+      some (cScalarProbeFunction "uint8_t".toList false continueValue, []) := by
+  cases continueValue <;> rfl
+
+theorem c_scalar_probe_pointer_tokens_parsed (continueValue : Bool) :
+    NativeC.function? (2 * (cScalarProbeTokens "bool".toList true continueValue).length + 4)
+      ["bool".toList]
+      (NativeC.ordinaryFunctionTokens (cScalarProbeTokens "bool".toList true continueValue)) =
+      some (cScalarProbeFunction "bool".toList true continueValue, []) := by
+  cases continueValue <;> rfl
+
+theorem c_scalar_probe_word_lexed (continueValue : Bool) :
+    NativeC.lex (cScalarProbeText "uint64_t" false continueValue).toList =
+      .ok (cScalarProbeTokens "uint64_t".toList false continueValue) := by
+  cases continueValue <;> cbv
+
+theorem c_scalar_probe_byte_lexed (continueValue : Bool) :
+    NativeC.lex (cScalarProbeText "uint8_t" false continueValue).toList =
+      .ok (cScalarProbeTokens "uint8_t".toList false continueValue) := by
+  cases continueValue <;> cbv
+
+theorem c_scalar_probe_pointer_lexed (continueValue : Bool) :
+    NativeC.lex (cScalarProbeText "bool" true continueValue).toList =
+      .ok (cScalarProbeTokens "bool".toList true continueValue) := by
+  cases continueValue <;> cbv
+
+theorem c_scalar_probe_word_text_admitted (continueValue : Bool) :
+    let header : Header := ⟨"logical", [⟨"left", .word⟩], .bool⟩
+    NativeC.primitiveFunctionText? cProbeRepresentation ["bool".toList, "uint64_t".toList]
+      header [] (cScalarProbeText "uint64_t" false continueValue).toList =
+      some ⟨header, NativeC.primitiveParameterCapture header.parameters ++
+        (cScalarProbeOutput .word 1 continueValue).code ++
+          [.return (cScalarProbeOutput .word 1 continueValue).result], 4⟩ := by
+  dsimp only
+  rw [NativeC.primitive_function_text_of_parts _ _ _ _ _ _ _
+    (c_scalar_probe_word_lexed continueValue)
+    (c_scalar_probe_word_tokens_parsed continueValue)]
+  cases continueValue <;> rfl
+
+theorem c_scalar_probe_byte_text_admitted (continueValue : Bool) :
+    let header : Header := ⟨"logical", [⟨"left", .byte⟩], .bool⟩
+    NativeC.primitiveFunctionText? cProbeRepresentation ["bool".toList, "uint8_t".toList]
+      header [] (cScalarProbeText "uint8_t" false continueValue).toList =
+      some ⟨header, NativeC.primitiveParameterCapture header.parameters ++
+        (cScalarProbeOutput .byte 1 continueValue).code ++
+          [.return (cScalarProbeOutput .byte 1 continueValue).result], 4⟩ := by
+  dsimp only
+  rw [NativeC.primitive_function_text_of_parts _ _ _ _ _ _ _
+    (c_scalar_probe_byte_lexed continueValue)
+    (c_scalar_probe_byte_tokens_parsed continueValue)]
+  cases continueValue <;> rfl
+
+theorem c_scalar_probe_pointer_text_admitted (continueValue : Bool) :
+    let header : Header := ⟨"logical", [⟨"left", .ref .bool⟩], .bool⟩
+    NativeC.primitiveFunctionText? cProbeRepresentation ["bool".toList]
+      header [] (cScalarProbeText "bool" true continueValue).toList =
+      some ⟨header, NativeC.primitiveParameterCapture header.parameters ++
+        (cScalarProbeOutput (.ref .bool) 1 continueValue).code ++
+          [.return (cScalarProbeOutput (.ref .bool) 1 continueValue).result], 4⟩ := by
+  dsimp only
+  rw [NativeC.primitive_function_text_of_parts _ _ _ _ _ _ _
+    (c_scalar_probe_pointer_lexed continueValue)
+    (c_scalar_probe_pointer_tokens_parsed continueValue)]
+  cases continueValue <;> rfl
+
+/-- The skipped action can have arbitrary semantics: its entire pre-state is
+retained, and no action contract is needed to justify skipping it. -/
+theorem c_probe_skipped_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state : TargetState World} (identity : Nat) (continueValue : Bool)
+    (hscope : TemporariesScoped frame)
+    (unused : frame.temporaryNames.contains (identity + 1) = false)
+    (read : TargetAtomEval interface frame state (.temporary identity .bool) (.bool (!continueValue)))
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .bool root (cProbeOutput identity continueValue).code frame state out ↔
+      out = ⟨.normal, targetDeclareTemporary frame (identity + 1) (.bool (!continueValue)), state⟩ := by
+  change TargetRun interface heap calls .bool root
+    (.temporary (identity + 1) .bool (.copy (.temporary identity .bool)) :: _) frame state out ↔ _
+  rw [target_short_circuit_copy_exact unused read]
+  have copied : TargetAtomEval interface
+      (targetDeclareTemporary frame (identity + 1) (.bool (!continueValue))) state
+      (.temporary (identity + 1) .bool) (.bool (!continueValue)) :=
+    .temporary (declare_temporary_read frame (identity + 1) _) (by simp [targetDeclareTemporary])
+  exact target_short_circuit_skip_exact continueValue
+    (declare_temporary_scoped frame (identity + 1) _ hscope) copied _ root out
+
+/-- Selecting the arm invokes the admitted action once and retains its whole
+post-state. Its returned Boolean replaces the outer copy before scope exit. -/
+theorem c_probe_taken_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state final : TargetState World} (identity : Nat) (continueValue returned : Bool)
+    (unusedCopy : frame.temporaryNames.contains (identity + 1) = false)
+    (unusedCall : frame.temporaryNames.contains (identity + 2) = false)
+    (read : TargetAtomEval interface frame state (.temporary identity .bool) (.bool continueValue))
+    (action : ∀ raw post, calls (.external "probe") [] state raw post ↔
+      raw = .bool returned ∧ post = final)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .bool root (cProbeOutput identity continueValue).code frame state out ↔
+      out = targetCloseBlock (targetDeclareTemporary frame (identity + 1) (.bool continueValue))
+        ⟨.normal, targetUpdateTemporary
+          (targetDeclareTemporary (targetDeclareTemporary frame (identity + 1) (.bool continueValue))
+            (identity + 2) (.bool returned)) (identity + 1) (.bool returned), final⟩ := by
+  let copied := targetDeclareTemporary frame (identity + 1) (.bool continueValue)
+  let called := targetDeclareTemporary copied (identity + 2) (.bool returned)
+  let body : List Instruction :=
+    [.call (some (.temporary (identity + 2) .bool)) (.external "probe") [],
+      .assign (.temporary (identity + 1) .bool) (.temporary (identity + 2) .bool)]
+  have copiedRead : TargetAtomEval interface copied state
+      (.temporary (identity + 1) .bool) (.bool continueValue) :=
+    .temporary (declare_temporary_read frame (identity + 1) _) (by simp [copied, targetDeclareTemporary])
+  have tested : TargetConditionEval interface copied state
+      (shortCircuitCondition continueValue (.temporary (identity + 1) .bool)) true := by
+    have self : (continueValue == continueValue) = true := by cases continueValue <;> rfl
+    simpa only [self] using short_circuit_condition_evaluates continueValue copiedRead
+  have freshCall : copied.temporaryNames.contains (identity + 2) = false := by
+    simpa [copied, targetDeclareTemporary] using unusedCall
+  have calledRead : TargetAtomEval interface called final
+      (.temporary (identity + 2) .bool) (.bool returned) :=
+    .temporary (declare_temporary_read copied (identity + 2) _) (by simp [called, targetDeclareTemporary])
+  have liveCopy : called.temporaryNames.contains (identity + 1) = true := by
+    simp [called, copied, targetDeclareTemporary]
+  have bodyExact : ∀ inner, TargetRun interface heap calls .bool body body copied state inner ↔
+      inner = ⟨.normal, targetUpdateTemporary called (identity + 1) (.bool returned), final⟩ := by
+    intro inner
+    rw [target_normal_then_exact
+      (target_call_temporary_instruction_exact freshCall TargetAtomsEval.nil action)]
+    exact target_assign_temporary_run_exact calledRead liveCopy _ inner
+  change TargetRun interface heap calls .bool root
+    (.temporary (identity + 1) .bool (.copy (.temporary identity .bool)) :: _) frame state out ↔ _
+  rw [target_short_circuit_copy_exact unusedCopy read]
+  change TargetRun interface heap calls .bool root
+    [.branch (shortCircuitCondition continueValue (.temporary (identity + 1) .bool)) body []]
+    copied state out ↔
+      out = targetCloseBlock copied
+        ⟨.normal, targetUpdateTemporary called (identity + 1) (.bool returned), final⟩
+  rw [target_single_branch_exact tested (by simp [body, jumpFreeCode, jumpFreeInstruction])]
+  constructor
+  · rintro ⟨inner, ran, same⟩
+    cases (bodyExact inner).mp ran
+    exact same
+  · intro same
+    exact ⟨_, (bodyExact _).mpr rfl, same⟩
+
+/-- The scalar reader's actual emitted code first computes truth, then uses
+the same Boolean branch constructor. The right call remains inside its arm. -/
+theorem c_scalar_probe_boolean_continuation {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state : TargetState World} {type : NativeType} {value : SourceValue}
+    (continueValue : Bool) (tagged : SourceOuterTag type value)
+    (read : TargetAtomEval interface frame state (.temporary 0 type) (encodeValue value))
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type)))
+    {test : Bool} (meaning : sourceScalarCondition value = some test)
+    (unused : frame.temporaryNames.contains 1 = false)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .bool root (cScalarProbeOutput type 0 continueValue).code
+      frame state out ↔
+      TargetRun interface heap calls .bool root (cProbeOutput 1 continueValue).code
+        (targetDeclareTemporary frame 1 (.bool test)) state out := by
+  have computed := (scalar_condition_source_exact (atom := .temporary 0 type)
+    tagged read admitted).mpr
+    ⟨test, meaning, rfl⟩
+  change TargetRun interface heap calls .bool root
+    (.temporary 1 .bool (.binary (.compare .ne) (.temporary 0 type) (.zero type)) :: _)
+    frame state out ↔ _
+  rw [target_normal_then_exact (target_temporary_instruction_exact unused computed)]
+  rfl
+
+/-- Skipped scalar guards preserve every external state field, not just the
+returned Boolean. No semantics for the unreachable action is assumed. -/
+theorem c_scalar_probe_skipped_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state : TargetState World} {type : NativeType} {value : SourceValue}
+    (continueValue : Bool) (tagged : SourceOuterTag type value)
+    (read : TargetAtomEval interface frame state (.temporary 0 type) (encodeValue value))
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type)))
+    (meaning : sourceScalarCondition value = some (!continueValue))
+    (hscope : TemporariesScoped frame)
+    (unusedTruth : frame.temporaryNames.contains 1 = false)
+    (unusedCopy : frame.temporaryNames.contains 2 = false)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .bool root (cScalarProbeOutput type 0 continueValue).code
+      frame state out ↔
+      out = ⟨.normal, targetDeclareTemporary
+        (targetDeclareTemporary frame 1 (.bool (!continueValue))) 2 (.bool (!continueValue)), state⟩ := by
+  rw [c_scalar_probe_boolean_continuation continueValue tagged read admitted meaning unusedTruth]
+  exact c_probe_skipped_exact 1 continueValue
+    (declare_temporary_scoped frame 1 _ hscope)
+    (by simpa [targetDeclareTemporary] using unusedCopy)
+    (declared_temporary_atom interface frame state 1 .bool (.bool (!continueValue))) root out
+
+theorem c_scalar_probe_taken_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state final : TargetState World} {type : NativeType} {value : SourceValue}
+    (continueValue returned : Bool) (tagged : SourceOuterTag type value)
+    (read : TargetAtomEval interface frame state (.temporary 0 type) (encodeValue value))
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type)))
+    (meaning : sourceScalarCondition value = some continueValue)
+    (unusedTruth : frame.temporaryNames.contains 1 = false)
+    (unusedCopy : frame.temporaryNames.contains 2 = false)
+    (unusedCall : frame.temporaryNames.contains 3 = false)
+    (action : ∀ raw post, calls (.external "probe") [] state raw post ↔
+      raw = .bool returned ∧ post = final)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .bool root (cScalarProbeOutput type 0 continueValue).code
+      frame state out ↔
+      out = targetCloseBlock
+        (targetDeclareTemporary (targetDeclareTemporary frame 1 (.bool continueValue)) 2 (.bool continueValue))
+        ⟨.normal, targetUpdateTemporary
+          (targetDeclareTemporary
+            (targetDeclareTemporary (targetDeclareTemporary frame 1 (.bool continueValue)) 2 (.bool continueValue))
+            3 (.bool returned)) 2 (.bool returned), final⟩ := by
+  rw [c_scalar_probe_boolean_continuation continueValue tagged read admitted meaning unusedTruth]
+  exact c_probe_taken_exact 1 continueValue returned
+    (by simpa [targetDeclareTemporary] using unusedCopy)
+    (by simpa [targetDeclareTemporary] using unusedCall)
+    (declared_temporary_atom interface frame state 1 .bool (.bool continueValue)) action root out
+
+def counterFrame (value : TargetValue) : TargetFrame :=
+  ⟨0, 0, [], [0], fun identity => if identity = 0 then some value else none⟩
+
+def counterState : TargetState Nat :=
+  ⟨⟨fun _ _ => none, fun _ => none⟩, none, true, true, 0, AllocatorStats.targetEmpty⟩
+
+def counterCalls : TargetCalls Nat := fun target arguments before value after =>
+  target = .external "probe" ∧ arguments = [] ∧ value = .bool true ∧
+    after = { before with external := before.external + 1 }
+
+theorem counter_frame_scoped (value : TargetValue) : TemporariesScoped (counterFrame value) := by
+  intro identity absent
+  by_cases same : identity = 0
+  · subst identity
+    simp [counterFrame] at absent
+  · simp [counterFrame, same]
+
+/-- A genuine effect discriminates the two arms: skipping retains zero calls,
+while selecting changes the external counter to exactly one. -/
+theorem c_probe_counter_controls (heap : TargetHeapSemantics Nat) (continueValue : Bool) :
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool
+      (cProbeOutput 0 continueValue).code (cProbeOutput 0 continueValue).code
+      (counterFrame (.bool (!continueValue))) counterState out ∧ out.state.external = 0) ∧
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool
+      (cProbeOutput 0 continueValue).code (cProbeOutput 0 continueValue).code
+      (counterFrame (.bool continueValue)) counterState out ∧ out.state.external = 1) := by
+  constructor
+  · refine ⟨⟨.normal, targetDeclareTemporary (counterFrame (.bool (!continueValue)))
+      1 (.bool (!continueValue)), counterState⟩, ?_, rfl⟩
+    exact (c_probe_skipped_exact 0 continueValue (counter_frame_scoped _) rfl
+      (TargetAtomEval.temporary (by simp [counterFrame]) rfl) _ _).mpr rfl
+  · let final := { counterState with external := 1 }
+    let out := targetCloseBlock (targetDeclareTemporary (counterFrame (.bool continueValue)) 1 (.bool continueValue))
+      ⟨.normal, targetUpdateTemporary
+        (targetDeclareTemporary (targetDeclareTemporary (counterFrame (.bool continueValue)) 1 (.bool continueValue))
+          2 (.bool true)) 1 (.bool true), final⟩
+    refine ⟨out, ?_, rfl⟩
+    exact (c_probe_taken_exact 0 continueValue true rfl rfl
+      (TargetAtomEval.temporary (by simp [counterFrame]) rfl)
+      (by intro raw post; simp [counterCalls, counterState, final]) _ _).mpr rfl
+
+theorem c_scalar_probe_counter_effect (heap : TargetHeapSemantics Nat)
+    (type : NativeType) (value : SourceValue) (selected continueValue : Bool)
+    (tagged : SourceOuterTag type value)
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type)))
+    (meaning : sourceScalarCondition value = some selected) (root : List NativeIR.Instruction) :
+    ∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool
+      root (cScalarProbeOutput type 0 continueValue).code
+      (counterFrame (encodeValue value)) counterState out ∧
+      out.state.external = if selected == continueValue then 1 else 0 := by
+  have read : TargetAtomEval cProbeRepresentation.interface (counterFrame (encodeValue value))
+      counterState (.temporary 0 type) (encodeValue value) :=
+    .temporary (by simp [counterFrame]) rfl
+  by_cases chose : selected = continueValue
+  · subst selected
+    let frame := counterFrame (encodeValue value)
+    let final := { counterState with external := 1 }
+    let out := targetCloseBlock
+      (targetDeclareTemporary (targetDeclareTemporary frame 1 (.bool continueValue)) 2 (.bool continueValue))
+      ⟨.normal, targetUpdateTemporary
+        (targetDeclareTemporary
+          (targetDeclareTemporary (targetDeclareTemporary frame 1 (.bool continueValue)) 2 (.bool continueValue))
+          3 (.bool true)) 2 (.bool true), final⟩
+    refine ⟨out, ?_, ?_⟩
+    · exact (c_scalar_probe_taken_exact continueValue true tagged read admitted meaning rfl rfl rfl
+        (by intro raw post; simp [counterCalls, counterState, final]) _ _).mpr rfl
+    · change 1 = if continueValue == continueValue then 1 else 0
+      simp only [beq_self_eq_true, if_true]
+  · have selectedEq : selected = !continueValue := by
+      cases selected <;> cases continueValue <;> simp_all
+    subst selected
+    let frame := counterFrame (encodeValue value)
+    let out : TargetBlockOutcome Nat :=
+      ⟨.normal, targetDeclareTemporary
+        (targetDeclareTemporary frame 1 (.bool (!continueValue))) 2 (.bool (!continueValue)), counterState⟩
+    refine ⟨out, ?_, by cases continueValue <;> rfl⟩
+    exact (c_scalar_probe_skipped_exact continueValue tagged read admitted meaning
+      (counter_frame_scoped _) rfl rfl _ _).mpr rfl
+
+theorem c_scalar_truth_effect_controls (heap : TargetHeapSemantics Nat) :
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool []
+      (cScalarProbeOutput .word 0 true).code (counterFrame (.word 0)) counterState out ∧
+      out.state.external = 0) ∧
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool []
+      (cScalarProbeOutput .word 0 true).code (counterFrame (.word 65536)) counterState out ∧
+      out.state.external = 1) ∧
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool []
+      (cScalarProbeOutput .byte 0 false).code (counterFrame (.byte 255)) counterState out ∧
+      out.state.external = 0) ∧
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool []
+      (cScalarProbeOutput (.ref .bool) 0 true).code (counterFrame (.reference none)) counterState out ∧
+      out.state.external = 0) ∧
+    (∃ out, TargetRun cProbeRepresentation.interface heap counterCalls .bool []
+      (cScalarProbeOutput (.ref .bool) 0 true).code
+        (counterFrame (.reference (some ⟨99, 7, []⟩))) counterState out ∧ out.state.external = 1) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  all_goals
+    first
+    | exact c_scalar_probe_counter_effect heap .word (.word 0) false true (.word 0) rfl rfl []
+    | exact c_scalar_probe_counter_effect heap .word (.word 65536) true true (.word 65536) rfl rfl []
+    | exact c_scalar_probe_counter_effect heap .byte (.byte 255) true false (.byte 255) rfl rfl []
+    | exact c_scalar_probe_counter_effect heap (.ref .bool) (.reference none) false true
+        (.reference _ _) rfl rfl []
+    | exact c_scalar_probe_counter_effect heap (.ref .bool) (.reference (some ⟨99, 7, []⟩)) true true
+        (.reference _ _) rfl rfl []
+
+theorem non_null_condition_does_not_validate_dereference (value : TargetValue) :
+    targetScalarCondition (.reference (some ⟨99, 7, []⟩)) = some true ∧
+      ¬ TargetPureEval cProbeRepresentation.interface
+        (counterFrame (.reference (some ⟨99, 7, []⟩))) counterState
+        (.indirectRead (.temporary 0 (.ref .bool))) value := by
+  refine ⟨rfl, ?_⟩
+  intro ran
+  cases ran with
+  | indirect pointer read =>
+      have actual : TargetAtomEval cProbeRepresentation.interface
+          (counterFrame (.reference (some ⟨99, 7, []⟩))) counterState
+          (.temporary 0 (.ref .bool)) (.reference (some ⟨99, 7, []⟩)) :=
+        .temporary rfl rfl
+      cases target_atom_unique actual pointer
+      cases read
+
+theorem c_scalar_not_actual_admission (type : NativeType)
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type))) :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 type)] 2
+      (.unary .not (.identifier "left".toList)) ⟨0⟩ =
+      some ⟨[.temporary 1 .bool (.binary (.compare .ne) (.temporary 0 type) (.zero type)),
+        .temporary 2 .bool (.unary .not (.temporary 1 .bool))], .temporary 2 .bool, ⟨2⟩⟩ := by
+  cases type <;> simp only [NativeLowering.scalarConditionOperation?, NativeIR.Atom.type,
+    reduceCtorEq, Option.some.injEq] at admitted
+  all_goals rfl
+
+theorem c_not_word_arithmetic_refused :
+    NativeC.primitiveExpression? [("left".toList, .temporary 0 .word)] 3
+      (.binary .add (.unary .not (.identifier "left".toList)) (.word 1)) ⟨0⟩ = none := by rfl
+
+theorem c_scalar_branch_actual_admission (type : NativeType)
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type))) :
+    NativeC.primitiveStatement? [("left".toList, .temporary 0 type)] .word 4
+      (.branch (.identifier "left".toList)
+        [.return (some (.word 7))] [.return (some (.word 9))]) ⟨0⟩ =
+      some ([.temporary 1 .bool (.binary (.compare .ne) (.temporary 0 type) (.zero type)),
+        .branch (.value (.temporary 1 .bool)) [.return (.word 7)] [.return (.word 9)]], ⟨1⟩) := by
+  cases type <;> simp only [NativeLowering.scalarConditionOperation?, NativeIR.Atom.type,
+    reduceCtorEq, Option.some.injEq] at admitted
+  all_goals rfl
+
+theorem c_scalar_conditional_return_actual_admission (type : NativeType)
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type))) :
+    NativeC.primitiveStatement? [("left".toList, .temporary 0 type)] .word 3
+      (.return (some (.conditional (.identifier "left".toList) (.word 7) (.word 9)))) ⟨0⟩ =
+      some ([.temporary 1 .bool (.binary (.compare .ne) (.temporary 0 type) (.zero type)),
+        .branch (.value (.temporary 1 .bool)) [.return (.word 7)] [.return (.word 9)]], ⟨1⟩) := by
+  cases type <;> simp only [NativeLowering.scalarConditionOperation?, NativeIR.Atom.type,
+    reduceCtorEq, Option.some.injEq] at admitted
+  all_goals rfl
+
+theorem c_scalar_conditional_return_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state : TargetState World} {type : NativeType} {value : SourceValue}
+    (tagged : SourceOuterTag type value)
+    (read : TargetAtomEval interface frame state (.temporary 0 type) (encodeValue value))
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type)))
+    {test : Bool} (meaning : sourceScalarCondition value = some test)
+    (hscope : TemporariesScoped frame) (unused : frame.temporaryNames.contains 1 = false)
+    (root : List NativeIR.Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .word root
+      [.temporary 1 .bool (.binary (.compare .ne) (.temporary 0 type) (.zero type)),
+        .branch (.value (.temporary 1 .bool)) [.return (.word 7)] [.return (.word 9)]]
+      frame state out ↔
+      out = ⟨.returned (.word (if test then 7 else 9)),
+        targetDeclareTemporary frame 1 (.bool test), state⟩ := by
+  have computed := (scalar_condition_source_exact (atom := .temporary 0 type)
+    tagged read admitted).mpr ⟨test, meaning, rfl⟩
+  rw [target_normal_then_exact (target_temporary_instruction_exact unused computed)]
+  let marker := targetDeclareTemporary frame 1 (.bool test)
+  have markerScoped : TemporariesScoped marker := declare_temporary_scoped frame 1 _ hscope
+  have tested : TargetConditionEval interface marker state (.value (.temporary 1 .bool)) test :=
+    .value (declared_temporary_atom interface frame state 1 .bool (.bool test))
+  rw [target_single_branch_exact tested
+    (by cases test <;> simp [jumpFreeCode, jumpFreeInstruction])]
+  cases test <;> simp only [Bool.false_eq_true, if_false, if_true]
+  all_goals
+    constructor
+    · rintro ⟨inner, ran, same⟩
+      cases (target_return_then_exact (.word _) _ [] inner).mp ran
+      simpa only [targetCloseBlock, targetLeaveScope_self marker state markerScoped] using same
+    · intro same
+      refine ⟨_, (target_return_then_exact (.word _) _ [] _).mpr rfl, ?_⟩
+      simpa only [targetCloseBlock, targetLeaveScope_self marker state markerScoped] using same
+
+theorem c_scalar_not_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    {frame : TargetFrame} {state : TargetState World} {type : NativeType} {value : SourceValue}
+    (tagged : SourceOuterTag type value)
+    (read : TargetAtomEval interface frame state (.temporary 0 type) (encodeValue value))
+    (admitted : NativeLowering.scalarConditionOperation? (.temporary 0 type) =
+      some (.binary (.compare .ne) (.temporary 0 type) (.zero type)))
+    {test : Bool} (meaning : sourceScalarCondition value = some test)
+    (unusedTruth : frame.temporaryNames.contains 1 = false)
+    (unusedNot : frame.temporaryNames.contains 2 = false)
+    (root : List NativeIR.Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .bool root
+      [.temporary 1 .bool (.binary (.compare .ne) (.temporary 0 type) (.zero type)),
+        .temporary 2 .bool (.unary .not (.temporary 1 .bool))] frame state out ↔
+      out = ⟨.normal,
+        targetDeclareTemporary (targetDeclareTemporary frame 1 (.bool test)) 2 (.bool (!test)), state⟩ := by
+  have computed := (scalar_condition_source_exact (atom := .temporary 0 type)
+    tagged read admitted).mpr ⟨test, meaning, rfl⟩
+  rw [target_normal_then_exact (target_temporary_instruction_exact unusedTruth computed)]
+  exact target_run_temporary_exact
+    (by simpa [targetDeclareTemporary] using unusedNot)
+    (.unary (declared_temporary_atom interface frame state 1 .bool (.bool test)) rfl) root out
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.ShortCircuitControls

@@ -5,9 +5,16 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-!
-# Correct Encoding π → ρ (Lybech 2022)
+# Pi-to-rho translation and name-server components
 
-This encoding fixes the errors in Meredith & Radestock (2005).
+The maintained operational correspondence concerns restriction-free,
+communication-safe executions. The restriction and server expressions here
+are a derived-extension sketch: their request payload and constant double-quote
+seed fail the authored core rho sorting contract. Replication uses the separate
+`PReplicate` extension. `Bridges.RhoScopedServers`, `Bridges.RhoScopedNamed`
+and `Bridges.RhoScopedAllocation` provide checked core-rho replacement blocks
+with explicit request substitution, advancing seed state and communication
+counts. Their composition into a general scoped compiler remains separate.
 
 ## Key Innovation: Name Server
 
@@ -16,22 +23,24 @@ Instead of parametrized name generation, use a dedicated process:
 !N(x,z,v,s) = D(x) | x⟨z(a).v(r).(D(x) | r⟨↓a⟩ | z⟨a⟨|0|⟩⟩)⟩
 ```
 
-This generates namespace N⁺[s] = {s, ⌜s⌜|0|⌝⌝, ⌜⌜s⌜|0|⌝⌝⌜|0|⌝⌝, ...}
+Lybech's intended construction generates an advancing namespace. The sketch
+below does not establish that property; the checked allocation bridge does.
 
 ## Challenge
 
 The π-calculus uses **atomic names** (strings like "x", "y"), while the
 ρ-calculus uses **structured names** (quoted processes like @(P)).
 
-**Meredith & Radestock (2005) errors:**
-1. Parameters lost access to "most recently replicated names"
-2. Static name increments weren't updated at runtime
-
-**Lybech's solution:** Name server generates fresh names dynamically.
+Lybech analyzes failures of the earlier Meredith--Radestock translation,
+including lost access to replicated names and interference through parameter
+names. His replacement uses a stateful name service and restricts observations
+to the source namespace. Freshness alone is not contextual privacy.
 
 ## References
-- Lybech (2022), Section 6, pages 104-107
-- Meredith & Radestock (2005) - INCORRECT encoding
+- Lybech (2024), The reflective higher-order calculus: Encodability,
+  typability and separation, Information and Computation 297, Section 6.
+- Meredith and Radestock (2005), A reflective higher-order calculus;
+  the original translation's limitations are analyzed by Lybech.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.PiCalculus
@@ -85,13 +94,11 @@ def rhoInput (n : Pattern) (x : String) (P : Pattern) : Pattern :=
 def rhoOutput (n q : Pattern) : Pattern :=
   .apply "POutput" [n, q]
 
-/-- Restriction in ρ-calculus: (νx)P (via new channel pattern) -/
+/-- Restriction syntax of the separate derived `PNu` extension. -/
 def rhoNu (x : String) (P : Pattern) : Pattern :=
-  -- In ρ-calculus, restriction is typically encoded using input on a fresh channel
-  -- For now, represent as a direct restriction pattern (may need refinement)
   .apply "PNu" [.lambda none (closeFVar 0 x P)]
 
-/-- Replication in ρ-calculus: !P -/
+/-- Replication syntax of the separate derived `PReplicate` extension. -/
 def rhoReplicate (P : Pattern) : Pattern :=
   .apply "PReplicate" [P]
 
@@ -101,8 +108,9 @@ def rhoDrop (n : Pattern) : Pattern :=
 
 /-! ## Name Server (Lybech's Innovation)
 
-The name server generates fresh names on demand. This is the key to fixing
-the Meredith & Radestock bugs.
+The intended name service generates fresh names on demand. The expressions
+below record an incomplete derived sketch, with its precise authored-core
+obstructions checked in `Bridges.RhoScopedControls`.
 
 The name server is defined as:
 ```
@@ -112,15 +120,13 @@ The name server is defined as:
 Where D(x) is a "drop" operation that repeatedly offers `x` for communication.
 -/
 
-/-- Drop operation: D(x) - repeatedly offers x for communication
-
-    In ρ-calculus, this is represented as a replicated input that
-    continuously makes x available.
--/
+/-- A derived replicated consuming input. This is not the core reflective
+code-reinstallation operation used by the checked guarded server. -/
 def dropOperation (x : String) : Pattern :=
   rhoReplicate (rhoInput (.fvar x) "_drop" rhoNil)
 
-/-- Core server body used by `nameServer`. Exposed for proof lemmas. -/
+/-- The derived server sketch uses a constant ill-sorted double-quote seed.
+Its algebraic lemmas do not establish dynamic allocation. -/
 def nameServerBody (x z v : String) : Pattern :=
   rhoInput (.fvar x) z
     (rhoInput (.fvar z) "a"
@@ -130,7 +136,8 @@ def nameServerBody (x z v : String) : Pattern :=
             (rhoOutput (.fvar "r") (.apply "PDrop" [.fvar "a"]))
             (rhoOutput (.fvar z) (.apply "NQuote" [.apply "NQuote" [rhoNil]]))))))
 
-/-- The name server process that generates fresh names on demand.
+/-- Derived server sketch with a seed output; dynamic fresh-name generation
+is proved for `Bridges.RhoScopedAllocation` instead.
 
     Parameters:
     - x: server channel (where to request names)
@@ -143,7 +150,8 @@ def nameServerBody (x z v : String) : Pattern :=
     !N(x,z,v,s) = D(x) | x⟨z(a).v(r).(D(x) | r⟨↓a⟩ | z⟨a⟨|0|⟩⟩)⟩ | z⟨↓s⟩
     ```
 
-    This generates namespace N⁺[s] = {s, ⌜s⌜|0|⌝⌝, ⌜⌜s⌜|0|⌝⌝⌜|0|⌝⌝, ...}
+    The displayed namespace belongs to the intended construction. The sketch's
+    constant seed update does not realize it.
 -/
 def nameServer (x z v s : String) : Pattern :=
   let dropX := dropOperation x

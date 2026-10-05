@@ -218,11 +218,4 @@ theorem local_body_not_closed_assignment
   rw [same] at typed
   exact identity_body_not_ambient_closed typed
 
-#print axioms language_valid
-#print axioms funded_local_beta_typed
-#print axioms funded_identity_fires
-#print axioms unfunded_identity_no_step
-#print axioms mismatched_identity_no_step
-#print axioms local_body_not_closed_assignment
-
 end Mettapedia.GSLT.LanguageDef.Cost.FiniteLambdaActivation

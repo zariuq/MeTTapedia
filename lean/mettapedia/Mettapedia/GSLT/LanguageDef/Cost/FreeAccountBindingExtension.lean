@@ -187,9 +187,4 @@ noncomputable def homEquiv :
   left_inv arrow := (extend_unique Q accountSort base target _ arrow rfl).symm
   right_inv := extend_unit Q accountSort base target
 
-#print axioms extendCloneHom
-#print axioms extend
-#print axioms extend_unique
-#print axioms homEquiv
-
 end Mettapedia.GSLT.LanguageDef.Cost.FreeAccountBindingExtension

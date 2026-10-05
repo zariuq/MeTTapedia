@@ -217,7 +217,7 @@ noncomputable def kpfWeight (prog : BinString) : ENNReal :=
   2 ^ (-(Kpf[U](prog) : ℤ))
 
 -- Already proven in SimplicityUncertainty.lean:
-theorem tsum_kpfWeight_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem tsum_kpfWeight_le_one (U : PrefixFreeMachine) [OutputComplete U] :
     (∑' x, kpfWeight U x) ≤ 1 :=
   tsum_two_pow_neg_Kpf_le_one U
 ```

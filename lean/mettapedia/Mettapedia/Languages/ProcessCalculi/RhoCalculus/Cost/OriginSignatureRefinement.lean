@@ -144,10 +144,4 @@ theorem unit_boundary_control :
     have literalSame := Multiset.singleton_inj.mp same
     cases literalSame
 
-#print axioms Image.annotation
-#print axioms Image.sourceAccount_substitute
-#print axioms Image.accepted
-#print axioms repeated_commitment_control
-#print axioms unit_boundary_control
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement

@@ -921,28 +921,28 @@ theorem reifyWith_thickenAmbientBVars
         (cospan.reifyWith resolve leg pattern) := by
   induction pattern using Pattern.inductionOn generalizing depth with
   | hbvar index =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith]
+      simp [CostStaticTypeThinning.thickenAmbientBVars_bvar, reifyWith]
   | hfvar name =>
       cases selected : resolve name <;>
-        simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+        simp [CostStaticTypeThinning.thickenAmbientBVars_fvar, reifyWith,
           selected]
   | happly constructor arguments inductionHypothesis =>
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_apply, reifyWith,
         List.map_map, Pattern.apply.injEq, true_and]
       apply List.map_congr_left
       intro argument membership
       exact inductionHypothesis argument membership depth
   | hlambda binder body inductionHypothesis =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+      simp [CostStaticTypeThinning.thickenAmbientBVars_lambda, reifyWith,
         inductionHypothesis]
   | hmultiLambda arity binders body inductionHypothesis =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+      simp [CostStaticTypeThinning.thickenAmbientBVars_multiLambda, reifyWith,
         inductionHypothesis]
   | hsubst body replacement bodyInduction replacementInduction =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+      simp [CostStaticTypeThinning.thickenAmbientBVars_subst, reifyWith,
         bodyInduction, replacementInduction]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_collection, reifyWith,
         List.map_map, Pattern.collection.injEq, true_and]
       exact ⟨List.map_congr_left (fun element membership =>
         inductionHypothesis element membership depth), trivial⟩

@@ -189,8 +189,7 @@ theorem CostStaticRegionNode.canonicalizeReifiedTargetFrame_quoteDrop_atom
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-    rhoReflectivePresentation, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars]
+    rhoReflectivePresentation, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 /-- A reified bare-parallel singleton canonicalizes to its selected semantic
 atom, independently of the semantic key: sorting a singleton has no choice. -/
@@ -219,8 +218,7 @@ theorem CostStaticRegionNode.canonicalizeReifiedTargetFrame_parallelSingleton_at
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel,
     Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy,
-    rhoReflectivePresentation, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars]
+    rhoReflectivePresentation, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 /-- A reified bare-parallel singleton whose payload is a bound variable
 canonicalizes to the mapped, binder-reinserted variable itself.  Unlike the
@@ -287,7 +285,7 @@ theorem CostStaticRegionNode.normalizeHereditaryRawWithInventory_parallelSinglet
   simp [CostStaticAtomEnvironment.restore,
     CostStaticAtomEnvironment.restoreAt,
     ReflectiveContextSupport.substituteAt, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars]
+    CostStaticTypeThinning.thickenAmbientBVars_bvar]
 
 /-- A selected rho frame consisting of one bare-parallel semantic atom
 evaluates to restoration of that atom.  Unlike the Quote/Drop companion, no
@@ -334,7 +332,7 @@ theorem CostStaticRegionNode.normalizeHereditaryRawWithInventory_parallelSinglet
         (mapPattern (color.symbols rhoCIGSLT)
           (.fvar ((CostStaticAtomEnvironment.ofInventory inventory).atomName
             slot)))) = _
-  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 /-- Total-inventory form of the bare-parallel singleton atom exposure. -/
 theorem CostStaticRegionNode.normalizeHereditary_parallelSingleton_restore
@@ -2231,7 +2229,7 @@ theorem CostStaticRegionNode.sourceVariableFrame_of_abstractCanonical
         rhoReflectivePresentation) = .fvar (environment.atomName slot)
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     node environment, keyed]
-  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 /-- Construct the atom branch when a collapsing static frame exposes an
 authored source-variable occurrence as its complete canonical result.

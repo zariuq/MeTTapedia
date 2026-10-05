@@ -138,7 +138,7 @@ noncomputable def ofSourceCanonicalAlignment
     simpa only [CostStaticRegionNode.thinning] using
       congrArg
         (fun targetBound =>
-          (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+          (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
             targetBound).thickenAmbientBVars depth pattern)
         sameBound
   have targetAligned : PatternLeafAligned

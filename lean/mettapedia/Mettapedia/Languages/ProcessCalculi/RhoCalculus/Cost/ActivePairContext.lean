@@ -250,8 +250,4 @@ theorem no_signed_descent (fuel : Nat) (code signature : Pattern) :
       (.apply costSignedConstructorName [code, signature]) = [] :=
   no_unlisted_constructor_descent fuel _ _ (by decide +kernel)
 
-#print axioms funded_left_step
-#print axioms trapped_without_context
-#print axioms resumes_continuation
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContext

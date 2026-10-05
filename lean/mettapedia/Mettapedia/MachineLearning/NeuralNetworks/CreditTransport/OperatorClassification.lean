@@ -109,7 +109,7 @@ theorem inverse_metric_recovers_energy
     (M Q A : Matrix Index Index ℝ) (hM : M.PosDef)
     (hA : A = -(M * Q)) :
     -(M⁻¹ * A) = Q := by
-  letI := hM.isUnit.invertible
+  let := hM.isUnit.invertible
   rw [hA]
   simp
 

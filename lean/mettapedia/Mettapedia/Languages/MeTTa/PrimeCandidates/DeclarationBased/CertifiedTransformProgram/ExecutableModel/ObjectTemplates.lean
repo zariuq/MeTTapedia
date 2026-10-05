@@ -74,9 +74,9 @@ theorem ceqAt_step (t : CTm Tower.Head n) :
 with the object package's root computation. -/
 theorem ceqAt_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {Γ : CCtx Tower.Head n}
     {t : CTm Tower.Head n} (typed : CTyped Q Γ t cnum)
-    (same : Q.computation = objectChurch.computation := by rfl) :
+    (within : StepsWithin objectChurch Q := by exact objectChurch_within rfl) :
     Q.Admits Γ (ceqAt t) (.id cnum (cadd czero t) t) := by
-  have a := objectChurch_admits_of_mor same
+  have a := objectChurch_admits_of_mor within
     (List.getElem_mem (l := computationSpecs) (n := 4) (by decide))
     (L := applyClosed eqAtTele ids (.const eqAtName)) (R := eqAtRhs) rfl (Γ := Γ)
     (fun _ => t) (Θ := .snoc .nil cnum) (by decide) (by decide) (fun i => by
@@ -134,9 +134,9 @@ theorem caddZero_step (t : CTm Tower.Head n) :
 /-- **The zero equation of addition is admitted where its first summand is a number.** -/
 theorem caddZero_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {Γ : CCtx Tower.Head n}
     {t : CTm Tower.Head n} (typed : CTyped Q Γ t cnum)
-    (same : Q.computation = objectChurch.computation := by rfl) :
+    (within : StepsWithin objectChurch Q := by exact objectChurch_within rfl) :
     Q.Admits Γ (cadd t czero) t := by
-  have a := objectChurch_admits_of_mor same
+  have a := objectChurch_admits_of_mor within
     (List.getElem_mem (l := computationSpecs) (n := 1) (by decide))
     (L := applyClosed (ofEntries addEntries 2) (patternSub 1 0 0 zeroN) (.const addN))
     (R := Presentation.subst (hypSub addN addEntries 1 0 []) (addBody zeroN []))
@@ -163,9 +163,9 @@ theorem caddSuc_step (a b : CTm Tower.Head n) :
 /-- **The successor equation of addition is admitted where its summands are numbers.** -/
 theorem caddSuc_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {Γ : CCtx Tower.Head n}
     {a b : CTm Tower.Head n} (ta : CTyped Q Γ a cnum) (tb : CTyped Q Γ b cnum)
-    (same : Q.computation = objectChurch.computation := by rfl) :
+    (within : StepsWithin objectChurch Q := by exact objectChurch_within rfl) :
     Q.Admits Γ (cadd a (csuc b)) (csuc (cadd a b)) := by
-  have s := objectChurch_admits_of_mor same
+  have s := objectChurch_admits_of_mor within
     (List.getElem_mem (l := computationSpecs) (n := 1) (by decide))
     (L := applyClosed (ofEntries addEntries 2) (patternSub 1 1 0 sucN) (.const addN))
     (R := Presentation.subst (hypSub addN addEntries 1 0 [.recursive]) (addBody sucN [.recursive]))

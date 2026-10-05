@@ -46,11 +46,11 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignResi
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostInhabitationLedger
 
 /-!
-# The Cost production surface
+# The Cost theory, one import
 
 One import for consumers of the Cost theory.  This is the *intended* API:
-importing anything else from the lane means reaching past the surface, and
-is a signal either that the surface is missing something or that the
+importing anything else from the lane means reaching past this module, and
+is a signal either that it is missing something or that the
 consumer is depending on an internal.
 
 ```
@@ -93,7 +93,7 @@ and its congruence) is likewise **not** re-exported: its replacement is
 `CostStaticPlanProvenancedStop`, whose `sourceFVar` arm carries membership
 evidence on both sides.  No compatibility alias is provided, deliberately.
 
-## Status of the surface
+## Status
 
 Green as imported here.  The umbrella exports the unconditional,
 proof-relevant `rhoHereditaryCostLayer : Cost.Layer`.

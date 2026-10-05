@@ -1,4 +1,5 @@
 import Mathlib.Data.List.Basic
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation
 
 /-!
 # Compact elements of the domain model
@@ -8,7 +9,9 @@ Melliès and Weirich, *Definitional Inversion, Without Normalisation*, solves an
 equation `D ≅ [D ⇒ D] + ↑(D × [D ⇒ D]) + ↑1 + …` whose summands are the
 functions, the dependent function types and the universe, extended here with
 dependent pair types and pairs, identity types and reflexivity, the numbers,
-a universe of codes and ground types. The domain is determined by its compact
+a universe of codes, ground types, and a type former for each declared datatype
+and a constructor for each declared constructor, named as the constants of the
+terms are. The domain is determined by its compact
 elements, and the compact elements are presented here as the finite sets of an
 information system (Scott; Larsen and Winskel): a *token* is one finite
 observation of an element, and a compact element is a finite list of tokens,
@@ -33,11 +36,37 @@ order `u ⊑ v` on compact elements is entailment of every token of `u` by `v`;
 it is a preorder (`Le.refl`, `Le.trans`, the latter from cut), and the join of
 two compact elements is their concatenation.
 
+**Tokens over any kinds.** Selections, entailment, the order and cut never
+inspect a kind except to compare it with another, so they are stated once over
+any type of kinds `κ` with decidable equality (`Tok κ`). The kinds of the domain
+(`Kind`) are the default: `Tok` alone is `Tok Kind`, and every statement about
+the domain's tokens is the general one at `Kind`, the type of kinds found by
+unification. Other types of kinds, such as one with a kind for each declared
+constructor, reuse the same construction.
+
+**Declared datatypes.** Beside the built-in numbers (`nat`, `zero`, `succ`), each
+declared datatype `d` is a kind of its own (`data d`), whose components are its
+parameters, and so is each constructor `c` of it (`ctor d c fs`), named as the
+constants of the terms are; the constructor's kind also records the shape of each of
+its fields (`FieldShape`): the datatype itself, or one of its parameters. So
+constructors keep their identity: a tag of one constructor is never entailed by tokens
+of another, and a constructor element carries its tag even with no field or with least
+fields.
+
 Two kinds are *lazy*: a function or a pair with no observations is the least
 element, since only its applications and projections can be observed. Every
 other constructor carries a tag, which is itself an observation: `Π ⊥ ⊥` and
 `S ⊥` are above `⊥` and different from it, while `λ ⊥` and `(⊥, ⊥)` are `⊥`.
 This is what validates the η-laws of functions and pairs.
+
+Examples. Positive: a list entails each of its tokens (`ent_of_mem`), the
+successor of an element is below a list exactly when the list has the successor
+tag and the element is below its predecessor (`Elem.succ_le_iff`), and the
+predecessor of a successor is the element (`Elem.pred_succ`). Negative: a tag is
+entailed only by a list that has it (`hasTag_iff`), so zero, `[tag zero]`, is not
+below the least element `[]` nor below a successor, and the declared constructor
+`nil` of the lists, `[tag (ctor list nil [])]`, is not below
+`[tag (ctor list cons [param 0, self])]`.
 -/
 
 set_option autoImplicit false
@@ -48,6 +77,36 @@ namespace Impredicative
 namespace Domain
 
 /-! ## Tokens -/
+
+/-- Equality of declared names, decided by their structure; unlike the instance of the core
+library, the decision uses no axiom, and the kinds of the domain decide their equality by it. -/
+def declNameDecEq : (a b : DeclName) → Decidable (a = b)
+  | .anonymous, .anonymous => isTrue rfl
+  | .str p s, .str q t =>
+      match declNameDecEq p q, decEq s t with
+      | isTrue h₁, isTrue h₂ => isTrue (h₁ ▸ h₂ ▸ rfl)
+      | isFalse h₁, _ => isFalse fun h => h₁ (by injection h)
+      | _, isFalse h₂ => isFalse fun h => h₂ (by injection h)
+  | .num p m, .num q n =>
+      match declNameDecEq p q, decEq m n with
+      | isTrue h₁, isTrue h₂ => isTrue (h₁ ▸ h₂ ▸ rfl)
+      | isFalse h₁, _ => isFalse fun h => h₁ (by injection h)
+      | _, isFalse h₂ => isFalse fun h => h₂ (by injection h)
+  | .anonymous, .str .. | .anonymous, .num .. | .str .., .anonymous | .str .., .num ..
+  | .num .., .anonymous | .num .., .str .. => isFalse nofun
+
+/-- The shape of a field of a declared constructor: the datatype itself (a recursive field), or
+the parameter `j` of the datatype (a field whose type is given beside the datatype). -/
+inductive FieldShape where
+  /-- The datatype being declared. -/
+  | self
+  /-- The parameter `j` of the datatype. -/
+  | param (j : Nat)
+  deriving DecidableEq, Repr
+
+section KindDecidableEq
+
+local instance : DecidableEq DeclName := declNameDecEq
 
 /-- The constructors of the domain. -/
 inductive Kind where
@@ -75,45 +134,55 @@ inductive Kind where
   | lam
   /-- A pair, observed only through its projections. -/
   | pair
+  /-- The declared datatype `d`, a type former whose components are its parameters. -/
+  | data (d : DeclName)
+  /-- The constructor `c` of the declared datatype `d`, whose components are its fields, each
+  of the shape `fields` gives it. -/
+  | ctor (d c : DeclName) (fields : List FieldShape)
   deriving DecidableEq, Repr
 
-/-- The finite observations of elements. -/
-inductive Tok where
+end KindDecidableEq
+
+/-- The finite observations of elements, over a type `κ` of kinds; the kinds of the domain
+unless another type is given. -/
+inductive Tok (κ : Type := Kind) where
   /-- The element is built by the constructor of kind `k`. -/
-  | tag (k : Kind)
-  /-- The component `i` of the element entails `t`, and its component `0` is
-  above `C`. -/
-  | arg (k : Kind) (i : Nat) (C : List Tok) (t : Tok)
-  /-- As a step function of kind `k`, the element maps every element above `X`
-  to an element above `Y`, and its component `0` is above `C`. -/
-  | fn (k : Kind) (C X Y : List Tok)
+  | tag (k : κ)
+  /-- The component `i` of the element entails `t`, and its component `0` is above `C`. -/
+  | arg (k : κ) (i : Nat) (C : List (Tok κ)) (t : Tok κ)
+  /-- As a step function of kind `k`, the element maps every element above `X` to an element
+  above `Y`, and its component `0` is above `C`. -/
+  | fn (k : κ) (C X Y : List (Tok κ))
   deriving Repr
 
+variable {κ : Type}
+
 /-- The kind of a token. -/
-def Tok.kind : Tok → Kind
+def Tok.kind : Tok κ → κ
   | .tag k => k
   | .arg k _ _ _ => k
   | .fn k _ _ _ => k
 
 /-- The dependency of a token: what it asserts of the component `0`. -/
-def Tok.dep : Tok → List Tok
+def Tok.dep : Tok κ → List (Tok κ)
   | .tag _ => []
   | .arg _ _ C _ => C
   | .fn _ C _ _ => C
 
 mutual
 /-- The nesting depth of a token. -/
-def Tok.depth : Tok → Nat
+def Tok.depth : Tok κ → Nat
   | .tag _ => 0
   | .arg _ _ C t => max (Tok.depthL C) t.depth + 1
   | .fn _ C X Y => max (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y)) + 1
 /-- The largest depth of the tokens of a list. -/
-def Tok.depthL : List Tok → Nat
+def Tok.depthL : List (Tok κ) → Nat
   | [] => 0
   | t :: ts => max t.depth (Tok.depthL ts)
 end
 
-theorem Tok.depth_le_of_mem {t : Tok} {v : List Tok} (h : t ∈ v) : t.depth ≤ Tok.depthL v := by
+theorem Tok.depth_le_of_mem {t : Tok κ} {v : List (Tok κ)} (h : t ∈ v) :
+    t.depth ≤ Tok.depthL v := by
   induction v with
   | nil => cases h
   | cons s v ih =>
@@ -122,7 +191,7 @@ theorem Tok.depth_le_of_mem {t : Tok} {v : List Tok} (h : t ∈ v) : t.depth ≤
     · exact Nat.le_max_left _ _
     · exact Nat.le_trans (ih h) (Nat.le_max_right _ _)
 
-theorem Tok.depthL_le {v : List Tok} {n : Nat} (h : ∀ t ∈ v, t.depth ≤ n) :
+theorem Tok.depthL_le {v : List (Tok κ)} {n : Nat} (h : ∀ t ∈ v, t.depth ≤ n) :
     Tok.depthL v ≤ n := by
   induction v with
   | nil => exact Nat.zero_le _
@@ -130,7 +199,7 @@ theorem Tok.depthL_le {v : List Tok} {n : Nat} (h : ∀ t ∈ v, t.depth ≤ n) 
     simp only [Tok.depthL]
     exact Nat.max_le.2 ⟨h s (by simp), ih fun t ht => h t (by simp [ht])⟩
 
-theorem Tok.depth_lt_of_mem_dep {t s : Tok} (h : s ∈ t.dep) : s.depth < t.depth := by
+theorem Tok.depth_lt_of_mem_dep {t s : Tok κ} (h : s ∈ t.dep) : s.depth < t.depth := by
   cases t with
   | tag => cases h
   | arg k i C t =>
@@ -144,17 +213,50 @@ theorem Tok.depth_lt_of_mem_dep {t s : Tok} (h : s ∈ t.dep) : s.depth < t.dept
     have := Nat.le_max_left (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
     simp only [Tok.depth]; omega
 
+theorem depth_lt_arg (k : κ) (i : Nat) (C : List (Tok κ)) (t : Tok κ) :
+    t.depth < (Tok.arg k i C t).depth := by
+  have := Nat.le_max_right (Tok.depthL C) t.depth
+  simp only [Tok.depth]; omega
+
+theorem depth_lt_fn_left {k : κ} {C X Y : List (Tok κ)} {s : Tok κ} (h : s ∈ X) :
+    s.depth < (Tok.fn k C X Y).depth := by
+  have := Tok.depth_le_of_mem h
+  have := Nat.le_max_left (Tok.depthL X) (Tok.depthL Y)
+  have := Nat.le_max_right (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
+  simp only [Tok.depth]; omega
+
+theorem depth_lt_fn_right {k : κ} {C X Y : List (Tok κ)} {s : Tok κ} (h : s ∈ Y) :
+    s.depth < (Tok.fn k C X Y).depth := by
+  have := Tok.depth_le_of_mem h
+  have := Nat.le_max_right (Tok.depthL X) (Tok.depthL Y)
+  have := Nat.le_max_right (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
+  simp only [Tok.depth]; omega
+
+theorem depthL_lt_fn_left (k : κ) (C X Y : List (Tok κ)) :
+    Tok.depthL X < (Tok.fn k C X Y).depth := by
+  have := Nat.le_max_left (Tok.depthL X) (Tok.depthL Y)
+  have := Nat.le_max_right (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
+  simp only [Tok.depth]; omega
+
+theorem depthL_lt_of_fn_mem {k : κ} {v C X Y : List (Tok κ)} (h : Tok.fn k C X Y ∈ v) :
+    Tok.depthL X < Tok.depthL v :=
+  Nat.lt_of_lt_of_le (depthL_lt_fn_left k C X Y) (Tok.depth_le_of_mem h)
+
 /-! ## Selections -/
 
+section Entailment
+
+variable [DecidableEq κ]
+
 /-- Whether a list has the tag of kind `k`. -/
-def hasTag (k : Kind) : List Tok → Bool
+def hasTag (k : κ) : List (Tok κ) → Bool
   | [] => false
   | .tag k' :: v => k' == k || hasTag k v
   | _ :: v => hasTag k v
 
 /-- The component `i` of kind `k`: the tokens its component tokens entail, and,
 for the component `0`, the dependencies of all its tokens of kind `k`. -/
-def args (k : Kind) (i : Nat) : List Tok → List Tok
+def args (k : κ) (i : Nat) : List (Tok κ) → List (Tok κ)
   | [] => []
   | t :: v =>
       ((match t with
@@ -163,12 +265,12 @@ def args (k : Kind) (i : Nat) : List Tok → List Tok
       (if t.kind = k ∧ i = 0 then t.dep else [])) ++ args k i v
 
 /-- The entries of the step function of kind `k`. -/
-def fns (k : Kind) : List Tok → List (List Tok × List Tok)
+def fns (k : κ) : List (Tok κ) → List (List (Tok κ) × List (Tok κ))
   | [] => []
   | .fn k' _ X Y :: v => if k' = k then (X, Y) :: fns k v else fns k v
   | _ :: v => fns k v
 
-theorem hasTag_iff {k : Kind} {v : List Tok} : hasTag k v = true ↔ Tok.tag k ∈ v := by
+theorem hasTag_iff {k : κ} {v : List (Tok κ)} : hasTag k v = true ↔ Tok.tag k ∈ v := by
   induction v with
   | nil => simp [hasTag]
   | cons t v ih =>
@@ -179,7 +281,7 @@ theorem hasTag_iff {k : Kind} {v : List Tok} : hasTag k v = true ↔ Tok.tag k �
     | arg => simp [hasTag, ih]
     | fn => simp [hasTag, ih]
 
-theorem mem_args_iff {k : Kind} {i : Nat} {v : List Tok} {s : Tok} :
+theorem mem_args_iff {k : κ} {i : Nat} {v : List (Tok κ)} {s : Tok κ} :
     s ∈ args k i v ↔
       (∃ C, Tok.arg k i C s ∈ v) ∨ (i = 0 ∧ ∃ t ∈ v, t.kind = k ∧ s ∈ t.dep) := by
   induction v with
@@ -212,7 +314,7 @@ theorem mem_args_iff {k : Kind} {i : Nat} {v : List Tok} {s : Tok} :
       · left; right; rw [if_pos ⟨hk, hi⟩]; exact hs
       · right; exact .inr ⟨hi, t', ht', hk, hs⟩
 
-theorem mem_fns_iff {k : Kind} {v : List Tok} {X Y : List Tok} :
+theorem mem_fns_iff {k : κ} {v : List (Tok κ)} {X Y : List (Tok κ)} :
     (X, Y) ∈ fns k v ↔ ∃ C, Tok.fn k C X Y ∈ v := by
   induction v with
   | nil => simp [fns]
@@ -241,34 +343,34 @@ theorem mem_fns_iff {k : Kind} {v : List Tok} {X Y : List Tok} :
           · exact absurd rfl hk
           · exact ⟨C, hC⟩
 
-theorem mem_args_of_arg {k : Kind} {i : Nat} {C : List Tok} {s : Tok} {v : List Tok}
+theorem mem_args_of_arg {k : κ} {i : Nat} {C : List (Tok κ)} {s : Tok κ} {v : List (Tok κ)}
     (h : Tok.arg k i C s ∈ v) : s ∈ args k i v :=
   mem_args_iff.2 (.inl ⟨C, h⟩)
 
-theorem mem_args_of_dep {k : Kind} {t s : Tok} {v : List Tok} (ht : t ∈ v) (hk : t.kind = k)
+theorem mem_args_of_dep {k : κ} {t s : Tok κ} {v : List (Tok κ)} (ht : t ∈ v) (hk : t.kind = k)
     (hs : s ∈ t.dep) : s ∈ args k 0 v :=
   mem_args_iff.2 (.inr ⟨rfl, t, ht, hk, hs⟩)
 
-theorem args_subset {k : Kind} {i : Nat} {v w : List Tok} (h : ∀ s ∈ v, s ∈ w) :
+theorem args_subset {k : κ} {i : Nat} {v w : List (Tok κ)} (h : ∀ s ∈ v, s ∈ w) :
     ∀ s ∈ args k i v, s ∈ args k i w := by
   intro s hs
   rcases mem_args_iff.1 hs with ⟨C, hC⟩ | ⟨hi, t, ht, hk, hs⟩
   · exact mem_args_iff.2 (.inl ⟨C, h _ hC⟩)
   · exact mem_args_iff.2 (.inr ⟨hi, t, h _ ht, hk, hs⟩)
 
-theorem fns_subset {k : Kind} {v w : List Tok} (h : ∀ s ∈ v, s ∈ w) :
+theorem fns_subset {k : κ} {v w : List (Tok κ)} (h : ∀ s ∈ v, s ∈ w) :
     ∀ p ∈ fns k v, p ∈ fns k w := by
   rintro ⟨X, Y⟩ hp
   obtain ⟨C, hC⟩ := mem_fns_iff.1 hp
   exact mem_fns_iff.2 ⟨C, h _ hC⟩
 
-theorem args_append (k : Kind) (i : Nat) (u v : List Tok) :
+theorem args_append (k : κ) (i : Nat) (u v : List (Tok κ)) :
     args k i (u ++ v) = args k i u ++ args k i v := by
   induction u with
   | nil => rfl
   | cons s u ih => simp only [List.cons_append, args, ih, List.append_assoc]
 
-theorem fns_append (k : Kind) (u v : List Tok) : fns k (u ++ v) = fns k u ++ fns k v := by
+theorem fns_append (k : κ) (u v : List (Tok κ)) : fns k (u ++ v) = fns k u ++ fns k v := by
   induction u with
   | nil => rfl
   | cons s u ih =>
@@ -281,7 +383,7 @@ theorem fns_append (k : Kind) (u v : List Tok) : fns k (u ++ v) = fns k u ++ fns
 
 /-! ## Depth bounds -/
 
-theorem depthL_args (k : Kind) (i : Nat) (v : List Tok) :
+theorem depthL_args (k : κ) (i : Nat) (v : List (Tok κ)) :
     Tok.depthL (args k i v) ≤ Tok.depthL v := by
   apply Tok.depthL_le
   intro s hs
@@ -294,7 +396,7 @@ theorem depthL_args (k : Kind) (i : Nat) (v : List Tok) :
     have h2 := Tok.depth_lt_of_mem_dep hs
     omega
 
-theorem depth_fn_le {k : Kind} {v X Y : List Tok} (h : (X, Y) ∈ fns k v) :
+theorem depth_fn_le {k : κ} {v X Y : List (Tok κ)} (h : (X, Y) ∈ fns k v) :
     max (Tok.depthL X) (Tok.depthL Y) + 1 ≤ Tok.depthL v := by
   obtain ⟨C, hC⟩ := mem_fns_iff.1 h
   have h1 := Tok.depth_le_of_mem hC
@@ -302,7 +404,7 @@ theorem depth_fn_le {k : Kind} {v X Y : List Tok} (h : (X, Y) ∈ fns k v) :
   simp only [Tok.depth] at h1
   omega
 
-theorem depthL_select (k : Kind) (v : List Tok) (P : {p // p ∈ fns k v} → Bool) :
+theorem depthL_select (k : κ) (v : List (Tok κ)) (P : {p // p ∈ fns k v} → Bool) :
     Tok.depthL (((fns k v).attach.filter P).flatMap fun q => q.1.2) ≤ Tok.depthL v := by
   apply Tok.depthL_le
   intro t ht
@@ -312,38 +414,13 @@ theorem depthL_select (k : Kind) (v : List Tok) (P : {p // p ∈ fns k v} → Bo
   have h3 := Nat.le_max_right (Tok.depthL q.1) (Tok.depthL q.2)
   omega
 
-theorem depth_lt_arg (k : Kind) (i : Nat) (C : List Tok) (t : Tok) :
-    t.depth < (Tok.arg k i C t).depth := by
-  have := Nat.le_max_right (Tok.depthL C) t.depth
-  simp only [Tok.depth]; omega
-
-theorem depth_lt_fn_left {k : Kind} {C X Y : List Tok} {s : Tok} (h : s ∈ X) :
-    s.depth < (Tok.fn k C X Y).depth := by
-  have := Tok.depth_le_of_mem h
-  have := Nat.le_max_left (Tok.depthL X) (Tok.depthL Y)
-  have := Nat.le_max_right (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
-  simp only [Tok.depth]; omega
-
-theorem depth_lt_fn_right {k : Kind} {C X Y : List Tok} {s : Tok} (h : s ∈ Y) :
-    s.depth < (Tok.fn k C X Y).depth := by
-  have := Tok.depth_le_of_mem h
-  have := Nat.le_max_right (Tok.depthL X) (Tok.depthL Y)
-  have := Nat.le_max_right (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
-  simp only [Tok.depth]; omega
-
-theorem depthL_lt_fn_left (k : Kind) (C X Y : List Tok) :
-    Tok.depthL X < (Tok.fn k C X Y).depth := by
-  have := Nat.le_max_left (Tok.depthL X) (Tok.depthL Y)
-  have := Nat.le_max_right (Tok.depthL C) (max (Tok.depthL X) (Tok.depthL Y))
-  simp only [Tok.depth]; omega
-
 /-! ## Entailment -/
 
 /-- Entailment: whether the list `v` entails the token `t`. A tag is entailed
 by its presence; a component token by the component, once its dependency is
 entailed by the component `0`; a step-function token by the value at its input
 of the step function the list presents, once its dependency is entailed. -/
-def ent (v : List Tok) : Tok → Bool
+def ent (v : List (Tok κ)) : Tok κ → Bool
   | .tag k => hasTag k v
   | .arg k i C t => (C.attach.all fun ⟨c, _⟩ => ent (args k 0 v) c) && ent (args k i v) t
   | .fn k C X Y => (C.attach.all fun ⟨c, _⟩ => ent (args k 0 v) c) &&
@@ -374,7 +451,7 @@ decreasing_by
 
 /-- The value at `X` of the step function of kind `k` that `v` presents: the
 outputs of its entries whose inputs are entailed by `X`. -/
-def fnApp (k : Kind) (v X : List Tok) : List Tok :=
+def fnApp (k : κ) (v X : List (Tok κ)) : List (Tok κ) :=
   ((fns k v).filter fun p => p.1.all (ent X)).flatMap Prod.snd
 
 private theorem all_attach_val {α : Type} (l : List α) (f : α → Bool) :
@@ -391,22 +468,22 @@ private theorem flatMap_filter_attach_val {α β : Type} (l : List α) (P : α �
     rfl
   rw [h, List.flatMap_map]
 
-theorem ent_tag (v : List Tok) (k : Kind) : ent v (.tag k) = hasTag k v := by
+theorem ent_tag (v : List (Tok κ)) (k : κ) : ent v (.tag k) = hasTag k v := by
   rw [ent]
 
-theorem ent_arg (v : List Tok) (k : Kind) (i : Nat) (C : List Tok) (t : Tok) :
+theorem ent_arg (v : List (Tok κ)) (k : κ) (i : Nat) (C : List (Tok κ)) (t : Tok κ) :
     ent v (.arg k i C t) = (C.all (ent (args k 0 v)) && ent (args k i v) t) := by
   rw [ent]
   simp only [all_attach_val]
 
-theorem ent_fn (v : List Tok) (k : Kind) (C X Y : List Tok) :
+theorem ent_fn (v : List (Tok κ)) (k : κ) (C X Y : List (Tok κ)) :
     ent v (.fn k C X Y) = (C.all (ent (args k 0 v)) && Y.all (ent (fnApp k v X))) := by
   rw [ent]
   simp only [all_attach_val]
   rw [flatMap_filter_attach_val (fns k v) (fun p => p.1.all (ent X)) Prod.snd]
   rfl
 
-theorem mem_fnApp {k : Kind} {v X : List Tok} {t : Tok} :
+theorem mem_fnApp {k : κ} {v X : List (Tok κ)} {t : Tok κ} :
     t ∈ fnApp k v X ↔
       ∃ C X' Y', Tok.fn k C X' Y' ∈ v ∧ (∀ s ∈ X', ent X s = true) ∧ t ∈ Y' := by
   simp only [fnApp, List.mem_flatMap, List.mem_filter, List.all_eq_true]
@@ -417,13 +494,13 @@ theorem mem_fnApp {k : Kind} {v X : List Tok} {t : Tok} :
   · rintro ⟨C, X', Y', hp, hX, ht⟩
     exact ⟨(X', Y'), ⟨mem_fns_iff.2 ⟨C, hp⟩, hX⟩, ht⟩
 
-theorem fnApp_subset {k : Kind} {v w : List Tok} (X : List Tok) (h : ∀ s ∈ v, s ∈ w) :
+theorem fnApp_subset {k : κ} {v w : List (Tok κ)} (X : List (Tok κ)) (h : ∀ s ∈ v, s ∈ w) :
     ∀ s ∈ fnApp k v X, s ∈ fnApp k w X := by
   intro s hs
   obtain ⟨C, X', Y', hp, hX, hs⟩ := mem_fnApp.1 hs
   exact mem_fnApp.2 ⟨C, X', Y', h _ hp, hX, hs⟩
 
-theorem depthL_fnApp_le (k : Kind) (v X : List Tok) :
+theorem depthL_fnApp_le (k : κ) (v X : List (Tok κ)) :
     Tok.depthL (fnApp k v X) ≤ Tok.depthL v := by
   apply Tok.depthL_le
   intro t ht
@@ -432,20 +509,16 @@ theorem depthL_fnApp_le (k : Kind) (v X : List Tok) :
   have h2 := depth_lt_fn_right (k := k) (C := C) (X := X') ht
   omega
 
-theorem depthL_lt_of_fn_mem {k : Kind} {v C X Y : List Tok} (h : Tok.fn k C X Y ∈ v) :
-    Tok.depthL X < Tok.depthL v :=
-  Nat.lt_of_lt_of_le (depthL_lt_fn_left k C X Y) (Tok.depth_le_of_mem h)
-
 /-! ## The order -/
 
 /-- `u ⊑ v`: `v` entails every token of `u`. This is the order of the compact
 elements, and the join of two compact elements is their concatenation. -/
-def Le (u v : List Tok) : Prop := ∀ t ∈ u, ent v t = true
+def Le (u v : List (Tok κ)) : Prop := ∀ t ∈ u, ent v t = true
 
 @[inherit_doc] scoped infix:50 " ⊑ " => Le
 
 /-- Every token of a list is entailed by it. -/
-theorem ent_of_mem : ∀ {v : List Tok} {t : Tok}, t ∈ v → ent v t = true
+theorem ent_of_mem : ∀ {v : List (Tok κ)} {t : Tok κ}, t ∈ v → ent v t = true
   | _, .tag k, h => by rw [ent_tag, hasTag_iff]; exact h
   | _, .arg k i C t, h => by
       rw [ent_arg, Bool.and_eq_true, List.all_eq_true]
@@ -463,8 +536,8 @@ decreasing_by
   · exact depth_lt_fn_right hs
 
 /-- Entailment is monotone in the entailing list. -/
-theorem ent_mono : ∀ {v w : List Tok} {t : Tok}, (∀ s ∈ v, s ∈ w) → ent v t = true →
-    ent w t = true
+theorem ent_mono : ∀ {v w : List (Tok κ)} {t : Tok κ}, (∀ s ∈ v, s ∈ w) →
+    ent v t = true → ent w t = true
   | _, _, .tag k, h, e => by
       rw [ent_tag, hasTag_iff] at e ⊢
       exact h _ e
@@ -482,15 +555,15 @@ decreasing_by
   · exact Tok.depth_lt_of_mem_dep (t := .fn k C X Y) hc
   · exact depth_lt_fn_right hs
 
-theorem Le.refl (u : List Tok) : u ⊑ u := fun _ ht => ent_of_mem ht
+theorem Le.refl (u : List (Tok κ)) : u ⊑ u := fun _ ht => ent_of_mem ht
 
-theorem Le.of_subset {u v : List Tok} (h : ∀ t ∈ u, t ∈ v) : u ⊑ v :=
+theorem Le.of_subset {u v : List (Tok κ)} (h : ∀ t ∈ u, t ∈ v) : u ⊑ v :=
   fun _ ht => ent_of_mem (h _ ht)
 
-theorem Le.nil (v : List Tok) : [] ⊑ v := fun _ ht => absurd ht List.not_mem_nil
+theorem Le.nil (v : List (Tok κ)) : [] ⊑ v := fun _ ht => absurd ht List.not_mem_nil
 
 /-- The components of an element below another are below its components. -/
-theorem Le.args {v w : List Tok} (h : v ⊑ w) (k : Kind) (i : Nat) :
+theorem Le.args {v w : List (Tok κ)} (h : v ⊑ w) (k : κ) (i : Nat) :
     args k i v ⊑ args k i w := by
   intro s hs
   rcases mem_args_iff.1 hs with ⟨C, hC⟩ | ⟨hi, t, ht, hk, hd⟩
@@ -515,7 +588,8 @@ theorem Le.args {v w : List Tok} (h : v ⊑ w) (k : Kind) (i : Nat) :
       exact this.1 s hd
 
 /-- **Cut**: entailment is transitive. -/
-theorem ent_cut : ∀ {v w : List Tok} {t : Tok}, ent v t = true → v ⊑ w → ent w t = true
+theorem ent_cut : ∀ {v w : List (Tok κ)} {t : Tok κ}, ent v t = true → v ⊑ w →
+    ent w t = true
   | _, _, .tag k, e, h => h _ (hasTag_iff.1 (by rwa [ent_tag] at e))
   | v, w, .arg k i C t, e, h => by
       rw [ent_arg, Bool.and_eq_true, List.all_eq_true] at e ⊢
@@ -548,39 +622,40 @@ decreasing_by
        · exact Prod.Lex.left _ _ hl
        · rw [hl]; exact Prod.Lex.right _ (depth_lt_fn_right hs))
 
-theorem Le.trans {u v w : List Tok} (h₁ : u ⊑ v) (h₂ : v ⊑ w) : u ⊑ w :=
+theorem Le.trans {u v w : List (Tok κ)} (h₁ : u ⊑ v) (h₂ : v ⊑ w) : u ⊑ w :=
   fun _ ht => ent_cut (h₁ _ ht) h₂
 
 /-- Equivalent compact elements: each below the other. -/
-def Equiv (u v : List Tok) : Prop := u ⊑ v ∧ v ⊑ u
+def Equiv (u v : List (Tok κ)) : Prop := u ⊑ v ∧ v ⊑ u
 
-theorem Equiv.refl (u : List Tok) : Equiv u u := ⟨Le.refl u, Le.refl u⟩
+theorem Equiv.refl (u : List (Tok κ)) : Equiv u u := ⟨Le.refl u, Le.refl u⟩
 
-theorem Equiv.symm {u v : List Tok} (h : Equiv u v) : Equiv v u := ⟨h.2, h.1⟩
+theorem Equiv.symm {u v : List (Tok κ)} (h : Equiv u v) : Equiv v u := ⟨h.2, h.1⟩
 
-theorem Equiv.trans {u v w : List Tok} (h₁ : Equiv u v) (h₂ : Equiv v w) : Equiv u w :=
+theorem Equiv.trans {u v w : List (Tok κ)} (h₁ : Equiv u v) (h₂ : Equiv v w) : Equiv u w :=
   ⟨h₁.1.trans h₂.1, h₂.2.trans h₁.2⟩
 
-theorem ent_of_le {u v : List Tok} {t : Tok} (h : u ⊑ v) (e : ent u t = true) :
+theorem ent_of_le {u v : List (Tok κ)} {t : Tok κ} (h : u ⊑ v) (e : ent u t = true) :
     ent v t = true :=
   ent_cut e h
 
 /-! ## Joins -/
 
-theorem Le.append_left (u v : List Tok) : u ⊑ u ++ v :=
+theorem Le.append_left (u v : List (Tok κ)) : u ⊑ u ++ v :=
   Le.of_subset fun _ ht => List.mem_append_left _ ht
 
-theorem Le.append_right (u v : List Tok) : v ⊑ u ++ v :=
+theorem Le.append_right (u v : List (Tok κ)) : v ⊑ u ++ v :=
   Le.of_subset fun _ ht => List.mem_append_right _ ht
 
 /-- The concatenation of two elements is their least upper bound. -/
-theorem Le.append {u v w : List Tok} (hu : u ⊑ w) (hv : v ⊑ w) : u ++ v ⊑ w := by
+theorem Le.append {u v w : List (Tok κ)} (hu : u ⊑ w) (hv : v ⊑ w) : u ++ v ⊑ w := by
   intro t ht
   rcases List.mem_append.1 ht with ht | ht
   · exact hu t ht
   · exact hv t ht
 
-theorem Le.cons_iff {t : Tok} {u v : List Tok} : t :: u ⊑ v ↔ ent v t = true ∧ u ⊑ v := by
+theorem Le.cons_iff {t : Tok κ} {u v : List (Tok κ)} :
+    t :: u ⊑ v ↔ ent v t = true ∧ u ⊑ v := by
   constructor
   · intro h
     exact ⟨h t List.mem_cons_self, fun s hs => h s (List.mem_cons_of_mem _ hs)⟩
@@ -589,7 +664,7 @@ theorem Le.cons_iff {t : Tok} {u v : List Tok} : t :: u ⊑ v ↔ ent v t = true
     · exact ht
     · exact hu s hs
 
-theorem Le.map_iff {α : Type} {u : List α} {v : List Tok} (f : α → Tok) :
+theorem Le.map_iff {α : Type} {u : List α} {v : List (Tok κ)} (f : α → Tok κ) :
     u.map f ⊑ v ↔ ∀ t ∈ u, ent v (f t) = true := by
   simp only [Le, List.mem_map, forall_exists_index, and_imp]
   constructor
@@ -601,10 +676,10 @@ theorem Le.map_iff {α : Type} {u : List α} {v : List Tok} (f : α → Tok) :
 /-! ## Step functions -/
 
 /-- The value at `X` of a step function presented by its entries. -/
-def stepApp (f : List (List Tok × List Tok)) (X : List Tok) : List Tok :=
+def stepApp (f : List (List (Tok κ) × List (Tok κ))) (X : List (Tok κ)) : List (Tok κ) :=
   (f.filter fun p => p.1.all (ent X)).flatMap Prod.snd
 
-theorem mem_stepApp {f : List (List Tok × List Tok)} {X : List Tok} {t : Tok} :
+theorem mem_stepApp {f : List (List (Tok κ) × List (Tok κ))} {X : List (Tok κ)} {t : Tok κ} :
     t ∈ stepApp f X ↔ ∃ p ∈ f, p.1 ⊑ X ∧ t ∈ p.2 := by
   simp only [stepApp, List.mem_flatMap, List.mem_filter, List.all_eq_true]
   constructor
@@ -613,12 +688,12 @@ theorem mem_stepApp {f : List (List Tok × List Tok)} {X : List Tok} {t : Tok} :
   · rintro ⟨p, hp, hX, ht⟩
     exact ⟨p, ⟨hp, hX⟩, ht⟩
 
-theorem mem_fnApp' {k : Kind} {v X : List Tok} {t : Tok} :
+theorem mem_fnApp' {k : κ} {v X : List (Tok κ)} {t : Tok κ} :
     t ∈ fnApp k v X ↔ ∃ C X' Y', Tok.fn k C X' Y' ∈ v ∧ X' ⊑ X ∧ t ∈ Y' :=
   mem_fnApp
 
 /-- The value of a step function is monotone in the function and the argument. -/
-theorem fnApp_mono {k : Kind} {v w X X' : List Tok} (hv : v ⊑ w) (hX : X ⊑ X') :
+theorem fnApp_mono {k : κ} {v w X X' : List (Tok κ)} (hv : v ⊑ w) (hX : X ⊑ X') :
     fnApp k v X ⊑ fnApp k w X' := by
   intro s hs
   obtain ⟨C, X₀, Y₀, hp, h₀, hs⟩ := mem_fnApp'.1 hs
@@ -629,11 +704,101 @@ theorem fnApp_mono {k : Kind} {v w X X' : List Tok} (hv : v ⊑ w) (hX : X ⊑ X
   obtain ⟨C', X₁, Y₁, hq, h₁, hr⟩ := mem_fnApp'.1 hr
   exact mem_fnApp'.2 ⟨C', X₁, Y₁, hq, (h₁.trans h₀).trans hX, hr⟩
 
-theorem fnApp_append (k : Kind) (u v X : List Tok) :
+theorem fnApp_append (k : κ) (u v X : List (Tok κ)) :
     fnApp k (u ++ v) X = fnApp k u X ++ fnApp k v X := by
   simp only [fnApp, fns_append, List.filter_append, List.flatMap_append]
 
-/-! ## Elements -/
+/-! ## The selections of single tokens -/
+
+@[simp] theorem args_nil (k : κ) (i : Nat) : args k i [] = [] := rfl
+
+@[simp] theorem args_cons_tag (k k' : κ) (i : Nat) (v : List (Tok κ)) :
+    args k i (.tag k' :: v) = args k i v := by
+  simp [args, Tok.dep]
+
+@[simp] theorem args_cons_arg (k k' : κ) (i i' : Nat) (C : List (Tok κ)) (t : Tok κ)
+    (v : List (Tok κ)) :
+    args k i (.arg k' i' C t :: v) =
+      ((if k' = k ∧ i' = i then [t] else []) ++ (if k' = k ∧ i = 0 then C else [])) ++
+        args k i v := rfl
+
+@[simp] theorem args_cons_fn (k k' : κ) (i : Nat) (C X Y : List (Tok κ)) (v : List (Tok κ)) :
+    args k i (.fn k' C X Y :: v) = (if k' = k ∧ i = 0 then C else []) ++ args k i v := rfl
+
+@[simp] theorem fns_nil (k : κ) : fns k [] = [] := rfl
+
+@[simp] theorem fns_cons_tag (k k' : κ) (v : List (Tok κ)) : fns k (.tag k' :: v) = fns k v := rfl
+
+@[simp] theorem fns_cons_arg (k k' : κ) (i : Nat) (C : List (Tok κ)) (t : Tok κ)
+    (v : List (Tok κ)) :
+    fns k (.arg k' i C t :: v) = fns k v := rfl
+
+@[simp] theorem fns_cons_fn (k k' : κ) (C X Y : List (Tok κ)) (v : List (Tok κ)) :
+    fns k (.fn k' C X Y :: v) = if k' = k then (X, Y) :: fns k v else fns k v := rfl
+
+@[simp] theorem hasTag_cons_tag (k k' : κ) (v : List (Tok κ)) :
+    hasTag k (.tag k' :: v) = (k' == k || hasTag k v) := rfl
+
+@[simp] theorem hasTag_cons_arg (k k' : κ) (i : Nat) (C : List (Tok κ)) (t : Tok κ)
+    (v : List (Tok κ)) : hasTag k (.arg k' i C t :: v) = hasTag k v := rfl
+
+@[simp] theorem hasTag_cons_fn (k k' : κ) (C X Y : List (Tok κ)) (v : List (Tok κ)) :
+    hasTag k (.fn k' C X Y :: v) = hasTag k v := rfl
+
+theorem args_map_arg (k : κ) (i : Nat) (C u : List (Tok κ)) (k' : κ) (j : Nat) :
+    args k' j (u.map (.arg k i C)) =
+      u.flatMap fun t => (if k = k' ∧ i = j then [t] else []) ++
+        (if k = k' ∧ j = 0 then C else []) := by
+  induction u with
+  | nil => rfl
+  | cons t u ih => simp only [List.map_cons, args_cons_arg, ih, List.flatMap_cons]
+
+theorem args_map_arg_same (k : κ) (i : Nat) (u : List (Tok κ)) :
+    args k i (u.map (.arg k i [])) = u := by
+  induction u with
+  | nil => rfl
+  | cons t u ih => simp [ih]
+
+theorem args_map_fn (k : κ) (C : List (Tok κ)) (f : List (List (Tok κ) × List (Tok κ)))
+    (k' : κ) (j : Nat) :
+    args k' j (f.map fun p => .fn k C p.1 p.2) =
+      f.flatMap fun _ => if k = k' ∧ j = 0 then C else [] := by
+  induction f with
+  | nil => rfl
+  | cons p f ih => simp only [List.map_cons, args_cons_fn, ih, List.flatMap_cons]
+
+theorem fns_map_arg (k : κ) (i : Nat) (C u : List (Tok κ)) (k' : κ) :
+    fns k' (u.map (.arg k i C)) = [] := by
+  induction u with
+  | nil => rfl
+  | cons t u ih => simpa using ih
+
+theorem fns_map_fn (k : κ) (C : List (Tok κ)) (f : List (List (Tok κ) × List (Tok κ))) :
+    fns k (f.map fun p => .fn k C p.1 p.2) = f := by
+  induction f with
+  | nil => rfl
+  | cons p f ih => simp [ih]
+
+theorem hasTag_map_arg (k : κ) (i : Nat) (C u : List (Tok κ)) (k' : κ) :
+    hasTag k' (u.map (.arg k i C)) = false := by
+  induction u with
+  | nil => rfl
+  | cons t u ih => simpa using ih
+
+theorem hasTag_map_fn (k : κ) (C : List (Tok κ)) (f : List (List (Tok κ) × List (Tok κ)))
+    (k' : κ) : hasTag k' (f.map fun p => .fn k C p.1 p.2) = false := by
+  induction f with
+  | nil => rfl
+  | cons p f ih => simpa using ih
+
+theorem hasTag_append (k : κ) (u v : List (Tok κ)) :
+    hasTag k (u ++ v) = (hasTag k u || hasTag k v) := by
+  rw [Bool.eq_iff_iff]
+  simp only [hasTag_iff, List.mem_append, Bool.or_eq_true]
+
+end Entailment
+
+/-! ## Elements of the domain -/
 
 namespace Elem
 
@@ -675,98 +840,7 @@ def ident (c u v : List Tok) : List Tok :=
 /-- Reflexivity at a point. -/
 def refl (w : List Tok) : List Tok := .tag .refl :: w.map (.arg .refl 0 [])
 
-end Elem
-
-/-! ## The selections of single tokens -/
-
-@[simp] theorem args_nil (k : Kind) (i : Nat) : args k i [] = [] := rfl
-
-@[simp] theorem args_cons_tag (k k' : Kind) (i : Nat) (v : List Tok) :
-    args k i (.tag k' :: v) = args k i v := by
-  simp [args, Tok.dep]
-
-@[simp] theorem args_cons_arg (k k' : Kind) (i i' : Nat) (C : List Tok) (t : Tok)
-    (v : List Tok) :
-    args k i (.arg k' i' C t :: v) =
-      ((if k' = k ∧ i' = i then [t] else []) ++ (if k' = k ∧ i = 0 then C else [])) ++
-        args k i v := rfl
-
-@[simp] theorem args_cons_fn (k k' : Kind) (i : Nat) (C X Y : List Tok) (v : List Tok) :
-    args k i (.fn k' C X Y :: v) = (if k' = k ∧ i = 0 then C else []) ++ args k i v := rfl
-
-@[simp] theorem fns_nil (k : Kind) : fns k [] = [] := rfl
-
-@[simp] theorem fns_cons_tag (k k' : Kind) (v : List Tok) : fns k (.tag k' :: v) = fns k v := rfl
-
-@[simp] theorem fns_cons_arg (k k' : Kind) (i : Nat) (C : List Tok) (t : Tok) (v : List Tok) :
-    fns k (.arg k' i C t :: v) = fns k v := rfl
-
-@[simp] theorem fns_cons_fn (k k' : Kind) (C X Y : List Tok) (v : List Tok) :
-    fns k (.fn k' C X Y :: v) = if k' = k then (X, Y) :: fns k v else fns k v := rfl
-
-@[simp] theorem hasTag_cons_tag (k k' : Kind) (v : List Tok) :
-    hasTag k (.tag k' :: v) = (k' == k || hasTag k v) := rfl
-
-@[simp] theorem hasTag_cons_arg (k k' : Kind) (i : Nat) (C : List Tok) (t : Tok)
-    (v : List Tok) : hasTag k (.arg k' i C t :: v) = hasTag k v := rfl
-
-@[simp] theorem hasTag_cons_fn (k k' : Kind) (C X Y : List Tok) (v : List Tok) :
-    hasTag k (.fn k' C X Y :: v) = hasTag k v := rfl
-
-theorem args_map_arg (k : Kind) (i : Nat) (C u : List Tok) (k' : Kind) (j : Nat) :
-    args k' j (u.map (.arg k i C)) =
-      u.flatMap fun t => (if k = k' ∧ i = j then [t] else []) ++
-        (if k = k' ∧ j = 0 then C else []) := by
-  induction u with
-  | nil => rfl
-  | cons t u ih => simp only [List.map_cons, args_cons_arg, ih, List.flatMap_cons]
-
-theorem args_map_arg_same (k : Kind) (i : Nat) (u : List Tok) :
-    args k i (u.map (.arg k i [])) = u := by
-  induction u with
-  | nil => rfl
-  | cons t u ih => simp [ih]
-
-theorem args_map_fn (k : Kind) (C : List Tok) (f : List (List Tok × List Tok)) (k' : Kind)
-    (j : Nat) :
-    args k' j (f.map fun p => .fn k C p.1 p.2) =
-      f.flatMap fun _ => if k = k' ∧ j = 0 then C else [] := by
-  induction f with
-  | nil => rfl
-  | cons p f ih => simp only [List.map_cons, args_cons_fn, ih, List.flatMap_cons]
-
-theorem fns_map_arg (k : Kind) (i : Nat) (C u : List Tok) (k' : Kind) :
-    fns k' (u.map (.arg k i C)) = [] := by
-  induction u with
-  | nil => rfl
-  | cons t u ih => simpa using ih
-
-theorem fns_map_fn (k : Kind) (C : List Tok) (f : List (List Tok × List Tok)) :
-    fns k (f.map fun p => .fn k C p.1 p.2) = f := by
-  induction f with
-  | nil => rfl
-  | cons p f ih => simp [ih]
-
-theorem hasTag_map_arg (k : Kind) (i : Nat) (C u : List Tok) (k' : Kind) :
-    hasTag k' (u.map (.arg k i C)) = false := by
-  induction u with
-  | nil => rfl
-  | cons t u ih => simpa using ih
-
-theorem hasTag_map_fn (k : Kind) (C : List Tok) (f : List (List Tok × List Tok)) (k' : Kind) :
-    hasTag k' (f.map fun p => .fn k C p.1 p.2) = false := by
-  induction f with
-  | nil => rfl
-  | cons p f ih => simpa using ih
-
-theorem hasTag_append (k : Kind) (u v : List Tok) :
-    hasTag k (u ++ v) = (hasTag k u || hasTag k v) := by
-  rw [Bool.eq_iff_iff]
-  simp only [hasTag_iff, List.mem_append, Bool.or_eq_true]
-
 /-! ## Laws of the elements -/
-
-namespace Elem
 
 theorem pred_succ (u : List Tok) : pred (succ u) = u := by
   simp [pred, succ, args_map_arg_same]

@@ -203,7 +203,7 @@ theorem bare_costBaseOut_params :
 are moved to the wrapped fibre. -/
 theorem bareContinuationRetyping_redexRetypable :
     bareContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType bareContinuationRetyping.generatedLanguage
     bareContinuationRetyping.generatedFreeContext []
     (.apply (costBaseConstructorName "Join")
@@ -239,7 +239,7 @@ theorem bareContinuationRetyping_redexRetypable :
 sort. -/
 theorem bareContinuationRetyping_wrappable :
     bareContinuationRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   have wrapped : "Join" ∈ bareContinuationRetyping.wrappedLabels := by
     decide +kernel
   have translated :

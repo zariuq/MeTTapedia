@@ -10,11 +10,12 @@ executable-independent relation.  Preparation and lookup are deliberately
 absent: a later conformance layer supplies the ordered lists together with
 their existing finite-scope avoidance facts.
 
-Each argument uses the first matching actual type as its private binding
-presentation, but classifies the whole ordered actual-type list so every
-failed actual remains available as a latent diagnostic.  When a later
-argument or return check rejects the function candidate, later argument
-blocks precede earlier blocks while each block retains declaration order.
+The single-choice scans below describe greedy argument processing. General
+applicability instead retains the complete ordered argument-branch list and
+commits its first branch whose return constraint succeeds. Greedy local
+choice is not interchangeable with this complete-path choice. Failed actuals
+remain available as latent diagnostics; later argument blocks precede
+earlier blocks while each block retains declaration order.
 No relation here mentions an evaluator state, a runtime environment, or fuel.
 -/
 
@@ -927,6 +928,89 @@ theorem ExpectedReturnBranchScanRel.exists_match_of_selected
         inductionHypothesis selected
       exact ⟨selectedIncoming, by simp [member], matched⟩
 
+/-- A committed applicability presentation is preceded only by complete
+argument branches whose return constraints fail. This is stronger than mere
+membership: later successes cannot replace a first surviving branch. -/
+theorem ExpectedReturnBranchScanRel.first_complete_success
+    {expected returnType : Atom} {branches : List TypeSubst}
+    {outcome : ExpectedReturnBranchOutcome} {output : TypeSubst}
+    (scan : ExpectedReturnBranchScanRel expected returnType branches outcome)
+    (selected : outcome.selected = some output) :
+    ∃ before incoming suffix,
+      branches = before ++ incoming :: suffix ∧
+      CorePlusR2TypePresentationMatchRel incoming expected returnType output ∧
+      ∀ earlier ∈ before, ∀ candidate,
+        ¬CorePlusR2TypePresentationMatchRel earlier expected returnType candidate := by
+  induction scan with
+  | nil => simp at selected
+  | @matched incoming matchedOutput branches matched =>
+      have equation : matchedOutput = output := by simpa using selected
+      subst output
+      exact ⟨[], incoming, branches, rfl, matched, by simp⟩
+  | @failed incoming branches tail noMatch tailScan inductionHypothesis =>
+      obtain ⟨before, selectedIncoming, suffix, equation, matched, rejected⟩ :=
+        inductionHypothesis selected
+      refine ⟨incoming :: before, selectedIncoming, suffix, ?_, matched, ?_⟩
+      · simp [equation]
+      · intro earlier member candidate
+        rcases List.mem_cons.mp member with rfl | member
+        · exact noMatch candidate
+        · exact rejected earlier member candidate
+
+/-- Undefined return demand commits exactly the first complete argument
+presentation, retaining its syntax and every caller assignment. It neither
+enumerates later successful presentations nor resets the selected frame. -/
+theorem ExpectedReturnBranchScanRel.undefined_exact
+    (returnType : Atom) (first : TypeSubst) (rest : List TypeSubst)
+    (outcome : ExpectedReturnBranchOutcome) :
+    ExpectedReturnBranchScanRel Atom.undefinedType returnType (first :: rest) outcome ↔
+      outcome = ⟨some first, []⟩ := by
+  constructor
+  · intro scan
+    cases scan with
+    | matched matched =>
+        generalize typeEquation : Atom.undefinedType = expected at matched
+        cases matched with
+        | undefinedLeft => rfl
+        | undefinedRight => rfl
+        | atomLeft => simp [Atom.undefinedType, Atom.atomType] at typeEquation
+        | atomRight => rfl
+        | reduced notUndefined _ _ _ _ => exact (notUndefined typeEquation.symm).elim
+    | failed noMatch _ =>
+        exact (noMatch first (.undefinedLeft first returnType)).elim
+  · rintro rfl
+    exact .matched (.undefinedLeft first returnType)
+
+/-- A complete branch selected by applicability preserves the incoming
+caller theory. This composes the independent argument-fold and return-match
+solution laws; ordered selection cannot reset their accumulated bindings. -/
+theorem selected_applicability_preserves_caller_theory
+    {formals : List Atom} {candidateLists : List (List Atom)}
+    {position : Nat} {incoming selected : TypeSubst}
+    {arguments : ArgumentCandidateListsBranchOutcome}
+    {expected returnType : Atom} {returned : ExpectedReturnBranchOutcome}
+    (argumentScan : ArgumentCandidateListsBranchScanRel formals candidateLists
+      position incoming arguments)
+    (arity : formals.length = candidateLists.length)
+    (normal : incoming.Normal)
+    (returnScan : ExpectedReturnBranchScanRel expected returnType
+      arguments.successes returned)
+    (selectedEquation : returned.selected = some selected)
+    (valuation : String → Atom)
+    (satisfied : TypeSubstSatisfied valuation selected) :
+    TypeSubstSatisfied valuation incoming := by
+  obtain ⟨argumentPresentation, member, returnedMatch⟩ :=
+    returnScan.exists_match_of_selected selectedEquation
+  obtain ⟨actuals, _choices, argumentMatch⟩ :=
+    argumentScan.exists_choice_of_mem_success arity member
+  have argumentNormal :=
+    Spec.Type.Presentation.ExactNormal.PresentationArgumentListMatchRel.output_normal
+      argumentMatch normal
+  have argumentSatisfied :=
+    (Spec.Type.Presentation.MatchSolutionTheory.CorePlusR2TypePresentationMatchRel.solutions
+      returnedMatch argumentNormal valuation).mp satisfied |>.1
+  exact (presentationArgumentList_solutions argumentMatch normal valuation).mp argumentSatisfied |>.1
+
 /-- If any incoming branch has a model for the expected-return constraint,
 the ordered return scan selects some branch.  Earlier matching branches may
 commit first, so this theorem deliberately promises existence rather than the
@@ -1200,5 +1284,105 @@ theorem branch_scan_distinct_symbol_has_no_success
           cases tail
           cases tails
           rfl
+
+/-! ## Complete-path commitment controls -/
+
+private def callerPresentation : TypeSubst := [("caller", .symbol "Held")]
+private def firstPresentation : TypeSubst :=
+  [("t", .symbol "A"), ("caller", .symbol "Held")]
+private def laterPresentation : TypeSubst :=
+  [("t", .symbol "B"), ("caller", .symbol "Held")]
+
+private theorem caller_variable_matches (typeName : String)
+    (notUndefined : typeName ≠ "%Undefined%")
+    (notAtom : typeName ≠ "Atom") :
+    CorePlusR2TypePresentationMatchRel callerPresentation (.var "t")
+      (.symbol typeName) [("t", .symbol typeName), ("caller", .symbol "Held")] := by
+  apply CorePlusR2TypePresentationMatchRel.reduced
+  · simp [Atom.undefinedType]
+  · simpa [Atom.undefinedType] using notUndefined
+  · simp [Atom.atomType]
+  · simpa [Atom.atomType] using notAtom
+  apply ReducedTypePresentationMatchRel.ordinary
+    (resolvedLeft := .var "t") (resolvedRight := .symbol typeName)
+  · simp [Atom.undefinedType]
+  · simpa [Atom.undefinedType] using notUndefined
+  · simp [ReducedTypeLeafShape]
+  · simp [callerPresentation, TypeSubst.apply, TypeSubst.lookup]
+  · simp [TypeSubst.apply]
+  · simpa [callerPresentation, TypeSubst.bind, TypeSubst.apply,
+      TypeSubst.erase, TypeSubst.lookup, TypeSubst.applyAssignment] using
+      (AppliedReducedTypeMatchRel.bindLeft (substitution := callerPresentation)
+        (name := "t") (right := .symbol typeName) (by simp [TypeSubst.typeVars]))
+
+/-- Both actual types produce legitimate complete argument branches. The
+first one commits under Undefined return demand and preserves the caller's
+existing assignment while refining the argument type variable. -/
+theorem ambiguous_applicability_commits_first_with_caller_binding :
+    ArgumentCandidateListsBranchScanRel [.var "t"]
+      [[.symbol "A", .symbol "B"]] 0 callerPresentation
+      ⟨[firstPresentation, laterPresentation], []⟩ ∧
+    ExpectedReturnBranchScanRel Atom.undefinedType (.var "t")
+      [firstPresentation, laterPresentation] ⟨some firstPresentation, []⟩ ∧
+    firstPresentation.lookup "caller" = some (.symbol "Held") ∧
+    firstPresentation.apply (.var "t") = .symbol "A" := by
+  have heads : ActualTypeCandidateBranchesRel callerPresentation (.var "t")
+      [.symbol "A", .symbol "B"] [firstPresentation, laterPresentation] [] :=
+    .matched (caller_variable_matches "A" (by decide) (by decide))
+      (.matched (caller_variable_matches "B" (by decide) (by decide)) .nil)
+  have tails : ArgumentCandidateListsBranchTailsRel [] [] 1
+      [firstPresentation, laterPresentation]
+      [⟨[firstPresentation], []⟩, ⟨[laterPresentation], []⟩] :=
+    .cons (.noArguments [] 1 firstPresentation)
+      (.cons (.noArguments [] 1 laterPresentation) .nil)
+  refine ⟨?_, .matched (.undefinedLeft firstPresentation (.var "t")), ?_, ?_⟩
+  · simpa [argumentTypeDiagnosticBlock] using
+      ArgumentCandidateListsBranchScanRel.step heads tails
+  · decide
+  · simp [firstPresentation, TypeSubst.apply, TypeSubst.lookup]
+
+/-- Even though the later branch is independently applicable, it cannot be
+the committed result when the earlier complete branch succeeds. -/
+theorem ambiguous_applicability_cannot_choose_later :
+    ¬∃ errors,
+      ExpectedReturnBranchScanRel Atom.undefinedType (.var "t")
+        [firstPresentation, laterPresentation] ⟨some laterPresentation, errors⟩ := by
+  rintro ⟨errors, scan⟩
+  have equation := (ExpectedReturnBranchScanRel.undefined_exact
+    (.var "t") firstPresentation [laterPresentation] _).mp scan
+  have selected := congrArg ExpectedReturnBranchOutcome.selected equation
+  simp [firstPresentation, laterPresentation] at selected
+
+/-- The first local argument success is not necessarily the first complete
+applicability success. Here its return constraint fails, so the later valid
+branch commits while retaining the caller frame and the failed diagnostic. -/
+theorem ambiguous_applicability_skips_failed_return :
+    ExpectedReturnBranchScanRel (.symbol "B") (.var "t")
+      [firstPresentation, laterPresentation]
+      ⟨some laterPresentation, [{ expected := .symbol "B", actual := .symbol "A" }]⟩ ∧
+    laterPresentation.lookup "caller" = some (.symbol "Held") := by
+  have rejected : ∀ output,
+      ¬CorePlusR2TypePresentationMatchRel firstPresentation
+        (.symbol "B") (.var "t") output := by
+    intro output matched
+    have reduced := matched.reduced_of_nonWildcard
+      (by decide) (by decide) (by decide) (by decide)
+    obtain ⟨resolvedLeft, resolvedRight, leftEquation, rightEquation, applied⟩ :=
+      reduced.ordinary_of_nonUndefined (by decide) (by decide)
+        (by simp [ReducedTypeLeafShape])
+    simp [firstPresentation, TypeSubst.apply, TypeSubst.lookup] at leftEquation rightEquation
+    rw [← leftEquation, ← rightEquation] at applied
+    exact AppliedReducedTypeMatchRel.no_distinct_symbols (by decide) applied
+  have accepted : CorePlusR2TypePresentationMatchRel laterPresentation
+      (.symbol "B") (.var "t") laterPresentation := by
+    exact .reduced (by decide) (by decide) (by decide) (by decide)
+      (.ordinary (by decide) (by decide) (by simp [ReducedTypeLeafShape])
+        (by simp [TypeSubst.apply])
+        (by simp [laterPresentation, TypeSubst.apply, TypeSubst.lookup])
+        (.identical laterPresentation (.symbol "B")))
+  constructor
+  · simpa [firstPresentation, TypeSubst.apply, TypeSubst.lookup] using
+      ExpectedReturnBranchScanRel.failed rejected (.matched accepted)
+  · decide
 
 end Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Selection

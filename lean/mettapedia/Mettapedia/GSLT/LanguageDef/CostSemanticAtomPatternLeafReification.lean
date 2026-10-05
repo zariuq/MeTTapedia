@@ -80,33 +80,33 @@ mutual
           (thinning.thickenAmbientBVars depth right)
     | _, _, _, .leaf related => .leaf (thickenLeaf _ related)
     | depth, _, _, .bvar index => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar] using
           (PatternLeafAligned.bvar (relation := thickenedRelation)
             (thinning.embedIndexAt depth index))
     | depth, _, _, .apply constructor arguments => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_apply] using
           (PatternLeafAligned.apply constructor
             (PatternLeafAlignedList.thickenAmbientBVars thinning thickenLeaf
               depth arguments))
     | depth, _, _, .lambda binder body => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_lambda] using
           (PatternLeafAligned.lambda binder
             (PatternLeafAligned.thickenAmbientBVars thinning thickenLeaf
               (depth + 1) body))
     | depth, _, _, .multiLambda arity binders body => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_multiLambda] using
           (PatternLeafAligned.multiLambda arity binders
             (PatternLeafAligned.thickenAmbientBVars thinning thickenLeaf
               (depth + arity) body))
     | depth, _, _, .subst body replacement => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_subst] using
           (PatternLeafAligned.subst
             (PatternLeafAligned.thickenAmbientBVars thinning thickenLeaf
               (depth + 1) body)
             (PatternLeafAligned.thickenAmbientBVars thinning thickenLeaf
               depth replacement))
     | depth, _, _, .collection collectionType rest elements => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_collection] using
           (PatternLeafAligned.collection collectionType rest
             (PatternLeafAlignedList.thickenAmbientBVars thinning thickenLeaf
               depth elements))

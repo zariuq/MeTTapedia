@@ -10,13 +10,14 @@ of their reads: the step rule of nets with read arcs. A finite step, whose
 consumptions fit beside the union of all its reads, fires in every order, and
 every order reaches one bag. Firings concurrent in pairs need not form a step.
 
-A read can be rendered linearly: the firing takes the resource and publishes
-it again. The rendering has the same steps and the same runs; for one stored
+A read can be rendered linearly: one atomic firing takes the resource and
+publishes it again. The rendering has the same individual steps and runs; for one stored
 atom this is `SpaceChannelBoundary.persistentRead_iff_takeThenRepublish`. It
 does not have the same concurrency. Firings that shared a read contend for it
 once it is taken, so their two orders, one trace before the rendering, become
 two traces. A replicated receiver rendered this way is a linear receiver that
-installs itself again.
+installs itself again. Exposing an intermediate state between the take and
+republishing is a different protocol and needs its own observation contract.
 
 A firing that reads a resource present once, and a firing that consumes it,
 are ordered: the reader may go first, and after the consumer it is disabled.
@@ -124,8 +125,8 @@ theorem step_orders_meet {order order' : List S.Entry} (perm : order.Perm order'
 
 /-! ## The linear rendering of reads -/
 
-/-- Reads rendered linearly: a firing takes what it read and publishes it
-again. -/
+/-- Reads rendered linearly: one atomic firing takes what it read and
+publishes it again. Intermediate take states are not exposed by this system. -/
 abbrev takeRepublish : System R where
   Site := S.Site
   Instance := S.Instance
@@ -409,6 +410,11 @@ def oneEquation : System CallRes where
   consume := fun index => {CallRes.call index}
   read := fun _ => {CallRes.equation}
   produce := fun index => {CallRes.answer index}
+
+def callEntry (index : Nat) : oneEquation.Entry := ⟨(), index⟩
+
+instance : DecidableEq oneEquation.Entry :=
+  inferInstanceAs (DecidableEq (Σ _ : Unit, Nat))
 
 def answerCall (index : ℕ) : oneEquation.Instance () := index
 

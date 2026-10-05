@@ -49,6 +49,13 @@ theorem applyClosed_eq_appSpine {n m : Nat} (Θ : Ctx Head n) (σ : Sub Head n m
       show Tm.app (applyClosed Θ (tailSub σ) f) (σ 0) = _
       rw [ih, telescopeArgs, appSpine_concat]
 
+/-- The application of a closed constant to the variables of a telescope, substituted. -/
+theorem subst_applyClosed_const {n m : Nat} (Θ : Ctx Head n) (σ : Sub Head n m) (c : DeclName) :
+    Presentation.subst σ (applyClosed Θ ids (liftClosed (.const c))) =
+      appSpine (.const c) (telescopeArgs Θ σ) := by
+  rw [applyClosed_subst, applyClosed_eq_appSpine]
+  rfl
+
 theorem rename_applyClosed {n m k : Nat} (Θ : Ctx Head n) (σ : Sub Head n m) (ρ : Ren m k)
     (f : Tm Head m) :
     Presentation.rename ρ (applyClosed Θ σ f) =

@@ -107,7 +107,7 @@ theorem rhoQuoteDropBVar_not_reflectiveScopeSafe :
     simp [ReflectionExtension.rhoReflectionProfile]
   have membership : rhoRigidBaseDeclaration ∈
       rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa only [CIGSLT.costWholeReflectionProfile_presentations,
+    simpa only [WrappableIGSLT.costWholeReflectionProfile_presentations,
       rhoRigidBaseDeclaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
         rhoReflectivePresentation.toReflectivePresentationDecl
@@ -208,10 +208,10 @@ private theorem rhoRigidParallelChoice_mem :
 
 private def rhoParallelSingletonBVarElementPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoRigidLeafFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         rhoRigidProcBound)
       rhoRigidProcBound
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base
         rhoRigidProcBound)
       rhoRigidProcBound outer rhoParallelSingletonBVarRight
       (.base "Proc") := by
@@ -221,29 +221,29 @@ private def rhoParallelSingletonBVarElementPlan (outer : OneHoleContext) :
   apply CostStaticRegionPlan.bvar 0
   · rw [boundEq]
     change
-      getElem? (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      getElem? (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         (([.base "Proc"] : List TypeExpr).map
           (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)))) 0 =
         some (.base "Proc")
-    rw [CostStaticBinderThinning.sourceContextOfTarget_map]
+    rw [CostStaticTypeThinning.sourceContextOfTarget_map]
     rfl
   · rw [boundEq,
-      CostStaticBinderThinning.toSourceIndex?_eq_targetToSourceIndex?]
-    simp [CostStaticBinderThinning.targetToSourceIndex?]
+      CostStaticTypeThinning.toSourceIndex?_eq_targetToSourceIndex?]
+    simp [CostStaticTypeThinning.targetToSourceIndex?]
   · rw [boundEq]
     change 0 <
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         (([.base "Proc"] : List TypeExpr).map
           (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)))).length
-    rw [CostStaticBinderThinning.sourceContextOfTarget_map]
+    rw [CostStaticTypeThinning.sourceContextOfTarget_map]
     decide
 
 private def rhoParallelSingletonBVarPlan :
     CostStaticRegionPlan rhoCIGSLT .base rhoRigidLeafFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         rhoRigidProcBound)
       rhoRigidProcBound
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base
         rhoRigidProcBound)
       rhoRigidProcBound .hole rhoParallelSingletonBVarLeft
       (.base "Proc") := by
@@ -329,23 +329,23 @@ private theorem rhoParallelSingletonBVarNode_mappedBVar :
     rhoParallelSingletonBVarNode.thinning.thickenAmbientBVars 0
         (mapPattern (CostStaticColor.base.symbols rhoCIGSLT) (.bvar 0)) =
       .bvar 0 := by
-  simp only [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp only [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar]
   have contracted :
       rhoParallelSingletonBVarNode.thinning.toSourceIndex? 0 = some 0 := by
-    rw [CostStaticBinderThinning.toSourceIndex?_eq_targetToSourceIndex?]
+    rw [CostStaticTypeThinning.toSourceIndex?_eq_targetToSourceIndex?]
     simp only [rhoParallelSingletonBVarNode, CostStaticRegionNode.ofPlan,
       rhoParallelSingletonBVarTerm, rhoRigidProcBound,
-      CostStaticBinderThinning.targetToSourceIndex?]
-    change (match decodeCostStaticTypeExpr rhoCIGSLT .base
+      CostStaticTypeThinning.targetToSourceIndex?]
+    change (match CostStaticTypeImage.decode rhoCIGSLT.theory .base
         (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
           (.base "Proc")) with
       | none => none
       | some _ => some 0) = some 0
-    rw [decodeCostStaticTypeExpr_mapTypeExpr]
+    rw [CostStaticTypeImage.decode_mapTypeExpr]
   have embedded :=
-    rhoParallelSingletonBVarNode.thinning.toTargetIndex_of_toSourceIndex?_eq_some
+    rhoParallelSingletonBVarNode.thinning.toTargetIndex_toSourceIndex?
       contracted
-  simp [CostStaticBinderThinning.embedIndexAt, embedded]
+  simp [CostStaticTypeThinning.embedIndexAt, embedded]
 
 /-- The explicit proof-relevant singleton decomposition evaluates through
 the rigid-leaf branch rather than manufacturing a semantic-atom slot. -/

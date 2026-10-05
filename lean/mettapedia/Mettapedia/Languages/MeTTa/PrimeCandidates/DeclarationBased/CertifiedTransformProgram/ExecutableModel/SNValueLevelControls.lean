@@ -24,7 +24,7 @@ Controls on the transport value model on the skeleton-free value side
    (`transportJ_refl_red`).
 3. **Identity elimination at a large carrier, with its computation.** The family
    `λ Z _. Z` lives over the carrier `U0`, of level one, where identity
-   elimination is valid by transport (`vmodel_valid_j_sorts`). The package
+   elimination is valid by transport (`TExtension.valid_j_sorts`). The package
    of control 2 with identity elimination's linear rule is sound
    (`carrierJRules_typedSoundS`), by the typed step of identity elimination at
    carrier level one, and the computation `J U0 X (λ Z _. Z) d X (refl X) ≡ d : X`
@@ -120,23 +120,24 @@ theorem tower_sub_control : RulesSub Tower.rules (controlRules types names) wher
 
 end Toolkit
 
-/-- **A control package whose declared constants are valid is sound for the model**,
-when it declares identity elimination at `elimType u w`, with `w` a universe,
+/-- **A control package whose declared constants are valid is sound for the model of an
+extension**, when it declares identity elimination at `elimType u w`, with `w` a universe,
 wherever it lists its computation: its root steps are steps of a stage of the
 executable package, and identity elimination's holds at its typed instances. -/
-theorem controlRules_typedSoundS {types : DeclName → Option (Tower.Tm 0)} {names : List DeclName}
-    (declaredJ : jName ∈ names → ∃ u w, (vmodel v).rules.isUniverse w ∧
+theorem TExtension.controlRules_typedSoundS (X : TExtension)
+    {types : DeclName → Option (Tower.Tm 0)} {names : List DeclName}
+    (declaredJ : jName ∈ names → ∃ u w, (X.model v).rules.isUniverse w ∧
       types jName = some (elimType u w))
     (constants : ∀ {name : DeclName} {type : Tower.Tm 0}, types name = some type →
-      ModelSN.ValidTmS (vmodel v) .nil (.const name) type) :
-    ModelSN.TypedSoundS (controlRules types names) (vmodel v) where
-  laws := vmodel_laws v
+      ModelSN.ValidTmS (X.model v) .nil (.const name) type) :
+    ModelSN.TypedSoundS (controlRules types names) (X.model v) where
+  laws := X.laws v
   headTyping := id
   isUniverse := id
   join := id
   cumulative := id
   headEq := id
-  root := vstage_root v (allowed := allowedIn names)
+  root := X.stage_root v (allowed := allowedIn names)
     fun allowedJ => declaredJ (by simpa [allowedIn] using allowedJ)
   constants := constants
 
@@ -178,22 +179,22 @@ theorem ctorStage_sub_large : RulesSub ctorStage largeRules :=
 motive into `U1` is valid by large elimination, identity elimination by
 transport, and the numbers and their constructors as declared. -/
 theorem largeRules_soundS : ModelSN.TypedSoundS largeRules (vmodel v) :=
-  controlRules_typedSoundS v (fun h => absurd h (by decide)) fun {name type} declared => by
+  objectTExt.controlRules_typedSoundS v (fun h => absurd h (by decide)) fun {name type} declared => by
     change largeTypes name = some type at declared
     unfold largeTypes at declared
     split_ifs at declared with h₁ h₂ h₃
     · subst h₁
       cases declared
-      exact valid_numRecS_sorts v (.succ Tower.zero)
+      exact objectTExt.valid_numRecS_sorts v (.succ Tower.zero)
     · subst h₂
       cases declared
-      exact vmodel_valid_j v
+      exact objectTExt.valid_j v
     · have mem : name ∈ [numN, zeroN, sucN] := by simpa [allowedIn] using h₃
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       rcases mem with rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-      · exact vmodel_valid_num v
-      · exact vmodel_valid_zero v
-      · exact vmodel_valid_suc v
+      · exact objectTExt.valid_num v
+      · exact objectTExt.valid_zero v
+      · exact objectTExt.valid_suc v
 
 section LargeTypings
 
@@ -373,13 +374,13 @@ abbrev carrierRules : Rules Tower.Head := controlRules carrierTypes []
 /-- **The second control package is sound for the model**: identity elimination
 at the carrier `U1` is valid by transport. -/
 theorem carrierRules_soundS : ModelSN.TypedSoundS carrierRules (vmodel v) :=
-  controlRules_typedSoundS v (fun h => absurd h (by simp)) fun {name type} declared => by
+  objectTExt.controlRules_typedSoundS v (fun h => absurd h (by simp)) fun {name type} declared => by
     change carrierTypes name = some type at declared
     unfold carrierTypes at declared
     split_ifs at declared with h
     subst h
     cases declared
-    exact vmodel_valid_j_sorts v (.succ Tower.zero) Tower.zero
+    exact objectTExt.valid_j_sorts v (.succ Tower.zero) Tower.zero
 
 /-- The motive `λ Z _. Z`. -/
 abbrev idMotive {n : Nat} : Tower.Tm n := .lam (.lam (.var 1))
@@ -449,7 +450,7 @@ theorem transportJ_red :
     WhRed (vmodel v).rules (vmodel v).roles transportJ
       (ValueSide.coeApp coeN (.app (.app idMotive (.var 3)) (.refl (.var 3)))
         (.app (.app idMotive (.var 2)) (.var 1)) (.var 0)) :=
-  .single (.root (vmodel_j_rootStep v _ _ _ _ _ _))
+  .single (.root (objectTExt.j_rootStep v _ _ _ _ _ _))
 
 /-- `(λ Z _. Z) T e` computes `T`. -/
 theorem idMotive_red {n : Nat} (T e : Tower.Tm n) :
@@ -465,7 +466,7 @@ theorem transportJ_refl_red :
     WhRed (vmodel v).rules (vmodel v).roles
       (appSpine (.const jName) [U0, numT, idMotive, .const zeroN, numT, .refl numT] : Tower.Tm 0)
       (.const zeroN) :=
-  .head (.root (vmodel_j_rootStep v _ _ _ _ _ _))
+  .head (.root (objectTExt.j_rootStep v _ _ _ _ _ _))
     ((vmodel_coeRules v).const (c := numN) (.inr ⟨_, tmodelRoles_num⟩) (idMotive_red v _ _)
       (idMotive_red v _ _))
 
@@ -485,7 +486,7 @@ theorem carrierTypes_j :
 at carrier level one computes by its linear rule, which holds at its typed
 instances. -/
 theorem carrierJRules_typedSoundS : ModelSN.TypedSoundS carrierJRules (vmodel v) :=
-  controlRules_typedSoundS v
+  objectTExt.controlRules_typedSoundS v
     (fun _ => ⟨.sort (.succ Tower.zero), .sort Tower.zero, LevelTower.IsUniverse.sort _, carrierTypes_j⟩)
     fun {name type} declared => by
       change carrierTypes name = some type at declared
@@ -493,7 +494,7 @@ theorem carrierJRules_typedSoundS : ModelSN.TypedSoundS carrierJRules (vmodel v)
       split_ifs at declared with h
       subst h
       cases declared
-      exact vmodel_valid_j_sorts v (.succ Tower.zero) Tower.zero
+      exact objectTExt.valid_j_sorts v (.succ Tower.zero) Tower.zero
 
 /-- The context of a type of `U0` and a term of it: `X : U0, d : X`. -/
 abbrev largeReflContext : Tower.Ctx 2 := .snoc (.snoc .nil U0) (.var 0)

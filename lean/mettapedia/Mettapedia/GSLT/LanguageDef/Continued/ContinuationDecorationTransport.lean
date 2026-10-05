@@ -396,7 +396,7 @@ def generatedStructural (morphism : source.Morphism target)
       apply List.mem_map.mpr
       refine ⟨mapTypeDecl morphism.underlying.structural.structural.symbols original,
         morphism.underlying.structural.structural.mapsTypes original originalMember, ?_⟩
-      exact (CIGSLT.Morphism.mapTypeDecl_costBase _ _).symm
+      exact (WrappableIGSLT.Morphism.mapTypeDecl_costBase _ _).symm
     · obtain rfl := List.mem_singleton.mp wrapped
       apply List.mem_append_right
       simp [mapTypeDecl, TypeDecl.plain]

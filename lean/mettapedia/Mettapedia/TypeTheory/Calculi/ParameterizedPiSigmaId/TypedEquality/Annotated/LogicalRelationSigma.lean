@@ -93,12 +93,17 @@ theorem RT.eta_right {t : Tok} {T D M M' : CTm Head n} {E : CTm Head (n + 1)}
         obtain ⟨e₁, e₂⟩ := key hT₁
         subst D₁ E₁
         exact .trans (RT.tm_pairTag_iff.1 h D E hT) (.symm redFst.2)
+      case ctor d c fs =>
+        obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+        exact absurd (CRedTy.nf_unique hT hs.2.1 (H.normal_sigma _ _)
+          (H.normal_data (K.ctor_data hs.1))) nofun
       all_goals
-        exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) nofun nofun nofun nofun
+        exact RT.tm_other htk (fun _ _ _ e => nomatch e) nofun nofun nofun nofun
+          (fun _ _ _ e => nomatch e)
   | arg k i C d =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) nofun
-          (fun e => Tok.noConfusion e) nofun nofun
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) nofun
+          (fun e => nomatch e) nofun nofun (fun _ _ _ e => nomatch e)
       · obtain ⟨B, x, y, r, r', hr⟩ := RT.tm_refl_shape rfl hv h
         exact absurd (CRedTy.nf_unique hT hr.1 (H.normal_sigma _ _) (H.normal_id _ _ _)) nofun
       · obtain ⟨m, m', hs⟩ := RT.tm_succ_shape rfl hv h
@@ -121,10 +126,13 @@ theorem RT.eta_right {t : Tok} {T D M M' : CTm Head n} {E : CTm Head (n + 1)}
         have tsnd : CTyped P Γ (.snd M) (CTm.inst0 N E) :=
           CTyped.convType (.sndElim tMS) (hE.instantiateEq tfst eN)
         exact RT.expand levels formed (CRedTm.refl tsnd) redSnd (h1 hi N Q hQ hNQ)
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+      · obtain ⟨ms, ms', hs⟩ := RT.tm_ctor_shape rfl hv h
+        exact absurd (CRedTy.nf_unique hT hs.2.1 (H.normal_sigma _ _)
+          (H.normal_data (K.ctor_data hs.1))) nofun
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
   | fn k C X Y =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
       · exact RT.tm_lam_iff.2 (.inr fun D₁ E₁ hpi =>
           absurd (CRedTy.nf_unique hT hpi (H.normal_sigma _ _) (H.normal_pi _ _)) nofun)
       · obtain ⟨B, x, y, r, r', hr⟩ := RT.tm_refl_shape rfl hv h
@@ -139,8 +147,11 @@ theorem RT.eta_right {t : Tok} {T D M M' : CTm Head n} {E : CTm Head (n + 1)}
         obtain ⟨e₀, hC⟩ := hcl D E hT
         exact ⟨.trans e₀ (.symm redFst.2),
           fun c hc => RT.expand levels formed (CRedTm.refl tfst) redFst (hC c hc)⟩
+      · obtain ⟨ms, ms', hs⟩ := RT.tm_ctor_shape rfl hv h
+        exact absurd (CRedTy.nf_unique hT hs.2.1 (H.normal_sigma _ _)
+          (H.normal_data (K.ctor_data hs.1))) nofun
       · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 include levels formed in
 /-- **η on the left**: at a type reducing to a dependent pair type, the pair of the
@@ -185,12 +196,17 @@ theorem RT.eta_left {t : Tok} {T D M M' : CTm Head n} {E : CTm Head (n + 1)}
         obtain ⟨e₁, e₂⟩ := key hT₁
         subst D₁ E₁
         exact .trans redFst.2 (RT.tm_pairTag_iff.1 h D E hT)
+      case ctor d c fs =>
+        obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+        exact absurd (CRedTy.nf_unique hT hs.2.1 (H.normal_sigma _ _)
+          (H.normal_data (K.ctor_data hs.1))) nofun
       all_goals
-        exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) nofun nofun nofun nofun
+        exact RT.tm_other htk (fun _ _ _ e => nomatch e) nofun nofun nofun nofun
+          (fun _ _ _ e => nomatch e)
   | arg k i C d =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) nofun
-          (fun e => Tok.noConfusion e) nofun nofun
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) nofun
+          (fun e => nomatch e) nofun nofun (fun _ _ _ e => nomatch e)
       · obtain ⟨B, x, y, r, r', hr⟩ := RT.tm_refl_shape rfl hv h
         exact absurd (CRedTy.nf_unique hT hr.1 (H.normal_sigma _ _) (H.normal_id _ _ _)) nofun
       · obtain ⟨m, m', hs⟩ := RT.tm_succ_shape rfl hv h
@@ -215,10 +231,13 @@ theorem RT.eta_left {t : Tok} {T D M M' : CTm Head n} {E : CTm Head (n + 1)}
         have tsnd' : CTyped P Γ (.snd M') (CTm.inst0 N E) :=
           CTyped.convType (.sndElim tM'S) (hE.instantiateEq tfst' eN')
         exact RT.expand levels formed redSnd (CRedTm.refl tsnd') (h1 hi N Q' hQ' hNQ')
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+      · obtain ⟨ms, ms', hs⟩ := RT.tm_ctor_shape rfl hv h
+        exact absurd (CRedTy.nf_unique hT hs.2.1 (H.normal_sigma _ _)
+          (H.normal_data (K.ctor_data hs.1))) nofun
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
   | fn k C X Y =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
       · exact RT.tm_lam_iff.2 (.inr fun D₁ E₁ hpi =>
           absurd (CRedTy.nf_unique hT hpi (H.normal_sigma _ _) (H.normal_pi _ _)) nofun)
       · obtain ⟨B, x, y, r, r', hr⟩ := RT.tm_refl_shape rfl hv h
@@ -233,8 +252,11 @@ theorem RT.eta_left {t : Tok} {T D M M' : CTm Head n} {E : CTm Head (n + 1)}
         obtain ⟨e₀, hC⟩ := hcl D E hT
         exact ⟨.trans redFst.2 e₀,
           fun c hc => RT.expand levels formed redFst (CRedTm.refl tfst') (hC c hc)⟩
+      · obtain ⟨ms, ms', hs⟩ := RT.tm_ctor_shape rfl hv h
+        exact absurd (CRedTy.nf_unique hT hs.2.1 (H.normal_sigma _ _)
+          (H.normal_data (K.ctor_data hs.1))) nofun
       · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 end Eta
 

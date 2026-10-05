@@ -26,6 +26,9 @@ namespace Mettapedia.TypeTheory
 
 universe uIndex uState uStep uRaw uTerm uType uTyping uReduction
 
+-- Retained states and proof-relevant steps can occupy different universes.
+-- Their independent levels remain visible in the bundled projections.
+set_option linter.checkUnivs false in
 /-- A proof-relevant transition system fibred over judgment indices.  A step
 cannot change its index because source and target inhabit the same fibre. -/
 structure JudgmentalComputation (Index : Type uIndex) where

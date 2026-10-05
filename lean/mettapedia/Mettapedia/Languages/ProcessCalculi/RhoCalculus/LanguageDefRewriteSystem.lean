@@ -30,17 +30,25 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 /-- A raw pattern inhabits a closed rho sort exactly when the
 declaration-derived typing judgment assigns it that sort and its de Bruijn
 indices respect quotation boundaries. -/
-def RhoClosedTermWellSorted (sort : LangSort rhoCalc) (pattern : Pattern) : Prop :=
-  ((sort = rhoProc ∧
-      ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] pattern) ∨
-    (sort = rhoName ∧
-      NameWellSorted rhoReflectivePresentation FreeSortContext.empty [] pattern)) ∧
+def RhoTermWellSorted (free : FreeSortContext) (sort : LangSort rhoCalc)
+    (pattern : Pattern) : Prop :=
+  ((sort = rhoProc ∧ ProcWellSorted rhoReflectivePresentation free [] pattern) ∨
+    (sort = rhoName ∧ NameWellSorted rhoReflectivePresentation free [] pattern)) ∧
     binderSafeAt "NQuote" 0 pattern = true
+
+/-- The declaration-derived semantic carrier over a supplied free-name context. -/
+abbrev RhoTerm (free : FreeSortContext) (sort : LangSort rhoCalc) :=
+  { pattern : Pattern // RhoTermWellSorted free sort pattern }
+
+/-- Closed formation is the empty-free-context specialization of the same
+rho formation judgment. -/
+def RhoClosedTermWellSorted (sort : LangSort rhoCalc) (pattern : Pattern) : Prop :=
+  RhoTermWellSorted FreeSortContext.empty sort pattern
 
 /-- Closed terms at an authored rho sort.  The syntax and both distinguished
 sorts come from `rhoCalc`; this is a derived semantic carrier, not a second AST. -/
 abbrev RhoClosedTerm (sort : LangSort rhoCalc) :=
-  { pattern : Pattern // RhoClosedTermWellSorted sort pattern }
+  RhoTerm FreeSortContext.empty sort
 
 /-- The two authored rho sorts are distinct. -/
 theorem rhoProc_ne_rhoName : rhoProc ≠ rhoName := by

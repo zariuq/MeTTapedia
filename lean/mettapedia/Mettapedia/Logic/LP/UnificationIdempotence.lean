@@ -169,6 +169,13 @@ theorem Subst.Absorbs.var_fixed {θ : Subst σ} (idempotent : θ.Absorbs θ)
     (t : Term σ) : ∀ v ∈ (θ.applyTerm t).freeVars, θ v = .var v :=
   Subst.var_fixed_of_applyTerm_eq_self (idempotent.applyTerm t)
 
+/-- A solved variable is absent from every resolved term, not only from
+its own binding. This is the solved-form invariant used by later queries. -/
+theorem Subst.Absorbs.solved_absent {θ : Subst σ} (idempotent : θ.Absorbs θ)
+    {v : σ.vars} (solved : θ v ≠ .var v) (t : Term σ) :
+    v ∉ (θ.applyTerm t).freeVars :=
+  fun occurs => solved (idempotent.var_fixed t v occurs)
+
 /-- A substitution already equating `v` with `t` absorbs the binding
 `v := t`. -/
 theorem Subst.absorbs_single {δ : Subst σ} {v : σ.vars} {t : Term σ}

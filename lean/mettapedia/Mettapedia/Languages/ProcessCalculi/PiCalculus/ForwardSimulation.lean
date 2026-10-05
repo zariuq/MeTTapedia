@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NameSubstitutionLaws
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.RhoEncoding
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
@@ -56,23 +57,19 @@ def RestrictionFree : Process → Prop
   | .nu _ _ => False
   | .replicate _ _ _ => False
 
-/-- RF is preserved by π-substitution. -/
+/-- Restriction-freeness is a name-insensitive structural observation. -/
+theorem restrictionFree_eq_fold (P : Process) :
+    RestrictionFree P = P.fold True And id True (fun _ => False) (fun _ => False) := by
+  induction P with
+  | nil | output | nu | replicate => rfl
+  | par P Q ihP ihQ => exact congrArg₂ And ihP ihQ
+  | input x w P ih => exact ih
+
+/-- RF is preserved by capture-avoiding π-substitution. -/
 theorem rf_substitute {P : Process} (hrf : RestrictionFree P) (y z : Name) :
     RestrictionFree (P.substitute y z) := by
-  induction P with
-  | nil => trivial
-  | par P Q ihP ihQ =>
-    simp only [Process.substitute]
-    exact ⟨ihP hrf.1, ihQ hrf.2⟩
-  | input x w P ihP =>
-    simp only [Process.substitute]
-    split_ifs with hxy hwy
-    · exact ihP hrf
-    · exact hrf
-    · exact ihP hrf
-  | output _ _ => trivial
-  | nu _ _ => exact absurd hrf id
-  | replicate _ _ _ => exact absurd hrf id
+  rw [restrictionFree_eq_fold, Process.fold_substitute, ← restrictionFree_eq_fold]
+  exact hrf
 
 /-! ## Namespace Independence for RF Processes -/
 
@@ -95,142 +92,6 @@ theorem encode_rf_ns_independent {P : Process} (hrf : RestrictionFree P)
   | replicate _ _ _ => exact absurd hrf id
 
 /-! ## Locally Nameless Metatheory -/
-
-/-- Helper: pointwise equal functions produce equal maps. -/
-private theorem list_map_eq_map {α β : Type*} {f g : α → β} {l : List α}
-    (h : ∀ a ∈ l, f a = g a) : l.map f = l.map g := by
-  induction l with
-  | nil => rfl
-  | cons a as ih =>
-    rw [List.map_cons, List.map_cons]; congr 1
-    · exact h a (List.mem_cons.mpr (Or.inl rfl))
-    · exact ih (fun b hb => h b (List.mem_cons.mpr (Or.inr hb)))
-
-/-- Helper: allNoExplicitSubst for a mapped list from pointwise proof. -/
-private theorem allNoExplicitSubst_map {f : Pattern → Pattern} {ps : List Pattern}
-    (hall : allNoExplicitSubst ps = true)
-    (hf : ∀ q ∈ ps, noExplicitSubst q = true → noExplicitSubst (f q) = true) :
-    allNoExplicitSubst (ps.map f) = true := by
-  induction ps with
-  | nil => rfl
-  | cons a as ih =>
-    simp only [allNoExplicitSubst, Bool.and_eq_true] at hall ⊢
-    simp only [List.map_cons, allNoExplicitSubst, Bool.and_eq_true]
-    exact ⟨hf a (List.mem_cons.mpr (Or.inl rfl)) hall.1,
-           ih hall.2 (fun q hq => hf q (List.mem_cons.mpr (Or.inr hq)))⟩
-
-/-- closeFVar preserves noExplicitSubst. -/
-theorem noExplicitSubst_closeFVar {k : Nat} {x : String} {p : Pattern}
-    (h : noExplicitSubst p = true) : noExplicitSubst (closeFVar k x p) = true := by
-  induction p using Pattern.inductionOn generalizing k with
-  | hbvar _ => simp only [closeFVar, noExplicitSubst]
-  | hfvar y =>
-    simp only [closeFVar]; split
-    · simp only [noExplicitSubst]
-    · simp only [noExplicitSubst]
-  | happly c args ih =>
-    simp only [closeFVar, noExplicitSubst]
-    exact allNoExplicitSubst_map h fun q hq hnes => ih q hq (k := k) hnes
-  | hlambda _ body ih => simp only [closeFVar, noExplicitSubst]; exact ih h
-  | hmultiLambda _ _ body ih => simp only [closeFVar, noExplicitSubst]; exact ih h
-  | hsubst _ _ _ _ => exact absurd h Bool.false_ne_true
-  | hcollection ct elems rest ih =>
-    simp only [closeFVar, noExplicitSubst]
-    exact allNoExplicitSubst_map h fun q hq hnes => ih q hq (k := k) hnes
-
-/-- y cannot appear in freeVars (closeFVar k y p). -/
-private theorem not_mem_freeVars_closeFVar_self (k : Nat) (y : String) (p : Pattern) :
-    y ∉ freeVars (closeFVar k y p) := by
-  induction p using Pattern.inductionOn generalizing k with
-  | hbvar _ => simp [closeFVar, freeVars]
-  | hfvar x =>
-    simp only [closeFVar]
-    split
-    · simp [freeVars]
-    · next hne =>
-      simp only [freeVars, List.mem_singleton]
-      intro heq
-      rw [heq] at hne
-      exact hne (beq_self_eq_true x)
-  | happly c args ih =>
-    simp only [closeFVar, freeVars, List.mem_flatMap]; push Not
-    intro sub hsub_mem
-    rw [List.mem_map] at hsub_mem
-    obtain ⟨a, ha, rfl⟩ := hsub_mem
-    exact ih a ha k
-  | hlambda _ body ih => simp only [closeFVar, freeVars]; exact ih (k + 1)
-  | hmultiLambda n _ body ih => simp only [closeFVar, freeVars]; exact ih (k + n)
-  | hsubst body repl ihb ihr =>
-    simp only [closeFVar, freeVars, List.mem_append]; push Not
-    exact ⟨ihb (k + 1), ihr k⟩
-  | hcollection ct elems rest ih =>
-    simp only [closeFVar, freeVars, List.mem_flatMap]; push Not
-    intro sub hsub_mem
-    rw [List.mem_map] at hsub_mem
-    obtain ⟨a, ha, rfl⟩ := hsub_mem
-    exact ih a ha k
-
-/-- After closeFVar k y p, y is fresh in the result. -/
-theorem isFresh_closeFVar_self (k : Nat) (y : String) (p : Pattern) :
-    isFresh y (closeFVar k y p) = true := by
-  simp only [isFresh, Bool.not_eq_true']
-  rw [Bool.eq_false_iff]; intro h
-  have hmem : y ∈ freeVars (closeFVar k y p) := by
-    simp only [List.contains_iff_exists_mem_beq] at h
-    obtain ⟨w, hw, hwy⟩ := h
-    rwa [show w = y from (beq_iff_eq.mp hwy).symm] at hw
-  exact not_mem_freeVars_closeFVar_self k y p hmem
-
-/-- Singleton fvar substitution commutes with closeFVar when names are disjoint.
-
-    Preconditions (Barendregt convention):
-    - `hyw : y ≠ w`: the substituted variable differs from the abstracted one
-    - `hzw : z ≠ w`: the replacement doesn't clash with the abstracted variable -/
-theorem applySubst_closeFVar_comm_single
-    {y z w : String} {p : Pattern} {k : Nat}
-    (hyw : y ≠ w) (hzw : z ≠ w) (hnes : noExplicitSubst p = true) :
-    applySubst (SubstEnv.extend SubstEnv.empty y (.fvar z)) (closeFVar k w p) =
-      closeFVar k w (applySubst (SubstEnv.extend SubstEnv.empty y (.fvar z)) p) := by
-  induction p using Pattern.inductionOn generalizing k with
-  | hbvar n => simp [closeFVar, applySubst]
-  | hfvar x =>
-    show applySubst _ (closeFVar k w (.fvar x)) = closeFVar k w (applySubst _ (.fvar x))
-    by_cases hxw : x = w
-    · -- x = w: LHS: closeFVar gives .bvar k, applySubst leaves it
-      --        RHS: applySubst misses (y ≠ w), then closeFVar gives .bvar k
-      subst hxw
-      simp only [closeFVar, beq_self_eq_true, ite_true, applySubst,
-                 SubstEnv.find_extend_empty_ne hyw]
-    · -- x ≠ w: closeFVar leaves .fvar x
-      have hxw_beq : (x == w) = false := beq_eq_false_iff_ne.mpr hxw
-      have hclose_x : closeFVar k w (.fvar x) = .fvar x := by
-        simp only [closeFVar, hxw_beq, Bool.false_eq_true, ↓reduceIte]
-      rw [hclose_x]
-      by_cases hxy : y = x
-      · -- y = x: substitution fires to .fvar z; closeFVar leaves it since z ≠ w
-        subst hxy
-        -- now x is gone, the var is y; hyw : y ≠ w, hxw_beq : (y == w) = false
-        have hsubst_y : applySubst (SubstEnv.extend SubstEnv.empty y (.fvar z)) (.fvar y) = .fvar z := by
-          simp only [applySubst, SubstEnv.find_extend_empty_eq]
-        rw [hsubst_y]
-        have hclose_z : closeFVar k w (.fvar z) = .fvar z := by
-          simp only [closeFVar, beq_eq_false_iff_ne.mpr hzw, Bool.false_eq_true, ↓reduceIte]
-        rw [hclose_z]
-      · -- y ≠ x: substitution misses, closeFVar leaves .fvar x
-        have hsubst_x : applySubst (SubstEnv.extend SubstEnv.empty y (.fvar z)) (.fvar x) = .fvar x := by
-          simp only [applySubst, SubstEnv.find_extend_empty_ne hxy]
-        rw [hsubst_x, hclose_x]
-  | happly c args ih =>
-    simp only [closeFVar, applySubst, List.map_map]; congr 1
-    exact list_map_eq_map fun a ha => ih a ha (allNoExplicitSubst_mem hnes ha)
-  | hlambda _ body ih =>
-    simp only [closeFVar, applySubst]; congr 1; exact ih hnes
-  | hmultiLambda _ _ body ih =>
-    simp only [closeFVar, applySubst]; congr 1; exact ih hnes
-  | hsubst _ _ _ _ => exact absurd hnes Bool.false_ne_true
-  | hcollection ct elems rest ih =>
-    simp only [closeFVar, applySubst, List.map_map]; congr 1
-    exact list_map_eq_map fun a ha => ih a ha (allNoExplicitSubst_mem hnes ha)
 
 /-! ## SC Propagation Through openBVar -/
 
@@ -327,48 +188,6 @@ theorem encode_noExplicitSubst (P : Process) (n v : String) :
 
 /-! ## Local Closure for closeFVar and Encoding -/
 
-/-- closeFVar k x maps lc_at k terms to lc_at (k+1) terms. -/
-theorem lc_at_closeFVar {k : Nat} {x : String} {p : Pattern}
-    (hlc : lc_at k p = true) : lc_at (k + 1) (closeFVar k x p) = true := by
-  induction p using Pattern.inductionOn generalizing k with
-  | hbvar n =>
-    simp only [closeFVar, lc_at]
-    simp only [lc_at] at hlc
-    exact decide_eq_true (Nat.lt_of_lt_of_le (of_decide_eq_true hlc) (Nat.le_succ k))
-  | hfvar y =>
-    simp only [closeFVar]
-    split
-    · simp only [lc_at]; exact decide_eq_true (Nat.lt_succ_of_le (Nat.le_refl k))
-    · simp only [lc_at]
-  | happly c args ih =>
-    simp only [closeFVar, lc_at] at hlc ⊢
-    exact lc_at_list_of_forall fun q hq => by
-      rw [List.mem_map] at hq
-      obtain ⟨a, ha, rfl⟩ := hq
-      exact ih a ha (lc_at_list_mem hlc ha)
-  | hlambda _ body ih =>
-    simp only [closeFVar, lc_at] at hlc ⊢
-    have : k + 1 + 1 = (k + 1) + 1 := by omega
-    rw [this]
-    exact ih hlc
-  | hmultiLambda n _ body ih =>
-    simp only [closeFVar, lc_at] at hlc ⊢
-    have : k + 1 + n = (k + n) + 1 := by omega
-    rw [this]
-    exact ih hlc
-  | hsubst body repl ihb ihr =>
-    simp only [closeFVar, lc_at, Bool.and_eq_true] at hlc ⊢
-    constructor
-    · have : k + 1 + 1 = (k + 1) + 1 := by omega
-      rw [this]; exact ihb hlc.1
-    · exact ihr hlc.2
-  | hcollection ct elems rest ih =>
-    simp only [closeFVar, lc_at] at hlc ⊢
-    exact lc_at_list_of_forall fun q hq => by
-      rw [List.mem_map] at hq
-      obtain ⟨a, ha, rfl⟩ := hq
-      exact ih a ha (lc_at_list_mem hlc ha)
-
 /-- Helper: lc_at_list distributes over append. -/
 private theorem lc_at_list_append {k : Nat} {ps qs : List Pattern}
     (hp : lc_at_list k ps = true) (hq : lc_at_list k qs = true) :
@@ -421,22 +240,22 @@ def BarendregtFor (y z : Name) : Process → Prop
   | .nu _ _ => True   -- RF processes don't have nu
   | .replicate _ _ _ => True
 
-/-- BarendregtFor is preserved by π-substitution. -/
+/-- Disjoint binders retain the Barendregt convention after substitution. -/
 theorem barendregt_substitute {P : Process} {y z : Name}
     (hb : BarendregtFor y z P) (hrf : RestrictionFree P) :
     BarendregtFor y z (P.substitute y z) := by
   induction P with
-  | nil => trivial
+  | nil => simpa only [Process.substitute_nil] using hb
   | par P Q ihP ihQ =>
-    exact ⟨ihP hb.1 hrf.1, ihQ hb.2 hrf.2⟩
+      rw [Process.substitute_par]
+      exact ⟨ihP hb.1 hrf.1, ihQ hb.2 hrf.2⟩
   | input x w R ih =>
-    have ⟨hyw, hzw, hbR⟩ := hb
-    simp only [Process.substitute]
-    split_ifs with hxy hwy
-    · exact ⟨hyw, hzw, ih hbR hrf⟩
-    · exact absurd hwy.symm hyw  -- w = y contradicts y ≠ w
-    · exact ⟨hyw, hzw, ih hbR hrf⟩
-  | output _ _ => trivial
+      have ⟨hyw, hzw, hbR⟩ := hb
+      rw [Process.substitute_input_of_disjoint x w R y z (Ne.symm hyw) (Ne.symm hzw)]
+      exact ⟨hyw, hzw, ih hbR hrf⟩
+  | output x w =>
+      rw [Process.substitute]
+      trivial
   | nu _ _ => exact absurd hrf id
   | replicate _ _ _ => exact absurd hrf id
 
@@ -592,7 +411,7 @@ theorem encode_rf_subst_fvar {Q : Process} (hrf : RestrictionFree Q)
     applySubst (SubstEnv.extend SubstEnv.empty y (.fvar z)) (encode Q n v) =
       encode (Q.substitute y z) n v := by
   induction Q generalizing n with
-  | nil => simp [encode, rhoNil, applySubst, Process.substitute]
+  | nil => simp [encode, rhoNil, applySubst]
   | par P R ihP ihR =>
     simp only [encode, Process.substitute]
     conv_rhs => rw [← ihP hrf.1 (n ++ "_L") hb.1, ← ihR hrf.2 (n ++ "_R") hb.2]
@@ -611,9 +430,8 @@ theorem encode_rf_subst_fvar {Q : Process} (hrf : RestrictionFree Q)
       applySubst_closeFVar_comm_single hyw hzw (encode_noExplicitSubst R n v)
     rw [hbody, ih hrf n hbR]
     -- Match π-substitute structure
-    simp only [Process.substitute]
-    have hwy : w ≠ y := Ne.symm hyw
-    simp only [hwy, ↓reduceIte]
+    rw [Process.substitute_input_of_disjoint x w R y z (Ne.symm hyw) (Ne.symm hzw)]
+    simp only [Process.replaceName]
     by_cases hxy : x = y
     · subst hxy
       simp only [↓reduceIte, encode, rhoInput, piNameToRhoName,

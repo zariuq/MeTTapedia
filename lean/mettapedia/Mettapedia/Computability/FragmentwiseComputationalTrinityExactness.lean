@@ -184,7 +184,7 @@ noncomputable def subfaceIso
 
 /-- Exactness is stable under replacing an interpretation by an equal natural
 transformation. -/
-def congr
+theorem congr
     {first second : source ⟶ target}
     (same : first = second)
     (bridge : ExactBridge first sourceFragment targetFragment) :
@@ -193,7 +193,7 @@ def congr
   exact bridge
 
 /-- Identity interpretation is exact on every selected fragment. -/
-def identity (fragment : Constraint source) :
+theorem identity (fragment : Constraint source) :
     ExactBridge (𝟙 source) fragment fragment where
   sound := by
     intro context element represented
@@ -208,7 +208,7 @@ def identity (fragment : Constraint source) :
 
 /-- Exact bridges compose: soundness, selected-target coverage, and
 faithfulness are each preserved. -/
-def comp
+theorem comp
     {first : source ⟶ middle} {second : middle ⟶ target}
     (sourceMiddle : ExactBridge first sourceFragment middleFragment)
     (middleTarget : ExactBridge second middleFragment targetFragment) :
@@ -276,7 +276,7 @@ def toFragmentwiseComparison
 
 /-- Two adjacent exact fragment bridges induce an exact direct
 program-to-space bridge. -/
-def programSpace (exact : ExactFragmentwiseComparison comparison) :
+theorem programSpace (exact : ExactFragmentwiseComparison comparison) :
     ExactBridge comparison.programToSpace exact.programFragment
       exact.spaceFragment :=
   (exact.programLogic.comp exact.logicSpace).congr comparison.coherence
@@ -321,7 +321,7 @@ def onlyFalseSpace : Constraint comparison.space where
     exact admitted
 
 /-- The first-bit interpretation is exact on the selected singleton slice. -/
-def programLogicExact : ExactBridge comparison.programToLogic
+theorem programLogicExact : ExactBridge comparison.programToLogic
     onlyFalseFalse onlyFalseLogic where
   sound := by
     intro context logicalElement represented
@@ -336,7 +336,7 @@ def programLogicExact : ExactBridge comparison.programToLogic
     intro context left right leftAdmitted rightAdmitted same
     exact leftAdmitted.trans rightAdmitted.symm
 
-def logicSpaceExact : ExactBridge comparison.logicToSpace
+theorem logicSpaceExact : ExactBridge comparison.logicToSpace
     onlyFalseLogic onlyFalseSpace where
   sound := by
     intro context point represented

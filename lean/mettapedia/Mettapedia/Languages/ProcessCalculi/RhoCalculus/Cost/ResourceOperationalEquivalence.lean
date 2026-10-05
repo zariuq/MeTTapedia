@@ -26,13 +26,17 @@ variable {Ground : Type u}
     (entry : (costResourceSystem Ground).Entry) :
     (costResourceSystem Ground).Enables source entry.2 ↔
       (event entry).consumed ≤ source := by
-  simp only [System.Enables, costResourceSystem, add_zero]
+  unfold System.Enables
+  rw [costResourceSystem_consume, costResourceSystem_read, add_zero]
   rfl
 
 @[simp] theorem fire_eq [DecidableEq Ground] (source : CostConfig Ground)
     (entry : (costResourceSystem Ground).Entry) :
     (costResourceSystem Ground).fire source entry.2 =
-      source - (event entry).consumed + (event entry).produced := rfl
+      source - (event entry).consumed + (event entry).produced := by
+  unfold System.fire
+  rw [costResourceSystem_consume, costResourceSystem_produce]
+  rfl
 
 end CostResourceWave
 
@@ -42,21 +46,15 @@ variable {Ground : Type u} [DecidableEq Ground]
   {source target : CostConfig Ground} {event : CostedEvent Ground}
 
 /-- The frame decomposition and the resource system's enable/fire contract
-are equivalent for the same complete funded event. -/
+are equivalent for the same complete funded event: the frame law of resource
+systems, for an instance that reads nothing. -/
 theorem iff_enabled_fire :
     AtomicResourceJoin source event target ↔
       (costResourceSystem Ground).Enables source event.resourceEntry.2 ∧
         target = (costResourceSystem Ground).fire source event.resourceEntry.2 := by
-  rw [CostResourceWave.enables_iff_consumed_le,
-    CostResourceWave.fire_eq, CostResourceWave.event_resourceEntry]
-  constructor
-  · rintro ⟨frame, sourceEq, targetEq⟩
-    refine ⟨?_, ?_⟩
-    · rw [sourceEq]
-      exact Multiset.le_add_left _ _
-    · rw [sourceEq, targetEq, add_tsub_cancel_right]
-  · rintro ⟨fits, targetEq⟩
-    exact ⟨source - event.consumed, (tsub_add_cancel_of_le fits).symm, targetEq⟩
+  rw [(costResourceSystem Ground).enables_fire_iff_frame source target event.resourceEntry.2
+    (costResourceSystem_read _), costResourceSystem_consume, costResourceSystem_produce]
+  rfl
 
 end AtomicResourceJoin
 

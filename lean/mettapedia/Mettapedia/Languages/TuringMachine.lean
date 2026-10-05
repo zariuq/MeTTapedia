@@ -16,6 +16,8 @@ import Mettapedia.Languages.TuringMachine.InputEncoding
 import Mettapedia.Languages.TuringMachine.UniversalTable
 import Mettapedia.Languages.TuringMachine.Bridges.Computability.ConditionalPrefix
 import Mettapedia.Languages.TuringMachine.Bridges.Computability.Controls
+import Mettapedia.Languages.TuringMachine.Bridges.GSLTIL
+import Mettapedia.Languages.TuringMachine.Bridges.GSLTILControls
 
 /-!
 # Turing machines as authored languages
@@ -30,4 +32,6 @@ partial-recursive compiler supplies one finite universal tape table and
 undecidability of halting in both presentations. Effective conditional prefix
 machines retain their binary outputs, prefix-free halting domains, and Kraft
 weights through the same compiler.
+The fixed universal table also executes through the shared GSLT-IL command
+rules, with exact successor coverage and effective structurally coded inputs.
 -/

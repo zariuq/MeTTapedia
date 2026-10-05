@@ -557,7 +557,8 @@ theorem below_kind (formed : CCtxFormed objectChurch Γ) {X T : CTm Tower.Head n
   | univ =>
       obtain ⟨w, hw, rfl⟩ := hX
       obtain ⟨v, hv, e, _⟩ := CBelow.universe_cumulative objectFormerFacts
-        ConvRules.objectLevels ConvRules.objectRules_algebra le formed hw (CIsType.refl typeX)
+        ConvRules.objectLevels (ConvRules.realRules_algebra objectTExt) le formed hw
+        (CIsType.refl typeX)
       exact ⟨.head v, ⟨v, hv, rfl⟩, e⟩
   | pi =>
       obtain ⟨A, B, rfl⟩ := hX
@@ -1685,8 +1686,8 @@ def Progresses (t : CTm Tower.Head n) : Prop :=
 an annotated weak-head step or is a weak-head normal form. -/
 theorem objectChurch_progress {t T : CTm Tower.Head n} (formed : CCtxFormed objectChurch Γ)
     (typing : CTyped objectChurch Γ t T) : Progresses t := by
-  rcases G.progress objectProgressFacts ConvRules.objectLevels ConvRules.objectRules_algebra
-      formed typing with step | shape
+  rcases G.progress objectProgressFacts ConvRules.objectLevels
+      (ConvRules.realRules_algebra objectTExt) formed typing with step | shape
   · exact .inl step
   · exact .inr (whnfShape_of_generic shape)
 
@@ -1703,7 +1704,7 @@ theorem objectChurch_typeProgress {n : Nat} {Γ : CCtx Tower.Head n} {A : CTm To
     (typing : CTyped objectChurch Γ A (.head u)) :
     (∃ A', CWhStepR objectChurch objectRoles A A') ∨ IsTypeForm objectRoles A.erase :=
   Progress.G.typeProgress Progress.objectProgressFacts ConvRules.objectLevels
-    ConvRules.objectRules_algebra formed hu typing
+    (ConvRules.realRules_algebra objectTExt) formed hu typing
 
 /-- **The facts about the weak-head forms of the object package's types**, given that its types
 and equations of types lift to the annotation: the annotated types progress

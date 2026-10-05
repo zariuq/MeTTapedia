@@ -130,9 +130,4 @@ noncomputable def algebra : BindingCloneAlgebra.Algebra.{u} S where
   operation := operation Q accountSort base
   operation_substitute := operation_substitute Q accountSort base
 
-#print axioms operation_project
-#print axioms project_substituteArguments
-#print axioms operation_substitute
-#print axioms algebra
-
 end Mettapedia.GSLT.LanguageDef.Cost.AccountBindingQuotientModel

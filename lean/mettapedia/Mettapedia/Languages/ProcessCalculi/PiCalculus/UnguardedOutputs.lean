@@ -24,26 +24,19 @@ def unguardedOutputs : Process → Nat
   | .nu _ body => body.unguardedOutputs
   | .replicate _ _ _ => 0
 
-/-- Renaming a name does not change the unguarded outputs. -/
-theorem unguardedOutputs_substitute (old new : Name) :
-    ∀ process : Process,
-      (process.substitute old new).unguardedOutputs = process.unguardedOutputs
-  | .nil => rfl
-  | .par left right => by
-      simp only [substitute, unguardedOutputs, unguardedOutputs_substitute old new left,
-        unguardedOutputs_substitute old new right]
-  | .input channel bound body => by
-      simp only [substitute]
-      split_ifs <;> rfl
-  | .output _ _ => rfl
-  | .nu bound body => by
-      simp only [substitute]
-      split_ifs
-      · rfl
-      · simp only [unguardedOutputs, unguardedOutputs_substitute old new body]
-  | .replicate channel bound body => by
-      simp only [substitute]
-      split_ifs <;> rfl
+/-- Counting unguarded outputs is a fold that ignores names. -/
+theorem unguardedOutputs_eq_fold (process : Process) :
+    process.unguardedOutputs =
+      process.fold 0 (· + ·) (fun _ => 0) 1 id (fun _ => 0) := by
+  induction process with
+  | nil | input | output | replicate => rfl
+  | par left right ihLeft ihRight => exact congrArg₂ Nat.add ihLeft ihRight
+  | nu bound body ih => exact ih
+
+/-- Capture-avoiding substitution preserves the unguarded outputs. -/
+theorem unguardedOutputs_substitute (old new : Name) (process : Process) :
+    (process.substitute old new).unguardedOutputs = process.unguardedOutputs := by
+  rw [unguardedOutputs_eq_fold, fold_substitute, ← unguardedOutputs_eq_fold]
 
 end Process
 

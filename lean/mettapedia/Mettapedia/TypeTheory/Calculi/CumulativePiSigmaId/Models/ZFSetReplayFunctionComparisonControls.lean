@@ -31,7 +31,7 @@ open ZFSetInterpretation.Controls (twoCode)
 open Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.ZFSetTraceUniverseInterpretation (interpretHead)
 open Mettapedia.Logic.HOL.Embedding
 open ZFSetUniverseClosure (CofinalInaccessibles)
-open ZFSetDependentProducts (graph)
+open ZFSetDependentProducts (graph graph_congr)
 open ZFSetTraceProducts (traceLam traceApp tracePiSet traceApp_graph_beta
   TraceFunctionRelated traceFunctionRelated_graph_iff)
 
@@ -152,17 +152,6 @@ theorem internal_identities_differ (h : CofinalInaccessibles.{u}) : identity h 0
   have member := seed_mem_universeSet h (∅ : ZFSet.{u}) (0 : Nat)
   rw [← observed] at member
   exact ZFSet.notMem_empty _ member
-
-private theorem graph_congr {A : ZFSet.{u}} {f g : ZFSet.{u} → ZFSet.{u}}
-    (agree : ∀ x ∈ A, f x = g x) : graph A f = graph A g := by
-  apply ZFSet.ext
-  intro z
-  simp only [ZFSetDependentProducts.mem_graph]
-  constructor
-  · rintro ⟨x, hx, equal⟩
-    exact ⟨x, hx, by rw [← agree x hx]; exact equal⟩
-  · rintro ⟨x, hx, equal⟩
-    exact ⟨x, hx, by rw [agree x hx]; exact equal⟩
 
 theorem program_returns_identity (h : CofinalInaccessibles.{u}) (level : Nat)
     (includes : universeSet h ∅ 0 ⊆ universeSet h ∅ level)

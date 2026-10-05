@@ -16,7 +16,10 @@ Inversion, Without Normalisation*, §2.5). A pair needs no annotation: the
 observations, and the paper's pairs (§3.1) carry none.
 
 The renaming and substitution algebra is that of `Presentation.Tm`, with the
-domain of an abstraction renamed and substituted outside the binder.
+domain of an abstraction renamed and substituted outside the binder. Opening,
+under one more binder, a term weakened twice cancels one weakening
+(`liftSub_subst0_rename_wk`). A placement of the variables of a context stays
+one when a variable is added to the context it places them in (`placement_succ`).
 
 This calculus is not the written-domains layer (`Presentation.ATm`,
 `TypedEquality.ATyped`), in which a λ may carry its domain as a checked contract
@@ -330,6 +333,12 @@ theorem liftSub_comp_apply {n m k : Nat} (τ : CSub Head m k) (σ : CSub Head n 
   rw [subst_rename]
   exact subst_ids t
 
+/-- Opening, under one more binder, a term weakened twice cancels one weakening. -/
+theorem liftSub_subst0_rename_wk {n : Nat} (u t : CTm Head n) :
+    subst (liftSub (subst0 u)) ((t.rename wk).rename wk) = t.rename wk := by
+  rw [subst_liftSub_wk]
+  exact congrArg (rename wk) (inst0_rename_wk u t)
+
 /-- Renaming commutes with opening the newest binder. -/
 theorem rename_inst0 {n m : Nat} (ρ : Ren n m) (u : CTm Head n) (body : CTm Head (n + 1)) :
     rename ρ (inst0 u body) = inst0 (rename ρ u) (rename (liftRen ρ) body) := by
@@ -427,6 +436,14 @@ theorem CCtxRen.snoc {n m : Nat} {Γ : CCtx Head n} {Δ : CCtx Head m} {ρ : Ren
 
 theorem CCtxRen.wk {n : Nat} (Γ : CCtx Head n) (A : CTm Head n) :
     CCtxRen Γ (.snoc Γ A) wk := fun _ => rfl
+
+/-- A placement of the variables of a context stays one when a variable is added to the
+context it places them in. -/
+theorem placement_succ {n m : Nat} {Γ : CCtx Head n} {Θ : CCtx Head m} {ρ : Ren n m}
+    (placed : CCtxRen Γ Θ ρ) (E : CTm Head m) :
+    CCtxRen Γ (.snoc Θ E) (fun i => wk (ρ i)) := fun i => by
+  show (Θ.lookup (ρ i)).rename wk = (Γ.lookup i).rename fun j => wk (ρ j)
+  rw [placed i, CTm.rename_comp]
 
 end Annotated
 end TypedEquality

@@ -41,12 +41,12 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRouteBreadthC
 /-- Collapsed endpoint of the base Quote/Drop cell: the plain free name. -/
 def rhoPairFvarAPlan :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole (.fvar "a") (.base "Name") :=
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
-      CostStaticColor.symbols, costBaseStaticSymbols,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
       costBaseLanguageDefSymbolMap])
 
 theorem rhoPairSourceReflectiveDecl_mem :
@@ -78,7 +78,8 @@ def rhoPairCollapseWitness :
       CostStaticPlanDecoration.abstractPattern,
       CostStaticPlanDecorationNode.abstractPattern,
       rhoBreadthBaseQuotePreimage, rhoBreadthBaseDropPreimage,
-      costStaticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
+      costStaticConstructorPreimage,
+      ContinuationDecorationProfile.staticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
       rhoBreadthBaseDropDeclared, rhoCalc]
   have rightEq : rhoPairFvarAPlan.decoration.abstractPattern =
       .fvar (costRegionSourceVariableName "a") := by
@@ -146,6 +147,7 @@ def rhoPairQuoteResetLeftReached :
     simp only [CostStaticRegionPlan.abstractPattern,
       CostStaticArgumentPlan.abstractPatterns, OneHoleContext.fill,
       rhoBreadthBaseQuotePreimage, costStaticConstructorPreimage,
+      ContinuationDecorationProfile.staticConstructorPreimage,
       rhoBreadthBaseQuoteDeclared, rhoCalc, List.nil_append]
     rfl
 
@@ -234,6 +236,7 @@ theorem rhoPairQuoteReset_reached_childCanonical_ne :
           simp [CostStaticRegionPlan.abstractPattern,
             CostStaticArgumentPlan.abstractPatterns,
             rhoBreadthBaseDropPreimage, costStaticConstructorPreimage,
+      ContinuationDecorationProfile.staticConstructorPreimage,
             rhoBreadthBaseDropDeclared, rhoCalc]),
     show rhoPairQuoteResetRightReached.plan.abstractPattern =
       .fvar (costRegionSourceVariableName "a") by
@@ -243,7 +246,7 @@ theorem rhoPairQuoteReset_reached_childCanonical_ne :
       (by rfl) 0,
     rhoPairQuoteResetRightReached.thinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       (by rfl) 0]
-  simp [mapPattern, CostStaticColor.symbols, costBaseStaticSymbols,
+  simp [mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
     costBaseLanguageDefSymbolMap, costStaticReflectivePresentationDecl,
     costBaseReflectivePresentationDecl,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,

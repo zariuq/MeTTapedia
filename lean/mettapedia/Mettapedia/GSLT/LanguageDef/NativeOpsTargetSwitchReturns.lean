@@ -30,42 +30,6 @@ theorem target_select_case_map {Item : Type} (items : List Item)
       · simp [targetSelectCase, selected]
       · simpa [targetSelectCase, selected] using ih
 
-theorem target_context_exists_exact {World : Type} {interface : Interface}
-    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
-    (frame : TargetFrame) (state : TargetState World) (out : TargetBlockOutcome World) :
-    TargetInstructionEval interface heap calls result .checkContextExists frame state out ↔
-      out = ⟨.normal, frame, state⟩ := by
-  constructor
-  · intro ran; cases ran; rfl
-  · intro same; subst out; exact .contextExists _ _
-
-theorem target_context_clear_exact {World : Type} {interface : Interface}
-    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
-    (frame : TargetFrame) (state : TargetState World) (clear : state.fault = none)
-    (out : TargetBlockOutcome World) :
-    TargetInstructionEval interface heap calls result .checkContext frame state out ↔
-      out = ⟨.normal, frame, state⟩ := by
-  constructor
-  · intro ran
-    cases ran with
-    | contextClear _ => rfl
-    | contextFault failed _ => rw [clear] at failed; cases failed
-  · intro same; subst out; exact .contextClear clear
-
-theorem target_context_fault_exact {World : Type} {interface : Interface}
-    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
-    (frame : TargetFrame) (state : TargetState World) {fault : NativeWord64.Fault}
-    (failed : state.fault = some fault) {default : TargetValue}
-    (zero : TargetZero interface result default) (out : TargetBlockOutcome World) :
-    TargetInstructionEval interface heap calls result .checkContext frame state out ↔
-      out = ⟨.returned default, frame, state⟩ := by
-  constructor
-  · intro ran
-    cases ran with
-    | contextClear clear => rw [failed] at clear; cases clear
-    | contextFault _ otherZero => cases target_zero_unique zero otherZero; rfl
-  · intro same; subst out; exact .contextFault failed zero
-
 theorem close_private_return {World : Type} (frame : TargetFrame) (state : TargetState World)
     (identity : Nat) (value : TargetValue)
     (unused : frame.temporaryNames.contains identity = false) (hscope : TemporariesScoped frame) :

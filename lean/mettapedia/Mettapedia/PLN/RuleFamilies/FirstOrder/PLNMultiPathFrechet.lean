@@ -26,7 +26,7 @@ ENNReal confidence-weight functions.
 namespace Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathFrechet
 
 open scoped BigOperators ENNReal Topology
-open MeasureTheory ProbabilityTheory Filter Asymptotics
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory Filter Asymptotics
 open Mettapedia.PLN.InferenceControl.CertifiedChaining.EstimatorEnvelope
 open Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation
 open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNNoisyOr

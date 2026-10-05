@@ -17,6 +17,15 @@ import Mettapedia.Logic.HOL.Embedding.ZFSetInductiveFunctions
 import Mettapedia.Logic.HOL.Embedding.ZFSetIndexedTrees
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.SetEliminators
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.DomainVisibility
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.ConstantFamilies
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.SetConstantFamilies
+import Mettapedia.Logic.HOL.Embedding.ZFSetLiftedTraceProducts
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.LiftedSetModel
+import Mettapedia.Logic.HOL.Embedding.ZFSetWellFoundedRecursion
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.SetDefinitionsByBound
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.SetDefinitionsBySolution
+import Mettapedia.Logic.HOL.Embedding.ZFSetPolymorphicLists
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.ReductionValues
 
 /-!
 # The candidate calculus interpreted in the set tower
@@ -75,6 +84,52 @@ it.
   the decoder rule and fewer propositions than quantifier domains, two domains
   receive one function type (`not_injective_pi_of_decoderRule`,
   `ThreeDomains.exists_same_value`); reading propositions as data avoids it.
+* `TypedEquality.Annotated.ConstantFamilies`, `SetConstantFamilies`: a family of constants
+  declared together, with equations between them (`withFamily`); it has a set model when
+  values satisfy its types and equations (`family_setModel_of_values`).
+* `LiftedSetModel`: the evaluation commutes with the lift of the sets of one universe into
+  the next (`ev_lift`); a universe model, a statement that holds and a set model carry to
+  the lifted heads and constants (`universeModel_lift`, `holds_lift_iff`, `setModel_lift`),
+  and every value there is one of the lifted sets (`ev_lifted_mem_carrierCode`). The lift on
+  the operations of the model is in `Logic.HOL.Embedding.ZFSetLiftedTraceProducts`.
+* `Logic.HOL.Embedding.ZFSetWellFoundedRecursion`: the recursion theorem along a
+  well-founded relation on a set: the equations of a definition have exactly one solution
+  (`solution_eq`, `solution_unique`); equations by cases whose right sides read the function
+  only below a bound have a solution, unique when the cases cover the domain
+  (`cases_solution`, `cases_solution_unique`).
+* `SetDefinitionsByBound`: a definition by equations whose calls go down a bound into a set
+  with a well-founded relation has a set model (`definition_setModel_of_bound`), and when its
+  patterns cover the domain every set model gives the defined name one value
+  (`bound_model_unique`); a set model satisfies the equations of its definitions
+  (`definition_valid_of_setModel`).
+* `SetDefinitionsBySolution`: a definition admitted on the evidence that some value of its
+  declared type satisfies its equations, read in a set model of the package before it, has a
+  set model (`definition_setModel_of_evidence`, at every such value
+  `definition_setModel_of_solution`). For a function result the equations at every position
+  are enough when both sides are functions of one type (`equationHolds_iff_atPosition`), and
+  not without that (`atPosition_needs_functions`).
+* `ReductionValues`: a typed term keeps its set value along every reduction of its
+  package, at any position and whether or not reduction stops (`reduction_value_eq`), and
+  on a class of closed terms that the model reads injectively a typed closed term reduces
+  to at most one term of the class (`result_unique`). The hypotheses are those of
+  `TypedEquality.Annotated.ContextualPreservation` (injective and distinct type formers,
+  root steps of typed terms that are equalities, head equality that preserves typing) and
+  a set model. No termination and no confluence is used.
+* `Logic.HOL.Embedding.ZFSetPolymorphicLists`: the lists over any set, with append by
+  recursion, its uniqueness and associativity (`listSet`, `setAppend_unique`,
+  `setAppend_assoc`). The empty list and an element before a list carry two tags, which
+  are parameters; the equations of append hold when the two tags differ. The lists over a
+  member of a closed universe that has `ω` and the two tags are a member of it
+  (`listSet_mem_of_closed`); the lists over the singleton of a closed universe are not
+  (`listSet_singleton_not_mem`).
+* `SetInductive` and `Logic.HOL.Embedding.ZFSetInductive`: a declared datatype is read as
+  the least set closed under its constructors, and a constructor is read by its name: its
+  value at its arguments is the code of its name paired with the tuple of the arguments
+  (`ZFSetInductive.nameCode`, `ZFSetInductive.constructorValue`, `InductiveReading`). The
+  reading of first-order data terms is injective (`ZFSetInductive.DataTerm.toSet_injective`),
+  datatypes with no constructor name in common are disjoint sets
+  (`InductiveReading.disjoint`), and a typed data term means its set
+  (`DataRead.typed_value`, `declarations_dataTerm_value`).
 * The concrete instantiation lives with the other concrete profiles, in
   `Instances.TowerInterpretation`: the universe package `Tower.rules` in the
   tower of universes built from `CofinalInaccessibles`, relative consistency of

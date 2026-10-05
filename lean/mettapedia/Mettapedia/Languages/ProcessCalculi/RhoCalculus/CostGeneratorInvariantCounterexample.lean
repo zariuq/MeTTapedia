@@ -296,8 +296,8 @@ private def rhoCutOrderWrappedFvarPlan (outer : OneHoleContext)
     (lookup : rhoCutOrderFree name =
       some (.base (costBaseSortName "Name"))) :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .wrapped []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .wrapped [])
       [] outer (.fvar name) (.base "Name") :=
   .fvar (by
     exact lookup)
@@ -307,8 +307,8 @@ private def rhoCutOrderWrappedDropFvarPlan (outer : OneHoleContext)
     (lookup : rhoCutOrderFree name =
       some (.base (costBaseSortName "Name"))) :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .wrapped []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .wrapped [])
       [] outer (rhoCutOrderWrappedDrop (.fvar name)) (.base "Proc") := by
   apply CostStaticRegionPlan.application rhoCutOrderWrappedDropDeclared rfl
     rhoCutOrderWrappedDropRole rhoCutOrderWrappedDropPreimage
@@ -366,7 +366,7 @@ private theorem rhoCutOrderBoundaryCertificate_exists :
           rhoCutOrderRedex =
         some certificate := by
   apply exists_certifyCostRegionBoundary?_eq_some
-  · exact ⟨.base "Name", decodeCostStaticTypeExpr_mapTypeExpr _ _ _⟩
+  · exact ⟨.base "Name", CostStaticTypeImage.decode_mapTypeExpr _ _ _⟩
   · exact rhoCutOrderRedex_wellSorted
 
 private noncomputable def rhoCutOrderBoundaryCertificate :=
@@ -417,8 +417,8 @@ private theorem rhoCutOrderBaseQuoteOutsideWrapped :
 private noncomputable def rhoCutOrderWrappedBoundaryPlan
     (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .wrapped []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .wrapped [])
       [] outer rhoCutOrderRedex (.base "Name") :=
   .boundaryApplication rhoCutOrderBaseQuoteDeclared rfl
     rhoCutOrderBaseQuoteOutsideWrapped rhoCutOrderBoundaryWitness
@@ -427,8 +427,8 @@ private noncomputable def rhoCutOrderWrappedBoundaryPlan
 private noncomputable def rhoCutOrderWrappedDropBoundaryPlan
     (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .wrapped []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .wrapped [])
       [] outer (rhoCutOrderWrappedDrop rhoCutOrderRedex) (.base "Proc") := by
   apply CostStaticRegionPlan.application rhoCutOrderWrappedDropDeclared rfl
     rhoCutOrderWrappedDropRole rhoCutOrderWrappedDropPreimage
@@ -460,8 +460,8 @@ private theorem rhoCutOrderRightParallelChoice_mem :
 
 private noncomputable def rhoCutOrderLeftPlan :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .wrapped []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .wrapped [])
       [] .hole rhoCutOrderLeftPattern (.base "Proc") := by
   apply CostStaticRegionPlan.collection rhoCutOrderParallelChoice
     rhoCutOrderParallelChoice_mem
@@ -478,8 +478,8 @@ private noncomputable def rhoCutOrderLeftPlan :
 
 private def rhoCutOrderRightPlan :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .wrapped []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .wrapped [])
       [] .hole rhoCutOrderRightPattern (.base "Proc") := by
   apply CostStaticRegionPlan.collection rhoCutOrderParallelChoice
     rhoCutOrderRightParallelChoice_mem
@@ -534,18 +534,18 @@ private theorem rhoCutOrderBaseQuote_notBare :
 
 private def rhoCutOrderBaseFvarPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer (.fvar "0") (.base "Name") :=
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
-      CostStaticColor.symbols, costBaseStaticSymbols,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
       costBaseLanguageDefSymbolMap])
 
 private def rhoCutOrderBaseDropPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer (rhoCutOrderBaseDrop (.fvar "0")) (.base "Proc") := by
   apply CostStaticRegionPlan.application rhoCutOrderBaseDropDeclared rfl
     rhoCutOrderBaseDropRole rhoCutOrderBaseDropPreimage
@@ -558,8 +558,8 @@ private def rhoCutOrderBaseDropPlan (outer : OneHoleContext) :
 
 private def rhoCutOrderBaseRedexPlan :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole rhoCutOrderRedex (.base "Name") := by
   apply CostStaticRegionPlan.application rhoCutOrderBaseQuoteDeclared rfl
     rhoCutOrderBaseQuoteRole rhoCutOrderBaseQuotePreimage
@@ -642,7 +642,7 @@ private theorem rhoCutOrderBaseRedexNode_normalizedThickenedSkeletonRaw :
       .fvar (costRegionSourceVariableName "0") := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderBaseRedexNode.thinning (by rfl)]
   unfold normalizeCostStaticStratum
   rw [rhoCutOrderBaseRedexNode_sourceCanonical]
@@ -884,7 +884,7 @@ private theorem rhoCutOrderLeftNode_normalizedThickenedSkeletonRaw :
               rhoCutOrderBoundaryWitness.typed.boundary))] none := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderLeftNode.thinning (by rfl)]
   unfold normalizeCostStaticStratum
   rw [rhoCutOrderLeftNode_sourceCanonical]
@@ -898,7 +898,7 @@ private theorem rhoCutOrderRightNode_normalizedThickenedSkeletonRaw :
             (.fvar (costRegionSourceVariableName "a"))] none := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderRightNode.thinning (by rfl)]
   unfold normalizeCostStaticStratum
   rw [rhoCutOrderRightNode_sourceCanonical]

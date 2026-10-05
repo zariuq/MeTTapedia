@@ -274,6 +274,12 @@ def bitRigid : RigidTypes bitChurch where
     simpa [CTm.liftClosed, CTm.rename] using
       (CDerivable.const (Γ := Γ) declared_holds holds_type_typed trivial)⟩
   ground := fun _ => False
+  data := fun d => d = numName
+  params := fun _ => []
+  ctor := fun d c fs => d = numName ∧ (c = zeroName ∧ fs = [] ∨ c = sucName ∧ fs = [.self])
+  ctor_data := fun h => h.1
+  zero_ctor := ⟨rfl, .inl ⟨rfl, rfl⟩⟩
+  suc_ctor := ⟨rfl, .inr ⟨rfl, rfl⟩⟩
 
 theorem suc_ne_holds : bitRigid.suc ≠ bitRigid.holds := by decide
 theorem suc_ne_not : bitRigid.suc ≠ notName := by decide
@@ -538,9 +544,13 @@ def bitReduction : HeadReduction bitChurch bitRigid where
   id_normal := fun _ _ _ _ => not_core_id
   refl_normal := fun _ _ => not_core_refl
   prop_normal := fun _ => not_core_const
-  num_normal := fun _ => not_core_const
-  zero_normal := fun _ => not_core_const
-  suc_normal := fun _ _ => not_core_suc
+  data_normal := fun _ _ => not_core_const
+  ctor_normal := fun {_ _ _ _ ms} _ hc hl => by
+    obtain ⟨-, ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩⟩ := hc
+    · match ms, hl with
+      | [], _ => exact not_core_const
+    · match ms, hl with
+      | [_], _ => exact not_core_suc
   fstPair := .fstPair
   sndPair := .sndPair
   fst := .fst

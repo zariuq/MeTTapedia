@@ -59,8 +59,8 @@ namespace Ideal
 
 /-- Finitely many witnesses, each a list of tokens with a property, combine into
 one list with the property, for any statement preserved by enlarging the list. -/
-theorem gather {α : Type} {P : Tok → Prop} {Q : List Tok → α → Prop}
-    (hQ : ∀ {G G' : List Tok} {y : α}, (∀ g ∈ G, g ∈ G') → Q G y → Q G' y) :
+theorem gather {κ α : Type} {P : Tok κ → Prop} {Q : List (Tok κ) → α → Prop}
+    (hQ : ∀ {G G' : List (Tok κ)} {y : α}, (∀ g ∈ G, g ∈ G') → Q G y → Q G' y) :
     ∀ {Y : List α}, (∀ y ∈ Y, ∃ G, (∀ g ∈ G, P g) ∧ Q G y) →
       ∃ G, (∀ g ∈ G, P g) ∧ ∀ y ∈ Y, Q G y
   | [], _ => ⟨[], fun _ h => absurd h List.not_mem_nil, fun _ h => absurd h List.not_mem_nil⟩
@@ -89,7 +89,8 @@ theorem typedAt_list {T : Ideal} :
       · exact (t₂ r hr).mono (Le.append_right _ _)
 
 /-- A token of a generated ideal that is a tag is a generator. -/
-theorem closure_tag {P : Tok → Prop} {k : Kind} (h : (closure P).Mem (.tag k)) : P (.tag k) := by
+theorem closure_tag {κ : Type} [DecidableEq κ] {P : Tok κ → Prop} {k : κ}
+    (h : (closure P).Mem (.tag k)) : P (.tag k) := by
   obtain ⟨v, hv, ht⟩ := h
   rw [ent_tag, hasTag_iff] at ht
   exact hv _ ht
@@ -122,8 +123,9 @@ theorem ty_args_dom {k : Kind} (hk : k = .pi ∨ k = .sigma) {a : List Tok}
         · obtain ⟨-, hC, -⟩ := (tyTok_dom hk').1 h
           subst hC
           cases hd
-        · refine absurd h (tyTok_arg_other ?_)
-          rcases hk with rfl | rfl <;> simp [argSlots] <;> omega
+        · refine absurd h (tyTok_arg_other ?_ ?_)
+          · rcases hk with rfl | rfl <;> simp [argSlots] <;> omega
+          · rcases hk with rfl | rfl <;> exact id
     | fn k' C X Y =>
         change k' = k at htk
         subst htk
@@ -176,17 +178,22 @@ theorem tyTok_below_sigma {A : Ideal} {F : List Tok → Ideal} {a : List Tok}
   cases t with
   | tag k =>
       exfalso
-      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl
+      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl | hk
       · exact notUniv ((tyTok_tag_former hk).1 ht)
       · exact notTag (by decide) (tyTok_tag_zero.1 ht)
       · exact notTag (by decide) (tyTok_tag_succ.1 ht)
       · exact notTag (by decide) (tyTok_tag_refl.1 ht)
       · exact tyTok_tag_lam ht
       · exact tyTok_tag_pair ht
+      · obtain ⟨d, c, fs, rfl⟩ := hk
+        exact notTag (k := .data _) nofun (tyTok_tag_ctor.1 ht)
   | arg k i C s =>
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact absurd ht (tyTok_arg_other hother)
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · exact absurd (tyTok_param.1 ht).1 notUniv
+        · exact absurd (tyTok_field.1 ht).1 (notTag (k := .data _) nofun)
+        · exact absurd ht (tyTok_arg_other hother hk)
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
@@ -223,18 +230,23 @@ theorem tyTok_below_pi {A : Ideal} {F : List Tok → Ideal} {a : List Tok}
   cases t with
   | tag k =>
       exfalso
-      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl
+      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl | hk
       · exact notUniv ((tyTok_tag_former hk).1 ht)
       · exact notTag (by decide) (tyTok_tag_zero.1 ht)
       · exact notTag (by decide) (tyTok_tag_succ.1 ht)
       · exact notTag (by decide) (tyTok_tag_refl.1 ht)
       · exact tyTok_tag_lam ht
       · exact tyTok_tag_pair ht
+      · obtain ⟨d, c, fs, rfl⟩ := hk
+        exact notTag (k := .data _) nofun (tyTok_tag_ctor.1 ht)
   | arg k i C s =>
       exfalso
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact tyTok_arg_other hother ht
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · exact notUniv (tyTok_param.1 ht).1
+        · exact notTag (k := .data _) nofun (tyTok_field.1 ht).1
+        · exact tyTok_arg_other hother hk ht
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
@@ -377,7 +389,7 @@ theorem projT_sigma {A : Ideal} {F : List Tok → Ideal} (hF : Monotone F) (x : 
       obtain ⟨w, hw, hCw⟩ := below_closure_iff.1 hC
       -- each typed token of the second projection has a typed second-projection token
       obtain ⟨G, hG, hvG⟩ := gather (P := fun g => (projT (former .sigma A F) x).Mem g)
-        (Q := fun G (s' : Tok) => s' ∈ args .pair 1 G)
+        (Q := fun G (s' : Tok) => s' ∈ args Kind.pair 1 G)
         (fun hsub h => args_subset hsub _ h) (Y := v) fun s' hs' => by
           obtain ⟨hs'x, b, hb, hbu, hbs⟩ := hv s' hs'
           obtain ⟨Z, hZ, hbZ⟩ := below_fam_former hF hb
@@ -445,7 +457,7 @@ theorem projT_pi {A : Ideal} {F : List Tok → Ideal} (hF : Monotone F) (f : Ide
       intro y hy
       obtain ⟨v, hv, hyv⟩ := hY' y hy
       obtain ⟨G, hG, hvG⟩ := gather (P := fun g => (projT (former .pi A F) f).Mem g)
-        (Q := fun G (s : Tok) => s ∈ fnApp .lam G X')
+        (Q := fun G (s : Tok) => s ∈ fnApp Kind.lam G X')
         (fun hsub h => fnApp_subset X' hsub _ h) (Y := v) fun s hs => by
           obtain ⟨hsf, b, hb, hbu, hbs⟩ := hv s hs
           obtain ⟨X₀, Y₀, hX₀, hf₀, hY₀⟩ := mem_app.1 hsf
@@ -551,21 +563,28 @@ def codesIdeal : Ideal := principal Elem.codes
 /-- The typing of a token at a compact element whose only tags that type tokens
 are universes is its typing as a type. -/
 theorem tyTok_of_univLike {a b : List Tok}
-    (hna : ∀ k, (k = .nat ∨ k = .ident ∨ k = .sigma ∨ k = .pi) → Tok.tag k ∉ a)
+    (hna : ∀ k, (k = .nat ∨ k = .ident ∨ k = .sigma ∨ k = .pi ∨ ∃ d, k = .data d) →
+      Tok.tag k ∉ a)
     (hb : IsUniv b) {t : Tok} (ht : TyTok a t) : TyTok b t := by
   cases t with
   | tag k =>
-      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl
+      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl | hk
       · exact (tyTok_tag_former hk).2 hb
       · exact absurd (tyTok_tag_zero.1 ht) (hna _ (.inl rfl))
       · exact absurd (tyTok_tag_succ.1 ht) (hna _ (.inl rfl))
       · exact absurd (tyTok_tag_refl.1 ht) (hna _ (.inr (.inl rfl)))
       · exact absurd ht tyTok_tag_lam
       · exact absurd ht tyTok_tag_pair
+      · obtain ⟨d, c, fs, rfl⟩ := hk
+        exact absurd (tyTok_tag_ctor.1 ht) (hna _ (.inr (.inr (.inr (.inr ⟨d, rfl⟩)))))
   | arg k i C s =>
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact absurd ht (tyTok_arg_other hother)
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · obtain ⟨-, hC, hs⟩ := tyTok_param.1 ht
+          exact tyTok_param.2 ⟨hb, hC, hs⟩
+        · exact absurd (tyTok_field.1 ht).1 (hna _ (.inr (.inr (.inr (.inr ⟨d, rfl⟩)))))
+        · exact absurd ht (tyTok_arg_other hother hk)
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
@@ -587,7 +606,7 @@ theorem tyTok_of_univLike {a b : List Tok}
       rcases fn_cases k with hk | rfl | hother
       · obtain ⟨-, hC, hX, hY⟩ := (tyTok_family hk).1 ht
         exact (tyTok_family hk).2 ⟨hb, hC, hX, hY⟩
-      · exact absurd (tyTok_lam.1 ht).1 (hna _ (.inr (.inr (.inr rfl))))
+      · exact absurd (tyTok_lam.1 ht).1 (hna _ (.inr (.inr (.inr (.inl rfl)))))
       · exact absurd ht (tyTok_fn_other hother)
 
 /-- The tags of the compact element of one tag. -/
@@ -599,11 +618,12 @@ theorem mem_principal_tag {k k' : Kind} : (principal [Tok.tag k]).Mem (.tag k') 
 theorem typedAt_iff_of_univ {k : Kind} (hk : k = .univ ∨ k = .codes) {t : Tok} :
     TypedAt (principal [Tok.tag k]) t ↔ TyTok Elem.univ t := by
   have hno : ∀ {a : List Tok}, Below a (principal [Tok.tag k]) →
-      ∀ k', (k' = .nat ∨ k' = .ident ∨ k' = .sigma ∨ k' = .pi) → Tok.tag k' ∉ a := by
+      ∀ k', (k' = .nat ∨ k' = .ident ∨ k' = .sigma ∨ k' = .pi ∨ ∃ d, k' = .data d) →
+        Tok.tag k' ∉ a := by
     intro a ha k' hk' h
     have e := mem_principal_tag.1 (ha _ h)
     subst e
-    rcases hk with rfl | rfl <;> rcases hk' with h | h | h | h <;> cases h
+    rcases hk with rfl | rfl <;> rcases hk' with h | h | h | h | ⟨d, h⟩ <;> cases h
   constructor
   · rintro ⟨a, ha, -, hat⟩
     exact tyTok_of_univLike (hno ha) Elem.isUniv_univ hat
@@ -616,7 +636,7 @@ theorem typedAt_iff_of_univ {k : Kind} (hk : k = .univ ∨ k = .codes) {t : Tok}
       Elem.ty_tag (by rcases hk with rfl | rfl <;> trivial) Elem.isUniv_univ, ?_⟩
     refine tyTok_of_univLike (a := Elem.univ) (fun k' hk' h => ?_) hU ht
     rw [Elem.univ, List.mem_singleton] at h
-    rcases hk' with rfl | rfl | rfl | rfl <;> cases h
+    rcases hk' with rfl | rfl | rfl | rfl | ⟨d, rfl⟩ <;> cases h
 
 /-- **A token is typed at the universe of codes iff it is a type token.** -/
 theorem typedAt_codes_iff {t : Tok} : TypedAt codesIdeal t ↔ TyTok Elem.univ t :=

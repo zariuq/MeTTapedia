@@ -169,7 +169,7 @@ theorem haltingTrustBoundaryChecker_complete :
   simp [haltingTrustBoundaryChecker, evaluated]
 
 /-- The same computable checker is sound and certificate-complete. -/
-def haltingTrustBoundaryAuthority :
+theorem haltingTrustBoundaryAuthority :
     haltingTrustBoundaryChecker.Authority HaltingMeaning where
   sound := haltingTrustBoundaryChecker_sound
   complete := haltingTrustBoundaryChecker_complete
@@ -590,7 +590,7 @@ theorem AuthorityProjection.sound
 
 /-- Exact authority is the special case whose certificate scope and guest
 meaning coincide. -/
-def Authority.toProjection
+theorem Authority.toProjection
     {Claim : Type uClaim} {Certificate : Type uCertificate}
     {checker : Checker Claim Certificate} {Meaning : Claim -> Prop}
     (authority : checker.Authority Meaning) :
@@ -616,7 +616,7 @@ theorem AuthorityProjection.not_target_authority_of_gap
 
 /-- Independent authority projections compose by pairing their evidence and
 conjoining both their exact and projected meanings. -/
-def AuthorityProjection.conjunction
+theorem AuthorityProjection.conjunction
     {Claim : Type uClaim} {LeftCertificate : Type uCertificate}
     {RightCertificate : Type uJudgment}
     {left : Checker Claim LeftCertificate}
@@ -638,7 +638,7 @@ def AuthorityProjection.conjunction
 
 /-- Authority projections for distinct judgment families compose through the
 same fail-closed tagged dispatch. -/
-def AuthorityProjection.sum
+theorem AuthorityProjection.sum
     {LeftClaim : Type uClaim} {RightClaim : Type uJudgment}
     {LeftCertificate : Type uCertificate}
     {RightCertificate : Type uAxiom}
@@ -732,7 +732,7 @@ theorem onWire_authority
 
 /-- Fail-closed wire decoding preserves both the exact certificate scope and
 its semantic projection. -/
-def AuthorityProjection.onWire
+theorem AuthorityProjection.onWire
     {Claim : Type uClaim} {Certificate : Type uCertificate}
     {Wire : Type uJudgment}
     {checker : Checker Claim Certificate}
@@ -1261,7 +1261,7 @@ theorem equationOnlyGSLT_false_true_equivalent :
     equationOnlyGSLT.Equiv false true :=
   trivial
 
-private def equationOnlyGSLT_reachable_eq :
+private theorem equationOnlyGSLT_reachable_eq :
     {source target : Bool} ->
       equationOnlyGSLT.MultiStep source target -> source = target
   | _, _, .refl _ => rfl

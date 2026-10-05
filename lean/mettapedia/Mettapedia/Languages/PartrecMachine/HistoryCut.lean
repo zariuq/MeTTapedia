@@ -153,13 +153,13 @@ theorem historyRetyping : ContinuationRetypingPlan historyCut where
 /-- The redex stays sorted once the two continuations are moved to the
 wrapped fibre. -/
 theorem historyRetyping_redexRetypable : historyRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   exact checkHasType_sound (by decide +kernel)
 
 /-- **The history theory is wrappable**: the contractum of its interaction
 rule has the wrapped sort in the continuation signature. -/
 theorem historyRetyping_wrappable : historyRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   exact checkHasType_sound (by decide +kernel)
 
 /-- The continuation under a prefix is retyped to the wrapped fibre. -/

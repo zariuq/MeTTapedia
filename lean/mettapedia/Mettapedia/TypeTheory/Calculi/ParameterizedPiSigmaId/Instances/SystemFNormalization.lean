@@ -2,6 +2,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.SystemF
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.Tower
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Fundamental
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.CodeConstants
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Renaming
 
 /-!
 # Strong normalization of System F from the normalization model
@@ -34,6 +35,16 @@ The context of every layout is formed, each entry being the type of codes or the
 of a code. So the translation of a well-typed System F term is a term typed in a formed
 context, hence strongly normalizing, and a System F term is strongly normalizing when its
 translation is (`strongNormalization`).
+
+**Constants that never compute.** The daimon is rigid on the realizer side
+(`realizerRoles_daimon`), so the model reads every constant that never computes as the
+daimon (`ModelSN.Typed.sn_of_noSteps`). Hence every term typed in a formed context of a
+package with the universe rules of the tower and no root step is strongly normalizing,
+whatever constants the package declares and at whatever types (`noSteps_sn`). Positive
+example: the tower with the constants of a set theory and constants for the rules of its
+logic. Negative example: a package with a declared equation is outside the theorem, and a
+constant whose equation unfolds again at every step has a typed term with an infinite
+reduction.
 -/
 
 set_option autoImplicit false
@@ -339,6 +350,37 @@ full β together with the decoding of (codesOver L), and so is its type. -/
 theorem rules_sn {n : Nat} {Δ : LevelTower.Ctx L n} {t A : LevelTower.Tm L n}
     (formed : CtxFormed (rulesOver L) Δ) (typed : Typed (rulesOver L) Δ t A) : SN (rulesOver L) t ∧ SN (rulesOver L) A :=
   ModelSN.Typed.sn soundS.typed formed typed
+
+/-- The daimon is rigid on the realizer side. -/
+theorem realizerRoles_daimon : realizerRoles (L := L) daimonName = .rigid := by
+  have holds : daimonName ≠ (codesOver L).holds := by
+    show daimonName ≠ holdsName
+    decide
+  have imp : daimonName ≠ (codesOver L).imp := by
+    show daimonName ≠ impName
+    decide
+  have all : daimonName ≠ allProp := by decide
+  have zero : daimonName ≠ zeroName := by decide
+  have suc : daimonName ≠ sucName := by decide
+  unfold realizerRoles
+  rw [if_neg holds, if_neg imp, if_neg all, if_neg zero, if_neg suc]
+
+/-- **Strong normalization over the tower, whatever constants are declared.** Every term
+typed in a formed context of a package with the universe rules of the tower and no root step
+is strongly normalizing under the package's reduction, β and the projections. -/
+theorem noSteps_sn {R : Rules (LevelTower.Head L)}
+    (headTyping : ∀ {h u : LevelTower.Head L}, R.headTyping h u →
+      (LevelTower.rules L).headTyping h u)
+    (isUniverse : ∀ {u : LevelTower.Head L}, R.isUniverse u → (LevelTower.rules L).isUniverse u)
+    (join : ∀ {u v w : LevelTower.Head L}, R.join u v w → (LevelTower.rules L).join u v w)
+    (cumulative : ∀ {u v : LevelTower.Head L}, R.cumulative u v →
+      (LevelTower.rules L).cumulative u v)
+    (headEq : ∀ {h h' : LevelTower.Head L}, R.headEq h h' → (LevelTower.rules L).headEq h h')
+    (noSteps : ∀ {n : Nat} {l r : LevelTower.Tm L n}, ¬ R.computation.step l r)
+    {n : Nat} {Γ : LevelTower.Ctx L n} {t A : LevelTower.Tm L n} (formed : CtxFormed R Γ)
+    (typed : Typed R Γ t A) : SN R t :=
+  ModelSN.Typed.sn_of_noSteps (M := model L) headTyping isUniverse join cumulative headEq noSteps
+    model_laws realizerRoles_daimon formed typed
 
 /-- **Strong normalization of System F.** Every well-typed term of Church-style
 System F is strongly normalizing for full β- and type-β-reduction. -/

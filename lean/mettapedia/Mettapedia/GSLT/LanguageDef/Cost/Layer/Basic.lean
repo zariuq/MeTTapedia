@@ -78,6 +78,15 @@ theorem compactOutput_theory (object : Cost.Layer) :
       object.source.toCIGSLT.costIGSLT :=
   rfl
 
+/-- **A layer is a section on a Cost image.**  The compact output of a layer
+is the Cost image of its source as a wrappable theory; the layer supplies
+clause (ii) on it and nothing else. -/
+@[simp]
+theorem compactOutput_toWrappableIGSLT (object : Cost.Layer) :
+    object.compactOutput.toCIGSLT.toWrappableIGSLT =
+      object.source.toCIGSLT.toWrappableIGSLT.cost :=
+  rfl
+
 /-- The proof-relevant semantic output over the exact same generated authored
 presentation as the compact continued object. -/
 def elaboratedOutput (object : Cost.Layer) :

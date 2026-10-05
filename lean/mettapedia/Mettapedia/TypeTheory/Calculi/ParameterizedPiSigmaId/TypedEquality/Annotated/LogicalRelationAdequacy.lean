@@ -156,10 +156,14 @@ theorem typeKind_of_tyTok_univ {t : Tok} (ht : TyTok Elem.univ t) : typeKind t.k
         | exact absurd (tyTok_tag_refl.1 ht) (nmem (by intro e; cases e))
         | exact absurd ht tyTok_tag_lam
         | exact absurd ht tyTok_tag_pair
+        | exact absurd (tyTok_tag_ctor.1 ht) (nmem (k := .data _) nofun)
   | arg k i C s =>
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact absurd ht (tyTok_arg_other hother)
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · rfl
+        · exact absurd (tyTok_field.1 ht).1 (nmem (k := .data _) nofun)
+        · exact absurd ht (tyTok_arg_other hother hk)
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩

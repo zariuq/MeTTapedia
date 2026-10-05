@@ -26,14 +26,14 @@ variable {source : CIGSLT} {color : CostStaticColor}
 def sourceContext (table : LanguageDef.TypedCostRegionBoundaryTable source color targetFree occurrences) :
     WellSorted.FreeTypeContext :=
   fun name => match decodeCostRegionSourceVariableName name with
-    | some original => (targetFree original).bind (decodeCostStaticTypeExpr source color)
+    | some original => (targetFree original).bind (CostStaticTypeImage.decode source.theory color)
     | none => (OccurrenceTokens.lookup table.entries.length name).map
         (fun slot => (table.entries.get slot).boundary.type)
 
 @[simp] theorem sourceContext_sourceVariable
     (table : LanguageDef.TypedCostRegionBoundaryTable source color targetFree occurrences) (name : String) :
     sourceContext table (costRegionSourceVariableName name) =
-      (targetFree name).bind (decodeCostStaticTypeExpr source color) := by
+      (targetFree name).bind (CostStaticTypeImage.decode source.theory color) := by
   simp only [sourceContext, decodeCostRegionSourceVariableName_encode]
 
 @[simp] theorem sourceContext_token
@@ -69,7 +69,7 @@ theorem positional_supportedSafe
     (token_namesValid plan.boundaryTable)
   intro name type lookup
   rw [sourceContext_sourceVariable, lookup]
-  exact decodeCostStaticTypeExpr_mapTypeExpr source color type
+  exact CostStaticTypeImage.decode_mapTypeExpr source.theory color type
 
 /-- A certified source sort maps back to the real target free context. The
 per-entry premise is type-image compatibility, not current-value coherence. -/
@@ -80,10 +80,10 @@ theorem map_sourceContext_lookup
     freeContext table name = some (mapTypeExpr (color.symbols source) type) := by
   cases decoded : decodeCostRegionSourceVariableName name with
   | some original =>
-      have boundLookup : (targetFree original).bind (decodeCostStaticTypeExpr source color) = some type := by
+      have boundLookup : (targetFree original).bind (CostStaticTypeImage.decode source.theory color) = some type := by
         simpa only [sourceContext, decoded] using lookup
       obtain ⟨targetType, targetLookup, recovered⟩ := Option.bind_eq_some_iff.mp boundLookup
-      have restored := mapTypeExpr_decodeCostStaticTypeExpr source color recovered
+      have restored := CostStaticTypeImage.mapTypeExpr_decode source.theory color recovered
       simpa only [freeContext, decoded, restored] using targetLookup
   | none =>
       cases selected : OccurrenceTokens.lookup table.entries.length name with

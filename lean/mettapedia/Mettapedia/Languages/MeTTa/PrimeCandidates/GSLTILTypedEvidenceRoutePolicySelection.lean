@@ -131,7 +131,7 @@ theorem supportsSourcePolicies_iff_compatible
     (family : PolicyFamily (SourceHistory source command)) :
     SupportsSourcePolicies route command family ↔
       family.CompatibleReadout (route.atCommand command).mapHistory := by
-  letI : Nonempty (SourceHistory source command) := ⟨[]⟩
+  let : Nonempty (SourceHistory source command) := ⟨[]⟩
   exact family.supportsReadout_iff_compatible
     (route.atCommand command).mapHistory
 

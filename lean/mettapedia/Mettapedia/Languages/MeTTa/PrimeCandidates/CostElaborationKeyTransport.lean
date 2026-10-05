@@ -42,7 +42,7 @@ three dependent indices while forgetting only the selected elaboration tree.
 -/
 def mapCompactCostCarrier {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism) :
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism) :
     CompactCostCarrier source → CompactCostCarrier target
   | ⟨index, term⟩ =>
       ⟨index.map morphism, morphism.mapCostOpenTerm scope term⟩
@@ -52,7 +52,7 @@ Cost elaboration.  No recompilation or comparison of proof trees occurs. -/
 @[simp] theorem compactCarrierKey_mapCostElaborationFiber
     {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     (fiber : CostElaborationFiber source) :
     compactCarrierKey target
@@ -71,8 +71,7 @@ def transportCompactCarrier {source target : CostElaborationBase}
       CompactCostCarrier target.toLayer.source.toCIGSLT :=
   mapCompactCostCarrier
     morphism.underlying.underlying.underlying
-    (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
-      morphism.underlying.compactMapLaws)
+    morphism.underlying.compactMapLaws.preservesGeneratedReflectiveScope
 
 /-- The global compact key commutes with the chosen strongly cocartesian
 displayed transport. -/
@@ -86,8 +85,7 @@ displayed transport. -/
         (compactCarrierKey source.toLayer.source.toCIGSLT fiber) := by
   exact compactCarrierKey_mapCostElaborationFiber
     morphism.underlying.underlying.underlying
-    (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
-      morphism.underlying.compactMapLaws)
+    morphism.underlying.compactMapLaws.preservesGeneratedReflectiveScope
     morphism.reindexLaws fiber
 
 /-- The source compact key is a concrete information refinement of the

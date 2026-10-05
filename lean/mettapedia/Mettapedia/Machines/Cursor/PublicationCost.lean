@@ -246,6 +246,139 @@ theorem finite_demand_is_not_full_collection {World : Type}
   · intro fuel
     exact full_collection_of_stream_never_completes expected fuel index world
 
+
+namespace Composition
+
+variable {Error : Type}
+
+/-- The HE reference first completes an atomic answer collection, then folds
+its ordered occurrences. No provisional scalar result is published. -/
+def heMaterializedFold (consume : Accumulator → Item → Accumulator)
+    (initial : Accumulator) (events : List (Event Item Error)) : Except Error Accumulator :=
+  (atomicResult events).map (fun items => items.foldl consume initial)
+
+/-- PeTTa's collecting worker retains a reverse list while answers arrive.
+The public list is restored to occurrence order only at completion. -/
+def pettaCollect : List Item → List (Event Item Error) → Except Error (List Item)
+  | collected, [] => .ok collected.reverse
+  | _, .raise error :: _ => .error error
+  | collected, .answer item :: rest => pettaCollect (item :: collected) rest
+
+theorem pettaCollect_eq (events : List (Event Item Error)) (collected : List Item) :
+    pettaCollect collected events =
+      (atomicResult events).map (fun items => collected.reverse ++ items) := by
+  induction events generalizing collected with
+  | nil => simp [pettaCollect, atomicResult, Except.map]
+  | cons event rest ih =>
+      cases event with
+      | raise error => rfl
+      | answer item =>
+          rw [pettaCollect, ih]
+          cases found : atomicResult rest with
+          | error error => simp [atomicResult, found, Except.map]
+          | ok items => simp [atomicResult, found, Except.map, List.append_assoc]
+
+def pettaMaterializedFold (consume : Accumulator → Item → Accumulator)
+    (initial : Accumulator) (events : List (Event Item Error)) : Except Error Accumulator :=
+  (pettaCollect [] events).map (fun items => items.foldl consume initial)
+
+/-- The native fused route updates a private accumulator, consumes the whole
+producer, and publishes only after an exhaustion boundary. The supplied step
+is a total pure operation in the admitted fragment. -/
+def privateFold (consume : Accumulator → Item → Accumulator) :
+    Accumulator → List (Event Item Error) → Except Error Accumulator
+  | initial, [] => .ok initial
+  | _, .raise error :: _ => .error error
+  | initial, .answer item :: rest => privateFold consume (consume initial item) rest
+
+theorem privateFold_agrees_he (consume : Accumulator → Item → Accumulator)
+    (events : List (Event Item Error)) (initial : Accumulator) :
+    privateFold consume initial events = heMaterializedFold consume initial events := by
+  induction events generalizing initial with
+  | nil => rfl
+  | cons event rest ih =>
+      cases event with
+      | raise error => rfl
+      | answer item =>
+          rw [privateFold, ih]
+          cases found : atomicResult rest with
+          | error error => simp [heMaterializedFold, atomicResult, found, Except.map]
+          | ok items => simp [heMaterializedFold, atomicResult, found, Except.map]
+
+theorem privateFold_agrees_petta (consume : Accumulator → Item → Accumulator)
+    (events : List (Event Item Error)) (initial : Accumulator) :
+    privateFold consume initial events = pettaMaterializedFold consume initial events := by
+  rw [privateFold_agrees_he, pettaMaterializedFold, pettaCollect_eq]
+  cases found : atomicResult events <;> simp [heMaterializedFold, Except.map, found]
+
+/-- Updating privately is not short-circuiting. A fault after any successful
+prefix remains a fault of the whole atomic operation. -/
+theorem late_fault_is_retained (consume : Accumulator → Item → Accumulator)
+    (items : List Item) (initial : Accumulator) (error : Error) :
+    privateFold consume initial (items.map Event.answer ++ [.raise error]) = .error error := by
+  induction items generalizing initial with
+  | nil => rfl
+  | cons item rest ih => simpa [privateFold] using ih (consume initial item)
+
+/-- The completed common boundary and both independent materializing routes
+agree for every finite pure occurrence list, with an explicit administrative
+request count. This is separate from authored firing/fuel accounting. -/
+theorem boundary_dialect_agreement (consume : Accumulator → Item → Accumulator)
+    (items : List Item) (initial : Accumulator) :
+    Fold.OwnedSequence.sequence (fun acc item => some (consume acc item)) (items.length + 1)
+      ⟨items, none, initial, 0, 0⟩ =
+        (.complete, ⟨[], none, items.foldl consume initial, items.length, items.length + 1⟩) ∧
+    heMaterializedFold consume initial (items.map (Event.answer (Error := Error))) =
+      .ok (items.foldl consume initial) ∧
+    pettaMaterializedFold consume initial (items.map (Event.answer (Error := Error))) =
+      .ok (items.foldl consume initial) := by
+  constructor
+  · simpa using Fold.OwnedSequence.complete_exact consume items initial 0 0
+  · have run : privateFold consume initial (items.map (Event.answer (Error := Error))) =
+        .ok (items.foldl consume initial) := by
+      induction items generalizing initial with
+      | nil => rfl
+      | cons item rest ih => simpa [privateFold] using ih (consume initial item)
+    exact ⟨(privateFold_agrees_he consume _ initial).symm.trans run,
+      (privateFold_agrees_petta consume _ initial).symm.trans run⟩
+
+/-- Direct composition retains the current payload and accumulator instead
+of copying every occurrence into an intermediate result container. The producer
+frontier and owner metadata must be added separately to this account. -/
+def directWorkingPeak (itemBytes : Item → Nat) (accumulatorBytes : Nat)
+    (items : List Item) : Nat :=
+  transientPeak itemBytes items + accumulatorBytes
+
+theorem direct_working_bound (itemBytes : Item → Nat) (items : List Item)
+    (itemLimit accumulatorBytes accumulatorLimit : Nat)
+    (itemBound : ∀ item ∈ items, itemBytes item ≤ itemLimit)
+    (accumulatorBound : accumulatorBytes ≤ accumulatorLimit) :
+    directWorkingPeak itemBytes accumulatorBytes items ≤ itemLimit + accumulatorLimit := by
+  exact Nat.add_le_add (transientPeak_le itemBytes items itemLimit itemBound) accumulatorBound
+
+/-- At fixed item size, the materialization receipt grows with occurrences;
+the direct working bound does not. Both quantities count bytes, not time. -/
+theorem avoided_materialization (count itemSize accumulatorSize : Nat) :
+    publicationBytes (fun _ : Unit => itemSize) (List.replicate count ()) = count * itemSize ∧
+    directWorkingPeak (fun _ : Unit => itemSize) accumulatorSize (List.replicate count ()) ≤
+      itemSize + accumulatorSize := by
+  constructor
+  · simp [publicationBytes]
+  · exact direct_working_bound _ _ _ _ _ (by intros; exact Nat.le_refl _) (Nat.le_refl _)
+
+namespace Controls
+
+theorem duplicate_and_late_fault :
+    privateFold (fun n item : Nat => n + item) 0
+      ([.answer 3, .answer 3] : List (Event Nat String)) = .ok 6 ∧
+    privateFold (fun n item : Nat => n + item) 0
+      ([.answer 3, .answer 3, .raise "late"] : List (Event Nat String)) = .error "late" :=
+  by decide
+
+end Controls
+
+end Composition
+
 namespace Controls
 
 theorem duplicate_publication_is_charged_twice :

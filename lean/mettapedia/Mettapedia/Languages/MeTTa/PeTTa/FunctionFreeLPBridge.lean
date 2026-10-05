@@ -188,7 +188,7 @@ noncomputable def pettaSpaceToFFKB (s : PeTTaSpace) : KnowledgeBase pettaFFSig w
 /-- When `kb.prog = []`, `T_P_LP kb I = kb.db` for any interpretation `I`. -/
 theorem T_P_LP_empty_prog {σ : LPSignature} (kb : KnowledgeBase σ)
     (hprog : kb.prog = []) (I : Interpretation σ) : T_P_LP kb I = kb.db := by
-  simp only [T_P_LP, Set.ext_iff, Set.mem_union, Set.mem_setOf_eq]
+  simp only [T_P_LP, Set.ext_iff, Set.mem_union, Set.mem_ofPred_eq]
   intro a
   constructor
   · rintro (ha | ⟨c, _g, hc, _⟩)
@@ -211,7 +211,7 @@ theorem encodeReducesFF_mem_lhm_iff (s : PeTTaSpace) (p q : Pattern) :
     encodeReducesFF p q ∈ leastHerbrandModel (pettaSpaceToFFKB s) ↔
     ∃ r ∈ s.rules, r.premises = [] ∧ r.left = p ∧ r.right = q := by
   rw [leastHerbrandModel_empty_prog (pettaSpaceToFFKB s) rfl]
-  simp only [pettaSpaceToFFKB, Set.mem_setOf_eq]
+  simp only [pettaSpaceToFFKB, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨r, hr, hprem, henc⟩
     obtain ⟨hleft, hright⟩ := encodeReducesFF_inj henc

@@ -36,6 +36,9 @@ universe uRaw uExact uKey uRetry uCell uRaw' uExact' uRawTwo uExactTwo
 
 /-! ## A capability displayed over unchanged raw semantics -/
 
+-- The bundled carrier uses the maximum of its independently sized raw and
+-- evidence universes. Both levels remain parameters of the displayed family.
+set_option linter.checkUnivs false in
 /-- One exact native capability family displayed over a raw carrier.  The raw
 value is not reconstructed from evidence and therefore remains available when
 evidence is absent or invalidated. -/

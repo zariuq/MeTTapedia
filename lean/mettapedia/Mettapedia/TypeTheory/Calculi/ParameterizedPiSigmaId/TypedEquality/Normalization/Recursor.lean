@@ -257,18 +257,18 @@ end Prefix
 section Typing
 
 variable {m : Nat} {Δ : Ctx Head m} {T : DeclName} {v : Head}
-  {ctors : List (DeclName × List (Field Head))} {rec : DeclName} {R₀ R₁ R₂ : Rules Head} {u : Head}
-  (decl : DeclaresInductive S R₀ R₁ R₂ T u ctors rec v)
+  {ctors : List (DeclName × List (Field Head))} {rec : DeclName}
+  (decl : DeclaresRecursor S T ctors rec v)
 include decl
 
 /-- The recursor at its declared type, in every context. -/
-theorem DeclaresInductive.rec_typing {n : Nat} {Γ : Ctx Head n} :
+theorem DeclaresRecursor.rec_typing {n : Nat} {Γ : Ctx Head n} :
     Typed S.R Γ (.const rec) (liftClosed (recType T v ctors)) := by
   obtain ⟨w, hw, typed⟩ := decl.recTyped
-  exact .const decl.recDeclared (Derivable.mono decl.sub₂ typed) hw
+  exact .const decl.recDeclared typed hw
 
 /-- The recursor applied to a typed motive and typed methods. -/
-theorem DeclaresInductive.prefix_typing {τ : Sub Head (ctors.length + 1) m}
+theorem DeclaresRecursor.prefix_typing {τ : Sub Head (ctors.length + 1) m}
     (typed : SubstMor S.R (recPrefix T v ctors) Δ τ) :
     Typed S.R Δ (recHead rec T v ctors τ)
       (.pi (.const T) (.app (Presentation.rename wk (τ (Fin.last ctors.length))) (.var 0))) := by
@@ -279,7 +279,7 @@ theorem DeclaresInductive.prefix_typing {τ : Sub Head (ctors.length + 1) m}
   exact h
 
 /-- The full application of the recursor to a typed scrutinee. -/
-theorem DeclaresInductive.app_typing {τ : Sub Head (ctors.length + 1) m}
+theorem DeclaresRecursor.app_typing {τ : Sub Head (ctors.length + 1) m}
     (typed : SubstMor S.R (recPrefix T v ctors) Δ τ) {t : Tm Head m}
     (ht : Typed S.R Δ t (.const T)) :
     Typed S.R Δ (.app (recHead rec T v ctors τ) t) (.app (τ (Fin.last ctors.length)) t) := by
@@ -287,7 +287,7 @@ theorem DeclaresInductive.app_typing {τ : Sub Head (ctors.length + 1) m}
   rwa [inst0_motiveApp] at h
 
 /-- Reducing the scrutinee of a full application of the recursor. -/
-theorem DeclaresInductive.scrutinee_red {τ : Sub Head (ctors.length + 1) m}
+theorem DeclaresRecursor.scrutinee_red {τ : Sub Head (ctors.length + 1) m}
     (typed : SubstMor S.R (recPrefix T v ctors) Δ τ) {t nf X : Tm Head m}
     (red : RedTm S.R S.roles Δ t nf (.const T))
     (result : TypeEq S.R Δ (.app (τ (Fin.last ctors.length)) t) X)
@@ -311,7 +311,8 @@ theorem DeclaresInductive.scrutinee_red {τ : Sub Head (ctors.length + 1) m}
 
 /-- The recursor applied to convertible motives and methods has convertible
 head spines. -/
-theorem DeclaresInductive.head_convNe (laws : S.E.Laws S.R S.roles) {τ τ' : Sub Head (ctors.length + 1) m}
+theorem DeclaresRecursor.head_convNe (laws : S.E.Laws S.R S.roles)
+    {τ τ' : Sub Head (ctors.length + 1) m}
     (conv : ∀ i, S.E.convTm Δ (τ i) (τ' i)
       (Presentation.subst τ (Ctx.lookup (recPrefix T v ctors) i))) :
     S.E.convNe Δ (recHead rec T v ctors τ) (recHead rec T v ctors τ')
@@ -407,8 +408,8 @@ theorem DeclaresInductive.rec_rel {τ τ' : Sub Head (ctors.length + 1) m}
     have toT' := laws.convTy_sound (escape.eqTy eqT')
     have toNf' := laws.convTy_sound (escape.eqTy eqNf')
     have toNf := laws.convTy_sound (escape.eqTy eqNf)
-    have redL := decl.scrutinee_red typed red (laws.convTy_sound escape.refl) toNf.symm
-    have redR := decl.scrutinee_red typed' red' toT'.symm toNf'.symm
+    have redL := decl.toRecursor.scrutinee_red typed red (laws.convTy_sound escape.refl) toNf.symm
+    have redR := decl.toRecursor.scrutinee_red typed' red' toT'.symm toNf'.symm
     have inner := ih red.target red'.target conv
     rw [← sameNf] at inner
     exact rApp.eqTm_expand laws redL redR inner
@@ -432,8 +433,10 @@ theorem DeclaresInductive.rec_rel {τ τ' : Sub Head (ctors.length + 1) m}
     obtain ⟨_, eqK, _⟩ := motive_apps laws formed decl.hv rMotive motiveEq hk hk' hEq
     have toK := laws.convTy_sound ((rRes.escape laws).eqTy eqK)
     obtain ⟨hres, hres'⟩ := rRes.eqTm_redTm laws eRes
-    have red₁ := RedTm.of_root step (decl.app_typing typed ty) ((rRes.escape laws).redTm hres).1
-    have red₁' := RedTm.of_root step' (Typed.convType (decl.app_typing typed' ty') toK.symm)
+    have red₁ := RedTm.of_root step (decl.toRecursor.app_typing typed ty)
+      ((rRes.escape laws).redTm hres).1
+    have red₁' := RedTm.of_root step'
+      (Typed.convType (decl.toRecursor.app_typing typed' ty') toK.symm)
       ((rRes.escape laws).redTm hres').1
     exact rRes.eqTm_expand laws red₁ red₁' eRes
   case neutral =>
@@ -461,11 +464,11 @@ theorem DeclaresInductive.rec_rel {τ τ' : Sub Head (ctors.length + 1) m}
     have neutralR : Neutral S.roles (.app (recHead rec T v ctors τ') nf') := by
       rw [app_recHead, recApp]
       exact .stuck_single (after := []) role lengthOk nN'
-    have spine := laws.convNe_app (decl.head_convNe laws convτ)
+    have spine := laws.convNe_app (decl.toRecursor.head_convNe laws convτ)
       (laws.convTm_of_convNe (.inl nN) (.inl nN') convN)
     rw [inst0_motiveApp] at spine
-    exact (rApp.reflects laws).eqTm neutralL neutralR (decl.app_typing typed ty)
-      (Typed.convType (decl.app_typing typed' ty') toN.symm) spine
+    exact (rApp.reflects laws).eqTm neutralL neutralR (decl.toRecursor.app_typing typed ty)
+      (Typed.convType (decl.toRecursor.app_typing typed' ty') toN.symm) spine
   case nil => exact .nil
   case recursive =>
     intro fields as as' a a' head tail ih₁ ih₃
@@ -530,7 +533,7 @@ theorem DeclaresInductive.rec_full :
 theorem DeclaresInductive.rec_semantic : SemanticConstant S rec (recType T v ctors) := by
   obtain ⟨w, hw, validType⟩ := decl.rec_valid_type laws
   have typing : Typed S.R .nil (.const rec) (closeType (recTele T v ctors) (recBody ctors.length)) := by
-    have h := decl.rec_typing (Γ := .nil)
+    have h := decl.toRecursor.rec_typing (Γ := .nil)
     rwa [liftClosed_zero] at h
   show SemanticConstant S rec (closeType (recTele T v ctors) (recBody ctors.length))
   exact SemanticConstant.of_telescope laws (.inr ⟨_, decl.recRole⟩) (Θ := recTele T v ctors)

@@ -1966,15 +1966,16 @@ theorem predDomain_rf_fragment_canary_nontrivial_progress :
     (I := fun _ p => rhoCoreStarRel p (encode Psrc "n_init" "v_init"))
     (φ := .box (.atom "rf_pred_prog"))
     (hfrag := EndpointDiaBoxFragment.box (EndpointDiaBoxFragment.atom "rf_pred_prog"))
-    (P0 := Psrc) (P1 := .nil)
+    (P0 := Psrc) (P1 := Process.nil.substitute "u" "w")
     (hstep := ?_)
     (hrf := hrf) (hsafe := ?_)
     (hAtomPred := fun _ p hp => hp)
-  · simpa [Psrc] using
+  · exact
       (Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiStepRF.step
         (Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.ReducesRF.comm
           "alpha" "u" "w" .nil)
-        (Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiStepRF.refl .nil))
+        (Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.MultiStepRF.refl
+          (Process.nil.substitute "u" "w")))
   · refine ⟨?_, trivial⟩
     exact ⟨by decide,
       by simp [Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation.BarendregtFor]⟩

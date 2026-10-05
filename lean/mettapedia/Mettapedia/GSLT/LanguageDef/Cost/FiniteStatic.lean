@@ -24,37 +24,6 @@ namespace ContinuationDecorationProfile
 
 variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
 
-def costStaticEquations (_profile : ContinuationDecorationProfile cut) : List Equation :=
-  theory.presentation.presentation.language.equations.map costBaseEquationDecl ++
-    theory.presentation.presentation.language.equations.map (costWrappedEquationDecl theory)
-
-def costWholeLanguage (profile : ContinuationDecorationProfile cut) : LanguageDef :=
-  { profile.costCoreLanguage with
-    name := "$cost:interaction:" ++ theory.presentation.presentation.language.name
-    equations := profile.costStaticEquations
-    rewrites := [profile.costWholeRedexRewrite] }
-
-/-- Intermediate host for the existing unrenamed equation images. -/
-def reflectiveRetypingLanguage (profile : ContinuationDecorationProfile cut) : LanguageDef :=
-  { profile.generatedLanguage with equations :=
-      theory.presentation.presentation.language.equations.map costBaseEquation ++
-      theory.presentation.presentation.language.equations.map (costWrappedEquation theory) }
-
-theorem ofRetypingPlan_costWholeLanguage (source : CIGSLT) :
-    (ofRetypingPlan source.continuationRetyping).costWholeLanguage =
-      source.costWholeLanguage := by
-  unfold costWholeLanguage CIGSLT.costWholeLanguage
-  rw [ofRetypingPlan_costCoreLanguage, ofRetypingPlan_costWholeRedexRewrite]
-  rfl
-
-theorem ofRetypingPlan_reflectiveRetypingLanguage {sourceTheory : IGSLT}
-    {sourceCut : InteractionCutPresentation sourceTheory}
-    (plan : ContinuationRetypingPlan sourceCut) :
-    (ofRetypingPlan plan).reflectiveRetypingLanguage =
-      Mettapedia.GSLT.LanguageDef.reflectiveRetypingLanguage plan := by
-  unfold reflectiveRetypingLanguage Mettapedia.GSLT.LanguageDef.reflectiveRetypingLanguage
-  rw [ofRetypingPlan_generatedLanguage]
-
 theorem costStaticEquationNames_nodup (profile : ContinuationDecorationProfile cut) :
     (profile.costStaticEquations.map (·.name)).Nodup := by
   rw [costStaticEquations, List.map_append, List.map_map, List.map_map, List.nodup_append]
@@ -85,7 +54,7 @@ private theorem sourceName_not_constructor (profile : ContinuationDecorationProf
   intro member
   obtain ⟨term, declared, same⟩ := List.mem_map.mp member
   obtain ⟨suffix, prefixed⟩ := profile.costCoreTerm_label_has_costPrefix term declared
-  exact CIGSLT.costSourceSchemaName_ne_costPrefix name suffix (same.symm.trans prefixed)
+  exact WrappableIGSLT.costSourceSchemaName_ne_costPrefix name suffix (same.symm.trans prefixed)
 
 /-- One common validation argument serves both static colors. It accepts
 sorting evidence for the computed image, never its desired validator result. -/
@@ -214,24 +183,6 @@ theorem costWholeLanguage_validate (profile : ContinuationDecorationProfile cut)
   · intro rule member
     obtain rfl := List.mem_singleton.mp member
     exact profile.costWholeRedexRewrite_validate noDuplicates redexTyped contractumTyped
-
-/-- Every admitted former two-slot input satisfies the generalized static
-gate by its existing equation typing evidence. -/
-theorem ofRetypingPlan_costWholeLanguage_validate (source : CIGSLT) :
-    (ofRetypingPlan source.continuationRetyping).costWholeLanguage.validate = [] := by
-  apply costWholeLanguage_validate _ source.continuationRetyping.noDuplicates
-    ((ofRetypingPlan_redexRetypable_iff _).mpr source.redexRetypable)
-    ((ofRetypingPlan_wrappable_iff _).mpr source.wrappable)
-  · exact fun equation member => (source.equationsRetypable equation member).premiseFree
-  · intro equation member
-    rw [ofRetypingPlan_generatedLanguage]
-    exact (source.equationsRetypable equation member).baseWellSorted
-  · intro equation member
-    rw [ofRetypingPlan_generatedLanguage]
-    exact (source.equationsRetypable equation member).wrappedWellSorted
-
-#print axioms costWholeLanguage_validate
-#print axioms ofRetypingPlan_costWholeLanguage_validate
 
 end ContinuationDecorationProfile
 end Mettapedia.GSLT.LanguageDef

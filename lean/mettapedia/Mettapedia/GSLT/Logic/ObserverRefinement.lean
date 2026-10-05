@@ -217,6 +217,10 @@ end ObserverRefinement
 
 /-! ## The category of observers -/
 
+-- These universes name independently chosen field carriers even though the
+-- structure's result sort contains their maximum. Merging them would change
+-- the parameters of the observational systems being compared.
+set_option linter.checkUnivs false in
 /-- One observer of a fixed operational system.  Atom and label universes are
 fixed only so these objects form an ordinary locally small category. -/
 structure ObserverObject (S : GSLT.{uS}) where

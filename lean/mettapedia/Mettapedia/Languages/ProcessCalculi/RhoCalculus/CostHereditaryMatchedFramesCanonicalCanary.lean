@@ -90,16 +90,16 @@ def rightCoreTerm : WellSorted.OpenTerm rhoCIGSLT.costWholeLanguage
 
 def leftPlan :=
   (buildCostStaticRegionPlan? rhoCIGSLT .base FreeTypeContext.empty
-    (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+    (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
       [ambientType]) [ambientType]
-    (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [ambientType])
+    (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [ambientType])
     [ambientType] .hole leftPattern (.base "Proc")).get (by decide)
 
 def rightPlan :=
   (buildCostStaticRegionPlan? rhoCIGSLT .base FreeTypeContext.empty
-    (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+    (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
       [ambientType]) [ambientType]
-    (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [ambientType])
+    (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [ambientType])
     [ambientType] .hole rightPattern (.base "Proc")).get (by decide)
 
 theorem leftPlan_rootStatic : leftPlan.isStaticRoot = true := by decide
@@ -598,8 +598,8 @@ theorem left_endpoint_frame_keyed
   unfold declaration
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     leftNode leftEnvironment, reifiedFrame]
-  simp [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
-    mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
+  simp [CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
+    mapPatternList_eq_map, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
     costBaseLanguageDefSymbolMap, rhoReflectivePresentation,
     canonicalizeByDepths, canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
@@ -630,8 +630,8 @@ theorem right_endpoint_frame_keyed
   unfold declaration
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     rightNode rightEnvironment, reifiedFrame]
-  simp [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
-    mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
+  simp [CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
+    mapPatternList_eq_map, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
     costBaseLanguageDefSymbolMap, rhoReflectivePresentation,
     canonicalizeByDepths, canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
@@ -743,9 +743,9 @@ theorem left_common_frame_canonical
           (mapPattern (CostStaticColor.base.symbols rhoCIGSLT) pattern)))
         (left_common_source_frame leftSlot selected)
     _ = _ := by
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
         mapPatternList_eq_map,
-        CostStaticColor.symbols, costBaseStaticSymbols,
+        CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.leftSlot leftSlot)
       have dropNeQuote : declaration.dropConstructor ≠
@@ -798,9 +798,9 @@ theorem right_common_frame_canonical
           (mapPattern (CostStaticColor.base.symbols rhoCIGSLT) pattern)))
         (right_common_source_frame rightSlot selected)
     _ = _ := by
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
         mapPatternList_eq_map,
-        CostStaticColor.symbols, costBaseStaticSymbols,
+        CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.rightSlot rightSlot)
       have dropNeQuote : declaration.dropConstructor ≠
@@ -860,8 +860,8 @@ theorem left_common_frame_keyed
           (mapPattern (CostStaticColor.base.symbols rhoCIGSLT) pattern)))
         (left_common_source_frame leftSlot selected)
     _ = _ := by
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
-        mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
+        mapPatternList_eq_map, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.leftSlot leftSlot)
       change canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
@@ -924,8 +924,8 @@ theorem right_common_frame_keyed
           (mapPattern (CostStaticColor.base.symbols rhoCIGSLT) pattern)))
         (right_common_source_frame rightSlot selected)
     _ = _ := by
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
-        mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
+        mapPatternList_eq_map, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.rightSlot rightSlot)
       change canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
@@ -1031,8 +1031,8 @@ theorem aligned_views_have_source_canonical_alignment :
     right_source_frame_keyed rightSlot rightSelected]
   apply PatternLeafAligned.apply
   exact .cons (.leaf (fun _sourceDepth restoreDepth => by
-    simpa [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
-      CostStaticColor.symbols, costBaseStaticSymbols,
+    simpa [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
       costBaseLanguageDefSymbolMap, CostStaticAtomKeyCospan.reifyWith,
       Pattern.renameFVars, CostStaticAtomKeyCospan.reifyNameWith,
       CostStaticAtomEnvironment.lookupAtom?_atomName, cospan] using
@@ -1151,15 +1151,15 @@ theorem frame_canonical_false_but_pair_normalize_eq :
 theorem planner_supports_differ :
     let leftPlan := buildCostStaticRegionPlan? rhoCIGSLT .base
       FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         [ambientType]) [ambientType]
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [ambientType])
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [ambientType])
       [ambientType] .hole leftPattern (.base "Proc")
     let rightPlan := buildCostStaticRegionPlan? rhoCIGSLT .base
       FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         [ambientType]) [ambientType]
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [ambientType])
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [ambientType])
       [ambientType] .hole rightPattern (.base "Proc")
     (leftPlan.get (by decide)).boundaryTable.entries.map
         (·.boundary.targetSupport) = [[]] ∧

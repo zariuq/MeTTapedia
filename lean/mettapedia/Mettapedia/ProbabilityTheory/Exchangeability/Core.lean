@@ -145,7 +145,7 @@ theorem finiteExchangeable_perm_values {Ω : Type*} [MeasurableSpace Ω] {n : �
   -- These are the same set: substitute j = σ i, so i = σ.symm j
   congr 1
   ext ω
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor <;> intro h' i
   · -- h' : ∀ i, X (σ i) ω = vals i, need X i ω = vals (σ.symm i)
     have := h' (σ.symm i)
@@ -366,7 +366,7 @@ theorem exchangeable_count_prob_partition
   have hdecomp : {ω : Ω | countTrue (fun i => X i ω) = countTrue vals} =
       ⋃ v ∈ S_k, {ω | ∀ i, X i ω = v i} := by
     ext ω
-    simp only [S_k, Set.mem_setOf_eq, Set.mem_iUnion, Finset.mem_filter,
+    simp only [S_k, Set.mem_ofPred_eq, Set.mem_iUnion, Finset.mem_filter,
       Finset.mem_univ, true_and, exists_prop]
     constructor
     · intro h; exact ⟨fun i => X i ω, h, fun i => rfl⟩

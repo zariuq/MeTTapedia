@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
-import Mettapedia.GSLT.Topos.PresheafPredicateProjectionPreservation
+import Mettapedia.GSLT.Topos.PresheafPredicateCartesianClosed
+import Mettapedia.GSLT.Topos.PresheafLogicalTransport
 import Mettapedia.GSLT.Topos.PresheafPredicateReification
 import Mettapedia.GSLT.Topos.PresheafPredicateYonedaRestriction
 import Mathlib.CategoryTheory.Comma.Arrow
@@ -15,16 +16,22 @@ This file bundles presheaf infrastructure into endpoints keyed to:
 ## Constructed endpoints and boundaries
 
 - **Prop 12**: Indexed adjoints with Beck-Chevalley
-- **Prop 14**: Indexed adjoints and frame fibers, plus chosen total products
-  and exponentials with curry/uncurry and strict projection laws. The total
-  constructions currently use a common universe for the base and values.
+- **Prop 14**: Actual cartesian closed total category and closed projection,
+  using the existing products and curry/uncurry adjunction. The total
+  constructions use a common universe for the base and values.
+- **Prop 18**: Small limits and colimits in the total category, preserved by
+  the projection, with their cone and cocone universal properties.
 - **Prop 17**: Function-object reification is right adjoint to curried
   evaluation on predicate fibres (`GSLT.Topos.reify_adjunction`). The older
   same-fiber infimum below is a separate, weaker construction.
-- **Def 21**: Codomain fibration (arrow category) + Cartesian lifts
-- **Sec 4**: Image-comprehension adjunction i ⊣ c (full iff characterization)
-- **Thm 23**: An object package and operation-preservation endpoints, not yet
-  an internal-language functor or 2-functor
+- **Def 21**: Codomain fibration with strongly Cartesian lifts and unique
+  factorization, registered as a Mathlib `IsFibered` instance
+- **Sec 4**: The actual image-comprehension adjunction is imported from
+  `PresheafImageComprehension`; the elementary factorization helpers remain below
+- **Thm 23**: Presheaf restriction now acts on both total categories and on
+  theory natural transformations, with identity/composition, whiskering and
+  adjunction compatibility in `PresheafLogicalTransport`. The all-toposes
+  2-functor into higher-order dependent theories remains a separate obligation.
 -/
 
 open CategoryTheory
@@ -40,6 +47,12 @@ namespace Mettapedia.OSLF.PresheafNativeType
 #check GSLT.Topos.projection_preserves_cartesianClosed
 #check GSLT.Topos.reify_adjunction
 #check GSLT.Topos.yonedaExpPredicate
+#check GSLT.Topos.PredicateCartesianClosed.closed
+#check GSLT.Topos.PredicateCartesianClosed.projectionClosed
+#check GSLT.Topos.PredicateLimits.liftedIsLimit
+#check GSLT.Topos.PredicateLimits.liftedIsColimit
+#check GSLT.Topos.ImageComprehension.adjunction
+#check GSLT.Topos.LogicalTransport.predicateTranslationFunctor
 
 /-! ## NTT Proposition 12: Indexed Adjoints with Beck-Chevalley -/
 
@@ -413,13 +426,61 @@ theorem def21_cartesianLift_universal_comp [Limits.HasPullbacks C]
   · change g ≫ f = τ.right
     exact hg
 
+
+/-- The pullback factorization is unique among arrows over the given base map. -/
+theorem def21_cartesianLift_universal_unique [Limits.HasPullbacks C]
+    (arr : Arrow C) {Y : C} (f : Y ⟶ arr.right)
+    {w : Arrow C} (τ : w ⟶ arr) (g : w.right ⟶ Y)
+    (hg : g ≫ f = τ.right)
+    (candidate : w ⟶ def21_cartesianLift arr f)
+    (hbase : candidate.right = g)
+    (fac : candidate ≫ def21_cartesianLiftMorphism arr f = τ) :
+    candidate = def21_cartesianLift_universal arr f τ g hg := by
+  apply Arrow.hom_ext
+  · apply Limits.pullback.hom_ext
+    · have h := congrArg Arrow.Hom.left fac
+      change candidate.left ≫ Limits.pullback.fst arr.hom f = τ.left at h
+      exact h.trans (Limits.pullback.lift_fst _ _ _).symm
+    · change candidate.left ≫ Limits.pullback.snd arr.hom f = _
+      exact candidate.w.trans ((congrArg (w.hom ≫ ·) hbase).trans
+        (Limits.pullback.lift_snd _ _ _).symm)
+  · exact hbase
+
+/-- The constructed lift satisfies the full Cartesian universal property. -/
+instance def21_cartesianLift_stronglyCartesian [Limits.HasPullbacks C]
+    (arr : Arrow C) {Y : C} (f : Y ⟶ arr.right) :
+    (codomainFunctor C).IsStronglyCartesian f (def21_cartesianLiftMorphism arr f) where
+  toIsHomLift := by
+    change (codomainFunctor C).IsHomLift
+      ((codomainFunctor C).map (def21_cartesianLiftMorphism arr f)) _
+    infer_instance
+  universal_property' := by
+    intro w g τ hτ
+    have hg : g ≫ f = τ.right :=
+      @IsHomLift.eq_of_isHomLift _ _ _ _ (codomainFunctor C) w arr (g ≫ f) τ hτ
+    refine ⟨def21_cartesianLift_universal arr f τ g hg, ⟨?_, ?_⟩, ?_⟩
+    · change (codomainFunctor C).IsHomLift
+        ((codomainFunctor C).map (def21_cartesianLift_universal arr f τ g hg)) _
+      infer_instance
+    · exact def21_cartesianLift_universal_comp arr f τ g hg
+    · intro candidate hc
+      exact def21_cartesianLift_universal_unique arr f τ g hg candidate
+        (@IsHomLift.eq_of_isHomLift _ _ _ _ (codomainFunctor C) w
+          (def21_cartesianLift arr f) g candidate hc.1).symm hc.2
+
+/-- The codomain functor is a Grothendieck fibration whenever pullbacks exist. -/
+instance codomain_fibered [Limits.HasPullbacks C] : (codomainFunctor C).IsFibered :=
+  Functor.IsFibered.of_exists_isStronglyCartesian (fun arr _ f =>
+    ⟨def21_cartesianLift arr f, def21_cartesianLiftMorphism arr f,
+      def21_cartesianLift_stronglyCartesian arr f⟩)
+
 end CartesianLift
 
 /-! ## Image-Comprehension Adjunction (NTT Sec 4) -/
 
 section ImageComprehension
 
-variable {C : Type u} [Category.{v} C]
+variable {C : Type u} [Category.{w} C]
 
 /-- Comprehension: predicate to dependent type (arrow). -/
 def comprehension (F : Cᵒᵖ ⥤ Type v) (φ : Subfunctor F) :
@@ -478,17 +539,17 @@ theorem imageComprehension_galois_reverse {G F : Cᵒᵖ ⥤ Type v}
   rw [← this]
   exact (lift.app U y).property
 
-/-- Full hom-set characterization of the image-comprehension adjunction:
-    `range(p) ≤ φ ↔ p factors through φ.ι`.
-    This is the adjunction `i ⊣ c` in hom-set form. -/
+/-- Existence of factorization through a predicate inclusion. The actual
+natural hom-set bijection, including uniqueness and arbitrary context maps,
+is `GSLT.Topos.ImageComprehension.homEquiv`. -/
 theorem imageComprehension_iff {G F : Cᵒᵖ ⥤ Type v}
     (p : G ⟶ F) (φ : Subfunctor F) :
     imagePredicate p ≤ φ ↔ ∃ (lift : G ⟶ φ.toFunctor), lift ≫ φ.ι = p :=
   ⟨imageComprehension_galois_key p φ, imageComprehension_galois_reverse p φ⟩
 
-/-- NTT Sec 4: Image-comprehension adjunction package.
-    Uses direct formulations to avoid Arrow type coercions. -/
-structure ImageComprehensionAdjunction (C : Type u) [Category.{v} C] where
+/-- Object-level image/comprehension operations and the factorization criterion.
+The categorical functors and adjunction are in `GSLT.Topos.ImageComprehension`. -/
+structure ImageComprehensionAdjunction (C : Type u) [Category.{w} C] where
   /-- Comprehension: predicate to dependent type (arrow) -/
   comp : ∀ (F : Cᵒᵖ ⥤ Type v), Subfunctor F → Arrow (Cᵒᵖ ⥤ Type v)
   /-- Image factorization: morphism to its range predicate -/
@@ -503,8 +564,8 @@ structure ImageComprehensionAdjunction (C : Type u) [Category.{v} C] where
   iff_characterization : ∀ {G F : Cᵒᵖ ⥤ Type v} (p : G ⟶ F) (φ : Subfunctor F),
     img p ≤ φ ↔ ∃ (lift : G ⟶ φ.toFunctor), lift ≫ φ.ι = p
 
-def imageComprehensionAdjunction (C : Type u) [Category.{v} C] :
-    ImageComprehensionAdjunction C where
+def imageComprehensionAdjunction (C : Type u) [Category.{w} C] :
+    ImageComprehensionAdjunction.{u, v, w} C where
   comp := comprehension
   img := imagePredicate
   roundtrip F φ := image_comprehension_roundtrip F φ
@@ -520,14 +581,14 @@ NTT Thm 23. Its categorical action and coherence are not fields of this package.
 structure InternalLanguagePackage (C : Type u) [Category.{w} C] where
   predicateFib : Prop14_CosmicFibration.{u, v, w} C
   codomainFib : Def21_CodomainFibration (Cᵒᵖ ⥤ Type v)
-  imageComprehension : ImageComprehensionAdjunction (Cᵒᵖ ⥤ Type v)
+  imageComprehension : ImageComprehensionAdjunction.{u, v, w} C
 
 noncomputable def thm23_internalLanguagePackage
     (C : Type u) [Category.{w} C] :
     InternalLanguagePackage.{u, v, w} C where
   predicateFib := prop14_cosmicFibration C
   codomainFib := def21_codomainFibration (Cᵒᵖ ⥤ Type v)
-  imageComprehension := imageComprehensionAdjunction (Cᵒᵖ ⥤ Type v)
+  imageComprehension := imageComprehensionAdjunction C
 
 /-! ### Identity and composite operation-preservation endpoints
 

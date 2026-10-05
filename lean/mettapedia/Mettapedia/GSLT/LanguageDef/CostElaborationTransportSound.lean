@@ -1596,7 +1596,7 @@ theorem reindex_act_ofTarget
     {firstSort secondSort :
       LangSort source.theory.presentation.presentation.language}
     (term : CostStaticSourceTerm source color free support
-      (CostStaticBinderThinning.sourceContextOfTarget source color
+      (CostStaticTypeThinning.sourceContextOfTarget source.theory color
         secondTargetBound) secondTargetBound secondSort)
     (targetBoundEq : firstTargetBound = secondTargetBound)
     (sortEq : firstSort = secondSort)
@@ -1605,13 +1605,13 @@ theorem reindex_act_ofTarget
         assignmentFree targetFree assignmentSupport) :
     (term.reindex
         (congrArg
-          (CostStaticBinderThinning.sourceContextOfTarget source color)
+          (CostStaticTypeThinning.sourceContextOfTarget source.theory color)
           targetBoundEq)
         targetBoundEq sortEq).act
-          (CostStaticBinderThinning.ofTargetThinning source color
+          (CostStaticTypeThinning.ofTargetThinning source.theory color
             firstTargetBound) assignment =
       term.act
-        (CostStaticBinderThinning.ofTargetThinning source color
+        (CostStaticTypeThinning.ofTargetThinning source.theory color
           secondTargetBound) assignment := by
   cases targetBoundEq
   cases sortEq
@@ -1682,7 +1682,7 @@ theorem restoreMappedAbstractPatternIn_eq_term
   change ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       globalTable.restorationSupport globalTable.restorationAssignment
       node.targetBound.length
-      ((CostStaticBinderThinning.ofTargetThinning source color
+      ((CostStaticTypeThinning.ofTargetThinning source.theory color
         node.targetBound).thickenAmbientBVars 0
           (mapPattern (color.symbols source) node.plan.abstractPattern)) =
     node.term.1
@@ -1732,7 +1732,7 @@ theorem costStaticRegionTransportSound_of_mappedGeneratorFiberAction
       ((staticLift.preservesFiber planStep).targetBound_eq.trans
         rightNode.plan.decoration_targetBound)
   let sourceBoundEq : leftNode.sourceBound = rightNode.sourceBound :=
-    congrArg (CostStaticBinderThinning.sourceContextOfTarget source color)
+    congrArg (CostStaticTypeThinning.sourceContextOfTarget source.theory color)
       targetBoundEq
   have targetTypeEq :
       TypeExpr.base

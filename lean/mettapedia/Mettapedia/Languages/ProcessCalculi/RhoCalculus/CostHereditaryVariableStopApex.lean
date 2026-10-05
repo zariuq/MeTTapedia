@@ -59,7 +59,7 @@ theorem canonicalize_environmentReify_eq_fvar_of_eq
   simp [Pattern.renameFVars, canonicalize]
 
 /-- Heterogeneously equal thinning witnesses act identically on indices. -/
-theorem CostStaticBinderThinning.embedIndexAt_eq_of_eq_heq
+theorem CostStaticTypeThinning.embedIndexAt_eq_of_eq_heq
     {source : CIGSLT} {color : CostStaticColor}
     {leftSourceBound leftTargetBound rightSourceBound rightTargetBound :
       List TypeExpr}
@@ -120,7 +120,7 @@ noncomputable def rho_reachedPlanPairCommonApex_of_sameColorBVar
       _ = rightReached.thinning.embedIndexAt 0 rightSource.sourceIndex :=
         rightSource.index_eq.symm
       _ = leftReached.thinning.embedIndexAt 0 rightSource.sourceIndex :=
-        (CostStaticBinderThinning.embedIndexAt_eq_of_eq_heq sourceBoundEq
+        (CostStaticTypeThinning.embedIndexAt_eq_of_eq_heq sourceBoundEq
           targetBoundEq thinningEq 0 rightSource.sourceIndex).symm
   let leftValues := leftView.children.normalizeValues
     (normalizeStatic := rhoHereditaryStaticNormalizer)
@@ -162,7 +162,7 @@ noncomputable def rho_reachedPlanPairCommonApex_of_sameColorBVar
         rightView.node.thinning.thickenAmbientBVars callbackScope pattern := by
     simpa only [CostStaticRegionNode.thinning] using congrArg
       (fun targetBound =>
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color targetBound)
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color targetBound)
           |>.thickenAmbientBVars callbackScope pattern)
       (leftView.targetBound_eq_targetBound rightView)
   let endpoint := Pattern.bvar
@@ -179,7 +179,7 @@ noncomputable def rho_reachedPlanPairCommonApex_of_sameColorBVar
         endpoint := by
     rw [leftKeyed]
     simp [endpoint, Pattern.renameFVars, mapPattern,
-      CostStaticBinderThinning.thickenAmbientBVars,
+      CostStaticTypeThinning.thickenAmbientBVars_bvar,
       CostStaticAtomKeyCospan.reifyLeft]
   have rightEndpoint :
       cospan.reifyRight rightEnvironment.lookupAtom?
@@ -193,7 +193,7 @@ noncomputable def rho_reachedPlanPairCommonApex_of_sameColorBVar
         endpoint := by
     rw [rightKeyed, ← sourceIndexEq, ← parentThinningEq]
     simp [endpoint, Pattern.renameFVars, mapPattern,
-      CostStaticBinderThinning.thickenAmbientBVars,
+      CostStaticTypeThinning.thickenAmbientBVars_bvar,
       CostStaticAtomKeyCospan.reifyRight]
   change CostStaticAtomKeyCospan.CommonRestorationApex rhoCIGSLT cospan
     targetDeclaration callbackRoot _ _
@@ -306,7 +306,7 @@ noncomputable def rho_reachedPlanPairCommonApex_of_sameColorFVar
         cospan.reifyLeft leftEnvironment.lookupAtom?
           (.fvar (leftEnvironment.reifyName sourceName)) := by
     rw [leftKeyed]
-    simp only [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+    simp only [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   have rightEndpoint :
       cospan.reifyRight rightEnvironment.lookupAtom?
           (rightView.node.thinning.thickenAmbientBVars callbackScope
@@ -319,7 +319,7 @@ noncomputable def rho_reachedPlanPairCommonApex_of_sameColorFVar
         cospan.reifyRight rightEnvironment.lookupAtom?
           (.fvar (rightEnvironment.reifyName sourceName)) := by
     rw [rightKeyed]
-    simp only [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+    simp only [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   change CostStaticAtomKeyCospan.CommonRestorationApex rhoCIGSLT cospan
     targetDeclaration callbackRoot _ _
   exact CostStaticAtomKeyCospan.CommonRestorationApex.reindex

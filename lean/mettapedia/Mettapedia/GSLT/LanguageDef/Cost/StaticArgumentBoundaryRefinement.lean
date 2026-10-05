@@ -77,15 +77,15 @@ variable (principal : source.DeclaredCostConstructor)
 /-- The replacement is located in the shell's exact argument occurrence. -/
 def argumentPlan :
     CostStaticArgumentPlan source color targetFree
-      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
-      targetBound (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      (CostStaticTypeThinning.sourceContextOfTarget source.theory color targetBound)
+      targetBound (CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
       (argumentAvailable (targetBound := targetBound) shell preimage) .hole
       (source.renderDeclaredCostConstructor shell) []
       [.apply (source.renderDeclaredCostConstructor principal) arguments]
       preimage.sourceConstructor.1.params :=
   reindexArgumentParameters oneParameter.symm (.cons trivial rfl
     (replacementPlan
-      (thinning := CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      (thinning := CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
       principal outsideCurrent arguments admitted
       (OneHoleContext.hole.comp
         (.apply (source.renderDeclaredCostConstructor shell) [] .hole [])))
@@ -94,8 +94,8 @@ def argumentPlan :
 /-- Reconstruct the enclosing plan from its declared source operator. -/
 def plan :
     CostStaticRegionPlan source color targetFree
-      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
-      targetBound (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      (CostStaticTypeThinning.sourceContextOfTarget source.theory color targetBound)
+      targetBound (CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
       targetBound .hole
       (.apply (source.renderDeclaredCostConstructor shell)
         [.apply (source.renderDeclaredCostConstructor principal) arguments])
@@ -118,7 +118,7 @@ private theorem replacement_typed_in_bound :
     simpa using typed.extendOuter targetBound
   · simpa [argumentAvailable, quoted] using admitted.1.1
 
-include current notBare oneParameter admitted in
+include notBare oneParameter admitted in
 theorem refined_term_typed :
     HasType source.costWholeLanguage targetFree targetBound
       (.apply (source.renderDeclaredCostConstructor shell)
@@ -130,7 +130,7 @@ theorem refined_term_typed :
       source.materializeDeclaredCostConstructor_mem shell
   have targetNotBare : ¬ UsesBareCollection rule := by
     intro bare
-    exact notBare (preimage.source_usesBareCollection current bare)
+    exact notBare (preimage.usesBareCollection_iff.mp bare)
   have typed : HasType source.costWholeLanguage targetFree targetBound
       (.apply rule.label
         [.apply (source.renderDeclaredCostConstructor principal) arguments])
@@ -153,7 +153,7 @@ def sourceSort : LangSort source.theory.presentation.presentation.language :=
 admission rather than by rerunning a compiler. -/
 def term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
     (color.mapLangSort source (sourceSort shell preimage categorySupported)) := by
-  let typed := refined_term_typed shell current preimage notBare parameterName
+  let typed := refined_term_typed shell preimage notBare parameterName
     sourceType oneParameter principal arguments admitted
   refine ⟨_, typed, ?_, ?_, typed.isWellScopedAt⟩
   · simpa [Pattern.hasCanonicalBinderMetadata,
@@ -165,7 +165,7 @@ def term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
 derived from the reconstructed enclosing plan. -/
 noncomputable def frame : CostStaticRegionNode source color targetFree :=
   CostStaticRegionNode.ofPlan
-    (term shell current preimage notBare parameterName sourceType oneParameter
+    (term shell preimage notBare parameterName sourceType oneParameter
       categorySupported principal arguments admitted)
     (plan shell current preimage notBare parameterName sourceType oneParameter
       principal outsideCurrent arguments admitted) rfl
@@ -176,7 +176,7 @@ theorem plan_boundaryPacket :
     (plan shell current preimage notBare parameterName sourceType oneParameter
       principal outsideCurrent arguments admitted).boundaryPacket =
     (replacementPlan
-      (thinning := CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      (thinning := CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
       principal outsideCurrent arguments admitted
       (OneHoleContext.hole.comp
         (.apply (source.renderDeclaredCostConstructor shell) [] .hole []))).boundaryPacket := by
@@ -209,7 +209,7 @@ noncomputable def children
     (plan_boundaryPacket shell current preimage notBare parameterName sourceType
       oneParameter principal outsideCurrent arguments admitted)).mpr
     (replacementChildren
-      (thinning := CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      (thinning := CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
       principal outsideCurrent arguments admitted
       (OneHoleContext.hole.comp
         (.apply (source.renderDeclaredCostConstructor shell) [] .hole [])) retained)
@@ -237,13 +237,5 @@ noncomputable def semanticTree (safe : CostStaticCanonicalPathSafe source)
     .static f state grafted
   exact tree.reindexPattern
     (CostStaticFrameState.original_actAvailable_pattern f (safe f))
-
-#print axioms argumentPlan
-#print axioms plan
-#print axioms refined_term_typed
-#print axioms frame
-#print axioms plan_boundaryPacket
-#print axioms children
-#print axioms semanticTree
 
 end Mettapedia.GSLT.LanguageDef.Cost.StaticArgumentBoundaryRefinement

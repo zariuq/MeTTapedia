@@ -126,8 +126,12 @@ theorem NameImage.borrowed_canonical_runtime
       (borrowedReceiverSource channelSource bodySource payloadSource signatureSource tailSource) target := by
   have image := borrowed_receiver_image channelImage bodyImage payloadImage signature checked tailImage
   refine ⟨image, ?_, fun base target => borrowed_receiver_no_authored_step base _ _ _ _ _ target⟩
-  apply runtimeCostCandidates_complete_up_to_struct (image.literal_wellFormed channelImage.literal_wellFormed)
-  rw [← borrowed_receiver_literal_readout]
-  exact locatedBorrowedEntry_canonical_declarative _ _ _ _ _
+  have runtime := image.funded_redex_runtime channelImage (.whole signature tail)
+    {CostTerm.purse location .empty} (by
+      simp only [decodedBorrowedReceiver, decodedReceiverSource, Funding.redex, locatedContact,
+        CostTerm.components, Multiset.cons_zero]
+      abel)
+  rw [Multiset.singleton_bind] at runtime
+  exact runtime
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerated

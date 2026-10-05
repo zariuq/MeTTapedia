@@ -31,9 +31,10 @@ their premises (`listRec_nil`, `listRec_cons`); the recursor computes on the one
 of the numeral one (`listRec_one`); the length of a list, defined by the recursor, is a number
 (`lengthOf_typed`), and the length of that list is one (`lengthOf_one`), so the equation also
 holds in the set model; and the set of the type of lists is the least set closed
-under the empty list and a number before a list (`listValue`), in bijection with the list
-codes over `ω` (`ZFSetInductive.listCarrierEquiv`). Negative example: no set model of the
-package reads the type of lists as the empty set (`no_setModel_of_empty_lists`).
+under the empty list and a number before a list (`listValue`), each read by its name: the
+carrier of the two constructors that carry the codes of the names `nil` and `cons`. Negative
+example: no set model of the package reads the type of lists as the empty set
+(`no_setModel_of_empty_lists`).
 
 **A proof by induction in the judgment** (`appendNil_identity`): every list appended to the
 empty list is identical to the list. Appending is a second program by the recursor
@@ -204,17 +205,20 @@ theorem objectLists_consistent (t : CTm Tower.Head 0) :
     (ev_emptyType h ZFSet.omega ∅ (fun _ => 0) (listConsts h)) t
 
 /-- **The set of the type of lists** is the least set closed under the empty list and a
-number before a list. -/
-theorem listValue : listConsts h listN = carrier (ZFSetInductive.listSignature ZFSet.omega) := by
+number before a list, the two read by their names: the carrier of the signature whose
+constructors carry the codes of the names `nil` and `cons`. -/
+theorem listValue : listConsts h listN =
+    carrier [⟨ZFSetInductive.nameCode nilN, []⟩,
+      ⟨ZFSetInductive.nameCode consN, [ZFSetInductive.Field.ofSet ZFSet.omega, .recursive]⟩] := by
   have reading := inductiveConsts_reading (v := listMotives) (lists_fresh h)
   have signatures := signature_of_agrees (lists_fresh h)
     (inductiveConsts_agrees (objHeads h) (objectSetConsts h) listN listMotives listCtors listRecN)
   show inductiveConsts (objHeads h) (objectSetConsts h) listN listMotives listCtors listRecN
     listN = _
   rw [reading.type, signatures]
-  show carrier [[], [ZFSetInductive.Field.ofSet (objectSetConsts h numN), .recursive]] = _
+  show carrier [⟨ZFSetInductive.nameCode nilN, []⟩, ⟨ZFSetInductive.nameCode consN,
+    [ZFSetInductive.Field.ofSet (objectSetConsts h numN), .recursive]⟩] = _
   rw [setConst_num]
-  rfl
 
 end Model
 
@@ -866,11 +870,11 @@ theorem nil_not_identical_to_one (h : CofinalInaccessibles.{u})
     (ofObject (csuc_typed (czero_typed (Γ := .nil)))) Fin.elim0 (sat_nil _ _ _)
   have empty := objectLists_sound h (nil_typed (Γ := .nil)) Fin.elim0 (sat_nil _ _ _)
   have nilValue : ev (objHeads h) (listConsts h) cnil Fin.elim0 =
-      ZFSetInductive.constructorValue 0 [] :=
+      ZFSetInductive.constructorValue (ZFSetInductive.nameCode nilN) [] :=
     ctor_apply (reading.ctor (i := 0) rfl) (args := [])
       ((fits_iff _ _ _ _).mpr ⟨rfl, fun j below => absurd below (Nat.not_lt_zero j)⟩)
   have consValue : ev (objHeads h) (listConsts h) (ccons (csuc czero) cnil) Fin.elim0 =
-      ZFSetInductive.constructorValue 1
+      ZFSetInductive.constructorValue (ZFSetInductive.nameCode consN)
         [ev (objHeads h) (listConsts h) (csuc czero) Fin.elim0,
           ev (objHeads h) (listConsts h) cnil Fin.elim0] :=
     ctor_apply (reading.ctor (i := 1) rfl)
@@ -881,7 +885,8 @@ theorem nil_not_identical_to_one (h : CofinalInaccessibles.{u})
       | 0, _ => exact one
       | 1, _ => exact empty⟩)
   rw [nilValue, consValue] at same
-  exact ZFSetInductive.constructorValue_ne_of_index_ne (by decide) _ _ same
+  exact ZFSetInductive.constructorValue_ne_of_tag_ne
+    (ZFSetInductive.nameCode_injective.ne (by decide)) _ _ same
 
 /-- Negative: **no set model of the package reads the type of lists as the empty set**: the
 empty list is a member. -/

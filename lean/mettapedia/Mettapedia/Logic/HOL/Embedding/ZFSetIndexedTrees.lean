@@ -22,8 +22,9 @@ open Mettapedia.SetTheory.ZFSetOrderedPair (first second first_pair second_pair)
 open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation
   (numeral numeral_injective numeral_mem_omega numeral_succ mem_omega_iff natOf
     numeral_natOf natOf_numeral insert_mem_omega)
-open ZFSetInductiveFunctions (graph_congr mem_tracePiSet_of_total total_of_mem_tracePiSet
-  decode_encode_any finiteRankIndex_mem_of_omega numeral_mem_of_omega)
+open ZFSetInductive (numeral_mem_of_omega)
+open ZFSetInductiveFunctions (mem_tracePiSet_of_total total_of_mem_tracePiSet
+  decode_encode_any finiteRankIndex_mem_of_omega)
 open scoped ZFSet
 open Classical
 
@@ -1076,9 +1077,9 @@ theorem toTree_eq (x : ZFSet.{u}) :
       ZFSetInductiveFunctions.OrdinalNotation.ordSignature toTreeStep x := rfl
 
 noncomputable def toIndStep (s _f results : ZFSet.{u}) : ZFSet.{u} :=
-  if s = numeral 0 then constructorValue 0 []
-  else if s = numeral 1 then constructorValue 1 [traceApp results ∅]
-  else constructorValue 2 [results]
+  if s = numeral 0 then constructorValue (numeral 0) []
+  else if s = numeral 1 then constructorValue (numeral 1) [traceApp results ∅]
+  else constructorValue (numeral 2) [results]
 
 noncomputable def toInd (x : ZFSet.{u}) : ZFSet.{u} := recFun ordTreeSignature toIndStep x
 
@@ -1124,7 +1125,8 @@ theorem limit_node_mem {g : ZFSet.{u}}
   exact h
 
 theorem toInd_node_zero :
-    toInd (node (numeral 0) (∅ : ZFSet.{u})) = constructorValue 0 ([] : List ZFSet.{u}) := by
+    toInd (node (numeral 0) (∅ : ZFSet.{u})) =
+      constructorValue (numeral 0) ([] : List ZFSet.{u}) := by
   unfold toInd
   have hs : numeral 0 ∈ ordTreeSignature.shape := by
     rw [ordTree_shape]
@@ -1138,7 +1140,7 @@ theorem toInd_node_zero :
   rw [if_pos rfl]
 
 theorem toInd_node_suc {r : ZFSet.{u}} (hr : r ∈ trees ordTreeSignature (numeral 3)) :
-    toInd (node (numeral 1) (singletonFun r)) = constructorValue 1 [toInd r] := by
+    toInd (node (numeral 1) (singletonFun r)) = constructorValue (numeral 1) [toInd r] := by
   unfold toInd
   have hs : numeral 1 ∈ ordTreeSignature.shape := by
     rw [ordTree_shape]
@@ -1150,7 +1152,7 @@ theorem toInd_node_suc {r : ZFSet.{u}} (hr : r ∈ trees ordTreeSignature (numer
   rw [recursion_node ordTreeSignature toIndStep hs hf]
   unfold toIndStep
   rw [if_neg numeral_one_ne_zero, if_pos rfl]
-  apply congrArg (fun z => constructorValue 1 [z])
+  apply congrArg (fun z => constructorValue (numeral 1) [z])
   rw [ordTree_pos]
   have hp : (∅ : ZFSet.{u}) ∈ ordPos (numeral 1) := by
     rw [ordPos_one]
@@ -1161,7 +1163,8 @@ theorem toInd_node_limit {g : ZFSet.{u}}
     (hvalues : ∀ a, a ∈ ZFSet.omega → traceApp g a ∈ trees ordTreeSignature (numeral 3))
     (htotal : g = traceLam (graph ZFSet.omega (fun a => traceApp g a))) :
     toInd (node (numeral 2) g) =
-      constructorValue 2 [traceLam (graph ZFSet.omega (fun a => toInd (traceApp g a)))] := by
+      constructorValue (numeral 2)
+        [traceLam (graph ZFSet.omega (fun a => toInd (traceApp g a)))] := by
   unfold toInd
   have hs : numeral 2 ∈ ordTreeSignature.shape := by
     rw [ordTree_shape]
@@ -1217,8 +1220,8 @@ private theorem carrier_round {x : ZFSet.{u}}
       toTree y ∈ trees ordTreeSignature (numeral 3) ∧ toInd (toTree y) = y)
     (motive_2 := fun c args _ =>
       ∀ i, ZFSetInductiveFunctions.OrdinalNotation.ordSignature[i]? = some c →
-        toTree (constructorValue i args) ∈ trees ordTreeSignature (numeral 3) ∧
-          toInd (toTree (constructorValue i args)) = constructorValue i args)
+        toTree (constructorValue (numeral i) args) ∈ trees ordTreeSignature (numeral 3) ∧
+          toInd (toTree (constructorValue (numeral i) args)) = constructorValue (numeral i) args)
     (fun atIndex _ ih => ih _ atIndex)
     (fun i atIndex => by
       rcases ordAt atIndex with ⟨rfl, _⟩ | ⟨_, hbad⟩ | ⟨_, hbad⟩
@@ -1291,7 +1294,7 @@ private theorem carrier_round {x : ZFSet.{u}}
           exact (traceApp_graph_beta (fun b => toTree (traceApp f b)) ha).symm
         refine ⟨limit_node_mem hvalues htotal, ?_⟩
         rw [toInd_node_limit hvalues htotal]
-        apply congrArg (fun z => constructorValue 2 [z])
+        apply congrArg (fun z => constructorValue (numeral 2) [z])
         have hback :
             traceLam (graph ZFSet.omega (fun a =>
               toInd (traceApp (traceLam (graph ZFSet.omega

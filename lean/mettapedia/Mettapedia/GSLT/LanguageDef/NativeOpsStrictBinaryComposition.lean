@@ -14,6 +14,7 @@ namespace Mettapedia.GSLT.LanguageDef.NativeOps
 
 open NativeIR (Atom Instruction)
 open NativeLowering (Expression)
+open NativeWord64 (Fault)
 
 variable {SourceWorld TargetWorld : Type}
   {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
@@ -316,5 +317,181 @@ theorem strict_binary_children_laws (scalar : GuardedScalarBinary operation)
     strict_binary_children_bounds scalar first second,
     strict_binary_children_strong_preservation scalar first second clear zero,
     strict_binary_children_reflection scalar first second clear zero⟩
+
+theorem stateful_guarded_binary_fragment_profile {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {heap : TargetHeapSemantics TargetWorld} {calls : TargetCalls TargetWorld}
+    {result input type : NativeType} {default : TargetValue} (zero : TargetZero interface result default)
+    {operation : Binary} (scalar : GuardedScalarBinary operation)
+    {first second : SourceValue} (typing : binaryType operation input = some type)
+    (firstTag : SourceOuterTag input first) (secondTag : SourceOuterTag input second)
+    {computed : Except Fault SourceValue} (executed : sourceBinaryOp operation first second = some computed)
+    {source : SourceState SourceWorld} {target : TargetState TargetWorld}
+    (states : StateRelated worldRelated source target) (clear : source.fault = none)
+    {frame : TargetFrame} {left right : Atom} {supply : NativeIR.Supply}
+    (readLeft : TargetAtomEval interface frame target left (encodeValue first))
+    (readRight : TargetAtomEval interface frame target right (encodeValue second))
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (root : List Instruction) {out : TargetBlockOutcome TargetWorld}
+    (ran : TargetRun interface heap calls result root
+      (NativeLowering.numericGuard operation right ++
+        (NativeLowering.pureTemporary supply type (.binary operation left right)).code) frame target out) :
+    CheckedExpressionRelated worldRelated interface default
+      (NativeLowering.pureTemporary supply type (.binary operation left right)).result
+      (sourceFinish source computed) out ∧
+    TemporaryProtection supply.next frame out.frame ∧
+    TemporaryNamesBound out.frame (NativeIR.fresh supply).2.next ∧ TemporariesScoped out.frame := by
+  have same := (guarded_binary_fragment_exact zero scalar typing firstTag secondTag executed readLeft readRight
+    (temporary_bound_fresh bounded (NativeIR.fresh_strict supply)) root out).mp ran
+  have fresh := strict_binary_tail_fresh operation left right type supply
+  obtain ⟨_, protection, outBounded⟩ := fresh_guarded_run_shape zero fresh
+    (temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict supply)) bounded) ran
+  refine ⟨?_, protection, outBounded, fresh_guarded_run_scoped fresh hscope ran⟩
+  apply guarded_related_checked states clear
+  cases computed with
+  | ok value =>
+      subst out
+      simp only [sourceFinish, sourceObserve, clear, GuardedEvaluationRelated, true_and]
+      exact declared_temporary_atom interface frame target (NativeIR.fresh supply).1 type (encodeValue value)
+  | error fault =>
+      subst out
+      simp only [sourceFinish, sourceObserve, sourcePoison, clear, GuardedEvaluationRelated, true_and]
+
+theorem stateful_guarded_binary_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) {operation : Binary}
+    (scalar : GuardedScalarBinary operation) (zero : TargetZero interface result default) (left right : Expr)
+    (children : ∀ expression ∈ [left, right], ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default expression)
+    (tagged : ∀ expression ∈ [left, right], ∀ before post value type,
+      inferExpr interface (sourceFrameScope sourceFrame) expression = some type →
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame expression before ⟨.ok value, post⟩ →
+      SourceOuterTag type value) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.binary operation left right) := by
+  have argumentBounds (supply : NativeIR.Supply) (operands : NativeLowering.Arguments)
+      (compiled : NativeLowering.arguments? interface (sourceFrameScope sourceFrame) [left, right] supply = some operands) :
+      supply.next ≤ operands.supply.next :=
+    (stateful_arguments_bounds interface (sourceFrameScope sourceFrame) [left, right]
+      (fun expression member _ _ emitted => (children expression member source clear).bounds emitted)
+      supply operands compiled).1
+  refine ⟨?_, ?_, ?_⟩
+  · intro supply output compiled
+    obtain ⟨type, first, second, inferred, firstCompiled, secondCompiled, shape⟩ :=
+      guarded_binary_lowering_exact scalar compiled
+    subst output
+    have argsCompiled := arguments_lowering_pair interface (sourceFrameScope sourceFrame) left right firstCompiled secondCompiled
+    exact ⟨(argumentBounds supply _ argsCompiled).trans (Nat.le_of_lt (NativeIR.fresh_strict second.supply)), Nat.le_refl _⟩
+  · intro root supply output frame target compiled frames states bounded hscope sourceOut sourceRan
+    obtain ⟨type, first, second, inferred, firstCompiled, secondCompiled, shape⟩ :=
+      guarded_binary_lowering_exact scalar compiled
+    subst output
+    obtain ⟨input, firstTyping, secondTyping, operationTyping⟩ := guarded_binary_inferred inferred
+    let operands : NativeLowering.Arguments := ⟨first.code ++ second.code, [first.result, second.result], second.supply⟩
+    have argsCompiled := arguments_lowering_pair interface (sourceFrameScope sourceFrame) left right firstCompiled secondCompiled
+    have grew := argumentBounds supply operands argsCompiled
+    have jumpFree := arguments_lowering_jump_free interface (sourceFrameScope sourceFrame) [left, right] supply operands argsCompiled
+    rcases (source_guarded_binary_stateful_exact scalar left right source sourceOut).mp sourceRan with
+      ⟨rawLeft, rawRight, middle, computed, argsRan, executed, same⟩ | ⟨fault, post, argsRan, same⟩
+    · obtain ⟨⟨flow, middleFrame, middleState⟩, targetArgs, related, protection, middleBounded, middleScoped⟩ :=
+        stateful_arguments_forward worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope argsRan
+      rcases related with ⟨postRelated, middleClear, normal, reads⟩
+      change flow = .normal at normal
+      subst flow
+      change middle.fault = none at middleClear
+      subst sourceOut
+      obtain ⟨leftValue, rightValue, valuesSame, readLeft, readRight⟩ := target_two_encoded_arguments reads
+      cases valuesSame
+      have tags := source_two_arguments_success_tags tagged firstTyping secondTyping argsRan
+      let tailOut : TargetBlockOutcome TargetWorld := match computed with
+        | .ok value => ⟨.normal, targetDeclareTemporary middleFrame (NativeIR.fresh second.supply).1
+            (encodeValue value), middleState⟩
+        | .error fault => ⟨.returned default, middleFrame, targetPoison middleState fault⟩
+      have suffix : TargetRun interface targetHeap targetCalls result root
+          (NativeLowering.numericGuard operation second.result ++
+            (NativeLowering.pureTemporary second.supply type (.binary operation first.result second.result)).code)
+          middleFrame middleState tailOut :=
+        (guarded_binary_fragment_exact zero scalar operationTyping tags.1 tags.2 executed readLeft readRight
+          (temporary_bound_fresh middleBounded (NativeIR.fresh_strict second.supply)) root tailOut).mpr
+          (by cases computed <;> rfl)
+      obtain ⟨checked, tailProtection, tailBounded, tailScoped⟩ := stateful_guarded_binary_fragment_profile
+        zero scalar operationTyping tags.1 tags.2 executed postRelated middleClear readLeft readRight
+        middleBounded middleScoped root suffix
+      refine ⟨tailOut, ?_, checked,
+        temporary_protection_trans protection (temporary_protection_weaken grew tailProtection),
+        tailBounded, tailScoped⟩
+      simpa only [operands, NativeLowering.prependCode, List.append_assoc] using
+        target_append_normal root operands.code _ jumpFree targetArgs suffix
+    · subst sourceOut
+      obtain ⟨⟨flow, postFrame, postState⟩, targetArgs, related, protection, postBounded, postScoped⟩ :=
+        stateful_arguments_forward worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope argsRan
+      rcases related with ⟨postRelated, faulted, returned⟩
+      change flow = .returned default at returned
+      subst flow
+      have combined := target_append_returned root operands.code
+        (NativeLowering.numericGuard operation second.result ++
+          (NativeLowering.pureTemporary second.supply type (.binary operation first.result second.result)).code)
+        jumpFree targetArgs
+      refine ⟨⟨.returned default, postFrame, postState⟩, ?_, ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict second.supply)) postBounded, postScoped⟩
+      simpa only [operands, NativeLowering.prependCode, List.append_assoc] using combined
+  · intro root supply output frame target compiled frames states bounded hscope out ran
+    obtain ⟨type, first, second, inferred, firstCompiled, secondCompiled, shape⟩ :=
+      guarded_binary_lowering_exact scalar compiled
+    subst output
+    obtain ⟨input, firstTyping, secondTyping, operationTyping⟩ := guarded_binary_inferred inferred
+    let operands : NativeLowering.Arguments := ⟨first.code ++ second.code, [first.result, second.result], second.supply⟩
+    have argsCompiled := arguments_lowering_pair interface (sourceFrameScope sourceFrame) left right firstCompiled secondCompiled
+    have grew := argumentBounds supply operands argsCompiled
+    have jumpFree := arguments_lowering_jump_free interface (sourceFrameScope sourceFrame) [left, right] supply operands argsCompiled
+    have splitRun : TargetRun interface targetHeap targetCalls result root
+        (operands.code ++ NativeLowering.numericGuard operation second.result ++
+          (NativeLowering.pureTemporary second.supply type (.binary operation first.result second.result)).code)
+        frame target out := ran
+    have splitRun' : TargetRun interface targetHeap targetCalls result root
+        (operands.code ++ (NativeLowering.numericGuard operation second.result ++
+          (NativeLowering.pureTemporary second.supply type (.binary operation first.result second.result)).code))
+        frame target out := by simpa only [List.append_assoc] using splitRun
+    rcases (target_run_append_exact interface targetHeap targetCalls result root operands.code _ jumpFree frame target out).mp splitRun' with
+      ⟨middleFrame, middleState, targetArgs, suffix⟩ | ⟨returnedValue, postFrame, postState, targetArgs, same⟩
+    · obtain ⟨sourceArgs, argsRan, related, protection, middleBounded, middleScoped⟩ :=
+        stateful_arguments_reflection worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope targetArgs
+      obtain ⟨values, success, middleClear, postRelated, reads⟩ := checked_result_normal related rfl
+      rcases sourceArgs with ⟨answer, middle⟩
+      change middle.fault = none at middleClear
+      cases success
+      obtain ⟨rawLeft, rawRight, valuesSame, readLeft, readRight⟩ := target_two_encoded_arguments reads
+      subst values
+      have tags := source_two_arguments_success_tags tagged firstTyping secondTyping argsRan
+      obtain ⟨computed, executed, _⟩ := source_binary_typed_defined operationTyping tags.1 tags.2
+      obtain ⟨checked, tailProtection, tailBounded, tailScoped⟩ := stateful_guarded_binary_fragment_profile
+        zero scalar operationTyping tags.1 tags.2 executed postRelated middleClear readLeft readRight
+        middleBounded middleScoped root suffix
+      exact ⟨sourceFinish middle computed,
+        (source_guarded_binary_stateful_exact scalar left right source _).mpr
+          (.inl ⟨rawLeft, rawRight, middle, computed, argsRan, executed, rfl⟩),
+        checked, temporary_protection_trans protection (temporary_protection_weaken grew tailProtection),
+        tailBounded, tailScoped⟩
+    · subst out
+      obtain ⟨sourceArgs, argsRan, related, protection, postBounded, postScoped⟩ :=
+        stateful_arguments_reflection worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope targetArgs
+      obtain ⟨fault, failed, faulted, postRelated, returned⟩ := checked_result_returned related rfl
+      rcases sourceArgs with ⟨answer, post⟩
+      cases failed
+      cases returned
+      exact ⟨⟨.error fault, post⟩,
+        (source_guarded_binary_stateful_exact scalar left right source _).mpr (.inr ⟨fault, post, argsRan, rfl⟩),
+        ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict second.supply)) postBounded, postScoped⟩
+
+
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

@@ -29,7 +29,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.PLN.Bridges.GSLT.ProbabilityAssumptionDischarge
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.Evidence
 open Mettapedia.Evidence.SourceScopeProbabilityBoundary
 open Mettapedia.GSLT.LanguageDef

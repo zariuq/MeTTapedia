@@ -6,11 +6,14 @@ import Mettapedia.Languages.Calculator.Cut
 import Mettapedia.Languages.InteractionCategory.Interaction
 
 /-!
-# The forgetful functor from continued theories is not essentially surjective
+# The forgetful functors to interactive theories are not essentially surjective
 
-Two interactive theories are shown to lie outside its essential image, each
+Two interactive theories are shown to lie outside the essential image, each
 for one clause of the definition of a continued theory, and each by a
-statement stronger than non-isomorphism.
+statement stronger than non-isomorphism.  Both clauses concern the cut and
+its wrappability, so the statements are made for the wrappable theories; the
+statements for continued theories follow, because their forgetful functor
+factors through the wrappable ones.
 
 * **The dynamics do not factor.**  In the contact theory whose rule unwraps
   the body of the output prefix, the selected rule has no interaction-cut
@@ -64,15 +67,25 @@ theorem IGSLT.Morphism.maps_right {source target : IGSLT} (morphism : source ⟶
   congrArg (fun rewrite : DeclaredRewrite target.presentation.presentation => rewrite.1.right)
     (IGSLT.Morphism.structural morphism).mapsInteractionRewrite
 
+end Mettapedia.GSLT.LanguageDef.CIGSLT
+
+namespace Mettapedia.GSLT.LanguageDef.WrappableIGSLT
+
+open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.StructuralMorphism
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef.Interaction.Controls.EquationalContact
+open Mettapedia.Languages.Calculator
+
 /-! ## Dynamics that do not factor as contact then contraction -/
 
-/-- **No continued theory maps into the unwrapping theory.**  The image of a
+/-- **No wrappable theory maps into the unwrapping theory.**  The image of a
 cut-form rule under a renaming has cut form; the unwrapping rule has none,
 because the argument of its output prefix is not a continuation. -/
-theorem deep_not_underlying (theory : CIGSLT) : IsEmpty (forget.obj theory ⟶ deep) := by
+theorem deep_not_underlying (theory : WrappableIGSLT) : IsEmpty (forget.obj theory ⟶ deep) := by
   constructor
   intro morphism
-  have left := IGSLT.Morphism.maps_left morphism
+  have left := CIGSLT.IGSLT.Morphism.maps_left morphism
   change mapPattern _ theory.theory.presentation.interactionRewrite.1.left =
     join (input (.fvar "x")) (output (wrap (.fvar "y"))) at left
   obtain ⟨contact, arguments, shape, -, images⟩ := (mapPattern_eq_apply_iff _ _ _ _).mp left
@@ -80,14 +93,14 @@ theorem deep_not_underlying (theory : CIGSLT) : IsEmpty (forget.obj theory ⟶ d
   obtain ⟨inputLabel, inputArguments, rfl, -, inputImages⟩ :=
     (mapPattern_eq_apply_iff _ _ _ _).mp firstImage
   obtain ⟨inputBody, rfl, inputBodyImage⟩ := map_eq_single inputImages
-  obtain rfl := (mapPattern_eq_fvar_iff _ _ _).mp inputBodyImage
+  obtain rfl := (CIGSLT.mapPattern_eq_fvar_iff _ _ _).mp inputBodyImage
   obtain ⟨outputLabel, outputArguments, rfl, -, outputImages⟩ :=
     (mapPattern_eq_apply_iff _ _ _ _).mp secondImage
   obtain ⟨wrapped, rfl, wrappedImage⟩ := map_eq_single outputImages
   obtain ⟨wrapLabel, wrapArguments, rfl, -, wrapImages⟩ :=
     (mapPattern_eq_apply_iff _ _ _ _).mp wrappedImage
   obtain ⟨inner, rfl, innerImage⟩ := map_eq_single wrapImages
-  obtain rfl := (mapPattern_eq_fvar_iff _ _ _).mp innerImage
+  obtain rfl := (CIGSLT.mapPattern_eq_fvar_iff _ _ _).mp innerImage
   obtain ⟨-, environment⟩ := theory.cut.operands_of_binary_left shape
     (by simp [containsContactShape, containsContactShapeList])
     (by simp [containsContactShape, containsContactShapeList])
@@ -102,9 +115,9 @@ theorem deep_not_underlying (theory : CIGSLT) : IsEmpty (forget.obj theory ⟶ d
 
 /-- **A contractum headed by its own program introduction.**  A theory whose
 selected rule contracts a binary contact `K(S(…), e)` to a term headed by
-`S` maps into the underlying theory of no continued theory: the image rule
+`S` maps into the theory of no wrappable theory: the image rule
 would have a contractum headed by the program introduction, and the
-contractum of a continued theory never is. -/
+contractum of a wrappable theory never is. -/
 theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
     {contact introduction : String} {programArguments contractumArguments : List Pattern}
     {environment : Pattern}
@@ -114,11 +127,11 @@ theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
       .apply introduction contractumArguments)
     (programPlain : containsContactShape (.apply introduction programArguments) = false)
     (environmentPlain : containsContactShape environment = false)
-    (theory : CIGSLT) : IsEmpty (source ⟶ forget.obj theory) := by
+    (theory : WrappableIGSLT) : IsEmpty (source ⟶ forget.obj theory) := by
   constructor
   intro morphism
-  have mappedLeft := IGSLT.Morphism.maps_left morphism
-  have mappedRight := IGSLT.Morphism.maps_right morphism
+  have mappedLeft := CIGSLT.IGSLT.Morphism.maps_left morphism
+  have mappedRight := CIGSLT.IGSLT.Morphism.maps_right morphism
   rw [left] at mappedLeft
   rw [right] at mappedRight
   simp only [mapPattern, mapPatternList] at mappedLeft mappedRight
@@ -134,18 +147,18 @@ theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
   obtain ⟨programLabel, -⟩ := theory.cut.program.of_apply program
   exact (theory.contractum_head_ne_introductions mappedRight.symm).1 programLabel
 
-/-- **Successor arithmetic maps into no continued theory.** -/
-theorem successor_not_underlying (theory : CIGSLT) :
+/-- **Successor arithmetic maps into no wrappable theory.** -/
+theorem successor_not_underlying (theory : WrappableIGSLT) :
     IsEmpty (calculatorRewritingIGSLT ⟶ forget.obj theory) :=
   no_morphism_of_contractum_headed_by_program (source := calculatorRewritingIGSLT)
     (contact := "Add") (introduction := "Succ") (programArguments := [.fvar "m"])
     (contractumArguments := [.apply "Add" [.fvar "m", .fvar "n"]])
     (environment := .fvar "n") rfl rfl (by decide) (by decide) theory
 
-/-- **Visible composition in an interaction category maps into no continued
+/-- **Visible composition in an interaction category maps into no wrappable
 theory**, for the same reason: the composite is headed by the action prefix
 that introduces both operands. -/
-theorem visibleComposition_not_underlying (theory : CIGSLT) :
+theorem visibleComposition_not_underlying (theory : WrappableIGSLT) :
     IsEmpty (Mettapedia.Languages.InteractionCategory.theory .visible ⟶ forget.obj theory) :=
   no_morphism_of_contractum_headed_by_program
     (source := Mettapedia.Languages.InteractionCategory.theory .visible)
@@ -154,6 +167,78 @@ theorem visibleComposition_not_underlying (theory : CIGSLT) :
     (contractumArguments := [.fvar "a", .fvar "c", .apply "Comp" [.fvar "p", .fvar "q"]])
     (environment := .apply "Act" [.fvar "b", .fvar "c", .fvar "q"]) rfl rfl
     (by decide) (by decide) theory
+
+/-! ## The essential image -/
+
+/-- **Not essentially surjective.**  The forgetful functor from the wrappable
+theories already misses the unwrapping theory. -/
+theorem forget_not_essSurj : ¬ forget.EssSurj := by
+  intro surjective
+  obtain ⟨theory, ⟨isomorphism⟩⟩ := surjective.mem_essImage deep
+  exact (deep_not_underlying theory).false isomorphism.hom
+
+/-- None of the three witnesses is isomorphic to the theory of a wrappable
+theory. -/
+theorem witnesses_outside_essImage :
+    ¬ forget.essImage deep ∧ ¬ forget.essImage calculatorRewritingIGSLT ∧
+      ¬ forget.essImage (Mettapedia.Languages.InteractionCategory.theory .visible) := by
+  refine ⟨?_, ?_, ?_⟩
+  · rintro ⟨theory, ⟨isomorphism⟩⟩
+    exact (deep_not_underlying theory).false isomorphism.hom
+  · rintro ⟨theory, ⟨isomorphism⟩⟩
+    exact (successor_not_underlying theory).false isomorphism.inv
+  · rintro ⟨theory, ⟨isomorphism⟩⟩
+    exact (visibleComposition_not_underlying theory).false isomorphism.inv
+
+end Mettapedia.GSLT.LanguageDef.WrappableIGSLT
+
+namespace Mettapedia.GSLT.LanguageDef.CIGSLT
+
+open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.StructuralMorphism
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef.Interaction.Controls.EquationalContact
+open Mettapedia.Languages.Calculator
+
+/-! ## The same for continued theories
+
+The forgetful functor from continued theories factors through the wrappable
+ones, so each statement above gives the statement for continued theories. -/
+
+/-- Forgetting the cut, the section and the wrappability witness is
+forgetting the section first. -/
+theorem forget_eq_toWrappable_comp : forget = toWrappable ⋙ WrappableIGSLT.forget :=
+  rfl
+
+/-- **No continued theory maps into the unwrapping theory.** -/
+theorem deep_not_underlying (theory : CIGSLT) : IsEmpty (forget.obj theory ⟶ deep) :=
+  WrappableIGSLT.deep_not_underlying theory.toWrappableIGSLT
+
+/-- **A contractum headed by its own program introduction** maps into the
+underlying theory of no continued theory. -/
+theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
+    {contact introduction : String} {programArguments contractumArguments : List Pattern}
+    {environment : Pattern}
+    (left : source.presentation.interactionRewrite.1.left =
+      .apply contact [.apply introduction programArguments, environment])
+    (right : source.presentation.interactionRewrite.1.right =
+      .apply introduction contractumArguments)
+    (programPlain : containsContactShape (.apply introduction programArguments) = false)
+    (environmentPlain : containsContactShape environment = false)
+    (theory : CIGSLT) : IsEmpty (source ⟶ forget.obj theory) :=
+  WrappableIGSLT.no_morphism_of_contractum_headed_by_program left right programPlain
+    environmentPlain theory.toWrappableIGSLT
+
+/-- **Successor arithmetic maps into no continued theory.** -/
+theorem successor_not_underlying (theory : CIGSLT) :
+    IsEmpty (calculatorRewritingIGSLT ⟶ forget.obj theory) :=
+  WrappableIGSLT.successor_not_underlying theory.toWrappableIGSLT
+
+/-- **Visible composition in an interaction category maps into no continued
+theory.** -/
+theorem visibleComposition_not_underlying (theory : CIGSLT) :
+    IsEmpty (Mettapedia.Languages.InteractionCategory.theory .visible ⟶ forget.obj theory) :=
+  WrappableIGSLT.visibleComposition_not_underlying theory.toWrappableIGSLT
 
 /-- The successor law does have interaction-cut form: what fails is the
 wrapping, not the factoring. -/

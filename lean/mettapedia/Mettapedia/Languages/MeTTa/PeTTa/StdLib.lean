@@ -215,7 +215,7 @@ private theorem letStarBase_match_mem (bodyP : Pattern) :
       matchPattern letStarBaseRule.left
         (.apply "let*" [.collection .vec [] none, bodyP]) := by
   simp only [letStarBaseRule, matchPattern, beq_self_eq_true, List.length_cons, List.length_nil]
-  simp [matchArgs, matchPattern, matchBag, mergeBindings]
+  simp [matchArgs, matchPattern, mergeBindings]
 
 private theorem letStarBase_applyBindings (bodyP : Pattern) :
     applyBindings [("body", bodyP)] (.fvar "body") = bodyP := by

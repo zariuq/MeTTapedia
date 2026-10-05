@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.OSLFCore.Atom
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
 import Mettapedia.Languages.MeTTa.TypeSchemeActivation
 import Mettapedia.Machines.OrderedGuardPipeline
 import Mettapedia.Machines.RevisionedQueryFacts
@@ -47,12 +48,21 @@ inductive LiteralDemand : Atom → Demand → Prop where
       formal ≠ .symbol "_" → LiteralDemand formal .checked
 
 def demand (formal : Atom) : Demand :=
-  if formal = .symbol "Atom" then .raw
+  if formalArgumentIsRaw formal then .raw
   else if formal = .symbol "%Undefined%" ∨ formal = .symbol "_" then .translate
   else .checked
 
+/-- A raw argument is selected by the literal declaration, before binding. -/
+theorem demand_raw (formal : Atom) :
+    (demand formal == .raw) = (formal == .symbol "Atom") := by
+  by_cases literal : formal = .symbol "Atom"
+  · simp [demand, literal]
+  · simp [demand, literal]
+    split <;> simp
+
 theorem demand_sound (formal : Atom) : LiteralDemand formal (demand formal) := by
   unfold demand
+  simp only [formalArgumentIsRaw, beq_iff_eq]
   split
   · rename_i same; subst formal; exact .raw
   · rename_i notAtom

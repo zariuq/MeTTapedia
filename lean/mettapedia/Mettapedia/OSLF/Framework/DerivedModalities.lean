@@ -164,6 +164,34 @@ theorem derived_galois (span : ReductionSpan X) :
   -- ◇(φ) ≤ ψ ↔ ∃_src(tgt*(φ)) ≤ ψ ↔ tgt*(φ) ≤ src*(ψ) ↔ φ ≤ ∀_tgt(src*(ψ)) ↔ φ ≤ □(ψ)
   exact Iff.trans (di_pb_adj span.source _ _) (pb_ui_adj span.target _ _)
 
+/-- Universal step-future operator: `∀_src ∘ tgt*`.
+
+    `derivedForwardBox(span)(φ)(p) = ∀ e, src(e) = p → φ(tgt(e))`
+    = "every reduction step from p leads to a state satisfying φ".
+    Invariance under reduction is stated with this operator; `derivedBox`
+    looks backward. `GSLT/Topos/PresheafEventModalities.lean` has the
+    presheaf version, `forwardBox`. -/
+def derivedForwardBox (span : ReductionSpan X) (φ : X → Prop) : X → Prop :=
+  ui span.source (pb span.target φ)
+
+/-- Step image: `∃_tgt ∘ src*`, the states reached by one step from a state
+    satisfying φ. -/
+def derivedImage (span : ReductionSpan X) (φ : X → Prop) : X → Prop :=
+  di span.target (pb span.source φ)
+
+/-- The Galois connection `image ⊣ forward box`, composing `∃_tgt ⊣ tgt*` and
+    `src* ⊣ ∀_src`. -/
+theorem derivedImage_galois (span : ReductionSpan X) :
+    GaloisConnection (derivedImage span) (derivedForwardBox span) := by
+  intro φ ψ
+  exact Iff.trans (di_pb_adj span.target _ _) (pb_ui_adj span.source _ _)
+
+/-- A property is preserved by every step exactly when its step image stays
+    inside it. -/
+theorem preserved_iff_derivedImage_le (span : ReductionSpan X) (φ : X → Prop) :
+    φ ≤ derivedForwardBox span φ ↔ derivedImage span φ ≤ φ :=
+  (derivedImage_galois span φ φ).symm
+
 /-! ## Summary
 
 **0 sorries. 0 axioms.**
@@ -171,7 +199,8 @@ theorem derived_galois (span : ReductionSpan X) :
 This file establishes:
 
 1. `di_pb_adj` / `pb_ui_adj` — the adjoint triple `∃_f ⊣ f* ⊣ ∀_f` at the Set level
-2. `derived_galois` — generic `◇ ⊣ □` for any reduction span
+2. `derived_galois` — generic `◇ ⊣ □` for any reduction span; `derivedImage_galois`
+   and `preserved_iff_derivedImage_le` — the forward pair, for invariance
 3. `GSLTTypeSynthesis.lean` applies this construction to the semantic
    equation quotient and compatible step of a GSLT
 

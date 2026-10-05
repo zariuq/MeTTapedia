@@ -46,6 +46,9 @@ therefore cannot be reused as authority for another class. -/
 abbrev OptimizationKey (Source : Type uSource) :=
   CheckKey (OptimizationKind × Source) Nat String Ty String
 
+-- The hosted judgment, evidence, artifact and observation carriers are bundled
+-- with independent universe levels; their joint maximum belongs to this record.
+set_option linter.checkUnivs false in
 /-- One semantics-preserving optimization family.  Shape evidence and
 artifacts may depend on the exact source occurrence.  Crucially, the hosted
 calculus supplies its own proof-relevant native judgment at the complete key;

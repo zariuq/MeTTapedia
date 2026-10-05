@@ -60,13 +60,13 @@ theorem sucMoveStageAllowed_adequate :
   consts_allowedIn fun c hc => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
     rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-    · exact constAdequateAt_num
-    · exact constAdequateAt_zero
-    · exact constAdequateAt_suc
-    · exact constAdequateAt_add
-    · exact constAdequateAt_j
-    · exact constAdequateAt_eqAt
-    · exact constAdequateAt_sucMove'
+    · exact constAdequateAt_num objectExtension
+    · exact constAdequateAt_zero objectExtension
+    · exact constAdequateAt_suc objectExtension
+    · exact constAdequateAt_add objectExtension
+    · exact constAdequateAt_j objectExtension
+    · exact constAdequateAt_eqAt objectExtension
+    · exact constAdequateAt_sucMove' objectExtension
 
 variable {A : DeclName → Bool}
 
@@ -101,7 +101,7 @@ own. -/
 theorem sucMoveZero_valid :
     (CStatement.typing .nil (.app (.const sucMoveName) czero)
       (.pi (ceqAt czero) (ceqAt (csuc czero)))).Valid objectChurchReading objectHeadReduction :=
-  objectChurch_valid sucMoveStageAllowed_adequate sucMoveZero_typed_within .nil
+  objectExtension.valid_within sucMoveStageAllowed_adequate sucMoveZero_typed_within .nil
 
 end Stages
 
@@ -143,7 +143,7 @@ theorem stuckZero_typed_within :
 /-- **The decoder is stuck at universes under the core reduction**, whose steps are steps
 of the object package's reduction. -/
 theorem coreReduction_decoderStuck : coreReduction.DecoderStuckAtUniverses :=
-  fun hu u s => objectHeadReduction_decoderStuck hu u (s.step objectHeadReduction)
+  fun hu u s => objectExtension.decoderStuck hu u (s.step objectHeadReduction)
 
 /-- **`add 0 (add 0 0) : num` is not valid under the core reduction**: its denotation is
 zero, at whose tag the relation asks it to reduce to zero, and it takes no core step. -/
@@ -174,7 +174,7 @@ theorem stuckAllowed_not_adequate :
       ConstAdequateAt objectChurchReading coreReduction c :=
   fun consts => stuckZero_not_valid (CDerivable.valid ConvRules.objectLevels
     objectChurchReading_valid
-    objectRigid_groundHeads objectRules_groundHeadEq coreReduction_decoderStuck consts
+    objectExtension.groundHeads objectRules_groundHeadEq coreReduction_decoderStuck consts
     stuckZero_typed_within CCtxFormed.nil)
 
 /-- `zero` is adequate under every head reduction of the object package. -/
@@ -197,7 +197,7 @@ theorem add_not_constAdequate_core : ¬ ConstAdequateAt objectChurchReading core
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
   rcases hc with rfl | rfl | rfl
   · exact ConstAdequateAt.of_adequate (objectChurch_declared (c := numN) (T := Package.U0)
-      (by decide) rfl) ((adequateType_typeAt (H := coreReduction) (.base .num)
+      (by decide) rfl) ((adequateType_typeAt objectExtension (H := coreReduction) (.base .num)
         (.nil : CCtx Tower.Head 0)).adequate ConvRules.objectLevels objectChurch_soundnessFacts
           (.sort Tower.zero))
   · exact ConstAdequateAt.of_adequate (objectChurch_declared (c := zeroN) (T := Package.numT)

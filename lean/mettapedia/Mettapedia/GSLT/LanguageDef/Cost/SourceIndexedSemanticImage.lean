@@ -177,11 +177,4 @@ theorem accountImage_observation (M : Type) [Monoid M] (source : CIGSLT)
     (accountImage M source safe color).hom.hom (account, term) =
       source.canonicalKey term.1.1 := rfl
 
-#print axioms insert
-#print axioms eraseColor_compile
-#print axioms compile_injective
-#print axioms normalize
-#print axioms sourceKey_ofSource_eq_iff
-#print axioms normalizeObservedImage
-
 end Mettapedia.GSLT.LanguageDef.Cost.SourceIndexedSemanticImage

@@ -157,4 +157,70 @@ theorem actual_whole_step_physical_lifting
   rw [targetEq]
   exact .collection (.cons targetImage (.cons frameImage .nil))
 
+/-! ## The comparison per place of firing, in both directions -/
+
+/-- The runtime firing `cover` of `config` is the generated step `source ⟶ target` on a contact,
+with the rest of the configuration as an untouched frame: the configuration is the canonical
+configuration of the image of the bag `[source, frame]`, and the runtime successor is observed as
+the image of the bag `[target, frame]`. -/
+def FiringIsGeneratedStep (location : CostName LiteralAuthority) (config : RawCostConfig)
+    (cover : RawWholeOccurrenceCover config) (source target : Pattern) : Prop :=
+  Step (.reflection rhoCIGSLT.costWholeReflectionProfile)
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+      rhoCIGSLT.costWholeLanguage source target ∧
+    ∃ frameSource sourceTerm targetTerm,
+      ConfigImage location (.collection .hashBag [source, frameSource] none) sourceTerm ∧
+      ConfigImage location (.collection .hashBag [target, frameSource] none) targetTerm ∧
+      ((literalEncodeTerm sourceTerm).normalizeConfig : Multiset RawCostTerm) =
+        (config : Multiset RawCostTerm) ∧
+      rawConfigStructuralDenote cover.runtimeStep.residual.normalizeConfig =
+        rawConfigStructuralDenote (literalEncodeTerm targetTerm).normalizeConfig
+
+/-- Runtime to generated: every whole-funded firing of a canonical admitted configuration at the
+image of a closed channel is a generated step at its place. -/
+theorem runtime_firing_is_generated_step {channelSource : Pattern}
+    {location : CostName LiteralAuthority} {config : RawCostConfig}
+    (channelImage : NameImage 0 channelSource location) (cover : RawWholeOccurrenceCover config)
+    (images : config.Forall (ConfigAdmitted (literalEncodeName location).normalize))
+    (components : config.Forall RawCostTerm.IsComponent)
+    (normalized : config.Forall (fun term => term.normalize = term)) :
+    ∃ source target, FiringIsGeneratedStep location config cover source target := by
+  obtain ⟨source, target, frameSource, sourceTerm, targetTerm, step, sourceImage, targetImage,
+    sourceBag, observed⟩ := cover.authored_full_rhs channelImage images components normalized
+  exact ⟨source, target, step, frameSource, sourceTerm, targetTerm, sourceImage, targetImage,
+    sourceBag, observed⟩
+
+/-- Generated to runtime: a generated step on an image determines its fields, and at every
+admission of those fields into a canonical admitted configuration (the place: both channels at
+the location, an index of the signed pair, a purse at the location whose head is the signature
+and whose tail is the contact's) the runtime fires exactly there, and that firing is the
+generated step at its place. -/
+theorem generated_step_is_runtime_firing
+    {locationSource : Pattern} {location : CostName LiteralAuthority}
+    {source target : Pattern} {decoded : CostTerm LiteralAuthority}
+    (step : Step (.reflection rhoCIGSLT.costWholeReflectionProfile)
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+      rhoCIGSLT.costWholeLanguage source target)
+    (image : ConfigImage location source decoded)
+    (locationImage : NameImage 0 locationSource location)
+    (config : RawCostConfig) (wellFormed : config.Forall (fun term => term.wellFormed = true))
+    (images : config.Forall (ConfigAdmitted (literalEncodeName location).normalize))
+    (components : config.Forall RawCostTerm.IsComponent)
+    (normalized : config.Forall (fun term => term.normalize = term)) :
+    ∃ bindings, ∃ fields : AuthoredWholeParserFields location source decoded bindings,
+      ∀ admission : AuthoredWholeOccurrenceAdmission fields config,
+        ∃ cover : RawWholeOccurrenceCover config,
+          cover.redex.index = admission.index ∧ cover.selected = [admission.purse] ∧
+          cover.runtimeStep ∈ runtimeCostCandidatesFromConfig config ∧
+          FiringIsGeneratedStep location config cover source target := by
+  obtain ⟨bindings, fields, _, lifted⟩ := actual_whole_step_physical_lifting step image locationImage
+    config wellFormed images components normalized
+  refine ⟨bindings, fields, fun admission => ?_⟩
+  obtain ⟨cover, frameSource, sourceTerm, targetTerm, index, selected, enabled, sourceImage,
+    targetImage, sourceBag, observed⟩ := lifted admission
+  exact ⟨cover, index, selected, enabled, step, frameSource, sourceTerm, targetTerm, sourceImage,
+    targetImage, sourceBag, observed⟩
+
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerated

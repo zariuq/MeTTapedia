@@ -478,7 +478,7 @@ theorem keyNames_supportedSafe {source : CIGSLT} {color : CostStaticColor}
       globalTable.sourceFreeContext (costRegionSourceVariableName name) = some type := by
     intro name type lookup
     rw [globalTable.sourceFreeContext_sourceVariable, lookup]
-    exact decodeCostStaticTypeExpr_mapTypeExpr source color type
+    exact CostStaticTypeImage.decode_mapTypeExpr source.theory color type
   have named : NamesValid plan.boundaryTable globalTable.sourceFreeContext globalTable.sourceSupport
       (keyNames plan.boundaryTable) := by
     intro slot

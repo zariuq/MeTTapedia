@@ -192,10 +192,10 @@ theorem existsUnique_additiveExtension
 /-- Package multiset addition as an `EvidenceType` when using multisets as
 posterior states. This is a non-instance helper so existing domain-specific
 instances remain free to choose their own import boundaries. -/
-def multisetEvidenceType (Obs : Type*) : EvidenceType (Multiset Obs) where
+@[instance_reducible] def multisetEvidenceType (Obs : Type*) : EvidenceType (Multiset Obs) where
 
 /-- Any atomic evidence contribution induces a multiset-based world model. -/
-noncomputable def worldModelOfAtomicEvidence
+@[instance_reducible] noncomputable def worldModelOfAtomicEvidence
     (a : AtomicEvidenceContribution Obs' Query') :
     letI : EvidenceType (Multiset Obs') := multisetEvidenceType Obs'
     BinaryWorldModel (Multiset Obs') Query' := by

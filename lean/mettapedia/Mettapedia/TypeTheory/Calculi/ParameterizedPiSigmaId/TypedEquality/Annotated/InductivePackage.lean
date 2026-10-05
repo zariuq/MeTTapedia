@@ -48,6 +48,16 @@ package with the declaration (`withInductive`):
   constructor and a term of the declared type, all typed along the recursor's telescope, it
   has the motive's type at that term.
 
+None of these but the recursor's typing needs the declaration's own package. Every package
+that declares the type in its universe with types for the closed fields (`DeclaresDataType`)
+has the type, the field types and the constructors' declared types as types; every package
+that declares the constructors at their declared types as well (`DeclaresDataCtors`) has the
+constructors' typings and the recursor's declared type as a type
+(`DeclaresDataCtors.recType_formed`), with or without the recursor. The package with the
+declaration is one (`withInductive_declaresDataCtors`), and the lemmas above are these at it;
+a package with the type and its constructors and without the recursor is another, where the
+recursor's declared type is formed before the recursor is declared.
+
 These rest on two facts about telescopes given by their entries: a telescope of types closes
 to a type (`closeType_formed`), and a term of a closed telescope type applied along a
 substitution typed along the telescope has the target at that substitution
@@ -772,82 +782,100 @@ theorem sum_rec_declared (distinct : DistinctNames T ctors rec) (free : FieldsLa
   (sumDecls_right new.recNew).trans
     (elabDeclarations_lamFree _ (inductiveDecls_rec distinct) (lamFree_recType _ v free))
 
-include levels in
-/-- **The declared type is a type of its universe**, in every context. -/
-theorem type_typed (hu : R.isUniverse u) (new : NewNames B T ctors rec) {n : Nat}
-    {Γ : CCtx Head n} : CTyped (withInductive B T u ctors rec v) Γ (.const T) (.head u) := by
-  obtain ⟨u', hu', typing, -⟩ := levels.successor hu
-  exact CDerivable.const (type := .head u) (u := u') (sum_type_declared B new)
-    (.headType typing) hu'
+end Constants
+
+/-! ## The constants of a declaration in every package that declares them -/
+
+section Declared
+
+variable {L : Type} [LevelOrder L] {R : Rules Head} (levels : LevelModel R L)
+  {Q : ChurchRules R}
+
+/-- **A package declares the type of a simple inductive declaration**: the type is declared in
+its universe, and every closed field type is a type of the package. The package with the
+declaration is one (`withInductive_declaresDataType`); a package with the type and without the
+recursor is another. -/
+structure DeclaresDataType (Q : ChurchRules R) (T : DeclName) (u : Head)
+    (ctors : List (DeclName × List (Field Head))) : Prop where
+  typeUniverse : R.isUniverse u
+  typeDeclared : Q.constantType T = some (.head u)
+  fieldsFormed : FieldsFormed Q ctors
+
+/-- **A package declares the constructors** of a simple inductive declaration as well, each at
+its declared type. -/
+structure DeclaresDataCtors (Q : ChurchRules R) (T : DeclName) (u : Head)
+    (ctors : List (DeclName × List (Field Head))) : Prop extends DeclaresDataType Q T u ctors where
+  ctor : ∀ {i : Nat} {k : DeclName} {fields : List (Field Head)}, ctors[i]? = some (k, fields) →
+    Q.constantType k = some (liftTm (ctorType T fields))
 
 include levels in
+/-- **A type declared in a universe is a type of it**, in every context. -/
+theorem typeConst_typed (hu : R.isUniverse u) (declared : Q.constantType T = some (.head u))
+    {n : Nat} {Γ : CCtx Head n} : CTyped Q Γ (.const T) (.head u) := by
+  obtain ⟨u', hu', typing, -⟩ := levels.successor hu
+  exact CDerivable.const (type := .head u) (u := u') declared (.headType typing) hu'
+
+namespace DeclaresDataType
+
+variable (decl : DeclaresDataType Q T u ctors)
+include levels decl
+
 /-- The type of a field is a type, in every context. -/
-theorem fieldType_formed (hu : R.isUniverse u) (new : NewNames B T ctors rec)
-    {entry : DeclName × List (Field Head)} (member : entry ∈ ctors)
-    (fieldsFormed : FieldsFormed B ctors) {field : Field Head} (among : field = .recursive ∨
-      field ∈ entry.2) {n : Nat} {Γ : CCtx Head n} :
-    CIsType (withInductive B T u ctors rec v) Γ (liftTm (field.type T)).liftClosed := by
+theorem fieldType_formed {entry : DeclName × List (Field Head)} (member : entry ∈ ctors)
+    {field : Field Head} (among : field = .recursive ∨ field ∈ entry.2) {n : Nat}
+    {Γ : CCtx Head n} : CIsType Q Γ (liftTm (field.type T)).liftClosed := by
   cases field with
-  | recursive => exact ⟨u, hu, type_typed levels B hu new⟩
+  | recursive =>
+    exact ⟨u, decl.typeUniverse, typeConst_typed levels decl.typeUniverse decl.typeDeclared⟩
   | closed F =>
     have listed : (.closed F : Field Head) ∈ entry.2 := among.resolve_left (fun h => nomatch h)
-    obtain ⟨w, hw, typed⟩ := fieldsFormed entry member F listed
-    have inSum : CIsType (withInductive B T u ctors rec v) .nil (liftTm F) :=
-      ⟨w, hw, CDerivable.sum_left _ typed⟩
-    exact inSum.liftClosed
+    exact (decl.fieldsFormed entry member F listed).liftClosed
 
-include levels in
 /-- **The declared type of a constructor is a type.** -/
-theorem ctorType_formed (hu : R.isUniverse u) (new : NewNames B T ctors rec)
-    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
-    (entry : ctors[i]? = some (k, fields)) :
-    CIsType (withInductive B T u ctors rec v) .nil (liftTm (ctorType T fields)) := by
-  refine closeType_formed (LevelModel.sum levels _) (ctorEntry T fields) fields.length (.const T)
-    (fun j _ => ?_) ⟨u, hu, type_typed levels B hu new⟩
+theorem ctorType_formed {i : Nat} {k : DeclName} {fields : List (Field Head)}
+    (entry : ctors[i]? = some (k, fields)) : CIsType Q .nil (liftTm (ctorType T fields)) := by
+  refine closeType_formed levels (ctorEntry T fields) fields.length (.const T)
+    (fun j _ => ?_)
+    ⟨u, decl.typeUniverse, typeConst_typed levels decl.typeUniverse decl.typeDeclared⟩
   rw [ctorEntry, liftTm_liftClosed]
-  refine fieldType_formed levels B hu new (List.mem_of_getElem? entry) fieldsFormed ?_
+  refine decl.fieldType_formed levels (List.mem_of_getElem? entry) ?_
   cases found : fields.getD j .recursive with
   | recursive => exact .inl rfl
   | closed F => exact .inr (closed_mem_of_getD found)
 
-include levels in
-/-- **A constructor has its declared type**, in every context. -/
-theorem ctor_typed (hu : R.isUniverse u) (distinct : DistinctNames T ctors rec)
-    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
-    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
-    (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n} :
-    CTyped (withInductive B T u ctors rec v) Γ (.const k)
-      (liftTm (ctorType T fields)).liftClosed := by
-  obtain ⟨w, hw, formed⟩ := ctorType_formed (v := v) (rec := rec) levels B hu new fieldsFormed entry
-  exact CDerivable.const (sum_ctor_declared B distinct free new entry) formed hw
+end DeclaresDataType
 
-include levels in
+namespace DeclaresDataCtors
+
+variable (decl : DeclaresDataCtors Q T u ctors)
+include levels decl
+
+/-- **A constructor has its declared type**, in every context. -/
+theorem ctor_typed {i : Nat} {k : DeclName} {fields : List (Field Head)}
+    (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n} :
+    CTyped Q Γ (.const k) (liftTm (ctorType T fields)).liftClosed := by
+  obtain ⟨w, hw, formed⟩ := decl.toDeclaresDataType.ctorType_formed levels entry
+  exact CDerivable.const (decl.ctor entry) formed hw
+
 /-- **A constructor applied along a substitution typed along its fields** is a term of the
 declared type. -/
-theorem ctor_applied (hu : R.isUniverse u) (distinct : DistinctNames T ctors rec)
-    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
-    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
+theorem ctor_applied {i : Nat} {k : DeclName} {fields : List (Field Head)}
     (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n}
-    {σ : CSub Head fields.length n}
-    (typed : CSubstMor (withInductive B T u ctors rec v) (liftCtx (ctorTele T fields)) Γ σ) :
-    CTyped (withInductive B T u ctors rec v) Γ (applyAlong σ (.const k)) (.const T) :=
+    {σ : CSub Head fields.length n} (typed : CSubstMor Q (liftCtx (ctorTele T fields)) Γ σ) :
+    CTyped Q Γ (applyAlong σ (.const k)) (.const T) :=
   applyAlong_typed (ctorEntry T fields) fields.length (.const T) σ typed
-    (ctor_typed levels B hu distinct free new fieldsFormed entry)
+    (decl.ctor_typed levels entry)
 
-include levels in
 /-- **A constructor applied to listed terms of the types of its fields** is a term of the
 declared type. -/
-theorem ctor_spine_typed (hu : R.isUniverse u) (distinct : DistinctNames T ctors rec)
-    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
-    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
+theorem ctor_spine_typed {i : Nat} {k : DeclName} {fields : List (Field Head)}
     (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n} {xs : List (Tm Head n)}
     (typed : List.Forall₂ (fun x (field : Field Head) =>
-      CTyped (withInductive B T u ctors rec v) Γ (liftTm x) (liftTm (field.type T)).liftClosed)
-      xs fields) :
-    CTyped (withInductive B T u ctors rec v) Γ (liftTm (appSpine (.const k) xs)) (.const T) := by
+      CTyped Q Γ (liftTm x) (liftTm (field.type T)).liftClosed) xs fields) :
+    CTyped Q Γ (liftTm (appSpine (.const k) xs)) (.const T) := by
   obtain ⟨length, pointwise⟩ := List.forall₂_iff_get.mp typed
   rw [← applyAlong_listSub fields.length xs length (.const k)]
-  refine ctor_applied levels B hu distinct free new fieldsFormed entry fun j => ?_
+  refine decl.ctor_applied levels entry fun j => ?_
   have below : fields.length - 1 - j.val < fields.length := by
     have := j.isLt
     omega
@@ -872,6 +900,221 @@ theorem ctor_spine_typed (hu : R.isUniverse u) (distinct : DistinctNames T ctors
   rw [left, right]
   exact pointwise _ _ _
 
+/-- **The type of a method with some of its fields bound is a type**: over a motive, the
+fields bound so far at the types of the constructor's first fields, and the recursive ones
+among them. -/
+theorem caseFields_formed (hv : R.isUniverse v) {i : Nat} {k : DeclName}
+    {allFields : List (Field Head)} (entry : ctors[i]? = some (k, allFields)) :
+    ∀ (fs done : List (Field Head)) {n : Nat} {Γ : CCtx Head n} (p : Tm Head n)
+      (xs recs : List (Tm Head n)), done ++ fs = allFields →
+      CTyped Q Γ (liftTm p) (.pi (.const T) (.head v)) →
+      List.Forall₂ (fun x (field : Field Head) =>
+        CTyped Q Γ (liftTm x) (liftTm (field.type T)).liftClosed) xs done →
+      (∀ r ∈ recs, CTyped Q Γ (liftTm r) (.const T)) →
+      CIsType Q Γ (liftTm (caseFields T k fs p xs recs))
+  | [], done, _, Γ, p, xs, recs, split, hp, hxs, hrecs => by
+    obtain rfl : done = allFields := by rw [← split, List.append_nil]
+    exact caseHyps_formed levels hv recs p _ hp hrecs (decl.ctor_spine_typed levels entry hxs)
+  | .recursive :: fs, done, n, Γ, p, xs, recs, split, hp, hxs, hrecs => by
+    have domain : CTyped Q Γ (.const T) (.head u) :=
+      typeConst_typed levels decl.typeUniverse decl.typeDeclared
+    have weakened : List.Forall₂ (fun x (field : Field Head) =>
+        CTyped Q (.snoc Γ (.const T)) (liftTm x)
+          (liftTm (field.type T)).liftClosed) (xs.map (Presentation.rename wk)) done :=
+      List.forall₂_map_left_iff.mpr (hxs.imp fun x field typed => by
+        rw [liftTm_rename]
+        simpa only [CTm.rename_liftClosed] using CTyped.weaken (E := .const T) typed)
+    obtain ⟨w, hw, codomain⟩ := caseFields_formed hv entry fs
+      (done ++ [.recursive]) (Γ := .snoc Γ (.const T)) (Presentation.rename wk p)
+      (xs.map (Presentation.rename wk) ++ [.var 0])
+      (recs.map (Presentation.rename wk) ++ [.var 0])
+      (by rw [List.append_assoc]; exact split)
+      (by rw [liftTm_rename]; exact CTyped.weaken hp)
+      (forall₂_concat weakened (CDerivable.var (Γ := .snoc Γ (.const T)) 0))
+      (fun r member => by
+        rcases List.mem_append.mp member with older | newest
+        · obtain ⟨r₀, member₀, rfl⟩ := List.mem_map.mp older
+          rw [liftTm_rename]
+          exact CTyped.weaken (hrecs r₀ member₀)
+        · obtain rfl := List.mem_singleton.mp newest
+          exact CDerivable.var (Γ := .snoc Γ (.const T)) 0)
+    obtain ⟨c, join⟩ := levels.join_exists decl.typeUniverse hw
+    exact ⟨c, (levels.join_level join).1, .piForm domain decl.typeUniverse codomain hw join⟩
+  | .closed F :: fs, done, n, Γ, p, xs, recs, split, hp, hxs, hrecs => by
+    have listed : (.closed F : Field Head) ∈ allFields := by
+      rw [← split]
+      exact List.mem_append_right _ List.mem_cons_self
+    obtain ⟨a, ha, domain⟩ : CIsType Q Γ
+        (liftTm (Presentation.liftClosed F : Tm Head n)) := by
+      rw [liftTm_liftClosed]
+      exact decl.toDeclaresDataType.fieldType_formed levels (List.mem_of_getElem? entry)
+        (field := .closed F) (.inr listed)
+    have weakened : List.Forall₂ (fun x (field : Field Head) =>
+        CTyped Q (.snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n))) (liftTm x)
+          (liftTm (field.type T)).liftClosed) (xs.map (Presentation.rename wk)) done :=
+      List.forall₂_map_left_iff.mpr (hxs.imp fun x field typed => by
+        rw [liftTm_rename]
+        simpa only [CTm.rename_liftClosed] using
+          CTyped.weaken (E := liftTm (Presentation.liftClosed F : Tm Head n)) typed)
+    have newest : CTyped Q
+        (.snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n))) (liftTm (.var 0))
+        (liftTm ((Field.closed F).type T)).liftClosed := by
+      have type : (liftTm (Presentation.liftClosed F : Tm Head n)).rename wk =
+          (liftTm F).liftClosed := by
+        rw [liftTm_liftClosed, CTm.rename_liftClosed]
+      have bound := CDerivable.var (P := Q)
+        (Γ := .snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n))) 0
+      rw [CCtx.lookup_snoc_zero, type] at bound
+      exact bound
+    obtain ⟨w, hw, codomain⟩ := caseFields_formed hv entry fs
+      (done ++ [.closed F]) (Γ := .snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n)))
+      (Presentation.rename wk p) (xs.map (Presentation.rename wk) ++ [.var 0])
+      (recs.map (Presentation.rename wk))
+      (by rw [List.append_assoc]; exact split)
+      (by rw [liftTm_rename]; exact CTyped.weaken hp)
+      (forall₂_concat weakened newest)
+      (fun r member => by
+        obtain ⟨r₀, member₀, rfl⟩ := List.mem_map.mp member
+        rw [liftTm_rename]
+        exact CTyped.weaken (hrecs r₀ member₀))
+    obtain ⟨c, join⟩ := levels.join_exists ha hw
+    exact ⟨c, (levels.join_level join).1, .piForm domain ha codomain hw join⟩
+
+/-- **Each entry of the recursor's telescope is a type** over the entries before it: the type
+of motives, the types of the methods over the motive, and the declared type. -/
+theorem recEntry_formed (hv : R.isUniverse v) :
+    ∀ j, CIsType Q (liftCtx (ofEntries (recEntry T v ctors) j)) (liftTm (recEntry T v ctors j))
+  | 0 => by
+    obtain ⟨v', hv', typing, -⟩ := levels.successor hv
+    obtain ⟨c, join⟩ := levels.join_exists decl.typeUniverse hv'
+    exact ⟨c, (levels.join_level join).1,
+      .piForm (typeConst_typed levels decl.typeUniverse decl.typeDeclared) decl.typeUniverse
+        (.headType typing) hv' join⟩
+  | j + 1 => by
+    cases entry : ctors[j]? with
+    | none =>
+      have unfolded : recEntry T v ctors (j + 1) = .const T := by simp [recEntry, entry]
+      rw [unfolded]
+      exact ⟨u, decl.typeUniverse, typeConst_typed levels decl.typeUniverse decl.typeDeclared⟩
+    | some pair =>
+      obtain ⟨k, fields⟩ := pair
+      rw [recEntry_method T v ctors entry]
+      refine decl.caseFields_formed levels hv entry fields []
+        (.var (Fin.last j)) [] [] rfl ?_ .nil (fun _ member => nomatch member)
+      have motive := CDerivable.var (P := Q)
+        (Γ := liftCtx (ofEntries (recEntry T v ctors) (j + 1))) (Fin.last j)
+      rw [lookup_last] at motive
+      exact motive
+
+/-- **The declared type of the recursor is a type.** -/
+theorem recType_formed (hv : R.isUniverse v) : CIsType Q .nil (liftTm (recType T v ctors)) := by
+  refine closeType_formed levels (recEntry T v ctors) (ctors.length + 2)
+    (recBody ctors.length)
+    (fun j _ => decl.recEntry_formed levels hv j) ⟨v, hv, ?_⟩
+  have motive := CDerivable.var (P := Q)
+    (Γ := liftCtx (ofEntries (recEntry T v ctors) (ctors.length + 2)))
+    (Fin.last (ctors.length + 1))
+  rw [lookup_last] at motive
+  have scrutinee := CDerivable.var (P := Q)
+    (Γ := liftCtx (ofEntries (recEntry T v ctors) (ctors.length + 2))) 0
+  change CTyped _ _ (.var 0) ((liftTm (recEntry T v ctors (ctors.length + 1))).rename wk)
+    at scrutinee
+  rw [recEntry_scrutinee] at scrutinee
+  exact .appElim motive scrutinee
+
+end DeclaresDataCtors
+
+end Declared
+
+/-! ## The constants of a declaration in the package with it -/
+
+section Constants
+
+variable {L : Type} [LevelOrder L] {R : Rules Head}
+variable (levels : LevelModel R L) (B : ChurchRules R)
+
+/-- **The package with a simple inductive declaration declares its type**, when the type's
+universe is a universe, its names are new and its closed field types are types. -/
+theorem withInductive_declaresDataType (hu : R.isUniverse u) (new : NewNames B T ctors rec)
+    (fieldsFormed : FieldsFormed B ctors) :
+    DeclaresDataType (withInductive B T u ctors rec v) T u ctors where
+  typeUniverse := hu
+  typeDeclared := sum_type_declared B new
+  fieldsFormed := fun entry member F field =>
+    let ⟨w, hw, typed⟩ := fieldsFormed entry member F field
+    ⟨w, hw, CDerivable.sum_left _ typed⟩
+
+/-- **The package with a simple inductive declaration declares its constructors.** -/
+theorem withInductive_declaresDataCtors (hu : R.isUniverse u)
+    (distinct : DistinctNames T ctors rec) (free : FieldsLamFree ctors)
+    (new : NewNames B T ctors rec) (fieldsFormed : FieldsFormed B ctors) :
+    DeclaresDataCtors (withInductive B T u ctors rec v) T u ctors :=
+  { withInductive_declaresDataType B hu new fieldsFormed with
+    ctor := fun entry => sum_ctor_declared B distinct free new entry }
+
+include levels in
+/-- **The declared type is a type of its universe**, in every context. -/
+theorem type_typed (hu : R.isUniverse u) (new : NewNames B T ctors rec) {n : Nat}
+    {Γ : CCtx Head n} : CTyped (withInductive B T u ctors rec v) Γ (.const T) (.head u) :=
+  typeConst_typed (LevelModel.sum levels _) hu (sum_type_declared B new)
+
+include levels in
+/-- The type of a field is a type, in every context. -/
+theorem fieldType_formed (hu : R.isUniverse u) (new : NewNames B T ctors rec)
+    {entry : DeclName × List (Field Head)} (member : entry ∈ ctors)
+    (fieldsFormed : FieldsFormed B ctors) {field : Field Head} (among : field = .recursive ∨
+      field ∈ entry.2) {n : Nat} {Γ : CCtx Head n} :
+    CIsType (withInductive B T u ctors rec v) Γ (liftTm (field.type T)).liftClosed :=
+  (withInductive_declaresDataType (v := v) B hu new fieldsFormed).fieldType_formed
+    (LevelModel.sum levels _) member among
+
+include levels in
+/-- **The declared type of a constructor is a type.** -/
+theorem ctorType_formed (hu : R.isUniverse u) (new : NewNames B T ctors rec)
+    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
+    (entry : ctors[i]? = some (k, fields)) :
+    CIsType (withInductive B T u ctors rec v) .nil (liftTm (ctorType T fields)) :=
+  (withInductive_declaresDataType (v := v) B hu new fieldsFormed).ctorType_formed
+    (LevelModel.sum levels _) entry
+
+include levels in
+/-- **A constructor has its declared type**, in every context. -/
+theorem ctor_typed (hu : R.isUniverse u) (distinct : DistinctNames T ctors rec)
+    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
+    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
+    (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n} :
+    CTyped (withInductive B T u ctors rec v) Γ (.const k)
+      (liftTm (ctorType T fields)).liftClosed :=
+  (withInductive_declaresDataCtors (v := v) B hu distinct free new fieldsFormed).ctor_typed
+    (LevelModel.sum levels _) entry
+
+include levels in
+/-- **A constructor applied along a substitution typed along its fields** is a term of the
+declared type. -/
+theorem ctor_applied (hu : R.isUniverse u) (distinct : DistinctNames T ctors rec)
+    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
+    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
+    (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n}
+    {σ : CSub Head fields.length n}
+    (typed : CSubstMor (withInductive B T u ctors rec v) (liftCtx (ctorTele T fields)) Γ σ) :
+    CTyped (withInductive B T u ctors rec v) Γ (applyAlong σ (.const k)) (.const T) :=
+  (withInductive_declaresDataCtors (v := v) B hu distinct free new fieldsFormed).ctor_applied
+    (LevelModel.sum levels _) entry typed
+
+include levels in
+/-- **A constructor applied to listed terms of the types of its fields** is a term of the
+declared type. -/
+theorem ctor_spine_typed (hu : R.isUniverse u) (distinct : DistinctNames T ctors rec)
+    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
+    (fieldsFormed : FieldsFormed B ctors) {i : Nat} {k : DeclName} {fields : List (Field Head)}
+    (entry : ctors[i]? = some (k, fields)) {n : Nat} {Γ : CCtx Head n} {xs : List (Tm Head n)}
+    (typed : List.Forall₂ (fun x (field : Field Head) =>
+      CTyped (withInductive B T u ctors rec v) Γ (liftTm x) (liftTm (field.type T)).liftClosed)
+      xs fields) :
+    CTyped (withInductive B T u ctors rec v) Γ (liftTm (appSpine (.const k) xs)) (.const T) :=
+  (withInductive_declaresDataCtors (v := v) B hu distinct free new fieldsFormed).ctor_spine_typed
+    (LevelModel.sum levels _) entry typed
+
 include levels in
 /-- **The type of a method with some of its fields bound is a type**: over a motive, the
 fields bound so far at the types of the constructor's first fields, and the recursive ones
@@ -887,76 +1130,9 @@ theorem caseFields_formed (hu : R.isUniverse u) (hv : R.isUniverse v)
         CTyped (withInductive B T u ctors rec v) Γ (liftTm x)
           (liftTm (field.type T)).liftClosed) xs done →
       (∀ r ∈ recs, CTyped (withInductive B T u ctors rec v) Γ (liftTm r) (.const T)) →
-      CIsType (withInductive B T u ctors rec v) Γ (liftTm (caseFields T k fs p xs recs))
-  | [], done, _, Γ, p, xs, recs, split, hp, hxs, hrecs => by
-    obtain rfl : done = allFields := by rw [← split, List.append_nil]
-    exact caseHyps_formed (LevelModel.sum levels _) hv recs p _ hp hrecs
-      (ctor_spine_typed levels B hu distinct free new fieldsFormed entry hxs)
-  | .recursive :: fs, done, n, Γ, p, xs, recs, split, hp, hxs, hrecs => by
-    have domain : CTyped (withInductive B T u ctors rec v) Γ (.const T) (.head u) :=
-      type_typed levels B hu new
-    have weakened : List.Forall₂ (fun x (field : Field Head) =>
-        CTyped (withInductive B T u ctors rec v) (.snoc Γ (.const T)) (liftTm x)
-          (liftTm (field.type T)).liftClosed) (xs.map (Presentation.rename wk)) done :=
-      List.forall₂_map_left_iff.mpr (hxs.imp fun x field typed => by
-        rw [liftTm_rename]
-        simpa only [CTm.rename_liftClosed] using CTyped.weaken (E := .const T) typed)
-    obtain ⟨w, hw, codomain⟩ := caseFields_formed hu hv distinct free new fieldsFormed entry fs
-      (done ++ [.recursive]) (Γ := .snoc Γ (.const T)) (Presentation.rename wk p)
-      (xs.map (Presentation.rename wk) ++ [.var 0])
-      (recs.map (Presentation.rename wk) ++ [.var 0])
-      (by rw [List.append_assoc]; exact split)
-      (by rw [liftTm_rename]; exact CTyped.weaken hp)
-      (forall₂_concat weakened (CDerivable.var (Γ := .snoc Γ (.const T)) 0))
-      (fun r member => by
-        rcases List.mem_append.mp member with older | newest
-        · obtain ⟨r₀, member₀, rfl⟩ := List.mem_map.mp older
-          rw [liftTm_rename]
-          exact CTyped.weaken (hrecs r₀ member₀)
-        · obtain rfl := List.mem_singleton.mp newest
-          exact CDerivable.var (Γ := .snoc Γ (.const T)) 0)
-    obtain ⟨c, join⟩ := levels.join_exists hu hw
-    exact ⟨c, (levels.join_level join).1, .piForm domain hu codomain hw join⟩
-  | .closed F :: fs, done, n, Γ, p, xs, recs, split, hp, hxs, hrecs => by
-    have listed : (.closed F : Field Head) ∈ allFields := by
-      rw [← split]
-      exact List.mem_append_right _ List.mem_cons_self
-    obtain ⟨a, ha, domain⟩ : CIsType (withInductive B T u ctors rec v) Γ
-        (liftTm (Presentation.liftClosed F : Tm Head n)) := by
-      rw [liftTm_liftClosed]
-      exact fieldType_formed levels B hu new (List.mem_of_getElem? entry) fieldsFormed
-        (field := .closed F) (.inr listed)
-    have weakened : List.Forall₂ (fun x (field : Field Head) =>
-        CTyped (withInductive B T u ctors rec v)
-          (.snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n))) (liftTm x)
-          (liftTm (field.type T)).liftClosed) (xs.map (Presentation.rename wk)) done :=
-      List.forall₂_map_left_iff.mpr (hxs.imp fun x field typed => by
-        rw [liftTm_rename]
-        simpa only [CTm.rename_liftClosed] using
-          CTyped.weaken (E := liftTm (Presentation.liftClosed F : Tm Head n)) typed)
-    have newest : CTyped (withInductive B T u ctors rec v)
-        (.snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n))) (liftTm (.var 0))
-        (liftTm ((Field.closed F).type T)).liftClosed := by
-      have type : (liftTm (Presentation.liftClosed F : Tm Head n)).rename wk =
-          (liftTm F).liftClosed := by
-        rw [liftTm_liftClosed, CTm.rename_liftClosed]
-      have bound := CDerivable.var (P := withInductive B T u ctors rec v)
-        (Γ := .snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n))) 0
-      rw [CCtx.lookup_snoc_zero, type] at bound
-      exact bound
-    obtain ⟨w, hw, codomain⟩ := caseFields_formed hu hv distinct free new fieldsFormed entry fs
-      (done ++ [.closed F]) (Γ := .snoc Γ (liftTm (Presentation.liftClosed F : Tm Head n)))
-      (Presentation.rename wk p) (xs.map (Presentation.rename wk) ++ [.var 0])
-      (recs.map (Presentation.rename wk))
-      (by rw [List.append_assoc]; exact split)
-      (by rw [liftTm_rename]; exact CTyped.weaken hp)
-      (forall₂_concat weakened newest)
-      (fun r member => by
-        obtain ⟨r₀, member₀, rfl⟩ := List.mem_map.mp member
-        rw [liftTm_rename]
-        exact CTyped.weaken (hrecs r₀ member₀))
-    obtain ⟨c, join⟩ := levels.join_exists ha hw
-    exact ⟨c, (levels.join_level join).1, .piForm domain ha codomain hw join⟩
+      CIsType (withInductive B T u ctors rec v) Γ (liftTm (caseFields T k fs p xs recs)) :=
+  (withInductive_declaresDataCtors (v := v) B hu distinct free new fieldsFormed).caseFields_formed
+    (LevelModel.sum levels _) hv entry
 
 include levels in
 /-- **Each entry of the recursor's telescope is a type** over the entries before it: the type
@@ -965,47 +1141,18 @@ theorem recEntry_formed (hu : R.isUniverse u) (hv : R.isUniverse v)
     (distinct : DistinctNames T ctors rec) (free : FieldsLamFree ctors)
     (new : NewNames B T ctors rec) (fieldsFormed : FieldsFormed B ctors) :
     ∀ j, CIsType (withInductive B T u ctors rec v) (liftCtx (ofEntries (recEntry T v ctors) j))
-      (liftTm (recEntry T v ctors j))
-  | 0 => by
-    obtain ⟨v', hv', typing, -⟩ := levels.successor hv
-    obtain ⟨c, join⟩ := levels.join_exists hu hv'
-    exact ⟨c, (levels.join_level join).1,
-      .piForm (type_typed levels B hu new) hu (.headType typing) hv' join⟩
-  | j + 1 => by
-    cases entry : ctors[j]? with
-    | none =>
-      have unfolded : recEntry T v ctors (j + 1) = .const T := by simp [recEntry, entry]
-      rw [unfolded]
-      exact ⟨u, hu, type_typed levels B hu new⟩
-    | some pair =>
-      obtain ⟨k, fields⟩ := pair
-      rw [recEntry_method T v ctors entry]
-      refine caseFields_formed levels B hu hv distinct free new fieldsFormed entry fields []
-        (.var (Fin.last j)) [] [] rfl ?_ .nil (fun _ member => nomatch member)
-      have motive := CDerivable.var (P := withInductive B T u ctors rec v)
-        (Γ := liftCtx (ofEntries (recEntry T v ctors) (j + 1))) (Fin.last j)
-      rw [lookup_last] at motive
-      exact motive
+      (liftTm (recEntry T v ctors j)) :=
+  (withInductive_declaresDataCtors (v := v) B hu distinct free new fieldsFormed).recEntry_formed
+    (LevelModel.sum levels _) hv
 
 include levels in
 /-- **The declared type of the recursor is a type.** -/
 theorem recType_formed (hu : R.isUniverse u) (hv : R.isUniverse v)
     (distinct : DistinctNames T ctors rec) (free : FieldsLamFree ctors)
     (new : NewNames B T ctors rec) (fieldsFormed : FieldsFormed B ctors) :
-    CIsType (withInductive B T u ctors rec v) .nil (liftTm (recType T v ctors)) := by
-  refine closeType_formed (LevelModel.sum levels _) (recEntry T v ctors) (ctors.length + 2)
-    (recBody ctors.length)
-    (fun j _ => recEntry_formed levels B hu hv distinct free new fieldsFormed j) ⟨v, hv, ?_⟩
-  have motive := CDerivable.var (P := withInductive B T u ctors rec v)
-    (Γ := liftCtx (ofEntries (recEntry T v ctors) (ctors.length + 2)))
-    (Fin.last (ctors.length + 1))
-  rw [lookup_last] at motive
-  have scrutinee := CDerivable.var (P := withInductive B T u ctors rec v)
-    (Γ := liftCtx (ofEntries (recEntry T v ctors) (ctors.length + 2))) 0
-  change CTyped _ _ (.var 0) ((liftTm (recEntry T v ctors (ctors.length + 1))).rename wk)
-    at scrutinee
-  rw [recEntry_scrutinee] at scrutinee
-  exact .appElim motive scrutinee
+    CIsType (withInductive B T u ctors rec v) .nil (liftTm (recType T v ctors)) :=
+  (withInductive_declaresDataCtors (v := v) B hu distinct free new fieldsFormed).recType_formed
+    (LevelModel.sum levels _) hv
 
 include levels in
 /-- **The recursor has its declared type**, in every context. -/

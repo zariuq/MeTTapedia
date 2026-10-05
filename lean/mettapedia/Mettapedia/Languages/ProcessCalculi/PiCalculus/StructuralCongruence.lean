@@ -81,7 +81,7 @@ inductive StructuralCongruence : Process → Process → Type where
   | replicate_unfold (x y : Name) (P : Process) :
       StructuralCongruence
         (Process.replicate x y P)
-        (Process.input x y (P ||| Process.replicate x y P))
+        ((Process.input x y P) ||| Process.replicate x y P)
 
 notation:50 P " ≡ " Q => StructuralCongruence P Q
 

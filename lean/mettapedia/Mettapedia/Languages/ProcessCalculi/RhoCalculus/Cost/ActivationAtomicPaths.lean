@@ -5,17 +5,19 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationExecutable
 # Atomic generated funding throughout actual finite execution
 
 A concrete count of non-singleton cells vanishes on the existing generated
-parser image. The executable occurrence partition preserves that condition:
-communicated code introduces no purses, selected heads are removed, and their
-ordered tails remain. Thus every firing in an actual finite path from an
-admitted generated source consumes one physical cell per exact authority atom.
-This does not identify firing count with atom count, or split signature syntax
-into authority atoms.
+parser image. That count is a readout of the bag of cells of the purses, and an
+executable firing takes exactly the selected heads from that bag, so the
+condition is preserved and every selected head is a single atom. Thus every
+firing in an actual finite path from an admitted generated source consumes one
+physical cell per exact authority atom. This does not identify firing count
+with atom count, or split signature syntax into authority atoms.
 -/
 
 set_option autoImplicit false
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
+
+open Mettapedia.GSLT.Causality.ResourceInteraction
 
 universe u
 
@@ -30,15 +32,29 @@ theorem CostStack.SingletonHeads.nonSingletonCells_zero {Ground : Type u}
   | empty => rfl
   | cons head rest ih => simp only [CostStack.nonSingletonCells, head, if_true, zero_add, ih]
 
-theorem CostStack.nonSingletonCells_cons_zero {Ground : Type u}
-    {head : CostSig Ground} {tail : CostStack Ground}
-    (zero : (CostStack.cons head tail).nonSingletonCells = 0) :
-    head.card = 1 ∧ tail.nonSingletonCells = 0 := by
-  unfold CostStack.nonSingletonCells at zero
-  by_cases atomic : head.card = 1
-  · exact ⟨atomic, by simpa only [atomic, if_true, zero_add] using zero⟩
-  · simp only [atomic, if_false] at zero
-    omega
+/-- The cells of a stack whose signature bag is not a singleton, counted among
+its cells. -/
+theorem CostStack.nonSingletonCells_eq_countP {Ground : Type u} :
+    ∀ stack : CostStack Ground,
+      stack.nonSingletonCells = stack.toList.countP fun cell => cell.card ≠ 1
+  | .empty => rfl
+  | .cons head tail => by
+      rw [CostStack.nonSingletonCells, CostStack.toList, List.countP_cons,
+        CostStack.nonSingletonCells_eq_countP tail]
+      by_cases single : head.card = 1 <;> simp [single, add_comm]
+
+/-- The non-singleton cells of the purses of a configuration, counted in the
+bag of their cells. -/
+theorem CostConfig.nonSingletonCells_eq_countP {Ground : Type u} (config : CostConfig Ground) :
+    config.physicalPurseMeasure CostStack.nonSingletonCells =
+      (cellBag config.purses).countP fun cell => cell.card ≠ 1 := by
+  rw [CostConfig.physicalPurseMeasure_eq_purses]
+  generalize config.purses = purses
+  induction purses using Multiset.induction_on with
+  | empty => rfl
+  | cons purse purses ih =>
+      rw [Multiset.map_cons, Multiset.sum_cons, ih, cellBag_cons, Multiset.countP_add,
+        CostStack.nonSingletonCells_eq_countP, CostStack.toList_ofList, Multiset.coe_countP]
 
 theorem CostTerm.components_measure_zero_of_inventory {Ground : Type u}
     (weight : CostStack Ground → Nat) (term : CostTerm Ground)
@@ -58,26 +74,6 @@ theorem CostTerm.components_measure_zero_of_inventory {Ground : Type u}
       have head := zero stack (Multiset.mem_add.mpr (Or.inl (Multiset.mem_singleton_self stack)))
       simpa [CostTerm.components, CostConfig.physicalPurseMeasure, CostTerm.physicalPurseMeasure] using head
 
-private theorem selected_zero_defects {selected : List RawSelectedPurse}
-    (zero : (selected.map fun purse =>
-      (CostStack.cons (decodeCostSig purse.head) (decodeCostStack purse.tail)).nonSingletonCells).sum = 0) :
-    selected.Forall (fun purse => purse.head.length = 1) ∧
-      (selected.map fun purse => (decodeCostStack purse.tail).nonSingletonCells).sum = 0 := by
-  induction selected with
-  | nil => exact ⟨by simp, rfl⟩
-  | cons purse rest ih =>
-      simp only [List.map_cons, List.sum_cons] at zero
-      have headZero : (CostStack.cons (decodeCostSig purse.head)
-          (decodeCostStack purse.tail)).nonSingletonCells = 0 := by omega
-      have restZero : (rest.map fun purse =>
-          (CostStack.cons (decodeCostSig purse.head) (decodeCostStack purse.tail)).nonSingletonCells).sum = 0 := by omega
-      obtain ⟨atomic, tailZero⟩ := CostStack.nonSingletonCells_cons_zero headZero
-      obtain ⟨restAtomic, restTails⟩ := ih restZero
-      constructor
-      · exact (List.forall_cons (fun purse : RawSelectedPurse => purse.head.length = 1) purse rest).mpr
-          ⟨atomic, restAtomic⟩
-      · simp only [List.map_cons, List.sum_cons, tailZero, restTails, zero_add]
-
 /-- Existing executable forcing preserves atomic cells and equates its two
 physical debit observations on this admission domain. -/
 theorem applyTracedStep_atomic_cells
@@ -91,22 +87,21 @@ theorem applyTracedStep_atomic_cells
     (decodeRawConfig ((applyTracedStep components step eventId).map RawTraceComponent.term)).physicalPurseMeasure
       CostStack.nonSingletonCells = 0 ∧
       step.selectedPurses.length = (decodeCostSig step.spend).card := by
-  obtain ⟨free, sourceMeasure⟩ := runtime_candidate_code_and_source_measure
-    CostStack.nonSingletonCells canonical.rawConfig separated enabled
-  have targetMeasure := applyTracedStep_physical_measure CostStack.nonSingletonCells components step eventId free
-  rw [atomic] at sourceMeasure
-  have retainedZero : (decodeRawConfig (eraseIndices (components.map RawTraceComponent.term)
-      (step.participantIndices ++ step.selectedPurses.map RawIndexedPurse.index))).physicalPurseMeasure
-        CostStack.nonSingletonCells = 0 := by omega
-  have selectedZero : (step.selectedPurses.map fun purse =>
-      (CostStack.cons (decodeCostSig purse.head) (decodeCostStack purse.tail)).nonSingletonCells).sum = 0 := by omega
-  obtain ⟨selectedAtomic, tailsZero⟩ := selected_zero_defects selectedZero
-  constructor
-  · rw [targetMeasure, retainedZero, tailsZero, zero_add]
-  · have spend := congrArg Multiset.card
-      (runtimeCostCandidatesFromConfig_funding_valid enabled).exact_spend
-    rw [rawSelectedSpend_card_eq_length selectedAtomic] at spend
-    exact spend
+  obtain ⟨present, fired⟩ := applyTracedStep_purses_fire canonical separated enabled eventId
+  have taken := congrArg (Multiset.countP fun cell : CostSig String => cell.card ≠ 1)
+    (pursesMany_cells_taken _ _ _ present)
+  rw [Multiset.countP_add, ← fired, ← CostConfig.nonSingletonCells_eq_countP,
+    ← CostConfig.nonSingletonCells_eq_countP, atomic] at taken
+  refine ⟨by omega, ?_⟩
+  have heads := Multiset.countP_eq_zero.mp (by omega :
+    (step.chosenPurses.map Prod.fst).countP (fun cell => cell.card ≠ 1) = 0)
+  have selectedAtomic : step.selectedPurses.Forall fun purse => purse.head.length = 1 :=
+    List.forall_iff_forall_mem.mpr fun purse member => not_not.mp (heads _
+      (Multiset.mem_map_of_mem _ (Multiset.mem_coe.mpr (List.mem_map_of_mem member))))
+  have spend := congrArg Multiset.card
+    (runtimeCostCandidatesFromConfig_funding_valid enabled).exact_spend
+  rw [rawSelectedSpend_card_eq_length selectedAtomic] at spend
+  exact spend
 
 namespace CostPath
 

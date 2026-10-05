@@ -268,7 +268,7 @@ theorem mapCostStatic_thickenAmbientBVars
         (mapPattern (color.symbols source) left))
       (thinning.thickenAmbientBVars depth
         (mapPattern (color.symbols source) right)) := by
-  simpa only [CostStaticBinderThinning.thickenAmbientBVars_eq_renameAmbientBVarsAt]
+  simpa only [CostStaticTypeThinning.thickenAmbientBVars_eq_renameAmbientBVarsAt]
     using witness.mapCostStatic_renameAmbientBVarsAt source color derivedMap stable
       thinning.toTargetIndex thinning.toTargetIndex_strictMono depth
 

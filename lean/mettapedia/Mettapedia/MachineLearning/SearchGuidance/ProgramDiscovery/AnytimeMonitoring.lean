@@ -22,7 +22,7 @@ those counts.
 
 namespace Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.PLN.Evidence
 open scoped ENNReal NNReal MeasureTheory ProbabilityTheory
 

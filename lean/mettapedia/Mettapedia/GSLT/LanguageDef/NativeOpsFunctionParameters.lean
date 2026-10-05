@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.NativeOpsSourceFunctions
 import Mettapedia.GSLT.LanguageDef.NativeOpsTargetFunctions
+import Mettapedia.GSLT.LanguageDef.NativeOpsTargetParameterFacts
 
 /-!
 # Function parameter frames across native lowering
@@ -110,10 +111,17 @@ theorem source_parameter_arity_exact {World : Type}
     (sourceBindParameters parameters arguments frame state).isSome = true ↔
       parameters.length = arguments.length := by
   induction parameters generalizing arguments frame state with
-  | nil => cases arguments <;> simp [sourceBindParameters]
+  | nil =>
+      cases arguments with
+      | nil => constructor <;> intro _same <;> rfl
+      | cons value values =>
+          change false = true ↔ 0 = values.length + 1
+          constructor <;> intro impossible <;> cases impossible
   | cons parameter rest ih =>
       cases arguments with
-      | nil => simp [sourceBindParameters]
+      | nil =>
+          change false = true ↔ rest.length + 1 = 0
+          constructor <;> intro impossible <;> cases impossible
       | cons value values =>
           simpa only [sourceBindParameters, List.length_cons, Nat.add_right_cancel_iff]
             using ih values (sourceDeclareLocal frame state parameter.name parameter.type value).1
@@ -125,10 +133,17 @@ theorem target_parameter_arity_exact {World : Type}
     (targetBindParameters parameters arguments frame state).isSome = true ↔
       parameters.length = arguments.length := by
   induction parameters generalizing arguments frame state with
-  | nil => cases arguments <;> simp [targetBindParameters]
+  | nil =>
+      cases arguments with
+      | nil => constructor <;> intro _same <;> rfl
+      | cons value values =>
+          change false = true ↔ 0 = values.length + 1
+          constructor <;> intro impossible <;> cases impossible
   | cons parameter rest ih =>
       cases arguments with
-      | nil => simp [targetBindParameters]
+      | nil =>
+          change false = true ↔ rest.length + 1 = 0
+          constructor <;> intro impossible <;> cases impossible
       | cons value values =>
           simpa only [targetBindParameters, List.length_cons, Nat.add_right_cancel_iff]
             using ih values (targetDeclareLocal frame state parameter.name parameter.type value).1
@@ -178,6 +193,48 @@ theorem source_parameter_frame_extent {World : Type}
           exact ⟨storage, by simpa [sourceDeclareLocal, Nat.add_assoc, Nat.add_comm,
             Nat.add_left_comm] using extent⟩
 
+/-- The operational binder prepends each parameter in source order, so its
+    final lexical presentation is reversed. The allocated locations retain
+    their original argument order. -/
+theorem source_parameter_frame_scope {World : Type}
+    {parameters : List Parameter} {arguments : List SourceValue}
+    {frame boundFrame : SourceFrame} {state boundState : SourceState World}
+    (bound : sourceBindParameters parameters arguments frame state =
+      some (boundFrame, boundState)) :
+    sourceFrameScope boundFrame =
+      (parameters.map (fun parameter => (parameter.name, parameter.type))).reverse ++
+        sourceFrameScope frame := by
+  induction parameters generalizing arguments frame state with
+  | nil =>
+      cases arguments with
+      | nil => cases bound; rfl
+      | cons _ _ => cases bound
+  | cons parameter rest ih =>
+      cases arguments with
+      | nil => cases bound
+      | cons value values =>
+          have tail := ih bound
+          simpa only [sourceFrameScope, sourceDeclareLocal, List.map_cons, List.reverse_cons,
+            List.singleton_append, List.append_assoc] using tail
+
+theorem source_parameter_lookup_agreement {World : Type}
+    {parameters : List Parameter} {arguments : List SourceValue}
+    {boundFrame : SourceFrame} {state boundState : SourceState World} {storage : Nat}
+    (distinct : (parameters.map Parameter.name).Nodup)
+    (bound : sourceBindParameters parameters arguments ⟨storage, 0, []⟩ state =
+      some (boundFrame, boundState)) :
+    ScopeLookupAgreement
+      (parameters.map (fun parameter => (parameter.name, parameter.type)))
+      (sourceFrameScope boundFrame) := by
+  have scope : sourceFrameScope boundFrame =
+      (parameters.map (fun parameter => (parameter.name, parameter.type))).reverse := by
+    simpa only [sourceFrameScope, List.map_nil, List.append_nil]
+      using source_parameter_frame_scope bound
+  rw [scope]
+  apply ScopeLookupAgreement.symm
+  apply scope_lookup_agreement_reverse
+  simpa only [List.map_map, Function.comp_def] using distinct
+
 theorem target_parameter_temporaries_unchanged {World : Type}
     {parameters : List Parameter} {arguments : List TargetValue}
     {frame boundFrame : TargetFrame} {state boundState : TargetState World}
@@ -196,6 +253,54 @@ theorem target_parameter_temporaries_unchanged {World : Type}
       | cons value values =>
           exact ih (frame := (targetDeclareLocal frame state parameter.name parameter.type value).1)
             (state := (targetDeclareLocal frame state parameter.name parameter.type value).2) bound
+
+theorem source_parameters_preserve_fault {World : Type}
+    {parameters : List Parameter} {arguments : List SourceValue}
+    {frame after : SourceFrame} {state post : SourceState World}
+    (bound : sourceBindParameters parameters arguments frame state = some (after, post)) :
+    post.fault = state.fault := by
+  induction parameters generalizing arguments frame state with
+  | nil =>
+      cases arguments with
+      | nil => cases bound; rfl
+      | cons _ _ => cases bound
+  | cons parameter rest ih =>
+      cases arguments with
+      | nil => cases bound
+      | cons value values =>
+          exact ih
+            (frame := (sourceDeclareLocal frame state parameter.name parameter.type value).1)
+            (state := (sourceDeclareLocal frame state parameter.name parameter.type value).2) bound
+
+theorem target_parameters_preserve_fault {World : Type}
+    {parameters : List Parameter} {arguments : List TargetValue}
+    {frame after : TargetFrame} {state post : TargetState World}
+    (bound : targetBindParameters parameters arguments frame state = some (after, post)) :
+    post.fault = state.fault := by
+  obtain ⟨_, _, _, same⟩ := target_bind_parameters_facts parameters arguments frame state after post bound
+  rw [same]
+
+/-- A fault path still tears down the actually bound invocation cells.
+    Freshness prevents cleanup from erasing an earlier caller value. -/
+theorem target_parameters_leave_scope {World : Type}
+    {parameters : List Parameter} {arguments : List TargetValue} {storage : Nat}
+    {after : TargetFrame} {state post : TargetState World}
+    (fresh : targetFreshFrame state.memory storage)
+    (bound : targetBindParameters parameters arguments (targetEmptyFrame storage) state =
+      some (after, post)) : (targetLeaveScope (targetEmptyFrame storage) after post).2 = state := by
+  obtain ⟨sameStorage, _extent, released⟩ :=
+    target_bound_parameters_release parameters arguments storage state after post fresh bound
+  obtain ⟨_, _, _, same⟩ :=
+    target_bind_parameters_facts parameters arguments (targetEmptyFrame storage) state after post bound
+  change { post with memory := targetDropLocals post.memory after.storage 0 after.nextLocal } = state
+  rw [sameStorage, released, same]
+
+theorem target_parameters_empty_temporaries {World : Type}
+    {parameters : List Parameter} {arguments : List TargetValue} {storage : Nat}
+    {after : TargetFrame} {state post : TargetState World}
+    (bound : targetBindParameters parameters arguments (targetEmptyFrame storage) state =
+      some (after, post)) : after.temporaryNames = [] ∧ after.temporaries = fun _ => none :=
+  target_parameter_temporaries_unchanged bound
 
 theorem singleton_parameter_readback {World : Type} (state : SourceState World)
     (storage : Nat) (parameter : Parameter) (value : SourceValue) :

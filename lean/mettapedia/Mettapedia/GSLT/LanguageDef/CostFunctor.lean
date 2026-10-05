@@ -924,9 +924,9 @@ theorem mapTermParam_costWrapped
 
 /-! ## Preservation and reflection of the selected continuation fibers -/
 
-namespace CIGSLT.Morphism
+namespace WrappableIGSLT.Morphism
 
-theorem mapsInteractingSortName {source target : CIGSLT}
+theorem mapsInteractingSortName {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     morphism.underlying.structural.structural.symbols.sort
         source.theory.presentation.interactingSort.1.name =
@@ -938,7 +938,7 @@ theorem mapsInteractingSortName {source target : CIGSLT}
 
 /-- The selected authored interaction rewrite is transported exactly, not
 merely mapped to some target declaration. -/
-theorem mapsInteractionRewriteValue {source target : CIGSLT}
+theorem mapsInteractionRewriteValue {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapRewriteRule morphism.underlying.structural.structural.symbols
         source.theory.presentation.interactionRewrite.1 =
@@ -946,21 +946,21 @@ theorem mapsInteractionRewriteValue {source target : CIGSLT}
   exact congrArg Subtype.val
     morphism.underlying.structural.mapsInteractionRewrite
 
-theorem mapsInteractionRewriteTypeContext {source target : CIGSLT}
+theorem mapsInteractionRewriteTypeContext {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapTypeContext morphism.underlying.structural.structural.symbols
         source.theory.presentation.interactionRewrite.1.typeContext =
       target.theory.presentation.interactionRewrite.1.typeContext := by
   exact congrArg RewriteRule.typeContext morphism.mapsInteractionRewriteValue
 
-theorem mapsInteractionRewriteLeft {source target : CIGSLT}
+theorem mapsInteractionRewriteLeft {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapPattern morphism.underlying.structural.structural.symbols
         source.theory.presentation.interactionRewrite.1.left =
       target.theory.presentation.interactionRewrite.1.left := by
   exact congrArg RewriteRule.left morphism.mapsInteractionRewriteValue
 
-theorem mapsInteractionRewriteRight {source target : CIGSLT}
+theorem mapsInteractionRewriteRight {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapPattern morphism.underlying.structural.structural.symbols
         source.theory.presentation.interactionRewrite.1.right =
@@ -969,7 +969,7 @@ theorem mapsInteractionRewriteRight {source target : CIGSLT}
 
 /-- Structural term maps preserve the schema-variable name selected by the
 program continuation. -/
-theorem mapsProgramContinuationVariableName {source target : CIGSLT}
+theorem mapsProgramContinuationVariableName {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     source.cut.program.continuationVariable.name =
       target.cut.program.continuationVariable.name := by
@@ -983,7 +983,7 @@ theorem mapsProgramContinuationVariableName {source target : CIGSLT}
 
 /-- Structural term maps preserve the schema-variable name selected by the
 environment continuation. -/
-theorem mapsEnvironmentContinuationVariableName {source target : CIGSLT}
+theorem mapsEnvironmentContinuationVariableName {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     source.cut.environment.continuationVariable.name =
       target.cut.environment.continuationVariable.name := by
@@ -995,7 +995,7 @@ theorem mapsEnvironmentContinuationVariableName {source target : CIGSLT}
     target.cut.environment.continuationVariable] at sourceName
   exact Option.some.inj sourceName.symm
 
-theorem mapsProgramConstructorRule {source target : CIGSLT}
+theorem mapsProgramConstructorRule {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapGrammarRule morphism.underlying.structural.structural.symbols
         source.cut.program.constructor.1 =
@@ -1005,7 +1005,7 @@ theorem mapsProgramConstructorRule {source target : CIGSLT}
     morphism.mapsProgramConstructor
   exact equality
 
-theorem mapsEnvironmentConstructorRule {source target : CIGSLT}
+theorem mapsEnvironmentConstructorRule {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapGrammarRule morphism.underlying.structural.structural.symbols
         source.cut.environment.constructor.1 =
@@ -1015,7 +1015,7 @@ theorem mapsEnvironmentConstructorRule {source target : CIGSLT}
     morphism.mapsEnvironmentConstructor
   exact equality
 
-theorem mapConstructor_eq_program_iff {source target : CIGSLT}
+theorem mapConstructor_eq_program_iff {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule) :
     mapGrammarRule morphism.underlying.structural.structural.symbols
           constructor = target.cut.program.constructor.1 ↔
@@ -1026,7 +1026,7 @@ theorem mapConstructor_eq_program_iff {source target : CIGSLT}
     subst constructor
     exact morphism.mapsProgramConstructorRule
 
-theorem mapConstructor_eq_environment_iff {source target : CIGSLT}
+theorem mapConstructor_eq_environment_iff {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule) :
     mapGrammarRule morphism.underlying.structural.structural.symbols
           constructor = target.cut.environment.constructor.1 ↔
@@ -1042,7 +1042,7 @@ authored source constructor.  The label formulation is what the induced
 contractum translation consumes; uniqueness of authored labels makes it
 equivalent to the constructor-level morphism laws. -/
 theorem mapConstructorLabel_mem_wrappedLabels_iff
-    {source target : CIGSLT}
+    {source target : WrappableIGSLT}
     (morphism : source.Morphism target)
     (constructor :
       DeclaredConstructor source.theory.presentation.presentation) :
@@ -1063,11 +1063,11 @@ theorem mapConstructorLabel_mem_wrappedLabels_iff
   · exact morphism.reflectsWrappedConstructors constructor
   · exact morphism.mapsWrappedConstructors constructor
 
-/-- Continuation-retyped contracta are natural in continued theory maps.
+/-- Continuation-retyped contracta are natural in maps of wrappable theories.
 The total wrapped-label fiber law is precisely what aligns the constructor
 choice at every raw schema node; all remaining pattern structure is mapped
 pointwise. -/
-theorem mapContractum_natural {source target : CIGSLT}
+theorem mapContractum_natural {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (pattern : Pattern) :
     mapPattern
         (costLanguageDefSymbolMap
@@ -1117,10 +1117,10 @@ theorem mapContractum_natural {source target : CIGSLT}
         mapPattern, List.map_map]
       exact inductionHypothesis
 
-/-- Selected continuation positions are invariant under a continued theory
-map.  The reflection fields are exactly what rules out newly selected fibers
-created by a collapsing symbol translation. -/
-theorem isSelectedContinuation_map {source target : CIGSLT}
+/-- Selected continuation positions are invariant under a map of wrappable
+theories.  The reflection fields are exactly what rules out newly selected
+fibers created by a collapsing symbol translation. -/
+theorem isSelectedContinuation_map {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule)
     (index : Nat) :
     isSelectedContinuation target.cut
@@ -1136,7 +1136,7 @@ theorem isSelectedContinuation_map {source target : CIGSLT}
     ← morphism.mapsProgramContinuationIndex,
     ← morphism.mapsEnvironmentContinuationIndex]
 
-theorem mapTermParam_costBaseParameter {source target : CIGSLT}
+theorem mapTermParam_costBaseParameter {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule)
     (entry : TermParam × Nat) :
     mapTermParam
@@ -1159,7 +1159,7 @@ theorem mapTermParam_costBaseParameter {source target : CIGSLT}
   · exact mapTermParam_costBase
       morphism.underlying.structural.structural.symbols entry.1
 
-theorem map_costBaseParameter_list {source target : CIGSLT}
+theorem map_costBaseParameter_list {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule) :
     (constructor.params.zipIdx.map
         (costBaseParameter source.cut constructor)).map
@@ -1179,8 +1179,8 @@ theorem map_costBaseParameter_list {source target : CIGSLT}
   exact morphism.mapTermParam_costBaseParameter constructor
     (parameter, index)
 
-/-- Base constructor retyping is natural in continued theory maps. -/
-theorem mapGrammarRule_costBaseConstructor {source target : CIGSLT}
+/-- Base constructor retyping is natural in maps of wrappable theories. -/
+theorem mapGrammarRule_costBaseConstructor {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule) :
     mapGrammarRule
         (costLanguageDefSymbolMap
@@ -1194,7 +1194,7 @@ theorem mapGrammarRule_costBaseConstructor {source target : CIGSLT}
   simp only [costBaseConstructor_def, mapGrammarRule] at parameters ⊢
   congr 1 <;> simp_all [mapCollectionAlgebra, Option.map_map, Function.comp_def]
 
-theorem map_costWrappedParameter_list {source target : CIGSLT}
+theorem map_costWrappedParameter_list {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (parameters : List TermParam) :
     (parameters.map (mapParameterType
         (costWrappedTypeExpr
@@ -1216,7 +1216,7 @@ theorem map_costWrappedParameter_list {source target : CIGSLT}
     morphism.mapsInteractingSortName morphism.reflectsInteractingSort
     parameter
 
-theorem map_costWrappedCategory {source target : CIGSLT}
+theorem map_costWrappedCategory {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (category : String) :
     (costLanguageDefSymbolMap
       morphism.underlying.structural.structural.symbols).sort
@@ -1240,8 +1240,8 @@ theorem map_costWrappedCategory {source target : CIGSLT}
         (morphism.reflectsInteractingSort category targetEquality)
     simp [sourceEquality, targetInequality]
 
-/-- Wrapped residual constructors are natural in continued theory maps. -/
-theorem mapGrammarRule_costWrappedConstructor {source target : CIGSLT}
+/-- Wrapped residual constructors are natural in maps of wrappable theories. -/
+theorem mapGrammarRule_costWrappedConstructor {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (constructor : GrammarRule) :
     mapGrammarRule
         (costLanguageDefSymbolMap
@@ -1269,10 +1269,10 @@ theorem mapTypeDecl_costBase
   simp [mapTypeDecl, costLanguageDefSymbolMap, costBaseSortName,
     costBaseSortTag]
 
-/-- Continued maps induce structural maps between the exact generated
+/-- Maps of wrappable theories induce structural maps between the exact generated
 continuation signatures.  This is the declaration-level action underlying
 the Cost signature; it adds no equations or reductions. -/
-def continuationRetypingStructural {source target : CIGSLT}
+def continuationRetypingStructural {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     StructuralMorphism
       source.continuationRetyping.generatedPresentation
@@ -1362,7 +1362,7 @@ theorem map_costCoreTypes
       costCoreTypes := by
   simp [costCoreTypes, costCoreSortSuffixes, mapTypeDecl, TypeDecl.plain]
 
-theorem map_costCoreConstructors {source target : CIGSLT}
+theorem map_costCoreConstructors {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     (costCoreConstructors
         source.theory.presentation.interactingSort.1.name).map
@@ -1384,8 +1384,8 @@ theorem map_costCoreConstructors {source target : CIGSLT}
     morphism.mapsInteractingSortName]
 
 /-- The structural Cost-core action maps generated declarations through the
-continued theory map and fixes the generic Cost apparatus. -/
-def costCoreStructural {source target : CIGSLT}
+map of wrappable theories and fixes the generic Cost apparatus. -/
+def costCoreStructural {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     StructuralMorphism source.costCorePresentation target.costCorePresentation where
   symbols := costLanguageDefSymbolMap
@@ -1446,17 +1446,17 @@ def costCoreStructural {source target : CIGSLT}
     change List.Mem rewrite [] at membership
     exact (List.not_mem_nil membership).elim
 
-end CIGSLT.Morphism
+end WrappableIGSLT.Morphism
 
 /-! ## Mathlib functor -/
 
-namespace CIGSLT
+namespace WrappableIGSLT
 
-/-- The declaration-derived Cost core is functorial from continued
-interactive theories to exact validated language definitions. -/
-def costCoreFunctor : CategoryTheory.Functor CIGSLT ValidatedLanguageDef where
+/-- The declaration-derived Cost core is functorial from wrappable theories
+to exact validated language definitions. No section is read. -/
+def costCoreFunctor : CategoryTheory.Functor WrappableIGSLT ValidatedLanguageDef where
   obj source := source.costCorePresentation
-  map morphism := CIGSLT.Morphism.costCoreStructural morphism
+  map morphism := morphism.costCoreStructural
   map_id source := by
     apply StructuralMorphism.ext
     exact costLanguageDefSymbolMap_id
@@ -1465,6 +1465,16 @@ def costCoreFunctor : CategoryTheory.Functor CIGSLT ValidatedLanguageDef where
     exact costLanguageDefSymbolMap_comp
       first.underlying.structural.structural.symbols
       second.underlying.structural.structural.symbols
+
+end WrappableIGSLT
+
+namespace CIGSLT
+
+/-- The declaration-derived Cost core is functorial from continued
+interactive theories to exact validated language definitions: forget the
+section, then apply the functor on wrappable theories. -/
+def costCoreFunctor : CategoryTheory.Functor CIGSLT ValidatedLanguageDef :=
+  toWrappable.comp WrappableIGSLT.costCoreFunctor
 
 end CIGSLT
 

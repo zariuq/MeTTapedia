@@ -226,12 +226,4 @@ losing its WorkSpan value. -/
 
 end Schedule
 
-#print axioms Schedule.events_append
-#print axioms Schedule.eventReceipt_events
-#print axioms Schedule.collect_events
-#print axioms Schedule.observed_append
-#print axioms Schedule.observed_ofIndexed
-#print axioms Schedule.observed_receipt_ofIndexed
-#print axioms Schedule.observed_wave_count_ofIndexed
-
 end Mettapedia.GSLT.LanguageDef.CostScheduleObservation

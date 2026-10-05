@@ -407,6 +407,176 @@ theorem privatelyBuild_preserves_original
       · exact builder.stage_preserves_base _
       · rw [ih, Builder.stage_preserves_base]
 
+/-! ## Consuming an unpublished binding image
+
+An exclusive caller can discard the entire candidate after a failed insertion.
+It need not keep the previous candidate as a rollback snapshot. The result below
+retains no builder on failure. The immutable base still represents an independently
+held sibling; owning the candidate does not establish ownership of Atom payloads.
+
+The trace records checked operations, including the first failed operation. This
+lets the correspondence state that consuming storage neither replays a check nor
+evaluates the abandoned suffix. The slot bound concerns this finite representation,
+not allocator capacity, shared syntax, or total process memory.
+-/
+
+structure OwnedExecution (Key : Type u) (Value : Type v) (Metadata : Type w)
+    (Error : Type x) (Operation : Type y) where
+  result : Except Error (Builder Key Value Metadata)
+  checked : List Operation
+
+def executeOwned (check : Checker Key Value Metadata Error Operation) :
+    Builder Key Value Metadata → List Operation →
+      OwnedExecution Key Value Metadata Error Operation
+  | builder, [] => ⟨.ok builder, []⟩
+  | builder, operation :: rest =>
+      let attempt := check builder.denote operation
+      let changed := builder.stage attempt.patch
+      match attempt.verdict with
+      | .error reason => ⟨.error reason, [operation]⟩
+      | .ok _ =>
+          let tail := executeOwned check changed rest
+          ⟨tail.result, operation :: tail.checked⟩
+
+/-- Independent logical execution records the attempted prefix, not the whole
+requested batch. In particular the first rejection prevents later checks. -/
+def checkedPrefix (check : Checker Key Value Metadata Error Operation) :
+    Environment Key Value Metadata → List Operation → List Operation
+  | _, [] => []
+  | environment, operation :: rest =>
+      let attempt := check environment operation
+      operation :: match attempt.verdict with
+      | .error _ => []
+      | .ok _ => checkedPrefix check (applyPatch environment attempt.patch) rest
+
+theorem executeOwned_matches_sequential
+    (check : Checker Key Value Metadata Error Operation)
+    (operations : List Operation) (builder : Builder Key Value Metadata) :
+    (executeOwned check builder operations).result.map Builder.denote =
+      sequential check builder.denote operations := by
+  induction operations generalizing builder with
+  | nil => rfl
+  | cons operation operations ih =>
+      simp only [executeOwned, sequential]
+      split
+      · rfl
+      · rw [ih, Builder.stage_exact]
+
+theorem executeOwned_preserves_checked_prefix
+    (check : Checker Key Value Metadata Error Operation)
+    (operations : List Operation) (builder : Builder Key Value Metadata) :
+    (executeOwned check builder operations).checked =
+      checkedPrefix check builder.denote operations := by
+  induction operations generalizing builder with
+  | nil => rfl
+  | cons operation operations ih =>
+      simp only [executeOwned, checkedPrefix]
+      split
+      · rfl
+      · rw [ih, Builder.stage_exact]
+
+theorem executeOwned_preserves_sibling
+    (check : Checker Key Value Metadata Error Operation)
+    (operations : List Operation) (builder result : Builder Key Value Metadata)
+    (accepted : (executeOwned check builder operations).result = .ok result) :
+    result.base = builder.base := by
+  induction operations generalizing builder with
+  | nil => cases accepted; rfl
+  | cons operation operations ih =>
+      simp only [executeOwned] at accepted
+      split at accepted
+      · cases accepted
+      · rw [ih _ accepted, Builder.stage_preserves_base]
+
+def OwnedExecution.retainedSlots
+    (execution : OwnedExecution Key Value Metadata Error Operation) : Nat :=
+  match execution.result with
+  | .ok builder => builder.slots.length
+  | .error _ => 0
+
+theorem executeOwned_failure_releases_image
+    (check : Checker Key Value Metadata Error Operation)
+    (operations : List Operation) (builder : Builder Key Value Metadata) (reason : Error)
+    (failure : sequential check builder.denote operations = .error reason) :
+    (executeOwned check builder operations).result = .error reason ∧
+      (executeOwned check builder operations).retainedSlots = 0 := by
+  have observes := executeOwned_matches_sequential check operations builder
+  rw [failure] at observes
+  cases result : (executeOwned check builder operations).result with
+  | error actual =>
+      rw [result] at observes
+      change Except.error actual = Except.error reason at observes
+      cases observes
+      exact ⟨rfl, by simp [OwnedExecution.retainedSlots, result]⟩
+  | ok final =>
+      rw [result] at observes
+      change Except.ok final.denote = Except.error reason at observes
+      cases observes
+
+theorem putSlot_length_le (key : Key) (value : Value) (slots : List (Slot Key Value)) :
+    (putSlot key value slots).length ≤ slots.length + 1 := by
+  induction slots with
+  | nil => simp [putSlot]
+  | cons slot slots ih =>
+      cases slot with
+      | spare => simp [putSlot]
+      | reserved found =>
+          by_cases same : key = found
+          · simp [putSlot, same]
+          · simpa [putSlot, same] using ih
+      | bound found old =>
+          by_cases same : key = found
+          · simp [putSlot, same]
+          · simpa [putSlot, same] using ih
+
+theorem Builder.writeMany_slots_bound (builder : Builder Key Value Metadata)
+    (writes : List (Key × Value)) :
+    (builder.writeMany writes).slots.length ≤ builder.slots.length + writes.length := by
+  induction writes generalizing builder with
+  | nil => simp [Builder.writeMany]
+  | cons row rest ih =>
+      have next := ih (builder.write row)
+      have grows := putSlot_length_le row.1 row.2 builder.slots
+      simp only [Builder.writeMany, Builder.write, List.length_cons] at *
+      omega
+
+/-- Count actual writes of attempts reached before the first failure. This
+includes a failing attempt's tentative writes, but excludes the unvisited tail. -/
+def checkedWrites (check : Checker Key Value Metadata Error Operation) :
+    Environment Key Value Metadata → List Operation → Nat
+  | _, [] => 0
+  | environment, operation :: rest =>
+      let attempt := check environment operation
+      attempt.patch.writes.length + match attempt.verdict with
+      | .error _ => 0
+      | .ok _ => checkedWrites check (applyPatch environment attempt.patch) rest
+
+/-- No rollback snapshots accumulate in the consumed image: its retained slots
+are bounded by initial slots plus actual attempted writes, even after failures. -/
+theorem executeOwned_retained_slots_bound
+    (check : Checker Key Value Metadata Error Operation)
+    (operations : List Operation) (builder : Builder Key Value Metadata) :
+    (executeOwned check builder operations).retainedSlots ≤
+      builder.slots.length + checkedWrites check builder.denote operations := by
+  induction operations generalizing builder with
+  | nil => simp [executeOwned, OwnedExecution.retainedSlots, checkedWrites]
+  | cons operation operations ih =>
+      simp only [executeOwned, checkedWrites]
+      split
+      · simp [OwnedExecution.retainedSlots]
+      · have tail := ih (builder.stage (check builder.denote operation).patch)
+        have grows := builder.writeMany_slots_bound
+          (check builder.denote operation).patch.writes
+        rw [Builder.stage_exact] at tail
+        change (executeOwned check (builder.stage (check builder.denote operation).patch)
+          operations).retainedSlots ≤ _
+        change (builder.stage (check builder.denote operation).patch).slots.length ≤ _ at grows
+        have sum := Nat.add_le_add_right grows
+          (checkedWrites check (applyPatch builder.denote
+            (check builder.denote operation).patch) operations)
+        rw [Nat.add_assoc] at sum
+        exact Nat.le_trans tail sum
+
 end General
 
 /-! ## Executable checked-binding controls
@@ -651,6 +821,28 @@ theorem spare_capacity_and_inventory_order_preserve_aliases :
     bulk (checkedInsert 8) empty [0, 1] 0 aliasOperations =
       bulk (checkedInsert 8) empty [1, 0, 1, 99] 7 aliasOperations :=
   inventory_capacity_irrelevant _ _ _ _ _ _ _
+
+/-- Aliases survive the consumed-image route with their occurrence metadata;
+each checked operation occurs once and two writes occupy two slots. -/
+theorem consumed_aliases_preserve_value_and_checks :
+    let run := executeOwned (checkedInsert 8) (prepare empty [] 0) aliasOperations
+    run.result.map (fun builder =>
+      (resolve 8 builder.denote (.var 0), builder.metadata)) =
+        .ok (.ok (.atom 7), ⟨[], 2, 17⟩) ∧
+      run.checked = aliasOperations ∧ run.retainedSlots = 2 := by
+  exact ⟨rfl, rfl, rfl⟩
+
+/-- A rejected privately mutated row cannot escape, and an invalid suffix is
+not checked. Keeping the dirty buffer would expose the conflicting value 8. -/
+theorem consumed_failure_discards_storage_and_suffix :
+    let first : Bind := ⟨0, none, .atom 7⟩
+    let conflict : Bind := ⟨0, none, .atom 8⟩
+    let cyclic : Bind := ⟨1, none, .pair (.var 1) (.atom 0)⟩
+    let run := executeOwned (checkedInsert 8) (prepare empty [] 0)
+      [first, conflict, cyclic]
+    run.result = .error .valueConflict ∧
+      run.checked = [first, conflict] ∧ run.retainedSlots = 0 := by
+  exact ⟨rfl, rfl, rfl⟩
 
 end Examples
 

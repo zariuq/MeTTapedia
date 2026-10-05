@@ -78,7 +78,7 @@ abbrev closedRec : CTm Tower.Head 0 := recAt (cadd one one)
 theorem numRec_add_reduces :
     Relation.ReflTransGen objectHeadReduction.step closedRec (csuc (recAt (cadd one czero))) := by
   have s₁ : objectHeadReduction.step closedRec (recAt (csuc (cadd one czero))) :=
-    objectHeadReduction_numRec (objectHeadReduction.root (caddSuc_step one czero))
+    objectExtension.head_numRec (objectHeadReduction.root (caddSuc_step one czero))
   have s₂ : objectHeadReduction.step (recAt (csuc (cadd one czero)))
       (.app (.app sucMethod (cadd one czero)) (recAt (cadd one czero))) :=
     objectHeadReduction.root (cnumRecSuc_step _ _ _ _)

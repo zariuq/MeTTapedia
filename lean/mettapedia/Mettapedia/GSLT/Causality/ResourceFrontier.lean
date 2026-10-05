@@ -348,6 +348,169 @@ theorem graded_return_of_fires {V : Type*} [Monoid V]
     ((S.graded_state_return_iff catalogueAt coefficient complete (path, N) (path, N)).mpr
       ⟨rfl, terminal⟩)
 
+/-! ## Atomic linear rendering of reads -/
+
+/-- Taking and republishing a read in one atomic firing preserves the actual
+ordered successor list. Discovery is reevaluated at each world on both sides;
+no catalogue deduplication or initial-world freezing is performed. -/
+theorem takeRepublish_stateSearch (catalogueAt : Multiset R → List S.Entry) :
+    S.takeRepublish.stateSearch catalogueAt = S.stateSearch catalogueAt := by
+  unfold stateSearch
+  congr 1
+  · funext node
+    rw [S.takeRepublish_enabledAt]
+  · funext node
+    rw [S.takeRepublish_enabledAt]
+    apply List.map_congr_left
+    intro entry member
+    have enabled := (S.enabledB_iff _ entry).mp (List.mem_filter.mp member).2
+    rw [S.takeRepublish_fire _ _ enabled]
+
+/-- The independently defined linear resource system preserves each weighted
+successor occurrence, including repeated entries and zero coefficients. -/
+theorem takeRepublish_gradedSuccessors {V : Type*}
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (node : List S.Entry × Multiset R) :
+    S.takeRepublish.gradedSuccessors catalogueAt coefficient node =
+      S.gradedSuccessors catalogueAt coefficient node := by
+  unfold gradedSuccessors
+  rw [S.takeRepublish_enabledAt]
+  apply List.map_congr_left
+  intro entry member
+  have enabled := (S.enabledB_iff _ entry).mp (List.mem_filter.mp member).2
+  rw [S.takeRepublish_fire _ _ enabled]
+
+/-- Atomic read rendering preserves both terminal publication and branching.
+The coefficient assignment is held fixed; physical implementation overhead
+and concurrency are different observations. -/
+theorem takeRepublish_gradedStateSource {V : Type*}
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V) :
+    S.takeRepublish.gradedStateSource catalogueAt coefficient =
+      S.gradedStateSource catalogueAt coefficient := by
+  funext node
+  unfold gradedStateSource
+  rw [S.takeRepublish_enabledAt, S.takeRepublish_gradedSuccessors]
+
+/-- The free resumption observations agree at every cut, including the full
+unfinished worlds and their ordered coefficient products. No normalization,
+termination, or commutativity of multiplication is required. -/
+theorem takeRepublish_gradedContributions {V : Type*} [Monoid V]
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (fuel : Nat) (node : List S.Entry × Multiset R) :
+    Dynamics.WeightedBranchingResumption.contributions
+      (S.takeRepublish.gradedStateSource catalogueAt coefficient) fuel node =
+      Dynamics.WeightedBranchingResumption.contributions
+        (S.gradedStateSource catalogueAt coefficient) fuel node := by
+  rw [S.takeRepublish_gradedStateSource]
+
+open Core.InferenceControl in
+/-- Every captured controller resumes with the same answers, live occurrence
+paths, accumulated coefficients and controller memory. Successor positions
+are retained before scheduling, so equal-valued branches remain distinct. -/
+theorem takeRepublish_controlledRun {V Memory : Type*} [Mul V]
+    (catalogueAt : Multiset R → List S.Entry)
+    (coefficient : (List S.Entry × Multiset R) → S.Entry → V)
+    (controller : Controller (WorkOccurrence ((List S.Entry × Multiset R) × V))
+      (((List S.Entry × Multiset R) × V) × List Nat) Memory)
+    (snapshot : Core.InferenceControl.Snapshot
+      (WorkOccurrence ((List S.Entry × Multiset R) × V))
+      (((List S.Entry × Multiset R) × V) × List Nat) Memory)
+    (fuel : Nat) :
+    Core.InferenceControl.Snapshot.run
+      (WorkOccurrence.lift (Dynamics.WeightedBranchingResumption.Scheduled.system
+        (S.takeRepublish.gradedStateSource catalogueAt coefficient)))
+      controller fuel snapshot =
+      Core.InferenceControl.Snapshot.run
+        (WorkOccurrence.lift (Dynamics.WeightedBranchingResumption.Scheduled.system
+          (S.gradedStateSource catalogueAt coefficient))) controller fuel snapshot := by
+  rw [S.takeRepublish_gradedStateSource]
+
+section ExecutableReadRendering
+
+open Dynamics.WeightedBranchingResumption
+open Mettapedia.OSLF.Binding
+
+variable {Token : Type} [DecidableEq Token] (T : System.{0, 0} Token)
+variable {V : Type} [Monoid V]
+
+private theorem takeRepublish_path_next
+    (catalogueAt : Multiset Token → List T.Entry)
+    (coefficient : (List T.Entry × Multiset Token) → T.Entry → V)
+    (node : (List T.Entry × Multiset Token) × V) :
+    (Scheduled.pathMachine (T.takeRepublish.gradedStateSource catalogueAt coefficient)).next
+        node =
+      ((Scheduled.pathMachine (T.gradedStateSource catalogueAt coefficient)).next node).map
+        id := by
+  rw [T.takeRepublish_gradedStateSource, List.map_id]
+
+/-- Actual event histories cross the read-rendering boundary by the existing
+position-preserving evidence map. The resource operations change, while their
+enabled sequential firings preserve the complete bag. -/
+def takeRepublish_historyForward
+    (catalogueAt : Multiset Token → List T.Entry)
+    (coefficient : (List T.Entry × Multiset Token) → T.Entry → V) :
+    RewriteEventHistory.ForwardEvidenceMap
+      (OccurrenceMachineHistory.system
+        (Scheduled.pathMachine (T.gradedStateSource catalogueAt coefficient)))
+      (OccurrenceMachineHistory.system
+        (Scheduled.pathMachine (T.takeRepublish.gradedStateSource catalogueAt coefficient))) :=
+  OccurrenceMachineHistory.forward _ _ id (T.takeRepublish_path_next catalogueAt coefficient)
+
+/-- Every history retains its physical successor positions through the
+rendering, not merely its final answer or multiset of firings. -/
+theorem takeRepublish_history_indices
+    (catalogueAt : Multiset Token → List T.Entry)
+    (coefficient : (List T.Entry × Multiset Token) → T.Entry → V)
+    {before after : RewriteEventHistory.State
+      (OccurrenceMachineHistory.system
+        (Scheduled.pathMachine (T.gradedStateSource catalogueAt coefficient)))}
+    (history : RewriteEventHistory.History _ before after) :
+    OccurrenceMachineHistory.indices
+        (Scheduled.pathMachine (T.takeRepublish.gradedStateSource catalogueAt coefficient))
+        ((T.takeRepublish_historyForward catalogueAt coefficient).histories.map history) =
+      OccurrenceMachineHistory.indices
+        (Scheduled.pathMachine (T.gradedStateSource catalogueAt coefficient)) history :=
+  OccurrenceMachineHistory.forward_indices _ _ id
+    (T.takeRepublish_path_next catalogueAt coefficient) history
+
+/-- Replay is preserved and reflected, including rejection of a missing
+occurrence. The source world, discovery function and coefficients are fixed. -/
+theorem takeRepublish_replay
+    (catalogueAt : Multiset Token → List T.Entry)
+    (coefficient : (List T.Entry × Multiset Token) → T.Entry → V)
+    (node : (List T.Entry × Multiset Token) × V) (trace : List Nat) :
+    (Scheduled.pathMachine (T.takeRepublish.gradedStateSource catalogueAt coefficient)).follow
+        node trace =
+      (Scheduled.pathMachine (T.gradedStateSource catalogueAt coefficient)).follow node trace := by
+  simpa using OccurrenceMachineHistory.follow_map _ _ id
+    (T.takeRepublish_path_next catalogueAt coefficient) node trace
+
+/-- A fixed per-occurrence account pulls back through the translation in
+execution order. This covers semantic work labels and noncommutative accounts;
+it does not identify the physical costs of two different implementations. -/
+theorem takeRepublish_history_account {W : Type} [Monoid W]
+    (catalogueAt : Multiset Token → List T.Entry)
+    (coefficient : (List T.Entry × Multiset Token) → T.Entry → V)
+    (value : ((List T.Entry × Multiset Token) × V) →
+      ((List T.Entry × Multiset Token) × V) → Nat → W) :
+    (OccurrenceMachineHistory.eventAccount
+      (Scheduled.pathMachine (T.takeRepublish.gradedStateSource catalogueAt coefficient)) value).comap
+        (T.takeRepublish_historyForward catalogueAt coefficient).histories =
+      OccurrenceMachineHistory.eventAccount
+        (Scheduled.pathMachine (T.gradedStateSource catalogueAt coefficient)) value := by
+  have mapped := OccurrenceMachineHistory.eventAccount_forward _ _ id
+    (T.takeRepublish_path_next catalogueAt coefficient) value value (MonoidHom.id W)
+    (fun _ _ _ _ => rfl)
+  exact mapped.trans (by
+    apply Mettapedia.Effects.RunAccount.ext
+    funext before after history
+    rfl)
+
+end ExecutableReadRendering
+
 /-- Every node of fixed-catalogue search is a run of its catalogued instances. -/
 theorem generated_fires {M : Multiset R} {node : List S.Entry × Multiset R}
     (generated : Generated (S.search catalogue) [([], M)] node) :
@@ -717,6 +880,103 @@ theorem zero_grade_keeps_authorized_world :
 
 end CurrentWorldControls
 
+/-! ## Read rendering preserves suspended occurrences, not concurrency -/
+
+namespace ReadRenderingControls
+
+open Controls (CallRes oneEquation twoCalls callEntry)
+open Dynamics.WeightedBranchingResumption
+open Core.InferenceControl
+
+/-- Discovery retains two occurrences of the first call. Both have a zero
+semantic coefficient, which must not erase their execution identities. -/
+def discover (world : Multiset CallRes) : List oneEquation.Entry :=
+  oneEquation.enabledAt [callEntry 1, callEntry 1, callEntry 2] world
+
+def grade (_node : List oneEquation.Entry × Multiset CallRes)
+    (entry : oneEquation.Entry) : Nat := if Nat.beq entry.2 1 then 0 else 3
+
+def controller : Controller
+    (WorkOccurrence ((List oneEquation.Entry × Multiset CallRes) × Nat))
+    (((List oneEquation.Entry × Multiset CallRes) × Nat) × List Nat) Bool where
+  initialMemory := false
+  scheduler reversed := if reversed then Scheduler.reverseBreadthFirst else Scheduler.breadthFirst
+  advance reversed _ _ _ := !reversed
+
+def start : Core.InferenceControl.Snapshot
+    (WorkOccurrence ((List oneEquation.Entry × Multiset CallRes) × Nat))
+    (((List oneEquation.Entry × Multiset CallRes) × Nat) × List Nat) Bool :=
+  Core.InferenceControl.Snapshot.initial controller [WorkOccurrence.root (([], twoCalls), 7)]
+
+def paused := Core.InferenceControl.Snapshot.run
+  (WorkOccurrence.lift (Scheduled.system
+    (oneEquation.takeRepublish.gradedStateSource discover grade))) controller 1 start
+
+/-- The translated pause retains both zero-weight occurrences with different
+indices, the third accumulated coefficient, and the changed agenda memory. -/
+theorem pause_keeps_duplicate_zero_occurrences :
+    (paused.search.frontier.map fun occurrence => (occurrence.state.2, occurrence.trace)) =
+        [(0, [0]), (0, [1]), (21, [2])] ∧
+      paused.search.events = [] ∧ paused.memory = true := by decide +kernel
+
+/-- A captured adaptive agenda can resume on the translated system with the
+same entire snapshot as one uninterrupted source run. -/
+theorem resumed_translation (first second : Nat) :
+    Core.InferenceControl.Snapshot.run
+      (WorkOccurrence.lift (Scheduled.system
+        (oneEquation.takeRepublish.gradedStateSource discover grade))) controller second
+      (Core.InferenceControl.Snapshot.run
+        (WorkOccurrence.lift (Scheduled.system
+          (oneEquation.takeRepublish.gradedStateSource discover grade))) controller first start) =
+      Core.InferenceControl.Snapshot.run
+        (WorkOccurrence.lift (Scheduled.system (oneEquation.gradedStateSource discover grade)))
+        controller (first + second) start := by
+  rw [← Core.InferenceControl.Snapshot.run_add,
+    oneEquation.takeRepublish_controlledRun]
+
+/-- Equal replay endpoints do not identify the two first firings, and an
+out-of-range index cannot be manufactured from their equal values. -/
+theorem replay_keeps_physical_positions :
+    (Scheduled.pathMachine (oneEquation.takeRepublish.gradedStateSource discover grade)).follow
+        (([], twoCalls), 7) [0, 0] =
+      some (([callEntry 1, callEntry 2], {CallRes.equation, CallRes.answer 1, CallRes.answer 2}), 0) ∧
+    (Scheduled.pathMachine (oneEquation.takeRepublish.gradedStateSource discover grade)).follow
+        (([], twoCalls), 7) [1, 0] =
+      some (([callEntry 1, callEntry 2], {CallRes.equation, CallRes.answer 1, CallRes.answer 2}), 0) ∧
+    (Scheduled.pathMachine (oneEquation.takeRepublish.gradedStateSource discover grade)).follow
+        (([], twoCalls), 7) [3] = none := by decide +kernel
+
+/-- A support-set catalogue destroys an occurrence even though it preserves
+the distinct successor values. It cannot implement this translation. -/
+theorem deduplicating_catalogue_changes_occurrence_replay :
+    (Scheduled.pathMachine
+      (oneEquation.gradedStateSource (fun _ => [callEntry 1, callEntry 2]) grade)).follow
+        (([], twoCalls), 7) [1, 0] ≠
+      (Scheduled.pathMachine (oneEquation.gradedStateSource discover grade)).follow
+        (([], twoCalls), 7) [1, 0] := by decide +kernel
+
+def wordGrade (_node : List oneEquation.Entry × Multiset CallRes)
+    (entry : oneEquation.Entry) : FreeMonoid Nat := FreeMonoid.of (α := Nat) entry.2
+
+/-- Atomic rendering preserves multiplication order; reversing the two
+firings changes a noncommutative coefficient although both final bags agree. -/
+theorem ordered_coefficients_survive_translation :
+    ((Scheduled.pathMachine
+      (oneEquation.takeRepublish.gradedStateSource
+        (fun _ => [callEntry 1, callEntry 2]) wordGrade)).follow
+        (([], twoCalls), 1) [0, 0]).map Prod.snd = some (FreeMonoid.ofList [1, 2]) ∧
+    ((Scheduled.pathMachine
+      (oneEquation.takeRepublish.gradedStateSource
+        (fun _ => [callEntry 1, callEntry 2]) wordGrade)).follow
+        (([], twoCalls), 1) [1, 0]).map Prod.snd = some (FreeMonoid.ofList [2, 1]) ∧
+      FreeMonoid.ofList [1, 2] ≠ FreeMonoid.ofList [2, 1] := by
+  refine ⟨rfl, rfl, ?_⟩
+  intro equal
+  have impossible : ([1, 2] : List Nat) = [2, 1] := congrArg FreeMonoid.toList equal
+  cases impossible
+
+end ReadRenderingControls
+
 #print axioms System.generated_fires
 #print axioms System.emitted_is_run
 #print axioms System.fair_emits_run
@@ -738,5 +998,17 @@ end CurrentWorldControls
 #print axioms CurrentWorldControls.frozen_initial_catalogue_closes_too_early
 #print axioms CurrentWorldControls.graded_descendant_work
 #print axioms CurrentWorldControls.zero_grade_keeps_authorized_world
+#print axioms System.takeRepublish_stateSearch
+#print axioms System.takeRepublish_gradedStateSource
+#print axioms System.takeRepublish_gradedContributions
+#print axioms System.takeRepublish_controlledRun
+#print axioms System.takeRepublish_history_indices
+#print axioms System.takeRepublish_replay
+#print axioms System.takeRepublish_history_account
+#print axioms ReadRenderingControls.pause_keeps_duplicate_zero_occurrences
+#print axioms ReadRenderingControls.resumed_translation
+#print axioms ReadRenderingControls.replay_keeps_physical_positions
+#print axioms ReadRenderingControls.deduplicating_catalogue_changes_occurrence_replay
+#print axioms ReadRenderingControls.ordered_coefficients_survive_translation
 
 end Mettapedia.GSLT.Causality.ResourceInteraction

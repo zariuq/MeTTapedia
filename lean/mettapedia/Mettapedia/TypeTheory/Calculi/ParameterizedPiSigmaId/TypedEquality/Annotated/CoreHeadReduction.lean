@@ -65,9 +65,8 @@ def HeadReduction.core (H : HeadReduction P K) : HeadReduction P K where
   id_normal := fun A a b u s => H.id_normal A a b u (s.step H)
   refl_normal := fun a u s => H.refl_normal a u (s.step H)
   prop_normal := fun u s => H.prop_normal u (s.step H)
-  num_normal := fun u s => H.num_normal u (s.step H)
-  zero_normal := fun u s => H.zero_normal u (s.step H)
-  suc_normal := fun m u s => H.suc_normal m u (s.step H)
+  data_normal := fun u hd s => H.data_normal u hd (s.step H)
+  ctor_normal := fun u hc hl s => H.ctor_normal u hc hl (s.step H)
   fstPair := .fstPair
   sndPair := .sndPair
   fst := .fst

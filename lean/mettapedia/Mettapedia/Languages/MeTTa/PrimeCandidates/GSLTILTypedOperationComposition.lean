@@ -195,7 +195,7 @@ def admitCompositeAtCommonCurrent
     alignment
 
 /-- Activate the already-composed admission at its common current world. -/
-def activateComposite
+theorem activateComposite
     {dependencies : DependencySystem}
     {earlierRevision laterRevision currentRevision : dependencies.Revision}
     (model : CandidateModel)
@@ -204,7 +204,13 @@ def activateComposite
     (sourceMeaning : StateAt model first -> Prop)
     (finalDiscipline : GSLTObservation (SemanticTheoryAt model last))
     (alignment : CommonCurrent dependencies earlierRevision laterRevision
-      currentRevision) :=
+      currentRevision) :
+    (ObservedAdmission.compAtCommonCurrent
+      (selectEarlierForComposite dependencies earlierRevision model earlier later
+        sourceMeaning finalDiscipline).admission
+      (selectLaterForComposite dependencies laterRevision model earlier later
+        sourceMeaning finalDiscipline).admission
+      alignment).Active currentRevision :=
   ObservedAdmission.activateComposite
     (selectEarlierForComposite dependencies earlierRevision model earlier later
       sourceMeaning finalDiscipline).admission

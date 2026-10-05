@@ -23,9 +23,9 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 /-- The process type of one rho static Cost fibre is not decodable in the
 opposite fibre.  Unlike the shared name type, it therefore cannot support an
 opposite-colour collection plan. -/
-theorem rho_decodeCostStaticTypeExpr_flip_process_eq_none
+theorem rho_costStaticTypeDecode_flip_process_eq_none
     (color : CostStaticColor) :
-    decodeCostStaticTypeExpr rhoCIGSLT color.flip
+    CostStaticTypeImage.decode rhoCIGSLT.theory color.flip
         (.base
           (costStaticReflectivePresentationDecl rhoCIGSLT color
             rhoReflectivePresentation.toReflectivePresentationDecl
@@ -40,7 +40,7 @@ theorem rho_decodeCostStaticTypeExpr_flip_process_eq_none
             ).processSort = costBaseSortName "Proc" := by
         simp [costStaticReflectivePresentationDecl_eq_map,
           ReflectionExtension.mapReflectivePresentation,
-          rhoReflectivePresentation, CostStaticColor.symbols,
+          rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
           costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
       rw [processSort]
       rfl
@@ -51,7 +51,7 @@ theorem rho_decodeCostStaticTypeExpr_flip_process_eq_none
             ).processSort = costWrappedSortName := by
         simp [costStaticReflectivePresentationDecl_eq_map,
           ReflectionExtension.mapReflectivePresentation,
-          rhoReflectivePresentation, CostStaticColor.symbols,
+          rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
           costWrappedStaticSymbols, interacting]
       rw [processSort]
       rfl
@@ -69,7 +69,7 @@ theorem rho_costStaticCollectionTypingChoices_flip_process_eq_nil
             rhoReflectivePresentation.toReflectivePresentationDecl
             ).processSort) = [] := by
   unfold costStaticCollectionTypingChoices
-  rw [rho_decodeCostStaticTypeExpr_flip_process_eq_none]
+  rw [rho_costStaticTypeDecode_flip_process_eq_none]
 
 /-- Source-facing form of
 `rho_costStaticCollectionTypingChoices_flip_process_eq_nil`. -/
@@ -89,7 +89,7 @@ theorem rho_costStaticCollectionTypingChoices_flip_mappedProcess_eq_nil
   cases color <;>
     simp [costStaticReflectivePresentationDecl_eq_map,
       ReflectionExtension.mapReflectivePresentation,
-      rhoReflectivePresentation, CostStaticColor.symbols,
+      rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
       costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
       costWrappedStaticSymbols, mapTypeExpr, interacting]
 
@@ -191,7 +191,7 @@ theorem CostStaticRegionNode.stopped_canonicalFrame_of_probeCollapse
     rhoReflectivePresentation node.targetBound.length 0 ordinaryCollapse
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     node environment, reifiedFrame, keyedCollapse]
-  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 namespace RhoCollapsingLeafExposure
 

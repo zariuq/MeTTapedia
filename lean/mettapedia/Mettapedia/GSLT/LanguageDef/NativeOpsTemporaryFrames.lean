@@ -34,6 +34,16 @@ def atomWithin (bound : Nat) : NativeIR.Atom → Prop
   | .temporary identity _ | .iterationCounter identity => identity ≤ bound
   | .localAddress _ _ | .word _ | .zero _ | .unit => True
 
+theorem atom_within_weaken {small large : Nat} (within : small ≤ large)
+    (atom : NativeIR.Atom) (bounded : atomWithin small atom) : atomWithin large atom := by
+  cases atom <;> simp only [atomWithin] at bounded ⊢
+  · exact bounded.trans within
+  · exact bounded.trans within
+
+theorem temporary_names_bound_weaken {small large : Nat} {frame : TargetFrame}
+    (within : small ≤ large) (bounded : TemporaryNamesBound frame small) :
+    TemporaryNamesBound frame large := fun identity live => (bounded identity live).trans within
+
 theorem temporary_protection_refl (bound : Nat) (frame : TargetFrame) :
     TemporaryProtection bound frame frame := ⟨rfl, rfl, rfl, fun _ _ => rfl, fun _ _ => rfl⟩
 
@@ -65,6 +75,23 @@ theorem temporary_bound_fresh {frame : TargetFrame} {bound identity : Nat}
   cases found : frame.temporaryNames.contains identity with
   | false => rfl
   | true => exact False.elim ((Nat.not_le_of_lt fresh) (bounded identity found))
+
+/-- A call cannot reuse a live result identity as a fresh result slot. This
+is an actual instruction refusal, rather than a comparison of equal values. -/
+theorem call_live_temporary_refused {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World) (result type : NativeType)
+    (target : NativeIR.CallTarget) (arguments : List NativeIR.Atom)
+    (frame : TargetFrame) (state : TargetState World) (identity : Nat) (held : TargetValue)
+    (out : TargetBlockOutcome World) :
+    ¬ TargetInstructionEval interface heap calls result
+      (.call (some (.temporary identity type)) target arguments)
+      (targetDeclareTemporary frame identity held) state out := by
+  intro ran
+  cases ran with
+  | call _ _ stored =>
+      cases stored with
+      | fresh unused => simp [targetDeclareTemporary] at unused
+      | existing notTemporary _ => exact (notTemporary identity type) rfl
 
 theorem declare_temporary_protects {bound identity : Nat} (frame : TargetFrame)
     (value : TargetValue) (fresh : bound < identity) :
@@ -105,6 +132,18 @@ theorem declared_temporaries_completeNames {frame : TargetFrame}
     (completeNames : TemporariesScoped frame) (identity : Nat) (value : TargetValue) :
     TemporariesScoped (targetDeclareTemporary frame identity value) :=
   declare_temporary_scoped frame identity value completeNames
+
+/-- A fresh result preserves every older temporary and keeps the new frame
+within its declared name bound. This profile does not constrain runtime effects. -/
+theorem declared_temporary_frame_profile {frame : TargetFrame} {lower upper identity : Nat}
+    (bounded : TemporaryNamesBound frame lower) (hscope : TemporariesScoped frame)
+    (fresh : lower < identity) (within : identity ≤ upper) (value : TargetValue) :
+    TemporaryProtection lower frame (targetDeclareTemporary frame identity value) ∧
+    TemporaryNamesBound (targetDeclareTemporary frame identity value) upper ∧
+    TemporariesScoped (targetDeclareTemporary frame identity value) :=
+  ⟨declare_temporary_protects frame value fresh,
+    declared_temporary_bound bounded (fresh.le.trans within) within value,
+    declared_temporaries_completeNames hscope identity value⟩
 
 theorem temporary_protection_local_address {bound : Nat} {before after : TargetFrame}
     (protection : TemporaryProtection bound before after) (name : String) :

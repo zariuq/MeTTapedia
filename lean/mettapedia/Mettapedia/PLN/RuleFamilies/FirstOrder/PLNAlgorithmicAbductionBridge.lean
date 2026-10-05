@@ -294,7 +294,7 @@ theorem only states the robust ranking rule once the chosen `xiKpf` prior
 separates the candidate intervals. -/
 theorem xiKpfAbduction_interval_rank_point_lt
     {U : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine}
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
+    [KolmogorovComplexity.OutputComplete U]
     {ν : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString →
       Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure}
     {ctx betterHypothesis worseHypothesis :
@@ -329,19 +329,17 @@ theorem xiKpfAbduction_interval_rank_point_lt
     hRank hBetter hWorse
 
 /-- Prefix-complexity universal mixtures give comparable conditional priors
-across universal prefix-free machines, up to the usual pair of invariance
+across effective reference machines, up to the usual pair of invariance
 constants.
 
 This is intentionally weaker than a ranking-invariance theorem.  It consumes
 the raw `xiKpfSemimeasure_mul_le_of_invariance` theorem at the conditional
-prior interface and says that changing universal machines rescales the
+prior interface and says that changing reference machines rescales the
 conditional prior by a bounded multiplicative factor.  A robust abduction
 ranking across machines still needs an explicit separation margin large enough
 to absorb that factor. -/
 theorem xiKpfConditionalENN_mul_le_of_invariance
-    (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    (U V : KolmogorovComplexity.ReferenceMachine)
     (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
       Mettapedia.UniversalAI.UniversalPrediction.Semimeasure) :
     ∃ c d : ℕ, ∀ ctx hyp : Mettapedia.UniversalAI.UniversalPrediction.BinString,
@@ -495,9 +493,7 @@ This is the `priorFromConditional` readout of
 `xiKpfConditionalENN_mul_le_of_invariance`, so it is the version consumed by the
 real-valued abduction-ranking interface. -/
 theorem xiKpfPriorFromConditional_mul_le_of_invariance
-    (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    (U V : KolmogorovComplexity.ReferenceMachine)
     (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
       Mettapedia.UniversalAI.UniversalPrediction.Semimeasure) :
     ∃ c d : ℕ, ∀ ctx hyp : Mettapedia.UniversalAI.UniversalPrediction.BinString,
@@ -536,9 +532,7 @@ machine factor, while the better candidate is only protected by the forward
 factor.  This is the honest ranking form of
 `xiKpfPriorFromConditional_mul_le_of_invariance`. -/
 theorem xiKpfAbduction_interval_rank_of_machine_margin
-    (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    (U V : KolmogorovComplexity.ReferenceMachine)
     (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
       Mettapedia.UniversalAI.UniversalPrediction.Semimeasure) :
     ∃ cUV dUV cVU dVU : ℕ,
@@ -610,15 +604,13 @@ theorem xiKpfAbduction_interval_rank_of_machine_margin
 /-- Point-readout corollary of
 `xiKpfAbduction_interval_rank_of_machine_margin`.
 
-If the old-machine margin is strong enough to survive the universal-machine
+If the old-machine margin is strong enough to survive the reference-machine
 distortion constants, then every selected point from the worse new-machine
 interval is below every selected point from the better new-machine interval.
 This is the downstream search-facing form: point scores may be read out only
 after the interval margin has done the real work. -/
 theorem xiKpfAbduction_point_rank_of_machine_margin
-    (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    (U V : KolmogorovComplexity.ReferenceMachine)
     (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
       Mettapedia.UniversalAI.UniversalPrediction.Semimeasure) :
     ∃ cUV dUV cVU dVU : ℕ,

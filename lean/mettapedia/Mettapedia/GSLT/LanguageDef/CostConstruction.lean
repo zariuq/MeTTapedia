@@ -1,11 +1,12 @@
 import Mettapedia.GSLT.LanguageDef.CostNamespace
+import Mettapedia.GSLT.LanguageDef.ConstructorSignatureExtension
 
 /-!
 # Declaration-derived Cost signature
 
 This module begins the generic Cost construction at its structural boundary.
 It adjoins symbolic signatures, wrapped terms, and ordered token stacks to the
-validated continuation signature of a continued interactive GSLT.  Located
+validated continuation signature of a wrappable theory.  Located
 purses are a subsequent location-indexed refinement; they are not identified
 with this location-independent core.
 
@@ -125,8 +126,8 @@ def costContactConstructor : GrammarRule where
 
 /-- The signed operand exposes the embedded source process, rather than a
 continuation of the generated wrapped carrier.  Consequently the literal
-outer forcing shape is not itself an `IntroductionProfile`; the continued
-cut retained by Cost is the retyped source cut beneath this gate. -/
+outer forcing shape is not itself an `IntroductionProfile`; the cut retained
+by Cost is the retyped source cut beneath this gate. -/
 @[simp]
 theorem costSignedConstructor_bodyParameter (interactingSort : String) :
     (costSignedConstructor interactingSort).params[0]? =
@@ -217,46 +218,31 @@ theorem costCoreConstructors_eq_typed (interactingSort : String) :
 
 /-! ## The validated core signature -/
 
-namespace CIGSLT
+namespace ContinuationDecorationProfile
 
-/-- Add the location-independent Cost apparatus to the exact generated
-continuation signature of a continued interactive GSLT. -/
-def costCoreLanguage (source : CIGSLT) : LanguageDef :=
-  { source.continuationRetyping.generatedLanguage with
-    name := "$cost:core:" ++ source.theory.presentation.presentation.language.name
-    types := source.continuationRetyping.generatedLanguage.types ++ costCoreTypes
-    terms := source.continuationRetyping.generatedLanguage.terms ++
-      costCoreConstructors source.theory.presentation.interactingSort.1.name }
+open WellSorted
 
-@[simp]
-theorem costCoreLanguage_typeNames (source : CIGSLT) :
-    source.costCoreLanguage.typeNames =
-      source.continuationRetyping.generatedLanguage.typeNames ++
-        costCoreSortSuffixes.map costApparatusSortName := by
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+/-- Append the existing Cost apparatus to the exact finite continuation
+signature, retaining every selected operand parameter. -/
+def costCoreLanguage (profile : ContinuationDecorationProfile cut) : LanguageDef :=
+  { profile.generatedLanguage with
+    name := "$cost:core:" ++ theory.presentation.presentation.language.name
+    types := profile.generatedLanguage.types ++ costCoreTypes
+    terms := profile.generatedLanguage.terms ++
+      costCoreConstructors theory.presentation.interactingSort.1.name }
+
+theorem costCoreLanguage_typeNames (profile : ContinuationDecorationProfile cut) :
+    profile.costCoreLanguage.typeNames = profile.generatedLanguage.typeNames ++
+      costCoreSortSuffixes.map costApparatusSortName := by
   simp [costCoreLanguage, costCoreTypes, LanguageDef.typeNames,
     TypeDecl.plain, List.map_map]
 
-private theorem costCoreTypeNames_nodup (source : CIGSLT) :
-    source.costCoreLanguage.typeNames.Nodup := by
-  rw [costCoreLanguage_typeNames, List.nodup_append]
-  refine ⟨generatedTypeNames_nodup source.continuationRetyping, ?_, ?_⟩
-  · exact (show costCoreSortSuffixes.Nodup by decide).map
-      costApparatusSortName_injective
-  · intro generated generatedMembership apparatus apparatusMembership
-    rw [generatedLanguage_typeNames] at generatedMembership
-    rcases List.mem_append.mp generatedMembership with
-      baseMembership | wrappedMembership
-    · rcases List.mem_map.mp baseMembership with ⟨base, _, rfl⟩
-      rcases List.mem_map.mp apparatusMembership with ⟨suffix, _, rfl⟩
-      exact costBaseSortName_ne_apparatus base suffix
-    · simp only [List.mem_singleton] at wrappedMembership
-      subst generated
-      rcases List.mem_map.mp apparatusMembership with ⟨suffix, _, rfl⟩
-      exact costWrappedSortName_ne_apparatus suffix
-
-theorem costCoreConstructorLabels (source : CIGSLT) :
-    source.costCoreLanguage.terms.map (·.label) =
-      source.continuationRetyping.generatedLanguage.terms.map (·.label) ++
+theorem costCoreConstructorLabels (profile : ContinuationDecorationProfile cut) :
+    profile.costCoreLanguage.terms.map (·.label) =
+      profile.generatedLanguage.terms.map (·.label) ++
         costCoreConstructorSuffixes.map costApparatusConstructorName := by
   simp [costCoreLanguage, costCoreConstructors, costCoreConstructorSuffixes,
     costSignatureUnitConstructor, costSignatureProductConstructor,
@@ -269,233 +255,392 @@ theorem costCoreConstructorLabels (source : CIGSLT) :
     costTokenStackEmptyConstructorName, costTokenStackConsConstructorName,
     costFundingConstructorName, costContactConstructorName]
 
-private theorem costCoreConstructorLabels_nodup (source : CIGSLT) :
-    (source.costCoreLanguage.terms.map (·.label)).Nodup := by
-  rw [costCoreConstructorLabels, List.nodup_append]
-  refine ⟨generatedConstructorLabels_nodup source.continuationRetyping,
-    ?_, ?_⟩
-  · exact (show costCoreConstructorSuffixes.Nodup by decide).map
-      costApparatusConstructorName_injective
-  · intro generated generatedMembership apparatus apparatusMembership
-    rw [ContinuationRetypingPlan.generatedLanguage_constructorLabels]
-      at generatedMembership
-    rcases List.mem_append.mp generatedMembership with
-      baseMembership | wrappedMembership
-    · rcases List.mem_map.mp baseMembership with ⟨base, _, rfl⟩
-      rcases List.mem_map.mp apparatusMembership with ⟨suffix, _, rfl⟩
-      exact costBaseConstructorName_ne_apparatus base suffix
-    · rcases List.mem_map.mp wrappedMembership with ⟨wrapped, _, rfl⟩
-      rcases List.mem_map.mp apparatusMembership with ⟨suffix, _, rfl⟩
-      exact costWrappedConstructorName_ne_apparatus wrapped suffix
-
-private theorem costCoreTerm_category_mem (source : CIGSLT)
-    (term : GrammarRule) (membership : term ∈ source.costCoreLanguage.terms) :
-    term.category ∈ source.costCoreLanguage.typeNames := by
-  rw [costCoreLanguage_typeNames]
-  change term ∈ source.continuationRetyping.generatedLanguage.terms ++
-    costCoreConstructors source.theory.presentation.interactingSort.1.name at membership
-  simp only [List.mem_append] at membership
-  rcases membership with generatedMembership | apparatusMembership
-  · exact List.mem_append_left _
-      (generatedTerm_category_mem source.continuationRetyping term
-        generatedMembership)
-  · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false]
-      at apparatusMembership
-    rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality | equality | equality | equality <;> subst term <;>
-      simp [costCoreSortSuffixes, costSignatureUnitConstructor,
-        costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
-        costSignatureCommitConstructor, costSignedConstructor,
-        costTokenStackEmptyConstructor, costTokenStackConsConstructor,
-        costFundingConstructor, costContactConstructor,
-        costSignatureSortName, costKeySortName, costTokenStackSortName]
-
-private theorem costCoreTerm_parameter_baseName_mem (source : CIGSLT)
-    (term : GrammarRule) (termMembership : term ∈ source.costCoreLanguage.terms)
-    (parameter : TermParam) (parameterMembership : parameter ∈ term.params)
-    (name : String)
-    (nameMembership : name ∈ (TermParam.typeExpr parameter).baseNames) :
-    name ∈ source.costCoreLanguage.typeNames := by
-  rw [costCoreLanguage_typeNames]
-  simp only [costCoreLanguage, List.mem_append] at termMembership
-  rcases termMembership with generatedMembership | apparatusMembership
-  · exact List.mem_append_left _
-      (generatedTerm_parameter_baseName_mem source.continuationRetyping term
-        generatedMembership parameter parameterMembership name nameMembership)
-  · have signatureMembership : costSignatureSortName ∈
-        source.continuationRetyping.generatedLanguage.typeNames ++
-          costCoreSortSuffixes.map costApparatusSortName :=
-      List.mem_append_right _ (by
-        simp [costCoreSortSuffixes, costSignatureSortName])
-    have keyMembership : costKeySortName ∈
-        source.continuationRetyping.generatedLanguage.typeNames ++
-          costCoreSortSuffixes.map costApparatusSortName :=
-      List.mem_append_right _ (by simp [costCoreSortSuffixes, costKeySortName])
-    have stackMembership : costTokenStackSortName ∈
-        source.continuationRetyping.generatedLanguage.typeNames ++
-          costCoreSortSuffixes.map costApparatusSortName :=
-      List.mem_append_right _ (by
-        simp [costCoreSortSuffixes, costTokenStackSortName])
-    have wrappedMembership : costWrappedSortName ∈
-        source.continuationRetyping.generatedLanguage.typeNames ++
-          costCoreSortSuffixes.map costApparatusSortName :=
-      List.mem_append_left _ (by
-        rw [generatedLanguage_typeNames]
-        exact List.mem_append_right _ (by simp))
-    have interactingMembership :
-        costBaseSortName source.theory.presentation.interactingSort.1.name ∈
-          source.continuationRetyping.generatedLanguage.typeNames ++
-            costCoreSortSuffixes.map costApparatusSortName := by
-      apply List.mem_append_left
-      rw [generatedLanguage_typeNames]
-      apply List.mem_append_left
-      apply List.mem_map.mpr
-      exact ⟨source.theory.presentation.interactingSort.1.name,
-        List.mem_map.mpr
-          ⟨source.theory.presentation.interactingSort.1,
-            source.theory.presentation.interactingSort.2, rfl⟩, rfl⟩
-    rw [costCoreConstructors_eq_typed] at apparatusMembership
-    obtain ⟨kind, _, rfl⟩ := List.mem_map.mp apparatusMembership
-    cases kind <;>
-      simp only [CostApparatusConstructor.grammarRule, costSignatureUnitConstructor,
-        costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
-        costSignatureCommitConstructor, costSignedConstructor,
-        costTokenStackEmptyConstructor, costTokenStackConsConstructor,
-        costFundingConstructor, costContactConstructor,
-        List.mem_cons, List.not_mem_nil, or_false] at parameterMembership
-    all_goals
-      first
-      | obtain rfl := parameterMembership
-      | rcases parameterMembership with rfl | rfl
-    all_goals
-      simp only [TermParam.typeExpr, TypeExpr.baseNames, List.mem_singleton] at nameMembership
-      subst name
-      assumption
-
-theorem costCoreTerm_syntaxPattern_eq_nil (source : CIGSLT)
-    (term : GrammarRule) (termMembership : term ∈ source.costCoreLanguage.terms) :
+/-- Generated typing constructors and the apparatus carry no parser notation. -/
+theorem costCoreTerm_syntaxPattern_eq_nil (profile : ContinuationDecorationProfile cut)
+    (term : GrammarRule) (termMembership : term ∈ profile.costCoreLanguage.terms) :
     term.syntaxPattern = [] := by
   simp only [costCoreLanguage, List.mem_append] at termMembership
   rcases termMembership with generatedMembership | apparatusMembership
-  · exact generatedTerm_syntaxPattern_eq_nil source.continuationRetyping term
-      generatedMembership
+  · exact profile.generatedTerm_syntaxPattern_eq_nil term generatedMembership
   · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at apparatusMembership
     rcases apparatusMembership with equality | equality | equality | equality |
       equality | equality | equality | equality | equality | equality <;> subst term <;> rfl
 
+theorem signature_mem_costCoreLanguage (profile : ContinuationDecorationProfile cut) :
+    costSignatureSortName ∈ profile.costCoreLanguage.typeNames := by
+  rw [costCoreLanguage_typeNames]
+  exact List.mem_append_right _ (by simp [costCoreSortSuffixes, costSignatureSortName])
+
+theorem key_mem_costCoreLanguage (profile : ContinuationDecorationProfile cut) :
+    costKeySortName ∈ profile.costCoreLanguage.typeNames := by
+  rw [costCoreLanguage_typeNames]
+  exact List.mem_append_right _ (by simp [costCoreSortSuffixes, costKeySortName])
+
+theorem stack_mem_costCoreLanguage (profile : ContinuationDecorationProfile cut) :
+    costTokenStackSortName ∈ profile.costCoreLanguage.typeNames := by
+  rw [costCoreLanguage_typeNames]
+  exact List.mem_append_right _ (by simp [costCoreSortSuffixes, costTokenStackSortName])
+
+theorem wrapped_mem_costCoreLanguage (profile : ContinuationDecorationProfile cut) :
+    costWrappedSortName ∈ profile.costCoreLanguage.typeNames := by
+  rw [costCoreLanguage_typeNames]
+  exact List.mem_append_left _ profile.costWrappedSortName_mem_generated
+
+theorem interacting_mem_costCoreLanguage (profile : ContinuationDecorationProfile cut) :
+    costBaseSortName theory.presentation.interactingSort.1.name ∈
+      profile.costCoreLanguage.typeNames := by
+  rw [costCoreLanguage_typeNames]
+  exact List.mem_append_left _ (profile.costBaseSortName_mem_generated
+    (List.mem_map.mpr ⟨theory.presentation.interactingSort.1,
+      theory.presentation.interactingSort.2, rfl⟩))
+
+/-- Each fixed apparatus row validates from its actual declared sorts.
+The generated source prefix is not expanded to establish this fact. -/
+theorem apparatus_validate (profile : ContinuationDecorationProfile cut)
+    (term : GrammarRule)
+    (membership : term ∈ costCoreConstructors theory.presentation.interactingSort.1.name) :
+    profile.costCoreLanguage.validateTerm term = [] := by
+  have signature := profile.signature_mem_costCoreLanguage
+  have key := profile.key_mem_costCoreLanguage
+  have stack := profile.stack_mem_costCoreLanguage
+  have wrapped := profile.wrapped_mem_costCoreLanguage
+  have interacting := profile.interacting_mem_costCoreLanguage
+  simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false] at membership
+  rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    simp [costSignatureUnitConstructor, costSignatureProductConstructor,
+      costKeyLeafConstructor, costKeyBranchConstructor, costSignatureCommitConstructor,
+      costSignedConstructor, costTokenStackEmptyConstructor, costTokenStackConsConstructor,
+      costFundingConstructor, costContactConstructor, LanguageDef.validateTerm,
+      signature, key, stack, wrapped, interacting, LanguageDef.validateTypeExpr_eq_nil_iff,
+      TypeExpr.baseNames, TermParam.typeExpr]
+
+/-- Finite continuation decoration and the fixed Cost apparatus jointly pass
+ordinary language validation. Only actual duplicate declarations are excluded. -/
+theorem costCoreLanguage_validate (profile : ContinuationDecorationProfile cut)
+    (noDuplicates : profile.constructorClosure.Nodup) :
+    profile.costCoreLanguage.validate = [] := by
+  change ((ConstructorSignatureExtension.ofLists costCoreTypes
+    (costCoreConstructors theory.presentation.interactingSort.1.name)
+    (some ("$cost:core:" ++ theory.presentation.presentation.language.name))).apply
+      { toLanguageDef := profile.generatedLanguage }).toLanguageDef.validate = []
+  apply ConstructorSignatureExtension.apply_language_validate
+  · exact profile.generatedLanguage_validate noDuplicates
+  · rfl
+  · rfl
+  · change (costCoreSortSuffixes.map costApparatusSortName).Nodup
+    exact (show costCoreSortSuffixes.Nodup by decide).map costApparatusSortName_injective
+  · intro generated generatedMembership apparatusMembership
+    rw [generatedLanguage_typeNames] at generatedMembership
+    change generated ∈ costCoreSortSuffixes.map costApparatusSortName at apparatusMembership
+    obtain ⟨suffix, _, apparatusEq⟩ := List.mem_map.mp apparatusMembership
+    rcases List.mem_append.mp generatedMembership with base | wrapped
+    · obtain ⟨name, _, rfl⟩ := List.mem_map.mp base
+      exact costBaseSortName_ne_apparatus name suffix apparatusEq.symm
+    · simp only [List.mem_singleton] at wrapped
+      exact costWrappedSortName_ne_apparatus suffix (wrapped.symm.trans apparatusEq.symm)
+  · change (costCoreConstructorSuffixes.map costApparatusConstructorName).Nodup
+    exact (show costCoreConstructorSuffixes.Nodup by decide).map
+      costApparatusConstructorName_injective
+  · intro generated generatedMembership apparatusMembership
+    rw [generatedLanguage_constructorLabels] at generatedMembership
+    change generated ∈ costCoreConstructorSuffixes.map costApparatusConstructorName
+      at apparatusMembership
+    obtain ⟨suffix, _, apparatusEq⟩ := List.mem_map.mp apparatusMembership
+    rcases List.mem_append.mp generatedMembership with base | wrapped
+    · obtain ⟨name, _, rfl⟩ := List.mem_map.mp base
+      exact costBaseConstructorName_ne_apparatus name suffix apparatusEq.symm
+    · obtain ⟨name, _, rfl⟩ := List.mem_map.mp wrapped
+      exact costWrappedConstructorName_ne_apparatus name suffix apparatusEq.symm
+  · intro term membership
+    exact profile.apparatus_validate term membership
+
+/-- A validated Cost core on the existing finite continuation profile. -/
+def costCorePresentation (profile : ContinuationDecorationProfile cut)
+    (noDuplicates : profile.constructorClosure.Nodup) : ValidatedLanguageDef where
+  language := profile.costCoreLanguage
+  valid := profile.costCoreLanguage_validate noDuplicates
+
+end ContinuationDecorationProfile
+
+namespace WrappableIGSLT
+
+open ContinuationDecorationProfile (ofRetypingPlan)
+
+/-- Add the location-independent Cost apparatus to the exact generated
+continuation signature of a wrappable theory. -/
+def costCoreLanguage (source : WrappableIGSLT) : LanguageDef :=
+  (ofRetypingPlan source.continuationRetyping).costCoreLanguage
+
+theorem costCoreLanguage_def (source : WrappableIGSLT) :
+    source.costCoreLanguage =
+      { source.continuationRetyping.generatedLanguage with
+        name := "$cost:core:" ++ source.theory.presentation.presentation.language.name
+        types := source.continuationRetyping.generatedLanguage.types ++ costCoreTypes
+        terms := source.continuationRetyping.generatedLanguage.terms ++
+          costCoreConstructors source.theory.presentation.interactingSort.1.name } :=
+  rfl
+
+/-- The constructors of the core: the generated ones, then the apparatus. -/
+theorem costCoreLanguage_terms (source : WrappableIGSLT) :
+    source.costCoreLanguage.terms =
+      source.continuationRetyping.generatedLanguage.terms ++
+        costCoreConstructors source.theory.presentation.interactingSort.1.name :=
+  rfl
+
+@[simp]
+theorem costCoreLanguage_typeNames (source : WrappableIGSLT) :
+    source.costCoreLanguage.typeNames =
+      source.continuationRetyping.generatedLanguage.typeNames ++
+        costCoreSortSuffixes.map costApparatusSortName :=
+  (ofRetypingPlan source.continuationRetyping).costCoreLanguage_typeNames
+
+theorem costCoreConstructorLabels (source : WrappableIGSLT) :
+    source.costCoreLanguage.terms.map (·.label) =
+      source.continuationRetyping.generatedLanguage.terms.map (·.label) ++
+        costCoreConstructorSuffixes.map costApparatusConstructorName :=
+  (ofRetypingPlan source.continuationRetyping).costCoreConstructorLabels
+
+theorem costCoreTerm_syntaxPattern_eq_nil (source : WrappableIGSLT)
+    (term : GrammarRule) (termMembership : term ∈ source.costCoreLanguage.terms) :
+    term.syntaxPattern = [] :=
+  (ofRetypingPlan source.continuationRetyping).costCoreTerm_syntaxPattern_eq_nil term
+    termMembership
+
 /-- The generic signature/wrapper/ordered-stack core passes the ordinary
 language validation gate. -/
-theorem costCoreLanguage_validate (source : CIGSLT) :
-    source.costCoreLanguage.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorOnly
-  · rfl
-  · rfl
-  · exact costCoreTypeNames_nodup source
-  · exact costCoreConstructorLabels_nodup source
-  · exact costCoreTerm_category_mem source
-  · exact costCoreTerm_parameter_baseName_mem source
-  · intro term termMembership
-    exact Or.inl (costCoreTerm_syntaxPattern_eq_nil source term termMembership)
+theorem costCoreLanguage_validate (source : WrappableIGSLT) :
+    source.costCoreLanguage.validate = [] :=
+  (ofRetypingPlan source.continuationRetyping).costCoreLanguage_validate
+    source.continuationRetyping.noDuplicates
 
 /-- The exact structural output of the first Cost object-map layer. -/
-def costCorePresentation (source : CIGSLT) : ValidatedLanguageDef where
-  language := source.costCoreLanguage
-  valid := costCoreLanguage_validate source
+def costCorePresentation (source : WrappableIGSLT) : ValidatedLanguageDef :=
+  (ofRetypingPlan source.continuationRetyping).costCorePresentation
+    source.continuationRetyping.noDuplicates
+
+@[simp]
+theorem costCorePresentation_language (source : WrappableIGSLT) :
+    source.costCorePresentation.language = source.costCoreLanguage :=
+  rfl
+
+end WrappableIGSLT
+
+/-- The profile of a continued theory has that theory's core language. -/
+@[simp]
+theorem ContinuationDecorationProfile.ofRetypingPlan_costCoreLanguage (source : CIGSLT) :
+    (ContinuationDecorationProfile.ofRetypingPlan source.continuationRetyping).costCoreLanguage =
+      source.costCoreLanguage :=
+  rfl
+
+namespace CIGSLT
 
 /-! ## Exact intrinsic classification of generated declarations -/
+
+end CIGSLT
+
+namespace ContinuationDecorationProfile
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+/-- Actual finite grammar-row interpretation. The base row uses all selected
+slots, not only the two primary positions. -/
+def materializeDeclaredCostConstructor (profile : ContinuationDecorationProfile cut) :
+    profile.DeclaredCostConstructor → GrammarRule
+  | ⟨.base authored, _⟩ => profile.baseConstructor authored.1
+  | ⟨.wrapped authored, _⟩ => costWrappedConstructor (theory := theory) authored.1
+  | ⟨.apparatus kind, _⟩ => kind.grammarRule theory.presentation.interactingSort.1.name
+
+@[simp] theorem materializeDeclaredCostConstructor_label (profile : ContinuationDecorationProfile cut)
+    (constructor : profile.DeclaredCostConstructor) :
+    (profile.materializeDeclaredCostConstructor constructor).label =
+      profile.renderDeclaredCostConstructor constructor := by
+  rcases constructor with ⟨constructor, declared⟩
+  cases constructor with
+  | base authored => rfl
+  | wrapped authored => rfl
+  | apparatus kind => cases kind <;> rfl
+
+theorem materializeDeclaredCostConstructor_injective (profile : ContinuationDecorationProfile cut) :
+    Function.Injective profile.materializeDeclaredCostConstructor := by
+  intro left right same
+  apply profile.renderDeclaredCostConstructor_injective
+  rw [← profile.materializeDeclaredCostConstructor_label left,
+    ← profile.materializeDeclaredCostConstructor_label right, same]
+
+theorem materializeDeclaredCostConstructor_mem (profile : ContinuationDecorationProfile cut)
+    (constructor : profile.DeclaredCostConstructor) :
+    profile.materializeDeclaredCostConstructor constructor ∈ profile.costCoreLanguage.terms := by
+  rcases constructor with ⟨constructor, declared⟩
+  cases constructor with
+  | base authored =>
+    exact List.mem_append_left _ (profile.baseConstructor_mem authored.1 authored.2)
+  | wrapped authored =>
+    exact List.mem_append_left _ (profile.wrappedConstructor_mem authored declared)
+  | apparatus kind =>
+    apply List.mem_append_right
+    rw [costCoreConstructors_eq_typed]
+    exact List.mem_map.mpr ⟨kind, by cases kind <;> simp [costCoreConstructorKinds], rfl⟩
+
+/-- No generated row is omitted by intrinsic classification, including all
+of the exact key, signature, stack, and funding apparatus. -/
+theorem exists_declaredCostConstructor_of_mem (profile : ContinuationDecorationProfile cut)
+    (rule : GrammarRule) (member : rule ∈ profile.costCoreLanguage.terms) :
+    ∃ constructor : profile.DeclaredCostConstructor,
+      profile.materializeDeclaredCostConstructor constructor = rule := by
+  rcases List.mem_append.mp member with generated | apparatus
+  · rcases List.mem_append.mp generated with base | wrapped
+    · obtain ⟨authored, included, same⟩ := List.mem_map.mp base
+      exact ⟨⟨.base ⟨authored, included⟩, trivial⟩, same⟩
+    · obtain ⟨authored, included, same⟩ := List.mem_map.mp wrapped
+      exact ⟨⟨.wrapped authored, included⟩, same⟩
+  · rw [costCoreConstructors_eq_typed] at apparatus
+    obtain ⟨kind, _, same⟩ := List.mem_map.mp apparatus
+    exact ⟨⟨.apparatus kind, trivial⟩, same⟩
+
+/-- Finite enumeration retaining exact source declaration identity. -/
+def declaredCostConstructors (profile : ContinuationDecorationProfile cut) :
+    List profile.DeclaredCostConstructor :=
+  theory.presentation.presentation.language.terms.attach.map
+      (fun constructor => (⟨.base constructor, trivial⟩ : profile.DeclaredCostConstructor)) ++
+    profile.constructorClosure.attach.map
+      (fun constructor => (⟨.wrapped constructor.1, constructor.2⟩ : profile.DeclaredCostConstructor)) ++
+    costCoreConstructorKinds.map
+      (fun kind => (⟨.apparatus kind, trivial⟩ : profile.DeclaredCostConstructor))
+
+/-- Materialization recovers the exact ordered row list, not merely an
+existentially equivalent signature. -/
+theorem declaredCostConstructors_materialize (profile : ContinuationDecorationProfile cut) :
+    profile.declaredCostConstructors.map profile.materializeDeclaredCostConstructor =
+      profile.costCoreLanguage.terms := by
+  change _ = (theory.presentation.presentation.language.terms.map profile.baseConstructor ++
+    profile.constructorClosure.map (fun constructor => costWrappedConstructor (theory := theory) constructor.1)) ++
+    costCoreConstructors theory.presentation.interactingSort.1.name
+  unfold declaredCostConstructors
+  rw [List.map_append, List.map_append, List.map_map, List.map_map, List.map_map]
+  change (theory.presentation.presentation.language.terms.attach.map
+      (fun constructor => profile.baseConstructor constructor.1) ++
+    profile.constructorClosure.attach.map
+      (fun constructor => costWrappedConstructor (theory := theory) constructor.1.1)) ++
+    costCoreConstructorKinds.map (·.grammarRule theory.presentation.interactingSort.1.name) = _
+  rw [List.attach_map_val,
+    List.attach_map_val (l := profile.constructorClosure)
+      (f := fun constructor => costWrappedConstructor (theory := theory) constructor.1),
+    costCoreConstructors_eq_typed]
+
+/-- Signature validation provides duplicate-freedom of the exact intrinsic
+enumeration when the supplied profile has no duplicate wrapped rows. -/
+theorem declaredCostConstructors_nodup (profile : ContinuationDecorationProfile cut)
+    (noDuplicates : profile.constructorClosure.Nodup) : profile.declaredCostConstructors.Nodup := by
+  apply List.Nodup.of_map profile.materializeDeclaredCostConstructor
+  rw [profile.declaredCostConstructors_materialize]
+  exact List.Nodup.of_map (fun rule => rule.label)
+    (LanguageDef.constructorLabels_nodup_of_validate_eq_nil _
+      (profile.costCoreLanguage_validate noDuplicates))
+
+theorem mem_declaredCostConstructors (profile : ContinuationDecorationProfile cut)
+    (constructor : profile.DeclaredCostConstructor) :
+    constructor ∈ profile.declaredCostConstructors := by
+  have member := profile.materializeDeclaredCostConstructor_mem constructor
+  rw [← profile.declaredCostConstructors_materialize] at member
+  obtain ⟨other, included, same⟩ := List.mem_map.mp member
+  have identical := profile.materializeDeclaredCostConstructor_injective same
+  simpa only [identical] using included
+
+/-- Declaration-aware executable lookup uses the existing finite-list
+search, never a wire prefix as a substitute for source membership. -/
+def decodeDeclaredCostConstructor (profile : ContinuationDecorationProfile cut) (name : String) :
+    Option profile.DeclaredCostConstructor :=
+  profile.declaredCostConstructors.find? (fun constructor =>
+    profile.renderDeclaredCostConstructor constructor == name)
+
+@[simp] theorem decodeDeclaredCostConstructor_render (profile : ContinuationDecorationProfile cut)
+    (constructor : profile.DeclaredCostConstructor) :
+    profile.decodeDeclaredCostConstructor (profile.renderDeclaredCostConstructor constructor) =
+      some constructor := by
+  unfold decodeDeclaredCostConstructor
+  cases found : profile.declaredCostConstructors.find? (fun candidate =>
+      profile.renderDeclaredCostConstructor candidate == profile.renderDeclaredCostConstructor constructor) with
+  | none =>
+    have missing := List.find?_eq_none.mp found constructor (profile.mem_declaredCostConstructors constructor)
+    simp at missing
+  | some candidate =>
+    have equalNames := List.find?_some found
+    have same := profile.renderDeclaredCostConstructor_injective (of_decide_eq_true equalNames)
+    exact congrArg some same
+
+theorem decodeDeclaredCostConstructor_eq_some_iff (profile : ContinuationDecorationProfile cut)
+    (name : String) (constructor : profile.DeclaredCostConstructor) :
+    profile.decodeDeclaredCostConstructor name = some constructor ↔
+      profile.renderDeclaredCostConstructor constructor = name := by
+  constructor
+  · intro found
+    have same : (profile.renderDeclaredCostConstructor constructor == name) = true :=
+      List.find?_some (p := fun candidate : profile.DeclaredCostConstructor =>
+        profile.renderDeclaredCostConstructor candidate == name) found
+    exact of_decide_eq_true same
+  · intro same
+    rw [← same]
+    exact profile.decodeDeclaredCostConstructor_render constructor
+
+theorem decodeDeclaredCostConstructor_eq_none_iff (profile : ContinuationDecorationProfile cut)
+    (name : String) : profile.decodeDeclaredCostConstructor name = none ↔
+      ∀ constructor : profile.DeclaredCostConstructor,
+        profile.renderDeclaredCostConstructor constructor ≠ name := by
+  constructor
+  · intro missing constructor same
+    have found := (profile.decodeDeclaredCostConstructor_eq_some_iff name constructor).mpr same
+    rw [missing] at found
+    cases found
+  · intro absent
+    cases found : profile.decodeDeclaredCostConstructor name with
+    | none => rfl
+    | some constructor =>
+      exact False.elim (absent constructor
+        ((profile.decodeDeclaredCostConstructor_eq_some_iff name constructor).mp found))
+
+end ContinuationDecorationProfile
+
+namespace CIGSLT
+
+open ContinuationDecorationProfile (ofRetypingPlan)
 
 /-- Materialize one exact intrinsic Cost constructor as the corresponding
 `GrammarRule` in the generated `LanguageDef`. -/
 def materializeDeclaredCostConstructor (source : CIGSLT) :
-    source.DeclaredCostConstructor → GrammarRule
-  | ⟨.base constructor, _⟩ =>
-      costBaseConstructor source.cut constructor.1
-  | ⟨.wrapped constructor, _⟩ =>
-      costWrappedConstructor (theory := source.theory) constructor.1
-  | ⟨.apparatus kind, _⟩ =>
-      kind.grammarRule source.theory.presentation.interactingSort.1.name
+    source.DeclaredCostConstructor → GrammarRule :=
+  (ofRetypingPlan source.continuationRetyping).materializeDeclaredCostConstructor
 
 @[simp]
 theorem materializeDeclaredCostConstructor_label (source : CIGSLT)
     (constructor : source.DeclaredCostConstructor) :
     (source.materializeDeclaredCostConstructor constructor).label =
-      source.renderDeclaredCostConstructor constructor := by
-  rcases constructor with ⟨constructor, declared⟩
-  cases constructor with
-  | base sourceConstructor => rfl
-  | wrapped sourceConstructor => rfl
-  | apparatus kind =>
-      cases kind <;> rfl
+      source.renderDeclaredCostConstructor constructor :=
+  (ofRetypingPlan source.continuationRetyping).materializeDeclaredCostConstructor_label
+    constructor
 
 /-- Intrinsic declaration identity is preserved by materialization. -/
 theorem materializeDeclaredCostConstructor_injective (source : CIGSLT) :
-    Function.Injective source.materializeDeclaredCostConstructor := by
-  intro left right equality
-  apply source.renderDeclaredCostConstructor_injective
-  rw [← source.materializeDeclaredCostConstructor_label left,
-    ← source.materializeDeclaredCostConstructor_label right, equality]
+    Function.Injective source.materializeDeclaredCostConstructor :=
+  (ofRetypingPlan source.continuationRetyping).materializeDeclaredCostConstructor_injective
 
 /-- Every intrinsic declared constructor materializes into the exact
 generated Cost declaration list. -/
 theorem materializeDeclaredCostConstructor_mem (source : CIGSLT)
     (constructor : source.DeclaredCostConstructor) :
     source.materializeDeclaredCostConstructor constructor ∈
-      source.costCoreLanguage.terms := by
-  rcases constructor with ⟨constructor, declared⟩
-  cases constructor with
-  | base sourceConstructor =>
-      exact List.mem_append_left _
-        (source.continuationRetyping.costBaseConstructor_mem_generated
-          sourceConstructor.1 sourceConstructor.2)
-  | wrapped sourceConstructor =>
-      exact List.mem_append_left _
-        (source.continuationRetyping.costWrappedConstructor_mem_generated
-          sourceConstructor declared)
-  | apparatus kind =>
-      apply List.mem_append_right
-      cases kind <;> simp [costCoreConstructors,
-        materializeDeclaredCostConstructor,
-        CostApparatusConstructor.grammarRule]
+      source.costCoreLanguage.terms :=
+  (ofRetypingPlan source.continuationRetyping).materializeDeclaredCostConstructor_mem
+    constructor
 
 /-- Conversely, every generated Cost grammar declaration has an intrinsic
 declared constructor. -/
 theorem exists_declaredCostConstructor_of_mem (source : CIGSLT)
     (rule : GrammarRule) (membership : rule ∈ source.costCoreLanguage.terms) :
     ∃ constructor : source.DeclaredCostConstructor,
-      source.materializeDeclaredCostConstructor constructor = rule := by
-  change rule ∈ source.continuationRetyping.generatedLanguage.terms ++
-    costCoreConstructors source.theory.presentation.interactingSort.1.name at membership
-  simp only [List.mem_append] at membership
-  rcases membership with generatedMembership | apparatusMembership
-  · rw [ContinuationRetypingPlan.generatedLanguage_terms] at generatedMembership
-    simp only [List.mem_append] at generatedMembership
-    rcases generatedMembership with baseMembership | wrappedMembership
-    · rcases List.mem_map.mp baseMembership with
-        ⟨sourceRule, sourceMembership, equality⟩
-      let sourceConstructor :
-          DeclaredConstructor source.theory.presentation.presentation :=
-        ⟨sourceRule, sourceMembership⟩
-      refine ⟨⟨.base sourceConstructor, True.intro⟩, ?_⟩
-      exact equality
-    · rcases List.mem_map.mp wrappedMembership with
-        ⟨sourceConstructor, wrappedMembership, equality⟩
-      refine ⟨⟨.wrapped sourceConstructor, wrappedMembership⟩, ?_⟩
-      exact equality
-  · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil,
-      or_false] at apparatusMembership
-    rcases apparatusMembership with equality | equality | equality | equality |
-      equality | equality | equality | equality | equality | equality <;> subst rule
-    · exact ⟨⟨.apparatus .signatureUnit, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .signatureProduct, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .keyLeaf, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .keyBranch, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .signatureCommit, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .signed, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .tokenStackEmpty, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .tokenStackCons, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .funding, True.intro⟩, rfl⟩
-    · exact ⟨⟨.apparatus .contact, True.intro⟩, rfl⟩
+      source.materializeDeclaredCostConstructor constructor = rule :=
+  (ofRetypingPlan source.continuationRetyping).exists_declaredCostConstructor_of_mem rule
+    membership
 
 /-- The intrinsic declared-constructor namespace is exactly the attached
 constructor carrier of the validated generated Cost presentation. -/
@@ -521,90 +666,36 @@ noncomputable def declaredCostConstructorEquiv (source : CIGSLT) :
 This is the executable inverse domain for faithful wire rendering. -/
 def declaredCostConstructors (source : CIGSLT) :
     List source.DeclaredCostConstructor :=
-  source.theory.presentation.presentation.language.terms.attach.map
-      (fun constructor =>
-        (⟨.base constructor, True.intro⟩ :
-          source.DeclaredCostConstructor)) ++
-    source.continuationRetyping.wrappedConstructors.attach.map
-      (fun constructor =>
-        (⟨.wrapped constructor.1, constructor.2⟩ :
-          source.DeclaredCostConstructor)) ++
-    costCoreConstructorKinds.map
-      (fun kind =>
-        (⟨.apparatus kind, True.intro⟩ :
-          source.DeclaredCostConstructor))
+  (ofRetypingPlan source.continuationRetyping).declaredCostConstructors
 
 /-- Every exact generated constructor occurs in the intrinsic enumeration. -/
 theorem mem_declaredCostConstructors (source : CIGSLT)
     (constructor : source.DeclaredCostConstructor) :
-    constructor ∈ source.declaredCostConstructors := by
-  rcases constructor with ⟨constructor, declared⟩
-  cases constructor with
-  | base sourceConstructor =>
-      apply List.mem_append_left
-      apply List.mem_append_left
-      apply List.mem_map.mpr
-      refine ⟨sourceConstructor, List.mem_attach _ sourceConstructor, ?_⟩
-      rfl
-  | wrapped sourceConstructor =>
-      apply List.mem_append_left
-      apply List.mem_append_right
-      apply List.mem_map.mpr
-      refine ⟨⟨sourceConstructor, declared⟩,
-        List.mem_attach _ ⟨sourceConstructor, declared⟩, ?_⟩
-      rfl
-  | apparatus kind =>
-      apply List.mem_append_right
-      cases kind <;> simp [costCoreConstructorKinds]
-
-/-- Search a finite intrinsic constructor list by its faithful wire name. -/
-def resolveDeclaredCostConstructor (source : CIGSLT) (name : String) :
-    List source.DeclaredCostConstructor →
-      Option source.DeclaredCostConstructor
-  | [] => none
-  | constructor :: constructors =>
-      if source.renderDeclaredCostConstructor constructor = name then
-        some constructor
-      else
-        source.resolveDeclaredCostConstructor name constructors
-
-/-- Faithful rendering makes finite constructor resolution exact. -/
-theorem resolveDeclaredCostConstructor_render_of_mem (source : CIGSLT)
-    (constructor : source.DeclaredCostConstructor)
-    (constructors : List source.DeclaredCostConstructor)
-    (membership : constructor ∈ constructors) :
-    source.resolveDeclaredCostConstructor
-        (source.renderDeclaredCostConstructor constructor) constructors =
-      some constructor := by
-  induction constructors with
-  | nil => cases membership
-  | cons head tail inductionHypothesis =>
-      simp only [List.mem_cons] at membership
-      rcases membership with equality | tailMembership
-      · subst head
-        simp [resolveDeclaredCostConstructor]
-      · simp only [resolveDeclaredCostConstructor]
-        split
-        · rename_i renderedEquality
-          have constructorEquality : head = constructor :=
-            source.renderDeclaredCostConstructor_injective renderedEquality
-          subst head
-          rfl
-        · exact inductionHypothesis tailMembership
+    constructor ∈ source.declaredCostConstructors :=
+  (ofRetypingPlan source.continuationRetyping).mem_declaredCostConstructors constructor
 
 /-- Executable decoding of one exact generated Cost constructor name. -/
 def decodeDeclaredCostConstructor (source : CIGSLT) (name : String) :
     Option source.DeclaredCostConstructor :=
-  source.resolveDeclaredCostConstructor name source.declaredCostConstructors
+  (ofRetypingPlan source.continuationRetyping).decodeDeclaredCostConstructor name
 
 /-- Decoding is a left inverse of faithful constructor rendering. -/
 @[simp]
 theorem decodeDeclaredCostConstructor_render (source : CIGSLT)
     (constructor : source.DeclaredCostConstructor) :
     source.decodeDeclaredCostConstructor
-        (source.renderDeclaredCostConstructor constructor) = some constructor := by
-  exact source.resolveDeclaredCostConstructor_render_of_mem constructor
-    source.declaredCostConstructors (source.mem_declaredCostConstructors constructor)
+        (source.renderDeclaredCostConstructor constructor) = some constructor :=
+  (ofRetypingPlan source.continuationRetyping).decodeDeclaredCostConstructor_render
+    constructor
+
+/-- Successful decoding recovers the exact rendered wire name, and
+conversely. -/
+theorem decodeDeclaredCostConstructor_eq_some_iff (source : CIGSLT)
+    (name : String) (constructor : source.DeclaredCostConstructor) :
+    source.decodeDeclaredCostConstructor name = some constructor ↔
+      source.renderDeclaredCostConstructor constructor = name :=
+  (ofRetypingPlan source.continuationRetyping).decodeDeclaredCostConstructor_eq_some_iff
+    name constructor
 
 /-- Positive control: the generic wrapper consumes the tagged source
 interacting sort and a symbolic signature, and returns a wrapped term. -/

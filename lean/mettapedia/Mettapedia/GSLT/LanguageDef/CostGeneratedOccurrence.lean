@@ -81,7 +81,7 @@ theorem nonempty_costEquationDeclarationOrigin_of_mem
     (membership : target ∈ source.costWholeLanguage.equations) :
     Nonempty (CostEquationDeclarationOrigin source target) := by
   have staticMembership : target ∈ source.costStaticEquations := by
-    simpa only [CIGSLT.costWholeLanguage_equations] using membership
+    simpa only [WrappableIGSLT.costWholeLanguage_equations] using membership
   obtain ⟨color, sourceEquation, sourceMembership, target_eq⟩ :=
     (mem_costStaticEquations_iff_exists_source source).1 staticMembership
   exact ⟨⟨color, sourceEquation, sourceMembership, target_eq⟩⟩
@@ -95,7 +95,7 @@ theorem nonempty_costReflectiveDeclarationOrigin_of_mem
     Nonempty (CostReflectiveDeclarationOrigin source target) := by
   have staticMembership : target ∈
       source.costStaticReflectivePresentations := by
-    simpa only [CIGSLT.costWholeReflectionProfile_presentations] using
+    simpa only [WrappableIGSLT.costWholeReflectionProfile_presentations] using
       membership
   obtain ⟨color, sourceDeclaration, sourceMembership, target_eq⟩ :=
     (mem_costStaticReflectivePresentations_iff_exists_source source).1

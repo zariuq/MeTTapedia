@@ -31,6 +31,14 @@ A left side with reflexivity positions, such as the identity eliminator's
 right side is typed at the instances that satisfy them (`TemplateTypedEq`), and
 such a schema preserves typing too (`SchemaPreserving.of_templateTypedEq`). A
 template typed without equations is one (`TemplateTyped.templateTypedEq`).
+
+**In a containing package.** Pattern inversion needs only that the left side is
+elaborated with declared types the package declares. So the steps of a presented
+package preserve typing (`ChurchRules.ofSchemas_preservesIn`) and are premised
+(`ChurchRules.ofSchemas_premisedIn`) in every package that contains them, such as
+its sum with declared datatypes, given the injectivity and no-confusion of that
+package's type formers. The presented package itself is the first case
+(`ChurchRules.ofSchemas_rootPreserving`, `ChurchRules.ofSchemas_rootPremised`).
 -/
 
 set_option autoImplicit false
@@ -80,6 +88,23 @@ def SchemaPreserving (P : ChurchRules R) {k : Nat} (left right : CTm Head k) : P
   ∀ {n : Nat} {Γ : CCtx Head n} {σ : CSub Head k n} {A : CTm Head n}, CCtxFormed P Γ →
     CTyped P Γ (left.subst σ) A → CTyped P Γ (right.subst σ) A
 
+/-- **Preservation, schema by schema, in a package containing the steps**: when every schema
+of a presentation preserves typing in a package `Q`, so does every annotated root step of the
+presented package. `Q` may be the presented package itself, or a package that contains its
+steps, such as its sum with further declarations. -/
+theorem ChurchRules.ofSchemas_preservesIn {RQ : Rules Head} {Q : ChurchRules RQ}
+    (S : SchemaFamily Head) (present : Presents R.computation S)
+    (schemas : ∀ {k : Nat} {L R' : Tm Head k}, S L R' →
+      SchemaPreserving Q (elabLeft (elabDeclarations R.constantType) L)
+        (elabRight (elabDeclarations R.constantType) L R'))
+    {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n} (formed : CCtxFormed Q Γ)
+    (step : (ChurchRules.ofSchemas R S present).computation.step l r)
+    (typing : CTyped Q Γ l A) : CTyped Q Γ r A := by
+  cases step with
+  | instantiate rule σ =>
+      obtain ⟨L, R', hS, rfl, rfl⟩ := rule
+      exact schemas hS formed typing
+
 /-- **Preservation, schema by schema**, for an annotation derived from a
 presentation by schemas. -/
 theorem ChurchRules.ofSchemas_rootPreserving (S : SchemaFamily Head)
@@ -88,12 +113,8 @@ theorem ChurchRules.ofSchemas_rootPreserving (S : SchemaFamily Head)
       SchemaPreserving (ChurchRules.ofSchemas R S present)
         (elabLeft (elabDeclarations R.constantType) L)
         (elabRight (elabDeclarations R.constantType) L R')) :
-    CRootPreserving (ChurchRules.ofSchemas R S present) := by
-  intro n Γ l r A formed step typing
-  cases step with
-  | instantiate rule σ =>
-      obtain ⟨L, R', hS, rfl, rfl⟩ := rule
-      exact schemas hS formed typing
+    CRootPreserving (ChurchRules.ofSchemas R S present) :=
+  fun formed step typing => ChurchRules.ofSchemas_preservesIn S present schemas formed step typing
 
 /-! ## Templates typed under the equations of their reflexivity positions -/
 
@@ -165,16 +186,19 @@ include facts levels
 equal to the instance of the type expected of it, instantiates each metavariable
 at the type its position requires, satisfies the equations of its reflexivity
 positions, and, unless it is a reflexivity proof, has the type it synthesizes,
-instantiated, below its own. -/
-theorem pattern_inv {k : Nat} (L : Tm Head k) (fo : firstOrder L = true) :
+instantiated, below its own. The left side is elaborated with declared types that the
+package declares (`within`): its own, or those of a package it contains. -/
+theorem pattern_inv {decls : DeclName → Option (CTm Head 0)}
+    (within : ∀ {c : DeclName} {T : CTm Head 0}, decls c = some T → P.constantType c = some T)
+    {k : Nat} (L : Tm Head k) (fo : firstOrder L = true) :
     ∀ (expected : Option (CTm Head k)) {n : Nat} {Γ : CCtx Head n} (σ : CSub Head k n)
       {X : CTm Head n}, CCtxFormed P Γ → CTyped P Γ ((liftTm L).subst σ) X →
       (∀ E, expected = some E → X = E.subst σ) →
-      (∀ i T, patternKnowledge P.constantType expected L i = some T →
+      (∀ i T, patternKnowledge decls expected L i = some T →
         CTyped P Γ (σ i) (T.subst σ)) ∧
-      (∀ T, (elaborate P.constantType Knowledge.empty none none L).2 = some T →
+      (∀ T, (elaborate decls Knowledge.empty none none L).2 = some T →
         (∀ a, L ≠ .refl a) → CBelow P Γ (T.subst σ) X) ∧
-      (∀ e ∈ patternEquations P.constantType expected L,
+      (∀ e ∈ patternEquations decls expected L,
         CEqual P Γ (e.1.subst σ) (e.2.1.subst σ) (e.2.2.subst σ)) := by
   induction L with
   | var i =>
@@ -197,7 +221,7 @@ theorem pattern_inv {k : Nat} (L : Tm Head k) (fo : firstOrder L = true) :
       · simp only [elaborate] at h
         obtain ⟨type, hc, rfl⟩ := Option.map_eq_some_iff.mp h
         obtain ⟨type', u, declared, _, _, le⟩ := typing.generation
-        rw [hc] at declared
+        rw [within hc] at declared
         cases declared
         rw [CTm.subst_liftClosed]
         exact CTypeLe.toBelow le (CTyped.isType levels typing formed)
@@ -221,7 +245,7 @@ theorem pattern_inv {k : Nat} (L : Tm Head k) (fo : firstOrder L = true) :
       obtain ⟨A₀, B₀, tf, ta, le⟩ := typing.generation
       obtain ⟨knowF, synF, eqsF⟩ := ihf fo.1 none σ formed tf (fun _ h => by cases h)
       -- The domain the function's synthesized type gives the argument.
-      have hdom : ∀ D B, (elaborate P.constantType Knowledge.empty none none f).2 = some (.pi D B) →
+      have hdom : ∀ D B, (elaborate decls Knowledge.empty none none f).2 = some (.pi D B) →
           CTypeEq P Γ (D.subst σ) A₀ ∧ CBelow P (.snoc Γ (D.subst σ)) (B.subst (CTm.liftSub σ)) B₀ := by
         intro D B hf
         have notRefl : ∀ a', f ≠ .refl a' := by
@@ -244,7 +268,7 @@ theorem pattern_inv {k : Nat} (L : Tm Head k) (fo : firstOrder L = true) :
             exact (iha fo.2 (some D) σ formed (CTyped.convType ta eD.symm)
               (fun _ h => by cases h; rfl)).1 j T h
           · exact (iha fo.2 none σ formed ta (fun _ h => by cases h)).1 j T h
-      · rw [elaborate_app_type P.constantType fo.1 fo.2] at h
+      · rw [elaborate_app_type decls fo.1 fo.2] at h
         split at h
         · rename_i D B hf
           cases h
@@ -303,15 +327,18 @@ theorem pattern_inv {k : Nat} (L : Tm Head k) (fo : firstOrder L = true) :
 
 /-- **A schema whose elaborated right side is typed preserves typing**: the typing
 of an instance of the left side puts the metavariables at the types of the
-right side's context and the right side's type below the instance's. -/
-theorem SchemaPreserving.of_templateTyped {k : Nat} {L R' : Tm Head k}
-    (fo : firstOrder L = true) (notRefl : ∀ a, L ≠ .refl a)
-    (typed : TemplateTyped P P.constantType L R') :
-    SchemaPreserving P (elabLeft P.constantType L) (elabRight P.constantType L R') := by
+right side's context and the right side's type below the instance's. The schema is
+elaborated with declared types that the package declares (`within`). -/
+theorem SchemaPreserving.of_templateTyped {decls : DeclName → Option (CTm Head 0)}
+    (within : ∀ {c : DeclName} {T : CTm Head 0}, decls c = some T → P.constantType c = some T)
+    {k : Nat} {L R' : Tm Head k} (fo : firstOrder L = true) (notRefl : ∀ a, L ≠ .refl a)
+    (typed : TemplateTyped P decls L R') :
+    SchemaPreserving P (elabLeft decls L) (elabRight decls L R') := by
   intro n Γ σ A formed typing
   obtain ⟨Θ, T, hK, hT, tR⟩ := typed
-  rw [elabLeft_firstOrder P.constantType fo] at typing
-  obtain ⟨know, syn, _⟩ := pattern_inv facts levels L fo none σ formed typing (fun _ h => by cases h)
+  rw [elabLeft_firstOrder decls fo] at typing
+  obtain ⟨know, syn, _⟩ :=
+    pattern_inv facts levels within L fo none σ formed typing (fun _ h => by cases h)
   have mor : CSubstMor P Θ Γ σ := fun i => know i _ (hK i)
   exact .sub (CTyped.substitute tR mor) (syn T hT notRefl)
 
@@ -319,36 +346,56 @@ theorem SchemaPreserving.of_templateTyped {k : Nat} {L R' : Tm Head k}
 reflexivity positions preserves typing**: the typing of an instance of the left
 side puts the metavariables at the types of the right side's context, satisfies
 the equations, and puts the right side's type below the instance's. -/
-theorem SchemaPreserving.of_templateTypedEq {k : Nat} {L R' : Tm Head k}
-    (fo : firstOrder L = true) (notRefl : ∀ a, L ≠ .refl a)
-    (typed : TemplateTypedEq P P.constantType L R') :
-    SchemaPreserving P (elabLeft P.constantType L) (elabRight P.constantType L R') := by
+theorem SchemaPreserving.of_templateTypedEq {decls : DeclName → Option (CTm Head 0)}
+    (within : ∀ {c : DeclName} {T : CTm Head 0}, decls c = some T → P.constantType c = some T)
+    {k : Nat} {L R' : Tm Head k} (fo : firstOrder L = true) (notRefl : ∀ a, L ≠ .refl a)
+    (typed : TemplateTypedEq P decls L R') :
+    SchemaPreserving P (elabLeft decls L) (elabRight decls L R') := by
   intro n Γ σ A formed typing
   obtain ⟨Θ, T, hK, hT, tR⟩ := typed
-  rw [elabLeft_firstOrder P.constantType fo] at typing
+  rw [elabLeft_firstOrder decls fo] at typing
   obtain ⟨know, syn, eqs⟩ :=
-    pattern_inv facts levels L fo none σ formed typing (fun _ h => by cases h)
+    pattern_inv facts levels within L fo none σ formed typing (fun _ h => by cases h)
   exact .sub (tR formed (fun i => know i _ (hK i)) eqs) (syn T hT notRefl)
 
 end Inversion
 
-/-- **The steps of a package annotated from schemas are premised**, given the injectivity
-and no-confusion of its type formers: pattern inversion reads the premises of a step, the
-typings of the instances of its metavariables and the equations of its reflexivity
-positions, off the typing of its left side. -/
-theorem ChurchRules.ofSchemas_rootPremised (S : SchemaFamily Head)
-    (present : Presents R.computation S) (firstOrderLeft : FirstOrderFamily S)
-    (facts : CFormerFacts (ChurchRules.ofSchemas R S present)) (levels : LevelModel R L) :
-    CRootPremised (ChurchRules.ofSchemas R S present) := by
-  intro n Γ l r A formed step typing
+/-- **The steps of a package annotated from schemas are premised in every package containing
+them**, given the injectivity and no-confusion of that package's type formers: pattern
+inversion reads the premises of a step, the typings of the instances of its metavariables and
+the equations of its reflexivity positions, off the typing of its left side. The containing
+package declares the presented package's constants (`declared`) and requires the premises
+the presented package requires (`requires`). -/
+theorem ChurchRules.ofSchemas_premisedIn {RQ : Rules Head} {Q : ChurchRules RQ}
+    (S : SchemaFamily Head) (present : Presents R.computation S)
+    (firstOrderLeft : ∀ {k : Nat} {L' R' : Tm Head k}, S L' R' → firstOrder L' = true)
+    (declared : ∀ {c : DeclName} {T : CTm Head 0},
+      elabDeclarations R.constantType c = some T → Q.constantType c = some T)
+    (requires : ∀ {n : Nat} {l r : CTm Head n} {premises : List (CPremise Head n)},
+      CSchemaRequires (elabDeclarations R.constantType) S l r premises →
+        Q.computation.requires l r premises)
+    (facts : CFormerFacts Q) (levels : LevelModel RQ L)
+    {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n} (formed : CCtxFormed Q Γ)
+    (step : (ChurchRules.ofSchemas R S present).computation.step l r)
+    (typing : CTyped Q Γ l A) : Q.Admits Γ l r := by
   cases step with
   | instantiate rule σ =>
       obtain ⟨L', R', hS, rfl, rfl⟩ := rule
-      have fo := (firstOrderLeft hS).1
+      have fo := firstOrderLeft hS
       rw [elabLeft_firstOrder (elabDeclarations R.constantType) fo] at typing
       obtain ⟨know, -, eqs⟩ :=
-        pattern_inv facts levels L' fo none σ formed typing (fun _ h => by cases h)
-      exact CSchemaRequires.admits id hS σ know eqs
+        pattern_inv facts levels declared L' fo none σ formed typing (fun _ h => by cases h)
+      exact CSchemaRequires.admits requires hS σ know eqs
+
+/-- **The steps of a package annotated from schemas are premised**, given the injectivity
+and no-confusion of its type formers. -/
+theorem ChurchRules.ofSchemas_rootPremised (S : SchemaFamily Head)
+    (present : Presents R.computation S) (firstOrderLeft : FirstOrderFamily S)
+    (facts : CFormerFacts (ChurchRules.ofSchemas R S present)) (levels : LevelModel R L) :
+    CRootPremised (ChurchRules.ofSchemas R S present) :=
+  fun formed step typing =>
+    ChurchRules.ofSchemas_premisedIn S present (fun h => (firstOrderLeft h).1) (fun h => h)
+      (fun h => h) facts levels formed step typing
 
 end Annotated
 end TypedEquality

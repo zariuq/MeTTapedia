@@ -1,13 +1,14 @@
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGeneratedRHS
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGeneratedRefinement
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGeneratedReadout
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGeneratedSubstitution
 
 /-!
 # Authored whole activation with arbitrary admitted receiver code
 
-The actual generated matcher and source-selected reflective RHS are compared
-with the existing located whole funding rule. Receiver bodies range over the
-existing closed anonymous-binder decoder domain. Target observations use pure
-structural congruence; literal configurations and keys remain separate.
+The generated matcher and the source-selected reflective right side are compared with the located
+whole funding rule. Receiver bodies range over the images of generated code at depth one; the
+receiver that returns what it receives is the instance of `ActivationGeneratedRHS`. Target
+observations use pure structural congruence; literal configurations and keys remain separate.
 -/
 
 set_option autoImplicit false
@@ -24,6 +25,22 @@ open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
+
+abbrev baseRhoDeclaration :=
+  costBaseReflectivePresentationDecl rhoReflectivePresentation.toReflectivePresentationDecl
+
+theorem baseRhoDeclaration_selected :
+    matchingPresentationForRule? rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeRedexRewrite = some baseRhoDeclaration := by
+  decide +kernel
+
+def nilChannelSource : Pattern :=
+  .apply (costBaseConstructorName "NQuote") [.apply (costBaseConstructorName "PZero") []]
+
+def nilChannelLocation : CostName LiteralAuthority := .quote .nil
+
+theorem nilChannelLocation_free : nilChannelLocation.purseInventory = 0 := rfl
+theorem nilChannelLocation_supported : nilChannelLocation.RuntimeSupported := trivial
 
 def receiverBindings (channel body payload signature tail : Pattern) : Bindings :=
   [(rhoCIGSLT.costStackTailVariable, tail),
@@ -65,8 +82,8 @@ theorem actual_receiver_match (channel body payload signature tail : Pattern) :
              [.fvar rhoCIGSLT.costSignatureVariable, .fvar rhoCIGSLT.costStackTailVariable]]]) _
   simp [receiverSource, receiverBindings, matchPatternWith, matchArgsWith,
     matchBagWith, mergeBindingsWith, canonicalEquivalent,
-    costSourceSchemaName, costSourceSchemaTag, CIGSLT.costSignatureVariable,
-    CIGSLT.costStackTailVariable, costAdministrativeSchemaName,
+    costSourceSchemaName, costSourceSchemaTag, WrappableIGSLT.costSignatureVariable,
+    WrappableIGSLT.costStackTailVariable, costAdministrativeSchemaName,
     costAdministrativeSchemaTag]
 
 def receiverContractum (body payload tail : Pattern) : Pattern :=
@@ -93,8 +110,8 @@ theorem actual_receiver_rhs (channel body payload signature tail : Pattern) :
       "$cost:wrapped-constructor:NQuote" := rfl
   simp [quoteName, receiverBindings, receiverContractum, generatedReplacement, applyBindingsReflective,
     applyBindingsReflectiveList, normalizeReflectiveReplacement,
-    costSourceSchemaName, costSourceSchemaTag, CIGSLT.costSignatureVariable,
-    CIGSLT.costStackTailVariable, costAdministrativeSchemaName,
+    costSourceSchemaName, costSourceSchemaTag, WrappableIGSLT.costSignatureVariable,
+    WrappableIGSLT.costStackTailVariable, costAdministrativeSchemaName,
     costAdministrativeSchemaTag, costWrappedConstructorName, costWrappedConstructorTag]
 
 theorem actual_receiver_step (channel body payload signature tail : Pattern) :

@@ -6,7 +6,7 @@ import Mettapedia.GSLT.LanguageDef.NativeOpsCGuestRepresentation
 /-! Generated original-character/body certificate; execution correspondence is separate. -/
 
 set_option autoImplicit false
-set_option maxRecDepth 100000
+set_option maxRecDepth 1000000
 set_option maxHeartbeats 4000000
 set_option Elab.async false
 
@@ -8109,7 +8109,7 @@ theorem function_050_characters_lexed :
 theorem function_050_tokens_parsed :
     function? (2 * functionTokens_050.length + 4) candidateTypeNames
       functionTokens_050 = some (function_050, []) := by
-  rfl
+  native_c_parser_reflexivity
 
 theorem function_050_text_checked :
     textBodyAgreement candidateTypeNames representation function_050_characters

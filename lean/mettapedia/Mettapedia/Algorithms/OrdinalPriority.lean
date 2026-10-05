@@ -35,6 +35,34 @@ def compare : CantorTerms → CantorTerms → Ordering
       (_root_.cmp leftExponent rightExponent).then
         ((_root_.cmp (leftCoefficient : Nat) (rightCoefficient : Nat)).then (compare left right))
 
+/-- The column comparisons of paired monomials, in scan order. -/
+def columnComparisons (left right : CantorTerms) : List Ordering :=
+  (left.zip right).flatMap fun (left, right) =>
+    [_root_.cmp left.1 right.1, _root_.cmp (left.2 : Nat) (right.2 : Nat)]
+
+/-- A scan stops at the first unequal column; equal paired prefixes are
+ordered by the number of rows. -/
+def scanCompare (left right : CantorTerms) : Ordering :=
+  ((columnComparisons left right).find? (fun ordering => ordering != .eq)).getD
+    (_root_.cmp left.length right.length)
+
+/-- Independent column scanning agrees with recursive monomial comparison,
+even before the normal-form check. -/
+theorem scanCompare_eq_compare (left right : CantorTerms) :
+    scanCompare left right = compare left right := by
+  induction left generalizing right with
+  | nil => cases right <;> simp [scanCompare, columnComparisons, compare, _root_.cmp, cmpUsing]
+  | cons first rest ih =>
+      cases right with
+      | nil => simp [scanCompare, columnComparisons, compare, _root_.cmp, cmpUsing]
+      | cons second tail =>
+          rcases first with ⟨leftExponent, leftCoefficient⟩
+          rcases second with ⟨rightExponent, rightCoefficient⟩
+          cases exponent : _root_.cmp leftExponent rightExponent <;>
+            cases coefficient : _root_.cmp (leftCoefficient : Nat) (rightCoefficient : Nat) <;>
+            simp [scanCompare, columnComparisons, compare, exponent, coefficient,
+              ← ih, Ordering.then]
+
 theorem compare_natural_notations (left right : Nat) :
     ONote.cmp (ONote.ofNat left) (ONote.ofNat right) = _root_.cmp left right := by
   cases left <;> cases right <;>
@@ -117,6 +145,13 @@ theorem comparison_semantics {left right : CantorTerms} {leftPriority rightPrior
         simpa only [outcome, Ordering.compares_eq] using compared
       exact congrArg ONote.repr equal
   | gt => simpa only [outcome, Ordering.compares_gt, ONote.lt_def, NONote.repr] using compared
+
+theorem scan_comparison_semantics {left right : CantorTerms}
+    {leftPriority rightPriority : NONote}
+    (leftChecked : check left = some leftPriority) (rightChecked : check right = some rightPriority) :
+    (scanCompare left right).Compares leftPriority.repr rightPriority.repr := by
+  rw [scanCompare_eq_compare]
+  exact comparison_semantics leftChecked rightChecked
 
 def omega : NONote := ⟨ONote.oadd (ONote.ofNat 1) 1 0, by infer_instance⟩
 

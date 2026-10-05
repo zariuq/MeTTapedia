@@ -70,6 +70,37 @@ def targetLedgerCall {World : Type} (children : List (TargetCallTree World)) (po
     occurrence.tree.arguments = arguments ∧ occurrence.tree.before = targetWithoutCursor before ∧
     occurrence.tree.raw = raw ∧ after = targetWithCursor occurrence.tree.after occurrence.stop
 
+/-- A retained child is executable at its own cursor with its exact input,
+output and complete states. Equal child endpoints do not erase occurrences. -/
+theorem target_ledger_call_of_member {World : Type} {children : List (TargetCallTree World)}
+    {position : Nat} {occurrence : TargetStampedCall World}
+    (member : occurrence ∈ targetStampChildren children position) :
+    targetLedgerCall children position occurrence.tree.target occurrence.tree.arguments
+      (targetWithCursor occurrence.tree.before occurrence.start) occurrence.tree.raw
+      (targetWithCursor occurrence.tree.after occurrence.stop) := by
+  exact ⟨occurrence, member, rfl, rfl, rfl, (target_cursor_projection _ _).symm, rfl, rfl⟩
+
+/-- The head and tail of a ledger retain distinct cursor positions. This
+decomposition exposes a missing or reordered call without identifying equal
+return values or states. -/
+theorem target_ledger_call_cons_iff {World : Type} (first : TargetCallTree World)
+    (rest : List (TargetCallTree World)) (position : Nat) (target : NativeIR.CallTarget)
+    (arguments : List TargetValue) (before after : TargetState (World × Nat)) (raw : TargetValue) :
+    targetLedgerCall (first :: rest) position target arguments before raw after ↔
+      (position = before.external.2 ∧ first.target = target ∧ first.arguments = arguments ∧
+        first.before = targetWithoutCursor before ∧ first.raw = raw ∧
+        after = targetWithCursor first.after (position + first.span)) ∨
+      targetLedgerCall rest (position + first.span) target arguments before raw after := by
+  constructor
+  · rintro ⟨occurrence, member, facts⟩
+    rcases List.mem_cons.mp member with same | later
+    · subst occurrence
+      exact .inl facts
+    · exact .inr ⟨occurrence, later, facts⟩
+  · rintro (facts | ⟨occurrence, member, facts⟩)
+    · exact ⟨⟨first, position, position + first.span⟩, List.mem_cons_self, facts⟩
+    · exact ⟨occurrence, List.mem_cons_of_mem _ member, facts⟩
+
 def targetBindParameters {World : Type} :
     List Parameter → List TargetValue → TargetFrame → TargetState World → Option (TargetFrame × TargetState World)
   | [], [], frame, state => some (frame, state)

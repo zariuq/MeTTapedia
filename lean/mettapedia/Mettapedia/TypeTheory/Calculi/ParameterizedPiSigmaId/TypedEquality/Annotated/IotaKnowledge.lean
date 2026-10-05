@@ -20,7 +20,13 @@ motives and methods that mention the others. In every containing package:
   premises** (`iota_holds_within`): an instance at a substitution typed along the telescope of
   the rule's metavariables is an equality at the motive at the constructor applied to its
   fields. Both sides are typed by `iota_typed_metaVars`, and the knowledge of the rule's left
-  side is the telescope of its metavariables (`iotaLeft_known`).
+  side is the telescope of its metavariables (`iotaLeft_known`);
+* **the computation rules preserve typing and are premised** (`iota_preservesIn`,
+  `iota_premisedIn`), given the injectivity and no-confusion of the containing package's type
+  formers: pattern inversion types the motive, the methods and the fields of a typed redex
+  along the rule's telescope, and the left side synthesizes the motive at the constructor
+  applied to its fields (`iotaLeft_type`). A template typed in a package is typed in every
+  package containing it (`TemplateTyped.mono`).
 
 The arguments are typed in the containing package, so they may use constants that the
 declaration's own package does not have. `iota_holds` is the case of the declaration's own
@@ -659,6 +665,44 @@ theorem iotaLeft_known {T : DeclName} {u : Head} {ctors : List (DeclName × List
       apply congrArg some
       exact (iotaEntry_field_at (index_lt _ j.val j.isLt) hp hqEq).symm
 
+/-- **The type the left side of a computation rule synthesizes** is the motive at the
+constructor applied to its fields, under every table of declared types that declares the
+recursor as the declaration does: the declaration's own, or that of a package containing it. -/
+theorem iotaLeft_type {decls : DeclName → Option (CTm Head 0)} {T : DeclName} {v : Head}
+    {ctors : List (DeclName × List (Field Head))} {rec : DeclName}
+    (recDeclared : decls rec = some (liftTm (closeType
+      (Normalization.ofEntries (Normalization.recEntry T v ctors) (ctors.length + 2))
+      (Normalization.recBody ctors.length))))
+    (k : DeclName) (a : Nat) :
+    leftType decls (iotaLeft rec k ctors.length a) =
+      some (liftTm (iotaTarget k ctors.length a)) := by
+  unfold leftType
+  rw [iotaLeft_spine]
+  obtain ⟨R, hR, synth⟩ := spine_type decls rec (ctors.length + 2)
+    (Normalization.recEntry T v ctors) (Normalization.recBody ctors.length) recDeclared
+    (recSpine k ctors.length a) (recSpine_fo k ctors.length a)
+    (Nat.le_of_eq (recSpine_length k ctors.length a))
+  rw [synth]
+  clear synth
+  revert R
+  rw [recSpine_length]
+  intro R hR
+  obtain rfl := hR.eq_body
+  apply congrArg some
+  show CTm.app
+      (liftTm ((recSpine k ctors.length a).getD (ctors.length + 2 - 1 - (ctors.length + 1))
+        Normalization.defaultTm))
+      (liftTm ((recSpine k ctors.length a).getD (ctors.length + 2 - 1 - 0)
+        Normalization.defaultTm)) = _
+  rw [show ctors.length + 2 - 1 - (ctors.length + 1) = 0 by omega,
+    show ctors.length + 2 - 1 - 0 = ctors.length + 1 by omega,
+    getD_of_getElem? (recSpine_prefix_get k ctors.length a 0 (by omega)),
+    getD_of_getElem? (recSpine_last_get k ctors.length a)]
+  have motive : metaIdx (1 + ctors.length + a) 0 (by omega) = ⟨ctors.length + a, by omega⟩ :=
+    Fin.ext (show 1 + ctors.length + a - 1 - 0 = ctors.length + a by omega)
+  rw [motive]
+  rfl
+
 /-! ## Examples -/
 
 namespace IotaExamples
@@ -936,6 +980,15 @@ theorem StepsWithin.sum_right {R₁ R₂ : Rules Head} (P₁ : ChurchRules R₁)
   step := .inr
   requires := fun step required => .inr ⟨step, required⟩
 
+/-- **A template typed in a package is typed in every package containing it**: the knowledge
+and the type of its left side do not depend on the package, and the typing of its right side
+persists. -/
+theorem TemplateTyped.mono {R₁ R₂ : Rules Head} {P : ChurchRules R₁} {Q : ChurchRules R₂}
+    (sub : ChurchRulesSub P Q) {decls : DeclName → Option (CTm Head 0)} {k : Nat}
+    {L R' : Tm Head k} (typed : TemplateTyped P decls L R') : TemplateTyped Q decls L R' :=
+  let ⟨Θ, T, known, left, right⟩ := typed
+  ⟨Θ, T, known, left, right.mono sub⟩
+
 /-! ## A declared datatype in a package that contains its declaration -/
 
 section Within
@@ -1038,6 +1091,80 @@ theorem iota_holds (hu : R.isUniverse u) (hv : R.isUniverse v)
       ((liftTm (iotaTarget k ctors.length fields.length)).subst σ) :=
   iota_holds_within levels B (ChurchRulesSub.refl _) (StepsWithin.sum_right _ _) hu hv distinct
     free new fieldsFormed entry σ typed
+
+/-- **The declaration's declared types are those of every package containing it**: its names
+are new to the base package, so the sum declares them as the declaration does. -/
+theorem inductive_declared_within (sub : ChurchRulesSub (withInductive B T u ctors rec v) Q)
+    (new : NewNames B T ctors rec) {c : DeclName} {D : CTm Head 0}
+    (declared : elabDeclarations (inductiveDecls T u ctors rec v) c = some D) :
+    Q.constantType c = some D := by
+  apply sub.constantType
+  obtain ⟨type, found, -⟩ := Option.map_eq_some_iff.mp declared
+  have fresh : B.constantType c = none := by
+    rcases inductiveDecls_cases found with ⟨rfl, -⟩ | ⟨i, fields, entry, -⟩ | ⟨rfl, -⟩
+    · exact new.typeNew
+    · exact new.ctorsNew _ (List.mem_of_getElem? entry)
+    · exact new.recNew
+  exact (sumDecls_right fresh).trans declared
+
+/-- The left side of a computation rule is an application, not a reflexivity proof. -/
+theorem iotaLeft_ne_refl (rec k : DeclName) (c a : Nat) (t : Tm Head (1 + c + a)) :
+    iotaLeft rec k c a ≠ .refl t := by
+  rw [iotaLeft_spine, show recSpine (Head := Head) k c a = recPrefix c a ++ [scrutinee k c a]
+    from rfl, Normalization.appSpine_concat]
+  exact fun h => nomatch h
+
+include levels in
+/-- **The computation rules of the recursor preserve typing in every package containing the
+declaration**, given the injectivity and no-confusion of that package's type formers: a typed
+instance of the left side has its metavariables typed along the rule's telescope (pattern
+inversion), so the right side has the motive's type at the constructor applied to its fields
+(`iota_typed_metaVars`), which is below the instance's type. -/
+theorem iota_preservesIn (sub : ChurchRulesSub (withInductive B T u ctors rec v) Q)
+    (hu : R.isUniverse u) (hv : R.isUniverse v) (distinct : DistinctNames T ctors rec)
+    (free : FieldsLamFree ctors) (new : NewNames B T ctors rec)
+    (fieldsFormed : FieldsFormed B ctors) (facts : CFormerFacts Q) (levelsQ : LevelModel R' L)
+    {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n} (formed : CCtxFormed Q Γ)
+    (step : (inductiveChurch R T u ctors rec v).computation.step l r)
+    (typing : CTyped Q Γ l A) : CTyped Q Γ r A :=
+  ChurchRules.ofSchemas_preservesIn (iotaSchema rec ctors) (iota_presents rec ctors)
+    (fun rule => by
+      obtain ⟨i, k, fields, entry, same⟩ := rule
+      cases same
+      refine SchemaPreserving.of_templateTyped facts levelsQ (inductive_declared_within B sub new)
+        (firstOrder_iotaLeft rec k _ _) (iotaLeft_ne_refl rec k _ _)
+        ⟨liftCtx (iotaTele T v ctors fields), liftTm (iotaTarget k ctors.length fields.length),
+          iotaLeft_known distinct free entry, iotaLeft_type (elab_recursor distinct free) k _, ?_⟩
+      have right : elabRight (elabDeclarations (inductiveDecls T u ctors rec v))
+          (iotaLeft rec k ctors.length fields.length) (iotaRight rec ctors.length i fields) =
+          liftTm (iotaRight rec ctors.length i fields) :=
+        elab_lamFree _ (lamFree_iotaRight rec _ i fields) _ _ _
+      rw [right]
+      exact CDerivable.mono sub
+        (iota_typed_metaVars levels B hu hv distinct free new fieldsFormed entry).2)
+    formed step typing
+
+/-- **The computation rules of the recursor are premised in every package containing the
+declaration and its steps**: pattern inversion reads the typings of the motive, the methods and
+the fields off the typing of a left side, and they are the step's only premises. -/
+theorem iota_premisedIn (sub : ChurchRulesSub (withInductive B T u ctors rec v) Q)
+    (steps : StepsWithin (inductiveChurch R T u ctors rec v) Q) (new : NewNames B T ctors rec)
+    (facts : CFormerFacts Q) (levelsQ : LevelModel R' L)
+    {n : Nat} {Γ : CCtx Head n} {l r A : CTm Head n} (formed : CCtxFormed Q Γ)
+    (step : (inductiveChurch R T u ctors rec v).computation.step l r)
+    (typing : CTyped Q Γ l A) : Q.Admits Γ l r :=
+  ChurchRules.ofSchemas_premisedIn (iotaSchema rec ctors) (iota_presents rec ctors)
+    (fun rule => by
+      obtain ⟨i, k, fields, entry, same⟩ := rule
+      cases same
+      exact firstOrder_iotaLeft rec k _ _)
+    (inductive_declared_within B sub new)
+    (fun required => by
+      cases required with
+      | instantiate rule σ =>
+          exact steps.requires (CSchemaStep.instantiate ⟨_, _, rule, rfl, rfl⟩ σ)
+            (.instantiate rule σ))
+    facts levelsQ formed step typing
 
 end Within
 

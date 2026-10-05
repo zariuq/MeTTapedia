@@ -7,7 +7,8 @@ Dependent pairs are Kuratowski pairs. Dependent functions are total
 single-valued graphs restricted to the declared fibres. Both are actual
 ZFSet constructions inside the previously constructed closed universes.
 Their decoding equivalences are proved from graph functionality and pair
-injectivity, not supplied as universe-structure assumptions.
+injectivity, not supplied as universe-structure assumptions. A graph depends
+only on the values on its domain (`graph_congr`).
 -/
 
 set_option autoImplicit false
@@ -179,6 +180,19 @@ theorem graph_mem_piSet {a : ZFSet.{u}} {b f : ZFSet.{u} → ZFSet.{u}}
   intro x hx y hy
   obtain ⟨_, rfl⟩ := pair_mem_graph.mp hy
   exact hf x hx
+
+/-- Two maps that agree on a set have the same graph. -/
+theorem graph_congr {a : ZFSet.{u}} {f g : ZFSet.{u} → ZFSet.{u}}
+    (h : ∀ x, x ∈ a → f x = g x) : graph a f = graph a g := by
+  apply ZFSet.ext
+  intro z
+  constructor
+  · intro hz
+    obtain ⟨x, hx, rfl⟩ := mem_graph.mp hz
+    exact mem_graph.mpr ⟨x, hx, by rw [h x hx]⟩
+  · intro hz
+    obtain ⟨x, hx, rfl⟩ := mem_graph.mp hz
+    exact mem_graph.mpr ⟨x, hx, by rw [← h x hx]⟩
 
 /-! ## Decoding sums and products, with actual inverse laws -/
 

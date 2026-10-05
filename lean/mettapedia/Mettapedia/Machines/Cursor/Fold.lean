@@ -130,6 +130,199 @@ theorem replay_duplicates_delivered_items :
 
 end Controls
 
+/-! ## An owned pending-return boundary
+
+The producer removes an occurrence into a borrowed pending slot before the
+consumer accepts it. Rejection retains that slot and the accumulator.
+The allowance counts accepted returns; discovering exhaustion is a separate
+producer request, distinct from semantic evaluation fuel.
+-/
+
+namespace OwnedSequence
+
+structure Packet (Item Accumulator : Type) where
+  remaining : List Item
+  pending : Option Item
+  accumulator : Accumulator
+  accepted : Nat
+  requested : Nat
+  deriving DecidableEq, Repr
+
+inductive Stop where
+  | paused
+  | complete
+  deriving DecidableEq, Repr
+
+def undelivered (state : Packet Item Accumulator) : List Item :=
+  state.pending.toList ++ state.remaining
+
+/-- A partial consumer commits only a successful update. Holding an item does
+not change its bindings, delayed conditions or syntax/value provenance. -/
+def sequence (consume : Accumulator → Item → Option Accumulator) :
+    Nat → Packet Item Accumulator → Stop × Packet Item Accumulator
+  | 0, state => (.paused, state)
+  | allowance + 1, state =>
+      match state.pending with
+      | some item =>
+          match consume state.accumulator item with
+          | none => (.paused, state)
+          | some accumulator => sequence consume allowance
+              ⟨state.remaining, none, accumulator, state.accepted + 1, state.requested⟩
+      | none =>
+          match state.remaining with
+          | [] => (.complete, {state with requested := state.requested + 1})
+          | item :: rest =>
+              let prepared : Packet Item Accumulator :=
+                ⟨rest, some item, state.accumulator, state.accepted, state.requested + 1⟩
+              match consume state.accumulator item with
+              | none => (.paused, prepared)
+              | some accumulator => sequence consume allowance
+                  ⟨rest, none, accumulator, state.accepted + 1, state.requested + 1⟩
+
+/-- Independent materialization followed by a fold is the finite reference.
+The common boundary retains just the residual and accumulator. -/
+theorem prefix_exact (consume : Accumulator → Item → Accumulator)
+    (items : List Item) (accumulator : Accumulator) (accepted requested allowance : Nat)
+    (within : allowance ≤ items.length) :
+    sequence (fun acc item => some (consume acc item)) allowance
+        ⟨items, none, accumulator, accepted, requested⟩ =
+      (.paused, ⟨items.drop allowance, none, (items.take allowance).foldl consume accumulator,
+        accepted + allowance, requested + allowance⟩) := by
+  induction allowance generalizing items accumulator accepted requested with
+  | zero => simp [sequence]
+  | succ allowance ih =>
+      cases items with
+      | nil => simp at within
+      | cons item rest =>
+          have bound : allowance ≤ rest.length := by simpa using within
+          change sequence (fun acc item => some (consume acc item)) allowance
+            ⟨rest, none, consume accumulator item, accepted + 1, requested + 1⟩ = _
+          rw [ih rest (consume accumulator item) (accepted + 1) (requested + 1) bound]
+          simp [Nat.add_comm, Nat.add_left_comm]
+
+/-- Completion has inspected the producer's terminal state. Duplicate
+occurrences each contribute an update and are never collapsed by value. -/
+theorem complete_exact (consume : Accumulator → Item → Accumulator)
+    (items : List Item) (accumulator : Accumulator) (accepted requested : Nat) :
+    sequence (fun acc item => some (consume acc item)) (items.length + 1)
+        ⟨items, none, accumulator, accepted, requested⟩ =
+      (.complete, ⟨[], none, items.foldl consume accumulator,
+        accepted + items.length, requested + items.length + 1⟩) := by
+  induction items generalizing accumulator accepted requested with
+  | nil => simp [sequence]
+  | cons item rest ih =>
+      change sequence (fun acc item => some (consume acc item)) (rest.length + 1)
+        ⟨rest, none, consume accumulator item, accepted + 1, requested + 1⟩ = _
+      rw [ih (consume accumulator item) (accepted + 1) (requested + 1)]
+      simp [Nat.add_comm, Nat.add_left_comm]
+
+theorem rejected_return_is_retained (consume : Accumulator → Item → Option Accumulator)
+    (rest : List Item) (item : Item) (accumulator : Accumulator)
+    (accepted requested allowance : Nat) (reject : consume accumulator item = none) :
+    sequence consume (allowance + 1) ⟨rest, some item, accumulator, accepted, requested⟩ =
+      (.paused, ⟨rest, some item, accumulator, accepted, requested⟩) := by
+  simp [sequence, reject]
+
+theorem pending_resume_does_not_pull_again (consume : Accumulator → Item → Accumulator)
+    (rest : List Item) (item : Item) (accumulator : Accumulator) (accepted requested : Nat) :
+    sequence (fun acc value => some (consume acc value)) 1
+        ⟨rest, some item, accumulator, accepted, requested⟩ =
+      (.paused, ⟨rest, none, consume accumulator item, accepted + 1, requested⟩) := rfl
+
+/-- Moving a rejected occurrence into pending storage preserves its place in
+the residual, including equal-valued predecessors or successors. -/
+theorem rejected_fresh_return_preserves_residual
+    (consume : Accumulator → Item → Option Accumulator)
+    (rest : List Item) (item : Item) (accumulator : Accumulator)
+    (accepted requested allowance : Nat) (reject : consume accumulator item = none) :
+    undelivered (sequence consume (allowance + 1)
+      ⟨item :: rest, none, accumulator, accepted, requested⟩).2 = item :: rest := by
+  simp [sequence, reject, undelivered]
+
+/-- Cancellation abandons undelivered work and keeps committed receipts. -/
+def cancel (state : Packet Item Accumulator) : Packet Item Accumulator :=
+  {state with remaining := [], pending := none}
+
+theorem cancellation_after_prefix (consume : Accumulator → Item → Accumulator)
+    (items : List Item) (accumulator : Accumulator) (accepted requested allowance : Nat)
+    (within : allowance ≤ items.length) :
+    (cancel (sequence (fun acc item => some (consume acc item)) allowance
+      ⟨items, none, accumulator, accepted, requested⟩).2).accumulator =
+        (items.take allowance).foldl consume accumulator ∧
+    (cancel (sequence (fun acc item => some (consume acc item)) allowance
+      ⟨items, none, accumulator, accepted, requested⟩).2).accepted = accepted + allowance := by
+  rw [prefix_exact consume items accumulator accepted requested allowance within]
+  exact ⟨rfl, rfl⟩
+
+namespace Controls
+
+theorem last_return_does_not_certify_exhaustion :
+    sequence (fun n item : Nat => some (n + item)) 2 ⟨[3, 3], none, 0, 0, 0⟩ =
+      (.paused, ⟨[], none, 6, 2, 2⟩) ∧
+    sequence (fun n item : Nat => some (n + item)) 1 ⟨[], none, 6, 2, 2⟩ =
+      (.complete, ⟨[], none, 6, 2, 3⟩) := by decide
+
+theorem partial_replay_changes_result :
+    (sequence (fun n item : Nat => some (n + item)) 4
+      ⟨[3, 3, 5], none, 6, 2, 2⟩).2.accumulator = 17 ∧
+    (sequence (fun n item : Nat => some (n + item)) 2
+      ⟨[5], none, 6, 2, 2⟩).2.accumulator = 11 := by decide
+
+end Controls
+
+
+/-! Returned occurrences retain provenance and conditions as well as payload.
+The common sequencer transports this record; activation belongs to the dialect
+adapter and is absent from the transport operation. -/
+
+inductive ReturnForm where
+  | source
+  | completed
+  | conditional
+  deriving DecidableEq, Repr
+
+structure Returned (Term Environment : Type) where
+  payload : Term
+  environment : Environment
+  form : ReturnForm
+  conditions : List Term
+  deriving DecidableEq, Repr
+
+theorem whole_return_delivery {Term Environment : Type}
+    (returns : List (Returned Term Environment)) :
+    sequence (fun delivered returned => some (delivered ++ [returned]))
+      (returns.length + 1) ⟨returns, none, [], 0, 0⟩ =
+        (.complete, ⟨[], none, returns, returns.length, returns.length + 1⟩) := by
+  rw [complete_exact]
+  have appendFold (items accumulated : List (Returned Term Environment)) :
+      items.foldl (fun delivered returned => delivered ++ [returned]) accumulated =
+        accumulated ++ items := by
+    induction items generalizing accumulated with
+    | nil => simp
+    | cons item rest ih => simpa [List.append_assoc] using ih (accumulated ++ [item])
+  simp [appendFold]
+
+namespace ReturnControls
+
+def held : Returned Nat (List Nat) := ⟨7, [4, 4], .completed, []⟩
+def source : Returned Nat (List Nat) := ⟨7, [4, 4], .source, []⟩
+def conditional : Returned Nat (List Nat) := ⟨7, [4, 4], .conditional, [9]⟩
+
+theorem equal_payloads_are_not_equal_returns :
+    held.payload = source.payload ∧ held ≠ source ∧ conditional ≠ held := by decide
+
+theorem held_and_delayed_forms_are_delivered_unchanged :
+    sequence (fun delivered returned => some (delivered ++ [returned])) 5
+      ⟨[held, held, source, conditional], none, [], 0, 0⟩ =
+        (.complete, ⟨[], none, [held, held, source, conditional], 4, 5⟩) := by
+  exact whole_return_delivery [held, held, source, conditional]
+
+end ReturnControls
+
+
+end OwnedSequence
+
+
 #print axioms prefix_exact
 #print axioms complete_exact
 #print axioms resumed_prefix_completes

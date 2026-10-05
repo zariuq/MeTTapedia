@@ -10,14 +10,16 @@ value-only constants, each of which inspects its type arguments for head forms
 
 * `coe X Y d` inspects the target `Y`. At a universe `U` it continues with
   `coeU U X d`; at `Π A' B'` with `coePi A' (λ B') X d`; at `Σ A' B'` with
-  `coeSigma A' (λ B') X d`; at the numbers with `coeNum X d`; at the codes with
-  `coeProp X d`; at every other head form (a head that is no universe, an
-  identity type, a rigid or constructor spine, a value) it returns the method.
+  `coeSigma A' (λ B') X d`; at a type constant `C`, the codes or any inductive
+  type, with `coeConst C X d`; at every other head form (a head that is no
+  universe, an identity type, a rigid or constructor spine, a value) it returns
+  the method.
 * `coeU U X d` inspects the target universe and then the source: the method
   from a universe of at most the level of `U`, the daimon from any other head
   form.
-* `coeNum X d` and `coeProp X d` inspect the source: the method from the
-  numbers, respectively the codes, the daimon from any other head form.
+* `coeConst C X d` inspects the source: the method from the type constant `C`
+  itself, the daimon from any other head form. Which constants are type
+  constants is read from the roles, so one row serves every inductive type.
 * `coePi A' B'' X f` inspects the source: from `Π A B` the λ-abstraction whose
   body transports `f a₀` along the codomains, `a₀` being the bound variable
   transported back along the domains (`piBody`); the daimon from any other head
@@ -61,20 +63,33 @@ local instance levelPreorder [LevelOrder L] : Preorder L :=
 structure CoeNames where
   coe : DeclName
   coeU : DeclName
-  coeNum : DeclName
-  coeProp : DeclName
+  coeConst : DeclName
   coePi : DeclName
   coeSigma : DeclName
 
 /-- What the rows of the transport read from a value side: its roles, which
-heads are universes and their levels, the numbers, the codes and the daimon. -/
+heads are universes and their levels, the codes and the daimon. -/
 structure CoeParams (Head L : Type) where
   roles : Roles Head
   isUniverse : Head → Prop
   level : Head → L
-  num : DeclName
   prop : DeclName
   star : DeclName
+
+/-- The type constants the transport reads by name: the codes and every
+inductive type of the roles. -/
+def CoeParams.TypeConst (P : CoeParams Head L) (c : DeclName) : Prop :=
+  c = P.prop ∨ ∃ cs, P.roles c = .inductive cs
+
+/-- A type constant does not compute, when the codes do not. -/
+theorem CoeParams.TypeConst.stuck {P : CoeParams Head L} {c : DeclName} (hc : P.TypeConst c)
+    (propStuck : ∀ arity inspect, P.roles P.prop ≠ .computes arity inspect) :
+    ∀ arity inspect, P.roles c ≠ .computes arity inspect := by
+  rcases hc with rfl | ⟨cs, role⟩
+  · exact propStuck
+  · intro _ _ h
+    rw [role] at h
+    cases h
 
 /-- The parameters of the transport's rows in a consistency model with a
 daimon. -/
@@ -83,7 +98,6 @@ def coeParamsOf [LevelOrder L] (M : Consistency.Model Head L) (star : DeclName) 
   roles := M.roles
   isUniverse := M.rules.isUniverse
   level := M.levels.level
-  num := M.num
   prop := M.prop
   star := star
 
@@ -282,14 +296,13 @@ theorem headView_constSpine_stuck {roles : Roles Head} {n : Nat} {c : DeclName}
 variable (P : CoeParams Head L) (N : CoeNames)
 
 /-- The head forms at which `coe` returns its method: those that are no head,
-no dependent function or pair type, and neither the numbers nor the codes. -/
+no dependent function or pair type, and no type constant. -/
 structure MethodTarget {n : Nat} (Y : Tm Head n) : Prop where
   form : HeadForm P.roles Y
   notHead : ∀ h, Y ≠ .head h
   notPi : ∀ A B, Y ≠ .pi A B
   notSigma : ∀ A B, Y ≠ .sigma A B
-  notNum : Y ≠ .const P.num
-  notProp : Y ≠ .const P.prop
+  notConst : ∀ c, P.TypeConst c → Y ≠ .const c
 
 /-- The rows of `coe X Y d`, read on the head form of the target `Y`. -/
 inductive CoeTarget {n : Nat} : Tm Head n → Tm Head n → Tm Head n → Tm Head n → Prop where
@@ -300,8 +313,8 @@ inductive CoeTarget {n : Nat} : Tm Head n → Tm Head n → Tm Head n → Tm Hea
       CoeTarget X (.pi A' B') d (appSpine (.const N.coePi) [A', .lam B', X, d])
   | sigma {X d A' : Tm Head n} {B' : Tm Head (n + 1)} :
       CoeTarget X (.sigma A' B') d (appSpine (.const N.coeSigma) [A', .lam B', X, d])
-  | num {X d : Tm Head n} : CoeTarget X (.const P.num) d (appSpine (.const N.coeNum) [X, d])
-  | prop {X d : Tm Head n} : CoeTarget X (.const P.prop) d (appSpine (.const N.coeProp) [X, d])
+  | const {X d : Tm Head n} {c : DeclName} : P.TypeConst c →
+      CoeTarget X (.const c) d (appSpine (.const N.coeConst) [.const c, X, d])
   | method {X Y d : Tm Head n} : MethodTarget P Y → CoeTarget X Y d d
 
 variable [LevelOrder L] in
@@ -314,11 +327,12 @@ inductive CoeUniv {n : Nat} : Tm Head n → Tm Head n → Tm Head n → Tm Head 
       (∀ u u', T = .head u → X = .head u' → P.isUniverse u' → P.level u < P.level u') →
       CoeUniv T X d (.const P.star)
 
-/-- The rows of `coeNum X d` and `coeProp X d`, for the type constant `c`: the
-method from `c`, the daimon from any other head form. -/
-inductive CoeConst (c : DeclName) {n : Nat} : Tm Head n → Tm Head n → Tm Head n → Prop where
-  | method {d : Tm Head n} : CoeConst c (.const c) d d
-  | star {X d : Tm Head n} : HeadForm P.roles X → X ≠ .const c → CoeConst c X d (.const P.star)
+/-- The rows of `coeConst C X d`, for the type constant `C`: the method from `C`,
+the daimon from any other head form. -/
+inductive CoeConst {n : Nat} : Tm Head n → Tm Head n → Tm Head n → Tm Head n → Prop where
+  | method {c : DeclName} {d : Tm Head n} : P.TypeConst c → CoeConst (.const c) (.const c) d d
+  | star {c : DeclName} {X d : Tm Head n} : HeadForm P.roles X → X ≠ .const c →
+      CoeConst (.const c) X d (.const P.star)
 
 /-- The rows of `coePi A' B'' X f`: from `Π A B` the λ-abstraction of the
 transport along the codomains, the daimon from any other head form. -/
@@ -350,10 +364,9 @@ variable {n m : Nat} (σ : Sub Head n m)
 
 theorem MethodTarget.subst {Y : Tm Head n} (target : MethodTarget P Y) :
     MethodTarget P (Presentation.subst σ Y) := by
-  obtain ⟨⟨key, view⟩, notHead, notPi, notSigma, notNum, notProp⟩ := target
+  obtain ⟨⟨key, view⟩, notHead, notPi, notSigma, notConst⟩ := target
   refine ⟨⟨key, view.subst σ⟩, fun h e => notHead h (headView_subst_eq_head view e), fun A B e => ?_,
-    fun A B e => ?_, fun e => notNum (headView_subst_eq_const view e),
-    fun e => notProp (headView_subst_eq_const view e)⟩
+    fun A B e => ?_, fun c hc e => notConst c hc (headView_subst_eq_const view e)⟩
   · obtain ⟨A₀, B₀, rfl⟩ := headView_subst_eq_pi view e
     exact notPi A₀ B₀ rfl
   · obtain ⟨A₀, B₀, rfl⟩ := headView_subst_eq_sigma view e
@@ -367,8 +380,7 @@ theorem CoeTarget.subst {X Y d r : Tm Head n} (h : CoeTarget P N X Y d r) :
   | ground hh => exact .ground hh
   | pi => exact .pi
   | sigma => exact .sigma
-  | num => exact .num
-  | prop => exact .prop
+  | const hc => exact .const hc
   | method target => exact .method (target.subst σ)
 
 variable [LevelOrder L] in
@@ -383,10 +395,11 @@ theorem CoeUniv.subst {T X d r : Tm Head n} (h : CoeUniv P T X d r) :
       exact .star ⟨keyT, viewT.subst σ⟩ ⟨keyX, viewX.subst σ⟩ fun u u' eT eX hu =>
         above u u' (headView_subst_eq_head viewT eT) (headView_subst_eq_head viewX eX) hu
 
-theorem CoeConst.subst {c : DeclName} {X d r : Tm Head n} (h : CoeConst P c X d r) :
-    CoeConst P c (Presentation.subst σ X) (Presentation.subst σ d) (Presentation.subst σ r) := by
+theorem CoeConst.subst {C X d r : Tm Head n} (h : CoeConst P C X d r) :
+    CoeConst P (Presentation.subst σ C) (Presentation.subst σ X) (Presentation.subst σ d)
+      (Presentation.subst σ r) := by
   cases h with
-  | method => exact .method
+  | method hc => exact .method hc
   | star form ne =>
       obtain ⟨key, view⟩ := form
       exact .star ⟨key, view.subst σ⟩ fun e => ne (headView_subst_eq_const view e)
@@ -445,7 +458,7 @@ section Determinism
 
 variable {n : Nat}
 
-theorem CoeTarget.deterministic (numNeProp : P.num ≠ P.prop) {X Y d r X' Y' d' r' : Tm Head n}
+theorem CoeTarget.deterministic {X Y d r X' Y' d' r' : Tm Head n}
     (h : CoeTarget P N X Y d r) (h' : CoeTarget P N X' Y' d' r') (hX : X = X') (hY : Y = Y')
     (hd : d = d') : r' = r := by
   cases h <;> cases h' <;>
@@ -454,18 +467,14 @@ theorem CoeTarget.deterministic (numNeProp : P.num ≠ P.prop) {X Y d r X' Y' d'
       | (subst hX hd; cases hY; rfl)
       | (cases hY; done)
       | (cases hY; contradiction)
-      | exact absurd (Tm.const.inj hY) numNeProp
-      | exact absurd (Tm.const.inj hY).symm numNeProp
       | exact absurd hY (‹MethodTarget P _›.notHead _)
       | exact absurd hY.symm (‹MethodTarget P _›.notHead _)
       | exact absurd hY (‹MethodTarget P _›.notPi _ _)
       | exact absurd hY.symm (‹MethodTarget P _›.notPi _ _)
       | exact absurd hY (‹MethodTarget P _›.notSigma _ _)
       | exact absurd hY.symm (‹MethodTarget P _›.notSigma _ _)
-      | exact absurd hY ‹MethodTarget P _›.notNum
-      | exact absurd hY.symm ‹MethodTarget P _›.notNum
-      | exact absurd hY ‹MethodTarget P _›.notProp
-      | exact absurd hY.symm ‹MethodTarget P _›.notProp
+      | exact absurd hY (‹MethodTarget P _›.notConst _ ‹_›)
+      | exact absurd hY.symm (‹MethodTarget P _›.notConst _ ‹_›)
 
 variable [LevelOrder L] in
 theorem CoeUniv.deterministic {T X d r T' X' d' r' : Tm Head n} (h : CoeUniv P T X d r)
@@ -481,17 +490,17 @@ theorem CoeUniv.deterministic {T X d r T' X' d' r' : Tm Head n} (h : CoeUniv P T
       | method hu le => exact absurd (lt_of_lt_of_le (above _ _ hT hX hu) le) (lt_irrefl _)
       | star _ _ _ => rfl
 
-theorem CoeConst.deterministic {c : DeclName} {X d r X' d' r' : Tm Head n}
-    (h : CoeConst P c X d r) (h' : CoeConst P c X' d' r') (hX : X = X') (hd : d = d') :
-    r' = r := by
+theorem CoeConst.deterministic {C X d r C' X' d' r' : Tm Head n}
+    (h : CoeConst P C X d r) (h' : CoeConst P C' X' d' r') (hC : C = C') (hX : X = X')
+    (hd : d = d') : r' = r := by
   cases h with
   | method =>
       cases h' with
       | method => exact hd.symm
-      | star _ ne => exact absurd hX.symm ne
+      | star _ ne => exact absurd (hX.symm.trans hC) ne
   | star _ ne =>
       cases h' with
-      | method => exact absurd hX ne
+      | method => exact absurd (hX.trans hC.symm) ne
       | star _ _ => rfl
 
 theorem CoePiRow.deterministic {A' B'' X f r A₂ B₂ X₂ f₂ r₂ : Tm Head n}
@@ -596,10 +605,9 @@ variable [LevelOrder L] in
 def CoeUArgs {n : Nat} (args : List (Tm Head n)) (r : Tm Head n) : Prop :=
   ∃ T X d, args = [T, X, d] ∧ CoeUniv P T X d r
 
-/-- The arguments of `coeNum` or `coeProp`, for the type constant `c`, and their
-reducts. -/
-def CoeConstArgs (c : DeclName) {n : Nat} (args : List (Tm Head n)) (r : Tm Head n) : Prop :=
-  ∃ X d, args = [X, d] ∧ CoeConst P c X d r
+/-- The arguments of `coeConst` and their reducts. -/
+def CoeConstArgs {n : Nat} (args : List (Tm Head n)) (r : Tm Head n) : Prop :=
+  ∃ C X d, args = [C, X, d] ∧ CoeConst P C X d r
 
 /-- The arguments of `coePi` and their reducts. -/
 def CoePiArgs {n : Nat} (args : List (Tm Head n)) (r : Tm Head n) : Prop :=
@@ -629,10 +637,10 @@ theorem coeUArgs_stable : SpineStable (CoeUArgs P) := by
   subst e
   exact ⟨_, _, _, rfl, h.subst σ⟩
 
-theorem coeConstArgs_stable {c : DeclName} : SpineStable (CoeConstArgs P c) := by
-  intro n m σ args r ⟨X, d, e, h⟩
+theorem coeConstArgs_stable : SpineStable (CoeConstArgs P) := by
+  intro n m σ args r ⟨C, X, d, e, h⟩
   subst e
-  exact ⟨_, _, rfl, h.subst σ⟩
+  exact ⟨_, _, _, rfl, h.subst σ⟩
 
 theorem coePiArgs_stable : SpineStable (CoePiArgs P N) := by
   intro n m σ args r ⟨A', B'', X, f, e, h⟩
@@ -658,10 +666,9 @@ variable [LevelOrder L] in
 /-- The rows of `coeU`. -/
 def coeUComputation : RootComputation Head := spineComputation N.coeU (CoeUArgs P) coeUArgs_stable
 
-/-- The rows of the constant `name`, which transports into the type constant
-`c`: `coeNum` for the numbers, `coeProp` for the codes. -/
-def coeConstComputation (name c : DeclName) : RootComputation Head :=
-  spineComputation name (CoeConstArgs P c) coeConstArgs_stable
+/-- The rows of `coeConst`, which transports into a type constant. -/
+def coeConstComputation : RootComputation Head :=
+  spineComputation N.coeConst (CoeConstArgs P) coeConstArgs_stable
 
 /-- The rows of `coePi`. -/
 def coePiComputation : RootComputation Head :=
@@ -687,13 +694,11 @@ theorem transportJ_step {J coe : DeclName} {n : Nat} (a₀ a₁ a₂ a₃ a₄ a
 
 section Shapes
 
-variable {c : DeclName}
-
 theorem coeComputation_headed : HeadedBy N.coe (coeComputation P N) := spineComputation_headed
 variable [LevelOrder L] in
 theorem coeUComputation_headed : HeadedBy N.coeU (coeUComputation P N) := spineComputation_headed
-theorem coeConstComputation_headed {name : DeclName} :
-    HeadedBy name (coeConstComputation P name c) := spineComputation_headed
+theorem coeConstComputation_headed : HeadedBy N.coeConst (coeConstComputation P N) :=
+  spineComputation_headed
 theorem coePiComputation_headed : HeadedBy N.coePi (coePiComputation P N) :=
   spineComputation_headed
 theorem coeSigmaComputation_headed : HeadedBy N.coeSigma (coeSigmaComputation P N) :=
@@ -701,13 +706,12 @@ theorem coeSigmaComputation_headed : HeadedBy N.coeSigma (coeSigmaComputation P 
 theorem transportJ_headed {J coe : DeclName} : HeadedBy J (transportJ (Head := Head) J coe) :=
   spineComputation_headed
 
-theorem coeComputation_deterministic (numNeProp : P.num ≠ P.prop) :
-    Deterministic (coeComputation P N) :=
+theorem coeComputation_deterministic : Deterministic (coeComputation P N) :=
   spineComputation_deterministic fun ⟨_, _, _, e, h⟩ ⟨_, _, _, e', h'⟩ => by
     rw [e] at e'
     simp only [List.cons.injEq, and_true] at e'
     obtain ⟨hX, hY, hd⟩ := e'
-    exact h.deterministic numNeProp h' hX hY hd
+    exact h.deterministic h' hX hY hd
 
 variable [LevelOrder L] in
 theorem coeUComputation_deterministic : Deterministic (coeUComputation P N) :=
@@ -717,13 +721,12 @@ theorem coeUComputation_deterministic : Deterministic (coeUComputation P N) :=
     obtain ⟨hT, hX, hd⟩ := e'
     exact h.deterministic h' hT hX hd
 
-theorem coeConstComputation_deterministic {name : DeclName} :
-    Deterministic (coeConstComputation P name c) :=
-  spineComputation_deterministic fun ⟨_, _, e, h⟩ ⟨_, _, e', h'⟩ => by
+theorem coeConstComputation_deterministic : Deterministic (coeConstComputation P N) :=
+  spineComputation_deterministic fun ⟨_, _, _, e, h⟩ ⟨_, _, _, e', h'⟩ => by
     rw [e] at e'
     simp only [List.cons.injEq, and_true] at e'
-    obtain ⟨hX, hd⟩ := e'
-    exact h.deterministic h' hX hd
+    obtain ⟨hC, hX, hd⟩ := e'
+    exact h.deterministic h' hC hX hd
 
 theorem coePiComputation_deterministic : Deterministic (coePiComputation P N) :=
   spineComputation_deterministic fun ⟨_, _, _, _, e, h⟩ ⟨_, _, _, _, e', h'⟩ => by
@@ -747,27 +750,23 @@ theorem transportJ_deterministic {J coe : DeclName} :
     obtain ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩ := e'
     rw [er, er']
 
-/-- The target of a row of `coe` is a head form, when the numbers and the codes
-do not compute. -/
-theorem CoeTarget.headForm (numStuck : ∀ arity inspect, P.roles P.num ≠ .computes arity inspect)
-    (propStuck : ∀ arity inspect, P.roles P.prop ≠ .computes arity inspect) {n : Nat}
-    {X Y d r : Tm Head n} (h : CoeTarget P N X Y d r) : HeadForm P.roles Y := by
+/-- The target of a row of `coe` is a head form, when the codes do not compute. -/
+theorem CoeTarget.headForm (propStuck : ∀ arity inspect, P.roles P.prop ≠ .computes arity inspect)
+    {n : Nat} {X Y d r : Tm Head n} (h : CoeTarget P N X Y d r) : HeadForm P.roles Y := by
   cases h with
   | univ _ => exact ⟨_, .head _⟩
   | ground _ => exact ⟨_, .head _⟩
   | pi => exact ⟨_, .pi _ _⟩
   | sigma => exact ⟨_, .sigma _ _⟩
-  | num => exact ⟨_, .spine [] numStuck⟩
-  | prop => exact ⟨_, .spine [] propStuck⟩
+  | const hc => exact ⟨_, .spine [] (hc.stuck propStuck)⟩
   | method target => exact target.form
 
 theorem coeComputation_spine (role : P.roles N.coe = .computes 3 (headAt 1))
-    (numStuck : ∀ arity inspect, P.roles P.num ≠ .computes arity inspect)
     (propStuck : ∀ arity inspect, P.roles P.prop ≠ .computes arity inspect) :
     SpineShaped P.roles (coeComputation P N) :=
   spineComputation_spine role fun ⟨X, _, d, e, h⟩ => by
     subst e
-    obtain ⟨key, view⟩ := h.headForm numStuck propStuck
+    obtain ⟨key, view⟩ := h.headForm propStuck
     exact ⟨rfl, .headForm (before := [X]) (after := [d]) rfl view (.leaf _)⟩
 
 variable [LevelOrder L] in
@@ -783,18 +782,17 @@ theorem coeUComputation_spine (role : P.roles N.coeU = .computes 3 headAtBoth) :
     exact ⟨rfl, .headForm (before := []) (after := [X, d]) rfl viewT
       (.headForm (before := [T]) (after := [d]) rfl viewX (.leaf _))⟩
 
-theorem coeConstComputation_spine {name : DeclName}
-    (role : P.roles name = .computes 2 (headAt 0))
-    (stuck : ∀ arity inspect, P.roles c ≠ .computes arity inspect) :
-    SpineShaped P.roles (coeConstComputation P name c) :=
-  spineComputation_spine role fun ⟨X, d, e, h⟩ => by
+theorem coeConstComputation_spine (role : P.roles N.coeConst = .computes 3 (headAt 1))
+    (propStuck : ∀ arity inspect, P.roles P.prop ≠ .computes arity inspect) :
+    SpineShaped P.roles (coeConstComputation P N) :=
+  spineComputation_spine role fun ⟨C, X, d, e, h⟩ => by
     subst e
     have form : HeadForm P.roles X := by
       cases h with
-      | method => exact ⟨_, .spine [] stuck⟩
+      | method hc => exact ⟨_, .spine [] (hc.stuck propStuck)⟩
       | star form _ => exact form
     obtain ⟨key, view⟩ := form
-    exact ⟨rfl, .headForm (before := []) (after := [d]) rfl view (.leaf _)⟩
+    exact ⟨rfl, .headForm (before := [C]) (after := [d]) rfl view (.leaf _)⟩
 
 theorem coePiComputation_spine (role : P.roles N.coePi = .computes 4 (headAt 2)) :
     SpineShaped P.roles (coePiComputation P N) :=

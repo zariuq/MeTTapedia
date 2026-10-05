@@ -187,12 +187,12 @@ theorem reader_choice_has_no_finite_provider :
         (readerLifting.lift IntrinsicMILNativeSearch.Canary.choice)) := by
   rintro ⟨provider⟩
   let fibre := provider.fibre readerUnit
-  letI : Fintype
+  let : Fintype
       (AnswerOccurrence
         (readerLifting.lift IntrinsicMILNativeSearch.Canary.choice)
         readerUnit) :=
     Fintype.ofEquiv fibre.Index fibre.occurrenceEquiv
-  letI : Fintype Nat :=
+  let : Fintype Nat :=
     Fintype.ofInjective spikeOccurrence spikeOccurrence_injective
   exact not_finite Nat
 

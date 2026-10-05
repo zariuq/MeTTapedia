@@ -146,8 +146,4 @@ theorem compound_name_rejected :
       (.apply (costWrappedConstructorName "PDrop") [.apply "undeclared" [.bvar 0]]) = false := by
   decide +kernel
 
-#print axioms corrected_open_firing
-#print axioms closed_operation_agrees
-#print axioms open_body_scope_preserved
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContextualReflection

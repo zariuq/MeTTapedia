@@ -66,7 +66,7 @@ theorem rhoSync_costBaseOutput_params :
 the output are moved to the wrapped fibre. -/
 theorem rhoSyncContinuationRetyping_redexRetypable :
     rhoSyncContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType rhoSyncContinuationRetyping.generatedLanguage
     rhoSyncContinuationRetyping.generatedFreeContext []
     (.collection .hashBag
@@ -207,7 +207,7 @@ theorem rhoSync_not_wrappable (cut : InteractionCutPresentation rhoSyncIGSLT)
             .fvar "k"] (some "rest") := by
     simp [rhoSyncCommRewrite, mapContractum_collection, mapContractum_subst, mapContractum_apply,
       mapContractum_fvar, quoteLabel]
-  unfold ContinuationRetypingPlan.Wrappable at wrappable
+  rw [ContinuationRetypingPlan.wrappable_def] at wrappable
   change HasType plan.generatedLanguage plan.generatedFreeContext []
     (plan.mapContractum rhoSyncCommRewrite.right) (.base costWrappedSortName) at wrappable
   rw [translated] at wrappable
@@ -238,14 +238,19 @@ theorem rhoSync_not_wrappable (cut : InteractionCutPresentation rhoSyncIGSLT)
                   | exact absurd (body.trans continuation.symm) (by decide)
                   | exact absurd (datum.trans continuation.symm) (by decide)
 
-/-- No continued interactive GSLT has the synchronous rho calculus as its
-underlying iGSLT: its wrappability witness would be a wrappable cut. -/
-theorem rhoSync_not_underlying (theory : CIGSLT) : theory.theory ≠ rhoSyncIGSLT := by
+/-- No wrappable interactive GSLT has the synchronous rho calculus as its
+theory: its wrappability witness would be a wrappable cut. -/
+theorem rhoSync_not_wrappableIGSLT (theory : WrappableIGSLT) :
+    theory.theory ≠ rhoSyncIGSLT := by
   intro same
-  obtain ⟨underlying, reflection, cut, openCanonical, retyping, bareWrapped, canonicalTyping,
-    equationsRetypable, reflectiveRetypable, envelopeStable, redexRetypable, wrappable⟩ :=
-    theory
+  obtain ⟨underlying, reflection, cut, retyping, bareWrapped, equationsRetypable,
+    reflectiveRetypable, envelopeStable, redexRetypable, wrappable⟩ := theory
   subst same
   exact rhoSync_not_wrappable cut retyping wrappable
+
+/-- In particular no continued interactive GSLT has it as its underlying
+iGSLT. -/
+theorem rhoSync_not_underlying (theory : CIGSLT) : theory.theory ≠ rhoSyncIGSLT :=
+  rhoSync_not_wrappableIGSLT theory.toWrappableIGSLT
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous

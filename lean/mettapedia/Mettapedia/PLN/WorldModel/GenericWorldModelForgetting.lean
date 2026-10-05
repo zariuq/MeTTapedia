@@ -24,6 +24,8 @@ open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 
+section Generic
+
 variable {State Query Ev : Type*}
 variable [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
 
@@ -70,35 +72,6 @@ theorem outsideInvariant'
       (State := State) (Query := Query) (Ev := Ev) W q :=
   F.outsideInvariant hout
 
-section Conjugate
-
-variable [ConjugateEvidence Ev]
-
-theorem outsideInvariant_queryObservationCount
-    (F : ForgettingLayer State Scope Query Ev)
-    {S : Scope} {W : State} {q : Query}
-    (hout : ¬ F.inScope S q) :
-    AdditiveWorldModel.queryObservationCount
-      (State := State) (Query := Query) (Ev := Ev) (F.forget S W) q =
-    AdditiveWorldModel.queryObservationCount
-      (State := State) (Query := Query) (Ev := Ev) W q := by
-  unfold AdditiveWorldModel.queryObservationCount
-  simpa using congrArg ConjugateEvidence.observationCount (F.outsideInvariant hout)
-
-theorem outsideInvariant_queryObservationConfidence
-    (F : ForgettingLayer State Scope Query Ev)
-    (κ : ℝ≥0∞)
-    {S : Scope} {W : State} {q : Query}
-    (hout : ¬ F.inScope S q) :
-    AdditiveWorldModel.queryObservationConfidence
-      (State := State) (Query := Query) (Ev := Ev) κ (F.forget S W) q =
-    AdditiveWorldModel.queryObservationConfidence
-      (State := State) (Query := Query) (Ev := Ev) κ W q := by
-  unfold AdditiveWorldModel.queryObservationConfidence
-  simpa using congrArg (observationConfidence κ) (F.outsideInvariant hout)
-
-end Conjugate
-
 /-- Exact inverse forgetting can only undo revisions whose evidence vanishes
 outside the forgotten scope. -/
 theorem exactInverse_revision_supported
@@ -144,6 +117,42 @@ theorem no_exactInverse_revision_of_nonzero_outside_scope
   exact hne (exactInverse_revision_supported
     (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
     F hzero hinv q hout)
+
+end ForgettingLayer
+
+end Generic
+
+namespace ForgettingLayer
+
+section Conjugate
+
+variable {State Scope Query Ev : Type*}
+variable [EvidenceType State] [ConjugateEvidence Ev] [AdditiveWorldModel State Query Ev]
+
+theorem outsideInvariant_queryObservationCount
+    (F : ForgettingLayer State Scope Query Ev)
+    {S : Scope} {W : State} {q : Query}
+    (hout : ¬ F.inScope S q) :
+    AdditiveWorldModel.queryObservationCount
+      (State := State) (Query := Query) (Ev := Ev) (F.forget S W) q =
+    AdditiveWorldModel.queryObservationCount
+      (State := State) (Query := Query) (Ev := Ev) W q := by
+  unfold AdditiveWorldModel.queryObservationCount
+  simpa using congrArg ConjugateEvidence.observationCount (F.outsideInvariant hout)
+
+theorem outsideInvariant_queryObservationConfidence
+    (F : ForgettingLayer State Scope Query Ev)
+    (κ : ℝ≥0∞)
+    {S : Scope} {W : State} {q : Query}
+    (hout : ¬ F.inScope S q) :
+    AdditiveWorldModel.queryObservationConfidence
+      (State := State) (Query := Query) (Ev := Ev) κ (F.forget S W) q =
+    AdditiveWorldModel.queryObservationConfidence
+      (State := State) (Query := Query) (Ev := Ev) κ W q := by
+  unfold AdditiveWorldModel.queryObservationConfidence
+  simpa using congrArg (observationConfidence κ) (F.outsideInvariant hout)
+
+end Conjugate
 
 end ForgettingLayer
 

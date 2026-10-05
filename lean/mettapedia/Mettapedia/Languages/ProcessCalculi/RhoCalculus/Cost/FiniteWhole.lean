@@ -145,12 +145,4 @@ theorem wrong_key_blocks : rewriteStepWithReflection presentation.reflection.1
     presentation.core.language (sourceWithStack wrongStack) = [] := by
   decide +kernel
 
-#print axioms language_valid
-#print axioms reflection_valid
-#print axioms source_typed
-#print axioms target_typed
-#print axioms reflective_reducts_exact
-#print axioms empty_stack_blocks
-#print axioms wrong_key_blocks
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole

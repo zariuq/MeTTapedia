@@ -56,6 +56,67 @@ theorem repeated_append_refused : append? [factor 1 3] (factor 1 3) = none := by
 theorem zero_append_retained : append? [factor 1 3] (factor 2 0) =
     some [factor 1 3, factor 2 0] := by decide +kernel
 
+/-! ## Scoped reads retain productions and partition their observations -/
+
+def unclaimed (productions : Ledger Nat Nat Nat) : Scoped Nat Nat Nat Nat :=
+  ⟨productions, fun _ => none⟩
+
+def innerWorld : Scoped Nat Nat Nat Nat := unclaimed [factor 1 2]
+def innerHandled : Scoped Nat Nat Nat Nat := Scoped.handle 0 11 innerWorld
+def afterInner : Scoped Nat Nat Nat Nat :=
+  { innerHandled with productions := [factor 1 2, factor 2 3] }
+
+/-- The inner two is returned as data, while the outer read observes three.
+Both physical productions remain in the shared world. -/
+theorem nested_reads_are_scoped :
+    denote (Scoped.selected 0 innerWorld) = 2 ∧
+      denote (Scoped.selected 0 afterInner) = 3 ∧
+      afterInner.productions = [factor 1 2, factor 2 3] := by decide +kernel
+
+/-- Folding the complete production list leaks the handled inner coefficient. -/
+theorem whole_world_fold_leaks_handled_factor :
+    denote afterInner.productions = 6 ∧
+      denote afterInner.productions ≠ denote (Scoped.selected 0 afterInner) := by decide +kernel
+
+/-- A reused shared factor is handled by the scope in which it was first
+produced; forcing before entry yields a different observation partition. -/
+theorem first_demand_changes_observation_partition :
+    denote (Scoped.selected 0 innerHandled) = 1 ∧
+      denote (Scoped.selected 1 innerWorld) = 1 ∧
+      denote (Scoped.selected 0 innerWorld) = 2 := by decide +kernel
+
+theorem old_cache_does_not_resurrect_left :
+    (Scoped.merge? innerHandled innerWorld).map (fun world => world.claims 1) =
+      some (some 11) := rfl
+
+theorem old_cache_does_not_resurrect_right :
+    (Scoped.merge? innerWorld innerHandled).map (fun world => world.claims 1) =
+      some (some 11) := rfl
+
+theorem same_owner_merge_is_idempotent :
+    (Scoped.merge? innerHandled innerHandled).map (Scoped.selected 0) = some [] := rfl
+
+/-- Incomparable observers cannot both acquire one shared production. -/
+theorem conflicting_handlers_refused :
+    Scoped.merge? innerHandled (Scoped.handle 0 12 innerWorld) = none := rfl
+
+theorem changed_capture_refused :
+    Scoped.handle? (unclaimed [factor 1 9]) innerWorld 11 = none := rfl
+
+theorem lost_capture_claim_refused :
+    Scoped.handle? innerHandled innerWorld 12 = none := rfl
+
+theorem zero_is_handled_without_erasing_its_production :
+    (Scoped.handle 0 11 (unclaimed [factor 1 0])).claims 1 = some 11 ∧
+      (Scoped.handle 0 11 (unclaimed [factor 1 0])).productions = [factor 1 0] := by
+  decide +kernel
+
+/-- An interpretation callback runs after the snapshot claim and contributes
+its own fresh factor to the enclosing scope. -/
+theorem callback_factor_remains_outer :
+    Scoped.selected 0 { innerHandled with productions := [factor 1 2, factor 2 7] } =
+      [factor 2 7] := rfl
+
 open Mettapedia.GSLT.Dynamics.WeightedResumptionControls
 
 def matrixFactor (identity : Nat) (coefficient : TwoByTwo) : Factor Nat Nat TwoByTwo :=

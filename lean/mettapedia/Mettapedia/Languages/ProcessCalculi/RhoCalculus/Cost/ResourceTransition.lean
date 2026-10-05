@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Path
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Valuation
-import Mettapedia.CategoryTheory.ParameterizedMonad
+import Mettapedia.CategoryTheory.RunAccount
+import Mathlib.Algebra.FreeMonoid.Basic
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.SingleObj
 
@@ -18,14 +19,19 @@ ordered emissions and proof-carrying causal receipts remain the operational
 evidence, while signature totals are derived observations.
 
 This is the grading category for the concrete funded semantics. Pairing its
-paths with returned values gives the parameterized monad constructed below,
-with a discrete type of pre/post state indices. It is not an endofunctor on
-language presentations.
+paths with returned values gives the parameterized monad of executions of
+this category, with a discrete type of pre/post state indices. It is not an
+endofunctor on language presentations.
+
+The chronological emission, the commutative spend total and the number of
+firings are accounts of this category: each sends the empty path to the unit
+and a composite to the product.  Every law of bind for them is the general law
+for accounts of runs.
 -/
 
-namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
-
 open CategoryTheory
+
+namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
 universe u
 
@@ -440,33 +446,55 @@ theorem comp_multiplicativeValue {source middle target : FundedState}
       first.multiplicativeValue weight * second.multiplicativeValue weight :=
   CostPath.multiplicativeValue_append first second weight
 
+/-! ## Accounts of funded runs -/
+
+open Mettapedia.Effects in
+/-- The chronological record of emitted events: the word of the events, in
+the order they fired. -/
+def emissionAccount : RunAccount FundedState (FreeMonoid RawEmittedEvent) where
+  of path := FreeMonoid.ofList (CostPath.rawEmission path)
+  of_id _ := rfl
+  of_comp first second := by
+    rw [comp_rawEmission]
+    rfl
+
+open Mettapedia.Effects in
+/-- The commutative total of what was spent.  It forgets the order of the
+firings and which purse paid. -/
+def spendAccount : RunAccount FundedState (Multiplicative (CostSig String)) where
+  of path := Multiplicative.ofAdd (CostPath.rawAccount path)
+  of_id _ := rfl
+  of_comp first second := by
+    rw [comp_rawAccount]
+    rfl
+
+open Mettapedia.Effects in
+/-- The number of firings. -/
+def firingAccount : RunAccount FundedState (Multiplicative Nat) where
+  of path := Multiplicative.ofAdd (CostPath.depth path)
+  of_id _ := rfl
+  of_comp first second := by
+    rw [comp_depth]
+    rfl
+
 /-- Forget an exact funded transition down to its commutative raw account.
 This is a genuine functor of the transition category; it is intentionally not
 claimed to be faithful. -/
 def rawAccountFunctor :
-    FundedState ⥤ SingleObj (Multiplicative (CostSig String)) where
-  obj _ := SingleObj.star _
-  map path := Multiplicative.ofAdd path.rawAccount
-  map_id state := by
-    change Multiplicative.ofAdd (CostPath.rawAccount (𝟙 state)) = 1
-    simp
-  map_comp first second := by
-    change Multiplicative.ofAdd (CostPath.rawAccount (first ≫ second)) =
-      Multiplicative.ofAdd (CostPath.rawAccount second) *
-        Multiplicative.ofAdd (CostPath.rawAccount first)
-    rw [comp_rawAccount]
-    exact mul_comm _ _
+    FundedState ⥤ SingleObj (Multiplicative (CostSig String)) :=
+  spendAccount.toCommFunctor
 
 end ResourceTransition
 
 /-- A result paired with the exact funded transition that produced it.  The
 pre/post resource states are type indices, while the transition field retains
 the full occurrence-sensitive execution rather than an aggregate cost. -/
-structure FundedExecution (source target : FundedState) (Result : Type u) where
-  transition : source ⟶ target
-  result : Result
+abbrev FundedExecution (source target : FundedState) (Result : Type u) : Type u :=
+  Mettapedia.Effects.Execution FundedState source target Result
 
 namespace FundedExecution
+
+open Mettapedia.Effects
 
 /-- Pair any certified runtime path with its returned value. -/
 def ofPath
@@ -484,55 +512,9 @@ theorem ofPath_transition
     (ofPath path result).transition = ResourceTransition.ofPath path :=
   rfl
 
-/-- Parameterised unit: return a result with the empty identity transition.
-It emits no event and changes no resource state. -/
-def pure (state : FundedState) (result : Result) :
-    FundedExecution state state Result :=
-  ⟨𝟙 state, result⟩
-
-/-- Parameterised bind composes only executions whose intermediate resource
-state agrees by type.  The continuation may depend on the first result. -/
-def bind {source middle target : FundedState}
-    (first : FundedExecution source middle Result)
-    (next : Result → FundedExecution middle target NextResult) :
-    FundedExecution source target NextResult :=
-  ⟨first.transition ≫ (next first.result).transition,
-    (next first.result).result⟩
-
-/-- Result mapping does not change the exact funded transition. -/
-def map (function : Result → NextResult)
-    (execution : FundedExecution source target Result) :
-    FundedExecution source target NextResult :=
-  ⟨execution.transition, function execution.result⟩
-
-@[simp]
-theorem pure_transition (state : FundedState) (result : Result) :
-    (pure state result).transition = 𝟙 state :=
-  rfl
-
-@[simp]
-theorem pure_result (state : FundedState) (result : Result) :
-    (pure state result).result = result :=
-  rfl
-
-@[simp]
-theorem bind_transition {source middle target : FundedState}
-    (first : FundedExecution source middle Result)
-    (next : Result → FundedExecution middle target NextResult) :
-    (first.bind next).transition =
-      first.transition ≫ (next first.result).transition :=
-  rfl
-
-@[simp]
-theorem bind_result {source middle target : FundedState}
-    (first : FundedExecution source middle Result)
-    (next : Result → FundedExecution middle target NextResult) :
-    (first.bind next).result = (next first.result).result :=
-  rfl
-
 @[simp]
 theorem pure_rawEmission (state : FundedState) (result : Result) :
-    (pure state result).transition.rawEmission = [] :=
+    (Execution.pure state result).transition.rawEmission = [] :=
   ResourceTransition.identity_rawEmission state
 
 /-- Exact receipts compose before any commutative aggregation is applied. -/
@@ -548,7 +530,7 @@ theorem bind_rawEmission {source middle target : FundedState}
 
 @[simp]
 theorem pure_rawAccount (state : FundedState) (result : Result) :
-    (pure state result).transition.rawAccount = 0 :=
+    (Execution.pure state result).transition.rawAccount = 0 :=
   ResourceTransition.identity_rawAccount state
 
 /-- The raw commutative account is a homomorphic observation of bind, not the
@@ -585,48 +567,6 @@ theorem bind_multiplicativeValue {source middle target : FundedState}
   ResourceTransition.comp_multiplicativeValue first.transition
     (next first.result).transition weight
 
-/-- Left unit of parameterised bind. -/
-@[simp]
-theorem pure_bind {source target : FundedState}
-    (result : Result)
-    (next : Result → FundedExecution source target NextResult) :
-    (pure source result).bind next = next result := by
-  rfl
-
-/-- Right unit of parameterised bind. -/
-@[simp]
-theorem bind_pure {source target : FundedState}
-    (execution : FundedExecution source target Result) :
-    execution.bind (pure target) = execution := by
-  cases execution
-  simp [bind, pure]
-
-/-- Associativity of parameterised bind.  The proof is exactly associativity
-of certified resource-transition composition. -/
-theorem bind_assoc
-    {firstState secondState thirdState fourthState : FundedState}
-    (first : FundedExecution firstState secondState Result)
-    (second : Result → FundedExecution secondState thirdState NextResult)
-    (third : NextResult → FundedExecution thirdState fourthState FinalResult) :
-    (first.bind second).bind third =
-      first.bind (fun result => (second result).bind third) := by
-  cases first
-  simp [bind, Category.assoc]
-
-@[simp]
-theorem map_id (execution : FundedExecution source target Result) :
-    execution.map id = execution := by
-  cases execution
-  rfl
-
-@[simp]
-theorem map_comp (first : Result → NextResult)
-    (second : NextResult → FinalResult)
-    (execution : FundedExecution source target Result) :
-    (execution.map first).map second = execution.map (second ∘ first) := by
-  cases execution
-  rfl
-
 /-- A computation whose pre/post resource state is identical cannot hide a
 funded event in its transition. -/
 theorem endomorphism_transition_eq_identity (state : FundedState)
@@ -636,15 +576,12 @@ theorem endomorphism_transition_eq_identity (state : FundedState)
 
 end FundedExecution
 
-/-- The concrete funded execution family, packaged with its proved
-Atkey-style parameterized-monad operations and laws. -/
+/-- The concrete funded execution family with its Atkey-style
+parameterized-monad operations and laws: the executions of the category of
+funded states. -/
 def fundedExecutionParameterizedMonad :
     Mettapedia.Effects.ParameterizedMonad FundedState
-      (fun source target Result => FundedExecution source target Result) where
-  pure := FundedExecution.pure
-  bind := FundedExecution.bind
-  pure_bind := FundedExecution.pure_bind
-  bind_pure := FundedExecution.bind_pure
-  bind_assoc := FundedExecution.bind_assoc
+      (fun source target Result => FundedExecution source target Result) :=
+  Mettapedia.Effects.executionParameterizedMonad FundedState
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost

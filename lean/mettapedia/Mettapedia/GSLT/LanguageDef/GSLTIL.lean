@@ -9,8 +9,8 @@ import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 The abstract indexed command calculus has dependent states: a state belongs to
 one GSLT fibre, and a route transports it to another fibre.  This module gives
-that calculus one small authored `LanguageDef` boundary suitable for finite
-execution and compilation.
+that calculus one small authored `LanguageDef` boundary for execution and
+compilation. Finite catalogs and qualified successor queries share its rules.
 
 There are two command forms:
 
@@ -24,9 +24,11 @@ entries; the runtime cannot silently treat them as one untyped arrow.
 
 The three authored reductions are the three constructors of the abstract
 indexed command step: compute at a fibre, compute underneath a pending route,
-or apply the selected route.  Their premises query a finite catalog.  The
-catalog is semantic input, not a host-language case split, and unsupported
-commands remain inert.
+or apply the selected route. Their premises query the existing relation
+environment. A finite catalog is one specialization; an executable successor
+query can also range over unbounded state data. Agreement of such a query
+with an independently specified fibre is a separate qualification obligation.
+Unsupported commands remain inert.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.GSLTIL
@@ -169,7 +171,6 @@ private theorem rewrites_validate :
     dsimp only [LanguageDef.validateRewrite, language, definition,
       ExtendedLanguageDef.toLanguageDef, fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite]
     simp [
-      fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite,
       atPattern, viaPattern, metavariable, fibreStepRelation,
       transportRelation, stageType, routeKindType, routeType, stateType,
       commandType, atConstructor, viaConstructor, constructor,
@@ -245,30 +246,44 @@ def transportTargets (catalog : Catalog) (kind route sourceStage targetStage
     else
       none
 
-/-- The relation environment generated from a finite catalog. -/
-def relationEnv (catalog : Catalog) : RelationEnv where
+/-- Wire finite answer lists for the two authored relations. The functions
+need not enumerate a globally finite set of states. Qualification against
+the intended fibre and route semantics is supplied by their realizations. -/
+def queryEnv
+    (localTargets : Pattern → Pattern → List Pattern)
+    (routeTargets : Pattern → Pattern → Pattern → Pattern → Pattern → List Pattern) :
+    RelationEnv where
   tuples relation arguments :=
     match relation, arguments with
     | candidate, [stage, source, .fvar _] =>
         if candidate = fibreStepRelation then
-          (fibreTargets catalog stage source).map fun target =>
+          (localTargets stage source).map fun target =>
             [stage, source, target]
         else
           []
     | candidate,
         [kind, route, sourceStage, targetStage, source, .fvar _] =>
         if candidate = transportRelation then
-          (transportTargets catalog kind route sourceStage targetStage source).map
+          (routeTargets kind route sourceStage targetStage source).map
             fun target =>
               [kind, route, sourceStage, targetStage, source, target]
         else
           []
     | _, _ => []
 
-/-- The GSLT denoted by the authored command language at one finite catalog. -/
-def totalTheory (catalog : Catalog) : GSLT :=
-  languageGSLTUsing (relationEnv catalog) language
+/-- The relation environment generated from a finite catalog. -/
+def relationEnv (catalog : Catalog) : RelationEnv :=
+  queryEnv (fibreTargets catalog) (transportTargets catalog)
+
+/-- The same authored command language interpreted by a relation environment.
+Supplying an environment does not establish its external semantic contract. -/
+def executionTheory (relations : RelationEnv) : GSLT :=
+  languageGSLTUsing relations language
     (ReductionRespectsEquationsUsing.of_equation_free _ rfl)
+
+/-- The finite catalog remains an instance of the shared execution boundary. -/
+def totalTheory (catalog : Catalog) : GSLT :=
+  executionTheory (relationEnv catalog)
 
 private theorem rules_noncontextual :
     ∀ rule, rule ∈ language.rewrites →
@@ -280,26 +295,33 @@ private theorem rules_noncontextual :
   rcases ruleMember with rfl | rfl | rfl
   all_goals exact .relationQuery .nil
 
-private theorem rootStep_iff_mem_executor (catalog : Catalog)
+private theorem rootStep_iff_mem_executor (relations : RelationEnv)
     (source target : Pattern) :
-    RootStep (relationEnv catalog) language source target ↔
+    RootStep relations language source target ↔
       target ∈ rewriteStepWithPremisesUsing
-        (relationEnv catalog) language source := by
+        relations language source := by
   simp [RootStep, rewriteStepWithPremisesUsing,
     applyRuleWithPremisesUsing]
 
 /-- The authored total GSLT and the generic root executor expose the same
 one-step relation. -/
+theorem executionTheory_step_iff_mem_executor (relations : RelationEnv)
+    (source target : Pattern) :
+    (executionTheory relations).Step source target ↔
+      target ∈ rewriteStepWithPremisesUsing
+        relations language source := by
+  unfold executionTheory
+  rw [languageGSLTUsing_step]
+  unfold langReducesUsing
+  rw [step_iff_rootStep_of_noncontextualRules rules_noncontextual]
+  exact rootStep_iff_mem_executor relations source target
+
 theorem totalTheory_step_iff_mem_executor (catalog : Catalog)
     (source target : Pattern) :
     (totalTheory catalog).Step source target ↔
       target ∈ rewriteStepWithPremisesUsing
-        (relationEnv catalog) language source := by
-  unfold totalTheory
-  rw [languageGSLTUsing_step]
-  unfold langReducesUsing
-  rw [step_iff_rootStep_of_noncontextualRules rules_noncontextual]
-  exact rootStep_iff_mem_executor catalog source target
+        (relationEnv catalog) language source :=
+  executionTheory_step_iff_mem_executor (relationEnv catalog) source target
 
 @[simp] private theorem match_fibre_tuple
     (stage state target : Pattern) :
@@ -312,13 +334,16 @@ theorem totalTheory_step_iff_mem_executor (catalog : Catalog)
 
 /-- A returned fibre command enumerates exactly the catalogued local
 successors of its state. -/
-theorem execute_at (catalog : Catalog) (stage state : Pattern) :
-    rewriteStepWithPremisesUsing (relationEnv catalog) language
+theorem execute_at_using
+    (localTargets : Pattern → Pattern → List Pattern)
+    (routeTargets : Pattern → Pattern → Pattern → Pattern → Pattern → List Pattern)
+    (stage state : Pattern) :
+    rewriteStepWithPremisesUsing (queryEnv localTargets routeTargets) language
         (atPattern stage state) =
-      (fibreTargets catalog stage state).map (atPattern stage) := by
+      (localTargets stage state).map (atPattern stage) := by
   simp [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
     applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, relationEnv, language, definition,
+    builtinRelationTuples, queryEnv, language, definition,
     fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite,
     fibreStepRelation, transportRelation, atPattern, viaPattern,
     metavariable, matchPatternForRule, matchPatternForRuleUsing,
@@ -326,27 +351,48 @@ theorem execute_at (catalog : Catalog) (stage state : Pattern) :
     matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
     applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings,
     matchPattern, matchArgs, mergeBindings, applyBindings]
-  generalize fibreTargets catalog stage state = targets
+  generalize localTargets stage state = targets
   induction targets with
   | nil => rfl
   | cons target targets inductionHypothesis =>
       simp [matchRelationArgs, matchRelationArgument, Bindings.lookup,
         mergeBindings, atPattern, inductionHypothesis]
 
+/-- The finite catalog executor uses the shared query calculation. -/
+theorem execute_at (catalog : Catalog) (stage state : Pattern) :
+    rewriteStepWithPremisesUsing (relationEnv catalog) language
+        (atPattern stage state) =
+      (fibreTargets catalog stage state).map (atPattern stage) :=
+  execute_at_using (fibreTargets catalog) (transportTargets catalog) stage state
+
+/-- A finite edge catalog can enable only the concrete sources recorded in
+its local rows, regardless of how many transport rows it contains. -/
+theorem catalog_step_source_mem (catalog : Catalog) (stage state target : Pattern)
+    (step : (totalTheory catalog).Step (atPattern stage state) target) :
+    state ∈ catalog.fibreRows.map FibreRow.source := by
+  rw [totalTheory_step_iff_mem_executor, execute_at] at step
+  obtain ⟨next, member, _⟩ := List.mem_map.mp step
+  obtain ⟨row, recorded, accepted⟩ := List.mem_filterMap.mp member
+  split at accepted
+  next applicable => exact List.mem_map.mpr ⟨row, recorded, applicable.2⟩
+  next _ => simp at accepted
+
 /-- A pending route exposes both kinds of enabled work without conflating
 them: source-fibre steps retain the route, while a catalogued transport
 returns an `at` command in the target fibre. -/
-theorem execute_via (catalog : Catalog)
+theorem execute_via_using
+    (localTargets : Pattern → Pattern → List Pattern)
+    (routeTargets : Pattern → Pattern → Pattern → Pattern → Pattern → List Pattern)
     (kind route sourceStage targetStage state : Pattern) :
-    rewriteStepWithPremisesUsing (relationEnv catalog) language
+    rewriteStepWithPremisesUsing (queryEnv localTargets routeTargets) language
         (viaPattern kind route sourceStage targetStage state) =
-      (fibreTargets catalog sourceStage state).map
+      (localTargets sourceStage state).map
           (viaPattern kind route sourceStage targetStage) ++
-        (transportTargets catalog kind route sourceStage targetStage state).map
+        (routeTargets kind route sourceStage targetStage state).map
           (atPattern targetStage) := by
   simp [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
     applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, relationEnv, language, definition,
+    builtinRelationTuples, queryEnv, language, definition,
     fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite,
     fibreStepRelation, transportRelation, atPattern, viaPattern,
     metavariable, matchPatternForRule, matchPatternForRuleUsing,
@@ -354,8 +400,8 @@ theorem execute_via (catalog : Catalog)
     matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
     applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings,
     matchPattern, matchArgs, mergeBindings, applyBindings]
-  generalize fibreTargets catalog sourceStage state = fibreRows
-  generalize transportTargets catalog kind route sourceStage targetStage state =
+  generalize localTargets sourceStage state = fibreRows
+  generalize routeTargets kind route sourceStage targetStage state =
     transportRows
   congr 1
   · induction fibreRows with
@@ -368,6 +414,18 @@ theorem execute_via (catalog : Catalog)
     | cons target targets inductionHypothesis =>
         simp [matchRelationArgs, matchRelationArgument, Bindings.lookup,
           mergeBindings, atPattern, inductionHypothesis]
+
+/-- Finite route execution is the catalog specialization of query execution. -/
+theorem execute_via (catalog : Catalog)
+    (kind route sourceStage targetStage state : Pattern) :
+    rewriteStepWithPremisesUsing (relationEnv catalog) language
+        (viaPattern kind route sourceStage targetStage state) =
+      (fibreTargets catalog sourceStage state).map
+          (viaPattern kind route sourceStage targetStage) ++
+        (transportTargets catalog kind route sourceStage targetStage state).map
+          (atPattern targetStage) :=
+  execute_via_using (fibreTargets catalog) (transportTargets catalog)
+    kind route sourceStage targetStage state
 
 theorem mem_fibreTargets_iff (catalog : Catalog)
     (stage source target : Pattern) :
@@ -643,7 +701,7 @@ theorem unknown_command_inert (catalog : Catalog) (arguments : List Pattern) :
     applyViaRewrite, atPattern, viaPattern, metavariable,
     matchPatternForRule, matchPatternForRuleUsing,
     OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?, matchPattern]
+    matchingPresentationForRule?, reflectiveRuleForRule?, matchPattern]
 
 /-- The direct finite command relation is itself a GSLT. -/
 def wireGSLT (catalog : Catalog) : GSLT where

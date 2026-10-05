@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.EquationSemantics
+import Mettapedia.GSLT.Logic.SeparationAlgebra
 import Mettapedia.OSLF.StructuralModal.EquationInvariance
 
 /-!
@@ -22,6 +23,27 @@ invariance, so the extra decompositions are precisely the equational ones.
 
 Nothing here assumes which laws a tag supplies.  Permutation invariance is a
 hypothesis, discharged for a concrete presentation by its own derived laws.
+
+## The algebra the equations decide
+
+A presentation that declares an associative collection former — flattening of
+nested occurrences, which also makes the empty collection a unit — makes its
+terms of the former's category, taken modulo the equations, a monoid
+(`AssociativeFormer.Configuration`).  When the former is a bag, the derived
+permutation law makes that monoid commutative, hence a separation algebra in
+which every two configurations are separate, and the separating reading of the
+cut on sorted terms *is* that algebra's separating conjunction
+(`AssociativeFormer.sepConj_iff_configuration_sepConj`).
+
+The equations decide nothing more than that: a commutative monoid of
+configurations.  Exclusive ownership, cancellativity, positivity and a local
+transition relation are not consequences of them.
+
+**Negative.**  `Sequences` declares an associative former over a sequence kind,
+which carries no permutation law.  Its configurations are a monoid that does not
+commute (`Sequences.configurations_not_commutative`), and its cut is not
+symmetric (`Sequences.sepConj_not_symmetric`): without commutativity there is no
+separating conjunction, only the positional reading up to regrouping.
 -/
 
 set_option autoImplicit false
@@ -504,5 +526,507 @@ theorem satisfiesModuloUsing_cut_reaches_element
     (EquationInvariance.satisfiesModuloUsing_equationInvariant relEnv lang inner
       singletonLaw).mp holds,
     (langGSLTUsing relEnv lang).equations.iseqv.refl _⟩
+
+/-! ## Configurations modulo the equations
+
+A declared associative former of a presentation turns the terms of its category
+into a monoid modulo the equations: the composition of two terms is the
+two-element collection, and the empty collection is the unit.  Associativity and
+the unit laws are the presentation's flattening and singleton laws.  A bag
+former adds the permutation law, and with it commutativity.
+
+The carrier is fixed to one typing context, because sortedness is what every
+derived law is conditioned on, and two terms sorted in different contexts need
+not be sorted together. -/
+
+open Mettapedia.GSLT.LanguageDef.WellSorted (HasSort HasType ElementsHaveType
+  FreeTypeContext)
+open Mettapedia.GSLT.SeparationAlgebra
+
+/-- A declared associative collection former: an authored rule whose single
+parameter is a collection of its own category, declaring flattening. -/
+structure AssociativeFormer (language : LanguageDef) (rule : GrammarRule)
+    (kind : CollType) (algebra : CollectionAlgebra) : Prop where
+  declared : AlgebraRule language rule kind algebra
+  flattens : algebra.flatten = true
+
+namespace AssociativeFormer
+
+variable {language : LanguageDef} {rule : GrammarRule} {kind : CollType}
+  {algebra : CollectionAlgebra}
+
+theorem elementsHaveType_append {free : FreeTypeContext} {bound : List TypeExpr}
+    {type : TypeExpr} {first second : List Pattern}
+    (firstTyped : ElementsHaveType language free bound first type)
+    (secondTyped : ElementsHaveType language free bound second type) :
+    ElementsHaveType language free bound (first ++ second) type := by
+  induction first with
+  | nil => exact secondTyped
+  | cons head tail inductionHypothesis =>
+      cases firstTyped with
+      | cons headTyped tailTyped => exact .cons headTyped (inductionHypothesis tailTyped)
+
+/-- A collection of terms of the former's category is again one. -/
+theorem collection_sorted (former : AssociativeFormer language rule kind algebra)
+    {free : FreeTypeContext} {bound : List TypeExpr} {elements : List Pattern}
+    (typed : ElementsHaveType language free bound elements (.base rule.category)) :
+    HasSort language free bound (.collection kind elements none) rule.category := by
+  obtain ⟨parameterName, parameters⟩ := former.declared.selfSorted
+  exact HasType.collectionConstructor former.declared.authored parameters typed
+
+/-- The terms of the former's category in one typing context. -/
+abbrev SortedTerm (language : LanguageDef) (rule : GrammarRule) (free : FreeTypeContext)
+    (bound : List TypeExpr) : Type :=
+  {term : Pattern // HasSort language free bound term rule.category}
+
+/-- Equivalence modulo the presentation's equations, on sorted terms. -/
+def setoid (base : BasePremiseEvaluator) (language : LanguageDef) (rule : GrammarRule)
+    (free : FreeTypeContext) (bound : List TypeExpr) :
+    Setoid (SortedTerm language rule free bound) where
+  r first second := EquationEquiv base language first.1 second.1
+  iseqv :=
+    ⟨fun _ => Relation.EqvGen.refl _, fun related => Relation.EqvGen.symm _ _ related,
+      fun first second => Relation.EqvGen.trans _ _ _ first second⟩
+
+/-- **Configurations**: sorted terms of the former's category modulo the
+equations. -/
+def Configuration (_former : AssociativeFormer language rule kind algebra)
+    (base : BasePremiseEvaluator) (free : FreeTypeContext) (bound : List TypeExpr) :
+    Type :=
+  Quotient (setoid base language rule free bound)
+
+variable {base : BasePremiseEvaluator} {free : FreeTypeContext} {bound : List TypeExpr}
+
+/-- Two sorted terms side by side. -/
+def composeTerms (former : AssociativeFormer language rule kind algebra)
+    (first second : SortedTerm language rule free bound) :
+    SortedTerm language rule free bound :=
+  ⟨.collection kind [first.1, second.1] none,
+    former.collection_sorted (.cons first.2 (.cons second.2 (.nil _ _)))⟩
+
+/-- The empty collection. -/
+def emptyTerm (former : AssociativeFormer language rule kind algebra) :
+    SortedTerm language rule free bound :=
+  ⟨.collection kind [] none, former.collection_sorted (.nil _ _)⟩
+
+/-- Composition of configurations. -/
+def compose (former : AssociativeFormer language rule kind algebra) :
+    Configuration former base free bound → Configuration former base free bound →
+    Configuration former base free bound :=
+  Quotient.map₂ (former.composeTerms) fun _ _ firstRelated _ _ secondRelated =>
+    equationEquiv_collection_of_forall₂ kind none
+      (.cons firstRelated (.cons secondRelated .nil))
+
+theorem sortedAt_of_typed (former : AssociativeFormer language rule kind algebra)
+    {elements : List Pattern}
+    (typed : ElementsHaveType language free bound elements (.base rule.category)) :
+    SortedAt language (.collection kind elements none) rule.category :=
+  ⟨free, bound, former.collection_sorted typed⟩
+
+/-- Flattening, at the root, for typed element lists. -/
+theorem flatten_equiv (former : AssociativeFormer language rule kind algebra)
+    {pre inner post : List Pattern}
+    (preTyped : ElementsHaveType language free bound pre (.base rule.category))
+    (innerTyped : ElementsHaveType language free bound inner (.base rule.category))
+    (postTyped : ElementsHaveType language free bound post (.base rule.category)) :
+    EquationEquiv base language
+      (.collection kind (pre ++ (.collection kind inner none) :: post) none)
+      (.collection kind (pre ++ inner ++ post) none) :=
+  derivedInstance_equivalent (DerivedInstance.flatten former.declared former.flattens
+    (former.sortedAt_of_typed (elementsHaveType_append preTyped
+      (.cons (former.collection_sorted innerTyped) postTyped))))
+
+/-- The singleton law, at the root. -/
+theorem singleton_equiv (former : AssociativeFormer language rule kind algebra)
+    {element : Pattern}
+    (typed : HasSort language free bound element rule.category) :
+    EquationEquiv base language (.collection kind [element] none) element :=
+  derivedInstance_equivalent (DerivedInstance.singleton former.declared former.flattens
+    (former.sortedAt_of_typed (.cons typed (.nil _ _))))
+
+/-- The empty configuration. -/
+instance instZero (former : AssociativeFormer language rule kind algebra) :
+    Zero (Configuration former base free bound) :=
+  ⟨Quotient.mk _ former.emptyTerm⟩
+
+/-- Composition of configurations. -/
+instance instAdd (former : AssociativeFormer language rule kind algebra) :
+    Add (Configuration former base free bound) :=
+  ⟨former.compose⟩
+
+/-- The configuration of a sorted term. -/
+def toConfiguration (former : AssociativeFormer language rule kind algebra)
+    (base : BasePremiseEvaluator) (term : SortedTerm language rule free bound) :
+    Configuration former base free bound :=
+  Quotient.mk _ term
+
+/-- Composition on representatives. -/
+theorem toConfiguration_add (former : AssociativeFormer language rule kind algebra)
+    (first second : SortedTerm language rule free bound) :
+    former.toConfiguration base first + former.toConfiguration base second =
+      former.toConfiguration base (former.composeTerms first second) :=
+  rfl
+
+/-- Configurations are equal exactly when representatives are equivalent modulo
+the equations. -/
+theorem toConfiguration_eq_iff (former : AssociativeFormer language rule kind algebra)
+    {first second : SortedTerm language rule free bound} :
+    former.toConfiguration base first = former.toConfiguration base second ↔
+      EquationEquiv base language first.1 second.1 :=
+  Quotient.eq
+
+/-- **A declared associative former makes configurations a monoid.**
+Associativity is flattening on either side; the unit laws are flattening of the
+empty collection followed by the singleton law. -/
+instance instAddMonoid (former : AssociativeFormer language rule kind algebra) :
+    AddMonoid (Configuration former base free bound) where
+  add_assoc := by
+    rintro ⟨first⟩ ⟨second⟩ ⟨third⟩
+    apply Quotient.sound
+    show EquationEquiv base language
+      (.collection kind [.collection kind [first.1, second.1] none, third.1] none)
+      (.collection kind [first.1, .collection kind [second.1, third.1] none] none)
+    have leftFlat := former.flatten_equiv (base := base) (pre := []) (inner := [first.1, second.1])
+      (post := [third.1]) (.nil _ _) (.cons first.2 (.cons second.2 (.nil _ _)))
+      (.cons third.2 (.nil _ _))
+    have rightFlat := former.flatten_equiv (base := base) (pre := [first.1])
+      (inner := [second.1, third.1]) (post := []) (.cons first.2 (.nil _ _))
+      (.cons second.2 (.cons third.2 (.nil _ _))) (.nil _ _)
+    exact Relation.EqvGen.trans _ _ _ leftFlat (Relation.EqvGen.symm _ _ rightFlat)
+  zero_add := by
+    rintro ⟨term⟩
+    apply Quotient.sound
+    show EquationEquiv base language
+      (.collection kind [.collection kind [] none, term.1] none) term.1
+    have flat := former.flatten_equiv (base := base) (pre := []) (inner := [])
+      (post := [term.1]) (.nil _ _) (.nil _ _) (.cons term.2 (.nil _ _))
+    exact Relation.EqvGen.trans _ _ _ flat (former.singleton_equiv term.2)
+  add_zero := by
+    rintro ⟨term⟩
+    apply Quotient.sound
+    show EquationEquiv base language
+      (.collection kind [term.1, .collection kind [] none] none) term.1
+    have flat := former.flatten_equiv (base := base) (pre := [term.1]) (inner := [])
+      (post := []) (.cons term.2 (.nil _ _)) (.nil _ _) (.nil _ _)
+    exact Relation.EqvGen.trans _ _ _ flat (former.singleton_equiv term.2)
+  nsmul := nsmulRec
+
+/-- The bag former's carrier declaration. -/
+theorem carrierRule (former : AssociativeFormer language rule .hashBag algebra) :
+    CollectionCarrierRule language rule .hashBag := by
+  obtain ⟨parameterName, parameters⟩ := former.declared.selfSorted
+  exact ⟨former.declared.authored, parameterName, _, parameters⟩
+
+/-- **A bag former makes configurations a commutative monoid**, by the derived
+permutation law. -/
+instance instAddCommMonoid (former : AssociativeFormer language rule .hashBag algebra) :
+    AddCommMonoid (Configuration former base free bound) where
+  add_comm := by
+    rintro ⟨first⟩ ⟨second⟩
+    apply Quotient.sound
+    exact equationEquiv_bag_perm former.carrierRule
+      (former.sortedAt_of_typed (.cons first.2 (.cons second.2 (.nil _ _))))
+      (List.Perm.swap second.1 first.1 [])
+
+/-- **Configurations of a bag former form a separation algebra**, in which every
+two configurations are separate. -/
+instance instSepAlgebra (former : AssociativeFormer language rule .hashBag algebra) :
+    SepAlgebra (Configuration former base free bound) :=
+  ofAddCommMonoid (Configuration former base free bound)
+
+/-- An equation-invariant predicate on terms, read on configurations. -/
+def lift (former : AssociativeFormer language rule kind algebra) (predicate : Pattern → Prop)
+    (invariant : ∀ first second, EquationEquiv base language first second →
+      (predicate first ↔ predicate second)) :
+    Configuration former base free bound → Prop :=
+  Quotient.lift (fun term => predicate term.1) fun _ _ related =>
+    propext (invariant _ _ related)
+
+/-- **The cut, read modulo the equations, is the separating conjunction of the
+configuration algebra**, on sorted terms and for equation-invariant readings
+that hold only of collections of sorted terms. -/
+theorem sepConj_iff_configuration_sepConj (former : AssociativeFormer language rule .hashBag algebra)
+    {left right : Pattern → Prop}
+    (leftInvariant : ∀ first second, EquationEquiv base language first second →
+      (left first ↔ left second))
+    (rightInvariant : ∀ first second, EquationEquiv base language first second →
+      (right first ↔ right second))
+    (leftTyped : ∀ elements, left (.collection .hashBag elements none) →
+      ElementsHaveType language free bound elements (.base rule.category))
+    (rightTyped : ∀ elements, right (.collection .hashBag elements none) →
+      ElementsHaveType language free bound elements (.base rule.category))
+    (term : SortedTerm language rule free bound) :
+    SepConj (EquationEquiv base language) .hashBag left right term.1 ↔
+      (former.lift left leftInvariant ∗ former.lift right rightInvariant)
+        (former.toConfiguration base term) := by
+  constructor
+  · rintro ⟨leftElements, rightElements, decomposition, holdsLeft, holdsRight⟩
+    have typedLeft := leftTyped _ holdsLeft
+    have typedRight := rightTyped _ holdsRight
+    let leftTerm : SortedTerm language rule free bound :=
+      ⟨_, former.collection_sorted typedLeft⟩
+    let rightTerm : SortedTerm language rule free bound :=
+      ⟨_, former.collection_sorted typedRight⟩
+    refine ⟨former.toConfiguration base leftTerm, former.toConfiguration base rightTerm,
+      trivial, ?_, holdsLeft, holdsRight⟩
+    rw [toConfiguration_add]
+    apply (former.toConfiguration_eq_iff).mpr
+    show EquationEquiv base language term.1
+      (.collection .hashBag
+        [.collection .hashBag leftElements none, .collection .hashBag rightElements none]
+        none)
+    have outer := former.flatten_equiv (base := base) (pre := []) (inner := leftElements)
+      (post := [.collection .hashBag rightElements none]) (.nil _ _) typedLeft
+      (.cons (former.collection_sorted typedRight) (.nil _ _))
+    have inner := former.flatten_equiv (base := base) (pre := leftElements)
+      (inner := rightElements) (post := []) typedLeft typedRight (.nil _ _)
+    simp only [List.nil_append, List.append_nil] at outer inner
+    exact Relation.EqvGen.trans _ _ _ decomposition
+      (Relation.EqvGen.symm _ _ (Relation.EqvGen.trans _ _ _ outer inner))
+  · rintro ⟨first, second, -, decomposition, holdsLeft, holdsRight⟩
+    obtain ⟨leftTerm, rfl⟩ := Quotient.exists_rep first
+    obtain ⟨rightTerm, rfl⟩ := Quotient.exists_rep second
+    have related : EquationEquiv base language term.1
+        (.collection .hashBag ([leftTerm.1] ++ [rightTerm.1]) none) :=
+      (former.toConfiguration_eq_iff (first := term)
+        (second := former.composeTerms leftTerm rightTerm)).mp decomposition
+    exact ⟨[leftTerm.1], [rightTerm.1], related,
+      (leftInvariant _ _ (former.singleton_equiv leftTerm.2)).mpr holdsLeft,
+      (rightInvariant _ _ (former.singleton_equiv rightTerm.2)).mpr holdsRight⟩
+
+end AssociativeFormer
+
+/-! ## Positive: rho's parallel composition
+
+The rho presentation declares its parallel former as a flattening bag with unit
+`PZero`, so its processes modulo the equations, in any typing context, form a
+commutative monoid and hence a separation algebra
+(`AssociativeFormer.instSepAlgebra` at `rhoParallel`). -/
+
+/-- Rho's parallel composition, as authored. -/
+def rhoParallelRule : GrammarRule :=
+  { label := "PPar", category := "Proc"
+    params := [.simple "ps" (TypeExpr.bag TypeExpr.proc)]
+    syntaxPattern := [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"]
+    algebra? := some { flatten := true, unit := some "PZero" } }
+
+/-- Rho's empty process, as authored. -/
+def rhoZeroRule : GrammarRule :=
+  { label := "PZero", category := "Proc", params := [], syntaxPattern := [.terminal "0"] }
+
+/-- **Rho's parallel composition is a declared associative bag former.** -/
+theorem rhoParallel :
+    AssociativeFormer rhoCalc rhoParallelRule .hashBag { flatten := true, unit := some "PZero" } where
+  declared :=
+    { authored := by simp [rhoCalc, rhoParallelRule]
+      declared := rfl
+      selfSorted := ⟨"ps", rfl⟩
+      unitAuthored := by
+        intro unit isUnit
+        cases isUnit
+        exact ⟨rhoZeroRule, by simp [rhoCalc, rhoZeroRule], rfl, rfl, rfl⟩ }
+  flattens := rfl
+
+/-- Rho processes modulo the equations, in one typing context, form a separation
+algebra. -/
+example (base : BasePremiseEvaluator) (free : FreeTypeContext) (bound : List TypeExpr) :
+    SepAlgebra (AssociativeFormer.Configuration rhoParallel base free bound) :=
+  inferInstance
+
+/-! ## Without the bag law: a monoid that does not commute
+
+A presentation with two atoms and one associative former over sequences.  The
+former declares flattening, so its configurations are a monoid, but the
+sequence kind carries no permutation law.  The labels of the atoms, read left
+to right through every collection, are invariant under every equation of the
+presentation, and they tell `[A, B]` from `[B, A]`. -/
+
+namespace Sequences
+
+/-- A nullary atom of the one category. -/
+def atomRule (label : String) : GrammarRule :=
+  { label, category := "T", params := [], syntaxPattern := [.terminal label] }
+
+/-- The associative sequence former, with no unit constructor. -/
+def seqRule : GrammarRule :=
+  { label := "Seq", category := "T"
+    params := [.simple "xs" (.collection .vec (.base "T"))]
+    syntaxPattern := [.terminal "[", .nonTerminal "xs", .terminal "]"]
+    algebra? := some { flatten := true, unit := none } }
+
+/-- The presentation: two atoms and the sequence former, and no equations. -/
+def language : LanguageDef :=
+  { name := "sequences", types := [], terms := [atomRule "A", atomRule "B", seqRule],
+    equations := [], rewrites := [] }
+
+/-- The two atoms. -/
+def atomA : Pattern := .apply "A" []
+
+def atomB : Pattern := .apply "B" []
+
+theorem former : AssociativeFormer language seqRule .vec { flatten := true, unit := none } where
+  declared :=
+    { authored := by simp [language]
+      declared := rfl
+      selfSorted := ⟨"xs", rfl⟩
+      unitAuthored := by intro unit isUnit; cases isUnit }
+  flattens := rfl
+
+theorem atom_sorted (label : String) (member : atomRule label ∈ language.terms)
+    (free : FreeTypeContext) (bound : List TypeExpr) :
+    HasSort language free bound (.apply label []) seqRule.category :=
+  HasType.constructor (rule := atomRule label) member
+    (by rintro ⟨_, _, _, parameters⟩; cases parameters) .nil
+
+mutual
+
+/-- The atom labels of a pattern, left to right, through every collection. -/
+def leaves : Pattern → List String
+  | .bvar _ => []
+  | .fvar _ => []
+  | .apply label arguments => label :: leavesList arguments
+  | .lambda _ body => leaves body
+  | .multiLambda _ _ body => leaves body
+  | .subst body replacement => leaves body ++ leaves replacement
+  | .collection _ elements _ => leavesList elements
+
+/-- The atom labels of a list of patterns. -/
+def leavesList : List Pattern → List String
+  | [] => []
+  | pattern :: patterns => leaves pattern ++ leavesList patterns
+
+end
+
+theorem leavesList_append (first second : List Pattern) :
+    leavesList (first ++ second) = leavesList first ++ leavesList second := by
+  induction first with
+  | nil => simp [leavesList]
+  | cons head tail inductionHypothesis =>
+      simp [leavesList, inductionHypothesis, List.append_assoc]
+
+theorem leaves_fill (context : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext)
+    {first second : Pattern} (same : leaves first = leaves second) :
+    leaves (context.fill first) = leaves (context.fill second) := by
+  induction context with
+  | hole => exact same
+  | apply constructor before inner after inductionHypothesis =>
+      simp [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill, leaves,
+        leavesList_append, leavesList, inductionHypothesis]
+  | lambda binderName inner inductionHypothesis =>
+      simp [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill, leaves,
+        inductionHypothesis]
+  | multiLambda arity binderNames inner inductionHypothesis =>
+      simp [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill, leaves,
+        inductionHypothesis]
+  | substBody inner replacement inductionHypothesis =>
+      simp [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill, leaves,
+        inductionHypothesis]
+  | substReplacement body inner inductionHypothesis =>
+      simp [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill, leaves,
+        inductionHypothesis]
+  | collection collectionType before inner after rest inductionHypothesis =>
+      simp [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill, leaves,
+        leavesList_append, leavesList, inductionHypothesis]
+
+/-- The only declared collections are sequences, and the only declared algebra
+is the sequence former's, which has no unit. -/
+private theorem no_bag_or_set_carrier {rule : GrammarRule} {kind : CollType}
+    (declaration : CollectionCarrierRule language rule kind) : kind = .vec := by
+  obtain ⟨authored, parameterName, elementType, parameters⟩ := declaration
+  simp only [language, List.mem_cons, List.not_mem_nil, or_false] at authored
+  rcases authored with rfl | rfl | rfl <;>
+    simp_all [atomRule, seqRule]
+
+private theorem algebra_has_no_unit {rule : GrammarRule} {kind : CollType}
+    {algebra : CollectionAlgebra} (declaration : AlgebraRule language rule kind algebra) :
+    algebra.unit = none := by
+  have declared := declaration.declared
+  have authored := declaration.authored
+  simp only [language, List.mem_cons, List.not_mem_nil, or_false] at authored
+  rcases authored with rfl | rfl | rfl <;>
+    simp_all [atomRule, seqRule]
+  · cases declared; rfl
+
+/-- **Every equation of the presentation preserves the atom labels.** -/
+theorem generator_leaves {base : BasePremiseEvaluator} {source target : Pattern}
+    (generator : EquationGenerator base language source target) :
+    leaves source = leaves target := by
+  rcases generator with authored | derived
+  · exact absurd authored (no_equationInstance_of_equations_eq_nil rfl _ _)
+  · cases derived with
+    | bagPerm declaration _ _ => cases no_bag_or_set_carrier declaration
+    | setPerm declaration _ _ => cases no_bag_or_set_carrier declaration
+    | setDedup declaration _ => cases no_bag_or_set_carrier declaration
+    | flatten _ _ _ => simp [leaves, leavesList_append, leavesList]
+    | singleton _ _ _ => simp [leaves, leavesList]
+    | unitElim declaration isUnit _ =>
+        rw [algebra_has_no_unit declaration] at isUnit; cases isUnit
+    | emptyUnit declaration isUnit _ =>
+        rw [algebra_has_no_unit declaration] at isUnit; cases isUnit
+
+theorem equationEquiv_leaves {base : BasePremiseEvaluator} {source target : Pattern}
+    (related : EquationEquiv base language source target) :
+    leaves source = leaves target := by
+  induction related with
+  | rel _ _ step =>
+      cases step with
+      | inContext context generator => exact leaves_fill context (generator_leaves generator)
+  | refl _ => rfl
+  | symm _ _ _ inductionHypothesis => exact inductionHypothesis.symm
+  | trans _ _ _ _ _ firstIH secondIH => exact firstIH.trans secondIH
+
+/-- The two-atom sequences in the two orders are not equal modulo the
+equations. -/
+theorem not_equiv_swap (base : BasePremiseEvaluator) :
+    ¬ EquationEquiv base language (.collection .vec [atomA, atomB] none)
+      (.collection .vec [atomB, atomA] none) := by
+  intro related
+  have := equationEquiv_leaves related
+  simp [leaves, leavesList, atomA, atomB] at this
+
+/-- **The configurations of an associative former without the bag law do not
+commute.**  They are a monoid (`AssociativeFormer.instAddMonoid`), and no more. -/
+theorem configurations_not_commutative (base : BasePremiseEvaluator)
+    (free : FreeTypeContext) (bound : List TypeExpr) :
+    ∃ first second : AssociativeFormer.Configuration former base free bound,
+      first + second ≠ second + first := by
+  refine ⟨former.toConfiguration base ⟨atomA, atom_sorted "A" (by simp [language]) free bound⟩,
+    former.toConfiguration base ⟨atomB, atom_sorted "B" (by simp [language]) free bound⟩, ?_⟩
+  intro equal
+  rw [AssociativeFormer.toConfiguration_add, AssociativeFormer.toConfiguration_add,
+    AssociativeFormer.toConfiguration_eq_iff] at equal
+  exact not_equiv_swap base equal
+
+/-- Being `A` up to the equations. -/
+def isA (base : BasePremiseEvaluator) (term : Pattern) : Prop :=
+  EquationEquiv base language term atomA
+
+/-- Being `B` up to the equations. -/
+def isB (base : BasePremiseEvaluator) (term : Pattern) : Prop :=
+  EquationEquiv base language term atomB
+
+/-- **The cut of this presentation is not symmetric.**  `[A, B]` splits as `A`
+beside `B`, and not as `B` beside `A`, although both readings are invariant
+under the equations. -/
+theorem sepConj_not_symmetric (base : BasePremiseEvaluator) :
+    SepConj (EquationEquiv base language) .vec (isA base) (isB base)
+        (.collection .vec [atomA, atomB] none) ∧
+      ¬ SepConj (EquationEquiv base language) .vec (isB base) (isA base)
+        (.collection .vec [atomA, atomB] none) := by
+  refine ⟨⟨[atomA], [atomB], Relation.EqvGen.refl _, ?_, ?_⟩, ?_⟩
+  · exact former.singleton_equiv (atom_sorted "A" (by simp [language])
+      Mettapedia.GSLT.LanguageDef.WellSorted.FreeTypeContext.empty [])
+  · exact former.singleton_equiv (atom_sorted "B" (by simp [language])
+      Mettapedia.GSLT.LanguageDef.WellSorted.FreeTypeContext.empty [])
+  · rintro ⟨leftElements, rightElements, decomposition, holdsLeft, holdsRight⟩
+    have whole := equationEquiv_leaves decomposition
+    have leftLeaves := equationEquiv_leaves holdsLeft
+    have rightLeaves := equationEquiv_leaves holdsRight
+    simp only [leaves, leavesList, atomA, atomB, leavesList_append, List.append_nil]
+      at whole leftLeaves rightLeaves
+    rw [leftLeaves, rightLeaves] at whole
+    simp at whole
+
+end Sequences
 
 end Mettapedia.OSLF.StructuralModal.SeparatingConjunction

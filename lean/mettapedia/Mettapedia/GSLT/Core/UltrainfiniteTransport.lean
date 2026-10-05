@@ -59,6 +59,50 @@ theorem comp {first middle last : GSLT}
     exact ⟨sourceTarget, sourceStep,
       (congrArg laterMap sourceTargetEq).trans middleTargetEq⟩
 
+/-- A locally covered map preserves every finite execution. -/
+theorem mapMultiStep {source target : GSLT}
+    {mapTerm : source.Term → target.Term} (cover : StepCover source target mapTerm)
+    {initial final : source.Term} (path : source.MultiStep initial final) :
+    target.MultiStep (mapTerm initial) (mapTerm final) := by
+  induction path with
+  | refl => exact .refl _
+  | step first _ ih => exact .step (cover.mapStep first) ih
+
+/-- Every finite target path from an image point lifts to a source path,
+including its exact target endpoint. -/
+theorem liftMultiStep {source target : GSLT}
+    {mapTerm : source.Term → target.Term} (cover : StepCover source target mapTerm)
+    {initial : source.Term} {final : target.Term}
+    (path : target.MultiStep (mapTerm initial) final) :
+    ∃ endpoint, mapTerm endpoint = final ∧ source.MultiStep initial endpoint := by
+  have lift : ∀ {start finish : target.Term}, target.MultiStep start finish →
+      ∀ state, mapTerm state = start →
+        ∃ endpoint, mapTerm endpoint = finish ∧ source.MultiStep state endpoint := by
+    intro start finish run
+    induction run with
+    | refl =>
+        intro state same
+        exact ⟨state, same, .refl state⟩
+    | step first _ ih =>
+        intro state same
+        rw [← same] at first
+        obtain ⟨next, lifted, encoded⟩ := cover.liftStep first
+        obtain ⟨endpoint, targetEq, remaining⟩ := ih next encoded
+        exact ⟨endpoint, targetEq, .step lifted remaining⟩
+  exact lift path initial rfl
+
+/-- Local coverage preserves and reflects normal forms. -/
+theorem normal_iff {source target : GSLT}
+    {mapTerm : source.Term → target.Term} (cover : StepCover source target mapTerm)
+    (state : source.Term) :
+    source.IsNormalForm state ↔ target.IsNormalForm (mapTerm state) := by
+  constructor
+  · intro normal ⟨targetState, step⟩
+    obtain ⟨next, lifted, _⟩ := cover.liftStep step
+    exact normal ⟨next, lifted⟩
+  · intro normal ⟨next, step⟩
+    exact normal ⟨_, cover.mapStep step⟩
+
 end StepCover
 
 /-! ## Explicit witnesses for failure of local coverage -/

@@ -27,6 +27,9 @@ namespace Mettapedia.TypeTheory.TarskiUniverseCapabilities
 
 universe uLevel uCode uEl
 
+-- The constructor and projections distinguish these three universe levels.
+-- The structure's result sort alone exposes only their maximum.
+set_option linter.checkUnivs false in
 /-- Level-indexed Tarski codes and their decoded types.  No order, lift, or
 closure operation is included. -/
 structure TarskiCodeFamily where

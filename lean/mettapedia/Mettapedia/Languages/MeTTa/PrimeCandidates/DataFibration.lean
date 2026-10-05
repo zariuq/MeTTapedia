@@ -192,6 +192,9 @@ theorem bool_requote_not_surjective :
 
 /-! ## Typed transport between language fibres -/
 
+-- Code and payload universes remain independent in the bundled fields.
+-- The bundle itself necessarily lives in their maximum universe.
+set_option linter.checkUnivs false in
 /-- The semantic ingredients of one language fibre. -/
 structure Fibre where
   BaseType : Type uBase
@@ -322,6 +325,8 @@ end FibreTranslation
 
 /-! ## The indexed Data diagram and its total category -/
 
+-- This bundle retains the independent code and payload universes of Fibre.
+set_option linter.checkUnivs false in
 /-- A covariant, typed Data family over an authored category of languages. -/
 structure IndexedDataDiagram (Lang : Type uLang)
     [CategoryTheory.Category.{vLang} Lang] where

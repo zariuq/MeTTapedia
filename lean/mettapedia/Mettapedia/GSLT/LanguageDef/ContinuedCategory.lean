@@ -4,17 +4,21 @@ import Mettapedia.GSLT.LanguageDef.CanonicalSection
 import Mettapedia.GSLT.LanguageDef.CostStatic
 
 /-!
-# Continued interactive GSLTs
+# Wrappable and continued interactive GSLTs
 
-A continued interactive GSLT is an iGSLT equipped with one ordered authored
-interaction cut, a computable section of its equational quotient, and a
-declaration-derived proof that the cut contractum remains sorted after its
-continuations are wrapped.  These fields retain the exact `LanguageDef`
-selected by the underlying iGSLT.
+A continued interactive GSLT is an iGSLT equipped with (i) one ordered
+authored interaction cut, (ii) a computable section of its equational
+quotient, and (iii) a declaration-derived proof that the cut contractum
+remains sorted after its continuations are wrapped.  These fields retain the
+exact `LanguageDef` selected by the underlying iGSLT.
 
-Morphisms preserve the selected cut and continuation retyping data.  They
-commute with canonicalization and are injective on canonical keys.  Thus the
-forgetful functor to iGSLTs forgets object structure but no morphism action.
+Clauses (i) and (iii) form `WrappableIGSLT`; `CIGSLT` adds clause (ii).  The
+Cost construction reads only the first structure, so it is defined there.
+
+Morphisms of wrappable theories preserve the selected cut and continuation
+retyping data.  Continued morphisms also commute with canonicalization and
+are injective on canonical keys.  The forgetful functors forget object
+structure but no morphism action.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
@@ -25,18 +29,17 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open StructuralMorphism
 open ReflectionExtension
 
-/-- A continued interactive GSLT over one exact authored presentation. -/
-structure CIGSLT where
+/-- An interactive GSLT with a wrappable interaction cut over one exact
+authored presentation: clauses (i) and (iii) of a continued interactive GSLT,
+the admitted reflection profile, and the stability laws under which the Cost
+construction is defined and can be applied again.  No section of the static
+equivalence belongs to this structure. -/
+structure WrappableIGSLT where
   theory : IGSLT
   /-- Reflection is an admitted extension over the exact five-field source;
   it is not part of the source `LanguageDef`. -/
   reflection : AdmittedProfile theory.presentation.presentation.language
   cut : InteractionCutPresentation theory
-  /-- Canonicalization on every declaration-derived open sorted fiber.  The
-  sort, free-variable context, binder context, and object boundary are
-  retained; the paper-facing closed section is derived from this datum. -/
-  openCanonical :
-    ComputableReflectiveFiberContextualSection theory reflection
   continuationRetyping : ContinuationRetypingPlan cut
   /-- A bare collection representation hides its constructor label in the
   raw `Pattern`, so every such constructor must belong to the non-principal
@@ -46,14 +49,6 @@ structure CIGSLT where
     ∀ rule ∈ theory.presentation.presentation.language.terms,
       WellSorted.UsesBareCollection rule →
         rule.label ∈ continuationRetyping.wrappedLabels
-  /-- Canonicalization preserves the declaration-derived non-principal
-  constructor fragment in every typed open fiber.  This is the intrinsic
-  closure law needed to iterate continued interaction: normalization may
-  rearrange authored static structure, but it cannot manufacture either
-  selected interaction principal. -/
-  openCanonicalPreservesWrappedConstructorTyping :
-    openCanonical.PreservesTypedConstructors
-      (· ∈ continuationRetyping.wrappedLabels)
   /-- Every authored static equation has both a sorted base image and a
   sorted hereditary wrapped image in the declaration-derived Cost
   signature.  This is the exact extra stability needed to carry equations
@@ -73,18 +68,41 @@ structure CIGSLT where
   redexRetypable : continuationRetyping.RedexRetypable
   wrappable : continuationRetyping.Wrappable
 
+/-- A continued interactive GSLT: a wrappable interactive GSLT together with
+clause (ii), a computable section of its equational quotient. -/
+structure CIGSLT extends WrappableIGSLT where
+  /-- Canonicalization on every declaration-derived open sorted fiber.  The
+  sort, free-variable context, binder context, and object boundary are
+  retained; the paper-facing closed section is derived from this datum. -/
+  openCanonical :
+    ComputableReflectiveFiberContextualSection theory reflection
+  /-- Canonicalization preserves the declaration-derived non-principal
+  constructor fragment in every typed open fiber.  This is the intrinsic
+  closure law needed to iterate continued interaction: normalization may
+  rearrange authored static structure, but it cannot manufacture either
+  selected interaction principal. -/
+  openCanonicalPreservesWrappedConstructorTyping :
+    openCanonical.PreservesTypedConstructors
+      (· ∈ continuationRetyping.wrappedLabels)
+
+instance : Coe CIGSLT WrappableIGSLT := ⟨CIGSLT.toWrappableIGSLT⟩
+
+namespace WrappableIGSLT
+
+/-- The stable source envelope remains sorted in the declaration-derived
+continuation signature. -/
+theorem sourceEnvelopeRetypable (source : WrappableIGSLT) :
+    source.continuationRetyping.SourceEnvelopeRetypable :=
+  source.sourceEnvelopeStable.retype source.continuationRetyping
+
+end WrappableIGSLT
+
 namespace CIGSLT
 
 /-- Forget the contextual laws while retaining the admitted reflective fibre. -/
 def canonical (theory : CIGSLT) :
     ComputableReflectiveFiberSection theory.theory theory.reflection :=
   theory.openCanonical.toComputableReflectiveFiberSection
-
-/-- The stable source envelope remains sorted in the declaration-derived
-continuation signature. -/
-theorem sourceEnvelopeRetypable (source : CIGSLT) :
-    source.continuationRetyping.SourceEnvelopeRetypable :=
-  source.sourceEnvelopeStable.retype source.continuationRetyping
 
 /-- The closed interacting fibre on which continued canonical keys live. -/
 abbrev CanonicalCarrier (theory : CIGSLT) :=
@@ -122,10 +140,18 @@ theorem mapOptionalPattern_comp (first second : LanguageDefSymbolMap)
       mapOptionalPattern second (mapOptionalPattern first pattern) := by
   cases pattern <;> simp [mapOptionalPattern, mapPattern_comp]
 
-/-- A continued morphism is one iGSLT theory map preserving the exact
-ordered cut, its selected continuation positions, the finite wrapped
-constructor closure, and the computable canonical keys. -/
-structure Morphism (source target : CIGSLT) where
+end CIGSLT
+
+namespace WrappableIGSLT
+
+open CIGSLT (mapOptionalPattern mapOptionalPattern_id mapOptionalPattern_comp
+  mapOneHoleContext mapOneHoleContext_fill mapOneHoleContext_id mapOneHoleContext_comp
+  mapOneHoleContext_contextComp mapPatternList_id mapPatternList_comp)
+
+/-- A morphism of wrappable interactive GSLTs is one iGSLT theory map
+preserving the exact ordered cut, its selected continuation positions and the
+finite wrapped constructor closure. -/
+structure Morphism (source target : WrappableIGSLT) where
   underlying : IGSLT.Morphism source.theory target.theory
   /-- Independent action on the reflection namespace.  Its core component is
   fixed by `underlying`; only reflection names are additional data. -/
@@ -238,34 +264,19 @@ structure Morphism (source target : CIGSLT) where
     mapOptionalPattern underlying.structural.structural.symbols
         source.cut.environment.subject.pattern =
       target.cut.environment.subject.pattern
-  /-- Canonicalization is natural on declaration-derived open sorted terms.
-  Unlike a law on raw patterns, both sides retain the expected sort and the
-  exact free and bound typing contexts. -/
-  mapsOpenCanonical : ∀ {free bound sort}
-      (term : ReflectiveWellSorted.OpenTerm source.reflection.1
-        source.theory.presentation.presentation.language free bound sort),
-    target.openCanonical.normalize
-        (term.map underlying.structural.structural mapsReflectiveScope) =
-      (source.openCanonical.normalize term).map
-        underlying.structural.structural mapsReflectiveScope
-  /-- Structural translation is injective on normalized reflective keys.
-  The target canonicalizer is omitted here because naturality proves that the
-  image of a normalized key is already normalized. -/
-  quoteFaithful : Function.Injective (fun key : source.CanonicalKey =>
-    mapPattern underlying.structural.structural.symbols key.1.1)
 
 namespace Morphism
 
 /-- The complete symbol action of a continued morphism, assembled from its
 core and reflection components. -/
-def reflectiveSymbols {source target : CIGSLT}
+def reflectiveSymbols {source target : WrappableIGSLT}
     (morphism : Morphism source target) : ReflectiveSymbols where
   toLanguageDefSymbolMap := morphism.underlying.structural.structural.symbols
   reflection := morphism.reflectionSymbols
 
 /-- Map one term in the admitted reflective fibre.  Ordinary structural
 typing and quote-visible scope are transported by separate morphism laws. -/
-def mapOpenTerm {source target : CIGSLT}
+def mapOpenTerm {source target : WrappableIGSLT}
     (morphism : Morphism source target) {free bound sort}
     (term : ReflectiveWellSorted.OpenTerm source.reflection.1
       source.theory.presentation.presentation.language free bound sort) :
@@ -280,7 +291,7 @@ def mapOpenTerm {source target : CIGSLT}
 
 /-- A continued morphism maps the selected interacting sort in its
 name-indexed form to the target's selected interacting sort. -/
-theorem mapsInteractingLangSort {source target : CIGSLT}
+theorem mapsInteractingLangSort {source target : WrappableIGSLT}
     (morphism : Morphism source target) :
     WellSorted.mapLangSort morphism.underlying.structural.structural
         source.theory.presentation.interactingLangSort =
@@ -290,73 +301,10 @@ theorem mapsInteractingLangSort {source target : CIGSLT}
     morphism.underlying.structural.mapsInteractingSort]
   rfl
 
-/-- Map the closed interacting reflective fibre and discharge the three
-index equalities produced by structural transport. -/
-def mapCanonicalTerm {source target : CIGSLT}
-    (morphism : Morphism source target)
-    (term : source.CanonicalCarrier) : target.CanonicalCarrier :=
-  (morphism.mapOpenTerm term).reindex
-    (WellSorted.FreeTypeContext.map_empty
-      morphism.underlying.structural.structural.symbols)
-    rfl morphism.mapsInteractingLangSort
-
-/-- Map a canonical key by translating its representative and then applying
-the target's computable section. -/
-def canonicalKeyMap {source target : CIGSLT}
-    (morphism : Morphism source target) :
-    source.CanonicalKey → target.CanonicalKey :=
-  fun key =>
-    ⟨target.canonical.normalize (morphism.mapCanonicalTerm key.1),
-      target.canonical.normalize_idempotent _⟩
-
-/-- Open typed naturality restricts to naturality of the closed
-paper-facing canonical sections. -/
-theorem mapsCanonical {source target : CIGSLT}
-    (morphism : Morphism source target)
-    (term : source.CanonicalCarrier) :
-    target.canonical.normalize (morphism.mapCanonicalTerm term) =
-      morphism.mapCanonicalTerm (source.canonical.normalize term) := by
-  let symbols := morphism.underlying.structural.structural.symbols
-  have freeEquality :
-      WellSorted.FreeTypeContext.empty.map symbols =
-        WellSorted.FreeTypeContext.empty :=
-    WellSorted.FreeTypeContext.map_empty symbols
-  have boundEquality :
-      ([] : List TypeExpr).map (mapTypeExpr symbols) = [] :=
-    rfl
-  have sortEquality := morphism.mapsInteractingLangSort
-  have normalizationTransport := target.openCanonical.normalize_reindex
-    freeEquality boundEquality sortEquality (morphism.mapOpenTerm term)
-  have transportedNaturality := congrArg
-    (ReflectiveWellSorted.OpenTerm.reindex freeEquality boundEquality
-      sortEquality) (morphism.mapsOpenCanonical term)
-  exact normalizationTransport.trans transportedNaturality
-
-/-- Mapping a normalized key does not invoke canonicalization observably: by
-naturality its raw target representative is exactly the structural image. -/
-@[simp]
-theorem canonicalKeyMap_pattern {source target : CIGSLT}
-    (morphism : Morphism source target) (key : source.CanonicalKey) :
-    (morphism.canonicalKeyMap key).1.1 =
-      mapPattern morphism.underlying.structural.structural.symbols key.1.1 := by
-  have naturality := morphism.mapsCanonical key.1
-  rw [key.2] at naturality
-  simpa [canonicalKeyMap, mapCanonicalTerm, mapOpenTerm] using
-    congrArg (fun term => term.1) naturality
-
-/-- The canonical-key action is genuinely injective; this is derived from
-raw quote faithfulness and canonicalization naturality. -/
-theorem canonicalKeyMap_injective {source target : CIGSLT}
-    (morphism : Morphism source target) :
-    Function.Injective morphism.canonicalKeyMap := by
-  intro left right equality
-  apply morphism.quoteFaithful
-  simpa using congrArg (fun key => key.1.1) equality
-
 /-- Preservation of the hereditary continuation closure is derived from
 preservation and reflection of the two principal introductions.  The closure
 therefore carries no independent morphism policy. -/
-theorem mapsWrappedConstructors {source target : CIGSLT}
+theorem mapsWrappedConstructors {source target : WrappableIGSLT}
     (morphism : Morphism source target)
     (constructor : DeclaredConstructor source.theory.presentation.presentation)
     (membership : constructor ∈
@@ -380,7 +328,7 @@ theorem mapsWrappedConstructors {source target : CIGSLT}
 
 /-- Reflection of the hereditary continuation closure is likewise forced by
 the reflected principal fibers. -/
-theorem reflectsWrappedConstructors {source target : CIGSLT}
+theorem reflectsWrappedConstructors {source target : WrappableIGSLT}
     (morphism : Morphism source target)
     (constructor : DeclaredConstructor source.theory.presentation.presentation)
     (membership :
@@ -396,10 +344,10 @@ theorem reflectsWrappedConstructors {source target : CIGSLT}
     apply membership.2
     rw [sourceEnvironment, morphism.mapsEnvironmentConstructor]
 
-/-- Continued morphisms are determined by their core and reflection symbol
-actions.  Forgetting reflection is intentionally not faithful. -/
+/-- Morphisms of wrappable theories are determined by their core and
+reflection symbol actions.  Forgetting reflection is intentionally not faithful. -/
 @[ext]
-theorem ext {source target : CIGSLT}
+theorem ext {source target : WrappableIGSLT}
     {first second : Morphism source target}
     (underlying : first.underlying = second.underlying)
     (reflectionSymbols : first.reflectionSymbols = second.reflectionSymbols) :
@@ -411,15 +359,15 @@ theorem ext {source target : CIGSLT}
   rfl
 
 /-- Identity structural transport preserves reflection scope exactly. -/
-theorem mapsReflectiveScope_id (theory : CIGSLT) {depth pattern}
+theorem mapsReflectiveScope_id (theory : WrappableIGSLT) {depth pattern}
     (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt theory.reflection.1
       depth pattern) :
     ReflectiveWellSorted.ReflectiveScopeSafeAt theory.reflection.1 depth
       (mapPattern LanguageDefSymbolMap.id pattern) := by
   simpa using safe
 
-/-- Identity continued morphism. -/
-def id (theory : CIGSLT) : Morphism theory theory where
+/-- Identity morphism of a wrappable theory. -/
+def id (theory : WrappableIGSLT) : Morphism theory theory where
   underlying := IGSLT.Morphism.id theory.theory
   reflectionSymbols := ReflectionSymbols.id
   mapsReflectivePresentations := by
@@ -490,90 +438,10 @@ def id (theory : CIGSLT) : Morphism theory theory where
   mapsEnvironmentSubject := by
     change mapOptionalPattern LanguageDefSymbolMap.id _ = _
     exact mapOptionalPattern_id _
-  mapsOpenCanonical := by
-    intro free bound sort term
-    have freeEquality : free = free.map LanguageDefSymbolMap.id :=
-      (WellSorted.FreeTypeContext.map_id free).symm
-    have boundEquality :
-        bound = bound.map (mapTypeExpr LanguageDefSymbolMap.id) := by
-      symm
-      calc
-        bound.map (mapTypeExpr LanguageDefSymbolMap.id) =
-            bound.map _root_.id := by
-          apply List.map_congr_left
-          intro type membership
-          exact mapTypeExpr_id type
-        _ = bound := List.map_id bound
-    have sortEquality : sort =
-        WellSorted.mapLangSort
-          (StructuralMorphism.id theory.theory.presentation.presentation)
-          sort := by
-      simp
-    have naturality := theory.openCanonical.normalize_reindex
-      freeEquality boundEquality sortEquality term
-    change theory.openCanonical.normalize
-        (ReflectiveWellSorted.OpenTerm.map
-          (StructuralMorphism.id theory.theory.presentation.presentation)
-          (mapsReflectiveScope_id theory) term) =
-      ReflectiveWellSorted.OpenTerm.map
-        (StructuralMorphism.id theory.theory.presentation.presentation)
-        (mapsReflectiveScope_id theory)
-        (theory.openCanonical.normalize term)
-    have mappedInputEquality :
-        ReflectiveWellSorted.OpenTerm.map
-            (StructuralMorphism.id theory.theory.presentation.presentation)
-            (mapsReflectiveScope_id theory) term =
-          term.reindex freeEquality boundEquality sortEquality := by
-      apply Subtype.ext
-      calc
-        (ReflectiveWellSorted.OpenTerm.map
-            (StructuralMorphism.id theory.theory.presentation.presentation)
-            (mapsReflectiveScope_id theory) term).1 =
-          mapPattern LanguageDefSymbolMap.id term.1 := rfl
-        _ = term.1 := mapPattern_id term.1
-        _ = (term.reindex freeEquality boundEquality sortEquality).1 :=
-          (ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _).symm
-    apply Subtype.ext
-    rw [mappedInputEquality]
-    have rawNaturality := congrArg Subtype.val naturality
-    calc
-      (theory.openCanonical.normalize
-          (term.reindex freeEquality boundEquality sortEquality)).1 =
-        ((theory.openCanonical.normalize term).reindex freeEquality
-          boundEquality sortEquality).1 := rawNaturality
-      _ = (theory.openCanonical.normalize term).1 :=
-        ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _
-      _ = mapPattern LanguageDefSymbolMap.id
-          (theory.openCanonical.normalize term).1 :=
-        (mapPattern_id _).symm
-      _ = (ReflectiveWellSorted.OpenTerm.map
-          (StructuralMorphism.id theory.theory.presentation.presentation)
-          (mapsReflectiveScope_id theory)
-          (theory.openCanonical.normalize term)).1 := rfl
-  quoteFaithful := by
-    intro left right equality
-    apply Subtype.ext
-    apply Subtype.ext
-    change mapPattern LanguageDefSymbolMap.id left.1.1 =
-      mapPattern LanguageDefSymbolMap.id right.1.1 at equality
-    simpa using equality
-
-/-- The canonical-key action of the identity is the identity. -/
-@[simp]
-theorem canonicalKeyMap_id (theory : CIGSLT)
-    (key : theory.CanonicalKey) :
-    canonicalKeyMap (id theory) key = key := by
-  apply Subtype.ext
-  have naturality := (id theory).mapsCanonical key.1
-  rw [key.2] at naturality
-  exact naturality.trans (by
-    apply Subtype.ext
-    change mapPattern LanguageDefSymbolMap.id key.1.1 = key.1.1
-    exact mapPattern_id _)
 
 /-- Reflection-scope preservation composes with the underlying structural
 symbol actions. -/
-theorem mapsReflectiveScope_comp {first second third : CIGSLT}
+theorem mapsReflectiveScope_comp {first second third : WrappableIGSLT}
     (left : Morphism first second) (right : Morphism second third)
     {depth pattern}
     (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt first.reflection.1
@@ -584,8 +452,8 @@ theorem mapsReflectiveScope_comp {first second third : CIGSLT}
   rw [mapPattern_comp]
   exact right.mapsReflectiveScope (left.mapsReflectiveScope safe)
 
-/-- Composition of continued morphisms. -/
-def comp {first second third : CIGSLT}
+/-- Composition of morphisms of wrappable theories. -/
+def comp {first second third : WrappableIGSLT}
     (left : Morphism first second) (right : Morphism second third) :
     Morphism first third where
   underlying := IGSLT.Morphism.comp left.underlying right.underlying
@@ -729,6 +597,243 @@ def comp {first second third : CIGSLT}
         right.underlying.structural.structural.symbols) _ = _
     rw [mapOptionalPattern_comp, left.mapsEnvironmentSubject,
       right.mapsEnvironmentSubject]
+
+end Morphism
+
+/-- Wrappable interactive GSLTs form a Mathlib category. -/
+instance : CategoryTheory.Category WrappableIGSLT where
+  Hom := Morphism
+  id := Morphism.id
+  comp := Morphism.comp
+  id_comp morphism := by
+    apply Morphism.ext
+    · apply IGSLT.Morphism.ext
+      apply InteractiveMorphism.ext
+      rfl
+    · rfl
+  comp_id morphism := by
+    apply Morphism.ext
+    · apply IGSLT.Morphism.ext
+      apply InteractiveMorphism.ext
+      rfl
+    · rfl
+  assoc first second third := by
+    apply Morphism.ext
+    · apply IGSLT.Morphism.ext
+      apply InteractiveMorphism.ext
+      rfl
+    · rfl
+
+/-- Forget the selected cut and the wrappability witness. -/
+def forget : CategoryTheory.Functor WrappableIGSLT IGSLT where
+  obj theory := theory.theory
+  map morphism := morphism.underlying
+  map_id theory := by
+    apply IGSLT.Morphism.ext
+    apply InteractiveMorphism.ext
+    rfl
+  map_comp left right := by
+    apply IGSLT.Morphism.ext
+    apply InteractiveMorphism.ext
+    rfl
+
+end WrappableIGSLT
+
+namespace CIGSLT
+
+open WrappableIGSLT.Morphism (mapsReflectiveScope_id mapsReflectiveScope_comp mapOpenTerm)
+
+/-- A continued morphism is a morphism of the underlying wrappable theories
+that commutes with canonicalization and is injective on canonical keys. -/
+structure Morphism (source target : CIGSLT) extends
+    WrappableIGSLT.Morphism source.toWrappableIGSLT target.toWrappableIGSLT where
+  /-- Canonicalization is natural on declaration-derived open sorted terms.
+  Unlike a law on raw patterns, both sides retain the expected sort and the
+  exact free and bound typing contexts. -/
+  mapsOpenCanonical : ∀ {free bound sort}
+      (term : ReflectiveWellSorted.OpenTerm source.reflection.1
+        source.theory.presentation.presentation.language free bound sort),
+    target.openCanonical.normalize
+        (term.map underlying.structural.structural mapsReflectiveScope) =
+      (source.openCanonical.normalize term).map
+        underlying.structural.structural mapsReflectiveScope
+  /-- Structural translation is injective on normalized reflective keys.
+  The target canonicalizer is omitted here because naturality proves that the
+  image of a normalized key is already normalized. -/
+  quoteFaithful : Function.Injective (fun key : source.CanonicalKey =>
+    mapPattern underlying.structural.structural.symbols key.1.1)
+
+namespace Morphism
+
+/-- Map the closed interacting reflective fibre and discharge the three
+index equalities produced by structural transport. -/
+def mapCanonicalTerm {source target : CIGSLT}
+    (morphism : Morphism source target)
+    (term : source.CanonicalCarrier) : target.CanonicalCarrier :=
+  (morphism.mapOpenTerm term).reindex
+    (WellSorted.FreeTypeContext.map_empty
+      morphism.underlying.structural.structural.symbols)
+    rfl morphism.mapsInteractingLangSort
+
+/-- Map a canonical key by translating its representative and then applying
+the target's computable section. -/
+def canonicalKeyMap {source target : CIGSLT}
+    (morphism : Morphism source target) :
+    source.CanonicalKey → target.CanonicalKey :=
+  fun key =>
+    ⟨target.canonical.normalize (morphism.mapCanonicalTerm key.1),
+      target.canonical.normalize_idempotent _⟩
+
+/-- Open typed naturality restricts to naturality of the closed
+paper-facing canonical sections. -/
+theorem mapsCanonical {source target : CIGSLT}
+    (morphism : Morphism source target)
+    (term : source.CanonicalCarrier) :
+    target.canonical.normalize (morphism.mapCanonicalTerm term) =
+      morphism.mapCanonicalTerm (source.canonical.normalize term) := by
+  let symbols := morphism.underlying.structural.structural.symbols
+  have freeEquality :
+      WellSorted.FreeTypeContext.empty.map symbols =
+        WellSorted.FreeTypeContext.empty :=
+    WellSorted.FreeTypeContext.map_empty symbols
+  have boundEquality :
+      ([] : List TypeExpr).map (mapTypeExpr symbols) = [] :=
+    rfl
+  have sortEquality := morphism.mapsInteractingLangSort
+  have normalizationTransport := target.openCanonical.normalize_reindex
+    freeEquality boundEquality sortEquality (morphism.mapOpenTerm term)
+  have transportedNaturality := congrArg
+    (ReflectiveWellSorted.OpenTerm.reindex freeEquality boundEquality
+      sortEquality) (morphism.mapsOpenCanonical term)
+  exact normalizationTransport.trans transportedNaturality
+
+/-- Mapping a normalized key does not invoke canonicalization observably: by
+naturality its raw target representative is exactly the structural image. -/
+@[simp]
+theorem canonicalKeyMap_pattern {source target : CIGSLT}
+    (morphism : Morphism source target) (key : source.CanonicalKey) :
+    (morphism.canonicalKeyMap key).1.1 =
+      mapPattern morphism.underlying.structural.structural.symbols key.1.1 := by
+  have naturality := morphism.mapsCanonical key.1
+  rw [key.2] at naturality
+  simpa [canonicalKeyMap, mapCanonicalTerm, mapOpenTerm] using
+    congrArg (fun term => term.1) naturality
+
+/-- The canonical-key action is genuinely injective; this is derived from
+raw quote faithfulness and canonicalization naturality. -/
+theorem canonicalKeyMap_injective {source target : CIGSLT}
+    (morphism : Morphism source target) :
+    Function.Injective morphism.canonicalKeyMap := by
+  intro left right equality
+  apply morphism.quoteFaithful
+  simpa using congrArg (fun key => key.1.1) equality
+
+/-- Continued morphisms are determined by their core and reflection symbol
+actions.  Forgetting reflection is intentionally not faithful. -/
+@[ext]
+theorem ext {source target : CIGSLT}
+    {first second : Morphism source target}
+    (underlying : first.underlying = second.underlying)
+    (reflectionSymbols : first.reflectionSymbols = second.reflectionSymbols) :
+    first = second := by
+  cases first with
+  | mk firstWrappable _ _ =>
+    cases second with
+    | mk secondWrappable _ _ =>
+      have same : firstWrappable = secondWrappable :=
+        WrappableIGSLT.Morphism.ext underlying reflectionSymbols
+      cases same
+      rfl
+
+/-- Identity continued morphism. -/
+def id (theory : CIGSLT) : Morphism theory theory where
+  toMorphism := WrappableIGSLT.Morphism.id theory.toWrappableIGSLT
+  mapsOpenCanonical := by
+    intro free bound sort term
+    have freeEquality : free = free.map LanguageDefSymbolMap.id :=
+      (WellSorted.FreeTypeContext.map_id free).symm
+    have boundEquality :
+        bound = bound.map (mapTypeExpr LanguageDefSymbolMap.id) := by
+      symm
+      calc
+        bound.map (mapTypeExpr LanguageDefSymbolMap.id) =
+            bound.map _root_.id := by
+          apply List.map_congr_left
+          intro type membership
+          exact mapTypeExpr_id type
+        _ = bound := List.map_id bound
+    have sortEquality : sort =
+        WellSorted.mapLangSort
+          (StructuralMorphism.id theory.theory.presentation.presentation)
+          sort := by
+      simp
+    have naturality := theory.openCanonical.normalize_reindex
+      freeEquality boundEquality sortEquality term
+    change theory.openCanonical.normalize
+        (ReflectiveWellSorted.OpenTerm.map
+          (StructuralMorphism.id theory.theory.presentation.presentation)
+          (mapsReflectiveScope_id theory) term) =
+      ReflectiveWellSorted.OpenTerm.map
+        (StructuralMorphism.id theory.theory.presentation.presentation)
+        (mapsReflectiveScope_id theory)
+        (theory.openCanonical.normalize term)
+    have mappedInputEquality :
+        ReflectiveWellSorted.OpenTerm.map
+            (StructuralMorphism.id theory.theory.presentation.presentation)
+            (mapsReflectiveScope_id theory) term =
+          term.reindex freeEquality boundEquality sortEquality := by
+      apply Subtype.ext
+      calc
+        (ReflectiveWellSorted.OpenTerm.map
+            (StructuralMorphism.id theory.theory.presentation.presentation)
+            (mapsReflectiveScope_id theory) term).1 =
+          mapPattern LanguageDefSymbolMap.id term.1 := rfl
+        _ = term.1 := mapPattern_id term.1
+        _ = (term.reindex freeEquality boundEquality sortEquality).1 :=
+          (ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _).symm
+    apply Subtype.ext
+    rw [mappedInputEquality]
+    have rawNaturality := congrArg Subtype.val naturality
+    calc
+      (theory.openCanonical.normalize
+          (term.reindex freeEquality boundEquality sortEquality)).1 =
+        ((theory.openCanonical.normalize term).reindex freeEquality
+          boundEquality sortEquality).1 := rawNaturality
+      _ = (theory.openCanonical.normalize term).1 :=
+        ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _
+      _ = mapPattern LanguageDefSymbolMap.id
+          (theory.openCanonical.normalize term).1 :=
+        (mapPattern_id _).symm
+      _ = (ReflectiveWellSorted.OpenTerm.map
+          (StructuralMorphism.id theory.theory.presentation.presentation)
+          (mapsReflectiveScope_id theory)
+          (theory.openCanonical.normalize term)).1 := rfl
+  quoteFaithful := by
+    intro left right equality
+    apply Subtype.ext
+    apply Subtype.ext
+    change mapPattern LanguageDefSymbolMap.id left.1.1 =
+      mapPattern LanguageDefSymbolMap.id right.1.1 at equality
+    simpa using equality
+
+/-- The canonical-key action of the identity is the identity. -/
+@[simp]
+theorem canonicalKeyMap_id (theory : CIGSLT)
+    (key : theory.CanonicalKey) :
+    canonicalKeyMap (id theory) key = key := by
+  apply Subtype.ext
+  have naturality := (id theory).mapsCanonical key.1
+  rw [key.2] at naturality
+  exact naturality.trans (by
+    apply Subtype.ext
+    change mapPattern LanguageDefSymbolMap.id key.1.1 = key.1.1
+    exact mapPattern_id _)
+
+/-- Composition of continued morphisms. -/
+def comp {first second third : CIGSLT}
+    (left : Morphism first second) (right : Morphism second third) :
+    Morphism first third where
+  toMorphism := WrappableIGSLT.Morphism.comp left.toMorphism right.toMorphism
   mapsOpenCanonical := by
     intro free bound sort term
     let firstStructural := left.underlying.structural.structural
@@ -789,7 +894,7 @@ def comp {first second third : CIGSLT}
         depth (mapPattern
           (left.underlying.structural.structural.symbols.comp
             right.underlying.structural.structural.symbols) pattern)
-      exact mapsReflectiveScope_comp left right safe
+      exact mapsReflectiveScope_comp left.toMorphism right.toMorphism safe
     let compositeMapped := term.map compositeStructural compositeScope
     let compositeNormalized := (first.openCanonical.normalize term).map
       compositeStructural compositeScope
@@ -894,6 +999,14 @@ instance : CategoryTheory.Category CIGSLT where
       apply InteractiveMorphism.ext
       rfl
     · rfl
+
+/-- Forget the section: the underlying wrappable theory, with the same action
+on morphisms. -/
+def toWrappable : CategoryTheory.Functor CIGSLT WrappableIGSLT where
+  obj theory := theory.toWrappableIGSLT
+  map morphism := morphism.toMorphism
+  map_id _ := rfl
+  map_comp _ _ := rfl
 
 /-- Forget the selected cut, section, and wrappability witness. -/
 def forget : CategoryTheory.Functor CIGSLT IGSLT where

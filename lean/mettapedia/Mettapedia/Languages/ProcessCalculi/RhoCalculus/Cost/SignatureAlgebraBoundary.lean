@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.Cost.KeyObservation
-import Mettapedia.Languages.MeTTa.PrimeCandidates.SelectedCostLayerIterationBoundary
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySupportedIterationObstruction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopRestoration
 
 /-!
 # The generated signature syntax does not impose the monoid unit law
@@ -16,12 +17,11 @@ open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.Framework.ConstructorCategory
-open Mettapedia.Languages.MeTTa.PrimeCandidates.SelectedCostLayerIterationBoundary
 open LanguageDefContinuedInteraction
 
 noncomputable section
 
-abbrev source : CIGSLT := rhoSelectedCostLayerConfiguration.source
+abbrev source : CIGSLT := rhoHereditaryCostLayer.compactOutput.toCIGSLT
 
 def unitSignature : Pattern := .apply costSignatureUnitConstructorName []
 
@@ -101,9 +101,6 @@ theorem signature_unit_product_not_equivalent :
   intro equivalent
   exact signature_unit_product_keys_distinct
     ((source.canonicalKey_eq_iff unitTerm productTerm).mpr equivalent)
-
-#print axioms signature_unit_product_keys_distinct
-#print axioms signature_unit_product_not_equivalent
 
 end
 

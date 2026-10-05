@@ -1,5 +1,7 @@
 import Mathlib.Data.NNReal.Defs
 import Mettapedia.CognitiveArchitecture.ProblemSolvingMethods
+import Mettapedia.Computability.KolmogorovComplexity.PrefixComplexity
+import Mettapedia.Computability.KolmogorovComplexity.ReferenceMachine
 import Mettapedia.UniversalAI.SelfModification.ProofBackedImprovement
 import Mettapedia.UniversalAI.SolomonoffPrior
 
@@ -22,9 +24,10 @@ The reusable components live outside this historical namespace:
   registries, evidence-retaining invention, and multiple-reference-machine
   memory;
 * `UniversalAI.SelfModification.ProofBackedImprovement` supplies the abstract
-  improvement interface; and
-* `UniversalAI.SolomonoffPrior` supplies the actual prefix-free universal
-  machine interface.
+  improvement interface;
+* `Computability.KolmogorovComplexity.ReferenceMachine` supplies effective
+  conditional prefix machines with uniform simulation witnesses; and
+* `UniversalAI.SolomonoffPrior` supplies their finite algorithmic probability.
 
 This file composes those parts.  It does not identify Omega with OmegaClaw,
 does not identify a tool authorization broker with a PSM registry, and does
@@ -39,18 +42,25 @@ open Mettapedia.UniversalAI.SolomonoffPrior
 open scoped NNReal
 
 universe uProblem uSolution uMethod uMachine uInput uOutput uKernel uCapability
-  uAnalysis uSynthesis uValue uMethodAdmission uMethodRealization uProgram uRun
-  uRetained uTransfer uBootstrap uImprovement
+  uValue uEvidence
 
 /-! ## The independently sourced Alpha component -/
 
-/-- Solomonoff's Alpha substrate, represented by an actual universal
-prefix-free machine rather than redefined inside Omega. -/
+/-- Solomonoff's Alpha substrate, represented by an effective reference
+machine with its uniform simulation witness. -/
 structure AlphaSubstrate where
-  machine : PrefixFreeMachine
-  universal : UniversalPFM machine
+  machine : KolmogorovComplexity.ReferenceMachine
 
 namespace AlphaSubstrate
+
+/-- An Alpha substrate carried by the effective trimmed indexed host. -/
+noncomputable def canonical : AlphaSubstrate where
+  machine := KolmogorovComplexity.ReferenceMachine.canonical
+
+/-- The canonical Alpha substrate represents every finite binary output. -/
+theorem canonical_has_output_program (output : BinString) :
+    ∃ program, (canonical.machine : PrefixFreeMachine).compute program = some output :=
+  KolmogorovComplexity.outputComplete_has_program (U := canonical.machine) output
 
 /-- The inherited Alpha substrate supplies the existing algorithmic
 probability, without attributing that construction to Omega. -/
@@ -74,7 +84,7 @@ structure BootstrapPremise
     (KernelState : Type uKernel) (Capability : Type uCapability) where
   initialState : KernelState
   targetCapability : Capability
-  Reaches : KernelState → Capability → Type uAnalysis
+  Reaches : KernelState → Capability → Type uEvidence
   bootstrap : Reaches initialState targetCapability
 
 /-- Architecture-neutral higher-order analysis and synthesis.
@@ -83,11 +93,11 @@ The plan types are intentionally abstract: an architecture may use trees,
 graphs, GSLT presentations, or another decomposition language. -/
 structure ReflectiveCognition
     (Problem : Type uProblem) (Method : Type uMethod) where
-  AnalysisPlan : Type uAnalysis
-  SynthesisPlan : Type uSynthesis
-  analyzes : Problem → AnalysisPlan → Type uAnalysis
-  usesMethod : SynthesisPlan → Method → Type uSynthesis
-  producesMethod : SynthesisPlan → Method → Type uSynthesis
+  AnalysisPlan : Type uEvidence
+  SynthesisPlan : Type uEvidence
+  analyzes : Problem → AnalysisPlan → Type uEvidence
+  usesMethod : SynthesisPlan → Method → Type uEvidence
+  producesMethod : SynthesisPlan → Method → Type uEvidence
 
 /-! ## Forecast-guided ensemble execution -/
 
@@ -143,16 +153,16 @@ structure Architecture
     (KernelState : Type uKernel) (Capability : Type uCapability)
     (Value : Type uValue) [Preorder Value] where
   alpha : AlphaSubstrate
-  bootstrap : BootstrapPremise.{uKernel, uCapability, uBootstrap} KernelState Capability
-  methods : Registry.{uProblem, uSolution, uMethod, uMethodAdmission,
-    uMethodRealization} Problem Solution Method
-  referenceMachines : ReferenceMachineFamily.{uInput, uOutput, uMachine, uProgram,
-    uRun} Machine Input Output
-  memory : MultiMachineMemory.{uInput, uOutput, uMachine, uRetained, uTransfer,
-    uProgram, uRun} referenceMachines
-  cognition : ReflectiveCognition.{uProblem, uMethod, uAnalysis, uSynthesis} Problem Method
+  bootstrap : BootstrapPremise.{uKernel, uCapability, uEvidence} KernelState Capability
+  methods : Registry.{uProblem, uSolution, uMethod, uEvidence,
+    uEvidence} Problem Solution Method
+  referenceMachines : ReferenceMachineFamily.{uInput, uOutput, uMachine, uEvidence,
+    uEvidence} Machine Input Output
+  memory : MultiMachineMemory.{uInput, uOutput, uMachine, uEvidence, uEvidence,
+    uEvidence, uEvidence} referenceMachines
+  cognition : ReflectiveCognition.{uProblem, uMethod, uEvidence} Problem Method
   ensemble : ForecastGuidedEnsemble Problem Method
-  selfImprovement : ProofBackedImprovement.{uKernel, uValue, uImprovement}
+  selfImprovement : ProofBackedImprovement.{uKernel, uValue, uEvidence}
     KernelState Value
   initialEnvironmentKnowledge : InitialEnvironmentKnowledge
 
@@ -169,12 +179,10 @@ structure SourceProfile
     {KernelState : Type uKernel} {Capability : Type uCapability}
     {Value : Type uValue} [Preorder Value]
     (architecture : Architecture.{uProblem, uSolution, uMethod, uMachine, uInput,
-      uOutput, uKernel, uCapability, uAnalysis, uSynthesis, uValue,
-      uMethodAdmission, uMethodRealization, uProgram, uRun, uRetained, uTransfer,
-      uBootstrap, uImprovement} Problem Solution Method Machine Input Output
+      uOutput, uKernel, uCapability, uValue, uEvidence} Problem Solution Method Machine Input Output
       KernelState Capability Value) where
-  futureMethods : Registry.{uProblem, uSolution, uMethod, uMethodAdmission,
-    uMethodRealization} Problem Solution Method
+  futureMethods : Registry.{uProblem, uSolution, uMethod, uEvidence,
+    uEvidence} Problem Solution Method
   invented : Method
   inventedMethod : InventionReceipt architecture.methods futureMethods invented
   multiMachineMemory : UsesMultipleMachines architecture.memory

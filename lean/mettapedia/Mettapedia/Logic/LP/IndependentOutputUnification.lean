@@ -36,6 +36,123 @@ def solutions (equations : List (Term σ × Term σ))
   { values | ∃ theta : Subst σ, Unifies theta equations ∧
       values = observations.map theta.applyTerm }
 
+omit [DecidableEq σ.vars] [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- Projected solutions can be compared inside further equations when the
+projection observes both sides of those equations together. The shared
+substitution retains correlations between the context and caller results. -/
+theorem solutions_context_congr
+    (first second context : List (Term σ × Term σ))
+    (observations : List (Term σ))
+    (equivalent :
+      solutions first (context.flatMap (fun pair => [pair.1, pair.2]) ++ observations) =
+        solutions second (context.flatMap (fun pair => [pair.1, pair.2]) ++ observations)) :
+    solutions (first ++ context) observations =
+      solutions (second ++ context) observations := by
+  let viewed := context.flatMap (fun pair => [pair.1, pair.2]) ++ observations
+  have transfer (left right : List (Term σ × Term σ))
+      (same : solutions left viewed = solutions right viewed) :
+      solutions (left ++ context) observations ⊆
+        solutions (right ++ context) observations := by
+    rintro values ⟨theta, solves, published⟩
+    have projected : viewed.map theta.applyTerm ∈ solutions left viewed :=
+      ⟨theta, fun pair member => solves pair (List.mem_append_left context member), rfl⟩
+    rw [same] at projected
+    obtain ⟨other, accepted, agreement⟩ := projected
+    have agrees : ∀ term ∈ viewed, theta.applyTerm term = other.applyTerm term :=
+      List.map_inj_left.mp agreement
+    refine ⟨other, ?_, ?_⟩
+    · intro pair member
+      rcases List.mem_append.mp member with inRight | inContext
+      · exact accepted pair inRight
+      · have leftObserved : pair.1 ∈ viewed := by
+          exact List.mem_append_left _
+            (List.mem_flatMap.mpr ⟨pair, inContext, by simp⟩)
+        have rightObserved : pair.2 ∈ viewed := by
+          exact List.mem_append_left _
+            (List.mem_flatMap.mpr ⟨pair, inContext, by simp⟩)
+        rw [← agrees pair.1 leftObserved, ← agrees pair.2 rightObserved]
+        exact solves pair (List.mem_append_right left inContext)
+    · rw [published]
+      exact List.map_congr_left fun term member =>
+        agrees term (List.mem_append_right _ member)
+  exact Set.Subset.antisymm (transfer first second equivalent)
+    (transfer second first equivalent.symm)
+
+omit [DecidableEq σ.vars] [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- Contextual projection preserves an ordered list of alternatives,
+including repeated occurrences. The hypothesis compares each complete
+joint projection at its original list position. -/
+theorem ordered_solutions_context_congr
+    (left right : List (Term σ)) (field : σ.vars)
+    (context : List (Term σ × Term σ)) (observations : List (Term σ))
+    (equivalent :
+      left.map (fun answer => solutions [(answer, .var field)]
+        (context.flatMap (fun pair => [pair.1, pair.2]) ++ observations)) =
+      right.map (fun answer => solutions [(answer, .var field)]
+        (context.flatMap (fun pair => [pair.1, pair.2]) ++ observations))) :
+    left.map (fun answer => solutions ([(answer, .var field)] ++ context) observations) =
+      right.map (fun answer => solutions ([(answer, .var field)] ++ context) observations) := by
+  induction left generalizing right with
+  | nil =>
+      cases right with
+      | nil => rfl
+      | cons answer rest => simp at equivalent
+  | cons answer rest ih =>
+      cases right with
+      | nil => simp at equivalent
+      | cons other later =>
+          simp only [List.map_cons, List.cons.injEq] at equivalent ⊢
+          exact ⟨solutions_context_congr _ _ context observations equivalent.1,
+            ih later equivalent.2⟩
+
+omit [DecidableEq σ.vars] [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- Joint observation equality pairs alternatives at their original list
+positions. Quantifying the observation vector before pairing preserves
+correlations across every later use of each alternative. -/
+theorem ordered_publication_pairing (left right : List (Term σ)) (field : σ.vars)
+    (admissible : List (Term σ) → Prop) (empty : admissible [])
+    (compared : ∀ observations, admissible observations →
+      left.map (fun answer => solutions [(answer, .var field)] observations) =
+        right.map (fun answer => solutions [(answer, .var field)] observations)) :
+    List.Forall₂ (fun first second => ∀ observations, admissible observations →
+      solutions [(first, .var field)] observations =
+        solutions [(second, .var field)] observations) left right := by
+  induction left generalizing right with
+  | nil =>
+      have same := compared [] empty
+      cases right with
+      | nil => exact .nil
+      | cons head tail => simp at same
+  | cons first rest ih =>
+      cases right with
+      | nil => have same := compared [] empty; simp at same
+      | cons second later =>
+          refine .cons ?_ (ih later ?_)
+          · intro observations allowed
+            exact (List.cons.inj (compared observations allowed)).1
+          · intro observations allowed
+            exact (List.cons.inj (compared observations allowed)).2
+
+omit [DecidableEq σ.vars] [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- Equation order does not affect their simultaneous solution family.
+This does not permute the ordered alternatives of a procedural query. -/
+theorem solutions_equations_congr (first second : List (Term σ × Term σ))
+    (same : ∀ equation, equation ∈ first ↔ equation ∈ second)
+    (observations : List (Term σ)) :
+    solutions first observations = solutions second observations := by
+  ext values
+  constructor
+  · rintro ⟨theta, solves, published⟩
+    exact ⟨theta, fun equation present => solves equation ((same equation).mpr present), published⟩
+  · rintro ⟨theta, solves, published⟩
+    exact ⟨theta, fun equation present => solves equation ((same equation).mp present), published⟩
+
+omit [DecidableEq σ.vars] [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+theorem solutions_append_comm (first second : List (Term σ × Term σ))
+    (observations : List (Term σ)) :
+    solutions (first ++ second) observations = solutions (second ++ first) observations :=
+  solutions_equations_congr (first ++ second) (second ++ first) (by intros; simp [or_comm]) observations
+
 def publish (result : Option (Subst σ)) (observations : List (Term σ)) :
     List (Set (List (Term σ))) :=
   result.toList.map fun theta => refinements theta observations
@@ -90,6 +207,93 @@ theorem unifies_applyEqs (first second : Subst σ)
     obtain ⟨original, present, rfl⟩ := List.mem_map.mp member
     rcases original with ⟨left, right⟩
     simpa only [Subst.applyTerm_comp] using solves (left, right) present
+
+/-- Solving an initial equation list transforms both the remaining
+equations and the observations by its actual most general unifier. All
+later solutions factor through that same substitution. -/
+theorem solutions_after_unifyTotal
+    (first context : List (Term σ × Term σ)) (theta : Subst σ)
+    (accepted : unifyTotal first = some theta) (observations : List (Term σ)) :
+    solutions (first ++ context) observations =
+      solutions (theta.applyEqs context) (observations.map theta.applyTerm) := by
+  ext values
+  constructor
+  · rintro ⟨candidate, solves, published⟩
+    obtain ⟨later, factors⟩ := unifyTotal_mgu first theta accepted candidate
+      (fun pair member => solves pair (List.mem_append_left context member))
+    have equal : candidate = later ∘ₛ theta := funext factors
+    refine ⟨later, ?_, ?_⟩
+    · apply (unifies_applyEqs theta later context).mpr
+      rw [← equal]
+      exact fun pair member => solves pair (List.mem_append_right first member)
+    · rw [published, equal, List.map_map]
+      apply List.map_congr_left
+      intro term _
+      simp only [Subst.applyTerm_comp, Function.comp_def]
+  · rintro ⟨later, solves, published⟩
+    refine ⟨later ∘ₛ theta, ?_, ?_⟩
+    · intro pair member
+      rcases List.mem_append.mp member with inFirst | inContext
+      · exact unifies_refinement first theta later
+          (unifyTotal_sound first theta accepted) pair inFirst
+      · exact (unifies_applyEqs theta later context).mp solves pair inContext
+    · rw [published, List.map_map]
+      apply List.map_congr_left
+      intro term _
+      simp only [Subst.applyTerm_comp, Function.comp_def]
+
+omit [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- An equation for a fresh private field can be eliminated into the
+remaining equations. Caller observations cannot read that field, and the
+replacement must not contain it. -/
+theorem solutions_eliminate_fresh (field : σ.vars) (answer : Term σ)
+    (context : List (Term σ × Term σ)) (observations : List (Term σ))
+    (answerAbsent : field ∉ answer.freeVars)
+    (privateAbsent : ∀ term ∈ observations, field ∉ term.freeVars) :
+    solutions ((answer, .var field) :: context) observations =
+      solutions ((Subst.single field answer).applyEqs context) observations := by
+  have fixes (term : Term σ) (absent : field ∉ term.freeVars) :
+      (Subst.single field answer).applyTerm term = term := by
+    apply Subst.applyTerm_eq_self
+    intro name member
+    exact Subst.single_ne answer (fun same => absent (same ▸ member))
+  ext values
+  constructor
+  · rintro ⟨theta, solves, published⟩
+    refine ⟨theta, ?_, published⟩
+    apply unifies_applyEqs_of_eliminate field answer context theta
+    · exact (solves (answer, .var field) (by simp)).symm
+    · exact fun pair member => solves pair (List.mem_cons_of_mem _ member)
+  · rintro ⟨theta, solves, published⟩
+    refine ⟨theta ∘ₛ Subst.single field answer, ?_, ?_⟩
+    · intro pair member
+      rcases List.mem_cons.mp member with rfl | inContext
+      · simp only [Subst.applyTerm_comp, fixes answer answerAbsent,
+          Subst.applyTerm_var]
+        simp [Subst.single]
+      · exact (unifies_applyEqs (Subst.single field answer) theta context).mp
+          solves pair inContext
+    · rw [published]
+      apply List.map_congr_left
+      intro term member
+      rw [Subst.applyTerm_comp, fixes term (privateAbsent term member)]
+
+omit [DecidableEq σ.vars] [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- An unsolved field contributes a reflexive equation and leaves every
+joint solution family unchanged. -/
+theorem solutions_reflexive_equation (term : Term σ)
+    (context : List (Term σ × Term σ)) (observations : List (Term σ)) :
+    solutions ((term, term) :: context) observations = solutions context observations := by
+  ext values
+  constructor
+  · rintro ⟨theta, solves, published⟩
+    exact ⟨theta, fun pair member => solves pair (List.mem_cons_of_mem _ member), published⟩
+  · rintro ⟨theta, solves, published⟩
+    refine ⟨theta, ?_, published⟩
+    intro pair member
+    rcases List.mem_cons.mp member with rfl | inContext
+    · rfl
+    · exact solves pair inContext
 
 theorem sequential_sound (first second : List (Term σ × Term σ))
     (theta : Subst σ) (accepted : sequential first second = some theta) :
@@ -309,6 +513,75 @@ theorem variable_output_match (privateName output : σ.vars)
       some (Subst.single privateName (.var output)) := by
   simp [unifyTotal, different, Subst.applyEqs, Subst.comp_id_left]
 
+/-- A proper result term binds an absent output without changing the result
+or orienting any of its internal variables toward the output. -/
+theorem nonvariable_output_match (output : σ.vars) (result : Term σ)
+    (proper : ∀ name, result ≠ .var name) (outputAbsent : output ∉ result.freeVars) :
+    unifyTotal [(result, .var output)] = some (Subst.single output result) := by
+  have notOccurs : result.occursIn output = false := by
+    cases occurs : result.occursIn output with
+    | false => rfl
+    | true =>
+        exact False.elim
+          (outputAbsent ((Term.occursIn_iff_mem_freeVars output result).mp occurs))
+  cases result with
+  | var name => exact False.elim (proper name rfl)
+  | const value => simp [unifyTotal, Subst.applyEqs, Subst.comp_id_left]
+  | app function children =>
+      simp [unifyTotal, notOccurs, Subst.applyEqs, Subst.comp_id_left]
+
+omit [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- Binding a private variable changes no projected refinement when that
+variable is absent from every caller observation. -/
+theorem private_alias_refinements (privateName output : σ.vars)
+    (observations : List (Term σ))
+    (privateAbsent : ∀ term ∈ observations, privateName ∉ term.freeVars) :
+    refinements (Subst.single privateName (.var output)) observations =
+      refinements (Subst.id σ) observations := by
+  have fixed : ∀ term ∈ observations,
+      (Subst.single privateName (.var output)).applyTerm term = term := by
+    intro term member
+    apply Subst.applyTerm_eq_self
+    intro name occurs
+    apply Subst.single_ne
+    exact fun same => privateAbsent term member (same ▸ occurs)
+  ext values
+  simp only [refinements, Set.mem_ofPred_eq]
+  have projection : ∀ later : Subst σ,
+      observations.map (later ∘ₛ Subst.single privateName (.var output)).applyTerm =
+        observations.map (later ∘ₛ Subst.id σ).applyTerm := by
+    intro later
+    apply List.map_congr_left
+    intro term member
+    simp only [Subst.applyTerm_comp, fixed term member, Subst.applyTerm_id]
+  simp only [projection]
+
+/-- A solved private result variable may be exchanged with an independent
+output before publication. All caller observations, including the output
+itself and any subject variables, retain the same refinement family. -/
+theorem solved_private_output_publication (privateName output : σ.vars)
+    (different : privateName ≠ output) (result : Term σ)
+    (solved : result = .var privateName ∨ privateName ∉ result.freeVars)
+    (outputAbsent : output ∉ result.freeVars) (observations : List (Term σ))
+    (privateAbsent : ∀ term ∈ observations, privateName ∉ term.freeVars) :
+    solutions [(UnificationRenaming.rename (Equiv.swap privateName output) result,
+        .var output)] observations =
+      solutions [(result, .var output)] observations := by
+  rcases solved with rfl | privateResultAbsent
+  · rw [UnificationRenaming.rename_var, Equiv.swap_apply_left]
+    rw [← total_refinements_exact _ (Subst.id σ)
+      (by simp [unifyTotal]) observations]
+    rw [← total_refinements_exact _ (Subst.single privateName (.var output))
+      (variable_output_match privateName output different) observations]
+    exact (private_alias_refinements privateName output observations privateAbsent).symm
+  · have fixed : UnificationRenaming.rename (Equiv.swap privateName output) result = result := by
+      apply Subst.applyTerm_eq_self
+      intro name member
+      have notPrivate : name ≠ privateName := fun same => privateResultAbsent (same ▸ member)
+      have notOutput : name ≠ output := fun same => outputAbsent (same ▸ member)
+      simp only [Equiv.swap_apply_of_ne_of_ne notPrivate notOutput]
+    rw [fixed]
+
 /-- The actual unifier cannot alter a subject whose variables are absent
 from its constraint problem. This includes variable-kind tests performed
 later by a procedural consumer. -/
@@ -321,6 +594,46 @@ theorem total_unifier_keeps_disjoint_subject
   intro name member
   apply (unifyTotal_relevantIdempotent equations theta accepted).fixes
   exact fun occurs => Finset.disjoint_left.mp separate member occurs
+
+omit [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] in
+/-- Relevant substitutions on disjoint variable sets commute. Each one
+fixes both the other one's bindings and every variable in their range. -/
+theorem relevant_substitutions_commute
+    (first second : Subst σ) (left right : Finset σ.vars)
+    (firstRelevant : first.RelevantIdempotent left)
+    (secondRelevant : second.RelevantIdempotent right)
+    (separate : Disjoint left right) :
+    first ∘ₛ second = second ∘ₛ first := by
+  funext name
+  simp only [Subst.comp_apply]
+  by_cases inLeft : name ∈ left
+  · have notRight : name ∉ right := Finset.disjoint_left.mp separate inLeft
+    rw [secondRelevant.fixes name notRight, Subst.applyTerm_var]
+    symm
+    apply Subst.applyTerm_eq_self
+    intro other member
+    apply secondRelevant.fixes
+    exact Finset.disjoint_left.mp separate (firstRelevant.range name inLeft member)
+  · rw [firstRelevant.fixes name inLeft, Subst.applyTerm_var]
+    by_cases inRight : name ∈ right
+    · apply Subst.applyTerm_eq_self
+      intro other member
+      apply firstRelevant.fixes
+      exact Finset.disjoint_right.mp separate (secondRelevant.range name inRight member)
+    · rw [secondRelevant.fixes name inRight, Subst.applyTerm_var,
+        firstRelevant.fixes name inLeft]
+
+/-- The substitutions returned by total matchers for disjoint equation
+problems can be composed in either order. -/
+theorem total_unifiers_commute
+    (left right : List (Term σ × Term σ)) (first second : Subst σ)
+    (firstAccepted : unifyTotal left = some first)
+    (secondAccepted : unifyTotal right = some second)
+    (separate : Disjoint (eqVars left) (eqVars right)) :
+    first ∘ₛ second = second ∘ₛ first :=
+  relevant_substitutions_commute first second (eqVars left) (eqVars right)
+    (unifyTotal_relevantIdempotent left first firstAccepted)
+    (unifyTotal_relevantIdempotent right second secondAccepted) separate
 
 /-- Fresh activation separates the codomain's variables from the subject;
 an independent output name separates the remaining variable in the initial

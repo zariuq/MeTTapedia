@@ -189,10 +189,4 @@ noncomputable def unit : base ⟶
     apply FreeBindingClone.Hom.ext
     exact FreeBindingTerms.Hom.ext (fun _ => rfl))
 
-#print axioms observationHom
-#print axioms act_substitute
-#print axioms model
-#print axioms generatorHom
-#print axioms unit
-
 end Mettapedia.GSLT.LanguageDef.Cost.FreeAccountBindingModel

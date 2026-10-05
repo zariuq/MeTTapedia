@@ -5,7 +5,8 @@ import Mettapedia.Logic.HOL.Embedding.ZFSetTraceProducts
 # Carriers of inductive signatures with function fields
 
 A field is recursive, one fixed set, or the functions from a fixed set into the
-carrier. Constructor values are the pairs already used for simple signatures.
+carrier. A constructor is its list of fields, and the value of constructor `i` is the
+constructor value of simple signatures whose tag is the numeral `i`.
 The carrier is the least set of those values at fitting arguments. It is
 collected as the image of path codes: a code is a function from finite lists of
 moves to node labels. The union of the finite iterates of one step is not that
@@ -18,8 +19,8 @@ namespace Mettapedia.Logic.HOL.Embedding.ZFSetInductiveFunctions
 
 open ZFSetHenkinInterpretation ZFSetUniverseClosure ZFSetDependentProducts
 open ZFSetIndexedClosure ZFSetList ZFSetTraceProducts
-open ZFSetInductive (constructorValue tuple constructorValue_index constructorValue_args
-  constructorValue_injective constructorValue_ne_empty)
+open ZFSetInductive (constructorValue tuple tuple_mem constructorValue_tag
+  constructorValue_args constructorValue_injective constructorValue_ne_empty numeral_mem_of_omega)
 open Mettapedia.SetTheory.ZFSetOrderedPair (first second first_pair second_pair)
 open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation
   (numeral numeral_injective numeral_mem_omega numeral_succ mem_omega_iff range_numeral
@@ -67,18 +68,6 @@ inductive FitsPred (P : ZFSet.{u} → Prop) : List Field.{u} → List ZFSet.{u} 
         (∀ a, a ∈ A → P (traceApp f a)) → FitsPred P fs args →
           FitsPred P (Field.ofFun A :: fs) (f :: args)
 
-theorem graph_congr {a : ZFSet.{u}} {f g : ZFSet.{u} → ZFSet.{u}}
-    (h : ∀ x, x ∈ a → f x = g x) : graph a f = graph a g := by
-  apply ZFSet.ext
-  intro z
-  constructor
-  · intro hz
-    obtain ⟨x, hx, rfl⟩ := mem_graph.mp hz
-    exact mem_graph.mpr ⟨x, hx, by rw [h x hx]⟩
-  · intro hz
-    obtain ⟨x, hx, rfl⟩ := mem_graph.mp hz
-    exact mem_graph.mpr ⟨x, hx, by rw [← h x hx]⟩
-
 theorem mem_tracePiSet_of_total {A f X : ZFSet.{u}}
     (total : f = traceLam (graph A (fun a => traceApp f a)))
     (values : ∀ a, a ∈ A → traceApp f a ∈ X) :
@@ -122,7 +111,7 @@ mutual
 inductive InCarrier (sig : Signature.{u}) : ZFSet.{u} → Prop where
   | intro {i : Nat} {c : Constructor} {args : List ZFSet.{u}}
       (atIndex : sig[i]? = some c) (fitting : Deriv sig c args) :
-      InCarrier sig (constructorValue i args)
+      InCarrier sig (constructorValue (numeral i) args)
 
 inductive Deriv (sig : Signature.{u}) : List Field.{u} → List ZFSet.{u} → Prop where
   | nil : Deriv sig [] []
@@ -160,7 +149,7 @@ theorem fitsPred_deriv {sig : Signature.{u}} {c : Constructor} {args : List ZFSe
 and function values satisfy it holds of every generated element. -/
 theorem inCarrier_induct {sig : Signature.{u}} {P : ZFSet.{u} → Prop}
     (step : ∀ {i : Nat} {c : Constructor} {args : List ZFSet.{u}},
-      sig[i]? = some c → FitsPred P c args → P (constructorValue i args))
+      sig[i]? = some c → FitsPred P c args → P (constructorValue (numeral i) args))
     {x : ZFSet.{u}} (hx : InCarrier sig x) : P x :=
   InCarrier.rec
     (motive_1 := fun y _ => P y)
@@ -184,7 +173,7 @@ inductive Arg : ZFSet.{u} → List Field.{u} → List ZFSet.{u} → Prop where
       Arg y fs args → Arg y (field :: fs) (a :: args)
 
 def Immediate (sig : Signature.{u}) (y x : ZFSet.{u}) : Prop :=
-  ∃ i c args, sig[i]? = some c ∧ x = constructorValue i args ∧
+  ∃ i c args, sig[i]? = some c ∧ x = constructorValue (numeral i) args ∧
     Deriv sig c args ∧ Arg y c args
 
 theorem arg_inCarrier {sig : Signature.{u}} {c : Constructor} {args : List ZFSet.{u}} {y : ZFSet.{u}}
@@ -204,10 +193,10 @@ theorem arg_inCarrier {sig : Signature.{u}} {c : Constructor} {args : List ZFSet
 
 theorem arg_of_immediate {sig : Signature.{u}} {y : ZFSet.{u}} {i : Nat} {c : Constructor}
     {args : List ZFSet.{u}}
-    (hy : Immediate sig y (constructorValue i args))
+    (hy : Immediate sig y (constructorValue (numeral i) args))
     (atIndex : sig[i]? = some c) : Arg y c args := by
   obtain ⟨j, d, ds, atJ, equal, _, harg⟩ := hy
-  have indexEq : i = j := constructorValue_index equal
+  have indexEq : i = j := numeral_injective (constructorValue_tag equal)
   have argsEq : args = ds := constructorValue_args equal
   cases indexEq
   cases argsEq
@@ -229,7 +218,7 @@ theorem inCarrier_acc {sig : Signature.{u}} {x : ZFSet.{u}} (hx : InCarrier sig 
     (motive_1 := fun y _ => Acc (Immediate sig) y)
     (motive_2 := fun c args _ => ∀ y, Arg y c args → Acc (Immediate sig) y)
     (fun {i c args} atIndex _ subAcc =>
-      Acc.intro (constructorValue i args) (fun y hy =>
+      Acc.intro (constructorValue (numeral i) args) (fun y hy =>
         subAcc y (arg_of_immediate hy atIndex)))
     (fun _ hy => by cases hy)
     (fun {fs args a} _ _ accA accRest y hy => by
@@ -251,7 +240,7 @@ theorem immediate_wf (sig : Signature.{u}) : WellFounded (Immediate sig) :=
 theorem arg_immediate {sig : Signature.{u}} {i : Nat} {c : Constructor}
     {args : List ZFSet.{u}} {y : ZFSet.{u}}
     (atIndex : sig[i]? = some c) (fitting : Deriv sig c args) (h : Arg y c args) :
-    Immediate sig y (constructorValue i args) :=
+    Immediate sig y (constructorValue (numeral i) args) :=
   ⟨i, c, args, atIndex, rfl, fitting, h⟩
 
 /-! ## Recursion -/
@@ -315,8 +304,8 @@ noncomputable def recBody (sig : Signature.{u})
     (step : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     (x : ZFSet.{u}) (ih : ∀ y, Immediate sig y x → ZFSet.{u}) : ZFSet.{u} :=
   @Classical.epsilon ZFSet.{u} ⟨∅⟩ fun result =>
-    ∀ i c args, sig[i]? = some c → constructorValue i args = x → Deriv sig c args →
-      result = step i args (mapResults (totalize sig x ih) c args)
+    ∀ i c args, sig[i]? = some c → constructorValue (numeral i) args = x →
+      Deriv sig c args → result = step i args (mapResults (totalize sig x ih) c args)
 
 noncomputable def recFun (sig : Signature.{u})
     (step : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u}) (x : ZFSet.{u}) : ZFSet.{u} :=
@@ -332,7 +321,8 @@ theorem mapResults_totalize (sig : Signature.{u})
     (step : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     {i : Nat} {c : Constructor} {args : List ZFSet.{u}}
     (atIndex : sig[i]? = some c) (fitting : Deriv sig c args) :
-    mapResults (totalize sig (constructorValue i args) (fun y _ => recFun sig step y)) c args =
+    mapResults (totalize sig (constructorValue (numeral i) args)
+        (fun y _ => recFun sig step y)) c args =
       mapResults (recFun sig step) c args := by
   apply mapResults_agree fitting
   intro y hy
@@ -342,25 +332,28 @@ theorem recFun_constructor (sig : Signature.{u})
     (step : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     {i : Nat} {c : Constructor} {args : List ZFSet.{u}}
     (atIndex : sig[i]? = some c) (fitting : Deriv sig c args) :
-    recFun sig step (constructorValue i args) =
+    recFun sig step (constructorValue (numeral i) args) =
       step i args (mapResults (recFun sig step) c args) := by
   rw [recFun_unfold]
   let pred : ZFSet.{u} → Prop := fun result =>
-    ∀ j d ds, sig[j]? = some d → constructorValue j ds = constructorValue i args →
-      Deriv sig d ds →
-        result = step j ds
-          (mapResults (totalize sig (constructorValue i args) (fun y _ => recFun sig step y)) d ds)
+    ∀ j d ds, sig[j]? = some d →
+      constructorValue (numeral j) ds = constructorValue (numeral i) args →
+        Deriv sig d ds →
+          result = step j ds
+            (mapResults (totalize sig (constructorValue (numeral i) args)
+              (fun y _ => recFun sig step y)) d ds)
   have existsValue : ∃ result, pred result := by
     refine ⟨step i args (mapResults (recFun sig step) c args), ?_⟩
     intro j d ds atJ equal fitting'
-    obtain ⟨rfl, rfl⟩ := constructorValue_injective.mp equal
+    obtain ⟨tags, rfl⟩ := constructorValue_injective.mp equal
+    cases numeral_injective tags
     have ctorEq : d = c := by
       have tags : some d = some c := by rw [← atJ, ← atIndex]
       exact Option.some_inj.mp tags
     cases ctorEq
     rw [mapResults_totalize sig step atIndex fitting']
   have spec := Classical.epsilon_spec_aux ⟨(∅ : ZFSet.{u})⟩ pred existsValue
-  change recBody sig step (constructorValue i args) (fun y _ => recFun sig step y) = _
+  change recBody sig step (constructorValue (numeral i) args) (fun y _ => recFun sig step y) = _
   have applied := spec i c args atIndex rfl fitting
   rw [mapResults_totalize sig step atIndex fitting] at applied
   exact applied
@@ -370,7 +363,7 @@ theorem recFun_unique (sig : Signature.{u})
     (g : ZFSet.{u} → ZFSet.{u})
     (equations : ∀ {i : Nat} {c : Constructor} {args : List ZFSet.{u}},
       sig[i]? = some c → Deriv sig c args →
-        g (constructorValue i args) = step i args (mapResults g c args))
+        g (constructorValue (numeral i) args) = step i args (mapResults g c args))
     {x : ZFSet.{u}} (hx : InCarrier sig x) : g x = recFun sig step x :=
   InCarrier.rec
     (motive_1 := fun y _ => g y = recFun sig step y)
@@ -391,17 +384,6 @@ theorem recFun_unique (sig : Signature.{u})
     hx
 
 /-! ## Membership of a generated element -/
-
-theorem numeral_mem_of_omega {U : ZFSet.{u}} (closed : Closed U) (hω : ZFSet.omega ∈ U)
-    (i : Nat) : numeral i ∈ U :=
-  closed.transitive ZFSet.omega hω (numeral_mem_omega i)
-
-theorem tuple_mem {U : ZFSet.{u}} (closed : Closed U) (seed : (∅ : ZFSet.{u}) ∈ U) :
-    ∀ args : List ZFSet.{u}, (∀ a, a ∈ args → a ∈ U) → tuple args ∈ U
-  | [], _ => seed
-  | a :: args, h =>
-      closed.pair_mem (h a List.mem_cons_self)
-        (tuple_mem closed seed args (fun b hb => h b (List.mem_cons_of_mem a hb)))
 
 theorem traceLam_graph_mem {U A f : ZFSet.{u}} (closed : Closed U) (hA : A ∈ U)
     (values : ∀ a, a ∈ A → traceApp f a ∈ U) :
@@ -793,7 +775,7 @@ noncomputable def codeOf (sig : Signature.{u}) : ZFSet.{u} → ZFSet.{u} :=
 
 theorem codeOf_assembled {sig : Signature.{u}} {i : Nat} {c : Constructor} {args : List ZFSet.{u}}
     (atIndex : sig[i]? = some c) (fitting : Deriv sig c args) :
-    codeOf sig (constructorValue i args) =
+    codeOf sig (constructorValue (numeral i) args) =
       assembled sig i c args (mapResults (codeOf sig) c args) := by
   rw [codeOf, recFun_constructor sig (assembleStep sig) atIndex fitting]
   unfold assembleStep
@@ -1162,13 +1144,13 @@ theorem fitsPred_in_carrier {sig : Signature.{u}} {c : Constructor} {args : List
 /-- The carrier is closed under constructor values at fitting arguments. -/
 theorem carrier_closed {sig : Signature.{u}} {i : Nat} {c : Constructor} {args : List ZFSet.{u}}
     (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c args) :
-    constructorValue i args ∈ carrier sig :=
+    constructorValue (numeral i) args ∈ carrier sig :=
   mem_carrier_of_inCarrier (InCarrier.intro atIndex (deriv_of_fits fitting))
 
 /-- The carrier is contained in every set closed under the constructors. -/
 theorem carrier_least {sig : Signature.{u}} {X : ZFSet.{u}}
     (closedX : ∀ {i : Nat} {c : Constructor} {args : List ZFSet.{u}},
-      sig[i]? = some c → Fits X c args → constructorValue i args ∈ X) :
+      sig[i]? = some c → Fits X c args → constructorValue (numeral i) args ∈ X) :
     carrier sig ⊆ X := by
   intro x hx
   exact inCarrier_induct (fun atIndex fitting => closedX atIndex (fits_of_fitsPred fitting))
@@ -1177,13 +1159,14 @@ theorem carrier_least {sig : Signature.{u}} {X : ZFSet.{u}}
 /-- A property preserved by constructor values holds on the carrier. -/
 theorem carrier_induct {sig : Signature.{u}} {P : ZFSet.{u} → Prop}
     (step : ∀ {i : Nat} {c : Constructor} {args : List ZFSet.{u}},
-      sig[i]? = some c → FitsPred P c args → P (constructorValue i args))
+      sig[i]? = some c → FitsPred P c args → P (constructorValue (numeral i) args))
     {x : ZFSet.{u}} (hx : x ∈ carrier sig) : P x :=
   inCarrier_induct step (inCarrier_of_mem_carrier hx)
 
 /-- Every member is one constructor value at one fitting argument list. -/
 theorem exists_inversion {sig : Signature.{u}} {x : ZFSet.{u}} (hx : x ∈ carrier sig) :
-    ∃ i c args, sig[i]? = some c ∧ Fits (carrier sig) c args ∧ constructorValue i args = x := by
+    ∃ i c args, sig[i]? = some c ∧ Fits (carrier sig) c args ∧
+      constructorValue (numeral i) args = x := by
   cases inCarrier_of_mem_carrier hx with
   | intro atIndex fitting =>
       exact ⟨_, _, _, atIndex, fits_of_fitsPred (fitsPred_in_carrier (deriv_fitsPred fitting)), rfl⟩
@@ -1191,11 +1174,12 @@ theorem exists_inversion {sig : Signature.{u}} {x : ZFSet.{u}} (hx : x ∈ carri
 theorem inversion_unique {sig : Signature.{u}} {x : ZFSet.{u}} {i j : Nat}
     {c d : Constructor} {args args' : List ZFSet.{u}}
     (atI : sig[i]? = some c) (atJ : sig[j]? = some d)
-    (left : constructorValue i args = x) (right : constructorValue j args' = x) :
+    (left : constructorValue (numeral i) args = x)
+    (right : constructorValue (numeral j) args' = x) :
     i = j ∧ c = d ∧ args = args' := by
   have equal := left.trans right.symm
   obtain ⟨hi, ha⟩ := constructorValue_injective.mp equal
-  cases hi
+  cases numeral_injective hi
   cases ha
   exact ⟨rfl, Option.some_inj.mp (atI.symm.trans atJ), rfl⟩
 
@@ -1204,7 +1188,7 @@ theorem recursion_constructor {sig : Signature.{u}}
     (step : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     {i : Nat} {c : Constructor} {args : List ZFSet.{u}}
     (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c args) :
-    recFun sig step (constructorValue i args) =
+    recFun sig step (constructorValue (numeral i) args) =
       step i args (mapResults (recFun sig step) c args) :=
   recFun_constructor sig step atIndex (deriv_of_fits fitting)
 
@@ -1214,7 +1198,7 @@ theorem recursion_unique {sig : Signature.{u}}
     (g : ZFSet.{u} → ZFSet.{u})
     (equations : ∀ {i : Nat} {c : Constructor} {args : List ZFSet.{u}},
       sig[i]? = some c → Fits (carrier sig) c args →
-        g (constructorValue i args) = step i args (mapResults g c args))
+        g (constructorValue (numeral i) args) = step i args (mapResults g c args))
     {x : ZFSet.{u}} (hx : x ∈ carrier sig) : g x = recFun sig step x :=
   recFun_unique sig step g
     (fun atIndex fitting => equations atIndex
@@ -1394,7 +1378,8 @@ def eraseField : Field.{u} → Option ZFSetInductive.Field.{u}
   | .ofSet A => some (.ofSet A)
   | .ofFun _ => none
 
-def eraseConstructor : Constructor → Option ZFSetInductive.Constructor.{u}
+/-- The fields of a constructor without function fields. -/
+def eraseConstructor : Constructor → Option (List ZFSetInductive.Field.{u})
   | [] => some []
   | .recursive :: fs =>
       match eraseConstructor fs with
@@ -1406,12 +1391,19 @@ def eraseConstructor : Constructor → Option ZFSetInductive.Constructor.{u}
       | none => none
   | .ofFun _ :: _ => none
 
-def eraseSignature : Signature.{u} → Option ZFSetInductive.Signature.{u}
+/-- The simple signature of a signature without function fields, its constructors numbered
+from `k`: constructor `j` carries the numeral of `k + j` as its tag. -/
+def eraseSignatureFrom (k : Nat) : Signature.{u} → Option ZFSetInductive.Signature.{u}
   | [] => some []
   | c :: cs =>
-      match eraseConstructor c, eraseSignature cs with
-      | some c', some cs' => some (c' :: cs')
+      match eraseConstructor c, eraseSignatureFrom (k + 1) cs with
+      | some fs, some cs' => some (⟨numeral k, fs⟩ :: cs')
       | _, _ => none
+
+/-- The simple signature of a signature without function fields: constructor `i` carries
+the numeral of `i` as its tag. -/
+def eraseSignature (sig : Signature.{u}) : Option ZFSetInductive.Signature.{u} :=
+  eraseSignatureFrom 0 sig
 
 theorem eraseConstructor_nil : eraseConstructor [] = some [] := rfl
 
@@ -1430,16 +1422,16 @@ theorem eraseConstructor_ofSet (A : ZFSet.{u}) (fs : Constructor) :
 theorem eraseConstructor_ofFun (A : ZFSet.{u}) (fs : Constructor) :
     eraseConstructor (Field.ofFun A :: fs) = none := rfl
 
-theorem eraseSignature_nil : eraseSignature [] = some [] := rfl
+theorem eraseSignatureFrom_nil (k : Nat) : eraseSignatureFrom k [] = some [] := rfl
 
-theorem eraseSignature_cons (c : Constructor) (cs : Signature.{u}) :
-    eraseSignature (c :: cs) =
-      match eraseConstructor c, eraseSignature cs with
-      | some c', some cs' => some (c' :: cs')
+theorem eraseSignatureFrom_cons (k : Nat) (c : Constructor) (cs : Signature.{u}) :
+    eraseSignatureFrom k (c :: cs) =
+      match eraseConstructor c, eraseSignatureFrom (k + 1) cs with
+      | some fs, some cs' => some (⟨numeral k, fs⟩ :: cs')
       | _, _ => none := rfl
 
 theorem fits_to_simple {X : ZFSet.{u}} {c : Constructor} {args : List ZFSet.{u}}
-    {c' : ZFSetInductive.Constructor.{u}} (fitting : Fits X c args)
+    {c' : List ZFSetInductive.Field.{u}} (fitting : Fits X c args)
     (erased : eraseConstructor c = some c') : ZFSetInductive.Fits X c' args :=
   match fitting with
   | .nil => by
@@ -1469,7 +1461,7 @@ theorem fits_to_simple {X : ZFSet.{u}} {c : Constructor} {args : List ZFSet.{u}}
       rw [eraseConstructor_ofFun] at erased
       cases erased
 
-theorem fits_from_simple {X : ZFSet.{u}} {c' : ZFSetInductive.Constructor.{u}}
+theorem fits_from_simple {X : ZFSet.{u}} {c' : List ZFSetInductive.Field.{u}}
     {args : List ZFSet.{u}} (fitting : ZFSetInductive.Fits X c' args) {c : Constructor}
     (erased : eraseConstructor c = some c') : Fits X c args :=
   match fitting with
@@ -1565,15 +1557,15 @@ theorem fits_from_simple {X : ZFSet.{u}} {c' : ZFSetInductive.Constructor.{u}}
           rw [eraseConstructor_ofFun] at erased
           cases erased
 
-theorem erase_atIndex {sig : Signature.{u}} {sig' : ZFSetInductive.Signature.{u}}
-    (h : eraseSignature sig = some sig') {i : Nat} {c : Constructor}
+theorem eraseFrom_atIndex {k : Nat} {sig : Signature.{u}} {sig' : ZFSetInductive.Signature.{u}}
+    (h : eraseSignatureFrom k sig = some sig') {i : Nat} {c : Constructor}
     (atIndex : sig[i]? = some c) :
-    ∃ c', sig'[i]? = some c' ∧ eraseConstructor c = some c' := by
-  induction sig generalizing sig' i with
+    ∃ fs, sig'[i]? = some ⟨numeral (k + i), fs⟩ ∧ eraseConstructor c = some fs := by
+  induction sig generalizing k sig' i with
   | nil => cases atIndex
   | cons head tail ih =>
-      rw [eraseSignature_cons] at h
-      match hc : eraseConstructor head, ht : eraseSignature tail with
+      rw [eraseSignatureFrom_cons] at h
+      match hc : eraseConstructor head, ht : eraseSignatureFrom (k + 1) tail with
       | none, _ =>
           rw [hc] at h
           cases h
@@ -1588,20 +1580,22 @@ theorem erase_atIndex {sig : Signature.{u}} {sig' : ZFSetInductive.Signature.{u}
               cases atIndex
               exact ⟨head', rfl, hc⟩
           | succ i =>
-              obtain ⟨c', atTail, herase⟩ := ih ht (atIndex : tail[i]? = some c)
-              exact ⟨c', atTail, herase⟩
+              obtain ⟨fs, atTail, herase⟩ := ih ht (atIndex : tail[i]? = some c)
+              refine ⟨fs, ?_, herase⟩
+              rw [show k + (i + 1) = k + 1 + i by omega]
+              exact atTail
 
-theorem erase_atIndex_symm {sig : Signature.{u}} {sig' : ZFSetInductive.Signature.{u}}
-    (h : eraseSignature sig = some sig') {i : Nat} {c' : ZFSetInductive.Constructor.{u}}
-    (atIndex : sig'[i]? = some c') :
-    ∃ c, sig[i]? = some c ∧ eraseConstructor c = some c' := by
-  induction sig generalizing sig' i with
+theorem eraseFrom_atIndex_symm {k : Nat} {sig : Signature.{u}}
+    {sig' : ZFSetInductive.Signature.{u}} (h : eraseSignatureFrom k sig = some sig') {i : Nat}
+    {c' : ZFSetInductive.Constructor.{u}} (atIndex : sig'[i]? = some c') :
+    ∃ c, sig[i]? = some c ∧ eraseConstructor c = some c'.fields ∧ c'.tag = numeral (k + i) := by
+  induction sig generalizing k sig' i with
   | nil =>
       cases h
       cases atIndex
   | cons head tail ih =>
-      rw [eraseSignature_cons] at h
-      match hc : eraseConstructor head, ht : eraseSignature tail with
+      rw [eraseSignatureFrom_cons] at h
+      match hc : eraseConstructor head, ht : eraseSignatureFrom (k + 1) tail with
       | none, _ =>
           rw [hc] at h
           cases h
@@ -1614,10 +1608,11 @@ theorem erase_atIndex_symm {sig : Signature.{u}} {sig' : ZFSetInductive.Signatur
           cases i with
           | zero =>
               cases atIndex
-              exact ⟨head, rfl, hc⟩
+              exact ⟨head, rfl, hc, rfl⟩
           | succ i =>
-              obtain ⟨c, atTail, herase⟩ := ih ht (atIndex : tail'[i]? = some c')
-              exact ⟨c, atTail, herase⟩
+              obtain ⟨c, atTail, herase, tag⟩ := ih ht (atIndex : tail'[i]? = some c')
+              refine ⟨c, atTail, herase, ?_⟩
+              rw [tag, show k + (i + 1) = k + 1 + i by omega]
 
 /-- Without function fields the carrier is the carrier of the erased simple signature. -/
 theorem carrier_eq_of_erase {sig : Signature.{u}} {sig' : ZFSetInductive.Signature.{u}}
@@ -1626,13 +1621,15 @@ theorem carrier_eq_of_erase {sig : Signature.{u}} {sig' : ZFSetInductive.Signatu
   intro x
   constructor
   · intro hx
-    exact carrier_least (fun atIndex fitting => by
-      obtain ⟨c', at', erased⟩ := erase_atIndex h atIndex
-      exact ZFSetInductive.constructor_mem_carrier at'
-        (fits_to_simple fitting erased)) hx
+    exact carrier_least (fun {i _ _} atIndex fitting => by
+      obtain ⟨fs, at', erased⟩ := eraseFrom_atIndex h atIndex
+      have member := ZFSetInductive.constructor_mem_carrier at'
+        (fits_to_simple fitting erased)
+      rwa [Nat.zero_add] at member) hx
   · intro hx
-    exact ZFSetInductive.carrier_subset_of_closed (fun _ _ _ present fitting => by
-      obtain ⟨c, atC, erased⟩ := erase_atIndex_symm h present
+    exact ZFSetInductive.carrier_subset_of_closed (fun i c' args present fitting => by
+      obtain ⟨c, atC, erased, tag⟩ := eraseFrom_atIndex_symm h present
+      rw [tag, Nat.zero_add]
       exact carrier_closed atC (fits_from_simple fitting erased)) hx
 
 /-! ## Ordinal notations: zero, successor, and a limit over `ω` -/
@@ -1642,11 +1639,11 @@ namespace OrdinalNotation
 def ordSignature : Signature.{u} :=
   [[], [Field.recursive], [Field.ofFun ZFSet.omega]]
 
-def zero : ZFSet.{u} := constructorValue 0 []
+def zero : ZFSet.{u} := constructorValue (numeral 0) []
 
-def suc (x : ZFSet.{u}) : ZFSet.{u} := constructorValue 1 [x]
+def suc (x : ZFSet.{u}) : ZFSet.{u} := constructorValue (numeral 1) [x]
 
-def limit (f : ZFSet.{u}) : ZFSet.{u} := constructorValue 2 [f]
+def limit (f : ZFSet.{u}) : ZFSet.{u} := constructorValue (numeral 2) [f]
 
 def sucIter : Nat → ZFSet.{u}
   | 0 => zero
@@ -1749,13 +1746,14 @@ def Bounded : Nat → ZFSet.{u} → Prop
         ∃ f, x = limit f ∧ ∀ a, a ∈ ZFSet.omega → Bounded n (traceApp f a)
 
 theorem zero_ne_suc (y : ZFSet.{u}) : zero ≠ suc y :=
-  fun h => Nat.succ_ne_zero 0 (constructorValue_index h).symm
+  fun h => Nat.succ_ne_zero 0 (numeral_injective (constructorValue_tag h)).symm
 
 theorem zero_ne_limit (f : ZFSet.{u}) : zero ≠ limit f :=
-  fun h => Nat.succ_ne_zero 1 (constructorValue_index h).symm
+  fun h => Nat.succ_ne_zero 1 (numeral_injective (constructorValue_tag h)).symm
 
 theorem suc_ne_limit (y f : ZFSet.{u}) : suc y ≠ limit f :=
-  fun h => Nat.succ_ne_zero 0 (Nat.succ_injective (constructorValue_index h)).symm
+  fun h => Nat.succ_ne_zero 0
+    (Nat.succ_injective (numeral_injective (constructorValue_tag h))).symm
 
 theorem ordIterate_bounded : ∀ n x, x ∈ ordIterate n → Bounded n x
   | 0, x, hx => (ZFSet.notMem_empty x hx).elim

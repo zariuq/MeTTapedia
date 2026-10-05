@@ -164,7 +164,7 @@ end Comparison
 
 /-- Endpoint reflection supplies a canonical sound comparison along every
 endpoint observation. -/
-def ofEndpointReflection
+theorem ofEndpointReflection
     {Source : Type uSource} {Target : Type uTarget}
     {layer : Layer.{uSource, uRoute} Source}
     (reflects : EndpointReflection layer) (observe : Source -> Target) :
@@ -196,7 +196,7 @@ theorem splitReadout_exactComparison_iff
 /-- Intrinsic contextual identity gives a route layer at each term fibre.  An
 endpoint-reflecting identity discipline therefore induces a sound comparison
 to equality after any selected term observation. -/
-def ofIntrinsicEndpointReflection
+theorem ofIntrinsicEndpointReflection
     (C : Cwf.{u, v, w, w'})
     (identity : IdentityFormation C)
     (introduction : IdentityReflexivity C identity)
@@ -252,7 +252,7 @@ theorem equalityLayer_uip (Carrier : Type uSource) :
     show Subsingleton (PLift (source = target)) from inferInstance
 
 /-- Ordinary equality observed without quotienting is exact. -/
-def exactEquality : Comparison (equalityLayer Bool) (id : Bool -> Bool) :=
+theorem exactEquality : Comparison (equalityLayer Bool) (id : Bool -> Bool) :=
   ofEndpointReflection (equalityLayer_reflects Bool) id
 
 theorem exactEquality_is_exact : exactEquality.Exact := by
@@ -262,7 +262,7 @@ theorem exactEquality_is_exact : exactEquality.Exact := by
 
 /-- A plural self-route layer can be complete on extensional equality while
 remaining nonfaithful to route identity. -/
-def pluralEquality :
+theorem pluralEquality :
     Comparison reflectedPlural (id : Unit -> Unit) :=
   ofEndpointReflection reflectedPlural_reflects id
 
@@ -281,7 +281,7 @@ theorem pluralEquality_not_exact : ¬ pluralEquality.Exact := by
 def coarseBool : Bool -> PUnit := fun _ => PUnit.unit
 
 /-- Coarse equality is sound for ordinary source equality. -/
-def coarseEquality : Comparison (equalityLayer Bool) coarseBool :=
+theorem coarseEquality : Comparison (equalityLayer Bool) coarseBool :=
   ofEndpointReflection (equalityLayer_reflects Bool) coarseBool
 
 /-- But it invents an observed equality between distinct source endpoints, so
@@ -294,7 +294,7 @@ theorem coarseEquality_not_complete : ¬ coarseEquality.Complete := by
 
 /-- A thin indiscrete route relation is exactly represented by equality in a
 coarse one-point observation, despite failing source endpoint reflection. -/
-def indiscreteCoarse :
+theorem indiscreteCoarse :
     Comparison indiscreteSubsingleton coarseBool where
   toObservedEquality _route := rfl
 
@@ -313,7 +313,7 @@ theorem indiscreteCoarse_not_endpointReflection :
 /-- Equality of route-bearing function values cannot be transported exactly
 through application behavior when the extensional readout forgets a route
 tag. -/
-def functionBehaviorEquality :
+theorem functionBehaviorEquality :
     Comparison (equalityLayer simpleRouteSensitive.Function)
       routeReadout.observe :=
   ofEndpointReflection

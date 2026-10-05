@@ -523,10 +523,10 @@ theorem occurrenceStep_target_isNormalForm [DecidableEq Answer]
 
 /-- The generated occurrence theory has the generic one-step-terminal
 capability. -/
-def occurrenceOneStepTerminal [DecidableEq Answer]
+theorem occurrenceOneStepTerminal [DecidableEq Answer]
     (source : OccurrenceSource Space Request Answer) :
-    OneStepTerminal (occurrenceGSLT source) where
-  target_normal := occurrenceStep_target_isNormalForm source
+    OneStepTerminal (occurrenceGSLT source) :=
+  ⟨occurrenceStep_target_isNormalForm source⟩
 
 /-- No generated occurrence theory has internal re-entry. -/
 theorem occurrenceGSLT_not_hasComposableSteps [DecidableEq Answer]

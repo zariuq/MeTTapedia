@@ -101,4 +101,29 @@ theorem deep_not_continued : ¬ IsContinued deep := by
   rintro ⟨continued⟩
   exact deep_no_cut.false continued.cut
 
+/-! ## Wrappable cuts and wrappable theories -/
+
+/-- Without a cut there is no wrappable cut. -/
+theorem deep_no_wrappableCut : IsEmpty (WrappableCut deep) :=
+  ⟨fun wrappable => deep_no_cut.false wrappable.cut⟩
+
+/-- A wrappable interactive GSLT carries a two-slot retyping plan, so the
+successor theory is the theory of none. -/
+theorem successor_not_wrappableIGSLT (wrappable : WrappableIGSLT) :
+    wrappable.theory ≠ calculatorRewritingIGSLT := by
+  intro same
+  cases wrappable with
+  | mk theory reflection cut plan _ _ _ _ _ _ =>
+    subst same
+    exact (successor_legacyRetyping_isEmpty cut).false plan
+
+/-- Visible composition is the theory of none either. -/
+theorem visibleComposition_not_wrappableIGSLT (wrappable : WrappableIGSLT) :
+    wrappable.theory ≠ Mettapedia.Languages.InteractionCategory.theory .visible := by
+  intro same
+  cases wrappable with
+  | mk theory reflection cut plan _ _ _ _ _ _ =>
+    subst same
+    exact (visibleComposition_legacyRetyping_isEmpty cut).false plan
+
 end Mettapedia.GSLT.LanguageDef

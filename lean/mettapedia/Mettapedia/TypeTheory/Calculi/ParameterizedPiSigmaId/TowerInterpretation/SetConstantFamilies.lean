@@ -26,7 +26,7 @@ family (`family_no_closed_inhabitant`).
 
 Positive example: the family that declares nothing leaves the model as it is
 (`empty_family_setModel`); the constants of set theory over the tower inside the sets are a
-family with content (`Instances/TowerInterpretation/AmbientSetTheory.lean`). Negative example:
+family with content (`Instances/MegalodonHOTG/SetTheory.lean`). Negative example:
 a family that declares a constant at a type with an empty set has no set model at any
 assignment (`family_no_setModel_of_empty`).
 -/

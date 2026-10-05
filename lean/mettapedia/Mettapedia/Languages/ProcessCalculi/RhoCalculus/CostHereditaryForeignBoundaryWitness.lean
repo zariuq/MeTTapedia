@@ -230,7 +230,7 @@ theorem certifyCostRegionBoundary?_quoteDropBVar_eq_none
         targetFree targetSupport targetType
         (quoteDropBVar declarationColor index)).mp checked)
   unfold certifyCostRegionBoundary?
-  cases decodeCostStaticTypeExpr rhoCIGSLT color targetType with
+  cases CostStaticTypeImage.decode rhoCIGSLT.theory color targetType with
   | none => rfl
   | some sourceType => exact dif_neg rejected
 

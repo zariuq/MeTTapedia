@@ -575,6 +575,28 @@ theorem Realizes.anti {t : Term V} {s s' : Skeleton V}
     (hle : s ⊑ₛ s') (h : Realizes t s') : Realizes t s :=
   fun p => Obs.holds_anti (hle p) (h p)
 
+/-- A bounded index stops at selected subtree roots. A stopped subtree is
+unknown, including all its descendants; it is never an observed absence. The
+cut selection may depend on both a depth limit and a remaining token budget. -/
+def forgetSubtrees (cuts : List Path) (source : Skeleton V) : Skeleton V :=
+  fun path => if cuts.any (fun cut => decide (cut <+: path)) then
+    .unknown else source path
+
+/-- Forgetting a subtree removes information and cannot invent a constructor
+or an absence. This holds for the actual cut construction, for every cut set. -/
+theorem forgetSubtrees_le (cuts : List Path) (source : Skeleton V) :
+    forgetSubtrees cuts source ⊑ₛ source := by
+  intro path
+  simp only [forgetSubtrees]
+  split
+  · trivial
+  · exact Obs.le.refl _
+
+theorem Realizes.forgetSubtrees {term : Term V} {source : Skeleton V}
+    (realized : Realizes term source) (cuts : List Path) :
+    Realizes term (forgetSubtrees cuts source) :=
+  realized.anti (forgetSubtrees_le cuts source)
+
 variable [DecidableEq V]
 
 /-- Skeleton-level conflict: some point's table row fires. -/
@@ -609,6 +631,19 @@ theorem conflictsOn_sound {ps : List Path} {o s : Skeleton V}
     (h : conflictsOn ps o s = true) : Conflicts o s := by
   obtain ⟨p, _, hp⟩ := List.any_eq_true.mp h
   exact ⟨p, hp⟩
+
+/-- Every full match survives a bounded index: wildcard cuts weaken only
+its stored observations. The query and its demanded positions are unchanged. -/
+theorem pruned_index_retains {term : Term V} {query pattern : Skeleton V}
+    (queryRealized : Realizes term query) (patternRealized : Realizes term pattern)
+    (cuts samples : List Path) :
+    Bool.not (conflictsOn samples query (forgetSubtrees cuts pattern)) = true := by
+  cases conflict : conflictsOn samples query (forgetSubtrees cuts pattern) with
+  | false => rfl
+  | true =>
+      obtain ⟨path, disagrees⟩ := conflictsOn_sound conflict
+      exact False.elim (Obs.conflictB_sound disagrees (queryRealized path)
+        ((patternRealized.forgetSubtrees cuts) path))
 
 /-- Only positions constrained by the pattern can refute a structural match.
 This drops no binding or cross-position equality obligation of a full unifier. -/
@@ -963,6 +998,87 @@ example :
 end Examples
 
 end Shaped
+
+/-! ## A shared budget for serialized index observations
+
+An expanded expression reserves one token per immediate child before any
+child is visited. A cut child uses its reserved token as a wildcard. The
+root adds one token. Thus wide nodes as well as deep graphs are bounded;
+a depth limit alone does not provide this property.
+-/
+
+namespace ExpansionBudget
+
+structure Budget where
+  expressions : Nat
+  childTokens : Nat
+  deriving DecidableEq, Repr
+
+/-- The native admission test for one expression expansion. -/
+def reserve (depthLimit depth arity : Nat) (before : Budget) : Option Budget :=
+  if depth < depthLimit ∧ 0 < before.expressions ∧ arity ≤ before.childTokens then
+    some ⟨before.expressions - 1, before.childTokens - arity⟩
+  else none
+
+theorem reserve_conservation {limit depth arity : Nat} {before after : Budget}
+    (accepted : reserve limit depth arity before = some after) :
+    before.expressions = after.expressions + 1 ∧
+      before.childTokens = after.childTokens + arity := by
+  unfold reserve at accepted
+  split at accepted
+  · rename_i permitted
+    cases accepted
+    dsimp
+    omega
+  · simp at accepted
+
+/-- Execute the reservations made by a traversal. Rejected expansions leave
+both budgets unchanged and contribute no children to the serialized path. -/
+def run (limit : Nat) : List (Nat × Nat) → Budget → Budget × List Nat
+  | [], before => (before, [])
+  | (depth, arity) :: rest, before =>
+      match reserve limit depth arity before with
+      | none => run limit rest before
+      | some middle =>
+          let (after, children) := run limit rest middle
+          (after, arity :: children)
+
+theorem run_conservation (limit : Nat) (requests : List (Nat × Nat)) (before : Budget) :
+    before.expressions = (run limit requests before).1.expressions +
+        (run limit requests before).2.length ∧
+      before.childTokens = (run limit requests before).1.childTokens +
+        (run limit requests before).2.sum := by
+  induction requests generalizing before with
+  | nil => simp [run]
+  | cons request rest ih =>
+      rcases request with ⟨depth, arity⟩
+      cases accepted : reserve limit depth arity before with
+      | none => simpa only [run, accepted] using ih before
+      | some middle =>
+          have first := reserve_conservation accepted
+          have next := ih middle
+          simp only [run, accepted, List.length_cons, List.sum_cons]
+          omega
+
+/-- Distinct DAG nodes may occur repeatedly in the index, but the complete
+serialized observation remains within the one root's token budget. -/
+theorem serialized_tokens_bounded (limit : Nat) (requests : List (Nat × Nat))
+    (before : Budget) :
+    1 + (run limit requests before).2.sum ≤ 1 + before.childTokens := by
+  have account := (run_conservation limit requests before).2
+  omega
+
+/-- The same account bounds the number of expanded expressions. -/
+theorem expression_expansions_bounded (limit : Nat) (requests : List (Nat × Nat))
+    (before : Budget) : (run limit requests before).2.length ≤ before.expressions := by
+  have account := (run_conservation limit requests before).1
+  omega
+
+example : reserve 8 0 512 ⟨128, 511⟩ = none := rfl
+example : reserve 8 8 2 ⟨128, 511⟩ = none := rfl
+example : run 8 [(0, 3), (1, 5), (1, 2)] ⟨128, 7⟩ = (⟨126, 2⟩, [3, 2]) := rfl
+
+end ExpansionBudget
 
 /-! ### Exact-key compiled-artifact repositories
 

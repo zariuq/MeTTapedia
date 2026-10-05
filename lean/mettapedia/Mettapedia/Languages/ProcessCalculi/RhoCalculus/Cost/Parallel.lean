@@ -461,29 +461,6 @@ theorem compatible_costed_diamond {Ground : Type u}
   · have step := left.toCostStepIn (right.produced + frame)
     simpa [costAfterRight, costPairTarget, add_assoc, add_comm, add_left_comm] using step
 
-/-- A source containing only one occurrence of a purse term cannot support two
-events that both select that occurrence in the same matching. -/
-theorem shared_single_purse_conflicts {Ground : Type u}
-    [DecidableEq Ground]
-    {source : CostConfig Ground} {left right : CostedEvent Ground}
-    (purse : CostTerm Ground)
-    (source_count : source.count purse = 1)
-    (left_uses : purse ∈ left.fundingBefore)
-    (right_uses : purse ∈ right.fundingBefore) :
-    ¬CostCompatibleAt source left right := by
-  intro compatible
-  have left_positive : 0 < left.consumed.count purse := by
-    have funding_positive := Multiset.count_pos.mpr left_uses
-    simp only [CostedEvent.consumed, Multiset.count_add]
-    omega
-  have right_positive : 0 < right.consumed.count purse := by
-    have funding_positive := Multiset.count_pos.mpr right_uses
-    simp only [CostedEvent.consumed, Multiset.count_add]
-    omega
-  have enough := compatible.consumed_count_le purse
-  rw [source_count] at enough
-  omega
-
 /-! ## The causal receipt of one wave -/
 
 /-- Events of one compatible wave have no causes among themselves.  Causes

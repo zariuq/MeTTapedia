@@ -10,6 +10,8 @@ the recursively trace-coded carriers. Structural comparison with the existing
 graph interpreter reuses its established Henkin and substitution theorems.
 Concrete set constants are built from the same lifted set operations; no
 second set model or assumed source-adequacy field is introduced.
+A closed statement holds in this interpretation exactly when it is true in
+the model of the logic (`holds_interpret_core_iff`, `holds_interpret_iff`).
 -/
 
 set_option autoImplicit false
@@ -334,6 +336,31 @@ theorem universe_substValuation_lift (h : CofinalInaccessibles.{u})
 /-! ## Original higher-order statements and a changed-function control -/
 
 def emptyValuation : Valuation.{u} [] := fun {_} boundVar => nomatch boundVar
+
+/-- A closed statement of the sets holds in the trace interpretation exactly when it is true
+in the model of the logic whose individuals are all the sets. -/
+theorem holds_interpret_core_iff (φ : ClosedFormula Symbol) :
+    holds (interpret constants.{u} φ emptyValuation) ↔
+      ZFSetHenkinInterpretation.model.{u}.models φ := by
+  have agreement := congrArg ULift.down (core_term_agreement φ emptyValuation.{u})
+  refine Iff.of_eq (agreement.trans ?_)
+  unfold Mettapedia.Logic.HOL.HenkinModel.models Mettapedia.Logic.HOL.PreModel.models
+  congr 2
+  funext A v
+  nomatch v
+
+/-- A closed statement of the sets with the universe operation holds in the trace
+interpretation exactly when it is true in the model of the logic. -/
+theorem holds_interpret_iff (small : CofinalInaccessibles.{u})
+    (φ : ClosedFormula UniverseSymbol) :
+    holds (interpret (universeConstants small) φ emptyValuation) ↔
+      (universeModel small).models φ := by
+  have agreement := congrArg ULift.down (universe_term_agreement small φ emptyValuation)
+  refine Iff.of_eq (agreement.trans ?_)
+  unfold Mettapedia.Logic.HOL.HenkinModel.models Mettapedia.Logic.HOL.PreModel.models
+  congr 2
+  funext A v
+  nomatch v
 
 theorem coded_function_eta : holds (interpret constants.{u}
     ZFSetHOLTermInterpretation.applicationEta emptyValuation) := by

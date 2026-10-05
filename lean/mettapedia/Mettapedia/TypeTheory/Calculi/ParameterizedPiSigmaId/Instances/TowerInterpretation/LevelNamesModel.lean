@@ -67,7 +67,7 @@ open ZFSetInterpretation (universeSet universeSet_mem_of_lt universeSet_mono
   universeSet_no_self_membership insert_seed_earlierStages_mem seed_mem_universeSet)
 open Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId
 open ZFSetTraceUniverseInterpretation (interpretHead)
-open ZFSetDependentProducts (graph)
+open ZFSetDependentProducts (graph graph_congr)
 open ZFSetTraceProducts (traceLam traceApp tracePiSet traceApp_graph_beta)
 open ZFSetReplayInterpretation (UniverseModel)
 

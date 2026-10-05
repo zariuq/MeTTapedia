@@ -76,7 +76,7 @@ theorem numOnly_adequate :
   consts_allowedIn fun c hc => by
     rw [List.mem_singleton] at hc
     subst hc
-    exact constAdequateAt_num
+    exact constAdequateAt_num objectExtension
 
 theorem setOnly_adequate :
     ∀ {c : DeclName}, allowedIn [setN] c = true →
@@ -84,7 +84,7 @@ theorem setOnly_adequate :
   consts_allowedIn fun c hc => by
     rw [List.mem_singleton] at hc
     subst hc
-    exact constAdequateAt_set
+    exact constAdequateAt_set objectExtension
 
 theorem ctxX_formed_within {A : DeclName → Bool} : CCtxFormed (objectChurch.restrict A) ctxX :=
   .snoc .nil ⟨_, .sort _, cU0_typed_within⟩
@@ -111,7 +111,7 @@ theorem not_mem_bot_tag (k : Kind) : ¬ Ideal.bot.Mem (.tag k) := fun h => by
 
 /-- **A universe variable matches itself as a neutral type.** -/
 theorem forms_varVar : CFormsMatch objectChurch objectRoles ctxX (.var 0) (.var 0) :=
-  objectChurch_formsMatch_within noConsts_adequate ⟨_, .sort Tower.zero, .refl (.var 0)⟩
+  ObjectExtension.formsMatch_within (X := objectExtension) noConsts_adequate ⟨_, .sort Tower.zero, .refl (.var 0)⟩
     ctxX_formed_within (.inr (.inr (.inr (.inr (.inl (var_neutral 0))))))
     (.inr (.inr (.inr (.inr (.inl (var_neutral 0))))))
 
@@ -124,7 +124,7 @@ theorem varVar_not_formersMatch : ¬ CFormersMatch objectChurch ctxX (.var 0) (.
 theorem forms_piNumNum :
     ∃ D E, (cPiNumNum : CTm Tower.Head 0) = .pi D E ∧ CTypeEq objectChurch .nil cnum D ∧
       CTypeEq objectChurch (.snoc .nil cnum) cnum E := by
-  have m := objectChurch_formsMatch_within numOnly_adequate
+  have m := ObjectExtension.formsMatch_within (X := objectExtension) numOnly_adequate
     ⟨_, .sort Tower.zero, .refl (cpiT_within (cnum_typed_within (by decide))
       (cnum_typed_within (by decide)))⟩ .nil (.inr (.inl ⟨_, _, rfl⟩)) (.inr (.inl ⟨_, _, rfl⟩))
   exact (m.formers_left (.pi _ _)).pi_left
@@ -132,7 +132,7 @@ theorem forms_piNumNum :
 /-- **The relation separates a universe variable from `Π num num`**, within `num`. -/
 theorem not_varEq_piNumNum_within :
     ¬ CTypeEq (objectChurch.restrict (allowedIn [numN])) ctxX (.var 0) cPiNumNum := fun equal =>
-  objectChurch_neutral_not_former_within numOnly_adequate equal ctxX_formed_within
+  ObjectExtension.neutral_not_former_within (X := objectExtension) numOnly_adequate equal ctxX_formed_within
     (var_neutral 0) (.pi _ _)
 
 /-! ## The least environment -/
@@ -192,7 +192,7 @@ theorem formerSide_separates :
     ¬ RT objectHeadReduction ctxX false (.tag .pi) cPiNumNum cPiNumNum (.var 0) := by
   intro h
   obtain ⟨D, E, D', E', hp⟩ := RT.ty_pi_iff.1 h
-  have e := objectHeadReduction.red_normal (objectHeadReduction_neutralNormal (var_neutral 0))
+  have e := objectHeadReduction.red_normal (objectExtension.neutralNormal (var_neutral 0))
     hp.2.1.1
   cases e
 
@@ -214,7 +214,7 @@ reduces both to one ground type, and each is normal. -/
 theorem not_setEq_legacyGround_within :
     ¬ CTypeEq (objectChurch.restrict (allowedIn [setN])) (.nil : CCtx Tower.Head 0) cset
       (.head .legacyGround) := fun equal =>
-  objectChurch_neutral_not_former_within setOnly_adequate equal .nil set_neutral (.head _)
+  ObjectExtension.neutral_not_former_within (X := objectExtension) setOnly_adequate equal .nil set_neutral (.head _)
 
 /-! ## Two neutral types -/
 

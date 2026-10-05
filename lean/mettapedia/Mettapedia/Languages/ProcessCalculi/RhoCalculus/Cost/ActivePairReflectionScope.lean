@@ -66,7 +66,4 @@ theorem not_open_reflective_subject_reduction :
       ActivePair.open_source_typed
       (by rw [actual_reflective_reducts]; exact List.mem_singleton_self _))
 
-#print axioms actual_reflective_reducts
-#print axioms not_open_reflective_subject_reduction
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionScope

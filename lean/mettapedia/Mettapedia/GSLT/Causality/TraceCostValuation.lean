@@ -1,4 +1,6 @@
 import Mettapedia.GSLT.Causality.Mazurkiewicz
+import Mettapedia.GSLT.Causality.EventConcurrency
+import Mettapedia.CategoryTheory.RunAccount
 import Mettapedia.Algebra.WorkSpan
 import Mettapedia.GSLT.Scope.ConsumerDescent
 
@@ -32,9 +34,21 @@ parallel composition of the two independent occurrences has span one
 (`tile_work_invariant_span_not`). Span belongs to the dependency structure,
 and a chosen schedule's wave count is a third quantity again, bounded below
 by span.
+
+**Accounts.** A valuation of occurrences is an account of occurrence paths
+(`pathAccount`): the empty path has grade zero and a composite the sum.  So
+the executions over any presentation form a parameterized monad, and every
+valuation reads them into a writer monad.  For any system of tiles, a
+valuation is a property of the trace exactly when its account of paths is
+the restriction of an account of traces (`descends_iff_account_of_traces`).
+The bag of sites is an account of traces for every independence of events
+(`siteBagTraceAccount`); the ordered list of sites on the grid is not
+(`grid_siteList_no_account_of_traces`).
 -/
 
 set_option autoImplicit false
+
+open CategoryTheory
 
 namespace Mettapedia.GSLT.Causality.TraceCostValuation
 
@@ -44,7 +58,7 @@ open Mettapedia.GSLT.Causality.OccurrenceHistory
 open Mettapedia.GSLT.Causality.Mazurkiewicz
 open Mettapedia.GSLT.Core.NonFactorization
 
-universe uSite uEvent
+universe uSite uEvent uTile
 
 variable {theory : GSLT}
 
@@ -161,6 +175,120 @@ theorem tile_work_invariant_span_not :
     WorkSpan.sequential ⟨1, 1⟩ ⟨1, 1⟩ = ⟨2, 2⟩ ∧
       WorkSpan.parallel ⟨1, 1⟩ ⟨1, 1⟩ = ⟨2, 1⟩ := by
   constructor <;> rfl
+
+
+/-! ## Accounts of paths and accounts of traces -/
+
+section Accounts
+
+open Mettapedia.Effects
+open Mettapedia.GSLT.Causality.EventConcurrency (TileSystem Trace TraceCat siteTiles
+  diamondEq_iff_traceEq Concurrency)
+
+variable {P : InteractionPresentation.{uSite, uEvent} theory}
+
+/-- A valuation of occurrences as an account of occurrence paths. -/
+def pathAccount {A : Type*} [AddMonoid A] (v : OccurrenceValuation P A) :
+    RunAccount (OccurrenceCat P) (Multiplicative A) where
+  of path := Multiplicative.ofAdd (v.onPath path)
+  of_id _ := rfl
+  of_comp first second := congrArg Multiplicative.ofAdd (v.onPath_append first second)
+
+/-- The trace of a path: every occurrence path has a trace, and concatenation
+of paths is concatenation of traces. -/
+def traceFunctor (T : TileSystem.{uSite, uEvent, uTile} P) :
+    OccurrenceCat P ⥤ TraceCat T where
+  obj state := state
+  map path := Trace.mk path
+  map_id _ := rfl
+  map_comp first second := (Trace.append_mk first second).symm
+
+/-- A valuation that descends is an account of traces. -/
+def traceAccount (T : TileSystem.{uSite, uEvent, uTile} P) {A : Type*} [AddMonoid A]
+    (v : OccurrenceValuation P A) (descends : EventConcurrency.Descends T v) :
+    RunAccount (TraceCat T) (Multiplicative A) where
+  of trace := Quotient.liftOn trace (fun path => Multiplicative.ofAdd (v.onPath path))
+    (fun first second related => congrArg Multiplicative.ofAdd (descends first second related))
+  of_id _ := rfl
+  of_comp first second := by
+    refine Quotient.inductionOn first ?_
+    intro firstPath
+    refine Quotient.inductionOn second ?_
+    intro secondPath
+    exact congrArg Multiplicative.ofAdd (v.onPath_append firstPath secondPath)
+
+/-- The account of traces restricts to the account of paths. -/
+theorem traceAccount_comap (T : TileSystem.{uSite, uEvent, uTile} P) {A : Type*}
+    [AddMonoid A] (v : OccurrenceValuation P A) (descends : EventConcurrency.Descends T v) :
+    (traceAccount T v descends).comap (traceFunctor T) = pathAccount v := rfl
+
+/-- **Descent, for accounts.**  A valuation is constant on trace-equivalent
+paths exactly when its account of paths is the restriction of an account of
+traces. -/
+theorem descends_iff_account_of_traces (T : TileSystem.{uSite, uEvent, uTile} P)
+    {A : Type*} [AddMonoid A] (v : OccurrenceValuation P A) :
+    EventConcurrency.Descends T v ↔
+      ∃ account : RunAccount (TraceCat T) (Multiplicative A),
+        account.comap (traceFunctor T) = pathAccount v := by
+  constructor
+  · intro descends
+    exact ⟨traceAccount T v descends, traceAccount_comap T v descends⟩
+  · rintro ⟨account, restricts⟩ source target first second related
+    have onFirst := congrArg (fun other : RunAccount (OccurrenceCat P) (Multiplicative A) =>
+      other.of (source := source) (target := target) first) restricts
+    have onSecond := congrArg (fun other : RunAccount (OccurrenceCat P) (Multiplicative A) =>
+      other.of (source := source) (target := target) second) restricts
+    have sameTrace : (traceFunctor T).map first = (traceFunctor T).map second :=
+      Trace.mk_sound related
+    change account.of ((traceFunctor T).map first) = Multiplicative.ofAdd (v.onPath first)
+      at onFirst
+    change account.of ((traceFunctor T).map second) = Multiplicative.ofAdd (v.onPath second)
+      at onSecond
+    rw [sameTrace, onSecond] at onFirst
+    exact (Multiplicative.ofAdd.injective onFirst).symm
+
+/-- Forget the order of independent occurrences in an execution: its run
+becomes a trace.  Executions over traces form a parameterized monad as the
+executions of any category do. -/
+def toTraceExecution (T : TileSystem.{uSite, uEvent, uTile} P)
+    {source target : theory.Term} {Result : Type*}
+    (execution : Execution (OccurrenceCat P) source target Result) :
+    Execution (TraceCat T) source target Result :=
+  ⟨(traceFunctor T).map execution.transition, execution.result⟩
+
+/-- Reading an account that descends does not need the order: the reading of
+an execution is the reading of its trace. -/
+theorem read_eq_read_trace (T : TileSystem.{uSite, uEvent, uTile} P)
+    {A : Type uSite} [AddMonoid A] (v : OccurrenceValuation P A)
+    (descends : EventConcurrency.Descends T v)
+    {source target : theory.Term} {Result : Type uSite}
+    (execution : Execution (OccurrenceCat P) source target Result) :
+    (pathAccount v).read execution =
+      (traceAccount T v descends).read (toTraceExecution T execution) := rfl
+
+/-- **Positive control.**  The bag of sites is an account of traces for every
+independence of events. -/
+def siteBagTraceAccount (C : Concurrency P) :
+    RunAccount (TraceCat C.tiles) (Multiplicative (Multiset P.Site)) :=
+  traceAccount C.tiles (bagValuation P) C.bagValuation_descends
+
+/-- **Negative control.**  On the grid, the ordered list of sites is an
+account of paths that is no account of traces: the two routes of one tile
+have different lists. -/
+theorem grid_siteList_no_account_of_traces :
+    ¬ ∃ account : RunAccount (TraceCat (siteTiles gridIndep))
+          (Multiplicative (SiteWord GridSite)),
+        account.comap (traceFunctor (siteTiles gridIndep)) =
+          pathAccount (siteListValuation (P := gridPresentation)) := by
+  intro exists_account
+  have descends : EventConcurrency.Descends (siteTiles gridIndep)
+      (siteListValuation (P := gridPresentation)) :=
+    (descends_iff_account_of_traces _ _).mpr exists_account
+  apply grid_siteList_not_descends
+  intro source target first second related
+  exact descends first second ((diamondEq_iff_traceEq gridIndep first second).mp related)
+
+end Accounts
 
 end Mettapedia.GSLT.Causality.TraceCostValuation
 

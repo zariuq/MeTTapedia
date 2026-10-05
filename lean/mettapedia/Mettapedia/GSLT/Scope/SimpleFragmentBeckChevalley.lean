@@ -856,7 +856,7 @@ theorem betaEtaConv_of_equal_object (facts : Presentation.TypedEquality.Normaliz
     BetaEtaConv l r :=
   algorithm_erasure objectSpine towerHeadEq_ground ground_not_universe
     (Presentation.TypedEquality.Normalization.Equal.algorithm
-      (S := CodeModel.ConvRules.objectSetting)
+      (S := CodeModel.ConvRules.realSetting CodeModel.objectTExt)
       (CodeModel.ConvRules.object_algorithmicComplete_of_facts facts) equal
       (context_formed simpleHeadRules Γ)) Γ A l r rfl rfl rfl rfl rfl
 

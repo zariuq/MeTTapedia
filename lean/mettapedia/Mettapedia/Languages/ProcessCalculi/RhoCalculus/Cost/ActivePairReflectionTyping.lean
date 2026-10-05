@@ -392,10 +392,4 @@ theorem source_selected_typed_firing {free : FreeTypeContext} (ambient : List Ty
   exact typed_firing_pair ambient channel body sent after signature tail channelTyped bodyTyped
     bodyObject bodySealed sentTyped afterTyped signatureTyped tailTyped
 
-#print axioms typed_name_atomicOrClosed
-#print axioms typed_namesAdmitted
-#print axioms operation_hasType
-#print axioms typed_firing_pair
-#print axioms source_selected_typed_firing
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionTyping

@@ -150,4 +150,87 @@ theorem strict_binary_tail_fresh (operation : Binary) (left right : Atom) (type 
   cases List.mem_singleton.mp member
   exact .inl ⟨_, _, _, rfl, NativeIR.fresh_strict supply, Nat.le_refl _⟩
 
+theorem source_guarded_binary_stateful_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {operation : Binary} (scalar : GuardedScalarBinary operation) (left right : Expr)
+    (before : SourceState World) (out : SourceOutcome World) :
+    SourceExprEval interface heap calls frame (.binary operation left right) before out ↔
+      (∃ first second middle computed,
+        SourceArgumentsEval interface heap calls frame [left, right] before ⟨.ok [first, second], middle⟩ ∧
+        sourceBinaryOp operation first second = some computed ∧ out = sourceFinish middle computed) ∨
+      (∃ fault after,
+        SourceArgumentsEval interface heap calls frame [left, right] before ⟨.error fault, after⟩ ∧
+        out = ⟨.error fault, after⟩) := by
+  rw [source_strict_expression_exact _ _ (guarded_scalar_operands scalar _ _)]
+  constructor
+  · rintro (⟨values, middle, arguments, primitive⟩ | ⟨fault, after, arguments, same⟩)
+    · cases values with
+      | nil => cases primitive
+      | cons first rest =>
+          cases rest with
+          | nil => cases primitive
+          | cons second tail =>
+              cases tail with
+              | nil =>
+                  obtain ⟨computed, _, _, executed, same⟩ := primitive
+                  exact .inl ⟨first, second, middle, computed, arguments, executed, same⟩
+              | cons extra rest => cases primitive
+    · exact .inr ⟨fault, after, arguments, same⟩
+  · rintro (⟨first, second, middle, computed, arguments, executed, same⟩ | ⟨fault, after, arguments, same⟩)
+    · exact .inl ⟨[first, second], middle, arguments, computed,
+        guarded_scalar_not_and scalar, guarded_scalar_not_or scalar, executed, same⟩
+    · exact .inr ⟨fault, after, arguments, same⟩
+
+theorem source_two_arguments_success_tags {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {left right : Expr} {before after : SourceState World} {first second : SourceValue} {type : NativeType}
+    (tagged : ∀ expression ∈ [left, right], ∀ initial post value input,
+      inferExpr interface (sourceFrameScope frame) expression = some input →
+      SourceExprEval interface heap calls frame expression initial ⟨.ok value, post⟩ →
+      SourceOuterTag input value)
+    (firstTyping : inferExpr interface (sourceFrameScope frame) left = some type)
+    (secondTyping : inferExpr interface (sourceFrameScope frame) right = some type)
+    (arguments : SourceArgumentsEval interface heap calls frame [left, right] before
+      ⟨.ok [first, second], after⟩) : SourceOuterTag type first ∧ SourceOuterTag type second := by
+  obtain ⟨middle, leftRan, tail⟩ :=
+    (source_arguments_cons_success_exact left [right] before after first [second]).mp arguments
+  obtain ⟨last, rightRan, ending⟩ :=
+    (source_arguments_cons_success_exact right [] middle after second []).mp tail
+  cases (source_arguments_nil_exact last _).mp ending
+  exact ⟨tagged left (by simp) before middle first type firstTyping leftRan,
+    tagged right (by simp) middle after second type secondTyping rightRan⟩
+
+
+theorem source_guarded_binary_stateful_success_tag {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {operation : Binary} (scalar : GuardedScalarBinary operation) {left right : Expr}
+    {before after : SourceState World} {value : SourceValue} {type : NativeType}
+    (typed : inferExpr interface (sourceFrameScope frame) (.binary operation left right) = some type)
+    (tagged : ∀ expression ∈ [left, right], ∀ initial post raw input,
+      inferExpr interface (sourceFrameScope frame) expression = some input →
+      SourceExprEval interface heap calls frame expression initial ⟨.ok raw, post⟩ →
+      SourceOuterTag input raw)
+    (ran : SourceExprEval interface heap calls frame (.binary operation left right) before ⟨.ok value, after⟩) :
+    SourceOuterTag type value := by
+  obtain ⟨input, firstTyping, secondTyping, operationTyping⟩ := guarded_binary_inferred typed
+  rcases (source_guarded_binary_stateful_exact scalar left right before _).mp ran with
+    ⟨first, second, middle, computed, arguments, executed, same⟩ | ⟨fault, post, _, same⟩
+  · obtain ⟨firstTag, secondTag⟩ := source_two_arguments_success_tags tagged firstTyping secondTyping arguments
+    obtain ⟨actual, defined, resultTag⟩ := source_binary_typed_defined operationTyping firstTag secondTag
+    have equality : actual = computed := Option.some.inj (defined.symm.trans executed)
+    subst actual
+    have result := congrArg SourceOutcome.result same
+    cases computed with
+    | ok raw =>
+        cases current : middle.fault with
+        | none =>
+            simp only [sourceFinish, sourceObserve, current, Except.ok.injEq] at result
+            cases result
+            exact resultTag _ rfl
+        | some fault => simp only [sourceFinish, sourceObserve, current, reduceCtorEq] at result
+    | error fault =>
+        cases current : middle.fault <;>
+          simp only [sourceFinish, sourcePoison, sourceObserve, current, reduceCtorEq] at result
+  · cases same
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

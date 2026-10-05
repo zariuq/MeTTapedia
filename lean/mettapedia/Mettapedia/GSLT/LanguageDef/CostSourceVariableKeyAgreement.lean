@@ -43,7 +43,7 @@ theorem mappedFreeContext_sourceVariable {source : CIGSLT}
     (name : String) :
     table.mappedFreeContext (costRegionSourceVariableName name) =
       ((targetFree name).bind
-        (decodeCostStaticTypeExpr source color)).map
+        (CostStaticTypeImage.decode source.theory color)).map
           (mapTypeExpr (color.symbols source)) := by
   simp [mappedFreeContext, decodeCostRegionSourceVariableName_encode]
 

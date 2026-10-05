@@ -150,14 +150,4 @@ theorem adapter_requires_funded_activation :
   ⟨FiniteLambdaActivation.funded_identity_fires,
     FiniteLambdaActivation.unfunded_identity_no_step (engineBasePremises RelationEnv.empty)⟩
 
-#print axioms source_self_application_typed
-#print axioms literal_base_translation_not_typed
-#print axioms signed_literal_translation_not_typed
-#print axioms wrapped_variable_not_base
-#print axioms two_environment_application_typed
-#print axioms two_binder_abstraction_not_typed
-#print axioms identity_adapter_typed
-#print axioms adapter_not_source_equivalent_to_variable
-#print axioms adapter_requires_funded_activation
-
 end Mettapedia.GSLT.LanguageDef.Cost.LiteralLambdaTranslationBoundary

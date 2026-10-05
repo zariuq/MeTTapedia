@@ -58,7 +58,7 @@ namespace ReductionRespectsEquationsUsing
 
 /-- For an equation-free presentation, reduction compatibility follows because
 the generated equation relation is exactly syntactic equality. -/
-def of_equation_free (relations : RelationEnv) {language : LanguageDef}
+theorem of_equation_free (relations : RelationEnv) {language : LanguageDef}
     (free : language.isEquationFree = true) :
     ReductionRespectsEquationsUsing relations language where
   source := by
@@ -83,7 +83,7 @@ abbrev ReductionRespectsEquations (language : LanguageDef) :=
 namespace ReductionRespectsEquations
 
 /-- Equation-free compatibility for the closed relation environment. -/
-def of_equation_free {language : LanguageDef}
+theorem of_equation_free {language : LanguageDef}
     (free : language.isEquationFree = true) : ReductionRespectsEquations language :=
   ReductionRespectsEquationsUsing.of_equation_free RelationEnv.empty free
 

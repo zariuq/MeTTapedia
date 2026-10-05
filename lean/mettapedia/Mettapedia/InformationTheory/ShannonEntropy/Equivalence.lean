@@ -12,18 +12,18 @@ depend on `Faddeev.lean`.
 
 Faddeev ↔ Shannon-Khinchin (same function characterized)
 
-## Key Insight: Faddeev is MINIMAL
+## Assumptions and Derived Properties
 
 Both systems characterize the same entropy function, but:
 - **Faddeev**: 4 axioms (binary continuity, symmetry, recursivity, normalization)
-- **Shannon-Khinchin**: 5 axioms (full continuity, maximality, expansibility, strong additivity, normalization)
+- **Shannon-Khinchin**: 5 named clauses (full continuity, maximality, expansibility,
+  strong additivity, normalization), plus explicit relabeling invariance
 
 Faddeev's 4 axioms **derive** what Shannon-Khinchin's 5 axioms **assume**:
-- Binary continuity → Full continuity (via F = log₂)
-- Recursivity → Maximality (via F = log₂ + Jensen's inequality)
-- Recursivity → Expansibility (via zero probability grouping)
+- Full continuity, maximality and expansibility follow from full entropy uniqueness
 
-See `Interface.lean` for the explicit minimality theorems.
+See `Interface.lean` for the derived properties and presentation-count comparisons.
+Those counts do not establish independence or absolute minimality.
 
 ## Main Theorems
 
@@ -41,8 +41,7 @@ open Finset Real
 /-- Faddeev axioms imply Shannon-Khinchin axioms.
 
 This direction uses Faddeev-side corollaries (`faddeev_full_continuity`,
-`faddeev_maximality`, `faddeev_expansibility`) which are currently proved via
-the (work-in-progress) Faddeev uniqueness theorem. -/
+`faddeev_maximality`, `faddeev_expansibility`) proved via full entropy uniqueness. -/
 theorem faddeev_implies_shannonKhinchin (E : FaddeevEntropy) :
     ∃ (E' : ShannonKhinchinEntropy), ∀ (n : ℕ) (p : ProbVec n), E'.H p = E.H p := by
   use
@@ -87,20 +86,21 @@ theorem faddeev_iff_shannonKhinchin :
 
 /-! ## Summary: Why Faddeev Matters
 
-The equivalence `faddeev_iff_shannonKhinchin` shows that both systems characterize
-the **same** entropy function. However, Faddeev's system is **strictly more economical**:
+The two axiom-system bridges preserve the entropy function. The separate
+`faddeev_iff_shannonKhinchin` theorem records only equivalence of inhabitedness.
 
 | System | Axiom Count | Key Assumptions |
 |--------|-------------|-----------------|
 | **Faddeev** | 4 | Binary continuity only |
-| Shannon-Khinchin | 5 | Full continuity, maximality, expansibility |
+| Shannon-Khinchin | 5, plus relabeling | Full continuity, maximality, expansibility |
 
 The power of Faddeev's approach lies in the **Lemma 9 proof** (in `Faddeev.lean`):
 1. From recursivity: `F(mn) = F(m) + F(n)` (multiplicativity)
 2. From normalization: `F(2) = 1`, hence `F(2^k) = k`
 3. Via prime power analysis: All `c_p = F(p)/log(p)` are equal
 4. Conclusion: `F(n) = log₂(n)` for all `n ≥ 1`
-5. Full continuity, monotonicity, and maximality then follow trivially!
+5. Grouping, binary continuity and induction extend uniqueness to every arity
+6. Full continuity, monotonicity, maximality and expansibility follow
 
 This is formalized in `faddeev_F_eq_log2` and `faddeev_F_monotone`.
 -/

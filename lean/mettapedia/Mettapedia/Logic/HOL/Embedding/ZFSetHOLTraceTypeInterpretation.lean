@@ -1,5 +1,6 @@
 import Mettapedia.Logic.HOL.Embedding.ZFSetTraceProducts
 import Mettapedia.Logic.HOL.Embedding.ZFSetHOLTypeInterpretation
+import Mettapedia.Logic.HOL.Embedding.ZFSetTraceProofDecoding
 
 /-!
 # Uniform trace codes for the existing HOL simple types
@@ -8,7 +9,10 @@ The base set carrier and truth-value code are unchanged. Every arrow uses
 the actual Aczel trace product, recursively even when its domain or codomain
 is itself a function type. Decoding lands in the same existing Henkin model.
 The earlier graph codes remain separate and are compared by equivalences,
-not identified as sets. This extensional model does not erase native proof
+not identified as sets. The set under an abstraction is the trace of the graph,
+over the set of the domain, of any function on sets that agrees with the body
+there (`lam_val`, beside `app_val`). A truth value, as a set, is the set of proofs of the
+statement that it holds (`prop_val`, `truth_val`, `holds_iff_empty_mem`). This extensional model does not erase native proof
 identity or constitute an interpretation of every native dependent rule.
 -/
 
@@ -60,6 +64,22 @@ theorem lam_eta {A B : Ty Unit} (function : Value.{u} (A ⇒ B)) :
     lam (fun argument => app function argument) = function :=
   trace_eta (a := typeCode A) (b := fun _ => typeCode B) function
 
+/-- The set under an application is the trace application of the sets. -/
+theorem app_val {A B : Ty Unit} (f : Value.{u} (.arr A B)) (x : Value.{u} A) :
+    (app f x).1 = traceApp f.1 x.1 := rfl
+
+/-- **The set under an abstraction** is the trace of the graph, over the set of the domain, of
+any function on sets that agrees with the body there. -/
+theorem lam_val {A B : Ty Unit} (body : Value.{u} A → Value.{u} B)
+    (g : ZFSet.{u + 1} → ZFSet.{u + 1})
+    (same : ∀ (x : ZFSet.{u + 1}) (hx : x ∈ typeCode.{u} A), g x = (body ⟨x, hx⟩).1) :
+    (lam body).1 = traceLam (graph (typeCode.{u} A) g) := by
+  show traceLam (graph (typeCode.{u} A)
+    (extendFunction (a := typeCode.{u} A) (b := fun _ => typeCode.{u} B) body)) = _
+  rw [graph_congr fun x hx =>
+    (extendFunction_at (a := typeCode.{u} A) (b := fun _ => typeCode.{u} B) body ⟨x, hx⟩).trans
+      (same x hx).symm]
+
 theorem decode_app {A B : Ty Unit} (function : Value.{u} (A ⇒ B))
     (argument : Value A) :
     decode B (app function argument) = decode (A ⇒ B) function (decode A argument) := by
@@ -76,6 +96,39 @@ theorem decode_lam {A B : Ty Unit} (body : Value.{u} A → Value B) :
 
 theorem decode_truth (p : Prop) : decode .prop (truth.{u + 1} p) = ULift.up p :=
   truthEquiv_truth p
+
+/-! ## Truth values as sets of proofs -/
+
+/-- A truth value of the logic, as a set, is the set of proofs of the statement that it
+holds: `{∅}` when it holds and `∅` when not (`ZFSetTraceProofDecoding.truthCode`). -/
+theorem prop_val (v : Value.{u} .prop) :
+    v.1 = ZFSetTraceProofDecoding.truthCode (holds v) := by
+  have member : v.1 ∈ ({ZFSetHOLTypeInterpretation.falseSet,
+      ZFSetHOLTypeInterpretation.trueSet} : ZFSet.{u + 1}) := v.2
+  apply ZFSet.ext
+  intro z
+  rw [ZFSetTraceProofDecoding.mem_truthCode]
+  rcases ZFSet.mem_pair.mp member with isFalse | isTrue
+  · constructor
+    · intro hz
+      rw [isFalse] at hz
+      exact absurd hz (ZFSet.notMem_empty z)
+    · rintro ⟨-, holds⟩
+      exact absurd (isFalse.symm.trans holds) ZFSetHOLTypeInterpretation.falseSet_ne_trueSet
+  · rw [isTrue]
+    exact ⟨fun hz => ⟨ZFSet.mem_singleton.mp hz, isTrue⟩,
+      fun h => ZFSet.mem_singleton.mpr h.1⟩
+
+/-- The truth value of a statement in the logic is, as a set, the set of its proofs. -/
+theorem truth_val (P : Prop) :
+    (truth.{u + 1} P).1 = ZFSetTraceProofDecoding.truthCode P :=
+  (prop_val _).trans (congrArg ZFSetTraceProofDecoding.truthCode (propext (holds_truth P)))
+
+/-- A truth value of the logic holds exactly when the empty set is a member of it. -/
+theorem holds_iff_empty_mem (v : Value.{u} .prop) :
+    holds v ↔ (∅ : ZFSet.{u + 1}) ∈ v.1 := by
+  rw [prop_val v, ZFSetTraceProofDecoding.mem_truthCode]
+  exact ⟨fun h => ⟨rfl, h⟩, fun h => h.2⟩
 
 theorem equality_decode {A : Ty Unit} (left right : Value.{u} A) :
     left = right ↔ ZFSetHenkinInterpretation.model.Eqv A

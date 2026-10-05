@@ -330,10 +330,4 @@ theorem leaf_branch_accounts_distinct :
   have trees := FreeMonoid.of_injective same
   cases trees
 
-#print axioms decodeNatKey_encodeNatKey
-#print axioms canonical_eq_iff
-#print axioms committed_accounts_injective
-#print axioms commitLiteral_typed
-#print axioms signature_syntax_readout
-
 end Mettapedia.GSLT.LanguageDef.Cost.AtomicSignatureInterpretation

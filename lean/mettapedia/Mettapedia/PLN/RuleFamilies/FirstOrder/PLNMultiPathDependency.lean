@@ -14,7 +14,7 @@ parameter from shared independent Bernoulli sources.
 namespace Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathDependency
 
 open scoped BigOperators ENNReal NNReal
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathFrechet
 open Mettapedia.ProbabilityTheory.Common.FrechetBounds
 

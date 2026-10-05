@@ -48,11 +48,13 @@ theorem holds_var_compared :
     ⟨_, LevelTower.IsUniverse.sort _, piO (raiseO prop_typedO) U0_typedO⟩
   have neutral : Neutral objectRoles (.app (.const holdsN) (.var 0) : Tower.Tm 1) :=
     Neutral.stuck_single (before := []) (after := []) objectRoles_holds rfl (.var 0)
+  have propNeutral : Neutral objectRoles (.const propN : Tower.Tm 1) := prop_neutral objectTExt
   have codes : Algorithmic objectRules objectRoles
       (.terms (.snoc .nil (.const propN)) (.var 0) (.var 0) (.const propN)) :=
-    .terms (RedTy.refl isProp) (.inr (.inr (.inr (.inr (.inl prop_neutral))))) (RedTm.refl typed)
-      (RedTm.refl typed) (.spine (.inr (.inl prop_neutral)) (.inl (.var 0)) (.inl (.var 0)) typed
-        typed (.spinesW (.var 0) (RedTy.refl isProp) (.inr (.inr (.inr (.inr (.inl prop_neutral)))))))
+    .terms (RedTy.refl isProp) (.inr (.inr (.inr (.inr (.inl propNeutral))))) (RedTm.refl typed)
+      (RedTm.refl typed) (.spine (.inr (.inl propNeutral)) (.inl (.var 0)) (.inl (.var 0)) typed
+        typed (.spinesW (.var 0) (RedTy.refl isProp)
+          (.inr (.inr (.inr (.inr (.inl propNeutral)))))))
   exact .terms (RedTy.refl isU0) (.inl ⟨_, rfl⟩) (RedTm.refl holdsT) (RedTm.refl holdsT)
     (.univ hu holdsT holdsT (.neutralTypes neutral neutral hu
       (.spinesW (.app (.spinesW (.const declared_holds holds_typedO) (RedTy.refl isPi)
@@ -88,7 +90,7 @@ constructor spine at the type of codes is saturated. -/
 theorem imp_partial_not_code (facts : FormFacts objectRules objectRoles) {n : Nat}
     {Γ : Tower.Ctx n} (formed : CtxFormed objectRules Γ) (p : Tower.Tm n) :
     ¬ Typed objectRules Γ (appSpine (.const impN) [p]) (.const propN) := fun typing =>
-  absurd (ctorSpine_saturated facts formed typing objectRoles_imp)
+  absurd (ctorSpine_saturated objectTExt facts formed typing objectRoles_imp)
     (show ¬ (1 : Nat) = 2 by decide)
 
 end ConvRules

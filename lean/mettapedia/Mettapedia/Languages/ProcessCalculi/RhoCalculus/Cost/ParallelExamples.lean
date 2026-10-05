@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Parallel
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ResourceWave
 
 /-!
 # Closed examples for parallel cost-accounted rho

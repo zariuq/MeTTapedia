@@ -22,7 +22,7 @@ keeps their authored order. -/
 @[simp]
 theorem TypedCostRegionBoundaryTable.entries_map
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     {targetFree : WellSorted.FreeTypeContext}
     {occurrences : List CostRegionOccurrence}
@@ -282,7 +282,7 @@ theorem CostStaticRegionPlan.decoration_reindex
   subst pattern₂
   subst sourceType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   rfl
 
@@ -299,7 +299,7 @@ theorem CostStaticRegionPlan.decoration_node_lambda
     (bodyPlan : CostStaticRegionPlan source color targetFree
       (domain :: sourceBound)
       (mapTypeExpr (color.symbols source) domain :: targetBound)
-      (CostStaticBinderThinning.mapped domain thinning)
+      (CostStaticTypeThinning.mapped domain thinning)
       (mapTypeExpr (color.symbols source) domain :: sourceAvailable)
       (outer.comp (.lambda binder .hole)) body codomain) :
     (CostStaticRegionPlan.lambda bodyPlan).decoration.node =
@@ -320,7 +320,7 @@ theorem CostStaticRegionPlan.decoration_node_multiLambda
       (List.replicate arity domain ++ sourceBound)
       (List.replicate arity (mapTypeExpr (color.symbols source) domain) ++
         targetBound)
-      (CostStaticBinderThinning.prependMapped arity domain thinning)
+      (CostStaticTypeThinning.prependMapped arity domain thinning)
       (List.replicate arity (mapTypeExpr (color.symbols source) domain) ++
         sourceAvailable)
       (outer.comp (.multiLambda arity binders .hole)) body codomain) :
@@ -362,7 +362,7 @@ theorem CostStaticArgumentPlan.decorations_reindex
   subst arguments₂
   subst parameters₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   rfl
 
@@ -405,7 +405,7 @@ theorem CostStaticElementPlan.decorations_reindex
   subst rest₂
   subst sourceElementType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   rfl
 
@@ -413,7 +413,7 @@ theorem CostStaticElementPlan.decorations_reindex
 is extracted from the stronger dependent packet naturality theorem. -/
 theorem mapCostStaticRegionPlan_boundaryEntries
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
@@ -456,7 +456,7 @@ theorem mapCostStaticRegionPlan_boundaryEntries
 source boundary list. -/
 theorem mapCostStaticRegionPlan_boundaryDecorations
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
@@ -479,7 +479,7 @@ mutual
   exactly the strict map of its complete plan decoration. -/
   theorem mapCostStaticRegionPlan_decoration
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -608,7 +608,7 @@ mutual
   pointwise. -/
   theorem mapCostStaticArgumentPlan_decorations
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -652,7 +652,7 @@ mutual
   pointwise. -/
   theorem mapCostStaticElementPlan_decorations
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -698,7 +698,7 @@ end
 plan. -/
 theorem CostStaticRegionNode.map_plan_decoration
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
@@ -718,7 +718,7 @@ theorem CostStaticRegionNode.map_plan_decoration
 
 private theorem mapCostRegionTree_decoration_of_node
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
@@ -744,7 +744,7 @@ mutual
   decoration theorem below adds the four index projections. -/
   private theorem mapCostRegionTree_decoration_node
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
@@ -835,7 +835,7 @@ mutual
   /-- Mapping an argument forest maps its complete decorations pointwise. -/
   theorem mapCostRegionArgumentTrees_decorations
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {arguments : List Pattern}
@@ -862,7 +862,7 @@ mutual
   pointwise. -/
   theorem mapCostRegionElementTrees_decorations
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {elements : List Pattern}
@@ -889,7 +889,7 @@ mutual
   decoration without identifying duplicates. -/
   theorem mapCostRegionBoundaryTrees_decorations
       {source target : CIGSLT} (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
       {occurrences : List CostRegionOccurrence}
@@ -922,7 +922,7 @@ end
 nondependent decoration projection. -/
 theorem mapCostRegionTree_decoration
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
@@ -936,7 +936,7 @@ theorem mapCostRegionTree_decoration
 exactly. -/
 theorem CostOpenElaboration.decoration_map
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
@@ -953,7 +953,7 @@ theorem CostOpenElaboration.decoration_map
 exactly. -/
 theorem CostElabTerm.decoration_map
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
@@ -967,7 +967,7 @@ theorem CostElabTerm.decoration_map
 decoration. -/
 theorem mapCostElaborationFiber_decoration
     {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     (fiber : CostElaborationFiber source) :
     (mapCostElaborationFiber morphism scope laws fiber).2.decoration =

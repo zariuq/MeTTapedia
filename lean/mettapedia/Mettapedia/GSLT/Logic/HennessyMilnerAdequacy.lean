@@ -35,6 +35,9 @@ namespace Mettapedia.GSLT.HennessyMilner
 
 universe uAtom uLabel
 
+-- Atomic observations and transition labels have separately sized carriers.
+-- The structure's result sort records only the maximum of their levels.
+set_option linter.checkUnivs false in
 /-- A GSLT with an explicit observation set and a labeled family of steps,
 all respecting the equations. -/
 structure System (S : GSLT) where

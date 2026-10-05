@@ -7,6 +7,11 @@ Code components contain no purse constructors, including quoted or suspended
 ones.  Located purses remain separate top-level components, and their locations
 likewise contain no embedded purses.  This predicate restricts the existing
 `CostStep`; it introduces no new execution relation.
+
+The cell and purse readouts of a funded step are those of the funded resource
+system: exactly the selected heads leave, and no purse is added or removed
+apart from those a contractum releases. On separated configurations a
+contractum releases none.
 -/
 
 set_option autoImplicit false
@@ -256,6 +261,177 @@ theorem LocatedPurse.configComponents_physicalPurseMeasure {Ground : Type u}
   simp [CostConfig.physicalPurseMeasure, LocatedPurse.configComponents,
     LocatedPurse.toTerm, CostTerm.physicalPurseMeasure, Function.comp_def]
 
+/-! ## Funded firings in the readouts of the purses
+
+The readouts of the purses of a configuration are readouts of its bag of
+purses. Funded firings then change them as the purse system does: exactly the
+selected heads leave, no purse is added or removed, and the purses a contractum
+releases are added. Where the code of a configuration holds no purse, the
+contractum of an enabled event releases none. -/
+
+section PaidFiring
+
+open Mettapedia.GSLT.Causality.ResourceInteraction
+open Mettapedia.GSLT.Causality.OccurrenceHistory (OccurrencePath)
+
+/-- The number of cells of a stack is the length of its list of cells. -/
+theorem CostStack.cellCount_eq_length {Ground : Type u} :
+    ∀ stack : CostStack Ground, stack.cellCount = stack.toList.length
+  | .empty => rfl
+  | .cons _ tail => congrArg (· + 1) (CostStack.cellCount_eq_length tail)
+
+/-- The readout of the purses of a configuration, from its bag of purses. -/
+theorem CostConfig.physicalPurseMeasure_eq_purses {Ground : Type u} {Measure : Type v}
+    [AddCommMonoid Measure] (weight : CostStack Ground → Measure) (config : CostConfig Ground) :
+    config.physicalPurseMeasure weight =
+      (config.purses.map fun purse => weight (CostStack.ofList purse.2)).sum := by
+  induction config using Multiset.induction_on with
+  | empty => rfl
+  | cons term config ih =>
+      unfold CostConfig.physicalPurseMeasure CostConfig.purses at ih ⊢
+      rw [Multiset.map_cons, Multiset.sum_cons, ih]
+      cases term with
+      | purse location stack =>
+          rw [Multiset.filterMap_cons_some CostTerm.purse? (CostTerm.purse location stack) config
+              (b := (location, stack.toList)) rfl,
+            Multiset.map_cons, Multiset.sum_cons, CostStack.ofList_toList]
+          rfl
+      | nil =>
+          rw [Multiset.filterMap_cons_none (f := CostTerm.purse?) _ _ rfl]
+          exact zero_add _
+      | signed process signature =>
+          rw [Multiset.filterMap_cons_none (f := CostTerm.purse?) _ _ rfl]
+          exact zero_add _
+      | par left right =>
+          rw [Multiset.filterMap_cons_none (f := CostTerm.purse?) _ _ rfl]
+          exact zero_add _
+      | drop name =>
+          rw [Multiset.filterMap_cons_none (f := CostTerm.purse?) _ _ rfl]
+          exact zero_add _
+
+/-- The stored cells are the cells of the purses. -/
+theorem CostConfig.physicalPurseCells_eq {Ground : Type u} (config : CostConfig Ground) :
+    config.physicalPurseCells = cells config.purses := by
+  rw [CostConfig.physicalPurseCells, CostConfig.physicalPurseMeasure_eq_purses]
+  unfold cells
+  refine congrArg Multiset.sum (Multiset.map_congr rfl fun purse _ => ?_)
+  rw [CostStack.cellCount_eq_length, CostStack.toList_ofList]
+
+/-- The purse occurrences are the purses. -/
+theorem CostConfig.physicalPurseOccurrences_eq {Ground : Type u} (config : CostConfig Ground) :
+    config.physicalPurseOccurrences = config.purses.card := by
+  rw [CostConfig.physicalPurseOccurrences, CostConfig.physicalPurseMeasure_eq_purses,
+    Multiset.map_const', Multiset.sum_replicate, smul_eq_mul, mul_one]
+
+/-- The cells of located purses are counted on their stacks. -/
+theorem LocatedPurse.cells_map_toPurse {Ground : Type u}
+    (purses : Multiset (LocatedPurse Ground)) :
+    cells (purses.map LocatedPurse.toPurse) =
+      (purses.map fun purse => purse.stack.cellCount).sum := by
+  unfold cells
+  rw [Multiset.map_map]
+  exact congrArg Multiset.sum (Multiset.map_congr rfl fun purse _ =>
+    (CostStack.cellCount_eq_length purse.stack).symm)
+
+/-- **Where the code of a configuration holds no purse, the contractum of an
+event whose endpoints are present releases none.** -/
+theorem CostedEvent.contractum_purses_eq_zero {Ground : Type u} {config : CostConfig Ground}
+    (separated : config.ResourceSeparated) (event : CostedEvent Ground)
+    (present : event.endpoints ≤ config) : event.contractum.purses = 0 := by
+  have none : ∀ {term : CostTerm Ground}, term.PurseFree →
+      CostConfig.purses term.components = 0 := by
+    intro term free
+    refine CostConfig.purses_eq_zero fun component member isPurse => ?_
+    obtain ⟨purse, found⟩ := Option.isSome_iff_exists.mp isPurse
+    rw [← purseTerm_of_purse? found] at member
+    exact free.no_component_purse _ _ member
+  cases event with
+  | wholeRecvSend channel body payload outerSig valid funding =>
+      have member : CostTerm.signed (.par (.recv channel body) (.send channel payload))
+          outerSig ∈ config := Multiset.mem_of_le present (Multiset.mem_singleton_self _)
+      have free := CostTerm.PurseFree.wholeRecvSend_payloads (separated _ member)
+      exact none (free.1.substitute free.2 0)
+  | wholeSendRecv channel body payload outerSig valid funding =>
+      have member : CostTerm.signed (.par (.send channel payload) (.recv channel body))
+          outerSig ∈ config := Multiset.mem_of_le present (Multiset.mem_singleton_self _)
+      have free := CostTerm.PurseFree.wholeSendRecv_payloads (separated _ member)
+      exact none (free.1.substitute free.2 0)
+  | split channel body payload recvSeal sendSeal recvValid sendValid funding =>
+      have recvMember : CostTerm.signed (.recv channel body) recvSeal ∈ config :=
+        Multiset.mem_of_le present
+          (Multiset.mem_add.mpr (Or.inl (Multiset.mem_singleton_self _)))
+      have sendMember : CostTerm.signed (.send channel payload) sendSeal ∈ config :=
+        Multiset.mem_of_le present
+          (Multiset.mem_add.mpr (Or.inr (Multiset.mem_singleton_self _)))
+      exact none ((CostTerm.PurseFree.recv_body (separated _ recvMember)).substitute
+        (CostTerm.PurseFree.send_payload (separated _ sendMember)) 0)
+
+/-- The contractum of an event enabled in a separated configuration has no
+purse readout. -/
+theorem contractum_physicalPurseMeasure_eq_zero {Ground : Type u} {Measure : Type v}
+    [AddCommMonoid Measure] (weight : CostStack Ground → Measure) {config : CostConfig Ground}
+    (separated : config.ResourceSeparated) {location : CostName Ground}
+    (event : {event : CostedEvent Ground // event.location = location})
+    (enabled : (costResourceSystem Ground).Enables config event) :
+    event.val.contractum.physicalPurseMeasure weight = 0 := by
+  rw [CostConfig.physicalPurseMeasure_eq_purses, event.val.contractum_purses_eq_zero separated
+    (((costResource_enables_iff_le config event).mp enabled).1.trans (Multiset.filter_le _ _))]
+  rfl
+
+/-- An enabled funded firing keeps a configuration separated. -/
+theorem costResource_preserves_resourceSeparated {Ground : Type u} [DecidableEq Ground]
+    {config : CostConfig Ground} {location : CostName Ground}
+    (event : {event : CostedEvent Ground // event.location = location})
+    (separated : config.ResourceSeparated)
+    (enabled : (costResourceSystem Ground).Enables config event) :
+    CostConfig.ResourceSeparated ((costResourceSystem Ground).fire config event) :=
+  CostStep.preserves_resourceSeparated
+    (CostResourceWave.enabled_costStep config ⟨location, event⟩ enabled) separated
+
+/-- **The stored cells drop by the number of selected purses** in a funded
+firing, apart from the cells of the purses its contractum releases. -/
+theorem costResource_physicalPurseCells {Ground : Type u} [DecidableEq Ground]
+    (config : CostConfig Ground) {location : CostName Ground}
+    (event : {event : CostedEvent Ground // event.location = location})
+    (enabled : (costResourceSystem Ground).Enables config event) :
+    config.physicalPurseCells + event.val.contractum.physicalPurseCells =
+      CostConfig.physicalPurseCells ((costResourceSystem Ground).fire config event) +
+        event.val.funding.chosen.card := by
+  have taken := congrArg Multiset.card (costResource_cells_taken config event enabled)
+  rw [Multiset.card_add, Multiset.card_add, card_cellBag, card_cellBag, card_cellBag,
+    Multiset.card_map] at taken
+  rw [CostConfig.physicalPurseCells_eq, CostConfig.physicalPurseCells_eq,
+    CostConfig.physicalPurseCells_eq]
+  exact taken
+
+/-- **A funded firing neither adds nor removes a purse**, apart from the purses
+its contractum releases. -/
+theorem costResource_physicalPurseOccurrences {Ground : Type u} [DecidableEq Ground]
+    (config : CostConfig Ground) {location : CostName Ground}
+    (event : {event : CostedEvent Ground // event.location = location})
+    (enabled : (costResourceSystem Ground).Enables config event) :
+    config.physicalPurseOccurrences + event.val.contractum.physicalPurseOccurrences =
+      CostConfig.physicalPurseOccurrences ((costResourceSystem Ground).fire config event) := by
+  rw [CostConfig.physicalPurseOccurrences_eq, CostConfig.physicalPurseOccurrences_eq,
+    CostConfig.physicalPurseOccurrences_eq]
+  exact costResource_purses_card config event enabled
+
+/-- **Along a run of funded firings, no purse is added or removed**, apart from
+the purses the contracta release. -/
+theorem costResource_run_physicalPurseOccurrences {Ground : Type u} [DecidableEq Ground]
+    {M N : CostConfig Ground} (p : OccurrencePath (costResourceSystem Ground).presentation M N) :
+    M.physicalPurseOccurrences + ((costResourceSystem Ground).instanceValuation
+        fun event => event.val.contractum.physicalPurseOccurrences).onPath p =
+      N.physicalPurseOccurrences := by
+  have released : ((costResourceSystem Ground).instanceValuation
+        fun event => event.val.contractum.physicalPurseOccurrences).onPath p =
+      ((costResourceSystem Ground).instanceValuation
+        fun event => event.val.contractum.purses.card).onPath p :=
+    (costResourceSystem Ground).instanceValuation_congr
+      (fun event => CostConfig.physicalPurseOccurrences_eq event.val.contractum) p
+  rw [released, CostConfig.physicalPurseOccurrences_eq, CostConfig.physicalPurseOccurrences_eq]
+  exact costResource_run_purses_card p
+
 /-- A real funding cover removes exactly one cell per selected occurrence;
 every unselected purse and every selected tail remains in the residual. -/
 theorem LocatedTokenCover.physical_cells_balance {Ground : Type u}
@@ -264,18 +440,12 @@ theorem LocatedTokenCover.physical_cells_balance {Ground : Type u}
     (cover : LocatedTokenCover location demand available residual) :
     (available.map fun purse => purse.stack.cellCount).sum =
       (residual.map fun purse => purse.stack.cellCount).sum + cover.chosen.card := by
-  have selected :
-      (cover.chosen.map fun choice => choice.tail.cellCount + 1).sum =
-        (cover.chosen.map fun choice => choice.tail.cellCount).sum + cover.chosen.card := by
-    induction cover.chosen using Multiset.induction_on with
-    | empty => simp
-    | @cons choice choices inductionHypothesis =>
-        simp only [Multiset.map_cons, Multiset.sum_cons, Multiset.card_cons]
-        omega
-  simp only [cover.available_eq, cover.residual_eq, Multiset.map_add, Multiset.sum_add, Multiset.map_map,
-    Function.comp_def, CostStack.cellCount]
-  rw [selected]
-  omega
+  classical
+  have taken := congrArg Multiset.card cover.cells_taken
+  rwa [Multiset.card_add, card_cellBag, card_cellBag, Multiset.card_map,
+    LocatedPurse.cells_map_toPurse, LocatedPurse.cells_map_toPurse] at taken
+
+end PaidFiring
 
 /-- A positive charge selects at least one actual purse cell. -/
 theorem LocatedTokenCover.selected_card_pos {Ground : Type u}
@@ -298,42 +468,14 @@ theorem CostStep.physical_cells_decrease {Ground : Type u}
     (step : CostStep source location spend target) (separated : source.ResourceSeparated) :
     ∃ consumedCells, 0 < consumedCells ∧
       source.physicalPurseCells = target.physicalPurseCells + consumedCells := by
-  have spendValid := step.spend_runtimeValid
-  cases step with
-  | wholeRecvSend valid cover =>
-      simp only [CostConfig.resourceSeparated_add_iff,
-        CostConfig.resourceSeparated_singleton_iff] at separated
-      have free := CostTerm.PurseFree.wholeRecvSend_payloads separated.1.2
-      refine ⟨cover.chosen.card, cover.selected_card_pos spendValid, ?_⟩
-      simp only [CostConfig.physicalPurseCells, CostTerm.commSubst, CostConfig.physicalPurseMeasure_add,
-        CostConfig.physicalPurseMeasure_cons_zero, CostTerm.physicalPurseMeasure,
-        LocatedPurse.configComponents_physicalPurseMeasure,
-        (free.1.substitute free.2 0).components_physicalPurseMeasure_zero, add_zero]
-      rw [cover.physical_cells_balance]
-      omega
-  | wholeSendRecv valid cover =>
-      simp only [CostConfig.resourceSeparated_add_iff,
-        CostConfig.resourceSeparated_singleton_iff] at separated
-      have free := CostTerm.PurseFree.wholeSendRecv_payloads separated.1.2
-      refine ⟨cover.chosen.card, cover.selected_card_pos spendValid, ?_⟩
-      simp only [CostConfig.physicalPurseCells, CostTerm.commSubst, CostConfig.physicalPurseMeasure_add,
-        CostConfig.physicalPurseMeasure_cons_zero, CostTerm.physicalPurseMeasure,
-        LocatedPurse.configComponents_physicalPurseMeasure,
-        (free.1.substitute free.2 0).components_physicalPurseMeasure_zero, add_zero]
-      rw [cover.physical_cells_balance]
-      omega
-  | split recvValid sendValid cover =>
-      simp only [CostConfig.resourceSeparated_add_iff,
-        CostConfig.resourceSeparated_singleton_iff] at separated
-      have bodyFree := CostTerm.PurseFree.recv_body separated.1.1.2
-      have payloadFree := CostTerm.PurseFree.send_payload separated.1.2
-      refine ⟨cover.chosen.card, cover.selected_card_pos spendValid, ?_⟩
-      simp only [CostConfig.physicalPurseCells, CostTerm.commSubst, CostConfig.physicalPurseMeasure_add,
-        CostConfig.physicalPurseMeasure_cons_zero, CostTerm.physicalPurseMeasure,
-        LocatedPurse.configComponents_physicalPurseMeasure,
-        (bodyFree.substitute payloadFree 0).components_physicalPurseMeasure_zero, add_zero]
-      rw [cover.physical_cells_balance]
-      omega
+  classical
+  obtain ⟨entry, rfl, rfl, enabled, rfl⟩ := costStep_iff_exists_enabled_resource.mp step
+  have balance := costResource_physicalPurseCells source entry.2 enabled
+  have released : entry.2.val.contractum.physicalPurseCells = 0 :=
+    contractum_physicalPurseMeasure_eq_zero _ separated entry.2 enabled
+  rw [released, add_zero] at balance
+  exact ⟨_, Multiset.card_pos.mpr (entry.2.val.funding.chosen_ne_zero entry.2.val.spend_valid),
+    balance⟩
 
 /-- A funded separated transition has strictly fewer actual temporal cells. -/
 theorem CostStep.physical_cells_strictly_decrease {Ground : Type u}
@@ -356,7 +498,10 @@ theorem LocatedTokenCover.physical_purse_count_balance {Ground : Type u}
     {available residual : Multiset (LocatedPurse Ground)}
     (cover : LocatedTokenCover location demand available residual) :
     available.card = residual.card := by
-  simp only [cover.available_eq, cover.residual_eq, Multiset.card_add, Multiset.card_map]
+  classical
+  obtain ⟨enabled, fired⟩ := cover.purses_firing
+  simpa only [fired, Multiset.card_map] using
+    (Mettapedia.GSLT.Causality.ResourceInteraction.pursesMany_card _ _ _ enabled).symm
 
 /-- The preserved separated domain rules out creation of executable purse
 occurrences, including through duplicating or discarding communicated code. -/
@@ -364,34 +509,11 @@ theorem CostStep.physical_purse_occurrences_preserved {Ground : Type u}
     {source target : CostConfig Ground} {location : CostName Ground} {spend : CostSig Ground}
     (step : CostStep source location spend target) (separated : source.ResourceSeparated) :
     source.physicalPurseOccurrences = target.physicalPurseOccurrences := by
-  cases step with
-  | wholeRecvSend valid cover =>
-      simp only [CostConfig.resourceSeparated_add_iff,
-        CostConfig.resourceSeparated_singleton_iff] at separated
-      have free := CostTerm.PurseFree.wholeRecvSend_payloads separated.1.2
-      simp only [CostConfig.physicalPurseOccurrences, CostTerm.commSubst,
-        CostConfig.physicalPurseMeasure_add, CostConfig.physicalPurseMeasure_cons_zero,
-        CostTerm.physicalPurseMeasure, LocatedPurse.configComponents_physicalPurseMeasure,
-        (free.1.substitute free.2 0).components_physicalPurseMeasure_zero, add_zero]
-      simpa using cover.physical_purse_count_balance
-  | wholeSendRecv valid cover =>
-      simp only [CostConfig.resourceSeparated_add_iff,
-        CostConfig.resourceSeparated_singleton_iff] at separated
-      have free := CostTerm.PurseFree.wholeSendRecv_payloads separated.1.2
-      simp only [CostConfig.physicalPurseOccurrences, CostTerm.commSubst,
-        CostConfig.physicalPurseMeasure_add, CostConfig.physicalPurseMeasure_cons_zero,
-        CostTerm.physicalPurseMeasure, LocatedPurse.configComponents_physicalPurseMeasure,
-        (free.1.substitute free.2 0).components_physicalPurseMeasure_zero, add_zero]
-      simpa using cover.physical_purse_count_balance
-  | split recvValid sendValid cover =>
-      simp only [CostConfig.resourceSeparated_add_iff,
-        CostConfig.resourceSeparated_singleton_iff] at separated
-      have bodyFree := CostTerm.PurseFree.recv_body separated.1.1.2
-      have payloadFree := CostTerm.PurseFree.send_payload separated.1.2
-      simp only [CostConfig.physicalPurseOccurrences, CostTerm.commSubst,
-        CostConfig.physicalPurseMeasure_add, CostConfig.physicalPurseMeasure_cons_zero,
-        CostTerm.physicalPurseMeasure, LocatedPurse.configComponents_physicalPurseMeasure,
-        (bodyFree.substitute payloadFree 0).components_physicalPurseMeasure_zero, add_zero]
-      simpa using cover.physical_purse_count_balance
+  classical
+  obtain ⟨entry, rfl, rfl, enabled, rfl⟩ := costStep_iff_exists_enabled_resource.mp step
+  have balance := costResource_physicalPurseOccurrences source entry.2 enabled
+  have released : entry.2.val.contractum.physicalPurseOccurrences = 0 :=
+    contractum_physicalPurseMeasure_eq_zero _ separated entry.2 enabled
+  rwa [released, add_zero] at balance
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost

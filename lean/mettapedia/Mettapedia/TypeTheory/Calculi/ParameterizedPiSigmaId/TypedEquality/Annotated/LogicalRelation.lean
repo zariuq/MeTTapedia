@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.Validity
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.HeadSteps
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.Domain.ProjectionLaws
 
 /-!
@@ -27,6 +28,13 @@ each of its tokens. The clause of a token is read off its kind:
   judgmentally equal to the endpoints of the identity type and to each other; a
   point token relates the points and the endpoints as far as it observes;
 * **numbers.** Both reduce to zero, or to successors of related numbers;
+* **declared datatypes.** At the tag of a declared datatype both types reduce to its
+  constant (`DataRed`); a parameter token relates the datatype's parameter to itself;
+* **constructors.** At the tag of a constructor `c` of a declared datatype both terms
+  reduce to `c` applied to as many terms as it has fields, the fields judgmentally equal
+  one by one at their types (`CtorRed`); a field token relates the fields `i` at the
+  field's type, the datatype itself or one of its parameters. Zero and the successor
+  are the instances at the numbers (`ZeroRed.iff_ctorRed`, `SuccRed.iff_ctorRed`);
 * **types and codes as terms.** At a universe the terms are related as types; at
   the type of proposition codes their decodings are.
 
@@ -42,9 +50,11 @@ at codes only through the smaller input of a family entry.
 The relation is parameterized by a weak-head reduction with the properties the
 clauses read (`HeadReduction`: β and the projections of pairs, the head position of
 applications and projections, the root steps, the argument of the decoder,
-determinism, and normal canonical forms), and by the syntactic rigid types
-(`RigidTypes`: the type of proposition codes and its decoder, the numbers with
-zero and successor, the ground types).
+determinism, and normal canonical forms, among them the constant of a declared
+datatype and a constructor applied to as many terms as it has fields), and by the
+syntactic rigid types (`RigidTypes`: the type of proposition codes and its decoder,
+the numbers with zero and successor, the ground types, and the declared datatypes with
+their parameters and constructors, the numbers among them).
 
 Laws proved here:
 
@@ -86,6 +96,24 @@ structure RigidTypes (P : ChurchRules R) where
     CTyped P Γ (.const holds) (.pi (.const prop) (.head u))
   /-- The ground types: the syntactic types whose only element is the least one. -/
   ground : {n : Nat} → CTm Head n → Prop
+  /-- The declared datatypes, each the constant of its type. -/
+  data : DeclName → Prop
+  /-- The parameters of a declared datatype: the closed types of the fields that are not the
+  datatype itself, numbered as the domain numbers the components of a datatype. -/
+  params : DeclName → List (CTm Head 0)
+  /-- The constructors of the declared datatypes: `c` builds `d` from fields of the shapes
+  `fs`. -/
+  ctor : DeclName → DeclName → List FieldShape → Prop
+  /-- A constructor builds a declared datatype. -/
+  ctor_data : ∀ {d c : DeclName} {fs : List FieldShape}, ctor d c fs → data d
+  /-- Zero is a constructor of the numbers with no field. -/
+  zero_ctor : ctor num zero []
+  /-- The successor is a constructor of the numbers with one recursive field. -/
+  suc_ctor : ctor num suc [.self]
+
+/-- The numbers are a declared datatype. -/
+theorem RigidTypes.num_data {P : ChurchRules R} (K : RigidTypes P) : K.data K.num :=
+  K.ctor_data K.zero_ctor
 
 /-- A weak-head reduction of annotated terms, with what the relation needs of it:
 β, the projections of pairs, the head position of applications and projections,
@@ -107,9 +135,12 @@ structure HeadReduction (P : ChurchRules R) (K : RigidTypes P) where
   id_normal : ∀ {n : Nat} (A a b u : CTm Head n), ¬ step (.id A a b) u
   refl_normal : ∀ {n : Nat} (a u : CTm Head n), ¬ step (.refl a) u
   prop_normal : ∀ {n : Nat} (u : CTm Head n), ¬ step (.const K.prop) u
-  num_normal : ∀ {n : Nat} (u : CTm Head n), ¬ step (.const K.num) u
-  zero_normal : ∀ {n : Nat} (u : CTm Head n), ¬ step (.const K.zero) u
-  suc_normal : ∀ {n : Nat} (m u : CTm Head n), ¬ step (.app (.const K.suc) m) u
+  /-- The constant of a declared datatype takes no step. -/
+  data_normal : ∀ {n : Nat} {d : DeclName} (u : CTm Head n), K.data d → ¬ step (.const d) u
+  /-- A constructor applied to as many terms as it has fields takes no step. -/
+  ctor_normal : ∀ {n : Nat} {d c : DeclName} {fs : List FieldShape} {ms : List (CTm Head n)}
+    (u : CTm Head n), K.ctor d c fs → ms.length = fs.length →
+      ¬ step (CTm.appSpine (.const c) ms) u
   fstPair : ∀ {n : Nat} (a b : CTm Head n), step (.fst (.pair a b)) a
   sndPair : ∀ {n : Nat} (a b : CTm Head n), step (.snd (.pair a b)) b
   fst : ∀ {n : Nat} {p p' : CTm Head n}, step p p' → step (.fst p) (.fst p')
@@ -178,11 +209,86 @@ def SuccRed (T M M' m m' : CTm Head n) : Prop :=
   CRedTy H Γ T (.const K.num) ∧ CRedTm H Γ M (.app (.const K.suc) m) T ∧
     CRedTm H Γ M' (.app (.const K.suc) m') T ∧ CEqual P Γ m m' (.const K.num)
 
+/-- Both types reduce to the constant of the declared datatype `d`. -/
+def DataRed (d : DeclName) (A A' : CTm Head n) : Prop :=
+  K.data d ∧ CRedTy H Γ A (.const d) ∧ CRedTy H Γ A' (.const d)
+
 end Shapes
+
+/-- The parameter `j` of the declared datatype `d`, when it has one. -/
+def RigidTypes.param (K : RigidTypes P) (d : DeclName) (j : Nat) {n : Nat} :
+    Option (CTm Head n) :=
+  ((K.params d)[j]?).map CTm.liftClosed
+
+/-- The type of a field of the shape `f` of a constructor of the declared datatype `d`: the
+datatype itself for a recursive field, and the parameter `j` of the datatype, when it has one,
+for the shape `param j`. -/
+def RigidTypes.fieldType (K : RigidTypes P) (d : DeclName) {n : Nat} :
+    FieldShape → Option (CTm Head n)
+  | .self => some (.const d)
+  | .param j => K.param d j
+
+/-- Two lists of fields of a constructor of the declared datatype `d`, of the shapes `fs`, are
+equal one by one, each at the type of its field. -/
+inductive FieldsEqual (K : RigidTypes P) {n : Nat} (Γ : CCtx Head n) (d : DeclName) :
+    List FieldShape → List (CTm Head n) → List (CTm Head n) → Prop
+  | nil : FieldsEqual K Γ d [] [] []
+  | cons {f : FieldShape} {fs : List FieldShape} {A m m' : CTm Head n}
+      {ms ms' : List (CTm Head n)} :
+      K.fieldType d f = some A → CEqual P Γ m m' A → FieldsEqual K Γ d fs ms ms' →
+        FieldsEqual K Γ d (f :: fs) (m :: ms) (m' :: ms')
+
+/-- The field `i` of two lists of fields of a constructor of the declared datatype `d`, of the
+shapes `fs`: it has the type `A`, and it is `m` in the first list and `m'` in the second. -/
+def FieldAt (K : RigidTypes P) (d : DeclName) (fs : List FieldShape) {n : Nat}
+    (ms ms' : List (CTm Head n)) (i : Nat) (A m m' : CTm Head n) : Prop :=
+  (∃ f, fs[i]? = some f ∧ K.fieldType d f = some A) ∧ ms[i]? = some m ∧ ms'[i]? = some m'
+
+section Shapes
+
+variable {n : Nat} (Γ : CCtx Head n)
+
+/-- The type reduces to the declared datatype `d`, and both terms to its constructor `c`, with
+fields of the shapes `fs`, applied to fields equal one by one. -/
+def CtorRed (d c : DeclName) (fs : List FieldShape) (T M M' : CTm Head n)
+    (ms ms' : List (CTm Head n)) : Prop :=
+  K.ctor d c fs ∧ CRedTy H Γ T (.const d) ∧ CRedTm H Γ M (CTm.appSpine (.const c) ms) T ∧
+    CRedTm H Γ M' (CTm.appSpine (.const c) ms') T ∧ FieldsEqual K Γ d fs ms ms'
+
+end Shapes
+
+section Instances
+
+variable {H} {n : Nat} {Γ : CCtx Head n}
+
+/-- **The numbers as a declared datatype**: their type clause is the datatype's. -/
+theorem DataRed.num_iff {A A' : CTm Head n} :
+    DataRed H Γ K.num A A' ↔ CRedTy H Γ A (.const K.num) ∧ CRedTy H Γ A' (.const K.num) :=
+  ⟨fun h => h.2, fun h => ⟨K.num_data, h⟩⟩
+
+/-- **Zero is the instance of a constructor** with no field. -/
+theorem ZeroRed.iff_ctorRed {T M M' : CTm Head n} :
+    ZeroRed H Γ T M M' ↔ CtorRed H Γ K.num K.zero [] T M M' [] [] :=
+  ⟨fun ⟨hT, r₁, r₂⟩ => ⟨K.zero_ctor, hT, r₁, r₂, .nil⟩, fun ⟨_, hT, r₁, r₂, _⟩ => ⟨hT, r₁, r₂⟩⟩
+
+/-- **A successor is the instance of a constructor** with one recursive field, its
+predecessor. -/
+theorem SuccRed.iff_ctorRed {T M M' m m' : CTm Head n} :
+    SuccRed H Γ T M M' m m' ↔ CtorRed H Γ K.num K.suc [.self] T M M' [m] [m'] := by
+  constructor
+  · rintro ⟨hT, r₁, r₂, e⟩
+    exact ⟨K.suc_ctor, hT, r₁, r₂, .cons rfl e .nil⟩
+  · rintro ⟨-, hT, r₁, r₂, fe⟩
+    cases fe with
+    | cons hf e _ =>
+        cases hf
+        exact ⟨hT, r₁, r₂, e⟩
+
+end Instances
 
 /-- The kinds whose elements are types. -/
 def typeKind : Kind → Bool
-  | .univ | .ground | .codes | .nat | .pi | .sigma | .ident => true
+  | .univ | .ground | .codes | .nat | .pi | .sigma | .ident | .data _ => true
   | _ => false
 
 /-! ## The relation -/
@@ -224,6 +330,12 @@ def RT {n : Nat} (Γ : CCtx Head n) : Bool → Tok → CTm Head n → CTm Head n
               RT Γ false w.1 (CTm.inst0 N E') (CTm.inst0 N E') (CTm.inst0 N' E')) ∧
           (∀ N, CTyped P Γ N D → (∀ z ∈ Z.attach, RT Γ true z.1 D N N) →
             ∀ w ∈ W.attach, RT Γ false w.1 (CTm.inst0 N E) (CTm.inst0 N E) (CTm.inst0 N E'))
+      | .tag (.data d) => DataRed H Γ d A A'
+      | .arg (.data d) i C s => DataRed H Γ d A A' ∧
+          (∀ c ∈ C.attach, ∀ B : CTm Head n, K.param d 0 = some B → RT Γ false c.1 B B B) ∧
+          (∀ B : CTm Head n, K.param d i = some B → RT Γ false s B B B)
+      | .fn (.data d) C _ _ => DataRed H Γ d A A' ∧
+          ∀ c ∈ C.attach, ∀ B : CTm Head n, K.param d 0 = some B → RT Γ false c.1 B B B
       | _ => True
   | true, t, T, M, M' => ent [] t = true ∨
       if typeKind t.kind then
@@ -261,11 +373,19 @@ def RT {n : Nat} (Γ : CCtx Head n) : Bool → Tok → CTm Head n → CTm Head n
               RT Γ true s (CTm.inst0 N E) (.snd M) (.snd M'))
         | .fn .pair C _ _ => ∀ D E, CRedTy H Γ T (.sigma D E) →
             CEqual P Γ (.fst M) (.fst M') D ∧ ∀ c ∈ C.attach, RT Γ true c.1 D (.fst M) (.fst M')
+        | .tag (.ctor d c fs) => ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms'
+        | .arg (.ctor d c fs) i C s => ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms' ∧
+            (∀ r ∈ C.attach, ∀ A m m', FieldAt K d fs ms ms' 0 A m m' → RT Γ true r.1 A m m') ∧
+            (∀ A m m', FieldAt K d fs ms ms' i A m m' → RT Γ true s A m m')
+        | .fn (.ctor d c fs) C _ _ => ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms' ∧
+            ∀ r ∈ C.attach, ∀ A m m', FieldAt K d fs ms ms' 0 A m m' → RT Γ true r.1 A m m'
         | _ => True
 termination_by b t => (t.depth, if b then 1 else 0)
 decreasing_by
   all_goals first
     | exact Prod.Lex.right _ (by decide)
+    | exact Prod.Lex.left _ _ (Tok.depth_lt_of_mem_dep (t := .arg _ _ _ _) r.2)
+    | exact Prod.Lex.left _ _ (Tok.depth_lt_of_mem_dep (t := .fn _ _ _ _) r.2)
     | exact Prod.Lex.left _ _ (depth_lt_fn_left z.2)
     | exact Prod.Lex.left _ _ (depth_lt_fn_right w.2)
     | exact Prod.Lex.left _ _ (depth_lt_fn_left x.2)
@@ -380,30 +500,59 @@ theorem RT.ty_fnSigma_iff {C Z W : List Tok} {T A A' : CTm Head n} :
   rw [RT.eq_def]
   simp only [List.mem_attach, forall_const, Subtype.forall]
 
-/-- The type relation carries no clause at the other type tokens. -/
+theorem RT.ty_data_iff {d : DeclName} {T A A' : CTm Head n} :
+    RT H Γ false (.tag (.data d)) T A A' ↔ DataRed H Γ d A A' := by
+  rw [RT.eq_def]
+  simp only [ent_nil_tag, Bool.false_eq_true, false_or]
+
+theorem RT.ty_param_iff {d : DeclName} {i : Nat} {C : List Tok} {s : Tok} {T A A' : CTm Head n} :
+    RT H Γ false (.arg (.data d) i C s) T A A' ↔ ent [] (.arg (.data d) i C s) = true ∨
+      DataRed H Γ d A A' ∧ (∀ c ∈ C, ∀ B, K.param d 0 = some B → RT H Γ false c B B B) ∧
+        (∀ B, K.param d i = some B → RT H Γ false s B B B) := by
+  rw [RT.eq_def]
+  simp only [List.mem_attach, forall_const, Subtype.forall]
+
+theorem RT.ty_fnData_iff {d : DeclName} {C X Y : List Tok} {T A A' : CTm Head n} :
+    RT H Γ false (.fn (.data d) C X Y) T A A' ↔ ent [] (.fn (.data d) C X Y) = true ∨
+      DataRed H Γ d A A' ∧ ∀ c ∈ C, ∀ B, K.param d 0 = some B → RT H Γ false c B B B := by
+  rw [RT.eq_def]
+  simp only [List.mem_attach, forall_const, Subtype.forall]
+
+/-- The type relation carries no clause at the tags of the kinds of terms: no type is built
+by them. -/
 theorem RT.ty_tag_other {k : Kind} {T A A' : CTm Head n}
     (hk : k ≠ .univ ∧ k ≠ .codes ∧ k ≠ .nat ∧ k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .ground ∧
-      k ≠ .sigma) :
+      k ≠ .sigma ∧ ∀ d, k ≠ .data d) :
     RT H Γ false (.tag k) T A A' := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := hk
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := hk
   rw [RT.eq_def]
   refine .inr ?_
   cases k <;> first | exact absurd rfl h1 | exact absurd rfl h2 | exact absurd rfl h3 |
-    exact absurd rfl h4 | exact absurd rfl h5 | exact absurd rfl h6 | exact absurd rfl h7 | trivial
+    exact absurd rfl h4 | exact absurd rfl h5 | exact absurd rfl h6 | exact absurd rfl h7 |
+    exact absurd rfl (h8 _) | trivial
 
+/-- The type relation carries no clause at the components of the kinds whose types have no
+components: the universes, the codes, the numbers, the ground types, and the kinds of
+terms. -/
 theorem RT.ty_arg_other {k : Kind} {i : Nat} {C : List Tok} {s : Tok} {T A A' : CTm Head n}
-    (hk : k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .sigma) : RT H Γ false (.arg k i C s) T A A' := by
-  obtain ⟨h1, h2, h3⟩ := hk
+    (hk : k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .sigma ∧ ∀ d, k ≠ .data d) :
+    RT H Γ false (.arg k i C s) T A A' := by
+  obtain ⟨h1, h2, h3, h4⟩ := hk
   rw [RT.eq_def]
   refine .inr ?_
-  cases k <;> first | exact absurd rfl h1 | exact absurd rfl h2 | exact absurd rfl h3 | trivial
+  cases k <;> first | exact absurd rfl h1 | exact absurd rfl h2 | exact absurd rfl h3 |
+    exact absurd rfl (h4 _) | trivial
 
+/-- The type relation carries no clause at the step functions of the kinds whose types have
+no family: the universes, the codes, the numbers, the ground types, and the kinds of terms. -/
 theorem RT.ty_fn_other {k : Kind} {C X Y : List Tok} {T A A' : CTm Head n}
-    (hk : k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .sigma) : RT H Γ false (.fn k C X Y) T A A' := by
-  obtain ⟨h1, h2, h3⟩ := hk
+    (hk : k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .sigma ∧ ∀ d, k ≠ .data d) :
+    RT H Γ false (.fn k C X Y) T A A' := by
+  obtain ⟨h1, h2, h3, h4⟩ := hk
   rw [RT.eq_def]
   refine .inr ?_
-  cases k <;> first | exact absurd rfl h1 | exact absurd rfl h2 | exact absurd rfl h3 | trivial
+  cases k <;> first | exact absurd rfl h1 | exact absurd rfl h2 | exact absurd rfl h3 |
+    exact absurd rfl (h4 _) | trivial
 
 /-- At a token of a type kind, terms are related as types at a universe, and their
 decodings are at the type of proposition codes. -/
@@ -500,9 +649,37 @@ theorem RT.tm_fnPair_iff {C X Y : List Tok} {T M M' : CTm Head n} :
   simp only [Tok.kind, typeKind, Bool.false_eq_true, if_false, List.mem_attach, forall_const,
     Subtype.forall]
 
+theorem RT.tm_ctorTag_iff {d c : DeclName} {fs : List FieldShape} {T M M' : CTm Head n} :
+    RT H Γ true (.tag (.ctor d c fs)) T M M' ↔ ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms' := by
+  rw [RT.eq_def]
+  simp only [ent_nil_tag, Bool.false_eq_true, false_or, Tok.kind, typeKind, if_false]
+
+theorem RT.tm_field_iff {d c : DeclName} {fs : List FieldShape} {i : Nat} {C : List Tok}
+    {s : Tok} {T M M' : CTm Head n} :
+    RT H Γ true (.arg (.ctor d c fs) i C s) T M M' ↔ ent [] (.arg (.ctor d c fs) i C s) = true ∨
+      ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms' ∧
+        (∀ r ∈ C, ∀ A m m', FieldAt K d fs ms ms' 0 A m m' → RT H Γ true r A m m') ∧
+        (∀ A m m', FieldAt K d fs ms ms' i A m m' → RT H Γ true s A m m') := by
+  rw [RT.eq_def]
+  simp only [Tok.kind, typeKind, Bool.false_eq_true, if_false, List.mem_attach, forall_const,
+    Subtype.forall]
+
+theorem RT.tm_fnCtor_iff {d c : DeclName} {fs : List FieldShape} {C X Y : List Tok}
+    {T M M' : CTm Head n} :
+    RT H Γ true (.fn (.ctor d c fs) C X Y) T M M' ↔ ent [] (.fn (.ctor d c fs) C X Y) = true ∨
+      ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms' ∧
+        ∀ r ∈ C, ∀ A m m', FieldAt K d fs ms ms' 0 A m m' → RT H Γ true r A m m' := by
+  rw [RT.eq_def]
+  simp only [Tok.kind, typeKind, Bool.false_eq_true, if_false, List.mem_attach, forall_const,
+    Subtype.forall]
+
+/-- The term relation carries no clause at the tokens of the kinds of terms that no term
+asserts: the tag and the components of a function, and the components and the step
+functions of zero. -/
 theorem RT.tm_other {t : Tok} {T M M' : CTm Head n}
     (hk : typeKind t.kind = false) (hl : ∀ C X Y, t ≠ .fn .lam C X Y) (hr : t.kind ≠ .refl)
-    (hz : t ≠ .tag .zero) (hs : t.kind ≠ .succ) (hp : t.kind ≠ .pair) :
+    (hz : t ≠ .tag .zero) (hs : t.kind ≠ .succ) (hp : t.kind ≠ .pair)
+    (hc : ∀ d c fs, t.kind ≠ .ctor d c fs) :
     RT H Γ true t T M M' := by
   rw [RT.eq_def]
   refine .inr ?_
@@ -511,15 +688,18 @@ theorem RT.tm_other {t : Tok} {T M M' : CTm Head n}
   | tag k =>
       cases k
       case pair => exact absurd rfl hp
+      case ctor d c fs => exact absurd rfl (hc d c fs)
       all_goals trivial
   | arg k i C s =>
       cases k
       case pair => exact absurd rfl hp
+      case ctor d c fs => exact absurd rfl (hc d c fs)
       all_goals trivial
   | fn k C X Y =>
       cases k
       case lam => exact absurd rfl (hl C X Y)
       case pair => exact absurd rfl hp
+      case ctor d c fs => exact absurd rfl (hc d c fs)
       all_goals trivial
 
 end Clauses
@@ -594,12 +774,23 @@ theorem HeadReduction.normal_refl (a : CTm Head n) : H.Normal (.refl a) := H.ref
 
 theorem HeadReduction.normal_prop : H.Normal (.const K.prop : CTm Head n) := H.prop_normal
 
-theorem HeadReduction.normal_num : H.Normal (.const K.num : CTm Head n) := H.num_normal
+theorem HeadReduction.normal_data {d : DeclName} (hd : K.data d) :
+    H.Normal (.const d : CTm Head n) :=
+  fun u => H.data_normal u hd
 
-theorem HeadReduction.normal_zero : H.Normal (.const K.zero : CTm Head n) := H.zero_normal
+theorem HeadReduction.normal_ctor {d c : DeclName} {fs : List FieldShape} {ms : List (CTm Head n)}
+    (hc : K.ctor d c fs) (hl : ms.length = fs.length) :
+    H.Normal (CTm.appSpine (.const c) ms) :=
+  fun u => H.ctor_normal u hc hl
+
+theorem HeadReduction.normal_num : H.Normal (.const K.num : CTm Head n) :=
+  H.normal_data K.num_data
+
+theorem HeadReduction.normal_zero : H.Normal (.const K.zero : CTm Head n) :=
+  H.normal_ctor (ms := []) K.zero_ctor rfl
 
 theorem HeadReduction.normal_suc (m : CTm Head n) : H.Normal (.app (.const K.suc) m) :=
-  H.suc_normal m
+  H.normal_ctor (ms := [m]) K.suc_ctor rfl
 
 /-- The head position of an application follows a reduction of the function. -/
 theorem HeadReduction.red_app {f f' : CTm Head n} (red : Relation.ReflTransGen H.step f f')
@@ -876,6 +1067,46 @@ theorem SuccRed.align {T M M' m m' m₁ m₁' : CTm Head n} (h : SuccRed H Γ T 
     (h₁ : SuccRed H Γ T M M' m₁ m₁') : m₁ = m ∧ m₁' = m' :=
   ⟨CRedTm.suc_align h.2.1 h₁.2.1, CRedTm.suc_align h.2.2.1 h₁.2.2.1⟩
 
+/-- Fields equal one by one are as many as the constructor has. -/
+theorem FieldsEqual.length {d : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)}
+    (h : FieldsEqual K Γ d fs ms ms') : ms.length = fs.length ∧ ms'.length = fs.length := by
+  induction h with
+  | nil => exact ⟨rfl, rfl⟩
+  | cons _ _ _ ih => exact ⟨congrArg (· + 1) ih.1, congrArg (· + 1) ih.2⟩
+
+theorem FieldsEqual.left {d : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)}
+    (h : FieldsEqual K Γ d fs ms ms') : FieldsEqual K Γ d fs ms ms := by
+  induction h with
+  | nil => exact .nil
+  | cons hf e _ ih => exact .cons hf e.left ih
+
+/-- The field of the left list read twice is the field of the left list beside the right
+one. -/
+theorem FieldAt.left {d : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)} {i : Nat}
+    {A m m₂ : CTm Head n} (hl : ms'.length = ms.length) (h : FieldAt K d fs ms ms i A m m₂) :
+    m₂ = m ∧ ∃ m', FieldAt K d fs ms ms' i A m m' := by
+  obtain ⟨hf, h₁, h₂⟩ := h
+  rw [h₁] at h₂
+  have hi : i < ms'.length := by
+    rw [hl]
+    exact (List.getElem?_eq_some_iff.1 h₁).1
+  exact ⟨(Option.some.inj h₂).symm, ms'[i], hf, h₁, List.getElem?_eq_getElem hi⟩
+
+/-- Two reductions of one term to applications of a constructor to as many terms as it has
+fields reach the same fields. -/
+theorem CRedTm.ctor_align {d c : DeclName} {fs : List FieldShape} {M T T' : CTm Head n}
+    {ms ms₁ : List (CTm Head n)} (hc : K.ctor d c fs) (hl : ms.length = fs.length)
+    (hl₁ : ms₁.length = fs.length) (h : CRedTm H Γ M (CTm.appSpine (.const c) ms) T)
+    (h₁ : CRedTm H Γ M (CTm.appSpine (.const c) ms₁) T') : ms₁ = ms :=
+  (CTm.appSpine_const_injective
+    (CRedTm.nf_unique h₁ h (H.normal_ctor hc hl₁) (H.normal_ctor hc hl))).2
+
+theorem CtorRed.align {d c : DeclName} {fs : List FieldShape} {T M M' : CTm Head n}
+    {ms ms' ms₁ ms₁' : List (CTm Head n)} (h : CtorRed H Γ d c fs T M M' ms ms')
+    (h₁ : CtorRed H Γ d c fs T M M' ms₁ ms₁') : ms₁ = ms ∧ ms₁' = ms' :=
+  ⟨CRedTm.ctor_align h.1 h.2.2.2.2.length.1 h₁.2.2.2.2.length.1 h.2.2.1 h₁.2.2.1,
+    CRedTm.ctor_align h.1 h.2.2.2.2.length.2 h₁.2.2.2.2.length.2 h.2.2.2.1 h₁.2.2.2.1⟩
+
 theorem CRedTy.sigma_align {A D D₁ : CTm Head n} {E E₁ : CTm Head (n + 1)}
     (r : CRedTy H Γ A (.sigma D E)) (r₁ : CRedTy H Γ A (.sigma D₁ E₁)) : D₁ = D ∧ E₁ = E := by
   have e := CRedTy.nf_unique r₁ r (H.normal_sigma _ _) (H.normal_sigma _ _)
@@ -971,6 +1202,41 @@ theorem RT.tm_succ_shape {s : Tok} (hk : s.kind = .succ) (hn : ent [] s = false)
       rcases RT.tm_fnSucc_iff.1 h with hv | ⟨m, m', hr, _⟩
       · rw [hv] at hn; cases hn
       · exact ⟨m, m', hr⟩
+
+theorem RT.tm_ctor_shape {s : Tok} {d c : DeclName} {fs : List FieldShape}
+    (hk : s.kind = .ctor d c fs) (hn : ent [] s = false) {T M M' : CTm Head n}
+    (h : RT H Γ true s T M M') : ∃ ms ms', CtorRed H Γ d c fs T M M' ms ms' := by
+  cases s with
+  | tag k =>
+      cases hk
+      exact RT.tm_ctorTag_iff.1 h
+  | arg k i C r =>
+      cases hk
+      rcases RT.tm_field_iff.1 h with hv | ⟨ms, ms', hr, _⟩
+      · rw [hv] at hn; cases hn
+      · exact ⟨ms, ms', hr⟩
+  | fn k C Z W =>
+      cases hk
+      rcases RT.tm_fnCtor_iff.1 h with hv | ⟨ms, ms', hr, _⟩
+      · rw [hv] at hn; cases hn
+      · exact ⟨ms, ms', hr⟩
+
+theorem RT.ty_data_shape {s : Tok} {d : DeclName} (hk : s.kind = .data d) (hn : ent [] s = false)
+    {T A A' : CTm Head n} (h : RT H Γ false s T A A') : DataRed H Γ d A A' := by
+  cases s with
+  | tag k =>
+      cases hk
+      exact RT.ty_data_iff.1 h
+  | arg k i C r =>
+      cases hk
+      rcases RT.ty_param_iff.1 h with hv | ⟨hd, _⟩
+      · rw [hv] at hn; cases hn
+      · exact hd
+  | fn k C Z W =>
+      cases hk
+      rcases RT.ty_fnData_iff.1 h with hv | ⟨hd, _⟩
+      · rw [hv] at hn; cases hn
+      · exact hd
 
 theorem RT.ty_sigma_shape {s : Tok} (hk : s.kind = .sigma) (hn : ent [] s = false)
     {T A A' : CTm Head n} (h : RT H Γ false s T A A') :
@@ -1167,6 +1433,57 @@ theorem RT.succ_pred {v : List Tok} {T M M' m m' : CTm Head n}
         · obtain ⟨rfl, rfl⟩ := hs.align hs₁
           exact hC₁ c hd
 
+/-- The field tokens `i` of the tokens of a constructor kind of a list relate the fields
+`i`. -/
+theorem RT.ctor_fields {v : List Tok} {d c : DeclName} {fs : List FieldShape}
+    {T M M' : CTm Head n} {ms ms' : List (CTm Head n)} (hs : CtorRed H Γ d c fs T M M' ms ms')
+    (hv : ∀ s ∈ v, s.kind = .ctor d c fs → RT H Γ true s T M M') (i : Nat) :
+    ∀ r ∈ args (.ctor d c fs) i v, ∀ A m m', FieldAt K d fs ms ms' i A m m' →
+      RT H Γ true r A m m' := by
+  intro r hr
+  rcases mem_args_iff.1 hr with ⟨C, hC⟩ | ⟨rfl, s, hs', hk, hd⟩
+  · rcases RT.tm_field_iff.1 (hv _ hC rfl) with hvac | ⟨ms₁, ms₁', hs₁, -, hr₁⟩
+    · exact fun _ _ _ _ => RT.of_vacuous (vacuous_arg hvac)
+    · obtain ⟨rfl, rfl⟩ := hs.align hs₁
+      exact hr₁
+  · cases s with
+    | tag k => cases hd
+    | arg k j C q =>
+        cases hk
+        rcases RT.tm_field_iff.1 (hv _ hs' rfl) with hvac | ⟨ms₁, ms₁', hs₁, hC₁, -⟩
+        · exact fun _ _ _ _ => RT.of_vacuous (vacuous_dep hvac hd)
+        · obtain ⟨rfl, rfl⟩ := hs.align hs₁
+          exact hC₁ r hd
+    | fn k C Z W =>
+        cases hk
+        rcases RT.tm_fnCtor_iff.1 (hv _ hs' rfl) with hvac | ⟨ms₁, ms₁', hs₁, hC₁⟩
+        · exact fun _ _ _ _ => RT.of_vacuous (vacuous_dep hvac hd)
+        · obtain ⟨rfl, rfl⟩ := hs.align hs₁
+          exact hC₁ r hd
+
+/-- The parameter tokens `i` of the tokens of a datatype kind of a list relate the parameter
+`i` of the datatype to itself. -/
+theorem RT.data_params {v : List Tok} {d : DeclName} {T A A' : CTm Head n}
+    (hv : ∀ s ∈ v, s.kind = .data d → RT H Γ false s T A A') (i : Nat) :
+    ∀ r ∈ args (.data d) i v, ∀ B, K.param d i = some B → RT H Γ false r B B B := by
+  intro r hr
+  rcases mem_args_iff.1 hr with ⟨C, hC⟩ | ⟨rfl, s, hs, hk, hd⟩
+  · rcases RT.ty_param_iff.1 (hv _ hC rfl) with hvac | ⟨-, -, hr₁⟩
+    · exact fun _ _ => RT.of_vacuous (vacuous_arg hvac)
+    · exact hr₁
+  · cases s with
+    | tag k => cases hd
+    | arg k j C q =>
+        cases hk
+        rcases RT.ty_param_iff.1 (hv _ hs rfl) with hvac | ⟨-, hC₁, -⟩
+        · exact fun _ _ => RT.of_vacuous (vacuous_dep hvac hd)
+        · exact hC₁ r hd
+    | fn k C Z W =>
+        cases hk
+        rcases RT.ty_fnData_iff.1 (hv _ hs rfl) with hvac | ⟨-, hC₁⟩
+        · exact fun _ _ => RT.of_vacuous (vacuous_dep hvac hd)
+        · exact hC₁ r hd
+
 /-- The domain tokens of the tokens of kind `sigma` of a list relate the domains. -/
 theorem RT.sigma_dom {v : List Tok} {T A A' D D' : CTm Head n} {E E' : CTm Head (n + 1)}
     (hp : SigmaRed H Γ A A' D E D' E') (hv : ∀ s ∈ v, s.kind = .sigma → RT H Γ false s T A A') :
@@ -1253,20 +1570,23 @@ section Closure
 
 variable {H} {n : Nat} {Γ : CCtx Head n}
 
-theorem kind_cases_ty (k : Kind) : k = .pi ∨ k = .ident ∨ (k ≠ .pi ∧ k ≠ .ident) := by
+theorem kind_cases_ty (k : Kind) :
+    k = .pi ∨ k = .ident ∨ (∃ d, k = .data d) ∨ (k ≠ .pi ∧ k ≠ .ident ∧ ∀ d, k ≠ .data d) := by
   cases k <;> simp
 
 theorem kind_cases_tm (k : Kind) :
-    k = .lam ∨ k = .refl ∨ k = .succ ∨ (k ≠ .lam ∧ k ≠ .refl ∧ k ≠ .succ) := by
+    k = .lam ∨ k = .refl ∨ k = .succ ∨ (∃ d c fs, k = .ctor d c fs) ∨
+      (k ≠ .lam ∧ k ≠ .refl ∧ k ≠ .succ ∧ ∀ d c fs, k ≠ .ctor d c fs) := by
   cases k <;> simp
 
 theorem kind_cases_tySigma (k : Kind) :
-    k = .pi ∨ k = .ident ∨ k = .sigma ∨ (k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .sigma) := by
+    k = .pi ∨ k = .ident ∨ k = .sigma ∨ (∃ d, k = .data d) ∨
+      (k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .sigma ∧ ∀ d, k ≠ .data d) := by
   cases k <;> simp
 
 theorem kind_cases_tmPair (k : Kind) :
-    k = .lam ∨ k = .refl ∨ k = .succ ∨ k = .pair ∨
-      (k ≠ .lam ∧ k ≠ .refl ∧ k ≠ .succ ∧ k ≠ .pair) := by
+    k = .lam ∨ k = .refl ∨ k = .succ ∨ k = .pair ∨ (∃ d c fs, k = .ctor d c fs) ∨
+      (k ≠ .lam ∧ k ≠ .refl ∧ k ≠ .succ ∧ k ≠ .pair ∧ ∀ d c fs, k ≠ .ctor d c fs) := by
   cases k <;> simp
 
 theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x' : CTm Head n),
@@ -1289,7 +1609,7 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
         | false =>
             simp only [Bool.toNat_false, Nat.add_zero] at hN
             rw [ent_arg, Bool.and_eq_true, List.all_eq_true] at e
-            rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+            rcases kind_cases_tySigma k with rfl | rfl | rfl | hk | hk
             · obtain ⟨D, E, D', E', hp⟩ := RT.ty_pi_shape hk₀ hn₀ (h s₀ hs₀ hk₀)
               have hdom := RT.pi_dom hp (fun s hs hk => h s hs hk)
               refine RT.ty_argPi_iff.2 (.inr ⟨D, E, D', E', hp, fun c hc => ?_, fun hi => ?_⟩)
@@ -1338,6 +1658,20 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
                 have := depthL_args .sigma 0 v
                 have := depth_lt_arg .sigma 0 C d
                 simp only [Bool.toNat_false]; omega
+            · obtain ⟨dn, rfl⟩ := hk
+              have hpar := RT.data_params (fun s hs hk => h s hs hk)
+              refine RT.ty_param_iff.2 (.inr ⟨RT.ty_data_shape hk₀ hn₀ (h s₀ hs₀ hk₀),
+                fun c hc B hB => ?_, fun B hB => ?_⟩)
+              · refine IH false (args (.data dn) 0 v) c B B B ?_ (e.1 c hc)
+                  (fun r hr _ => hpar 0 r hr B hB)
+                have := depthL_args (.data dn) 0 v
+                have := Tok.depth_lt_of_mem_dep (t := .arg (.data dn) i C d) hc
+                simp only [Bool.toNat_false]; omega
+              · refine IH false (args (.data dn) i v) d B B B ?_ e.2
+                  (fun r hr _ => hpar i r hr B hB)
+                have := depthL_args (.data dn) i v
+                have := depth_lt_arg (.data dn) i C d
+                simp only [Bool.toNat_false]; omega
             · exact RT.ty_arg_other hk
         | true =>
             simp only [Bool.toNat_true] at hN
@@ -1376,9 +1710,10 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
                   exact IH false v _ _ _ _ (by simp only [Bool.toNat_false]; omega) e'
                     (fun s hs hk => hstep' hs hk hp)
             | false =>
-                rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-                · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-                    (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+                rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk | hk
+                · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+                    (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+                    (fun _ _ _ e => nomatch e)
                 · obtain ⟨B, y₁, y₂, r, r', hr⟩ := RT.tm_refl_shape hk₀ hn₀ (h s₀ hs₀ hk₀)
                   have hpts := RT.refl_points hr (fun s hs hk => h s hs hk)
                   have go : ∀ c, ent (args .refl 0 v) c = true → c.depth < (Tok.arg .refl i C d).depth →
@@ -1423,14 +1758,29 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
                     have := depthL_args .pair 1 v
                     have := depth_lt_arg .pair 1 C d
                     simp only [Bool.toNat_true]; omega
-                · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-                    (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+                · obtain ⟨dn, cn, fs, rfl⟩ := hk
+                  obtain ⟨ms, ms', hs⟩ := RT.tm_ctor_shape hk₀ hn₀ (h s₀ hs₀ hk₀)
+                  have hfld := RT.ctor_fields hs (fun s hs hk => h s hs hk)
+                  refine RT.tm_field_iff.2 (.inr ⟨ms, ms', hs, fun c hc A m m' hA => ?_,
+                    fun A m m' hA => ?_⟩)
+                  · refine IH true (args (.ctor dn cn fs) 0 v) c A m m' ?_ (e.1 c hc)
+                      (fun r hr _ => hfld 0 r hr A m m' hA)
+                    have := depthL_args (.ctor dn cn fs) 0 v
+                    have := Tok.depth_lt_of_mem_dep (t := .arg (.ctor dn cn fs) i C d) hc
+                    simp only [Bool.toNat_true]; omega
+                  · refine IH true (args (.ctor dn cn fs) i v) d A m m' ?_ e.2
+                      (fun r hr _ => hfld i r hr A m m' hA)
+                    have := depthL_args (.ctor dn cn fs) i v
+                    have := depth_lt_arg (.ctor dn cn fs) i C d
+                    simp only [Bool.toNat_true]; omega
+                · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+                    (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
     | fn k C Z W =>
         cases b with
         | false =>
             simp only [Bool.toNat_false, Nat.add_zero] at hN
             rw [ent_fn, Bool.and_eq_true, List.all_eq_true, List.all_eq_true] at e
-            rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+            rcases kind_cases_tySigma k with rfl | rfl | rfl | hk | hk
             · obtain ⟨D, E, D', E', hp⟩ := RT.ty_pi_shape hk₀ hn₀ (h s₀ hs₀ hk₀)
               have hv' : ∀ s ∈ v, s.kind = .pi → RT H Γ false s T x x' := fun s hs hk => h s hs hk
               have hdom := RT.pi_dom hp hv'
@@ -1520,6 +1870,15 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
                 rcases RT.sigma_fam hp hv' hm with hvac | ⟨-, hg⟩
                 · exact RT.of_vacuous (vacuous_out hvac hr')
                 · exact hg N₁ hN₁ (hargs hZ hm hZ') r hr'
+            · obtain ⟨dn, rfl⟩ := hk
+              have hpar := RT.data_params (fun s hs hk => h s hs hk)
+              refine RT.ty_fnData_iff.2 (.inr ⟨RT.ty_data_shape hk₀ hn₀ (h s₀ hs₀ hk₀),
+                fun c hc B hB => ?_⟩)
+              refine IH false (args (.data dn) 0 v) c B B B ?_ (e.1 c hc)
+                (fun r hr _ => hpar 0 r hr B hB)
+              have := depthL_args (.data dn) 0 v
+              have := Tok.depth_lt_of_mem_dep (t := .fn (.data dn) C Z W) hc
+              simp only [Bool.toNat_false]; omega
             · exact RT.ty_fn_other hk
         | true =>
             simp only [Bool.toNat_true] at hN
@@ -1557,7 +1916,7 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
                   exact IH false v _ _ _ _ (by simp only [Bool.toNat_false]; omega) e'
                     (fun s hs hk => hstep' hs hk hp)
             | false =>
-                rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+                rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk | hk
                 · -- function entries
                   refine RT.tm_lam_iff.2 (.inr fun D E hT => ?_)
                   have hent : ∀ {C' X' Y'}, Tok.fn .lam C' X' Y' ∈ v →
@@ -1626,8 +1985,17 @@ theorem RT.closed_aux : ∀ (N : Nat) (b : Bool) (v : List Tok) (t : Tok) (T x x
                   have := Tok.depth_lt_of_mem_dep (t := .fn .pair C Z W) hc
                   exact IH true (args .pair 0 v) c _ _ _ (by simp only [Bool.toNat_true]; omega)
                     (e.1 c hc) (fun r hr _ => hfirst r hr)
+                · obtain ⟨dn, cn, fs, rfl⟩ := hk
+                  obtain ⟨ms, ms', hs⟩ := RT.tm_ctor_shape hk₀ hn₀ (h s₀ hs₀ hk₀)
+                  have hfld := RT.ctor_fields hs (fun s hs hk => h s hs hk)
+                  refine RT.tm_fnCtor_iff.2 (.inr ⟨ms, ms', hs, fun c hc A m m' hA => ?_⟩)
+                  have := depthL_args (.ctor dn cn fs) 0 v
+                  have := Tok.depth_lt_of_mem_dep (t := .fn (.ctor dn cn fs) C Z W) hc
+                  exact IH true (args (.ctor dn cn fs) 0 v) c A m m'
+                    (by simp only [Bool.toNat_true]; omega) (e.1 c hc)
+                    (fun r hr _ => hfld 0 r hr A m m' hA)
                 · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-                    (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+                    (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 /-- **Closure under entailment**: a token entailed by a list relates what the
 tokens of its kind in the list all relate. -/
@@ -1662,6 +2030,8 @@ theorem RT.expand_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
   have idr : ∀ {B z₁ z₂ B' z₁' z₂' : CTm Head n}, IdRed H Γ y y' B z₁ z₂ B' z₁' z₂' →
       IdRed H Γ x x' B z₁ z₂ B' z₁' z₂' := fun ⟨r, r', e₁, e₂, e₃⟩ =>
     ⟨rx.trans levels r, rx'.trans levels r', e₁, e₂, e₃⟩
+  have data : ∀ {d : DeclName}, DataRed H Γ d y y' → DataRed H Γ d x x' := fun ⟨hd, r, r'⟩ =>
+    ⟨hd, rx.trans levels r, rx'.trans levels r'⟩
   cases hv : ent [] t with
   | true => exact RT.of_vacuous hv
   | false =>
@@ -1689,9 +2059,10 @@ theorem RT.expand_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       case sigma =>
         obtain ⟨D, E, D', E', hp⟩ := RT.ty_sigma_iff.1 h
         exact RT.ty_sigma_iff.2 ⟨D, E, D', E', sigma hp⟩
+      case data d => exact RT.ty_data_iff.2 (data (RT.ty_data_iff.1 h))
       all_goals exact RT.ty_tag_other (by simp)
   | arg k i C d =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · rcases RT.ty_argPi_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_argPi_iff.2 (.inr ⟨D, E, D', E', pi hp, rest⟩)
@@ -1701,9 +2072,12 @@ theorem RT.expand_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       · rcases RT.ty_argSigma_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_argSigma_iff.2 (.inr ⟨D, E, D', E', sigma hp, rest⟩)
+      · rcases RT.ty_param_iff.1 h with hvac | ⟨hd, rest⟩
+        · exact RT.of_vacuous hvac
+        · exact RT.ty_param_iff.2 (.inr ⟨data hd, rest⟩)
       · exact RT.ty_arg_other hk
   | fn k C Z W =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · rcases RT.ty_fnPi_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_fnPi_iff.2 (.inr ⟨D, E, D', E', pi hp, rest⟩)
@@ -1713,6 +2087,9 @@ theorem RT.expand_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       · rcases RT.ty_fnSigma_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_fnSigma_iff.2 (.inr ⟨D, E, D', E', sigma hp, rest⟩)
+      · rcases RT.ty_fnData_iff.1 h with hvac | ⟨hd, rest⟩
+        · exact RT.of_vacuous hvac
+        · exact RT.ty_fnData_iff.2 (.inr ⟨data hd, rest⟩)
       · exact RT.ty_fn_other hk
 
 /-- **Head reduction of types**: types related as far as a token observes stay
@@ -1731,6 +2108,8 @@ theorem RT.reduce_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       IdRed H Γ y y' B z₁ z₂ B' z₁' z₂' := fun ⟨r, r', e₁, e₂, e₃⟩ =>
     ⟨CRedTy.reduce levels rx r (H.normal_id _ _ _), CRedTy.reduce levels rx' r' (H.normal_id _ _ _),
       e₁, e₂, e₃⟩
+  have data : ∀ {d : DeclName}, DataRed H Γ d x x' → DataRed H Γ d y y' := fun ⟨hd, r, r'⟩ =>
+    ⟨hd, CRedTy.reduce levels rx r (H.normal_data hd), CRedTy.reduce levels rx' r' (H.normal_data hd)⟩
   cases hv : ent [] t with
   | true => exact RT.of_vacuous hv
   | false =>
@@ -1762,9 +2141,10 @@ theorem RT.reduce_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       case sigma =>
         obtain ⟨D, E, D', E', hp⟩ := RT.ty_sigma_iff.1 h
         exact RT.ty_sigma_iff.2 ⟨D, E, D', E', sigma hp⟩
+      case data d => exact RT.ty_data_iff.2 (data (RT.ty_data_iff.1 h))
       all_goals exact RT.ty_tag_other (by simp)
   | arg k i C d =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · rcases RT.ty_argPi_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_argPi_iff.2 (.inr ⟨D, E, D', E', pi hp, rest⟩)
@@ -1774,9 +2154,12 @@ theorem RT.reduce_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       · rcases RT.ty_argSigma_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_argSigma_iff.2 (.inr ⟨D, E, D', E', sigma hp, rest⟩)
+      · rcases RT.ty_param_iff.1 h with hvac | ⟨hd, rest⟩
+        · exact RT.of_vacuous hvac
+        · exact RT.ty_param_iff.2 (.inr ⟨data hd, rest⟩)
       · exact RT.ty_arg_other hk
   | fn k C Z W =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · rcases RT.ty_fnPi_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_fnPi_iff.2 (.inr ⟨D, E, D', E', pi hp, rest⟩)
@@ -1786,6 +2169,9 @@ theorem RT.reduce_ty {t : Tok} {T T' x x' y y' : CTm Head n} (rx : CRedTy H Γ x
       · rcases RT.ty_fnSigma_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RT.of_vacuous hvac
         · exact RT.ty_fnSigma_iff.2 (.inr ⟨D, E, D', E', sigma hp, rest⟩)
+      · rcases RT.ty_fnData_iff.1 h with hvac | ⟨hd, rest⟩
+        · exact RT.of_vacuous hvac
+        · exact RT.ty_fnData_iff.2 (.inr ⟨data hd, rest⟩)
       · exact RT.ty_fn_other hk
 
 omit levels in
@@ -1856,6 +2242,9 @@ theorem RT.expand_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
       ⟨hT, rx.trans r₁, rx'.trans r₂, e₁, e₂, e₃⟩
     have succ : ∀ {m m' : CTm Head n}, SuccRed H Γ T y y' m m' → SuccRed H Γ T x x' m m' :=
       fun ⟨hT, r₁, r₂, e⟩ => ⟨hT, rx.trans r₁, rx'.trans r₂, e⟩
+    have ctor : ∀ {d c : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)},
+        CtorRed H Γ d c fs T y y' ms ms' → CtorRed H Γ d c fs T x x' ms ms' :=
+      fun ⟨hc, hT, r₁, r₂, fe⟩ => ⟨hc, hT, rx.trans r₁, rx'.trans r₂, fe⟩
     -- the first projections of the pairs
     have core : ∀ {D : CTm Head n} {E : CTm Head (n + 1)}, CRedTy H Γ T (.sigma D E) →
         CEqual P Γ (.fst y) (.fst y') D → CEqual P Γ (.fst x) (.fst x') D := fun hT e =>
@@ -1874,13 +2263,18 @@ theorem RT.expand_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
           exact RT.tm_succTag_iff.2 ⟨m, m', succ hs⟩
         case pair =>
           exact RT.tm_pairTag_iff.2 fun D E hT => core hT (RT.tm_pairTag_iff.1 h D E hT)
+        case ctor d c fs =>
+          obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+          exact RT.tm_ctorTag_iff.2 ⟨ms, ms', ctor hs⟩
         all_goals
-          exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
+          exact RT.tm_other htk (fun _ _ _ e => nomatch e)
             (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)
     | arg k i C d =>
-        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-        · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-            (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+        · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+            (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)
         · rcases RT.tm_argRefl_iff.1 h with hvac | ⟨B, z₁, z₂, r, r', hr, rest⟩
           · exact RT.of_vacuous hvac
           · exact RT.tm_argRefl_iff.2 (.inr ⟨B, z₁, z₂, r, r', refl hr, rest⟩)
@@ -1907,10 +2301,13 @@ theorem RT.expand_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
             exact IH d hd' ((rx.snd hT).retype hE tx exN)
               ((rx'.snd hT).retype hE (CEqual.typed levels ex formed).2 (.trans (.symm ex) exN))
               (h1 hi N₁ Q' hQ' hNQ')
-        · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+        · rcases RT.tm_field_iff.1 h with hvac | ⟨ms, ms', hs, rest⟩
+          · exact RT.of_vacuous hvac
+          · exact RT.tm_field_iff.2 (.inr ⟨ms, ms', ctor hs, rest⟩)
+        · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
     | fn k C X Y =>
-        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
         · rcases RT.tm_lam_iff.1 h with hvac | hcl
           · exact RT.of_vacuous hvac
           refine RT.tm_lam_iff.2 (.inr fun D E hT => ?_)
@@ -1941,8 +2338,11 @@ theorem RT.expand_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
           have hc' : c.depth < N := by
             have := Tok.depth_lt_of_mem_dep (t := .fn .pair C X Y) hc; omega
           exact IH c hc' (rx.fst hT) (rx'.fst hT) (hC c hc)
+        · rcases RT.tm_fnCtor_iff.1 h with hvac | ⟨ms, ms', hs, rest⟩
+          · exact RT.of_vacuous hvac
+          · exact RT.tm_fnCtor_iff.2 (.inr ⟨ms, ms', ctor hs, rest⟩)
         · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 /-- **Head expansion** of related terms along typed weak-head reduction. -/
 theorem RT.expand (formed : CCtxFormed P Γ) {t : Tok} {T x x' y y' : CTm Head n}
@@ -1984,6 +2384,10 @@ theorem RT.reduce_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
     have succ : ∀ {m m' : CTm Head n}, SuccRed H Γ T x x' m m' → SuccRed H Γ T y y' m m' :=
       fun ⟨hT, r₁, r₂, e⟩ =>
         ⟨hT, rx.reduce_same r₁ (H.normal_suc _), rx'.reduce_same r₂ (H.normal_suc _), e⟩
+    have ctor : ∀ {d c : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)},
+        CtorRed H Γ d c fs T x x' ms ms' → CtorRed H Γ d c fs T y y' ms ms' :=
+      fun ⟨hc, hT, r₁, r₂, fe⟩ => ⟨hc, hT, rx.reduce_same r₁ (H.normal_ctor hc fe.length.1),
+        rx'.reduce_same r₂ (H.normal_ctor hc fe.length.2), fe⟩
     have core : ∀ {D : CTm Head n} {E : CTm Head (n + 1)}, CRedTy H Γ T (.sigma D E) →
         CEqual P Γ (.fst x) (.fst x') D → CEqual P Γ (.fst y) (.fst y') D := fun hT e =>
       .trans (.symm (rx.fst hT).2) (.trans e (rx'.fst hT).2)
@@ -2002,13 +2406,18 @@ theorem RT.reduce_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
           exact RT.tm_succTag_iff.2 ⟨m, m', succ hs⟩
         case pair =>
           exact RT.tm_pairTag_iff.2 fun D E hT => core hT (RT.tm_pairTag_iff.1 h D E hT)
+        case ctor d c fs =>
+          obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+          exact RT.tm_ctorTag_iff.2 ⟨ms, ms', ctor hs⟩
         all_goals
-          exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
+          exact RT.tm_other htk (fun _ _ _ e => nomatch e)
             (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)
     | arg k i C d =>
-        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-        · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-            (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+        · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+            (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)
         · rcases RT.tm_argRefl_iff.1 h with hvac | ⟨B, z₁, z₂, r, r', hr, rest⟩
           · exact RT.of_vacuous hvac
           · exact RT.tm_argRefl_iff.2 (.inr ⟨B, z₁, z₂, r, r', refl hr, rest⟩)
@@ -2034,10 +2443,13 @@ theorem RT.reduce_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
             exact IH d hd' ((rx.snd hT).retype hE tx exN)
               ((rx'.snd hT).retype hE (CEqual.typed levels e₀ formed).2 (.trans (.symm e₀) exN))
               (h1 hi N₁ Q ((rx.fst hT).trans hQ) hNQ)
-        · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+        · rcases RT.tm_field_iff.1 h with hvac | ⟨ms, ms', hs, rest⟩
+          · exact RT.of_vacuous hvac
+          · exact RT.tm_field_iff.2 (.inr ⟨ms, ms', ctor hs, rest⟩)
+        · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
     | fn k C X Y =>
-        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
         · rcases RT.tm_lam_iff.1 h with hvac | hcl
           · exact RT.of_vacuous hvac
           refine RT.tm_lam_iff.2 (.inr fun D E hT => ?_)
@@ -2068,8 +2480,11 @@ theorem RT.reduce_aux (formed : CCtxFormed P Γ) : ∀ (N : Nat) (t : Tok), t.de
           have hc' : c.depth < N := by
             have := Tok.depth_lt_of_mem_dep (t := .fn .pair C X Y) hc; omega
           exact IH c hc' (rx.fst hT) (rx'.fst hT) (hC c hc)
+        · rcases RT.tm_fnCtor_iff.1 h with hvac | ⟨ms, ms', hs, rest⟩
+          · exact RT.of_vacuous hvac
+          · exact RT.tm_fnCtor_iff.2 (.inr ⟨ms, ms', ctor hs, rest⟩)
         · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 /-- **Head reduction** of related terms along typed weak-head reduction. -/
 theorem RT.reduce (formed : CCtxFormed P Γ) {t : Tok} {T x x' y y' : CTm Head n}
@@ -2104,6 +2519,8 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
     have sigmaL : ∀ {D D' : CTm Head n} {E E' : CTm Head (n + 1)},
         SigmaRed H Γ x x' D E D' E' → SigmaRed H Γ x x D E D E :=
       fun ⟨r, _, e, e'⟩ => ⟨r, r, e.left, e'.left⟩
+    have dataL : ∀ {d : DeclName}, DataRed H Γ d x x' → DataRed H Γ d x x :=
+      fun ⟨hd, r, _⟩ => ⟨hd, r, r⟩
     cases b with
     | false =>
         cases t with
@@ -2130,9 +2547,10 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
             case sigma =>
               obtain ⟨D, E, D', E', hp⟩ := RT.ty_sigma_iff.1 h
               exact RT.ty_sigma_iff.2 ⟨D, E, D, E, sigmaL hp⟩
+            case data d => exact RT.ty_data_iff.2 (dataL (RT.ty_data_iff.1 h))
             all_goals exact RT.ty_tag_other (by simp)
         | arg k i C d =>
-            rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+            rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
             · rcases RT.ty_argPi_iff.1 h with hvac | ⟨D, E, D', E', hp, hC, hd⟩
               · exact RT.of_vacuous hvac
               · refine RT.ty_argPi_iff.2 (.inr ⟨D, E, D, E, piL hp, fun c hc => ?_, fun hi => ?_⟩)
@@ -2155,9 +2573,12 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
                 · exact IH false c (sub false (Tok.depth_lt_of_mem_dep (t := .arg .sigma i C d) hc))
                     _ _ _ (hC c hc)
                 · exact IH false d (sub false (depth_lt_arg .sigma i C d)) _ _ _ (hd hi)
+            · rcases RT.ty_param_iff.1 h with hvac | ⟨hd, rest⟩
+              · exact RT.of_vacuous hvac
+              · exact RT.ty_param_iff.2 (.inr ⟨dataL hd, rest⟩)
             · exact RT.ty_arg_other hk
         | fn k C Z W =>
-            rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+            rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
             · rcases RT.ty_fnPi_iff.1 h with hvac | ⟨D, E, D', E', hp, hC, hf, -⟩
               · exact RT.of_vacuous hvac
               · refine RT.ty_fnPi_iff.2 (.inr ⟨D, E, D, E, piL hp, fun c hc => ?_,
@@ -2177,6 +2598,9 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
                   fun N₁ tN hZ w hw => (hf N₁ N₁ (.refl tN) hZ w hw).1⟩)
                 exact IH false c (sub false (Tok.depth_lt_of_mem_dep (t := .fn .sigma C Z W) hc))
                   _ _ _ (hC c hc)
+            · rcases RT.ty_fnData_iff.1 h with hvac | ⟨hd, rest⟩
+              · exact RT.of_vacuous hvac
+              · exact RT.ty_fnData_iff.2 (.inr ⟨dataL hd, rest⟩)
             · exact RT.ty_fn_other hk
     | true =>
         cases htk : typeKind t.kind with
@@ -2193,6 +2617,9 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
           ⟨hT, r₁, r₁, e₁, e₂, e₃.left⟩
         have succL : ∀ {m m' : CTm Head n}, SuccRed H Γ T x x' m m' → SuccRed H Γ T x x m m :=
           fun ⟨hT, r₁, _, e⟩ => ⟨hT, r₁, r₁, e.left⟩
+        have ctorL : ∀ {d c : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)},
+            CtorRed H Γ d c fs T x x' ms ms' → CtorRed H Γ d c fs T x x ms ms :=
+          fun ⟨hc, hT, r₁, _, fe⟩ => ⟨hc, hT, r₁, r₁, fe.left⟩
         cases t with
         | tag k =>
             cases k
@@ -2207,14 +2634,18 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
               exact RT.tm_succTag_iff.2 ⟨m, m, succL hs⟩
             case pair =>
               exact RT.tm_pairTag_iff.2 fun D E hT => (RT.tm_pairTag_iff.1 h D E hT).left
+            case ctor d c fs =>
+              obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+              exact RT.tm_ctorTag_iff.2 ⟨ms, ms, ctorL hs⟩
             all_goals
-              exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
+              exact RT.tm_other htk (fun _ _ _ e => nomatch e)
                 (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
-                (by intro e; cases e)
+                (by intro e; cases e) (fun _ _ _ e => nomatch e)
         | arg k i C d =>
-            rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-            · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-                (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+            rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+            · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+                (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+                (fun _ _ _ e => nomatch e)
             · rcases RT.tm_argRefl_iff.1 h with hvac | ⟨B, z₁, z₂, r, r', hr, hC, hd⟩
               · exact RT.of_vacuous hvac
               · refine RT.tm_argRefl_iff.2 (.inr ⟨B, z₁, z₂, r, r, reflL hr, fun c hc => ?_,
@@ -2239,10 +2670,21 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
                     _ _ _ (hC c hc)
                 · exact IH true d (sub true (depth_lt_arg .pair i C d)) _ _ _ (h0 hi)
                 · exact IH true d (sub true (depth_lt_arg .pair i C d)) _ _ _ (h1 hi N₁ Q hQ hNQ)
-            · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-                (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+            · rcases RT.tm_field_iff.1 h with hvac | ⟨ms, ms', hs, hC, hd⟩
+              · exact RT.of_vacuous hvac
+              · have hl := hs.2.2.2.2.length
+                refine RT.tm_field_iff.2 (.inr ⟨ms, ms, ctorL hs, fun c hc A m m₂ hA => ?_,
+                  fun A m m₂ hA => ?_⟩)
+                · obtain ⟨rfl, m', hA'⟩ := FieldAt.left (hl.2.trans hl.1.symm) hA
+                  exact IH true c (sub true (Tok.depth_lt_of_mem_dep
+                    (t := .arg (.ctor dn cn fs) i C d) hc)) _ _ _ (hC c hc A m₂ m' hA')
+                · obtain ⟨rfl, m', hA'⟩ := FieldAt.left (hl.2.trans hl.1.symm) hA
+                  exact IH true d (sub true (depth_lt_arg (.ctor dn cn fs) i C d)) _ _ _
+                    (hd A m₂ m' hA')
+            · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+                (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
         | fn k C X Y =>
-            rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+            rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
             · rcases RT.tm_lam_iff.1 h with hvac | hcl
               · exact RT.of_vacuous hvac
               · refine RT.tm_lam_iff.2 (.inr fun D E hT => ⟨fun N₁ N₁' hNN hX y hy => ?_,
@@ -2267,8 +2709,15 @@ theorem RT.left_aux : ∀ (N : Nat) (b : Bool) (t : Tok), 2 * t.depth + b.toNat 
                   ⟨(hcl D E hT).1.left, fun c hc => ?_⟩)
                 exact IH true c (sub true (Tok.depth_lt_of_mem_dep (t := .fn .pair C X Y) hc))
                   _ _ _ ((hcl D E hT).2 c hc)
+            · rcases RT.tm_fnCtor_iff.1 h with hvac | ⟨ms, ms', hs, hC⟩
+              · exact RT.of_vacuous hvac
+              · have hl := hs.2.2.2.2.length
+                refine RT.tm_fnCtor_iff.2 (.inr ⟨ms, ms, ctorL hs, fun c hc A m m₂ hA => ?_⟩)
+                obtain ⟨rfl, m', hA'⟩ := FieldAt.left (hl.2.trans hl.1.symm) hA
+                exact IH true c (sub true (Tok.depth_lt_of_mem_dep
+                  (t := .fn (.ctor dn cn fs) C X Y) hc)) _ _ _ (hC c hc A m₂ m' hA')
             · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-                (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+                (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 /-- **The reflexive instance of the left side** of related terms or types. -/
 theorem RT.left {b : Bool} {t : Tok} {T x x' : CTm Head n} (h : RT H Γ b t T x x') :

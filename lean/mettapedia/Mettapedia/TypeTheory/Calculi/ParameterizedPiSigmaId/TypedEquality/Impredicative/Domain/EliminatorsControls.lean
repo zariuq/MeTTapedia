@@ -168,7 +168,7 @@ theorem reflTag_not_mem {A I J R : Ideal} {k : Kind} (hJ : ¬ J.Mem (.tag k)) :
           subst hi
           obtain ⟨-, rfl, -⟩ := tyTok_reflPoint.1 hat
           cases hd
-        · exact tyTok_arg_other hother hat
+        · exact tyTok_arg_other hother id hat
     | fn k' C X Y =>
         change k' = .refl at hk
         subst hk

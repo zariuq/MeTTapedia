@@ -37,7 +37,7 @@ def boundary {pattern : Pattern}
   typed :=
     { boundary :=
         { type := sourceType
-          support := CostStaticBinderThinning.sourceContextOfTarget source
+          support := CostStaticTypeThinning.sourceContextOfTarget source.theory
             color available
           targetType := mapTypeExpr (color.symbols source) sourceType
           targetSupport := available
@@ -62,7 +62,7 @@ theorem boundary_certifies {pattern : Pattern}
       source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available (mapTypeExpr (color.symbols source) sourceType) pattern).mpr
         admitted
-  simp [certifyCostRegionBoundary?, decodeCostStaticTypeExpr_mapTypeExpr,
+  simp [certifyCostRegionBoundary?,
     checked, boundary]
 
 variable {sourceBound targetBound : List TypeExpr}
@@ -159,11 +159,5 @@ theorem replacement_rigid_leaf_changed {name : String}
   constructor
   · rfl
   · simp [replacementPlan, CostStaticRegionPlan.occurrences]
-
-#print axioms boundary_certifies
-#print axioms replacementChildren
-#print axioms replacement_restore
-#print axioms replacement_recontextualize
-#print axioms replacement_rigid_leaf_changed
 
 end Mettapedia.GSLT.LanguageDef.Cost.StaticLeafBoundaryRefinement

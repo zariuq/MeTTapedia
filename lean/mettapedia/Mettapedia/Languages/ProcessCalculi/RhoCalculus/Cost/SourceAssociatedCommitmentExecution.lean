@@ -286,14 +286,4 @@ theorem example_source_key_changes :
   intro unchanged
   exact different (before.trans (unchanged.trans after.symm))
 
-#print axioms admitted_origin
-#print axioms source_decodes
-#print axioms funded_step
-#print axioms path
-#print axioms exact_receipt
-#print axioms canonical_entry_path_rhs
-#print axioms authored_runtime_agreement
-#print axioms example_funded_step
-#print axioms example_source_key_changes
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution

@@ -162,7 +162,7 @@ theorem rhoCutOrder_atomClosed_normal_canary :
       rhoCutOrderRightPattern := by
   rw [rhoCutOrder_reify_left, rhoCutOrder_atomFrame_canonical]
   simp [rhoCutOrderAtomFrame, restoreRhoCutOrderAtoms,
-    restoreRhoCutOrderAtomList, mapPattern, CostStaticColor.symbols,
+    restoreRhoCutOrderAtomList, mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf,
     costWrappedStaticSymbols, rhoCutOrderRightPattern, rhoCutOrderParallel,
     rhoCutOrderWrappedDrop, rhoCutOrderZeroAtom, rhoCutOrderAAtom]
 
@@ -176,7 +176,7 @@ theorem rhoCutOrder_atomClosed_right_canary :
       rhoCutOrderRightPattern := by
   rw [rhoCutOrder_reify_right, rhoCutOrder_atomFrame_canonical]
   simp [rhoCutOrderAtomFrame, restoreRhoCutOrderAtoms,
-    restoreRhoCutOrderAtomList, mapPattern, CostStaticColor.symbols,
+    restoreRhoCutOrderAtomList, mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf,
     costWrappedStaticSymbols, rhoCutOrderRightPattern, rhoCutOrderParallel,
     rhoCutOrderWrappedDrop, rhoCutOrderZeroAtom, rhoCutOrderAAtom]
 
@@ -803,7 +803,7 @@ theorem rhoCutOrder_boundary_source_semanticAtom_coalescence :
           (costRegionSourceVariableName "0") = some (.base "Name") := by
     rw [TypedCostRegionBoundaryTable.sourceFreeContext_sourceVariable]
     simp [rhoCutOrderFree, WellSorted.FreeTypeContext.ofList,
-      decodeCostStaticTypeExpr, CostStaticTypeImage.decode, costBaseSortName_ne_wrapped,
+      CostStaticTypeImage.decode, costBaseSortName_ne_wrapped,
       rhoCutOrderName_ne_interactingSort]
   have rightSourceType :
       (rightEnvironment.atomValue rightSlot).key.sourceType = .base "Name" := by
@@ -873,7 +873,7 @@ theorem rhoCutOrder_boundary_source_semanticAtom_coalescence :
           (.base "Name")) := by
     simp [TypedCostRegionBoundaryTable.mappedFreeContext,
       rhoCutOrderFree, WellSorted.FreeTypeContext.ofList,
-      decodeCostStaticTypeExpr, CostStaticTypeImage.decode, costBaseSortName_ne_wrapped,
+      CostStaticTypeImage.decode, costBaseSortName_ne_wrapped,
       rhoCutOrderName_ne_interactingSort]
   have rightTargetType :
       (rightEnvironment.atomValue rightSlot).key.targetType =
@@ -1158,9 +1158,9 @@ theorem rhoCutOrder_commonMappedSemanticFrames_eq :
       rhoCutOrderRightNode.mappedThickenedSkeleton.1
   rw [rhoCutOrderLeftNode.mappedThickenedSkeleton_pattern,
     rhoCutOrderRightNode.mappedThickenedSkeleton_pattern]
-  rw [CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+  rw [CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderLeftNode.thinning rfl,
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderRightNode.thinning rfl]
   rw [cospan.reifyWith_mapPattern, cospan.reifyWith_mapPattern]
   exact congrArg (mapPattern (CostStaticColor.symbols rhoCIGSLT .wrapped))
@@ -1661,7 +1661,7 @@ theorem rhoCutOrder_reified_frames_parallel :
             (cospan.reifyWith leftEnvironment.slotOfName? cospan.leftSlot
               rhoCutOrderLeftNode.skeleton.1) := by
       rw [rhoCutOrderLeftNode.mappedThickenedSkeleton_pattern,
-        CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+        CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
           rhoCutOrderLeftNode.thinning rfl]
       exact cospan.reifyWith_mapPattern _ _ _ _
     have skeletonList := congrArg
@@ -1757,14 +1757,14 @@ theorem rhoCutOrderRight_commonSemanticRestoration_pattern :
         0 rhoCutOrderRightNode.mappedThickenedSkeleton.1 =
       rhoCutOrderRightPattern := by
   rw [rhoCutOrderRightNode.mappedThickenedSkeleton_pattern,
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderRightNode.thinning rfl,
     ReflectiveWellSorted.OpenTerm.toCore_pattern,
     rhoCutOrderRightNode_skeleton_pattern]
   simp [ReflectiveContextSupport.substituteAt,
     hereditaryValues_assignment_sourceVariable,
     rhoCutOrderRightPattern, rhoCutOrderParallel, rhoCutOrderWrappedDrop,
-    mapPattern, mapPatternList_eq_map, CostStaticColor.symbols_constructor,
+    mapPattern, mapPatternList_eq_map,
     CostStaticColor.constructorTag, costWrappedConstructorName,
     Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
 

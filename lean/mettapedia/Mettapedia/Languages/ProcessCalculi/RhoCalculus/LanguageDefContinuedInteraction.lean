@@ -62,7 +62,7 @@ This is the declaration-level wrappability obligation of the continued
 interaction structure. -/
 theorem rhoContinuationRetyping_wrappable :
     rhoContinuationRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   change HasType rhoContinuationRetyping.generatedLanguage
     rhoContinuationRetyping.generatedFreeContext []
     (.collection .hashBag
@@ -246,7 +246,7 @@ theorem rho_costWrappedDropConstructor_params :
 continuation positions are moved to the wrapped fiber. -/
 theorem rhoContinuationRetyping_redexRetypable :
     rhoContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType rhoContinuationRetyping.generatedLanguage
     rhoContinuationRetyping.generatedFreeContext []
     (mapPattern costBaseLanguageDefSymbolMap rhoCommRewrite.left)
@@ -466,6 +466,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
         costBaseSortName_injective equality
       simp at sourceEquality
     · simpa [reflectiveRetypingLanguage,
+        ContinuationDecorationProfile.reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
         costBaseStaticReflectiveSymbols,
         costBaseLanguageDefSymbolMap,
@@ -476,6 +477,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · rfl
     · exact rho_costBaseQuoteConstructor_params
     · simpa [reflectiveRetypingLanguage,
+        ContinuationDecorationProfile.reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
         costBaseStaticReflectiveSymbols,
         costBaseLanguageDefSymbolMap,
@@ -486,6 +488,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · rfl
     · exact rho_costBaseDropConstructor_params
     · simpa [reflectiveRetypingLanguage,
+        ContinuationDecorationProfile.reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
         costBaseStaticReflectiveSymbols,
         costBaseLanguageDefSymbolMap,
@@ -495,7 +498,8 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
           rhoCalc.terms[0] rhoContinuationUnitConstructor.2
     · rfl
     · rfl
-    · simp [reflectiveRetypingLanguage, rhoIGSLT,
+    · simp [reflectiveRetypingLanguage,
+        ContinuationDecorationProfile.reflectiveRetypingLanguage, rhoIGSLT,
         rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
         rhoReflectivePresentation, costBaseReflectivePresentationDecl,
         costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
@@ -570,7 +574,8 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
         rhoReflectivePresentation]
       rfl
     · rfl
-    · simp [reflectiveRetypingLanguage, rhoIGSLT,
+    · simp [reflectiveRetypingLanguage,
+        ContinuationDecorationProfile.reflectiveRetypingLanguage, rhoIGSLT,
         rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
         rhoReflectivePresentation, costWrappedReflectivePresentationDecl,
         costWrappedStaticReflectiveSymbols,
@@ -721,31 +726,13 @@ theorem rho_input_continuation_retyped :
       some (.abstraction "p"
         (.arrow (.base (costBaseSortName "Name"))
           (.base costWrappedSortName))) := by
-  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation, rhoCalc,
-    rhoInteractionCut_program_constructor_value,
-    rhoInteractionCut_environment_constructor_value,
-    rhoInteractionCut_program_continuation_index,
-    rhoInteractionCut_environment_continuation_index,
-    mapParameterType, costWrappedTypeExpr, costBaseTypeExpr,
-    rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
-    TypeExpr.name, TypeExpr.proc, TypeExpr.funType, TypeExpr.baseType,
-    costBaseSortName, costWrappedSortName]
-
-  constructor <;> decide +kernel
+  decide +kernel
 
 /-- Negative control: rho's channel/subject argument remains in the base name
 sort; continuation retyping does not seal or re-sort interaction subjects. -/
 theorem rho_input_subject_not_retyped :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[5]).params[0]? =
       some (.simple "n" (.base (costBaseSortName "Name"))) := by
-  simp [costBaseConstructor_def, costBaseParameter_def, isSelectedContinuation, rhoCalc,
-    rhoInteractionCut_program_constructor_value,
-    rhoInteractionCut_environment_constructor_value,
-    rhoInteractionCut_program_continuation_index,
-    rhoInteractionCut_environment_continuation_index,
-    mapParameterType, costWrappedTypeExpr, costBaseTypeExpr,
-    rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
-    TypeExpr.name, TypeExpr.proc, TypeExpr.funType, TypeExpr.baseType,
-    costBaseSortName, costWrappedSortName]
+  decide +kernel
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction

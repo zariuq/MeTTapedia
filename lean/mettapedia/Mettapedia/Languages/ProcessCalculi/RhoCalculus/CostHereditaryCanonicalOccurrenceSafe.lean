@@ -525,7 +525,7 @@ theorem rhoCanonicalOccurrence_atomSafeAt_targetAvailable
             rfl
           cases color <;>
             simp [declaration, costStaticReflectivePresentationDecl_eq_map,
-              mapReflectivePresentation, CostStaticColor.symbols,
+              mapReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               costWrappedStaticSymbols, rhoReflectivePresentation,
               mapTypeExpr, TypeExpr.name, TypeExpr.baseType,
@@ -1012,26 +1012,26 @@ mutual
           (thinning.thickenAmbientBVars depth pattern) =
         WellSorted.ReflectiveSubstitutionBinderFree pattern
     | .bvar _ => by
-        simp [CostStaticBinderThinning.thickenAmbientBVars,
+        simp [CostStaticTypeThinning.thickenAmbientBVars_bvar,
           WellSorted.ReflectiveSubstitutionBinderFree]
     | .fvar _ => by
-        simp [CostStaticBinderThinning.thickenAmbientBVars]
+        simp [CostStaticTypeThinning.thickenAmbientBVars_fvar]
     | .apply constructor arguments => by
-        simp only [CostStaticBinderThinning.thickenAmbientBVars,
+        simp only [CostStaticTypeThinning.thickenAmbientBVars_apply,
           WellSorted.ReflectiveSubstitutionBinderFree]
         exact rhoReflectiveSubstitutionBinderFreeList_thickenAmbientBVars
           thinning depth arguments
     | .lambda _ _ => by
-        simp [CostStaticBinderThinning.thickenAmbientBVars,
+        simp [CostStaticTypeThinning.thickenAmbientBVars_lambda,
           WellSorted.ReflectiveSubstitutionBinderFree]
     | .multiLambda _ _ _ => by
-        simp [CostStaticBinderThinning.thickenAmbientBVars,
+        simp [CostStaticTypeThinning.thickenAmbientBVars_multiLambda,
           WellSorted.ReflectiveSubstitutionBinderFree]
     | .subst _ _ => by
-        simp [CostStaticBinderThinning.thickenAmbientBVars,
+        simp [CostStaticTypeThinning.thickenAmbientBVars_subst,
           WellSorted.ReflectiveSubstitutionBinderFree]
     | .collection collectionType elements rest => by
-        simp only [CostStaticBinderThinning.thickenAmbientBVars,
+        simp only [CostStaticTypeThinning.thickenAmbientBVars_collection,
           WellSorted.ReflectiveSubstitutionBinderFree]
         exact rhoReflectiveSubstitutionBinderFreeList_thickenAmbientBVars
           thinning depth elements
@@ -1288,7 +1288,7 @@ theorem exists_sourceOccurrence_of_mappedThickenedOccurrence
       thinning 0 targetOccurrence.selected
   have mappedPayloadShape : mappedPayload = .fvar targetOccurrence.name := by
     cases mappedPayload <;>
-      simp_all [CostStaticBinderThinning.thickenAmbientBVars]
+      simp_all [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection]
   subst mappedPayload
   obtain ⟨sourcePayload, sourceContext, sourceSelected,
       sourceContextEquality, sourcePayloadEquality⟩ :=

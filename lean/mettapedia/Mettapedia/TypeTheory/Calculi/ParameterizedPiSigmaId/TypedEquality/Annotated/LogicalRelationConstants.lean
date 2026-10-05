@@ -184,7 +184,7 @@ theorem eq_tag_univ_of_typed {s : Tok} (hs : ent Elem.univ s = true) (hv : ent [
   | arg k i C t =>
       change Kind.univ = k at hk
       subst hk
-      exact absurd hta (tyTok_arg_other (by simp [argSlots]))
+      exact absurd hta (tyTok_arg_other (by simp [argSlots]) id)
   | fn k C X Y =>
       change Kind.univ = k at hk
       subst hk

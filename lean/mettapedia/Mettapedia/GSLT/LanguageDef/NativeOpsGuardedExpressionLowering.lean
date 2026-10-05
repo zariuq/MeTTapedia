@@ -449,6 +449,34 @@ def GuardedEvaluationRelated {SourceWorld TargetWorld : Type} (interface : Inter
   | .error fault => sourceOut.state = sourcePoison source fault ∧ targetOut.flow = .returned default ∧
       targetOut.state = targetPoison target fault
 
+/-- The established pure comparison is an instance of the complete
+post-state comparison used by effectful operand composition. -/
+theorem guarded_related_checked {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {default : TargetValue} {atom : Atom} {source : SourceState SourceWorld}
+    {target : TargetState TargetWorld} {sourceOut : SourceOutcome SourceWorld}
+    {out : TargetBlockOutcome TargetWorld}
+    (states : StateRelated worldRelated source target) (clear : source.fault = none)
+    (related : GuardedEvaluationRelated interface default atom source target sourceOut out) :
+    CheckedExpressionRelated worldRelated interface default atom sourceOut out := by
+  rcases sourceOut with ⟨answer, post⟩
+  cases answer with
+  | ok value =>
+      rcases related with ⟨unchanged, normal, sameTarget, read⟩
+      change post = source at unchanged
+      subst post
+      refine ⟨?_, clear, normal, read⟩
+      rw [sameTarget]
+      exact states
+  | error fault =>
+      rcases related with ⟨poisoned, returned, sameTarget⟩
+      change post = sourcePoison source fault at poisoned
+      subst post
+      refine ⟨?_, ?_, returned⟩
+      · rw [sameTarget]
+        exact poison_correspondence states fault
+      · simp only [sourcePoison, clear]
+
 theorem guarded_related_normal {SourceWorld TargetWorld : Type} {interface : Interface}
     {default : TargetValue} {atom : Atom} {source : SourceState SourceWorld}
     {target : TargetState TargetWorld} {sourceOut : SourceOutcome SourceWorld}

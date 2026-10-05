@@ -90,7 +90,7 @@ theorem adequateType_iterType : AdequateType objectChurchReading H .nil (liftTm 
   obtain ⟨-, t₆⟩ := CIsType.pi_parts t₅
   obtain ⟨-, tSt'⟩ := CIsType.pi_parts tSt
   refine AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts t₀
-    (adequateType_typeAt (.base .num) .nil) ?_
+    (adequateType_typeAt objectExtension (.base .num) .nil) ?_
   refine AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts t₁
     (AdequateType.universe ConvRules.objectLevels objectChurch_soundnessFacts (.sort _)) ?_
   refine AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts t₂
@@ -100,13 +100,13 @@ theorem adequateType_iterType : AdequateType objectChurchReading H .nil (liftTm 
     (AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts tSt (adequateType_var 1 rfl)
       (AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts tSt'
         (adequateType_appVar 1 0 rfl rfl)
-        ((valid_sigmaFam (H := H) 3 2 rfl rfl).1.1.adequateType ConvRules.objectLevels
+        ((valid_sigmaFam objectExtension (H := H) 3 2 rfl rfl).1.1.adequateType ConvRules.objectLevels
           objectChurch_soundnessFacts (.sort _)))) ?_
   refine AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts t₄
     (adequateType_var 2 rfl) ?_
   refine AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts t₅
     (adequateType_appVar 2 0 rfl rfl) ?_
-  exact (valid_sigmaFam (H := H) 4 3 rfl rfl).1.1.adequateType ConvRules.objectLevels
+  exact (valid_sigmaFam objectExtension (H := H) 4 3 rfl rfl).1.1.adequateType ConvRules.objectLevels
     objectChurch_soundnessFacts (.sort _)
 
 end Types
@@ -116,11 +116,6 @@ end Types
 section Numerals
 
 variable {H : HeadReduction objectChurch objectRigid}
-
-/-- The closed numeral `k`. -/
-def cnumeral {n : Nat} : Nat → CTm Tower.Head n
-  | 0 => czero
-  | k + 1 => csuc (cnumeral k)
 
 theorem subst_cnumeral {n m : Nat} (σ : CSub Tower.Head n m) :
     ∀ k : Nat, (cnumeral k : CTm Tower.Head n).subst σ = cnumeral k
@@ -179,7 +174,7 @@ end Numerals
 theorem valid_iterConst {n : Nat} {Γ : CCtx Tower.Head n} :
     (CStatement.typing Γ (.const iterName) (liftTm Package.iterType).liftClosed).Valid
       objectChurchReading objectHeadReduction :=
-  CStatement.Valid.constAt ConvRules.objectLevels objectChurch_soundnessFacts constAdequateAt_iter
+  CStatement.Valid.constAt ConvRules.objectLevels objectChurch_soundnessFacts (constAdequateAt_iter objectExtension)
     (objectChurch_declared (by decide) (by decide))
     ⟨AdequateType.adequate ConvRules.objectLevels objectChurch_soundnessFacts (.sort _)
       adequateType_iterType,
@@ -194,7 +189,7 @@ theorem adequate_iterTwo :
   have v := CStatement.Valid.appElim ConvRules.objectLevels objectChurch_soundnessFacts
     (A := cnum) (B := iterTail.liftClosed)
     (by rw [← liftClosed_iterType]; exact valid_iterConst)
-    ⟨adequate_cnumeral 2, adequateType_typeAt (.base .num) .nil⟩
+    ⟨adequate_cnumeral 2, adequateType_typeAt objectExtension (.base .num) .nil⟩
     citer_typed' (cnumeral_typed 2)
   rw [inst0_iterTail] at v
   exact v.1
@@ -231,7 +226,7 @@ eliminator, then the eliminator's root step at the path `refl 1`, at `eqAt 2`. -
 theorem sucMoveOne_reduces :
     CRedTm objectHeadReduction .nil (.app (.app (.const sucMoveName) (cnumeral 1)) (.refl (cnumeral 1)))
       (.refl sucPoint) (ceqAt (cnumeral 2)) := by
-  have rδ := sucMove_teleReduces objectHeadReduction (Δ := .nil) (cnumeral 1) (cnumeral_typed 1)
+  have rδ := sucMove_teleReduces objectExtension objectHeadReduction (Δ := .nil) (cnumeral 1) (cnumeral_typed 1)
     (.refl (cnumeral 1)) reflOne_typed
   have jStep := objectChurch_jStep (n := 0) (CTm.consSub (cnumeral 1) (CTm.consSub (cnumeral 1)
     (CTm.consSub (.refl sucPoint) (CTm.consSub (cSucMotive.subst (CTm.consSub (.refl (cnumeral 1))

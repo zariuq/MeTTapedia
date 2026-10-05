@@ -63,7 +63,7 @@ namespace ConvRules
 
 section Model
 
-variable (v : Nat → Nat) {T : RealizerSide Tower.Head ℕ} (ext : OverRules T)
+variable (X : TExtension) (v : Nat → Nat) {T : RealizerSide Tower.Head ℕ} (ext : OverRules T)
 include ext
 
 /-! ## Identity elimination -/
@@ -71,8 +71,8 @@ include ext
 /-- The package with the executable package's universes and no constant or
 computation is sound for the model. -/
 theorem constantFree_typedSoundN :
-    TypedSoundN (constantFreeRules rules) (nmodel v T) where
-  laws := nmodel_laws v T
+    TypedSoundN (constantFreeRules rules) (nmodel X v T) where
+  laws := nmodel_laws X v T
   headTyping := id
   isUniverse := id
   join := id
@@ -89,13 +89,13 @@ theorem constantFree_typedSoundN :
 /-- **Identity elimination is valid**: on the value side it transports its
 method along its motive, and on the realizer side it is declared as an
 eliminator at the lowest universes; its type is typed without constants. -/
-theorem valid_j : ValidTmN (nmodel v T) .nil (.const jName) Package.jType := by
-  have laws := nmodel_laws v T
+theorem valid_j : ValidTmN (nmodel X v T) .nil (.const jName) Package.jType := by
+  have laws := nmodel_laws X v T
   obtain ⟨w, hw, typed⟩ := (declaresJ (fun _ => 0) (E := T.E)).typed
-  have sound₀ := constantFree_typedSoundN v ext
+  have sound₀ := constantFree_typedSoundN X v ext
   obtain ⟨validT, partsT, _⟩ := Derivable.validTN sound₀ typed trivial
-  exact ValidTmN.transportEliminator laws (LevelTower.IsUniverse.sort _) (nmodel_jStep v)
-    (nmodel_coeRules v) ext.declaresJ
+  exact ValidTmN.transportEliminator laws (LevelTower.IsUniverse.sort _) (nmodel_jStep X v)
+    (nmodel_coeRules X v) ext.declaresJ
     (validT.validTy (sound₀.isUniverse hw) (sound₀.isUniverse' hw)) partsT
 
 /-! ## Definitions by one equation -/
@@ -104,12 +104,12 @@ theorem valid_j : ValidTmN (nmodel v T) .nil (.const jName) Package.jType := by
 and right-hand side are typed in a stage sound for the model, and which computes
 on the value side to its right-hand side, is valid. -/
 theorem valid_of_declaresDefinition {allowed : DeclName → Bool}
-    (sound₀ : TypedSoundN (stage allowed) (nmodel v T)) {f : DeclName} {k : Nat}
+    (sound₀ : TypedSoundN (stage allowed) (nmodel X v T)) {f : DeclName} {k : Nat}
     {Θ : Tower.Ctx k} {C rhs : Tower.Tm k}
     (decl : DeclaresDefinition (setting fun _ => 0) (stage allowed) f Θ C rhs)
-    (rule : ∀ {n : Nat} (σ : Sub Tower.Head k n), WhRed (nmodel v T).rules
-      (nmodel v T).roles (applyClosed Θ σ (.const f)) (Presentation.subst σ rhs)) :
-    ValidTmN (nmodel v T) .nil (.const f) (closeType Θ C) := by
+    (rule : ∀ {n : Nat} (σ : Sub Tower.Head k n), WhRed (nmodel X v T).rules
+      (nmodel X v T).roles (applyClosed Θ σ (.const f)) (Presentation.subst σ rhs)) :
+    ValidTmN (nmodel X v T) .nil (.const f) (closeType Θ C) := by
   obtain ⟨w, hw, typed⟩ := decl.typed
   have declared : Typed T.R .nil (.const f) (closeType Θ C) := by
     have h := ext.typed (decl.typing (Γ := .nil))
@@ -118,98 +118,98 @@ theorem valid_of_declaresDefinition {allowed : DeclName → Bool}
     ⟨.leaf, ext.keep decl.role nofun⟩ rule fun σ => ext.step (decl.rule σ)
 
 /-- `eqAt` is valid. -/
-theorem valid_eqAt : ValidTmN (nmodel v T) .nil (.const eqAtName) Package.eqAtType :=
-  valid_of_declaresDefinition v ext
-    (stage_typedSoundN_of v ext (names := [numN, zeroN, sucN, addN])
+theorem valid_eqAt : ValidTmN (nmodel X v T) .nil (.const eqAtName) Package.eqAtType :=
+  valid_of_declaresDefinition X v ext
+    (stage_typedSoundN_of X v ext (names := [numN, zeroN, sucN, addN])
       fun name mem type declared => by
         simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
         rcases mem with rfl | rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-        · exact valid_num v ext
-        · exact valid_zero v ext
-        · exact valid_suc v ext
-        · exact valid_add v ext)
+        · exact valid_num X v ext
+        · exact valid_zero X v ext
+        · exact valid_suc X v ext
+        · exact valid_add X v ext)
     (declaresEqAt (fun _ => 0) (laws fun _ => 0))
-    fun σ => vmodel_rule v (listed 4 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 4 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-- `sucMove` is valid: its right-hand side, an identity elimination, is typed in
 the stage of the numbers, addition, identity elimination and `eqAt`. -/
 theorem valid_sucMove :
-    ValidTmN (nmodel v T) .nil (.const sucMoveName) Package.sucMoveType :=
-  valid_of_declaresDefinition v ext
-    (stage_typedSoundN_of v ext (names := [numN, zeroN, sucN, addN, jName, eqAtName])
+    ValidTmN (nmodel X v T) .nil (.const sucMoveName) Package.sucMoveType :=
+  valid_of_declaresDefinition X v ext
+    (stage_typedSoundN_of X v ext (names := [numN, zeroN, sucN, addN, jName, eqAtName])
       fun name mem type declared => by
         simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
         rcases mem with rfl | rfl | rfl | rfl | rfl | rfl <;>
           obtain rfl := Option.some.inj declared
-        · exact valid_num v ext
-        · exact valid_zero v ext
-        · exact valid_suc v ext
-        · exact valid_add v ext
-        · exact valid_j v ext
-        · exact valid_eqAt v ext)
+        · exact valid_num X v ext
+        · exact valid_zero X v ext
+        · exact valid_suc X v ext
+        · exact valid_add X v ext
+        · exact valid_j X v ext
+        · exact valid_eqAt X v ext)
     (declaresSucMove (fun _ => 0) (laws fun _ => 0))
-    fun σ => vmodel_rule v (listed 5 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 5 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-- The stage without constants is sound for the model. -/
-theorem emptyStage_typedSoundN : TypedSoundN emptyStage (nmodel v T) :=
-  stage_typedSoundN_of v ext fun _ mem => absurd mem List.not_mem_nil
+theorem emptyStage_typedSoundN : TypedSoundN emptyStage (nmodel X v T) :=
+  stage_typedSoundN_of X v ext fun _ mem => absurd mem List.not_mem_nil
 
 /-- `keep` is valid. -/
-theorem valid_keep : ValidTmN (nmodel v T) .nil (.const keepName) Package.keepType :=
-  valid_of_declaresDefinition v ext (emptyStage_typedSoundN v ext)
+theorem valid_keep : ValidTmN (nmodel X v T) .nil (.const keepName) Package.keepType :=
+  valid_of_declaresDefinition X v ext (emptyStage_typedSoundN X v ext)
     (declaresKeep (fun _ => 0))
-    fun σ => vmodel_rule v (listed 6 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 6 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-- The transport of a value and its evidence is valid. -/
 theorem valid_transport :
-    ValidTmN (nmodel v T) .nil (.const transportName) Package.transportType :=
-  valid_of_declaresDefinition v ext (emptyStage_typedSoundN v ext)
+    ValidTmN (nmodel X v T) .nil (.const transportName) Package.transportType :=
+  valid_of_declaresDefinition X v ext (emptyStage_typedSoundN X v ext)
     (declaresTransport (fun _ => 0))
-    fun σ => vmodel_rule v (listed 7 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 7 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-- The composition of steps is valid. -/
 theorem valid_compose :
-    ValidTmN (nmodel v T) .nil (.const composeName) Package.composeType :=
-  valid_of_declaresDefinition v ext (emptyStage_typedSoundN v ext)
+    ValidTmN (nmodel X v T) .nil (.const composeName) Package.composeType :=
+  valid_of_declaresDefinition X v ext (emptyStage_typedSoundN X v ext)
     (declaresCompose (fun _ => 0))
-    fun σ => vmodel_rule v (listed 8 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 8 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-- `returnIter` is valid: its right-hand side is typed with the iterator. -/
 theorem valid_returnIter :
-    ValidTmN (nmodel v T) .nil (.const returnIterName) Package.returnIterType :=
-  valid_of_declaresDefinition v ext
-    (stage_typedSoundN_of v ext (names := [numN, zeroN, sucN, iterName])
+    ValidTmN (nmodel X v T) .nil (.const returnIterName) Package.returnIterType :=
+  valid_of_declaresDefinition X v ext
+    (stage_typedSoundN_of X v ext (names := [numN, zeroN, sucN, iterName])
       fun name mem type declared => by
         simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
         rcases mem with rfl | rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-        · exact valid_num v ext
-        · exact valid_zero v ext
-        · exact valid_suc v ext
-        · exact valid_iter v ext)
+        · exact valid_num X v ext
+        · exact valid_zero X v ext
+        · exact valid_suc X v ext
+        · exact valid_iter X v ext)
     (declaresReturnIter (fun _ => 0) (laws fun _ => 0))
-    fun σ => vmodel_rule v (listed 10 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 10 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-- `sucStep` is valid: its right-hand side is typed with `sucMove` and the
 transport. -/
 theorem valid_sucStep :
-    ValidTmN (nmodel v T) .nil (.const sucStepName) Package.sucStepType :=
-  valid_of_declaresDefinition v ext
-    (stage_typedSoundN_of v ext
+    ValidTmN (nmodel X v T) .nil (.const sucStepName) Package.sucStepType :=
+  valid_of_declaresDefinition X v ext
+    (stage_typedSoundN_of X v ext
       (names := [numN, zeroN, sucN, addN, jName, eqAtName, sucMoveName, transportName])
       fun name mem type declared => by
         simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
         rcases mem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
           obtain rfl := Option.some.inj declared
-        · exact valid_num v ext
-        · exact valid_zero v ext
-        · exact valid_suc v ext
-        · exact valid_add v ext
-        · exact valid_j v ext
-        · exact valid_eqAt v ext
-        · exact valid_sucMove v ext
-        · exact valid_transport v ext)
+        · exact valid_num X v ext
+        · exact valid_zero X v ext
+        · exact valid_suc X v ext
+        · exact valid_add X v ext
+        · exact valid_j X v ext
+        · exact valid_eqAt X v ext
+        · exact valid_sucMove X v ext
+        · exact valid_transport X v ext)
     (declaresSucStep (fun _ => 0) (laws fun _ => 0))
-    fun σ => vmodel_rule v (listed 11 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
+    fun σ => X.rule v (listed 11 (by decide)) (by decide) ⟨σ, rfl, rfl⟩
 
 /-! ## The package -/
 
@@ -217,34 +217,34 @@ theorem valid_sucStep :
 declared type in the conversion model.** -/
 theorem valid_declared {name : DeclName} {type : Tower.Tm 0}
     (declared : allTypes name = some type) :
-    ValidTmN (nmodel v T) .nil (.const name) type := by
+    ValidTmN (nmodel X v T) .nil (.const name) type := by
   have mem := mem_of_lookup declared
   simp only [declarations, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at mem
   rcases mem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
     ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
     ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-  · exact valid_num v ext
-  · exact valid_set v ext
-  · exact valid_zero v ext
-  · exact valid_suc v ext
-  · exact valid_add v ext
-  · exact valid_power v ext
-  · exact valid_pow v ext
-  · exact valid_numRec v ext
-  · exact valid_j v ext
-  · exact valid_eqAt v ext
-  · exact valid_sucMove v ext
-  · exact valid_keep v ext
-  · exact valid_transport v ext
-  · exact valid_compose v ext
-  · exact valid_iter v ext
-  · exact valid_returnIter v ext
-  · exact valid_sucStep v ext
+  · exact valid_num X v ext
+  · exact valid_set X v ext
+  · exact valid_zero X v ext
+  · exact valid_suc X v ext
+  · exact valid_add X v ext
+  · exact valid_power X v ext
+  · exact valid_pow X v ext
+  · exact valid_numRec X v ext
+  · exact valid_j X v ext
+  · exact valid_eqAt X v ext
+  · exact valid_sucMove X v ext
+  · exact valid_keep X v ext
+  · exact valid_transport X v ext
+  · exact valid_compose X v ext
+  · exact valid_iter X v ext
+  · exact valid_returnIter X v ext
+  · exact valid_sucStep X v ext
 
 /-- **The executable package is sound for the conversion model over every
 realizer side over it**, its root steps read with their typing. -/
-theorem rules_typedSoundN : TypedSoundN rules (nmodel v T) :=
-  stage_typedSoundN v ext fun _ declared => valid_declared v ext declared
+theorem rules_typedSoundN : TypedSoundN rules (nmodel X v T) :=
+  stage_typedSoundN X v ext fun _ declared => valid_declared X v ext declared
 
 end Model
 
@@ -257,9 +257,9 @@ theorem rulesAlgorithmicSide_over : OverRules rulesAlgorithmicSide :=
 
 /-- **The executable package is sound for its conversion model with the
 conversion algorithm.** -/
-theorem rules_typedSoundN_algorithmic (v : Nat → Nat) :
-    TypedSoundN rules (nmodel v rulesAlgorithmicSide) :=
-  rules_typedSoundN v rulesAlgorithmicSide_over
+theorem rules_typedSoundN_algorithmic (X : TExtension) (v : Nat → Nat) :
+    TypedSoundN rules (nmodel X v rulesAlgorithmicSide) :=
+  rules_typedSoundN X v rulesAlgorithmicSide_over
 
 section Consequences
 
@@ -270,7 +270,7 @@ derivably equal terms of a formed context are compared by it. The statement is
 that of `algorithm_complete`. -/
 theorem algorithm_completeN {t u T : Tower.Tm n} (formed : CtxFormed rules Γ)
     (equal : Equal rules Γ t u T) : Algorithm rules (.compare Γ t u T) := by
-  have escaped := Equal.escapeN (rules_typedSoundN_algorithmic fun _ => 0) formed equal
+  have escaped := Equal.escapeN (rules_typedSoundN_algorithmic objectTExt fun _ => 0) formed equal
   have derivation := escaped.2 (CtxRen.id Γ) formed
   rw [rename_id, rename_id, rename_id] at derivation
   exact derivation.refines
@@ -286,14 +286,15 @@ shape, or a neutral term. -/
 theorem closed_num_shape {t : Tower.Tm 0} (typing : Typed rules .nil t numT) :
     ∃ s, NumShapeRel rulesAlgorithmicSide numN zeroN sucN s .nil numT t t := by
   obtain ⟨P, den, val, real⟩ :=
-    Typed.shapeN (rules_typedSoundN_algorithmic fun _ => 0) .nil typing
+    Typed.shapeN (rules_typedSoundN_algorithmic objectTExt fun _ => 0) .nil typing
   have closed : ∀ σ : Sub Tower.Head 0 0, Presentation.subst σ t = t := fun σ => by
     rw [show σ = ids from funext fun i => Fin.elim0 i, subst_ids]
   rw [closed] at val real
   have val' := val
-  rw [num_den (fun _ => 0) den] at val'
+  rw [num_den objectTExt (fun _ => 0) den] at val'
   obtain ⟨s, hs, -⟩ := ValueSide.numIndPack_rel.mp val'
-  exact ⟨s, (num_real (fun _ => 0) rulesAlgorithmicSide_over den hs .nil numT t t).mp real⟩
+  exact ⟨s, (num_real objectTExt (fun _ => 0) rulesAlgorithmicSide_over den hs .nil numT t
+    t).mp real⟩
 
 /-! ## Controls -/
 
@@ -311,7 +312,7 @@ theorem add_zero_compared :
 /-- **The escape relates only typed-equal terms**: `zero` and `suc zero` are not
 related by the algorithmic equality. -/
 theorem zero_suc_not_convertible :
-    ¬ (nmodel (fun _ => 0) rulesAlgorithmicSide).side.E.convTm (.nil : Tower.Ctx 0)
+    ¬ (nmodel objectTExt (fun _ => 0) rulesAlgorithmicSide).side.E.convTm (.nil : Tower.Ctx 0)
       (.const zeroN) (.app (.const sucN) (.const zeroN)) numT :=
   fun convertible => zero_ne_suc .nil convertible.1
 
@@ -337,16 +338,17 @@ theorem rules_sub_zeroSucRules : RulesSub rules zeroSucRules :=
 /-- **A package deriving `zero` equal to `suc zero` is sound for no conversion
 model over any realizer side**: on the value side numbers of different shapes
 are not related. -/
-theorem not_typedSoundN_of_zero_eq_suc (v : Nat → Nat) (T : RealizerSide Tower.Head ℕ)
+theorem not_typedSoundN_of_zero_eq_suc (X : TExtension) (v : Nat → Nat)
+    (T : RealizerSide Tower.Head ℕ)
     {R : Rules Tower.Head}
     (equal : Equal R (.nil : Tower.Ctx 0) (.const zeroN) (.app (.const sucN) (.const zeroN)) numT) :
-    ¬ TypedSoundN R (nmodel v T) := by
+    ¬ TypedSoundN R (nmodel X v T) := by
   intro sound
   have valid := Equal.validN sound equal trivial
-  have laws := (nmodel_laws v T).value
-  have e : EqSubstN (nmodel v T) .nil World.closed (fun i => Fin.elim0 i)
+  have laws := (nmodel_laws X v T).value
+  have e : EqSubstN (nmodel X v T) .nil World.closed (fun i => Fin.elim0 i)
       (fun i => Fin.elim0 i) .nil (fun i => Fin.elim0 i) (fun i => Fin.elim0 i) := CtxFormed.nil
-  have den : DenN (nmodel v T) World.closed numT (ValueSide.numIndPack (nmodel v T).value 0) :=
+  have den : DenN (nmodel X v T) World.closed numT (ValueSide.numIndPack (nmodel X v T).value 0) :=
     ⟨0, ValueSide.InterpAt.num laws 0 .refl⟩
   obtain ⟨s, hz, hs⟩ := ValueSide.numIndPack_rel.mp (valid.2.2 e den).1
   have zero := HasShape.deterministic laws.values.truth laws.star hz (.zero .refl)
@@ -357,13 +359,13 @@ theorem not_typedSoundN_of_zero_eq_suc (v : Nat → Nat) (T : RealizerSide Tower
 /-- **The executable package with a root step identifying `zero` with `suc zero`
 is not sound for the conversion model**: the step makes them typed-equal, and
 on the value side numbers of different shapes are not related. -/
-theorem zeroSucRules_not_typedSoundN (v : Nat → Nat) :
-    ¬ TypedSoundN zeroSucRules (nmodel v rulesAlgorithmicSide) := by
+theorem zeroSucRules_not_typedSoundN (X : TExtension) (v : Nat → Nat) :
+    ¬ TypedSoundN zeroSucRules (nmodel X v rulesAlgorithmicSide) := by
   have typed₀ : Typed zeroSucRules (.nil : Tower.Ctx 0) (.const zeroN) numT :=
     Derivable.mono rules_sub_zeroSucRules rules_zero_typed
   have typed₁ : Typed zeroSucRules (.nil : Tower.Ctx 0) (.app (.const sucN) (.const zeroN)) numT :=
     Derivable.mono rules_sub_zeroSucRules (sucApp_typed' rulesAlgorithmicSide_over rules_zero_typed)
-  exact not_typedSoundN_of_zero_eq_suc v rulesAlgorithmicSide
+  exact not_typedSoundN_of_zero_eq_suc X v rulesAlgorithmicSide
     (.root (.inr ⟨rfl, rfl⟩) typed₀ typed₁)
 
 end ConvRules

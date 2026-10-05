@@ -11,6 +11,10 @@ five literal outputs. No C rebuild or full gate is claimed here. Neither
 that probe nor the source report's successful specimens establishes an
 all-input correspondence.
 
+The fixture paths follow their later relocation into the explicit HOTG profile.
+The digests and observations still describe the September snapshot before that
+profile existed; they do not certify the contents of the relocated files.
+
 Retained derivations, exact operation-name ownership and dependency-sensitive
 reuse are different properties. In particular, writable proof-shaped records
 remain data; neither their shape nor their recorded revision qualifies their
@@ -32,7 +36,7 @@ def source : InspectedSourceSnapshot where
     ⟨"src/prime_semantics.c", "6acf5df5de7d2d2112093ad327726c6a147f9e9675c9cdaa2fc5394752000df1"⟩,
     ⟨"src/prime_regular_pattern.c", "b8bce60106249fcc63bc5323a6d210c95707d8f36a188b91cfaacfa5deec2135"⟩,
     ⟨"src/prime_regular_kernel.c", "e444ec9d1c0b01e31e036609aee4fe5bc4ea21a78c109ff3781ba3f77afdd581"⟩,
-    ⟨"tests/prime/scoped/live_propositions.metta", "6787193d56e9c7bdcbf9b2ea6539f115f6cb78a509e647bd9677a3ff80954c69"⟩]
+    ⟨"tests/prime/profiles/megalodon_hotg/scoped/live_propositions.metta", "6787193d56e9c7bdcbf9b2ea6539f115f6cb78a509e647bd9677a3ff80954c69"⟩]
 
 private def scopedSource : SourceDigest :=
   ⟨"src/prime_scoped_judgments.c", "b9f8132126f011970e54fc28517ba50e1709b878c561c70a53360261a7f4cba4"⟩
@@ -87,7 +91,7 @@ def nativeMay : SourceObservation source where
   limitation := "This does not implement a predecessor-quantified box, all OSLF formulas or arbitrary language semantics. Unknown-name rejection is not semantic falsity of an uninterpreted proposition. Source presence does not prove the delegated may observer agrees with the candidate."
 
 def livePropositionProgram : SourceObservation source where
-  source := ⟨"tests/prime/scoped/live_propositions.metta", "6787193d56e9c7bdcbf9b2ea6539f115f6cb78a509e647bd9677a3ff80954c69"⟩
+  source := ⟨"tests/prime/profiles/megalodon_hotg/scoped/live_propositions.metta", "6787193d56e9c7bdcbf9b2ea6539f115f6cb78a509e647bd9677a3ff80954c69"⟩
   sourceInSnapshot := by decide
   symbols := ["member-claim", "pick", "find-proof", "found-membership", "live-consequence", "set:union"]
   observation := "The authored program constructs propositions from values, branches over witnesses, searches submitted proofs, publishes and inspects them, withdraws a premise, and defines an ordinary finite-data set:union independently of the signature's Union."

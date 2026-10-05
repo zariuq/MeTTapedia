@@ -347,12 +347,4 @@ theorem constructorMap_arguments_unique (target : Model Q accountSort)
 
 end
 
-#print axioms observe_interpret
-#print axioms interpret_substitute_variable
-#print axioms interpret_gen_operation
-#print axioms interpret_gen_substitute
-#print axioms account_word_injective
-#print axioms interpretMap
-#print axioms constructorMap_unique
-
 end Mettapedia.GSLT.LanguageDef.Cost.RawAccountBindingExtension

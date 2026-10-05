@@ -617,7 +617,7 @@ def recCode : CTm Tower.Head 0 :=
 motive. -/
 theorem recTerm_numVal (v : Nat → Nat) : NumVal (tmodelC v).toSetting recTermC.erase 2 :=
   (numVal_numeral (S := (tmodelC v).toSetting) 2).expand
-    (.single (vnumRec_zero_step v (.lam (.const propN))
+    (.single (objectTExt.numRec_zero_step v (.lam (.const propN))
       (Presentation.TypedEquality.Impredicative.Consistency.numeral (tmodelC v).toSetting 2)
       (.lam (.lam (.var 0)))))
 

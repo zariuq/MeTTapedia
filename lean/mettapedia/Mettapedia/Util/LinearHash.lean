@@ -119,6 +119,10 @@ private theorem nodup_eraseDups
     simp only [List.length_cons]
     omega
 
+/-- Stable duplicate removal produces a duplicate-free list. -/
+theorem eraseDups_nodup {alpha : Type} [BEq alpha] [LawfulBEq alpha]
+    (values : List alpha) : values.eraseDups.Nodup := nodup_eraseDups values
+
 private theorem eraseDups_of_nodup
     {alpha : Type} [BEq alpha] [LawfulBEq alpha] :
     forall {values : List alpha}, values.Nodup -> values.eraseDups = values

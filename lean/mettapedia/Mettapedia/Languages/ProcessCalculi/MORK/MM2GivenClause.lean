@@ -8,7 +8,7 @@ import Mettapedia.GSLT.Core.ResumableGivenClause
 A selected occurrence supplies a `selected` fact. Positive MM2 premises join
 that fact with the captured processed context; one authored add conclusion
 creates new owned occurrences. Generation runs through the actual matching
-cursor, including suspension before any row is available. Completed publication
+cursor, including suspension inside a nested atom before any row is available. Completed publication
 uses the existing GCL operation on processed/passive occurrences.
 
 This is a declared positive, add-only inference protocol. It does not identify
@@ -53,17 +53,17 @@ def system (pattern : Pattern) (conclusion : Atom) : GivenClauseLoop.System Node
   generate given processed := children given conclusion (referenceRows pattern given processed) 0
 
 structure Generation where
-  matcher : MM2MatchingCursor.State
+  matcher : MM2MatchingCursor.StructuralQuanta.State
   rowIndex : Nat
 
 def initial (pattern : Pattern) (given : Node) (processed : List Node) : Generation :=
-  ⟨start (context given processed) (.compat pattern), 0⟩
+  ⟨StructuralQuanta.start (context given processed) (.compat pattern), 0⟩
 
 /-- A match row is transformed by one finite authored template. A declined
 unbound template is not an invented answer, and it still consumes its row. -/
 def pullChild (patternSpace : List Entry) (given : Node) (conclusion : Atom)
     (state : Generation) : Pull Generation Node :=
-  match pull patternSpace state.matcher with
+  match StructuralQuanta.pull patternSpace state.matcher with
   | .done => .done
   | .suspend residual => .suspend ⟨residual, state.rowIndex⟩
   | .yield row residual =>
@@ -74,7 +74,7 @@ def pullChild (patternSpace : List Entry) (given : Node) (conclusion : Atom)
 
 def generated (space : List Entry) (given : Node) (conclusion : Atom)
     (state : Generation) : List Node :=
-  children given conclusion (residualRows space state.matcher) state.rowIndex
+  children given conclusion (StructuralQuanta.residualRows space state.matcher) state.rowIndex
 
 theorem pullChild_rows (space : List Entry) (given : Node) (conclusion : Atom)
     (state : Generation) :
@@ -83,9 +83,9 @@ theorem pullChild_rows (space : List Entry) (given : Node) (conclusion : Atom)
     | .suspend next => generated space given conclusion state = generated space given conclusion next
     | .yield child next => generated space given conclusion state =
         child :: generated space given conclusion next := by
-  have localLaw := pull_rows space state.matcher
+  have localLaw := StructuralQuanta.pull_rows space state.matcher
   unfold pullChild
-  cases moved : pull space state.matcher with
+  cases moved : StructuralQuanta.pull space state.matcher with
   | done =>
       simp only [moved] at localLaw
       simp [generated, children, localLaw]
@@ -100,12 +100,12 @@ theorem pullChild_rows (space : List Entry) (given : Node) (conclusion : Atom)
 theorem pullChild_cost (space : List Entry) (given : Node) (conclusion : Atom)
     (state : Generation) :
     match pullChild space given conclusion state with
-    | .done => remainingCost space state.matcher = 0
-    | .suspend next => remainingCost space next.matcher < remainingCost space state.matcher
-    | .yield _ next => remainingCost space next.matcher < remainingCost space state.matcher := by
-  have decreases := pull_cost space state.matcher
+    | .done => StructuralQuanta.remainingCost space state.matcher = 0
+    | .suspend next => StructuralQuanta.remainingCost space next.matcher < StructuralQuanta.remainingCost space state.matcher
+    | .yield _ next => StructuralQuanta.remainingCost space next.matcher < StructuralQuanta.remainingCost space state.matcher := by
+  have decreases := StructuralQuanta.pull_cost space state.matcher
   unfold pullChild
-  cases moved : pull space state.matcher with
+  cases moved : StructuralQuanta.pull space state.matcher with
   | done => simpa only [moved] using decreases
   | suspend next => simpa only [moved] using decreases
   | yield row next =>
@@ -114,52 +114,27 @@ theorem pullChild_cost (space : List Entry) (given : Node) (conclusion : Atom)
         simpa only [found] using decreases
 
 theorem collect_complete (space : List Entry) (given : Node) (conclusion : Atom)
-    (fuel : Nat) (state : Generation) (enough : remainingCost space state.matcher < fuel) :
+    (fuel : Nat) (state : Generation) (enough : StructuralQuanta.remainingCost space state.matcher < fuel) :
     collect (pullChild space given conclusion) fuel state =
-      some (generated space given conclusion state) := by
-  induction fuel generalizing state with
-  | zero => omega
-  | succ fuel ih =>
-      have semantic := pullChild_rows space given conclusion state
-      have decreases := pullChild_cost space given conclusion state
-      cases moved : pullChild space given conclusion state with
-      | done =>
-          simp only [moved] at semantic
-          simp [collect, moved, semantic]
-      | suspend next =>
-          simp only [moved] at semantic decreases
-          have small : remainingCost space next.matcher < fuel := by omega
-          simp [collect, moved, ih next small, semantic]
-      | yield child next =>
-          simp only [moved] at semantic decreases
-          have small : remainingCost space next.matcher < fuel := by omega
-          simp [collect, moved, ih next small, semantic]
+      some (generated space given conclusion state) :=
+  NativeControlCursor.collect_complete (pullChild space given conclusion)
+    (generated space given conclusion)
+    (fun state => by cases moved : pullChild space given conclusion state <;>
+      simpa only [moved] using pullChild_rows space given conclusion state)
+    (fun state => StructuralQuanta.remainingCost space state.matcher)
+    (fun state => by cases moved : pullChild space given conclusion state <;>
+      simpa only [moved] using pullChild_cost space given conclusion state)
+    fuel state enough
 
 theorem collect_sound (space : List Entry) (given : Node) (conclusion : Atom)
     (fuel : Nat) (state : Generation) (result : List Node)
     (completed : collect (pullChild space given conclusion) fuel state = some result) :
-    result = generated space given conclusion state := by
-  induction fuel generalizing state result with
-  | zero => simp [collect] at completed
-  | succ fuel ih =>
-      have semantic := pullChild_rows space given conclusion state
-      cases moved : pullChild space given conclusion state with
-      | done =>
-          simp only [moved] at semantic
-          simpa [collect, moved, semantic] using completed.symm
-      | suspend next =>
-          simp only [moved] at semantic
-          simp only [collect, moved] at completed
-          exact (ih next result completed).trans semantic.symm
-      | yield child next =>
-          simp only [moved] at semantic
-          simp only [collect, moved] at completed
-          cases found : collect (pullChild space given conclusion) fuel next with
-          | none => simp [found] at completed
-          | some tail =>
-              simp only [found, Option.map_some, Option.some.injEq] at completed
-              subst result
-              rw [ih next tail found, semantic]
+    result = generated space given conclusion state :=
+  NativeControlCursor.collect_sound (pullChild space given conclusion)
+    (generated space given conclusion)
+    (fun state => by cases moved : pullChild space given conclusion state <;>
+      simpa only [moved] using pullChild_rows space given conclusion state)
+    fuel state result completed
 
 theorem children_values (given : Node) (conclusion : Atom) (rows : List Row) (first : Nat) :
     (children given conclusion rows first).map WorkOccurrence.state =
@@ -179,7 +154,7 @@ theorem generated_values (pattern : Pattern) (conclusion : Atom)
       (cmatchPattern [] (context given processed) pattern).filterMap
         (fun row => instantiateTemplateAtom? row.1 conclusion) := by
   rw [system, children_values]
-  have erasure := start_rows_erase (context given processed) (.compat pattern) []
+  have erasure := MM2MatchingCursor.start_rows_erase (context given processed) (.compat pattern) []
   change (referenceRows pattern given processed).map eraseRow =
     cmatchPattern [] (context given processed) pattern at erasure
   rw [← erasure, List.filterMap_map]
@@ -351,9 +326,9 @@ def publish (pattern : Pattern) (conclusion : Atom)
       ResumableGivenClause.publish (system pattern conclusion) disciplines state selected
         (provider := Sequence.tails Node) (.done ⟨(), result.2.1, []⟩)
 
-def allowance (pattern : Pattern) (state : Snapshot (count := count))
+noncomputable def allowance (pattern : Pattern) (state : Snapshot (count := count))
     (selected : ResumableGivenClause.Selected state) : Nat :=
-  remainingCost (entries (context selected.val state.processed))
+  StructuralQuanta.remainingCost (entries (context selected.val state.processed))
     (initial pattern selected.val state.processed).matcher + 2
 
 theorem completed_publication (pattern : Pattern) (conclusion : Atom)
@@ -366,7 +341,7 @@ theorem completed_publication (pattern : Pattern) (conclusion : Atom)
       some (GivenClauseLoop.Snapshot.tick (system pattern conclusion) disciplines state) := by
   have collection := NativeControlCursor.advance_collect
     (pullChild (entries (context selected.val state.processed)) selected.val conclusion)
-    (remainingCost (entries (context selected.val state.processed))
+    (StructuralQuanta.remainingCost (entries (context selected.val state.processed))
       (initial pattern selected.val state.processed).matcher + 1)
     (initial pattern selected.val state.processed) []
   rw [collect_complete _ _ _ _ _ (Nat.lt_succ_self _)] at collection
@@ -467,7 +442,7 @@ theorem generated_support_is_one_fact :
       {answer} := by decide
 
 theorem match_cursor_reaches_the_join :
-    collect (pullChild (entries (context root processed)) root conclusion) 100
+    collect (pullChild (entries (context root processed)) root conclusion) 512
       (initial premises root processed) = some [⟨answer, [7, 0]⟩, ⟨answer, [7, 1]⟩] := by
   decide
 

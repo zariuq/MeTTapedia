@@ -20,7 +20,7 @@ heads (`ChurchRules.mapSchemas`), and two packages over one language of heads ar
 
 Positive example: the object package of the MeTTa candidate, read at the heads of the tower
 with level names and summed with the families over the names, has one set model
-(`objectNames_model`, in the executable model of the candidate). Negative example: a model of
+(`CodeModel.objectWithFamilies_model`, in the executable model of the candidate). Negative example: a model of
 a sum gives a model of its first package (`SetModel.of_sum_left`), so a sum whose first
 package has no set model has none.
 -/

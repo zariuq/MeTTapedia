@@ -387,11 +387,11 @@ inductive Runs (program : Program) : Pattern → Pattern → Prop where
       Step program source middle → Runs program middle target →
       Runs program source target
 
-def Runs.single (program : Program) {source target : Pattern}
+theorem Runs.single (program : Program) {source target : Pattern}
     (step : Step program source target) : Runs program source target :=
   .tail step (.refl target)
 
-def Runs.trans (program : Program) {first middle last : Pattern}
+theorem Runs.trans (program : Program) {first middle last : Pattern}
     (earlier : Runs program first middle)
     (later : Runs program middle last) : Runs program first last :=
   by

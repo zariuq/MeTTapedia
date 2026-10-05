@@ -44,6 +44,27 @@ theorem target_assign_temporary_run_exact {World : Type} {interface : Interface}
   rw [target_normal_then_exact (target_assign_temporary_instruction_exact read live)]
   exact target_run_empty_exact _ _ _ _
 
+/-- A proved normally returning selected arm supplies its whole frame and
+state. Its lexical closure is the branch's only additional operation. -/
+theorem target_normal_branch_instruction_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {condition : Condition} {yes no : List Instruction} {selected : Bool}
+    {frame after : TargetFrame} {state post : TargetState World}
+    (tested : TargetConditionEval interface frame state condition selected)
+    (armExact : ∀ inner, TargetRun interface heap calls result
+      (if selected then yes else no) (if selected then yes else no) frame state inner ↔
+      inner = ⟨.normal, after, post⟩)
+    (out : TargetBlockOutcome World) :
+    TargetInstructionEval interface heap calls result (.branch condition yes no) frame state out ↔
+      out = targetCloseBlock frame ⟨.normal, after, post⟩ := by
+  rw [target_branch_instruction_exact tested]
+  constructor
+  · rintro ⟨inner, ran, same⟩
+    cases (armExact _).mp ran
+    exact same
+  · intro same
+    exact ⟨⟨.normal, after, post⟩, (armExact _).mpr rfl, same⟩
+
 theorem short_circuit_condition_evaluates {World : Type} {interface : Interface}
     {frame : TargetFrame} {state : TargetState World} {atom : Atom} {value : Bool}
     (continueValue : Bool) (read : TargetAtomEval interface frame state atom (.bool value)) :
@@ -203,5 +224,130 @@ theorem close_updated_temporary_protection {World : Type} {lower upper identity 
   close_block_temporary_protection hscope
     (temporary_protection_trans (temporary_protection_weaken within protection)
       (update_temporary_protects current value fresh)) state
+
+/-- The selected short-circuit arm updates the inherited result cell and
+closes its private scope. The skipped arm retains the incoming frame. -/
+def shortCircuitFrame {World : Type} (continueValue : Bool) (marker current : TargetFrame)
+    (state : TargetState World) (identity : Nat) (ready value : Bool) : TargetFrame :=
+  if ready = continueValue then
+    (targetCloseBlock marker ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩).frame
+  else marker
+
+/-- Exact execution for a pure normally returning right operand, including
+its private scope. Right-operand evidence is needed only when it is selected. -/
+theorem short_circuit_rhs_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World}
+    (continueValue : Bool) {marker current : TargetFrame} {state : TargetState World}
+    {identity : Nat} {ready value : Bool} {rhs : List Instruction} {resultAtom : Atom}
+    (hscope : TemporariesScoped marker)
+    (condition : TargetAtomEval interface marker state (.temporary identity .bool) (.bool ready))
+    (checked : jumpFreeCode rhs = true)
+    (rhsExact : ready = continueValue → ∀ root out,
+      TargetRun interface heap calls .bool root rhs marker state out ↔
+        out = ⟨.normal, current, state⟩)
+    (resultRead : TargetAtomEval interface current state resultAtom (.bool value))
+    (live : current.temporaryNames.contains identity = true)
+    (sameLocals : current.nextLocal = marker.nextLocal)
+    (out : TargetBlockOutcome World) :
+    TargetInstructionEval interface heap calls .bool
+      (.branch (shortCircuitCondition continueValue (.temporary identity .bool))
+        (rhs ++ [.assign (.temporary identity .bool) resultAtom]) []) marker state out ↔
+      out = ⟨.normal, shortCircuitFrame continueValue marker current state identity ready value, state⟩ := by
+  have tested := short_circuit_condition_evaluates continueValue condition
+  by_cases selected : ready = continueValue
+  · have sameBool : (ready == continueValue) = true := beq_iff_eq.mpr selected
+    rw [sameBool] at tested
+    have armExact (inner : TargetBlockOutcome World) :
+        TargetRun interface heap calls .bool
+          (rhs ++ [.assign (.temporary identity .bool) resultAtom])
+          (rhs ++ [.assign (.temporary identity .bool) resultAtom]) marker state inner ↔
+          inner = ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩ := by
+      rw [target_normal_prefix_then_exact checked (rhsExact selected _)]
+      exact target_assign_temporary_run_exact resultRead live _ inner
+    rw [target_normal_branch_instruction_exact tested (by simpa only [if_true] using armExact)]
+    have stateKept := @target_close_block_state_no_locals World marker
+      ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩ sameLocals
+    simp only [shortCircuitFrame, selected, if_true]
+    apply iff_of_eq
+    apply congrArg (fun final => out = final)
+    change (targetCloseBlock marker
+      ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩).state = state at stateKept
+    have flowKept : (targetCloseBlock marker
+      ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩).flow = .normal := rfl
+    generalize closedEq : targetCloseBlock marker
+      ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩ = closed at flowKept stateKept ⊢
+    cases closed
+    cases flowKept
+    cases stateKept
+    rfl
+  · have differentBool : (ready == continueValue) = false := by
+      cases ready <;> cases continueValue <;> simp_all
+    rw [differentBool] at tested
+    rw [target_normal_branch_instruction_exact tested
+      (by simpa only [Bool.false_eq_true, if_false] using
+        (fun inner => @target_run_empty_exact World interface heap calls .bool [] marker state inner))]
+    simp only [shortCircuitFrame, selected, if_false, targetCloseBlock,
+      targetLeaveScope_self marker state hscope]
+
+theorem short_circuit_frame_read {World : Type} {interface : Interface}
+    (continueValue : Bool) {marker current : TargetFrame}
+    {state : TargetState World} {identity : Nat} {ready value : Bool}
+    (condition : TargetAtomEval interface marker state (.temporary identity .bool) (.bool ready))
+    (live : current.temporaryNames.contains identity = true)
+    (sameLocals : current.nextLocal = marker.nextLocal) :
+    TargetAtomEval interface (shortCircuitFrame continueValue marker current state identity ready value) state
+      (.temporary identity .bool) (.bool (if continueValue then ready && value else ready || value)) := by
+  have selectedValue : (if ready = continueValue then value else ready) =
+      (if continueValue then ready && value else ready || value) := by
+    cases continueValue <;> cases ready <;> rfl
+  rw [← selectedValue]
+  have outer : marker.temporaryNames.contains identity = true := by
+    cases condition with | temporary _ live => exact live
+  by_cases selected : ready = continueValue
+  · have kept := close_updated_temporary_read interface marker current state identity .bool (.bool value) outer live
+    have stateKept := @target_close_block_state_no_locals World marker
+      ⟨.normal, targetUpdateTemporary current identity (.bool value), state⟩ sameLocals
+    simpa only [shortCircuitFrame, selected, if_true, stateKept] using kept
+  · simpa only [shortCircuitFrame, selected, if_false] using condition
+
+theorem short_circuit_frame_protects {World : Type} (continueValue : Bool)
+    {lower identity : Nat} {marker current : TargetFrame} (hscope : TemporariesScoped marker)
+    (protection : TemporaryProtection lower marker current) (fresh : lower < identity)
+    (state : TargetState World) (ready value : Bool) :
+    TemporaryProtection lower marker (shortCircuitFrame continueValue marker current state identity ready value) := by
+  unfold shortCircuitFrame
+  split
+  · exact close_block_temporary_protection hscope
+      (temporary_protection_trans protection (update_temporary_protects current _ fresh)) state
+  · exact temporary_protection_refl lower marker
+
+theorem short_circuit_frame_bound {World : Type} (continueValue : Bool)
+    {bound : Nat} {marker current : TargetFrame}
+    (bounded : TemporaryNamesBound marker bound) (state : TargetState World)
+    (identity : Nat) (ready value : Bool) :
+    TemporaryNamesBound (shortCircuitFrame continueValue marker current state identity ready value) bound := by
+  unfold shortCircuitFrame
+  split
+  · exact close_block_temporary_bound bounded _
+  · exact bounded
+
+theorem short_circuit_frame_scoped {World : Type} (continueValue : Bool)
+    {marker current : TargetFrame} (hscope : TemporariesScoped marker) (state : TargetState World)
+    (identity : Nat) (ready value : Bool) :
+    TemporariesScoped (shortCircuitFrame continueValue marker current state identity ready value) := by
+  unfold shortCircuitFrame
+  split
+  · exact target_close_block_scoped marker _
+  · exact hscope
+
+theorem short_circuit_condition_boolean {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {atom : Atom} {value : TargetValue}
+    (continueValue : Bool) (read : TargetAtomEval interface frame state atom value)
+    {selected : Bool}
+    (tested : TargetConditionEval interface frame state (shortCircuitCondition continueValue atom) selected) :
+    ∃ boolean, value = .bool boolean := by
+  cases continueValue
+  · cases tested with | negated otherRead => exact ⟨_, target_atom_unique read otherRead⟩
+  · cases tested with | value otherRead => exact ⟨_, target_atom_unique read otherRead⟩
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

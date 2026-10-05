@@ -190,7 +190,7 @@ def ofSourceFVar {source : CIGSLT} {color : CostStaticColor}
     (name : String) (sourceType targetType : TypeExpr)
     (targetLookup : targetFree name = some targetType)
     (_decodedType :
-      decodeCostStaticTypeExpr source color targetType = some sourceType) :
+      CostStaticTypeImage.decode source.theory color targetType = some sourceType) :
     TypedCostStaticAtom source color targetFree where
   key :=
     { sourceType := sourceType
@@ -448,7 +448,7 @@ inductive CostStaticParameterOccurrence
       (decodesName : decodeCostRegionSourceVariableName occurrence.name =
         some sourceName)
       (targetLookup : targetFree sourceName = some targetType)
-      (decodesType : decodeCostStaticTypeExpr source color targetType =
+      (decodesType : CostStaticTypeImage.decode source.theory color targetType =
         some sourceType) :
       CostStaticParameterOccurrence source color targetFree table values root
   | boundary
@@ -491,7 +491,7 @@ def classify? {source : CIGSLT} {color : CostStaticColor}
       match targetLookup : targetFree sourceName with
       | none => none
       | some targetType =>
-          match decodedType : decodeCostStaticTypeExpr source color targetType with
+          match decodedType : CostStaticTypeImage.decode source.theory color targetType with
           | none => none
           | some sourceType =>
               some (.sourceFVar (sourceType := sourceType) occurrence
@@ -540,7 +540,7 @@ theorem classify?_sourceFVar_isSome
     (decodedName : decodeCostRegionSourceVariableName occurrence.name =
       some sourceName)
     (targetLookup : targetFree sourceName = some targetType)
-    (decodedType : decodeCostStaticTypeExpr source color targetType =
+    (decodedType : CostStaticTypeImage.decode source.theory color targetType =
       some sourceType) :
     (classify? table values occurrence).isSome = true := by
   unfold classify?
@@ -594,7 +594,7 @@ theorem classify?_isSome_of_typed
           simp [TypedCostRegionBoundaryTable.sourceFreeContext, decodedName,
             targetLookup] at lookup
       | some targetType =>
-          cases decodedType : decodeCostStaticTypeExpr source color targetType with
+          cases decodedType : CostStaticTypeImage.decode source.theory color targetType with
           | none =>
               simp [TypedCostRegionBoundaryTable.sourceFreeContext, decodedName,
                 targetLookup, decodedType] at lookup
@@ -753,7 +753,7 @@ theorem mappedFreeContext_eq_atom_targetType
   cases parameter with
   | sourceFVar occurrence decodedName targetLookup decodedType =>
       have encodedType :=
-        mapTypeExpr_decodeCostStaticTypeExpr source color decodedType
+        CostStaticTypeImage.mapTypeExpr_decode source.theory color decodedType
       simp [TypedCostRegionBoundaryTable.mappedFreeContext, decodedName,
         targetLookup, decodedType, atom, TypedCostStaticAtom.ofSourceFVar,
         encodedType, fvarOccurrence]
@@ -854,7 +854,7 @@ theorem atom_targetType_eq_map_sourceType
   cases parameter with
   | sourceFVar occurrence decodedName targetLookup decodedType =>
       simpa [atom, TypedCostStaticAtom.ofSourceFVar] using
-        mapTypeExpr_decodeCostStaticTypeExpr source color decodedType
+        CostStaticTypeImage.mapTypeExpr_decode source.theory color decodedType
   | boundary occurrence notSource resolved resolution =>
       have tableResolution : table.resolve occurrence.name =
           some resolved.1 := by

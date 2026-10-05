@@ -121,7 +121,7 @@ theorem matched_whole_positions {source : Pattern} {bindings : Bindings}
   cases stackSignatureMatch
   cases tailStackMatch
   simp [mergeBindingsWith, costSourceSchemaName, costSourceSchemaTag,
-    CIGSLT.costSignatureVariable, CIGSLT.costStackTailVariable,
+    WrappableIGSLT.costSignatureVariable, WrappableIGSLT.costStackTailVariable,
     costAdministrativeSchemaName, costAdministrativeSchemaTag] at mergeInput mergeOutput mergeStack
   subst inputBindings
   subst outputBindings
@@ -131,7 +131,7 @@ theorem matched_whole_positions {source : Pattern} {bindings : Bindings}
   simp [mergeBindingsWith] at mergePair
   obtain ⟨channels, pairEq⟩ := mergePair
   subst pairBindings
-  simp [mergeBindingsWith, CIGSLT.costSignatureVariable,
+  simp [mergeBindingsWith, WrappableIGSLT.costSignatureVariable,
     costAdministrativeSchemaName, costAdministrativeSchemaTag] at mergeSigned
   subst signedBindings
   refine ⟨elements, termRest, inputIndex, inputBound, outputIndex, outputBound,

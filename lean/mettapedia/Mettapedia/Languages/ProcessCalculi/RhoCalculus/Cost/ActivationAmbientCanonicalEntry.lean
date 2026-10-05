@@ -3,10 +3,11 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationLocatedCan
 /-!
 # Canonical runtime entry in arbitrary admitted parallel frames
 
-The frame is read by the existing generated configuration parser. Its complete
-code, signing seals and located purses remain in the source and RHS observers.
-The theorem preserves one selected funded firing; other candidates, including
-same-location ambient borrowing, remain available to the original runtime.
+A whole-funded contact beside any admitted configuration. The frame keeps its code, seals and
+located purses in the source and in the successor. The firing
+(`NameImage.ambient_canonical_entry_path_rhs`) is `ConfigImage.funded_redex_fires_readback` with
+whole funding and the frame's bag; other candidates, including borrowing from a purse of the
+frame at the same location, remain available to the runtime.
 -/
 
 set_option autoImplicit false
@@ -14,82 +15,6 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerated
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-
-theorem encodeCostConfig_add (left right : CostConfig String) :
-    encodeCostConfig (left + right) = encodeCostConfig left + encodeCostConfig right := by
-  simp [encodeCostConfig]
-
-mutual
-  theorem ConfigImage.literal_wellFormed {location : CostName LiteralAuthority}
-      {source : Pattern} {term : CostTerm LiteralAuthority}
-      (image : ConfigImage location source term)
-      (locationValid : (literalEncodeName location).wellFormed = true) :
-      (literalEncodeTerm term).wellFormed = true := by
-    cases image with
-    | zero => rfl
-    | drop name => exact name.literal_wellFormed
-    | signed signature accepted process =>
-      exact (CodeImage.signed signature accepted process).literal_wellFormed
-    | contact code stack =>
-      change ((literalEncodeTerm _).wellFormed &&
-        ((literalEncodeName location).wellFormed &&
-          (literalEncodeStack _).all RawCostSig.valid)) = true
-      rw [code.literal_wellFormed locationValid, locationValid, stack.literal_wellFormed]
-      rfl
-    | collection codes => exact codes.literal_wellFormed locationValid
-
-  theorem ConfigListImage.literal_wellFormed {location : CostName LiteralAuthority}
-      {sources : List Pattern} {term : CostTerm LiteralAuthority}
-      (image : ConfigListImage location sources term)
-      (locationValid : (literalEncodeName location).wellFormed = true) :
-      (literalEncodeTerm term).wellFormed = true := by
-    cases image with
-    | nil => rfl
-    | cons head tail =>
-      change ((literalEncodeTerm _).wellFormed && (literalEncodeTerm _).wellFormed) = true
-      rw [head.literal_wellFormed locationValid, tail.literal_wellFormed locationValid]
-      rfl
-end
-
-mutual
-  theorem ConfigImage.literal_runtimeBinderSafeAt {location : CostName LiteralAuthority}
-      {source : Pattern} {term : CostTerm LiteralAuthority}
-      (image : ConfigImage location source term)
-      (locationSafe : (literalEncodeName location).runtimeBinderSafeAt 0 = true) :
-      (literalEncodeTerm term).runtimeBinderSafeAt 0 = true := by
-    cases image with
-    | zero => rfl
-    | drop name => exact name.literal_runtimeBinderSafeAt
-    | signed signature accepted process =>
-      exact (CodeImage.signed signature accepted process).literal_runtimeBinderSafeAt
-    | contact code stack =>
-      change ((literalEncodeTerm _).runtimeBinderSafeAt 0 &&
-        (literalEncodeName location).runtimeBinderSafeAt 0) = true
-      rw [code.literal_runtimeBinderSafeAt locationSafe, locationSafe]
-      rfl
-    | collection codes => exact codes.literal_runtimeBinderSafeAt locationSafe
-
-  theorem ConfigListImage.literal_runtimeBinderSafeAt {location : CostName LiteralAuthority}
-      {sources : List Pattern} {term : CostTerm LiteralAuthority}
-      (image : ConfigListImage location sources term)
-      (locationSafe : (literalEncodeName location).runtimeBinderSafeAt 0 = true) :
-      (literalEncodeTerm term).runtimeBinderSafeAt 0 = true := by
-    cases image with
-    | nil => rfl
-    | cons head tail =>
-      change ((literalEncodeTerm _).runtimeBinderSafeAt 0 &&
-        (literalEncodeTerm _).runtimeBinderSafeAt 0) = true
-      rw [head.literal_runtimeBinderSafeAt locationSafe, tail.literal_runtimeBinderSafeAt locationSafe]
-      rfl
-end
-
-theorem ConfigImage.literal_supported {channelSource source : Pattern}
-    {location : CostName LiteralAuthority} {term : CostTerm LiteralAuthority}
-    (channelImage : NameImage 0 channelSource location) (image : ConfigImage location source term) :
-    (literalEncodeTerm term).supported = true := by
-  rw [RawCostTerm.supported, Bool.and_eq_true]
-  exact ⟨image.literal_wellFormed channelImage.literal_wellFormed,
-    image.literal_runtimeBinderSafeAt channelImage.literal_runtimeBinderSafeAt⟩
 
 theorem locatedWholeEntry_canonical_frame_runtime
     {location : RawCostName} {body payload ambient : RawCostTerm} {authority : String} {tail : RawCostStack}
@@ -170,7 +95,8 @@ theorem NameImage.ambient_canonical_target_observation
   apply RawTermStructuralDenotation.ext <;>
     simp [RawCostTerm.structuralDenote, RawTermStructuralDenotation.combine, add_comm]
 
-/-- Every admitted ambient frame retains a selected actual canonical firing and its full RHS observation. -/
+/-- Beside any admitted frame, the contact fires, and the successor is observed as the image of
+the generated right side beside the frame. -/
 theorem NameImage.ambient_canonical_entry_path_rhs
     {channelSource bodySource payloadSource signatureSource tailSource ambientSource : Pattern}
     {location : CostName LiteralAuthority} {body payload ambient : CostTerm LiteralAuthority}
@@ -201,32 +127,14 @@ theorem NameImage.ambient_canonical_entry_path_rhs
         path.depth = 1) ∧
       rawConfigStructuralDenote ((applyTracedStep
         (initialTraceComponents (literalEncodeTerm (decodedAmbientReceiver location body payload signature.val tail ambient))) step 0).map
-          RawTraceComponent.term) = rawConfigStructuralDenote (literalEncodeTerm target).normalizeConfig := by
-  have sourceImage := ambient_receiver_config_image channelImage bodyImage payloadImage signature accepted tailImage ambientImage
-  obtain ⟨sourceFuel, sourceReadback⟩ := sourceImage.parser_eventually
-    channelImage.purseInventory_zero channelImage.runtimeSupported
-  obtain ⟨target, fuel, parsed, targetObservation⟩ :=
-    channelImage.ambient_canonical_target_observation bodyImage payloadImage tailImage ambientImage
-  let source := literalEncodeTerm (decodedAmbientReceiver location body payload signature.val tail ambient)
-  have sourceSupported : source.supported = true := sourceImage.literal_supported channelImage
-  have publicCandidates : runtimeCostCandidates source =
-      some (runtimeCostCandidatesFromConfig source.normalizeConfig) := by
-    rw [runtimeCostCandidates, sourceSupported]
-    rfl
-  have sourceValid : source.wellFormed = true :=
-    ((RawCostTerm.supported_iff source).mp sourceSupported).1
-  have ambientValid : (literalEncodeTerm (.par ambient .nil)).wellFormed = true := by
-    change ((literalEncodeTerm ambient).wellFormed && true) = true
-    rw [ambientImage.literal_wellFormed channelImage.literal_wellFormed]
-    rfl
-  have runtime := locatedWholeEntry_canonical_frame_runtime (authority := literalAuthorityKey signatureSource)
-    channelImage.literal_wellFormed
-    bodyImage.literal_wellFormed payloadImage.literal_wellFormed tailImage.literal_wellFormed ambientValid
-  rw [locatedWholeEntry_authored_readout location body payload signature tail] at runtime
-  change RuntimeCostStepComplete source.normalizeConfig _ _ _ at runtime
-  obtain ⟨step, enabled, located, spent, frame, path, observed⟩ :=
-    canonical_runtime_complete_path sourceValid runtime
-  exact ⟨sourceFuel, step, target, fuel, sourceReadback sourceFuel (le_refl sourceFuel),
-    publicCandidates, parsed, enabled, located, spent, frame, path, observed.trans targetObservation⟩
+          RawTraceComponent.term) = rawConfigStructuralDenote (literalEncodeTerm target).normalizeConfig :=
+  (ambient_receiver_config_image channelImage bodyImage payloadImage signature accepted tailImage
+    ambientImage).funded_redex_fires_readback channelImage bodyImage payloadImage (.whole signature tail)
+    ambient.components (by simp [decodedAmbientReceiver, CostTerm.components, Funding.redex])
+    (fun result => .par (locatedContact location (.par result .nil) tail) (.par ambient .nil))
+    (fun resultImage => .collection (.cons (receiver_contractum_image resultImage tailImage)
+      (.cons ambientImage .nil)))
+    (fun result => by
+      simp [CostTerm.components, receiver_contractum_components, Funding.residue])
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerated

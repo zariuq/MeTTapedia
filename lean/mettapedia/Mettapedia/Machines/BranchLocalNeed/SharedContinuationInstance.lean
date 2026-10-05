@@ -51,14 +51,18 @@ The receipt-erased need machine of `NeedExecution` is an instance of
   duplicates, and in particular on `NeedExecution.answers`.
 * `arena_answers_eq_of_program`: the arena realization publishes the same
   answers, by the generic `SharedContinuation.decode_checkedStep`.
+* `returnCohort_need_steps`: delivery to retained sites in one selected world
+  agrees with the independent need step, with complete return stacks and
+  duplicate sites. A successful owned commit preserves that world's cache;
+  a mismatched owner returns a retryable fault.
 
 ## Not covered
 
 * Unfinished runs are related only transition by transition: the shared run
   follows the depth-first schedule, `runFrontier` the breadth-first one.
 * Receipts are erased; `NeedExecution.step_commutes` relates them.
-* Native realization: constant-time arena access, retirement of need frames and
-  native code are separate obligations.
+* Native realization: constant-time arena access, retirement of need frames,
+  physical producer/subscriber delivery and native code are separate obligations.
 * `SharedContinuation.Program` is stated in `Type`, so the instance covers need
   machines whose parameters live in `Type`.
 -/
@@ -1349,6 +1353,118 @@ theorem step_returns_context_free {Ctx Ctl Callee Frm Ans : Type}
       rintro _ ⟨_, _, rfl⟩ _ ⟨_, _, rfl⟩
       rfl
 
+/-! ## Returning to retained sites in one branch -/
+
+/-- One captured resume token with its complete pending return stack. -/
+abbrev ReturnSite (Resume : Type) := Resume × List (Frame Resume)
+
+/-- Resume each retained site in one selected branch world, preserving order and
+multiplicity. This is a semantic delivery boundary, not a worker registry or a
+merge of worlds. The caller supplies the actual outcome of a checked commit. -/
+def returnCohort
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (outcome : Produced Value StableFault RetryableFault)
+    (sites : List (ReturnSite Resume)) :
+    List (NeedTask Origin Local Resume Rule Value StableFault RetryableFault Effect) :=
+  sites.foldr (fun site rest =>
+    let next := resume spec context (.resume site.1) outcome
+    ⟨next.1, next.2, site.2⟩ :: rest) []
+
+/-- The delivered tasks, decoded, are exactly the independently defined need
+steps of those same captured sites. -/
+theorem returnCohort_need_steps
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (outcome : Produced Value StableFault RetryableFault)
+    (sites : List (ReturnSite Resume)) :
+    (returnCohort spec context outcome sites).map taskMachine =
+      sites.flatMap (fun site => NeedExecution.step spec
+        (taskMachine ⟨context, .returned outcome, .resume site.1 :: site.2⟩)) := by
+  induction sites with
+  | nil => rfl
+  | cons site sites ih =>
+      change _ :: (returnCohort spec context outcome sites).map taskMachine =
+        _ :: sites.flatMap (fun site => NeedExecution.step spec
+          (taskMachine ⟨context, .returned outcome, .resume site.1 :: site.2⟩))
+      rw [ih]
+      rfl
+
+theorem returnCohort_length
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (outcome : Produced Value StableFault RetryableFault)
+    (sites : List (ReturnSite Resume)) :
+    (returnCohort spec context outcome sites).length = sites.length := by
+  induction sites with
+  | nil => rfl
+  | cons site sites ih => simp only [returnCohort, List.foldr_cons, List.length_cons] at *; omega
+
+theorem returnCohort_member
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (outcome : Produced Value StableFault RetryableFault)
+    (sites : List (ReturnSite Resume))
+    (task : NeedTask Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (member : task ∈ returnCohort spec context outcome sites) :
+    ∃ site ∈ sites,
+      task.context.world = context.world ∧
+      task.control = .run (spec.afterDemand site.1 outcome) ∧
+      task.returns = site.2 ∧
+      task.context.work.transitions = context.work.transitions + 1 := by
+  induction sites with
+  | nil => simp [returnCohort] at member
+  | cons site sites ih =>
+      simp only [returnCohort, List.foldr_cons, List.mem_cons] at member
+      rcases member with rfl | member
+      · exact ⟨site, by simp, rfl, rfl, rfl, rfl⟩
+      · obtain ⟨found, hfound, properties⟩ := ih member
+        exact ⟨found, by simp [hfound], properties⟩
+
+/-- A successful owned commit supplies the same cached value to every site in
+this branch. It does not authorize delivery across incompatible worlds. -/
+theorem committed_returnCohort_cache
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (cell : CellId) (record : CellRecord Origin Value StableFault)
+    (owner : EvaluatorId) (value : Value)
+    (present : context.world.heap.lookup cell = some record)
+    (owned : record.cache = .evaluating owner)
+    (sites : List (ReturnSite Resume))
+    (task : NeedTask Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (member : task ∈ returnCohort spec
+      (resume spec context (.commit cell owner) (.value value)).1 (.value value) sites) :
+    task.context.world.heap.lookup cell = some { record with cache := .value value } := by
+  obtain ⟨site, _, sameWorld, _⟩ := returnCohort_member spec _ (.value value) sites task member
+  rw [sameWorld]
+  simp [resume, present, owned, Context.transit, CoreWorld.setKnownCache]
+
+theorem mismatched_commit_is_not_value
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (cell : CellId) (record : CellRecord Origin Value StableFault)
+    (owner actual : EvaluatorId) (value : Value)
+    (present : context.world.heap.lookup cell = some record)
+    (owned : record.cache = .evaluating actual) (different : actual ≠ owner) :
+    (resume spec context (.commit cell owner) (.value value)).2 =
+      .returned (.retryableFault (.ownershipLost cell owner actual)) := by
+  simp [resume, present, owned, different, Context.retry, Context.transit]
+
+theorem returnCohort_append
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (context : Context Origin Rule Value StableFault RetryableFault Effect)
+    (outcome : Produced Value StableFault RetryableFault)
+    (first later : List (ReturnSite Resume)) :
+    returnCohort spec context outcome (first ++ later) =
+      returnCohort spec context outcome first ++ returnCohort spec context outcome later := by
+  induction first with
+  | nil => rfl
+  | cons site sites ih =>
+      change _ :: returnCohort spec context outcome (sites ++ later) =
+        _ :: (returnCohort spec context outcome sites ++ returnCohort spec context outcome later)
+      rw [ih]
+
+
 /-! ## A two-demand example -/
 
 namespace Demo
@@ -1461,6 +1577,59 @@ example :
         (SharedContinuation.encode ⟨[demoTask], []⟩)).1.emitted.map Prod.snd =
       [.value 42] := by
   decide
+
+/-! ### Retained return sites -/
+
+private def cohortSites : List (ReturnSite Token) :=
+  [(.first, [.resume (.second 0)]), (.second 7, []), (.first, [.resume (.second 0)])]
+
+private def ownedReturnContext (branch : Nat) : Context Unit Unit Nat Unit Unit Unit :=
+  ⟨(CoreWorld.fork { demoWorld with nextEvaluator := 1 } branch).setKnownCache
+      demoCell ⟨(), .suspended⟩ (.evaluating 0), {}⟩
+
+private def committedReturnContext (branch value : Nat) : Context Unit Unit Nat Unit Unit Unit :=
+  (resume demoSpec (ownedReturnContext branch) (.commit demoCell 0) (.value value)).1
+
+/-- Delivery keeps each site's captured token and complete pending return stack. -/
+example :
+    (returnCohort demoSpec (committedReturnContext 0 21) (.value 21) cohortSites).map
+      (fun task => (task.control, task.returns)) =
+    [(.run (.again 21), [.resume (.second 0)]), (.run (.total 28), []),
+      (.run (.again 21), [.resume (.second 0)])] := rfl
+
+/-- Equal sites remain two occurrences; their equality does not authorize deduplication. -/
+example :
+    (returnCohort demoSpec (committedReturnContext 0 21) (.value 21) cohortSites).length = 3 := rfl
+
+/-- Both branches name the same cell. Their selected cache values and paths stay distinct. -/
+example :
+    (returnCohort demoSpec (committedReturnContext 0 21) (.value 21) cohortSites).map
+      (fun task => (task.context.world.path, task.context.world.heap.lookup demoCell)) =
+      [([0], some ⟨(), .value 21⟩), ([0], some ⟨(), .value 21⟩),
+        ([0], some ⟨(), .value 21⟩)] ∧
+    (returnCohort demoSpec (committedReturnContext 1 28) (.value 28) cohortSites).map
+      (fun task => (task.context.world.path, task.context.world.heap.lookup demoCell)) =
+      [([1], some ⟨(), .value 28⟩), ([1], some ⟨(), .value 28⟩),
+        ([1], some ⟨(), .value 28⟩)] := ⟨rfl, rfl⟩
+
+/-- A wrong owner produces a retryable outcome. Delivering that outcome propagates it. -/
+example :
+    (resume demoSpec (ownedReturnContext 0) (.commit demoCell 1) (.value 21)).2 =
+      .returned (.retryableFault (.ownershipLost demoCell 1 0)) := rfl
+
+example :
+    (returnCohort demoSpec
+      (resume demoSpec (ownedReturnContext 0) (.commit demoCell 1) (.value 21)).1
+      (.retryableFault (.ownershipLost demoCell 1 0)) cohortSites).map (·.control) =
+      [.run (.propagate (.retryableFault (.ownershipLost demoCell 1 0))),
+        .run (.propagate (.retryableFault (.ownershipLost demoCell 1 0))),
+        .run (.propagate (.retryableFault (.ownershipLost demoCell 1 0)))] := rfl
+
+/-- A failed ownership check leaves the evaluating cache in its original world. -/
+example :
+    (resume demoSpec (ownedReturnContext 0) (.commit demoCell 1) (.value 21)).1.world.heap.lookup
+      demoCell = some ⟨(), .evaluating 0⟩ := rfl
+
 
 /-! ### Lock-step is impossible with a world-independent control -/
 

@@ -101,7 +101,7 @@ theorem Resolves.append_right {definition : ValidatedCalculusLanguageDef}
   · simp [List.append_assoc]
 
 /-- Multi-step proof search is stable under an untouched suffix. -/
-def multiStep_append_right {definition : ValidatedCalculusLanguageDef}
+theorem multiStep_append_right {definition : ValidatedCalculusLanguageDef}
     {source target : GoalState}
     (steps : (proofSearchGSLT definition).MultiStep source target)
     (suffix : GoalState) :
@@ -117,7 +117,7 @@ def multiStep_append_right {definition : ValidatedCalculusLanguageDef}
         (multiStep_append_right rest suffix)
 
 /-- Transitivity of the reflexive-transitive proof-search closure. -/
-def multiStep_trans {definition : ValidatedCalculusLanguageDef}
+theorem multiStep_trans {definition : ValidatedCalculusLanguageDef}
     {first second third : GoalState}
     (firstSecond :
       (proofSearchGSLT definition).MultiStep first second)
@@ -157,7 +157,7 @@ mutual
 
 /-- A derivation discharges its singleton obligation by proof-search
 rewriting. -/
-def derivationToProofSearch
+theorem derivationToProofSearch
     {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
     (derivation : Derivation definition goal) :
     (proofSearchGSLT definition).MultiStep [goal] [] :=
@@ -171,7 +171,7 @@ def derivationToProofSearch
       exact .step first (derivationListToProofSearch children)
 
 /-- An ordered derivation list discharges exactly its obligation list. -/
-def derivationListToProofSearch
+theorem derivationListToProofSearch
     {definition : ValidatedCalculusLanguageDef} {goals : List Pattern}
     (derivations : DerivationList definition goals) :
     (proofSearchGSLT definition).MultiStep goals [] :=

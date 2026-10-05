@@ -50,9 +50,9 @@ draft); here that form is a definition by recursion (`revOntoFirstDef`, with the
 as a later argument that the recursive call changes), and `rev-onto` is an explicit definition
 over it (`revOntoDef`):
 
-    rev-onto-list-first nil acc ⟶ acc
-    rev-onto-list-first (cons x xs) acc ⟶ rev-onto-list-first xs (cons x acc)
-    rev-onto acc l ⟶ rev-onto-list-first l acc
+    rev-onto~scrutinee-first nil acc ⟶ acc
+    rev-onto~scrutinee-first (cons x xs) acc ⟶ rev-onto~scrutinee-first xs (cons x acc)
+    rev-onto acc l ⟶ rev-onto~scrutinee-first l acc
 
 The list of the three declarations is admissible (`reverseProgram_admissible`), so the package
 has a set model and is consistent. The two authored equations hold in its judgment
@@ -421,7 +421,7 @@ theorem append_without_lists_not_admissible :
 /-! ## An authored order of arguments: reversal onto an accumulator -/
 
 /-- The name of the reversal with the list first. -/
-def revOntoFirstN : DeclName := .str .anonymous "rev-onto-list-first"
+def revOntoFirstN : DeclName := .str .anonymous "rev-onto~scrutinee-first"
 
 /-- The name of the reversal as authored, with the accumulator first. -/
 def revOntoN : DeclName := .str .anonymous "rev-onto"
@@ -456,21 +456,21 @@ def revOntoDef : ExplicitDefinition Tower.Head where
   result := clist
   body := (.app (.app (.const revOntoFirstN) (.var 0)) (.var 1) : CTm Tower.Head 2)
 
-/-- `rev-onto-list-first nil acc ⟶ acc`. -/
+/-- `rev-onto~scrutinee-first nil acc ⟶ acc`. -/
 def revOntoFirstNilEquation : DefiningEquation Tower.Head where
   arity := 1
   telescope := .snoc .nil clist
   left := .app (.app (.const revOntoFirstN) cnil) (.var 0)
   right := .var 0
 
-/-- `rev-onto-list-first (cons x xs) acc ⟶ rev-onto-list-first xs (cons x acc)`. -/
+/-- `rev-onto~scrutinee-first (cons x xs) acc ⟶ rev-onto~scrutinee-first xs (cons x acc)`. -/
 def revOntoFirstConsEquation : DefiningEquation Tower.Head where
   arity := 3
   telescope := .snoc (.snoc (.snoc .nil cnum) clist) clist
   left := .app (.app (.const revOntoFirstN) (ccons (.var 2) (.var 1))) (.var 0)
   right := .app (.app (.const revOntoFirstN) (.var 1)) (ccons (.var 2) (.var 0))
 
-/-- `rev-onto acc l ⟶ rev-onto-list-first l acc`. -/
+/-- `rev-onto acc l ⟶ rev-onto~scrutinee-first l acc`. -/
 def revOntoEquation : DefiningEquation Tower.Head where
   arity := 2
   telescope := .snoc (.snoc .nil clist) clist
@@ -754,12 +754,12 @@ theorem revOnto_one_not_nil (h : CofinalInaccessibles.{u}) :
   have empty := objectDeclarations_sound h reverseProgram_admissible
     (ofListsReverse (nil_typed (Γ := .nil))) Fin.elim0 (sat_nil _ _ _)
   have nilValue : ev (objHeads h) (objectDeclarationsConsts h reverseProgram) cnil Fin.elim0 =
-      constructorValue 0 [] :=
+      constructorValue (ZFSetInductive.nameCode nilN) [] :=
     ctor_apply (reading.ctor (i := 0) rfl) (args := [])
       ((fits_iff _ _ _ _).mpr ⟨rfl, fun j below => absurd below (Nat.not_lt_zero j)⟩)
   have consValue : ev (objHeads h) (objectDeclarationsConsts h reverseProgram)
         (ccons czero cnil) Fin.elim0 =
-      constructorValue 1
+      constructorValue (ZFSetInductive.nameCode consN)
         [ev (objHeads h) (objectDeclarationsConsts h reverseProgram) czero Fin.elim0,
           ev (objHeads h) (objectDeclarationsConsts h reverseProgram) cnil Fin.elim0] :=
     ctor_apply (reading.ctor (i := 1) rfl)
@@ -770,7 +770,8 @@ theorem revOnto_one_not_nil (h : CofinalInaccessibles.{u}) :
       | 0, _ => exact zero
       | 1, _ => exact empty⟩)
   rw [nilValue, consValue] at same
-  exact ZFSetInductive.constructorValue_ne_of_index_ne (by decide) _ _ same
+  exact ZFSetInductive.constructorValue_ne_of_tag_ne
+    (ZFSetInductive.nameCode_injective.ne (by decide)) _ _ same
 
 end CodeModel
 

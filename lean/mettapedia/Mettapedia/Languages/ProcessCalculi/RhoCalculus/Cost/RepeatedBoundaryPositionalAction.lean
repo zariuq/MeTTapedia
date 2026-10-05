@@ -19,13 +19,13 @@ open RepeatedBoundaryValueControls RetainedBoundaryGraftControls
 theorem mixed_action : (frame.positionalActAvailable mixedValues).pattern =
     .collection .hashBag [inputPattern, zeroPattern] none := by
   rw [CostStaticRegionNode.positionalActAvailable_pattern,
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil frame.thinning rfl]
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil frame.thinning rfl]
   change (RepeatedBoundaryPositionalRestoration.restored mixedValues).1 = _
   exact RepeatedBoundaryPositionalRestoration.mixed_restored
 
 theorem uniform_action : (frame.positionalActAvailable uniformValues).pattern = originalPattern := by
   rw [CostStaticRegionNode.positionalActAvailable_pattern,
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil frame.thinning rfl]
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil frame.thinning rfl]
   change (RepeatedBoundaryPositionalRestoration.restored uniformValues).1 = _
   exact RepeatedBoundaryPositionalRestoration.uniform_restored
 

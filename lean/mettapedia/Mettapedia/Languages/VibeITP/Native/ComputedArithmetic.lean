@@ -23,6 +23,8 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.VibeITP.Native.ComputedArithmetic
 
+open Mettapedia.GSLT.LanguageDef.FirstOrderRules
+
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker

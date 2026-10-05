@@ -242,16 +242,6 @@ end Interpretation
 
 /-! ## Set facts used by the soundness proof -/
 
-/-- A graph depends only on the values on its domain. -/
-theorem graph_congr {a : ZFSet.{u}} {f g : ZFSet.{u} → ZFSet.{u}}
-    (same : ∀ x ∈ a, f x = g x) : graph a f = graph a g := by
-  apply ZFSet.ext
-  intro z
-  simp only [mem_graph]
-  constructor <;> rintro ⟨x, hx, rfl⟩
-  · exact ⟨x, hx, by rw [same x hx]⟩
-  · exact ⟨x, hx, by rw [same x hx]⟩
-
 /-- Application of a trace function to a point of its domain lies in the
 fibre. -/
 theorem traceApp_mem_fibre {a t x : ZFSet.{u}} {b : ZFSet.{u} → ZFSet.{u}}

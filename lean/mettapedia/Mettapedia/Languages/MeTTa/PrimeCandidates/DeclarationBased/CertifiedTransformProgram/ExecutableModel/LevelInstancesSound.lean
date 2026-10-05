@@ -15,7 +15,7 @@ levels of the instances (`eraseLevels`).
 **Strong normalization.** In the transport value model (`vmodel`):
 
 * each instance `jAt lu lw` erases to `id:eliminate`, a valid term of
-  `elimType (U lu) (U lw)` (`vmodel_valid_j_sorts`), each `numRecAt lr` to
+  `elimType (U lu) (U lw)` (`TExtension.valid_j_sorts`), each `numRecAt lr` to
   `num-rec`, a valid term of `numRecTypeAt (U lr)` (`valid_numRecS_sorts`), and
   every other constant is the object package's;
 * each root step erases to a root step of the object package, which the model
@@ -69,9 +69,9 @@ theorem vmodel_valid_instances {name : DeclName} {type : Tower.Tm 0}
   rcases objectRulesInstances_declared_cases declared with
     ⟨lu, lw, rfl, rfl⟩ | ⟨lr, rfl, rfl⟩ | ⟨-, -, declared'⟩
   · rw [eraseLevels_jAt]
-    exact vmodel_valid_j_sorts v lu lw
+    exact objectTExt.valid_j_sorts v lu lw
   · rw [eraseLevels_numRecAt]
-    exact valid_numRecS_sorts v lr
+    exact objectTExt.valid_numRecS_sorts v lr
   · rw [eraseLevels_of_readLevel (readLevel_of_declared declared')]
     exact (vmodel_soundS_objectRules v).constants declared'
 

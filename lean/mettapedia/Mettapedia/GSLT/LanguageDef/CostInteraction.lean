@@ -10,7 +10,7 @@ source contact constructor.  The funded rule consumes exactly the head of an
 ordered token stack and carries its tail into the contractum.
 
 This module first constructs the exact schema data.  Validation, sorting, and
-closure back into continued interactive GSLTs are proved in the subsequent
+closure back into wrappable theories are proved in the subsequent
 layer.
 -/
 
@@ -210,23 +210,6 @@ theorem costWrappedEquationDecl_premises (theory : IGSLT)
 
 namespace CIGSLT
 
-/-- The static equation theory of Cost consists of disjoint base and wrapped
-images of the sole authored source equations. -/
-def costStaticEquations (source : CIGSLT) : List Equation :=
-  source.theory.presentation.presentation.language.equations.map
-      costBaseEquationDecl ++
-    source.theory.presentation.presentation.language.equations.map
-      (costWrappedEquationDecl source.theory)
-
-/-- The reflective static theory of Cost consists of disjoint base and
-wrapped images of the exact authored presentation list. -/
-def costStaticReflectivePresentations (source : CIGSLT) :
-    List ReflectivePresentationDecl :=
-  source.reflection.1.presentations.map
-      costBaseReflectivePresentationDecl ++
-    source.reflection.1.presentations.map
-      (costWrappedReflectivePresentationDecl source.theory)
-
 /-- Transform one source rule-local reflective selection for the funded
 whole-redex rule.  Matching sees the base redex; substitution constructs the
 wrapped contractum. -/
@@ -239,17 +222,85 @@ def costInteractionReflectiveRuleDecl
     substitutionPresentation :=
       costWrappedReflectiveName declaration.substitutionPresentation }
 
+end CIGSLT
+
+namespace ContinuationDecorationProfile
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+/-- The static equation theory of Cost consists of disjoint base and wrapped
+images of the sole authored source equations. -/
+def costStaticEquations (_profile : ContinuationDecorationProfile cut) : List Equation :=
+  theory.presentation.presentation.language.equations.map costBaseEquationDecl ++
+    theory.presentation.presentation.language.equations.map (costWrappedEquationDecl theory)
+
+/-- The reflective static theory of Cost consists of disjoint base and
+wrapped images of the presentations of a reflection profile. -/
+def costStaticReflectivePresentations (_profile : ContinuationDecorationProfile cut)
+    (reflection : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile) : List ReflectivePresentationDecl :=
+  reflection.presentations.map costBaseReflectivePresentationDecl ++
+    reflection.presentations.map (costWrappedReflectivePresentationDecl theory)
+
+/-- Preserve exactly the selections attached to the selected interaction
+rewrite.  Zero, one, or ambiguous selections remain zero, one, or ambiguous
+after transport; no reflective behavior is guessed. -/
+def costInteractionReflectiveRules (_profile : ContinuationDecorationProfile cut)
+    (reflection : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile) : List ReflectiveRuleDecl :=
+  (reflection.rules.filter fun declaration =>
+    declaration.rewriteRule == theory.presentation.interactionRewrite.1.name).map
+      CIGSLT.costInteractionReflectiveRuleDecl
+
+end ContinuationDecorationProfile
+
+namespace WrappableIGSLT
+
+open ContinuationDecorationProfile (ofRetypingPlan)
+
+/-- The static equation theory of Cost consists of disjoint base and wrapped
+images of the sole authored source equations. -/
+def costStaticEquations (source : WrappableIGSLT) : List Equation :=
+  (ofRetypingPlan source.continuationRetyping).costStaticEquations
+
+theorem costStaticEquations_def (source : WrappableIGSLT) :
+    source.costStaticEquations =
+      source.theory.presentation.presentation.language.equations.map
+          costBaseEquationDecl ++
+        source.theory.presentation.presentation.language.equations.map
+          (costWrappedEquationDecl source.theory) :=
+  rfl
+
+/-- The reflective static theory of Cost consists of disjoint base and
+wrapped images of the exact authored presentation list. -/
+def costStaticReflectivePresentations (source : WrappableIGSLT) :
+    List ReflectivePresentationDecl :=
+  (ofRetypingPlan source.continuationRetyping).costStaticReflectivePresentations
+    source.reflection.1
+
+theorem costStaticReflectivePresentations_def (source : WrappableIGSLT) :
+    source.costStaticReflectivePresentations =
+      source.reflection.1.presentations.map
+          costBaseReflectivePresentationDecl ++
+        source.reflection.1.presentations.map
+          (costWrappedReflectivePresentationDecl source.theory) :=
+  rfl
+
 /-- Preserve exactly the source selections attached to the selected
 interaction rewrite.  Zero, one, or ambiguous selections remain zero, one,
 or ambiguous after transport; no reflective behavior is guessed. -/
-def costInteractionReflectiveRules (source : CIGSLT) :
+def costInteractionReflectiveRules (source : WrappableIGSLT) :
     List ReflectiveRuleDecl :=
-  (source.reflection.1.rules.filter
-      fun declaration => declaration.rewriteRule ==
-        source.theory.presentation.interactionRewrite.1.name).map
-    costInteractionReflectiveRuleDecl
+  (ofRetypingPlan source.continuationRetyping).costInteractionReflectiveRules
+    source.reflection.1
 
-end CIGSLT
+theorem costInteractionReflectiveRules_def (source : WrappableIGSLT) :
+    source.costInteractionReflectiveRules =
+      (source.reflection.1.rules.filter
+          fun declaration => declaration.rewriteRule ==
+            source.theory.presentation.interactionRewrite.1.name).map
+        CIGSLT.costInteractionReflectiveRuleDecl :=
+  rfl
+
+end WrappableIGSLT
 
 @[simp]
 theorem mapPatternListSchemaNames_length (mapName : String → String)
@@ -509,11 +560,11 @@ theorem mapEquation_mapEquationSchemaNames
   rcases equation with ⟨name, context, premises, left, right⟩
   simp [mapEquation, mapEquationSchemaNames, List.map_map]
 
-namespace CIGSLT.Morphism
+namespace WrappableIGSLT.Morphism
 
 /-- Base reflective presentations are natural under the generated Cost
 symbol action. -/
-theorem mapReflectivePresentation_costBase {source target : CIGSLT}
+theorem mapReflectivePresentation_costBase {source target : WrappableIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectivePresentationDecl) :
     mapReflectivePresentation
@@ -526,9 +577,9 @@ theorem mapReflectivePresentation_costBase {source target : CIGSLT}
     costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
     costBaseLanguageDefSymbolMap, costReflectiveSymbols, reflectiveSymbols]
 
-/-- Wrapped reflective presentations are natural because continued maps
-preserve and reflect the distinguished interacting sort. -/
-theorem mapReflectivePresentation_costWrapped {source target : CIGSLT}
+/-- Wrapped reflective presentations are natural because maps of wrappable
+theories preserve and reflect the distinguished interacting sort. -/
+theorem mapReflectivePresentation_costWrapped {source target : WrappableIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectivePresentationDecl) :
     mapReflectivePresentation
@@ -542,24 +593,24 @@ theorem mapReflectivePresentation_costWrapped {source target : CIGSLT}
     costReflectiveSymbols, reflectiveSymbols,
     morphism.map_costWrappedCategory]
 
-/-- Rule-local reflective selections commute with continued structural maps:
+/-- Rule-local reflective selections commute with the structural maps:
 the whole-redex rewrite is fixed, while the source presentation references
 move inside their reserved tags. -/
-theorem mapReflectiveRule_costInteraction {source target : CIGSLT}
+theorem mapReflectiveRule_costInteraction {source target : WrappableIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectiveRuleDecl) :
     mapReflectiveRule
         (costReflectiveSymbols morphism.reflectiveSymbols)
-        (costInteractionReflectiveRuleDecl declaration) =
-      costInteractionReflectiveRuleDecl
+        (CIGSLT.costInteractionReflectiveRuleDecl declaration) =
+      CIGSLT.costInteractionReflectiveRuleDecl
         (mapReflectiveRule morphism.reflectiveSymbols declaration) := by
   cases declaration
-  simp [mapReflectiveRule, costInteractionReflectiveRuleDecl,
+  simp [mapReflectiveRule, CIGSLT.costInteractionReflectiveRuleDecl,
     costWholeRedexRewriteName, costReflectiveSymbols, reflectiveSymbols]
 
-/-- A continued theory map carries each final base-fiber equation declaration
-to the declaration generated from the mapped source equation. -/
-theorem mapEquation_costBaseEquationDecl {source target : CIGSLT}
+/-- A map of wrappable theories carries each final base-fiber equation
+declaration to the declaration generated from the mapped source equation. -/
+theorem mapEquation_costBaseEquationDecl {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (equation : Equation)
     (premisesEmpty : equation.premises = []) :
     mapEquation
@@ -574,8 +625,9 @@ theorem mapEquation_costBaseEquationDecl {source target : CIGSLT}
     mapEquation_costBase_natural _ equation premisesEmpty]
 
 /-- The corresponding hereditary wrapped declaration is natural because a
-continued morphism preserves and reflects the selected interacting fiber. -/
-theorem mapEquation_costWrappedEquationDecl {source target : CIGSLT}
+morphism of wrappable theories preserves and reflects the selected interacting
+fiber. -/
+theorem mapEquation_costWrappedEquationDecl {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (equation : Equation)
     (premisesEmpty : equation.premises = []) :
     mapEquation
@@ -594,14 +646,14 @@ theorem mapEquation_costWrappedEquationDecl {source target : CIGSLT}
 /-- The Cost equation list is functorial as an authored subtheory: every
 source declaration maps into the corresponding base or wrapped declaration
 generated from the mapped equation in the target. -/
-theorem mapsCostStaticEquations {source target : CIGSLT}
+theorem mapsCostStaticEquations {source target : WrappableIGSLT}
     (morphism : source.Morphism target) (equation : Equation)
     (membership : equation ∈ source.costStaticEquations) :
     mapEquation
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         equation ∈ target.costStaticEquations := by
-  rw [CIGSLT.costStaticEquations] at membership ⊢
+  rw [WrappableIGSLT.costStaticEquations_def] at membership ⊢
   rcases List.mem_append.mp membership with
     baseMembership | wrappedMembership
   · rcases List.mem_map.mp baseMembership with
@@ -625,16 +677,16 @@ theorem mapsCostStaticEquations {source target : CIGSLT}
     exact (morphism.mapEquation_costWrappedEquationDecl sourceEquation
       (source.equationsRetypable sourceEquation sourceMembership).premiseFree).symm
 
-/-- Continued structural maps carry both tagged copies of every authored
+/-- The structural maps carry both tagged copies of every authored
 reflective presentation into the corresponding target copies. -/
-theorem mapsCostStaticReflectivePresentations {source target : CIGSLT}
+theorem mapsCostStaticReflectivePresentations {source target : WrappableIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectivePresentationDecl)
     (membership : declaration ∈ source.costStaticReflectivePresentations) :
     mapReflectivePresentation
         (costReflectiveSymbols morphism.reflectiveSymbols) declaration ∈
       target.costStaticReflectivePresentations := by
-  rw [CIGSLT.costStaticReflectivePresentations] at membership ⊢
+  rw [WrappableIGSLT.costStaticReflectivePresentations_def] at membership ⊢
   rcases List.mem_append.mp membership with
       baseMembership | wrappedMembership
   · rcases List.mem_map.mp baseMembership with
@@ -659,14 +711,14 @@ theorem mapsCostStaticReflectivePresentations {source target : CIGSLT}
 /-- The selected rule-local reflective subtheory is natural: preservation of
 the distinguished interaction rewrite carries the source filter predicate to
 the target filter predicate. -/
-theorem mapsCostInteractionReflectiveRules {source target : CIGSLT}
+theorem mapsCostInteractionReflectiveRules {source target : WrappableIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectiveRuleDecl)
     (membership : declaration ∈ source.costInteractionReflectiveRules) :
     mapReflectiveRule
         (costReflectiveSymbols morphism.reflectiveSymbols) declaration ∈
       target.costInteractionReflectiveRules := by
-  rw [CIGSLT.costInteractionReflectiveRules] at membership ⊢
+  rw [WrappableIGSLT.costInteractionReflectiveRules_def] at membership ⊢
   rcases List.mem_map.mp membership with
     ⟨sourceDeclaration, selectedMembership, rfl⟩
   have sourceMembership := (List.mem_filter.mp selectedMembership).1
@@ -695,7 +747,7 @@ theorem mapsCostInteractionReflectiveRules {source target : CIGSLT}
   refine ⟨targetDeclaration, targetSelectedMembership, ?_⟩
   exact (morphism.mapReflectiveRule_costInteraction sourceDeclaration).symm
 
-end CIGSLT.Morphism
+end WrappableIGSLT.Morphism
 
 @[simp]
 theorem attach_flatMap_value (values : List α) (mapValue : α → List β) :
@@ -1128,26 +1180,89 @@ end
 
 end WellSorted
 
-namespace CIGSLT
+namespace ContinuationDecorationProfile
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+/-- Source-variable types follow all selected continuation positions. -/
+def costRetypedSourceContext (profile : ContinuationDecorationProfile cut) :
+    List (String × TypeExpr) :=
+  theory.presentation.interactionRewrite.1.typeContext.map fun entry =>
+    (costSourceSchemaName entry.1,
+      profile.variableChoice entry.1
+        (costWrappedTypeExpr theory.presentation.interactingSort.1.name entry.2)
+        (costBaseTypeExpr entry.2))
+
+/-- The two fresh administrative variables carry the consumed signature and
+the remainder of the stack. -/
+def costWholeRedexTypeContext (profile : ContinuationDecorationProfile cut) :
+    List (String × TypeExpr) :=
+  profile.costRetypedSourceContext ++
+    [(costAdministrativeSchemaName "signature", .base costSignatureSortName),
+      (costAdministrativeSchemaName "stack-tail", .base costTokenStackSortName)]
+
+/-- The selected redex in the tagged base copy, with its schema names moved
+into the reserved namespace. -/
+def costMappedRedex (_profile : ContinuationDecorationProfile cut) : Pattern :=
+  mapPatternSchemaNames costSourceSchemaName
+    (mapPattern costBaseLanguageDefSymbolMap theory.presentation.interactionRewrite.1.left)
+
+/-- The wrapped contractum with all source schema names transported into the
+reserved Cost namespace. -/
+def costMappedContractum (profile : ContinuationDecorationProfile cut) : Pattern :=
+  mapPatternSchemaNames costSourceSchemaName
+    (profile.mapContractum theory.presentation.interactionRewrite.1.right)
+
+/-- Located whole-redex funding: the signing key equals the adjacent stack head. -/
+def costWholeRedexSource (profile : ContinuationDecorationProfile cut) : Pattern :=
+  .apply costContactConstructorName
+    [.apply costSignedConstructorName
+      [profile.costMappedRedex, .fvar (costAdministrativeSchemaName "signature")],
+      .apply costFundingConstructorName
+        [.apply costTokenStackConsConstructorName
+          [.fvar (costAdministrativeSchemaName "signature"),
+            .fvar (costAdministrativeSchemaName "stack-tail")]]]
+
+/-- Exactly the authored contractum and unconsumed tail survive the firing. -/
+def costWholeRedexTarget (profile : ContinuationDecorationProfile cut) : Pattern :=
+  .apply costContactConstructorName
+    [profile.costMappedContractum,
+      .apply costFundingConstructorName
+        [.fvar (costAdministrativeSchemaName "stack-tail")]]
+
+/-- The whole-redex rule schema.  It has no callback or host-side premise:
+reduction authority is ordinary authored rewrite data. -/
+def costWholeRedexRewrite (profile : ContinuationDecorationProfile cut) : RewriteRule where
+  name := costWholeRedexRewriteName
+  typeContext := profile.costWholeRedexTypeContext
+  premises := []
+  left := profile.costWholeRedexSource
+  right := profile.costWholeRedexTarget
+
+end ContinuationDecorationProfile
+
+namespace WrappableIGSLT
+
+open ContinuationDecorationProfile (ofRetypingPlan)
 
 /-- Administrative variable carrying the signature consumed by the generated
 rule.  Its namespace is disjoint from every transported source variable. -/
-def costSignatureVariable (_source : CIGSLT) : String :=
+def costSignatureVariable (_source : WrappableIGSLT) : String :=
   costAdministrativeSchemaName "signature"
 
 /-- Administrative variable carrying the unconsumed token-stack tail. -/
-def costStackTailVariable (_source : CIGSLT) : String :=
+def costStackTailVariable (_source : WrappableIGSLT) : String :=
   costAdministrativeSchemaName "stack-tail"
 
-theorem costSourceSchemaName_ne_signature (source : CIGSLT) (name : String) :
+theorem costSourceSchemaName_ne_signature (source : WrappableIGSLT) (name : String) :
     costSourceSchemaName name ≠ source.costSignatureVariable := by
   exact costSourceSchemaName_ne_administrative name "signature"
 
-theorem costSourceSchemaName_ne_stackTail (source : CIGSLT) (name : String) :
+theorem costSourceSchemaName_ne_stackTail (source : WrappableIGSLT) (name : String) :
     costSourceSchemaName name ≠ source.costStackTailVariable := by
   exact costSourceSchemaName_ne_administrative name "stack-tail"
 
-theorem costSignatureVariable_ne_stackTail (source : CIGSLT) :
+theorem costSignatureVariable_ne_stackTail (source : WrappableIGSLT) :
     source.costSignatureVariable ≠ source.costStackTailVariable := by
   intro equality
   have listEquality := congrArg String.toList equality
@@ -1156,44 +1271,59 @@ theorem costSignatureVariable_ne_stackTail (source : CIGSLT) :
 
 /-- Retype the selected source rewrite context exactly as the generated base
 constructors retype their two continuation positions. -/
-def costRetypedSourceContext (source : CIGSLT) : List (String × TypeExpr) :=
-  source.theory.presentation.interactionRewrite.1.typeContext.map fun entry =>
-    (costSourceSchemaName entry.1,
-      if entry.1 = source.cut.program.continuationVariable.name ∨
-        entry.1 = source.cut.environment.continuationVariable.name then
-        costWrappedTypeExpr
-          source.theory.presentation.interactingSort.1.name entry.2
-      else
-        costBaseTypeExpr entry.2)
+def costRetypedSourceContext (source : WrappableIGSLT) : List (String × TypeExpr) :=
+  (ofRetypingPlan source.continuationRetyping).costRetypedSourceContext
+
+theorem costRetypedSourceContext_def (source : WrappableIGSLT) :
+    source.costRetypedSourceContext =
+      source.theory.presentation.interactionRewrite.1.typeContext.map fun entry =>
+        (costSourceSchemaName entry.1,
+          if entry.1 = source.cut.program.continuationVariable.name ∨
+            entry.1 = source.cut.environment.continuationVariable.name then
+            costWrappedTypeExpr
+              source.theory.presentation.interactingSort.1.name entry.2
+          else
+            costBaseTypeExpr entry.2) :=
+  rfl
 
 /-- Complete type context of the whole-redex Cost rule. -/
-def costWholeRedexTypeContext (source : CIGSLT) :
+def costWholeRedexTypeContext (source : WrappableIGSLT) :
     List (String × TypeExpr) :=
-  source.costRetypedSourceContext ++
-    [(source.costSignatureVariable, .base costSignatureSortName),
-      (source.costStackTailVariable, .base costTokenStackSortName)]
+  (ofRetypingPlan source.continuationRetyping).costWholeRedexTypeContext
+
+theorem costWholeRedexTypeContext_def (source : WrappableIGSLT) :
+    source.costWholeRedexTypeContext =
+      source.costRetypedSourceContext ++
+        [(source.costSignatureVariable, .base costSignatureSortName),
+          (source.costStackTailVariable, .base costTokenStackSortName)] :=
+  rfl
 
 /-- The exact ordered interaction core in the tagged base namespace. -/
-def costBaseInteractionCore (source : CIGSLT) : Pattern :=
+def costBaseInteractionCore (source : WrappableIGSLT) : Pattern :=
   mapPatternSchemaNames costSourceSchemaName
     (mapPattern costBaseLanguageDefSymbolMap source.cut.sourceShape.core)
 
 /-- The source cut's pre-existing envelope, transported to the base copy. -/
-def costBaseSourceEnvelope (source : CIGSLT) : OneHoleContext :=
+def costBaseSourceEnvelope (source : WrappableIGSLT) : OneHoleContext :=
   mapOneHoleContextSchemaNames costSourceSchemaName
-    (mapOneHoleContext costBaseLanguageDefSymbolMap
+    (CIGSLT.mapOneHoleContext costBaseLanguageDefSymbolMap
       source.cut.sourceShape.envelope)
 
 /-- The wrapped contractum with all source schema names transported into the
 reserved Cost namespace. -/
-def costMappedContractum (source : CIGSLT) : Pattern :=
-  mapPatternSchemaNames costSourceSchemaName
-    (source.continuationRetyping.mapContractum
-      source.theory.presentation.interactionRewrite.1.right)
+def costMappedContractum (source : WrappableIGSLT) : Pattern :=
+  (ofRetypingPlan source.continuationRetyping).costMappedContractum
+
+theorem costMappedContractum_def (source : WrappableIGSLT) :
+    source.costMappedContractum =
+      mapPatternSchemaNames costSourceSchemaName
+        (source.continuationRetyping.mapContractum
+          source.theory.presentation.interactionRewrite.1.right) :=
+  rfl
 
 /-- Administrative envelope that signs the complete base redex and pairs it
 with a funding stack whose head carries the same signature. -/
-def costFundingEnvelope (source : CIGSLT) : OneHoleContext :=
+def costFundingEnvelope (source : WrappableIGSLT) : OneHoleContext :=
   .apply costContactConstructorName []
     (.apply costSignedConstructorName [] .hole
       [.fvar source.costSignatureVariable])
@@ -1204,43 +1334,45 @@ def costFundingEnvelope (source : CIGSLT) : OneHoleContext :=
 
 /-- Compose the administrative funding envelope with any envelope already
 authored around the source interaction core. -/
-def costWholeRedexEnvelope (source : CIGSLT) : OneHoleContext :=
+def costWholeRedexEnvelope (source : WrappableIGSLT) : OneHoleContext :=
   source.costFundingEnvelope.comp source.costBaseSourceEnvelope
 
 /-- Left side of the generated whole-redex funded interaction. -/
-def costWholeRedexSource (source : CIGSLT) : Pattern :=
-  source.costWholeRedexEnvelope.fill source.costBaseInteractionCore
+def costWholeRedexSource (source : WrappableIGSLT) : Pattern :=
+  (ofRetypingPlan source.continuationRetyping).costWholeRedexSource
 
 /-- Right side of the generated interaction: the wrapped source contractum
 and the unconsumed funding tail remain under the explicit wrapped contact. -/
-def costWholeRedexTarget (source : CIGSLT) : Pattern :=
-  .apply costContactConstructorName
-    [source.costMappedContractum,
-      .apply costFundingConstructorName
-        [.fvar source.costStackTailVariable]]
+def costWholeRedexTarget (source : WrappableIGSLT) : Pattern :=
+  (ofRetypingPlan source.continuationRetyping).costWholeRedexTarget
 
 /-- The generic whole-redex rule schema.  It has no callback or host-side
 premise: reduction authority is ordinary authored rewrite data. -/
-def costWholeRedexRewrite (source : CIGSLT) : RewriteRule where
-  name := costWholeRedexRewriteName
-  typeContext := source.costWholeRedexTypeContext
-  premises := []
-  left := source.costWholeRedexSource
-  right := source.costWholeRedexTarget
+def costWholeRedexRewrite (source : WrappableIGSLT) : RewriteRule :=
+  (ofRetypingPlan source.continuationRetyping).costWholeRedexRewrite
+
+theorem costWholeRedexRewrite_def (source : WrappableIGSLT) :
+    source.costWholeRedexRewrite =
+      { name := costWholeRedexRewriteName
+        typeContext := source.costWholeRedexTypeContext
+        premises := []
+        left := source.costWholeRedexSource
+        right := source.costWholeRedexTarget } :=
+  rfl
 
 @[simp]
-theorem costBaseSourceEnvelope_fill (source : CIGSLT) :
+theorem costBaseSourceEnvelope_fill (source : WrappableIGSLT) :
     source.costBaseSourceEnvelope.fill source.costBaseInteractionCore =
       mapPatternSchemaNames costSourceSchemaName
         (mapPattern costBaseLanguageDefSymbolMap
           source.theory.presentation.interactionRewrite.1.left) := by
   rw [costBaseSourceEnvelope, costBaseInteractionCore,
-    mapOneHoleContextSchemaNames_fill, mapOneHoleContext_fill,
+    mapOneHoleContextSchemaNames_fill, CIGSLT.mapOneHoleContext_fill,
     source.cut.sourceShape.fillsSource]
 
 /-- Positive shape control: the generated source is exactly one explicit
 wrapped contact between a signed source redex and a matching funded stack. -/
-theorem costWholeRedexSource_eq (source : CIGSLT) :
+theorem costWholeRedexSource_eq (source : WrappableIGSLT) :
     source.costWholeRedexSource =
       .apply costContactConstructorName
         [.apply costSignedConstructorName
@@ -1251,14 +1383,20 @@ theorem costWholeRedexSource_eq (source : CIGSLT) :
           .apply costFundingConstructorName
             [.apply costTokenStackConsConstructorName
               [.fvar source.costSignatureVariable,
-                .fvar source.costStackTailVariable]]] := by
-  rw [costWholeRedexSource, costWholeRedexEnvelope,
-    OneHoleContext.fill_comp, costBaseSourceEnvelope_fill]
+                .fvar source.costStackTailVariable]]] :=
+  rfl
+
+/-- The generated source is the funding envelope around the cut's own
+envelope, filled with the interaction core. -/
+theorem costWholeRedexSource_eq_fill (source : WrappableIGSLT) :
+    source.costWholeRedexSource =
+      source.costWholeRedexEnvelope.fill source.costBaseInteractionCore := by
+  rw [costWholeRedexEnvelope, OneHoleContext.fill_comp, costBaseSourceEnvelope_fill]
   rfl
 
 /-- The generated rule carries the exact tail variable through unchanged;
 there is no rule that creates a replacement token. -/
-theorem costWholeRedexTarget_funding_tail (source : CIGSLT) :
+theorem costWholeRedexTarget_funding_tail (source : WrappableIGSLT) :
     source.costWholeRedexTarget =
       .apply costContactConstructorName
         [source.costMappedContractum,
@@ -1270,7 +1408,7 @@ namespace Morphism
 
 /-- Transport of the source interaction core commutes with its embedding in
 the collision-free Cost base namespace. -/
-theorem map_costBaseInteractionCore {source target : CIGSLT}
+theorem map_costBaseInteractionCore {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
         (costLanguageDefSymbolMap
@@ -1284,9 +1422,9 @@ theorem map_costBaseInteractionCore {source target : CIGSLT}
 
 /-- Transport of the source cut envelope commutes with both the base-fibre
 embedding and the collision-free schema-name action. -/
-theorem map_costBaseSourceEnvelope {source target : CIGSLT}
+theorem map_costBaseSourceEnvelope {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
-    mapOneHoleContext
+    CIGSLT.mapOneHoleContext
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costBaseSourceEnvelope =
@@ -1298,23 +1436,23 @@ theorem map_costBaseSourceEnvelope {source target : CIGSLT}
 
 /-- The signing and funding frames contain only fixed Cost apparatus
 constructors and administrative variables. -/
-theorem map_costFundingEnvelope {source target : CIGSLT}
+theorem map_costFundingEnvelope {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
-    mapOneHoleContext
+    CIGSLT.mapOneHoleContext
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costFundingEnvelope =
       target.costFundingEnvelope := by
-  simp [costFundingEnvelope, mapOneHoleContext, mapPattern,
+  simp [costFundingEnvelope, CIGSLT.mapOneHoleContext, mapPattern,
     costContactConstructorName, costSignedConstructorName,
     costFundingConstructorName, costTokenStackConsConstructorName,
     costSignatureVariable, costStackTailVariable]
 
 /-- The complete generated redex envelope is natural as a composition of
 the fixed administrative envelope and the transported source envelope. -/
-theorem map_costWholeRedexEnvelope {source target : CIGSLT}
+theorem map_costWholeRedexEnvelope {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
-    mapOneHoleContext
+    CIGSLT.mapOneHoleContext
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexEnvelope =
@@ -1324,17 +1462,17 @@ theorem map_costWholeRedexEnvelope {source target : CIGSLT}
     morphism.map_costFundingEnvelope,
     morphism.map_costBaseSourceEnvelope]
 
-/-- Retyping the selected rewrite context commutes with a continued theory
-map.  The two continuation-variable names are structural invariants, while
-their types follow the wrapped/base type naturality squares. -/
-theorem map_costRetypedSourceContext {source target : CIGSLT}
+/-- Retyping the selected rewrite context commutes with a map of wrappable
+theories.  The two continuation-variable names are structural invariants,
+while their types follow the wrapped/base type naturality squares. -/
+theorem map_costRetypedSourceContext {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapTypeContext
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costRetypedSourceContext =
       target.costRetypedSourceContext := by
-  rw [costRetypedSourceContext, costRetypedSourceContext,
+  rw [costRetypedSourceContext_def, costRetypedSourceContext_def,
     ← morphism.mapsInteractionRewriteTypeContext]
   simp only [mapTypeContext, List.map_map]
   apply List.map_congr_left
@@ -1354,28 +1492,28 @@ theorem map_costRetypedSourceContext {source target : CIGSLT}
   · simp [selected, mapTypeExpr_costBaseTypeExpr]
 
 /-- The hereditary wrapped contractum, including collision-free schema
-renaming, is natural in continued theory maps. -/
-theorem map_costMappedContractum {source target : CIGSLT}
+renaming, is natural in maps of wrappable theories. -/
+theorem map_costMappedContractum {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costMappedContractum =
       target.costMappedContractum := by
-  unfold costMappedContractum
-  rw [mapPattern_mapPatternSchemaNames, morphism.mapContractum_natural,
+  rw [costMappedContractum_def, costMappedContractum_def,
+    mapPattern_mapPatternSchemaNames, morphism.mapContractum_natural,
     morphism.mapsInteractionRewriteRight]
 
 /-- The complete generated schema context, including the two fixed
-administrative variables, is natural in continued theory maps. -/
-theorem map_costWholeRedexTypeContext {source target : CIGSLT}
+administrative variables, is natural in maps of wrappable theories. -/
+theorem map_costWholeRedexTypeContext {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapTypeContext
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexTypeContext =
       target.costWholeRedexTypeContext := by
-  rw [costWholeRedexTypeContext, costWholeRedexTypeContext]
+  rw [costWholeRedexTypeContext_def, costWholeRedexTypeContext_def]
   rw [show
     mapTypeContext
         (costLanguageDefSymbolMap
@@ -1400,7 +1538,7 @@ theorem map_costWholeRedexTypeContext {source target : CIGSLT}
 
 /-- The funded source schema is natural: its only non-administrative payload
 is the exact mapped source interaction rewrite. -/
-theorem map_costWholeRedexSource {source target : CIGSLT}
+theorem map_costWholeRedexSource {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
         (costLanguageDefSymbolMap
@@ -1416,26 +1554,26 @@ theorem map_costWholeRedexSource {source target : CIGSLT}
 
 /-- The funded target schema is natural; the funding tail is unchanged and
 the hereditary contractum follows `mapContractum_natural`. -/
-theorem map_costWholeRedexTarget {source target : CIGSLT}
+theorem map_costWholeRedexTarget {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexTarget =
       target.costWholeRedexTarget := by
-  simp [costWholeRedexTarget, mapPattern, costFundingConstructorName,
+  simp [costWholeRedexTarget_funding_tail, mapPattern, costFundingConstructorName,
     costContactConstructorName, morphism.map_costMappedContractum,
     costStackTailVariable]
 
 /-- The single generated funded rewrite is transported exactly. -/
-theorem map_costWholeRedexRewrite {source target : CIGSLT}
+theorem map_costWholeRedexRewrite {source target : WrappableIGSLT}
     (morphism : source.Morphism target) :
     mapRewriteRule
         (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexRewrite =
       target.costWholeRedexRewrite := by
-  simp only [mapRewriteRule, costWholeRedexRewrite, List.map_nil]
+  simp only [mapRewriteRule, costWholeRedexRewrite_def, List.map_nil]
   rw [morphism.map_costWholeRedexTypeContext,
     morphism.map_costWholeRedexSource,
     morphism.map_costWholeRedexTarget]
@@ -1443,6 +1581,6 @@ theorem map_costWholeRedexRewrite {source target : CIGSLT}
 
 end Morphism
 
-end CIGSLT
+end WrappableIGSLT
 
 end Mettapedia.GSLT.LanguageDef

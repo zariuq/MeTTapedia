@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.Cost.FiniteInteractionValidation
+import Mettapedia.GSLT.LanguageDef.Cost.FiniteReflection
 import Mettapedia.GSLT.LanguageDef.WellSortedChecker
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 import Mettapedia.OSLF.MeTTaIL.ReflectiveEngine
@@ -91,11 +91,5 @@ theorem full_reflection_not_admitted_by_finite_fragment :
     Mettapedia.OSLF.MeTTaIL.Reflection.validate profile.costWholeRedexLanguage
       rhoCIGSLT.costWholeReflectionProfile ≠ [] := by
   decide +kernel
-
-#print axioms candidate_typed
-#print axioms ordinary_no_step
-#print axioms full_reflection_admitted
-#print axioms reflective_reducts_nonempty
-#print axioms full_reflection_not_admitted_by_finite_fragment
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary

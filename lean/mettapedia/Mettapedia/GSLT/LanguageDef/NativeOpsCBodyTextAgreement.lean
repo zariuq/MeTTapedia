@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.NativeOpsCBodyAgreement
+import Lean
 
 /-!
 # Original C characters to a common operational body
@@ -12,6 +13,25 @@ lexical failures and failed translations cannot establish agreement.
 set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.NativeOps.NativeC
+
+/-- Submit a closed reflexivity certificate without repeating elaborator
+conversion. The expected equality itself is checked by the kernel, with
+kernel checking explicitly enabled, before the goal is discharged. -/
+elab "native_c_parser_reflexivity" : tactic => do
+  let goal ← Lean.Elab.Tactic.getMainGoal
+  let target ← Lean.instantiateMVars (← goal.getType)
+  let some (_, left, _) := target.eq? | throwError "Expected a closed equality"
+  let proof ← Lean.Meta.mkEqRefl left
+  let environment ← Lean.getEnv
+  if target.hasMVar || target.hasFVar || proof.hasMVar || proof.hasFVar ||
+      target.hasSorry || proof.hasSorry || environment.hasUnsafe target ||
+      environment.hasUnsafe proof then
+    throwError "Parser reflexivity requires a closed safe proof"
+  let checked ← Lean.withOptions
+    (fun options => Lean.debug.skipKernelTC.set (Lean.Elab.async.set options false) false)
+    (Lean.Meta.mkAuxLemma [] target proof (cache := false))
+  goal.assign (Lean.mkConst checked)
+  Lean.Elab.Tactic.replaceMainGoal []
 
 def completeFunction? (names : TypeNames) (tokens : List Token) : Option CFunction :=
   match function? (2 * tokens.length + 4) names tokens with

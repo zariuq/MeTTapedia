@@ -103,12 +103,35 @@ def Emission.mapOrigin {Node NextNode Answer : Type*} (mapping : Node → NextNo
     (event : Emission Node Answer) : Emission NextNode Answer :=
   ⟨mapping event.origin, event.value⟩
 
+@[simp] theorem Emission.mapOrigin_id {Node Answer : Type*} :
+    Emission.mapOrigin (Node := Node) (Answer := Answer) id = id := by
+  funext event
+  cases event
+  rfl
+
+theorem Emission.mapOrigin_comp {Node NextNode FinalNode Answer : Type*}
+    (first : Node → NextNode) (second : NextNode → FinalNode) :
+    Emission.mapOrigin (Answer := Answer) second ∘ Emission.mapOrigin first =
+      Emission.mapOrigin (second ∘ first) :=
+  rfl
+
 /-- A realization may erase private state, but neither frontier entries nor
 answer occurrences are deduplicated by this transport. -/
 def Snapshot.mapNodes {Node NextNode Answer : Type*} (mapping : Node → NextNode)
     (snapshot : Snapshot Node Answer) : Snapshot NextNode Answer where
   events := snapshot.events.map (Emission.mapOrigin mapping)
   frontier := snapshot.frontier.map mapping
+
+@[simp] theorem Snapshot.mapNodes_id {Node Answer : Type*}
+    (snapshot : Snapshot Node Answer) : snapshot.mapNodes id = snapshot := by
+  cases snapshot
+  simp [mapNodes]
+
+theorem Snapshot.mapNodes_comp {Node NextNode FinalNode Answer : Type*}
+    (first : Node → NextNode) (second : NextNode → FinalNode)
+    (snapshot : Snapshot Node Answer) :
+    (snapshot.mapNodes first).mapNodes second = snapshot.mapNodes (second ∘ first) := by
+  simp only [mapNodes, List.map_map, Emission.mapOrigin_comp]
 
 def initial {Node Answer : Type*} (roots : List Node) : Snapshot Node Answer :=
   ⟨[], roots⟩
@@ -936,5 +959,10 @@ theorem scheduled_event_has_gslt_path {S : GSLT} {Answer : Type*}
     (initial_sound presentation.toSystem [root]) fuel
   have valid := sound.2 event member
   exact ⟨generated_has_gslt_multistep presentation valid.1, valid.2⟩
+
+#print axioms Emission.mapOrigin_id
+#print axioms Emission.mapOrigin_comp
+#print axioms Snapshot.mapNodes_id
+#print axioms Snapshot.mapNodes_comp
 
 end Mettapedia.GSLT.Core.BranchingTemporal

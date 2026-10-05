@@ -534,448 +534,118 @@ theorem mapSchemaNames_weakenTerms
 
 end SchemaSidesWellSorted
 
-namespace CIGSLT
+namespace ContinuationDecorationProfile
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+/-- Free-variable assignment induced by the generated rule's exact declared
+type context. -/
+def costWholeRedexFreeContext (profile : ContinuationDecorationProfile cut) :
+    FreeTypeContext :=
+  lookupTypeContext profile.costWholeRedexTypeContext
+
+/-- The complete Cost language adds the static equations and exactly the
+funded whole-redex rule to the validated Cost signature. -/
+def costWholeLanguage (profile : ContinuationDecorationProfile cut) : LanguageDef :=
+  { profile.costCoreLanguage with
+    name := "$cost:interaction:" ++ theory.presentation.presentation.language.name
+    equations := profile.costStaticEquations
+    rewrites := [profile.costWholeRedexRewrite] }
+
+/-- The reflective interpretation generated for the Cost language from a
+reflection profile of the source.  It is an extension over the five-field
+core, never a field of that core. -/
+def costWholeReflectionProfile (profile : ContinuationDecorationProfile cut)
+    (reflection : ReflectionProfile) : ReflectionProfile :=
+  { presentations := profile.costStaticReflectivePresentations reflection
+    rules := profile.costInteractionReflectiveRules reflection }
+
+end ContinuationDecorationProfile
+
+namespace WrappableIGSLT
+
+open ContinuationDecorationProfile (ofRetypingPlan)
 
 /-- The complete generic Cost language adds exactly the funded whole-redex
 rule to the already validated Cost signature. -/
-def costWholeLanguage (source : CIGSLT) : LanguageDef :=
-  { source.costCoreLanguage with
-    name := "$cost:interaction:" ++
-      source.theory.presentation.presentation.language.name
-    equations := source.costStaticEquations
-    rewrites := [source.costWholeRedexRewrite] }
+def costWholeLanguage (source : WrappableIGSLT) : LanguageDef :=
+  (ofRetypingPlan source.continuationRetyping).costWholeLanguage
+
+theorem costWholeLanguage_def (source : WrappableIGSLT) :
+    source.costWholeLanguage =
+      { source.costCoreLanguage with
+        name := "$cost:interaction:" ++
+          source.theory.presentation.presentation.language.name
+        equations := source.costStaticEquations
+        rewrites := [source.costWholeRedexRewrite] } :=
+  rfl
 
 /-- The reflective interpretation generated for the Cost language.  It is an
 extension over the five-field core, never a field of that core. -/
-def costWholeReflectionProfile (source : CIGSLT) : ReflectionProfile :=
-  { presentations := source.costStaticReflectivePresentations
-    rules := source.costInteractionReflectiveRules }
+def costWholeReflectionProfile (source : WrappableIGSLT) : ReflectionProfile :=
+  (ofRetypingPlan source.continuationRetyping).costWholeReflectionProfile
+    source.reflection.1
+
+theorem costWholeReflectionProfile_def (source : WrappableIGSLT) :
+    source.costWholeReflectionProfile =
+      { presentations := source.costStaticReflectivePresentations
+        rules := source.costInteractionReflectiveRules } :=
+  rfl
 
 @[simp]
-theorem costWholeLanguage_terms (source : CIGSLT) :
+theorem costWholeLanguage_terms (source : WrappableIGSLT) :
     source.costWholeLanguage.terms = source.costCoreLanguage.terms := rfl
 
 @[simp]
-theorem costWholeLanguage_typeNames (source : CIGSLT) :
+theorem costWholeLanguage_typeNames (source : WrappableIGSLT) :
     source.costWholeLanguage.typeNames = source.costCoreLanguage.typeNames := rfl
 
 @[simp]
-theorem costWholeLanguage_rewrites (source : CIGSLT) :
+theorem costWholeLanguage_rewrites (source : WrappableIGSLT) :
     source.costWholeLanguage.rewrites = [source.costWholeRedexRewrite] := rfl
 
 @[simp]
-theorem costWholeLanguage_equations (source : CIGSLT) :
+theorem costWholeLanguage_equations (source : WrappableIGSLT) :
     source.costWholeLanguage.equations = source.costStaticEquations := rfl
 
 @[simp]
-theorem costWholeReflectionProfile_presentations (source : CIGSLT) :
+theorem costWholeReflectionProfile_presentations (source : WrappableIGSLT) :
     source.costWholeReflectionProfile.presentations =
       source.costStaticReflectivePresentations := rfl
 
 @[simp]
-theorem costWholeReflectionProfile_rules (source : CIGSLT) :
+theorem costWholeReflectionProfile_rules (source : WrappableIGSLT) :
     source.costWholeReflectionProfile.rules =
       source.costInteractionReflectiveRules := rfl
 
-private theorem generatedTerms_mem_costWhole (source : CIGSLT)
-    (rule : GrammarRule)
-    (membership : rule ∈ source.continuationRetyping.generatedLanguage.terms) :
-    rule ∈ source.costWholeLanguage.terms := by
-  change rule ∈ source.costCoreLanguage.terms
-  exact List.mem_append_left _ membership
-
-private theorem generatedTypeNames_mem_costWhole (source : CIGSLT)
-    (name : String)
-    (membership :
-      name ∈ source.continuationRetyping.generatedLanguage.typeNames) :
-    name ∈ source.costWholeLanguage.typeNames := by
-  change name ∈ source.costCoreLanguage.typeNames
-  rw [costCoreLanguage_typeNames]
-  exact List.mem_append_left _ membership
-
 /-- Every authored constructor has its declaration-derived base copy in the
 complete Cost language. -/
-theorem costBaseConstructor_mem_costWhole (source : CIGSLT)
+theorem costBaseConstructor_mem_costWhole (source : WrappableIGSLT)
     (constructor : GrammarRule)
     (membership : constructor ∈
       source.theory.presentation.presentation.language.terms) :
     costBaseConstructor source.cut constructor ∈
       source.costWholeLanguage.terms :=
-  source.generatedTerms_mem_costWhole _
+  List.mem_append_left _
     (source.continuationRetyping.costBaseConstructor_mem_generated
       constructor membership)
 
 /-- Every constructor in the cut-derived non-principal fragment has its
 uniform wrapped copy in the complete Cost language. -/
-theorem costWrappedConstructor_mem_costWhole (source : CIGSLT)
+theorem costWrappedConstructor_mem_costWhole (source : WrappableIGSLT)
     (constructor : DeclaredConstructor
       source.theory.presentation.presentation)
     (membership : constructor ∈
       source.continuationRetyping.wrappedConstructors) :
     costWrappedConstructor (theory := source.theory) constructor.1 ∈
       source.costWholeLanguage.terms :=
-  source.generatedTerms_mem_costWhole _
+  List.mem_append_left _
     (source.continuationRetyping.costWrappedConstructor_mem_generated
       constructor membership)
 
-/-- The two generated equation namespaces are individually injective and
-mutually disjoint, so the static Cost theory inherits duplicate freedom from
-the authored source equations. -/
-theorem costStaticEquationNames_nodup (source : CIGSLT) :
-    (source.costStaticEquations.map (·.name)).Nodup := by
-  rw [costStaticEquations, List.map_append, List.map_map, List.map_map,
-    List.nodup_append]
-  have sourceNodup := LanguageDef.equationNames_nodup_of_validate_eq_nil
-    source.theory.presentation.presentation.language
-    source.theory.presentation.presentation.valid
-  refine ⟨?_, ?_, ?_⟩
-  · simpa [Function.comp_def] using
-      sourceNodup.map costBaseEquationName_injective
-  · simpa [Function.comp_def] using
-      sourceNodup.map costWrappedEquationName_injective
-  · intro baseName baseMembership wrappedName wrappedMembership equality
-    rcases List.mem_map.mp baseMembership with
-      ⟨baseEquation, _baseEquationMembership, rfl⟩
-    rcases List.mem_map.mp wrappedMembership with
-      ⟨wrappedEquation, _wrappedEquationMembership, rfl⟩
-    exact costBaseEquationName_ne_wrapped _ _ equality
-
-/-- The two tagged copies of the authored reflective presentations retain
-unique names, and the reserved tags keep the copies disjoint. -/
-theorem costStaticReflectivePresentationNames_nodup (source : CIGSLT) :
-    (source.costStaticReflectivePresentations.map (·.name)).Nodup := by
-  rw [costStaticReflectivePresentations, List.map_append, List.map_map,
-    List.map_map, List.nodup_append]
-  have sourceNodup :=
-    presentationNames_nodup_of_validate_eq_nil source.reflection.2
-  refine ⟨?_, ?_, ?_⟩
-  · simpa [Function.comp_def, costBaseReflectivePresentationDecl,
-      costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-      mapReflectivePresentation] using
-      sourceNodup.map costBaseReflectiveName_injective
-  · simpa [Function.comp_def, costWrappedReflectivePresentationDecl,
-      costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
-      mapReflectivePresentation] using
-      sourceNodup.map costWrappedReflectiveName_injective
-  · intro baseName baseMembership wrappedName wrappedMembership equality
-    rcases List.mem_map.mp baseMembership with
-      ⟨basePresentation, _basePresentationMembership, rfl⟩
-    rcases List.mem_map.mp wrappedMembership with
-      ⟨wrappedPresentation, _wrappedPresentationMembership, rfl⟩
-    exact costBaseReflectiveName_ne_wrapped _ _ equality
-
-private theorem reflectiveRuleName_filter_nodup
-    (rules : List ReflectiveRuleDecl) (predicate : ReflectiveRuleDecl → Bool)
-    (namesNodup : (rules.map (·.name)).Nodup) :
-    ((rules.filter predicate).map (·.name)).Nodup := by
-  induction rules with
-  | nil => simp
-  | cons head tail inductionHypothesis =>
-      simp only [List.map_cons, List.nodup_cons] at namesNodup
-      rcases namesNodup with ⟨headFresh, tailNodup⟩
-      by_cases selected : predicate head
-      · simp only [List.filter_cons, selected, if_true, List.map_cons,
-          List.nodup_cons]
-        refine ⟨?_, inductionHypothesis tailNodup⟩
-        intro filteredMembership
-        apply headFresh
-        rcases List.mem_map.mp filteredMembership with
-          ⟨declaration, declarationMembership, nameEquality⟩
-        exact List.mem_map.mpr ⟨declaration,
-          (List.mem_filter.mp declarationMembership).1, nameEquality⟩
-      · simp [selected, inductionHypothesis tailNodup]
-
-/-- Selecting a sublist of authored reflective rules and applying the
-injective base tag preserves duplicate freedom. -/
-theorem costInteractionReflectiveRuleNames_nodup (source : CIGSLT) :
-    (source.costInteractionReflectiveRules.map (·.name)).Nodup := by
-  rw [costInteractionReflectiveRules, List.map_map]
-  have sourceNodup :=
-    ruleNames_nodup_of_validate_eq_nil source.reflection.2
-  have filteredNodup :
-      ((source.reflection.1.rules.filter
-          fun declaration => declaration.rewriteRule ==
-            source.theory.presentation.interactionRewrite.1.name).map
-        (·.name)).Nodup := by
-    exact reflectiveRuleName_filter_nodup _ _ sourceNodup
-  simpa [Function.comp_def, costInteractionReflectiveRuleDecl] using
-    filteredNodup.map costBaseReflectiveRuleName_injective
-
-/-- Schema-local alpha-renaming carries every equation of the intermediate
-reflective retyping language into the final collision-free static theory. -/
-private theorem mapEquationSchemaNames_mem_costStaticEquations
-    (source : CIGSLT) (equation : Equation)
-    (membership : equation ∈
-      (reflectiveRetypingLanguage source.continuationRetyping).equations) :
-    mapEquationSchemaNames costSourceSchemaName equation ∈
-      source.costStaticEquations := by
-  rw [reflectiveRetypingLanguage] at membership
-  rw [costStaticEquations]
-  rcases List.mem_append.mp membership with
-      baseMembership | wrappedMembership
-  · rcases List.mem_map.mp baseMembership with
-      ⟨sourceEquation, sourceMembership, rfl⟩
-    exact List.mem_append_left _
-      (List.mem_map.mpr ⟨sourceEquation, sourceMembership, rfl⟩)
-  · rcases List.mem_map.mp wrappedMembership with
-      ⟨sourceEquation, sourceMembership, rfl⟩
-    exact List.mem_append_right _
-      (List.mem_map.mpr ⟨sourceEquation, sourceMembership, rfl⟩)
-
-/-- A reflective presentation validated in the exact continuation-retyped
-signature remains valid after adjoining the Cost apparatus and applying the
-collision-free alpha-renaming to its selected equation. -/
-private theorem validateReflectivePresentation_of_retyping
-    (source : CIGSLT) (declaration : ReflectivePresentationDecl)
-    (valid :
-      (reflectiveRetypingLanguage source.continuationRetyping).validateReflectivePresentation
-        declaration = []) :
-    source.costWholeLanguage.validateReflectivePresentation declaration = [] := by
-  rcases LanguageDef.reflectivePresentationWitness_of_validate_eq_nil
-      (reflectiveRetypingLanguage source.continuationRetyping)
-      declaration valid with ⟨witness⟩
-  have labelsNodup :
-      (source.costWholeLanguage.terms.map (·.label)).Nodup := by
-    rw [costWholeLanguage_terms]
-    exact LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-      source.costCoreLanguage source.costCoreLanguage_validate
-  have equationNamesNodup :
-      (source.costWholeLanguage.equations.map (·.name)).Nodup := by
-    simpa only [costWholeLanguage_equations] using
-      source.costStaticEquationNames_nodup
-  have quoteFiltered : witness.quote ∈
-      (reflectiveRetypingLanguage source.continuationRetyping).terms.filter
-        (fun term => term.label == declaration.quoteConstructor) := by
-    rw [witness.quoteUnique]
-    simp
-  have quoteMembership := (List.mem_filter.mp quoteFiltered).1
-  have quoteLabel : witness.quote.label = declaration.quoteConstructor :=
-    beq_iff_eq.mp (List.mem_filter.mp quoteFiltered).2
-  change witness.quote ∈
-      source.continuationRetyping.generatedLanguage.terms at quoteMembership
-  have dropFiltered : witness.drop ∈
-      (reflectiveRetypingLanguage source.continuationRetyping).terms.filter
-        (fun term => term.label == declaration.dropConstructor) := by
-    rw [witness.dropUnique]
-    simp
-  have dropMembership := (List.mem_filter.mp dropFiltered).1
-  have dropLabel : witness.drop.label = declaration.dropConstructor :=
-    beq_iff_eq.mp (List.mem_filter.mp dropFiltered).2
-  change witness.drop ∈
-      source.continuationRetyping.generatedLanguage.terms at dropMembership
-  have unitFiltered : witness.unit ∈
-      (reflectiveRetypingLanguage source.continuationRetyping).terms.filter
-        (fun term => term.label == declaration.parallelUnitConstructor) := by
-    rw [witness.unitUnique]
-    simp
-  have unitMembership := (List.mem_filter.mp unitFiltered).1
-  have unitLabel :
-      witness.unit.label = declaration.parallelUnitConstructor :=
-    beq_iff_eq.mp (List.mem_filter.mp unitFiltered).2
-  change witness.unit ∈
-      source.continuationRetyping.generatedLanguage.terms at unitMembership
-  have equationFiltered : witness.equation ∈
-      (reflectiveRetypingLanguage source.continuationRetyping).equations.filter
-        (fun candidate => candidate.name == declaration.quoteDropEquation) := by
-    rw [witness.equationUnique]
-    simp
-  have equationMembership := (List.mem_filter.mp equationFiltered).1
-  have equationName :
-      witness.equation.name = declaration.quoteDropEquation :=
-    beq_iff_eq.mp (List.mem_filter.mp equationFiltered).2
-  have mappedEquationMembership :=
-    source.mapEquationSchemaNames_mem_costStaticEquations witness.equation
-      equationMembership
-  have quoteUnique :
-      source.costWholeLanguage.terms.filter
-          (fun term => term.label == declaration.quoteConstructor) =
-        [witness.quote] := by
-    simpa [quoteLabel] using
-      LanguageDef.filter_terms_by_label_eq_singleton
-        source.costWholeLanguage.terms witness.quote labelsNodup
-        (source.generatedTerms_mem_costWhole witness.quote quoteMembership)
-  have dropUnique :
-      source.costWholeLanguage.terms.filter
-          (fun term => term.label == declaration.dropConstructor) =
-        [witness.drop] := by
-    simpa [dropLabel] using
-      LanguageDef.filter_terms_by_label_eq_singleton
-        source.costWholeLanguage.terms witness.drop labelsNodup
-        (source.generatedTerms_mem_costWhole witness.drop dropMembership)
-  have unitUnique :
-      source.costWholeLanguage.terms.filter
-          (fun term => term.label == declaration.parallelUnitConstructor) =
-        [witness.unit] := by
-    simpa [unitLabel] using
-      LanguageDef.filter_terms_by_label_eq_singleton
-        source.costWholeLanguage.terms witness.unit labelsNodup
-        (source.generatedTerms_mem_costWhole witness.unit unitMembership)
-  have equationUnique :
-      source.costWholeLanguage.equations.filter
-          (fun candidate => candidate.name == declaration.quoteDropEquation) =
-        [mapEquationSchemaNames costSourceSchemaName witness.equation] := by
-    simpa [mapEquationSchemaNames, equationName] using
-      LanguageDef.filter_equations_by_name_eq_singleton
-        source.costWholeLanguage.equations
-        (mapEquationSchemaNames costSourceSchemaName witness.equation)
-        equationNamesNodup mappedEquationMembership
-  apply (LanguageDef.ReflectivePresentationWitness.validate
-    ({ quote := witness.quote
-       drop := witness.drop
-       unit := witness.unit
-       equation := mapEquationSchemaNames costSourceSchemaName witness.equation
-       quoteParameter := witness.quoteParameter
-       dropParameter := witness.dropParameter
-       processSort := source.generatedTypeNames_mem_costWhole
-         declaration.processSort witness.processSort
-       nameSort := source.generatedTypeNames_mem_costWhole
-         declaration.nameSort witness.nameSort
-       sortsDistinct := witness.sortsDistinct
-       quoteUnique := quoteUnique
-       quoteCategory := witness.quoteCategory
-       quoteParameters := witness.quoteParameters
-       dropUnique := dropUnique
-       dropCategory := witness.dropCategory
-       dropParameters := witness.dropParameters
-       unitUnique := unitUnique
-       unitCategory := witness.unitCategory
-       unitParameters := witness.unitParameters
-       equationUnique := equationUnique
-       equationShape := quoteDropShape_mapEquationSchemaNames
-         costSourceSchemaName declaration witness.equation
-           witness.equationShape } :
-      LanguageDef.ReflectivePresentationWitness
-        source.costWholeLanguage declaration))
-
-/-- Every tagged base or wrapped presentation in the generated static theory
-passes the final language's exact reflective validator. -/
-theorem costStaticReflectivePresentation_validate (source : CIGSLT)
-    (declaration : ReflectivePresentationDecl)
-    (membership : declaration ∈ source.costStaticReflectivePresentations) :
-    source.costWholeLanguage.validateReflectivePresentation declaration = [] := by
-  rw [costStaticReflectivePresentations, List.mem_append] at membership
-  rcases membership with baseMembership | wrappedMembership
-  · rcases List.mem_map.mp baseMembership with
-      ⟨sourceDeclaration, sourceMembership, rfl⟩
-    exact source.validateReflectivePresentation_of_retyping
-      (costBaseReflectivePresentationDecl sourceDeclaration)
-      (source.reflectivePresentationsRetypable sourceDeclaration
-        sourceMembership).1
-  · rcases List.mem_map.mp wrappedMembership with
-      ⟨sourceDeclaration, sourceMembership, rfl⟩
-    exact source.validateReflectivePresentation_of_retyping
-      (costWrappedReflectivePresentationDecl source.theory sourceDeclaration)
-      (source.reflectivePresentationsRetypable sourceDeclaration
-        sourceMembership).2
-
-/-- Each selected source rule-local reflective interpretation is transported
-to the generated whole-redex rule, matching in the base presentation and
-substituting in the wrapped presentation. -/
-theorem costInteractionReflectiveRule_validate (source : CIGSLT)
-    (declaration : ReflectiveRuleDecl)
-    (membership : declaration ∈ source.costInteractionReflectiveRules) :
-    source.costWholeLanguage.validateReflectiveRule
-      source.costStaticReflectivePresentations declaration = [] := by
-  rw [costInteractionReflectiveRules] at membership
-  rcases List.mem_map.mp membership with
-    ⟨sourceDeclaration, selectedMembership, rfl⟩
-  have sourceMembership := (List.mem_filter.mp selectedMembership).1
-  have sourceValid := rule_validate_eq_nil_of_validate_eq_nil
-    source.reflection.2 sourceMembership
-  rcases LanguageDef.reflectiveRuleWitness_of_validate_eq_nil
-      source.theory.presentation.presentation.language
-      source.reflection.1.presentations sourceDeclaration
-      sourceValid with ⟨witness⟩
-  have matchingFiltered : witness.matchingPresentation ∈
-      source.reflection.1.presentations.filter
-        (fun candidate =>
-          candidate.name == sourceDeclaration.matchingPresentation) := by
-    rw [witness.matchingUnique]
-    simp
-  have matchingMembership := (List.mem_filter.mp matchingFiltered).1
-  have matchingName : witness.matchingPresentation.name =
-      sourceDeclaration.matchingPresentation :=
-    beq_iff_eq.mp (List.mem_filter.mp matchingFiltered).2
-  have substitutionFiltered : witness.substitutionPresentation ∈
-      source.reflection.1.presentations.filter
-        (fun candidate =>
-          candidate.name == sourceDeclaration.substitutionPresentation) := by
-    rw [witness.substitutionUnique]
-    simp
-  have substitutionMembership :=
-    (List.mem_filter.mp substitutionFiltered).1
-  have substitutionName : witness.substitutionPresentation.name =
-      sourceDeclaration.substitutionPresentation :=
-    beq_iff_eq.mp (List.mem_filter.mp substitutionFiltered).2
-  let basePresentation :=
-    costBaseReflectivePresentationDecl witness.matchingPresentation
-  let wrappedPresentation :=
-    costWrappedReflectivePresentationDecl source.theory
-      witness.substitutionPresentation
-  have baseMembership :
-      basePresentation ∈ source.costStaticReflectivePresentations := by
-    apply List.mem_append_left
-    exact List.mem_map.mpr ⟨witness.matchingPresentation,
-      matchingMembership, rfl⟩
-  have wrappedMembership :
-      wrappedPresentation ∈ source.costStaticReflectivePresentations := by
-    apply List.mem_append_right
-    exact List.mem_map.mpr ⟨witness.substitutionPresentation,
-      substitutionMembership, rfl⟩
-  have presentationNamesNodup :
-      (source.costWholeReflectionProfile.presentations.map (·.name)).Nodup := by
-    simpa only [costWholeReflectionProfile_presentations] using
-      source.costStaticReflectivePresentationNames_nodup
-  have matchingUnique :
-      source.costWholeReflectionProfile.presentations.filter
-          (fun candidate => candidate.name == costBaseReflectiveName
-            sourceDeclaration.matchingPresentation) =
-        [basePresentation] := by
-    have unique := LanguageDef.filter_by_string_key_eq_singleton
-      (fun candidate : ReflectivePresentationDecl => candidate.name)
-      source.costWholeReflectionProfile.presentations basePresentation
-      presentationNamesNodup
-      (by simpa only [costWholeReflectionProfile_presentations] using
-        baseMembership)
-    simpa [basePresentation, costInteractionReflectiveRuleDecl,
-      costBaseReflectivePresentationDecl, mapReflectivePresentation,
-      costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-      matchingName] using unique
-  have substitutionUnique :
-      source.costWholeReflectionProfile.presentations.filter
-          (fun candidate => candidate.name == costWrappedReflectiveName
-            sourceDeclaration.substitutionPresentation) =
-        [wrappedPresentation] := by
-    have unique := LanguageDef.filter_by_string_key_eq_singleton
-      (fun candidate : ReflectivePresentationDecl => candidate.name)
-      source.costWholeReflectionProfile.presentations wrappedPresentation
-      presentationNamesNodup
-      (by simpa only [costWholeReflectionProfile_presentations] using
-        wrappedMembership)
-    simpa [wrappedPresentation, costInteractionReflectiveRuleDecl,
-      costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-      costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
-      substitutionName] using unique
-  have rewriteUnique :
-      source.costWholeLanguage.rewrites.filter
-          (fun candidate => candidate.name == costWholeRedexRewriteName) =
-        [source.costWholeRedexRewrite] := by
-    simp [costWholeLanguage_rewrites, costWholeRedexRewrite,
-      costWholeRedexRewriteName]
-  exact (LanguageDef.ReflectiveRuleWitness.validate
-    ({ rewrite := source.costWholeRedexRewrite
-       matchingPresentation := basePresentation
-       substitutionPresentation := wrappedPresentation
-       rewriteUnique := rewriteUnique
-       matchingUnique := matchingUnique
-       substitutionUnique := substitutionUnique } :
-      LanguageDef.ReflectiveRuleWitness source.costWholeLanguage
-        source.costStaticReflectivePresentations
-        (costInteractionReflectiveRuleDecl sourceDeclaration)))
-
 /-- The final collision-free base equation image is sorted in the complete
 Cost signature. -/
-theorem costBaseEquationDecl_wellSorted (source : CIGSLT)
+theorem costBaseEquationDecl_wellSorted (source : WrappableIGSLT)
     (equation : Equation)
     (membership : equation ∈
       source.theory.presentation.presentation.language.equations) :
@@ -984,12 +654,12 @@ theorem costBaseEquationDecl_wellSorted (source : CIGSLT)
   have raw :=
     (source.equationsRetypable equation membership).baseWellSorted
   exact raw.mapSchemaNames_weakenTerms
-    (source.generatedTerms_mem_costWhole) costSourceSchemaName
+    (fun _ membership => List.mem_append_left _ membership) costSourceSchemaName
       costSourceSchemaName_injective
 
 /-- The final collision-free wrapped equation image is sorted in the complete
 Cost signature. -/
-theorem costWrappedEquationDecl_wellSorted (source : CIGSLT)
+theorem costWrappedEquationDecl_wellSorted (source : WrappableIGSLT)
     (equation : Equation)
     (membership : equation ∈
       source.theory.presentation.presentation.language.equations) :
@@ -998,7 +668,7 @@ theorem costWrappedEquationDecl_wellSorted (source : CIGSLT)
   have raw :=
     (source.equationsRetypable equation membership).wrappedWellSorted
   exact raw.mapSchemaNames_weakenTerms
-    (source.generatedTerms_mem_costWhole) costSourceSchemaName
+    (fun _ membership => List.mem_append_left _ membership) costSourceSchemaName
       costSourceSchemaName_injective
 
 theorem costSourceSchemaName_ne_costPrefix (name suffix : String) :
@@ -1014,585 +684,17 @@ theorem costAdministrativeSchemaName_ne_costPrefix (name suffix : String) :
   simp [costAdministrativeSchemaName, costAdministrativeSchemaTag]
     at characters
 
-/-- Every constructor in the generated Cost signature occupies the reserved
-`$cost:` namespace. -/
-theorem costCoreTerm_label_has_costPrefix (source : CIGSLT)
-    (term : GrammarRule) (membership : term ∈ source.costCoreLanguage.terms) :
-    ∃ suffix, term.label = "$cost:" ++ suffix := by
-  have labelMembership :
-      term.label ∈ source.costCoreLanguage.terms.map (·.label) :=
-    List.mem_map.mpr ⟨term, membership, rfl⟩
-  rw [source.costCoreConstructorLabels,
-    source.continuationRetyping.generatedLanguage_constructorLabels]
-      at labelMembership
-  rcases List.mem_append.mp labelMembership with
-    generatedMembership | apparatusMembership
-  · rcases List.mem_append.mp generatedMembership with
-      baseMembership | wrappedMembership
-    · rcases List.mem_map.mp baseMembership with
-        ⟨sourceLabel, _, equality⟩
-      refine ⟨"base-constructor:" ++ sourceLabel, ?_⟩
-      rw [← equality]
-      unfold costBaseConstructorName
-      unfold costBaseConstructorTag
-      calc
-        "$cost:base-constructor:" ++ sourceLabel =
-            ("$cost:" ++ "base-constructor:") ++ sourceLabel := by
-              rw [show "$cost:base-constructor:" =
-                "$cost:" ++ "base-constructor:" by decide]
-        _ = "$cost:" ++ ("base-constructor:" ++ sourceLabel) := by
-          exact String.append_assoc
-    · rcases List.mem_map.mp wrappedMembership with
-        ⟨sourceLabel, _, equality⟩
-      refine ⟨"wrapped-constructor:" ++ sourceLabel, ?_⟩
-      rw [← equality]
-      unfold costWrappedConstructorName
-      unfold costWrappedConstructorTag
-      calc
-        "$cost:wrapped-constructor:" ++ sourceLabel =
-            ("$cost:" ++ "wrapped-constructor:") ++ sourceLabel := by
-              rw [show "$cost:wrapped-constructor:" =
-                "$cost:" ++ "wrapped-constructor:" by decide]
-        _ = "$cost:" ++ ("wrapped-constructor:" ++ sourceLabel) := by
-          exact String.append_assoc
-  · rcases List.mem_map.mp apparatusMembership with
-      ⟨suffix, _, equality⟩
-    refine ⟨"apparatus-constructor:" ++ suffix, ?_⟩
-    rw [← equality]
-    unfold costApparatusConstructorName
-    rw [show "$cost:apparatus-constructor:" =
-      "$cost:" ++ "apparatus-constructor:" by decide, String.append_assoc]
-
-theorem costSourceSchemaName_ne_costCoreTermLabel (source : CIGSLT)
-    (name : String) (term : GrammarRule)
-    (membership : term ∈ source.costCoreLanguage.terms) :
-    costSourceSchemaName name ≠ term.label := by
-  rcases source.costCoreTerm_label_has_costPrefix term membership with
-    ⟨suffix, equality⟩
-  rw [equality]
-  exact costSourceSchemaName_ne_costPrefix name suffix
-
-theorem costAdministrativeSchemaName_ne_costCoreTermLabel (source : CIGSLT)
-    (name : String) (term : GrammarRule)
-    (membership : term ∈ source.costCoreLanguage.terms) :
-    costAdministrativeSchemaName name ≠ term.label := by
-  rcases source.costCoreTerm_label_has_costPrefix term membership with
-    ⟨suffix, equality⟩
-  rw [equality]
-  exact costAdministrativeSchemaName_ne_costPrefix name suffix
-
-theorem generatedSchemaName_not_mem_costCoreLabels (source : CIGSLT)
-    (name : String)
-    (generated :
-      (∃ sourceName, name = costSourceSchemaName sourceName) ∨
-        ∃ administrativeName,
-          name = costAdministrativeSchemaName administrativeName) :
-    name ∉ source.costCoreLanguage.terms.map (·.label) := by
-  intro membership
-  rcases List.mem_map.mp membership with ⟨term, termMembership, equality⟩
-  rcases generated with ⟨sourceName, rfl⟩ | ⟨administrativeName, rfl⟩
-  · exact source.costSourceSchemaName_ne_costCoreTermLabel
-      sourceName term termMembership equality.symm
-  · exact source.costAdministrativeSchemaName_ne_costCoreTermLabel
-      administrativeName term termMembership equality.symm
-
-/-- A collision-free image of a premise-free authored equation passes the
-wildcard/scope component of validation.  The proof uses the source equation's
-validated binding flow; generated constructor names play no role in deciding
-which metavariables are bound. -/
-theorem costMappedEquation_validateRulePatterns
-    (source : CIGSLT) (symbols : LanguageDefSymbolMap)
-    (equation : Equation)
-    (equationMembership : equation ∈
-      source.theory.presentation.presentation.language.equations)
-    (premisesEmpty : equation.premises = [])
-    (sorted : EquationWellSorted source.costWholeLanguage
-      (mapEquationSchemaNames costSourceSchemaName
-        (mapEquation symbols equation))) :
-    LanguageDef.validateRulePatterns
-      s!"equation {(mapEquation symbols equation).name}"
-      (source.costWholeLanguage.terms.map (·.label))
-      (mapTypeContextSchemaNames costSourceSchemaName
-        (mapTypeContext symbols equation.typeContext)) []
-      (mapPatternSchemaNames costSourceSchemaName
-        (mapPattern symbols equation.left))
-      (mapPatternSchemaNames costSourceSchemaName
-        (mapPattern symbols equation.right)) = [] := by
-  rcases sorted with ⟨type, leftTyped, rightTyped⟩
-  change HasType source.costWholeLanguage
-      (FreeTypeContext.ofList
-        (mapTypeContextSchemaNames costSourceSchemaName
-          (mapTypeContext symbols equation.typeContext))) []
-      (mapPatternSchemaNames costSourceSchemaName
-        (mapPattern symbols equation.left)) type at leftTyped
-  change HasType source.costWholeLanguage
-      (FreeTypeContext.ofList
-        (mapTypeContextSchemaNames costSourceSchemaName
-          (mapTypeContext symbols equation.typeContext))) []
-      (mapPatternSchemaNames costSourceSchemaName
-        (mapPattern symbols equation.right)) type at rightTyped
-  apply validateRulePatterns_noPremises_eq_nil
-  · simpa [Pattern.isWellScoped] using leftTyped.isWellScopedAt
-  · simpa [Pattern.isWellScoped] using rightTyped.isWellScopedAt
-  · intro name membership
-    have combined := List.mem_eraseDups.mp membership
-    rw [patternFvarNames_nil, patternFvarNames_nil,
-      mapPatternSchemaNames_freeFvarNames,
-      mapPatternSchemaNames_freeFvarNames,
-      StructuralMorphism.mapPattern_freeFvarNames,
-      StructuralMorphism.mapPattern_freeFvarNames,
-      ← List.map_append] at combined
-    rcases List.mem_map.mp combined with ⟨sourceName, _sourceMembership,
-      equality⟩
-    rw [costWholeLanguage_terms]
-    exact source.generatedSchemaName_not_mem_costCoreLabels name
-      (Or.inl ⟨sourceName, equality.symm⟩)
-  · intro name membership
-    have combined := List.mem_eraseDups.mp membership
-    rw [mapPatternSchemaNames_patternBinderNames,
-      mapPatternSchemaNames_patternBinderNames,
-      StructuralMorphism.mapPattern_patternBinderNames,
-      StructuralMorphism.mapPattern_patternBinderNames,
-      ← List.map_append] at combined
-    rcases List.mem_map.mp combined with ⟨sourceName, _sourceMembership,
-      equality⟩
-    rw [costWholeLanguage_terms]
-    exact source.generatedSchemaName_not_mem_costCoreLabels name
-      (Or.inl ⟨sourceName, equality.symm⟩)
-  · intro entry membership
-    simp only [mapTypeContextSchemaNames, mapTypeContext, List.map_map,
-      List.mem_map] at membership
-    rcases membership with ⟨sourceEntry, _sourceMembership, rfl⟩
-    rw [costWholeLanguage_terms]
-    exact source.generatedSchemaName_not_mem_costCoreLabels
-      (costSourceSchemaName sourceEntry.1)
-      (Or.inl ⟨sourceEntry.1, rfl⟩)
-  · intro name rightMembership
-    have rightMembershipRaw := List.mem_eraseDups.mp rightMembership
-    rw [patternFvarNames_nil,
-      mapPatternSchemaNames_freeFvarNames,
-      StructuralMorphism.mapPattern_freeFvarNames] at rightMembershipRaw
-    rcases List.mem_map.mp rightMembershipRaw with
-      ⟨sourceName, sourceRightMembership, equality⟩
-    have sourceLeftMembership :=
-      rightFvar_mem_left_of_validatedEquation_noPremises
-        source.theory.presentation.presentation.language
-        source.theory.presentation.presentation.valid equation
-        equationMembership premisesEmpty sourceName
-        (by simpa [patternFvarNames_nil] using sourceRightMembership)
-    rw [patternFvarNames_nil,
-      mapPatternSchemaNames_freeFvarNames,
-      StructuralMorphism.mapPattern_freeFvarNames]
-    exact List.mem_map.mpr
-      ⟨sourceName, by simpa [patternFvarNames_nil] using sourceLeftMembership,
-        equality⟩
-
 /-- Free-variable assignment induced by the generated rule's exact declared
 type context. -/
-def costWholeRedexFreeContext (source : CIGSLT) : FreeTypeContext :=
-  lookupTypeContext source.costWholeRedexTypeContext
+def costWholeRedexFreeContext (source : WrappableIGSLT) : FreeTypeContext :=
+  (ofRetypingPlan source.continuationRetyping).costWholeRedexFreeContext
 
-theorem lookup_costRetypedSourceContext (source : CIGSLT) (name : String) :
-    lookupTypeContext source.costRetypedSourceContext
-        (costSourceSchemaName name) =
-      source.continuationRetyping.generatedFreeContext name := by
-  unfold costRetypedSourceContext
-  rw [ContinuationRetypingPlan.generatedFreeContext_apply]
-  simpa using
-    (lookupTypeContext_map_injective
-      source.theory.presentation.interactionRewrite.1.typeContext
-      costSourceSchemaName
-      (fun schemaName type =>
-        if schemaName = source.cut.program.continuationVariable.name ∨
-            schemaName = source.cut.environment.continuationVariable.name then
-          costWrappedTypeExpr
-            source.theory.presentation.interactingSort.1.name type
-        else
-          costBaseTypeExpr type)
-      costSourceSchemaName_injective name)
+theorem costWholeRedexFreeContext_def (source : WrappableIGSLT) :
+    source.costWholeRedexFreeContext =
+      lookupTypeContext source.costWholeRedexTypeContext :=
+  rfl
 
-theorem costWholeRedexFreeContext_source (source : CIGSLT)
-    (name : String) (type : TypeExpr)
-    (lookup : source.continuationRetyping.generatedFreeContext name =
-      some type) :
-    source.costWholeRedexFreeContext (costSourceSchemaName name) =
-      some type := by
-  rw [costWholeRedexFreeContext, costWholeRedexTypeContext,
-    lookupTypeContext_append, lookup_costRetypedSourceContext, lookup]
-
-private theorem lookup_costRetypedSourceContext_signature_none
-    (source : CIGSLT) :
-    lookupTypeContext source.costRetypedSourceContext
-        source.costSignatureVariable = none := by
-  unfold costRetypedSourceContext
-  exact lookupTypeContext_map_outside
-    source.theory.presentation.interactionRewrite.1.typeContext
-    costSourceSchemaName
-    (fun schemaName type =>
-      if schemaName = source.cut.program.continuationVariable.name ∨
-          schemaName = source.cut.environment.continuationVariable.name then
-        costWrappedTypeExpr
-          source.theory.presentation.interactingSort.1.name type
-      else
-        costBaseTypeExpr type)
-    source.costSignatureVariable
-    (fun name => source.costSourceSchemaName_ne_signature name)
-
-private theorem lookup_costRetypedSourceContext_stackTail_none
-    (source : CIGSLT) :
-    lookupTypeContext source.costRetypedSourceContext
-        source.costStackTailVariable = none := by
-  unfold costRetypedSourceContext
-  exact lookupTypeContext_map_outside
-    source.theory.presentation.interactionRewrite.1.typeContext
-    costSourceSchemaName
-    (fun schemaName type =>
-      if schemaName = source.cut.program.continuationVariable.name ∨
-          schemaName = source.cut.environment.continuationVariable.name then
-        costWrappedTypeExpr
-          source.theory.presentation.interactingSort.1.name type
-      else
-        costBaseTypeExpr type)
-    source.costStackTailVariable
-    (fun name => source.costSourceSchemaName_ne_stackTail name)
-
-@[simp]
-theorem costWholeRedexFreeContext_signature (source : CIGSLT) :
-    source.costWholeRedexFreeContext source.costSignatureVariable =
-      some (.base costSignatureSortName) := by
-  rw [costWholeRedexFreeContext, costWholeRedexTypeContext,
-    lookupTypeContext_append,
-    lookup_costRetypedSourceContext_signature_none]
-  simp [lookupTypeContext]
-
-@[simp]
-theorem costWholeRedexFreeContext_stackTail (source : CIGSLT) :
-    source.costWholeRedexFreeContext source.costStackTailVariable =
-      some (.base costTokenStackSortName) := by
-  rw [costWholeRedexFreeContext, costWholeRedexTypeContext,
-    lookupTypeContext_append,
-    lookup_costRetypedSourceContext_stackTail_none]
-  simp [lookupTypeContext, source.costSignatureVariable_ne_stackTail]
-
-private theorem generatedTerms_mem_costCore (source : CIGSLT)
-    (rule : GrammarRule)
-    (membership :
-      rule ∈ source.continuationRetyping.generatedLanguage.terms) :
-    rule ∈ source.costCoreLanguage.terms := by
-  exact List.mem_append_left _ membership
-
-theorem costMappedRedex_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (mapPatternSchemaNames costSourceSchemaName
-        (mapPattern costBaseLanguageDefSymbolMap
-          source.theory.presentation.interactionRewrite.1.left))
-      (costBaseSortName
-        source.theory.presentation.interactingSort.1.name) := by
-  exact (source.redexRetypable.weakenTerms
-      (generatedTerms_mem_costCore source)).mapSchemaNames
-        costSourceSchemaName (source.costWholeRedexFreeContext_source)
-
-theorem costMappedContractum_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      source.costMappedContractum costWrappedSortName := by
-  exact (source.wrappable.weakenTerms
-      (generatedTerms_mem_costCore source)).mapSchemaNames
-        costSourceSchemaName (source.costWholeRedexFreeContext_source)
-
-private theorem costSignedConstructor_mem (source : CIGSLT) :
-    costSignedConstructor
-        source.theory.presentation.interactingSort.1.name ∈
-      source.costCoreLanguage.terms := by
-  apply List.mem_append_right
-  simp [costCoreConstructors]
-
-private theorem costTokenStackConsConstructor_mem (source : CIGSLT) :
-    costTokenStackConsConstructor ∈ source.costCoreLanguage.terms := by
-  apply List.mem_append_right
-  simp [costCoreConstructors]
-
-private theorem costFundingConstructor_mem (source : CIGSLT) :
-    costFundingConstructor ∈ source.costCoreLanguage.terms := by
-  apply List.mem_append_right
-  simp [costCoreConstructors]
-
-private theorem costContactConstructor_mem (source : CIGSLT) :
-    costContactConstructor ∈ source.costCoreLanguage.terms := by
-  apply List.mem_append_right
-  simp [costCoreConstructors]
-
-theorem costSignatureVariable_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (.fvar source.costSignatureVariable) costSignatureSortName := by
-  exact .fvar (source.costWholeRedexFreeContext_signature)
-
-theorem costStackTailVariable_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (.fvar source.costStackTailVariable) costTokenStackSortName := by
-  exact .fvar (source.costWholeRedexFreeContext_stackTail)
-
-theorem costSigned_hasType (source : CIGSLT) {body : Pattern}
-    (bodyTyped :
-      HasSort source.costCoreLanguage source.costWholeRedexFreeContext [] body
-        (costBaseSortName
-          source.theory.presentation.interactingSort.1.name)) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (.apply costSignedConstructorName
-        [body, .fvar source.costSignatureVariable]) costWrappedSortName := by
-  apply HasType.constructor (costSignedConstructor_mem source)
-  · simp [UsesBareCollection, costSignedConstructor]
-  · apply ArgumentsHaveTypes.cons
-    · trivial
-    · rfl
-    · exact bodyTyped
-    · apply ArgumentsHaveTypes.cons
-      · trivial
-      · rfl
-      · exact source.costSignatureVariable_hasType
-      · exact .nil
-
-theorem costTokenStackCons_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (.apply costTokenStackConsConstructorName
-        [.fvar source.costSignatureVariable,
-          .fvar source.costStackTailVariable]) costTokenStackSortName := by
-  apply HasType.constructor (costTokenStackConsConstructor_mem source)
-  · simp [UsesBareCollection, costTokenStackConsConstructor]
-  · apply ArgumentsHaveTypes.cons
-    · trivial
-    · rfl
-    · exact source.costSignatureVariable_hasType
-    · apply ArgumentsHaveTypes.cons
-      · trivial
-      · rfl
-      · exact source.costStackTailVariable_hasType
-      · exact .nil
-
-theorem costFunding_hasType (source : CIGSLT) {stack : Pattern}
-    (stackTyped :
-      HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-        stack costTokenStackSortName) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (.apply costFundingConstructorName [stack]) costWrappedSortName := by
-  apply HasType.constructor (costFundingConstructor_mem source)
-  · simp [UsesBareCollection, costFundingConstructor]
-  · apply ArgumentsHaveTypes.cons
-    · trivial
-    · rfl
-    · exact stackTyped
-    · exact .nil
-
-theorem costContact_hasType (source : CIGSLT) {left right : Pattern}
-    (leftTyped :
-      HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-        left costWrappedSortName)
-    (rightTyped :
-      HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-        right costWrappedSortName) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      (.apply costContactConstructorName [left, right]) costWrappedSortName := by
-  apply HasType.constructor (costContactConstructor_mem source)
-  · simp [UsesBareCollection, costContactConstructor]
-  · apply ArgumentsHaveTypes.cons
-    · trivial
-    · rfl
-    · exact leftTyped
-    · apply ArgumentsHaveTypes.cons
-      · trivial
-      · rfl
-      · exact rightTyped
-      · exact .nil
-
-theorem costWholeRedexSource_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      source.costWholeRedexSource costWrappedSortName := by
-  rw [source.costWholeRedexSource_eq]
-  exact source.costContact_hasType
-    (source.costSigned_hasType source.costMappedRedex_hasType)
-    (source.costFunding_hasType source.costTokenStackCons_hasType)
-
-theorem costWholeRedexTarget_hasType (source : CIGSLT) :
-    HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
-      source.costWholeRedexTarget costWrappedSortName := by
-  unfold costWholeRedexTarget
-  exact source.costContact_hasType source.costMappedContractum_hasType
-    (source.costFunding_hasType source.costStackTailVariable_hasType)
-
-@[simp]
-theorem costWholeRedexSource_freeFvarNames (source : CIGSLT) :
-    source.costWholeRedexSource.freeFvarNames =
-      source.theory.presentation.interactionRewrite.1.left.freeFvarNames.map
-          costSourceSchemaName ++
-        [source.costSignatureVariable, source.costSignatureVariable,
-          source.costStackTailVariable] := by
-  rw [source.costWholeRedexSource_eq]
-  simp [Pattern.freeFvarNames]
-
-@[simp]
-theorem costWholeRedexTarget_freeFvarNames (source : CIGSLT) :
-    source.costWholeRedexTarget.freeFvarNames =
-      source.theory.presentation.interactionRewrite.1.right.freeFvarNames.map
-          costSourceSchemaName ++
-        [source.costStackTailVariable] := by
-  simp [costWholeRedexTarget, costMappedContractum,
-    Pattern.freeFvarNames]
-
-@[simp]
-theorem costWholeRedexSource_patternBinderNames (source : CIGSLT) :
-    LanguageDef.patternBinderNames source.costWholeRedexSource =
-      (LanguageDef.patternBinderNames
-        source.theory.presentation.interactionRewrite.1.left).map
-          costSourceSchemaName := by
-  rw [source.costWholeRedexSource_eq]
-  simp [LanguageDef.patternBinderNames]
-
-@[simp]
-theorem costWholeRedexTarget_patternBinderNames (source : CIGSLT) :
-    LanguageDef.patternBinderNames source.costWholeRedexTarget =
-      (LanguageDef.patternBinderNames
-        source.theory.presentation.interactionRewrite.1.right).map
-          costSourceSchemaName := by
-  simp [costWholeRedexTarget, costMappedContractum,
-    LanguageDef.patternBinderNames]
-
-theorem costWholeRedex_fvar_generated (source : CIGSLT) (name : String)
-    (membership : name ∈
-      (LanguageDef.patternFvarNames [] source.costWholeRedexSource ++
-        LanguageDef.patternFvarNames [] source.costWholeRedexTarget).eraseDups) :
-    (∃ sourceName, name = costSourceSchemaName sourceName) ∨
-      ∃ administrativeName,
-        name = costAdministrativeSchemaName administrativeName := by
-  have combined := List.mem_eraseDups.mp membership
-  rw [patternFvarNames_nil, patternFvarNames_nil,
-    source.costWholeRedexSource_freeFvarNames,
-    source.costWholeRedexTarget_freeFvarNames] at combined
-  simp only [List.mem_append, List.mem_map, List.mem_cons] at combined
-  rcases combined with
-    (⟨sourceName, _, equality⟩ | equality | equality | equality) |
-      ⟨sourceName, _, equality⟩ | equality
-  · exact Or.inl ⟨sourceName, equality.symm⟩
-  · exact Or.inr ⟨"signature", by
-      simpa [costSignatureVariable] using equality⟩
-  · exact Or.inr ⟨"signature", by
-      simpa [costSignatureVariable] using equality⟩
-  · exact Or.inr ⟨"stack-tail", by
-      simpa [costStackTailVariable] using equality⟩
-  · exact Or.inl ⟨sourceName, equality.symm⟩
-  · exact Or.inr ⟨"stack-tail", by
-      simpa [costStackTailVariable] using equality⟩
-
-theorem costWholeRedex_binder_generated (source : CIGSLT) (name : String)
-    (membership : name ∈
-      (LanguageDef.patternBinderNames source.costWholeRedexSource ++
-        LanguageDef.patternBinderNames source.costWholeRedexTarget).eraseDups) :
-    ∃ sourceName, name = costSourceSchemaName sourceName := by
-  have combined := List.mem_eraseDups.mp membership
-  rw [source.costWholeRedexSource_patternBinderNames,
-    source.costWholeRedexTarget_patternBinderNames] at combined
-  simp only [List.mem_append, List.mem_map] at combined
-  rcases combined with
-    ⟨sourceName, _, equality⟩ | ⟨sourceName, _, equality⟩
-  · exact ⟨sourceName, equality.symm⟩
-  · exact ⟨sourceName, equality.symm⟩
-
-theorem costWholeRedex_contextName_generated (source : CIGSLT)
-    (entry : String × TypeExpr)
-    (membership : entry ∈ source.costWholeRedexTypeContext) :
-    (∃ sourceName, entry.1 = costSourceSchemaName sourceName) ∨
-      ∃ administrativeName,
-        entry.1 = costAdministrativeSchemaName administrativeName := by
-  simp only [costWholeRedexTypeContext, List.mem_append] at membership
-  rcases membership with sourceEntry | administrativeEntry
-  · simp only [costRetypedSourceContext, List.mem_map] at sourceEntry
-    rcases sourceEntry with ⟨originalEntry, _, rfl⟩
-    exact Or.inl ⟨originalEntry.1, rfl⟩
-  · simp only [List.mem_cons, List.not_mem_nil, or_false]
-      at administrativeEntry
-    rcases administrativeEntry with equality | equality
-    · subst entry
-      exact Or.inr ⟨"signature", rfl⟩
-    · subst entry
-      exact Or.inr ⟨"stack-tail", rfl⟩
-
-theorem costWholeRedex_fvars_avoid_constructorLabels (source : CIGSLT)
-    (name : String)
-    (membership : name ∈
-      (LanguageDef.patternFvarNames [] source.costWholeRedexSource ++
-        LanguageDef.patternFvarNames [] source.costWholeRedexTarget).eraseDups) :
-    name ∉ source.costWholeLanguage.terms.map (·.label) := by
-  rw [costWholeLanguage_terms]
-  exact source.generatedSchemaName_not_mem_costCoreLabels name
-    (source.costWholeRedex_fvar_generated name membership)
-
-theorem costWholeRedex_binders_avoid_constructorLabels (source : CIGSLT)
-    (name : String)
-    (membership : name ∈
-      (LanguageDef.patternBinderNames source.costWholeRedexSource ++
-        LanguageDef.patternBinderNames source.costWholeRedexTarget).eraseDups) :
-    name ∉ source.costWholeLanguage.terms.map (·.label) := by
-  rw [costWholeLanguage_terms]
-  rcases source.costWholeRedex_binder_generated name membership with
-    ⟨sourceName, equality⟩
-  exact source.generatedSchemaName_not_mem_costCoreLabels name
-    (Or.inl ⟨sourceName, equality⟩)
-
-theorem costWholeRedex_context_avoids_constructorLabels (source : CIGSLT)
-    (entry : String × TypeExpr)
-    (membership : entry ∈ source.costWholeRedexTypeContext) :
-    entry.1 ∉ source.costWholeLanguage.terms.map (·.label) := by
-  rw [costWholeLanguage_terms]
-  exact source.generatedSchemaName_not_mem_costCoreLabels entry.1
-    (source.costWholeRedex_contextName_generated entry membership)
-
-theorem costWholeRedex_rightFvar_mem_left (source : CIGSLT)
-    (name : String)
-    (membership :
-      name ∈ LanguageDef.patternFvarNames [] source.costWholeRedexTarget) :
-    name ∈ LanguageDef.patternFvarNames [] source.costWholeRedexSource := by
-  rw [patternFvarNames_nil, source.costWholeRedexTarget_freeFvarNames]
-      at membership
-  simp only [List.mem_append, List.mem_map, List.mem_cons] at membership
-  rcases membership with ⟨sourceName, sourceRightMembership, equality⟩ |
-      equality
-  · have sourceLeftMembership := source.cut.rightFvar_mem_left
-      sourceName sourceRightMembership
-    rw [patternFvarNames_nil, source.costWholeRedexSource_freeFvarNames]
-    apply List.mem_append_left
-    exact List.mem_map.mpr ⟨sourceName, by simpa only [patternFvarNames_nil] using sourceLeftMembership,
-      equality⟩
-  · rw [patternFvarNames_nil, source.costWholeRedexSource_freeFvarNames]
-    apply List.mem_append_right
-    simp only [List.not_mem_nil, or_false] at equality
-    exact List.mem_cons.mpr (Or.inr (List.mem_cons.mpr
-      (Or.inr (List.mem_cons.mpr (Or.inl equality)))))
-
-theorem costWholeRedexSource_isWellScoped (source : CIGSLT) :
-    source.costWholeRedexSource.isWellScoped = true := by
-  simpa [Pattern.isWellScoped] using
-    source.costWholeRedexSource_hasType.isWellScopedAt
-
-theorem costWholeRedexTarget_isWellScoped (source : CIGSLT) :
-    source.costWholeRedexTarget.isWellScoped = true := by
-  simpa [Pattern.isWellScoped] using
-    source.costWholeRedexTarget_hasType.isWellScopedAt
-
-theorem costWholeRedex_validateRulePatterns (source : CIGSLT) :
-    LanguageDef.validateRulePatterns
-      s!"rewrite {source.costWholeRedexRewrite.name}"
-      (source.costWholeLanguage.terms.map (·.label))
-      source.costWholeRedexTypeContext [] source.costWholeRedexSource
-      source.costWholeRedexTarget = [] := by
-  apply validateRulePatterns_noPremises_eq_nil
-  · exact source.costWholeRedexSource_isWellScoped
-  · exact source.costWholeRedexTarget_isWellScoped
-  · exact source.costWholeRedex_fvars_avoid_constructorLabels
-  · exact source.costWholeRedex_binders_avoid_constructorLabels
-  · exact source.costWholeRedex_context_avoids_constructorLabels
-  · intro name membership
-    exact source.costWholeRedex_rightFvar_mem_left name
-      (List.mem_eraseDups.mp membership)
-
-theorem costBaseSortName_mem_costWhole (source : CIGSLT) (name : String)
+theorem costBaseSortName_mem_costWhole (source : WrappableIGSLT) (name : String)
     (membership : name ∈
       source.theory.presentation.presentation.language.typeNames) :
     costBaseSortName name ∈ source.costWholeLanguage.typeNames := by
@@ -1601,407 +703,28 @@ theorem costBaseSortName_mem_costWhole (source : CIGSLT) (name : String)
   exact List.mem_append_left _ (List.mem_append_left _
     (List.mem_map.mpr ⟨name, membership, rfl⟩))
 
-theorem costWrappedSortName_mem_costWhole (source : CIGSLT) :
+theorem costWrappedSortName_mem_costWhole (source : WrappableIGSLT) :
     costWrappedSortName ∈ source.costWholeLanguage.typeNames := by
   rw [costWholeLanguage_typeNames, costCoreLanguage_typeNames,
     generatedLanguage_typeNames]
   exact List.mem_append_left _ (List.mem_append_right _ (by simp))
 
-theorem costSignatureSortName_mem_costWhole (source : CIGSLT) :
-    costSignatureSortName ∈ source.costWholeLanguage.typeNames := by
-  rw [costWholeLanguage_typeNames, costCoreLanguage_typeNames]
-  exact List.mem_append_right _ (by
-    simp [costCoreSortSuffixes, costSignatureSortName])
+end WrappableIGSLT
 
-theorem costTokenStackSortName_mem_costWhole (source : CIGSLT) :
-    costTokenStackSortName ∈ source.costWholeLanguage.typeNames := by
-  rw [costWholeLanguage_typeNames, costCoreLanguage_typeNames]
-  exact List.mem_append_right _ (by
-    simp [costCoreSortSuffixes, costTokenStackSortName])
+namespace ContinuationDecorationProfile
 
-theorem costBaseTypeExpr_baseName_mem_costWhole (source : CIGSLT)
-    (type : TypeExpr)
-    (sourceKnown : ∀ name ∈ type.baseNames,
-      name ∈ source.theory.presentation.presentation.language.typeNames)
-    (name : String) (membership : name ∈ (costBaseTypeExpr type).baseNames) :
-    name ∈ source.costWholeLanguage.typeNames := by
-  rw [costBaseTypeExpr_baseNames] at membership
-  rcases List.mem_map.mp membership with ⟨sourceName, sourceMembership, rfl⟩
-  exact source.costBaseSortName_mem_costWhole sourceName
-    (sourceKnown sourceName sourceMembership)
+/-- The profile of a continued theory has that theory's whole language. -/
+theorem ofRetypingPlan_costWholeLanguage (source : CIGSLT) :
+    (ofRetypingPlan source.continuationRetyping).costWholeLanguage =
+      source.costWholeLanguage :=
+  rfl
 
-theorem costWrappedTypeExpr_baseName_mem_costWhole (source : CIGSLT)
-    (type : TypeExpr)
-    (sourceKnown : ∀ name ∈ type.baseNames,
-      name ∈ source.theory.presentation.presentation.language.typeNames)
-    (name : String)
-    (membership : name ∈
-      (costWrappedTypeExpr
-        source.theory.presentation.interactingSort.1.name type).baseNames) :
-    name ∈ source.costWholeLanguage.typeNames := by
-  rw [costWrappedTypeExpr_baseNames] at membership
-  rcases List.mem_map.mp membership with ⟨sourceName, sourceMembership, rfl⟩
-  by_cases interacting :
-      sourceName = source.theory.presentation.interactingSort.1.name
-  · rw [if_pos interacting]
-    exact source.costWrappedSortName_mem_costWhole
-  · rw [if_neg interacting]
-    exact source.costBaseSortName_mem_costWhole sourceName
-      (sourceKnown sourceName sourceMembership)
+/-- The profile of a continued theory has that theory's funded rule. -/
+theorem ofRetypingPlan_costWholeRedexRewrite (source : CIGSLT) :
+    (ofRetypingPlan source.continuationRetyping).costWholeRedexRewrite =
+      source.costWholeRedexRewrite :=
+  rfl
 
-/-- Every sort annotation in a base-fiber equation context names a sort of
-the complete Cost language. -/
-theorem costBaseEquationDecl_typeContext_baseName_mem (source : CIGSLT)
-    (equation : Equation)
-    (equationMembership : equation ∈
-      source.theory.presentation.presentation.language.equations)
-    (entry : String × TypeExpr)
-    (entryMembership : entry ∈ (costBaseEquationDecl equation).typeContext)
-    (name : String) (nameMembership : name ∈ entry.2.baseNames) :
-    name ∈ source.costWholeLanguage.typeNames := by
-  simp only [costBaseEquationDecl, mapEquationSchemaNames,
-    mapTypeContextSchemaNames, costBaseEquation, mapEquation,
-    mapTypeContext, List.map_map, List.mem_map] at entryMembership
-  rcases entryMembership with ⟨sourceEntry, sourceEntryMembership, rfl⟩
-  change name ∈
-    (mapTypeExpr costBaseStaticSymbols sourceEntry.2).baseNames
-      at nameMembership
-  rw [mapTypeExpr_costBaseStaticSymbols] at nameMembership
-  apply source.costBaseTypeExpr_baseName_mem_costWhole sourceEntry.2
-  · intro sourceName sourceNameMembership
-    exact equationTypeContext_baseName_mem_of_validate_eq_nil
-      source.theory.presentation.presentation.language
-      source.theory.presentation.presentation.valid equation
-      equationMembership sourceEntry sourceEntryMembership sourceName
-      sourceNameMembership
-  · exact nameMembership
-
-/-- Every sort annotation in a wrapped-fiber equation context names a sort
-of the complete Cost language. -/
-theorem costWrappedEquationDecl_typeContext_baseName_mem (source : CIGSLT)
-    (equation : Equation)
-    (equationMembership : equation ∈
-      source.theory.presentation.presentation.language.equations)
-    (entry : String × TypeExpr)
-    (entryMembership : entry ∈
-      (costWrappedEquationDecl source.theory equation).typeContext)
-    (name : String) (nameMembership : name ∈ entry.2.baseNames) :
-    name ∈ source.costWholeLanguage.typeNames := by
-  simp only [costWrappedEquationDecl, mapEquationSchemaNames,
-    mapTypeContextSchemaNames, costWrappedEquation, mapEquation,
-    mapTypeContext, List.map_map, List.mem_map] at entryMembership
-  rcases entryMembership with ⟨sourceEntry, sourceEntryMembership, rfl⟩
-  change name ∈
-    (mapTypeExpr (costWrappedStaticSymbols source.theory)
-      sourceEntry.2).baseNames at nameMembership
-  rw [mapTypeExpr_costWrappedStaticSymbols] at nameMembership
-  apply source.costWrappedTypeExpr_baseName_mem_costWhole sourceEntry.2
-  · intro sourceName sourceNameMembership
-    exact equationTypeContext_baseName_mem_of_validate_eq_nil
-      source.theory.presentation.presentation.language
-      source.theory.presentation.presentation.valid equation
-      equationMembership sourceEntry sourceEntryMembership sourceName
-      sourceNameMembership
-  · exact nameMembership
-
-/-- Every base-fiber image of an authored equation passes the exact
-per-equation validator of the generated Cost language. -/
-theorem costBaseEquationDecl_validate (source : CIGSLT)
-    (equation : Equation)
-    (equationMembership : equation ∈
-      source.theory.presentation.presentation.language.equations) :
-    source.costWholeLanguage.validateEquation
-      (costBaseEquationDecl equation) = [] := by
-  have premisesEmpty :=
-    (source.equationsRetypable equation equationMembership).premiseFree
-  have sorted :=
-    source.costBaseEquationDecl_wellSorted equation equationMembership
-  have wildcardClean := source.costMappedEquation_validateRulePatterns
-    costBaseStaticSymbols equation equationMembership premisesEmpty sorted
-  rcases sorted with ⟨type, leftTyped, rightTyped⟩
-  have labelsNodup :
-      (source.costWholeLanguage.terms.map (·.label)).Nodup := by
-    rw [costWholeLanguage_terms]
-    exact LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-      source.costCoreLanguage source.costCoreLanguage_validate
-  unfold LanguageDef.validateEquation
-  simp only [List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · constructor
-    · apply List.flatMap_eq_nil_iff.mpr
-      intro entry entryMembership
-      exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-        source.costWholeLanguage.typeNames
-        s!"equation {(costBaseEquationDecl equation).name}" entry.2
-        (source.costBaseEquationDecl_typeContext_baseName_mem equation
-          equationMembership entry entryMembership)
-    · simp [costBaseEquationDecl_premises, premisesEmpty]
-  · exact leftTyped.validatePatternConstructors_eq_nil labelsNodup
-      (s!"equation {(costBaseEquationDecl equation).name}" ++ " lhs")
-  · exact rightTyped.validatePatternConstructors_eq_nil labelsNodup
-      (s!"equation {(costBaseEquationDecl equation).name}" ++ " rhs")
-  · simp [costBaseEquationDecl_premises, premisesEmpty]
-  · simpa [costBaseEquationDecl, mapEquationSchemaNames, costBaseEquation,
-      mapEquation, premisesEmpty] using wildcardClean
-
-/-- Every hereditary wrapped-fiber image of an authored equation passes the
-exact per-equation validator of the generated Cost language. -/
-theorem costWrappedEquationDecl_validate (source : CIGSLT)
-    (equation : Equation)
-    (equationMembership : equation ∈
-      source.theory.presentation.presentation.language.equations) :
-    source.costWholeLanguage.validateEquation
-      (costWrappedEquationDecl source.theory equation) = [] := by
-  have premisesEmpty :=
-    (source.equationsRetypable equation equationMembership).premiseFree
-  have sorted :=
-    source.costWrappedEquationDecl_wellSorted equation equationMembership
-  have wildcardClean := source.costMappedEquation_validateRulePatterns
-    (costWrappedStaticSymbols source.theory) equation equationMembership
-      premisesEmpty sorted
-  rcases sorted with ⟨type, leftTyped, rightTyped⟩
-  have labelsNodup :
-      (source.costWholeLanguage.terms.map (·.label)).Nodup := by
-    rw [costWholeLanguage_terms]
-    exact LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-      source.costCoreLanguage source.costCoreLanguage_validate
-  unfold LanguageDef.validateEquation
-  simp only [List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · constructor
-    · apply List.flatMap_eq_nil_iff.mpr
-      intro entry entryMembership
-      exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-        source.costWholeLanguage.typeNames
-        s!"equation {(costWrappedEquationDecl source.theory equation).name}"
-        entry.2
-        (source.costWrappedEquationDecl_typeContext_baseName_mem equation
-          equationMembership entry entryMembership)
-    · simp [costWrappedEquationDecl_premises, premisesEmpty]
-  · exact leftTyped.validatePatternConstructors_eq_nil labelsNodup
-      (s!"equation {(costWrappedEquationDecl source.theory equation).name}" ++
-        " lhs")
-  · exact rightTyped.validatePatternConstructors_eq_nil labelsNodup
-      (s!"equation {(costWrappedEquationDecl source.theory equation).name}" ++
-        " rhs")
-  · simp [costWrappedEquationDecl_premises, premisesEmpty]
-  · simpa [costWrappedEquationDecl, mapEquationSchemaNames,
-      costWrappedEquation, mapEquation, premisesEmpty] using wildcardClean
-
-/-- Every equation selected from the generated static Cost theory is one of
-the two validated images of an authored equation. -/
-theorem costStaticEquation_validate (source : CIGSLT)
-    (equation : Equation) (membership : equation ∈ source.costStaticEquations) :
-    source.costWholeLanguage.validateEquation equation = [] := by
-  rw [costStaticEquations, List.mem_append] at membership
-  rcases membership with baseMembership | wrappedMembership
-  · rcases List.mem_map.mp baseMembership with
-      ⟨sourceEquation, sourceMembership, rfl⟩
-    exact source.costBaseEquationDecl_validate sourceEquation sourceMembership
-  · rcases List.mem_map.mp wrappedMembership with
-      ⟨sourceEquation, sourceMembership, rfl⟩
-    exact source.costWrappedEquationDecl_validate sourceEquation
-      sourceMembership
-
-theorem costWholeRedexTypeContext_baseName_mem (source : CIGSLT)
-    (entry : String × TypeExpr)
-    (entryMembership : entry ∈ source.costWholeRedexTypeContext)
-    (name : String) (nameMembership : name ∈ entry.2.baseNames) :
-    name ∈ source.costWholeLanguage.typeNames := by
-  simp only [costWholeRedexTypeContext, List.mem_append] at entryMembership
-  rcases entryMembership with sourceEntry | administrativeEntry
-  · simp only [costRetypedSourceContext, List.mem_map] at sourceEntry
-    rcases sourceEntry with ⟨originalEntry, originalMembership, rfl⟩
-    have sourceKnown : ∀ sourceName ∈ originalEntry.2.baseNames,
-        sourceName ∈
-          source.theory.presentation.presentation.language.typeNames := by
-      intro sourceName sourceNameMembership
-      exact rewriteTypeContext_baseName_mem_of_validate_eq_nil
-        source.theory.presentation.presentation.language
-        source.theory.presentation.presentation.valid
-        source.theory.presentation.interactionRewrite.1
-        source.cut.interactionRewrite_mem originalEntry originalMembership
-        sourceName sourceNameMembership
-    by_cases selected :
-        originalEntry.1 = source.cut.program.continuationVariable.name ∨
-          originalEntry.1 = source.cut.environment.continuationVariable.name
-    · simp only [selected, ↓reduceIte] at nameMembership
-      exact source.costWrappedTypeExpr_baseName_mem_costWhole
-        originalEntry.2 sourceKnown name nameMembership
-    · simp only [selected, ↓reduceIte] at nameMembership
-      exact source.costBaseTypeExpr_baseName_mem_costWhole
-        originalEntry.2 sourceKnown name nameMembership
-  · simp only [List.mem_cons, List.not_mem_nil, or_false]
-      at administrativeEntry
-    rcases administrativeEntry with equality | equality
-    · subst entry
-      simp only [TypeExpr.baseNames, List.mem_singleton] at nameMembership
-      subst name
-      exact source.costSignatureSortName_mem_costWhole
-    · subst entry
-      simp only [TypeExpr.baseNames, List.mem_singleton] at nameMembership
-      subst name
-      exact source.costTokenStackSortName_mem_costWhole
-
-theorem costWholeRedexRewrite_validate (source : CIGSLT) :
-    source.costWholeLanguage.validateRewrite
-      source.costWholeRedexRewrite = [] := by
-  have labelsNodup :
-      (source.costWholeLanguage.terms.map (·.label)).Nodup := by
-    rw [costWholeLanguage_terms]
-    exact LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-      source.costCoreLanguage source.costCoreLanguage_validate
-  unfold LanguageDef.validateRewrite
-  simp only [costWholeRedexRewrite, List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · constructor
-    · apply List.flatMap_eq_nil_iff.mpr
-      intro entry membership
-      exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-        source.costWholeLanguage.typeNames
-        s!"rewrite {source.costWholeRedexRewrite.name}" entry.2
-        (source.costWholeRedexTypeContext_baseName_mem entry membership)
-    · rfl
-  · simpa [costWholeLanguage_terms, costWholeRedexRewriteName] using
-      source.costWholeRedexSource_hasType.validatePatternConstructors_eq_nil
-        labelsNodup
-        (toString "rewrite " ++ toString "$cost:rewrite:whole-redex" ++ " lhs")
-  · simpa [costWholeLanguage_terms, costWholeRedexRewriteName] using
-      source.costWholeRedexTarget_hasType.validatePatternConstructors_eq_nil
-        labelsNodup
-        (toString "rewrite " ++ toString "$cost:rewrite:whole-redex" ++ " rhs")
-  · rfl
-  · exact source.costWholeRedex_validateRulePatterns
-
-/-- The generic Cost interaction is an ordinary validated language
-presentation: its only reduction authority is the generated whole-redex
-rewrite over the already validated Cost signature. -/
-theorem costWholeLanguage_validate (source : CIGSLT) :
-    source.costWholeLanguage.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  · simpa only [costWholeLanguage_typeNames] using
-      LanguageDef.typeNames_nodup_of_validate_eq_nil
-        source.costCoreLanguage source.costCoreLanguage_validate
-  · simpa only [costWholeLanguage_terms] using
-      LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-        source.costCoreLanguage source.costCoreLanguage_validate
-  · exact source.costStaticEquationNames_nodup
-  · simp only [costWholeLanguage_rewrites, List.map_singleton,
-      List.nodup_singleton]
-  · intro term membership
-    exact LanguageDef.termCategory_mem_of_validate_eq_nil
-      source.costCoreLanguage source.costCoreLanguage_validate term
-      (by simpa only [costWholeLanguage_terms] using membership)
-  · intro term termMembership parameter parameterMembership name
-      nameMembership
-    exact LanguageDef.termParam_baseName_mem_of_validate_eq_nil
-      source.costCoreLanguage source.costCoreLanguage_validate term
-      (by simpa only [costWholeLanguage_terms] using termMembership)
-      parameter parameterMembership name nameMembership
-  · intro term membership
-    exact Or.inl (costCoreTerm_syntaxPattern_eq_nil source term
-      (by simpa only [costWholeLanguage_terms] using membership))
-  · intro equation membership
-    exact source.costStaticEquation_validate equation
-      (by simpa only [costWholeLanguage_equations] using membership)
-  · intro rewrite membership
-    simp only [costWholeLanguage_rewrites, List.mem_singleton] at membership
-    subst rewrite
-    exact source.costWholeRedexRewrite_validate
-
-/-- The generated reflective interpretation validates independently against
-the generated five-field Cost language. -/
-theorem costWholeReflectionProfile_validate (source : CIGSLT) :
-    Mettapedia.OSLF.MeTTaIL.Reflection.validate source.costWholeLanguage
-      source.costWholeReflectionProfile = [] := by
-  unfold Mettapedia.OSLF.MeTTaIL.Reflection.validate
-  simp only [costWholeReflectionProfile,
-    source.costStaticReflectivePresentationNames_nodup,
-    source.costInteractionReflectiveRuleNames_nodup, if_true,
-    List.nil_append, List.append_eq_nil_iff]
-  constructor
-  · apply List.flatMap_eq_nil_iff.mpr
-    intro declaration membership
-    exact source.costStaticReflectivePresentation_validate declaration
-      (by simpa only [costWholeReflectionProfile_presentations] using
-        membership)
-  · apply List.flatMap_eq_nil_iff.mpr
-    intro declaration membership
-    exact source.costInteractionReflectiveRule_validate declaration
-      (by simpa only [costWholeReflectionProfile_rules] using membership)
-
-/-- The admitted reflection fibre over the generated Cost core. -/
-def costWholeAdmittedReflection (source : CIGSLT) :
-    ReflectionExtension.AdmittedProfile source.costWholeLanguage :=
-  ⟨source.costWholeReflectionProfile,
-    source.costWholeReflectionProfile_validate⟩
-
-/-- The validated structural output of the generic Cost interaction layer. -/
-def costWholePresentation (source : CIGSLT) : ValidatedLanguageDef where
-  language := source.costWholeLanguage
-  valid := source.costWholeLanguage_validate
-
-namespace Morphism
-
-/-- A continued-theory morphism carries the complete generated Cost
-presentation structurally: inherited and apparatus declarations follow the
-Cost-core map, static equations follow the authored source equations, and the
-single funded interaction follows the selected continuation cut. -/
-def costWholeStructural {source target : CIGSLT}
-    (morphism : source.Morphism target) :
-    StructuralMorphism source.costWholePresentation
-      target.costWholePresentation where
-  symbols := costLanguageDefSymbolMap
-    morphism.underlying.structural.structural.symbols
-  mapsTypes declaration membership := by
-    change List.Mem declaration source.costCoreLanguage.types at membership
-    change List.Mem (mapTypeDecl
-        (costLanguageDefSymbolMap
-          morphism.underlying.structural.structural.symbols)
-        declaration) target.costCoreLanguage.types
-    exact morphism.costCoreStructural.mapsTypes declaration membership
-  mapsTerms constructor membership := by
-    change List.Mem constructor source.costCoreLanguage.terms at membership
-    change List.Mem (mapGrammarRule
-        (costLanguageDefSymbolMap
-          morphism.underlying.structural.structural.symbols)
-        constructor) target.costCoreLanguage.terms
-    exact morphism.costCoreStructural.mapsTerms constructor membership
-  mapsEquations equation membership := by
-    change List.Mem equation source.costStaticEquations at membership
-    change List.Mem (mapEquation
-        (costLanguageDefSymbolMap
-          morphism.underlying.structural.structural.symbols)
-        equation) target.costStaticEquations
-    exact morphism.mapsCostStaticEquations equation membership
-  mapsRewrites rewrite membership := by
-    change List.Mem rewrite [source.costWholeRedexRewrite] at membership
-    change List.Mem (mapRewriteRule
-        (costLanguageDefSymbolMap
-          morphism.underlying.structural.structural.symbols)
-        rewrite) [target.costWholeRedexRewrite]
-    cases membership with
-    | head =>
-        rw [morphism.map_costWholeRedexRewrite]
-        exact List.Mem.head _
-    | tail _ impossible => cases impossible
-
-end Morphism
-
-/-- The complete declaration-derived Cost presentation is functorial on
-continued interactive theories. -/
-def costWholeFunctor : CategoryTheory.Functor CIGSLT ValidatedLanguageDef where
-  obj source := source.costWholePresentation
-  map morphism := morphism.costWholeStructural
-  map_id source := by
-    apply StructuralMorphism.ext
-    exact costLanguageDefSymbolMap_id
-  map_comp first second := by
-    apply StructuralMorphism.ext
-    exact costLanguageDefSymbolMap_comp
-      first.underlying.structural.structural.symbols
-      second.underlying.structural.structural.symbols
-
-end CIGSLT
+end ContinuationDecorationProfile
 
 end Mettapedia.GSLT.LanguageDef

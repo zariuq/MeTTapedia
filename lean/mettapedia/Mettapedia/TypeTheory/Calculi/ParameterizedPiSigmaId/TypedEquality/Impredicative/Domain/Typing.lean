@@ -14,18 +14,30 @@ projection of a pair records the first.
 
 The clauses:
 
-* the universe, the universe of codes, ground types, the numbers and the
-  dependent and identity types are elements of the universe and of the universe
-  of codes (`U : U`; the universe of codes has every type as element);
+* the universe, the universe of codes, ground types, the numbers, the
+  dependent and identity types and the declared datatypes are elements of the
+  universe and of the universe of codes (`U : U`; the universe of codes has every
+  type as element);
 * the domain of a dependent type is a type; a family entry maps elements of the
   domain to types; the carrier of an identity type is a type and its endpoints
-  are elements of the carrier;
+  are elements of the carrier; the parameters of a declared datatype are types;
 * zero and successors are numbers;
 * reflexivity at a point `w` is an element of an identity type when `w` is an
   element of the carrier below both endpoints;
 * a function entry maps elements of the domain to elements of the family's value;
 * the first projection of a pair is an element of the domain, and the second an
-  element of the family's value at the first.
+  element of the family's value at the first;
+* the tag of a constructor of a declared datatype is an element of the datatype
+  (`tyTok_tag_ctor`), and so is a field token when its field has a shape and its
+  content is an element of the field's type there (`tyTok_field`): the datatype
+  itself for a recursive field, the parameter of the datatype for a parameter
+  field (`FieldShape.typeAt`).
+
+Examples. Positive: `cons a l`, a constructor of the lists of numbers with the
+shapes `[param 0, self]`, is typed at the lists of numbers when `a` is typed at the
+numbers and `l` at the lists. Negative: `cons a a` is not, since its second field
+is read at the lists; and no constructor token is typed at a compact type without
+its datatype's tag.
 
 This is the intensional form of the typing of the paper (its Proposition 2.15):
 a function is typed by a presentation whose inputs are all typed. Typing is
@@ -46,16 +58,34 @@ def IsUniv (a : List Tok) : Prop := Tok.tag .univ ∈ a ∨ Tok.tag .codes ∈ a
 
 /-- The type formers: the kinds whose elements are types. -/
 def Kind.IsFormer : Kind → Prop
-  | .univ | .ground | .codes | .nat | .pi | .sigma | .ident => True
+  | .univ | .ground | .codes | .nat | .pi | .sigma | .ident | .data _ => True
   | _ => False
+
+/-- The kinds of declared datatypes and their constructors. -/
+def Kind.IsDecl : Kind → Prop
+  | .data _ | .ctor _ _ _ => True
+  | _ => False
+
+/-- The type of a field of the shape `f` of a constructor of the declared datatype `d`, at
+the compact type `a` of the datatype: `a` itself for a recursive field, and the parameter
+`j` of `a` for the shape `param j`. -/
+def FieldShape.typeAt (d : DeclName) (a : List Tok) : FieldShape → List Tok
+  | .self => a
+  | .param j => args (.data d) j a
+
+theorem FieldShape.typeAt_mono {d : DeclName} {a a' : List Tok} (h : a ⊑ a') :
+    ∀ f : FieldShape, f.typeAt d a ⊑ f.typeAt d a'
+  | .self => h
+  | .param j => h.args (.data d) j
 
 /-- The typing of a token at a type. -/
 def TyTok (a : List Tok) : Tok → Prop
   | .tag k =>
       match k with
-      | .univ | .ground | .codes | .nat | .pi | .sigma | .ident => IsUniv a
+      | .univ | .ground | .codes | .nat | .pi | .sigma | .ident | .data _ => IsUniv a
       | .zero | .succ => Tok.tag .nat ∈ a
       | .refl => Tok.tag .ident ∈ a
+      | .ctor d _ _ => Tok.tag (.data d) ∈ a
       | .lam | .pair => False
   | .arg k i C t =>
       match k, i with
@@ -68,6 +98,9 @@ def TyTok (a : List Tok) : Tok → Prop
       | .pair, 0 => Tok.tag .sigma ∈ a ∧ C = [] ∧ TyTok (args .sigma 0 a) t
       | .pair, 1 => Tok.tag .sigma ∈ a ∧ (∀ c ∈ C.attach, TyTok (args .sigma 0 a) c.1) ∧
           TyTok (fnApp .sigma a C) t
+      | .data _, _ => IsUniv a ∧ C = [] ∧ TyTok Elem.univ t
+      | .ctor d _ fs, i => Tok.tag (.data d) ∈ a ∧ C = [] ∧
+          ∃ f, fs[i]? = some f ∧ TyTok (f.typeAt d a) t
       | _, _ => False
   | .fn k C X Y =>
       match k with
@@ -107,6 +140,9 @@ theorem tyTok_tag_refl : TyTok a (.tag .refl) ↔ Tok.tag .ident ∈ a := by rw 
 theorem tyTok_tag_lam : ¬ TyTok a (.tag .lam) := by rw [TyTok]; exact id
 theorem tyTok_tag_pair : ¬ TyTok a (.tag .pair) := by rw [TyTok]; exact id
 
+theorem tyTok_tag_ctor {d c : DeclName} {fs : List FieldShape} :
+    TyTok a (.tag (.ctor d c fs)) ↔ Tok.tag (.data d) ∈ a := by rw [TyTok]
+
 theorem tyTok_dom {k : Kind} (hk : k = .pi ∨ k = .sigma ∨ k = .ident) {C : List Tok} {t : Tok} :
     TyTok a (.arg k 0 C t) ↔ IsUniv a ∧ C = [] ∧ TyTok Elem.univ t := by
   rcases hk with rfl | rfl | rfl <;> rw [TyTok]
@@ -127,6 +163,18 @@ theorem tyTok_reflPoint {C : List Tok} {t : Tok} :
 
 theorem tyTok_fst {C : List Tok} {t : Tok} :
     TyTok a (.arg .pair 0 C t) ↔ Tok.tag .sigma ∈ a ∧ C = [] ∧ TyTok (args .sigma 0 a) t := by
+  rw [TyTok]
+
+/-- A parameter of a declared datatype is a type. -/
+theorem tyTok_param {d : DeclName} {j : Nat} {C : List Tok} {t : Tok} :
+    TyTok a (.arg (.data d) j C t) ↔ IsUniv a ∧ C = [] ∧ TyTok Elem.univ t := by
+  rw [TyTok]
+
+/-- A field of a constructor of a declared datatype is typed at the datatype when its field
+has a shape and its content is typed at the field's type there. -/
+theorem tyTok_field {d c : DeclName} {fs : List FieldShape} {i : Nat} {C : List Tok} {t : Tok} :
+    TyTok a (.arg (.ctor d c fs) i C t) ↔ Tok.tag (.data d) ∈ a ∧ C = [] ∧
+      ∃ f, fs[i]? = some f ∧ TyTok (f.typeAt d a) t := by
   rw [TyTok]
 
 theorem tyTok_snd {C : List Tok} {t : Tok} :
@@ -151,12 +199,15 @@ def argSlots : List (Kind × Nat) :=
   [(.pi, 0), (.sigma, 0), (.ident, 0), (.ident, 1), (.ident, 2), (.succ, 0), (.refl, 0),
     (.pair, 0), (.pair, 1)]
 
-/-- The component tokens that are typed nowhere. -/
-theorem tyTok_arg_other {k : Kind} {i : Nat} {C : List Tok} {t : Tok} (h : (k, i) ∉ argSlots) :
-    ¬ TyTok a (.arg k i C t) := by
+/-- The component tokens that are typed nowhere: of a built-in kind, outside the slots. -/
+theorem tyTok_arg_other {k : Kind} {i : Nat} {C : List Tok} {t : Tok} (h : (k, i) ∉ argSlots)
+    (hk : ¬ k.IsDecl) : ¬ TyTok a (.arg k i C t) := by
   rw [TyTok]
   · exact id
-  all_goals rintro rfl rfl; exact h (by decide)
+  all_goals first
+    | (rintro rfl rfl; exact h (by decide))
+    | (rintro _ rfl; exact hk trivial)
+    | (rintro _ _ _ rfl; exact hk trivial)
 
 theorem tyTok_fn_other {k : Kind} {C X Y : List Tok}
     (h : k ≠ .pi ∧ k ≠ .sigma ∧ k ≠ .lam) : ¬ TyTok a (.fn k C X Y) := by
@@ -184,23 +235,36 @@ theorem fn_cases (k : Kind) :
 
 /-- The kinds of tags. -/
 theorem tag_cases (k : Kind) :
-    k.IsFormer ∨ k = .zero ∨ k = .succ ∨ k = .refl ∨ k = .lam ∨ k = .pair := by
+    k.IsFormer ∨ k = .zero ∨ k = .succ ∨ k = .refl ∨ k = .lam ∨ k = .pair ∨
+      ∃ d c fs, k = .ctor d c fs := by
   cases k <;> simp [Kind.IsFormer]
+
+/-- The declared kinds: a datatype, a constructor, or neither. -/
+theorem decl_cases (k : Kind) :
+    (∃ d, k = .data d) ∨ (∃ d c fs, k = .ctor d c fs) ∨ ¬ k.IsDecl := by
+  cases k <;> simp [Kind.IsDecl]
 
 /-- **Typing is monotone in the type.** -/
 theorem TyTok.mono : ∀ {t : Tok} {a a' : List Tok}, a ⊑ a' → TyTok a t → TyTok a' t
   | .tag k, _, _, h, ht => by
-      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl
+      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl | hk
       · exact (tyTok_tag_former hk).2 (((tyTok_tag_former hk).1 ht).mono h)
       · exact tyTok_tag_zero.2 (mem_of_le h (tyTok_tag_zero.1 ht))
       · exact tyTok_tag_succ.2 (mem_of_le h (tyTok_tag_succ.1 ht))
       · exact tyTok_tag_refl.2 (mem_of_le h (tyTok_tag_refl.1 ht))
       · exact absurd ht tyTok_tag_lam
       · exact absurd ht tyTok_tag_pair
+      · obtain ⟨d, c, fs, rfl⟩ := hk
+        exact tyTok_tag_ctor.2 (mem_of_le h (tyTok_tag_ctor.1 ht))
   | .arg k i C t, _, _, h, ht => by
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact absurd ht (tyTok_arg_other hother)
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · obtain ⟨hu, hC, ht⟩ := tyTok_param.1 ht
+          exact tyTok_param.2 ⟨hu.mono h, hC, ht⟩
+        · obtain ⟨hd, hC, f, hf, ht⟩ := tyTok_field.1 ht
+          exact tyTok_field.2 ⟨mem_of_le h hd, hC, f, hf, TyTok.mono (f.typeAt_mono h) ht⟩
+        · exact absurd ht (tyTok_arg_other hother hk)
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩

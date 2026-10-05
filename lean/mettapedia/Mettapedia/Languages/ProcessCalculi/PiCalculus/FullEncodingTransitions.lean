@@ -178,9 +178,9 @@ twice. -/
 theorem replicate_unfold_not_respected (channel bound : Name) (body : Process)
     (n v n' v' : String) :
     Nonempty (PiCalculus.StructuralCongruence (.replicate channel bound body)
-        (.input channel bound (.par body (.replicate channel bound body)))) ∧
+        (.par (.input channel bound body) (.replicate channel bound body))) ∧
       ¬ RhoCalculus.StructuralCongruence (encode (.replicate channel bound body) n v)
-        (encode (.input channel bound (.par body (.replicate channel bound body))) n' v') :=
+        (encode (.par (.input channel bound body) (.replicate channel bound body)) n' v') :=
   ⟨⟨StructuralCongruence.replicate_unfold channel bound body⟩, fun related => by
     have same := actionCount_eq_of_encode_congruent related
     simp only [Process.actionCount, Process.inputCount, Process.outputCount,

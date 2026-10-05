@@ -1,6 +1,8 @@
 import Mettapedia.Machines.RevisionedOccurrenceStore
 import Mettapedia.Machines.BindingPublication
 import Mathlib.Data.Finset.Image
+import Mettapedia.Machines.LinkedScopeStack
+import Mettapedia.Machines.Cursor.OwnedLifecycle
 
 /-!
 # Finite dependencies on revision-scoped store occurrences
@@ -103,6 +105,96 @@ theorem matchingRows_ne_after_matching_append {Query Row : Type}
   intro equal
   have sameLength := congrArg List.length equal
   simp [matchingRows, List.filter_append, matching] at sameLength
+
+/-- Ordered, short-circuit checks against the captured revisions. The observer
+returns both its answer and its actual next state; that state is retained even
+when a comparison fails. No observer-purity law is built into this algorithm. -/
+def checkObserved {State : Type} [DecidableEq Revision]
+    (expected : RevisionEnvironment StoreId Revision)
+    (observe : StoreId → State → Revision × State) :
+    List StoreId → State → Bool × State
+  | [], state => (true, state)
+  | store :: rest, state =>
+      let sampled := observe store state
+      if sampled.1 = expected.current store then
+        checkObserved expected observe rest sampled.2
+      else (false, sampled.2)
+
+/-- Truthful observations which preserve the complete consulted support make
+sequential validation exact. State outside that support may change, including
+observer bookkeeping. Protecting only the currently sampled key is weaker. -/
+theorem checkObserved_spec {State : Type} [DecidableEq StoreId] [DecidableEq Revision]
+    (projection : State → RevisionEnvironment StoreId Revision)
+    (observe : StoreId → State → Revision × State)
+    (expected : RevisionEnvironment StoreId Revision) (support : Finset StoreId)
+    (truthful : ∀ store ∈ support, ∀ state,
+      (observe store state).1 = (projection state).current store)
+    (stable : ∀ store ∈ support, ∀ state,
+      AgreesOn support (projection (observe store state).2) (projection state))
+    (stores : List StoreId) (covered : ∀ store ∈ stores, store ∈ support) (state : State) :
+    AgreesOn support (projection (checkObserved expected observe stores state).2)
+        (projection state) ∧
+      ((checkObserved expected observe stores state).1 = true ↔
+        AgreesOn stores.toFinset (projection state) expected) := by
+  induction stores generalizing state with
+  | nil =>
+      refine ⟨agreesOn_refl support (projection state), ?_⟩
+      simp [checkObserved, AgreesOn]
+  | cons store rest ih =>
+      have member := covered store List.mem_cons_self
+      have read := truthful store member state
+      have preserved := stable store member state
+      have coveredRest : ∀ other ∈ rest, other ∈ support :=
+        fun other present => covered other (List.mem_cons_of_mem store present)
+      by_cases compared : (observe store state).1 = expected.current store
+      · simp only [checkObserved, compared, ↓reduceIte]
+        obtain ⟨after, agreement⟩ := ih coveredRest (observe store state).2
+        refine ⟨agreesOn_trans after preserved, ?_⟩
+        rw [agreement]
+        have firstMatches := read.symm.trans compared
+        constructor
+        · intro remaining other present
+          rcases List.mem_cons.mp (List.mem_toFinset.mp present) with same | later
+          · subst other
+            exact firstMatches
+          · exact (preserved other (coveredRest other later)).symm.trans
+              (remaining other (List.mem_toFinset.mpr later))
+        · intro all other present
+          have later := List.mem_toFinset.mp present
+          exact (preserved other (coveredRest other later)).trans
+            (all other (List.mem_toFinset.mpr (List.mem_cons_of_mem store later)))
+      · simp only [checkObserved, compared, ↓reduceIte]
+        refine ⟨preserved, ?_⟩
+        constructor
+        · intro impossible
+          cases impossible
+        · intro all
+          exact False.elim (compared (read.trans
+            (all store (List.mem_toFinset.mpr List.mem_cons_self))))
+
+/-- The same checked run is exact at publication, after all observer effects.
+Stability covers earlier reads as well as the last read. -/
+theorem checkObserved_accepts_final {State : Type}
+    [DecidableEq StoreId] [DecidableEq Revision]
+    (projection : State → RevisionEnvironment StoreId Revision)
+    (observe : StoreId → State → Revision × State)
+    (expected : RevisionEnvironment StoreId Revision) (stores : List StoreId)
+    (truthful : ∀ store ∈ stores.toFinset, ∀ state,
+      (observe store state).1 = (projection state).current store)
+    (stable : ∀ store ∈ stores.toFinset, ∀ state,
+      AgreesOn stores.toFinset (projection (observe store state).2) (projection state))
+    (state : State) :
+    (checkObserved expected observe stores state).1 = true ↔
+      AgreesOn stores.toFinset
+        (projection (checkObserved expected observe stores state).2) expected := by
+  obtain ⟨after, agreement⟩ := checkObserved_spec projection observe expected stores.toFinset
+    truthful stable stores (fun _ member => List.mem_toFinset.mpr member) state
+  rw [agreement]
+  constructor
+  · intro before
+    exact agreesOn_trans after before
+  · intro final
+    exact agreesOn_trans (agreesOn_symm after) final
 
 end RevisionEnvironment
 
@@ -384,6 +476,26 @@ theorem validate_accepted_iff_canPublish
     firstCurrentMismatch_eq_none_iff, valid_dependencies_iff,
     RevisionEnvironment.AgreesOn, List.mem_toFinset]
 
+/-- Ordered native observations discharge the existing publication contract
+when they report current revisions and preserve every consulted dependency.
+The final state includes their effects; it is not replaced by the entry state. -/
+theorem checkObserved_canPublish {State : Type}
+    (view : CapturedReadView StoreId Revision)
+    (projection : State → RevisionEnvironment StoreId Revision)
+    (observe : StoreId → State → Revision × State)
+    (complete : view.captureComplete = true) (unpoisoned : view.firstMismatch = none)
+    (truthful : ∀ store ∈ view.consulted.toFinset, ∀ state,
+      (observe store state).1 = (projection state).current store)
+    (stable : ∀ store ∈ view.consulted.toFinset, ∀ state,
+      RevisionEnvironment.AgreesOn view.consulted.toFinset
+        (projection (observe store state).2) (projection state)) (state : State) :
+    (RevisionEnvironment.checkObserved view.captured observe view.consulted state).1 = true ↔
+      view.CanPublish (projection
+        (RevisionEnvironment.checkObserved view.captured observe view.consulted state).2) := by
+  simpa only [CanPublish, complete, unpoisoned, true_and, valid_dependencies_iff] using
+    RevisionEnvironment.checkObserved_accepts_final projection observe view.captured
+      view.consulted truthful stable state
+
 /-- A recorded mismatch cannot be erased by consultation or later restoration. -/
 theorem consult_preserves_mismatch
     (view : CapturedReadView StoreId Revision)
@@ -476,6 +588,378 @@ def nested (view : CapturedReadView StoreId Revision) :
 
 end CapturedReadView
 
+/-- A read frame retains its source authority, admitted view and whole
+captured computation payload. Lookup may add dependencies but cannot replace
+the payload with the ambient caller's bindings or continuation. -/
+structure CapturedReadFrame (SourceId StoreId Revision Capture : Type) where
+  source : SourceId
+  view : CapturedReadView StoreId Revision
+  capture : Capture
+
+namespace CapturedReadFrame
+
+variable {FrameId SourceId StoreId Revision Capture : Type}
+variable [DecidableEq FrameId] [DecidableEq SourceId]
+variable [DecidableEq StoreId] [DecidableEq Revision]
+
+abbrev Table := FrameId → CapturedReadFrame SourceId StoreId Revision Capture
+abbrev Observation := Option Revision × Table (FrameId := FrameId)
+  (SourceId := SourceId) (StoreId := StoreId) (Revision := Revision) (Capture := Capture)
+
+/-- All matching observers see the live lookup. Only the first matching
+observer chooses the value returned to the computation. `some none` can
+therefore select an admitted absence when revisions themselves are optional. -/
+def observeOne (source : SourceId) (live : RevisionEnvironment StoreId Revision)
+    (key : StoreId) (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture))
+    (owner : FrameId) : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture) :=
+  let frame := state.2 owner
+  if frame.source = source then
+    (state.1.or (some (frame.view.captured.current key)),
+      fun other => if other = owner then
+        { frame with view := frame.view.consult live key } else state.2 other)
+  else state
+
+/-- The reference interpretation visits the independently specified active
+list in order. The table retains inactive frames for subsequent resumption. -/
+def observeList (source : SourceId) (live : RevisionEnvironment StoreId Revision)
+    (key : StoreId) (active : List FrameId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) :
+    Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture) :=
+  active.foldl (observeOne source live key) state
+
+/-- The implementation model follows the object's actual predecessor link.
+Exhausting this observation budget leaves qualification unfinished. -/
+def observeLinks (parent : FrameId → Option FrameId) (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId) :
+    Nat → Option FrameId → Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture) →
+      Option (Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture))
+  | _, none, state => some state
+  | 0, some _, _ => none
+  | fuel + 1, some owner, state =>
+      observeLinks parent source live key fuel (parent owner)
+        (observeOne source live key state owner)
+
+theorem observeLinks_of_matches (parent : FrameId → Option FrameId)
+    (source : SourceId) (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    {active : List FrameId} (linked : LinkedScopeStack.MatchesLinks parent active)
+    (extra : Nat) (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) :
+    observeLinks parent source live key (active.length + extra) active.head? state =
+      some (observeList source live key active state) := by
+  induction active generalizing state with
+  | nil => cases extra <;> rfl
+  | cons owner rest ih =>
+      have fuel : (owner :: rest).length + extra = (rest.length + extra) + 1 := by
+        simp only [List.length_cons]
+        omega
+      rw [fuel]
+      simp only [List.head?_cons, observeLinks]
+      rw [linked.1, ih linked.2]
+      rfl
+
+theorem observeLinks_eq_reference (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    {stack : LinkedScopeStack FrameId} {active : List FrameId}
+    (represented : stack.Represents active) (extra : Nat)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) :
+    observeLinks stack.parent source live key (active.length + extra) stack.top state =
+      some (observeList source live key active state) := by
+  rw [represented.top]
+  exact observeLinks_of_matches _ _ _ _ represented.links extra state
+
+theorem observeOne_preserves_capture (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner other : FrameId) :
+    ((observeOne source live key state owner).2 other).capture = (state.2 other).capture ∧
+      ((observeOne source live key state owner).2 other).source = (state.2 other).source ∧
+      ((observeOne source live key state owner).2 other).view.captured =
+        (state.2 other).view.captured := by
+  simp only [observeOne]
+  split
+  · by_cases equal : other = owner <;> simp [equal, CapturedReadView.consult]
+  · exact ⟨rfl, rfl, rfl⟩
+
+theorem observeList_preserves_capture (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId) (active : List FrameId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner : FrameId) :
+    ((observeList source live key active state).2 owner).capture = (state.2 owner).capture ∧
+      ((observeList source live key active state).2 owner).source = (state.2 owner).source ∧
+      ((observeList source live key active state).2 owner).view.captured =
+        (state.2 owner).view.captured := by
+  induction active generalizing state with
+  | nil => exact ⟨rfl, rfl, rfl⟩
+  | cons first rest ih =>
+      have firstLaw := observeOne_preserves_capture source live key state first owner
+      have tailLaw := ih (observeOne source live key state first)
+      exact ⟨tailLaw.1.trans firstLaw.1, tailLaw.2.1.trans firstLaw.2.1,
+        tailLaw.2.2.trans firstLaw.2.2⟩
+
+theorem observeOne_retains_selected (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    (table : Table (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (selected : Revision) :
+    (observeOne source live key (some selected, table) owner).1 = some selected := by
+  simp only [observeOne]
+  split <;> rfl
+
+theorem observeList_retains_selected (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId) (active : List FrameId)
+    (table : Table (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (selected : Revision) :
+    (observeList source live key active (some selected, table)).1 = some selected := by
+  induction active generalizing table with
+  | nil => rfl
+  | cons owner rest ih =>
+      change (observeList source live key rest
+        (observeOne source live key (some selected, table) owner)).1 = _
+      have chosen := observeOne_retains_selected source live key table owner selected
+      rw [← Prod.eta (observeOne source live key (some selected, table) owner)]
+      rw [chosen]
+      exact ih _
+
+theorem observeOne_preserves_consulted (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key prior : StoreId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner other : FrameId)
+    (consulted : prior ∈ (state.2 other).view.consulted) :
+    prior ∈ ((observeOne source live key state owner).2 other).view.consulted := by
+  simp only [observeOne]
+  split
+  · by_cases equal : other = owner
+    · subst other
+      simpa only [↓reduceIte] using
+        (CapturedReadView.mem_consulted_consult_iff _ _ _ _).mpr (Or.inl consulted)
+    · simpa only [if_neg equal] using consulted
+  · exact consulted
+
+theorem observeList_preserves_consulted (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key prior : StoreId) (active : List FrameId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (consulted : prior ∈ (state.2 owner).view.consulted) :
+    prior ∈ ((observeList source live key active state).2 owner).view.consulted := by
+  induction active generalizing state with
+  | nil => exact consulted
+  | cons first rest ih =>
+      exact ih _ (observeOne_preserves_consulted source live key prior state first owner consulted)
+
+theorem observeOne_marks (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (same : (state.2 owner).source = source) :
+    key ∈ ((observeOne source live key state owner).2 owner).view.consulted := by
+  simp only [observeOne, same, ↓reduceIte]
+  exact (CapturedReadView.mem_consulted_consult_iff _ _ _ _).mpr (Or.inr rfl)
+
+theorem observeList_marks_all_matching (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId) (active : List FrameId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId)
+      (StoreId := StoreId) (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (member : owner ∈ active) (same : (state.2 owner).source = source) :
+    key ∈ ((observeList source live key active state).2 owner).view.consulted := by
+  induction active generalizing state with
+  | nil => cases member
+  | cons first rest ih =>
+      rcases List.mem_cons.mp member with equal | later
+      · subst first
+        exact observeList_preserves_consulted source live key key rest _ owner
+          (observeOne_marks source live key state owner same)
+      · have sourceKept := (observeOne_preserves_capture source live key state first owner).2.1
+        exact ih _ later (sourceKept.trans same)
+
+theorem observeList_head_value (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    (owner : FrameId) (rest : List FrameId)
+    (table : Table (FrameId := FrameId) (SourceId := SourceId) (StoreId := StoreId)
+      (Revision := Revision) (Capture := Capture))
+    (same : (table owner).source = source) :
+    (observeList source live key (owner :: rest) (none, table)).1 =
+      some ((table owner).view.captured.current key) := by
+  change (observeList source live key rest
+    (observeOne source live key (none, table) owner)).1 = _
+  simp only [observeOne, same, ↓reduceIte, Option.none_or]
+  exact observeList_retains_selected source live key rest _ _
+
+theorem observeOne_other (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId) (StoreId := StoreId)
+      (Revision := Revision) (Capture := Capture)) (owner other : FrameId)
+    (different : other ≠ owner) :
+    (observeOne source live key state owner).2 other = state.2 other := by
+  simp only [observeOne]
+  split <;> simp [different]
+
+theorem observeList_inactive_unchanged (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId) (active : List FrameId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId) (StoreId := StoreId)
+      (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (inactive : owner ∉ active) :
+    (observeList source live key active state).2 owner = state.2 owner := by
+  induction active generalizing state with
+  | nil => rfl
+  | cons first rest ih =>
+      have different : owner ≠ first := fun same => inactive (List.mem_cons.mpr (Or.inl same))
+      have later : owner ∉ rest := fun member => inactive (List.mem_cons_of_mem _ member)
+      exact (ih _ later).trans (observeOne_other source live key state first owner different)
+
+section OwnedCapture
+
+open ResourceOwnership Cursor.OwnedLifecycle
+
+variable {Owner Address Value World : Type} [DecidableEq Owner] [DecidableEq Address]
+
+/-- Dependency recording leaves the captured paths unchanged. Publishing
+their starting roots before retiring a scope preserves every complete read.
+The path projection must cover the runtime's actual strong references. -/
+theorem observeList_owned_paths (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId) (active : List FrameId)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId) (StoreId := StoreId)
+      (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (paths : Capture → List (Address × List Address))
+    (memory : Session Owner Address Value World) (dead : Finset Owner) (output : Owner)
+    (outside : output ∉ dead)
+    (allocated : ∀ query ∈ paths (state.2 owner).capture, query.1 ∈ memory.heap.allocated) :
+    RequestBorrow.observe
+      (commit memory dead output ((paths (state.2 owner).capture).map Prod.fst)).heap
+      (paths ((observeList source live key active state).2 owner).capture) =
+      RequestBorrow.observe memory.heap (paths (state.2 owner).capture) := by
+  rw [(observeList_preserves_capture source live key active state owner).1]
+  exact commit_preserves_paths memory dead output _ outside allocated
+
+variable {DestinationAddress DestinationValue : Type} [DecidableEq DestinationAddress]
+
+/-- Actual link traversal and independent publication/copying compose. The
+destination owns the capture after source-scope retirement; the active read
+frames acquire their dependencies without replacing that captured payload. -/
+theorem observeLinks_copied_paths (source : SourceId)
+    (live : RevisionEnvironment StoreId Revision) (key : StoreId)
+    {stack : LinkedScopeStack FrameId} {active : List FrameId}
+    (represented : stack.Represents active) (extra : Nat)
+    (state : Observation (FrameId := FrameId) (SourceId := SourceId) (StoreId := StoreId)
+      (Revision := Revision) (Capture := Capture)) (owner : FrameId)
+    (paths : Capture → List (Address × List Address))
+    (memory : Session Owner Address Value World)
+    (destination : Heap DestinationAddress DestinationValue)
+    (copy : Relocation memory.heap destination)
+    (dead : Finset Owner) (output : Owner) (outside : output ∉ dead)
+    (allocated : ∀ query ∈ paths (state.2 owner).capture, query.1 ∈ memory.heap.allocated) :
+    ∃ result,
+      observeLinks stack.parent source live key (active.length + extra) stack.top state =
+        some result ∧
+      (result.2 owner).capture = (state.2 owner).capture ∧
+      RequestBorrow.observe
+        (commit (relocateSession memory destination copy) dead output
+          ((RequestBorrow.relocatePaths copy.address (paths (state.2 owner).capture)).map
+            Prod.fst)).heap
+        (RequestBorrow.relocatePaths copy.address (paths (result.2 owner).capture)) =
+        (RequestBorrow.observe memory.heap (paths (state.2 owner).capture)).map
+          (Option.map fun pair =>
+            (copy.address pair.1, pair.2.relocate copy.address copy.payload)) := by
+  refine ⟨observeList source live key active state,
+    observeLinks_eq_reference source live key represented extra state,
+    (observeList_preserves_capture source live key active state owner).1, ?_⟩
+  rw [(observeList_preserves_capture source live key active state owner).1]
+  exact relocate_commit_paths memory destination copy dead output _ outside allocated
+
+end OwnedCapture
+
+namespace Controls
+
+def captured : RevisionEnvironment Nat (Option Nat) :=
+  ⟨fun key => if key = 3 then none else some 7⟩
+
+def replaced : RevisionEnvironment Nat (Option Nat) :=
+  ⟨fun key => if key = 3 then some 9 else some 7⟩
+
+def frames (owner : Nat) : CapturedReadFrame Nat Nat (Option Nat) (Nat × List Nat) :=
+  if owner = 2 then
+    ⟨1, CapturedReadView.admit ⟨fun _ => some 99⟩, (22, [4, 4])⟩
+  else ⟨0, CapturedReadView.admit captured, (owner, [0, 1])⟩
+
+def observed := observeList 0 replaced 3 [1, 2, 0] (none, frames)
+
+theorem absence_is_selected : observed.1 = some none := by rfl
+
+theorem every_matching_scope_records_absence :
+    (observed.2 1).view.consulted = [3] ∧ (observed.2 0).view.consulted = [3] := by
+  exact ⟨rfl, rfl⟩
+
+theorem foreign_scope_unchanged : observed.2 2 = frames 2 := by rfl
+
+theorem outer_and_inner_detect_replacement :
+    (observed.2 1).view.firstMismatch = some ⟨3, none, some 9⟩ ∧
+      (observed.2 0).view.firstMismatch = some ⟨3, none, some 9⟩ := by
+  exact ⟨rfl, rfl⟩
+
+theorem observing_only_inner_loses_outer_dependency :
+    ((observeOne 0 replaced 3 (none, frames) 1).2 0).view.consulted = [] ∧
+      (observed.2 0).view.consulted ≠ [] := by
+  exact ⟨rfl, by decide⟩
+
+theorem ambient_replacement_is_not_the_selected_value :
+    observed.1 ≠ some (replaced.current 3) := by decide
+
+theorem full_payload_survives (owner : Nat) :
+    (observed.2 owner).capture = (frames owner).capture :=
+  (observeList_preserves_capture 0 replaced 3 [1, 2, 0] (none, frames) owner).1
+
+open ResourceOwnership Cursor.OwnedLifecycle
+
+def ownedFrames (owner : Nat) :
+    CapturedReadFrame Nat Nat (Option Nat) (List (Fin 3 × List (Fin 3))) where
+  source := (frames owner).source
+  view := (frames owner).view
+  capture := if owner = 0 then Cursor.OwnedLifecycle.Examples.capturedPaths else [(1, [2, 1])]
+
+def activeStack : LinkedScopeStack Nat :=
+  ((LinkedScopeStack.Controls.empty.enter 0).enter 2).enter 1
+
+theorem activeStack_represents : activeStack.Represents [1, 2, 0] := by
+  exact LinkedScopeStack.enter_represents
+    (LinkedScopeStack.enter_represents
+      (LinkedScopeStack.enter_represents LinkedScopeStack.Controls.empty_represents
+        (by simp)) (by simp)) (by simp)
+
+/-- The native-shaped linked traversal selects a captured absence while
+both read observers retain their cyclic payload. A copied capture remains
+readable after the old owner is cancelled. -/
+theorem linked_read_and_retired_capture :
+    ∃ result,
+      observeLinks activeStack.parent 0 replaced 3 3 activeStack.top
+        (none, ownedFrames) = some result ∧
+      result.1 = some none ∧
+      RequestBorrow.observe
+        (commit Cursor.OwnedLifecycle.Examples.copiedCursorSession {0} 7 [1, 1, 1]).heap
+        (RequestBorrow.relocatePaths ResourceOwnership.Examples.relocationAddress
+          (result.2 0).capture) =
+        [some (3, ResourceOwnership.Examples.copiedCell 3),
+          some (3, ResourceOwnership.Examples.copiedCell 3), none] := by
+  obtain ⟨result, traversed, kept, copied⟩ :=
+    observeLinks_copied_paths 0 replaced 3 activeStack_represents 0 (none, ownedFrames) 0
+      id Cursor.OwnedLifecycle.Examples.cursorSession ResourceOwnership.Examples.copiedHeap
+      ResourceOwnership.Examples.shiftedCopy {0} 7 (by decide)
+        (by intro query _; exact Finset.mem_univ query.1)
+  refine ⟨result, traversed, ?_, copied⟩
+  have reference := observeLinks_eq_reference 0 replaced 3 activeStack_represents 0
+    (none, ownedFrames)
+  have same := Option.some.inj (traversed.symm.trans reference)
+  rw [same]
+  rfl
+
+end Controls
+end CapturedReadFrame
+
 /-! ## Positive and negative controls -/
 
 namespace RevisionDependencySetCanary
@@ -523,6 +1007,97 @@ example : ¬ RevisionDependencySet.ValidAt
   · decide
 
 end RevisionDependencySetCanary
+
+namespace AuthorityObservationControls
+
+open RevisionDependencySetCanary (Store environment)
+
+/-- Operational bookkeeping is separate from the three semantic stores. -/
+structure State where
+  evidence : Nat
+  model : Nat
+  unrelated : Nat
+  cacheTicks : Nat
+  deriving DecidableEq
+
+def projection (state : State) : RevisionEnvironment Store Nat where
+  current
+    | .evidence => state.evidence
+    | .model => state.model
+    | .unrelated => state.unrelated
+
+def initial : State := ⟨7, 3, 99, 0⟩
+
+def capture : CapturedReadView Store Nat :=
+  ((CapturedReadView.admit environment).consult environment .evidence).consult environment .model
+
+/-- The observer does real bookkeeping while keeping the selected meanings. -/
+def stableObserve (store : Store) (state : State) : Nat × State :=
+  ((projection state).current store, { state with cacheTicks := state.cacheTicks + 1 })
+
+/-- Sampling the second store changes the first store after its successful
+comparison. Each returned revision is nevertheless truthful at its own read. -/
+def lateObserve (store : Store) (state : State) : Nat × State :=
+  ((projection state).current store,
+    if store = .model then
+      { state with evidence := state.evidence + 1, cacheTicks := state.cacheTicks + 1 }
+    else { state with cacheTicks := state.cacheTicks + 1 })
+
+theorem stable_observer_truthful (store : Store) (state : State) :
+    (stableObserve store state).1 = (projection state).current store := rfl
+
+theorem stable_observer_preserves_support (sampled : Store) (state : State)
+    (support : Finset Store) :
+    RevisionEnvironment.AgreesOn support (projection (stableObserve sampled state).2)
+      (projection state) := by
+  intro store _
+  cases store <;> rfl
+
+theorem stable_checks_accept_with_bookkeeping :
+    RevisionEnvironment.checkObserved environment stableObserve [.evidence, .model] initial =
+      (true, { initial with cacheTicks := 2 }) := rfl
+
+theorem stable_checks_publish :
+    capture.CanPublish (projection
+      (RevisionEnvironment.checkObserved capture.captured stableObserve capture.consulted initial).2) := by
+  apply (CapturedReadView.checkObserved_canPublish capture projection stableObserve rfl rfl
+    (fun store _ state => stable_observer_truthful store state)
+    (fun store _ state => stable_observer_preserves_support store state _) initial).mp
+  rfl
+
+theorem late_observer_truthful (store : Store) (state : State) :
+    (lateObserve store state).1 = (projection state).current store := rfl
+
+/-- The late observer even preserves the key it is presently sampling. -/
+theorem late_observer_preserves_own_key (store : Store) (state : State) :
+    (projection (lateObserve store state).2).current store =
+      (projection state).current store := by
+  cases store <;> rfl
+
+theorem late_checks_accept_changed_prior_revision :
+    RevisionEnvironment.checkObserved environment lateObserve [.evidence, .model] initial =
+      (true, { initial with evidence := 8, cacheTicks := 2 }) := rfl
+
+/-- Two successful comparisons do not grant current publication authority
+when the second observer invalidates an earlier consulted store. -/
+theorem late_checks_cannot_publish :
+    ¬ capture.CanPublish (projection
+      (RevisionEnvironment.checkObserved capture.captured lateObserve capture.consulted initial).2) := by
+  intro allowed
+  have current := (CapturedReadView.valid_dependencies_iff _ _).mp allowed.2.2
+  have first := current .evidence (by decide)
+  change (8 : Nat) = 7 at first
+  contradiction
+
+theorem late_observer_violates_consulted_support :
+    ¬ RevisionEnvironment.AgreesOn capture.consulted.toFinset
+      (projection (lateObserve .model initial).2) (projection initial) := by
+  intro stable
+  have first := stable .evidence (by decide)
+  change (8 : Nat) = 7 at first
+  contradiction
+
+end AuthorityObservationControls
 
 namespace CapturedReadViewCanary
 

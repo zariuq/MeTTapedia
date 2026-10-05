@@ -232,4 +232,101 @@ theorem target_run_append_exact {World : Type} (interface : Interface)
     · rw [equal]
       exact target_append_returned root fragment suffix checked prefixRan
 
+/-- A proved, normally returning prefix passes its complete post-frame and
+state to the suffix. The prefix can contain several loads or calls; its
+absence of outward jumps remains explicit. -/
+theorem target_normal_prefix_then_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {root fragment : List Instruction} {before after : TargetFrame}
+    {pre post : TargetState World}
+    (checked : jumpFreeCode fragment = true)
+    (prefixExact : ∀ out, TargetRun interface heap calls result root fragment before pre out ↔
+      out = ⟨.normal, after, post⟩)
+    (suffix : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root (fragment ++ suffix) before pre out ↔
+      TargetRun interface heap calls result root suffix after post out := by
+  rw [target_run_append_exact interface heap calls result root fragment suffix checked before pre out]
+  constructor
+  · rintro (⟨middle, final, first, rest⟩ | ⟨value, final, state, first, same⟩)
+    · cases (prefixExact _).mp first
+      exact rest
+    · have impossible := (prefixExact _).mp first
+      cases impossible
+  · intro rest
+    exact .inl ⟨after, post, (prefixExact _).mpr rfl, rest⟩
+
+/-- An instruction's complete outcome determines the remaining execution.
+Label lookup uses the enclosing root; an unresolved jump and a return skip
+the suffix. The statement includes both execution and reflection. -/
+theorem target_run_cons_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    (root : List Instruction) (first : Instruction) (rest : List Instruction)
+    (frame : TargetFrame) (state : TargetState World) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root (first :: rest) frame state out ↔
+      ∃ firstOut, TargetInstructionEval interface heap calls result first frame state firstOut ∧
+        match firstOut.flow with
+        | .normal => TargetRun interface heap calls result root rest firstOut.frame firstOut.state out
+        | .returned _ => out = firstOut
+        | .jumped label =>
+            match targetAfterLabel? root label with
+            | some suffix =>
+                TargetRun interface heap calls result root suffix firstOut.frame firstOut.state out
+            | none => out = firstOut := by
+  constructor
+  · intro ran
+    cases ran with
+    | next head tail => exact ⟨_, head, tail⟩
+    | «return» head => exact ⟨_, head, rfl⟩
+    | resume head found tail => exact ⟨_, head, by simpa only [found] using tail⟩
+    | escape head outside => exact ⟨_, head, by simp only [outside]⟩
+  · rintro ⟨⟨flow, after, post⟩, head, following⟩
+    cases flow with
+    | normal => exact .next head following
+    | returned value => cases following; exact .return head
+    | jumped label =>
+        cases found : targetAfterLabel? root label with
+        | none => simp only [found] at following; cases following; exact .escape head found
+        | some suffix =>
+            simp only [found] at following
+            exact .resume head found following
+
+theorem target_label_cons_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    (root : List Instruction) (label : NativeIR.Label) (rest : List Instruction)
+    (frame : TargetFrame) (state : TargetState World) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root (.label label :: rest) frame state out ↔
+      TargetRun interface heap calls result root rest frame state out := by
+  rw [target_run_cons_exact]
+  constructor
+  · rintro ⟨firstOut, head, following⟩
+    cases head with
+    | label => exact following
+  · intro following
+    exact ⟨_, .label label frame state, following⟩
+
+/-- Scope cleanup occurs before the outer root resolves a jump. The inner
+derivation remains an execution of the actual scoped body. -/
+theorem target_scope_cons_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    (root body rest : List Instruction) (frame : TargetFrame) (state : TargetState World)
+    (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root (.scope body :: rest) frame state out ↔
+      ∃ inner, TargetRun interface heap calls result body body frame state inner ∧
+        match inner.flow with
+        | .normal => TargetRun interface heap calls result root rest
+            (targetCloseBlock frame inner).frame (targetCloseBlock frame inner).state out
+        | .returned _ => out = targetCloseBlock frame inner
+        | .jumped label =>
+            match targetAfterLabel? root label with
+            | some suffix => TargetRun interface heap calls result root suffix
+                (targetCloseBlock frame inner).frame (targetCloseBlock frame inner).state out
+            | none => out = targetCloseBlock frame inner := by
+  rw [target_run_cons_exact]
+  constructor
+  · rintro ⟨firstOut, head, following⟩
+    cases head with
+    | scope ran => exact ⟨_, ran, following⟩
+  · rintro ⟨inner, ran, following⟩
+    exact ⟨_, .scope ran, following⟩
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

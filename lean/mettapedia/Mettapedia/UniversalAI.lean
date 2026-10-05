@@ -8,10 +8,13 @@ rebuilds just the UniversalAI development.
 import Mettapedia.UniversalAI.SimplicityUncertainty
 import Mettapedia.UniversalAI.SolomonoffPrior
 import Mettapedia.UniversalAI.UniversalMachineBoundary
+import Mettapedia.UniversalAI.PredictivePrivilege
 import Mettapedia.UniversalAI.ZetaProgramPrior
 import Mettapedia.UniversalAI.SolomonoffInduction
 import Mettapedia.UniversalAI.SolomonoffMeasure
 import Mettapedia.UniversalAI.UniversalPrediction
+import Mettapedia.UniversalAI.UniversalPrediction.EffectiveWeights
+import Mettapedia.UniversalAI.ReferenceMachineControls
 import Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge
 import Mettapedia.UniversalAI.UniversalPredictionApproximation
 import Mettapedia.UniversalAI.UniversalPredictionApproximationWMBridge

@@ -176,7 +176,7 @@ theorem no_refl_fact :
   rintro ⟨T, hT⟩
   rw [dom_instPi_jType unaligned_prefix] at hT
   have e := (ident_endpoints_eq hT).1
-  exact bot_not_mem_tag .zero (e ▸ zeroI_mem_zero)
+  exact bot_not_mem_tag Kind.zero (e ▸ zeroI_mem_zero)
 
 /-- **Negative: the refl fact is needed.** At `J ℕ 0 (λ y p. Id ℕ y y) (refl 0) 0 (refl ⊥)`
 the arguments have spine facts and the method `refl 0` is an element of the

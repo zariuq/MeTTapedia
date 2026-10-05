@@ -67,7 +67,7 @@ mutual
             have mappedArguments :=
               argumentsTyped.mapCostStaticHereditary source .base
             have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
+              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source.continuationRetyping
                 rule membership labelSupported
             have targetArguments :
                 WellSorted.ArgumentsHaveTypesWithConstructors
@@ -79,7 +79,7 @@ mutual
                   (arguments.map
                     (mapPattern (CostStaticColor.base.symbols source)))
                   (costBaseConstructor source.cut rule).params := by
-              simpa only [parameterEquality, CostStaticColor.symbols] using
+              simpa only [parameterEquality, CostStaticColor.symbols, CostStaticColor.symbolsOf] using
                 mappedArguments
             have targetNotBare :
                 ¬ WellSorted.UsesBareCollection
@@ -92,7 +92,7 @@ mutual
                 CostStaticColor.hereditaryConstructorImage source .base
                   (costBaseConstructor source.cut rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
+            simpa [mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseConstructor_def,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasTypeWithConstructors.constructor targetAllowed
@@ -110,7 +110,7 @@ mutual
                         source.theory.presentation.interactingSort.1.name)) := by
               apply List.map_congr_left
               intro parameter _membership
-              exact mapTermParam_costWrappedStaticSymbols source parameter
+              exact mapTermParam_costWrappedStaticSymbols source.theory parameter
             have targetArguments :
                 WellSorted.ArgumentsHaveTypesWithConstructors
                   source.costWholeLanguage
@@ -122,7 +122,7 @@ mutual
                     (mapPattern (CostStaticColor.wrapped.symbols source)))
                   (costWrappedConstructor
                     (theory := source.theory) rule).params := by
-              simpa only [costWrappedConstructor, CostStaticColor.symbols,
+              simpa only [costWrappedConstructor, CostStaticColor.symbols, CostStaticColor.symbolsOf,
                 parameterMapEquality] using mappedArguments
             have targetNotBare :
                 ¬ WellSorted.UsesBareCollection
@@ -136,7 +136,7 @@ mutual
                   (costWrappedConstructor
                     (theory := source.theory) rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
-            simpa [mapPattern, CostStaticColor.symbols,
+            simpa [mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf,
               costWrappedStaticSymbols, costWrappedConstructor, mapTypeExpr,
               costWrappedTypeExpr] using
               (WellSorted.HasTypeWithConstructors.constructor targetAllowed
@@ -187,7 +187,7 @@ mutual
             have mappedElements :=
               elementsTyped.mapCostStaticHereditary source .base
             have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
+              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source.continuationRetyping
                 rule membership labelSupported
             have targetShape :
                 (costBaseConstructor source.cut rule).params =
@@ -197,13 +197,13 @@ mutual
                         (CostStaticColor.base.symbols source) elementType))] := by
               simp [parameterEquality, parameterShape,
                 mapTermParam_costBaseStaticSymbols,
-                CostStaticColor.symbols, mapParameterType,
+                CostStaticColor.symbols, CostStaticColor.symbolsOf, mapParameterType,
                 costBaseTypeExpr]
             have targetAllowed :
                 CostStaticColor.hereditaryConstructorImage source .base
                   (costBaseConstructor source.cut rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
+            simpa [mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseConstructor_def,
               costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasTypeWithConstructors.collectionConstructor
@@ -221,14 +221,14 @@ mutual
                         (CostStaticColor.wrapped.symbols source)
                         elementType))] := by
               simp [costWrappedConstructor, parameterShape,
-                CostStaticColor.symbols, mapParameterType,
+                CostStaticColor.symbols, CostStaticColor.symbolsOf, mapParameterType,
                 costWrappedTypeExpr]
             have targetAllowed :
                 CostStaticColor.hereditaryConstructorImage source .wrapped
                   (costWrappedConstructor
                     (theory := source.theory) rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
-            simpa [mapPattern, CostStaticColor.symbols,
+            simpa [mapPattern, CostStaticColor.symbols, CostStaticColor.symbolsOf,
               costWrappedStaticSymbols, costWrappedConstructor, mapTypeExpr,
               costWrappedTypeExpr] using
               (WellSorted.HasTypeWithConstructors.collectionConstructor
@@ -290,27 +290,6 @@ mutual
           (elementsTyped.mapCostStaticHereditary source color)
 end
 
-private theorem matchesParameterRepresentation_thickenAmbientBVars
-    {source : CIGSLT} {color : CostStaticColor}
-    {sourceBound targetBound : List TypeExpr}
-    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
-    (depth : Nat) (parameter : TermParam) (pattern : Pattern) :
-    WellSorted.MatchesParameterRepresentation parameter pattern →
-      WellSorted.MatchesParameterRepresentation parameter
-        (thinning.thickenAmbientBVars depth pattern) := by
-  cases parameter with
-  | simple => exact fun _ => trivial
-  | abstractionNamed binderName bodyName type =>
-      cases pattern <;>
-        simp [WellSorted.MatchesParameterRepresentation,
-          CostStaticBinderThinning.thickenAmbientBVars]
-      case lambda binder body => cases binder <;> simp
-  | multiAbstractionNamed binderNames bodyName type =>
-      cases pattern <;>
-        simp [WellSorted.MatchesParameterRepresentation,
-          CostStaticBinderThinning.thickenAmbientBVars]
-      case multiLambda arity binders body => cases binders <;> simp
-
 mutual
   /-- Binder reinsertion preserves the proof-relevant hereditary declaration
   witness as well as ordinary typing. -/
@@ -330,15 +309,15 @@ mutual
         (thinning.thickenAmbientBVars inner.length pattern) type := by
     cases typed with
     | bvar lookup =>
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_bvar] using
           (WellSorted.HasTypeWithConstructors.bvar
             (thinning.lookup_embedIndexAt inner lookup))
     | fvar lookup =>
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_fvar] using
           (WellSorted.HasTypeWithConstructors.fvar
             (bound := inner ++ targetBound) lookup)
     | constructor allowed membership notBare argumentsTyped =>
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_apply] using
           (WellSorted.HasTypeWithConstructors.constructor allowed membership
             notBare
             (WellSorted.ArgumentsHaveTypesWithConstructors.thickenAmbientBVars
@@ -347,7 +326,7 @@ mutual
         have thickenedBody :=
           WellSorted.HasTypeWithConstructors.thickenAmbientBVars
             (inner := domain :: inner) bodyTyped thinning
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_lambda] using
           (WellSorted.HasTypeWithConstructors.lambda (binder := binder)
             thickenedBody)
     | @multiLambda _ arity binders body domain codomain bodyTyped =>
@@ -366,7 +345,7 @@ mutual
               codomain := by
           simpa [List.append_assoc, List.length_append,
             List.length_replicate, Nat.add_comm] using thickenedBody
-        simpa [CostStaticBinderThinning.thickenAmbientBVars,
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_multiLambda,
           List.append_assoc, List.length_append, List.length_replicate,
           Nat.add_comm] using
             (WellSorted.HasTypeWithConstructors.multiLambda
@@ -378,16 +357,16 @@ mutual
         have thickenedReplacement :=
           WellSorted.HasTypeWithConstructors.thickenAmbientBVars
             (inner := inner) replacementTyped thinning
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_subst] using
           (WellSorted.HasTypeWithConstructors.subst thickenedBody
             thickenedReplacement)
     | collection elementsTyped =>
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_collection] using
           (WellSorted.HasTypeWithConstructors.collection
             (WellSorted.ElementsHaveTypeWithConstructors.thickenAmbientBVars
               (inner := inner) elementsTyped thinning))
     | collectionConstructor allowed membership parameterShape elementsTyped =>
-        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa [CostStaticTypeThinning.thickenAmbientBVars_collection] using
           (WellSorted.HasTypeWithConstructors.collectionConstructor allowed
             membership parameterShape
             (WellSorted.ElementsHaveTypeWithConstructors.thickenAmbientBVars
@@ -412,8 +391,8 @@ mutual
     | nil => exact .nil
     | cons representation parameterType argumentTyped argumentsTyped =>
         exact .cons
-          (matchesParameterRepresentation_thickenAmbientBVars thinning
-            inner.length _ _ representation)
+          (representation.renameAmbientBVarsAt thinning.toTargetIndex
+            inner.length)
           parameterType
           (WellSorted.HasTypeWithConstructors.thickenAmbientBVars
             (inner := inner) argumentTyped thinning)

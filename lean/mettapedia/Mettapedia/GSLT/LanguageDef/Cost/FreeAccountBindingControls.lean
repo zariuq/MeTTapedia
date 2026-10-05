@@ -180,11 +180,4 @@ theorem input_nontrivial :
 
 end Rho
 
-#print axioms Lambda.self_application_nontrivial
-#print axioms Lambda.full_environment_is_essential
-#print axioms Lambda.multiplication_noninjective
-#print axioms Lambda.inside_binder_not_root_action
-#print axioms Rho.input_source
-#print axioms Rho.input_nontrivial
-
 end Mettapedia.GSLT.LanguageDef.Cost.FreeAccountBindingControls

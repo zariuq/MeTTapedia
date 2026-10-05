@@ -11,11 +11,11 @@ ordinary endofunctor or collapsing the two state indices.
 
 namespace Mettapedia.Effects
 
-universe u v
+universe u v w
 
 /-- An Atkey-style parameterized monad over a type of state indices. -/
 structure ParameterizedMonad (Index : Type u)
-    (Carrier : Index → Index → Type v → Type (max u v)) where
+    (Carrier : Index → Index → Type v → Type w) where
   pure : {Result : Type v} →
     (state : Index) → Result → Carrier state state Result
   bind : {Result NextResult : Type v} →

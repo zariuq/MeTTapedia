@@ -16,6 +16,8 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.VibeITP.Presentation
 
+open Mettapedia.GSLT.LanguageDef.FirstOrderRules
+
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.VibeITP.Spec
 open Mettapedia.GSLT.LanguageDef.InferenceChecker

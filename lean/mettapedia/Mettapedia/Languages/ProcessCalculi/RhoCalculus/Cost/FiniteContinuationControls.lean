@@ -177,9 +177,4 @@ theorem localBody_not_closed : ¬ HasType communicationDecoration.generatedLangu
 
 end FiniteContinuationControls
 
-#print axioms communicationDecoration_validate
-#print axioms instantiatedContractum_typed
-#print axioms FiniteContinuationControls.actual_contractum_typed
-#print axioms FiniteContinuationControls.localBody_not_closed
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous

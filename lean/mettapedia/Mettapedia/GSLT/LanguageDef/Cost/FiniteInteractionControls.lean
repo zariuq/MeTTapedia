@@ -222,13 +222,4 @@ theorem mismatched_head_no_step (base : BasePremiseEvaluator) (result : Pattern)
 
 end FundedSynchronous
 
-#print axioms lambda_core_valid
-#print axioms asynchronous_core_valid
-#print axioms synchronous_core_valid
-#print axioms synchronous_contractum_in_core
-#print axioms FundedSynchronous.fires
-#print axioms FundedSynchronous.reducts_exact
-#print axioms FundedSynchronous.empty_stack_no_step
-#print axioms FundedSynchronous.mismatched_head_no_step
-
 end Mettapedia.GSLT.LanguageDef.Cost.FiniteInteractionControls

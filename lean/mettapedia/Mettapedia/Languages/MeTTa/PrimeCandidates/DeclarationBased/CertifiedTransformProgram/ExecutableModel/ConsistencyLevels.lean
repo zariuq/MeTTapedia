@@ -331,8 +331,8 @@ not, so the row of the numbers gives the daimon. -/
 theorem tmodelC_coe_universe_num {n : Nat} (d : Tower.Tm n) :
     ∃ w, WhRed (tmodelC v).rules (tmodelC v).roles
       (appSpine (.const coeN) [U0, numT, d]) w ∧ Daimonic (tmodelC v).roles starN w :=
-  ⟨_, .head ((tmodel_coeTable v).step_coe .num)
-      (.single ((tmodel_coeTable v).step_num (.star ⟨_, .head _⟩ fun e => by cases e))),
+  ⟨_, .head ((tmodel_coeTable v).step_coe (.const (.inr ⟨_, tmodelRoles_num⟩)))
+      (.single ((tmodel_coeTable v).step_const (.star ⟨_, .head _⟩ fun e => by cases e))),
     .star⟩
 
 /-- **The transport's daimon rows give no value in the consistency model.** In

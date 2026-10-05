@@ -1,13 +1,16 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Located
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.UnitClosure
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Valuation
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ResourceOperationalEquivalence
 
 /-!
 # Units and funding in the positive rho meter
 
 A signature's additive unit, a zero-valued price, and a spendable temporal
 cell have different operational meanings.  Every existing `CostStep` needs
-a positive purse head at its interaction location.  Wrapping a process adds
+a positive purse head at its interaction location: a funded step is an enabled
+firing of the funded resource system, and every such firing selects a purse
+there.  Wrapping a process adds
 no such authority.  A signature may have price zero while its positive
 authority still has to be supplied and consumed.
 
@@ -64,23 +67,16 @@ theorem exists_positive_funding_purse {Ground : Type u}
     {spend : CostSig Ground} (step : CostStep source location spend target) :
     ∃ head tail, head.RuntimeValid ∧
       CostTerm.purse location (.cons head tail) ∈ source := by
-  have valid := step.spend_runtimeValid
-  cases step with
-  | wholeRecvSend _ cover =>
-      obtain ⟨head, tail, head_valid, member⟩ := cover.exists_positive_head valid
-      exact ⟨head, tail, head_valid,
-        Multiset.mem_add.mpr (Or.inr
-          (Multiset.mem_map.mpr ⟨_, member, rfl⟩))⟩
-  | wholeSendRecv _ cover =>
-      obtain ⟨head, tail, head_valid, member⟩ := cover.exists_positive_head valid
-      exact ⟨head, tail, head_valid,
-        Multiset.mem_add.mpr (Or.inr
-          (Multiset.mem_map.mpr ⟨_, member, rfl⟩))⟩
-  | split _ _ cover =>
-      obtain ⟨head, tail, head_valid, member⟩ := cover.exists_positive_head valid
-      exact ⟨head, tail, head_valid,
-        Multiset.mem_add.mpr (Or.inr
-          (Multiset.mem_map.mpr ⟨_, member, rfl⟩))⟩
+  classical
+  obtain ⟨entry, rfl, -, enabled, -⟩ := costStep_iff_exists_enabled_resource.mp step
+  obtain ⟨choice, chosen⟩ := Multiset.exists_mem_of_ne_zero
+    (entry.2.val.funding.chosen_ne_zero entry.2.val.spend_valid)
+  have present := (Mettapedia.GSLT.Causality.ResourceInteraction.pursesMany_enables_iff _ _ _).mp
+    ((costResource_enables_iff source entry.2).mp enabled).2
+  exact ⟨choice.head, choice.tail, choice.head_valid,
+    purseTerm_toList entry.1 (.cons choice.head choice.tail) ▸
+      (CostConfig.mem_purses_iff source _).mp (Multiset.mem_of_le present
+        (Multiset.mem_map_of_mem _ (Multiset.mem_map_of_mem _ chosen)))⟩
 
 /-- Absence of a purse head at this location blocks every charged firing. -/
 theorem blocked_of_no_funding_at {Ground : Type u}

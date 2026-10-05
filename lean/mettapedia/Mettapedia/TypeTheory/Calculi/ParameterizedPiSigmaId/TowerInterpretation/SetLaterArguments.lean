@@ -27,7 +27,8 @@ proof takes the equation of the abstracted form at the fields (`recursionEquatio
 applies both sides to the later arguments.
 
 **The theorem** (`laterArguments_setModel`): a package with a set model and a reading of a
-declared datatype at every assignment that agrees on its names, extended by a function
+declared datatype with distinct constructor names at every assignment that agrees on its
+names, extended by a function
 defined by its written equations (structural recursion on its first argument, any later
 arguments, bodies typed in their contexts), has a set model at every assignment that agrees on
 the names it declares with the base assignment extended by the recursion's value. Consistency
@@ -235,7 +236,7 @@ variable {heads consts} {m : Nat} {T : DeclName} {Ξ : CTele Head 1 m} {C : CTm 
 arguments, the defined constant at the constructor form applied to the later arguments has the
 value of the body with the recursive calls in place of the hypotheses. -/
 theorem laterEquation_valid (model : SetModel heads consts B)
-    (reading : InductiveReading heads consts T v ctors rec)
+    (names : (ctors.map (·.1)).Nodup) (reading : InductiveReading heads consts T v ctors rec)
     (abstracted : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
       ctors[i]? = some (k, fields) →
         CTyped B (methodCtx T (Ξ.pis C) fields (recPositions fields).length)
@@ -254,7 +255,7 @@ theorem laterEquation_valid (model : SetModel heads consts B)
         ((body k fields).subst ((laterTele Ξ k fields).liftAlong (callSub f fields))) η := by
   obtain ⟨satFields, satLater⟩ :=
     (sat_extend heads consts (writtenTele f Ξ k fields) _ η).mp sat
-  have atFields := recursionEquation_valid model reading abstracted value entry
+  have atFields := recursionEquation_valid model names reading abstracted value entry
     (teleDrop (writtenTele f Ξ k fields) η) satFields
   have satBody : TeleSat heads consts (laterTele Ξ k fields)
       (substEnv heads consts (laterTele Ξ k fields) (callSub f fields) η) :=
@@ -283,7 +284,8 @@ variable {base : DeclName → ZFSet.{u}} {L : Type} [LevelOrder L]
 /-- **A function defined by its written equations, by structural recursion on its first
 argument, has a set model.** The package before the definition has a set model, and a reading
 of the datatype, at every assignment that agrees with the base assignment on the names it
-declares; the defined name is new to it; the result family and the closed field types are
+declares; the constructor names of the datatype are distinct; the defined name is new to the
+package; the result family and the closed field types are
 typed in it; and for each constructor the context of the body is formed, the result type is a
 type there, and the body has it. The model is at every assignment that agrees, on the names
 the package with the definition declares, with the base assignment extended by the value of
@@ -291,6 +293,7 @@ the recursion. -/
 theorem laterArguments_setModel (levels : LevelModel R L) (B : ChurchRules R)
     (baseModel : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) → SetModel heads consts B)
+    (names : (ctors.map (·.1)).Nodup)
     (readings : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) →
         InductiveReading heads consts T v ctors rec)
@@ -332,10 +335,10 @@ theorem laterArguments_setModel (levels : LevelModel R L) (B : ChurchRules R)
     (fun consts agreesBase _ => ?_) (fun consts agreesBase atDefined e member η sat => ?_)
     consts agrees
   · rw [valueAt consts agreesBase]
-    exact recursionValue_mem (baseModel consts agreesBase) (readings consts agreesBase)
+    exact recursionValue_mem (baseModel consts agreesBase) names (readings consts agreesBase)
       abstracted
   · obtain ⟨i, k, fields, entry, rfl⟩ := mem_laterEquations member
-    exact laterEquation_valid (baseModel consts agreesBase) (readings consts agreesBase)
+    exact laterEquation_valid (baseModel consts agreesBase) names (readings consts agreesBase)
       abstracted (atDefined.trans (valueAt consts agreesBase)) entry η sat
 
 /-- **Consistency**: a closed type whose set is empty has no closed term in a package with a
@@ -343,6 +346,7 @@ function defined by its written equations. -/
 theorem laterArguments_no_closed_inhabitant (levels : LevelModel R L) (B : ChurchRules R)
     (baseModel : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) → SetModel heads consts B)
+    (names : (ctors.map (·.1)).Nodup)
     (readings : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) →
         InductiveReading heads consts T v ctors rec)
@@ -365,8 +369,8 @@ theorem laterArguments_no_closed_inhabitant (levels : LevelModel R L) (B : Churc
     ¬ CTyped (withDefinition B f (.pi (.const T) (Ξ.pis C)) (laterEquations f T Ξ ctors body))
       .nil t A :=
   CDerivable.no_closed_inhabitant
-    (laterArguments_setModel levels B baseModel readings new typeDeclared motive fieldsFormed
-      formed resultType bodies _ fun _ _ => rfl)
+    (laterArguments_setModel levels B baseModel names readings new typeDeclared motive
+      fieldsFormed formed resultType bodies _ fun _ _ => rfl)
     empty t
 
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation

@@ -33,8 +33,8 @@ expression `expr` produces answers `answers` and leaves the system in state `s�
 - `EvalState` wraps `PeTTaSpace` (single `&self` space). Multiple named spaces
   and I/O effects are deferred to future work.
 - All answers are `Answers = List Pattern` (same as `PeTTaEval`).
-- Return value of `(add-atom ...)` and `(remove-atom ...)` is `[.apply "()" []]`
-  (the unit atom `()`), matching PeTTa's actual behavior.
+- Ordinary `add-atom` and `remove-atom` return Boolean `True`, matching
+  CeTTa PeTTa mode and the upstream Prolog ordinary-fact operations.
 - `(get-atoms &self)` returns all currently stored atoms (facts plus the
   narrow visible stored-rule slice) as a superposition of answers.
 - `prognCmd` sequences two commands: the second is evaluated in the output state
@@ -87,8 +87,11 @@ end EvalState
 
 /-! ## The Unit Atom -/
 
-/-- The unit return value `()` — what `add-atom` and `remove-atom` return. -/
+/-- The unit literal `()`. Ordinary space mutations return `True`. -/
 def unitAtom : Pattern := .apply "()" []
+
+/-- Successful ordinary space mutations return a Boolean. -/
+def mutationSuccess : Pattern := .apply "True" []
 
 /-! ## Stateful Evaluation Relation -/
 
@@ -101,25 +104,25 @@ def unitAtom : Pattern := .apply "()" []
     Constructors cover the effectful PeTTa primitives plus embedding of pure eval. -/
 inductive PeTTaCmd : EvalState → Pattern → EvalState → Answers → Prop where
 
-  /-- **add-atom**: `(add-atom &self p)` adds `p` to the space and returns `()`.
+  /-- **add-atom**: `(add-atom &self p)` adds `p` to the space and returns `True`.
 
       PeTTa: `'add-atom'(&self, P) :- add_atom_to_space(self, P).`
-      Answer: `[()]` (the unit pattern). -/
+      Answer: `[True]`. -/
   | addAtomCmd (s : EvalState) (p : Pattern) :
       PeTTaCmd s
         (.apply "add-atom" [.apply "&self" [], p])
         (s.addAtom p)
-        [unitAtom]
+        [mutationSuccess]
 
   /-- **remove-atom**: `(remove-atom &self p)` removes all copies of `p` from
-      the space and returns `()`.
+      the space and returns `True`.
 
       PeTTa: `'remove-atom'(&self, P) :- remove_atom_from_space(self, P).` -/
   | removeAtomCmd (s : EvalState) (p : Pattern) :
       PeTTaCmd s
         (.apply "remove-atom" [.apply "&self" [], p])
         (s.removeAtom p)
-        [unitAtom]
+        [mutationSuccess]
 
   /-- **get-atoms**: `(get-atoms &self)` returns all stored atoms in the space as answers.
 
@@ -169,17 +172,17 @@ theorem pureEval_lifts (s : EvalState) (p : Pattern) (ans : Answers)
 
 /-- `addAtomCmd` strictly extends the fact list. -/
 theorem addAtomCmd_facts (s : EvalState) (p : Pattern) :
-    (s.addAtom p).space.facts = p :: s.space.facts := rfl
+    (s.addAtom p).space.facts = s.space.facts ++ [p] := rfl
 
 /-- The state output by `addAtomCmd` has the added atom as a fact. -/
 theorem addAtomCmd_mem_facts (s : EvalState) (p : Pattern) :
     p ∈ (s.addAtom p).space.facts :=
-  List.mem_cons_self ..
+  PeTTaSpace.mem_facts_addAtom_self s.space p
 
 /-- `addAtomCmd` preserves previously existing facts. -/
 theorem addAtomCmd_preserves_facts (s : EvalState) (p q : Pattern)
     (h : q ∈ s.space.facts) : q ∈ (s.addAtom p).space.facts :=
-  List.mem_cons_of_mem _ h
+  PeTTaSpace.mem_facts_addAtom h
 
 /-- `removeAtomCmd` only removes the targeted atom; other facts survive. -/
 theorem removeAtomCmd_subset_facts (s : EvalState) (p q : Pattern)
@@ -206,8 +209,8 @@ theorem addAtom_facts_subset (s : EvalState) (p : Pattern) :
     Characterizes the expression form and the state transition. -/
 theorem pettaCmd_shape (s s₁ : EvalState) (p : Pattern) (ans : Answers)
     (h : PeTTaCmd s p s₁ ans) :
-    (∃ q, p = .apply "add-atom" [.apply "&self" [], q] ∧ s₁ = s.addAtom q ∧ ans = [unitAtom]) ∨
-    (∃ q, p = .apply "remove-atom" [.apply "&self" [], q] ∧ s₁ = s.removeAtom q ∧ ans = [unitAtom]) ∨
+    (∃ q, p = .apply "add-atom" [.apply "&self" [], q] ∧ s₁ = s.addAtom q ∧ ans = [mutationSuccess]) ∨
+    (∃ q, p = .apply "remove-atom" [.apply "&self" [], q] ∧ s₁ = s.removeAtom q ∧ ans = [mutationSuccess]) ∨
     (p = .apply "get-atoms" [.apply "&self" []] ∧ s₁ = s ∧ ans = s.space.storedAtoms) ∨
     (s₁ = s ∧ PeTTaEval s.space p ans) ∨
     (∃ e₁ e₂, p = .apply "progn" [e₁, e₂]) ∨
@@ -259,8 +262,8 @@ theorem example_addThenGet :
 - `EvalState` — wraps `PeTTaSpace`; `empty`, `addAtom`, `removeAtom`, `addRule`, `withSpace`
 
 ### Commands (`PeTTaCmd s₀ expr s₁ answers`)
-- `addAtomCmd`  — `(add-atom &self p)` → adds fact, returns `[()]`
-- `removeAtomCmd` — `(remove-atom &self p)` → removes fact, returns `[()]`
+- `addAtomCmd`  — `(add-atom &self p)` → adds fact, returns `[True]`
+- `removeAtomCmd` — `(remove-atom &self p)` → removes fact, returns `[True]`
 - `getAtomsCmd` — `(get-atoms &self)` → returns all stored atoms, no state change
 - `pureEval`    — lifts any `PeTTaEval` derivation; no state change
 - `prognCmd`    — `(progn e₁ e₂)` → sequence, return e₂ answers

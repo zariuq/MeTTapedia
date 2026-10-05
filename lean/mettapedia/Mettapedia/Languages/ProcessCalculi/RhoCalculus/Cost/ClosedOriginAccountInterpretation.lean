@@ -218,10 +218,4 @@ theorem input_origin_key_distinct : key inputOrigin ≠ key zeroOrigin := by
       canonicalize (encodeTerm nilP) := by decide +kernel
   exact different patterns
 
-#print axioms sourceAtom_substitute
-#print axioms sourceWord_substitute
-#print axioms annotate_substitute
-#print axioms readoutOrigin_key
-#print axioms input_origin_key_distinct
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation

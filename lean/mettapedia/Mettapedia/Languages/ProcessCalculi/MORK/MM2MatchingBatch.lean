@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.MORK.MM2ResumableExecution
 # Resumable matching and atomic MM2 batch publication
 
 Selection consumes the live exec and captures a read snapshot containing that
-exec. The ordinary cursor client collects matching rows privately. A paused
+exec. The structural cursor client collects matching rows privately. A paused
 activation publishes no sink batch. A completed activation invokes the
 existing reflective sink implementation exactly once, agreeing with the
 independently defined finite-support firing on its admitted fragment.
@@ -34,15 +34,15 @@ def live (space : List Atom) (directive : SourceExecFact) : List Atom :=
 def snapshot (space : List Atom) (directive : SourceExecFact) : List Atom :=
   directive.atom :: live space directive
 
-def initial (space : List Atom) (directive : SourceExecFact) : MM2MatchingCursor.State :=
-  start (snapshot space directive) directive.rule.input
+def initial (space : List Atom) (directive : SourceExecFact) : MM2MatchingCursor.StructuralQuanta.State :=
+  StructuralQuanta.start (snapshot space directive) directive.rule.input
 
 abbrev packet (space : List Atom) (directive : SourceExecFact) :=
-  NativeControlCursor.packet (pull (entries (snapshot space directive)))
+  NativeControlCursor.packet (StructuralQuanta.pull (entries (snapshot space directive)))
     (initial space directive) []
 
 abbrev Result (space : List Atom) (directive : SourceExecFact) :=
-  Outcome (provider (entries (snapshot space directive))) (NativeControlCursor.client Row) ()
+  Outcome (StructuralQuanta.provider (entries (snapshot space directive))) (NativeControlCursor.client Row) ()
 
 def finalize (space : List Atom) (directive : SourceExecFact) (rows : List Row) : List Atom :=
   cApplyReflectiveTemplate (live space directive) (rows.map Prod.fst) directive.rule.tmpl
@@ -53,11 +53,11 @@ def publish (space : List Atom) (directive : SourceExecFact) :
 
 def run (space : List Atom) (directive : SourceExecFact) (fuel : Nat) :
     Nat × Result space directive :=
-  advance (provider (entries (snapshot space directive))) (NativeControlCursor.client Row)
+  advance (StructuralQuanta.provider (entries (snapshot space directive))) (NativeControlCursor.client Row)
     (fun _ _ => 1) fuel (packet space directive)
 
 @[simp] theorem paused_cannot_commit (space : List Atom) (directive : SourceExecFact)
-    (residual : Packet (provider (entries (snapshot space directive)))
+    (residual : Packet (StructuralQuanta.provider (entries (snapshot space directive)))
       (NativeControlCursor.client Row) ()) :
     publish space directive (.paused residual) = none := rfl
 
@@ -65,17 +65,23 @@ def run (space : List Atom) (directive : SourceExecFact) (fuel : Nat) :
 additional committed MM2 firing or a discarded matcher quantum. -/
 theorem run_observation (space : List Atom) (directive : SourceExecFact) (fuel : Nat) :
     publish space directive (run space directive (fuel + 1)).2 =
-      (collect (pull (entries (snapshot space directive))) fuel
+      (collect (StructuralQuanta.pull (entries (snapshot space directive))) fuel
         (initial space directive)).map (finalize space directive) := by
   unfold publish run packet
   rw [NativeControlCursor.advance_collect]
   simp
 
+/-- A first grant cannot publish an unfinished input match or its sink batch. -/
+theorem first_grant_cannot_commit (space : List Atom) (directive : SourceExecFact) :
+    publish space directive (run space directive 1).2 = none := by
+  rw [show 1 = 0 + 1 from rfl, run_observation]
+  rfl
+
 theorem finalize_reference (space : List Atom) (directive : SourceExecFact) :
     finalize space directive
-      (residualRows (entries (snapshot space directive)) (initial space directive)) =
+      (StructuralQuanta.residualRows (entries (snapshot space directive)) (initial space directive)) =
         cFireReflectiveSourceExecFact space directive := by
-  have erased := start_rows_erase (snapshot space directive) directive.rule.input []
+  have erased := StructuralQuanta.start_rows_erase (snapshot space directive) directive.rule.input []
   have substitutions := congrArg (List.map Prod.fst) erased
   simp only [List.map_map, eraseRow, Function.comp_def] at substitutions
   unfold finalize initial
@@ -92,25 +98,25 @@ theorem commit_sound (space : List Atom) (directive : SourceExecFact)
   | zero => simp [run, advance, publish, NativeControlCursor.published] at committed
   | succ fuel =>
       rw [run_observation] at committed
-      cases collected : collect (pull (entries (snapshot space directive))) fuel
+      cases collected : collect (StructuralQuanta.pull (entries (snapshot space directive))) fuel
           (initial space directive) with
       | none => simp [collected] at committed
       | some rows =>
           simp only [collected, Option.map_some, Option.some.injEq] at committed
-          rw [← committed, collect_sound _ _ _ _ collected]
+          rw [← committed, StructuralQuanta.collect_sound _ _ _ _ collected]
           exact finalize_reference _ _
 
-def allowance (space : List Atom) (directive : SourceExecFact) : Nat :=
-  remainingCost (entries (snapshot space directive)) (initial space directive) + 2
+noncomputable def allowance (space : List Atom) (directive : SourceExecFact) : Nat :=
+  StructuralQuanta.remainingCost (entries (snapshot space directive)) (initial space directive) + 2
 
 theorem commit_complete (space : List Atom) (directive : SourceExecFact) :
     publish space directive (run space directive (allowance space directive)).2 =
       some (cFireReflectiveSourceExecFact space directive) := by
   unfold allowance
-  rw [show remainingCost (entries (snapshot space directive)) (initial space directive) + 2 =
-      (remainingCost (entries (snapshot space directive)) (initial space directive) + 1) + 1
+  rw [show StructuralQuanta.remainingCost (entries (snapshot space directive)) (initial space directive) + 2 =
+      (StructuralQuanta.remainingCost (entries (snapshot space directive)) (initial space directive) + 1) + 1
       from rfl, run_observation]
-  rw [collect_complete _ _ _ (Nat.lt_succ_self _)]
+  rw [StructuralQuanta.collect_complete _ _ _ (Nat.lt_succ_self _)]
   simp only [Option.map_some, finalize_reference]
 
 theorem commit_exists_iff (space : List Atom) (directive : SourceExecFact)

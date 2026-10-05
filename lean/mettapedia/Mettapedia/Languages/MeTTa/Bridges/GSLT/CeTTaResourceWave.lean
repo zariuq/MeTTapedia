@@ -133,7 +133,7 @@ theorem demand_function_source_admitted : NativeC.primitiveFunctionText? represe
     demand_lexed demand_parsed]
   have normalized : NativeC.primitiveStatements?
       (NativeC.primitiveParameterBindings demandHeader.parameters ++ []) .bool
-      (demandSource.length + 1) demandParsed.body ⟨demandHeader.parameters.length⟩ =
+      (demandSource.length + 1) demandParsed.body ⟨demandHeader.parameters.length⟩ [] representation =
       some (demandCode.drop 4, ⟨12⟩) := by
     have length : demandSource.length + 1 = 308 := by decide +kernel
     rw [length]

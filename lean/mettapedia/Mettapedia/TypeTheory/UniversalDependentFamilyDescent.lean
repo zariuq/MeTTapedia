@@ -99,7 +99,7 @@ theorem exact_iff_allFamiliesDescend
 
 /-- The canonical comparison from ordinary source equality to equality after
 the readout. -/
-def ordinaryIdentityComparison
+theorem ordinaryIdentityComparison
     {Source : Type uSource} {Target : Type uTarget}
     (readout : SplitReadout Source Target) :
     Comparison

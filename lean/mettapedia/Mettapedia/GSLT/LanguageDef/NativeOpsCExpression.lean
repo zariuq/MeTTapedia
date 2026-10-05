@@ -77,6 +77,9 @@ mutual
                 match afterType with
                 | .punctuation ['{'] :: .number ['0'] :: .punctuation ['}'] :: afterZero =>
                     postfix? fuel names (.zero type) afterZero
+                | .punctuation ['{'] :: afterOpen => do
+                    let (values, afterValues) ← initializers? fuel names afterOpen
+                    postfix? fuel names (.aggregate type values) afterValues
                 | _ => do
                     let (operand, afterOperand) ← prefix? fuel names afterType
                     some (.cast type operand, afterOperand)
@@ -98,29 +101,43 @@ mutual
                   let value ← byteChars? characters
                   postfix? fuel names (.byte value) after
               | _ => none
-            else if name == "sizeof".toList then do
-              let (type, afterType) ← cType? names rest
-              match afterType with
-              | .punctuation [')'] :: after => postfix? fuel names (.sizeOf type) after
-              | _ => none
+            else if name == "sizeof".toList then
+              match cType? names rest with
+              | some (type, .punctuation [')'] :: after) =>
+                  postfix? fuel names (.sizeOf type) after
+              | _ => do
+                  let (operand, afterOperand) ← expression? fuel names 0 rest
+                  match afterOperand with
+                  | .punctuation [')'] :: after =>
+                      postfix? fuel names (.sizeOfExpr operand) after
+                  | _ => none
             else do
               let (arguments, after) ← arguments? fuel names rest
               postfix? fuel names (.call name arguments) after
         | .identifier name :: rest =>
-            let value := if name == "true".toList then CExpr.bool true
-              else if name == "false".toList then .bool false
-              else if name == "NULL".toList then .null else .identifier name
-            postfix? fuel names value rest
-        | .number ['0', 'u'] :: rest | .number ['0', 'U'] :: rest =>
-            postfix? fuel names (.cast ⟨"unsigned".toList, 0⟩ (.decimal 0)) rest
-        | .number characters :: rest => do
-            let value ← decimalChars? characters
-            postfix? fuel names (.decimal value) rest
+            if name == "sizeof".toList then do
+              let (operand, afterOperand) ← prefix? fuel names rest
+              postfix? fuel names (.sizeOfExpr operand) afterOperand
+            else
+              let value := if name == "true".toList then CExpr.bool true
+                else if name == "false".toList then .bool false
+                else if name == "NULL".toList then .null else .identifier name
+              postfix? fuel names value rest
+        | .number characters :: rest =>
+            match unsignedChars? characters with
+            | some value => postfix? fuel names (.unsignedInteger value) rest
+            | none => do
+                let value ← decimalChars? characters
+                postfix? fuel names (.decimal value) rest
         | _ => none
 
   def postfix? (fuel : Nat) (names : TypeNames) (base : CExpr)
       (tokens : List Token) : Option (CExpr × List Token) :=
     match tokens with
+    | .punctuation ['+', '+'] :: rest =>
+        match fuel with
+        | 0 => none
+        | fuel + 1 => postfix? fuel names (.postIncrement base) rest
     | .punctuation ['.'] :: .identifier field :: rest =>
         match fuel with
         | 0 => none
@@ -156,6 +173,23 @@ mutual
               let (others, afterOthers) ← arguments? fuel names rest
               some (first :: others, afterOthers)
           | _ => none
+
+  /-- Positional initializers are retained in source order. An empty list is
+  outside C11; a final comma is legal. Layout, conversion and zero-filling
+  obligations belong to typed execution rather than syntax recognition. -/
+  def initializers? (fuel : Nat) (names : TypeNames)
+      (tokens : List Token) : Option (List CExpr × List Token) :=
+    match fuel with
+    | 0 => none
+    | fuel + 1 => do
+        let (first, afterFirst) ← expression? fuel names 0 tokens
+        match afterFirst with
+        | .punctuation ['}'] :: after => some ([first], after)
+        | .punctuation [','] :: .punctuation ['}'] :: after => some ([first], after)
+        | .punctuation [','] :: rest => do
+            let (others, afterOthers) ← initializers? fuel names rest
+            some (first :: others, afterOthers)
+        | _ => none
 end
 
 def completeExpression? (names : TypeNames) (tokens : List Token) : Option CExpr := do
@@ -206,13 +240,33 @@ theorem oversized_word_macro_refused : expressionText? exampleTypes
 theorem trailing_call_argument_comma_refused : expressionText? exampleTypes
     "f(x,)".toList = none := by cbv
 
-/-- The unsigned suffix has its own integral type. It is not rewritten to
-an arbitrary 64-bit arithmetic operand. The scalar return reader can check
-the exact zero conversion against the function's declared result. -/
+/-- The unsigned suffix remains explicit syntax. Its C integer type still
+requires an ABI and range check; recognition does not widen the operand. -/
 theorem unsigned_zero_keeps_integral_type : expressionText? exampleTypes "0u".toList =
-    some (.cast ⟨"unsigned".toList, 0⟩ (.decimal 0)) := by cbv
+    some (.unsignedInteger 0) := by cbv
 
-theorem unsupported_unsigned_arithmetic_literal_refused :
-    expressionText? exampleTypes "1u".toList = none := by cbv
+theorem unsigned_nonzero_magnitude_retained :
+    expressionText? exampleTypes "1u".toList = some (.unsignedInteger 1) := by cbv
+
+theorem unsigned_octal_expression_retained :
+    expressionText? exampleTypes "077U".toList = some (.unsignedInteger 63) := by cbv
+
+theorem invalid_unsigned_octal_expression_refused :
+    expressionText? exampleTypes "09u".toList = none := by cbv
+
+theorem unsuffixed_octal_expression_not_misread :
+    expressionText? exampleTypes "077".toList = none := by cbv
+
+theorem word_macro_octal_not_misread :
+    expressionText? exampleTypes "UINT64_C(077)".toList = none := by cbv
+
+theorem byte_macro_octal_not_misread :
+    expressionText? exampleTypes "UINT8_C(010)".toList = none := by cbv
+
+theorem postfix_increment_is_not_prefix : expressionText? exampleTypes "i++".toList =
+    some (.postIncrement (.identifier ['i'])) := by cbv
+
+theorem postfix_increment_precedes_addition : expressionText? exampleTypes "i++ + j".toList =
+    some (.binary .add (.postIncrement (.identifier ['i'])) (.identifier ['j'])) := by cbv
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC

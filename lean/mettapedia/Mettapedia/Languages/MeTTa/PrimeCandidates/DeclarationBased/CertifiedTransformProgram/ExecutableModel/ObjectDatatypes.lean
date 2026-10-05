@@ -434,16 +434,22 @@ theorem trees_fresh :
       rcases field with impossible | impossible <;> exact nomatch impossible
 
 /-- **The set of the type of trees** is the least set closed under a tip of each list and a
-fork of two trees: the field of the tips is read as the set of the lists. -/
+fork of two trees, the two read by their names: the field of the tips is read as the set of
+the lists. -/
 theorem treeValue : objectDeclarationsConsts h datatypes treeN =
-    carrier [[ZFSetInductive.Field.ofSet (carrier (ZFSetInductive.listSignature ZFSet.omega))],
-      [.recursive, .recursive]] := by
+    carrier [⟨ZFSetInductive.nameCode tipN,
+        [ZFSetInductive.Field.ofSet (carrier [⟨ZFSetInductive.nameCode nilN, []⟩,
+          ⟨ZFSetInductive.nameCode consN,
+            [ZFSetInductive.Field.ofSet ZFSet.omega, .recursive]⟩])]⟩,
+      ⟨ZFSetInductive.nameCode forkN, [.recursive, .recursive]⟩] := by
   have reading := inductiveConsts_reading (v := listMotives) (trees_fresh h)
   have signatures := signature_of_agrees (trees_fresh h)
     (inductiveConsts_agrees (objHeads h) (listConsts h) treeN listMotives treeCtors treeRecN)
   show inductiveConsts (objHeads h) (listConsts h) treeN listMotives treeCtors treeRecN treeN = _
   rw [reading.type, signatures]
-  show carrier [[ZFSetInductive.Field.ofSet (listConsts h listN)], [.recursive, .recursive]] = _
+  show carrier [⟨ZFSetInductive.nameCode tipN,
+      [ZFSetInductive.Field.ofSet (listConsts h listN)]⟩,
+    ⟨ZFSetInductive.nameCode forkN, [.recursive, .recursive]⟩] = _
   rw [listValue]
 
 /-- In the set model the spine of the empty list has the value of the tip of the empty list. -/

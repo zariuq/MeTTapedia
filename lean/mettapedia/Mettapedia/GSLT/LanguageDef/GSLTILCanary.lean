@@ -111,14 +111,14 @@ private theorem step_target_revision :
       (.fibreAt targetRevision_mem)
 
 /-- Positive: revising before transport reaches the common target. -/
-def reviseThenTransport :
+theorem reviseThenTransport :
     (totalTheory catalog).MultiStep start joined :=
   .step step_source_revision
     (.step step_transport_after_revision
       (@GSLT.MultiStep.refl (totalTheory catalog) joined))
 
 /-- Positive: transporting before revision reaches the same target. -/
-def transportThenRevise :
+theorem transportThenRevise :
     (totalTheory catalog).MultiStep start joined :=
   .step step_transport_before_revision
     (.step step_target_revision
@@ -213,13 +213,13 @@ def program : Program :=
 
 /-- Local computation remains available while a route application is
 pending. -/
-def computeBeforeRoute :
+theorem computeBeforeRoute :
     Step program (routeCall "grow" ready) (routeCall "grow" done) :=
   .underRoute (route := growth) (rule := sourceRule)
     (by simp [program]) (by simp [program]) rfl
 
 /-- The same pending command may instead cross its declared route. -/
-def applyRouteBeforeCompute :
+theorem applyRouteBeforeCompute :
     Step program (routeCall "grow" ready) (inSpace space1 mappedReady) :=
   .applyRoute (route := growth) (rule := readyMap)
     (by simp [program]) (by simp [program]) rfl
@@ -260,16 +260,16 @@ private def chainProgram : Program :=
     routes := []
     routeRules := [] }
 
-private def stepAB :
+private theorem stepAB :
     Step chainProgram (inSpace space0 a) (inSpace space0 b) :=
   .inSpace (rule := ruleAB) (by simp [chainProgram])
 
-private def stepBC :
+private theorem stepBC :
     Step chainProgram (inSpace space0 b) (inSpace space0 c) :=
   .inSpace (rule := ruleBC) (by simp [chainProgram])
 
 /-- Two generating steps compose in the runner closure. -/
-def chainRun : Runs chainProgram (inSpace space0 a) (inSpace space0 c) :=
+theorem chainRun : Runs chainProgram (inSpace space0 a) (inSpace space0 c) :=
   .tail stepAB (.tail stepBC (.refl _))
 
 /-- The generating catalog contains no direct `a` to `c` rule merely because

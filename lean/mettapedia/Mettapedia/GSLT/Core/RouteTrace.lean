@@ -18,6 +18,62 @@ universe uObject uStep uEvent
 variable {Object : Type uObject} {Step : Object → Object → Type uStep}
 variable {Event : Type uEvent}
 
+/-- An operational trace judgment with a declared list of observations per
+step. Empty observations retain their underlying step and transition count. -/
+inductive ObservedTrace {Object : Type uObject}
+    {Step : Object → Object → Type uStep} {Event : Type uEvent}
+    (observe : {source target : Object} → Step source target → List Event) :
+    Nat → Object → Object → List Event → Prop where
+  | refl (source : Object) : ObservedTrace (Step := Step) (@observe) 0 source source []
+  | cons {count : Nat} {source middle target : Object} {observations : List Event}
+      (edge : Step source middle)
+      (rest : ObservedTrace (Step := Step) (@observe) count middle target observations) :
+      ObservedTrace (Step := Step) (@observe) (count + 1) source target (observe edge ++ observations)
+
+namespace ObservedTrace
+
+theorem comp (observe : {source target : Object} → Step source target → List Event)
+    {first second : Nat} {source middle target : Object} {leftEvents rightEvents : List Event}
+    (left : ObservedTrace (Step := Step) (@observe) first source middle leftEvents)
+    (right : ObservedTrace (Step := Step) (@observe) second middle target rightEvents) :
+    ObservedTrace (Step := Step) (@observe) (first + second) source target (leftEvents ++ rightEvents) := by
+  induction left with
+  | refl state => simpa using right
+  | cons edge rest ih =>
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm, List.append_assoc] using
+        ObservedTrace.cons edge (ih right)
+
+/-- Changing the representation of step evidence preserves the declared
+observation. The state endpoints and number of steps are unchanged. -/
+theorem map {OtherStep : Object → Object → Type*}
+    (observe : {source target : Object} → Step source target → List Event)
+    (otherObserve : {source target : Object} → OtherStep source target → List Event)
+    (mapStep : {source target : Object} → Step source target → OtherStep source target)
+    (preserves : ∀ {source target} (edge : Step source target),
+      otherObserve (mapStep edge) = observe edge)
+    {count : Nat} {source target : Object} {observations : List Event}
+    (trace : ObservedTrace (Step := Step) (@observe) count source target observations) :
+    ObservedTrace (Step := OtherStep) (@otherObserve) count source target observations := by
+  induction trace with
+  | refl state => exact .refl state
+  | cons edge rest ih => simpa only [preserves] using ObservedTrace.cons (mapStep edge) ih
+
+/-- A reported event comes from one of the real steps of the trace. -/
+theorem mem_has_step
+    (observe : {source target : Object} → Step source target → List Event)
+    {count : Nat} {source target : Object} {observations : List Event}
+    (trace : ObservedTrace (Step := Step) (@observe) count source target observations)
+    (event : Event) (member : event ∈ observations) :
+    ∃ (before after : Object) (edge : Step before after), event ∈ observe edge := by
+  induction trace with
+  | refl state => simp at member
+  | @cons count before middle after observations edge rest ih =>
+      rcases List.mem_append.mp member with first | later
+      · exact ⟨before, middle, edge, first⟩
+      · exact ih later
+
+end ObservedTrace
+
 /-- The ordered event record of a finite route. -/
 def trace (event : {source target : Object} → Step source target → Event)
     {source target : Object} : Route Step source target → List Event
@@ -57,6 +113,29 @@ theorem trace_heq
   | refl => rfl
   | cons step rest inductionHypothesis =>
       simp [trace, length, inductionHypothesis]
+
+/-- The observation judgment describes exactly the finite routes with the
+specified transition count and flattened event record. An empty observation
+does not remove its step from the witnessing route. -/
+theorem observed_trace_iff_route
+    (observe : {source target : Object} → Step source target → List Event)
+    {count : Nat} {source target : Object} {observations : List Event} :
+    ObservedTrace (Step := Step) (@observe) count source target observations ↔
+      ∃ route : Route Step source target,
+        route.length = count ∧ (trace (@observe) route).flatten = observations := by
+  constructor
+  · intro admitted
+    induction admitted with
+    | refl state => exact ⟨.refl state, rfl, rfl⟩
+    | cons edge rest ih =>
+        obtain ⟨route, countEq, observationsEq⟩ := ih
+        exact ⟨.cons edge route, by simp [length, countEq],
+          by simp [trace, observationsEq]⟩
+  · rintro ⟨route, rfl, rfl⟩
+    induction route with
+    | refl state => exact .refl state
+    | cons edge rest ih =>
+        simpa only [trace, length, List.flatten_cons] using ObservedTrace.cons edge ih
 
 /-- If each event identifies an outgoing step at its source, a whole event
 trace identifies the route and its final state. -/

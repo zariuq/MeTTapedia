@@ -144,9 +144,9 @@ theorem modelSN_computesAdd (v : Nat → Nat) : ComputesAdd (tmodelC v).toSettin
   intro n x y i j left right
   induction right with
   | zero red =>
-      exact left.expand (Relation.ReflTransGen.tail (vadd_scrutinee v x red) (vadd_zero_step v x))
+      exact left.expand (Relation.ReflTransGen.tail (objectTExt.add_scrutinee v x red) (objectTExt.add_zero_step v x))
   | suc red _ ih =>
-      exact .suc (Relation.ReflTransGen.tail (vadd_scrutinee v x red) (vadd_suc_step v x _)) ih
+      exact .suc (Relation.ReflTransGen.tail (objectTExt.add_scrutinee v x red) (objectTExt.add_suc_step v x _)) ih
 
 /-- **The consistency model's reduction computes addition.** -/
 theorem consistency_computesAdd (v : Nat → Nat) : ComputesAdd (model v).toSetting :=

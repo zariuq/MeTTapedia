@@ -9,6 +9,7 @@ import Mettapedia.Languages.ProcessCalculi.CCS.Continued
 import Mettapedia.Languages.ProcessCalculi.CCS.Surface
 import Mettapedia.Languages.ProcessCalculi.Ambient.Continued
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredSemantics
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SynchronousDecoration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
@@ -131,6 +132,16 @@ theorem interactionCategory_visible_row :
   ⟨interactionCategory_isInteractive .visible, visible_migrationMode,
     visible_isContinued, visibleNonPrincipalDecoration_not_wrappable⟩
 
+/-- **A wrappable cut that is not a two-slot plan.**  Visible composition has
+a wrappable cut, whose continuation bundle contains the rebuilt action
+prefix, and is the theory of no `WrappableIGSLT`: those carry a two-slot
+plan. -/
+theorem visible_wrappableCut_without_plan :
+    Nonempty (WrappableCut (theory .visible)) ∧
+      ∀ wrappable : WrappableIGSLT, wrappable.theory ≠ theory .visible :=
+  ⟨⟨visibleContinuedPresentation.toWrappableCut⟩,
+    visibleComposition_not_wrappableIGSLT⟩
+
 end InteractionCategories
 
 /-! ## Rho and pi, asynchronous -/
@@ -154,8 +165,8 @@ theorem rho_row :
   ⟨rhoCalc_isInteractive, rho_subject_nominal, rho_migrationMode, rfl⟩
 
 /-- The static laws of asynchronous pi are those of one bag. -/
-theorem pi_bagTheory : BagTheory piCalc piParallelConstructor.1 none :=
-  bagTheory_of_check (by decide +kernel)
+theorem pi_bagTheory : BagTheory piCalc piParallelConstructor.1 (some "PiNil") :=
+  piBagTheory
 
 /-- The bag normal form is a section of asynchronous pi. -/
 def piCanonicalSection : ComputableCanonicalSection piIGSLT :=
@@ -190,7 +201,7 @@ open Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous
 
 /-- The static laws of synchronous pi are those of one bag. -/
-theorem piSync_bagTheory : BagTheory piSyncCalc piSyncParallelConstructor.1 none :=
+theorem piSync_bagTheory : BagTheory piSyncCalc piSyncParallelConstructor.1 (some "PiNil") :=
   bagTheory_of_check (by decide +kernel)
 
 /-- The bag normal form is a section of synchronous pi. -/

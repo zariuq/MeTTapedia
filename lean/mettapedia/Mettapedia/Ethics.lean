@@ -28,6 +28,7 @@ import Mettapedia.Ethics.EthicalCommunicationConceptFormation
 import Mettapedia.Ethics.EthicalCommunicationTrinity
 import Mettapedia.Ethics.TargetCenteredVirtue
 import Mettapedia.Ethics.MoralParadigmEquivalence
+import Mettapedia.Ethics.ParadigmPluralism
 import Mettapedia.Ethics.OptimizerVirtueBridge
 import Mettapedia.Ethics.EthicalLearningApproximation
 import Mettapedia.Ethics.EthicalConceptFormation

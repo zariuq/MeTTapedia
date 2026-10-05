@@ -9,8 +9,11 @@ it runs and of how it is typed.
 **The sets.** A numeral is a finite ordinal: zero is `∅` and the successor of `x` is
 `x ∪ {x}` (`NumExpr.toSet`). The set of lists (`listSet`) is the least set closed under the
 empty list (`nilSet`) and a natural number before a list (`consSet`): the carrier of the
-signature of lists over `ω` (`ZFSetInductive.carrier`, `ZFSetInductive.listSignature`). Its
-induction principle (`list_induct`) is the induction of that carrier.
+signature of lists over `ω` (`ZFSetInductive.carrier`, `listSignature`). A constructor is read
+by its name: the empty list is the code of the name `nil` paired with the empty tuple, and a
+number before a list is the code of the name `cons` paired with the tuple of the two
+(`ZFSetInductive.nameCode`, `ZFSetInductive.constructorValue`). Its induction principle
+(`list_induct`) is the induction of that carrier.
 
 **The append, on sets alone.** By the recursion of the set of lists
 (`ZFSetInductive.recFun`) every list gives a function from lists to lists, coded as a set
@@ -18,8 +21,8 @@ induction principle (`list_induct`) is the induction of that carrier.
 function that puts `a` before the value of the function of `l` (`appendFun`). The append of
 two sets is the function of the first applied to the second (`setAppend`). It satisfies the
 two equations of the source (`setAppend_nil`, `setAppend_cons`), sends two lists to a list
-(`setAppend_mem`), and is the only function on lists with those two equations
-(`setAppend_unique`). Nothing of the type theory is used to define it.
+(`setAppend_mem`), is associative (`setAppend_assoc`), and is the only function on lists with
+those two equations (`setAppend_unique`). Nothing of the type theory is used to define it.
 
 **The reading of the source** (`ListExpr.toSet`): `nil` is `nilSet`, `cons` is `consSet` and
 `append` is `setAppend`; every expression is read as a list (`ListExpr.toSet_mem`). A step of
@@ -54,8 +57,9 @@ open Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransf
 open CodeModel
 open Mettapedia.Logic.HOL.Embedding
 open ZFSetUniverseClosure (CofinalInaccessibles)
-open ZFSetInductive (Fits constructorValue carrier listSignature recFun
-  constructor_mem_carrier carrier_induct recFun_constructor constructorValue_injective)
+open ZFSetInductive (Fits constructorValue carrier recFun nameCode DistinctTags
+  constructor_mem_carrier carrier_induct recFun_constructor constructorValue_injective
+  numeral_zero_ne_one)
 open ZFSetDependentProducts (graph)
 open ZFSetTraceProducts (traceLam traceApp traceApp_graph_beta)
 
@@ -63,26 +67,37 @@ universe u
 
 /-! ## The set of lists -/
 
+/-- **The signature of the lists of natural numbers**: the empty list, and a member of `ω`
+before a list. The two constructors carry the codes of the names `nil` and `cons`. -/
+def listSignature : ZFSetInductive.Signature.{u} :=
+  [⟨nameCode nilN, []⟩,
+    ⟨nameCode consN, [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive]⟩]
+
+/-- The two constructors have different names, so their tags are distinct. -/
+theorem listSignature_distinct : DistinctTags listSignature.{u} :=
+  ZFSetInductive.distinctTags_pair (ZFSetInductive.nameCode_injective.ne (by decide))
+
 /-- **The set of the lists of natural numbers**: the least set closed under the empty list and
 a member of `ω` before a list. -/
-noncomputable abbrev listSet : ZFSet.{u} := carrier (listSignature ZFSet.omega)
+noncomputable abbrev listSet : ZFSet.{u} := carrier listSignature
 
-/-- The empty list as a set: the value of constructor `0` at no argument. -/
-def nilSet : ZFSet.{u} := constructorValue 0 []
+/-- The empty list as a set: the code of the name `nil` at no argument. -/
+def nilSet : ZFSet.{u} := constructorValue (nameCode nilN) []
 
-/-- A number before a list, as a set: the value of constructor `1` at the two. -/
-def consSet (a l : ZFSet.{u}) : ZFSet.{u} := constructorValue 1 [a, l]
+/-- A number before a list, as a set: the code of the name `cons` at the two. -/
+def consSet (a l : ZFSet.{u}) : ZFSet.{u} := constructorValue (nameCode consN) [a, l]
 
 /-- The empty list is a list. -/
 theorem nilSet_mem : nilSet.{u} ∈ listSet.{u} :=
-  constructor_mem_carrier (sig := listSignature ZFSet.omega) (i := 0) (c := []) (args := [])
-    rfl Fits.nil
+  constructor_mem_carrier (sig := listSignature) (i := 0) (c := ⟨nameCode nilN, []⟩)
+    (args := []) rfl Fits.nil
 
 /-- A natural number before a list is a list. -/
 theorem consSet_mem {a l : ZFSet.{u}} (ha : a ∈ ZFSet.omega) (hl : l ∈ listSet) :
     consSet a l ∈ listSet :=
-  constructor_mem_carrier (sig := listSignature ZFSet.omega) (i := 1)
-    (c := [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive])
+  constructor_mem_carrier (sig := listSignature) (i := 1)
+    (c := ⟨nameCode consN,
+      [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive]⟩)
     (args := [a, l]) rfl (Fits.ofSet ha (Fits.recursive hl Fits.nil))
 
 /-- **Induction on the set of lists**: a property of the empty list that passes from a list to
@@ -91,23 +106,25 @@ theorem list_induct {P : ZFSet.{u} → Prop} (nil : P nilSet)
     (cons : ∀ a l, a ∈ ZFSet.omega → l ∈ listSet → P l → P (consSet a l)) :
     ∀ l, l ∈ listSet → P l := by
   intro l member
-  refine (carrier_induct (sig := listSignature ZFSet.omega)
+  refine (carrier_induct (sig := listSignature)
     (P := fun y => y ∈ listSet ∧ P y) ?_ member).2
   intro i c args atIndex fitting
   have bound := ZFSetInductive.some_index_lt atIndex
   cases i with
   | zero =>
-      have hc : c = [] := (Option.some_inj).mp atIndex.symm
+      have hc : c = ⟨nameCode nilN, []⟩ := (Option.some_inj).mp atIndex.symm
       subst hc
-      cases fitting
+      cases (fitting : ZFSetInductive.FitsPred _ [] args)
       exact ⟨nilSet_mem, nil⟩
   | succ i =>
       cases i with
       | zero =>
-          have hc : c = [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive] :=
+          have hc : c = ⟨nameCode consN,
+              [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive]⟩ :=
             (Option.some_inj).mp atIndex.symm
           subst hc
-          cases fitting with
+          cases (fitting : ZFSetInductive.FitsPred _
+            [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive] args) with
           | ofSet headMember tailFit =>
               cases tailFit with
               | recursive tail rest =>
@@ -118,8 +135,8 @@ theorem list_induct {P : ZFSet.{u} → Prop} (nil : P nilSet)
 /-- Negative example: the empty set is not a list. Every list is a tagged pair. -/
 theorem empty_not_mem_listSet : (∅ : ZFSet.{u}) ∉ listSet.{u} := by
   intro member
-  obtain ⟨i, _, args, _, _, value⟩ := ZFSetInductive.exists_inversion member
-  exact ZFSetInductive.constructorValue_ne_empty i args value
+  obtain ⟨_, c, args, _, _, value⟩ := ZFSetInductive.exists_inversion member
+  exact ZFSetInductive.constructorValue_ne_empty c.tag args value
 
 /-! ## The append, by the recursion of the set of lists -/
 
@@ -136,23 +153,24 @@ noncomputable def appendCase (i : Nat) (args recs : List ZFSet.{u}) : ZFSet.{u} 
 
 /-- **The function of a list**, by the recursion of the set of lists. -/
 noncomputable def appendFun : ZFSet.{u} → ZFSet.{u} :=
-  recFun (sig := listSignature ZFSet.omega) appendCase
+  recFun (sig := listSignature) appendCase
 
 /-- **The append of two sets**: the function of the first, applied to the second. -/
 noncomputable def setAppend (l ys : ZFSet.{u}) : ZFSet.{u} := traceApp (appendFun l) ys
 
 /-- The function of the empty list is the identity on lists. -/
 theorem appendFun_nil : appendFun nilSet.{u} = traceLam (graph listSet fun ys => ys) :=
-  recFun_constructor (sig := listSignature ZFSet.omega) appendCase (i := 0) (c := [])
-    (args := []) rfl Fits.nil
+  recFun_constructor (sig := listSignature) listSignature_distinct appendCase (i := 0)
+    (c := ⟨nameCode nilN, []⟩) (args := []) rfl Fits.nil
 
 /-- The function of a number before a list puts the number before the values of the function
 of the list. -/
 theorem appendFun_cons {a l : ZFSet.{u}} (ha : a ∈ ZFSet.omega) (hl : l ∈ listSet) :
     appendFun (consSet a l) =
       traceLam (graph listSet fun ys => consSet a (traceApp (appendFun l) ys)) :=
-  recFun_constructor (sig := listSignature ZFSet.omega) appendCase (i := 1)
-    (c := [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive])
+  recFun_constructor (sig := listSignature) listSignature_distinct appendCase (i := 1)
+    (c := ⟨nameCode consN,
+      [ZFSetInductive.Field.ofSet ZFSet.omega, ZFSetInductive.Field.recursive]⟩)
     (args := [a, l]) rfl (Fits.ofSet ha (Fits.recursive hl Fits.nil))
 
 /-- **The first equation, between sets**: the empty list appended to a list is the list. -/
@@ -194,6 +212,16 @@ the list. By induction on the set of lists. -/
 theorem setAppend_nil_right : ∀ l, l ∈ listSet.{u} → setAppend l nilSet = l :=
   list_induct (P := fun l => setAppend l nilSet = l) (setAppend_nil nilSet_mem)
     (fun a l ha hl ih => by rw [setAppend_cons ha hl nilSet_mem, ih])
+
+/-- **The append on sets is associative**, by induction on the set of lists. -/
+theorem setAppend_assoc : ∀ x, x ∈ listSet.{u} → ∀ y, y ∈ listSet.{u} → ∀ z, z ∈ listSet.{u} →
+    setAppend (setAppend x y) z = setAppend x (setAppend y z) :=
+  list_induct (P := fun x => ∀ y, y ∈ listSet → ∀ z, z ∈ listSet →
+      setAppend (setAppend x y) z = setAppend x (setAppend y z))
+    (fun y hy z hz => by rw [setAppend_nil hy, setAppend_nil (setAppend_mem _ hy _ hz)])
+    (fun a x ha hx ih y hy z hz => by
+      rw [setAppend_cons ha hx hy, setAppend_cons ha (setAppend_mem _ hx _ hy) hz, ih y hy z hz,
+        setAppend_cons ha hx (setAppend_mem _ hy _ hz)])
 
 /-! ## The source, read as sets -/
 
@@ -258,13 +286,6 @@ theorem append_two_one_toSet :
   (setAppend_cons (NumExpr.toSet_mem (.suc .zero)) nilSet_mem (ListExpr.toSet_mem one)).trans
     (congrArg (consSet _) (setAppend_nil (ListExpr.toSet_mem one)))
 
-/-- The numerals `0` and `1` are different sets. -/
-theorem numeral_zero_ne_one : (numeral 0 : ZFSet.{u}) ≠ numeral 1 := by
-  intro same
-  have member : numeral 0 ∈ (numeral 1 : ZFSet.{u}) := ZFSet.mem_insert _ _
-  rw [← same] at member
-  exact ZFSet.notMem_empty _ member
-
 /-- Two lists with different first numbers are different sets. -/
 theorem consSet_ne_of_head_ne {a b l m : ZFSet.{u}} (distinct : a ≠ b) :
     consSet a l ≠ consSet b m := by
@@ -328,8 +349,9 @@ theorem program_reading :
 /-- **The type of lists means the set of lists.** -/
 theorem program_list : objectDeclarationsConsts h listProgram listN = listSet := by
   rw [(program_reading h).type]
-  show carrier [[], [ZFSetInductive.Field.ofSet (objectDeclarationsConsts h listProgram numN),
-    ZFSetInductive.Field.recursive]] = carrier (listSignature ZFSet.omega)
+  show carrier [⟨nameCode nilN, []⟩, ⟨nameCode consN,
+    [ZFSetInductive.Field.ofSet (objectDeclarationsConsts h listProgram numN),
+      ZFSetInductive.Field.recursive]⟩] = carrier listSignature
   rw [program_num h]
   rfl
 

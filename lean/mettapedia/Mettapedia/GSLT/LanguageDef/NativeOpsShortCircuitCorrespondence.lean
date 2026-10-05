@@ -45,6 +45,7 @@ structure ShortCircuitChildLaws {SourceWorld TargetWorld : Type}
       GuardedEvaluationRelated interface default output.result source target sourceOut out ∧
       TemporaryProtection supply.next targetFrame out.frame ∧
       TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame
+
   backward : ∀ (root : List Instruction) {supply : NativeIR.Supply} {output : Expression}
       {targetFrame : TargetFrame} {target : TargetState TargetWorld},
     NativeLowering.expression? interface (sourceFrameScope sourceFrame) expression supply = some output →
@@ -57,6 +58,34 @@ structure ShortCircuitChildLaws {SourceWorld TargetWorld : Type}
       GuardedEvaluationRelated interface default output.result source target sourceOut out ∧
       TemporaryProtection supply.next targetFrame out.frame ∧
       TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame
+
+/-- Existing pure implementations supply the stronger fixed-state laws.
+Their actual compiled executions instantiate the stateful interface. -/
+theorem short_circuit_child_stateful_laws {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {sourceHeap : SourceHeapSemantics SourceWorld} {sourceCalls : SourceCalls SourceWorld}
+    {targetHeap : TargetHeapSemantics TargetWorld} {targetCalls : TargetCalls TargetWorld}
+    {sourceFrame : SourceFrame} {source : SourceState SourceWorld}
+    {result : NativeType} {default : TargetValue} {expression : Expr}
+    (clear : source.fault = none)
+    (laws : ShortCircuitChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default expression) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default expression := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro supply output compiled
+    exact ⟨Nat.le_of_lt (laws.bounds compiled).1, (laws.bounds compiled).2⟩
+  · intro root supply output frame target compiled frames states bounded hscope sourceOut ran
+    obtain ⟨out, executed, related, protection, finalBounded, finalScoped⟩ :=
+      laws.forward root compiled frames states bounded hscope ran
+    exact ⟨out, executed, guarded_related_checked states clear related,
+      protection, finalBounded, finalScoped⟩
+  · intro root supply output frame target compiled frames states bounded hscope out ran
+    obtain ⟨sourceOut, executed, related, protection, finalBounded, finalScoped⟩ :=
+      laws.backward root compiled frames states bounded hscope ran
+    exact ⟨sourceOut, executed, guarded_related_checked states clear related,
+      protection, finalBounded, finalScoped⟩
+
 
 theorem guarded_short_circuit_child_laws {SourceWorld TargetWorld : Type}
     (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
@@ -601,5 +630,302 @@ theorem short_circuit_expression_reflection {SourceWorld TargetWorld : Type}
   exact ⟨sourceOut, sourceRan, child_related_target_shape related,
     temporary_protection_preserves_source_frame frames protection, protection, finalBounded, finalScoped,
     guarded_related_observation_correspondence states clear related observation⟩
+
+/-- A selected stateful arm retains the child's actual effects through its
+result assignment and lexical close. The inherited result cell remains live. -/
+theorem stateful_short_circuit_taken_preservation {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {sourceHeap : SourceHeapSemantics SourceWorld} {sourceCalls : SourceCalls SourceWorld}
+    {targetHeap : TargetHeapSemantics TargetWorld} {targetCalls : TargetCalls TargetWorld}
+    {sourceFrame : SourceFrame} {source : SourceState SourceWorld}
+    {result : NativeType} {default : TargetValue} {right : Expr}
+    (continueValue : Bool)
+    (child : StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default right)
+    {supply : NativeIR.Supply} {output : Expression}
+    (compiled : NativeLowering.expression? interface (sourceFrameScope sourceFrame) right supply = some output)
+    {marker : TargetFrame} {target : TargetState TargetWorld}
+    (frames : FrameRelated sourceFrame marker) (states : StateRelated worldRelated source target)
+    (bounded : TemporaryNamesBound marker supply.next) (hscope : TemporariesScoped marker)
+    {lower identity : Nat} (fresh : lower < identity) (within : identity ≤ supply.next)
+    (read : TargetAtomEval interface marker target (.temporary identity .bool) (.bool continueValue))
+    (root : List Instruction) {sourceOut : SourceOutcome SourceWorld}
+    (sourceRan : SourceExprEval interface sourceHeap sourceCalls sourceFrame right source sourceOut) :
+    ∃ out,
+      TargetRun interface targetHeap targetCalls result root
+        [.branch (shortCircuitCondition continueValue (.temporary identity .bool))
+          (output.code ++ [.assign (.temporary identity .bool) output.result]) []] marker target out ∧
+      CheckedExpressionRelated worldRelated interface default (.temporary identity .bool) sourceOut out ∧
+      TemporaryProtection lower marker out.frame ∧
+      TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame := by
+  have live : marker.temporaryNames.contains identity = true := by cases read; assumption
+  have checked := expression_lowering_jump_free interface (sourceFrameScope sourceFrame) _ _ output compiled
+  have finalBounded := guarded_temporary_bound_mono bounded (child.bounds compiled).1
+  obtain ⟨⟨flow, after, post⟩, ran, related, protection, _, _⟩ :=
+    child.forward (output.code ++ [.assign (.temporary identity .bool) output.result])
+      compiled frames states bounded hscope sourceRan
+  rcases sourceOut with ⟨answer, sourcePost⟩
+  cases answer with
+  | ok value =>
+      rcases related with ⟨postRelated, clear, normal, resultRead⟩
+      cases normal
+      have innerLive := (protection.names identity within).trans live
+      let out := targetCloseBlock marker
+        ⟨.normal, targetUpdateTemporary after identity (encodeValue value), post⟩
+      have stateKept : out.state = post := target_close_block_state_no_locals protection.nextLocal
+      refine ⟨out, ?_, ?_, ?_, close_block_temporary_bound finalBounded _, target_close_block_scoped marker _⟩
+      · exact (target_short_circuit_taken_exact continueValue read output checked root out).mpr
+          (.inl ⟨after, post, encodeValue value, ran, resultRead, innerLive, rfl⟩)
+      · exact ⟨by simpa only [stateKept] using postRelated, clear, rfl,
+          close_updated_temporary_read interface marker after post identity .bool (encodeValue value) live innerLive⟩
+      · exact close_updated_temporary_protection hscope protection
+          ((Nat.le_of_lt fresh).trans within) fresh (encodeValue value) post
+  | error fault =>
+      rcases related with ⟨postRelated, faulted, returned⟩
+      cases returned
+      let out := targetCloseBlock marker ⟨.returned default, after, post⟩
+      have stateKept : out.state = post := target_close_block_state_no_locals protection.nextLocal
+      refine ⟨out, ?_, ?_, ?_, close_block_temporary_bound finalBounded _, target_close_block_scoped marker _⟩
+      · exact (target_short_circuit_taken_exact continueValue read output checked root out).mpr
+          (.inr ⟨default, after, post, ran, rfl⟩)
+      · exact ⟨by simpa only [stateKept] using postRelated, faulted, rfl⟩
+      · exact close_block_temporary_protection hscope
+          (temporary_protection_weaken ((Nat.le_of_lt fresh).trans within) protection) post
+
+/-- Every actual selected stateful arm reflects to its child outcome, with
+the complete post-state and the enclosing function's default on fault. -/
+theorem stateful_short_circuit_taken_reflection {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {sourceHeap : SourceHeapSemantics SourceWorld} {sourceCalls : SourceCalls SourceWorld}
+    {targetHeap : TargetHeapSemantics TargetWorld} {targetCalls : TargetCalls TargetWorld}
+    {sourceFrame : SourceFrame} {source : SourceState SourceWorld}
+    {result : NativeType} {default : TargetValue} {right : Expr}
+    (continueValue : Bool)
+    (child : StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default right)
+    {supply : NativeIR.Supply} {output : Expression}
+    (compiled : NativeLowering.expression? interface (sourceFrameScope sourceFrame) right supply = some output)
+    {marker : TargetFrame} {target : TargetState TargetWorld}
+    (frames : FrameRelated sourceFrame marker) (states : StateRelated worldRelated source target)
+    (bounded : TemporaryNamesBound marker supply.next) (hscope : TemporariesScoped marker)
+    {lower identity : Nat} (fresh : lower < identity) (within : identity ≤ supply.next)
+    (read : TargetAtomEval interface marker target (.temporary identity .bool) (.bool continueValue))
+    (root : List Instruction) {out : TargetBlockOutcome TargetWorld}
+    (ran : TargetRun interface targetHeap targetCalls result root
+      [.branch (shortCircuitCondition continueValue (.temporary identity .bool))
+        (output.code ++ [.assign (.temporary identity .bool) output.result]) []] marker target out) :
+    ∃ sourceOut,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame right source sourceOut ∧
+      CheckedExpressionRelated worldRelated interface default (.temporary identity .bool) sourceOut out ∧
+      TemporaryProtection lower marker out.frame ∧
+      TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame := by
+  have outerLive : marker.temporaryNames.contains identity = true := by cases read; assumption
+  have checked := expression_lowering_jump_free interface (sourceFrameScope sourceFrame) _ _ output compiled
+  have finalBounded := guarded_temporary_bound_mono bounded (child.bounds compiled).1
+  rcases (target_short_circuit_taken_exact continueValue read output checked root out).mp ran with
+    ⟨after, post, value, childRan, resultRead, innerLive, same⟩ |
+    ⟨value, after, post, childRan, same⟩
+  · obtain ⟨sourceOut, sourceRan, related, protection, _, _⟩ := child.backward
+      (output.code ++ [.assign (.temporary identity .bool) output.result])
+      compiled frames states bounded hscope childRan
+    obtain ⟨sourceValue, exactSource, clear, postRelated, actualRead⟩ := checked_result_normal related rfl
+    rcases sourceOut with ⟨answer, sourcePost⟩
+    cases exactSource
+    cases target_atom_unique resultRead actualRead
+    subst out
+    have stateKept :
+        (targetCloseBlock marker ⟨.normal, targetUpdateTemporary after identity (encodeValue sourceValue), post⟩).state = post :=
+      target_close_block_state_no_locals protection.nextLocal
+    refine ⟨⟨.ok sourceValue, sourcePost⟩, sourceRan, ?_, ?_,
+      close_block_temporary_bound finalBounded _, target_close_block_scoped marker _⟩
+    · exact ⟨by simpa only [stateKept] using postRelated, clear, rfl,
+        close_updated_temporary_read interface marker after post identity .bool (encodeValue sourceValue)
+          outerLive innerLive⟩
+    · exact close_updated_temporary_protection hscope protection
+        ((Nat.le_of_lt fresh).trans within) fresh (encodeValue sourceValue) post
+  · obtain ⟨sourceOut, sourceRan, related, protection, _, _⟩ := child.backward
+      (output.code ++ [.assign (.temporary identity .bool) output.result])
+      compiled frames states bounded hscope childRan
+    obtain ⟨fault, exactSource, faulted, postRelated, returned⟩ := checked_result_returned related rfl
+    rcases sourceOut with ⟨answer, sourcePost⟩
+    cases exactSource
+    subst value
+    subst out
+    have stateKept : (targetCloseBlock marker ⟨.returned default, after, post⟩).state = post :=
+      target_close_block_state_no_locals protection.nextLocal
+    refine ⟨⟨.error fault, sourcePost⟩, sourceRan, ?_, ?_,
+      close_block_temporary_bound finalBounded _, target_close_block_scoped marker _⟩
+    · exact ⟨by simpa only [stateKept] using postRelated, faulted, rfl⟩
+    · exact close_block_temporary_protection hscope
+        (temporary_protection_weaken ((Nat.le_of_lt fresh).trans within) protection) post
+
+/-- Stateful short-circuiting composes the actual child comparisons at their
+successive entry states. A skipped arm contributes no read or execution. -/
+theorem stateful_short_circuit_child_laws {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {sourceHeap : SourceHeapSemantics SourceWorld} {sourceCalls : SourceCalls SourceWorld}
+    {targetHeap : TargetHeapSemantics TargetWorld} {targetCalls : TargetCalls TargetWorld}
+    {sourceFrame : SourceFrame} {source : SourceState SourceWorld}
+    {result : NativeType} {default : TargetValue} {left right : Expr}
+    (clear : source.fault = none) (continueValue : Bool)
+    (first : StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default left)
+    (second : ∀ middle : SourceState SourceWorld, middle.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame middle result default right) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.binary (shortCircuitBinary continueValue) left right) := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro supply output compiled
+    obtain ⟨leftOutput, rightOutput, _, _, leftCompiled, rightCompiled, same⟩ :=
+      short_circuit_lowering_exact continueValue compiled
+    subst output
+    have leftBounds := first.bounds leftCompiled
+    have rightBounds := (second source clear).bounds rightCompiled
+    have copied : leftOutput.supply.next <
+        (NativeLowering.pureTemporary leftOutput.supply .bool (.copy leftOutput.result)).supply.next :=
+      NativeIR.fresh_strict leftOutput.supply
+    exact ⟨leftBounds.1.trans (copied.le.trans rightBounds.1), rightBounds.1⟩
+  · intro root supply output before target compiled frames states bounded hscope sourceOut sourceRan
+    obtain ⟨leftOutput, rightOutput, _, _, leftCompiled, rightCompiled, same⟩ :=
+      short_circuit_lowering_exact continueValue compiled
+    subst output
+    let identity := (NativeIR.fresh leftOutput.supply).1
+    let copied := NativeLowering.pureTemporary leftOutput.supply .bool (.copy leftOutput.result)
+    let branch := Instruction.branch (shortCircuitCondition continueValue copied.result)
+      (rightOutput.code ++ [.assign (.temporary identity .bool) rightOutput.result]) []
+    have leftChecked := expression_lowering_jump_free interface (sourceFrameScope sourceFrame) _ _ leftOutput leftCompiled
+    have leftBounds := first.bounds leftCompiled
+    have rightBounds := (second source clear).bounds rightCompiled
+    have copyFresh : leftOutput.supply.next < identity := NativeIR.fresh_strict leftOutput.supply
+    have originFresh : supply.next < identity := leftBounds.1.trans_lt copyFresh
+    rcases (source_short_circuit_exact continueValue left right source sourceOut).mp sourceRan with
+      ⟨sourcePost, leftRan, sameOut⟩ | ⟨sourcePost, leftRan, rightRan⟩ |
+      ⟨fault, sourcePost, leftRan, sameOut⟩
+    · subst sourceOut
+      obtain ⟨⟨flow, middle, post⟩, leftTarget, leftRelated, leftProtection, middleBounded, middleScoped⟩ :=
+        first.forward root leftCompiled frames states bounded hscope leftRan
+      rcases leftRelated with ⟨postRelated, leftClear, normal, leftRead⟩
+      cases normal
+      let marker := targetDeclareTemporary middle identity (.bool (!continueValue))
+      have markerProtection := temporary_protection_trans leftProtection
+        (declare_temporary_protects middle (.bool (!continueValue)) originFresh)
+      have markerBounded : TemporaryNamesBound marker copied.supply.next :=
+        declared_temporary_bound middleBounded copyFresh.le (Nat.le_refl identity) _
+      have markerScoped := declared_temporaries_completeNames middleScoped identity (.bool (!continueValue))
+      have copiedRead := declared_temporary_atom interface middle post identity .bool (.bool (!continueValue))
+      have suffix : TargetRun interface targetHeap targetCalls result root
+          (copied.code ++ [branch]) middle post ⟨.normal, marker, post⟩ := by
+        apply (target_short_circuit_copy_exact
+          (temporary_bound_fresh middleBounded copyFresh) leftRead root [branch] _).mpr
+        exact (target_short_circuit_skip_exact continueValue markerScoped copiedRead _ root _).mpr rfl
+      have ran := target_append_normal root leftOutput.code _ leftChecked leftTarget suffix
+      refine ⟨⟨.normal, marker, post⟩, ?_, ⟨postRelated, leftClear, rfl, copiedRead⟩,
+        markerProtection, guarded_temporary_bound_mono markerBounded rightBounds.1, markerScoped⟩
+      simpa only [shortCircuitOutput, List.append_assoc] using ran
+    · obtain ⟨⟨flow, middle, post⟩, leftTarget, leftRelated, leftProtection, middleBounded, middleScoped⟩ :=
+        first.forward root leftCompiled frames states bounded hscope leftRan
+      rcases leftRelated with ⟨postRelated, leftClear, normal, leftRead⟩
+      cases normal
+      let marker := targetDeclareTemporary middle identity (.bool continueValue)
+      have markerProtection := temporary_protection_trans leftProtection
+        (declare_temporary_protects middle (.bool continueValue) originFresh)
+      have markerBounded : TemporaryNamesBound marker copied.supply.next :=
+        declared_temporary_bound middleBounded copyFresh.le (Nat.le_refl identity) _
+      have markerScoped := declared_temporaries_completeNames middleScoped identity (.bool continueValue)
+      have copiedRead := declared_temporary_atom interface middle post identity .bool (.bool continueValue)
+      obtain ⟨out, branchRan, related, branchProtection, finalBounded, finalScoped⟩ :=
+        stateful_short_circuit_taken_preservation continueValue (second sourcePost leftClear) rightCompiled
+          (temporary_protection_preserves_source_frame frames markerProtection) postRelated markerBounded markerScoped
+          originFresh (Nat.le_refl identity) copiedRead root rightRan
+      have suffix : TargetRun interface targetHeap targetCalls result root
+          (copied.code ++ [branch]) middle post out :=
+        (target_short_circuit_copy_exact (temporary_bound_fresh middleBounded copyFresh)
+          leftRead root [branch] out).mpr branchRan
+      have ran := target_append_normal root leftOutput.code _ leftChecked leftTarget suffix
+      refine ⟨out, ?_, related, temporary_protection_trans markerProtection branchProtection,
+        finalBounded, finalScoped⟩
+      simpa only [shortCircuitOutput, List.append_assoc] using ran
+    · subst sourceOut
+      obtain ⟨⟨flow, after, post⟩, leftTarget, related, protection, finalBounded, finalScoped⟩ :=
+        first.forward root leftCompiled frames states bounded hscope leftRan
+      rcases related with ⟨postRelated, faulted, returned⟩
+      cases returned
+      have ran := target_append_returned root leftOutput.code (copied.code ++ [branch]) leftChecked leftTarget
+      refine ⟨⟨.returned default, after, post⟩, ?_, ⟨postRelated, faulted, rfl⟩, protection,
+        guarded_temporary_bound_mono finalBounded (copyFresh.le.trans rightBounds.1), finalScoped⟩
+      simpa only [shortCircuitOutput, List.append_assoc] using ran
+  · intro root supply output before target compiled frames states bounded hscope out ran
+    obtain ⟨leftOutput, rightOutput, _, _, leftCompiled, rightCompiled, same⟩ :=
+      short_circuit_lowering_exact continueValue compiled
+    subst output
+    let identity := (NativeIR.fresh leftOutput.supply).1
+    let copied := NativeLowering.pureTemporary leftOutput.supply .bool (.copy leftOutput.result)
+    let branch := Instruction.branch (shortCircuitCondition continueValue copied.result)
+      (rightOutput.code ++ [.assign (.temporary identity .bool) rightOutput.result]) []
+    have leftChecked := expression_lowering_jump_free interface (sourceFrameScope sourceFrame) _ _ leftOutput leftCompiled
+    have leftBounds := first.bounds leftCompiled
+    have rightBounds := (second source clear).bounds rightCompiled
+    have copyFresh : leftOutput.supply.next < identity := NativeIR.fresh_strict leftOutput.supply
+    have originFresh : supply.next < identity := leftBounds.1.trans_lt copyFresh
+    have ordered : TargetRun interface targetHeap targetCalls result root
+        (leftOutput.code ++ (copied.code ++ [branch])) before target out := by
+      simpa only [shortCircuitOutput, List.append_assoc] using ran
+    rcases target_split_jump_free_prefix root leftOutput.code _ leftChecked ordered with
+      ⟨middle, post, leftTarget, suffix⟩ | ⟨value, after, post, leftTarget, sameOut⟩
+    · obtain ⟨leftSourceOut, leftSource, leftRelated, leftProtection, middleBounded, middleScoped⟩ :=
+        first.backward root leftCompiled frames states bounded hscope leftTarget
+      obtain ⟨leftValue, exactLeft, leftClear, postRelated, leftRead⟩ := checked_result_normal leftRelated rfl
+      rcases leftSourceOut with ⟨leftAnswer, sourcePost⟩
+      cases exactLeft
+      let rawMarker := targetDeclareTemporary middle identity (encodeValue leftValue)
+      have rawBranch : TargetRun interface targetHeap targetCalls result root [branch] rawMarker post out :=
+        (target_normal_then_exact
+          (target_temporary_instruction_exact (temporary_bound_fresh middleBounded copyFresh) (.copy leftRead))
+          root [branch] out).mp suffix
+      obtain ⟨selected, tested⟩ := target_branch_test_of_run rawBranch
+      obtain ⟨boolean, booleanValue⟩ := short_circuit_condition_boolean continueValue
+        (declared_temporary_atom interface middle post identity .bool (encodeValue leftValue)) tested
+      have exactValue : leftValue = .bool boolean := encodeValue_injective booleanValue
+      subst leftValue
+      let marker := targetDeclareTemporary middle identity (.bool boolean)
+      have markerProtection := temporary_protection_trans leftProtection
+        (declare_temporary_protects middle (.bool boolean) originFresh)
+      have markerBounded : TemporaryNamesBound marker copied.supply.next :=
+        declared_temporary_bound middleBounded copyFresh.le (Nat.le_refl identity) _
+      have markerScoped := declared_temporaries_completeNames middleScoped identity (.bool boolean)
+      have copiedRead := declared_temporary_atom interface middle post identity .bool (.bool boolean)
+      have branchRan := (target_short_circuit_copy_exact (temporary_bound_fresh middleBounded copyFresh)
+        leftRead root [branch] out).mp suffix
+      by_cases selected : boolean = continueValue
+      · subst boolean
+        obtain ⟨sourceOut, sourceRan, related, branchProtection, finalBounded, finalScoped⟩ :=
+          stateful_short_circuit_taken_reflection continueValue (second sourcePost leftClear) rightCompiled
+            (temporary_protection_preserves_source_frame frames markerProtection) postRelated markerBounded markerScoped
+            originFresh (Nat.le_refl identity) copiedRead root branchRan
+        exact ⟨sourceOut, source_short_circuit_taken continueValue leftSource sourceRan,
+          related, temporary_protection_trans markerProtection branchProtection, finalBounded, finalScoped⟩
+      · have skipped : boolean = !continueValue := by
+          cases boolean <;> cases continueValue
+          · exact False.elim (selected rfl)
+          · rfl
+          · rfl
+          · exact False.elim (selected rfl)
+        subst boolean
+        have sameOut := (target_short_circuit_skip_exact continueValue markerScoped copiedRead _ root out).mp branchRan
+        subst out
+        exact ⟨⟨.ok (.bool (!continueValue)), sourcePost⟩, source_short_circuit_skip continueValue leftSource,
+          ⟨postRelated, leftClear, rfl, copiedRead⟩, markerProtection,
+          guarded_temporary_bound_mono markerBounded rightBounds.1, markerScoped⟩
+    · obtain ⟨sourceOut, sourceRan, related, protection, finalBounded, finalScoped⟩ :=
+        first.backward root leftCompiled frames states bounded hscope leftTarget
+      obtain ⟨fault, exactSource, faulted, postRelated, returned⟩ := checked_result_returned related rfl
+      rcases sourceOut with ⟨answer, sourcePost⟩
+      cases exactSource
+      subst value
+      subst out
+      exact ⟨⟨.error fault, sourcePost⟩, source_short_circuit_left_fault continueValue sourceRan,
+        ⟨postRelated, faulted, rfl⟩, protection,
+        guarded_temporary_bound_mono finalBounded (copyFresh.le.trans rightBounds.1), finalScoped⟩
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

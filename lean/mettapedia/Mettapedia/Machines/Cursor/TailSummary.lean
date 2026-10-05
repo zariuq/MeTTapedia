@@ -299,6 +299,36 @@ inductive Home
   | global
   deriving DecidableEq
 
+namespace Home
+
+/-- Rename arena identities without changing globally owned storage. -/
+def map (arena : ℕ → ℕ) : Home → Home
+  | .arena id => .arena (arena id)
+  | .global => .global
+
+theorem map_id (home : Home) : home.map id = home := by
+  cases home <;> rfl
+
+theorem map_comp (first second : ℕ → ℕ) (home : Home) :
+    (home.map first).map second = home.map (second ∘ first) := by
+  cases home <;> rfl
+
+theorem map_injective {arena : ℕ → ℕ} (injective : Function.Injective arena) :
+    Function.Injective (map arena) := by
+  intro one two same
+  cases one with
+  | global =>
+    cases two with
+    | global => rfl
+    | arena _ => cases same
+  | arena one =>
+    cases two with
+    | global => cases same
+    | arena two =>
+      exact congrArg Home.arena (injective (Home.arena.inj same))
+
+end Home
+
 /-- Releasing arena `r` releases storage at home `h`. -/
 def releasedBy (r : ℕ) : Home → Prop
   | .arena id => id = r

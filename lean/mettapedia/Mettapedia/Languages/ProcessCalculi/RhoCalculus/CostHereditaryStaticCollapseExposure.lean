@@ -217,7 +217,7 @@ theorem stopped_collapse_canonicalFrame
     node environment, reifiedFrame]
   rw [canonicalizeByDepths_eq_fvar_of_canonicalize_eq _ declaration _ _
     ordinaryCollapse]
-  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 end CostStaticRegionNode
 

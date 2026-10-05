@@ -1,11 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGeneratedNormalizationClosure
 
 /-!
-# Exact authority stack stability in the generated decoder
+# Token stacks are fixed by the generated normalizer
 
-Accepted stack syntax retains every literal authority key and its temporal
-position under the authored normalizer. This does not identify a product
-signature with several independently stored authority atoms.
+A stack image keeps every literal authority key and its position under the generated
+normalizer. A product signature is one key; it is not several stored authority atoms.
 -/
 
 set_option autoImplicit false
@@ -15,56 +14,14 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerat
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 
-inductive StackImage : Pattern → CostStack LiteralAuthority → Prop
-  | empty : StackImage (.apply "$cost:apparatus-constructor:token-stack-empty" []) .empty
-  | cons {head tail : Pattern} {stack : CostStack LiteralAuthority}
-      (signature : TypedSignature head) (accepted : signature? head = some signature)
-      (rest : StackImage tail stack) :
-      StackImage (.apply "$cost:apparatus-constructor:token-stack-cons" [head, tail])
-        (.cons signature.val stack)
-
 theorem stack_parser_image {fuel : Nat} {source : Pattern} {stack : CostStack LiteralAuthority}
-    (parsed : (stack? fuel source).map Subtype.val = some stack) : StackImage source stack := by
-  induction fuel, source using stack?.induct generalizing stack with
-  | case1 source => simp [stack?] at parsed
-  | case2 fuel =>
-    simp only [stack?, Option.map_some, Option.some.injEq] at parsed
-    subst stack
-    exact .empty
-  | case3 fuel head tail ih =>
-    cases sigParsed : signature? head with
-    | none => simp [stack?, sigParsed] at parsed
-    | some signature =>
-      cases tailParsed : stack? fuel tail with
-      | none => simp [stack?, sigParsed, tailParsed] at parsed
-      | some rest =>
-        simp only [stack?, sigParsed, tailParsed] at parsed
-        change some (CostStack.cons signature.val rest.val) = some stack at parsed
-        cases parsed
-        exact .cons signature sigParsed (ih (by rw [tailParsed]; rfl))
-  | case4 source fuel notEmpty notCons =>
-    rw [stack?.eq_4 source fuel notEmpty notCons] at parsed
-    contradiction
+    (parsed : (stack? fuel source).map Subtype.val = some stack) : StackImage source stack :=
+  readStack_image ((stack?_val fuel source).symm.trans parsed)
 
 theorem StackImage.parser_eventually {source : Pattern} {stack : CostStack LiteralAuthority}
     (image : StackImage source stack) :
     ∃ bound, ∀ fuel, bound ≤ fuel → (stack? fuel source).map Subtype.val = some stack := by
-  induction image with
-  | empty =>
-    refine ⟨1, ?_⟩
-    intro fuel enough
-    cases fuel with
-    | zero => omega
-    | succ fuel => rfl
-  | cons signature accepted rest ih =>
-    obtain ⟨bound, readback⟩ := ih
-    refine ⟨bound + 1, ?_⟩
-    intro fuel enough
-    cases fuel with
-    | zero => omega
-    | succ fuel =>
-      rw [stack_cons_readout, accepted, readback fuel (by omega)]
-      rfl
+  simpa only [stack?_val] using image.read_eventually
 
 theorem StackImage.normalize_identity {source : Pattern} {stack : CostStack LiteralAuthority}
     (image : StackImage source stack) :

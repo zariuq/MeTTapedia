@@ -685,7 +685,7 @@ mutual
                 leftPreimage.sourceConstructor.1.label ≠
                   declaration.quoteConstructor
             · have preimageEq : leftPreimage = rightPreimage :=
-                CostStaticConstructorPreimage.eq _ _
+                Subsingleton.elim _ _
               subst rightPreimage
               subst rightAvailable
               obtain ⟨targetRule, targetMembership, targetLabel, _targetNotBare,
@@ -768,7 +768,7 @@ mutual
                       leftConstructor
                 · intro targetBare
                   exact leftNotBare
-                    (leftPreimage.source_usesBareCollection leftCurrent
+                    (leftPreimage.usesBareCollection_iff.mp
                       targetBare)
                 · rw [leftPreimage.parametersMap]
                   exact List.mem_map_of_mem parameterMembership
@@ -930,7 +930,7 @@ mutual
                 leftSizeLe rightSizeLe
                 (Or.inr (by
                   have preimageEq : leftPreimage = rightPreimage :=
-                    CostStaticConstructorPreimage.eq _ _
+                    Subsingleton.elim _ _
                   subst rightPreimage
                   simp at sourceNe
                   simpa [CostStaticPlanStopEligible,

@@ -24,30 +24,30 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticPlanPairCanary
 /-- Collapsed endpoint of the zero-name Quote/Drop cell. -/
 def rhoCoverageZeroFvarPlan :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole (.fvar "0") (.base "Name") :=
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
-      CostStaticColor.symbols, costBaseStaticSymbols,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
       costBaseLanguageDefSymbolMap])
 
 /-- The zero name as a base static region. -/
 def rhoCoverageZeroNameFvarPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer (.fvar "0") (.base "Name") :=
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
-      CostStaticColor.symbols, costBaseStaticSymbols,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
       costBaseLanguageDefSymbolMap])
 
 /-- Base drop cell over the zero name. -/
 def rhoCoverageZeroDropPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer (rhoCutOrderBaseDrop (.fvar "0")) (.base "Proc") := by
   apply CostStaticRegionPlan.application rhoBreadthBaseDropDeclared rfl
     rhoBreadthBaseDropRole rhoBreadthBaseDropPreimage
@@ -61,8 +61,8 @@ def rhoCoverageZeroDropPlan (outer : OneHoleContext) :
 /-- The zero-name Quote/Drop region. -/
 def rhoCoverageZeroRedexPlan :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole rhoCutOrderRedex (.base "Name") := by
   apply CostStaticRegionPlan.application rhoBreadthBaseQuoteDeclared rfl
     rhoBreadthBaseQuoteRole rhoBreadthBaseQuotePreimage
@@ -95,7 +95,8 @@ def rhoCoverageZeroCollapseWitness :
       CostStaticPlanDecoration.abstractPattern,
       CostStaticPlanDecorationNode.abstractPattern,
       rhoBreadthBaseQuotePreimage, rhoBreadthBaseDropPreimage,
-      costStaticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
+      costStaticConstructorPreimage,
+      ContinuationDecorationProfile.staticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
       rhoBreadthBaseDropDeclared, rhoCalc]
   have rightEq : rhoCoverageZeroFvarPlan.decoration.abstractPattern =
       .fvar (costRegionSourceVariableName "0") := by

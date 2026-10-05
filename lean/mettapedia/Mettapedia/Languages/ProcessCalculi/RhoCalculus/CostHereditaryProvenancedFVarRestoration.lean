@@ -432,7 +432,7 @@ noncomputable def memberFVar_sourcePatternLeafAligned
           rightTrees leftEnvironment rightEnvironment name leftMembership
             rightMembership rhoReflectivePresentation depth)
   simpa [relation, cospan, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars] using restores
+    CostStaticTypeThinning.thickenAmbientBVars_fvar] using restores
 
 /-- Rho source-frame alignment from a raw stop descent, with every rigid
 free-variable callback discharged internally.  The caller is responsible

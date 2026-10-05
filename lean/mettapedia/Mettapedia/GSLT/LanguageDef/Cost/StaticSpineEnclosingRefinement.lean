@@ -145,15 +145,4 @@ theorem children_packedChildren :
 
 end Element
 
-#print axioms Argument.plan
-#print axioms Argument.entries
-#print axioms Argument.abstractPatterns
-#print axioms Argument.children
-#print axioms Argument.children_packedChildren
-#print axioms Element.plan
-#print axioms Element.entries
-#print axioms Element.abstractPatterns
-#print axioms Element.children
-#print axioms Element.children_packedChildren
-
 end Mettapedia.GSLT.LanguageDef.Cost.StaticSpineEnclosingRefinement

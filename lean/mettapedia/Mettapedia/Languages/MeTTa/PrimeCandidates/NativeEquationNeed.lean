@@ -96,13 +96,13 @@ inductive Rule where
 inductive Origin where
   | expression (term : Atom) (environment : Environment)
   | application (head : String) (arguments : List CellId)
-  deriving Repr
+  deriving Repr, DecidableEq
 
 inductive Operation where
   | constructor (head : String)
   | application (head : String)
   | add
-  deriving Repr
+  deriving Repr, DecidableEq
 
 inductive Local where
   | evaluate (term : Atom) (environment : Environment)
@@ -112,7 +112,7 @@ inductive Local where
   | normalize (operation : Operation) (accumulated : List Atom) (remaining : List CellId)
   | forward (cell : CellId)
   | bind (name : String) (value body : Atom) (environment : Environment)
-  deriving Repr
+  deriving Repr, DecidableEq
 
 inductive Resume where
   | allocatedArgument (operation : Operation) (accumulated : List CellId)
@@ -121,7 +121,7 @@ inductive Resume where
   | applicationAllocated
   | forward
   | letAllocated (name : String) (body : Atom) (environment : Environment)
-  deriving Repr
+  deriving Repr, DecidableEq
 
 abbrev Outcome := Produced Atom Empty String
 abbrev NativeAction := Action Origin Local Resume Atom Empty String Empty
@@ -272,6 +272,14 @@ def initial (term : Atom) : NativeMachine where
       nextEvaluator := 1 }
   control := .force rootCell []
 
+/-- The authored root's live map is exactly its retained allocation. -/
+theorem initial_heap_recorded (term : Atom) : (initial term).world.heap.Recorded := by
+  intro cell
+  rfl
+
+theorem initial_receipts_valid (term : Atom) : (initial term).world.receipts.Valid :=
+  ReceiptGraph.empty_valid
+
 def occurrenceSystem (program : Program) :=
   NeedInferenceControl.Reference.occurrenceSystem (specification program)
 
@@ -286,6 +294,21 @@ def executeControlled {Memory : Type*}
     controller goal allowance
     (Mettapedia.GSLT.Core.InferenceControl.Snapshot.initial
       controller [WorkOccurrence.root (initial term)])
+
+/-- The actual authored controller preserves checkable receipt graphs in
+every emitted answer and every retained work occurrence. The projection
+checks recorded predecessors, without inferring minimal dependencies. -/
+theorem controlled_receipts_check {Memory : Type*}
+    (controller : Controller (WorkOccurrence NativeMachine) (Outcome × List Nat) Memory)
+    (program : Program) (term : Atom) (goal : List (Outcome × List Nat) → Bool)
+    (allowance : Nat) :
+    (∀ occurrence ∈ (executeControlled controller program term goal allowance).search.frontier,
+      occurrence.state.world.receipts.toCausalReceipt.check [] = true) ∧
+    (∀ event ∈ (executeControlled controller program term goal allowance).search.events,
+      event.origin.state.world.receipts.toCausalReceipt.check [] = true) := by
+  exact NeedInferenceControl.Reference.demanded_receipts_check
+    (specification program) controller goal allowance (initial_receipts_valid term)
+    (initial_sound (occurrenceSystem program) [WorkOccurrence.root (initial term)])
 
 /-- Breadth-first occurrence demand is one client of the same native control
 interface, rather than a separate execution semantics. -/

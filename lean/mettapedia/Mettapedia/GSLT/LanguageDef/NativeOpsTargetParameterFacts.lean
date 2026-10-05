@@ -54,22 +54,62 @@ theorem target_bind_parameters_facts {World : Type} (parameters : List Parameter
         omega
       · simpa only [declared, targetDeclareLocal, targetParameterMemory] using facts.2.2.2
 
+/-- A local declaration is read from its actual newly allocated cell. Name
+ shadowing changes the local resolver; it does not change earlier cell contents. -/
+theorem target_declared_local_address {World : Type} (frame : TargetFrame)
+    (state : TargetState World) (name : String) (type : NativeType) (value : TargetValue) :
+    targetLocalAddress (targetDeclareLocal frame state name type value).1 name =
+      some ⟨frame.storage, frame.nextLocal, []⟩ := by
+  have self : (name == name) = true := decide_eq_true rfl
+  dsimp only [targetDeclareLocal, targetLocalAddress]
+  rw [List.find?_cons_of_pos (p := fun binding : LocalBinding => binding.name == name)
+    (a := ⟨name, type, frame.nextLocal⟩) self]
+  rfl
+
+theorem target_declared_local_readback {World : Type} (frame : TargetFrame)
+    (state : TargetState World) (name : String) (type : NativeType) (value : TargetValue) :
+    let bound := targetDeclareLocal frame state name type value
+    targetLocalValue bound.1 bound.2 name = some value := by
+  dsimp only [targetLocalValue]
+  rw [target_declared_local_address]
+  change (if frame.storage = frame.storage then
+      (if frame.nextLocal = frame.nextLocal then some value
+        else state.memory.cells frame.storage frame.nextLocal)
+    else state.memory.cells frame.storage frame.nextLocal).bind (targetReadPath []) = some value
+  rw [if_pos rfl, if_pos rfl]
+  cases value <;> rfl
+
+/-- A differently named local preserves a resolved earlier address. -/
+theorem target_local_address_after_other_declare {World : Type} (frame : TargetFrame)
+    (state : TargetState World) (name other : String) (type : NativeType) (value : TargetValue)
+    (different : other ≠ name) :
+    targetLocalAddress (targetDeclareLocal frame state other type value).1 name =
+      targetLocalAddress frame name := by
+  have unequal : (other == name) = false := beq_eq_false_iff_ne.mpr different
+  dsimp only [targetDeclareLocal, targetLocalAddress]
+  rw [List.find?_cons_of_neg (p := fun binding : LocalBinding => binding.name == name)
+    (a := ⟨other, type, frame.nextLocal⟩)
+    (by intro same; exact Bool.false_ne_true (unequal.symm.trans same))]
+
+/-- Name resolution and cell separation are separate premises. Distinct
+ names alone would not protect a reused physical cell. -/
+theorem target_local_readback_after_other_declare {World : Type} (frame : TargetFrame)
+    (state : TargetState World) (name other : String) (type : NativeType) (value : TargetValue)
+    (address : Address) (different : other ≠ name)
+    (resolved : targetLocalAddress frame name = some address)
+    (separate : address.element ≠ frame.nextLocal) :
+    targetLocalValue (targetDeclareLocal frame state other type value).1
+      (targetDeclareLocal frame state other type value).2 name =
+      targetLocalValue frame state name := by
+  simp only [targetLocalValue, target_local_address_after_other_declare frame state name other
+    type value different, resolved, Option.bind_some]
+  simp [targetDeclareLocal, targetRead, targetStoreCell, separate]
+
 theorem target_singleton_parameter_readback {World : Type}
     (state : TargetState World) (storage : Nat) (parameter : Parameter) (value : TargetValue) :
     let bound := targetDeclareLocal (targetEmptyFrame storage) state parameter.name parameter.type value
-    targetLocalValue bound.1 bound.2 parameter.name = some value := by
-  have emptyPath (contents : TargetValue) : targetReadPath [] contents = some contents := by
-    cases contents <;> rfl
-  have self : (parameter.name == parameter.name) = true := decide_eq_true rfl
-  dsimp only [targetDeclareLocal, targetEmptyFrame, targetLocalValue, targetLocalAddress,
-    targetRead, targetStoreCell]
-  rw [List.find?_cons_of_pos (p := fun binding : LocalBinding => binding.name == parameter.name)
-    (a := ⟨parameter.name, parameter.type, 0⟩) self]
-  change (if storage = storage then
-      (if (0 : Nat) = 0 then some value else state.memory.cells storage 0)
-    else state.memory.cells storage 0).bind (targetReadPath []) = some value
-  rw [if_pos rfl, if_pos rfl]
-  exact emptyPath value
+    targetLocalValue bound.1 bound.2 parameter.name = some value :=
+  target_declared_local_readback (targetEmptyFrame storage) state parameter.name parameter.type value
 
 /-- Removing a lexical interval from unused invocation storage changes no
 caller cell. The extent is independent of the number of function parameters. -/
@@ -124,6 +164,18 @@ theorem target_parameter_memory_release (memory : TargetMemory) (storage : Nat)
   rw [target_parameter_memory_drop memory storage 0 values.length 0 values
     (Nat.zero_le _) (by simp)]
   exact targetDropLocals_fresh fresh 0 values.length
+
+/-- Reading any path in another storage ignores invocation parameter writes.
+The address may designate a nested field, including a failed read. -/
+theorem targetRead_parameter_memory_other_storage (memory : TargetMemory) (storage first : Nat)
+    (values : List TargetValue) (address : Address) (different : address.storage ≠ storage) :
+    targetRead (targetParameterMemory memory storage first values) address =
+      targetRead memory address := by
+  induction values generalizing memory first with
+  | nil => rfl
+  | cons value rest ih =>
+      rw [targetParameterMemory, ih]
+      simp [targetRead, targetStoreCell, different]
 
 /-- A write to the caller's separate storage commutes with the whole
 parameter-memory fold, retaining undefined writes as undefined. -/
@@ -269,5 +321,63 @@ theorem target_singleton_parameter_teardown {World : Type}
   change { state with memory := (targetDropLocals
     (targetStoreCell state.memory storage 0 value) current.storage 0 current.nextLocal) } = state
   rw [sameStorage, extent, target_singleton_cell_released value fresh]
+
+/-- Caller field transport commutes with all invocation parameter cells.
+Missing reads or writes remain missing; the law does not fill caller storage. -/
+theorem targetCopyFields_parameter_memory (source destination : Address)
+    (fields : List (Nat × Nat)) (memory : TargetMemory) (storage first : Nat)
+    (parameters : List TargetValue) (sourceSeparate : source.storage ≠ storage)
+    (destinationSeparate : destination.storage ≠ storage) :
+    targetCopyFields source destination fields (targetParameterMemory memory storage first parameters) =
+      (targetCopyFields source destination fields memory).map
+        (fun copied => targetParameterMemory copied storage first parameters) := by
+  induction fields generalizing memory with
+  | nil => rfl
+  | cons field fields ih =>
+      rcases field with ⟨readIndex, writeIndex⟩
+      simp only [targetCopyFields]
+      rw [targetRead_parameter_memory_other_storage memory storage first parameters
+        { source with fields := source.fields ++ [readIndex] } sourceSeparate]
+      cases loaded : targetRead memory { source with fields := source.fields ++ [readIndex] } with
+      | none => rfl
+      | some value =>
+          dsimp only [bind, Option.bind]
+          rw [targetWrite_parameter_memory_other_storage memory storage first parameters
+            { destination with fields := destination.fields ++ [writeIndex] } value destinationSeparate]
+          cases written : targetWrite memory { destination with fields := destination.fields ++ [writeIndex] } value with
+          | none => rfl
+          | some middle =>
+              simpa only [Option.map_some, Option.bind_some] using ih middle
+
+theorem targetFreshFrame_after_field_copies (source destination : Address)
+    (fields : List (Nat × Nat)) {memory after : TargetMemory} {storage : Nat}
+    (fresh : targetFreshFrame memory storage) (different : storage ≠ destination.storage)
+    (copied : targetCopyFields source destination fields memory = some after) :
+    targetFreshFrame after storage := by
+  induction fields generalizing memory with
+  | nil => cases Option.some.inj copied; exact fresh
+  | cons field fields ih =>
+      rcases field with ⟨readIndex, writeIndex⟩
+      cases loaded : targetRead memory { source with fields := source.fields ++ [readIndex] } with
+      | none => simp [targetCopyFields, loaded] at copied
+      | some value =>
+          cases written : targetWrite memory { destination with fields := destination.fields ++ [writeIndex] } value with
+          | none => simp [targetCopyFields, loaded, written] at copied
+          | some middle =>
+              exact ih (targetFreshFrame_after_write
+                (address := { destination with fields := destination.fields ++ [writeIndex] })
+                fresh different written)
+                (by simpa [targetCopyFields, loaded, written] using copied)
+
+/-- Whole invocation teardown keeps caller field writes and releases exactly
+the independently allocated parameter interval. Payload ownership is unchanged. -/
+theorem target_field_copy_parameter_teardown (source destination : Address)
+    (fields : List (Nat × Nat)) {memory after : TargetMemory} (storage : Nat)
+    (parameters : List TargetValue) (fresh : targetFreshFrame memory storage)
+    (different : storage ≠ destination.storage)
+    (copied : targetCopyFields source destination fields memory = some after) :
+    targetDropLocals (targetParameterMemory after storage 0 parameters) storage 0 parameters.length = after :=
+  target_parameter_memory_release after storage parameters
+    (targetFreshFrame_after_field_copies source destination fields fresh different copied)
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

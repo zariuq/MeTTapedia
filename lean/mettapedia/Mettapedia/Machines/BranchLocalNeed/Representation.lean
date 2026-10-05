@@ -86,6 +86,15 @@ def mapReceipts (graph : ReceiptGraph Origin Rule Value StableFault RetryableFau
     ReceiptGraph Origin' Rule' Value' StableFault' RetryableFault' Effect' :=
   ⟨graph.nodes.map mapping.mapNode, graph.roots, graph.nextSerial⟩
 
+/-- Language payload changes preserve every receipt identity and edge. -/
+theorem receipts_projection
+    (mapping : Mapping Origin Local Resume Rule Value StableFault RetryableFault Effect
+      Origin' Local' Resume' Rule' Value' StableFault' RetryableFault' Effect')
+    (graph : ReceiptGraph Origin Rule Value StableFault RetryableFault Effect) :
+    (mapping.mapReceipts graph).toCausalReceipt = graph.toCausalReceipt := by
+  simp [Mapping.mapReceipts, Mapping.mapNode, ReceiptGraph.toCausalReceipt,
+    List.map_reverse, List.map_map, Function.comp_def]
+
 def mapWorld (world : World Origin Rule Value StableFault RetryableFault Effect) :
     World Origin' Rule' Value' StableFault' RetryableFault' Effect' :=
   ⟨world.lineage, world.path, mapping.mapHeap world.heap, mapping.mapReceipts world.receipts,
@@ -614,3 +623,179 @@ end Examples
 #print axioms Examples.different_branch_worlds
 
 end Mettapedia.Machines.BranchLocalNeed.NeedRepresentation
+
+/-! ## Exact finite views of recorded worlds and machines
+
+The persistent update spine determines the live heap only under `Heap.Recorded`.
+These views retain the full control stack, causal receipts and work counters.
+Decoding recovers the original states and instruction results; it does not
+certify an independent implementation or authorize replay of external effects.
+-/
+
+namespace Mettapedia.Machines.BranchLocalNeed.NeedReference
+
+variable {Origin Local Resume Rule Value StableFault RetryableFault Effect : Type*}
+
+namespace World
+
+abbrev RecordedView (Origin Rule Value StableFault RetryableFault Effect : Type*) :=
+  LineageId × WorldPath × List (HeapUpdate Origin Value StableFault) ×
+    ReceiptGraph Origin Rule Value StableFault RetryableFault Effect × Nat × EvaluatorId
+
+set_option synthInstance.maxSize 1024 in
+instance instDecidableEqRecordedView [DecidableEq Origin] [DecidableEq Rule] [DecidableEq Value]
+    [DecidableEq StableFault] [DecidableEq RetryableFault] [DecidableEq Effect] :
+    DecidableEq (RecordedView Origin Rule Value StableFault RetryableFault Effect) :=
+  inferInstanceAs (DecidableEq (LineageId × WorldPath × List (HeapUpdate Origin Value StableFault) ×
+    ReceiptGraph Origin Rule Value StableFault RetryableFault Effect × Nat × EvaluatorId))
+
+/-- A finite retained view includes the causal graph and all allocator and
+owner coordinates. It does not collapse heaps merely sharing final values. -/
+def recordedView (world : World Origin Rule Value StableFault RetryableFault Effect) :
+    RecordedView Origin Rule Value StableFault RetryableFault Effect :=
+  (world.lineage, world.path, world.heap.spine, world.receipts, world.nextCell, world.nextEvaluator)
+
+theorem recordedView_injective
+    (left right : World Origin Rule Value StableFault RetryableFault Effect)
+    (leftRecorded : left.heap.Recorded) (rightRecorded : right.heap.Recorded)
+    (same : left.recordedView = right.recordedView) : left = right := by
+  simp only [recordedView, Prod.mk.injEq] at same
+  have heaps := Heap.eq_of_spine_eq _ _ leftRecorded rightRecorded same.2.2.1
+  cases left
+  cases right
+  simp only [mk.injEq]
+  exact ⟨same.1, same.2.1, heaps, same.2.2.2.1, same.2.2.2.2.1, same.2.2.2.2.2⟩
+
+instance [DecidableEq Origin] [DecidableEq Rule] [DecidableEq Value]
+    [DecidableEq StableFault] [DecidableEq RetryableFault] [DecidableEq Effect] :
+    DecidableEq {world : World Origin Rule Value StableFault RetryableFault Effect //
+      world.heap.Recorded} :=
+  fun left right =>
+    if same : left.val.recordedView = right.val.recordedView then
+      isTrue (Subtype.ext (recordedView_injective _ _ left.property right.property same))
+    else isFalse (fun equal => same (congrArg (fun world => world.val.recordedView) equal))
+
+end World
+
+namespace Machine
+
+abbrev RecordedView (Origin Local Resume Rule Value StableFault RetryableFault Effect : Type*) :=
+  World.RecordedView Origin Rule Value StableFault RetryableFault Effect ×
+    Control Local Resume Value StableFault RetryableFault × Work
+
+instance instDecidableEqRecordedView [DecidableEq Origin] [DecidableEq Local] [DecidableEq Resume]
+    [DecidableEq Rule] [DecidableEq Value] [DecidableEq StableFault]
+    [DecidableEq RetryableFault] [DecidableEq Effect] :
+    DecidableEq (RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :=
+  inferInstanceAs (DecidableEq (World.RecordedView Origin Rule Value StableFault RetryableFault Effect ×
+    Control Local Resume Value StableFault RetryableFault × Work))
+
+/-- The complete finite state view retains control, residual stack and work,
+in addition to the recorded world. -/
+def recordedView (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect :=
+  (machine.world.recordedView, machine.control, machine.work)
+
+theorem recordedView_injective
+    (left right : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (leftRecorded : left.world.heap.Recorded) (rightRecorded : right.world.heap.Recorded)
+    (same : left.recordedView = right.recordedView) : left = right := by
+  simp only [recordedView, Prod.mk.injEq] at same
+  have worlds := World.recordedView_injective _ _ leftRecorded rightRecorded same.1
+  cases left
+  cases right
+  simp only [mk.injEq]
+  exact ⟨worlds, same.2.1, same.2.2⟩
+
+instance [DecidableEq Origin] [DecidableEq Local] [DecidableEq Resume]
+    [DecidableEq Rule] [DecidableEq Value] [DecidableEq StableFault]
+    [DecidableEq RetryableFault] [DecidableEq Effect] :
+    DecidableEq {machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect //
+      machine.world.heap.Recorded} :=
+  fun left right =>
+    if same : left.val.recordedView = right.val.recordedView then
+      isTrue (Subtype.ext (recordedView_injective _ _ left.property right.property same))
+    else isFalse (fun equal => same (congrArg (fun machine => machine.val.recordedView) equal))
+
+end Machine
+
+
+namespace World
+
+/-- Reconstruct the map from the finite history. This decodes a state; it
+does not grant authority to execute it or claim that its history occurred. -/
+def ofRecordedView (view : RecordedView Origin Rule Value StableFault RetryableFault Effect) :
+    World Origin Rule Value StableFault RetryableFault Effect where
+  lineage := view.1
+  path := view.2.1
+  heap := ⟨Heap.lookupSpine view.2.2.1, view.2.2.1⟩
+  receipts := view.2.2.2.1
+  nextCell := view.2.2.2.2.1
+  nextEvaluator := view.2.2.2.2.2
+
+theorem ofRecordedView_recorded (view : RecordedView Origin Rule Value StableFault RetryableFault Effect) :
+    (ofRecordedView view).heap.Recorded := by
+  intro cell
+  rfl
+
+@[simp] theorem recordedView_ofRecordedView
+    (view : RecordedView Origin Rule Value StableFault RetryableFault Effect) :
+    (ofRecordedView view).recordedView = view := rfl
+
+theorem ofRecordedView_recordedView
+    (world : World Origin Rule Value StableFault RetryableFault Effect)
+    (recorded : world.heap.Recorded) : ofRecordedView world.recordedView = world := by
+  exact recordedView_injective _ _ (ofRecordedView_recorded _) recorded
+    (recordedView_ofRecordedView _)
+
+end World
+
+namespace Machine
+
+def ofRecordedView
+    (view : RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Machine Origin Local Resume Rule Value StableFault RetryableFault Effect :=
+  ⟨World.ofRecordedView view.1, view.2.1, view.2.2⟩
+
+theorem ofRecordedView_recorded
+    (view : RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    (ofRecordedView view).world.heap.Recorded := World.ofRecordedView_recorded _
+
+@[simp] theorem recordedView_ofRecordedView
+    (view : RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    (ofRecordedView view).recordedView = view := rfl
+
+theorem ofRecordedView_recordedView
+    (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (recorded : machine.world.heap.Recorded) :
+    ofRecordedView machine.recordedView = machine :=
+  recordedView_injective _ _ (ofRecordedView_recorded _) recorded
+    (recordedView_ofRecordedView _)
+
+/-- Execute the original instruction through its finite retained-state view.
+Reconstruction expense is not identified with the semantic instruction count. -/
+def recordedStep
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (view : RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    List (RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :=
+  (step spec (ofRecordedView view)).map recordedView
+
+/-- Decoding every finite successor recovers the independently defined
+reference step, in its exact order and with every physical alternative. -/
+theorem recordedStep_decodes
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (view : RecordedView Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    (recordedStep spec view).map ofRecordedView = step spec (ofRecordedView view) := by
+  simp only [recordedStep, List.map_map]
+  calc
+    _ = (step spec (ofRecordedView view)).map id := by
+      apply List.map_congr_left
+      intro next member
+      exact ofRecordedView_recordedView next
+        (step_heap_recorded spec _ next (ofRecordedView_recorded view) member)
+    _ = _ := List.map_id _
+
+
+end Machine
+
+end Mettapedia.Machines.BranchLocalNeed.NeedReference

@@ -341,8 +341,8 @@ typing. -/
 theorem roots : RootPreserving (rules lv) := by
   intro n Γ l r A formed step typing
   rcases step with step | step
-  · exact (declares lv fun _ => 0).step_preserves (TowerArithmeticModel.facts lv) (RulesSub.refl _)
-      formed step typing
+  · exact (declares lv fun _ => 0).toRecursor.step_preserves (TowerArithmeticModel.facts lv)
+      (RulesSub.refl _) formed step typing
   · obtain ⟨k, fields, σ, as, mem, has, rfl, rfl⟩ := step
     exact (declaresAdd lv fun _ => 0).rule_preserves (TowerArithmeticModel.facts lv) (declares lv
         fun _ => 0) (RulesSub.refl _) formed mem σ as has typing

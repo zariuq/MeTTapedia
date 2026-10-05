@@ -426,4 +426,62 @@ theorem empty_bound_has_no_refinement (φ : Formula Symbol (set :: [])) :
 #print axioms singleton_fibre_empty
 #print axioms empty_bound_has_no_refinement
 
+/-! ## A conservative choice operator
+
+`Eps_set` chooses a set satisfying a predicate, and the empty set when none does.
+It is not a constructor of `Symbol`: the package constant `epsN` already chooses
+by `epsChoice`, and `Classical.choose` is not that function. `ChoiceSymbol` keeps
+the seven set operations and adds the operator. -/
+
+/-- The set signature extended by the choice operator. -/
+inductive ChoiceSymbol : Ty Unit → Type where
+  | core : {A : Ty Unit} → Symbol A → ChoiceSymbol A
+  | epsilon : ChoiceSymbol (predicate ⇒ set)
+
+/-- A set at which `p` holds, if there is one, and the empty set otherwise.
+The witness is `Classical.choose`. -/
+noncomputable def epsilonSet (p : ZFSet.{u} → ULift.{u + 1} Prop) : ZFSet.{u} :=
+  haveI := Classical.propDecidable (∃ x, (p x).down)
+  if h : ∃ x, (p x).down then Classical.choose h else ∅
+
+/-- The chosen set satisfies `p` whenever some set does. -/
+theorem epsilonSet_spec (p : ZFSet.{u} → ULift.{u + 1} Prop) {x : ZFSet.{u}}
+    (hx : (p x).down) : (p (epsilonSet p)).down := by
+  have witness : ∃ y, (p y).down := ⟨x, hx⟩
+  unfold epsilonSet
+  split
+  · next h => exact Classical.choose_spec h
+  · next h => exact absurd witness h
+
+/-- With no satisfying set, the operator returns the empty set. -/
+theorem epsilonSet_default (p : ZFSet.{u} → ULift.{u + 1} Prop)
+    (h : ¬ ∃ x, (p x).down) : epsilonSet p = ∅ := by
+  unfold epsilonSet
+  split
+  · next h' => exact absurd h' h
+  · rfl
+
+/-- Core symbols keep their set operations. `epsilon` is `epsilonSet`. -/
+noncomputable def choiceDenote :
+    {A : Ty Unit} → ChoiceSymbol A → Ty.denote.{0, u + 1} carrier.{u} A
+  | _, .core c => denoteSymbol c
+  | _, .epsilon => epsilonSet
+
+/-- The set model extended by the choice operator. -/
+noncomputable def choiceModel : HenkinModel.{0, 0, u + 1} Unit ChoiceSymbol :=
+  HenkinModel.standard carrier choiceDenote
+
+/-- `EpsI`: a predicate true of a set is true of `Eps_set` at that predicate. -/
+def choiceLaw : ClosedFormula ChoiceSymbol :=
+  .all (.all (.imp
+    (.app (.var (.vs .vz)) (.var .vz))
+    (.app (.var (.vs .vz)) (.app (.const .epsilon) (.var (.vs .vz))))))
+
+theorem choiceLaw_valid : choiceModel.{u}.models choiceLaw := by
+  intro P _ x _ hx
+  change ZFSet.{u} → ULift.{u + 1} Prop at P
+  change ZFSet.{u} at x
+  change (P (epsilonSet P)).down
+  exact epsilonSet_spec P hx
+
 end Mettapedia.Logic.HOL.Embedding.ZFSetHenkinInterpretation

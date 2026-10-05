@@ -5,50 +5,56 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impred
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.Conversion.Inversion
 
 /-!
-# The object package in the conversion model
+# The package of an extension in the conversion model
 
-The object package, the executable package with the program's codes, is a
-realizer side of the conversion model at every lawful generic equality that
-respects typed weak-head reduction, given facts about the weak-head forms of its
-types (`objectSideAt`). The facts are an input: they are the declarative facts
-of the object package, which the conversion model does not prove itself.
+The package of an extension of the transport value model (`TExtension`): the object
+package, the executable package with the program's codes, possibly with further declared
+names. Its package is a realizer side of the conversion model at every lawful generic
+equality that respects typed weak-head reduction, given facts about the weak-head forms of
+its types (`realSideAt`). The facts are an input: they are the declarative facts of the
+package, which the conversion model does not prove itself. The object package is the
+extension by no name (`objectTExt`); the object package with a declared datatype is another.
 
-The side is over the executable package (`objectSideAt_over`): the object package
-contains it, and its roles keep the roles of the numbers and of the constants
-with computation. So every constant of the executable package is valid in the
-model over it by the executable package's own proofs.
+The side is over the executable package (`realSideAt_over`): the package contains it, and its
+roles keep the roles of the numbers and of the constants with computation. So every constant
+of the executable package is valid in the model over it by the executable package's own
+proofs.
 
-**The codes.** The model reads the program's codes (`objectCodesRead`):
+**The codes.** The model reads the program's codes (`realCodesRead`):
 
 * the value side reads them as the transport value model does;
-* the realizer side declares them at their types (`objectRules_code_typed`), gives
+* the realizer side declares them at their types (`realRules_code_typed`), gives
   the decoder and the code constructors their roles, and keeps the type of
   codes rigid;
 * the decoder is a congruence of the generic equality: an input of the side,
-  which typed equality has (`objectDeclarative_holdsCongruence`);
+  which typed equality has (`realDeclarative_holdsCongruence`);
 * a typed constructor spine at the type of codes is a code constructor applied
   to its arguments, and it decodes to a typed weak-head form of a type
-  (`objectRules_decodes`). The proof inverts the typing with the facts: a
+  (`realRules_decodes`). The proof inverts the typing with the facts: a
   spine of implication, of a quantifier or of an equation has its arguments at
-  the declared domains, and the numbers' constructors are no codes, since the
-  type of the numbers is equal to no type of codes.
+  the declared domains; the numbers' constructors are no codes, since the
+  type of the numbers is equal to no type of codes, and neither are the new
+  constructors, which build new inductive types (`inductive_not_below_prop`).
 
 The declared types of the codes are typed in a package with the type of codes,
 the numbers and the sets and no computation (`typeStage`), sound for the model
 by the validity of those three constants (`typeStage_typedSoundN`); the
 fundamental lemma of that package makes them valid types.
 
-**Soundness.** The object package is sound for its conversion model, its root
-steps read with their typing (`objectRules_typedSoundN`): the executable package's
-root steps as in each stage, identity elimination at its typed instances, and a
-decoding of a code as a step of the value side's decoding and of the realizer
-side's computation. It holds at typed equality with only the facts as input
-(`objectRules_typedSoundN_declarative`). So derivably equal terms of a formed
-context are related by the generic equality, derivably equal types too, and a
-typed term is related to itself by the candidate of its value
-(`object_equal_escapeN`, `object_typeEq_escapeN`, `object_typed_shapeN`): a closed
-term of the numbers reaches `zero`, `suc` of a term of a smaller shape, or a
-neutral term (`object_closed_num_shape`).
+**Soundness.** The object package is sound for the conversion model over the package of every
+extension (`objectRules_typedSoundN`), and the package itself is sound for it, its root steps
+read with their typing, when its new constants are valid and its root steps at new names hold
+(`NewSoundN`, `realRules_typedSoundN`): the executable package's root steps as in each stage,
+identity elimination at its typed instances, and a decoding of a code as a step of the value side's
+decoding and of the realizer side's computation. It holds at typed equality with only the
+facts and the new names as input (`realRules_typedSoundN_declarative`). So derivably equal
+terms of a formed context are related by the generic equality, derivably equal types too, and
+a typed term is related to itself by the candidate of its value (`real_equal_escapeN`,
+`real_typeEq_escapeN`, `real_typed_shapeN`): a closed term of the numbers reaches `zero`, `suc`
+of a term of a smaller shape, or a neutral term (`real_closed_num_shape`).
+
+Negative: the object package with one more root step identifying `zero` with `suc zero` is
+sound for no such model (`zeroSucObjectRules_not_typedSoundN`).
 -/
 
 set_option autoImplicit false
@@ -73,41 +79,23 @@ open Mettapedia.Logic
 namespace CodeModel
 namespace ConvRules
 
-/-! ## The object package as a realizer side -/
+/-! ## The package of an extension as a realizer side -/
 
-/-- The universe levels of the object package: those of the executable
-package. -/
-def objectLevels : LevelModel objectRules ℕ where
-  level := (levels fun _ => 0).level
-  successor := (levels fun _ => 0).successor
-  universe_typing := (levels fun _ => 0).universe_typing
-  ground_typing := (levels fun _ => 0).ground_typing
-  cumulative_universe := (levels fun _ => 0).cumulative_universe
-  headEq_level := (levels fun _ => 0).headEq_level
-  join_level := (levels fun _ => 0).join_level
-  join_exists := (levels fun _ => 0).join_exists
-  join_upper := (levels fun _ => 0).join_upper
-  cumulative_refl := (levels fun _ => 0).cumulative_refl
-  headEq_symm := (levels fun _ => 0).headEq_symm
-  headEq_trans := (levels fun _ => 0).headEq_trans
-  universe_decided := (levels fun _ => 0).universe_decided
-
-/-- The normalization setting of the object package at a generic equality. -/
-def objectSettingAt (E : GenericEquality Tower.Head) : Setting Tower.Head ℕ where
-  R := objectRules
-  roles := objectRoles
+/-- The normalization setting of the package of an extension at a generic equality. -/
+def realSettingAt (X : TExtension) (E : GenericEquality Tower.Head) : Setting Tower.Head ℕ where
+  R := X.realRules
+  roles := X.realRoles
   E := E
-  levels := objectLevels
-  shape := objectShape
-  constructors := objectConstructorsDeclared
+  levels := X.realLevels
+  shape := X.realShape
+  constructors := X.realDeclared
 
-/-- **The object package as a realizer side** at a lawful generic equality that
-respects typed weak-head reduction, with facts about the weak-head forms of its
-types. -/
-def objectSideAt (facts : FormFacts objectRules objectRoles) (E : GenericEquality Tower.Head)
-    (lawsE : E.Laws objectRules objectRoles) (reduceE : RespectsReduction objectRules objectRoles E) :
-    RealizerSide Tower.Head ℕ where
-  toSetting := objectSettingAt E
+/-- **The package of an extension as a realizer side** at a lawful generic equality that
+respects typed weak-head reduction, with facts about the weak-head forms of its types. -/
+def realSideAt (X : TExtension) (facts : FormFacts X.realRules X.realRoles)
+    (E : GenericEquality Tower.Head) (lawsE : E.Laws X.realRules X.realRoles)
+    (reduceE : RespectsReduction X.realRules X.realRoles E) : RealizerSide Tower.Head ℕ where
+  toSetting := realSettingAt X E
   laws := lawsE
   reduce := reduceE
   facts := facts
@@ -147,17 +135,39 @@ theorem objectRoles_prop : objectRoles propN = .rigid :=
   (objectRoles_of (by decide) (by decide) (by decide) (by decide)).trans
     (roles_of_not_mem (by decide))
 
+/-- A name with computation or a constructor in the executable package is declared there. -/
+theorem objectRules_declared_of_roles {c : DeclName} {role : Role Tower.Head}
+    (declared : roles c = role) (nonrigid : role ≠ .rigid) :
+    objectRules.constantType c ≠ none := by
+  by_cases mem : c ∈ nonrigidNames
+  · have all : ∀ n ∈ nonrigidNames, (allTypes n).isSome = true := by decide
+    obtain ⟨T, hT⟩ := Option.isSome_iff_exists.mp (all c mem)
+    rw [rules_sub_objectRules.constantType (show rules.constantType c = some T from hT)]
+    exact Option.some_ne_none T
+  · exact absurd (declared.symm.trans (roles_of_not_mem mem)) nonrigid
+
 section Side
 
-variable (facts : FormFacts objectRules objectRoles) {E : GenericEquality Tower.Head}
-  (lawsE : E.Laws objectRules objectRoles) (reduceE : RespectsReduction objectRules objectRoles E)
+variable (X : TExtension)
 
-/-- **The object package is a realizer side over the executable package.** -/
-theorem objectSideAt_over : OverRules (objectSideAt facts E lawsE reduceE) where
-  sub := rules_sub_objectRules
-  keep := fun declared nonrigid => objectRoles_of_roles declared nonrigid
-  set := objectRoles_set
-  power := objectRoles_power
+theorem realRoles_prop : X.realRoles propN = .rigid :=
+  (X.realRoles_declared (c := propN) (by decide)).trans objectRoles_prop
+
+theorem realRoles_holds :
+    X.realRoles holdsN = .computes 1 (.split 0 .constructor fun _ => .leaf) :=
+  X.realDecoderRoles.holds
+
+variable (facts : FormFacts X.realRules X.realRoles) {E : GenericEquality Tower.Head}
+  (lawsE : E.Laws X.realRules X.realRoles) (reduceE : RespectsReduction X.realRules X.realRoles E)
+
+/-- **The package of an extension is a realizer side over the executable package.** -/
+theorem realSideAt_over : OverRules (realSideAt X facts E lawsE reduceE) where
+  sub := rules_sub_objectRules.trans X.realSub
+  keep := fun declared nonrigid =>
+    (X.realRoles_declared (objectRules_declared_of_roles declared nonrigid)).trans
+      (objectRoles_of_roles declared nonrigid)
+  set := (X.realRoles_declared (c := setN) (by decide)).trans objectRoles_set
+  power := (X.realRoles_declared (c := powerN) (by decide)).trans objectRoles_power
 
 end Side
 
@@ -279,6 +289,11 @@ theorem objectRules_code_typed {c : DeclName} {T : Tower.Tm 0}
     .const (programCodes.extend_constantType_of_code rules code) typedT hu
   rwa [liftClosed_zero] at h
 
+/-- The package of an extension declares each code constant at its type. -/
+theorem realRules_code_typed (X : TExtension) {c : DeclName} {T : Tower.Tm 0}
+    (code : programCodes.codeType c = some T) : Typed X.realRules .nil (.const c) T :=
+  Derivable.mono X.realSub (objectRules_code_typed code)
+
 /-! ## Typed constructor spines at the type of codes -/
 
 /-- A behaviour that is no constructor. -/
@@ -349,30 +364,61 @@ theorem objectRoles_constructor {k : DeclName} {a : Nat} (role : objectRoles k =
           rw [objectRoles_of hh hi ha he] at role
           exact .inr (.inr (.inr (roles_constructor role)))
 
+/-- **The constructors of the package of an extension**: the object package's, at the names
+the extension does not add, and new constructors, which build new inductive types. -/
+theorem realRoles_constructor (X : TExtension) {k : DeclName} {a : Nat}
+    (role : X.realRoles k = .constructor a) :
+    (k ∉ X.names ∧ objectRoles k = .constructor a) ∨
+      (k ∈ X.names ∧ ∃ (I : DeclName) (fs : List (Normalization.Field Tower.Head)),
+        X.realRules.constantType k = some (ctorType I fs) ∧ fs.length = a ∧ I ∈ X.names ∧
+          ∃ cs, X.realRoles I = .inductive cs) := by
+  by_cases new : k ∈ X.names
+  · exact .inr ⟨new, X.realNewCtor new role⟩
+  · exact .inl ⟨new, (X.realOld new).symm.trans role⟩
+
+/-- A spine of a constant applied to as many terms as a telescope has entries is the constant
+applied to the telescope at the substitution of those terms. -/
+theorem appSpine_eq_applyClosed (entry : (j : Nat) → Tower.Tm j) (c : DeclName) {N n : Nat}
+    {args : List (Tower.Tm n)} (length : args.length = N) :
+    appSpine (.const c) args = applyClosed (ofEntries entry N) (argsSub N args) (.const c) := by
+  rw [applyClosed_eq_appSpine, telescopeArgs_argsSub entry N args length]
+
 section Decoding
 
-variable (facts : FormFacts objectRules objectRoles)
+variable (X : TExtension) (facts : FormFacts X.realRules X.realRoles)
 
-/-- The object package at typed equality, as a realizer side with the facts. -/
-abbrev objectDeclarativeSide : RealizerSide Tower.Head ℕ :=
-  objectSideAt facts (declarative objectRules) (declarative_laws objectRoles objectLevels)
+/-- The package of an extension at typed equality, as a realizer side with the facts. -/
+abbrev realDeclarativeSide : RealizerSide Tower.Head ℕ :=
+  realSideAt X facts (declarative X.realRules) (declarative_laws X.realRoles X.realLevels)
     declarative_convTm_reduce
 
 variable {n : Nat} {Δ : Tower.Ctx n}
 
+/-- A new inductive type is a type of the package of an extension. -/
+theorem newInductive_isType {I : DeclName}
+    {cs : List (DeclName × List (Normalization.Field Tower.Head))}
+    (mem : I ∈ X.names) (role : X.realRoles I = .inductive cs) :
+    IsType X.realRules Δ (.const I) := by
+  obtain ⟨u, hu, declared⟩ := X.realNewInductive mem role
+  obtain ⟨w, hw, typedU⟩ := universe_isType (S := realSettingAt X (declarative X.realRules))
+    (Δ := .nil) (X.realSub.isUniverse hu)
+  exact ⟨u, X.realSub.isUniverse hu, .const declared typedU hw⟩
+
 include facts in
-/-- The type of the numbers is below no type of codes: a chain from the numbers
-ends in a type equal to the numbers, which is not the rigid type of codes. -/
-theorem num_not_below_prop (formed : CtxFormed objectRules Δ)
-    (le : TypeLe objectRules Δ numT (.const propN)) : False := by
-  have numType : IsType objectRules Δ numT := ⟨_, LevelTower.IsUniverse.sort _, num_typedO⟩
-  have e := RealizerSide.typeLe_inductive (T := objectDeclarativeSide facts) (I := numN) formed
-    objectRoles_num le numType.refl
-  have neutral : Neutral objectRoles (.const propN : Tower.Tm n) :=
-    .rigid (args := []) objectRoles_prop
+/-- **An inductive type is below no type of codes**: a chain from it ends in a type equal to
+it, which is not the rigid type of codes. -/
+theorem inductive_not_below_prop (formed : CtxFormed X.realRules Δ) {I : DeclName}
+    {cs : List (DeclName × List (Normalization.Field Tower.Head))}
+    (role : X.realRoles I = .inductive cs)
+    (typeI : IsType X.realRules Δ (.const I))
+    (le : TypeLe X.realRules Δ (.const I) (.const propN)) : False := by
+  have e := RealizerSide.typeLe_inductive (T := realDeclarativeSide X facts) (I := I) formed
+    role le typeI.refl
+  have neutral : Neutral X.realRoles (.const propN : Tower.Tm n) :=
+    .rigid (args := []) (realRoles_prop X)
   exact ((facts.forms e formed (.inr (.inr (.inr (.inr (.inl neutral)))))
-    (.inr (.inr (.inr (.inr (.inr ⟨numN, _, objectRoles_num, rfl⟩)))))).neutral_left
-      neutral).ne_inductive objectRoles_num rfl
+    (.inr (.inr (.inr (.inr (.inr ⟨I, _, role, rfl⟩)))))).neutral_left
+      neutral).ne_inductive role rfl
 
 /-- The simple types of the profile, as types of a context. -/
 theorem typeTerm_lift (type : HOL.Ty SetProfile.SetBase) :
@@ -384,109 +430,135 @@ include facts in
 /-- **A typed constructor spine at the type of codes decodes to a typed weak-head
 form of a type**, by one root step: it is a spine of implication, of a
 quantifier instance or of an equation instance, with its arguments at the
-declared domains; the numbers' constructors have no typing at the type of
-codes. -/
-theorem objectRules_decodes (formed : CtxFormed objectRules Δ) {k : DeclName}
-    {args : List (Tower.Tm n)} (typing : Typed objectRules Δ (appSpine (.const k) args) (.const propN))
-    (role : objectRoles k = .constructor args.length) :
-    ∃ D, objectRules.computation.step (.app (.const holdsN) (appSpine (.const k) args)) D ∧
-      IsTypeForm objectRoles D ∧ Typed objectRules Δ D U0 := by
-  have univ := tower_sub_objectRules
-  have hu : objectRules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
-  have propT : ∀ {m : Nat} {Γ : Tower.Ctx m}, Typed objectRules Γ (.const propN) U0 :=
-    prop_typedO
+declared domains; the numbers' constructors and the new constructors have no typing at the
+type of codes. -/
+theorem realRules_decodes (formed : CtxFormed X.realRules Δ) {k : DeclName}
+    {args : List (Tower.Tm n)}
+    (typing : Typed X.realRules Δ (appSpine (.const k) args) (.const propN))
+    (role : X.realRoles k = .constructor args.length) :
+    ∃ D, X.realRules.computation.step (.app (.const holdsN) (appSpine (.const k) args)) D ∧
+      IsTypeForm X.realRoles D ∧ Typed X.realRules Δ D U0 := by
+  have univ := tower_sub_objectRules.trans X.realSub
+  have hu : X.realRules.isUniverse (.sort Tower.zero) := X.realSub.isUniverse (.sort _)
+  have propT : ∀ {m : Nat} {Γ : Tower.Ctx m}, Typed X.realRules Γ (.const propN) U0 :=
+    Derivable.mono X.realSub prop_typedO
   have typeT : ∀ (type : HOL.Ty SetProfile.SetBase) {m : Nat} {Γ : Tower.Ctx m},
-      Typed objectRules Γ (FormationSensitiveHOLInterface.typeAt SetProfile.types m type) U0 :=
-    fun type => typeAt_typed univ declared_prop declared_num rfl type
-  rcases objectRoles_constructor role with ⟨rfl, len⟩ | ⟨type, found, len⟩ |
-    ⟨type, found, len⟩ | ⟨rfl, len⟩ | ⟨rfl, len⟩
-  · -- Implication: both arguments are codes, and the decoding is a dependent
-    -- function type of proof types.
-    match args, len with
-    | [p, q], _ =>
-      obtain ⟨mor, -, -⟩ :=
-        Typed.telescope_inv (S := objectSettingAt (declarative objectRules)) facts formed
-          (.snoc (.snoc .nil (.const propN)) (.const propN)) (.const propN) declared_imp
-          (σ := consSub q (consSub p fun i => Fin.elim0 i)) typing
-      have tp : Typed objectRules Δ p (.const propN) := mor 1
-      have tq : Typed objectRules Δ q (.const propN) := mor 0
-      refine ⟨_, .inr (DecoderStep.imp p q), .inr (.inl ⟨_, _, rfl⟩), piU0 univ
-        (.appElim holds_typedO tp) (.appElim holds_typedO (Typed.weaken tq))⟩
-  · -- A quantifier: its argument is a family of codes over the carrier, and the
-    -- decoding is a dependent function type over the carrier.
-    obtain rfl := SetProfile.allInstance?_eq_some found
-    match args, len with
-    | [f], _ =>
-      have carrier : programCodes.quantifiers (SetProfile.allName type) = some (typeTerm type) := by
-        change (SetProfile.allInstance? (SetProfile.allName type)).map typeTerm = _
-        rw [found]
-        rfl
-      obtain ⟨mor, -, -⟩ :=
-        Typed.telescope_inv (S := objectSettingAt (declarative objectRules)) facts formed
-          (.snoc .nil (.pi (typeTerm type) (.const propN))) (.const propN) (declared_allName type)
-          (σ := consSub f fun i => Fin.elim0 i) typing
-      have tf : Typed objectRules Δ f
-          (.pi (FormationSensitiveHOLInterface.typeAt SetProfile.types n type) (.const propN)) := by
-        have h := mor 0
-        simp only [Ctx.lookup_snoc_zero, subst_rename_wk, Presentation.subst,
-          FormationSensitiveHOLInterface.typeAt_subst] at h
-        exact h
-      refine ⟨_, .inr (DecoderStep.all carrier f), .inr (.inl ⟨_, _, rfl⟩), ?_⟩
-      rw [typeTerm_lift]
-      exact piU0 univ (typeT type)
-        (.appElim holds_typedO (.appElim (B := .const propN) (Typed.weaken tf) (.var 0)))
-  · -- An equation: both arguments are points of the carrier, and the decoding is
-    -- an identity type.
-    obtain rfl := SetProfile.eqInstance?_eq_some found
-    match args, len with
-    | [x, y], _ =>
-      have carrier : programCodes.decoders.eqCarrier (SetProfile.eqName type) =
-          some (typeTerm type) := by
-        change (if true = true then (SetProfile.eqInstance? (SetProfile.eqName type)).map typeTerm
-          else none) = _
-        rw [if_pos rfl, found]
-        rfl
-      obtain ⟨mor, -, -⟩ :=
-        Typed.telescope_inv (S := objectSettingAt (declarative objectRules)) facts formed
-          (.snoc (.snoc .nil (FormationSensitiveHOLInterface.typeAt SetProfile.types 0 type))
-            (FormationSensitiveHOLInterface.typeAt SetProfile.types 1 type))
-          (.const propN) (declared_eqName type)
-          (σ := consSub y (consSub x fun i => Fin.elim0 i)) typing
-      have tx : Typed objectRules Δ x
-          (FormationSensitiveHOLInterface.typeAt SetProfile.types n type) := by
-        have h := mor 1
-        change Typed objectRules Δ x (Presentation.subst (consSub y (consSub x fun i => Fin.elim0 i))
-          (Presentation.rename wk (Presentation.rename wk
-            (FormationSensitiveHOLInterface.typeAt SetProfile.types 0 type)))) at h
-        rw [FormationSensitiveHOLInterface.typeAt_rename, FormationSensitiveHOLInterface.typeAt_rename,
-          FormationSensitiveHOLInterface.typeAt_subst] at h
-        exact h
-      have ty : Typed objectRules Δ y
-          (FormationSensitiveHOLInterface.typeAt SetProfile.types n type) := by
-        have h := mor 0
-        change Typed objectRules Δ y (Presentation.subst (consSub y (consSub x fun i => Fin.elim0 i))
-          (Presentation.rename wk
-            (FormationSensitiveHOLInterface.typeAt SetProfile.types 1 type))) at h
-        rw [FormationSensitiveHOLInterface.typeAt_rename,
-          FormationSensitiveHOLInterface.typeAt_subst] at h
-        exact h
-      refine ⟨_, .inr (DecoderStep.eq carrier x y), .inr (.inr (.inr (.inl ⟨_, _, _, rfl⟩))), ?_⟩
-      rw [typeTerm_lift]
-      exact .idForm (typeT type) hu tx ty
-  · -- `zero` has the type of the numbers, which is below no type of codes.
-    match args, len with
-    | [], _ =>
-      obtain ⟨-, -, le⟩ :=
-        Typed.telescope_inv (S := objectSettingAt (declarative objectRules)) facts formed
-          .nil numT declared_zero (σ := fun i => Fin.elim0 i) typing
-      exact (num_not_below_prop facts formed le).elim
-  · -- `suc` returns the numbers, which are below no type of codes.
-    match args, len with
-    | [a], _ =>
-      obtain ⟨-, -, le⟩ :=
-        Typed.telescope_inv (S := objectSettingAt (declarative objectRules)) facts formed
-          (.snoc .nil numT) numT declared_suc (σ := consSub a fun i => Fin.elim0 i) typing
-      exact (num_not_below_prop facts formed le).elim
+      Typed X.realRules Γ (FormationSensitiveHOLInterface.typeAt SetProfile.types m type) U0 :=
+    fun type => typeAt_typed univ (X.realSub.constantType declared_prop)
+      (X.realSub.constantType declared_num) (X.realSub.constantType rfl) type
+  have holdsT : ∀ {m : Nat} {Γ : Tower.Ctx m},
+      Typed X.realRules Γ (.const holdsN) (.pi (.const propN) U0) :=
+    Derivable.mono X.realSub holds_typedO
+  have numNotProp : ∀ {m : Nat} {Γ : Tower.Ctx m}, CtxFormed X.realRules Γ →
+      TypeLe X.realRules Γ numT (.const propN) → False :=
+    fun formed le => inductive_not_below_prop X facts formed X.realRoles_num
+      ⟨_, hu, Derivable.mono X.realSub num_typedO⟩ le
+  rcases realRoles_constructor X role with ⟨-, role⟩ | ⟨-, I, fs, declared, len, memI, cs, roleI⟩
+  · rcases objectRoles_constructor role with ⟨rfl, len⟩ | ⟨type, found, len⟩ |
+      ⟨type, found, len⟩ | ⟨rfl, len⟩ | ⟨rfl, len⟩
+    · -- Implication: both arguments are codes, and the decoding is a dependent
+      -- function type of proof types.
+      match args, len with
+      | [p, q], _ =>
+        obtain ⟨mor, -, -⟩ :=
+          Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+            (.snoc (.snoc .nil (.const propN)) (.const propN)) (.const propN)
+            (X.realSub.constantType declared_imp)
+            (σ := consSub q (consSub p fun i => Fin.elim0 i)) typing
+        have tp : Typed X.realRules Δ p (.const propN) := mor 1
+        have tq : Typed X.realRules Δ q (.const propN) := mor 0
+        refine ⟨_, X.realDecodes (DecoderStep.imp p q), .inr (.inl ⟨_, _, rfl⟩), piU0 univ
+          (.appElim holdsT tp) (.appElim holdsT (Typed.weaken tq))⟩
+    · -- A quantifier: its argument is a family of codes over the carrier, and the
+      -- decoding is a dependent function type over the carrier.
+      obtain rfl := SetProfile.allInstance?_eq_some found
+      match args, len with
+      | [f], _ =>
+        have carrier : programCodes.quantifiers (SetProfile.allName type) =
+            some (typeTerm type) := by
+          change (SetProfile.allInstance? (SetProfile.allName type)).map typeTerm = _
+          rw [found]
+          rfl
+        obtain ⟨mor, -, -⟩ :=
+          Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+            (.snoc .nil (.pi (typeTerm type) (.const propN))) (.const propN)
+            (X.realSub.constantType (declared_allName type))
+            (σ := consSub f fun i => Fin.elim0 i) typing
+        have tf : Typed X.realRules Δ f
+            (.pi (FormationSensitiveHOLInterface.typeAt SetProfile.types n type)
+              (.const propN)) := by
+          have h := mor 0
+          simp only [Ctx.lookup_snoc_zero, subst_rename_wk, Presentation.subst,
+            FormationSensitiveHOLInterface.typeAt_subst] at h
+          exact h
+        refine ⟨_, X.realDecodes (DecoderStep.all carrier f), .inr (.inl ⟨_, _, rfl⟩), ?_⟩
+        rw [typeTerm_lift]
+        exact piU0 univ (typeT type)
+          (.appElim holdsT (.appElim (B := .const propN) (Typed.weaken tf) (.var 0)))
+    · -- An equation: both arguments are points of the carrier, and the decoding is
+      -- an identity type.
+      obtain rfl := SetProfile.eqInstance?_eq_some found
+      match args, len with
+      | [x, y], _ =>
+        have carrier : programCodes.decoders.eqCarrier (SetProfile.eqName type) =
+            some (typeTerm type) := by
+          change (if true = true then
+            (SetProfile.eqInstance? (SetProfile.eqName type)).map typeTerm else none) = _
+          rw [if_pos rfl, found]
+          rfl
+        obtain ⟨mor, -, -⟩ :=
+          Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+            (.snoc (.snoc .nil (FormationSensitiveHOLInterface.typeAt SetProfile.types 0 type))
+              (FormationSensitiveHOLInterface.typeAt SetProfile.types 1 type))
+            (.const propN) (X.realSub.constantType (declared_eqName type))
+            (σ := consSub y (consSub x fun i => Fin.elim0 i)) typing
+        have tx : Typed X.realRules Δ x
+            (FormationSensitiveHOLInterface.typeAt SetProfile.types n type) := by
+          have h := mor 1
+          change Typed X.realRules Δ x
+            (Presentation.subst (consSub y (consSub x fun i => Fin.elim0 i))
+              (Presentation.rename wk (Presentation.rename wk
+                (FormationSensitiveHOLInterface.typeAt SetProfile.types 0 type)))) at h
+          rw [FormationSensitiveHOLInterface.typeAt_rename,
+            FormationSensitiveHOLInterface.typeAt_rename,
+            FormationSensitiveHOLInterface.typeAt_subst] at h
+          exact h
+        have ty : Typed X.realRules Δ y
+            (FormationSensitiveHOLInterface.typeAt SetProfile.types n type) := by
+          have h := mor 0
+          change Typed X.realRules Δ y
+            (Presentation.subst (consSub y (consSub x fun i => Fin.elim0 i))
+              (Presentation.rename wk
+                (FormationSensitiveHOLInterface.typeAt SetProfile.types 1 type))) at h
+          rw [FormationSensitiveHOLInterface.typeAt_rename,
+            FormationSensitiveHOLInterface.typeAt_subst] at h
+          exact h
+        refine ⟨_, X.realDecodes (DecoderStep.eq carrier x y),
+          .inr (.inr (.inr (.inl ⟨_, _, _, rfl⟩))), ?_⟩
+        rw [typeTerm_lift]
+        exact .idForm (typeT type) hu tx ty
+    · -- `zero` has the type of the numbers, which is below no type of codes.
+      match args, len with
+      | [], _ =>
+        obtain ⟨-, -, le⟩ :=
+          Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+            .nil numT (X.realSub.constantType declared_zero) (σ := fun i => Fin.elim0 i) typing
+        exact (numNotProp formed le).elim
+    · -- `suc` returns the numbers, which are below no type of codes.
+      match args, len with
+      | [a], _ =>
+        obtain ⟨-, -, le⟩ :=
+          Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+            (.snoc .nil numT) numT (X.realSub.constantType declared_suc)
+            (σ := consSub a fun i => Fin.elim0 i) typing
+        exact (numNotProp formed le).elim
+  · -- A new constructor returns its new inductive type, which is below no type of codes.
+    rw [appSpine_eq_applyClosed (ctorEntry I fs) k len.symm] at typing
+    obtain ⟨-, -, le⟩ :=
+      Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+        (ctorTele I fs) (.const I) declared typing
+    exact (inductive_not_below_prop X facts formed roleI (newInductive_isType X memI roleI)
+      le).elim
 
 end Decoding
 
@@ -522,45 +594,60 @@ theorem typeStage_codeType_typed {c : DeclName} {T : Tower.Tm 0}
     (show (if setN = propN ∨ setN = numN ∨ setN = setN then some U0 else none) = some U0 from
       if_pos (.inr (.inr rfl))) code
 
+/-- **The new names of an extension are sound for a conversion model**: each new constant is a
+valid term of its declared type, and each root step at a new name preserves meaning,
+semantically or at its typed instances. The object package has no new name. -/
+structure NewSoundN (X : TExtension) (M : NModel Tower.Head ℕ) : Prop where
+  constants : ∀ {name : DeclName} {type : Tower.Tm 0}, name ∈ X.names →
+    X.realRules.constantType name = some type → ValidTmN M .nil (.const name) type
+  roots : ∀ {n : Nat} {c : DeclName} {args : List (Tower.Tm n)} {r : Tower.Tm n}, c ∈ X.names →
+    X.realRules.computation.step (appSpine (.const c) args) r →
+      RootSemanticN M (appSpine (.const c) args) r ∨
+        TypedRootN X.realRules M (appSpine (.const c) args) r
+
+/-- The object package has no new name. -/
+theorem objectTExt_newSoundN (M : NModel Tower.Head ℕ) : NewSoundN objectTExt M :=
+  ⟨fun h => (nomatch h), fun h => (nomatch h)⟩
+
 section Model
 
-variable (v : Nat → Nat) (facts : FormFacts objectRules objectRoles) {E : GenericEquality Tower.Head}
-  (lawsE : E.Laws objectRules objectRoles) (reduceE : RespectsReduction objectRules objectRoles E)
+variable (X : TExtension) (v : Nat → Nat) (facts : FormFacts X.realRules X.realRoles)
+  {E : GenericEquality Tower.Head} (lawsE : E.Laws X.realRules X.realRoles)
+  (reduceE : RespectsReduction X.realRules X.realRoles E)
   (holdsE : HoldsCongruence E programCodes)
 include holdsE
 
-/-- **The conversion model over the object package reads the program's codes**:
-the value side reads them as the transport value model does, and on the
-realizer side the codes are declared at their types, the decoder and the code
-constructors have their roles, the type of codes is rigid, the decoder is a
-congruence of the generic equality, and typed constructor spines at the type of
-codes decode by the facts. -/
-theorem objectCodesRead :
-    CodesReadN (nmodel v (objectSideAt facts E lawsE reduceE)) programCodes where
-  read := tprogramCodes_read v
-  typed := objectRules_code_typed
-  decoderRoles := objectDecoderRoles
-  propRigid := objectRoles_prop
-  proofs := LevelTower.IsUniverse.sort _
+/-- **The conversion model over the package of an extension reads the program's codes**:
+the value side reads them as the transport value model does, and on the realizer side the
+codes are declared at their types, the decoder and the code constructors have their roles, the
+type of codes is rigid, the decoder is a congruence of the generic equality, and typed
+constructor spines at the type of codes decode by the facts. -/
+theorem realCodesRead :
+    CodesReadN (nmodel X v (realSideAt X facts E lawsE reduceE)) programCodes where
+  read := X.programCodes_read v
+  typed := realRules_code_typed X
+  decoderRoles := X.realDecoderRoles
+  propRigid := realRoles_prop X
+  proofs := X.realSub.isUniverse (.sort _)
   holds := holdsE
-  decodes := fun formed typing role => objectRules_decodes facts formed typing role
+  decodes := fun formed typing role => realRules_decodes X facts formed typing role
 
 /-- **The package of the types of the codes is sound for the conversion model
-over the object package**: the type of codes, the numbers and the sets are
+over the package of an extension**: the type of codes, the numbers and the sets are
 valid, and it has no computation. -/
 theorem typeStage_typedSoundN :
-    TypedSoundN typeStage (nmodel v (objectSideAt facts E lawsE reduceE)) where
-  laws := nmodel_laws v _
+    TypedSoundN typeStage (nmodel X v (realSideAt X facts E lawsE reduceE)) where
+  laws := nmodel_laws X v _
   headTyping := id
   isUniverse := id
   join := id
   cumulative := id
   headEq := id
-  headTyping' := id
-  isUniverse' := id
-  join' := id
-  cumulative' := id
-  headEq' := id
+  headTyping' := fun typing => X.realSub.headTyping typing
+  isUniverse' := fun hu => X.realSub.isUniverse hu
+  join' := fun join => X.realSub.join join
+  cumulative' := fun c => X.realSub.cumulative c
+  headEq' := fun same => X.realSub.headEq same
   root := fun step => nomatch step
   constants := by
     intro name type declared
@@ -569,49 +656,46 @@ theorem typeStage_typedSoundN :
     split_ifs at declared with h
     cases declared
     rcases h with rfl | rfl | rfl
-    · exact valid_propN (nmodel_laws v _) (objectCodesRead v facts lawsE reduceE holdsE)
-    · exact valid_num v (objectSideAt_over facts lawsE reduceE)
-    · exact valid_set v (objectSideAt_over facts lawsE reduceE)
+    · exact valid_propN (nmodel_laws X v _) (realCodesRead X v facts lawsE reduceE holdsE)
+    · exact valid_num X v (realSideAt_over X facts lawsE reduceE)
+    · exact valid_set X v (realSideAt_over X facts lawsE reduceE)
 
 /-- **The declared types of the codes are valid types with valid parts** in the
-conversion model over the object package, by the fundamental lemma of the
+conversion model over the package of an extension, by the fundamental lemma of the
 package of the types of the codes. -/
-theorem objectCodeTypes {c : DeclName} {T : Tower.Tm 0} (code : programCodes.codeType c = some T) :
-    ValidTyN (nmodel v (objectSideAt facts E lawsE reduceE)) .nil T ∧
-      StructuredN (nmodel v (objectSideAt facts E lawsE reduceE)) .nil T := by
-  have sound := typeStage_typedSoundN v facts lawsE reduceE holdsE
+theorem realCodeTypes {c : DeclName} {T : Tower.Tm 0} (code : programCodes.codeType c = some T) :
+    ValidTyN (nmodel X v (realSideAt X facts E lawsE reduceE)) .nil T ∧
+      StructuredN (nmodel X v (realSideAt X facts E lawsE reduceE)) .nil T := by
+  have sound := typeStage_typedSoundN X v facts lawsE reduceE holdsE
   obtain ⟨u, hu, typedT⟩ := typeStage_codeType_typed code
   obtain ⟨validT, partsT, _⟩ := Derivable.validTN sound typedT trivial
   exact ⟨validT.validTy (sound.isUniverse hu) (sound.isUniverse' hu), partsT⟩
 
-/-- **The object package is sound for its conversion model**, its root steps
-read with their typing, at every lawful generic equality that respects typed
-weak-head reduction and has the decoder as a congruence, given facts about the
-weak-head forms of its types: the executable package's root steps as in each
-stage, a decoding of a code as a step of the value side's decoding and of the
-realizer side's computation; each code constant by the code constants of the
-model, and each constant of the executable package by the executable package's
-own proofs over the realizer side. -/
+/-- **The object package is sound for the conversion model over the package of every
+extension**, its root steps read with their typing: the executable package's root steps as in
+each stage, a decoding of a code as a step of the value side's decoding and of the realizer
+side's computation; each code constant by the code constants of the model, and each constant
+of the executable package by the executable package's own proofs over the realizer side. -/
 theorem objectRules_typedSoundN :
-    TypedSoundN objectRules (nmodel v (objectSideAt facts E lawsE reduceE)) where
-  laws := nmodel_laws v _
+    TypedSoundN objectRules (nmodel X v (realSideAt X facts E lawsE reduceE)) where
+  laws := nmodel_laws X v _
   headTyping := id
   isUniverse := id
   join := id
   cumulative := id
   headEq := id
-  headTyping' := id
-  isUniverse' := id
-  join' := id
-  cumulative' := id
-  headEq' := id
+  headTyping' := fun typing => X.realSub.headTyping typing
+  isUniverse' := fun hu => X.realSub.isUniverse hu
+  join' := fun join => X.realSub.join join
+  cumulative' := fun c => X.realSub.cumulative c
+  headEq' := fun same => X.realSub.headEq same
   root := by
     intro n l r step
     rcases step with step | step
-    · exact stage_root v (objectSideAt_over facts lawsE reduceE) (allowed := fun _ => true)
+    · exact stage_root X v (realSideAt_over X facts lawsE reduceE) (allowed := fun _ => true)
         (fun _ => by rw [objectRules_declared_j]; rfl) step
-    · exact .inl (ModelRootN.semantic (nmodel_laws v (objectSideAt facts E lawsE reduceE))
-        (vprogramDecodes v) ⟨.inr step, programCodes.extend_decoder_step rules step⟩)
+    · exact .inl (ModelRootN.semantic (nmodel_laws X v (realSideAt X facts E lawsE reduceE))
+        (X.programDecodes v) ⟨.inr step, X.realDecodes step⟩)
   constants := by
     intro name type declared
     change (programCodes.codeType name).orElse (fun _ => rules.constantType name) = some type
@@ -620,100 +704,124 @@ theorem objectRules_typedSoundN :
     | some T =>
         rw [code] at declared
         cases declared
-        exact valid_codeN (nmodel_laws v _) (objectCodesRead v facts lawsE reduceE holdsE)
-          (objectCodeTypes v facts lawsE reduceE holdsE) code
+        exact valid_codeN (nmodel_laws X v _) (realCodesRead X v facts lawsE reduceE holdsE)
+          (realCodeTypes X v facts lawsE reduceE holdsE) code
     | none =>
         rw [code] at declared
-        exact valid_declared v (objectSideAt_over facts lawsE reduceE) declared
+        exact valid_declared X v (realSideAt_over X facts lawsE reduceE) declared
+
+/-- **The package of an extension is sound for its conversion model**, its root steps read
+with their typing, at every lawful generic equality that respects typed weak-head reduction
+and has the decoder as a congruence, given facts about the weak-head forms of its types, when
+its new constants are valid and its root steps at its new names hold: the executable package's
+root steps as in each stage, a decoding of a code as a step of the value side's decoding and of
+the realizer side's computation; each code constant by the code constants of the model, and
+each constant of the executable package by the executable package's own proofs over the
+realizer side. -/
+theorem realRules_typedSoundN
+    (new : NewSoundN X (nmodel X v (realSideAt X facts E lawsE reduceE))) :
+    TypedSoundN X.realRules (nmodel X v (realSideAt X facts E lawsE reduceE)) where
+  laws := nmodel_laws X v _
+  headTyping := fun typing => X.realHeadTyping typing
+  isUniverse := fun hu => X.realIsUniverse hu
+  join := fun join => X.realJoin join
+  cumulative := fun c => X.realCumulative c
+  headEq := fun same => X.realHeadEq same
+  headTyping' := id
+  isUniverse' := id
+  join' := id
+  cumulative' := id
+  headEq' := id
+  root := by
+    intro n l r step
+    obtain ⟨c, arity, inspect, args, -, rfl, -, -⟩ := X.realShape.spine step
+    by_cases isNew : c ∈ X.names
+    · exact new.roots isNew step
+    rcases X.realStepOld isNew step with step | step
+    · exact stage_root X v (realSideAt_over X facts lawsE reduceE) (allowed := fun _ => true)
+        (fun _ => by rw [X.realSub.constantType objectRules_declared_j]; rfl) step
+    · exact .inl (ModelRootN.semantic (nmodel_laws X v (realSideAt X facts E lawsE reduceE))
+        (X.programDecodes v) ⟨.inr step, X.realDecodes step⟩)
+  constants := by
+    intro name type declared
+    by_cases isNew : name ∈ X.names
+    · exact new.constants isNew declared
+    · exact (objectRules_typedSoundN X v facts lawsE reduceE holdsE).constants
+        (X.realDeclaredOld isNew declared)
 
 end Model
 
 /-! ## Typed equality -/
 
-/-- **Typed equality has the congruence of the decoder** in the object
-package. -/
-theorem objectDeclarative_holdsCongruence :
-    HoldsCongruence (declarative objectRules) programCodes :=
-  declarative_holdsCongruence holds_typedO
-
-/-- **The object package is sound for its conversion model at typed equality**,
-given only the facts about the weak-head forms of its types. -/
-theorem objectRules_typedSoundN_declarative (v : Nat → Nat)
-    (facts : FormFacts objectRules objectRoles) :
-    TypedSoundN objectRules (nmodel v (objectDeclarativeSide facts)) :=
-  objectRules_typedSoundN v facts _ _ objectDeclarative_holdsCongruence
+/-- **Typed equality has the congruence of the decoder** in the package of an extension. -/
+theorem realDeclarative_holdsCongruence (X : TExtension) :
+    HoldsCongruence (declarative X.realRules) programCodes :=
+  declarative_holdsCongruence (Derivable.mono X.realSub holds_typedO)
 
 /-! ## Consequences at the daimon valuation -/
 
 section Consequences
 
-variable (facts : FormFacts objectRules objectRoles) {E : GenericEquality Tower.Head}
-  (lawsE : E.Laws objectRules objectRoles) (reduceE : RespectsReduction objectRules objectRoles E)
-  (holdsE : HoldsCongruence E programCodes) {n : Nat} {Γ : Tower.Ctx n}
-include facts lawsE reduceE holdsE
+variable (X : TExtension) (facts : FormFacts X.realRules X.realRoles)
+  {E : GenericEquality Tower.Head} (lawsE : E.Laws X.realRules X.realRoles)
+  (reduceE : RespectsReduction X.realRules X.realRoles E)
+  (holdsE : HoldsCongruence E programCodes)
+  (new : NewSoundN X (nmodel X (fun _ => 0) (realSideAt X facts E lawsE reduceE)))
+  {n : Nat} {Γ : Tower.Ctx n}
+include facts lawsE reduceE holdsE new
 
-/-- **Escape at the object package**: derivably equal terms of a formed context
-are related by the generic equality, at every lawful generic equality that
-respects typed weak-head reduction and has the decoder as a congruence, given
-the facts. -/
-theorem object_equal_escapeN {t u A : Tower.Tm n} (formed : CtxFormed objectRules Γ)
-    (equal : Equal objectRules Γ t u A) : E.convTm Γ t u A :=
-  Equal.escapeN (objectRules_typedSoundN (fun _ => 0) facts lawsE reduceE holdsE) formed equal
+/-- **Escape at the package of an extension**: derivably equal terms of a formed context are
+related by the generic equality, at every lawful generic equality that respects typed
+weak-head reduction and has the decoder as a congruence, given the facts, when the new
+constants are valid and the root steps at the new names hold. -/
+theorem real_equal_escapeN {t u A : Tower.Tm n} (formed : CtxFormed X.realRules Γ)
+    (equal : Equal X.realRules Γ t u A) : E.convTm Γ t u A :=
+  Equal.escapeN (realRules_typedSoundN X (fun _ => 0) facts lawsE reduceE holdsE new) formed equal
 
-/-- **Escape for types at the object package.** -/
-theorem object_typeEq_escapeN {A B : Tower.Tm n} (formed : CtxFormed objectRules Γ)
-    (equal : TypeEq objectRules Γ A B) : E.convTy Γ A B :=
-  TypeEq.escapeN (objectRules_typedSoundN (fun _ => 0) facts lawsE reduceE holdsE) formed equal
+/-- **Escape for types at the package of an extension.** -/
+theorem real_typeEq_escapeN {A B : Tower.Tm n} (formed : CtxFormed X.realRules Γ)
+    (equal : TypeEq X.realRules Γ A B) : E.convTy Γ A B :=
+  TypeEq.escapeN (realRules_typedSoundN X (fun _ => 0) facts lawsE reduceE holdsE new) formed equal
 
-/-- **The evaluated candidate records the shape at the object package**: a typed
-term of a formed context is related to itself, at its own type, by the
-candidate of its value at the daimon valuation. -/
-theorem object_typed_shapeN {t A : Tower.Tm n} (formed : CtxFormed objectRules Γ)
-    (typing : Typed objectRules Γ t A) :
-    ∃ P : NPack (nmodel (fun _ => 0) (objectSideAt facts E lawsE reduceE)) 0,
-      DenN (nmodel (fun _ => 0) (objectSideAt facts E lawsE reduceE)) World.closed
+/-- **The evaluated candidate records the shape at the package of an extension**: a typed term
+of a formed context is related to itself, at its own type, by the candidate of its value at
+the daimon valuation. -/
+theorem real_typed_shapeN {t A : Tower.Tm n} (formed : CtxFormed X.realRules Γ)
+    (typing : Typed X.realRules Γ t A) :
+    ∃ P : NPack (nmodel X (fun _ => 0) (realSideAt X facts E lawsE reduceE)) 0,
+      DenN (nmodel X (fun _ => 0) (realSideAt X facts E lawsE reduceE)) World.closed
           (Presentation.subst (fun _ => .const starN) A) P ∧
         P.Val (Presentation.subst (fun _ => .const starN) t) ∧
         (P.real (Presentation.subst (fun _ => .const starN) t)).rel Γ A t t :=
-  Typed.shapeN (objectRules_typedSoundN (fun _ => 0) facts lawsE reduceE holdsE) formed typing
-
-end Consequences
-
-section Shapes
-
-variable (facts : FormFacts objectRules objectRoles) {n : Nat} {Γ : Tower.Ctx n}
-include facts
+  Typed.shapeN (realRules_typedSoundN X (fun _ => 0) facts lawsE reduceE holdsE new) formed typing
 
 /-- **A code reaches a constructor spine or a neutral term**: a term typed at the
-type of codes in a formed context of the object package reduces, typed, to a
-code constructor applied to its arguments or to a neutral term, given the
-facts. -/
-theorem object_code_shape {c : Tower.Tm n} (formed : CtxFormed objectRules Γ)
-    (typing : Typed objectRules Γ c (.const propN)) :
-    ∃ w, RedTm objectRules objectRoles Γ c w (.const propN) ∧ IsCtorForm objectRoles w := by
-  obtain ⟨P, den, -, real⟩ := object_typed_shapeN facts _ _ objectDeclarative_holdsCongruence
-    formed typing
-  change DenN _ World.closed (.const (tmodelC fun _ => 0).prop) P at den
+type of codes in a formed context of the package of an extension reduces, typed, to a code
+constructor applied to its arguments or to a neutral term. -/
+theorem real_code_shape {c : Tower.Tm n} (formed : CtxFormed X.realRules Γ)
+    (typing : Typed X.realRules Γ c (.const propN)) :
+    ∃ w, RedTm X.realRules X.realRoles Γ c w (.const propN) ∧ IsCtorForm X.realRoles w := by
+  obtain ⟨P, den, -, real⟩ := real_typed_shapeN X facts lawsE reduceE holdsE new formed typing
+  change DenN _ World.closed (.const ((X.model fun _ => 0).prop)) P at den
   obtain rfl := ValueSide.DenS.prop_inv
-    (nmodel_laws (fun _ => 0) (objectDeclarativeSide facts)).value den
+    (nmodel_laws X (fun _ => 0) (realSideAt X facts E lawsE reduceE)).value den
   obtain ⟨-, ⟨w, red, form⟩, -⟩ := real
   exact ⟨w, red, form⟩
 
 /-- **A closed term of the numbers reaches `zero`, `suc` of a term of a smaller
-shape, or a neutral term**, in the object package, given the facts. -/
-theorem object_closed_num_shape {t : Tower.Tm 0} (typing : Typed objectRules .nil t numT) :
-    ∃ s, NumShapeRel (objectDeclarativeSide facts) numN zeroN sucN s .nil numT t t := by
-  obtain ⟨P, den, val, real⟩ := object_typed_shapeN facts _ _ objectDeclarative_holdsCongruence
-    .nil typing
+shape, or a neutral term**, in the package of an extension. -/
+theorem real_closed_num_shape {t : Tower.Tm 0} (typing : Typed X.realRules .nil t numT) :
+    ∃ s, NumShapeRel (realSideAt X facts E lawsE reduceE) numN zeroN sucN s .nil numT t t := by
+  obtain ⟨P, den, val, real⟩ := real_typed_shapeN X facts lawsE reduceE holdsE new .nil typing
   have closed : ∀ σ : Sub Tower.Head 0 0, Presentation.subst σ t = t := fun σ => by
     rw [show σ = ids from funext fun i => Fin.elim0 i, subst_ids]
   rw [closed] at val real
   have val' := val
-  rw [num_den (fun _ => 0) den] at val'
+  rw [num_den X (fun _ => 0) den] at val'
   obtain ⟨s, hs, -⟩ := ValueSide.numIndPack_rel.mp val'
-  exact ⟨s, (num_real (fun _ => 0) (objectSideAt_over facts _ _) den hs .nil numT t t).mp real⟩
+  exact ⟨s, (num_real X (fun _ => 0) (realSideAt_over X facts _ _) den hs .nil numT t t).mp real⟩
 
-end Shapes
+end Consequences
 
 /-! ## Controls -/
 
@@ -724,31 +832,39 @@ def zeroSucObjectRules : Rules Tower.Head :=
 
 section Controls
 
-variable (facts : FormFacts objectRules objectRoles) {n : Nat} {Γ : Tower.Ctx n}
+variable (X : TExtension) (facts : FormFacts X.realRules X.realRoles) {n : Nat}
+  {Γ : Tower.Ctx n}
 include facts
 
 /-- **The numbers' constructor `zero` is no code**: it has no typing at the type
 of codes, given the facts. -/
-theorem zero_not_code (formed : CtxFormed objectRules Γ) :
-    ¬ Typed objectRules Γ (.const zeroN) (.const propN) := fun typing => by
+theorem zero_not_code (formed : CtxFormed X.realRules Γ) :
+    ¬ Typed X.realRules Γ (.const zeroN) (.const propN) := fun typing => by
   obtain ⟨-, -, le⟩ :=
-    Typed.telescope_inv (S := objectSettingAt (declarative objectRules)) facts formed
-      .nil numT declared_zero (σ := fun i => Fin.elim0 i) typing
-  exact num_not_below_prop facts formed le
+    Typed.telescope_inv (S := realSettingAt X (declarative X.realRules)) facts formed
+      .nil numT (X.realSub.constantType declared_zero) (σ := fun i => Fin.elim0 i) typing
+  exact inductive_not_below_prop X facts formed (I := numN) X.realRoles_num
+    ⟨_, X.realSub.isUniverse (.sort _), Derivable.mono X.realSub num_typedO⟩ le
 
 /-- **A code built by a quantifier decodes, typed**: the false code `∀ n : num,
 zero = suc n` decodes by one root step to a dependent function type of the lowest
 universe. -/
 theorem falseCode_decodes :
-    ∃ D, objectRules.computation.step (programCodes.holdsOf (falseCode (n := 0))) D ∧
-      IsTypeForm objectRoles D ∧ Typed objectRules .nil D U0 :=
-  objectRules_decodes facts (Δ := .nil) .nil (args := [_]) falseCode_typed
-    (objectRoles_all (SetProfile.allInstance?_allName SetProfile.numTy))
+    ∃ D, X.realRules.computation.step (programCodes.holdsOf (falseCode (n := 0))) D ∧
+      IsTypeForm X.realRoles D ∧ Typed X.realRules .nil D U0 :=
+  realRules_decodes X facts (Δ := .nil) .nil (args := [_])
+    (Derivable.mono X.realSub falseCode_typed)
+    ((X.realRoles_declared (by decide)).trans
+      (objectRoles_all (SetProfile.allInstance?_allName SetProfile.numTy)))
+
+end Controls
 
 /-- **The object package with a root step identifying `zero` with `suc zero` is
 not sound for its conversion model**, whatever the facts. -/
-theorem zeroSucObjectRules_not_typedSoundN (v : Nat → Nat) :
-    ¬ TypedSoundN zeroSucObjectRules (nmodel v (objectDeclarativeSide facts)) := by
+theorem zeroSucObjectRules_not_typedSoundN (facts : FormFacts objectRules objectRoles)
+    (v : Nat → Nat) :
+    ¬ TypedSoundN zeroSucObjectRules
+      (nmodel objectTExt v (realDeclarativeSide objectTExt facts)) := by
   have sub : RulesSub objectRules zeroSucObjectRules :=
     ⟨id, id, id, id, id, id, fun step => .inl step⟩
   have typed₀ : Typed zeroSucObjectRules (.nil : Tower.Ctx 0) (.const zeroN) numT :=
@@ -756,10 +872,9 @@ theorem zeroSucObjectRules_not_typedSoundN (v : Nat → Nat) :
   have typed₁ : Typed zeroSucObjectRules (.nil : Tower.Ctx 0)
       (.app (.const sucN) (.const zeroN)) numT :=
     Derivable.mono sub (.appElim suc_typedO zero_typedO)
-  exact not_typedSoundN_of_zero_eq_suc v (objectDeclarativeSide facts)
+  exact not_typedSoundN_of_zero_eq_suc objectTExt v (realDeclarativeSide objectTExt facts)
     (.root (.inr ⟨rfl, rfl⟩) typed₀ typed₁)
 
-end Controls
 
 end ConvRules
 end CodeModel

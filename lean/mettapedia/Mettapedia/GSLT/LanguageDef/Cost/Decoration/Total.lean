@@ -215,8 +215,7 @@ theorem forgetToDecoration_obj_transportObject
   · rfl
   · exact heq_of_eq (mapCostElaborationFiber_decoration
         morphism.underlying.underlying.underlying
-        (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
-          morphism.underlying.compactMapLaws)
+        morphism.underlying.compactMapLaws.preservesGeneratedReflectiveScope
         morphism.reindexLaws fiber)
 
 /-- The chosen checked-tree lift maps to the canonical decoration lift, up

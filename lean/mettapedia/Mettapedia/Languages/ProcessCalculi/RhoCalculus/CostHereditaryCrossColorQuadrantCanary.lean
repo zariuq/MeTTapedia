@@ -249,7 +249,7 @@ theorem rightFrame_is_application : rightFrame = rightPattern := by
   unfold rightFrame
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     rightViewPair.2.node rightEnv]
-  rw [CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+  rw [CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
     _ closed]
   have targetDepth : rightViewPair.2.node.targetBound.length = 0 := by
     simp [closed]
@@ -257,8 +257,7 @@ theorem rightFrame_is_application : rightFrame = rightPattern := by
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-    rhoReflectivePresentation, mapPattern, mapPatternList_eq_map,
-    CostStaticColor.symbols_constructor, CostStaticColor.constructorTag,
+    rhoReflectivePresentation, mapPattern, mapPatternList_eq_map, CostStaticColor.constructorTag,
     costWrappedConstructorName, rightPattern]
   rw [rightViewPair_color]
 
@@ -732,7 +731,7 @@ theorem mLeftFrame_is_application : mLeftFrame = partnerBase := by
   unfold mLeftFrame
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     mLeftViewPair.2.node mLeftEnv]
-  rw [CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+  rw [CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
     _ closed]
   have targetDepth : mLeftViewPair.2.node.targetBound.length = 0 := by
     simp [closed]
@@ -740,8 +739,7 @@ theorem mLeftFrame_is_application : mLeftFrame = partnerBase := by
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-    rhoReflectivePresentation, mapPattern, mapPatternList_eq_map,
-    CostStaticColor.symbols_constructor, CostStaticColor.constructorTag,
+    rhoReflectivePresentation, mapPattern, mapPatternList_eq_map, CostStaticColor.constructorTag,
     costBaseConstructorName, partnerBase]
   rw [mLeftViewPair_color]
 

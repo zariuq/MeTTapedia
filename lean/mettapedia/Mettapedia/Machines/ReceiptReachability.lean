@@ -112,6 +112,53 @@ theorem of_parent
     ReceiptAncestor order child target :=
   .step direct (.refl target)
 
+
+theorem trans {first middle last : Frame}
+    (before : ReceiptAncestor order first middle) (after : ReceiptAncestor order middle last) :
+    ReceiptAncestor order first last := by
+  induction before with
+  | refl => exact after
+  | step edge _ ih => exact .step edge (ih after)
+
+/-- On a bounded chronological carrier, every retained non-root having a
+later child implies that each retained node supports a retained root.
+This concerns the represented graph, not the authenticity of its edges. -/
+theorem covered_by_roots
+    (retained root : Frame → Prop) [DecidablePred root] (limit : Nat)
+    (bounded : ∀ frame, retained frame → order.depth frame ≤ limit)
+    (supported : ∀ frame, retained frame → ¬ root frame →
+      ∃ child, retained child ∧ order.parent child frame) :
+    ∀ frame, retained frame →
+      ∃ published, retained published ∧ root published ∧ ReceiptAncestor order published frame := by
+  intro frame member
+  generalize remaining : limit - order.depth frame = budget
+  induction budget using Nat.strong_induction_on generalizing frame with
+  | h budget ih =>
+      by_cases atRoot : root frame
+      · exact ⟨frame, member, atRoot, .refl frame⟩
+      · obtain ⟨child, childMember, edge⟩ := supported frame member atRoot
+        have earlier : limit - order.depth child < budget := by
+          have rising := order.parent_depth edge
+          have bound := bounded child childMember
+          omega
+        obtain ⟨published, present, terminal, path⟩ :=
+          ih (limit - order.depth child) earlier child childMember rfl
+        exact ⟨published, present, terminal, path.trans (of_parent edge)⟩
+
+/-- The single-root form justifies a collector's reference-bit scan once
+rank bounds and the bit-to-edge correspondence have been established. -/
+theorem covered_by_unique_root [DecidableEq Frame]
+    (retained : Frame → Prop) (root : Frame)
+    (bounded : ∀ frame, retained frame → order.depth frame ≤ order.depth root)
+    (supported : ∀ frame, retained frame → frame ≠ root →
+      ∃ child, retained child ∧ order.parent child frame) :
+    ∀ frame, retained frame → ReceiptAncestor order root frame := by
+  intro frame member
+  obtain ⟨published, _, same, path⟩ :=
+    covered_by_roots retained (fun node => node = root) (order.depth root)
+      bounded supported frame member
+  simpa only [same] using path
+
 end ReceiptAncestor
 
 variable {Frame : Type} (order : ReceiptOrder Frame)
@@ -284,6 +331,32 @@ theorem join_not_reach_orphan :
     ReceiptAncestor.invariant_eq
       component parent_component reachable
   simp [component] at sameComponent
+
+/-- The reference-bit criterion covers the shared join and both branches,
+without confusing the orphan in the same session with an ancestor. -/
+theorem join_covers_component :
+    ∀ frame, component frame = 0 → ReceiptAncestor graph join frame := by
+  apply ReceiptAncestor.covered_by_unique_root (fun frame => component frame = 0) join
+  · intro frame member
+    cases frame <;> simp_all [graph, component, depth]
+  · intro frame member different
+    cases frame with
+    | root => exact ⟨left, rfl, True.intro⟩
+    | left => exact ⟨join, rfl, True.intro⟩
+    | right => exact ⟨join, rfl, True.intro⟩
+    | join => exact False.elim (different rfl)
+    | orphan => simp [component] at member
+    | outsider => simp [component] at member
+
+/-- Omitting the reference-bit obligation permits an unrelated retained
+component even though all of its ranks fit below the published root. -/
+theorem orphan_has_no_support :
+    depth orphan ≤ depth join ∧
+      ¬ ∃ child, graph.parent child orphan := by
+  constructor
+  · decide
+  · rintro ⟨child, edge⟩
+    cases child <;> simp [graph, parent] at edge
 
 end ExampleFrame
 

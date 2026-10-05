@@ -284,4 +284,17 @@ noncomputable def BinEvNat.toBinaryEvidence (e : BinEvNat) :
       (e₁.neg : ℝ≥0∞) + (e₂.neg : ℝ≥0∞))
     exact Nat.cast_add e₁.neg e₂.neg
 
+@[simp] theorem BinEvNat.toBinaryEvidence_one :
+    BinEvNat.toBinaryEvidence 1 =
+      (1 : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence) := by
+  ext <;> change ((1 : Nat) : ℝ≥0∞) = 1
+  all_goals exact Nat.cast_one
+
+/-- Exact count tensor agrees with the existing extended nonnegative evidence
+tensor. This comparison does not authorize additive revision of shared sources. -/
+@[simp] theorem BinEvNat.toBinaryEvidence_mul (left right : BinEvNat) :
+    BinEvNat.toBinaryEvidence (left * right) =
+      BinEvNat.toBinaryEvidence left * BinEvNat.toBinaryEvidence right := by
+  ext <;> simp [BinEvNat.toBinaryEvidence, BinaryEvidence.tensor_def]
+
 end Mettapedia.PLN.Evidence.EvidentialLedger

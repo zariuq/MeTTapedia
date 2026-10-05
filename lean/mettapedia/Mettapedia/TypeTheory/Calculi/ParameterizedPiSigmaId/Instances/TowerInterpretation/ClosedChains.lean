@@ -24,7 +24,7 @@ of universes are inclusions of the chain's universes.
 
 A chain need not consist of least universes. One of its universes may be closed under the
 universe operation, which no least closed universe is (`univOf_not_closed_under_univOf`); the
-tower inside the sets (`AmbientSetsModel`) is read by such a chain.
+tower inside the sets (`MegalodonHOTG.SetsModel`) is read by such a chain.
 
 Positive example: the least closed universes of the tower model are a chain
 (`universeSet_closedChain`), and the reading over it is the tower model's

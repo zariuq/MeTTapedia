@@ -212,7 +212,4 @@ theorem unresolved_target_rest_boundary :
     matchPatternForRuleUsing rhoReflectionProfile rhoSyncCommRewrite source ≠ [] := by
   decide +kernel
 
-#print axioms matched_pair_positions
-#print axioms actual_match_factorization
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairMatchCoverage

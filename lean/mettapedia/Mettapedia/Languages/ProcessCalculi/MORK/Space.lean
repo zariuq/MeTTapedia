@@ -88,6 +88,20 @@ where
     | []      => []
     | a :: as => applySubst σ a :: applySubstList σ as
 
+/-- `applySubst` with empty substitution is the identity. -/
+theorem applySubst_nil : ∀ (a : Atom), applySubst [] a = a
+  | .var v => by simp [applySubst, Subst.lookup, List.find?]
+  | .symbol _ => rfl
+  | .grounded _ => rfl
+  | .expression es => by
+      simp only [applySubst]; congr 1
+      exact applySubstList_nil es
+where
+  applySubstList_nil : ∀ (es : List Atom), applySubst.applySubstList [] es = es
+    | [] => rfl
+    | a :: as => by
+        simp [applySubst.applySubstList, applySubst_nil a, applySubstList_nil as]
+
 /-! ## Free variables and freshness -/
 
 /-- Collect all variable names occurring in an atom. -/

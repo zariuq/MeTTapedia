@@ -144,6 +144,48 @@ theorem source_operand_free_expression_exact {World : Type} {interface : Interfa
   · intro operation
     exact .inl ⟨[], before, .nil before, operation⟩
 
+/-- The call primitive retains each actual raw result and the complete
+post-state. A fault in that state is observed before the raw value. -/
+theorem source_call_primitive_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    (name : String) (arguments : List Expr) (values : List SourceValue)
+    (before : SourceState World) (out : SourceOutcome World) :
+    sourcePrimitive interface heap calls frame (.call name arguments) values before out ↔
+      ∃ raw post, calls name values before raw post ∧ out = sourceObserve post raw := by
+  rfl
+
+/-- Calls evaluate their operands in the existing left-to-right relation.
+An operand fault retains its state and does not require a call occurrence. -/
+theorem source_call_expression_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    (name : String) (arguments : List Expr)
+    (before : SourceState World) (out : SourceOutcome World) :
+    SourceExprEval interface heap calls frame (.call name arguments) before out ↔
+      (∃ values middle raw post,
+        SourceArgumentsEval interface heap calls frame arguments before ⟨.ok values, middle⟩ ∧
+        calls name values middle raw post ∧ out = sourceObserve post raw) ∨
+      (∃ fault after,
+        SourceArgumentsEval interface heap calls frame arguments before ⟨.error fault, after⟩ ∧
+        out = ⟨.error fault, after⟩) := by
+  rw [source_strict_expression_exact (.call name arguments) arguments rfl]
+  constructor
+  · intro witnessed
+    rcases witnessed with ⟨values, middle, evaluated, raw, post, called, same⟩ | failed
+    · exact .inl ⟨values, middle, raw, post, evaluated, called, same⟩
+    · exact .inr failed
+  · intro witnessed
+    rcases witnessed with ⟨values, middle, raw, post, evaluated, called, same⟩ | failed
+    · exact .inl ⟨values, middle, evaluated, raw, post, called, same⟩
+    · exact .inr failed
+
+theorem source_nullary_call_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    (name : String) (before : SourceState World) (out : SourceOutcome World) :
+    SourceExprEval interface heap calls frame (.call name []) before out ↔
+      ∃ raw post, calls name [] before raw post ∧ out = sourceObserve post raw := by
+  exact (source_operand_free_expression_exact (.call name []) rfl before out).trans
+    (source_call_primitive_exact name [] [] before out)
+
 theorem source_and_exact {World : Type} {interface : Interface}
     {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
     (left right : Expr) (before : SourceState World) (out : SourceOutcome World) :
@@ -193,5 +235,41 @@ theorem source_or_exact {World : Type} {interface : Interface}
     · subst out; exact .orTrue leftRun
     · exact .orFalse leftRun rightRun
     · subst out; exact .orFault leftRun
+
+
+/-- Unary computation follows the operand's actual post-state. The operand
+may change storage or effects, and its fault suppresses the operation. -/
+theorem source_unary_expression_stateful_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    (operation : Unary) (operand : Expr) (before : SourceState World) (out : SourceOutcome World) :
+    SourceExprEval interface heap calls frame (.unary operation operand) before out ↔
+      (∃ raw middle value,
+        SourceExprEval interface heap calls frame operand before ⟨.ok raw, middle⟩ ∧
+        sourceUnaryOp operation raw = some value ∧ out = ⟨.ok value, middle⟩) ∨
+      (∃ fault after,
+        SourceExprEval interface heap calls frame operand before ⟨.error fault, after⟩ ∧
+        out = ⟨.error fault, after⟩) := by
+  rw [source_strict_expression_exact _ _
+    (rfl : sourceStrictOperands? (.unary operation operand) = some [operand])]
+  constructor
+  · rintro (⟨values, middle, arguments, primitive⟩ | ⟨fault, after, arguments, same⟩)
+    · cases values with
+      | nil => cases primitive
+      | cons raw rest =>
+          cases rest with
+          | nil =>
+              obtain ⟨between, child, tail⟩ :=
+                (source_arguments_cons_success_exact operand [] before middle raw []).mp arguments
+              cases (source_arguments_nil_exact between _).mp tail
+              obtain ⟨value, computed, same⟩ := primitive
+              exact .inl ⟨raw, middle, value, child, computed, same⟩
+          | cons extra rest => cases primitive
+    · rcases (source_arguments_cons_fault_exact operand [] before after fault).mp arguments with
+        child | ⟨raw, between, _, impossible⟩
+      · exact .inr ⟨fault, after, child, same⟩
+      · cases (source_arguments_nil_exact between _).mp impossible
+  · rintro (⟨raw, middle, value, child, computed, same⟩ | ⟨fault, after, child, same⟩)
+    · exact .inl ⟨[raw], middle, .cons child (.nil middle), value, computed, same⟩
+    · exact .inr ⟨fault, after, .consFault child, same⟩
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

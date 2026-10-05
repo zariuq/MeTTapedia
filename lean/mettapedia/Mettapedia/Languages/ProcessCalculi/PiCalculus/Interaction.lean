@@ -50,8 +50,15 @@ def piCommRewrite : RewriteRule := piCalc.rewrites[0]
 /-- The contextual rule for parallel composition. -/
 def piParCongRewrite : RewriteRule := piCalc.rewrites[1]
 
-/-- The two rules are the rewrites of the calculus. -/
-theorem piCalc_rewrites : piCalc.rewrites = [piCommRewrite, piParCongRewrite] :=
+/-- The contextual rule for restriction. -/
+def piResCongRewrite : RewriteRule := piCalc.rewrites[2]
+
+/-- Communication with a guarded server. -/
+def piRepCommRewrite : RewriteRule := piCalc.rewrites[3]
+
+/-- The two communication rules and two contextual rules are authored. -/
+theorem piCalc_rewrites : piCalc.rewrites =
+    [piCommRewrite, piParCongRewrite, piResCongRewrite, piRepCommRewrite] :=
   rfl
 
 theorem piCommRewrite_validates :
@@ -71,6 +78,23 @@ theorem piParCongRewrite_validates :
       | decide
       | rule_patterns [piParCongRewrite, piCalc]
 
+theorem piResCongRewrite_validates :
+    LanguageDef.validateRewrite piCalc piResCongRewrite = [] := by
+  apply LanguageDef.validateRewrite_eq_nil_of_variableCongruence (source := "S")
+    (target := "T") <;>
+    first
+      | rfl
+      | decide
+      | rule_patterns [piResCongRewrite, piCalc]
+
+theorem piRepCommRewrite_validates :
+    LanguageDef.validateRewrite piCalc piRepCommRewrite = [] := by
+  apply LanguageDef.validateRewrite_eq_nil_of_premiseFree <;>
+    first
+      | rfl
+      | decide
+      | rule_patterns [piRepCommRewrite, piCalc]
+
 /-- The asynchronous pi calculus passes the declaration gate. -/
 theorem piCalc_validate_eq_nil : piCalc.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
@@ -84,12 +108,14 @@ theorem piCalc_validate_eq_nil : piCalc.validate = [] := by
   · intro rewrite membership
     rw [piCalc_rewrites] at membership
     simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
-    rcases membership with rfl | rfl
+    rcases membership with rfl | rfl | rfl | rfl
     · exact piCommRewrite_validates
     · exact piParCongRewrite_validates
+    · exact piResCongRewrite_validates
+    · exact piRepCommRewrite_validates
 
 /-- Communication binds every variable of its contractum in its redex, and
-the contextual rule reads only its reduction hypothesis. -/
+the contextual rules read only their reduction hypotheses. -/
 theorem piCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
     piCalc.executionFlowErrors modes = [] := by
   apply LanguageDef.executionFlowErrors_eq_nil_of_ruleFlows
@@ -97,7 +123,7 @@ theorem piCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
   · intro rule membership
     rw [piCalc_rewrites] at membership
     simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
-    rcases membership with rfl | rfl
+    rcases membership with rfl | rfl | rfl | rfl
     · refine .plain rfl ?_
       intro name nameMembership
       simp [piCommRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
@@ -107,6 +133,17 @@ theorem piCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
       · intro name nameMembership
         simp [piParCongRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
         tauto
+
+    · refine .contextual "S" "T" rfl ?_ ?_
+      · simp [piResCongRewrite, piCalc, Pattern.freeFvarNames]
+      · intro name nameMembership
+        simp [piResCongRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
+        tauto
+
+    · refine .plain rfl ?_
+      intro name nameMembership
+      simp [piRepCommRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
+      tauto
 
 /-- The calculus passes the ordered binding-flow gate with no relation mode. -/
 theorem piCalc_executionAdmissionErrors_eq_nil :
@@ -358,7 +395,7 @@ theorem pi_costWrappedParallel_params :
 are moved to the wrapped fibre. -/
 theorem piContinuationRetyping_redexRetypable :
     piContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType piContinuationRetyping.generatedLanguage
     piContinuationRetyping.generatedFreeContext []
     (.collection .hashBag
@@ -394,7 +431,7 @@ theorem piContinuationRetyping_redexRetypable :
 around the substitution of the carried name into the body, has the wrapped
 sort. -/
 theorem piContinuationRetyping_wrappable : piContinuationRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   change HasType piContinuationRetyping.generatedLanguage
     piContinuationRetyping.generatedFreeContext []
     (.collection .hashBag [.subst (.fvar "body") (.fvar "z")] (some "rest"))

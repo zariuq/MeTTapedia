@@ -12,21 +12,24 @@ import Mathlib.Topology.Basic
 This file sets up Shannon's original axiom system from:
 
 * Claude E. Shannon, *A Mathematical Theory of Communication* (1948)
-  `/home/zar/claude/literature/shannon_entropy.pdf`
 
 and proves that the standard Shannon entropy `∑ negMulLog(pᵢ)` satisfies these axioms.
 
-## Shannon's Original Axioms (5 total)
+## Shannon's Axioms (Four Clauses, with Optional Normalization)
 
 1. **Relabeling Invariance**: H is invariant under permutations (= Faddeev's symmetry)
 2. **Continuity**: H(p₁,...,pₙ) is continuous in the pᵢ (full continuity)
 3. **Monotonicity**: A(n) = H(1/n,...,1/n) is monotonically increasing in n
 4. **Grouping**: H satisfies the chain rule / grouping property (= Faddeev's recursivity)
-5. **Normalization**: A(2) = H(1/2, 1/2) = 1
+5. **Optional normalization**: A(2) = H(1/2, 1/2) = 1
+
+`Shannon1948Entropy` contains the first four clauses. It does not fix a scale;
+the uniqueness theorem therefore gives a constant multiple of Shannon entropy.
 
 ## Comparison to Faddeev (1956)
 
-Shannon's original system has **5** axioms; Faddeev's system has only **4**:
+Adding fair-coin normalization to the four-clause Shannon interface gives five
+clauses. Faddeev's four-clause interface already includes normalization:
 
 | Property | Shannon (1948) | Faddeev (1956) |
 |----------|----------------|----------------|
@@ -35,19 +38,20 @@ Shannon's original system has **5** axioms; Faddeev's system has only **4**:
 | Binary continuity | - | ASSUMES |
 | Monotonicity | **ASSUMES** | **DERIVES** |
 | Grouping/Recursivity | ASSUMES | ASSUMES |
-| Normalization | ASSUMES | ASSUMES |
-| **Total axioms** | **5** | **4** |
+| Normalization | OPTIONAL | ASSUMES |
+| Clauses in the structure | 4 | 4 |
 
 The key difference: Faddeev assumes only **binary** continuity and PROVES monotonicity
 and full continuity. Shannon assumes **full** continuity and monotonicity outright.
 
-See `Faddeev.lean` for the minimal system and `Interface.lean` for the unified view.
+See `Faddeev.lean` for the binary-continuity formulation and `Interface.lean`
+for the unified view. These counts do not establish absolute minimality.
 
 ## Main Results
 
-* `ShannonEntropy` - Structure encoding Shannon's 1948 axioms
-* `shannonEntropy_satisfies` - Shannon entropy satisfies the axioms
-* Uniqueness argument (Shannon's Appendix 2)
+* `Shannon1948Entropy` - Structure encoding the four unnormalized clauses
+* `shannon1948Model` - Normalized Shannon entropy satisfies these clauses
+* `shannon1948_uniqueness` - Every model is a constant multiple of Shannon entropy
 -/
 
 namespace Mettapedia.InformationTheory

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction
+import Mettapedia.OSLF.MeTTaIL.MatchSpec
 
 /-!
 # The synchronous pi calculus as an interactive GSLT
@@ -61,16 +62,28 @@ def piSyncCommRewrite : RewriteRule where
     .fvar "k"
   ] (some "rest")
 
+/-- Synchronous communication with a retained guarded server. -/
+def piSyncRepCommRewrite : RewriteRule :=
+  { piSyncCommRewrite with
+    name := "RepComm"
+    left := .collection .hashBag [
+      .apply "PiRep" [.fvar "x", .lambda none (.fvar "body")],
+      .apply "PiOutK" [.fvar "x", .fvar "z", .fvar "k"]] (some "rest")
+    right := .collection .hashBag [
+      .subst (.fvar "body") (.fvar "z"),
+      .apply "PiRep" [.fvar "x", .lambda none (.fvar "body")],
+      .fvar "k"] (some "rest") }
+
 /-- The synchronous pi calculus: the signature of the asynchronous calculus
-with its output replaced, synchronous communication, and the same contextual
-rule. -/
+with its output replaced, synchronous communication, and the same parallel
+and restriction contexts. -/
 def piSyncCalc : LanguageDef :=
   { name := "PiSyncCalc"
     types := ["Proc"]
     terms := [piCalc.terms[0], piCalc.terms[1], piCalc.terms[2], piSyncOutputRule,
       piCalc.terms[4], piCalc.terms[5]]
     equations := []
-    rewrites := [piSyncCommRewrite, piParCongRewrite] }
+    rewrites := [piSyncCommRewrite, piParCongRewrite, piResCongRewrite, piSyncRepCommRewrite] }
 
 /-! ## Admission -/
 
@@ -91,6 +104,23 @@ theorem piSync_parCong_validates :
       | decide
       | rule_patterns [piParCongRewrite, piSyncCalc, piSyncOutputRule, piCalc]
 
+theorem piSync_resCong_validates :
+    LanguageDef.validateRewrite piSyncCalc piResCongRewrite = [] := by
+  apply LanguageDef.validateRewrite_eq_nil_of_variableCongruence (source := "S")
+    (target := "T") <;>
+    first
+      | rfl
+      | decide
+      | rule_patterns [piResCongRewrite, piSyncCalc, piSyncOutputRule, piCalc]
+
+theorem piSyncRepCommRewrite_validates :
+    LanguageDef.validateRewrite piSyncCalc piSyncRepCommRewrite = [] := by
+  apply LanguageDef.validateRewrite_eq_nil_of_premiseFree <;>
+    first
+      | rfl
+      | decide
+      | rule_patterns [piSyncRepCommRewrite, piSyncCommRewrite, piSyncCalc, piSyncOutputRule, piCalc]
+
 /-- The synchronous pi calculus passes the declaration gate. -/
 theorem piSyncCalc_validate_eq_nil : piSyncCalc.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
@@ -102,12 +132,15 @@ theorem piSyncCalc_validate_eq_nil : piSyncCalc.validate = [] := by
   · decide
   · decide +kernel
   · intro rewrite membership
-    have cases : rewrite = piSyncCommRewrite ∨ rewrite = piParCongRewrite := by
-      have listed : rewrite ∈ [piSyncCommRewrite, piParCongRewrite] := membership
+    have cases : rewrite = piSyncCommRewrite ∨ rewrite = piParCongRewrite ∨
+        rewrite = piResCongRewrite ∨ rewrite = piSyncRepCommRewrite := by
+      have listed : rewrite ∈ [piSyncCommRewrite, piParCongRewrite, piResCongRewrite, piSyncRepCommRewrite] := membership
       simpa using listed
-    rcases cases with rfl | rfl
+    rcases cases with rfl | rfl | rfl | rfl
     · exact piSyncCommRewrite_validates
     · exact piSync_parCong_validates
+    · exact piSync_resCong_validates
+    · exact piSyncRepCommRewrite_validates
 
 /-- Communication binds every variable of its contractum in its redex, and
 the contextual rule reads only its reduction hypothesis. -/
@@ -116,10 +149,11 @@ theorem piSyncCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
   apply LanguageDef.executionFlowErrors_eq_nil_of_ruleFlows
   · rfl
   · intro rule membership
-    have cases : rule = piSyncCommRewrite ∨ rule = piParCongRewrite := by
-      have listed : rule ∈ [piSyncCommRewrite, piParCongRewrite] := membership
+    have cases : rule = piSyncCommRewrite ∨ rule = piParCongRewrite ∨
+        rule = piResCongRewrite ∨ rule = piSyncRepCommRewrite := by
+      have listed : rule ∈ [piSyncCommRewrite, piParCongRewrite, piResCongRewrite, piSyncRepCommRewrite] := membership
       simpa using listed
-    rcases cases with rfl | rfl
+    rcases cases with rfl | rfl | rfl | rfl
     · refine .plain rfl ?_
       intro name nameMembership
       simp [piSyncCommRewrite, Pattern.freeFvarNames] at nameMembership ⊢
@@ -129,6 +163,17 @@ theorem piSyncCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
       · intro name nameMembership
         simp [piParCongRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
         tauto
+
+    · refine .contextual "S" "T" rfl ?_ ?_
+      · simp [piResCongRewrite, piCalc, Pattern.freeFvarNames]
+      · intro name nameMembership
+        simp [piResCongRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
+        tauto
+
+    · refine .plain rfl ?_
+      intro name nameMembership
+      simp [piSyncRepCommRewrite, piSyncCommRewrite, Pattern.freeFvarNames] at nameMembership ⊢
+      tauto
 
 /-- The calculus passes the ordered binding-flow gate with no relation mode. -/
 theorem piSyncCalc_executionAdmissionErrors_eq_nil :
@@ -370,7 +415,7 @@ theorem piSync_costWrappedParallel_params :
 the output are moved to the wrapped fibre. -/
 theorem piSyncContinuationRetyping_redexRetypable :
     piSyncContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType piSyncContinuationRetyping.generatedLanguage
     piSyncContinuationRetyping.generatedFreeContext []
     (.collection .hashBag
@@ -408,7 +453,7 @@ theorem piSyncContinuationRetyping_redexRetypable :
 of the body with the carried name substituted and the process after the
 output, has the wrapped sort. -/
 theorem piSyncContinuationRetyping_wrappable : piSyncContinuationRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   change HasType piSyncContinuationRetyping.generatedLanguage
     piSyncContinuationRetyping.generatedFreeContext []
     (.collection .hashBag [.subst (.fvar "body") (.fvar "z"), .fvar "k"] (some "rest"))
@@ -436,5 +481,78 @@ theorem piSync_datum_stays_base :
       piSyncContinuationRetyping.generatedFreeContext "body" =
         some (.base costWrappedSortName) := by
   decide +kernel
+
+/-! ## Execution with retained continuations -/
+
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.MatchSpec
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.Engine
+
+def piSyncMatchedBindings (channel body datum continuation : Pattern) (rest : List Pattern) : Bindings :=
+  [("k", continuation), ("z", datum), ("rest", .collection .hashBag rest none), ("body", body), ("x", channel)]
+
+private theorem sync_exchange_matchRel (listener : String)
+    (channel body datum continuation : Pattern) (rest : List Pattern) :
+    MatchRel
+      (.collection .hashBag [
+        .apply listener [.fvar "x", .lambda none (.fvar "body")],
+        .apply "PiOutK" [.fvar "x", .fvar "z", .fvar "k"]] (some "rest"))
+      (.collection .hashBag
+        ([.apply listener [channel, .lambda none body],
+          .apply "PiOutK" [channel, datum, continuation]] ++ rest) none)
+      (piSyncMatchedBindings channel body datum continuation rest) := by
+  apply MatchRel.collection (by decide)
+  apply MatchBagRel.cons 0 (by simp)
+  · apply MatchRel.apply
+    · apply MatchArgsRel.cons MatchRel.fvar
+      · exact MatchArgsRel.cons (MatchRel.lambda MatchRel.fvar) MatchArgsRel.nil rfl
+      · rfl
+    · rfl
+  · apply MatchBagRel.cons 0 (by simp)
+    · apply MatchRel.apply
+      · apply MatchArgsRel.cons MatchRel.fvar
+        · exact MatchArgsRel.cons MatchRel.fvar
+            (MatchArgsRel.cons MatchRel.fvar MatchArgsRel.nil rfl) rfl
+        · rfl
+      · rfl
+    · exact MatchBagRel.nilRest
+    · rfl
+  · simp [piSyncMatchedBindings, mergeBindings]
+
+theorem piSyncComm_step (channel body datum continuation : Pattern) (rest : List Pattern) :
+    Step (engineBasePremises RelationEnv.empty) piSyncCalc
+      (.collection .hashBag
+        ([.apply "PiInp" [channel, .lambda none body],
+          .apply "PiOutK" [channel, datum, continuation]] ++ rest) none)
+      (.collection .hashBag ([instantiateBVar datum body, continuation] ++ rest) none) := by
+  refine ⟨1, .rule (rule := piSyncCommRewrite)
+    (initialBindings := piSyncMatchedBindings channel body datum continuation rest)
+    (finalBindings := piSyncMatchedBindings channel body datum continuation rest)
+    (by simp [piSyncCalc]) ?_ (.nil _) ?_⟩
+  · rw [matchPatternForRule_eq_syntactic]
+    exact matchPattern_iff_matchRel.mpr (sync_exchange_matchRel "PiInp" channel body datum continuation rest)
+  · rw [applyBindingsForRule_eq_applyBindings _ _ _ (by decide +kernel)]
+    simp [piSyncCommRewrite, piSyncMatchedBindings, applyBindings]
+
+theorem piSyncRepComm_step (channel body datum continuation : Pattern) (rest : List Pattern) :
+    Step (engineBasePremises RelationEnv.empty) piSyncCalc
+      (.collection .hashBag
+        ([.apply "PiRep" [channel, .lambda none body],
+          .apply "PiOutK" [channel, datum, continuation]] ++ rest) none)
+      (.collection .hashBag
+        ([instantiateBVar datum body, .apply "PiRep" [channel, .lambda none body], continuation] ++ rest) none) := by
+  refine ⟨1, .rule (rule := piSyncRepCommRewrite)
+    (initialBindings := piSyncMatchedBindings channel body datum continuation rest)
+    (finalBindings := piSyncMatchedBindings channel body datum continuation rest)
+    (by simp [piSyncCalc]) ?_ (.nil _) ?_⟩
+  · rw [matchPatternForRule_eq_syntactic]
+    exact matchPattern_iff_matchRel.mpr (sync_exchange_matchRel "PiRep" channel body datum continuation rest)
+  · rw [applyBindingsForRule_eq_applyBindings _ _ _ (by decide +kernel)]
+    simp [piSyncRepCommRewrite, piSyncCommRewrite, piSyncMatchedBindings, applyBindings]
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous

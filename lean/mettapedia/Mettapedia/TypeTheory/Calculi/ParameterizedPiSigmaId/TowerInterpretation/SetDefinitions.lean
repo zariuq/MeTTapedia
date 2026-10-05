@@ -37,6 +37,11 @@ followed by β-steps. Positive example: the append of two lists by pattern equat
 object package with the lists of numbers (`ObjectAppendByEquations.lean`, in the executable
 model of the candidate). Negative example there: the equation `bad ⟶ suc bad` has no set
 model at all.
+
+A proposition equal to its own negation has no truth value (`truthCode_ne_own_negation`), so
+an equation `c = imp c Q` whose consequent is false in the model has no set model
+(`equals_own_negation_no_setModel`). The true truth value satisfies `c = imp c True`
+(`imp_true_has_value`).
 -/
 
 set_option autoImplicit false
@@ -302,5 +307,95 @@ theorem definition_setModel_of_derived {B : ChurchRules R} {consts : DeclName �
     obtain ⟨C, equal⟩ := derived e member
     rw [ev_subst, ev_subst]
     exact (CDerivable.sound model equal _ satTele).1
+
+/-! ## A proposition equal to its own negation -/
+
+open ZFSetTraceProofDecoding (truthCode mem_truthCode)
+
+private theorem truthCode_congr {P Q : Prop} (h : P ↔ Q) : truthCode.{u} P = truthCode Q := by
+  apply ZFSet.ext
+  intro x
+  rw [mem_truthCode, mem_truthCode]
+  exact ⟨fun ⟨hx, hP⟩ => ⟨hx, h.mp hP⟩, fun ⟨hx, hQ⟩ => ⟨hx, h.mpr hQ⟩⟩
+
+private theorem truthCode_prop_iff {P Q : Prop} (h : truthCode.{u} P = truthCode Q) : P ↔ Q := by
+  have memP : (∅ : ZFSet.{u}) ∈ truthCode P ↔ P := by
+    rw [mem_truthCode]
+    exact ⟨And.right, fun hp => ⟨rfl, hp⟩⟩
+  have memQ : (∅ : ZFSet.{u}) ∈ truthCode Q ↔ Q := by
+    rw [mem_truthCode]
+    exact ⟨And.right, fun hq => ⟨rfl, hq⟩⟩
+  rw [h] at memP
+  exact memP.symm.trans memQ
+
+/-- **No truth value is the truth value of its own negation.** -/
+theorem truthCode_ne_own_negation (P : Prop) : truthCode.{u} P ≠ truthCode (P → False) := by
+  intro equal
+  have iffP : P ↔ (P → False) := truthCode_prop_iff equal
+  have hP : P := iffP.mpr (fun h => iffP.mp h h)
+  exact iffP.mp hP hP
+
+/-- With a false consequent, no truth value equals the truth value of its implication. -/
+theorem truthCode_ne_imp_false (P Q : Prop) (hQ : ¬ Q) :
+    truthCode.{u} P ≠ truthCode (P → Q) := by
+  intro equal
+  have equiv : (P → Q) ↔ (P → False) :=
+    ⟨fun h hP => hQ (h hP), fun h hP => False.elim (h hP)⟩
+  exact truthCode_ne_own_negation P (equal.trans (truthCode_congr equiv))
+
+/-- Implication to truth is the true truth value. -/
+theorem truthCode_imp_true (P : Prop) : truthCode.{u} (P → True) = truthCode True := by
+  apply ZFSet.ext
+  intro x
+  rw [mem_truthCode, mem_truthCode]
+  exact ⟨fun ⟨hx, _⟩ => ⟨hx, trivial⟩, fun ⟨hx, _⟩ => ⟨hx, fun _ => trivial⟩⟩
+
+/-- **The true truth value satisfies `c = imp c True`.** It is the only truth value that does. -/
+theorem imp_true_has_value : ∃ v : ZFSet.{u}, v = truthCode True ∧ v = truthCode (True → True) :=
+  ⟨truthCode True, rfl, (truthCode_imp_true True).symm⟩
+
+theorem truthCode_eq_imp_true_iff (P : Prop) :
+    truthCode.{u} P = truthCode (P → True) ↔ P := by
+  constructor
+  · intro equal
+    have iffP : P ↔ (P → True) := truthCode_prop_iff equal
+    exact iffP.mpr fun _ => trivial
+  · intro hP
+    have left : truthCode P = truthCode True := truthCode_congr ⟨fun _ => trivial, fun _ => hP⟩
+    rw [left, truthCode_imp_true]
+
+/-- The right side applies `imp` to the left side and a consequent. The call that the equation
+repeats is the left side, and the consequent is the second argument. -/
+structure OwnNegation (impName : DeclName) (e : DefiningEquation Head) where
+  consequent : CTm Head e.arity
+  right_eq : e.right = .app (.app (.const impName) e.left) consequent
+
+/-- **An equation `c = imp c Q` with `Q` false in the model has no set model.** The two sides
+would be a truth value and the truth value of its implication to a false consequent, and no
+truth value equals that. `imp` is read as implication on truth values. -/
+theorem equals_own_negation_no_setModel {R : Rules Head} {B : ChurchRules R} {c : DeclName}
+    {A : CTm Head 0} {eqs : List (DefiningEquation Head)} {consts : DeclName → ZFSet.{u}}
+    (model : SetModel heads consts (withDefinition B c A eqs)) {e : DefiningEquation Head}
+    (member : e ∈ eqs) {impName : DeclName} (shape : OwnNegation impName e)
+    {η : Env.{u} e.arity} (sat : Sat heads consts e.telescope η) {P Q : Prop}
+    (leftValue : ev heads consts e.left η = truthCode P)
+    (consequentValue : ev heads consts shape.consequent η = truthCode Q) (falseQ : ¬ Q)
+    (impReads : ∀ {R S : Prop}, ev heads consts e.left η = truthCode R →
+      ev heads consts shape.consequent η = truthCode S →
+      ev heads consts (.app (.app (.const impName) e.left) shape.consequent) η =
+        truthCode (R → S)) : False := by
+  have equal := model.steps (Γ := e.telescope) (l := e.left.subst CTm.ids)
+    (r := e.right.subst CTm.ids) (.inr ⟨e, member, CTm.ids, rfl, rfl⟩)
+    (.inr ⟨⟨e, member, CTm.ids, rfl, rfl⟩, ⟨e, member, CTm.ids, rfl, rfl, rfl⟩⟩)
+    (fun premise among => by
+      obtain ⟨i, rfl⟩ := mem_telescopePremises.mp among
+      intro ρ satρ
+      show ρ i ∈ ev heads consts ((e.telescope.lookup i).subst CTm.ids) ρ
+      rw [CTm.subst_ids]
+      exact satρ i)
+    η sat
+  rw [CTm.subst_ids, CTm.subst_ids, shape.right_eq] at equal
+  rw [leftValue, impReads leftValue consequentValue] at equal
+  exact truthCode_ne_imp_false P Q falseQ equal
 
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation

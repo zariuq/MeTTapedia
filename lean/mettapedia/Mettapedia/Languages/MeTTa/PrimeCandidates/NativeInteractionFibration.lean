@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.Core.GSLTConstructions
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionInterpretation
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.WorkSpan
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ResourceWave
 
 /-!
 # Proof-relevant interaction fibres for MeTTa Native

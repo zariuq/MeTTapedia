@@ -255,9 +255,4 @@ theorem code_readout_canonical {depth : Nat} {source : Pattern}
   exact canonicalize_eq_of_structuralCongruence agree (encodedTerm_hashSetFree term)
     ((hashSetFree_iff_of_structuralCongruence agree).mp (encodedTerm_hashSetFree term))
 
-#print axioms name_image_readout
-#print axioms code_image_readout
-#print axioms code_readout_canonical
-#print axioms code_readout_quoteSafe
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification

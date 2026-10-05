@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.BindingSignatureEquationPresentation
-import Mettapedia.GSLT.LanguageDef.CostInteractionClosure
+import Mettapedia.GSLT.LanguageDef.Cost.FiniteReflection
 import Mettapedia.OSLF.Syntax.IntrinsicScopedOperationalPresheafProgramModel
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 

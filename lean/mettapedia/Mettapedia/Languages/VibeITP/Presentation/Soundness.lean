@@ -15,6 +15,8 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.VibeITP.Presentation
 
+open Mettapedia.GSLT.LanguageDef.FirstOrderRules
+
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.VibeITP.Spec
 open Mettapedia.GSLT.LanguageDef
@@ -44,7 +46,7 @@ theorem hostedRules_meaningSound (T : Theory) (n : Nat) (h : Hosted T n)
 theorem meaning_of_foDerivable {T : Theory} {n : Nat} (h : Hosted T n)
     {goal : Pattern} (derivation : FODerivable (kernelRules ++ theoryRules T n) goal) :
     Meaning T goal :=
-  derivation.meaning (fun _ hr => hostedRules_meaningSound T n h hr)
+  FODerivable.meaning (fun _ hr => hostedRules_meaningSound T n h hr) derivation
 
 /-- The full presented static kernel derives only independently derivable
 theorem statements, uniformly over the concretely admitted theory. -/
@@ -75,10 +77,5 @@ theorem checkRaw_kernel_sound {T : Theory} {n : Nat} (h : Hosted T n)
     Derives T φ :=
   checkRaw_sound_presented h (kernelValidated_presents T n) accepted
 
-/-- Derivations remain valid when their real rule list is extended. -/
-theorem FODerivable.mono {R S : List FORule} (hRS : R ⊆ S) {goal : Pattern}
-    (derivation : FODerivable R goal) : FODerivable S goal := by
-  induction derivation with
-  | rule r hr args hlen hvalid _ ih => exact .rule r (hRS hr) args hlen hvalid ih
 
 end Mettapedia.Languages.VibeITP.Presentation

@@ -246,12 +246,4 @@ theorem normalize_account_transport {M N : Type} [Monoid M] [Monoid N]
     (WriterActionTransport.freeMap accounts id).hom ≫
       (normalizeAccountFibre N source targetFree targetBound targetSort).left.hom := rfl
 
-#print axioms sourceSkeletonInventoryTree_eq_of_rel
-#print axioms distinct_fvars_same_inventory
-#print axioms sourceSkeletonInventory_eq_of_equivalent
-#print axioms sourceSkeletonInventory_normalizeTerm
-#print axioms normalizeObservedFibre
-#print axioms normalizeAccountFibre
-#print axioms normalize_account_transport
-
 end Mettapedia.GSLT.LanguageDef.Cost.RetainedSourceObservation

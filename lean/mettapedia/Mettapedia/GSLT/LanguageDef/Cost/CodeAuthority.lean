@@ -116,8 +116,4 @@ theorem wrapped_typing_does_not_imply_code {theory : IGSLT}
   · simp [UsesBareCollection, costTokenStackEmptyConstructor]
   · exact .nil
 
-#print axioms typed_code_instantiateBVar
-#print axioms prior_layer_funding_is_code
-#print axioms wrapped_typing_does_not_imply_code
-
 end Mettapedia.GSLT.LanguageDef.Cost

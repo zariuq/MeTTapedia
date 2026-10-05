@@ -3,11 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.MORK.Space
 /-!
 # MORK Match Specification
 
-Relational specification for `matchAtom` on the currently supported MORK
-fragment (variables, symbols, grounded values).  This isolates the matching
-semantics from implementation details and makes the supported scope explicit.
-
-Expression-pattern matching is intentionally unsupported in `matchAtom` today.
+Relational specification for finite one-way `matchAtom`: variables, symbols,
+grounded values and nested expressions. Repeated variables must agree with
+their captured binding. This relation does not specify bidirectional or cyclic
+unification.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK

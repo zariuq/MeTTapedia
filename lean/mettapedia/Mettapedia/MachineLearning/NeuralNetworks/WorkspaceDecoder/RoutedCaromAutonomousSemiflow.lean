@@ -234,7 +234,7 @@ noncomputable def autonomousLinearPhaseFirst :
       (mul_le_mul_of_nonneg_left hstate.2 (Real.exp_pos (-time)).le)
   stays_in_tube := by
     intro state hstate time htime
-    simp only [Set.mem_setOf_eq, linearAutonomousChannelFlow]
+    simp only [Set.mem_ofPred_eq, linearAutonomousChannelFlow]
     rw [hstate.1]
     constructor
     · linarith [htime.1]
@@ -249,7 +249,7 @@ noncomputable def autonomousLinearPhaseFirst :
           linarith [htime.1]
   dwells_in_observation_region := by
     intro state hstate time htime
-    simp only [Set.mem_setOf_eq, linearAutonomousChannelFlow]
+    simp only [Set.mem_ofPred_eq, linearAutonomousChannelFlow]
     rw [hstate.1]
     simpa using htime
   observation_constant := by
@@ -262,7 +262,7 @@ noncomputable def autonomousLinearPhaseFirst :
         norm_num [linearAutonomousChannelObserve]
   exits := by
     intro state hstate
-    simp only [Set.mem_setOf_eq, linearAutonomousChannelFlow]
+    simp only [Set.mem_ofPred_eq, linearAutonomousChannelFlow]
     rw [hstate.1]
     constructor
     · norm_num
@@ -318,7 +318,7 @@ noncomputable def autonomousLinearPhaseSecond :
       (mul_le_mul_of_nonneg_left hstate.2 (Real.exp_pos (-time)).le)
   stays_in_tube := by
     intro state hstate time htime
-    simp only [Set.mem_setOf_eq, linearAutonomousChannelFlow]
+    simp only [Set.mem_ofPred_eq, linearAutonomousChannelFlow]
     rw [hstate.1]
     constructor
     · linarith [htime.1]
@@ -333,7 +333,7 @@ noncomputable def autonomousLinearPhaseSecond :
           linarith [htime.1]
   dwells_in_observation_region := by
     intro state hstate time htime
-    simp only [Set.mem_setOf_eq, linearAutonomousChannelFlow]
+    simp only [Set.mem_ofPred_eq, linearAutonomousChannelFlow]
     rw [hstate.1]
     norm_num at htime ⊢
     constructor <;> linarith [htime.1, htime.2]
@@ -345,7 +345,7 @@ noncomputable def autonomousLinearPhaseSecond :
     norm_num [hstateNotFirst, hstateSecond]
   exits := by
     intro state hstate
-    simp only [Set.mem_setOf_eq, linearAutonomousChannelFlow]
+    simp only [Set.mem_ofPred_eq, linearAutonomousChannelFlow]
     rw [hstate.1]
     constructor
     · norm_num

@@ -126,8 +126,5 @@ theorem costActivePairContractum_hasType (profile : ContinuationDecorationProfil
   exact (profile.hasType_costCoreLanguage closed).mapSchemaNames
     costSourceSchemaName profile.costWholeRedexFreeContext_source
 
-#print axioms costActivePairRedex_hasType
-#print axioms costActivePairContractum_hasType
-
 end ContinuationDecorationProfile
 end Mettapedia.GSLT.LanguageDef

@@ -119,8 +119,8 @@ theorem rhoParallelChoice_mem :
 is `nil`, so the plan stops at no foreign occurrence. -/
 def rhoEmptyParallelPlan :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base [])
-      [] (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base [])
+      [] (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole (.collection .hashBag [] none) (.base rhoProc.1) :=
   .collection rhoParallelChoice rhoParallelChoice_mem .nil
 

@@ -56,7 +56,7 @@ theorem ordered_receiver_match (reversed : Bool) (channel body payload signature
                [.fvar rhoCIGSLT.costSignatureVariable, .fvar rhoCIGSLT.costStackTailVariable]]]) _
       simp [orderedReceiverSource, receiverBindings, matchPatternWith, matchArgsWith,
         matchBagWith, mergeBindingsWith, canonicalEquivalent, costSourceSchemaName,
-        costSourceSchemaTag, CIGSLT.costSignatureVariable, CIGSLT.costStackTailVariable,
+        costSourceSchemaTag, WrappableIGSLT.costSignatureVariable, WrappableIGSLT.costStackTailVariable,
         costAdministrativeSchemaName, costAdministrativeSchemaTag]
 
 theorem ordered_receiver_step (reversed : Bool) (channel body payload signature tail : Pattern) :

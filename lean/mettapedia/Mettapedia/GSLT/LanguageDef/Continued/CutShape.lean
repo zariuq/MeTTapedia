@@ -262,6 +262,19 @@ theorem contractum_head_ne_introductions {theory : IGSLT}
 
 end ContinuationRetypingPlan
 
+namespace WrappableIGSLT
+
+/-- The contractum of a wrappable theory is not headed by an introduction. -/
+theorem contractum_head_ne_introductions (theory : WrappableIGSLT)
+    {label : String} {arguments : List Pattern}
+    (right : theory.theory.presentation.interactionRewrite.1.right =
+      .apply label arguments) :
+    theory.cut.program.constructor.1.label ≠ label ∧
+      theory.cut.environment.constructor.1.label ≠ label :=
+  theory.continuationRetyping.contractum_head_ne_introductions right
+
+end WrappableIGSLT
+
 namespace CIGSLT
 
 /-- The contractum of a continued theory is not headed by an introduction. -/
@@ -271,7 +284,7 @@ theorem contractum_head_ne_introductions (theory : CIGSLT)
       .apply label arguments) :
     theory.cut.program.constructor.1.label ≠ label ∧
       theory.cut.environment.constructor.1.label ≠ label :=
-  theory.continuationRetyping.contractum_head_ne_introductions right
+  theory.toWrappableIGSLT.contractum_head_ne_introductions right
 
 end CIGSLT
 

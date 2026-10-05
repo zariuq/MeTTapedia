@@ -1,5 +1,6 @@
 import Mettapedia.InformationTheory.Basic
 import Mettapedia.InformationTheory.ShannonEntropy.Properties
+import InformationTheory.ShannonEntropy.Faddeev
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Analysis.Asymptotics.SpecificAsymptotics
@@ -12,51 +13,60 @@ import Mathlib.Tactic.Convert
 /-!
 # Faddeev's Axiomatic Characterization of Shannon Entropy
 
-This file formalizes Faddeev's 1956 axiomatization of Shannon entropy and the
-uniqueness route: any function satisfying Faddeev's axioms must equal the Shannon
-entropy (up to a multiplicative constant determined by normalization). The current
-Lean 4.28 recovery build has one explicit proof gap at `faddeev_c_prime_all_equal`.
+Faddeev's 1956 characterization derives normalized Shannon entropy from binary
+continuity, symmetry, grouping and normalization. In particular, full continuity
+and maximality are conclusions, not additional assumptions.
 
-## The Key Insight: Faddeev is MINIMAL
+The prime-coefficient equality proof is reused from the standalone
+`InformationTheory.ShannonEntropy.Faddeev` module through
+`FaddeevEntropy.toStandalone`. The adapter preserves the entropy function and
+each axiom; `c_prime_toStandalone` identifies the two coefficient definitions.
+The remaining lemmas retain Mettapedia's probability-vector interface.
 
-Faddeev's axioms are the **minimal** characterization of Shannon entropy:
+## Assumptions
 
-**Only 4 axioms** (compared to Shannon-Khinchin's 5):
-1. **Binary Continuity (F1)**: H(p, 1-p) is continuous (NOT full continuity!)
+1. **Binary Continuity (F1)**: H(p, 1-p) is continuous
 2. **Symmetry (F2)**: H is invariant under permutations
 3. **Recursivity (F3)**: H satisfies the grouping/chain rule
 4. **Normalization (F4)**: H(1/2, 1/2) = 1
 
-## What Faddeev DERIVES (others ASSUME)
+These four clauses characterize entropy. Their count is not a proof that every
+clause is independent or that no smaller axiomatization exists.
+
+## Derived Properties
 
 | Property | Faddeev | Shannon-Khinchin |
 |----------|---------|------------------|
 | Binary continuity | **ASSUMES** | - |
 | Full continuity | **DERIVES** | ASSUMES |
-| Symmetry | ASSUMES | DERIVES |
+| Symmetry | ASSUMES | ASSUMES (explicit relabeling field) |
 | Recursivity | ASSUMES | ASSUMES (=strong additivity) |
 | Monotonicity | **DERIVES** | - |
 | Maximality | **DERIVES** | ASSUMES |
 | Expansibility | **DERIVES** | ASSUMES |
-| **Total axioms** | **4** | **5** |
+| Named clauses | 4 | 5, plus relabeling |
 
-## Proof Strategy (via Lemma 9)
+## Proof Route
 
 1. From recursivity: F(mn) = F(m) + F(n) where F(n) = H(uniform(n))
 2. From normalization: F(2) = 1, hence F(2^k) = k
 3. Define c_p = F(p)/log(p) for primes p
-4. Via prime power analysis and binary continuity: All c_p are equal
+4. Binary continuity gives F(n) - F(n-1) → 0. Extremal prime coefficients and
+   the factor 2 in the predecessors of odd prime powers force all c_p to agree
 5. Conclusion: F(n) = log₂(n) for all n ≥ 1
-6. Full continuity, monotonicity, and maximality then follow!
+6. Grouping gives equality on rational binary distributions; binary continuity
+   and induction on arity give equality on every probability vector
+7. Full continuity, monotonicity, maximality and expansibility follow
 
 ## Main Results
 
 * `FaddeevEntropy` - Structure encoding Faddeev's 4 axioms
 * `shannonFaddeev` - Shannon entropy satisfies Faddeev's axioms
-* `faddeev_c_prime_all_equal` - Key lemma: all c_p = c_2 = 1/log(2);
-  currently the explicit recovered proof gap.
-* `faddeev_F_eq_log2` - F(n) = log₂(n), downstream of the key lemma.
-* `faddeev_F_monotone` - Derived: F is monotone (Faddeev proves, Shannon assumes).
+* `FaddeevEntropy.toStandalone` - Axiom-preserving bridge to the canonical proof
+* `faddeev_c_prime_all_equal` - All c_p = c_2 = 1/log(2)
+* `faddeev_F_eq_log2` - F(n) = log₂(n)
+* `faddeev_H_eq_shannon` - Equality on all finite probability vectors
+* `faddeev_F_monotone` - Monotonicity on uniform distributions
 
 ## References
 
@@ -94,6 +104,23 @@ structure FaddeevEntropy where
       (p.nonneg 0) (p.nonneg 1) h)
   /-- Normalization: H(1/2, 1/2) = 1 -/
   normalization : H binaryUniform = 1
+
+/-- Transfer the same entropy function and axioms to the standalone development.
+
+Both probability-vector interfaces are the standard simplex over `Fin n`;
+no continuity, sign or monotonicity assumption is added. -/
+def FaddeevEntropy.toStandalone (E : FaddeevEntropy) :
+    _root_.InformationTheory.FaddeevEntropy where
+  H := E.H
+  continuous_binary := E.continuous_binary
+  symmetry := E.symmetry
+  recursivity := E.recursivity
+  normalization := E.normalization
+
+/-- The adapter preserves entropy at every arity. -/
+@[simp]
+theorem FaddeevEntropy.toStandalone_H (E : FaddeevEntropy) {n : ℕ} (p : ProbVec n) :
+    E.toStandalone.H p = E.H p := rfl
 
 /-- Shannon entropy (normalized) satisfies all of Faddeev's axioms. -/
 noncomputable def shannonFaddeev : FaddeevEntropy :=
@@ -198,11 +225,8 @@ theorem faddeev_F1_eq_zero (E : FaddeevEntropy) :
   exact hF1
 
 /-- For a Faddeev entropy, H(1, 0) = 0.
-    Proof via ternary recursivity + symmetry + continuity:
-    For (ε, ε, 1-2ε), by symmetry H(ε, ε, 1-2ε) = H(1-2ε, ε, ε).
-    Grouping (ε,ε) gives: f(2ε) + 2ε
-    Grouping (1-2ε,ε) gives: f(ε) + (1-ε) * h((1-2ε)/(1-ε))
-    As ε → 0: f(0) = f(0) + f(1), hence f(1) = 0. -/
+    Compare the ternary distributions (1/2, 0, 1/2) and (1/2, 1/2, 0)
+    using symmetry and recursivity. No continuity argument is needed. -/
 theorem faddeev_H_one_zero (E : FaddeevEntropy) :
     E.H (binaryDist 1 (by norm_num) (by norm_num)) = 0 := by
   -- A purely algebraic proof using just symmetry + recursivity.
@@ -2462,7 +2486,7 @@ theorem faddeev_F_mul (E : FaddeevEntropy) {m n : ℕ} (hm : 0 < m) (hn : 0 < n)
                 exact this.trans hr1'_tail
 
               -- Allow numerals `0`,`1` as `Fin _` indices by providing `NeZero`.
-              letI : NeZero ((m.succ.succ - 1) * n.succ.succ) := ⟨Nat.ne_of_gt htailpos⟩
+              let : NeZero ((m.succ.succ - 1) * n.succ.succ) := ⟨Nat.ne_of_gt htailpos⟩
               have hqmn : 0 < qmn.1 0 + qmn.1 1 := by
                 simp [hqmn_def, uniformDist_apply] ; positivity
 
@@ -2911,20 +2935,12 @@ theorem faddeev_F_pow2 (E : FaddeevEntropy) (k : ℕ) :
 
 end PowerLaws
 
-/-! ## Continuity-Based Uniqueness Proof
+/-! ## Continuity and Vanishing Increments
 
-A key discovery: if F(3) ≠ log₂(3), then the binary entropy φ(1/n) = H(1/n, (n-1)/n)
-diverges along the sequence n = 3^k + 1 as k → ∞, violating continuity at 0.
-
-The mechanism:
-- F(3^k) = k * F(3) by multiplicativity
-- φ(1/(3^k+1)) = F(3^k+1) - 3^k/(3^k+1) * F(3^k)
-- If F(3) = log₂(3) + ε for ε ≠ 0:
-  - F(3^k) ≈ k * log₂(3) + k * ε (inflated/deflated by k*ε)
-  - F(3^k+1) ≈ log₂(3^k+1) ≈ k * log₂(3) (normal growth)
-  - φ(1/(3^k+1)) ≈ k*log₂(3) - k*log₂(3) - k*ε = -k*ε → ∓∞
-
-Since continuity at 0 requires φ(1/n) → 0 as n → ∞, this forces F(3) = log₂(3).
+Binary continuity gives H(1/n, 1-1/n) → 0. The grouping identity then gives
+F(n)/n → 0 by a weighted Cesàro argument, and hence F(n) - F(n-1) → 0.
+These limits are proved before identifying F with a logarithm; they do not
+assume monotonicity or a growth estimate for F.
 -/
 
 section ContinuityProof
@@ -3441,6 +3457,11 @@ Hence all c_p = c_2. -/
 noncomputable def c_prime (E : FaddeevEntropy) (p : ℕ) (hp : Nat.Prime p) : ℝ :=
   F E p (Nat.Prime.pos hp) / Real.log p
 
+/-- Prime coefficients agree with the standalone coefficients under the adapter. -/
+@[simp]
+theorem c_prime_toStandalone (E : FaddeevEntropy) (p : ℕ) (hp : Nat.Prime p) :
+    _root_.InformationTheory.c_prime E.toStandalone p hp = c_prime E p hp := rfl
+
 /-! ### Helper Lemmas for Faddeev's Argument -/
 
 /-- For odd primes p > 2, we have 2 | (p - 1).
@@ -3468,7 +3489,7 @@ theorem F_prime_eq_c_times_log (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime p)
   unfold c_prime
   field_simp [log_prime_ne_zero hp]
 
-/-- c_2 = 1 follows from F(2) = 1 and log(2) > 0. -/
+/-- c_2 = 1/log(2) follows from F(2) = 1. -/
 theorem c_prime_two (E : FaddeevEntropy) :
     c_prime E 2 Nat.prime_two = 1 / Real.log 2 := by
   unfold c_prime
@@ -3532,7 +3553,7 @@ theorem F_eq_c2_times_log_of_c_prime_const (E : FaddeevEntropy)
           exact Nat.div_mul_cancel hm_dvd
         have hk_pos : 0 < k := by
           by_contra h_not
-          push_neg at h_not
+          push Not at h_not
           have : n = m * k := hdiv.symm
           simp [Nat.le_zero.mp h_not] at this
           omega
@@ -3618,7 +3639,7 @@ theorem F_odd_upper_bound (E : FaddeevEntropy) {n : ℕ} (hn : 0 < n) (h_odd : O
       obtain ⟨k, m, hq_not_dvd, hn_eq⟩ := Nat.exists_eq_pow_mul_and_not_dvd hn.ne' q hq_prime.ne_one
       have hm_pos : 0 < m := by
         by_contra hm_not_pos
-        push_neg at hm_not_pos
+        push Not at hm_not_pos
         simp [Nat.le_zero.mp hm_not_pos] at hn_eq
         omega
       -- m is odd (since n = q^k * m is odd, q is odd, so q^k is odd, so m is odd)
@@ -3628,7 +3649,7 @@ theorem F_odd_upper_bound (E : FaddeevEntropy) {n : ℕ} (hn : 0 < n) (h_odd : O
       -- k ≥ 1 since q | n
       have hk_pos : 0 < k := by
         by_contra hk_zero
-        push_neg at hk_zero
+        push Not at hk_zero
         have hk_eq : k = 0 := Nat.le_zero.mp hk_zero
         simp [hk_eq] at hn_eq
         rw [hn_eq] at hq_dvd
@@ -3734,11 +3755,11 @@ theorem F_odd_lower_bound (E : FaddeevEntropy) {n : ℕ} (hn : 0 < n) (h_odd : O
         exact h_odd.not_two_dvd_nat hq_dvd
       obtain ⟨k, m, hq_not_dvd, hn_eq⟩ := Nat.exists_eq_pow_mul_and_not_dvd hn.ne' q hq_prime.ne_one
       have hm_pos : 0 < m := by
-        by_contra hm_not_pos; push_neg at hm_not_pos
+        by_contra hm_not_pos; push Not at hm_not_pos
         simp [Nat.le_zero.mp hm_not_pos] at hn_eq; omega
       have hm_odd : Odd m := by rw [hn_eq] at h_odd; exact (Nat.odd_mul.mp h_odd).2
       have hk_pos : 0 < k := by
-        by_contra hk_zero; push_neg at hk_zero
+        by_contra hk_zero; push Not at hk_zero
         have hk_eq : k = 0 := Nat.le_zero.mp hk_zero
         simp [hk_eq] at hn_eq; rw [hn_eq] at hq_dvd; exact hq_not_dvd hq_dvd
       have hm_lt_n : m < n := by
@@ -3796,54 +3817,12 @@ theorem F_odd_lower_bound (E : FaddeevEntropy) {n : ℕ} (hn : 0 < n) (h_odd : O
         _ = F E (q ^ k * m) hqkm_pos := (hFn).symm
         _ = F E n hn := by rw [← hF_eq]
 
-/-- For a prime p, λ_p = F(p) - F(p-1) relates to c_p via the factorization of p-1.
-    Key identity: λ_p ≥ c_p · log(p/(p-1)) + (c_p - c_2) · log(2) when c_p ≥ c_q for all q | (p-1).
+/-- For an odd prime p whose coefficient dominates those of all prime divisors
+    of p-1, the entropy increment is at least (c_p - c_2) * log(2).
 
-    The lower bound uses: 2 | (p-1) for odd primes p, so the sum includes q = 2.
-
-    **Detailed Proof Sketch**:
-    Write p - 1 = 2^a · m where m is odd and a ≥ 1 (since p is odd).
-    Then F(p-1) = a + F(m) by `F_two_pow_mul`.
-
-    Now, F(m) = Σ_{q | m, q odd prime} v_q(m) · F(q) by multiplicativity (since m is odd).
-
-    The key rearrangement:
-      λ_p = F(p) - F(p-1)
-          = c_p · log(p) - a - F(m)
-          = c_p · log(p) - a·c_2·log(2) - F(m)  (since F(2) = 1 = c_2·log(2))
-
-    Wait, that's not right. Let me redo:
-      F(2) = 1, and c_2 = F(2)/log(2) = 1/log(2).
-      So a = a · 1 = a · F(2).
-
-    The bound F(m) ≤ c_p · log(m) holds when c_p dominates all odd prime factors of m.
-    For record-holder p, this is guaranteed since all q | m satisfy q | (p-1) and q < p.
-
-    Therefore:
-      λ_p = c_p·log(p) - a·F(2) - F(m)
-          ≥ c_p·log(p) - a - c_p·log(m)  [using F(m) ≤ c_p·log(m)]
-          = c_p·(log(p) - log(m)) - a
-          = c_p·log(p/m) - a
-          = c_p·log(2^a · (p/(p-1))) - a  [since p/m = p/(p-1 / 2^a) = 2^a·p/(p-1)]
-
-    Hmm, this algebra is getting complicated. Let me use a different approach:
-
-    λ_p = c_p·log(p) - a - Σ_{q | m} v_q(m)·c_q·log(q)
-        = c_p·log(p) - a - Σ v_q(m)·c_p·log(q) + Σ v_q(m)·(c_p - c_q)·log(q)
-        = c_p·(log(p) - log(m)) - a + Σ v_q(m)·(c_p - c_q)·log(q)
-        = c_p·log(2^a · p/(p-1)) - a + Σ v_q(m)·(c_p - c_q)·log(q)
-
-    Since 2^a · m = p - 1, we have p/(p-1) · 2^a = p/m, so:
-      c_p·log(2^a) + c_p·log(p/(p-1)) - a + Σ(c_p - c_q)·log(q^{v_q})
-    = a·c_p·log(2) + c_p·log(p/(p-1)) - a + Σ(c_p - c_q)·log(q^{v_q})
-    = a·(c_p·log(2) - 1) + c_p·log(p/(p-1)) + Σ(c_p - c_q)·log(q^{v_q})
-    = a·(c_p - c_2)·log(2) + c_p·log(p/(p-1)) + Σ(c_p - c_q)·log(q^{v_q})
-
-    Since a ≥ 1, c_p ≥ c_2, log(p/(p-1)) > 0, and c_p ≥ c_q for all q | m:
-      λ_p ≥ (c_p - c_2)·log(2)
-
-    **Full formalization**: Requires expressing F(m) via prime factorization.
-    For now, we state this as the key technical lemma. -/
+    Write p-1 = 2^a * m with m odd and a ≥ 1. Multiplicativity gives
+    F(p-1) = a + F(m), while coefficient domination bounds F(m) by
+    c_p * log(m). The compulsory factor 2 supplies the stated margin. -/
 theorem lambda_prime_lower_bound (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime p) (hp2 : p ≠ 2)
     (h_dom : ∀ q : ℕ, ∀ hq : Nat.Prime q, q ∣ (p - 1) → c_prime E q hq ≤ c_prime E p hp) :
     entropyIncrement E p hp.one_lt ≥ (c_prime E p hp - c_prime E 2 Nat.prime_two) * Real.log 2 := by
@@ -3863,7 +3842,7 @@ theorem lambda_prime_lower_bound (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime 
   obtain ⟨a, m, h2_not_dvd, hp1_eq⟩ := Nat.exists_eq_pow_mul_and_not_dvd hp1_pos.ne' 2 (by decide : (2 : ℕ) ≠ 1)
   have hm_pos : 0 < m := by
     by_contra hm_not_pos
-    push_neg at hm_not_pos
+    push Not at hm_not_pos
     simp [Nat.le_zero.mp hm_not_pos] at hp1_eq
     omega
   -- m is odd since 2 ∤ m
@@ -3871,7 +3850,7 @@ theorem lambda_prime_lower_bound (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime 
   -- a ≥ 1 since p - 1 is even (2 | p - 1)
   have ha_pos : 0 < a := by
     by_contra ha_zero
-    push_neg at ha_zero
+    push Not at ha_zero
     have ha_eq : a = 0 := Nat.le_zero.mp ha_zero
     simp [ha_eq] at hp1_eq
     rw [hp1_eq] at h2_dvd
@@ -4022,7 +4001,7 @@ theorem exists_recordHolder_gt (E : FaddeevEntropy)
     -- First show q₀ > r (otherwise contradicts record-holder)
     have hq₀_gt_r : q₀ > r := by
       by_contra hq₀_le_r
-      push_neg at hq₀_le_r
+      push Not at hq₀_le_r
       have hq₀_lt_r_or_eq : q₀ < r ∨ q₀ = r := Nat.lt_or_eq_of_le hq₀_le_r
       cases hq₀_lt_r_or_eq with
       | inl hq₀_lt => exact absurd (h_rec q₀ hq₀_prime hq₀_lt) (not_lt.mpr (le_of_lt hq₀_gt))
@@ -4056,14 +4035,14 @@ theorem exists_recordHolder_gt (E : FaddeevEntropy)
           exact ⟨q, hq_prime, hq_gt_r, le_refl q, hq_rec⟩
         · -- q is not a record-holder: ∃ prime q' < q with c_q' ≥ c_q
           unfold isRecordHolder at hq_rec
-          push_neg at hq_rec
+          push Not at hq_rec
           obtain ⟨q', hq'_prime, hq'_lt_q, hq'_ge⟩ := hq_rec
           -- c_q' ≥ c_q > c_r, so c_q' > c_r
           have hq'_gt_cr : c_prime E r hr < c_prime E q' hq'_prime := lt_of_lt_of_le hq_gt hq'_ge
           -- q' > r (otherwise contradicts r being record-holder)
           have hq'_gt_r : r < q' := by
             by_contra hq'_le_r
-            push_neg at hq'_le_r
+            push Not at hq'_le_r
             have hq'_lt_r_or_eq : q' < r ∨ q' = r := Nat.lt_or_eq_of_le hq'_le_r
             cases hq'_lt_r_or_eq with
             | inl hq'_lt => exact absurd (h_rec q' hq'_prime hq'_lt) (not_lt.mpr (le_of_lt hq'_gt_cr))
@@ -4087,7 +4066,7 @@ theorem exists_recordHolder_gt (E : FaddeevEntropy)
   by_cases hr'_gt_p : r' > p
   · exact ⟨r', hr', hr'_gt_p, hr'_rec⟩
   · -- r' ≤ p, but r' > r, so we made progress
-    push_neg at hr'_gt_p
+    push Not at hr'_gt_p
     -- Use strong induction on (p - r)
     have hp_sub_r_pos : p - r > 0 := Nat.sub_pos_of_lt (lt_of_lt_of_le hr'_gt_r hr'_gt_p)
     -- Actually we need to track that p - r' < p - r
@@ -4104,7 +4083,7 @@ theorem exists_recordHolder_gt (E : FaddeevEntropy)
         obtain ⟨r', hr', hr'_gt_r, hr'_rec⟩ := next_recordHolder r hr hr_rec
         by_cases hr'_gt_p : r' > p
         · exact ⟨r', hr', hr'_gt_p, hr'_rec⟩
-        · push_neg at hr'_gt_p
+        · push Not at hr'_gt_p
           have hd' : p - r' < d := by omega
           exact ih (p - r') hd' r' hr' hr'_gt_p rfl hr'_rec)
       (p - r) r hr hr_le_p rfl hr_rec
@@ -4123,7 +4102,7 @@ theorem faddeev_c_prime_has_max (E : FaddeevEntropy) :
       c_prime E q hq ≤ c_prime E p hp := by
   -- Proof by contradiction using λ_n → 0
   by_contra h_no_max
-  push_neg at h_no_max
+  push Not at h_no_max
   -- h_no_max: For each prime p, there exists prime q with c_q > c_p
 
   -- Key fact: λ_n → 0 as n → ∞
@@ -4226,7 +4205,7 @@ theorem exists_downwardRecordHolder_gt (E : FaddeevEntropy)
     -- First show q₀ > r (otherwise contradicts downward record-holder)
     have hq₀_gt_r : q₀ > r := by
       by_contra hq₀_le_r
-      push_neg at hq₀_le_r
+      push Not at hq₀_le_r
       have hq₀_lt_r_or_eq : q₀ < r ∨ q₀ = r := Nat.lt_or_eq_of_le hq₀_le_r
       cases hq₀_lt_r_or_eq with
       | inl hq₀_lt_nat =>
@@ -4246,7 +4225,7 @@ theorem exists_downwardRecordHolder_gt (E : FaddeevEntropy)
         · exact ⟨q, hq_prime, hq_gt_r, le_refl q, hq_rec⟩
         · -- q is not a downward record-holder, so there exists s < q with c_s ≤ c_q
           unfold isDownwardRecordHolder at hq_rec
-          push_neg at hq_rec
+          push Not at hq_rec
           obtain ⟨s, hs, hs_lt_q, hs_le⟩ := hq_rec
           -- s < q and c_s ≤ c_q < c_r
           have hs_lt_r : c_prime E s hs < c_prime E r hr := lt_of_le_of_lt hs_le hq_lt
@@ -4258,7 +4237,7 @@ theorem exists_downwardRecordHolder_gt (E : FaddeevEntropy)
           · -- s ≤ r, but we have c_s ≤ c_q < c_r
             -- If s = r, then c_r ≤ c_q < c_r, contradiction
             -- If s < r, then by downward record-holder of r: c_r < c_s, but c_s < c_r, contradiction
-            push_neg at hs_gt_r
+            push Not at hs_gt_r
             have hs_lt_r_or_eq : s < r ∨ s = r := Nat.lt_or_eq_of_le hs_gt_r
             cases hs_lt_r_or_eq with
             | inl hs_lt =>
@@ -4299,7 +4278,7 @@ theorem exists_downwardRecordHolder_gt (E : FaddeevEntropy)
         by_cases h : n + 1 ≤ r
         · exact ⟨r, hr, h, hr_rec⟩
         · -- r < n + 1, so r ≤ n, and combined with n ≤ r, we have r = n
-          push_neg at h
+          push Not at h
           -- Get a larger downward record-holder
           obtain ⟨r', hr', hr'_gt_r, hr'_rec⟩ := next_downwardRecordHolder r hr hr_rec
           -- r' > r ≥ n, so r' ≥ n + 1
@@ -4309,10 +4288,10 @@ theorem exists_downwardRecordHolder_gt (E : FaddeevEntropy)
 
 /-- **lambda_prime_upper_bound**: Symmetric to lambda_prime_lower_bound.
     For a downward record-holder p ≠ 2 (where c_p ≤ c_q for all primes q | (p-1)),
-    we have λ_p ≤ (c_p - c_2) * log(2) + positive correction.
+    we have λ_p ≤ (c_p - c_2) * log(2) + c_p * log(p/(p-1)).
 
-    Since c_p < c_2 implies (c_p - c_2) < 0, this gives an upper bound on λ_p
-    that goes to -∞ as c_p → -∞. -/
+    A fixed gap below c_2 supplies a negative margin. The second term is
+    nonpositive when c_p ≤ 0; otherwise it becomes small for large p. -/
 theorem lambda_prime_upper_bound (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime p) (hp2 : p ≠ 2)
     (h_dom : ∀ q : ℕ, ∀ hq : Nat.Prime q, q ∣ (p - 1) → c_prime E p hp ≤ c_prime E q hq) :
     entropyIncrement E p hp.one_lt ≤ (c_prime E p hp - c_prime E 2 Nat.prime_two) * Real.log 2 +
@@ -4327,11 +4306,11 @@ theorem lambda_prime_upper_bound (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime 
   have hc2_le := h_dom 2 Nat.prime_two h2_dvd
   obtain ⟨a, m, h2_not_dvd, hp1_eq⟩ := Nat.exists_eq_pow_mul_and_not_dvd hp1_pos.ne' 2 (by decide)
   have hm_pos : 0 < m := by
-    by_contra hm_not_pos; push_neg at hm_not_pos
+    by_contra hm_not_pos; push Not at hm_not_pos
     simp [Nat.le_zero.mp hm_not_pos] at hp1_eq; omega
   have hm_odd : Odd m := Nat.odd_iff.mpr (Nat.two_dvd_ne_zero.mp h2_not_dvd)
   have ha_pos : 0 < a := by
-    by_contra ha_zero; push_neg at ha_zero
+    by_contra ha_zero; push Not at ha_zero
     have ha_eq : a = 0 := Nat.le_zero.mp ha_zero
     simp [ha_eq] at hp1_eq; rw [hp1_eq] at h2_dvd; exact h2_not_dvd h2_dvd
   have hFp1 := F_two_pow_mul E a hm_pos
@@ -4403,16 +4382,17 @@ theorem lambda_prime_upper_bound (E : FaddeevEntropy) {p : ℕ} (hp : Nat.Prime 
     This is proven independently of Lemma 9 (all c_p equal), using the λ → 0 argument.
 
     Proof by contradiction:
-    1. If no min exists, build sequence p₁ > p₂ > ... where c_{p_i} < c_q for all primes q < p_i
-    2. For each p_i > 2 (downward record-holder): λ_{p_i} ≤ (c_{p_i} - c_2)·log(2) + correction
-       Since c_{p_i} → -∞, this upper bound → -∞.
+    1. If no minimum exists, find arbitrarily large downward record-holder primes,
+       whose coefficients stay below one fixed coefficient smaller than c_2.
+    2. For such p > 2, λ_p ≤ (c_p - c_2)·log(2) + correction.
+       The correction tends to zero, leaving a fixed negative margin.
     3. But λ_n → 0, so |λ_n| < ε for large n. Contradiction! -/
 theorem faddeev_c_prime_has_min_aux (E : FaddeevEntropy) :
     ∃ p : ℕ, ∃ hp : Nat.Prime p, ∀ q : ℕ, ∀ hq : Nat.Prime q,
       c_prime E p hp ≤ c_prime E q hq := by
   -- Proof by contradiction using λ_n → 0
   by_contra h_no_min
-  push_neg at h_no_min
+  push Not at h_no_min
   -- h_no_min: For each prime p, there exists prime q with c_q < c_p
 
   -- Key fact: λ_n → 0 as n → ∞
@@ -4517,7 +4497,7 @@ theorem faddeev_c_prime_has_min_aux (E : FaddeevEntropy) :
         apply mul_nonpos_of_nonpos_of_nonneg hcp₂_sign (le_of_lt hlog_ratio_pos)
       linarith
     · -- Case B: c_{p₂} > 0
-      push_neg at hcp₂_sign
+      push Not at hcp₂_sign
       -- c_{p₂} < c_2, so correction < c_2 · log(p₂/(p₂-1))
       have hcorr_lt : c_prime E p₂ hp₂ * Real.log ((p₂ : ℝ) / ((p₂ : ℝ) - 1)) <
           c_prime E 2 Nat.prime_two * Real.log ((p₂ : ℝ) / ((p₂ : ℝ) - 1)) := by
@@ -4619,960 +4599,19 @@ theorem faddeev_c_prime_has_min_aux (E : FaddeevEntropy) :
   -- These contradict each other
   linarith
 
-set_option maxHeartbeats 800000 in
 /-- **Faddeev's Lemma 9**: All c_p are equal.
 
-    Proof: Let p_max achieve the maximum from Lemma 8.
-    Apply the λ → 0 argument to the sequence p_max^m - 1 to show c_{p_max} ≤ c_2.
-    Similarly, c_{p_min} ≥ c_2.
-    Therefore all c_p = c_2. -/
+    The standalone proof compares extremal prime coefficients with c_2.
+    For an odd prime p, p^k - 1 is even: a single factor of 2 gives a fixed
+    discrepancy if c_p differs from c_2, contradicting vanishing increments.
+    The adapter transports that proof without strengthening the axioms. -/
 theorem faddeev_c_prime_all_equal (E : FaddeevEntropy) :
     ∀ p q : ℕ, ∀ hp : Nat.Prime p, ∀ hq : Nat.Prime q,
       c_prime E p hp = c_prime E q hq := by
-  -- TODO: complete Faddeev's Lemma 9 in Lean 4.28.
-  -- This is the current recovered proof gap for the Faddeev uniqueness route.
-  sorry
-
-/-
-Recovered non-building proof attempt retained for forensic reference.
-
-  -- DETAILED PROOF OUTLINE:
-  --
-  -- Step 1: Get p_max achieving maximum from Lemma 8.
-  -- obtain ⟨p_max, hp_max, h_max⟩ := faddeev_c_prime_has_max E
-  --
-  -- Step 2: SHOW c_{p_max} ≤ c_2.
-  -- If p_max = 2, then c_{p_max} = c_2, done.
-  -- Otherwise p_max > 2, so p_max is odd.
-  --
-  -- Consider the sequence n_m = p_max^m for m = 1, 2, 3, ...
-  -- Factor: p_max^m - 1 = (p_max - 1)(p_max^{m-1} + ... + 1)
-  --
-  -- KEY IDENTITY for λ_{p_max^m}:
-  --   λ_{p_max^m} = F(p_max^m) - F(p_max^m - 1)
-  --               = m · c_{p_max} · log(p_max) - F(p_max^m - 1)
-  --
-  -- Since all prime factors q of p_max^m - 1 satisfy q < p_max,
-  -- and p_max achieves the maximum, we have c_q ≤ c_{p_max}.
-  --
-  -- Since p_max is odd, p_max^m - 1 is even, so 2 | (p_max^m - 1).
-  --
-  -- Similar rearrangement gives:
-  --   λ_{p_max^m} = c_{p_max} · [m·log(p_max) - log(p_max^m - 1)]
-  --                 + Σ α · (c_{p_max} - c_q) · log(q)
-  --              ≥ c_{p_max} · [m·log(p_max) - log(p_max^m - 1)]
-  --                 + (c_{p_max} - c_2) · α_2 · log(2)
-  --
-  -- As m → ∞:
-  --   m·log(p_max) - log(p_max^m - 1) = log(p_max^m / (p_max^m - 1))
-  --                                      = log(1 + 1/(p_max^m - 1)) → 0
-  --
-  -- But if c_{p_max} > c_2, then the second term provides a uniform positive bound,
-  -- preventing λ_{p_max^m} → 0. Contradiction with faddeev_lambda_tendsto_zero!
-  --
-  -- Therefore c_{p_max} ≤ c_2.
-  --
-  -- Step 3: SHOW c_{p_min} ≥ c_2 (symmetric argument).
-  -- obtain ⟨p_min, hp_min, h_min⟩ := faddeev_c_prime_has_min E
-  -- Similar argument shows c_{p_min} ≥ c_2.
-  --
-  -- Step 4: CONCLUDE all c_p = c_2.
-  -- For any prime p:
-  --   c_{p_min} ≤ c_p ≤ c_{p_max}  [by Lemmas 8, 8']
-  --   c_2 ≤ c_p ≤ c_2              [by Steps 2, 3]
-  --   c_p = c_2
-  --
-  -- Since this holds for all primes p, q: c_p = c_q = c_2.
-  --
-  -- ACTUAL PROOF: Use λ_n → 0 to show all c_p = c_2
-
-  -- Step 1: Get p_max achieving maximum
-  obtain ⟨p_max, hp_max, h_max⟩ := faddeev_c_prime_has_max E
-
-  -- Step 2: Show c_{p_max} ≤ c_2
-  -- If p_max = 2, this is trivial. Otherwise, use the power sequence argument.
-  have h_max_le_c2 : c_prime E p_max hp_max ≤ c_prime E 2 Nat.prime_two := by
-    by_cases hp_max_eq_2 : p_max = 2
-    · simp only [hp_max_eq_2, le_refl]
-    · -- p_max > 2, odd. Use contradiction via λ → 0.
-      by_contra h_max_gt_c2
-      push_neg at h_max_gt_c2
-      -- δ := (c_{p_max} - c_2) * log 2 > 0
-      set δ := (c_prime E p_max hp_max - c_prime E 2 Nat.prime_two) * Real.log 2 with hδ_def
-      have hδ_pos : 0 < δ := mul_pos (sub_pos.mpr h_max_gt_c2) log_two_pos
-      -- By λ → 0, for ε = δ/2, there exists N such that |λ_n| < δ/2 for n ≥ N
-      have hlim := faddeev_lambda_tendsto_zero E
-      rw [Metric.tendsto_atTop] at hlim
-      obtain ⟨N, hN⟩ := hlim (δ / 2) (by linarith)
-      -- Find m large enough that p_max^m - 2 ≥ N
-      have hp_max_ge_3 : p_max ≥ 3 := by
-        have h2le := hp_max.two_le
-        omega
-      -- Use subsequence p_max^{2^k} for k = 1, 2, ...
-      -- Key facts:
-      -- 1. ord_2(p_max^{2^k} - 1) ≥ k + 1 (since p_max odd implies each factor 2^j + 1 is even)
-      -- 2. F(p_max^{2^k}) = 2^k · c_{p_max} · log(p_max)
-      -- 3. F(p_max^{2^k} - 1) = a_k + F(b_k) where b_k is odd
-      -- 4. F(b_k) ≤ c_{p_max} · log(b_k) since p_max achieves max
-      -- 5. λ_{p_max^{2^k}} ≥ a_k · (c_{p_max} - c_2) · log(2) + o(1) → +∞
-
-      -- Find k₀ large enough that p_max^{2^{k₀}} - 2 ≥ N
-      have hpow_large : ∃ k₀ : ℕ, N + 2 ≤ p_max ^ (2 ^ k₀) := by
-        have hp_ge_2 : 2 ≤ p_max := hp_max.two_le
-        use N + 2
-        have h1 : 2 ^ (2 ^ (N + 2)) ≤ p_max ^ (2 ^ (N + 2)) := Nat.pow_le_pow_left hp_ge_2 _
-        have h2 : N + 2 ≤ 2 ^ (N + 2) := (@Nat.lt_two_pow_self (N + 2)).le
-        have h3 : 2 ^ (N + 2) ≤ 2 ^ (2 ^ (N + 2)) :=
-          Nat.pow_le_pow_right (by norm_num) h2
-        omega
-      obtain ⟨k₀, hk₀⟩ := hpow_large
-
-      -- For any k ≥ k₀, we have p_max^{2^k} - 2 ≥ N
-      have hk_large : ∀ k ≥ k₀, N ≤ p_max ^ (2 ^ k) - 2 := by
-        intro k hk
-        have h1 : p_max ^ (2 ^ k₀) ≤ p_max ^ (2 ^ k) := by
-          apply Nat.pow_le_pow_right hp_max.pos
-          exact Nat.pow_le_pow_right (by norm_num) hk
-        omega
-
-      -- p_max is odd since p_max ≠ 2
-      have hp_max_odd : Odd p_max := hp_max.odd_of_ne_two hp_max_eq_2
-
-      -- For k ≥ 1, factor p_max^{2^k} - 1 = 2^{a_k} · b_k
-      -- Key: a_k ≥ k + 1 for odd p_max ≥ 3
-      have hord2_growth : ∀ k ≥ 1, k + 1 ≤ (p_max ^ (2 ^ k) - 1).factorization 2 := by
-        intro k hk
-        -- p_max^{2^k} - 1 = (p_max^{2^{k-1}} - 1)(p_max^{2^{k-1}} + 1)
-        -- Each application of this factorization adds at least one factor of 2
-        -- since p_max^{2^j} + 1 is even for odd p_max
-        induction k with
-        | zero => omega
-        | succ k' ih =>
-          by_cases hk' : k' = 0
-          · -- Base: k = 1, need ord_2(p_max^2 - 1) ≥ 2
-            -- p_max^2 - 1 = (p_max - 1)(p_max + 1)
-            -- Both p_max - 1 and p_max + 1 are even for odd p_max ≥ 3
-            simp only [hk']
-            -- 2 | p_max - 1 since p_max is odd
-            have h1 : 2 ∣ p_max - 1 := by
-              rcases hp_max_odd with ⟨m, rfl⟩
-              simp only [add_tsub_cancel_right, dvd_mul_right]
-            -- 2 | p_max + 1 since p_max is odd
-            have h2 : 2 ∣ p_max + 1 := Even.two_dvd (Odd.add_one hp_max_odd)
-            have hp_ge_1 : 1 ≤ p_max := by omega
-            have hp_sq_ge_1 : 1 ≤ p_max ^ 2 := Nat.one_le_pow 2 p_max (by omega)
-            have h3 : p_max ^ 2 - 1 = (p_max - 1) * (p_max + 1) := by
-              zify [hp_ge_1, hp_sq_ge_1]
-              ring
-            -- Both factors are ≥ 2, so the product has ord_2 ≥ 2
-            have hp_ge_3 : 3 ≤ p_max := hp_max_ge_3
-            have hdvd4 : 4 ∣ (p_max - 1) * (p_max + 1) := by
-              -- p_max - 1 and p_max + 1 are consecutive even numbers
-              -- One of them is divisible by 4
-              have hdiv1 : p_max - 1 = (p_max - 1) / 2 * 2 := (Nat.div_mul_cancel h1).symm
-              have hdiv2 : p_max + 1 = (p_max + 1) / 2 * 2 := (Nat.div_mul_cancel h2).symm
-              rcases Nat.even_or_odd ((p_max - 1) / 2) with ⟨m, hm⟩ | ⟨m, hm⟩
-              · -- (p_max - 1)/2 = 2m, so p_max - 1 = 4m
-                have hpm1_eq : p_max - 1 = 4 * m := by omega
-                exact ⟨m * (p_max + 1), by rw [hpm1_eq]; ring⟩
-              · -- (p_max - 1)/2 = 2m + 1, so (p_max + 1)/2 = 2m + 2 is even
-                have hpp1_half : (p_max + 1) / 2 = (p_max - 1) / 2 + 1 := by
-                  have : p_max + 1 = (p_max - 1) + 2 := by omega
-                  rw [this, Nat.add_div_right _ (by norm_num : 0 < 2)]
-                have hpp1_half_even : Even ((p_max + 1) / 2) := by
-                  rw [hpp1_half, hm]
-                  exact ⟨m + 1, by ring⟩
-                obtain ⟨n, hn⟩ := hpp1_half_even
-                have hpp1_eq : p_max + 1 = 4 * n := by omega
-                exact ⟨(p_max - 1) * n, by rw [hpp1_eq]; ring⟩
-            -- 4 | (p_max - 1)(p_max + 1) implies ord_2 ≥ 2
-            have hne : (p_max - 1) * (p_max + 1) ≠ 0 := Nat.mul_ne_zero (by omega) (by omega)
-            have h2pow : 2 ^ 2 ∣ (p_max - 1) * (p_max + 1) := by simpa using hdvd4
-            have hord2 := Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two hne |>.mp h2pow
-            calc (p_max ^ (2 ^ 1) - 1).factorization 2
-                = (p_max ^ 2 - 1).factorization 2 := by norm_num
-              _ = ((p_max - 1) * (p_max + 1)).factorization 2 := by rw [h3]
-              _ ≥ 2 := hord2
-          · -- Inductive step: k' ≥ 1
-            have hk'_ge_1 : 1 ≤ k' := Nat.one_le_iff_ne_zero.mpr hk'
-            have ih' := ih hk'_ge_1
-            -- p_max^{2^{k'+1}} - 1 = (p_max^{2^{k'}} - 1)(p_max^{2^{k'}} + 1)
-            set a := p_max ^ (2 ^ k') with ha_def
-            have ha_ge_1 : 1 ≤ a := Nat.one_le_pow _ _ hp_max.pos
-            -- a ≥ 3 since p_max ≥ 3 and k' ≥ 1 means 2^k' ≥ 2
-            have ha_ge_3 : 3 ≤ a := by
-              have h1 : 1 ≤ 2 ^ k' := Nat.one_le_two_pow
-              calc a = p_max ^ (2 ^ k') := rfl
-                _ ≥ p_max ^ 1 := Nat.pow_le_pow_right hp_max.pos h1
-                _ = p_max := by ring
-                _ ≥ 3 := hp_max_ge_3
-            have ha_sq_ge_1 : 1 ≤ a * a := by nlinarith
-            have hfact : p_max ^ (2 ^ (k' + 1)) - 1 = (a - 1) * (a + 1) := by
-              have h2pow : 2 ^ (k' + 1) = 2 ^ k' + 2 ^ k' := by ring
-              rw [h2pow, pow_add, ← ha_def]
-              -- a * a - 1 = (a - 1) * (a + 1) when a ≥ 1
-              zify [ha_ge_1, ha_sq_ge_1]
-              ring
-            -- a is odd (power of odd number)
-            have ha_odd : Odd a := hp_max_odd.pow
-            -- a + 1 is even, so ord_2(a + 1) ≥ 1
-            have heven_succ : 2 ∣ a + 1 := Even.two_dvd (Odd.add_one ha_odd)
-            have hord2_succ : 1 ≤ (a + 1).factorization 2 := by
-              have hne : a + 1 ≠ 0 := by omega
-              have h2pow : 2 ^ 1 ∣ a + 1 := by simpa using heven_succ
-              exact Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two hne |>.mp h2pow
-            -- Both factors are nonzero (a ≥ 3 ensures a - 1 ≥ 2 > 0)
-            have ham1_ne : a - 1 ≠ 0 := by omega
-            have hap1_ne : a + 1 ≠ 0 := by omega
-            -- Use Nat.factorization_mul (no coprimality needed!)
-            have hfact_mul := Nat.factorization_mul ham1_ne hap1_ne
-            -- ord_2(product) = ord_2(a-1) + ord_2(a+1)
-            calc (p_max ^ (2 ^ (k' + 1)) - 1).factorization 2
-                = ((a - 1) * (a + 1)).factorization 2 := by rw [hfact]
-              _ = (a - 1).factorization 2 + (a + 1).factorization 2 := by
-                  rw [hfact_mul]; rfl
-              _ ≥ (k' + 1) + 1 := by
-                  -- By IH: (a - 1).factorization 2 ≥ k' + 1
-                  -- By hord2_succ: (a + 1).factorization 2 ≥ 1
-                  have hih : (k' + 1) ≤ (a - 1).factorization 2 := ih'
-                  omega
-              _ = k' + 1 + 1 := by ring
-      -- Now use this to get the contradiction
-      -- Pick k = max(k₀, 2) to ensure both conditions
-      set k := max k₀ 2 with hk_def
-      have hk_ge_k0 : k ≥ k₀ := le_max_left _ _
-      have hk_ge_2 : k ≥ 2 := le_max_right _ _
-      have hk_ge_1 : k ≥ 1 := by omega
-      have hN_le := hk_large k hk_ge_k0
-      have hord2 := hord2_growth k hk_ge_1
-      -- Get the factorization
-      set n := p_max ^ (2 ^ k) with hn_def
-      have hn_pos : 0 < n := Nat.pow_pos hp_max.pos
-      have hn_ge_2 : 2 ≤ n := by
-        have h1 : 1 ≤ 2 ^ k := @Nat.one_le_two_pow k
-        calc n = p_max ^ (2 ^ k) := rfl
-          _ ≥ p_max ^ 1 := Nat.pow_le_pow_right hp_max.pos h1
-          _ = p_max := pow_one _
-          _ ≥ 3 := hp_max_ge_3
-          _ ≥ 2 := by norm_num
-      have hn1_pos : 0 < n - 1 := by omega
-      have hn1_ne : n - 1 ≠ 0 := by omega
-      -- Factor n - 1 = 2^a · b where b is odd
-      obtain ⟨a, b, hb_odd, hab⟩ := Nat.exists_eq_pow_mul_and_not_dvd hn1_ne 2 (by norm_num)
-      have hb_pos : 0 < b := by
-        by_contra hb_zero
-        push_neg at hb_zero
-        interval_cases b; simp_all
-      have hb_ne : b ≠ 0 := by omega
-      have ha_ge : k + 1 ≤ a := by
-        -- 2^a and b are coprime since b is odd
-        have hcop : (2 ^ a).Coprime b :=
-          Nat.Coprime.pow_left _ (Nat.Prime.coprime_iff_not_dvd Nat.prime_two |>.mpr hb_odd)
-        have h2a_ne : 2 ^ a ≠ 0 := ne_of_gt (Nat.pow_pos (by norm_num : 0 < 2))
-        have hfact_eq : (n - 1).factorization 2 = a := by
-          calc (n - 1).factorization 2 = (2 ^ a * b).factorization 2 := by rw [hab]
-            _ = (2 ^ a).factorization 2 + b.factorization 2 := by
-                rw [Nat.factorization_mul h2a_ne hb_ne]; rfl
-            _ = a + 0 := by
-                have h1 : (2 ^ a).factorization 2 = a := by
-                  simp only [Nat.factorization_pow, Finsupp.smul_apply, smul_eq_mul,
-                    Nat.Prime.factorization_self Nat.prime_two, mul_one]
-                have h2 : b.factorization 2 = 0 := Nat.factorization_eq_zero_of_not_dvd hb_odd
-                rw [h1, h2]
-            _ = a := by ring
-        rw [← hfact_eq]
-        exact hord2
-      -- Now compute the entropy increment bound
-      -- F(n) = 2^k · F(p_max) and F(n-1) = a + F(b)
-      have hFn := faddeev_F_pow E hp_max.pos (2 ^ k)
-      have hFn1 := F_two_pow_mul E a hb_pos
-      -- entropyIncrement at n
-      have hn_sub : n - 1 + 1 = n := Nat.sub_add_cancel (by omega : 1 ≤ n)
-      -- Key insight: since p_max achieves the maximum of {c_q : q prime},
-      -- we have c_q ≤ c_{p_max} for ALL primes q (not just those < p_max).
-      -- Therefore F(b) ≤ c_{p_max} · log(b) for ANY odd b by F_odd_upper_bound.
-      have hb_bound : ∀ q : ℕ, ∀ hq : q.Prime, q ∣ b → Odd q → c_prime E q hq ≤ c_prime E p_max hp_max :=
-        fun q hq _ _ => h_max q hq
-      have hb_is_odd : Odd b := (Nat.even_or_odd b).resolve_left (fun heven => hb_odd (Even.two_dvd heven))
-      have hFb_bound := F_odd_upper_bound E hb_pos hb_is_odd (c_prime E p_max hp_max) hb_bound
-
-      -- Now compute the entropy increment
-      -- λ_n = F(n) - F(n-1) = 2^k · F(p_max) - (a + F(b))
-      -- Using F(p_max) = c_{p_max} · log(p_max):
-      -- λ_n = 2^k · c_{p_max} · log(p_max) - a - F(b)
-      --     ≥ 2^k · c_{p_max} · log(p_max) - a - c_{p_max} · log(b)
-      --     = c_{p_max} · (2^k · log(p_max) - log(b)) - a
-
-      -- Key identity: log(n) - log(n-1) = log(1 + 1/(n-1)) ≈ 1/(n-1) → 0
-      -- And: 2^k · log(p_max) - log(b) = log(n) - log(b) = log(n/b) = log(2^a) + log(1 + 1/(n-1))
-      --                                 = a · log(2) + ε_k where ε_k → 0
-
-      -- So: λ_n ≥ c_{p_max} · (a · log(2) + ε_k) - a
-      --        = a · (c_{p_max} · log(2) - 1) + c_{p_max} · ε_k
-      --        = a · (c_{p_max} - c_2) · log(2) + c_{p_max} · ε_k
-      -- Since c_{p_max} > c_2, and a ≥ k + 1 → ∞, this → +∞, contradicting λ → 0.
-
-      -- The formal calculation:
-      have hFpmax := F_prime_eq_c_times_log E hp_max
-      -- F(p_max) = c_{p_max} · log(p_max)
-
-      -- For the limit argument, we need to show λ_n > δ for large n
-      -- We have: F(n) = F(p_max^{2^k}) = 2^k · F(p_max) = 2^k · c_{p_max} · log(p_max)
-      --          F(n-1) = a + F(b) ≤ a + c_{p_max} · log(b)
-      -- So: λ_n ≥ 2^k · c_{p_max} · log(p_max) - a - c_{p_max} · log(b)
-
-      -- Using n = 2^a · b + 1, we have:
-      -- log(n) = log(2^a · b + 1) = log(2^a · b) + log(1 + 1/(2^a · b))
-      --        = a · log(2) + log(b) + ε where ε = log(1 + 1/(n-1)) > 0
-
-      -- So: 2^k · log(p_max) = log(p_max^{2^k}) = log(n) = a · log(2) + log(b) + ε
-      -- Therefore: 2^k · log(p_max) - log(b) = a · log(2) + ε
-
-      -- λ_n ≥ c_{p_max} · (a · log(2) + ε) - a - c_{p_max} · log(b)
-      --     = c_{p_max} · a · log(2) + c_{p_max} · ε - a
-      --     = a · (c_{p_max} · log(2) - 1) + c_{p_max} · ε
-
-      -- Since c_2 = 1/log(2), we have c_2 · log(2) = 1, so:
-      -- c_{p_max} · log(2) - 1 = (c_{p_max} - c_2) · log(2) = δ / log(2) · log(2) / log(2)... wait
-
-      -- Actually: δ = (c_{p_max} - c_2) · log(2), so:
-      -- c_{p_max} · log(2) - 1 = c_{p_max} · log(2) - c_2 · log(2) = (c_{p_max} - c_2) · log(2) = δ
-
-      -- So: λ_n ≥ a · δ + c_{p_max} · ε > a · δ ≥ (k + 1) · δ
-
-      -- For k large enough that (k + 1) · δ > δ/2, we get λ_n > δ/2.
-      -- But by hN, for n - 2 ≥ N, we have |λ_n| < δ/2. Contradiction!
-
-      -- Since the above calculation requires careful handling of real arithmetic and logs,
-      -- we defer to the key bound: for large k, λ_n ≥ (k + 1) · δ which eventually exceeds δ/2.
-
-      have hc2_eq : c_prime E 2 Nat.prime_two * Real.log 2 = 1 := by
-        rw [c_prime_two E]
-        field_simp
-      have hδ_eq : (c_prime E p_max hp_max - c_prime E 2 Nat.prime_two) * Real.log 2 = δ := rfl
-
-      -- For k ≥ 1, we have a ≥ k + 1 ≥ 2
-      have ha_pos : 0 < a := by linarith [ha_ge, hk_ge_1]
-
-      -- Now derive the contradiction via entropy increment bound
-      -- First, compute F(p_max) = c_{p_max} · log(p_max)
-      have hFp_eq : F E p_max hp_max.pos = c_prime E p_max hp_max * Real.log p_max := by
-        rw [c_prime]
-        have hlog_pos : 0 < Real.log p_max := by
-          apply Real.log_pos
-          have h := hp_max.one_lt
-          exact Nat.one_lt_cast.mpr h
-        field_simp
-
-      -- F(n) = 2^k · F(p_max) = 2^k · c_{p_max} · log(p_max) = c_{p_max} · log(n)
-      have hFn_eq : F E n hn_pos = (2 ^ k : ℕ) * c_prime E p_max hp_max * Real.log p_max := by
-        have h1 : F E n hn_pos = (2 ^ k : ℕ) * F E p_max hp_max.pos := by
-          have h2 : n = p_max ^ (2 ^ k) := hn_def
-          calc F E n hn_pos = F E (p_max ^ (2 ^ k)) (by rw [← hn_def]; exact hn_pos) := by congr 1
-            _ = (2 ^ k : ℕ) * F E p_max hp_max.pos := hFn
-        rw [h1, hFp_eq]
-        ring
-
-      -- F(n-1) = a + F(b) and F(b) ≤ c_{p_max} · log(b)
-      have hFn1_eq : F E (n - 1) hn1_pos = a + F E b hb_pos := by
-        have h : n - 1 = 2 ^ a * b := hab
-        calc F E (n - 1) hn1_pos = F E (2 ^ a * b) (by rw [← hab]; exact hn1_pos) := by
-              congr 1
-          _ = a + F E b hb_pos := hFn1
-
-      -- The entropy increment is F(n) - F(n-1)
-      have hn_gt_1 : 1 < n := by omega
-      have hlam_eq : entropyIncrement E n hn_gt_1 = F E n (by omega) - F E (n - 1) (by omega) := rfl
-
-      -- Compute the lower bound
-      -- λ_n = F(n) - F(n-1)
-      --     = 2^k · c_{p_max} · log(p_max) - (a + F(b))
-      --     ≥ 2^k · c_{p_max} · log(p_max) - a - c_{p_max} · log(b)
-      --     = c_{p_max} · (2^k · log(p_max) - log(b)) - a
-      --     = c_{p_max} · log(p_max^{2^k} / b) - a
-      --     = c_{p_max} · log(n / b) - a
-
-      -- Key fact: n - 1 = 2^a · b, so b = (n-1) / 2^a
-      -- Hence n / b = n · 2^a / (n - 1) = 2^a · n / (n - 1) = 2^a · (1 + 1/(n-1))
-      -- So log(n/b) = a · log(2) + log(1 + 1/(n-1))
-
-      -- Therefore: λ_n ≥ c_{p_max} · (a · log(2) + log(1 + 1/(n-1))) - a
-      --               = a · (c_{p_max} · log(2) - 1) + c_{p_max} · log(1 + 1/(n-1))
-      --               = a · δ + (positive term)
-
-      -- The key: c_{p_max} · log(2) - 1 = (c_{p_max} - c_2) · log(2) = δ
-      have hcpmax_log2_sub_1 : c_prime E p_max hp_max * Real.log 2 - 1 = δ := by
-        calc c_prime E p_max hp_max * Real.log 2 - 1
-            = c_prime E p_max hp_max * Real.log 2 - c_prime E 2 Nat.prime_two * Real.log 2 := by
-                rw [hc2_eq]
-          _ = (c_prime E p_max hp_max - c_prime E 2 Nat.prime_two) * Real.log 2 := by ring
-          _ = δ := rfl
-
-      -- Since a ≥ k + 1 ≥ 3, and δ > 0, we have a · δ ≥ 3δ
-      have ha_ge_3 : 3 ≤ a := by omega
-
-      -- Apply hN: for m ≥ N, |λ_{m+2}| < δ/2
-      -- We have n - 2 ≥ N, so |λ_n| < δ/2
-      have hlam_bound := hN (n - 2) hN_le
-      simp only [Nat.sub_add_cancel (by omega : 2 ≤ n)] at hlam_bound
-
-      -- Key positivity facts
-      have hn_real_pos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
-      have hn1_real_pos : (0 : ℝ) < n - 1 := by
-        have h : (1 : ℝ) < n := Nat.one_lt_cast.mpr hn_gt_1
-        linarith
-      have hb_real_pos : (0 : ℝ) < b := Nat.cast_pos.mpr hb_pos
-
-      have hc_pos : 0 < c_prime E p_max hp_max := by
-        have hc2_pos : 0 < c_prime E 2 Nat.prime_two := by
-          rw [c_prime_two E]; positivity
-        linarith [h_max_gt_c2]
-
-      -- The key calculation: n - 1 = 2^a · b, so n / b = 2^a · n / (n-1)
-      have hn1_cast : ((n - 1 : ℕ) : ℝ) = (n : ℝ) - 1 := by
-        rw [Nat.cast_sub (by omega : 1 ≤ n), Nat.cast_one]
-      have h2a_ne : (2 : ℝ) ^ a ≠ 0 := pow_ne_zero a (by norm_num)
-      have hb_ne' : (b : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
-      have hn1_ne : (n : ℝ) - 1 ≠ 0 := by linarith
-
-      have hn1_eq_2ab : (n : ℝ) - 1 = 2 ^ a * b := by
-        rw [← hn1_cast]
-        have h := hab  -- (n - 1 : ℕ) = 2^a * b
-        norm_cast
-
-      have hnb_eq : (n : ℝ) / b = 2 ^ a * n / (n - 1) := by
-        have h1 : (n : ℝ) / b = n * (1 / b) := by ring
-        have h2 : (1 : ℝ) / b = 2 ^ a / (n - 1) := by
-          rw [hn1_eq_2ab]
-          field_simp
-        rw [h1, h2]
-        field_simp [hn1_ne]
-
-      -- log(n/b) = a · log(2) + log(n/(n-1))
-      have h_ratio_pos : 0 < (n : ℝ) / (n - 1) := div_pos hn_real_pos hn1_real_pos
-      have h2a_pos : (0 : ℝ) < 2 ^ a := pow_pos (by norm_num : (0 : ℝ) < 2) a
-
-      have hlog_nb : Real.log (n / b) = a * Real.log 2 + Real.log (n / (n - 1)) := by
-        rw [hnb_eq, mul_div_assoc]
-        rw [Real.log_mul (ne_of_gt h2a_pos) (ne_of_gt h_ratio_pos), Real.log_pow]
-
-      -- log(n / (n-1)) > 0 since n > n - 1
-      have hlog_ratio_pos : 0 < Real.log (n / (n - 1)) := by
-        have h1 : (n : ℝ) / (n - 1) > 1 := by
-          have hn_gt_n1 : (n : ℝ) > n - 1 := by linarith
-          exact one_lt_div hn1_real_pos |>.mpr hn_gt_n1
-        exact Real.log_pos h1
-
-      set_option maxHeartbeats 400000 in
-      -- Lower bound: λ_n ≥ a · δ
-      have hlam_lower : entropyIncrement E n hn_gt_1 ≥ a * δ := by
-        -- λ_n = F(n) - F(n-1) ≥ F(n) - a - c_{p_max} · log(b)
-        have h1 : entropyIncrement E n hn_gt_1 = F E n (by omega) - F E (n - 1) (by omega) := rfl
-        have hF1 : F E n (by omega) = F E n hn_pos := by congr 1
-        have hF2 : F E (n - 1) (by omega) = F E (n - 1) hn1_pos := by congr 1
-        rw [h1, hF1, hF2, hFn_eq, hFn1_eq]
-        have hFb_le : F E b hb_pos ≤ c_prime E p_max hp_max * Real.log b := hFb_bound
-        have hlog_n : Real.log n = (2 ^ k : ℕ) * Real.log p_max := by
-          have hn_eq : (n : ℝ) = (p_max : ℝ) ^ (2 ^ k : ℕ) := by
-            have h : n = p_max ^ (2 ^ k) := hn_def
-            simp only [h, Nat.cast_pow]
-          rw [hn_eq, Real.log_pow]
-        -- Simplify: (2^k) * c * log(p) - (a + Fb) ≥ (2^k) * c * log(p) - a - c * log(b)
-        --         = c * ((2^k) * log(p) - log(b)) - a = c * (log(n) - log(b)) - a
-        --         = c * log(n/b) - a = c * (a * log(2) + log(n/(n-1))) - a
-        --         = a * (c * log(2) - 1) + c * log(n/(n-1)) = a * δ + (positive term) ≥ a * δ
-        have h_step1 : (2 ^ k : ℕ) * c_prime E p_max hp_max * Real.log p_max - (↑a + F E b hb_pos)
-            ≥ (2 ^ k : ℕ) * c_prime E p_max hp_max * Real.log p_max - (a + c_prime E p_max hp_max * Real.log b) := by
-          linarith [hFb_le]
-        have h_step2 : (2 ^ k : ℕ) * c_prime E p_max hp_max * Real.log p_max - (a + c_prime E p_max hp_max * Real.log b)
-            = c_prime E p_max hp_max * (Real.log n - Real.log b) - a := by
-          -- RHS has Real.log n, substitute using hlog_n: log(n) = (2^k) * log(p)
-          conv_rhs => rw [hlog_n]
-          ring
-        have h_step3 : c_prime E p_max hp_max * (Real.log n - Real.log b) - a
-            = c_prime E p_max hp_max * Real.log (n / b) - a := by
-          rw [Real.log_div (ne_of_gt hn_real_pos) (ne_of_gt hb_real_pos)]
-        have h_step4 : c_prime E p_max hp_max * Real.log (n / b) - a
-            = c_prime E p_max hp_max * (a * Real.log 2 + Real.log (n / (n - 1))) - a := by
-          rw [hlog_nb]
-        have h_step5 : c_prime E p_max hp_max * (a * Real.log 2 + Real.log (n / (n - 1))) - a
-            = a * (c_prime E p_max hp_max * Real.log 2 - 1) + c_prime E p_max hp_max * Real.log (n / (n - 1)) := by
-          ring
-        have h_step6 : a * (c_prime E p_max hp_max * Real.log 2 - 1) + c_prime E p_max hp_max * Real.log (n / (n - 1))
-            = a * δ + c_prime E p_max hp_max * Real.log (n / (n - 1)) := by
-          rw [hcpmax_log2_sub_1]
-        have h_step7 : a * δ + c_prime E p_max hp_max * Real.log (n / (n - 1)) ≥ a * δ := by
-          linarith [mul_pos hc_pos hlog_ratio_pos]
-        linarith [h_step1, h_step2, h_step3, h_step4, h_step5, h_step6, h_step7]
-
-      -- Since a ≥ 3 and δ > 0, we have a · δ ≥ 3δ > δ/2
-      have ha_ge_3_real : (3 : ℝ) ≤ a := by exact_mod_cast ha_ge_3
-      have ha_δ_large : a * δ > δ / 2 := by
-        have h1 : a * δ ≥ 3 * δ := by nlinarith
-        have h2 : 3 * δ > δ / 2 := by linarith
-        linarith
-
-      -- So λ_n > δ/2, but hlam_bound says |λ_n| < δ/2. Contradiction!
-      have hlam_large : entropyIncrement E n hn_gt_1 > δ / 2 := by linarith [hlam_lower]
-      have hcontra : dist (entropyIncrement E n hn_gt_1) 0 < δ / 2 := by
-        have h := hlam_bound
-        convert h using 2
-      rw [Real.dist_eq, sub_zero, abs_of_pos (by linarith [hlam_lower, hδ_pos])] at hcontra
-      linarith
-
-  -- Step 3: For any prime p, c_p ≤ c_{p_max} ≤ c_2
-  have h_all_le_c2 : ∀ p : ℕ, ∀ hp : Nat.Prime p, c_prime E p hp ≤ c_prime E 2 Nat.prime_two :=
-    fun p hp => le_trans (h_max p hp) h_max_le_c2
-
-  -- Step 4: Show c_p ≥ c_2 for all primes p (SYMMETRIC ARGUMENT)
-  --
-  -- **Mathematical Outline** (symmetric to Step 2):
-  --
-  -- 1. By contradiction: Assume ∃ prime p₀ with c_{p₀} < c_2.
-  --
-  -- 2. Key insight: Use the prime p_min achieving the MINIMUM c_prime.
-  --    - If c_{p_min} < c_2, the power sequence n = p_min^{2^k} gives λ_n → -∞.
-  --    - Since p_min achieves the min, c_{p_min} ≤ c_q for all primes q.
-  --    - This gives F(b) ≥ c_{p_min} * log(b) for odd b (via F_odd_lower_bound).
-  --
-  -- 3. For the power sequence n = p_min^{2^k}:
-  --    - n - 1 = 2^a * b where a ≥ k+1 (from 2-adic valuation) and b is odd.
-  --    - F(n) = 2^k * c_{p_min} * log(p_min)
-  --    - F(n-1) = a + F(b) ≥ a + c_{p_min} * log(b)
-  --    - λ_n = F(n) - F(n-1) ≤ [upper bound that → -∞]
-  --
-  -- 4. The upper bound calculation (symmetric to Step 2's lower bound):
-  --    λ_n ≤ (c_{p_min} - c_2) * (something growing) + O(1) → -∞
-  --    since c_{p_min} - c_2 < 0.
-  --
-  -- 5. But λ_n → 0 (by faddeev_lambda_tendsto_zero), contradiction.
-  --
-  -- This proves: c_p ≥ c_2 for all primes p.
-  -- Combined with Step 2 (c_p ≤ c_2), we get c_p = c_2 for all p.
-  --
-  have h_all_ge_c2 : ∀ p : ℕ, ∀ hp : Nat.Prime p, c_prime E 2 Nat.prime_two ≤ c_prime E p hp := by
-    -- By faddeev_c_prime_has_min_aux, a minimum exists among {c_p}
-    obtain ⟨p_min, hp_min, h_min⟩ := faddeev_c_prime_has_min_aux E
-
-    -- For any prime p, c_{p_min} ≤ c_p
-    -- In particular, c_{p_min} ≤ c_2
-    have h_min_le_c2 : c_prime E p_min hp_min ≤ c_prime E 2 Nat.prime_two := h_min 2 Nat.prime_two
-
-    -- Combined with h_max_le_c2 (c_{p_max} ≤ c_2) and h_max (c_p ≤ c_{p_max}),
-    -- and the fact that p_min achieves the minimum:
-    -- For any p: c_{p_min} ≤ c_p ≤ c_{p_max} ≤ c_2
-    -- Also c_{p_min} ≤ c_2
-
-    -- Case analysis on p_min:
-    -- If p_min = 2: Then c_2 = c_{p_min} ≤ c_p for all p, which is what we want.
-    -- If p_min ≠ 2: We need to show c_{p_min} ≥ c_2 as well.
-
-    by_cases hp_min_eq_2 : p_min = 2
-    · -- p_min = 2: Then c_{p_min} = c_2, so c_2 ≤ c_p for all p
-      subst hp_min_eq_2
-      intro p hp
-      exact h_min p hp
-    · -- p_min ≠ 2: Show c_{p_min} = c_2 using the power sequence argument
-      -- By contradiction: if c_{p_min} < c_2, then λ → -∞ for the power sequence
-      -- But λ → 0, contradiction. So c_{p_min} ≥ c_2.
-      -- Combined with h_min_le_c2, we get c_{p_min} = c_2.
-
-      -- The detailed power sequence argument (symmetric to Step 2) is encapsulated
-      -- in faddeev_c_prime_has_min_aux. Once that's proven, we have:
-      -- c_{p_min} achieves the minimum, so for any p: c_{p_min} ≤ c_p.
-      -- We already have c_{p_min} ≤ c_2.
-      -- The power sequence argument in faddeev_c_prime_has_min_aux shows c_{p_min} ≥ c_2.
-      -- (If c_{p_min} < c_2, the λ → -∞ contradiction rules this out.)
-      -- Therefore c_{p_min} = c_2, and for any p: c_2 = c_{p_min} ≤ c_p.
-
-      intro p hp
-      -- From h_min: c_{p_min} ≤ c_p
-      -- We need: c_2 ≤ c_p
-      -- This follows from: c_{p_min} = c_2 (which faddeev_c_prime_has_min_aux implies
-      -- via the power sequence argument ruling out c_{p_min} < c_2)
-
-      -- For now, we use the minimum directly:
-      have h1 := h_min p hp  -- c_{p_min} ≤ c_p
-      have h2 := h_min 2 Nat.prime_two  -- c_{p_min} ≤ c_2
-
-      -- We also have c_{p_max} ≤ c_2 from Step 2, and c_p ≤ c_{p_max}
-      -- So: c_{p_min} ≤ c_p ≤ c_{p_max} ≤ c_2 and c_{p_min} ≤ c_2
-      -- This gives c_{p_min} ≤ c_2
-
-      -- The key insight from faddeev_c_prime_has_min_aux is that c_{p_min} = c_2:
-      -- If c_{p_min} < c_2, the power sequence p_min^{2^k} would give λ → -∞,
-      -- contradicting λ → 0. So c_{p_min} ≥ c_2.
-      -- Combined with h_min_le_c2 (c_{p_min} ≤ c_2), we get c_{p_min} = c_2.
-
-      -- Therefore c_2 = c_{p_min} ≤ c_p
-      have h_eq : c_prime E p_min hp_min = c_prime E 2 Nat.prime_two := by
-        apply le_antisymm h_min_le_c2
-        -- Need: c_2 ≤ c_{p_min}
-        -- By contradiction: if c_{p_min} < c_2, the power sequence p_min^{2^k} gives λ → -∞
-        -- This contradicts λ → 0 (faddeev_lambda_tendsto_zero).
-        by_contra h_lt_c2
-        push_neg at h_lt_c2
-
-        -- p_min ≠ 2, so p_min ≥ 3 and odd
-        have hp_min_ge_3 : 3 ≤ p_min := by
-          have h2le := hp_min.two_le
-          omega
-        have hp_min_odd : Odd p_min := hp_min.odd_of_ne_two hp_min_eq_2
-
-        -- δ = (c_2 - c_{p_min}) · log(2) > 0
-        set δ := (c_prime E 2 Nat.prime_two - c_prime E p_min hp_min) * Real.log 2 with hδ_def
-        have hδ_pos : 0 < δ := by
-          rw [hδ_def]; apply mul_pos; · linarith
-          · exact Real.log_pos (by norm_num : (1 : ℝ) < 2)
-
-        -- By λ → 0, ∃ N such that for m ≥ N, |λ_{m+2}| < δ/2
-        have h_lim := faddeev_lambda_tendsto_zero E
-        rw [Metric.tendsto_atTop] at h_lim
-        obtain ⟨N, hN⟩ := h_lim (δ / 2) (by linarith)
-
-        -- LTE: 2-adic valuation of p_min^{2^k} - 1 grows (ord_2 ≥ k + 1 for k ≥ 1)
-        have hord2_growth : ∀ k ≥ 1, k + 1 ≤ (p_min ^ (2 ^ k) - 1).factorization 2 := by
-          intro k hk
-          induction k with
-          | zero => omega
-          | succ k' ih =>
-            by_cases hk' : k' = 0
-            · -- Base: k = 1, need ord_2(p_min^2 - 1) ≥ 2
-              simp only [hk']
-              have h1 : 2 ∣ p_min - 1 := by
-                rcases hp_min_odd with ⟨m, rfl⟩; simp only [add_tsub_cancel_right, dvd_mul_right]
-              have h2 : 2 ∣ p_min + 1 := Even.two_dvd (Odd.add_one hp_min_odd)
-              have hp_ge_1 : 1 ≤ p_min := by omega
-              have hp_sq_ge_1 : 1 ≤ p_min ^ 2 := Nat.one_le_pow 2 p_min (by omega)
-              have h3 : p_min ^ 2 - 1 = (p_min - 1) * (p_min + 1) := by zify [hp_ge_1, hp_sq_ge_1]; ring
-              have hdvd4 : 4 ∣ (p_min - 1) * (p_min + 1) := by
-                have hdiv1 : p_min - 1 = (p_min - 1) / 2 * 2 := (Nat.div_mul_cancel h1).symm
-                have hdiv2 : p_min + 1 = (p_min + 1) / 2 * 2 := (Nat.div_mul_cancel h2).symm
-                rcases Nat.even_or_odd ((p_min - 1) / 2) with ⟨m, hm⟩ | ⟨m, hm⟩
-                · have hpm1_eq : p_min - 1 = 4 * m := by omega
-                  exact ⟨m * (p_min + 1), by rw [hpm1_eq]; ring⟩
-                · have hpp1_half : (p_min + 1) / 2 = (p_min - 1) / 2 + 1 := by
-                    have : p_min + 1 = (p_min - 1) + 2 := by omega
-                    rw [this, Nat.add_div_right _ (by norm_num : 0 < 2)]
-                  have hpp1_half_even : Even ((p_min + 1) / 2) := by rw [hpp1_half, hm]; exact ⟨m + 1, by ring⟩
-                  obtain ⟨n, hn⟩ := hpp1_half_even
-                  have hpp1_eq : p_min + 1 = 4 * n := by omega
-                  exact ⟨(p_min - 1) * n, by rw [hpp1_eq]; ring⟩
-              have hne : (p_min - 1) * (p_min + 1) ≠ 0 := Nat.mul_ne_zero (by omega) (by omega)
-              have h2pow : 2 ^ 2 ∣ (p_min - 1) * (p_min + 1) := by simpa using hdvd4
-              have hord2 := Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two hne |>.mp h2pow
-              calc (p_min ^ (2 ^ 1) - 1).factorization 2 = (p_min ^ 2 - 1).factorization 2 := by norm_num
-                _ = ((p_min - 1) * (p_min + 1)).factorization 2 := by rw [h3]
-                _ ≥ 2 := hord2
-            · -- Inductive step: k' ≥ 1
-              have hk'_ge_1 : 1 ≤ k' := Nat.one_le_iff_ne_zero.mpr hk'
-              have ih' := ih hk'_ge_1
-              set a := p_min ^ (2 ^ k') with ha_def
-              have ha_ge_1 : 1 ≤ a := Nat.one_le_pow _ _ hp_min.pos
-              have ha_ge_3 : 3 ≤ a := by
-                have h1 : 1 ≤ 2 ^ k' := Nat.one_le_two_pow
-                calc a = p_min ^ (2 ^ k') := rfl
-                  _ ≥ p_min ^ 1 := Nat.pow_le_pow_right hp_min.pos h1
-                  _ = p_min := by ring
-                  _ ≥ 3 := hp_min_ge_3
-              have ha_sq_ge_1 : 1 ≤ a * a := by nlinarith
-              have hfact : p_min ^ (2 ^ (k' + 1)) - 1 = (a - 1) * (a + 1) := by
-                have h2pow : 2 ^ (k' + 1) = 2 ^ k' + 2 ^ k' := by ring
-                rw [h2pow, pow_add, ← ha_def]; zify [ha_ge_1, ha_sq_ge_1]; ring
-              have ha_odd : Odd a := hp_min_odd.pow
-              have heven_succ : 2 ∣ a + 1 := Even.two_dvd (Odd.add_one ha_odd)
-              have hord2_succ : 1 ≤ (a + 1).factorization 2 := by
-                have hne : a + 1 ≠ 0 := by omega
-                have h2pow : 2 ^ 1 ∣ a + 1 := by simpa using heven_succ
-                exact Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two hne |>.mp h2pow
-              have ham1_ne : a - 1 ≠ 0 := by omega
-              have hap1_ne : a + 1 ≠ 0 := by omega
-              have hfact_mul := Nat.factorization_mul ham1_ne hap1_ne
-              calc (p_min ^ (2 ^ (k' + 1)) - 1).factorization 2
-                  = ((a - 1) * (a + 1)).factorization 2 := by rw [hfact]
-                _ = (a - 1).factorization 2 + (a + 1).factorization 2 := by rw [hfact_mul]; rfl
-                _ ≥ (k' + 1) + 1 := by have hih : (k' + 1) ≤ (a - 1).factorization 2 := ih'; omega
-                _ = k' + 1 + 1 := by ring
-
-        -- Find k large enough that n - 2 ≥ N AND correction term < δ/4
-        -- Use a simple approach: pick k large enough that p_min^{2^k} > max(N+3, 4·c_2/δ + 2)
-        have hc2_pos : 0 < c_prime E 2 Nat.prime_two := by rw [c_prime_two E]; positivity
-
-        -- Helper: 2^k ≥ k + 1 for all k
-        have h2k_bound : ∀ k : ℕ, 2 ^ k ≥ k + 1 := by
-          intro k; induction k with
-          | zero => simp
-          | succ n ih =>
-            calc 2 ^ (n + 1) = 2 * 2 ^ n := by ring
-              _ ≥ 2 * (n + 1) := Nat.mul_le_mul_left 2 ih
-              _ ≥ n + 1 + 1 := by omega
-
-        -- For large enough k, both conditions hold
-        set M := max (N + 4) (Nat.ceil (4 * (c_prime E 2 Nat.prime_two + 1) / δ) + 2) with hM_def
-
-        have hk_exists : ∃ k₀, ∀ k ≥ k₀, p_min ^ (2 ^ k) - 2 ≥ N ∧
-            (1 : ℝ) / (p_min ^ (2 ^ k) - 1) < δ / (4 * (c_prime E 2 Nat.prime_two + 1)) := by
-          -- Use k₀ = M since p_min^{2^k} ≥ 3^{2^k} ≥ 2^{2^k} ≥ 2^k ≥ k for k ≥ k₀
-          use M
-          intro k hk
-          have hk_ge_N4 : k ≥ N + 4 := le_trans (le_max_left _ _) hk
-          have hk_ge_ceil : k ≥ Nat.ceil (4 * (c_prime E 2 Nat.prime_two + 1) / δ) + 2 :=
-            le_trans (le_max_right _ _) hk
-
-          have h_pmin_ge : p_min ^ (2 ^ k) ≥ 3 ^ (2 ^ k) := Nat.pow_le_pow_left hp_min_ge_3 _
-          have h_3_ge_2 : 3 ^ (2 ^ k) ≥ 2 ^ (2 ^ k) := Nat.pow_le_pow_left (by norm_num) _
-          have h_2k_ge_k1 : 2 ^ k ≥ k + 1 := h2k_bound k
-          have h_k_le_2pk : k ≤ 2 ^ k := Nat.le_of_succ_le h_2k_ge_k1
-          have h_2pow_ge : 2 ^ (2 ^ k) ≥ 2 ^ k := Nat.pow_le_pow_right (by norm_num) h_k_le_2pk
-
-          -- n = p_min^{2^k} ≥ 3^{2^k} ≥ 2^{2^k} ≥ 2^k ≥ k + 1 ≥ N + 5
-          have hn_ge : p_min ^ (2 ^ k) ≥ k + 1 := by
-            calc p_min ^ (2 ^ k) ≥ 3 ^ (2 ^ k) := h_pmin_ge
-              _ ≥ 2 ^ (2 ^ k) := h_3_ge_2
-              _ ≥ 2 ^ k := h_2pow_ge
-              _ ≥ k + 1 := h_2k_ge_k1
-
-          constructor
-          · -- n - 2 ≥ N
-            have h1 : p_min ^ (2 ^ k) ≥ N + 5 := by
-              calc p_min ^ (2 ^ k) ≥ k + 1 := hn_ge
-                _ ≥ N + 4 + 1 := by omega
-                _ = N + 5 := by ring
-            omega
-          · -- 1/(n-1) < δ/(4(c_2+1))
-            have hn_large : (p_min ^ (2 ^ k) : ℝ) - 1 > 4 * (c_prime E 2 Nat.prime_two + 1) / δ := by
-              have h1 : (p_min ^ (2 ^ k) : ℝ) ≥ k + 1 := by exact_mod_cast hn_ge
-              have hk_real : (k : ℝ) ≥ Nat.ceil (4 * (c_prime E 2 Nat.prime_two + 1) / δ) + 2 := by
-                exact_mod_cast hk_ge_ceil
-              have hceil := Nat.le_ceil (4 * (c_prime E 2 Nat.prime_two + 1) / δ)
-              have h3 : (Nat.ceil (4 * (c_prime E 2 Nat.prime_two + 1) / δ) : ℝ) + 1 ≥
-                  4 * (c_prime E 2 Nat.prime_two + 1) / δ := by linarith
-              have h2 : (k : ℝ) + 1 > (Nat.ceil (4 * (c_prime E 2 Nat.prime_two + 1) / δ) : ℝ) + 1 := by
-                linarith
-              linarith
-            have h_bound_pos : (0 : ℝ) < 4 * (c_prime E 2 Nat.prime_two + 1) / δ := by positivity
-            calc (1 : ℝ) / (p_min ^ (2 ^ k) - 1)
-                < 1 / (4 * (c_prime E 2 Nat.prime_two + 1) / δ) :=
-                  one_div_lt_one_div_of_lt h_bound_pos hn_large
-              _ = δ / (4 * (c_prime E 2 Nat.prime_two + 1)) := by field_simp
-        obtain ⟨k₀, hk_cond⟩ := hk_exists
-
-        -- Pick k = max(k₀, 2)
-        set k := max k₀ 2 with hk_def
-        have hk_ge_k0 : k ≥ k₀ := le_max_left _ _
-        have hk_ge_2 : k ≥ 2 := le_max_right _ _
-        have hk_ge_1 : k ≥ 1 := by omega
-        obtain ⟨hN_le, hcorr_bound⟩ := hk_cond k hk_ge_k0
-        have hord2 := hord2_growth k hk_ge_1
-
-        -- n = p_min^{2^k}
-        set n := p_min ^ (2 ^ k) with hn_def
-        have hn_pos : 0 < n := Nat.pow_pos hp_min.pos
-        have hn_ge_2 : 2 ≤ n := by
-          calc n = p_min ^ (2 ^ k) := rfl
-            _ ≥ p_min ^ 1 := Nat.pow_le_pow_right hp_min.pos (@Nat.one_le_two_pow k)
-            _ = p_min := pow_one _
-            _ ≥ 3 := hp_min_ge_3
-            _ ≥ 2 := by norm_num
-        have hn1_pos : 0 < n - 1 := by omega
-        have hn1_ne : n - 1 ≠ 0 := by omega
-        have hn_gt_1 : 1 < n := by omega
-
-        -- Factor n - 1 = 2^a · b where b is odd
-        obtain ⟨a, b, hb_odd, hab⟩ := Nat.exists_eq_pow_mul_and_not_dvd hn1_ne 2 (by norm_num)
-        have hb_pos : 0 < b := by
-          by_contra hb_zero
-          push_neg at hb_zero
-          interval_cases b; simp_all
-        have hb_ne : b ≠ 0 := by omega
-        have ha_ge : k + 1 ≤ a := by
-          have h2a_ne : 2 ^ a ≠ 0 := ne_of_gt (Nat.pow_pos (by norm_num : 0 < 2))
-          have hfact_eq : (n - 1).factorization 2 = a := by
-            calc (n - 1).factorization 2 = (2 ^ a * b).factorization 2 := by rw [hab]
-              _ = (2 ^ a).factorization 2 + b.factorization 2 := by rw [Nat.factorization_mul h2a_ne hb_ne]; rfl
-              _ = a + 0 := by
-                have h1 : (2 ^ a).factorization 2 = a := by
-                  simp only [Nat.factorization_pow, Finsupp.smul_apply, smul_eq_mul,
-                    Nat.Prime.factorization_self Nat.prime_two, mul_one]
-                have h2 : b.factorization 2 = 0 := Nat.factorization_eq_zero_of_not_dvd hb_odd
-                rw [h1, h2]
-              _ = a := by ring
-          rw [← hfact_eq]; exact hord2
-
-        -- Since p_min achieves minimum, c_{p_min} ≤ c_q for all primes q
-        have hb_is_odd : Odd b := (Nat.even_or_odd b).resolve_left (fun h => hb_odd (Even.two_dvd h))
-        have hb_bound : ∀ q : ℕ, ∀ hq : q.Prime, q ∣ b → Odd q → c_prime E p_min hp_min ≤ c_prime E q hq :=
-          fun q hq _ _ => h_min q hq
-        have hFb_bound := F_odd_lower_bound E hb_pos hb_is_odd (c_prime E p_min hp_min) hb_bound
-
-        -- Key facts for calculation
-        have hc2_eq : c_prime E 2 Nat.prime_two * Real.log 2 = 1 := by rw [c_prime_two E]; field_simp
-        have hc2_pos : 0 < c_prime E 2 Nat.prime_two := by rw [c_prime_two E]; positivity
-        have hn_real_pos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
-        have hn1_real_pos : (0 : ℝ) < n - 1 := by have h : (1 : ℝ) < n := Nat.one_lt_cast.mpr hn_gt_1; linarith
-        have hb_real_pos : (0 : ℝ) < b := Nat.cast_pos.mpr hb_pos
-        have ha_pos : 0 < a := by linarith [ha_ge, hk_ge_1]
-        have ha_ge_3 : 3 ≤ a := by omega
-
-        -- F formulas
-        have hFn := faddeev_F_pow E hp_min.pos (2 ^ k)
-        have hFn1 := F_two_pow_mul E a hb_pos
-        have hFp_eq : F E p_min hp_min.pos = c_prime E p_min hp_min * Real.log p_min := by
-          rw [c_prime]; have hlog_pos : 0 < Real.log p_min := Real.log_pos (Nat.one_lt_cast.mpr hp_min.one_lt)
-          field_simp
-
-        have hFn_eq : F E n hn_pos = (2 ^ k : ℕ) * c_prime E p_min hp_min * Real.log p_min := by
-          calc F E n hn_pos = F E (p_min ^ (2 ^ k)) (by rw [← hn_def]; exact hn_pos) := by congr 1
-            _ = (2 ^ k : ℕ) * F E p_min hp_min.pos := hFn
-            _ = (2 ^ k : ℕ) * (c_prime E p_min hp_min * Real.log p_min) := by rw [hFp_eq]
-            _ = _ := by ring
-
-        have hFn1_eq : F E (n - 1) hn1_pos = a + F E b hb_pos := by
-          calc F E (n - 1) hn1_pos = F E (2 ^ a * b) (by rw [← hab]; exact hn1_pos) := by congr 1
-            _ = a + F E b hb_pos := hFn1
-
-        -- Log calculations
-        have hlog_n : Real.log n = (2 ^ k : ℕ) * Real.log p_min := by
-          have hn_eq : (n : ℝ) = (p_min : ℝ) ^ (2 ^ k : ℕ) := by simp only [hn_def, Nat.cast_pow]
-          rw [hn_eq, Real.log_pow]
-
-        have hn1_cast : ((n - 1 : ℕ) : ℝ) = (n : ℝ) - 1 := by rw [Nat.cast_sub (by omega : 1 ≤ n), Nat.cast_one]
-        have hn1_ne_real : (n : ℝ) - 1 ≠ 0 := by linarith
-        have hn1_eq_2ab : (n : ℝ) - 1 = 2 ^ a * b := by rw [← hn1_cast]; norm_cast
-
-        have h_ratio_pos : 0 < (n : ℝ) / (n - 1) := div_pos hn_real_pos hn1_real_pos
-        have h2a_pos : (0 : ℝ) < 2 ^ a := pow_pos (by norm_num) a
-
-        have hlog_nb : Real.log (n / b) = a * Real.log 2 + Real.log (n / (n - 1)) := by
-          have hnb_eq : (n : ℝ) / b = 2 ^ a * n / (n - 1) := by
-            have h2 : (1 : ℝ) / b = 2 ^ a / (n - 1) := by rw [hn1_eq_2ab]; field_simp
-            calc (n : ℝ) / b = n * (1 / b) := by ring
-              _ = n * (2 ^ a / (n - 1)) := by rw [h2]
-              _ = 2 ^ a * n / (n - 1) := by ring
-          rw [hnb_eq, mul_div_assoc, Real.log_mul (ne_of_gt h2a_pos) (ne_of_gt h_ratio_pos), Real.log_pow]
-
-        have hlog_ratio_pos : 0 < Real.log (n / (n - 1)) := by
-          have h1 : (n : ℝ) / (n - 1) > 1 := one_lt_div hn1_real_pos |>.mpr (by linarith)
-          exact Real.log_pos h1
-
-        -- Upper bound on λ_n
-        set_option maxHeartbeats 600000 in
-        have hlam_upper : entropyIncrement E n hn_gt_1 ≤ -(a : ℝ) * δ + c_prime E p_min hp_min * Real.log (n / (n - 1)) := by
-          have hFb_ge : c_prime E p_min hp_min * Real.log b ≤ F E b hb_pos := hFb_bound
-          have h_step1 : (2 ^ k : ℕ) * c_prime E p_min hp_min * Real.log p_min - (↑a + F E b hb_pos)
-              ≤ (2 ^ k : ℕ) * c_prime E p_min hp_min * Real.log p_min - (a + c_prime E p_min hp_min * Real.log b) := by
-            linarith [hFb_ge]
-          have h_step2 : (2 ^ k : ℕ) * c_prime E p_min hp_min * Real.log p_min - (a + c_prime E p_min hp_min * Real.log b)
-              = c_prime E p_min hp_min * (Real.log n - Real.log b) - a := by
-            rw [hlog_n]
-            ring
-          have h_step3 : c_prime E p_min hp_min * (Real.log n - Real.log b) - a
-              = c_prime E p_min hp_min * Real.log (n / b) - a := by
-            rw [Real.log_div (ne_of_gt hn_real_pos) (ne_of_gt hb_real_pos)]
-          have h_step4 : c_prime E p_min hp_min * Real.log (n / b) - a
-              = c_prime E p_min hp_min * (a * Real.log 2 + Real.log (n / (n - 1))) - a := by rw [hlog_nb]
-          have h_step5 : c_prime E p_min hp_min * (a * Real.log 2 + Real.log (n / (n - 1))) - a
-              = a * (c_prime E p_min hp_min * Real.log 2 - 1) + c_prime E p_min hp_min * Real.log (n / (n - 1)) := by ring
-          have hcpmin_eq : c_prime E p_min hp_min * Real.log 2 - 1 = -δ := by rw [hδ_def]; linarith [hc2_eq]
-          have h_step6 : a * (c_prime E p_min hp_min * Real.log 2 - 1) + c_prime E p_min hp_min * Real.log (n / (n - 1))
-              = -(a : ℝ) * δ + c_prime E p_min hp_min * Real.log (n / (n - 1)) := by rw [hcpmin_eq]; ring
-          calc entropyIncrement E n hn_gt_1 = F E n (by omega) - F E (n - 1) (by omega) := rfl
-            _ = F E n hn_pos - F E (n - 1) hn1_pos := by
-              have hFn : F E n (by omega : 0 < n) = F E n hn_pos :=
-                F_congr (E := E) (hn := (by omega : 0 < n)) (hn' := hn_pos)
-              have hFn1 : F E (n - 1) (by omega : 0 < n - 1) = F E (n - 1) hn1_pos :=
-                F_congr (E := E) (hn := (by omega : 0 < n - 1)) (hn' := hn1_pos)
-              simp
-            _ = (2 ^ k : ℕ) * c_prime E p_min hp_min * Real.log p_min - (↑a + F E b hb_pos) := by rw [hFn_eq, hFn1_eq]
-            _ ≤ _ := by linarith [h_step1, h_step2, h_step3, h_step4, h_step5, h_step6]
-
-        -- Correction term is small: c_{p_min} · log(n/(n-1)) < δ/4
-        have hcorr_small : c_prime E p_min hp_min * Real.log (n / (n - 1)) < δ / 4 := by
-          -- log(n/(n-1)) = log(1 + 1/(n-1)) < 1/(n-1)
-          have hlog_bound : Real.log (n / (n - 1)) < 1 / (n - 1) := by
-            have h1 : (n : ℝ) / (n - 1) = 1 + 1 / (n - 1) := by field_simp [hn1_ne_real]; ring
-            rw [h1]
-            -- Use: log(1 + x) < x for x > 0, derived from 1 + x < exp(x)
-            have hx_pos : (0 : ℝ) < 1 / (n - 1) := by positivity
-            have hx_ne : (1 : ℝ) / (n - 1) ≠ 0 := ne_of_gt hx_pos
-            have h_exp := Real.add_one_lt_exp hx_ne
-            -- h_exp has form: x + 1 < exp(x), need: 1 + x < exp(x)
-            have h_exp' : 1 + 1 / ((n : ℝ) - 1) < Real.exp (1 / (n - 1)) := by linarith
-            have h_1x_pos : (0 : ℝ) < 1 + 1 / (n - 1) := by linarith
-            calc Real.log (1 + 1 / (n - 1))
-                < Real.log (Real.exp (1 / (n - 1))) := Real.log_lt_log h_1x_pos h_exp'
-              _ = 1 / (n - 1) := Real.log_exp _
-          -- c_{p_min} < c_2, so c_{p_min} · log(...) < c_2 · 1/(n-1) < c_2 · δ/(4(c_2+1)) < δ/4
-          have hcpmin_lt : c_prime E p_min hp_min < c_prime E 2 Nat.prime_two := h_lt_c2
-          -- Handle by cases on sign of c_{p_min}
-          by_cases hcpmin_sign : 0 < c_prime E p_min hp_min
-          case pos =>
-            -- c_{p_min} > 0 case: use the full calc chain
-            calc c_prime E p_min hp_min * Real.log (n / (n - 1))
-                < c_prime E p_min hp_min * (1 / (n - 1)) := by
-                  apply mul_lt_mul_of_pos_left hlog_bound hcpmin_sign
-              _ ≤ c_prime E 2 Nat.prime_two * (1 / (n - 1)) := by
-                  apply mul_le_mul_of_nonneg_right (le_of_lt hcpmin_lt); positivity
-              _ < c_prime E 2 Nat.prime_two * (δ / (4 * (c_prime E 2 Nat.prime_two + 1))) := by
-                  -- hcorr_bound : 1 / ((↑p_min)^(2^k) - 1) < δ / (4 * (c_2 + 1)) (Real subtraction)
-                  -- n = p_min ^ (2 ^ k), so (n : ℝ) - 1 = (↑p_min)^(2^k) - 1
-                  have hn_cast_eq : (n : ℝ) = (p_min : ℝ) ^ (2 ^ k) := by
-                    simp only [hn_def, Nat.cast_pow]
-                  have hcorr' : (1 : ℝ) / (n - 1) < δ / (4 * (c_prime E 2 Nat.prime_two + 1)) := by
-                    calc (1 : ℝ) / (n - 1) = 1 / ((p_min : ℝ) ^ (2 ^ k) - 1) := by rw [hn_cast_eq]
-                      _ < δ / (4 * (c_prime E 2 Nat.prime_two + 1)) := hcorr_bound
-                  apply mul_lt_mul_of_pos_left hcorr' hc2_pos
-              _ = c_prime E 2 Nat.prime_two * δ / (4 * (c_prime E 2 Nat.prime_two + 1)) := by ring
-              _ < δ / 4 := by
-                  have hc2p1_pos : (0 : ℝ) < c_prime E 2 Nat.prime_two + 1 := by linarith
-                  have h1 : c_prime E 2 Nat.prime_two < c_prime E 2 Nat.prime_two + 1 := by linarith
-                  have h2 : c_prime E 2 Nat.prime_two / (c_prime E 2 Nat.prime_two + 1) < 1 :=
-                    (div_lt_one hc2p1_pos).mpr h1
-                  calc c_prime E 2 Nat.prime_two * δ / (4 * (c_prime E 2 Nat.prime_two + 1))
-                      = δ / 4 * (c_prime E 2 Nat.prime_two / (c_prime E 2 Nat.prime_two + 1)) := by
-                        field_simp
-                    _ < δ / 4 * 1 := by apply mul_lt_mul_of_pos_left h2; positivity
-                    _ = δ / 4 := by ring
-          case neg =>
-            -- c_{p_min} ≤ 0 case: product is nonpositive, δ/4 is positive
-            push_neg at hcpmin_sign
-            have h1 : c_prime E p_min hp_min * Real.log (n / (n - 1)) ≤ 0 :=
-              mul_nonpos_of_nonpos_of_nonneg hcpmin_sign (le_of_lt hlog_ratio_pos)
-            have h2 : (0 : ℝ) < δ / 4 := by positivity
-            linarith
-
-        -- λ_n < -δ/2
-        have hlam_neg : entropyIncrement E n hn_gt_1 < -δ / 2 := by
-          have ha_ge_3_real : (3 : ℝ) ≤ a := by exact_mod_cast ha_ge_3
-          calc entropyIncrement E n hn_gt_1
-              ≤ -(a : ℝ) * δ + c_prime E p_min hp_min * Real.log (n / (n - 1)) := hlam_upper
-            _ < -(a : ℝ) * δ + δ / 4 := by linarith [hcorr_small]
-            _ ≤ -3 * δ + δ / 4 := by nlinarith
-            _ = -(11 : ℝ) / 4 * δ := by ring
-            _ < -δ / 2 := by linarith
-
-        -- But |λ_n| < δ/2 from hN, so λ_n > -δ/2. Contradiction!
-        have hlam_bound := hN (n - 2) hN_le
-        simp only [Nat.sub_add_cancel (by omega : 2 ≤ n)] at hlam_bound
-        rw [Real.dist_eq, sub_zero] at hlam_bound
-        have hlam_bound' : entropyIncrement E n hn_gt_1 > -δ / 2 := by
-          have h1 : |entropyIncrement E n hn_gt_1| < δ / 2 := hlam_bound
-          have h2 := (abs_lt.mp h1).1
-          -- h2 : -(δ / 2) < entropyIncrement, need: entropyIncrement > -δ / 2
-          linarith
-        linarith
-      rw [← h_eq]
-      exact h1
-
-
-  -- Step 5: Conclude c_p = c_2 for all primes
   intro p q hp hq
-  have hp_eq_c2 : c_prime E p hp = c_prime E 2 Nat.prime_two :=
-    le_antisymm (h_all_le_c2 p hp) (h_all_ge_c2 p hp)
-  have hq_eq_c2 : c_prime E q hq = c_prime E 2 Nat.prime_two :=
-    le_antisymm (h_all_le_c2 q hq) (h_all_ge_c2 q hq)
-  rw [hp_eq_c2, hq_eq_c2]
--/
+  simpa only [c_prime_toStandalone] using
+    _root_.InformationTheory.faddeev_c_prime_all_equal E.toStandalone p q hp hq
+
 
 /-- **Faddeev's Lemma 8'**: The set {c_p | p prime} has a minimum.
 
@@ -5591,8 +4630,7 @@ theorem faddeev_c_prime_has_min (E : FaddeevEntropy) :
     Proof: By Lemma 9, all c_p = c_2 = 1/log(2).
     By the prime factorization theorem, F(n) = c_2 · log(n) = log(n)/log(2) = log₂(n).
 
-    This breaks the circular dependency: derive F = log₂ without using monotonicity.
-    In the current recovery build this theorem depends on the explicit Lemma 9 proof gap. -/
+    This derives F = log₂ without assuming monotonicity. -/
 theorem faddeev_F_eq_log2 (E : FaddeevEntropy) {n : ℕ} (hn : 0 < n) :
     F E n hn = Real.log n / Real.log 2 := by
   have h_all_equal := faddeev_c_prime_all_equal E
@@ -5894,10 +4932,9 @@ end Sandwich
 
 This section states and proves the full uniqueness theorem downstream of the
 uniform-distribution result: any Faddeev entropy equals Shannon entropy on all
-distributions, not just uniform ones. In the current recovery build, this depends
-on the explicit Lemma 9 proof gap above.
+distributions, not just uniform ones.
 
-The strategy (following GPT-5.2 Pro's guidance):
+The argument:
 1. Define binary entropy functions ηE and ηSh
 2. Prove equality on rationals m/n via the splitting lemma
 3. Extend to all of [0,1] via continuity
@@ -6041,7 +5078,7 @@ theorem rat_dense_in_Icc : Dense {x : Set.Icc (0 : ℝ) 1 | ∃ m n : ℕ, 0 < n
   let y : Set.Icc (0 : ℝ) 1 := ⟨(m : ℝ) / n, h_nonneg, h_le_one⟩
   -- Show y is in the set of rationals
   have hy_rat : y ∈ {x : Set.Icc (0 : ℝ) 1 | ∃ m n : ℕ, 0 < n ∧ m ≤ n ∧ x.1 = m / n} := by
-    simp only [Set.mem_setOf_eq, y]
+    simp only [Set.mem_ofPred_eq, y]
     exact ⟨m, n, hn_pos, hm_le, rfl⟩
   -- Show y is close to x
   have hy_close : dist y x < ε := by
@@ -6087,7 +5124,7 @@ theorem ηE_eq_ηSh (E : FaddeevEntropy) : ηE E = ηSh := by
   apply Continuous.ext_on rat_dense_in_Icc (continuous_ηE E) continuous_ηSh
   -- Show ηE and ηSh agree on rationals
   intro x hx
-  simp only [Set.mem_setOf_eq] at hx
+  simp only [Set.mem_ofPred_eq] at hx
   obtain ⟨m, n, hn_pos, hm_le, hx_eq⟩ := hx
   -- x.1 = m/n, need to show ηE E x = ηSh x
   -- First rewrite x as the standard rational form
@@ -6105,7 +5142,7 @@ theorem ηE_eq_ηSh (E : FaddeevEntropy) : ηE E = ηSh := by
 
 /-- Every Faddeev entropy equals Shannon entropy on all distributions.
 
-    Proof by induction on n using recursivity, downstream of the recovered Lemma 9 gap. -/
+    Binary uniqueness extends to every arity by induction using recursivity. -/
 theorem faddeev_H_eq_shannon (E : FaddeevEntropy) {n : ℕ} (p : ProbVec n) :
     E.H p = shannonEntropyNormalized p := by
   -- Induction on n
@@ -6178,13 +5215,13 @@ theorem faddeev_H_eq_shannon (E : FaddeevEntropy) {n : ℕ} (p : ProbVec n) :
         ring
       · -- p.1 0 + p.1 1 = 0, so p.1 0 = p.1 1 = 0
         -- Use permutation to bring a positive entry to position 0
-        push_neg at h
+        push Not at h
         have hp0 : p.1 0 = 0 := le_antisymm (by linarith [p.nonneg 1]) (p.nonneg 0)
         have hp1 : p.1 1 = 0 := le_antisymm (by linarith [p.nonneg 0]) (p.nonneg 1)
         -- Find a positive index (exists since sum = 1)
         have hpos : ∃ i, 0 < p.1 i := by
           by_contra h_all_zero
-          push_neg at h_all_zero
+          push Not at h_all_zero
           have hsum := p.sum_eq_one
           have : ∑ i, p.1 i ≤ 0 := Finset.sum_nonpos (fun i _ => h_all_zero i)
           linarith
@@ -6246,8 +5283,7 @@ end FullUniqueness
 /-! ## Derived Properties (from Full Uniqueness)
 
 Given `faddeev_H_eq_shannon`, we can derive all the properties that
-Shannon-Khinchin explicitly assumes. These are used in Equivalence.lean and are
-therefore downstream of the recovered Lemma 9 gap.
+Shannon-Khinchin explicitly assumes. These are used in `Equivalence.lean`.
 
 The key theorem `faddeev_H_eq_shannon` shows:
 ```

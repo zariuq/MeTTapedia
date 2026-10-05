@@ -18,6 +18,7 @@ namespace Mettapedia.Languages.VibeITP.Presentation
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.Languages.VibeITP.Spec
+open Mettapedia.GSLT.LanguageDef.FirstOrderRules
 
 theorem inst_rPsucc1 :
     rPsucc1.instPremises [] = [] ∧

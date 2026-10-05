@@ -34,7 +34,7 @@ inductive Kind where
   | queueInsert | queueTake | queueVisit | queueMove | capture | restore
   | frameAllocate | frameRetire | publish | coefficientAppend | coefficientMultiply
   | costRead | analysisStep | workerDispatch | workerJoin | commitCheck | equationActivation
-  | storageProbe
+  | storageProbe | coefficientHandle
   deriving DecidableEq, Repr
 
 instance : Fintype Kind where
@@ -43,7 +43,7 @@ instance : Fintype Kind where
     .queueInsert, .queueTake, .queueVisit, .queueMove, .capture, .restore,
     .frameAllocate, .frameRetire, .publish, .coefficientAppend, .coefficientMultiply,
     .costRead, .analysisStep, .workerDispatch, .workerJoin, .commitCheck, .equationActivation,
-    .storageProbe}
+    .storageProbe, .coefficientHandle}
   complete := by intro kind; cases kind <;> simp
 
 structure Payload where

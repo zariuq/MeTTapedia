@@ -1219,9 +1219,9 @@ theorem stageRoots : RootPreserving (stageRules lv) := by
   obtain ⟨entry, mem, step⟩ := RootComputation.unionAll_step step
   simp only [stageComputations, List.mem_cons, List.not_mem_nil, or_false] at mem
   rcases mem with rfl | rfl
-  · exact (stageDeclaresNum lv fun _ => 0).step_preserves
+  · exact (stageDeclaresNum lv fun _ => 0).toRecursor.step_preserves
       (stageFacts lv) (RulesSub.refl _) formed step typing
-  · exact (stageDeclaresList lv fun _ => 0).step_preserves
+  · exact (stageDeclaresList lv fun _ => 0).toRecursor.step_preserves
       (stageFacts lv) (RulesSub.refl _) formed step typing
 
 /-- The constants of the checking package are semantic in the full package's
@@ -1504,10 +1504,10 @@ theorem roots : RootPreserving (rules lv) := by
   obtain ⟨entry, mem, step⟩ := RootComputation.unionAll_step step
   simp only [computations, List.mem_cons, List.not_mem_nil, or_false] at mem
   rcases mem with rfl | rfl | rfl | rfl | rfl | rfl
-  · exact (declaresNum lv fun _ => 0).step_preserves (TowerListAccumulatorsModel.facts lv) (RulesSub.refl _)
-      formed step typing
-  · exact (declaresList lv fun _ => 0).step_preserves (TowerListAccumulatorsModel.facts lv) (RulesSub.refl _) formed
-        step typing
+  · exact (declaresNum lv fun _ => 0).toRecursor.step_preserves
+      (TowerListAccumulatorsModel.facts lv) (RulesSub.refl _) formed step typing
+  · exact (declaresList lv fun _ => 0).toRecursor.step_preserves
+      (TowerListAccumulatorsModel.facts lv) (RulesSub.refl _) formed step typing
   · obtain ⟨k, fields, σ, as, mem, has, rfl, rfl⟩ := step
     exact (declaresRevFirst lv fun _ => 0).rule_preserves (TowerListAccumulatorsModel.facts lv)
         (declaresList lv fun _ => 0) (RulesSub.refl _) formed mem σ as has typing

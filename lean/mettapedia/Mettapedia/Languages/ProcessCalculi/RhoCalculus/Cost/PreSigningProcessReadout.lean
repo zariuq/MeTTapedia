@@ -128,8 +128,4 @@ theorem purse_not_process (fuel : Nat) (stack : Pattern) :
     readout? fuel 0 (.apply costFundingConstructorName [stack]) = none := by
   cases fuel <;> rfl
 
-#print axioms receiverPair_readout
-#print axioms readout_canonical
-#print axioms origin_signature
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.PreSigningProcessReadout

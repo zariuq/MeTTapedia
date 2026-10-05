@@ -248,7 +248,7 @@ def communication : Policy Store Atom Unit Store Receipt where
     simpa [Cause.Supported, resident, enabled.1] using enabled.2
   observe := id
 
-def evaluationCommunicationCompatible :
+theorem evaluationCommunicationCompatible :
     evaluation.Compatible communication :=
   ⟨fun _ _ => Iff.rfl, fun _ => rfl⟩
 

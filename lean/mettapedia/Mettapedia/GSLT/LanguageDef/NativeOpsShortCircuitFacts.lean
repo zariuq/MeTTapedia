@@ -17,19 +17,105 @@ namespace Mettapedia.GSLT.LanguageDef.NativeOps
 open NativeIR (Instruction Atom Condition)
 open NativeLowering (Expression)
 
-/-- Conjunction continues on true; disjunction continues on false. -/
-def shortCircuitBinary (continueValue : Bool) : Binary :=
-  if continueValue then .and else .or
+/-- Typed zero/null testing executes through the ordinary pure target
+operation. An outer pointer tag establishes nullness, not pointee liveness. -/
+theorem scalar_condition_evaluates {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {atom : Atom} {value : TargetValue}
+    (tagged : TargetOuterTag atom.type value)
+    (read : TargetAtomEval interface frame state atom value)
+    {operation : NativeIR.PureOperation}
+    (admitted : NativeLowering.scalarConditionOperation? atom = some operation) :
+    ∃ test, targetScalarCondition value = some test ∧
+      TargetPureEval interface frame state operation (.bool test) := by
+  generalize typeEq : atom.type = type at tagged
+  cases tagged with
+  | unit => simp [NativeLowering.scalarConditionOperation?, typeEq] at admitted
+  | record => simp [NativeLowering.scalarConditionOperation?, typeEq] at admitted
+  | array => simp [NativeLowering.scalarConditionOperation?, typeEq] at admitted
+  | bool value =>
+      simp only [NativeLowering.scalarConditionOperation?, typeEq, Option.some.injEq] at admitted
+      cases admitted
+      exact ⟨value, rfl, .copy read⟩
+  | word value =>
+      simp only [NativeLowering.scalarConditionOperation?, typeEq, Option.some.injEq] at admitted
+      cases admitted
+      refine ⟨decide (value.toNat ≠ 0), rfl, .binary read (.zero .unsignedWord) ?_⟩
+      have testEq : (!(value == (0 : BitVec 64))) = decide (value.toNat ≠ 0) := by
+        apply Bool.eq_iff_iff.mpr
+        simp [BitVec.toNat_eq]
+      change some (TargetValue.bool (!(value == (0 : BitVec 64)))) =
+        some (TargetValue.bool (decide (value.toNat ≠ 0)))
+      exact congrArg (fun test => some (TargetValue.bool test)) testEq
+  | byte value =>
+      simp only [NativeLowering.scalarConditionOperation?, typeEq, Option.some.injEq] at admitted
+      cases admitted
+      refine ⟨decide (value.toNat ≠ 0), rfl, .binary read (.zero .unsignedByte) ?_⟩
+      have testEq : (!(NativeWord64.targetToWord value == NativeWord64.targetToWord 0)) =
+          decide (value.toNat ≠ 0) := by
+        apply Bool.eq_iff_iff.mpr
+        simp [NativeWord64.targetToWord, BitVec.toNat_eq,
+          BitVec.toNat_setWidth_of_le (by decide +kernel : 8 ≤ 64)]
+      change some (TargetValue.bool (!(NativeWord64.targetToWord value == NativeWord64.targetToWord 0))) =
+        some (TargetValue.bool (decide (value.toNat ≠ 0)))
+      exact congrArg (fun test => some (TargetValue.bool test)) testEq
+  | reference element address =>
+      simp only [NativeLowering.scalarConditionOperation?, typeEq, Option.some.injEq] at admitted
+      cases admitted
+      refine ⟨address.isSome, rfl, .binary read (.zero (.nullPointer element)) ?_⟩
+      cases address <;> rfl
 
-def shortCircuitCondition (continueValue : Bool) (atom : Atom) : Condition :=
-  if continueValue then .value atom else .negated atom
+theorem scalar_condition_exact {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {atom : Atom} {value result : TargetValue}
+    (tagged : TargetOuterTag atom.type value)
+    (read : TargetAtomEval interface frame state atom value)
+    {operation : NativeIR.PureOperation}
+    (admitted : NativeLowering.scalarConditionOperation? atom = some operation) :
+    TargetPureEval interface frame state operation result ↔
+      ∃ test, targetScalarCondition value = some test ∧ result = .bool test := by
+  obtain ⟨test, meaning, computed⟩ := scalar_condition_evaluates tagged read admitted
+  constructor
+  · intro ran
+    exact ⟨test, meaning, target_pure_unique ran computed⟩
+  · rintro ⟨other, same, resultEq⟩
+    cases Option.some.inj (meaning.symm.trans same)
+    cases resultEq
+    exact computed
 
-def shortCircuitOutput (continueValue : Bool) (left right : Expression) : Expression :=
-  let copied := NativeLowering.pureTemporary left.supply .bool (.copy left.result)
-  ⟨left.code ++ copied.code ++
-      [.branch (shortCircuitCondition continueValue copied.result)
-        (right.code ++ [.assign (.temporary (NativeIR.fresh left.supply).1 .bool) right.result]) []],
-    copied.result, right.supply⟩
+/-- The target condition is compared with the independently defined source
+scalar value, in both directions and with no additional possible result. -/
+theorem scalar_condition_source_exact {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {atom : Atom}
+    {value : SourceValue} {result : TargetValue}
+    (tagged : SourceOuterTag atom.type value)
+    (read : TargetAtomEval interface frame state atom (encodeValue value))
+    {operation : NativeIR.PureOperation}
+    (admitted : NativeLowering.scalarConditionOperation? atom = some operation) :
+    TargetPureEval interface frame state operation result ↔
+      ∃ test, sourceScalarCondition value = some test ∧ result = .bool test := by
+  rw [← scalar_condition_correspondence]
+  exact scalar_condition_exact (outer_tag_preservation tagged) read admitted
+
+/-- A condition temporary retains the complete external state, memory,
+fault and accounting record; only its fresh private binding is installed. -/
+theorem scalar_condition_run_source_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {atom : Atom} {value : SourceValue}
+    (tagged : SourceOuterTag atom.type value)
+    (read : TargetAtomEval interface frame state atom (encodeValue value))
+    {operation : NativeIR.PureOperation}
+    (admitted : NativeLowering.scalarConditionOperation? atom = some operation)
+    {test : Bool} (meaning : sourceScalarCondition value = some test)
+    {identity : Nat} (unused : frame.temporaryNames.contains identity = false)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root [.temporary identity .bool operation] frame state out ↔
+      out = ⟨.normal, targetDeclareTemporary frame identity (.bool test), state⟩ := by
+  have computed := (scalar_condition_source_exact tagged read admitted).mpr
+    ⟨test, meaning, rfl⟩
+  exact target_run_temporary_exact unused computed root out
+
+theorem scalar_condition_boolean_path {input : Expression}
+    (typed : input.result.type = .bool) : NativeLowering.scalarCondition? input = some input := by
+  simp only [NativeLowering.scalarCondition?, typed]
 
 theorem source_short_circuit_exact {World : Type} {interface : Interface}
     {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
@@ -89,14 +175,19 @@ theorem short_circuit_lowering_exact {interface : Interface} {scope : Scope}
       NativeLowering.expression? interface scope right
         (NativeLowering.pureTemporary first.supply .bool (.copy first.result)).supply = some second ∧
       output = shortCircuitOutput continueValue first second := by
-  cases continueValue <;> change NativeLowering.expression? interface scope
-    (.binary _ left right) supply = some output at compiled
+  cases continueValue <;>
+    simp only [shortCircuitBinary, Bool.false_eq_true, if_false, if_true] at compiled
   all_goals rw [NativeLowering.expression?] at compiled
   all_goals
+    dsimp only at compiled
     rcases Option.bind_eq_some_iff.mp compiled with ⟨type, inferred, compiled⟩
     rcases Option.bind_eq_some_iff.mp compiled with ⟨first, firstCompiled, compiled⟩
     rcases Option.bind_eq_some_iff.mp compiled with ⟨second, secondCompiled, compiled⟩
-    have types := short_circuit_inferred _ inferred
+    have types : type = .bool ∧ inferExpr interface scope left = some .bool ∧
+        inferExpr interface scope right = some .bool := by
+      first
+      | exact short_circuit_inferred false inferred
+      | exact short_circuit_inferred true inferred
     cases types.1
     refine ⟨first, second, types.2.1, types.2.2, firstCompiled, secondCompiled, ?_⟩
     exact (Option.some.inj compiled).symm

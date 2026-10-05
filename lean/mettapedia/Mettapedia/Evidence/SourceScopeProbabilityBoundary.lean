@@ -27,7 +27,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Evidence.SourceScopeProbabilityBoundary
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.Evidence
 open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathDependency
 

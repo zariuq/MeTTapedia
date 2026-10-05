@@ -188,9 +188,7 @@ structure InductionAbductionRuleFamilyProfile where
         priorWeightedPoint (priorFromConditional ξ ctx hypothesis) point ∈
           Set.Icc (0 : ℝ) 1
   xiKpfMachinePriorComparability :
-    ∀ (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-      [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-      [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    ∀ (U V : KolmogorovComplexity.ReferenceMachine)
       (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
         Mettapedia.UniversalAI.UniversalPrediction.Semimeasure),
       ∃ c d : ℕ,
@@ -205,9 +203,7 @@ structure InductionAbductionRuleFamilyProfile where
                 (U := U) ν)
               ctx hyp
   xiKpfMachineMarginIntervalRank :
-    ∀ (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-      [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-      [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    ∀ (U V : KolmogorovComplexity.ReferenceMachine)
       (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
         Mettapedia.UniversalAI.UniversalPrediction.Semimeasure),
       ∃ cUV dUV cVU dVU : ℕ,
@@ -234,9 +230,7 @@ structure InductionAbductionRuleFamilyProfile where
                 (U := U) ν)
               ctx betterHypothesis better
   xiKpfMachineMarginPointRank :
-    ∀ (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-      [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-      [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V]
+    ∀ (U V : KolmogorovComplexity.ReferenceMachine)
       (ν : Mettapedia.UniversalAI.UniversalPrediction.BinString →
         Mettapedia.UniversalAI.UniversalPrediction.Semimeasure),
       ∃ cUV dUV cVU dVU : ℕ,
@@ -346,7 +340,7 @@ structure InductionAbductionRuleFamilyProfile where
         abductionSearchBetterPointITV abductionSearchOpenITV
 
 /-- Compact public handle for the Induction/Abduction rule-family interface. -/
-noncomputable def inductionAbductionRuleFamilyProfile :
+theorem inductionAbductionRuleFamilyProfile :
     InductionAbductionRuleFamilyProfile where
   inductionCatalogScopeCanary :=
     plnInductionBayesPremise_catalog_scope_canary

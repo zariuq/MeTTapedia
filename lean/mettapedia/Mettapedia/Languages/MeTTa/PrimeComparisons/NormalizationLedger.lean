@@ -351,7 +351,7 @@ alias identityTransportAtUniverse :=
   Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.TypedEquality.Impredicative.ValueSide.transportJ_rel_of_universe
 
 alias identityTransportInObjectModel :=
-  Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.CodeModel.vmodel_transportJ_rel_of_universe
+  Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.CodeModel.TExtension.transportJ_rel_of_universe
 
 alias transportedTermNotObserver :=
   Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.TypedEquality.Impredicative.ValueSide.coe_term_not_factors

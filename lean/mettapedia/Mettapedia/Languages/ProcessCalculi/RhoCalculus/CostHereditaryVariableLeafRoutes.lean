@@ -76,15 +76,15 @@ theorem rho_costWhole_rule_category_of_unitWire
             ⟨CostConstructor.base ⟨rhoCalc.terms[0],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PZero" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-          rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>
       have labelRendered :
@@ -93,14 +93,14 @@ theorem rho_costWhole_rule_category_of_unitWire
                 List.getElem_mem (by simp [rhoCalc])⟩,
               rhoZero_mem_wrappedConstructors⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .wrapped).constructor "PZero" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
-          rhoCalc, CostStaticColor.symbols, costWrappedStaticSymbols]
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costWrappedStaticSymbols, rho_interactingSort_name]
 
 theorem rho_process_collection_choice_sourceElementType
@@ -112,7 +112,7 @@ theorem rho_process_collection_choice_sourceElementType
       (mapTypeExpr (color.symbols rhoCIGSLT) (.base "Proc"))) :
     choice.sourceElementType = .base "Proc" := by
   unfold costStaticCollectionTypingChoices at selected
-  rw [decodeCostStaticTypeExpr_mapTypeExpr] at selected
+  rw [CostStaticTypeImage.decode_mapTypeExpr] at selected
   dsimp only at selected
   rw [mem_bareCostStaticCollectionTypingChoices_iff] at selected
   obtain ⟨rule, sourceElementType, choiceEq, membership, _wrapped,
@@ -164,12 +164,12 @@ theorem rhoBVarTowerSource_sameColor
               simp only [canonicalize, iterDrop_zero, Pattern.bvar.injEq]
                 at canonical
               have embedded :=
-                thinning.toTargetIndex_of_toSourceIndex?_eq_some correspondence
+                thinning.toTargetIndex_toSourceIndex? correspondence
               exact ⟨
                 { sourceIndex := sourceIndex
                   index_eq := by
                     rw [← canonical]
-                    simpa [CostStaticBinderThinning.embedIndexAt] using embedded
+                    simpa [CostStaticTypeThinning.embedIndexAt] using embedded
                   abstractCanonical := by
                     simp [CostStaticRegionPlan.abstractPattern, iterDrop,
                       canonicalize] }⟩

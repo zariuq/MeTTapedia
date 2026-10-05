@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CostInteractionClosure
+import Mettapedia.GSLT.LanguageDef.Cost.FiniteReflection
 
 /-!
 # Interactive closure of the generic Cost presentation
@@ -14,10 +14,10 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open StructuralMorphism
 
-namespace CIGSLT
+namespace WrappableIGSLT
 
 /-- The generated wrapped carrier, selected from the exact Cost language. -/
-def costWholeInteractingSort (source : CIGSLT) :
+def costWholeInteractingSort (source : WrappableIGSLT) :
     DeclaredSort source.costWholePresentation :=
   ⟨TypeDecl.plain costWrappedSortName, by
     change List.Mem (TypeDecl.plain costWrappedSortName)
@@ -26,7 +26,7 @@ def costWholeInteractingSort (source : CIGSLT) :
     exact List.mem_append_right _ (List.mem_singleton_self _)⟩
 
 /-- The generated binary contact, selected from the exact Cost language. -/
-def costWholeContactConstructor (source : CIGSLT) :
+def costWholeContactConstructor (source : WrappableIGSLT) :
     DeclaredConstructor source.costWholePresentation :=
   ⟨costContactConstructor, by
     change List.Mem costContactConstructor source.costCoreLanguage.terms
@@ -34,7 +34,7 @@ def costWholeContactConstructor (source : CIGSLT) :
     simp [costCoreConstructors]⟩
 
 /-- The generated funded interaction, selected from the exact Cost language. -/
-def costWholeDeclaredRewrite (source : CIGSLT) :
+def costWholeDeclaredRewrite (source : WrappableIGSLT) :
     DeclaredRewrite source.costWholePresentation :=
   ⟨source.costWholeRedexRewrite, by
     change List.Mem source.costWholeRedexRewrite
@@ -44,7 +44,7 @@ def costWholeDeclaredRewrite (source : CIGSLT) :
 /-- The generic Cost presentation is interactive at its generated wrapped
 carrier.  Binary contact is representation data; the singleton authored
 rewrite remains the only reduction authority. -/
-def costWholeInteractivePresentation (source : CIGSLT) :
+def costWholeInteractivePresentation (source : WrappableIGSLT) :
     InteractivePresentation where
   presentation := source.costWholePresentation
   interactingSort := source.costWholeInteractingSort
@@ -74,7 +74,7 @@ theorem costBaseEquationDecl_right_freeFvarNames (equation : Equation) :
     mapEquation, StructuralMorphism.mapPattern_freeFvarNames]
 
 @[simp]
-theorem costWrappedEquationDecl_left_freeFvarNames (source : CIGSLT)
+theorem costWrappedEquationDecl_left_freeFvarNames (source : WrappableIGSLT)
     (equation : Equation) :
     (costWrappedEquationDecl source.theory equation).left.freeFvarNames =
       equation.left.freeFvarNames.map costSourceSchemaName := by
@@ -83,7 +83,7 @@ theorem costWrappedEquationDecl_left_freeFvarNames (source : CIGSLT)
     StructuralMorphism.mapPattern_freeFvarNames]
 
 @[simp]
-theorem costWrappedEquationDecl_right_freeFvarNames (source : CIGSLT)
+theorem costWrappedEquationDecl_right_freeFvarNames (source : WrappableIGSLT)
     (equation : Equation) :
     (costWrappedEquationDecl source.theory equation).right.freeFvarNames =
       equation.right.freeFvarNames.map costSourceSchemaName := by
@@ -94,7 +94,7 @@ theorem costWrappedEquationDecl_right_freeFvarNames (source : CIGSLT)
 /-- The exact source language's admitted execution profile exposes its
 ordered-flow component independently of structural and relation-mode
 validation. -/
-theorem sourceExecutionFlowErrors_eq_nil (source : CIGSLT) :
+theorem sourceExecutionFlowErrors_eq_nil (source : WrappableIGSLT) :
     source.theory.presentation.presentation.language.executionFlowErrors
         source.theory.executionProfile.relationModes = [] := by
   have admitted := source.theory.executionProfile.admitted.admitted
@@ -104,10 +104,10 @@ theorem sourceExecutionFlowErrors_eq_nil (source : CIGSLT) :
   exact admitted.2
 
 /-- Every generated static Cost equation remains premise-free. -/
-theorem costStaticEquation_premises_eq_nil (source : CIGSLT)
+theorem costStaticEquation_premises_eq_nil (source : WrappableIGSLT)
     (equation : Equation) (membership : equation ∈ source.costStaticEquations) :
     equation.premises = [] := by
-  rw [costStaticEquations] at membership
+  rw [costStaticEquations_def] at membership
   rcases List.mem_append.mp membership with base | wrapped
   · rcases List.mem_map.mp base with
       ⟨sourceEquation, sourceMembership, rfl⟩
@@ -124,11 +124,11 @@ theorem costStaticEquation_premises_eq_nil (source : CIGSLT)
 
 /-- Structural validation of the source equation supplies the forward
 metavariable inclusion for both generated Cost fibers. -/
-theorem costStaticEquation_rightFvar_mem_left (source : CIGSLT)
+theorem costStaticEquation_rightFvar_mem_left (source : WrappableIGSLT)
     (equation : Equation) (membership : equation ∈ source.costStaticEquations)
     (name : String) (rightMembership : name ∈ equation.right.freeFvarNames) :
     name ∈ equation.left.freeFvarNames := by
-  rw [costStaticEquations] at membership
+  rw [costStaticEquations_def] at membership
   rcases List.mem_append.mp membership with base | wrapped
   · rcases List.mem_map.mp base with
       ⟨sourceEquation, sourceMembership, rfl⟩
@@ -165,11 +165,11 @@ theorem costStaticEquation_rightFvar_mem_left (source : CIGSLT)
 
 /-- Reverse source flow supplies the converse metavariable inclusion, which
 is necessary because authored equations execute in both orientations. -/
-theorem costStaticEquation_leftFvar_mem_right (source : CIGSLT)
+theorem costStaticEquation_leftFvar_mem_right (source : WrappableIGSLT)
     (equation : Equation) (membership : equation ∈ source.costStaticEquations)
     (name : String) (leftMembership : name ∈ equation.left.freeFvarNames) :
     name ∈ equation.right.freeFvarNames := by
-  rw [costStaticEquations] at membership
+  rw [costStaticEquations_def] at membership
   rcases List.mem_append.mp membership with base | wrapped
   · rcases List.mem_map.mp base with
       ⟨sourceEquation, sourceMembership, rfl⟩
@@ -202,7 +202,7 @@ theorem costStaticEquation_leftFvar_mem_right (source : CIGSLT)
         (source.equationsRetypable sourceEquation sourceMembership).premiseFree
         sourceName sourceLeftMembership, rfl⟩
 
-theorem costWholeLanguage_executionFlowErrors_eq_nil (source : CIGSLT) :
+theorem costWholeLanguage_executionFlowErrors_eq_nil (source : WrappableIGSLT) :
     source.costWholeLanguage.executionFlowErrors [] = [] := by
   apply LanguageDef.executionFlowErrors_eq_nil_of_premiseFree_withEquations
   · intro rule membership
@@ -213,9 +213,9 @@ theorem costWholeLanguage_executionFlowErrors_eq_nil (source : CIGSLT) :
     simp only [costWholeLanguage_rewrites, List.mem_singleton] at membership
     subst rule
     have bound := source.costWholeRedex_rightFvar_mem_left name
-      (by simpa [costWholeRedexRewrite, patternFvarNames_nil] using
+      (by simpa [costWholeRedexRewrite_def, patternFvarNames_nil] using
         nameMembership)
-    simpa [costWholeRedexRewrite, patternFvarNames_nil] using bound
+    simpa [costWholeRedexRewrite_def, patternFvarNames_nil] using bound
   · exact source.costStaticEquation_premises_eq_nil
   · exact source.costStaticEquation_rightFvar_mem_left
   · exact source.costStaticEquation_leftFvar_mem_right
@@ -223,7 +223,7 @@ theorem costWholeLanguage_executionFlowErrors_eq_nil (source : CIGSLT) :
 /-- The generated interaction has no external relation premises and passes
 the existing ordered execution-flow gate. -/
 theorem costWholeLanguage_executionAdmissionErrors_eq_nil
-    (source : CIGSLT) :
+    (source : WrappableIGSLT) :
     source.costWholeLanguage.executionAdmissionErrors [] = [] := by
   exact LanguageDef.executionAdmissionErrors_eq_nil_of_emptyModes
     source.costWholeLanguage source.costWholeLanguage_validate
@@ -231,7 +231,7 @@ theorem costWholeLanguage_executionAdmissionErrors_eq_nil
 
 /-- Empty relation modes are the exact execution profile of the generated
 premise-free Cost interaction. -/
-def costWholeExecutionProfile (source : CIGSLT) :
+def costWholeExecutionProfile (source : WrappableIGSLT) :
     ExecutionProfile source.costWholePresentation where
   relationModes := []
   admitted :=
@@ -241,11 +241,11 @@ def costWholeExecutionProfile (source : CIGSLT) :
 
 /-- The generic Cost interaction as an iGSLT over the exact generated
 presentation. -/
-def costIGSLT (source : CIGSLT) : IGSLT where
+def costIGSLT (source : WrappableIGSLT) : IGSLT where
   presentation := source.costWholeInteractivePresentation
   baseInteraction := isBaseRewrite_of_premises_eq_nil rfl
   executionProfile := source.costWholeExecutionProfile
 
-end CIGSLT
+end WrappableIGSLT
 
 end Mettapedia.GSLT.LanguageDef

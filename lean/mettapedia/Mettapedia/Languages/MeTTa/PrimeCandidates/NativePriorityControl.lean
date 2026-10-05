@@ -20,6 +20,14 @@ import Mettapedia.Languages.ProcessCalculi.MORK.MM2QueueFairness
 This entry point assembles authored Need computation, captured advisory
 grades, demand and joint selection, owned revision, exact k-best extraction,
 protected scheduling and the independently specified MM2 execution bridge.
+Privately prepared MM2 quanta use the common cursor scheduler and private-write
+kernel: installation keeps the whole owned residual and pull account, and
+completed row observations agree with the independent input matcher. Physical
+C node matching, thread-state transport and transactional publication retain
+their separate correspondence obligations.
+The same private-write kernel retains differently indexed protocol packets;
+their complete states and charges compose across installed waves, while each
+simultaneous preparation requires distinct writable owners.
 Each theorem keeps its fragment, finiteness, cost and observation assumptions.
 
 The executable reference and the native runtime are distinct realizations.

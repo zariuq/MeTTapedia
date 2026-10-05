@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredRFComparison
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 
 /-!
@@ -40,6 +41,21 @@ theorem encoding_forward_single_step_rf {N : Finset String} {P P' : Process}
     (n v : String) :
     ∃ T, Nonempty (ReducesStar (encode P n v) T) ∧ T ≈{N} (encode P' n v) :=
   EncodingMorphism.forward_single_step_bisim h hrf hsafe n v
+
+/-- The maintained RF compiler step is also a step of the authored source
+GSLT, with exactly the named result as its encoded endpoint. The target
+comparison retains the compiler's restriction and communication hypotheses. -/
+theorem encoding_forward_single_step_rf_authored {N : Finset String} {P P' : Process}
+    (h : ForwardSimulation.ReducesRF P P')
+    (hrf : ForwardSimulation.RestrictionFree P)
+    (hsafe : ForwardSimulation.CommSafe h)
+    (n v : String) :
+    Mettapedia.GSLT.LanguageDef.EquationSemantics.StepModuloEquations
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+      PiCalcInstance.piCalc (PiCalcInstance.piToPattern P) (PiCalcInstance.piToPattern P') ∧
+      ∃ T, Nonempty (ReducesStar (encode P n v) T) ∧ T ≈{N} (encode P' n v) :=
+  ⟨PiCalcInstance.reducesRF_authored_step h, encoding_forward_single_step_rf h hrf hsafe n v⟩
 
 /-- Forward operational correspondence for RF π multi-step reductions. -/
 theorem encoding_forward_multi_step_rf {N : Finset String} {P P' : Process}
@@ -178,13 +194,15 @@ theorem ci_canary_fixed_three_comm_steps
     simpa [ciMid1, ciMid2, ciRedex2, ciRedex3] using
       ForwardSimulation.ReducesSafe.of_par_left
         (Process.nil ||| ciRedex2) (Process.nil ||| Process.nil) ciRedex3
-        (ForwardSimulation.ReducesSafe.comm_par_right "a" "b" "c" Process.nil Process.nil hbc hb2)
+        (by simpa only [ciRedex2, Process.substitute_nil] using
+          ForwardSimulation.ReducesSafe.comm_par_right "a" "b" "c" Process.nil Process.nil hbc hb2)
   have h2 : ciMid1 ⇝ₛ* ciMid2 := ForwardSimulation.MultiStepSafe.single h2step
   have h3step : ciMid2 ⇝ₛ ciFinal := by
     simpa [ciMid2, ciFinal, ciRedex3] using
       ForwardSimulation.ReducesSafe.of_par_right
         (Process.nil ||| Process.nil) ciRedex3 Process.nil
-        (ForwardSimulation.ReducesSafe.of_comm "p" "q" "r" Process.nil hqr hb3)
+        (by simpa only [ciRedex3, Process.substitute_nil] using
+          ForwardSimulation.ReducesSafe.of_comm "p" "q" "r" Process.nil hqr hb3)
   have h3 : ciMid2 ⇝ₛ* ciFinal := ForwardSimulation.MultiStepSafe.single h3step
   let h12 : ciStart ⇝ₛ* ciMid2 := ForwardSimulation.MultiStepSafe.trans h1 h2
   let h123 : ciStart ⇝ₛ* ciFinal := ForwardSimulation.MultiStepSafe.trans h12 h3

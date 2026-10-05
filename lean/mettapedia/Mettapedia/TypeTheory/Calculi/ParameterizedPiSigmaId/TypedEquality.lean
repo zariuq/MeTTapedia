@@ -7,6 +7,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normal
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.WeakHeadNormalization
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.Algorithmic.Decidability
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.Algorithmic.RigidHeads
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.Algorithmic.NeutralHeads
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.Algorithmic.Renaming
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.Algorithmic.NormalizingLift
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.Synthesis
@@ -38,6 +39,9 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normal
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.HeadMorphism
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.ElaborationHeadMap
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.PackageSum
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.DeclarationRewriting
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.ParameterizedDatatypes
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.ParameterizedPackage
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.ConstantRenaming
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.TheoremDefinitions
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.TheoremStability
@@ -60,8 +64,13 @@ the refutations principal types justify; the declared identity eliminator is a
 semantic constant whose linear rule preserves typing; declared simple
 inductive types, their constructors and their recursors are semantic
 constants, constructors are injective and distinct, and the recursor's
-computation rules preserve typing; definitions by one equation and by
+computation rules preserve typing; a datatype may carry a parameter telescope,
+and the empty telescope is that simple inductive; definitions by one equation and by
 structural recursion are semantic constants whose equations preserve typing;
+a package extended by an admissible list of datatypes and definitions computes as the package
+extended by one case tree for each declaration, its root steps start at the constants that
+compute and never overlap, and over a definition by constructor patterns its rewriting is
+Church–Rosser;
 typed terms are weakly head normalizing; and the cumulative tower, alone, with
 the eliminator, with the natural numbers, and with addition defined by
 structural recursion, is an instance satisfying every hypothesis; the tower

@@ -962,7 +962,7 @@ theorem rhoCostStatic_processSort_ne_nameSort
   cases processColor <;> cases nameColor
   all_goals simp [costStaticReflectivePresentationDecl_eq_map,
       ReflectionExtension.mapReflectivePresentation,
-      rhoReflectivePresentation, CostStaticColor.symbols,
+      rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
       costBaseStaticSymbols, costWrappedStaticSymbols,
       costBaseLanguageDefSymbolMap,
       show rhoCIGSLT.theory.presentation.interactingSort.1.name = "Proc" by
@@ -995,15 +995,15 @@ private theorem rho_costWhole_rule_category_of_unitWire_local
             ⟨CostConstructor.base ⟨rhoCalc.terms[0],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PZero" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-          rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>
       let zero : StructuralMorphism.DeclaredConstructor
@@ -1021,15 +1021,15 @@ private theorem rho_costWhole_rule_category_of_unitWire_local
           (rhoCIGSLT.materializeDeclaredCostConstructor
             ⟨CostConstructor.wrapped zero, zeroWrapped⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .wrapped).constructor "PZero" := by
-        simp [zero, CIGSLT.materializeDeclaredCostConstructor,
-          costWrappedConstructor, rhoCalc, CostStaticColor.symbols,
+        simp [zero, CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+          costWrappedConstructor, rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf,
           costWrappedStaticSymbols]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [zero, CIGSLT.materializeDeclaredCostConstructor,
-        costWrappedConstructor, rhoCalc, mapTypeExpr, CostStaticColor.symbols,
+      simp [zero, CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+        costWrappedConstructor, rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costWrappedStaticSymbols,
         show rhoCIGSLT.theory.presentation.interactingSort.1.name = "Proc" by
           rfl]
@@ -2109,7 +2109,7 @@ private theorem rhoParallel_shapeWithConstructors
     have targetBare : UsesBareCollection rule :=
       ⟨parameterName, _, elementType, parameterShape⟩
     have sourceBare : UsesBareCollection preimage.sourceConstructor.1 :=
-      preimage.source_usesBareCollection selectedRole
+      preimage.usesBareCollection_iff.mp
         (materializes ▸ targetBare)
     obtain ⟨sourceParameter, sourceCollection, sourceElement, sourceShape⟩ :=
       sourceBare
@@ -6027,13 +6027,13 @@ theorem rhoCommonRestorationApex_of_canonicalWithin
             costBaseSortName "Proc" := by
           simp [declaration, costStaticReflectivePresentationDecl_eq_map,
             ReflectionExtension.mapReflectivePresentation,
-            rhoReflectivePresentation, CostStaticColor.symbols,
+            rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
             costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
         have nameSort : declaration.nameSort =
             costBaseSortName "Name" := by
           simp [declaration, costStaticReflectivePresentationDecl_eq_map,
             ReflectionExtension.mapReflectivePresentation,
-            rhoReflectivePresentation, CostStaticColor.symbols,
+            rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
             costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
         rw [processSort, nameSort]
         intro equality
@@ -6043,13 +6043,13 @@ theorem rhoCommonRestorationApex_of_canonicalWithin
         have processSort : declaration.processSort = costWrappedSortName := by
           simp [declaration, costStaticReflectivePresentationDecl_eq_map,
             ReflectionExtension.mapReflectivePresentation,
-            rhoReflectivePresentation, CostStaticColor.symbols,
+            rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
             costWrappedStaticSymbols, interactingName]
         have nameSort : declaration.nameSort =
             costBaseSortName "Name" := by
           simp [declaration, costStaticReflectivePresentationDecl_eq_map,
             ReflectionExtension.mapReflectivePresentation,
-            rhoReflectivePresentation, CostStaticColor.symbols,
+            rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
             costWrappedStaticSymbols, interactingName,
             show "Name" ≠ "Proc" by decide]
         rw [processSort, nameSort]

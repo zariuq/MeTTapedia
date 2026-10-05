@@ -291,7 +291,7 @@ theorem infinite_element_fibre_has_no_finite_list_provider :
   let fibre := provider.fibre ListExample.singletonUnit
   let indexEquivNat : fibre.Index ≃ Nat :=
     fibre.occurrenceEquiv.trans infiniteListOccurrenceEquiv
-  letI : Fintype Nat := Fintype.ofEquiv fibre.Index indexEquivNat
+  let : Fintype Nat := Fintype.ofEquiv fibre.Index indexEquivNat
   exact not_finite Nat
 
 end Canary

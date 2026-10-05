@@ -42,6 +42,29 @@ def collect {α β : Type} (items : List α) (visit : α → Option (List β)) :
       let later ← collect rest visit
       pure (first ++ later)
 
+theorem collect_member {α β : Type} (items : List α)
+    (visit : α → Option (List β)) (answers : List β)
+    (returned : collect items visit = some answers) {answer : β}
+    (present : answer ∈ answers) :
+    ∃ item ∈ items, ∃ branch, visit item = some branch ∧ answer ∈ branch := by
+  induction items generalizing answers with
+  | nil => simp [collect] at returned; subst answers; simp at present
+  | cons item rest ih =>
+      simp only [collect] at returned
+      cases first : visit item with
+      | none => simp [first] at returned
+      | some branch =>
+          cases later : collect rest visit with
+          | none => simp [first, later] at returned
+          | some branches =>
+              simp only [first, later, bind, Option.bind, Option.pure_def,
+                Option.some.injEq] at returned
+              subst answers
+              rcases List.mem_append.mp present with here | there
+              · exact ⟨item, List.mem_cons_self, branch, first, here⟩
+              · obtain ⟨other, member, values, got, occurs⟩ := ih branches later there
+                exact ⟨other, List.mem_cons_of_mem _ member, values, got, occurs⟩
+
 def row (items : List TypeTerm) : TypeTerm :=
   .app items.length (fun i => items[i])
 
@@ -200,6 +223,192 @@ def step (library : List Declaration) (supply : Supply) (query : Query)
 def run (library : List Declaration) (supply : Supply) : Nat → Query
   | 0 => fun _ _ _ => none
   | fuel + 1 => step library supply (run library supply fuel)
+
+namespace Completion
+
+/-- A larger approximation preserves every completed answer vector. In
+particular, normal answerless exhaustion is a completed vector, whereas
+`none` carries no assertion about exhaustion. -/
+def Extends {α : Type} (before after : Option α) : Prop :=
+  ∀ answer, before = some answer → after = some answer
+
+theorem extends_refl {α : Type} (result : Option α) : Extends result result :=
+  fun _ returned => returned
+
+theorem extends_trans {α : Type} {first second third : Option α}
+    (left : Extends first second) (right : Extends second third) :
+    Extends first third := fun answer returned => right answer (left answer returned)
+
+private theorem bind_extends {α β : Type} {before after : Option α}
+    {left right : α → Option β} (input : Extends before after)
+    (body : ∀ item, Extends (left item) (right item)) :
+    Extends (before.bind left) (after.bind right) := by
+  intro answer returned
+  cases original : before with
+  | none => simp [original] at returned
+  | some item =>
+      rw [input item original]
+      exact body item answer (by simpa [original] using returned)
+
+private theorem map_extends {α β : Type} {before after : Option α}
+    (same : Extends before after) (f : α → β) :
+    Extends (before.map f) (after.map f) := by
+  intro answer returned
+  cases original : before with
+  | none => simp [original] at returned
+  | some item => simpa [original, same item original] using returned
+
+theorem collect_extends {α β : Type} (items : List α)
+    (left right : α → Option (List β))
+    (same : ∀ item, Extends (left item) (right item)) :
+    Extends (collect items left) (collect items right) := by
+  induction items with
+  | nil => exact extends_refl _
+  | cons item rest ih =>
+      apply bind_extends (same item)
+      intro first
+      apply bind_extends ih
+      intro later
+      exact extends_refl _
+
+def QueryExtends (left right : Query) : Prop :=
+  ∀ path subject required, Extends (left path subject required) (right path subject required)
+
+theorem arguments_extends (left right : Query) (same : QueryExtends left right)
+    (path : Path) (position : Nat) (pending : List (TypeTerm × TypeTerm))
+    (result : TypeTerm) (store : Subst signature) :
+    Extends (arguments left path position pending result store)
+      (arguments right path position pending result store) := by
+  induction pending generalizing position store with
+  | nil => exact extends_refl _
+  | cons pair rest ih =>
+      rcases pair with ⟨subject, formal⟩
+      simp only [arguments]
+      split
+      · exact ih (position + 1) store
+      · apply bind_extends (same _ _ _)
+        intro candidates
+        apply collect_extends
+        intro candidate
+        cases unifyTotal [(candidate, store.applyTerm formal)] with
+        | none => exact extends_refl _
+        | some refinement => exact ih (position + 1) (refinement ∘ₛ store)
+
+theorem functions_extends (library : List Declaration) (supply : Supply)
+    (left right : Query) (same : QueryExtends left right)
+    (path : Path) (items : List TypeTerm) (required : Option TypeTerm) :
+    Extends (functions library supply left path items required)
+      (functions library supply right path items required) := by
+  cases items with
+  | nil => exact extends_refl _
+  | cons head actuals =>
+      apply collect_extends
+      intro scheme
+      cases callParts actuals.length scheme with
+      | none => exact extends_refl _
+      | some pair =>
+          rcases pair with ⟨domains, result⟩
+          cases required with
+          | none => exact arguments_extends left right same path 0 _ result _
+          | some target =>
+              dsimp only
+              cases unifyTotal [(result, target)] with
+              | none => exact extends_refl _
+              | some initial => exact arguments_extends left right same path 0 _ result initial
+
+theorem freshRows_extends (left right : Query) (same : QueryExtends left right)
+    (path : Path) (position : Nat) (items : List TypeTerm) :
+    Extends (freshRows left path position items) (freshRows right path position items) := by
+  induction items generalizing position with
+  | nil => exact extends_refl _
+  | cons item rest ih =>
+      apply bind_extends (same _ _ _)
+      intro first
+      apply bind_extends (ih (position + 1))
+      intro later
+      exact extends_refl _
+
+theorem structural_extends (supply : Supply) (left right : Query)
+    (same : QueryExtends left right) (path : Path)
+    (items : List TypeTerm) (required : Option TypeTerm) :
+    Extends (structural supply left path items required)
+      (structural supply right path items required) := by
+  cases required with
+  | none => exact map_extends (freshRows_extends left right same _ _ _) _
+  | some target =>
+      simp only [structural]
+      split
+      · exact extends_refl _
+      · exact arguments_extends left right same _ _ _ _ _
+
+theorem expression_extends (library : List Declaration) (supply : Supply)
+    (left right : Query) (same : QueryExtends left right)
+    (path : Path) (items : List TypeTerm) (required : Option TypeTerm) :
+    Extends (expression library supply left path items required)
+      (expression library supply right path items required) := by
+  apply bind_extends (functions_extends library supply left right same _ _ _)
+  intro functionAnswers
+  apply bind_extends
+  · cases required with
+    | none => exact extends_refl _
+    | some target =>
+        dsimp only
+        split
+        · exact functions_extends library supply left right same _ _ _
+        · exact extends_refl _
+  · intro allFunctions
+    apply bind_extends
+    · split
+      · exact structural_extends supply left right same _ _ _
+      · exact extends_refl _
+    · intro rowAnswers
+      exact extends_refl _
+
+theorem step_extends (library : List Declaration) (supply : Supply)
+    (left right : Query) (same : QueryExtends left right) :
+    QueryExtends (step library supply left) (step library supply right) := by
+  intro path subject required
+  simp only [step]
+  split
+  · exact extends_refl _
+  · split
+    · exact extends_refl _
+    · split
+      · exact extends_refl _
+      · exact expression_extends library supply left right same _ _ _
+
+/-- Increasing fuel never changes any completed observation, including its
+answer order, duplicate multiplicity or normal empty result. -/
+theorem run_succ_extends (library : List Declaration) (supply : Supply) (fuel : Nat) :
+    QueryExtends (run library supply fuel) (run library supply (fuel + 1)) := by
+  induction fuel with
+  | zero => intro path subject required answer returned; simp [run] at returned
+  | succ fuel ih => exact step_extends library supply _ _ ih
+
+theorem run_add_extends (library : List Declaration) (supply : Supply)
+    (fuel extra : Nat) :
+    QueryExtends (run library supply fuel) (run library supply (fuel + extra)) := by
+  induction extra with
+  | zero => intro path subject required; exact extends_refl _
+  | succ extra ih =>
+      intro path subject required
+      exact extends_trans (ih path subject required)
+        (run_succ_extends library supply (fuel + extra) path subject required)
+
+theorem completed_answers_unique (library : List Declaration) (supply : Supply)
+    (firstFuel secondFuel : Nat) (path : Path) (subject : TypeTerm)
+    (required : Option TypeTerm) (first second : List TypeTerm)
+    (firstRun : run library supply firstFuel path subject required = some first)
+    (secondRun : run library supply secondFuel path subject required = some second) :
+    first = second := by
+  have left := run_add_extends library supply firstFuel secondFuel
+    path subject required first firstRun
+  have right := run_add_extends library supply secondFuel firstFuel
+    path subject required second secondRun
+  rw [Nat.add_comm secondFuel firstFuel, left] at right
+  exact Option.some.inj right
+
+end Completion
 
 namespace Coordinates
 

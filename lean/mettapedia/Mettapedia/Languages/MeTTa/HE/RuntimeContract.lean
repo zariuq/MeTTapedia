@@ -162,7 +162,7 @@ def unifyContract : OpRuntimeContract where
   arity := 4
   argRoles := ["target-atom", "pattern", "success-body", "failure-body"]
   specConstructors :=
-    [ "Spec.Eval.Minimal.MinimalStepRel.unify"
+    [ "Spec.Eval.Minimal.CoreStepRel.unify"
     ]
   semanticAuthority :=
     [ "Matching.matchAtoms"
@@ -207,21 +207,21 @@ def unifyContract : OpRuntimeContract where
 def chainContract : OpRuntimeContract where
   head := "chain"
   arity := 3
-  argRoles := ["atom-to-eval", "variable", "template"]
+  argRoles := ["minimal source", "local variable", "minimal continuation template"]
   specConstructors :=
-    [ "Spec.Eval.Minimal.MinimalStepRel.chain"
-    , "Spec.Eval.Minimal.MinimalStepRel.chainEmpty"
+    [ "Spec.Eval.Minimal.CoreStepRel.chain"
     ]
   semanticAuthority :=
-    [ "EvalAtom"           -- evaluates the atom
-    , "Bindings.assign"    -- binds variable to result
-    , "Bindings.apply"     -- substitutes in template
+    [ "Spec.Eval.Minimal.MinimalRunRel"
+    , "Spec.Eval.Minimal.substituteName"
     ]
-  determinism := .deterministic
-  bindingsFlow := .assignVariable
+  determinism := .nondeterministic
+  bindingsFlow := .passthrough
   resultCases :=
-    [ "eval succeeds (non-Empty): template with $var substituted, output bindings include $var assignment"
-    , "eval yields Empty: internal Empty sentinel, reported as no user-visible results"
+    [ "each source result: substitute the local variable and run the minimal template"
+    , "source binding refinements are retained; the local binder is not exported"
+    , "Empty and NotReducible source sentinels are also substituted into the template"
+    , "only final Empty output is omitted at the observation boundary"
     ]
   errorCases := []
   mutatesSpace := false
@@ -231,14 +231,14 @@ def chainContract : OpRuntimeContract where
         instructionAtom := "(chain x $v (tag $v))"
         inputBindings := []
         expectedResults := ["(tag x)"]
-        expectedBindings := some [("v", "x")]
+        expectedBindings := some []
       }
-    , { label := "chain: eval yields Empty → no results"
+    , { label := "chain: Empty source is substituted into the continuation"
         positive := true
         instructionAtom := "(chain Empty $v (tag $v))"
         inputBindings := []
-        expectedResults := []
-        expectedBindings := none
+        expectedResults := ["(tag Empty)"]
+        expectedBindings := some []
       }
     ]
 
@@ -352,12 +352,12 @@ def collapseBindContract : OpRuntimeContract where
   arity := 1
   argRoles := ["atom (to evaluate and collect all results)"]
   specConstructors :=
-    [ "Spec.Eval.Minimal.MinimalStepRel.collapseBind"
+    [ "Spec.Eval.Minimal.CoreStepRel.collapseBind"
     ]
   semanticAuthority :=
-    [ "Spec.Eval.EvalRel"
+    [ "Spec.Eval.Minimal.MinimalResultRel"
     , "Spec.Eval.Minimal.EvalEnumeration"
-    , "Spec.Eval.Minimal.EvalEnumerationLaws"
+    , "Spec.Eval.Minimal.MinimalEnumerationLaws"
     , "Spec.Eval.Minimal.encodeResults"
     , "Spec.Eval.Minimal.Services.bindingPayload"
     ]
@@ -379,14 +379,14 @@ def collapseBindContract : OpRuntimeContract where
       }
     , { label := "collapse-bind: empty eval → empty expression"
         positive := false
-        instructionAtom := "(collapse-bind (match &self (= z $w) $w))"
+        instructionAtom := "(collapse-bind (eval (match &self (= z $w) $w)))"
         inputBindings := []
         expectedResults := ["()"]
         expectedBindings := some []
       }
     , { label := "collapse-bind: filters Empty branches"
         positive := true
-        instructionAtom := "(collapse-bind (superpose (a Empty b)))"
+        instructionAtom := "(collapse-bind (eval (superpose (a Empty b))))"
         inputBindings := []
         expectedResults := ["((b {  }) (a {  }))"]
         expectedBindings := some []
@@ -402,7 +402,7 @@ def superposeBindContract : OpRuntimeContract where
   arity := 1
   argRoles := ["encoded-pairs (from collapse-bind output)"]
   specConstructors :=
-    [ "Spec.Eval.Minimal.MinimalStepRel.superposeBind"
+    [ "Spec.Eval.Minimal.CoreStepRel.superposeBind"
     ]
   semanticAuthority :=
     [ "Spec.Eval.Minimal.encodeResults"
@@ -495,31 +495,37 @@ def assertContract : OpRuntimeContract where
     ]
 
 /-- `eval` — one step of evaluation in current space.
-    Ref: `Spec.Eval.Minimal.MinimalStepRel.eval`, metta.md "makes one step of the evaluation". -/
+    Ref: `Spec.Eval.Minimal.CoreStepRel.eval`, metta.md "makes one step of the evaluation". -/
 def evalContract : OpRuntimeContract where
   head := "eval"
   arity := 1
   argRoles := ["atom (to evaluate one step)"]
-  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.eval"]
+  specConstructors := ["Spec.Eval.Minimal.CoreStepRel.eval"]
   semanticAuthority :=
-    [ "EvalAtom"  -- the 6-function evaluation loop
+    [ "Spec.Eval.Minimal.RawInvocationRel"
+    , "Spec.Eval.Minimal.MinimalRunRel"
+    , "Spec.Eval.GroundedDispatch.valueProvenance"
     ]
   determinism := .nondeterministic
   bindingsFlow := .mergeFromMatch
   resultCases :=
     [ "atom reduces: one or more result atoms with updated bindings"
-    , "atom is irreducible: returned unchanged"
+    , "ordinary native emission: emitted function completes before the raw result is returned"
+    , "producer-completed native value: raw invocation retains the value without function execution"
+    , "atom is irreducible: NotReducible"
+    , "empty alternatives: internal Empty sentinel; final Empty output is omitted"
     ]
   errorCases :=
-    [ "stack overflow (fuel exhaustion): atom returned unchanged"
+    [ "runtime failure: structured Error result"
+    , "resource exhaustion: incomplete execution, not an unchanged semantic answer"
     ]
   mutatesSpace := false
   fixtures :=
     [ { label := "eval: symbol is irreducible"
-        positive := true
+        positive := false
         instructionAtom := "(eval x)"
         inputBindings := []
-        expectedResults := ["x"]
+        expectedResults := ["NotReducible"]
         expectedBindings := some []
       }
     , { label := "eval: expression with equation reduces"
@@ -537,7 +543,7 @@ def consAtomContract : OpRuntimeContract where
   head := "cons-atom"
   arity := 2
   argRoles := ["head (atom)", "tail (expression)"]
-  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.consAtom"]
+  specConstructors := ["Spec.Eval.Minimal.CoreStepRel.consAtom"]
   semanticAuthority := []
   determinism := .deterministic
   bindingsFlow := .passthrough
@@ -569,7 +575,7 @@ def deconsAtomContract : OpRuntimeContract where
   head := "decons-atom"
   arity := 1
   argRoles := ["expression (non-empty, to deconstruct)"]
-  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.deconsAtom"]
+  specConstructors := ["Spec.Eval.Minimal.CoreStepRel.deconsAtom"]
   semanticAuthority := []
   determinism := .deterministic
   bindingsFlow := .passthrough
@@ -599,23 +605,27 @@ def deconsAtomContract : OpRuntimeContract where
 
 /-- `function` / `return` — evaluate body in a loop until `(return <atom>)`.
     `function` is the loop wrapper; `return` is the exit signal.
-    If the body never produces `(return ...)`, a NoReturn error is returned. -/
+    A noninstruction terminal without `return` produces NoReturn. Minimal
+    chain can carry internal Empty as a datum; only final returned Empty is
+    removed at the observation boundary. -/
 def functionContract : OpRuntimeContract where
   head := "function"
   arity := 1
   argRoles := ["body (to evaluate until return)"]
   specConstructors :=
-    [ "Spec.Eval.Minimal.MinimalStepRel.functionReturn"
-    , "Spec.Eval.Minimal.MinimalStepRel.functionNoReturn"
+    [ "Spec.Eval.Minimal.CoreStepRel.functionReturn"
+    , "Spec.Eval.Minimal.CoreStepRel.functionNoReturn"
     ]
   semanticAuthority :=
-    [ "EvalAtom"  -- evaluates body
+    [ "Spec.Eval.Minimal.FunctionBodyRel"
+    , "Spec.Eval.Minimal.MinimalResultRel"
     ]
-  determinism := .deterministic
+  determinism := .nondeterministic
   bindingsFlow := .passthrough
   resultCases :=
     [ "body evaluates to (return <atom>): unwrap and return <atom>"
     , "body does not produce (return ...): return (Error (function <body>) NoReturn)"
+    , "body returns Empty: no user-visible answer"
     ]
   errorCases :=
     [ "NoReturn: body reached a terminal form that is not (return <atom>)"
@@ -631,9 +641,9 @@ def functionContract : OpRuntimeContract where
       }
     , { label := "function: no return → NoReturn error"
         positive := false
-        instructionAtom := "(function stuck)"
+        instructionAtom := "(function (stuck))"
         inputBindings := []
-        expectedResults := ["(Error (function stuck) NoReturn)"]
+        expectedResults := ["(Error (function (stuck)) NoReturn)"]
         expectedBindings := some []
       }
     ]
@@ -681,7 +691,7 @@ def contextSpaceContract : OpRuntimeContract where
   head := "context-space"
   arity := 0
   argRoles := []
-  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.contextSpace"]
+  specConstructors := ["Spec.Eval.Minimal.CoreStepRel.contextSpace"]
   semanticAuthority := ["Spec.Eval.Minimal.Services.contextPayload"]
   determinism := .deterministic
   bindingsFlow := .passthrough
@@ -708,7 +718,7 @@ def callNativeContract : OpRuntimeContract where
   head := "call-native"
   arity := 3
   argRoles := ["op (executable grounded atom)", "args (expression of arguments)"]
-  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.callNative"]
+  specConstructors := ["Spec.Eval.Minimal.CoreStepRel.callNative"]
   semanticAuthority :=
     [ "GroundedDispatch.isExecutable"
     , "GroundedDispatch.execute"

@@ -186,12 +186,6 @@ structure DeductionExactnessNeeds (pA pB pC sAB sBC : ℝ) where
     pA * (1 - sAB) * complementConditionalFromMarginal pB pC sBC ≤
       deductionNotBBranchUpper pA pB pC sAB sBC
 
-/-- Numeric exactness breakpoints are the explicit side-condition bundle. -/
-def exactnessBreaks {pA pB pC sAB sBC : ℝ}
-    (needs : DeductionExactnessNeeds pA pB pC sAB sBC) :
-    DeductionExactnessNeeds pA pB pC sAB sBC :=
-  needs
-
 theorem exactnessBreaks_pointFormula_mem_interval
     {pA pB pC sAB sBC : ℝ}
     (needs : DeductionExactnessNeeds pA pB pC sAB sBC)
@@ -274,7 +268,7 @@ def whatBreaks {T : ClosedTheorySet Const} {φ : ClosedFormula Const}
     (needs : DeductionExactnessNeeds pA pB pC sAB sBC) :
     WhatBreaks (Const := Const) T φ pA pB pC sAB sBC where
   sourceTokens := sourceBreaks (Const := Const) w
-  exactnessNeeds := exactnessBreaks needs
+  exactnessNeeds := needs
 
 @[simp] theorem whatBreaks_sourceTokens
     {T : ClosedTheorySet Const} {φ : ClosedFormula Const}
@@ -291,7 +285,7 @@ def whatBreaks {T : ClosedTheorySet Const} {φ : ClosedFormula Const}
     {pA pB pC sAB sBC : ℝ}
     (needs : DeductionExactnessNeeds pA pB pC sAB sBC) :
     (whatBreaks (Const := Const) w needs).exactnessNeeds =
-      exactnessBreaks needs :=
+      needs :=
   rfl
 
 theorem whatBreaks_source_mem_sourceIdeal
@@ -328,7 +322,7 @@ theorem whatBreaks_exactness_pointFormula_mem_interval
         credibility hc
     itv.lower ≤ simpleDeductionStrengthFormula pA pB pC sAB sBC ∧
       simpleDeductionStrengthFormula pA pB pC sAB sBC ≤ itv.upper := by
-  dsimp [whatBreaks, exactnessBreaks]
+  dsimp [whatBreaks]
   exact exactnessBreaks_pointFormula_mem_interval needs credibility hc
 
 theorem whatBreaks_negative_example

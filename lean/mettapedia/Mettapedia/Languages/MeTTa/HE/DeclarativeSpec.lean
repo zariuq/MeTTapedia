@@ -33,6 +33,10 @@ mirroring the style of `PeTTa/DeclarativeSpec.lean`. It is simultaneously:
    `cons-atom`, `decons-atom`, `collapse-bind`, `superpose-bind`,
    `function`/`return`, `metta`, `context-space`, `call-native`.  Host context
    spaces and collapsed binding snapshots have abstract opaque carriers.
+   The shared spec evaluator distinguishes ordinary native emissions from
+   producer-completed values. Ordinary emitted functions execute before the
+   saved return demand; completed values bypass interpretation but retain
+   the existing return cast and binding refinement.
 
    `MinimalMeTTa.lean` is retained only as the legacy structural validation
    relation used by the older small-step development.
@@ -513,14 +517,15 @@ theorem cons_decons_roundtrip (services : Spec.Eval.Minimal.Services)
 | `empty_results`          | 386-387   | all paths empty (non-grounded) |
 | `grounded_empty_results` | 386-387   | grounded dispatch returns empty list |
 
-### MinimalStepRel constructors (spec lines 84-91)
+### Shared CoreStepRel constructors (minimal instructions)
 | Constructor         | Description                          |
 |--------------------|--------------------------------------|
 | `eval`              | `(eval <atom>)` — one step            |
 | `evalc`             | `(evalc <atom> <space>)` — in context |
-| `metta`             | `(metta <atom> <type> <space>)`       |
-| `chain`             | `(chain <atom> <var> <tmpl>)`         |
-| `chainEmpty`        | chain with Empty result               |
+| `metta`             | non-error full typed interpretation result |
+| `mettaAtom`         | exact Atom-demand input passthrough |
+| `mettaError`        | syntactic error input passthrough |
+| `chain`             | minimal source, local binder, minimal template; internal sentinels are data |
 | `unify`             | `(unify ...)` — branch by match       |
 | `consAtom`          | `(cons-atom <hd> <tl>)`              |
 | `deconsAtom`        | `(decons-atom <expr>)`               |

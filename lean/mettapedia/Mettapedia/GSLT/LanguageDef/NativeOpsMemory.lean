@@ -251,6 +251,22 @@ def MemoryRelated (source : SourceMemory) (target : TargetMemory) : Prop :=
     (source.cells storage element).map encodeValue) ∧
   (∀ storage, target.owned storage = (source.owned storage).map encode)
 
+/-- The independent memory relation determines the whole native memory,
+ including all live cells and the allocation ownership map. -/
+theorem memory_related_target_unique {source : SourceMemory} {one two : TargetMemory}
+    (first : MemoryRelated source one) (second : MemoryRelated source two) : one = two := by
+  have cells : one.cells = two.cells := by
+    funext storage element
+    exact (first.1 storage element).trans (second.1 storage element).symm
+  have owned : one.owned = two.owned := by
+    funext storage
+    exact (first.2 storage).trans (second.2 storage).symm
+  cases one
+  cases two
+  cases cells
+  cases owned
+  rfl
+
 def sourceRead (memory : SourceMemory) (address : Address) : Option SourceValue :=
   (memory.cells address.storage address.element).bind (sourceReadPath address.fields)
 
@@ -441,6 +457,173 @@ theorem memory_write_missing_iff (source : SourceMemory) (target : TargetMemory)
       cases changed : sourceWritePath address.fields value old <;>
         simp [sourceWrite, targetWrite, related.1, previous, write_path_correspondence, changed,
           bind, Option.bind]
+
+/-- Ordered field transport reads each source field at the moment its write
+occurs. Overlapping source and destination records therefore retain C's
+sequential behavior; the source record is not snapshotted in advance. -/
+def sourceCopyFields (source destination : Address) :
+    List (Nat × Nat) → SourceMemory → Option SourceMemory
+  | [], memory => some memory
+  | (readIndex, writeIndex) :: rest, memory => do
+      let value ← sourceRead memory { source with fields := source.fields ++ [readIndex] }
+      let written ← sourceWrite memory { destination with fields := destination.fields ++ [writeIndex] } value
+      sourceCopyFields source destination rest written
+
+def targetCopyFields (source destination : Address) :
+    List (Nat × Nat) → TargetMemory → Option TargetMemory
+  | [], memory => some memory
+  | (readIndex, writeIndex) :: rest, memory => do
+      let value ← targetRead memory { source with fields := source.fields ++ [readIndex] }
+      let written ← targetWrite memory { destination with fields := destination.fields ++ [writeIndex] } value
+      targetCopyFields source destination rest written
+
+theorem field_copies_forward (sourceAddress destination : Address)
+    (fields : List (Nat × Nat)) {source : SourceMemory} {target : TargetMemory}
+    (related : MemoryRelated source target) {after : SourceMemory}
+    (copied : sourceCopyFields sourceAddress destination fields source = some after) :
+    ∃ native, targetCopyFields sourceAddress destination fields target = some native ∧
+      MemoryRelated after native := by
+  induction fields generalizing source target with
+  | nil =>
+      cases Option.some.inj copied
+      exact ⟨target, rfl, related⟩
+  | cons field rest ih =>
+      rcases field with ⟨readIndex, writeIndex⟩
+      cases loaded : sourceRead source { sourceAddress with fields := sourceAddress.fields ++ [readIndex] } with
+      | none => simp [sourceCopyFields, loaded] at copied
+      | some value =>
+          cases written : sourceWrite source
+              { destination with fields := destination.fields ++ [writeIndex] } value with
+          | none => simp [sourceCopyFields, loaded, written] at copied
+          | some middle =>
+              have remaining : sourceCopyFields sourceAddress destination rest middle = some after := by
+                simpa [sourceCopyFields, loaded, written] using copied
+              obtain ⟨nativeMiddle, nativeWrite, middleRelated⟩ :=
+                memory_write_forward source target related _ value middle written
+              obtain ⟨native, tail, afterRelated⟩ := ih middleRelated remaining
+              exact ⟨native, by
+                simp [targetCopyFields, memory_read_correspondence source target related,
+                  loaded, nativeWrite, tail], afterRelated⟩
+
+theorem field_copies_backward (sourceAddress destination : Address)
+    (fields : List (Nat × Nat)) {source : SourceMemory} {target : TargetMemory}
+    (related : MemoryRelated source target) {native : TargetMemory}
+    (copied : targetCopyFields sourceAddress destination fields target = some native) :
+    ∃ after, sourceCopyFields sourceAddress destination fields source = some after ∧
+      MemoryRelated after native := by
+  induction fields generalizing source target with
+  | nil =>
+      cases Option.some.inj copied
+      exact ⟨source, rfl, related⟩
+  | cons field rest ih =>
+      rcases field with ⟨readIndex, writeIndex⟩
+      cases loaded : sourceRead source { sourceAddress with fields := sourceAddress.fields ++ [readIndex] } with
+      | none =>
+          simp [targetCopyFields, memory_read_correspondence source target related, loaded] at copied
+      | some value =>
+          have nativeLoad : targetRead target
+              { sourceAddress with fields := sourceAddress.fields ++ [readIndex] } = some (encodeValue value) := by
+            simp [memory_read_correspondence source target related, loaded]
+          cases written : targetWrite target
+              { destination with fields := destination.fields ++ [writeIndex] } (encodeValue value) with
+          | none => simp [targetCopyFields, nativeLoad, written] at copied
+          | some middle =>
+              have remaining : targetCopyFields sourceAddress destination rest middle = some native := by
+                simpa [targetCopyFields, nativeLoad, written] using copied
+              obtain ⟨sourceMiddle, sourceWrite, middleRelated⟩ :=
+                memory_write_backward source target related _ value middle written
+              obtain ⟨after, tail, afterRelated⟩ := ih middleRelated remaining
+              exact ⟨after, by simp [sourceCopyFields, loaded, sourceWrite, tail], afterRelated⟩
+
+theorem field_copies_missing_iff (sourceAddress destination : Address)
+    (fields : List (Nat × Nat)) {source : SourceMemory} {target : TargetMemory}
+    (related : MemoryRelated source target) :
+    targetCopyFields sourceAddress destination fields target = none ↔
+      sourceCopyFields sourceAddress destination fields source = none := by
+  constructor
+  · intro missing
+    cases copied : sourceCopyFields sourceAddress destination fields source with
+    | none => rfl
+    | some after =>
+        obtain ⟨native, copied, _⟩ := field_copies_forward sourceAddress destination fields related copied
+        rw [missing] at copied
+        contradiction
+  · intro missing
+    cases copied : targetCopyFields sourceAddress destination fields target with
+    | none => rfl
+    | some native =>
+        obtain ⟨after, copied, _⟩ := field_copies_backward sourceAddress destination fields related copied
+        rw [missing] at copied
+        contradiction
+
+/-- Native field transport does not allocate or acquire ownership of payloads. -/
+theorem target_field_copies_owned (source destination : Address)
+    (fields : List (Nat × Nat)) {memory after : TargetMemory}
+    (copied : targetCopyFields source destination fields memory = some after) :
+    after.owned = memory.owned := by
+  induction fields generalizing memory with
+  | nil => cases Option.some.inj copied; rfl
+  | cons field rest ih =>
+      rcases field with ⟨readIndex, writeIndex⟩
+      cases loaded : targetRead memory { source with fields := source.fields ++ [readIndex] } with
+      | none => simp [targetCopyFields, loaded] at copied
+      | some value =>
+          cases written : targetWrite memory { destination with fields := destination.fields ++ [writeIndex] } value with
+          | none => simp [targetCopyFields, loaded, written] at copied
+          | some middle =>
+              have remaining : targetCopyFields source destination rest middle = some after := by
+                simpa [targetCopyFields, loaded, written] using copied
+              exact (ih remaining).trans (targetRead_after_write written).2
+
+namespace FieldCopyControls
+
+def address : Address := ⟨1, 0, []⟩
+
+def source : SourceMemory :=
+  ⟨fun storage element => if storage = 1 ∧ element = 0 then
+      some (.record "Triple" [.word 7, .word 11, .word 13]) else none,
+   fun storage => if storage = 1 then some 1 else none⟩
+
+def target : TargetMemory :=
+  ⟨fun storage element => if storage = 1 ∧ element = 0 then
+      some (.record "Triple" [.word 7, .word 11, .word 13]) else none,
+   fun storage => if storage = 1 then some 1 else none⟩
+
+def sourceObservation (fields : List (Nat × Nat)) : Option SourceValue :=
+  (sourceCopyFields address address fields source).bind
+    (fun after => sourceRead after ⟨1, 0, [2]⟩)
+
+def targetObservation (fields : List (Nat × Nat)) : Option TargetValue :=
+  (targetCopyFields address address fields target).bind
+    (fun after => targetRead after ⟨1, 0, [2]⟩)
+
+/-- The second read sees the first assignment through the existing alias. -/
+theorem aliased_source_read_after_write :
+    sourceObservation [(0, 1), (1, 2)] = some (.word 7) := by rfl
+
+theorem aliased_target_read_after_write :
+    targetObservation [(0, 1), (1, 2)] = some (.word 7) := by rfl
+
+theorem reordered_assignments_change_observation :
+    targetObservation [(1, 2), (0, 1)] ≠ targetObservation [(0, 1), (1, 2)] := by
+  intro same
+  have impossible : (some (.word 11) : Option TargetValue) = some (.word 7) := same
+  have words := TargetValue.word.inj (Option.some.inj impossible)
+  have values := congrArg BitVec.toNat words
+  contradiction
+
+theorem omitted_assignment_changes_observation :
+    targetObservation [(1, 2)] ≠ targetObservation [(0, 1), (1, 2)] := by
+  intro same
+  have impossible : (some (.word 11) : Option TargetValue) = some (.word 7) := same
+  have words := TargetValue.word.inj (Option.some.inj impossible)
+  have values := congrArg BitVec.toNat words
+  contradiction
+
+theorem nonexistent_field_is_not_zero :
+    targetCopyFields address address [(3, 1)] target = none := by rfl
+
+end FieldCopyControls
 
 def sourceRelease (memory : SourceMemory) (storage : Nat) : SourceMemory :=
   { cells := fun candidate index => if candidate = storage then none else memory.cells candidate index

@@ -194,11 +194,4 @@ theorem elementTail_packedChildren
     packedChildren (elementTail plan children newBefore).2 = packedChildren children :=
   transport_packedChildren children _ _
 
-#print axioms transport
-#print axioms transport_packedChildren
-#print axioms append
-#print axioms append_packedChildren
-#print axioms argumentTail_packedChildren
-#print axioms elementTail_packedChildren
-
 end Mettapedia.GSLT.LanguageDef.Cost.RetainedBoundaryOriginTransport

@@ -51,9 +51,9 @@ namespace PeTTaSpace
 /-- The empty atomspace. -/
 def empty : PeTTaSpace := { facts := [], rules := [] }
 
-/-- Add an atom to the space (returns a new space). -/
+/-- Append an atom in insertion order, retaining duplicate occurrences. -/
 def addAtom (s : PeTTaSpace) (p : Pattern) : PeTTaSpace :=
-  { s with facts := p :: s.facts }
+  { s with facts := s.facts ++ [p] }
 
  /-- Stored source atom corresponding to a premise-free rewrite rule.
 
@@ -145,12 +145,12 @@ theorem mem_spaceMatch {s : PeTTaSpace} {pat tmpl q : Pattern} :
 /-- Facts in the original space are preserved after `addAtom`. -/
 theorem mem_facts_addAtom {s : PeTTaSpace} {p fact : Pattern} (h : fact ∈ s.facts) :
     fact ∈ (s.addAtom p).facts :=
-  List.mem_cons_of_mem _ h
+  List.mem_append_left _ h
 
 /-- The added atom is a fact in the new space. -/
 theorem mem_facts_addAtom_self (s : PeTTaSpace) (p : Pattern) :
     p ∈ (s.addAtom p).facts :=
-  List.mem_cons_self
+  List.mem_append_right _ (List.mem_cons_self)
 
 /-- Facts in `removeAtom` are a subset of the original facts. -/
 theorem mem_facts_removeAtom_subset {s : PeTTaSpace} {p fact : Pattern}
@@ -163,8 +163,9 @@ theorem mem_storedAtoms_addAtom {s : PeTTaSpace} {p atom : Pattern}
     (h : atom ∈ s.storedAtoms) :
     atom ∈ (s.addAtom p).storedAtoms := by
   unfold storedAtoms at h ⊢
-  simp [addAtom] at h ⊢
-  exact Or.inr h
+  rcases List.mem_append.mp h with oldFact | storedRule
+  · exact List.mem_append_left _ (List.mem_append_left _ oldFact)
+  · exact List.mem_append_right _ storedRule
 
 /-- Any fact stored in the space is also a visible stored atom. -/
 theorem mem_storedAtoms_of_fact {s : PeTTaSpace} {fact : Pattern}

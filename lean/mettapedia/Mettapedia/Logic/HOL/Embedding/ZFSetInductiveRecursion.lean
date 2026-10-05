@@ -5,18 +5,20 @@ import Mettapedia.Logic.HOL.Embedding.ZFSetTraceProducts
 # Recursion along the subterm order of an inductive carrier
 
 `recFun` computes a value from the values at the direct recursive arguments of one
-constructor. The recursion defined here follows every proper subterm. The stages of
-the carrier are the measure: a direct subterm of a set in `iterate sig (n + 1)` lies
-in `iterate sig n`, and a set in no iterate has no subterm. The transitive closure of
-that relation is well-founded on every set, and `WellFounded.fix` supplies the
-unfolding equation at every set.
+constructor. The recursion defined here follows every proper subterm. A direct subterm
+has a smaller rank than the set it stands in, and a set outside the carrier has no
+subterm; so the subterm relation and its transitive closure are well-founded on every
+set, for every signature, and `WellFounded.fix` supplies the unfolding equation at every
+set. When no two constructors carry one tag, the stage drops as well: a direct subterm of
+a set in `iterate sig (n + 1)` lies in `iterate sig n` (`sub_mem_prev`).
 
 Two carriers give the lexicographic product of their transitive subterm relations.
 A third carrier, and any further one, is the same product nested once more; the
 function set is the corresponding tower of traced products. The development writes
 the two-carrier case.
 
-Primitive recursion is the special case that reads only the direct subterms. Half,
+Primitive recursion is the special case that reads only the direct subterms, for a
+signature with distinct tags (`subRec_recFun`). Half,
 the Ackermann function, and addition with an accumulator are computed on the embedded
 natural numbers. An equation that does not descend along a subterm may have no
 solution, or more than one.
@@ -66,14 +68,14 @@ theorem atRecursive_tuple_rank {fs : List Field.{u}} {args : List ZFSet.{u}} {y 
       rw [tuple]
       exact ih.trans (rank_gt_second _ _)
 
-theorem arg_rank_lt_constructor (i : Nat) (y : ZFSet.{u}) (ys : List ZFSet.{u}) :
-    y.rank < (constructorValue i (y :: ys)).rank := by
+theorem arg_rank_lt_constructor (t y : ZFSet.{u}) (ys : List ZFSet.{u}) :
+    y.rank < (constructorValue t (y :: ys)).rank := by
   have inTuple : y.rank < (tuple (y :: ys)).rank := by
     rw [tuple]
     exact rank_gt_first y (tuple ys)
-  have inValue : (tuple (y :: ys)).rank < (constructorValue i (y :: ys)).rank := by
+  have inValue : (tuple (y :: ys)).rank < (constructorValue t (y :: ys)).rank := by
     rw [constructorValue]
-    exact rank_gt_second (numeral i) (tuple (y :: ys))
+    exact rank_gt_second t (tuple (y :: ys))
   exact inTuple.trans inValue
 
 /-! ## The subterm relation -/
@@ -82,8 +84,9 @@ theorem arg_rank_lt_constructor (i : Nat) (y : ZFSet.{u}) (ys : List ZFSet.{u}) 
 at a recursive field of the constructor value that `x` is. -/
 def Sub (sig : Signature.{u}) (y x : ZFSet.{u}) : Prop :=
   x ∈ carrier sig ∧
-    ∃ i c args, sig[i]? = some c ∧ Fits (carrier sig) c args ∧
-      constructorValue i args = x ∧ AtRecursive c args y
+    ∃ (i : Nat) (c : Constructor.{u}) (args : List ZFSet.{u}),
+      sig[i]? = some c ∧ Fits (carrier sig) c.fields args ∧
+        constructorValue c.tag args = x ∧ AtRecursive c.fields args y
 
 theorem sub_right_mem {sig : Signature.{u}} {y x : ZFSet.{u}} (related : Sub sig y x) :
     x ∈ carrier sig :=
@@ -100,44 +103,36 @@ theorem sub_outside {sig : Signature.{u}} {x : ZFSet.{u}} (outside : x ∉ carri
   fun related => outside (sub_right_mem related)
 
 theorem sub_at {sig : Signature.{u}} {i : Nat} {c : Constructor.{u}} {args : List ZFSet.{u}}
-    {y : ZFSet.{u}} (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c args)
-    (pos : AtRecursive c args y) : Sub sig y (constructorValue i args) :=
+    {y : ZFSet.{u}} (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c.fields args)
+    (pos : AtRecursive c.fields args y) : Sub sig y (constructorValue c.tag args) :=
   ⟨constructor_mem_carrier atIndex fitting, i, c, args, atIndex, fitting, rfl, pos⟩
 
 theorem sub_rank_lt {sig : Signature.{u}} {y x : ZFSet.{u}} (related : Sub sig y x) :
     y.rank < x.rank := by
-  obtain ⟨_, i, _, args, _, _, valueEq, pos⟩ := related
-  have hlt : y.rank < (constructorValue i args).rank :=
+  obtain ⟨_, _, c, args, _, _, valueEq, pos⟩ := related
+  have hlt : y.rank < (constructorValue c.tag args).rank :=
     (atRecursive_tuple_rank pos).trans (by
       rw [constructorValue]
-      exact rank_gt_second (numeral i) (tuple args))
+      exact rank_gt_second c.tag (tuple args))
   rw [valueEq] at hlt
   exact hlt
 
-/-- The stage drops. A direct subterm of a member of `iterate sig (n + 1)` was already
-present in `iterate sig n`. -/
-theorem sub_mem_prev {sig : Signature.{u}} {y x : ZFSet.{u}} {n : Nat}
-    (related : Sub sig y x) (member : x ∈ iterate sig (n + 1)) : y ∈ iterate sig n := by
+/-- The stage drops, for a signature with distinct tags. A direct subterm of a member of
+`iterate sig (n + 1)` was already present in `iterate sig n`. -/
+theorem sub_mem_prev {sig : Signature.{u}} (distinct : DistinctTags sig) {y x : ZFSet.{u}}
+    {n : Nat} (related : Sub sig y x) (member : x ∈ iterate sig (n + 1)) :
+    y ∈ iterate sig n := by
   obtain ⟨_, i, c, args, atIndex, fitting, valueEq, pos⟩ := related
   obtain ⟨j, d, args', atJ, fitting', valueEq'⟩ := exists_presentation member
-  obtain ⟨rfl, rfl, rfl⟩ := inversion_unique atIndex atJ fitting
+  obtain ⟨rfl, rfl, rfl⟩ := inversion_unique distinct atIndex atJ fitting
     (fitting'.mono (iterate_subset_carrier n)) valueEq valueEq'
   exact atRecursive_mem fitting' pos
 
-theorem acc_of_iterate {sig : Signature.{u}} :
-    ∀ n x, x ∈ iterate sig n → Acc (Sub sig) x
-  | 0, x, member => (ZFSet.notMem_empty x member).elim
-  | n + 1, x, member =>
-      Acc.intro x fun y related => acc_of_iterate n y (sub_mem_prev related member)
-
-/-- `Sub sig` is well-founded on every set. A predecessor lies in some iterate, and
-those sets are accessible by induction on the stage. A set outside the carrier has
-no predecessor. -/
-theorem sub_wf (sig : Signature.{u}) : WellFounded (Sub sig) := by
-  refine ⟨fun x => Acc.intro x (by
-    intro y related
-    obtain ⟨n, hn⟩ := mem_carrier.mp (sub_left_mem related)
-    exact acc_of_iterate n y hn)⟩
+/-- `Sub sig` is well-founded on every set: a direct subterm has a smaller rank. A set
+outside the carrier has no predecessor. -/
+theorem sub_wf (sig : Signature.{u}) : WellFounded (Sub sig) :=
+  Subrelation.wf (r := InvImage (· < ·) ZFSet.rank) (fun related => sub_rank_lt related)
+    (InvImage.wf ZFSet.rank Ordinal.lt_wf)
 
 /-- The transitive closure of the direct subterm relation. -/
 def SubPlus (sig : Signature.{u}) (y x : ZFSet.{u}) : Prop :=
@@ -168,8 +163,8 @@ theorem subPlus_rank_lt {sig : Signature.{u}} {y x : ZFSet.{u}} (related : SubPl
 
 theorem subPlus_at {sig : Signature.{u}} {i : Nat} {c : Constructor.{u}}
     {args : List ZFSet.{u}} {y : ZFSet.{u}} (atIndex : sig[i]? = some c)
-    (fitting : Fits (carrier sig) c args) (pos : AtRecursive c args y) :
-    SubPlus sig y (constructorValue i args) :=
+    (fitting : Fits (carrier sig) c.fields args) (pos : AtRecursive c.fields args y) :
+    SubPlus sig y (constructorValue c.tag args) :=
   TransGen.single (sub_at atIndex fitting pos)
 
 /-- The one-step function of recursion along proper subterms. -/
@@ -208,14 +203,15 @@ theorem subRec_unique {sig : Signature.{u}} (F : SubStep sig) (g : ZFSet.{u} →
 
 /-! ## Primitive recursion reads only the direct subterms -/
 
-/-- The unique constructor presentation of a member of the carrier. -/
+/-- A constructor presentation of a member of the carrier. With distinct tags there is
+one (`inversionOf_spec`). -/
 structure Inversion (sig : Signature.{u}) (x : ZFSet.{u}) where
   index : Nat
   ctor : Constructor.{u}
   args : List ZFSet.{u}
   atIndex : sig[index]? = some ctor
-  fitting : Fits (carrier sig) ctor args
-  valueEq : constructorValue index args = x
+  fitting : Fits (carrier sig) ctor.fields args
+  valueEq : constructorValue ctor.tag args = x
 
 theorem inversion_nonempty {sig : Signature.{u}} {x : ZFSet.{u}} (member : x ∈ carrier sig) :
     Nonempty (Inversion sig x) := by
@@ -226,33 +222,33 @@ noncomputable def inversionOf {sig : Signature.{u}} {x : ZFSet.{u}} (member : x 
     Inversion sig x :=
   Classical.choice (inversion_nonempty member)
 
-theorem inversionOf_spec {sig : Signature.{u}} {x : ZFSet.{u}} (member : x ∈ carrier sig)
-    {i : Nat} {c : Constructor.{u}} {args : List ZFSet.{u}}
-    (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c args)
-    (valueEq : constructorValue i args = x) :
+theorem inversionOf_spec {sig : Signature.{u}} (distinct : DistinctTags sig) {x : ZFSet.{u}}
+    (member : x ∈ carrier sig) {i : Nat} {c : Constructor.{u}} {args : List ZFSet.{u}}
+    (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c.fields args)
+    (valueEq : constructorValue c.tag args = x) :
     (inversionOf member).index = i ∧ (inversionOf member).ctor = c ∧
       (inversionOf member).args = args :=
-  inversion_unique (inversionOf member).atIndex atIndex (inversionOf member).fitting fitting
-    (inversionOf member).valueEq valueEq
+  inversion_unique distinct (inversionOf member).atIndex atIndex (inversionOf member).fitting
+    fitting (inversionOf member).valueEq valueEq
 
 noncomputable def applyConstructor {sig : Signature.{u}}
     (onConstructor : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     (x : ZFSet.{u}) (f : ZFSet.{u} → ZFSet.{u}) : ZFSet.{u} :=
   if member : x ∈ carrier sig then
     onConstructor (inversionOf member).index (inversionOf member).args
-      (mapRec f (inversionOf member).ctor (inversionOf member).args)
+      (mapRec f (inversionOf member).ctor.fields (inversionOf member).args)
   else
     ∅
 
-theorem applyConstructor_eq {sig : Signature.{u}}
+theorem applyConstructor_eq {sig : Signature.{u}} (distinct : DistinctTags sig)
     (onConstructor : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     {i : Nat} {c : Constructor.{u}} {args : List ZFSet.{u}}
-    (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c args)
+    (atIndex : sig[i]? = some c) (fitting : Fits (carrier sig) c.fields args)
     (f : ZFSet.{u} → ZFSet.{u}) :
-    applyConstructor (sig := sig) onConstructor (constructorValue i args) f =
-      onConstructor i args (mapRec f c args) := by
+    applyConstructor (sig := sig) onConstructor (constructorValue c.tag args) f =
+      onConstructor i args (mapRec f c.fields args) := by
   have member := constructor_mem_carrier atIndex fitting
-  obtain ⟨hi, hc, ha⟩ := inversionOf_spec member atIndex fitting rfl
+  obtain ⟨hi, hc, ha⟩ := inversionOf_spec distinct member atIndex fitting rfl
   rw [applyConstructor, dif_pos member, hi, hc, ha]
 
 theorem mapRec_at_congr {f g : ZFSet.{u} → ZFSet.{u}} {X : ZFSet.{u}}
@@ -282,15 +278,15 @@ noncomputable def recAsSubStep {sig : Signature.{u}}
       else
         ∅
 
-theorem subRec_recFun {sig : Signature.{u}}
+theorem subRec_recFun {sig : Signature.{u}} (distinct : DistinctTags sig)
     (onConstructor : Nat → List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u})
     {x : ZFSet.{u}} (member : x ∈ carrier sig) :
     subRec (sig := sig) (recAsSubStep (sig := sig) onConstructor) x =
       recFun (sig := sig) onConstructor x := by
-  refine recFun_unique onConstructor
+  refine recFun_unique distinct onConstructor
     (subRec (sig := sig) (recAsSubStep (sig := sig) onConstructor)) ?_ member
   intro i c args atIndex fitting
-  rw [subRec_eq, recAsSubStep, applyConstructor_eq onConstructor atIndex fitting]
+  rw [subRec_eq, recAsSubStep, applyConstructor_eq distinct onConstructor atIndex fitting]
   apply congrArg (onConstructor i args)
   refine mapRec_at_congr fitting ?_
   intro a pos
@@ -415,7 +411,8 @@ theorem lexTrace_app {sig₁ sig₂ : Signature.{u}} (F : LexStep sig₁ sig₂)
 /-! ## Embedded natural numbers -/
 
 theorem sub_embed_succ (n : Nat) : Sub natSignature (natEmbed n) (natEmbed (n + 1)) :=
-  sub_at (c := [Field.recursive]) rfl (Fits.recursive (natEmbed_mem n) Fits.nil) AtRecursive.head
+  sub_at (i := 1) (c := ⟨numeral 1, [Field.recursive]⟩) rfl
+    (Fits.recursive (natEmbed_mem n) Fits.nil) AtRecursive.head
 
 theorem subPlus_embed_one (n : Nat) :
     SubPlus natSignature (natEmbed n) (natEmbed (n + 1)) :=
@@ -426,7 +423,7 @@ theorem subPlus_embed_two (n : Nat) :
   TransGen.tail (subPlus_embed_one n) (sub_embed_succ (n + 1))
 
 theorem natEmbed_zero_ne_succ (n : Nat) : natEmbed 0 ≠ natEmbed (n + 1) :=
-  constructorValue_ne_of_index_ne (by decide : (0 : Nat) ≠ 1) [] [natEmbed n]
+  constructorValue_ne_of_tag_ne numeral_zero_ne_one [] [natEmbed n]
 
 theorem natEmbed_injective : Function.Injective (natEmbed : Nat → ZFSet.{u}) := by
   intro m n h
@@ -459,7 +456,7 @@ def halfPred (x : ZFSet.{u})
   (x = natEmbed 0 → result = natEmbed 0) ∧
     (x = natEmbed 1 → result = natEmbed 0) ∧
       ∀ n, (eq : x = natEmbed (n + 2)) →
-        result = constructorValue 1 [rec (natEmbed n) (twoProof n eq)]
+        result = constructorValue (numeral 1) [rec (natEmbed n) (twoProof n eq)]
 
 theorem halfPred_exists (x : ZFSet.{u})
     (rec : (y : ZFSet.{u}) → SubPlus natSignature y x → ZFSet.{u}) :
@@ -485,7 +482,8 @@ theorem halfPred_exists (x : ZFSet.{u})
               exact Nat.succ_ne_zero n
                 (Nat.succ.inj (natEmbed_injective (hk.trans eq))).symm
         | succ k =>
-            refine ⟨constructorValue 1 [rec (natEmbed k) (twoProof k hk.symm)], ?_, ?_, ?_⟩
+            refine ⟨constructorValue (numeral 1) [rec (natEmbed k) (twoProof k hk.symm)],
+              ?_, ?_, ?_⟩
             · intro h
               exfalso
               exact Nat.succ_ne_zero (k + 1) (natEmbed_injective (hk.trans h))
@@ -530,7 +528,7 @@ theorem half_one : half (natEmbed 1) = natEmbed 0 := by
   exact (halfStep_spec (natEmbed 1) (fun y _ => half y)).2.1 rfl
 
 theorem half_succ_succ (n : Nat) :
-    half (natEmbed (n + 2)) = constructorValue 1 [half (natEmbed n)] := by
+    half (natEmbed (n + 2)) = constructorValue (numeral 1) [half (natEmbed n)] := by
   rw [half, subRec_eq]
   exact (halfStep_spec (natEmbed (n + 2)) (fun y _ => half y)).2.2 n rfl
 
@@ -698,7 +696,7 @@ def plusPred (x : ZFSet.{u})
     (a result : ZFSet.{u}) : Prop :=
   (x = natEmbed 0 → result = a) ∧
     ∀ n, (eq : x = natEmbed (n + 1)) →
-      result = rec (natEmbed n) (plusOneProof n eq) (constructorValue 1 [a])
+      result = rec (natEmbed n) (plusOneProof n eq) (constructorValue (numeral 1) [a])
 
 theorem plusPred_exists (x : ZFSet.{u})
     (rec : (y : ZFSet.{u}) → SubPlus natSignature y x → ZFSet.{u} → ZFSet.{u})
@@ -713,7 +711,8 @@ theorem plusPred_exists (x : ZFSet.{u})
           exfalso
           exact Nat.succ_ne_zero n (natEmbed_injective (hk.trans eq)).symm
     | succ k =>
-        refine ⟨rec (natEmbed k) (plusOneProof k hk.symm) (constructorValue 1 [a]), ?_, ?_⟩
+        refine ⟨rec (natEmbed k) (plusOneProof k hk.symm) (constructorValue (numeral 1) [a]),
+          ?_, ?_⟩
         · intro h
           exfalso
           exact Nat.succ_ne_zero k (natEmbed_injective (hk.trans h))
@@ -752,34 +751,35 @@ theorem plus_zero (a : ZFSet.{u}) : plus (natEmbed 0) a = a := by
   exact (plusAt_spec (natEmbed 0) (fun y _ => plus y) a).1 rfl
 
 theorem plus_succ (n : Nat) (a : ZFSet.{u}) :
-    plus (natEmbed (n + 1)) a = plus (natEmbed n) (constructorValue 1 [a]) := by
+    plus (natEmbed (n + 1)) a = plus (natEmbed n) (constructorValue (numeral 1) [a]) := by
   rw [plus, WellFounded.fix_eq]
   exact (plusAt_spec (natEmbed (n + 1)) (fun y _ => plus y) a).2 n rfl
 
 theorem not_subPlus_successor (a : ZFSet.{u}) :
-    ¬ SubPlus natSignature (constructorValue 1 [a]) a := by
+    ¬ SubPlus natSignature (constructorValue (numeral 1) [a]) a := by
   intro related
-  exact absurd ((subPlus_rank_lt related).trans (arg_rank_lt_constructor 1 a [])) (lt_irrefl _)
+  exact absurd ((subPlus_rank_lt related).trans (arg_rank_lt_constructor (numeral 1) a []))
+    (lt_irrefl _)
 
 theorem plus_natEmbed (m n : Nat) : plus (natEmbed m) (natEmbed n) = natEmbed (m + n) := by
   induction m generalizing n with
   | zero =>
       rw [Nat.zero_add, plus_zero]
   | succ m ih =>
-      have embedStep : constructorValue 1 [natEmbed n] = natEmbed (n + 1) := rfl
+      have embedStep : constructorValue (numeral 1) [natEmbed n] = natEmbed (n + 1) := rfl
       rw [plus_succ, embedStep, ih]
       exact congrArg natEmbed ((Nat.add_succ m n).trans (Nat.succ_add m n).symm)
 
 /-! ## Equations without a descent -/
 
-theorem no_self_successor (x : ZFSet.{u}) : x ≠ constructorValue 1 [x] := by
+theorem no_self_successor (x : ZFSet.{u}) : x ≠ constructorValue (numeral 1) [x] := by
   intro eq
-  have hlt := arg_rank_lt_constructor 1 x []
+  have hlt := arg_rank_lt_constructor (numeral 1) x []
   rw [← eq] at hlt
   exact absurd hlt (lt_irrefl _)
 
 theorem no_self_successor_function :
-    ¬ ∃ g : ZFSet.{u} → ZFSet.{u}, ∃ x : ZFSet.{u}, g x = constructorValue 1 [g x] := by
+    ¬ ∃ g : ZFSet.{u} → ZFSet.{u}, ∃ x : ZFSet.{u}, g x = constructorValue (numeral 1) [g x] := by
   intro ⟨g, x, h⟩
   exact no_self_successor (g x) h
 
@@ -801,26 +801,27 @@ noncomputable def solutionAlt (x : ZFSet.{u}) : ZFSet.{u} :=
 
 theorem solutionAlt_zero : solutionAlt (natEmbed 0) = natEmbed 0 := by
   rw [solutionAlt, dif_pos (natEmbed_mem 0),
-    if_pos (inversionOf_spec (natEmbed_mem 0) rfl Fits.nil rfl).1]
+    if_pos (inversionOf_spec natSignature_distinct (natEmbed_mem 0) (i := 0)
+      (c := ⟨numeral 0, []⟩) rfl Fits.nil rfl).1]
 
 theorem solutionAlt_successor (x : ZFSet.{u}) (member : x ∈ carrier natSignature) :
-    solutionAlt (constructorValue 1 [x]) = natEmbed 1 := by
+    solutionAlt (constructorValue (numeral 1) [x]) = natEmbed 1 := by
   have inCarrier := constructor_mem_carrier (sig := natSignature) (i := 1)
-    (c := [Field.recursive]) rfl (Fits.recursive member Fits.nil)
-  have indexOne := (inversionOf_spec (i := 1) (c := [Field.recursive]) inCarrier rfl
-    (Fits.recursive member Fits.nil) rfl).1
+    (c := ⟨numeral 1, [Field.recursive]⟩) rfl (Fits.recursive member Fits.nil)
+  have indexOne := (inversionOf_spec natSignature_distinct (i := 1)
+    (c := ⟨numeral 1, [Field.recursive]⟩) inCarrier rfl (Fits.recursive member Fits.nil) rfl).1
   rw [solutionAlt, dif_pos inCarrier, if_neg (by rw [indexOne]; decide)]
 
 theorem solutionAlt_shift (x : ZFSet.{u}) (member : x ∈ carrier natSignature) :
-    solutionAlt (constructorValue 1 [x]) =
-      solutionAlt (constructorValue 1 [constructorValue 1 [x]]) := by
+    solutionAlt (constructorValue (numeral 1) [x]) =
+      solutionAlt (constructorValue (numeral 1) [constructorValue (numeral 1) [x]]) := by
   rw [solutionAlt_successor x member,
-    solutionAlt_successor (constructorValue 1 [x])
-      (constructor_mem_carrier (sig := natSignature) (i := 1) (c := [Field.recursive]) rfl
-        (Fits.recursive member Fits.nil))]
+    solutionAlt_successor (constructorValue (numeral 1) [x])
+      (constructor_mem_carrier (sig := natSignature) (i := 1)
+        (c := ⟨numeral 1, [Field.recursive]⟩) rfl (Fits.recursive member Fits.nil))]
 
 theorem solution_differ : solutionConst (natEmbed 1) ≠ solutionAlt (natEmbed 1) := by
-  have asSucc : natEmbed 1 = constructorValue 1 [natEmbed 0] := rfl
+  have asSucc : natEmbed 1 = constructorValue (numeral 1) [natEmbed 0] := rfl
   rw [solutionConst, asSucc, solutionAlt_successor (natEmbed 0) (natEmbed_mem 0)]
   exact natEmbed_zero_ne_succ 0
 
@@ -829,9 +830,11 @@ theorem shift_not_unique :
       g₁ (natEmbed 0) = natEmbed 0 ∧
       g₂ (natEmbed 0) = natEmbed 0 ∧
       (∀ x, x ∈ carrier natSignature →
-        g₁ (constructorValue 1 [x]) = g₁ (constructorValue 1 [constructorValue 1 [x]])) ∧
+        g₁ (constructorValue (numeral 1) [x]) =
+          g₁ (constructorValue (numeral 1) [constructorValue (numeral 1) [x]])) ∧
       (∀ x, x ∈ carrier natSignature →
-        g₂ (constructorValue 1 [x]) = g₂ (constructorValue 1 [constructorValue 1 [x]])) ∧
+        g₂ (constructorValue (numeral 1) [x]) =
+          g₂ (constructorValue (numeral 1) [constructorValue (numeral 1) [x]])) ∧
       g₁ (natEmbed 1) ≠ g₂ (natEmbed 1) :=
   ⟨solutionConst, solutionAlt, rfl, solutionAlt_zero,
     fun _ _ => rfl, solutionAlt_shift, solution_differ⟩

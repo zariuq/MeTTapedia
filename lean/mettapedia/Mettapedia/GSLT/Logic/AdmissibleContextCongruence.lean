@@ -103,8 +103,8 @@ def labelledSystem (A : AdmissibleClass rules)
   observes_resp := observations.observes_resp
   Label := {context : rules.Context // A.Admissible context}
   act := fun label => rules.Act label.val
-  act_resp_left := fun {label} => rules.act_resp_left
-  act_resp_right := fun {label} => rules.act_resp_right
+  act_resp_left := fun {label} => rules.act_resp_left (context := label.val)
+  act_resp_right := fun {label} => rules.act_resp_right (context := label.val)
 
 end AdmissibleClass
 

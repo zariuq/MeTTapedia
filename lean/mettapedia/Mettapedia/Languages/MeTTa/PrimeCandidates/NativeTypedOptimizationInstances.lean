@@ -163,7 +163,14 @@ def profitability : ProfitabilityReceipt spec source nativeAuthority evidence
   improves :=
     SingleValuedDispatch.artifactWorkSpan_le_sourceWorkSpan source evidence
 
-def pathProfitability :=
+theorem pathProfitability :
+    Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.PathProfitabilityReceipt
+      (Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.Prepared.optimized
+        (family := nikFamily spec) (dependencies := keyDependencies _)
+        (revision := candidate.key) (candidate := candidate)
+        authority evidence)
+      Mettapedia.Algebra.WorkSpan (sourcePathWorkSpan spec candidate)
+      (targetPathWorkSpan spec candidate) :=
   NativeTypedOptimizationNIKBridge.profitabilityReceipt spec candidate
     authority evidence profitability
 
@@ -264,7 +271,14 @@ def profitability : ProfitabilityReceipt spec source nativeAuthority evidence
   improves :=
     NonEscapingStorage.artifactWorkSpan_le_sourceWorkSpan source evidence
 
-def pathProfitability :=
+theorem pathProfitability :
+    Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.PathProfitabilityReceipt
+      (Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.Prepared.optimized
+        (family := nikFamily spec) (dependencies := keyDependencies _)
+        (revision := candidate.key) (candidate := candidate)
+        authority evidence)
+      Mettapedia.Algebra.WorkSpan (sourcePathWorkSpan spec candidate)
+      (targetPathWorkSpan spec candidate) :=
   NativeTypedOptimizationNIKBridge.profitabilityReceipt spec candidate
     authority evidence profitability
 
@@ -387,7 +401,14 @@ def profitability : ProfitabilityReceipt spec source nativeAuthority evidence
   optimized_eq := rfl
   improves := by rfl
 
-def pathProfitability :=
+theorem pathProfitability :
+    Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.PathProfitabilityReceipt
+      (Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.Prepared.optimized
+        (family := nikFamily spec) (dependencies := keyDependencies _)
+        (revision := candidate.key) (candidate := candidate)
+        authority evidence)
+      Mettapedia.Algebra.WorkSpan (sourcePathWorkSpan spec candidate)
+      (targetPathWorkSpan spec candidate) :=
   NativeTypedOptimizationNIKBridge.profitabilityReceipt spec candidate
     authority evidence profitability
 

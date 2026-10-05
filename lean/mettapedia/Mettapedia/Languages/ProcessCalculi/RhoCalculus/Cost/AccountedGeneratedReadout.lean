@@ -306,13 +306,4 @@ theorem sendUnderInput_program_nonzero :
       canonicalize (encodeTerm nilP) := by decide +kernel
   exact separate observed
 
-#print axioms sourceFold
-#print axioms program_substitute
-#print axioms readout_canonical_observation
-#print axioms closedSource
-#print axioms readoutAuthority_literal
-#print axioms distinct_authorities_equal_annotation
-#print axioms sendUnderInput_readout
-#print axioms sendUnderInput_program_nonzero
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout

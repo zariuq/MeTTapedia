@@ -48,11 +48,34 @@ def continuationConstructors {theory : IGSLT}
 
 /-! ## The two-slot profile and its base copies -/
 
+/-- Duplicate-freedom of the closure follows from source declaration
+validation. -/
+theorem continuationConstructors_nodup {theory : IGSLT}
+    (cut : InteractionCutPresentation theory) : (continuationConstructors cut).Nodup := by
+  unfold continuationConstructors
+  apply List.Nodup.filter
+  apply List.nodup_attach.mpr
+  exact List.Nodup.of_map (fun constructor => constructor.label)
+    (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
+      theory.presentation.presentation.language theory.presentation.presentation.valid)
+
+/-- A profile whose closure is every authored constructor other than the two
+introductions.  The slot arguments already carry their declaration, parameter
+position, binder representation and schema-occurrence evidence. -/
+def ContinuationDecorationProfile.withNonprincipalInventory {theory : IGSLT}
+    {cut : InteractionCutPresentation theory}
+    (programAdditional : List (ContinuationDecorationSlot cut.program))
+    (environmentAdditional : List (ContinuationDecorationSlot cut.environment)) :
+    ContinuationDecorationProfile cut where
+  programAdditional := programAdditional
+  environmentAdditional := environmentAdditional
+  constructorClosure := continuationConstructors cut
+
 /-- The profile with exactly the cut's two continuation slots.  Its closure
 is every authored constructor other than the two introductions. -/
 def ContinuationDecorationProfile.primary {theory : IGSLT}
-    (cut : InteractionCutPresentation theory) : ContinuationDecorationProfile cut where
-  constructorClosure := continuationConstructors cut
+    (cut : InteractionCutPresentation theory) : ContinuationDecorationProfile cut :=
+  ContinuationDecorationProfile.withNonprincipalInventory [] []
 
 /-- Retype one indexed parameter of a base constructor.  Naming this action
 makes explicit that selection is positional declaration data, not a traversal
@@ -186,15 +209,8 @@ duplicate-free. -/
 theorem noDuplicates {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut) :
-    plan.wrappedConstructors.Nodup := by
-  rw [wrappedConstructors_def]
-  unfold continuationConstructors
-  apply List.Nodup.filter
-  apply List.nodup_attach.mpr
-  exact List.Nodup.of_map (fun constructor => constructor.label)
-    (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-      theory.presentation.presentation.language
-      theory.presentation.presentation.valid)
+    plan.wrappedConstructors.Nodup :=
+  continuationConstructors_nodup cut
 
 theorem programNotWrapped {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
@@ -357,6 +373,11 @@ def generatedPresentation
     (plan : ContinuationRetypingPlan cut) : ValidatedLanguageDef :=
   (ofRetypingPlan plan).generatedPresentation plan.noDuplicates
 
+@[simp]
+theorem generatedPresentation_language (plan : ContinuationRetypingPlan cut) :
+    plan.generatedPresentation.language = plan.generatedLanguage :=
+  rfl
+
 /-- Every authored source constructor has its retyped base copy in the
 generated continuation signature. -/
 theorem costBaseConstructor_mem_generated
@@ -419,6 +440,30 @@ theorem costWrappedConstructor_filter_generated
     constructor membership
 
 end ContinuationRetypingPlan
+
+namespace ContinuationDecorationProfile
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+theorem withNonprincipalInventory_mem
+    (programAdditional : List (ContinuationDecorationSlot cut.program))
+    (environmentAdditional : List (ContinuationDecorationSlot cut.environment))
+    (constructor : DeclaredConstructor theory.presentation.presentation) :
+    constructor ∈ (withNonprincipalInventory programAdditional environmentAdditional).constructorClosure ↔
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor :=
+  ContinuationRetypingPlan.mem_continuationConstructors_iff cut constructor
+
+theorem withNonprincipalInventory_nodup
+    (programAdditional : List (ContinuationDecorationSlot cut.program))
+    (environmentAdditional : List (ContinuationDecorationSlot cut.environment)) :
+    (withNonprincipalInventory programAdditional environmentAdditional).constructorClosure.Nodup :=
+  continuationConstructors_nodup cut
+
+/-- The plan's profile is the case without additional slots. -/
+theorem ofRetypingPlan_eq_withNonprincipalInventory (plan : ContinuationRetypingPlan cut) :
+    ofRetypingPlan plan = withNonprincipalInventory [] [] := rfl
+
+end ContinuationDecorationProfile
 
 namespace ContinuationStableContext
 
@@ -798,11 +843,11 @@ def Wrappable (plan : ContinuationRetypingPlan cut) : Prop :=
   (ofRetypingPlan plan).Wrappable
 
 theorem wrappable_def (plan : ContinuationRetypingPlan cut) :
-    plan.Wrappable ↔
+    plan.Wrappable =
       HasSort plan.generatedLanguage plan.generatedFreeContext []
         (plan.mapContractum theory.presentation.interactionRewrite.1.right)
         costWrappedSortName :=
-  Iff.rfl
+  rfl
 
 /-- The selected interaction redex remains sorted after its two continuation
 positions are moved to the wrapped fiber.  This is the source-side companion
@@ -811,12 +856,12 @@ def RedexRetypable (plan : ContinuationRetypingPlan cut) : Prop :=
   (ofRetypingPlan plan).RedexRetypable
 
 theorem redexRetypable_def (plan : ContinuationRetypingPlan cut) :
-    plan.RedexRetypable ↔
+    plan.RedexRetypable =
       HasSort plan.generatedLanguage plan.generatedFreeContext []
         (mapPattern costBaseLanguageDefSymbolMap
           theory.presentation.interactionRewrite.1.left)
         (costBaseSortName theory.presentation.interactingSort.1.name) :=
-  Iff.rfl
+  rfl
 
 end ContinuationRetypingPlan
 

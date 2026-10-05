@@ -267,7 +267,7 @@ theorem materialize_category_ne_name
         by_contra notPrincipal
         have role : rhoCIGSLT.declaredCostConstructorRole
             ⟨.base sourceConstructor, declared⟩ = .static .base := by
-          simp [CIGSLT.declaredCostConstructorRole, notPrincipal]
+          simp [CIGSLT.declaredCostConstructorRole, ContinuationDecorationProfile.declaredCostConstructorRole, notPrincipal]
         rcases neutral with equality | ⟨kind, equality⟩ <;>
           rw [role] at equality <;> cases equality
       have category : sourceConstructor.1.category = "Proc" := by

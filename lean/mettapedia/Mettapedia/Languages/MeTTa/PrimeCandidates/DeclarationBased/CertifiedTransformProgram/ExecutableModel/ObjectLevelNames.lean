@@ -11,20 +11,20 @@ universes `U₀` and `U₁` of the tower over the finite levels. The tower with 
 any level order, has types of names of levels and families of constants over them, among them
 the polymorphic identity. This module puts the two in one judgment and gives it one set model.
 
-* **The package** (`objectNames Δ Fs`), over a level order `L`: the tower with level names and
+* **The package** (`objectWithFamilies Δ Fs`), over a level order `L`: the tower with level names and
   a list of families `Fs`, together with the object package read at the heads with level names
   (`objectAtNames`): its finite levels are sent to the finite levels of `L` (`towerHead`). Its
   steps are the steps of the families and the instances of the object package's schemas at
   terms of the larger language.
 * **Both parts are contained in it**: every derivation of the tower with level names
-  (`objectNames_of_names`), and every derivation of the object package with its heads mapped
-  (`objectNames_of_object`), when the families' names are not names of the object package.
-* **One set model** (`objectNames_model`), relative to `CofinalInaccessibles`: the tower over
+  (`objectWithFamilies_of_names`), and every derivation of the object package with its heads mapped
+  (`objectWithFamilies_of_object`), when the families' names are not names of the object package.
+* **One set model** (`objectWithFamilies_model`), relative to `CofinalInaccessibles`: the tower over
   `L` seeded with the natural numbers, in the standard reading of the names, with the object
   package's values at its names and the families' values at theirs. The finite stages of the
   tower over `L` are the stages of the tower over the natural numbers
-  (`objectNamesHeads_tower`), so the object package keeps its values. Hence soundness
-  (`objectNames_sound`) and consistency (`objectNames_consistent`): the type `Π (X : U₀). X`
+  (`objectWithFamiliesHeads_tower`), so the object package keeps its values. Hence soundness
+  (`objectWithFamilies_sound`) and consistency (`objectWithFamilies_consistent`): the type `Π (X : U₀). X`
   has no closed term.
 
 Positive examples: the polymorphic identity at the name of the least level, applied to the type
@@ -34,7 +34,7 @@ and over the ordinal notations with the names of all finite levels (`identity_nu
 The identity law, proved once for every level below the bound, applies to the numbers
 (`polyId_law_num_one`, `polyId_law_num_one_omega`): the type of the numbers is a member of the
 universe a name names, because the decoders compute at the name.
-Negative examples: no closed term has the empty type (`objectNames_consistent`), and a family
+Negative examples: no closed term has the empty type (`objectWithFamilies_consistent`), and a family
 that takes the name of the numbers is not apart from the object package (`not_apart_num`).
 -/
 
@@ -97,7 +97,7 @@ def objectAtNames (Δ : LevelBounds L) :
 
 /-- **The object package with level names**, and with a list of families of constants over the
 names. -/
-def objectNames (Δ : LevelBounds L) (Fs : List (Family L)) :
+def objectWithFamilies (Δ : LevelBounds L) (Fs : List (Family L)) :
     ChurchRules (Rules.sum (LevelNames.rules Δ Fs)
       (Rules.mapSchemas (towerHead L) (baseRules Δ) objectRules objectSchemas)) :=
   (church Δ Fs).sum (objectAtNames Δ)
@@ -139,7 +139,7 @@ theorem objectAtNames_declared {Δ : LevelBounds L} {c : DeclName}
   | some _ => rfl
 
 /-- The families declare none of the object package's names. -/
-theorem objectNames_fresh {Δ : LevelBounds L} {Fs : List (Family L)} (apart : Apart Fs)
+theorem objectWithFamilies_fresh {Δ : LevelBounds L} {Fs : List (Family L)} (apart : Apart Fs)
     {c : DeclName} {D : CTm (LevelNames.Head L) 0}
     (known : (objectAtNames Δ).constantType c = some D) : (church Δ Fs).constantType c = none :=
   declared_eq_none fun F mem same => by
@@ -148,19 +148,19 @@ theorem objectNames_fresh {Δ : LevelBounds L} {Fs : List (Family L)} (apart : A
     exact nomatch here
 
 /-- **Every derivation of the tower with level names is a derivation of the package.** -/
-theorem objectNames_of_names {Δ : LevelBounds L} {Fs : List (Family L)}
+theorem objectWithFamilies_of_names {Δ : LevelBounds L} {Fs : List (Family L)}
     {s : CStatement (LevelNames.Head L)} (derivation : CDerivable (church Δ Fs) s) :
-    CDerivable (objectNames Δ Fs) s :=
+    CDerivable (objectWithFamilies Δ Fs) s :=
   CDerivable.sum_left _ derivation
 
 /-- **Every derivation of the object package is a derivation of the package**, with its heads
 read as heads of the tower over `L` with level names. -/
-theorem objectNames_of_object {Δ : LevelBounds L} {Fs : List (Family L)} (apart : Apart Fs)
+theorem objectWithFamilies_of_object {Δ : LevelBounds L} {Fs : List (Family L)} (apart : Apart Fs)
     {s : CStatement Tower.Head} (derivation : CDerivable objectChurch s) :
-    CDerivable (objectNames Δ Fs) (s.mapHead (towerHead L)) :=
+    CDerivable (objectWithFamilies Δ Fs) (s.mapHead (towerHead L)) :=
   (CDerivable.mapHead (objectAtNames_morphism Δ) derivation).mono
     (ChurchRulesSub.sum_right (church Δ Fs) (objectAtNames Δ) id id id id id
-      fun known => objectNames_fresh apart known)
+      fun known => objectWithFamilies_fresh apart known)
 
 end Package
 
@@ -173,13 +173,13 @@ variable (h : CofinalInaccessibles.{u})
 variable (L) in
 /-- The values of the heads: the tower over `L` seeded with the natural numbers, in the
 standard reading of the names, at the least valuation of the level parameters. -/
-noncomputable abbrev objectNamesHeads : LevelNames.Head L → ZFSet.{u} :=
+noncomputable abbrev objectWithFamiliesHeads : LevelNames.Head L → ZFSet.{u} :=
   headValue (standardNames h ZFSet.omega) ∅ fun _ => LevelOrder.bot
 
 /-- **The heads of the object package keep their values**: the finite stages of the tower over
 `L` are the stages of the tower over the natural numbers. -/
-theorem objectNamesHeads_tower :
-    (fun t => objectNamesHeads L h (towerHead L t)) = objHeads h := by
+theorem objectWithFamiliesHeads_tower :
+    (fun t => objectWithFamiliesHeads L h (towerHead L t)) = objHeads h := by
   funext t
   cases t with
   | legacyGround => rfl
@@ -197,32 +197,32 @@ theorem objectNamesHeads_tower :
 variable (L) in
 /-- **The values of the constants**: the object package's at its names, the families' at
 theirs. -/
-noncomputable def objectNamesConsts (Fs : List (Family L)) : DeclName → ZFSet.{u} := fun c =>
+noncomputable def objectWithFamiliesConsts (Fs : List (Family L)) : DeclName → ZFSet.{u} := fun c =>
   if objectDeclared c = true then objectSetConsts h c
-  else familyValues (standardNames h ZFSet.omega) (objectNamesHeads L h) (fun _ _ => ∅) Fs c
+  else familyValues (standardNames h ZFSet.omega) (objectWithFamiliesHeads L h) (fun _ _ => ∅) Fs c
 
-theorem objectNamesConsts_object {Fs : List (Family L)} {c : DeclName}
-    (known : objectDeclared c = true) : objectSetConsts h c = objectNamesConsts L h Fs c :=
+theorem objectWithFamiliesConsts_object {Fs : List (Family L)} {c : DeclName}
+    (known : objectDeclared c = true) : objectSetConsts h c = objectWithFamiliesConsts L h Fs c :=
   (if_pos known).symm
 
-theorem objectNamesConsts_family {Fs : List (Family L)} {c : DeclName}
+theorem objectWithFamiliesConsts_family {Fs : List (Family L)} {c : DeclName}
     (other : objectDeclared c = false) :
-    objectNamesConsts L h Fs c =
-      familyValues (standardNames h ZFSet.omega) (objectNamesHeads L h) (fun _ _ => ∅) Fs c :=
+    objectWithFamiliesConsts L h Fs c =
+      familyValues (standardNames h ZFSet.omega) (objectWithFamiliesHeads L h) (fun _ _ => ∅) Fs c :=
   if_neg (by rw [other]; exact fun impossible => nomatch impossible)
 
 /-- The values fit the families: at the families' names and in the families' values they are
 the families' own. -/
-theorem objectNames_fits {Fs : List (Family L)} (admitted : Admitted Fs) (apart : Apart Fs) :
-    Fits (standardNames h ZFSet.omega) (objectNamesHeads L h) (fun _ _ => ∅) Fs
-      (objectNamesConsts L h Fs) := by
+theorem objectWithFamilies_fits {Fs : List (Family L)} (admitted : Admitted Fs) (apart : Apart Fs) :
+    Fits (standardNames h ZFSet.omega) (objectWithFamiliesHeads L h) (fun _ _ => ∅) Fs
+      (objectWithFamiliesConsts L h Fs) := by
   have family : ∀ n, declared Fs n ≠ none →
-      objectNamesConsts L h Fs n =
-        familyValues (standardNames h ZFSet.omega) (objectNamesHeads L h) (fun _ _ => ∅)
+      objectWithFamiliesConsts L h Fs n =
+        familyValues (standardNames h ZFSet.omega) (objectWithFamiliesHeads L h) (fun _ _ => ∅)
           Fs n := by
     intro n known
     obtain ⟨F, mem, rfl⟩ := exists_family_of_declared known
-    exact objectNamesConsts_family h (apart F mem)
+    exact objectWithFamiliesConsts_family h (apart F mem)
   exact Fits.congr family
     (fun F mem d below n used => family n (admitted.body_declared F mem d below n used))
     (familyValues_fits _ _ _ admitted)
@@ -230,42 +230,42 @@ theorem objectNames_fits {Fs : List (Family L)} (admitted : Admitted Fs) (apart 
 /-- **The object package with level names has a set model**, relative to
 `CofinalInaccessibles`: for an admitted list of families whose names are not names of the
 object package, and positive bounds on the level parameters. -/
-theorem objectNames_model {Fs : List (Family L)} (admitted : Admitted Fs) (apart : Apart Fs)
+theorem objectWithFamilies_model {Fs : List (Family L)} (admitted : Admitted Fs) (apart : Apart Fs)
     {Δ : LevelBounds L} (positive : Δ.Positive) :
-    SetModel (objectNamesHeads L h) (objectNamesConsts L h Fs) (objectNames Δ Fs) :=
+    SetModel (objectWithFamiliesHeads L h) (objectWithFamiliesConsts L h Fs) (objectWithFamilies Δ Fs) :=
   SetModel.sum
     (familyModel (standardNames h ZFSet.omega) admitted ∅ (fun _ => LevelOrder.bot)
       (empty_mem_universeSet h ZFSet.omega LevelOrder.bot) (fun _ _ => ∅)
-      (objectNames_fits h admitted apart) (standard_extraTyped _ _ _ _) positive.valid_bot)
+      (objectWithFamilies_fits h admitted apart) (standard_extraTyped _ _ _ _) positive.valid_bot)
     (SetModel.mapSchemas (towerHead L)
       { (universeModel (standardNames h ZFSet.omega) positive.valid_bot
           (empty_mem_universeSet h ZFSet.omega LevelOrder.bot) Fs) with }
       (fun same => headEq_values (standardNames h ZFSet.omega) positive.valid_bot same)
       (fun known => by
-        rw [objectNamesHeads_tower h]
+        rw [objectWithFamiliesHeads_tower h]
         exact (objectSetModel_agreeing h
-          fun _ declared => objectNamesConsts_object h declared).constants known)
+          fun _ declared => objectWithFamiliesConsts_object h declared).constants known)
       (by
-        rw [objectNamesHeads_tower h]
+        rw [objectWithFamiliesHeads_tower h]
         exact fun rule =>
           (SetTower.objectSchemas_valid h rule).of_closed (objectSchemas_closed rule)
-            fun _ declared => objectNamesConsts_object h declared))
+            fun _ declared => objectWithFamiliesConsts_object h declared))
 
 /-- **Soundness**: every derivable statement of the package holds in the model. -/
-theorem objectNames_sound {Fs : List (Family L)} (admitted : Admitted Fs) (apart : Apart Fs)
+theorem objectWithFamilies_sound {Fs : List (Family L)} (admitted : Admitted Fs) (apart : Apart Fs)
     {Δ : LevelBounds L} (positive : Δ.Positive) {s : CStatement (LevelNames.Head L)}
-    (derivation : CDerivable (objectNames Δ Fs) s) :
-    Holds (objectNamesHeads L h) (objectNamesConsts L h Fs) s :=
-  CDerivable.sound (objectNames_model h admitted apart positive) derivation
+    (derivation : CDerivable (objectWithFamilies Δ Fs) s) :
+    Holds (objectWithFamiliesHeads L h) (objectWithFamiliesConsts L h Fs) s :=
+  CDerivable.sound (objectWithFamilies_model h admitted apart positive) derivation
 
 include h in
 /-- **Consistency**, relative to `CofinalInaccessibles`: no closed term of the package has the
 type `Π (X : U₀). X`. -/
-theorem objectNames_consistent {Fs : List (Family L)} (admitted : Admitted Fs)
+theorem objectWithFamilies_consistent {Fs : List (Family L)} (admitted : Admitted Fs)
     (apart : Apart Fs) {Δ : LevelBounds L} (positive : Δ.Positive)
     (t : CTm (LevelNames.Head L) 0) :
-    ¬ CDerivable (objectNames Δ Fs) (.typing .nil t LevelNames.emptyType) :=
-  CDerivable.no_closed_inhabitant (objectNames_model h admitted apart positive)
+    ¬ CDerivable (objectWithFamilies Δ Fs) (.typing .nil t LevelNames.emptyType) :=
+  CDerivable.no_closed_inhabitant (objectWithFamilies_model h admitted apart positive)
     (LevelNames.ev_emptyType _ ∅ _ _) t
 
 end Model
@@ -291,92 +291,92 @@ theorem identity_num_one {c : L} (positive : LevelOrder.bot < c) {univ el identi
     (distinct : el ≠ univ) (notUniv : identity ≠ univ) (notEl : identity ≠ el)
     (apart : Apart (identityFamily c univ el identity :: decoders c univ el))
     {Δ : LevelBounds L} (positiveBounds : Δ.Positive) :
-    CDerivable (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+    CDerivable (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.equality .nil
         (.app (.app (.app (.const identity) (levelName (.const LevelOrder.bot)))
           (.const numN)) (.app (.const sucN) (.const zeroN)))
         (.app (.const sucN) (.const zeroN)) (.const numN)) := by
   have atZero : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.equality .nil (.app (.const identity) (levelName (.const LevelOrder.bot)))
         (.lam (universeAt (.const LevelOrder.bot)) (.lam (.var 0) (.var 0)))
         (.pi (universeAt (.const LevelOrder.bot)) (.pi (.var 0) (.var 1)))) :=
-    objectNames_of_names
+    objectWithFamilies_of_names
       (identity_at positive distinct notUniv notEl positiveBounds
         fun _ _ => LevelOrder.succ_le_of_lt positive)
   have numTyped : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing .nil (.const numN) (universeAt (.const LevelOrder.bot))) :=
-    objectNames_of_object apart (cnum_typed (Γ := .nil))
+    objectWithFamilies_of_object apart (cnum_typed (Γ := .nil))
   have numInContext : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc .nil (.const numN)) (.const numN) (universeAt (.const LevelOrder.bot))) :=
-    objectNames_of_object apart (cnum_typed (Γ := .snoc .nil cnum))
+    objectWithFamilies_of_object apart (cnum_typed (Γ := .snoc .nil cnum))
   have oneTyped : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing .nil (.app (.const sucN) (.const zeroN)) (.const numN)) :=
-    objectNames_of_object apart (csuc_typed (Γ := .nil) czero_typed)
+    objectWithFamilies_of_object apart (csuc_typed (Γ := .nil) czero_typed)
   have isSort {e : LevelExpr L} :
       (Rules.sum (LevelNames.rules Δ (identityFamily c univ el identity :: decoders c univ el))
         (Rules.mapSchemas (towerHead L) (baseRules Δ) objectRules
           objectSchemas)).isUniverse (.tower (.sort e)) :=
     LevelNames.IsUniverse.tower (.sort e)
   have universeTyped : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing .nil (universeAt (.const LevelOrder.bot))
         (universeAt (.succ (.const LevelOrder.bot)))) :=
     .headType (LevelNames.HeadTyping.tower (.sort _))
   have member : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc .nil (universeAt (.const LevelOrder.bot))) (.var 0)
         (universeAt (.const LevelOrder.bot))) := .var 0
   have again : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc (.snoc .nil (universeAt (.const LevelOrder.bot))) (.var 0)) (.var 1)
         (universeAt (.const LevelOrder.bot))) := .var 1
   have element : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc (.snoc .nil (universeAt (.const LevelOrder.bot))) (.var 0)) (.var 0)
         (.var 1)) := .var 0
   have inner : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc .nil (universeAt (.const LevelOrder.bot))) (.pi (.var 0) (.var 1))
         (universeAt (.max (.const LevelOrder.bot) (.const LevelOrder.bot)))) :=
     .piForm member isSort again isSort (LevelNames.Join.tower (.sorts _ _))
   have whole : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing .nil (.pi (universeAt (.const LevelOrder.bot)) (.pi (.var 0) (.var 1)))
         (universeAt (.max (.succ (.const LevelOrder.bot))
           (.max (.const LevelOrder.bot) (.const LevelOrder.bot))))) :=
     .piForm universeTyped isSort inner isSort (LevelNames.Join.tower (.sorts _ _))
   have body : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc .nil (universeAt (.const LevelOrder.bot))) (.lam (.var 0) (.var 0))
         (.pi (.var 0) (.var 1))) :=
     .lamIntro member isSort inner isSort element
   have applied : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.equality .nil
         (.app (.app (.const identity) (levelName (.const LevelOrder.bot))) (.const numN))
         (.app (.lam (universeAt (.const LevelOrder.bot)) (.lam (.var 0) (.var 0))) (.const numN))
         (.pi (.const numN) (.const numN))) :=
     .appCong atZero (.refl numTyped)
   have unfolded : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.equality .nil
         (.app (.lam (universeAt (.const LevelOrder.bot)) (.lam (.var 0) (.var 0))) (.const numN))
         (.lam (.const numN) (.var 0)) (.pi (.const numN) (.const numN))) :=
     .betaPi whole isSort body numTyped
   have numPi : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing .nil (.pi (.const numN) (.const numN))
         (universeAt (.max (.const LevelOrder.bot) (.const LevelOrder.bot)))) :=
     .piForm numTyped isSort numInContext isSort (LevelNames.Join.tower (.sorts _ _))
   have variable_ : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.typing (.snoc .nil (.const numN)) (.var 0) (.const numN)) := .var 0
   have atOne : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.equality .nil
         (.app (.app (.app (.const identity) (levelName (.const LevelOrder.bot)))
           (.const numN)) (.app (.const sucN) (.const zeroN)))
@@ -384,7 +384,7 @@ theorem identity_num_one {c : L} (positive : LevelOrder.bot < c) {univ el identi
         (.const numN)) :=
     .appCong (.trans applied unfolded) (.refl oneTyped)
   have computed : CDerivable
-      (objectNames Δ (identityFamily c univ el identity :: decoders c univ el))
+      (objectWithFamilies Δ (identityFamily c univ el identity :: decoders c univ el))
       (.equality .nil
         (.app (.lam (.const numN) (.var 0)) (.app (.const sucN) (.const zeroN)))
         (.app (.const sucN) (.const zeroN)) (.const numN)) :=
@@ -399,7 +399,7 @@ element of what they decode to, because the two decoders compute at the name. -/
 theorem polyId_law_num_one {c : L} (positive : LevelOrder.bot < c) {univ el : DeclName}
     (distinct : el ≠ univ) (apart : Apart (decoders c univ el)) {Δ : LevelBounds L}
     (positiveBounds : Δ.Positive) :
-    CDerivable (objectNames Δ (decoders c univ el))
+    CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil
         (.app (.app (.app
           (.lam (levelsBelow (.const c)) (.lam (.app (.const univ) (.var 0))
@@ -413,58 +413,58 @@ theorem polyId_law_num_one {c : L} (positive : LevelOrder.bot < c) {univ el : De
   have admitted := decoders_admitted (c := c) (univ := univ) (el := el) positive distinct
   have below : LevelBounds.LeUnder Δ (.succ (.const LevelOrder.bot)) (.const c) :=
     fun _ _ => LevelOrder.succ_le_of_lt positive
-  have law := objectNames_of_names (Δ := Δ) (polyId_law (Δ := Δ) admitted)
-  have name : CDerivable (objectNames Δ (decoders c univ el))
+  have law := objectWithFamilies_of_names (Δ := Δ) (polyId_law (Δ := Δ) admitted)
+  have name : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil (levelName (.const LevelOrder.bot)) (levelsBelow (.const c))) :=
-    objectNames_of_names (LevelNames.lift_bare (LevelNames.levelName_typed below))
-  have numTyped : CDerivable (objectNames Δ (decoders c univ el))
+    objectWithFamilies_of_names (LevelNames.lift_bare (LevelNames.levelName_typed below))
+  have numTyped : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil (.const numN) (universeAt (.const LevelOrder.bot))) :=
-    objectNames_of_object apart (cnum_typed (Γ := .nil))
-  have oneTyped : CDerivable (objectNames Δ (decoders c univ el))
+    objectWithFamilies_of_object apart (cnum_typed (Γ := .nil))
+  have oneTyped : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil (.app (.const sucN) (.const zeroN)) (.const numN)) :=
-    objectNames_of_object apart (csuc_typed (Γ := .nil) czero_typed)
+    objectWithFamilies_of_object apart (csuc_typed (Γ := .nil) czero_typed)
   have isSort {e : LevelExpr L} :
       (Rules.sum (LevelNames.rules Δ (decoders c univ el))
         (Rules.mapSchemas (towerHead L) (baseRules Δ) objectRules
           objectSchemas)).isUniverse (.tower (.sort e)) :=
     LevelNames.IsUniverse.tower (.sort e)
-  have univEq : CDerivable (objectNames Δ (decoders c univ el))
+  have univEq : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.equality .nil (.app (.const univ) (levelName (.const LevelOrder.bot)))
         (universeAt (.const LevelOrder.bot)) (LevelNames.CU c)) :=
-    objectNames_of_names (univ_at admitted positiveBounds below)
-  have numMember : CDerivable (objectNames Δ (decoders c univ el))
+    objectWithFamilies_of_names (univ_at admitted positiveBounds below)
+  have numMember : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil (.const numN) (.app (.const univ) (levelName (.const LevelOrder.bot)))) :=
     .conv numTyped (.symm univEq) isSort
-  have stepped : CDerivable (objectNames Δ (decoders c univ el))
+  have stepped : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.equality .nil (.app (.const el) (levelName (.const LevelOrder.bot)))
         (.lam (universeAt (.const LevelOrder.bot)) (.var 0))
         (.pi (.app (.const univ) (levelName (.const LevelOrder.bot))) (LevelNames.CU c))) :=
-    objectNames_of_names (el_step admitted positiveBounds below)
-  have applied : CDerivable (objectNames Δ (decoders c univ el))
+    objectWithFamilies_of_names (el_step admitted positiveBounds below)
+  have applied : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.equality .nil
         (.app (.app (.const el) (levelName (.const LevelOrder.bot))) (.const numN))
         (.app (.lam (universeAt (.const LevelOrder.bot)) (.var 0)) (.const numN))
         (LevelNames.CU c)) :=
     .appCong (A := .app (.const univ) (levelName (.const LevelOrder.bot)))
       (B := LevelNames.CU c) stepped (.refl numMember)
-  have source : CDerivable (objectNames Δ (decoders c univ el))
+  have source : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil
         (.pi (universeAt (.const LevelOrder.bot)) (universeAt (.const LevelOrder.bot)))
         (universeAt (.max (.succ (.const LevelOrder.bot)) (.succ (.const LevelOrder.bot))))) :=
     .piForm (.headType (LevelNames.HeadTyping.tower (.sort _))) isSort
       (.headType (LevelNames.HeadTyping.tower (.sort _))) isSort
       (LevelNames.Join.tower (.sorts _ _))
-  have reduced : CDerivable (objectNames Δ (decoders c univ el))
+  have reduced : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.equality .nil (.app (.lam (universeAt (.const LevelOrder.bot)) (.var 0)) (.const numN))
         (.const numN) (universeAt (.const LevelOrder.bot))) :=
     .betaPi (A := universeAt (.const LevelOrder.bot)) (B := universeAt (.const LevelOrder.bot))
       (body := .var 0) (a := .const numN) source isSort (.var 0) numTyped
-  have elEq : CDerivable (objectNames Δ (decoders c univ el))
+  have elEq : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.equality .nil
         (.app (.app (.const el) (levelName (.const LevelOrder.bot))) (.const numN))
         (.const numN) (LevelNames.CU c)) :=
     .trans applied (.subEq reduced (.subUniv fun _ _ => le_of_lt positive))
-  have oneMember : CDerivable (objectNames Δ (decoders c univ el))
+  have oneMember : CDerivable (objectWithFamilies Δ (decoders c univ el))
       (.typing .nil (.app (.const sucN) (.const zeroN))
         (.app (.app (.const el) (levelName (.const LevelOrder.bot))) (.const numN))) :=
     .conv oneTyped (.symm elEq) isSort
@@ -487,7 +487,7 @@ theorem exampleNames_apart (c : L) :
 /-- Over the natural numbers, with the names of the levels below `3`. -/
 theorem identity_num_one_nat {Δ : LevelBounds Nat} (positive : Δ.Positive) :
     CDerivable
-      (objectNames Δ
+      (objectWithFamilies Δ
         (identityFamily 3 (.str .anonymous "univ") (.str .anonymous "el")
             (.str .anonymous "identity") ::
           decoders 3 (.str .anonymous "univ") (.str .anonymous "el")))
@@ -503,7 +503,7 @@ identity over the levels below `ω`, at the name of the level `0`, applied to th
 numbers and to the numeral one, is the numeral one. -/
 theorem identity_num_one_omega {Δ : LevelBounds Level} (positive : Δ.Positive) :
     CDerivable
-      (objectNames Δ
+      (objectWithFamilies Δ
         (identityFamily Level.omega (.str .anonymous "univ") (.str .anonymous "el")
             (.str .anonymous "identity") ::
           decoders Level.omega (.str .anonymous "univ") (.str .anonymous "el")))
@@ -519,7 +519,7 @@ theorem identity_num_one_omega {Δ : LevelBounds Level} (positive : Δ.Positive)
 finite levels, applied to the name of the level `0`, the numbers and the numeral one. -/
 theorem polyId_law_num_one_omega {Δ : LevelBounds Level} (positive : Δ.Positive) :
     CDerivable
-      (objectNames Δ (decoders Level.omega (.str .anonymous "univ") (.str .anonymous "el")))
+      (objectWithFamilies Δ (decoders Level.omega (.str .anonymous "univ") (.str .anonymous "el")))
       (.typing .nil
         (.app (.app (.app
           (.lam (levelsBelow (.const Level.omega))
@@ -541,8 +541,8 @@ theorem polyId_law_num_one_omega {Δ : LevelBounds Level} (positive : Δ.Positiv
 /-- In the model over the ordinal notations the judgment holds: the value of the application
 is the numeral one. -/
 theorem identity_num_one_omega_holds (h : CofinalInaccessibles.{u}) :
-    Holds (objectNamesHeads Level h)
-      (objectNamesConsts Level h
+    Holds (objectWithFamiliesHeads Level h)
+      (objectWithFamiliesConsts Level h
         (identityFamily Level.omega (.str .anonymous "univ") (.str .anonymous "el")
             (.str .anonymous "identity") ::
           decoders Level.omega (.str .anonymous "univ") (.str .anonymous "el")))
@@ -551,7 +551,7 @@ theorem identity_num_one_omega_holds (h : CofinalInaccessibles.{u}) :
           (levelName (.const Level.zero))) (.const numN))
           (.app (.const sucN) (.const zeroN)))
         (.app (.const sucN) (.const zeroN)) (.const numN)) :=
-  objectNames_sound h
+  objectWithFamilies_sound h
     (identity_admitted Level.isLimit_omega.1 (by decide) (by decide) (by decide))
     (exampleNames_apart Level.omega) (Δ := LevelBounds.unbounded Level)
     LevelBounds.positive_unbounded (identity_num_one_omega LevelBounds.positive_unbounded)

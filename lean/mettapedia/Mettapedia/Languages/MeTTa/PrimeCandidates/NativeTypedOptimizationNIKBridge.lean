@@ -413,7 +413,14 @@ theorem native_dispatch_enters_common_nik_family :
 
 /-- The existing native profitability witness descends to the common NIK
 path-policy layer without participating in semantic admission. -/
-def pathProfitability :=
+theorem pathProfitability :
+    Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.PathProfitabilityReceipt
+      (Mettapedia.GSLT.LanguageDef.NIKOptimizationAdmission.Prepared.optimized
+        (family := nikFamily spec) (dependencies := keyDependencies _)
+        (revision := candidate.key) (candidate := candidate)
+        authority Dispatch.evidence)
+      WorkSpan (sourcePathWorkSpan spec candidate)
+      (targetPathWorkSpan spec candidate) :=
   profitabilityReceipt spec candidate authority Dispatch.evidence
     Dispatch.profitability
 

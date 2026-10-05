@@ -64,6 +64,34 @@ inductive Outcome (base : Base) where
   | paused (packet : Packet M C base)
   | done (result : Finished M (Return := Return) base)
 
+/-- Transport only provider state, preserving the client continuation and
+completion status. This operation alone asserts no relation between the
+providers' transitions; `Hom` supplies that stronger obligation. -/
+def Outcome.mapState {source target : Provider P}
+    (map : {base : Base} → {index : Index base} →
+      source.State base index → target.State base index) {base : Base} :
+    Outcome source C base → Outcome target C base
+  | .paused ⟨index, control, state⟩ => .paused ⟨index, control, map state⟩
+  | .done ⟨index, value, state⟩ => .done ⟨index, value, map state⟩
+
+@[simp] theorem Outcome.mapState_id {base : Base} (value : Outcome M C base) :
+    Outcome.mapState C (source := M) (target := M) (fun state => state) value = value := by
+  cases value with
+  | paused packet => rcases packet with ⟨index, control, state⟩; rfl
+  | done result => rcases result with ⟨index, value, state⟩; rfl
+
+theorem Outcome.mapState_comp {source middle target : Provider P}
+    (first : {base : Base} → {index : Index base} →
+      source.State base index → middle.State base index)
+    (second : {base : Base} → {index : Index base} →
+      middle.State base index → target.State base index)
+    {base : Base} (value : Outcome source C base) :
+    Outcome.mapState C second (Outcome.mapState C first value) =
+      Outcome.mapState C (fun state => second (first state)) value := by
+  cases value with
+  | paused packet => rcases packet with ⟨index, control, state⟩; rfl
+  | done result => rcases result with ⟨index, value, state⟩; rfl
+
 variable (charge : Charge M)
 
 /-- Execute a bounded prefix. A returned value does not execute a provider
@@ -183,9 +211,8 @@ def finished (h : Hom source target) {base : Base}
   ⟨value.1, value.2.1, h.map value.2.2⟩
 
 def outcome (h : Hom source target) {base : Base} :
-    Outcome source C base → Outcome target C base
-  | .paused value => .paused (h.packet C value)
-  | .done value => .done (h.finished value)
+    Outcome source C base → Outcome target C base :=
+  Outcome.mapState C h.map
 
 /-- Every adaptive, potentially recursive client preserves its full bounded
 observation, including residual control and finished state, under a lawful
@@ -207,7 +234,7 @@ theorem advance (h : Hom source target)
       cases eq : C.str base index control with
       | mk shape children =>
           cases shape with
-          | inl result => simp only [Cursor.advance, eq, outcome, finished]
+          | inl result => simp only [Cursor.advance, eq, outcome, Outcome.mapState]
           | inr request =>
               dsimp only [withHoles] at children
               simp only [Cursor.advance, eq]
@@ -215,6 +242,74 @@ theorem advance (h : Hom source target)
               rw [← h.step state request]
               exact ih ⟨_, children (source.step state request).1,
                 (source.step state request).2⟩
+
+/-- A local equality of receipts transports through any adaptive client. -/
+theorem advance_charge
+    {Base : Type u} {Index : Base → Type u}
+    {P : IndexedPolynomial.{u, u, u, u} Base Index}
+    {Return : (base : Base) → Index base → Type u}
+    {source target : Provider P}
+    (C : Client (P := P) (Return := Return)) (h : Hom source target)
+    (sourceCost : Charge source) (targetCost : Charge target)
+    (localCharge : ∀ {base index} (state : source.State base index)
+      (request : P.Shape base index), sourceCost state request = targetCost (h.map state) request)
+    (fuel : Nat) {base : Base} (packet : Packet source C base) :
+    (Cursor.advance source C sourceCost fuel packet).1 =
+      (Cursor.advance target C targetCost fuel (h.packet C packet)).1 := by
+  induction fuel generalizing packet with
+  | zero => rfl
+  | succ fuel ih =>
+      rcases packet with ⟨index, control, state⟩
+      change (Cursor.advance source C sourceCost (fuel + 1) ⟨index, control, state⟩).1 =
+        (Cursor.advance target C targetCost (fuel + 1) ⟨index, control, h.map state⟩).1
+      cases eq : C.str base index control with
+      | mk shape children =>
+          cases shape with
+          | inl value => simp [Cursor.advance, eq]
+          | inr request =>
+              dsimp only [withHoles] at children
+              simp only [Cursor.advance, eq]
+              dsimp only [withHoles]
+              rw [← h.step state request, localCharge]
+              exact congrArg (fun n => targetCost (h.map state) request + n)
+                (ih ⟨_, children (source.step state request).1, (source.step state request).2⟩)
+
+/-- Local transition and charge correspondence preserves the full bounded
+account, including unfinished client control and provider state. -/
+theorem advance_account (h : Hom source target)
+    (sourceCost : Charge source) (targetCost : Charge target)
+    (localCharge : ∀ {base index} (state : source.State base index)
+      (request : P.Shape base index), sourceCost state request = targetCost (h.map state) request)
+    (fuel : Nat) {base : Base} (value : Packet source C base) :
+    ((Cursor.advance source C sourceCost fuel value).1,
+        h.outcome C (Cursor.advance source C sourceCost fuel value).2) =
+      Cursor.advance target C targetCost fuel (h.packet C value) := by
+  apply Prod.ext
+  · exact h.advance_charge C sourceCost targetCost localCharge fuel value
+  · exact h.advance C sourceCost targetCost fuel value
+
+/-- Moving a saved account transports its already paid charge without
+replaying the prefix. Every future bounded resume retains the same complete
+outcome and pays exactly the corresponding future provider operations. -/
+theorem resume_account (h : Hom source target)
+    (sourceCost : Charge source) (targetCost : Charge target)
+    (localCharge : ∀ {base index} (state : source.State base index)
+      (request : P.Shape base index), sourceCost state request = targetCost (h.map state) request)
+    (fuel : Nat) {base : Base} (previous : Nat × Outcome source C base) :
+    ((Cursor.resume source C sourceCost fuel previous).1,
+        h.outcome C (Cursor.resume source C sourceCost fuel previous).2) =
+      Cursor.resume target C targetCost fuel (previous.1, h.outcome C previous.2) := by
+  rcases previous with ⟨paid, outcome⟩
+  cases outcome with
+  | done result => rfl
+  | paused packet =>
+      change (paid + (Cursor.advance source C sourceCost fuel packet).1,
+          h.outcome C (Cursor.advance source C sourceCost fuel packet).2) =
+        (paid + (Cursor.advance target C targetCost fuel (h.packet C packet)).1,
+          (Cursor.advance target C targetCost fuel (h.packet C packet)).2)
+      apply Prod.ext
+      · exact congrArg (paid + ·) (h.advance_charge C sourceCost targetCost localCharge fuel packet)
+      · exact h.advance C sourceCost targetCost fuel packet
 
 end Hom
 

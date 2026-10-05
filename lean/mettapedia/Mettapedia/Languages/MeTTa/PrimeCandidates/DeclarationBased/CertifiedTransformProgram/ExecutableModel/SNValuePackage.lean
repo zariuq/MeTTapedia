@@ -10,10 +10,10 @@ of the transport value model (`vmodel`):
 
 * every declared constant is a valid term of its declared type: identity
   elimination by transport at every pair of universes of the tower
-  (`vmodel_valid_j_sorts`), the recursor by large elimination
+  (`TExtension.valid_j_sorts`), the recursor by large elimination
   (`valid_numRecS_sorts`), and every other constant as in the object package;
 * every root step is validated: identity elimination's linear rule at its typed
-  instances, at the package's own declared type (`vmodel_jRoot_typed_at`), every
+  instances, at the package's own declared type (`TExtension.jRoot_typed_at`), every
   other step semantically.
 
 So the package is sound for the model (`vmodel_soundS_at`), and every term typed
@@ -69,7 +69,7 @@ theorem vmodel_root_at (lu lw lr : LevelExpr Nat) {n : Nat} {l r : Tower.Tm n}
     (step : (objectRulesAt lu lw lr).computation.step l r) :
     ModelSN.RootSemanticS (vmodel v) l r ∨ ModelSN.TypedRootS (objectRulesAt lu lw lr) (vmodel v) l r := by
   rcases step with step | step
-  · exact vstage_root v (allowed := fun _ => true)
+  · exact objectTExt.stage_root v (allowed := fun _ => true)
       (fun _ => ⟨.sort lu, .sort lw, LevelTower.IsUniverse.sort lw, objectRulesAt_j lu lw lr⟩) step
   · exact .inl (ModelSN.ModelRootS.semantic (vmodel_laws v) (vprogramDecodes v) (.inr step))
 
@@ -83,12 +83,12 @@ theorem vmodel_valid_at (lu lw lr : LevelExpr Nat) {name : DeclName} {type : Tow
   · subst hj
     rw [objectRulesAt_j] at declared
     cases declared
-    exact vmodel_valid_j_sorts v lu lw
+    exact objectTExt.valid_j_sorts v lu lw
   by_cases hr : name = numRecName
   · subst hr
     rw [objectRulesAt_numRec] at declared
     cases declared
-    exact valid_numRecS_sorts v lr
+    exact objectTExt.valid_numRecS_sorts v lr
   rw [objectRulesAt_other lu lw lr hj hr] at declared
   exact (vmodel_soundS_objectRules v).constants declared
 

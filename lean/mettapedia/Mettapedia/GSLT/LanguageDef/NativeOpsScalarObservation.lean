@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.NativeOpsScalarLowering
+import Mettapedia.GSLT.LanguageDef.NativeOpsTemporaryFrames
 
 /-!
 # Observable outcomes of emitted scalar evaluation
@@ -24,6 +25,131 @@ def targetExpressionObservation {World : Type} (interface : Interface) (result :
       observed = targetObserve out.state value
   | .returned value => observed = targetObserve out.state value
   | .jumped _ => False
+
+/-- A checked fragment retains its actual post-state. Successful values are
+read there; a fault returns the enclosing function's default and cannot run
+the following fragment. The read relation also covers ordered argument lists. -/
+def CheckedResultRelated {SourceWorld TargetWorld Value : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (default : TargetValue)
+    (answer : Except Fault Value) (sourcePost : SourceState SourceWorld)
+    (out : TargetBlockOutcome TargetWorld)
+    (read : Value → TargetFrame → TargetState TargetWorld → Prop) : Prop :=
+  StateRelated worldRelated sourcePost out.state ∧
+    match answer with
+    | .ok value => sourcePost.fault = none ∧ out.flow = .normal ∧ read value out.frame out.state
+    | .error fault => sourcePost.fault = some fault ∧ out.flow = .returned default
+
+def CheckedExpressionRelated {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (default : TargetValue) (atom : Atom) (source : SourceOutcome SourceWorld)
+    (out : TargetBlockOutcome TargetWorld) : Prop :=
+  CheckedResultRelated worldRelated default source.result source.state out
+    (fun value frame state => TargetAtomEval interface frame state atom (encodeValue value))
+
+def CheckedArgumentsRelated {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (default : TargetValue) (atoms : List Atom) (source : SourceArgumentsOutcome SourceWorld)
+    (out : TargetBlockOutcome TargetWorld) : Prop :=
+  CheckedResultRelated worldRelated default source.result source.state out
+    (fun values frame state => TargetAtomsEval interface frame state atoms (encodeValues values))
+
+/-- Complete child comparisons permit storage and external effects. Private
+result protection concerns values, not an unchanged runtime state. Unit
+children may preserve the supply rather than allocate a result temporary. -/
+structure StatefulChildLaws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (expression : Expr) : Prop where
+  bounds : ∀ {supply : NativeIR.Supply} {output : NativeLowering.Expression},
+    NativeLowering.expression? interface (sourceFrameScope sourceFrame) expression supply = some output →
+    supply.next ≤ output.supply.next ∧ atomWithin output.supply.next output.result
+  forward : ∀ (root : List Instruction) {supply : NativeIR.Supply} {output : NativeLowering.Expression}
+      {targetFrame : TargetFrame} {target : TargetState TargetWorld},
+    NativeLowering.expression? interface (sourceFrameScope sourceFrame) expression supply = some output →
+    FrameRelated sourceFrame targetFrame → StateRelated worldRelated source target →
+    TemporaryNamesBound targetFrame supply.next → TemporariesScoped targetFrame →
+    ∀ {sourceOut : SourceOutcome SourceWorld},
+    SourceExprEval interface sourceHeap sourceCalls sourceFrame expression source sourceOut →
+    ∃ out,
+      TargetRun interface targetHeap targetCalls result root output.code targetFrame target out ∧
+      CheckedExpressionRelated worldRelated interface default output.result sourceOut out ∧
+      TemporaryProtection supply.next targetFrame out.frame ∧
+      TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame
+  backward : ∀ (root : List Instruction) {supply : NativeIR.Supply} {output : NativeLowering.Expression}
+      {targetFrame : TargetFrame} {target : TargetState TargetWorld},
+    NativeLowering.expression? interface (sourceFrameScope sourceFrame) expression supply = some output →
+    FrameRelated sourceFrame targetFrame → StateRelated worldRelated source target →
+    TemporaryNamesBound targetFrame supply.next → TemporariesScoped targetFrame →
+    ∀ {out : TargetBlockOutcome TargetWorld},
+    TargetRun interface targetHeap targetCalls result root output.code targetFrame target out →
+    ∃ sourceOut,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame expression source sourceOut ∧
+      CheckedExpressionRelated worldRelated interface default output.result sourceOut out ∧
+      TemporaryProtection supply.next targetFrame out.frame ∧
+      TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame
+
+theorem checked_result_normal {SourceWorld TargetWorld Value : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {default : TargetValue}
+    {answer : Except Fault Value} {sourcePost : SourceState SourceWorld}
+    {out : TargetBlockOutcome TargetWorld}
+    {read : Value → TargetFrame → TargetState TargetWorld → Prop}
+    (related : CheckedResultRelated worldRelated default answer sourcePost out read)
+    (normal : out.flow = .normal) :
+    ∃ value, answer = .ok value ∧ sourcePost.fault = none ∧
+      StateRelated worldRelated sourcePost out.state ∧ read value out.frame out.state := by
+  cases answer with
+  | ok value => exact ⟨value, rfl, related.2.1, related.1, related.2.2.2⟩
+  | error fault =>
+      have impossible := related.2.2
+      rw [normal] at impossible
+      cases impossible
+
+theorem checked_result_returned {SourceWorld TargetWorld Value : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {default value : TargetValue}
+    {answer : Except Fault Value} {sourcePost : SourceState SourceWorld}
+    {out : TargetBlockOutcome TargetWorld}
+    {read : Value → TargetFrame → TargetState TargetWorld → Prop}
+    (related : CheckedResultRelated worldRelated default answer sourcePost out read)
+    (returned : out.flow = .returned value) :
+    ∃ fault, answer = .error fault ∧ sourcePost.fault = some fault ∧
+      StateRelated worldRelated sourcePost out.state ∧ value = default := by
+  cases answer with
+  | ok sourceValue =>
+      have impossible := related.2.2.1
+      rw [returned] at impossible
+      cases impossible
+  | error fault =>
+      exact ⟨fault, rfl, related.2.1, related.1,
+        TargetFlow.returned.inj (returned.symm.trans related.2.2)⟩
+
+theorem checked_expression_observation {SourceWorld TargetWorld : Type}
+    {worldRelated : SourceWorld → TargetWorld → Prop} {interface : Interface}
+    {default : TargetValue} {atom : Atom} {source : SourceOutcome SourceWorld}
+    {out : TargetBlockOutcome TargetWorld}
+    (related : CheckedExpressionRelated worldRelated interface default atom source out) :
+    ∃ observed, targetExpressionObservation interface atom out observed ∧
+      OutcomeRelated worldRelated source observed := by
+  rcases source with ⟨answer, post⟩
+  cases answer with
+  | ok value =>
+      rcases related with ⟨states, clear, normal, read⟩
+      change post.fault = none at clear
+      refine ⟨targetObserve out.state (encodeValue value), ?_, ?_⟩
+      · simp only [targetExpressionObservation, normal]
+        exact ⟨_, read, rfl⟩
+      · refine ⟨?_, ?_⟩
+        · simpa only [targetObserve_state] using states
+        · simp only [targetObserve, states.fault, clear, Option.isNone_none, if_true, Except.map]
+  | error fault =>
+      rcases related with ⟨states, failed, returned⟩
+      change post.fault = some fault at failed
+      refine ⟨targetObserve out.state default, ?_, ?_⟩
+      · simp only [targetExpressionObservation, returned]
+      · refine ⟨?_, ?_⟩
+        · simpa only [targetObserve_state] using states
+        · exact target_default_after_fault out.state fault default (states.fault.trans failed)
 
 theorem declared_temporary_atom {World : Type} (interface : Interface)
     (frame : TargetFrame) (state : TargetState World) (identity : Nat)

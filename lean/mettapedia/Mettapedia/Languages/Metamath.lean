@@ -26,6 +26,7 @@ import Mettapedia.Languages.Metamath.InferenceNormalByteReflection
 import Mettapedia.Languages.Metamath.InferenceNormalProvabilitySoundness
 import Mettapedia.Languages.Metamath.InferenceSourceAdmission
 import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
+import Mettapedia.Languages.Metamath.SourceInferenceProjectionValidation
 import Mettapedia.Languages.Metamath.NIKAuthority
 import Mettapedia.Languages.Metamath.NIKDefault
 import Mettapedia.Languages.Metamath.DatabaseNIKAuthority
@@ -74,8 +75,7 @@ import Mettapedia.Languages.Metamath.MM2CompressedProofPhysicalAssertionRejoin
 import Mettapedia.Languages.Metamath.MM2CompressedProofPhysicalSpeculativeResume
 import Mettapedia.Languages.Metamath.MM2NormalStackCorrespondence
 import Mettapedia.Languages.Metamath.MM2NormalProofCorrespondence
-import Mettapedia.Languages.Metamath.MM2TransformationCanary
-import Mettapedia.Languages.Metamath.MM2AssembledNormalExecution
+import Mettapedia.Languages.Metamath.MM2AssembledNormalExecutionCore
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedMMLean4
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedExecutionMMLean4
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedParserMMLean4
@@ -106,6 +106,12 @@ import Mettapedia.Languages.Metamath.SourceGSLTParserStatementSimulation
 
 /-!
 # Metamath Bridge Interface
+
+The MM2 execution theory is available through
+`MM2AssembledNormalExecutionCore` without running its concrete examples.
+Those positive and negative examples remain in `MM2AssembledNormalExecution`
+and can be checked explicitly with `lake build MetamathProofRegression`.
+Direct imports of that example module also expose the reusable theory.
 
 Positive example:
 - this umbrella exposes the verified `mm-lean4` bridge layer used for rebuilding

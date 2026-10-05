@@ -69,7 +69,7 @@ theorem zeroI_not_mem_succ : ¬ zeroI.Mem (.tag .succ) := by
   change ent Elem.zero (.tag .succ) = true at h
   simp [ent_tag, hasTag, Elem.zero] at h
 
-theorem bot_not_mem_tag (k : Kind) : ¬ bot.Mem (.tag k) := by
+theorem bot_not_mem_tag {κ : Type} [DecidableEq κ] (k : κ) : ¬ (bot : Ideal κ).Mem (.tag k) := by
   intro h
   change ent [] (.tag k) = true at h
   simp [ent_tag, hasTag] at h

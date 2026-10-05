@@ -32,7 +32,7 @@ theorem rhoBreadthWrappedNameTypeForAtomCanary :
     (.base (costBaseSortName "Name") : TypeExpr) =
       mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
         (.base "Name") := by
-  simp [mapTypeExpr, CostStaticColor.symbols,
+  simp [mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf,
     costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
     rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
     show "Name" ≠ "Proc" by decide]

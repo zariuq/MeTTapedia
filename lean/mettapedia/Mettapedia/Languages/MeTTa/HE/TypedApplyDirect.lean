@@ -127,6 +127,63 @@ def typedApplyDirect
                            env := extEnv }
 termination_by st.origArgs.length - st.idx
 
+/-! ## Work of the direct argument tree
+
+This account is defined from the recursive dialect operation, independently of
+the explicit-stack runner. Each argument-consumer occurrence costs one step,
+including failed merges and binder extensions; exhausting its frontier costs
+another. `evalCost` charges the completed argument service separately from
+these administrative steps. It may be zero when only stack administration is
+being measured, but the argument's observation and all of its occurrences are
+still supplied by `eval1`.
+-/
+
+def typedApplyWork
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool)
+    (evalCost : Atom → Atom → Bindings → Nat)
+    (st : TypedApplyState) : Nat :=
+  if h : st.idx ≥ st.origArgs.length then 1
+  else
+    have h_lt : st.idx < st.origArgs.length := Nat.lt_of_not_le h
+    let origArg := st.origArgs[st.idx]
+    let argType := if h' : st.idx < st.argTypes.length
+                   then st.argTypes[st.idx] else Atom.undefinedType
+    let boundArg := applyEnv st.env origArg
+    if isTrivial argType || origArg.isVariable then
+      match extendBinder st.env argType boundArg with
+      | none => 1
+      | some env' => 1 + typedApplyWork eval1 applyEnv mergeEnv extendBinder
+          isTrivial evalCost
+          { st with idx := st.idx + 1, evArgs := st.evArgs ++ [boundArg], env := env' }
+    else
+      2 + evalCost boundArg argType st.env +
+        ((eval1 boundArg argType st.env).map fun (argVal, evalEnv) =>
+          1 + match mergeEnv st.env evalEnv with
+          | none => 0
+          | some mergedEnv =>
+            if isEmptyOrError argVal && decide (argVal ≠ origArg) then 0
+            else
+              match extendBinder mergedEnv argType argVal with
+              | none => 0
+              | some extEnv => typedApplyWork eval1 applyEnv mergeEnv extendBinder
+                  isTrivial evalCost
+                  { st with idx := st.idx + 1, evArgs := st.evArgs ++ [argVal], env := extEnv }).sum
+termination_by st.origArgs.length - st.idx
+
+theorem typedApplyWork_positive (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (st : TypedApplyState) :
+    0 < typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost st := by
+  unfold typedApplyWork
+  split
+  · omega
+  · dsimp only
+    split_ifs <;> try dsimp only
+    all_goals first | omega | (split <;> omega)
+
 /-! ## Invariants -/
 
 /-- Base case: when idx ≥ nargs, result is exactly one call term. -/

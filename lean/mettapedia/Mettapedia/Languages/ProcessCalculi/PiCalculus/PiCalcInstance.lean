@@ -17,7 +17,18 @@ Fifth example instantiation of the OSLF pipeline: the asynchronous, choice-free
 
 - **Single sort**: `Proc` (atomic names are free variables, not a separate sort)
 - **Six constructors**: `PiNil`, `PiPar`, `PiInp`, `PiOut`, `PiNu`, `PiRep`
-- **One reduction rule**: COMM (+ ParCong for congruence)
+- **Base reduction rules**: input COMM and guarded-server COMM (with context descent)
+
+## Operational scope
+
+The authored internal relation supplies ordinary and guarded-server COMM,
+with descent through parallel composition and restriction. A guarded-server
+firing retains the server; unfolding is not an additional directed step. Its
+parallel results retain their bag representation, whereas the named relation
+uses structural congruence, including the parallel unit. `PresentationBoundary`
+records these remaining operational boundaries. The generated OSLF belongs to
+the authored rules; full adequacy for the named relation modulo structural
+congruence requires the equation comparison as well.
 
 ## Sort Structure
 
@@ -67,7 +78,7 @@ open Mettapedia.OSLF.Formula
 
     - **Sorts**: `["Proc"]` (single sort; names are free variables)
     - **Proc constructors**: `PiNil`, `PiPar`, `PiInp`, `PiOut`, `PiNu`, `PiRep`
-    - **Reductions**: COMM (x(y).P | x<z> → P[z/y]), plus ParCong -/
+    - **Reductions**: COMM, guarded-server COMM, ParCong and ResCong -/
 def piCalc : LanguageDef := {
   name := "PiCalc",
   types := ["Proc"],
@@ -79,7 +90,8 @@ def piCalc : LanguageDef := {
     -- PiPar: parallel composition as flat bag {P₁ | P₂ | ...}
     { label := "PiPar", category := "Proc",
       params := [.simple "ps" (TypeExpr.bag (TypeExpr.base "Proc"))],
-      syntaxPattern := [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"] },
+      syntaxPattern := [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"],
+      algebra? := some { flatten := true, unit := some "PiNil" } },
 
     -- PiInp: input x(y).P where y is bound via λ
     { label := "PiInp", category := "Proc",
@@ -105,7 +117,7 @@ def piCalc : LanguageDef := {
       syntaxPattern := [.terminal "!", .nonTerminal "x", .terminal "(", .terminal "y",
                         .terminal ")", .terminal ".", .nonTerminal "body"] }
   ],
-  equations := [],   -- par laws handled by hashBag; no reflection equation
+  equations := [],   -- parallel monoid laws come from the declared collection algebra
   rewrites := [
     -- Comm: x(y).P | x<z> ~> P[z/y]
     -- In LN: PiInp(x, λ.body) + PiOut(x, z) in a bag ~> body[z/BVar0] in a bag
@@ -126,13 +138,36 @@ def piCalc : LanguageDef := {
       typeContext := [],
       premises := [.congruence (.fvar "S") (.fvar "T")],
       left := .collection .hashBag [.fvar "S"] (some "rest"),
-      right := .collection .hashBag [.fvar "T"] (some "rest") }
+      right := .collection .hashBag [.fvar "T"] (some "rest") },
+
+    -- ResCong: a body step is interpreted in the surrounding restriction.
+    -- Both the captured source and the premise-produced target are re-emitted
+    -- at the same local binder depth.
+    { name := "ResCong",
+      typeContext := [],
+      premises := [.congruence (.fvar "S") (.fvar "T")],
+      left := .apply "PiNu" [.lambda none (.fvar "S")],
+      right := .apply "PiNu" [.lambda none (.fvar "T")] },
+
+    -- RepComm: consume one message and keep the guarded server unchanged.
+    { name := "RepComm",
+      typeContext := [("x", .base "Proc"), ("body", .base "Proc"),
+                      ("z", .base "Proc")],
+      premises := [],
+      left := .collection .hashBag [
+        .apply "PiRep" [.fvar "x", .lambda none (.fvar "body")],
+        .apply "PiOut" [.fvar "x", .fvar "z"]
+      ] (some "rest"),
+      right := .collection .hashBag [
+        .subst (.fvar "body") (.fvar "z"),
+        .apply "PiRep" [.fvar "x", .lambda none (.fvar "body")]
+      ] (some "rest") }
   ]
 }
 
 /-- π-calculus reducts at an explicit authored-context depth.  Depth one
-contains root COMM steps; each surrounding `ParCong` consumes one further
-unit. -/
+contains root COMM steps; each surrounding `ParCong` or `ResCong`
+consumes one further unit. -/
 def piCalcReducts (contextDepth : Nat) (process : Pattern) : List Pattern :=
   rewriteAt (engineBasePremises RelationEnv.empty) piCalc contextDepth process
 
@@ -148,6 +183,33 @@ def piPar (P Q : Pattern) : Pattern :=
   | p, .collection .hashBag qs none =>
       .collection .hashBag (p :: qs) none
   | p, q => .collection .hashBag [p, q] none
+
+/-- Top-level components used by flattened parallel composition. -/
+def piComponents : Pattern → List Pattern
+  | .collection .hashBag elements none => elements
+  | p => [p]
+
+/-- A non-bag term contributes one component. -/
+theorem piComponents_non_bag (P : Pattern)
+    (notBag : ∀ elements, P ≠ .collection .hashBag elements none) : piComponents P = [P] := by
+  cases P with
+  | collection kind elements rest =>
+      cases kind with
+      | hashBag => cases rest with
+        | none => exact False.elim (notBag elements rfl)
+        | some _ => rfl
+      | vec | hashSet => rfl
+  | _ => rfl
+
+/-- The binary parallel representation concatenates its component spines. -/
+theorem piPar_components (P Q : Pattern) :
+    piPar P Q = .collection .hashBag (piComponents P ++ piComponents Q) none := by
+  unfold piPar
+  split
+  · rfl
+  · rw [piComponents_non_bag Q (by assumption)]; rfl
+  · rw [piComponents_non_bag _ (by assumption)]; rfl
+  · rw [piComponents_non_bag _ (by assumption), piComponents_non_bag _ (by assumption)]; rfl
 
 /-! ## Bridge: Process ↔ Pattern
 
@@ -266,10 +328,10 @@ theorem piCalc_terms_length : piCalc.terms.length = 6 := by decide
 /-- piCalc has one sort. -/
 theorem piCalc_types_length : piCalc.types.length = 1 := by decide
 
-/-- piCalc has 2 rewrite rules (COMM + ParCong). -/
-theorem piCalc_rewrites_length : piCalc.rewrites.length = 2 := by decide
+/-- piCalc has two COMM rules and two authored contextual rules. -/
+theorem piCalc_rewrites_length : piCalc.rewrites.length = 4 := by decide
 
-/-- piCalc has no equations (par laws handled by bag structure). -/
+/-- No additional equation is authored; parallel laws come from its algebra declaration. -/
 theorem piCalc_equations_length : piCalc.equations.length = 0 := by decide
 
 /-! ## Authored contextual boundary -/

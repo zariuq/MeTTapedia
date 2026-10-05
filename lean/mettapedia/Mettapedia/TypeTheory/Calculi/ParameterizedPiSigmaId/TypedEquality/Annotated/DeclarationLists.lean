@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.ExplicitDefinitions
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annotated.LogicalRelationForms
 
 /-!
 # Lists of declarations: datatypes and definitions
@@ -9,8 +10,9 @@ a list and states when the list is admissible.
 
 **A declaration** (`Declaration`) is
 
-* a datatype (`Datatype`): a simple inductive declaration, with its type, its constructors
-  and its recursor (`withInductive`), or
+* a datatype (`Datatype`): its type, its constructors and its recursor (`withInductive`).
+  A parameter telescope (`Parameterization`) may stand in front of them; the empty
+  parameterization is the simple inductive, or
 * a definition (`Definition`), of one of two kinds:
   * by structural recursion (`RecursiveDefinition`): a constant whose first argument is of a
     datatype and which computes by one written equation for each constructor, with its later
@@ -47,7 +49,11 @@ arguments typed there:
   its written equations hold at typed instances (`definition_equation_holds`).
 
 Derivations of the base package and of every earlier stage persist
-(`CDerivable.withDeclarations`, `withDeclarations_sub`).
+(`CDerivable.withDeclarations`, `withDeclarations_sub`). A later list extends an earlier one
+(`Extends`) when its package contains the earlier package and it has every earlier
+declaration; a list extends every list it ends with (`Extends.after`). A definition by
+recursion admissible over a package is admissible over every larger package that does not
+declare its name (`RecursiveDefinition.Admissible.mono`).
 
 Positive examples: the empty list is admissible, and its package is the base package; an
 explicit definition admissible over the base package is an admissible list of one declaration
@@ -72,14 +78,39 @@ variable {Head : Type}
 
 /-! ## Declarations -/
 
-/-- **A datatype**: a simple inductive declaration, with the type and its universe, the
-constructors with their fields, and the recursor with the universe of its motives. -/
+/-- A field of a constructor in a parameter context of length `p`. `uniform` is the datatype
+applied to exactly those parameters. `plain` is a type in that context that does not mention
+the datatype. -/
+inductive OpenField (Head : Type) : Nat → Type where
+  | uniform {p : Nat} : OpenField Head p
+  | plain {p : Nat} (type : Tm Head p) : OpenField Head p
+
+/-- A parameter telescope, outermost entry first. -/
+structure ParameterTelescope (Head : Type) where
+  count : Nat
+  context : Ctx Head count
+
+/-- Constructors whose fields may mention the parameters. The empty telescope with no
+constructors here is the simple datatype, whose constructors are `Datatype.ctors`. -/
+structure Parameterization (Head : Type) where
+  telescope : ParameterTelescope Head
+  constructors : List (DeclName × List (OpenField Head telescope.count))
+
+/-- No parameters, and no open constructors. -/
+def Parameterization.none : Parameterization Head where
+  telescope := ⟨0, .nil⟩
+  constructors := []
+
+/-- **A datatype**: a type, its universe, constructors with their fields, and a recursor
+with the universe of its motives. `parameters` is a parameter telescope. The empty
+parameterization is the simple datatype. -/
 structure Datatype (Head : Type) where
   type : DeclName
   typeUniverse : Head
   ctors : List (DeclName × List (Field Head))
   recursor : DeclName
   motiveUniverse : Head
+  parameters : Parameterization Head := .none
 
 /-- **A definition by structural recursion on a datatype**: the defined constant, the
 datatype of its first argument, the telescope of its later arguments over that argument
@@ -206,6 +237,23 @@ theorem CDerivable.withDeclarations {B : ChurchRules R} (ds : List (Declaration 
     {s : CStatement Head} (derivation : CDerivable B s) : CDerivable (withDeclarations B ds) s :=
   derivation.mono (withDeclarations_base B ds)
 
+/-- **A later list of declarations**: the package of `post` is contained in that of `ds`, and
+`ds` has every declaration of `post`. -/
+structure Extends (B : ChurchRules R) (post ds : List (Declaration Head)) : Prop where
+  sub : ChurchRulesSub (withDeclarations B post) (withDeclarations B ds)
+  mem : ∀ {D : Declaration Head}, D ∈ post → D ∈ ds
+
+theorem Extends.after {B : ChurchRules R} (pre post : List (Declaration Head)) :
+    Extends B post (pre ++ post) :=
+  ⟨withDeclarations_sub B post pre, fun member => List.mem_append_right pre member⟩
+
+theorem Extends.refl {B : ChurchRules R} (ds : List (Declaration Head)) : Extends B ds ds :=
+  ⟨ChurchRulesSub.refl _, id⟩
+
+theorem Extends.trans {B : ChurchRules R} {a b c : List (Declaration Head)}
+    (first : Extends B a b) (second : Extends B b c) : Extends B a c :=
+  ⟨first.sub.trans second.sub, fun member => second.mem (first.mem member)⟩
+
 /-- The computation steps of a datatype of a list are steps of the package of the list, with
 the same premises. -/
 theorem datatype_stepsWithin (B : ChurchRules R) (d : Datatype Head)
@@ -269,6 +317,24 @@ structure RecursiveDefinition.Admissible (B : ChurchRules R) (δ : RecursiveDefi
     δ.datatype.ctors[i]? = some (k, fields) →
       CTyped B (laterCtx δ.datatype.type δ.later δ.result k fields) (δ.body k fields)
         (laterResult δ.later δ.result k fields)
+
+/-- A definition by recursion admissible over a package is admissible over every package that
+contains it and does not declare its name. -/
+theorem RecursiveDefinition.Admissible.mono {R' : Rules Head} {Q : ChurchRules R}
+    {P : ChurchRules R'} (sub : ChurchRulesSub Q P) {δ : RecursiveDefinition Head}
+    (new : P.constantType δ.name = none) (admissible : δ.Admissible Q) : δ.Admissible P where
+  new := new
+  typeFormed :=
+    let ⟨w, hw, typed⟩ := admissible.typeFormed
+    ⟨w, sub.isUniverse hw, typed.mono sub⟩
+  family :=
+    let ⟨w, hw, typed⟩ := admissible.family
+    ⟨w, sub.isUniverse hw, typed.mono sub⟩
+  formed := fun entry => CCtxFormed.mono sub (admissible.formed entry)
+  resultType := fun entry =>
+    let ⟨w, hw, typed⟩ := admissible.resultType entry
+    ⟨w, sub.isUniverse hw, typed.mono sub⟩
+  bodies := fun entry => (admissible.bodies entry).mono sub
 
 /-- **An explicit definition is admissible over a package**: its name is new, the context of
 its arguments is formed, its result type is a type there, and its body has it. -/

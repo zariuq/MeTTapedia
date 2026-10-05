@@ -83,7 +83,7 @@ theorem materialize_mapDeclaredCostConstructor
   | apparatus kind =>
       cases kind <;>
         simp [mapDeclaredCostConstructor,
-          CIGSLT.materializeDeclaredCostConstructor,
+          CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
           CostApparatusConstructor.grammarRule, costSignatureUnitConstructor,
           costSignatureProductConstructor, costKeyLeafConstructor, costKeyBranchConstructor,
           costSignatureCommitConstructor, costSignedConstructor,
@@ -128,7 +128,7 @@ theorem declaredCostConstructorRole_map
   cases constructor with
   | base constructor =>
       simp only [mapDeclaredCostConstructor,
-        CIGSLT.declaredCostConstructorRole]
+        CIGSLT.declaredCostConstructorRole, ContinuationDecorationProfile.declaredCostConstructorRole]
       by_cases sourcePrincipal :
           constructor = source.cut.program.constructor ∨
             constructor = source.cut.environment.constructor
@@ -209,15 +209,15 @@ theorem mapDeclaredCostConstructor_comp
 The wrapped case uses both preservation and reflection of the interacting
 sort; reflection is what prevents a previously foreign base sort from
 entering the wrapped fibre after transport. -/
-theorem decodeCostStaticTypeExpr_natural
+theorem costStaticTypeDecode_natural
     {source target : CIGSLT} (morphism : source.Morphism target)
     (color : CostStaticColor) (type : TypeExpr) :
-    decodeCostStaticTypeExpr target color
+    CostStaticTypeImage.decode target.theory color
         (mapTypeExpr
           (costLanguageDefSymbolMap
             morphism.underlying.structural.structural.symbols)
           type) =
-      (decodeCostStaticTypeExpr source color type).map
+      (CostStaticTypeImage.decode source.theory color type).map
         (mapTypeExpr morphism.underlying.structural.structural.symbols) := by
   let symbols := morphism.underlying.structural.structural.symbols
   change CostStaticTypeImage.decode target.theory color
@@ -301,9 +301,9 @@ theorem mapTypeExpr_costStatic_natural
         (mapTypeExpr morphism.underlying.structural.structural.symbols type) := by
   cases color with
   | base =>
-      simp [CostStaticColor.symbols, mapTypeExpr_costBaseStaticSymbols]
+      simp [CostStaticColor.symbols, CostStaticColor.symbolsOf, mapTypeExpr_costBaseStaticSymbols]
   | wrapped =>
-      simpa [CostStaticColor.symbols, mapTypeExpr_costWrappedStaticSymbols] using
+      simpa [CostStaticColor.symbols, CostStaticColor.symbolsOf, mapTypeExpr_costWrappedStaticSymbols] using
         mapTypeExpr_costWrappedTypeExpr
           morphism.underlying.structural.structural.symbols
           source.theory.presentation.interactingSort.1.name
@@ -375,7 +375,7 @@ theorem mapConstructor_costStatic_natural
         (morphism.underlying.structural.structural.symbols.constructor
           constructor) := by
   cases color <;>
-    simp [CostStaticColor.symbols, costBaseStaticSymbols,
+    simp [CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
       costWrappedStaticSymbols]
 
 /-- Static one-hole contexts are natural under the same symbol action. -/
@@ -436,6 +436,9 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
       preimage.sourceConstructor
   wrapped := morphism.mapsWrappedConstructors _ preimage.wrapped
   labelMap := by
+    show (target.materializeDeclaredCostConstructor
+        (morphism.mapDeclaredCostConstructor constructor)).label =
+      (color.symbols target).constructor _
     rw [morphism.materialize_mapDeclaredCostConstructor]
     change (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols).constructor
@@ -785,7 +788,7 @@ theorem map_comp {first second third : CIGSLT}
 
 end CostRegionBoundary
 
-namespace CostStaticBinderThinning
+namespace CostStaticTypeThinning
 
 /-- Reindex one exact retained/foreign binder classification.  A retained
 entry uses static-type naturality; a foreign entry stays foreign by decoder
@@ -801,26 +804,26 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
           (mapTypeExpr morphism.costWholeStructural.symbols))
   | [], [], .nil => .nil
   | _ :: _, _ :: _, .mapped sourceType tail => by
-      simpa [CIGSLT.Morphism.costWholeStructural,
+      simpa [WrappableIGSLT.Morphism.costWholeStructural,
         morphism.mapTypeExpr_costStatic_natural color sourceType] using
-        CostStaticBinderThinning.mapped
+        CostStaticTypeThinning.mapped
           (mapTypeExpr morphism.underlying.structural.structural.symbols
             sourceType)
           (map morphism color tail)
   | _, targetType :: _, .foreign _ rejected tail => by
       have targetRejected :
-          decodeCostStaticTypeExpr target color
+          CostStaticTypeImage.decode target.theory color
               (mapTypeExpr morphism.costWholeStructural.symbols targetType) =
             none := by
-        change decodeCostStaticTypeExpr target color
+        change CostStaticTypeImage.decode target.theory color
             (mapTypeExpr
               (costLanguageDefSymbolMap
                 morphism.underlying.structural.structural.symbols)
               targetType) = none
-        rw [morphism.decodeCostStaticTypeExpr_natural color targetType,
+        rw [morphism.costStaticTypeDecode_natural color targetType,
           rejected]
         rfl
-      exact CostStaticBinderThinning.foreign
+      exact CostStaticTypeThinning.foreign
         (mapTypeExpr morphism.costWholeStructural.symbols targetType)
         targetRejected (map morphism color tail)
 
@@ -829,12 +832,12 @@ reindexing. -/
 theorem sourceContextOfTarget_natural {source target : CIGSLT}
     (morphism : source.Morphism target) (color : CostStaticColor)
     (targetBound : List TypeExpr) :
-    sourceContextOfTarget target color
+    sourceContextOfTarget target.theory color
         (targetBound.map
           (mapTypeExpr morphism.costWholeStructural.symbols)) =
-      (sourceContextOfTarget source color targetBound).map
+      (sourceContextOfTarget source.theory color targetBound).map
         (mapTypeExpr morphism.underlying.structural.structural.symbols) := by
-  change sourceContextOfTarget target color
+  change sourceContextOfTarget target.theory color
       (targetBound.map
         (mapTypeExpr
           (costLanguageDefSymbolMap
@@ -843,8 +846,8 @@ theorem sourceContextOfTarget_natural {source target : CIGSLT}
   | nil => simp [sourceContextOfTarget]
   | cons targetType targetBound inductionHypothesis =>
       simp only [List.map_cons, sourceContextOfTarget]
-      rw [morphism.decodeCostStaticTypeExpr_natural color targetType]
-      cases decodeCostStaticTypeExpr source color targetType <;>
+      rw [morphism.costStaticTypeDecode_natural color targetType]
+      cases CostStaticTypeImage.decode source.theory color targetType <;>
         simp [inductionHypothesis]
 
 /-- The erased target-to-source index filter is natural under generated Cost
@@ -867,12 +870,12 @@ theorem targetToSourceIndex?_natural {source target : CIGSLT}
       cases index with
       | zero =>
           simp only [List.map_cons, targetToSourceIndex?]
-          rw [morphism.decodeCostStaticTypeExpr_natural color targetType]
-          cases decodeCostStaticTypeExpr source color targetType <;> rfl
+          rw [morphism.costStaticTypeDecode_natural color targetType]
+          cases CostStaticTypeImage.decode source.theory color targetType <;> rfl
       | succ index =>
           simp only [List.map_cons, targetToSourceIndex?]
-          rw [morphism.decodeCostStaticTypeExpr_natural color targetType]
-          cases decodeCostStaticTypeExpr source color targetType <;>
+          rw [morphism.costStaticTypeDecode_natural color targetType]
+          cases CostStaticTypeImage.decode source.theory color targetType <;>
             simp [inductionHypothesis]
 
 /-- Reindexing changes binder types but not the retained/foreign position
@@ -889,7 +892,7 @@ theorem toSourceIndex?_map {source target : CIGSLT}
     targetToSourceIndex?_natural,
     ← thinning.toSourceIndex?_eq_targetToSourceIndex?]
 
-end CostStaticBinderThinning
+end CostStaticTypeThinning
 
 namespace TypedCostRegionBoundary
 
@@ -897,7 +900,7 @@ namespace TypedCostRegionBoundary
 The target free context, binder support, result type, raw content, and
 quotation-scope certificate all move together. -/
 def map {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (boundary : TypedCostRegionBoundary source color targetFree) :
@@ -925,7 +928,7 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
 @[simp]
 theorem map_boundary {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (boundary : TypedCostRegionBoundary source color targetFree) :
@@ -1005,7 +1008,7 @@ theorem castContent_typed_boundary {source : CIGSLT}
 /-- Reindex one certified boundary while preserving its exact decoded
 source fibre and observed generated fibre. -/
 def map {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {targetType : TypeExpr}
@@ -1034,7 +1037,7 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
 source fibre.  Static-type naturality exposes the target index expected by a
 mapped static plan. -/
 def mapStatic {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {sourceType : TypeExpr}
@@ -1054,7 +1057,7 @@ def mapStatic {source target : CIGSLT} (morphism : source.Morphism target)
 @[simp]
 theorem mapStatic_typed_boundary {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {sourceType : TypeExpr}
@@ -1070,7 +1073,7 @@ not alter the mapped typed boundary retained in a finite occurrence table. -/
 @[simp]
 theorem castContent_mapStatic_typed {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {sourceType : TypeExpr}
@@ -1090,7 +1093,7 @@ theorem castContent_mapStatic_typed {source target : CIGSLT}
 @[simp]
 theorem map_typed_boundary {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {targetType : TypeExpr}
@@ -1106,7 +1109,7 @@ plans.  The proof compares the executable target certificate with the
 structurally mapped source certificate; no second certifier is introduced. -/
 theorem certify_mapStatic_eq_some {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {sourceType : TypeExpr}
@@ -1154,7 +1157,7 @@ theorem certify_mapStatic_eq_some {source target : CIGSLT}
         (mapTypeExpr
           morphism.underlying.structural.structural.symbols sourceType))
       (content := mapPattern morphism.costWholeStructural.symbols content)
-      ⟨_, decodeCostStaticTypeExpr_mapTypeExpr target color _⟩
+      ⟨_, CostStaticTypeImage.decode_mapTypeExpr target.theory color _⟩
       mappedWellSorted
   rw [targetCertified]
   congr 1
@@ -1172,7 +1175,7 @@ theorem certify_mapStatic_eq_some {source target : CIGSLT}
       (mapTypeExpr
         morphism.underlying.structural.structural.symbols)
     rw [certifyCostRegionBoundary?_sourceSupport certified,
-      CostStaticBinderThinning.sourceContextOfTarget_natural]
+      CostStaticTypeThinning.sourceContextOfTarget_natural]
   · exact targetBoundary.targetType_eq.trans mapped.targetType_eq.symm
   · exact targetBoundary.targetSupport_eq.trans
       mapped.targetSupport_eq.symm
@@ -1182,7 +1185,7 @@ theorem certify_mapStatic_eq_some {source target : CIGSLT}
 spelling of the structurally mapped content. -/
 theorem certify_mapStatic_castContent_eq_some {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {targetSupport : List TypeExpr} {sourceType : TypeExpr}
@@ -1214,7 +1217,7 @@ namespace TypedCostRegionBoundaryTable
 Repeated equal contents remain distinct entries because both the table and
 its list index are mapped structurally. -/
 def map {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     {targetFree : WellSorted.FreeTypeContext} :
     {occurrences : List CostRegionOccurrence} →
@@ -1231,7 +1234,7 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
 @[simp]
 theorem map_nil {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     (targetFree : WellSorted.FreeTypeContext) :
     map morphism scope color
@@ -1243,7 +1246,7 @@ theorem map_nil {source target : CIGSLT}
 duplicate boundary occurrences keep their left-to-right positions. -/
 theorem map_append {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     {targetFree : WellSorted.FreeTypeContext}
     {leftOccurrences rightOccurrences : List CostRegionOccurrence}
@@ -1303,7 +1306,7 @@ The occurrence equality is the canonical composite from the two component
 equalities and structural list mapping. -/
 theorem map_append_of {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     {targetFree : WellSorted.FreeTypeContext}
     {leftSourceOccurrences rightSourceOccurrences
@@ -1359,7 +1362,7 @@ namespace TypedCostRegionBoundaryPacket
 /-- Map one total occurrence/table packet without separating its dependent
 index from the retained certificates. -/
 def map {source target : CIGSLT} (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     {targetFree : WellSorted.FreeTypeContext}
     (packet : TypedCostRegionBoundaryPacket source color targetFree) :
@@ -1371,7 +1374,7 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
 /-- Mapping total packets preserves chronological composition exactly. -/
 theorem map_append {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (color : CostStaticColor)
     {targetFree : WellSorted.FreeTypeContext}
     (left right : TypedCostRegionBoundaryPacket source color targetFree) :

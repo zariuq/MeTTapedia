@@ -2174,7 +2174,7 @@ theorem weak_backward_outcome_piStep_rf_step_of_SC_source_at_canary_nonempty :
       (encode (Process.par (Process.input "alpha" "u" .nil) (Process.output "alpha" "w"))
         "n_custom" "v_custom") := by
   let Psrc : Process := Process.par (Process.input "alpha" "u" .nil) (Process.output "alpha" "w")
-  let Qdst : Process := .nil
+  let Qdst : Process := Process.nil.substitute "u" "w"
   have hrfSrc : ForwardSimulation.RestrictionFree Psrc := by
     simp [Psrc, ForwardSimulation.RestrictionFree]
   have hsafe :
@@ -2211,7 +2211,7 @@ theorem weak_backward_reflection_step_rfStepAt_target_sensitive_canary_nonempty 
           WeakRestrictedBisimD ({ "alpha" } : Finset String) tgt' (encode P'' n v)) := by
   let Psrc : Process := Process.par (Process.input "alpha" "u" .nil) (Process.output "alpha" "w")
   let src : Pattern := encode Psrc "n_custom" "v_custom"
-  let Qdst : Process := .nil
+  let Qdst : Process := Process.nil.substitute "u" "w"
   have hrfSrc : ForwardSimulation.RestrictionFree Psrc := by
     simp [Psrc, ForwardSimulation.RestrictionFree]
   have hsafe :
@@ -2274,7 +2274,7 @@ theorem weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive_
           WeakRestrictedBisimD ({ "alpha" } : Finset String) tgt' (encode P'' n v))) := by
   let Psrc : Process := Process.par (Process.input "alpha" "u" .nil) (Process.output "alpha" "w")
   let src : Pattern := encode Psrc "n_custom" "v_custom"
-  let Qdst : Process := .nil
+  let Qdst : Process := Process.nil.substitute "u" "w"
   have hrfSrc : ForwardSimulation.RestrictionFree Psrc := by
     simp [Psrc, ForwardSimulation.RestrictionFree]
   have hsafe :
@@ -2324,7 +2324,7 @@ theorem weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive_
           WeakRestrictedBisimD ({ "alpha" } : Finset String) tgt' (encode P'' n v))) := by
   let Psrc : Process := Process.par (Process.input "alpha" "u" .nil) (Process.output "alpha" "w")
   let src : Pattern := encode Psrc "n_custom" "v_custom"
-  let Qdst : Process := .nil
+  let Qdst : Process := Process.nil.substitute "u" "w"
   have hrfSrc : ForwardSimulation.RestrictionFree Psrc := by
     simp [Psrc, ForwardSimulation.RestrictionFree]
   have hsafe :
@@ -2385,13 +2385,12 @@ theorem weak_backward_outcome_fresh_of_encodedSC_star_source_fresh_canary_nonemp
     exact Finset.mem_insert_self "alpha" ({"w"} : Finset String)
   have hfresh : EncodingFreshAt Psrc "n_custom" "v_custom" := by
     simp [EncodingFreshAt, Psrc, Process.freeNames]
-    decide
   have hsrc :
       EncodedSCStepSourceFresh ({ "alpha" } : Finset String) src :=
     encodedSC_step_classifier_rfStepAt_fresh
       (N := ({ "alpha" } : Finset String))
       (src := src)
-      (P := Psrc) (Q := .nil) (n := "n_custom") (v := "v_custom")
+      (P := Psrc) (Q := Process.nil.substitute "u" "w") (n := "n_custom") (v := "v_custom")
       (h := ForwardSimulation.ReducesRF.comm "alpha" "u" "w" .nil)
       hrfSrc hsafe
       (Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence.refl _)

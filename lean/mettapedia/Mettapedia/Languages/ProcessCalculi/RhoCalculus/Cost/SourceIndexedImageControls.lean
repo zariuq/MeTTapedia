@@ -111,11 +111,4 @@ theorem closedInput_not_certified :
   exact (by decide +kernel :
     ¬ "PInput" ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) constructorAllowed.1
 
-#print axioms compiler_image_inhabited
-#print axioms parallel_compile_ne_zero
-#print axioms parallel_image_key_eq_zero
-#print axioms freeDrop_image_key_ne_zero
-#print axioms normalize_parallel_image_key
-#print axioms closedInput_not_certified
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls

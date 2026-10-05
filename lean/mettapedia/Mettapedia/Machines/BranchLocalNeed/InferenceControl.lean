@@ -29,6 +29,22 @@ namespace Reference
 
 open Mettapedia.Machines.BranchLocalNeed.NeedReference
 
+/-- The actual reference successors and halted outcomes, with executable
+successor-index replay. This adapter is independent of coefficient handlers. -/
+def pathMachine
+    {Origin Local Resume Rule Value StableFault RetryableFault Effect : Type}
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (initial : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Mettapedia.Machines.OccurrenceMachineCore Unit
+      (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+      (Produced Value StableFault RetryableFault) where
+  load _ := initial
+  next := step spec
+  answer := haltedOutcome
+  answer_final machine answer returned := by
+    cases control : machine.control <;>
+      simp [haltedOutcome, control, step] at returned ⊢
+
 variable {Origin Local Resume Rule Value StableFault RetryableFault Effect :
   Type*}
 
@@ -238,6 +254,50 @@ theorem demanded_frontier_has_steps_and_cost
       (occurrenceSystem spec) controller goal fuel sound).1 occurrence member
   exact ⟨generated_has_steps spec generated,
     generated_transition_clock spec generated⟩
+
+/-- A sound retained frontier preserves actual receipt graphs in both
+answers and unfinished work. No execution occurrence is reconstructed from
+its answer value alone. -/
+theorem snapshot_receipts_valid_of_sound
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {initial : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {snapshot : Mettapedia.GSLT.Core.BranchingTemporal.Snapshot
+      (WorkOccurrence (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat)}
+    (valid : initial.world.receipts.Valid)
+    (sound : snapshot.Sound (occurrenceSystem spec) [WorkOccurrence.root initial]) :
+    (∀ occurrence ∈ snapshot.frontier, occurrence.state.world.receipts.Valid) ∧
+      (∀ event ∈ snapshot.events, event.origin.state.world.receipts.Valid) := by
+  constructor
+  · intro occurrence member
+    exact Steps.receipts_valid spec (generated_has_steps spec (sound.1 occurrence member)) valid
+  · intro event member
+    exact Steps.receipts_valid spec (generated_has_steps spec (sound.2 event member).1) valid
+
+theorem demanded_receipts_check
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {Memory : Type*}
+    (controller : Controller
+      (WorkOccurrence (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Memory)
+    (goal : List (Produced Value StableFault RetryableFault × List Nat) → Bool) (fuel : Nat)
+    {initial : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      (WorkOccurrence (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Memory}
+    (valid : initial.world.receipts.Valid)
+    (sound : snapshot.search.Sound (occurrenceSystem spec) [WorkOccurrence.root initial]) :
+    (∀ occurrence ∈ (Mettapedia.GSLT.Core.DemandExecution.run
+        (occurrenceSystem spec) controller goal fuel snapshot).search.frontier,
+      occurrence.state.world.receipts.toCausalReceipt.check [] = true) ∧
+    (∀ event ∈ (Mettapedia.GSLT.Core.DemandExecution.run
+        (occurrenceSystem spec) controller goal fuel snapshot).search.events,
+      event.origin.state.world.receipts.toCausalReceipt.check [] = true) := by
+  have preserved := snapshot_receipts_valid_of_sound spec valid
+    (Mettapedia.GSLT.Core.DemandExecution.run_sound
+      (occurrenceSystem spec) controller goal fuel sound)
+  exact ⟨fun occurrence member => ReceiptGraph.checked_projection _ (preserved.1 occurrence member),
+    fun event member => ReceiptGraph.checked_projection _ (preserved.2 event member)⟩
 
 end Reference
 

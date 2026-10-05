@@ -66,7 +66,7 @@ class IsCommQuantale (Q : Type*) [CommSemigroup Q] [CompleteLattice Q]
     extends IsQuantale Q where
 
 /-- For a commutative quantale, we only need one direction of the distributivity law. -/
-@[reducible] def IsCommQuantale.ofCommSemigroup
+theorem IsCommQuantale.ofCommSemigroup
     {Q : Type*} [CommSemigroup Q] [CompleteLattice Q]
     (h : ∀ (x : Q) (s : Set Q), x * sSup s = ⨆ y ∈ s, x * y) :
     IsCommQuantale Q where
@@ -722,7 +722,7 @@ theorem residuate_comm' {Q : Type*} [CommSemigroup Q] [CompleteLattice Q] [IsQua
   unfold leftResiduate rightResiduate
   congr 1
   ext z
-  simp only [Set.mem_setOf_eq, mul_comm]
+  simp only [Set.mem_ofPred_eq, mul_comm]
 
 /-- Galois connection for residuation. -/
 theorem residuate_galois (x y z : Q) :
@@ -947,7 +947,7 @@ theorem weakness_empty {Q : Type*} [Monoid Q] [CompleteLattice Q]
   unfold weakness
   have hempty : {x | ∃ p ∈ (∅ : Finset (U × U)), wf.μ p.1 * wf.μ p.2 = x} = (∅ : Set Q) := by
     ext q
-    simp only [Set.mem_setOf_eq, Finset.notMem_empty, false_and, exists_false,
+    simp only [Set.mem_ofPred_eq, Finset.notMem_empty, false_and, exists_false,
       Set.mem_empty_iff_false]
   rw [hempty, sSup_empty]
 

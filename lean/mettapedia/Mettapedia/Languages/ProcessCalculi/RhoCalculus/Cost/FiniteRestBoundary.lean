@@ -64,9 +64,4 @@ theorem not_unrestricted_reflective_subject_reduction :
   exact target_not_typed (preserves source target source_typed
     (by rw [actual_reducts]; exact List.mem_singleton_self _))
 
-#print axioms source_typed
-#print axioms actual_reducts
-#print axioms target_not_typed
-#print axioms not_unrestricted_reflective_subject_reduction
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteRestBoundary

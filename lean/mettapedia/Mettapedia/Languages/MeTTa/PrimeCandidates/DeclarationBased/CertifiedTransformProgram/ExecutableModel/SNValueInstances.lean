@@ -164,9 +164,9 @@ theorem vmodel_allMeaning {k : Consistency.Kind} (K : Carrier k)
 /-! ## The pack of `num → num` -/
 
 /-- The pack of `num → num`: functions sending numbers of one shape to numbers
-of one shape (`vinterp_numArrow`). -/
+of one shape (`TExtension.interp_numArrow`). -/
 abbrev vnumArrow {n : Nat} (ξ : World (vmodel v).reading n) : ValueSide.Pack (vmodel v).value n :=
-  varrowD v (vnumD v) (vnumD v) ξ
+  objectTExt.arrowD v (objectTExt.numD v) (objectTExt.numD v) ξ
 
 /-- `num → num` is of one shape with itself at every level. -/
 theorem vshape_numArrow (l : Nat) {n : Nat} (ξ : World (vmodel v).reading n) :
@@ -347,7 +347,7 @@ the daimon.** -/
 theorem impDecoding_numArrow (X Y : (vmodel v).reading.P) (f : Tower.Tm 2) :
     (vnumArrow v (propWorld v X Y)).rel (ValueSide.coeApp coeN impDecoding (.pi numT numT) f)
       (.const starN) :=
-  vmodel_coe_total_star (impDecoding_total v 0 X Y) (vinterp_numArrow v 0 (propWorld v X Y))
+  vmodel_coe_total_star (impDecoding_total v 0 X Y) (objectTExt.interp_numArrow v 0 (propWorld v X Y))
     (vshape_numArrow v 0 (propWorld v X Y)) f
 
 /-- **The transports out of `holds (imp p q)` and out of `Π (holds p) (holds q)`
@@ -356,7 +356,7 @@ theorem holdsImp_numArrow_congr (X Y : (vmodel v).reading.P) (d d' : Tower.Tm 2)
     (vnumArrow v (propWorld v X Y)).rel (ValueSide.coeApp coeN holdsImp (.pi numT numT) d)
       (ValueSide.coeApp coeN impDecoding (.pi numT numT) d') :=
   vmodel_coe_congr (holdsImp_shapePair v 0 X Y)
-    ⟨vinterp_numArrow v 0 (propWorld v X Y), vinterp_numArrow v 0 (propWorld v X Y), rfl,
+    ⟨objectTExt.interp_numArrow v 0 (propWorld v X Y), objectTExt.interp_numArrow v 0 (propWorld v X Y), rfl,
       vshape_numArrow v 0 (propWorld v X Y)⟩ trivial
 
 /-- **The transport out of `Π (x : num). holds (f x)` into `num → num` is related
@@ -366,7 +366,7 @@ theorem allDecoding_numArrow (φ : (Carrier.arr .num .prop).V (vmodel v).reading
     (f : Tower.Tm 1) :
     (vnumArrow v (predWorld v φ)).rel (ValueSide.coeApp coeN allDecoding (.pi numT numT) f)
       (.const starN) :=
-  vmodel_coe_total_star (allDecoding_total v 0 φ) (vinterp_numArrow v 0 (predWorld v φ))
+  vmodel_coe_total_star (allDecoding_total v 0 φ) (objectTExt.interp_numArrow v 0 (predWorld v φ))
     (vshape_numArrow v 0 (predWorld v φ)) f
 
 /-- The transports out of `holds (all@num f)` and out of
@@ -376,7 +376,7 @@ theorem holdsAll_numArrow_congr (φ : (Carrier.arr .num .prop).V (vmodel v).read
     (vnumArrow v (predWorld v φ)).rel (ValueSide.coeApp coeN holdsAll (.pi numT numT) d)
       (ValueSide.coeApp coeN allDecoding (.pi numT numT) d') :=
   vmodel_coe_congr (holdsAll_shapePair v 0 φ)
-    ⟨vinterp_numArrow v 0 (predWorld v φ), vinterp_numArrow v 0 (predWorld v φ), rfl,
+    ⟨objectTExt.interp_numArrow v 0 (predWorld v φ), objectTExt.interp_numArrow v 0 (predWorld v φ), rfl,
       vshape_numArrow v 0 (predWorld v φ)⟩ trivial
 
 /-- **The transport out of `Σ (holds p) (holds q)` into `Σ num num` is related to
@@ -559,12 +559,16 @@ theorem vmodel_largeJ_valid (ξ : World (vmodel v).reading 0) (e : Tower.Tm 0) :
     ValueSide.InterpAt.num laws 0 rX
   have hY : ValueSide.InterpAt (vmodel v).value 0 ξ (.app (.app largeMotive oneT) e)
       (vnumArrow v ξ) :=
-    ValueSide.InterpAt.expand rY (vinterp_numArrow v 0 ξ)
+    ValueSide.InterpAt.expand rY (objectTExt.interp_numArrow v 0 ξ)
   obtain ⟨-, val⟩ := ValueSide.coe_num_numArrow laws facts (vmodel_coeRules v) hX hY rX rY
     (d := .const zeroN) (ValueSide.numIndPack_rel.mpr ⟨.zero, .zero .refl, .zero .refl⟩)
   refine ⟨vmodel_largeJ_red v e, fun {P} den => ?_⟩
   obtain rfl := ValueSide.DenS.deterministic laws den ⟨0, hY⟩
   exact facts.expandRel hY (.single jStep) (.single jStep) val
+
+namespace TExtension
+
+variable (X : TExtension)
 
 /-! ## The constants with dependent types -/
 
@@ -575,91 +579,98 @@ open Package (iterName eqAtName keepName transportName composeName returnIterNam
 /-- The recursor is valid: its declared type is typed in the stage of the
 numbers and their constructors, whose fundamental lemma gives the validity of
 the type and of its parts. -/
-theorem vmodel_valid_numRec' : ModelSN.ValidTmS (vmodel v) .nil (.const numRecName) numRecType := by
-  have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN]) (by decide)
+theorem valid_numRec' : ModelSN.ValidTmS (X.model v) .nil (.const numRecName) numRecType := by
+  have sound₀ := X.stage_soundS_of v (names := [numN, zeroN, sucN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       rcases mem with rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-      · exact vmodel_valid_num v
-      · exact vmodel_valid_zero v
-      · exact vmodel_valid_suc v
+      · exact X.valid_num v
+      · exact X.valid_zero v
+      · exact X.valid_suc v
   obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS sound₀ numRecType_typed trivial
-  exact vmodel_valid_numRec v (validT.validTy (.sort _)) partsT
+  exact X.valid_numRec v (validT.validTy (.sort _)) partsT
 
 /-- The iterator is valid: its declared type is typed in the stage of the
 numbers. -/
-theorem vmodel_valid_iter' : ModelSN.ValidTmS (vmodel v) .nil (.const iterName) iterType := by
-  have sound₀ := vstage_soundS_of v (names := [numN]) (by decide)
+theorem valid_iter' : ModelSN.ValidTmS (X.model v) .nil (.const iterName) iterType := by
+  have sound₀ := X.stage_soundS_of v (names := [numN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       subst mem
       obtain rfl := Option.some.inj declared
-      exact vmodel_valid_num v
+      exact X.valid_num v
   obtain ⟨validT, partsT, _⟩ := ModelSN.Derivable.validS sound₀ (iterType_typed (by simp)) trivial
-  exact vmodel_valid_iter v (validT.validTy (.sort _)) partsT
+  exact X.valid_iter v (validT.validTy (.sort _)) partsT
 
 /-! ## Definitions by one equation -/
 
-theorem vmodel_valid_eqAt : ModelSN.ValidTmS (vmodel v) .nil (.const eqAtName) eqAtType := by
-  have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN, addN]) (by decide)
+theorem valid_eqAt : ModelSN.ValidTmS (X.model v) .nil (.const eqAtName) eqAtType := by
+  have sound₀ := X.stage_soundS_of v (names := [numN, zeroN, sucN, addN]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       rcases mem with rfl | rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-      · exact vmodel_valid_num v
-      · exact vmodel_valid_zero v
-      · exact vmodel_valid_suc v
-      · exact vmodel_valid_add v
+      · exact X.valid_num v
+      · exact X.valid_zero v
+      · exact X.valid_suc v
+      · exact X.valid_add v
   exact ModelSN.ValidTmS.definition (Θ := eqAtTele) (C := U0) (rhs := eqAtRhs) sound₀
     ⟨_, .sort _, eqAtType_typed⟩ eqAtBody_typed
-    (fun σ => vmodel_rule v (listed 4 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
-    (fun _ sns X h => KCand.definition_mem objectShape X objectRoles_eqAt
-      (objectStep_definition (listed 4 (by decide)) (by decide)) sns h)
+    (fun σ => X.rule v (listed 4 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
+    (fun _ sns Y h => KCand.definition_mem X.realShape Y X.realRoles_eqAt
+      (fun step => objectStep_definition (listed 4 (by decide)) (by decide)
+        (X.realStep_declared (by decide) step)) sns h)
 
-theorem vmodel_valid_keep : ModelSN.ValidTmS (vmodel v) .nil (.const keepName) keepType :=
+theorem valid_keep : ModelSN.ValidTmS (X.model v) .nil (.const keepName) keepType :=
   ModelSN.ValidTmS.definition (Θ := keepTele) (C := .sigma (.var 3) (.app (.var 3) (.var 0)))
     (rhs := keepRhs)
-    (vstage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
+    (X.stage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
     ⟨_, .sort _, keepType_typed⟩ keepBody_typed
-    (fun σ => vmodel_rule v (listed 6 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
-    (fun _ sns X h => KCand.definition_mem objectShape X objectRoles_keep
-      (objectStep_definition (listed 6 (by decide)) (by decide)) sns h)
+    (fun σ => X.rule v (listed 6 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
+    (fun _ sns Y h => KCand.definition_mem X.realShape Y X.realRoles_keep
+      (fun step => objectStep_definition (listed 6 (by decide)) (by decide)
+        (X.realStep_declared (by decide) step)) sns h)
 
-theorem vmodel_valid_transport :
-    ModelSN.ValidTmS (vmodel v) .nil (.const transportName) transportType :=
+theorem valid_transport :
+    ModelSN.ValidTmS (X.model v) .nil (.const transportName) transportType :=
   ModelSN.ValidTmS.definition (Θ := transportTelescope)
     (C := .sigma (.var 5) (.app (.var 5) (.var 0))) (rhs := transportRhs)
-    (vstage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
+    (X.stage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
     ⟨_, .sort _, transportType_typed⟩ transportBody_typed
-    (fun σ => vmodel_rule v (listed 7 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
-    (fun _ sns X h => KCand.definition_mem objectShape X objectRoles_transport
-      (objectStep_definition (listed 7 (by decide)) (by decide)) sns h)
+    (fun σ => X.rule v (listed 7 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
+    (fun _ sns Y h => KCand.definition_mem X.realShape Y X.realRoles_transport
+      (fun step => objectStep_definition (listed 7 (by decide)) (by decide)
+        (X.realStep_declared (by decide) step)) sns h)
 
-theorem vmodel_valid_compose :
-    ModelSN.ValidTmS (vmodel v) .nil (.const composeName) composeType :=
+theorem valid_compose :
+    ModelSN.ValidTmS (X.model v) .nil (.const composeName) composeType :=
   ModelSN.ValidTmS.definition (Θ := composeTelescope)
     (C := .sigma (.var 5) (.app (.var 5) (.var 0))) (rhs := composeRhs)
-    (vstage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
+    (X.stage_soundS_of v (names := []) (by decide) fun _ mem => absurd mem List.not_mem_nil)
     ⟨_, .sort _, composeType_typed⟩ composeBody_typed
-    (fun σ => vmodel_rule v (listed 8 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
-    (fun _ sns X h => KCand.definition_mem objectShape X objectRoles_compose
-      (objectStep_definition (listed 8 (by decide)) (by decide)) sns h)
+    (fun σ => X.rule v (listed 8 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
+    (fun _ sns Y h => KCand.definition_mem X.realShape Y X.realRoles_compose
+      (fun step => objectStep_definition (listed 8 (by decide)) (by decide)
+        (X.realStep_declared (by decide) step)) sns h)
 
-theorem vmodel_valid_returnIter :
-    ModelSN.ValidTmS (vmodel v) .nil (.const returnIterName) returnIterType := by
-  have sound₀ := vstage_soundS_of v (names := [numN, zeroN, sucN, iterName]) (by decide)
+theorem valid_returnIter :
+    ModelSN.ValidTmS (X.model v) .nil (.const returnIterName) returnIterType := by
+  have sound₀ := X.stage_soundS_of v (names := [numN, zeroN, sucN, iterName]) (by decide)
     fun name mem type declared => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
       rcases mem with rfl | rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-      · exact vmodel_valid_num v
-      · exact vmodel_valid_zero v
-      · exact vmodel_valid_suc v
-      · exact vmodel_valid_iter' v
+      · exact X.valid_num v
+      · exact X.valid_zero v
+      · exact X.valid_suc v
+      · exact X.valid_iter' v
   exact ModelSN.ValidTmS.definition (Θ := returnIterTele) (C := returnIterResult)
     (rhs := returnIterRhs) sound₀ ⟨_, .sort _, returnIterType_typed (by simp)⟩
     (returnIterBody_typed (by simp) (by simp))
-    (fun σ => vmodel_rule v (listed 10 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
-    (fun _ sns X h => KCand.definition_mem objectShape X objectRoles_returnIter
-      (objectStep_definition (listed 10 (by decide)) (by decide)) sns h)
+    (fun σ => X.rule v (listed 10 (by decide)) (by decide) ⟨σ, rfl, rfl⟩)
+    (fun _ sns Y h => KCand.definition_mem X.realShape Y X.realRoles_returnIter
+      (fun step => objectStep_definition (listed 10 (by decide)) (by decide)
+        (X.realStep_declared (by decide) step)) sns h)
+
+end TExtension
 
 end CodeModel
 

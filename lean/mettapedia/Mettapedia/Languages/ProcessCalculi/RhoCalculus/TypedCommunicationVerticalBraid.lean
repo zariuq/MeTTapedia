@@ -24,7 +24,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.TypedCommunicationVerticalBraid
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT.Core.ContextualLadder
 open Mettapedia.GSLT.Dynamics.AnswerEffects
 open Mettapedia.GSLT.Core.InteractionEvent
@@ -259,7 +259,7 @@ theorem communicationCostSource_binderSafe :
 
 /-- The corresponding interleaving step is the singleton event with no
 surrounding frame. -/
-def communicationCostStep :
+theorem communicationCostStep :
     CostStep communicationCostSource communicationCostChannel
       communicationSeal communicationCostTarget := by
   simpa [communicationCostSource, communicationCostTarget,
@@ -269,7 +269,7 @@ def communicationCostStep :
 
 /-- Binder safety of the target is derived by preservation, rather than
 rechecked independently. -/
-def communicationCostTarget_binderSafe :
+theorem communicationCostTarget_binderSafe :
     communicationCostTarget.BinderSafe :=
   communicationCostStep.preserves_binderSafe
     communicationCostSource_binderSafe
@@ -801,7 +801,7 @@ private theorem communicationGeneratedCost2_typed_in_generatedLanguage :
         communicationGeneratedCost1Pattern)
       (mapTypeExpr rhoCIGSLT.costClosureSymbols
         (.base costWrappedSortName)) at mapped
-  simpa [communicationGeneratedCost2Pattern, CIGSLT.costClosureTyping,
+  simpa [communicationGeneratedCost2Pattern, WrappableIGSLT.costClosureTyping,
     FreeTypeContext.map,
     rhoCIGSLT.mapTypeExpr_costClosureSymbols, costWrappedTypeExpr] using mapped
 
@@ -815,7 +815,7 @@ theorem communicationGeneratedCost2_typed :
   intro rule membership
   change rule ∈
     rhoSelectedCostLayerConfiguration.source.costWholeLanguage.terms
-  rw [CIGSLT.costWholeLanguage_terms]
+  rw [WrappableIGSLT.costWholeLanguage_terms]
   apply List.mem_append_left
   change rule ∈
     rhoCIGSLT.costContinuationRetyping.generatedLanguage.terms
@@ -836,7 +836,7 @@ noncomputable def communicationGeneratedCost2Term :
     communicationGeneratedName, communicationGeneratedBaseNil,
     communicationGeneratedWrappedNil, communicationGeneratedSignature,
     communicationGeneratedStack, communicationGeneratedEmptyStack,
-    CIGSLT.costClosureSymbols, mapPattern, mapPatternList_eq_map,
+    WrappableIGSLT.costClosureSymbols, mapPattern, mapPatternList_eq_map,
     binderSafeAt, binderSafeListAt]
 
 /-- The selected Cost2 compiler retains a checked region tree over this exact

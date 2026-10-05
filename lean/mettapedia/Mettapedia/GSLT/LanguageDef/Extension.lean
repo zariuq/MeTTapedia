@@ -190,6 +190,9 @@ end ExtensionLayer
 
 /-! ## A GSLT-authored extension language -/
 
+-- Source syntax and declaration fibres may inhabit different universes.
+-- Both levels must remain independent in the projections of this structure.
+set_option linter.checkUnivs false in
 /-- An extension layer whose own syntax and sugar are specified by a GSLT.
 
 `elaborate` is invariant under both authored equations and one-step rewrites.

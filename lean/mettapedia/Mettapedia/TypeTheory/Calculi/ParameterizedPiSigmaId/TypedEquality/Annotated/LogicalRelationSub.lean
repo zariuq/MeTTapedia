@@ -17,7 +17,8 @@ observes. The clauses follow the cumulative subtyping of the calculus:
   argument, and that the family of the larger type be related to itself at related
   arguments of its domain;
 * at every other token, the types are related as in the relation: identity types,
-  the numbers, the proposition codes and the ground types are invariant.
+  the numbers, the declared datatypes, the proposition codes and the ground types are
+  invariant.
 
 Laws proved here:
 
@@ -29,8 +30,9 @@ Laws proved here:
   witness observes. At a dependent pair type the second projections move from the
   family of `A` at the first projection of the left term to the family of `B` there,
   and then, along the family of `B` related to itself, to every term with a common
-  reduct with that projection. At identity types and the numbers the subtyping mode
-  is the relation and gives an equality of types, and subsumption is conversion;
+  reduct with that projection. At identity types, the numbers and the declared
+  datatypes the subtyping mode is the relation and gives an equality of types, and
+  subsumption is conversion;
 * **transitivity** (`RTSub.trans`).
 -/
 
@@ -201,6 +203,10 @@ theorem RTSub.nat_iff {A B : CTm Head n} :
     RTSub H Γ (.tag .nat) A B ↔ CRedTy H Γ A (.const K.num) ∧ CRedTy H Γ B (.const K.num) :=
   (RTSub.iff_of_kind (t := .tag .nat) ⟨nofun, nofun, nofun⟩).trans
     RT.ty_nat_iff
+
+theorem RTSub.data_iff {d : DeclName} {A B : CTm Head n} :
+    RTSub H Γ (.tag (.data d)) A B ↔ DataRed H Γ d A B :=
+  (RTSub.iff_of_kind (t := .tag (.data d)) ⟨nofun, nofun, nofun⟩).trans RT.ty_data_iff
 
 theorem RTSub.ident_iff {A B : CTm Head n} :
     RTSub H Γ (.tag .ident) A B ↔ ∃ C x y C' x' y', IdRed H Γ A B C x y C' x' y' :=
@@ -414,7 +420,7 @@ theorem RT.toSub_aux : ∀ (N : Nat) {t : Tok}, t.depth < N → TyTok Elem.univ 
           exact RTSub.sigma_iff.2 ⟨D, E, D', E', r₁, r₂, eD.below, eE.below⟩
         all_goals exact other ⟨nofun, nofun, nofun⟩
     | arg k i C d =>
-        rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+        rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
         · rcases RT.ty_argPi_iff.1 h with hvac | ⟨D, E, D', E', ⟨r₁, r₂, eD, eE⟩, hC, hd⟩
           · exact RTSub.of_vacuous hvac
           · exact RTSub.argPi_iff.2 (.inr ⟨D, E, D', E', ⟨r₁, r₂, eD, eE.below⟩, hC, hd⟩)
@@ -427,9 +433,10 @@ theorem RT.toSub_aux : ∀ (N : Nat) {t : Tok}, t.depth < N → TyTok Elem.univ 
                 fun c hc => absurd hc List.not_mem_nil,
                 fun _ => IH (sub (depth_lt_arg _ _ _ _)) hd (hdd rfl)⟩)
           · exact absurd hty tyTok_argSigma_succ
-        · exact other ⟨nofun, hk.1, hk.2.2⟩
+        · exact other ⟨nofun, nofun, nofun⟩
+        · exact other ⟨nofun, hk.1, hk.2.2.1⟩
     | fn k C Z W =>
-        rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+        rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
         · obtain ⟨-, -, -, hW⟩ := (tyTok_family (.inl rfl)).1 hty
           rcases RT.ty_fnPi_iff.1 h with hvac | ⟨D, E, D', E', ⟨r₁, r₂, eD, eE⟩, hc, -, hg⟩
           · exact RTSub.of_vacuous hvac
@@ -448,7 +455,8 @@ theorem RT.toSub_aux : ∀ (N : Nat) {t : Tok}, t.depth < N → TyTok Elem.univ 
               (hC c hc') (hc c hc'),
             fun N₁ N₁' hNN hz w hw => (hf N₁ N₁' (hNN.convType eD.symm) (zConv hz) w hw).2,
             fun N₁ tN hz w hw => IH (sub (depth_lt_fn_right hw)) (hW w hw) (hg N₁ tN hz w hw)⟩)
-        · exact other ⟨nofun, hk.1, hk.2.2⟩
+        · exact other ⟨nofun, nofun, nofun⟩
+        · exact other ⟨nofun, hk.1, hk.2.2.1⟩
 
 include levels formed in
 /-- **Related types are in the subtyping mode.** -/
@@ -487,7 +495,7 @@ theorem RTSub.expand {t : Tok} {x x' y y' : CTm Head n} (rx : CRedTy H Γ x y)
         exact RTSub.sigma_iff.2 ⟨D, E, D', E', sigma hp⟩
       all_goals exact other ⟨nofun, nofun, nofun⟩
   | arg k i C d =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · rcases RTSub.argPi_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RTSub.of_vacuous hvac
         · exact RTSub.argPi_iff.2 (.inr ⟨D, E, D', E', pi hp, rest⟩)
@@ -495,9 +503,10 @@ theorem RTSub.expand {t : Tok} {x x' y y' : CTm Head n} (rx : CRedTy H Γ x y)
       · rcases RTSub.argSigma_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RTSub.of_vacuous hvac
         · exact RTSub.argSigma_iff.2 (.inr ⟨D, E, D', E', sigma hp, rest⟩)
-      · exact other ⟨nofun, hk.1, hk.2.2⟩
+      · exact other ⟨nofun, nofun, nofun⟩
+      · exact other ⟨nofun, hk.1, hk.2.2.1⟩
   | fn k C Z W =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · rcases RTSub.fnPi_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RTSub.of_vacuous hvac
         · exact RTSub.fnPi_iff.2 (.inr ⟨D, E, D', E', pi hp, rest⟩)
@@ -505,7 +514,8 @@ theorem RTSub.expand {t : Tok} {x x' y y' : CTm Head n} (rx : CRedTy H Γ x y)
       · rcases RTSub.fnSigma_iff.1 h with hvac | ⟨D, E, D', E', hp, rest⟩
         · exact RTSub.of_vacuous hvac
         · exact RTSub.fnSigma_iff.2 (.inr ⟨D, E, D', E', sigma hp, rest⟩)
-      · exact other ⟨nofun, hk.1, hk.2.2⟩
+      · exact other ⟨nofun, nofun, nofun⟩
+      · exact other ⟨nofun, hk.1, hk.2.2.1⟩
 
 end Basic
 
@@ -565,6 +575,12 @@ theorem RT.subConv_aux : ∀ (N : Nat) {t : Tok} {a : List Tok}, t.depth < N →
       exact viaNormal rA H.normal_num
         ⟨fun _ => nofun, fun _ _ => nofun, fun _ _ => nofun⟩
         (CTypeEq.trans levels rA.2 rB.2.symm)
+    have viaData : ∀ {d : DeclName}, Tok.tag (.data d) ∈ a → RT H Γ true t B M M' :=
+      fun hdat => by
+        obtain ⟨hd, rA, rB⟩ := RTSub.data_iff.1 (hAB _ hdat)
+        exact viaNormal rA (H.normal_data hd)
+          ⟨fun _ => nofun, fun _ _ => nofun, fun _ _ => nofun⟩
+          (CTypeEq.trans levels rA.2 rB.2.symm)
     cases t with
     | tag k =>
         cases k
@@ -572,13 +588,16 @@ theorem RT.subConv_aux : ∀ (N : Nat) {t : Tok} {a : List Tok}, t.depth < N →
         case zero => exact viaNat (tyTok_tag_zero.1 hta)
         case succ => exact viaNat (tyTok_tag_succ.1 hta)
         case pair => exact absurd hta tyTok_tag_pair
+        case ctor d c fs => exact viaData (tyTok_tag_ctor.1 hta)
         all_goals
-          exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
+          exact RT.tm_other htk (fun _ _ _ e => nomatch e)
             (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)
     | arg k i C d =>
-        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-        · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-            (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+        · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+            (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)
         · refine viaIdent ?_
           rcases i with _ | i
           · exact (tyTok_reflPoint.1 hta).1
@@ -637,10 +656,11 @@ theorem RT.subConv_aux : ∀ (N : Nat) {t : Tok} {a : List Tok}, t.depth < N →
               (RTSub.sigma_famRight hp (fun s hs _ => hAB s hs) eN hZ)
               (hE₂.instantiateEq tfst₂ eN)).1 h₂
           · exact absurd hta tyTok_pair_high
-        · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+        · exact viaData (tyTok_field.1 hta).1
+        · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
     | fn k C X Y =>
-        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+        rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
         · obtain ⟨hpi, -, hX, hY⟩ := tyTok_lam.1 hta
           obtain ⟨D₁, E₁, D₂, E₂, hp⟩ := RTSub.pi_iff.1 (hAB _ hpi)
           have hdom : ∀ r ∈ args .pi 0 a, RT H Γ false r D₁ D₁ D₂ :=
@@ -677,8 +697,9 @@ theorem RT.subConv_aux : ∀ (N : Nat) {t : Tok} {a : List Tok}, t.depth < N →
         · exact absurd hta (tyTok_fn_other (by simp))
         · exact absurd hta (tyTok_fn_other (by simp))
         · exact absurd hta (tyTok_fn_other (by simp))
+        · exact absurd hta (tyTok_fn_other (by simp))
         · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 include levels formed in
 /-- **Subsumption.** At a token typed at a type witness `a`, terms related at `A` are
@@ -749,7 +770,7 @@ theorem RTSub.trans_aux : ∀ (N : Nat) {t : Tok}, t.depth < N → TyTok Elem.un
           exact RTSub.sigma_iff.2 ⟨D₁, E₁, D₃, E₃, p₁.trans p₂⟩
         all_goals exact other ⟨nofun, nofun, nofun⟩
     | arg k i C d =>
-        rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+        rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
         · rcases i with _ | i
           · obtain ⟨-, rfl, hd⟩ := (tyTok_dom (.inl rfl)).1 hty
             rcases RTSub.argPi_iff.1 h₁ with hvac | ⟨D₁, E₁, D₂, E₂, p₁, -, hd₁⟩
@@ -773,9 +794,10 @@ theorem RTSub.trans_aux : ∀ (N : Nat) {t : Tok}, t.depth < N → TyTok Elem.un
               fun c hc => absurd hc List.not_mem_nil,
               fun _ => IH (sub (depth_lt_arg _ _ _ _)) hd (hd₁ rfl) (hd₂ rfl)⟩)
           · exact absurd hty tyTok_argSigma_succ
-        · exact other ⟨nofun, hk.1, hk.2.2⟩
+        · exact other ⟨nofun, nofun, nofun⟩
+        · exact other ⟨nofun, hk.1, hk.2.2.1⟩
     | fn k C Z W =>
-        rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+        rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
         · obtain ⟨-, hC, hZ, hW⟩ := (tyTok_family (.inl rfl)).1 hty
           rcases RTSub.fnPi_iff.1 h₁ with hvac | ⟨D₁, E₁, D₂, E₂, p₁, hc₁, hg₁⟩
           · exact RTSub.of_vacuous hvac
@@ -806,7 +828,8 @@ theorem RTSub.trans_aux : ∀ (N : Nat) {t : Tok}, t.depth < N → TyTok Elem.un
             RT.subConv levels formed hC (hZ z hz') hc₁ p₁.2.2.1 (hz z hz')
           exact IH (sub (depth_lt_fn_right hw)) (hW w hw) (hg₁ N₁ tN₁ hz w hw)
             (hg₂ N₁ tN₂ hz₂ w hw)
-        · exact other ⟨nofun, hk.1, hk.2.2⟩
+        · exact other ⟨nofun, nofun, nofun⟩
+        · exact other ⟨nofun, hk.1, hk.2.2.1⟩
 
 include levels formed in
 /-- **Transitivity of the subtyping mode.** -/

@@ -1,14 +1,17 @@
 import Mettapedia.GSLT.Core.AgeProtectedSchedule
 import Mettapedia.GSLT.Core.BranchingTemporal
+import Mettapedia.GSLT.Core.InferenceControl
 import Mathlib.Data.List.Sort
+import Mathlib.Algebra.Order.Interval.Set.Instances
+import Mathlib.Algebra.Order.Ring.Rat
 
 /-!
 # Best-first selection by accumulated weight
 
-Weights live in a totally ordered monoid and are combined by a superior
-function: the combination is monotone, and it is never below either
-argument.  Best-first selection orders the live frontier by the resulting
-weight and otherwise preserves occurrences.
+Best-first selection orders the live frontier by a total weight order and
+otherwise preserves occurrences. Stopping bounds need only a preorder and
+one-sided growth on a preserved domain. A superior combination is one
+sufficient instance: it is monotone and never below either argument.
 
 An emitted answer is a lightest latent answer.  If only finitely many
 generated items are at most as heavy as a live target, and a selected item
@@ -22,6 +25,17 @@ themselves decrease.
 Breadth-first and depth-first queue updates append or prepend.  They do not
 sort by weight.  The weight order is the scheduler reorder, an insertion
 sort, and that reorder is a permutation, so grades do not drop occurrences.
+
+Nonnegative costs under addition, and coefficients in the unit interval under
+multiplication read with larger coefficients as better, are superior; a
+factor above one is not. A superior law is sufficient for a stopping
+certificate; the certificate itself needs only one-sided growth along
+successors within a preserved domain. When no live frontier item is better
+than a bound, no node any scheduler has not yet chosen is better than it
+either, since every such node is still reachable from that frontier. The
+certificate holds for every scheduler, including stateful controllers and
+portfolios with an age lane. Retained unaccepted results also need a bound.
+Without the step law a strictly better answer can still be pending.
 -/
 
 namespace Mettapedia.GSLT.Core.WeightOrderedSelection
@@ -63,6 +77,47 @@ theorem intAdd_not_superior : ¬ ∃ s : Superior Int, s.combine = (· + ·) := 
   have hle := s.left_le (0 : Int) (-1)
   simp [hcombine] at hle
 
+/-- Addition in a canonically ordered additive monoid is superior: the law of
+nonnegative costs, for example nonnegative rationals under addition. -/
+def canonicalAdd (W : Type _) [AddCommMonoid W] [PartialOrder W]
+    [IsOrderedAddMonoid W] [CanonicallyOrderedAdd W] : Superior W where
+  combine := (· + ·)
+  mono_left := fun h => add_le_add h le_rfl
+  mono_right := fun h => add_le_add le_rfl h
+  left_le := fun _ _ => le_self_add
+  right_le := fun _ _ => le_add_self
+
+/-- Coefficients in the unit interval under multiplication, with larger
+coefficients better: in the order dual, where lighter means larger, the
+product is superior. -/
+def unitIntervalMul (R : Type _) [Semiring R] [PartialOrder R] [IsOrderedRing R] :
+    Superior (Set.Icc (0 : R) 1)ᵒᵈ where
+  combine a b := OrderDual.toDual (OrderDual.ofDual a * OrderDual.ofDual b)
+  mono_left := fun {a a' b} h => by
+    change OrderDual.ofDual a' * OrderDual.ofDual b ≤ OrderDual.ofDual a * OrderDual.ofDual b
+    have h' : ((OrderDual.ofDual a' : Set.Icc (0 : R) 1) : R) ≤ OrderDual.ofDual a := h
+    exact Subtype.coe_le_coe.mp (by
+      simpa using mul_le_mul_of_nonneg_right h' (OrderDual.ofDual b).2.1)
+  mono_right := fun {a b b'} h => by
+    change OrderDual.ofDual a * OrderDual.ofDual b' ≤ OrderDual.ofDual a * OrderDual.ofDual b
+    have h' : ((OrderDual.ofDual b' : Set.Icc (0 : R) 1) : R) ≤ OrderDual.ofDual b := h
+    exact Subtype.coe_le_coe.mp (by
+      simpa using mul_le_mul_of_nonneg_left h' (OrderDual.ofDual a).2.1)
+  left_le := fun _ _ => Set.Icc.mul_le_left
+  right_le := fun _ _ => Set.Icc.mul_le_right
+
+/-- Outside the unit interval the product is not superior: a factor of
+twenty moves a coefficient of one up, so it is not below its argument in the
+larger-is-better order. -/
+theorem rat_mul_not_superior :
+    ¬ ∃ s : Superior ℚᵒᵈ, ∀ a b,
+      s.combine a b = OrderDual.toDual (OrderDual.ofDual a * OrderDual.ofDual b) := by
+  rintro ⟨s, hs⟩
+  have h := s.left_le (OrderDual.toDual 1) (OrderDual.toDual 20)
+  rw [hs] at h
+  change (1 : ℚ) * 20 ≤ 1 at h
+  norm_num at h
+
 /-- A weight is accumulated when every successor's weight is the superior
 combination of its parent's weight with some edge weight. -/
 structure Realized {W Node Answer : Type _} [Preorder W]
@@ -77,6 +132,39 @@ theorem realized_monotone {W Node Answer : Type _} [Preorder W]
   intro parent child hmem
   obtain ⟨edge, heq⟩ := h.accumulated parent child hmem
   simpa [heq] using s.left_le (weight parent) edge
+
+/-- A stopping bound needs only one-sided growth on a preserved domain of
+states. It does not require an order on individual factors or a superior
+combination on the entire coefficient carrier. -/
+structure StepBound {W Node Answer : Type*} [Preorder W]
+    (system : BranchingSystem Node Answer) (weight : Node → W)
+    (domain : Node → Prop) : Prop where
+  preserves : ∀ parent child, domain parent → child ∈ system.successors parent → domain child
+  bounds : ∀ parent child, domain parent → child ∈ system.successors parent →
+    weight parent ≤ weight child
+
+/-- A superior realization supplies the unrestricted instance of the weaker
+step law. The growth proof uses its actual successor realization. -/
+theorem Realized.stepBound {W Node Answer : Type*} [Preorder W]
+    {system : BranchingSystem Node Answer} {s : Superior W} {weight : Node → W}
+    (realized : Realized system s weight) : StepBound system weight (fun _ => True) where
+  preserves := fun _ _ _ _ => True.intro
+  bounds := fun parent child _ member =>
+    realized_monotone system s weight realized parent child member
+
+/-- Both domain membership and the frontier bound survive every finite
+source path. No total order, factor commutation or fairness is needed. -/
+theorem StepBound.generated {W Node Answer : Type*} [Preorder W]
+    {system : BranchingSystem Node Answer} {weight : Node → W} {domain : Node → Prop}
+    (law : StepBound system weight domain) {frontier : List Node} {bound : W}
+    (frontierDomain : ∀ item ∈ frontier, domain item)
+    (certificate : ∀ item ∈ frontier, bound ≤ weight item) {node : Node}
+    (reachable : Generated system frontier node) : domain node ∧ bound ≤ weight node := by
+  induction reachable with
+  | root member => exact ⟨frontierDomain _ member, certificate _ member⟩
+  | successor _ childMember inductionHypothesis =>
+      exact ⟨law.preserves _ _ inductionHypothesis.1 childMember,
+        inductionHypothesis.2.trans (law.bounds _ _ inductionHypothesis.1 childMember)⟩
 
 /-! ## Best-first frontiers -/
 
@@ -115,15 +203,6 @@ theorem reorder_pair_not {Node : Type _} (rank : Node → Node → Prop)
   simp only [orderScheduler, List.insertionSort_cons, List.insertionSort_nil,
     List.orderedInsert_cons, List.orderedInsert_nil, hnot]
   simp
-
-/-- A node reached from the current frontier by zero or more successor steps. -/
-inductive Reaches {Node Answer : Type _} (system : BranchingSystem Node Answer) :
-    List Node → Node → Prop where
-  | here {frontier node} : node ∈ frontier → Reaches system frontier node
-  | step {frontier parent child} :
-      Reaches system frontier parent →
-      child ∈ system.successors parent →
-      Reaches system frontier child
 
 def choiceAt {Node Answer : Type _} (rank : Node → Node → Prop)
     [DecidableRel rank] [IsTrans Node rank] [Std.Total rank]
@@ -325,26 +404,21 @@ theorem generated_accounted {Node Answer : Type _} [DecidableEq Node]
     (system : BranchingSystem Node Answer) (roots : List Node) (fuel : Nat) {node : Node}
     (hgen : Generated system roots node) :
     node ∈ choiceList rank system roots fuel ∨
-      Reaches system (run system (orderScheduler rank) fuel (initial roots)).frontier node := by
-  induction hgen generalizing fuel with
-  | root hroot =>
-      rename_i reached
-      have henter : reached ∈ (run system (orderScheduler rank) 0 (initial roots)).frontier := by
-        simpa [run, initial] using hroot
-      rcases from_entry rank system roots 0 fuel henter with hselected | hlive
-      · exact Or.inl (by simpa [Nat.zero_add] using hselected)
-      · exact Or.inr (Reaches.here (by simpa [Nat.zero_add] using hlive))
-  | successor hparent hchild ih =>
-      rcases ih fuel with hselected | hreach
-      · simp only [choiceList, List.mem_filterMap, List.mem_range] at hselected
-        obtain ⟨index, hindex, hchoice⟩ := hselected
-        have henter := successor_enters rank system roots index hchoice hchild
-        have hle : index + 1 ≤ fuel := Nat.succ_le_of_lt hindex
-        obtain ⟨extra, heq⟩ := Nat.le.dest hle
-        rcases from_entry rank system roots (index + 1) extra henter with hchildSelected | hchildLive
-        · exact Or.inl (by simpa [heq] using hchildSelected)
-        · exact Or.inr (Reaches.here (by simpa [heq] using hchildLive))
-      · exact Or.inr (Reaches.step hreach hchild)
+      Generated system (run system (orderScheduler rank) fuel (initial roots)).frontier node := by
+  have covered := InferenceControl.Snapshot.generated_selected_or_reachable system
+    (InferenceControl.Controller.fixed (orderScheduler rank))
+    { search := initial roots, memory := () } fuel hgen
+  rcases covered with ⟨index, beforeEnd, selection⟩ | reachable
+  · left
+    simp only [choiceList, List.mem_filterMap, List.mem_range]
+    refine ⟨index, beforeEnd, ?_⟩
+    change ((orderScheduler rank).reorder
+      (InferenceControl.Snapshot.run system
+        (InferenceControl.Controller.fixed (orderScheduler rank)) index
+        { search := initial roots, memory := () }).search.frontier).head? = some node at selection
+    simpa only [InferenceControl.Snapshot.fixed_run_search, choiceAt] using selection
+  · exact Or.inr (by
+      simpa only [InferenceControl.Snapshot.fixed_run_search] using reachable)
 
 /-- One scheduler step appends no event, or exactly the selected emission. -/
 private theorem tick_events {Node Answer : Type _}
@@ -424,7 +498,7 @@ theorem unemitted_reaches {Node Answer : Type _} [DecidableEq Node]
     (hgen : Generated system roots node) (hemits : system.emit node = some answer)
     (hnot : (⟨node, answer⟩ : Emission Node Answer) ∉
       (run system (orderScheduler rank) fuel (initial roots)).events) :
-    Reaches system (run system (orderScheduler rank) fuel (initial roots)).frontier node := by
+    Generated system (run system (orderScheduler rank) fuel (initial roots)).frontier node := by
   rcases generated_accounted rank system roots fuel hgen with hselected | hreach
   · exact absurd (chosen_emission rank system roots fuel hemits hselected) hnot
   · exact hreach
@@ -435,10 +509,10 @@ theorem reaches_ranked {Node Answer : Type _} (rank : Node → Node → Prop)
     (mono : ∀ parent child, child ∈ system.successors parent → rank parent child)
     {frontier : List Node} {head : Node}
     (hleast : ∀ item ∈ frontier, rank head item) {node : Node}
-    (hreaches : Reaches system frontier node) : rank head node := by
+    (hreaches : Generated system frontier node) : rank head node := by
   induction hreaches with
-  | here hmem => exact hleast _ hmem
-  | step _ hchild ih => exact trans_of rank ih (mono _ _ hchild)
+  | root hmem => exact hleast _ hmem
+  | successor _ hchild ih => exact trans_of rank ih (mono _ _ hchild)
 
 /-- When best-first emits an answer, no generated answer that is still
 unemitted is strictly better in `rank`. -/
@@ -609,6 +683,242 @@ theorem least_first_selects {Node Answer : Type _} [DecidableEq Node]
         obtain ⟨fuel, hfuel⟩ := ih (steps + 1) hsum' hinv' hstay' hnodup' hlen' hsub'
         exact ⟨fuel + 1, by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hfuel⟩
 
+/-! ## The stopping certificate under any scheduler -/
+
+/-- The node a scheduler selects at a step. -/
+def chosenAt {Node Answer : Type _} (system : BranchingSystem Node Answer)
+    (scheduler : Scheduler Node) (roots : List Node) (index : Nat) : Option Node :=
+  selected scheduler (run system scheduler index (initial roots)).frontier
+
+theorem chosen_successor_enters {Node Answer : Type _} (system : BranchingSystem Node Answer)
+    (scheduler : Scheduler Node) (roots : List Node) (index : Nat) {parent child : Node}
+    (hchoice : chosenAt system scheduler roots index = some parent)
+    (hchild : child ∈ system.successors parent) :
+    child ∈ (run system scheduler (index + 1) (initial roots)).frontier := by
+  exact BranchingTemporal.successor_mem_tick_of_selected system scheduler _ hchoice hchild
+
+/-- A node on the frontier is later chosen, or is still on the frontier. -/
+theorem entry_chosen_or_live {Node Answer : Type _} (system : BranchingSystem Node Answer)
+    (scheduler : Scheduler Node) (roots : List Node) (start extra : Nat) {node : Node}
+    (henter : node ∈ (run system scheduler start (initial roots)).frontier) :
+    (∃ index, index < start + extra ∧ chosenAt system scheduler roots index = some node) ∨
+      node ∈ (run system scheduler (start + extra) (initial roots)).frontier := by
+  have starts : node ∈ (InferenceControl.Snapshot.run system
+      (InferenceControl.Controller.fixed scheduler) start
+      { search := initial roots, memory := () }).search.frontier := by
+    rw [InferenceControl.Snapshot.fixed_run_search]
+    exact henter
+  have covered := InferenceControl.Snapshot.entry_selected_or_live system
+    (InferenceControl.Controller.fixed scheduler)
+    { search := initial roots, memory := () } start extra starts
+  rcases covered with ⟨index, _, beforeEnd, choice⟩ | live
+  · refine Or.inl ⟨index, beforeEnd, ?_⟩
+    change selected scheduler (InferenceControl.Snapshot.run system
+      (InferenceControl.Controller.fixed scheduler) index
+      { search := initial roots, memory := () }).search.frontier = some node at choice
+    simpa only [InferenceControl.Snapshot.fixed_run_search, chosenAt] using choice
+  · exact Or.inr (by
+      simpa only [InferenceControl.Snapshot.fixed_run_search] using live)
+
+/-- Under any scheduler, every generated node has been chosen, or is still
+reachable from the live frontier. -/
+theorem generated_chosen_or_reachable {Node Answer : Type _}
+    (system : BranchingSystem Node Answer) (scheduler : Scheduler Node) (roots : List Node)
+    (fuel : Nat) {node : Node} (hgen : Generated system roots node) :
+    (∃ index, index < fuel ∧ chosenAt system scheduler roots index = some node) ∨
+      Generated system (run system scheduler fuel (initial roots)).frontier node := by
+  have covered := InferenceControl.Snapshot.generated_selected_or_reachable system
+    (InferenceControl.Controller.fixed scheduler)
+    { search := initial roots, memory := () } fuel hgen
+  change (∃ index, index < fuel ∧ selected scheduler
+    (InferenceControl.Snapshot.run system (InferenceControl.Controller.fixed scheduler)
+      index { search := initial roots, memory := () }).search.frontier = some node) ∨
+    Generated system
+      (InferenceControl.Snapshot.run system (InferenceControl.Controller.fixed scheduler)
+        fuel { search := initial roots, memory := () }).search.frontier node at covered
+  simpa only [InferenceControl.Snapshot.fixed_run_search, chosenAt] using covered
+
+/-- Under a superior law, a weight no worse than every live frontier item's
+bounds every node still reachable from that frontier. -/
+theorem bound_reaches {W Node Answer : Type _} [Preorder W]
+    (system : BranchingSystem Node Answer) (s : Superior W) (weight : Node → W)
+    (law : Realized system s weight) {frontier : List Node} {bound : W}
+    (certificate : ∀ item ∈ frontier, bound ≤ weight item) {node : Node}
+    (hreach : Generated system frontier node) : bound ≤ weight node := by
+  exact (law.stepBound.generated (fun _ _ => True.intro) certificate hreach).2
+
+namespace Controlled
+
+open Mettapedia.GSLT.Core.InferenceControl
+
+/-- The frontier bound applies to unselected descendants under any stateful
+controller, starting from an arbitrary captured snapshot. -/
+theorem certificate_bounds_unchosen {W Node Answer Memory : Type*} [Preorder W]
+    (system : BranchingSystem Node Answer) (weight : Node → W) (domain : Node → Prop)
+    (law : StepBound system weight domain) (controller : Controller Node Answer Memory)
+    (snapshot : InferenceControl.Snapshot Node Answer Memory) (fuel : Nat)
+    (frontierDomain : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      domain item) {bound : W}
+    (certificate : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      bound ≤ weight item)
+    {node : Node} (generated : Generated system snapshot.search.frontier node)
+    (unchosen : ∀ index, index < fuel → InferenceControl.Snapshot.selected controller
+      (InferenceControl.Snapshot.run system controller index snapshot) ≠ some node) :
+    bound ≤ weight node := by
+  rcases InferenceControl.Snapshot.generated_selected_or_reachable system controller
+    snapshot fuel generated with ⟨index, beforeEnd, selection⟩ | reachable
+  · exact absurd selection (unchosen index beforeEnd)
+  · exact (law.generated frontierDomain certificate reachable).2
+
+/-- An emitting node not yet represented in the event stream is bounded by
+the live frontier, even after arbitrary controller-memory changes. -/
+theorem certificate_bounds_unemitted {W Node Answer Memory : Type*} [Preorder W]
+    (system : BranchingSystem Node Answer) (weight : Node → W) (domain : Node → Prop)
+    (law : StepBound system weight domain) (controller : Controller Node Answer Memory)
+    (snapshot : InferenceControl.Snapshot Node Answer Memory) (fuel : Nat)
+    (frontierDomain : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      domain item) {bound : W}
+    (certificate : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      bound ≤ weight item)
+    {node : Node} {answer : Answer}
+    (generated : Generated system snapshot.search.frontier node)
+    (emits : system.emit node = some answer)
+    (unemitted : (⟨node, answer⟩ : Emission Node Answer) ∉
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.events) :
+    bound ≤ weight node := by
+  rcases InferenceControl.Snapshot.generated_emitted_or_reachable system controller
+    snapshot fuel generated emits with emitted | reachable
+  · exact absurd emitted unemitted
+  · exact (law.generated frontierDomain certificate reachable).2
+
+/-- A selected/unselected answer observation needs bounds on both forms of
+residual: reachable frontier work and retained, unaccepted events. In
+particular a parked result is not discharged by an empty runnable frontier.
+The bound concerns this fixed system; revising a parked result's meaning
+requires a separate preservation law. -/
+theorem certificate_bounds_unaccepted {W Node Answer Memory : Type*} [Preorder W]
+    (system : BranchingSystem Node Answer) (weight : Node → W) (domain : Node → Prop)
+    (law : StepBound system weight domain) (controller : Controller Node Answer Memory)
+    (snapshot : InferenceControl.Snapshot Node Answer Memory) (fuel : Nat)
+    (frontierDomain : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      domain item) {bound : W}
+    (accepted : Emission Node Answer → Prop)
+    (frontierBound : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      bound ≤ weight item)
+    (retainedBound : ∀ event ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.events,
+      ¬ accepted event → bound ≤ weight event.origin)
+    {node : Node} {answer : Answer}
+    (generated : Generated system snapshot.search.frontier node)
+    (emits : system.emit node = some answer)
+    (unaccepted : ¬ accepted ⟨node, answer⟩) :
+    bound ≤ weight node := by
+  rcases InferenceControl.Snapshot.generated_emitted_or_reachable system controller
+    snapshot fuel generated emits with emitted | reachable
+  · exact retainedBound _ emitted unaccepted
+  · exact (law.generated frontierDomain frontierBound reachable).2
+
+/-- A finite selected batch is no worse than any unaccepted emitting node
+when both residual bounds hold. Occurrence identities belong in `Node` and
+`accepted`; this theorem neither deduplicates answers nor supplies the
+requested batch size. -/
+theorem early_stop_selects_best {W Node Answer Memory : Type*} [Preorder W]
+    (system : BranchingSystem Node Answer) (weight : Node → W) (domain : Node → Prop)
+    (law : StepBound system weight domain) (controller : Controller Node Answer Memory)
+    (snapshot : InferenceControl.Snapshot Node Answer Memory) (fuel : Nat)
+    (frontierDomain : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      domain item) {bound : W}
+    (accepted : Emission Node Answer → Prop)
+    (frontierBound : ∀ item ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.frontier,
+      bound ≤ weight item)
+    (retainedBound : ∀ event ∈
+      (InferenceControl.Snapshot.run system controller fuel snapshot).search.events,
+      ¬ accepted event → bound ≤ weight event.origin)
+    {selections : List Node} (selectedBound : ∀ chosen ∈ selections, weight chosen ≤ bound)
+    {node : Node} {answer : Answer}
+    (generated : Generated system snapshot.search.frontier node)
+    (emits : system.emit node = some answer)
+    (unaccepted : ¬ accepted ⟨node, answer⟩) :
+    ∀ chosen ∈ selections, weight chosen ≤ weight node := fun chosen member =>
+  le_trans (selectedBound chosen member)
+    (certificate_bounds_unaccepted system weight domain law controller snapshot fuel
+      frontierDomain accepted frontierBound retainedBound generated emits unaccepted)
+
+end Controlled
+
+/-- The stopping certificate.  Under a superior law and any scheduler, when no
+live frontier item is lighter than `bound`, no generated node that has not
+yet been chosen is lighter than `bound` either. -/
+theorem certificate_bounds_unchosen {W Node Answer : Type _} [Preorder W]
+    (system : BranchingSystem Node Answer) (s : Superior W) (weight : Node → W)
+    (law : Realized system s weight) (scheduler : Scheduler Node) (roots : List Node)
+    (fuel : Nat) {bound : W}
+    (certificate : ∀ item ∈ (run system scheduler fuel (initial roots)).frontier,
+      bound ≤ weight item)
+    {node : Node} (hgen : Generated system roots node)
+    (hunchosen : ∀ index, index < fuel → chosenAt system scheduler roots index ≠ some node) :
+    bound ≤ weight node := by
+  rcases generated_chosen_or_reachable system scheduler roots fuel hgen with
+    ⟨index, hindex, hchoice⟩ | hreach
+  · exact absurd hchoice (hunchosen index hindex)
+  · exact bound_reaches system s weight law certificate hreach
+
+/-- Early best-k is sound: selections no heavier than the certified bound
+are no heavier than any node, answer or not, the search has yet to choose. -/
+theorem early_stop_selects_best {W Node Answer : Type _} [Preorder W]
+    (system : BranchingSystem Node Answer) (s : Superior W) (weight : Node → W)
+    (law : Realized system s weight) (scheduler : Scheduler Node) (roots : List Node)
+    (fuel : Nat) {bound : W}
+    (certificate : ∀ item ∈ (run system scheduler fuel (initial roots)).frontier,
+      bound ≤ weight item)
+    {selections : List Node} (hselected : ∀ chosen ∈ selections, weight chosen ≤ bound)
+    {node : Node} (hgen : Generated system roots node)
+    (hunchosen : ∀ index, index < fuel → chosenAt system scheduler roots index ≠ some node) :
+    ∀ chosen ∈ selections, weight chosen ≤ weight node := fun chosen hmem =>
+  le_trans (hselected chosen hmem)
+    (certificate_bounds_unchosen system s weight law scheduler roots fuel certificate hgen hunchosen)
+
+/-- Order nodes by their accumulated weight. -/
+def byWeight {W Node : Type _} [LinearOrder W] (weight : Node → W) (left right : Node) : Prop :=
+  weight left ≤ weight right
+
+instance {W Node : Type _} [LinearOrder W] (weight : Node → W) :
+    DecidableRel (byWeight weight) := fun left right =>
+  inferInstanceAs (Decidable (weight left ≤ weight right))
+
+instance {W Node : Type _} [LinearOrder W] (weight : Node → W) :
+    IsTrans Node (byWeight weight) := ⟨fun _ _ _ hleft hright => le_trans hleft hright⟩
+
+instance {W Node : Type _} [LinearOrder W] (weight : Node → W) :
+    Std.Total (byWeight weight) := ⟨fun left right => le_total (weight left) (weight right)⟩
+
+/-- Under a superior law, best-first by accumulated weight emits a best
+answer first: no generated answer still unemitted is lighter. -/
+theorem best_first_best_under_law {W Node Answer : Type _} [LinearOrder W] [DecidableEq Node]
+    (system : BranchingSystem Node Answer) (s : Superior W) (weight : Node → W)
+    (law : Realized system s weight) (roots : List Node) (fuel : Nat)
+    {node : Node} {answer : Answer}
+    (hnew : (⟨node, answer⟩ : Emission Node Answer) ∈
+      (run system (orderScheduler (byWeight weight)) (fuel + 1) (initial roots)).events)
+    (hold : (⟨node, answer⟩ : Emission Node Answer) ∉
+      (run system (orderScheduler (byWeight weight)) fuel (initial roots)).events)
+    {later : Node} {laterAnswer : Answer}
+    (hgen : Generated system roots later) (hlater : system.emit later = some laterAnswer)
+    (hnot : (⟨later, laterAnswer⟩ : Emission Node Answer) ∉
+      (run system (orderScheduler (byWeight weight)) fuel (initial roots)).events) :
+    weight node ≤ weight later :=
+  best_first_lightest (byWeight weight) system roots
+    (fun parent child hchild => realized_monotone system s weight law parent child hchild)
+    fuel hnew hold hgen hlater hnot
+
 /-! ## Positive control: the lighter answer is emitted first -/
 
 namespace LightFirst
@@ -659,6 +969,56 @@ the lighter answer first. -/
 theorem emits_light_before_heavy :
     (run system (orderScheduler rank) 2 (initial [.root])).events = [⟨.light, 1⟩] := by
   decide
+
+/-- The policy changes after each selected occurrence. It is not a fixed
+best-first scheduler: the first expansion uses FIFO and the next uses the
+reverse frontier. -/
+def adaptive : InferenceControl.Controller Node Nat Bool where
+  initialMemory := false
+  scheduler changed := if changed then Scheduler.reverseBreadthFirst else Scheduler.breadthFirst
+  advance changed _ _ _ := !changed
+
+def adaptiveRun (fuel : Nat) :=
+  InferenceControl.Snapshot.run system adaptive fuel
+    (InferenceControl.Snapshot.initial adaptive [.root])
+
+theorem adaptive_prefix_keeps_heavy_pending :
+    (adaptiveRun 2).search.events = [⟨.light, 1⟩] ∧
+      (adaptiveRun 2).search.frontier = [.heavy] ∧
+      (adaptiveRun 1).memory = true ∧ (adaptiveRun 2).memory = false := by
+  decide
+
+/-- The certificate applies after resuming with the changed policy memory,
+and bounds every generated emitting node still absent from the event stream. -/
+theorem resumed_bound {node : Node} {answer : Nat}
+    (generated : Generated system (adaptiveRun 1).search.frontier node)
+    (emits : system.emit node = some answer)
+    (unemitted : (⟨node, answer⟩ : Emission Node Nat) ∉ (adaptiveRun 2).search.events) :
+    1 ≤ weight node := by
+  have resumed : InferenceControl.Snapshot.run system adaptive 1 (adaptiveRun 1) =
+      adaptiveRun 2 := (InferenceControl.Snapshot.run_add system adaptive 1 1 _).symm
+  refine Controlled.certificate_bounds_unemitted system weight (fun _ => True)
+    realized.stepBound adaptive (adaptiveRun 1) 1 (fun _ _ => True.intro)
+    (bound := 1) ?_ generated emits ?_
+  · rw [resumed, adaptive_prefix_keeps_heavy_pending.2.1]
+    intro item member
+    have same := List.mem_singleton.mp member
+    subst item
+    decide
+  · simpa only [resumed] using unemitted
+
+/-- Empty runnable work does not bound already retained, unaccepted results.
+Here all transitions satisfy the superior law, but accepting only the heavy
+answer cannot justify discarding the lighter retained occurrence. -/
+theorem frontier_only_misses_retained_answer :
+    (∀ item ∈ (adaptiveRun 3).search.frontier, 5 ≤ weight item) ∧
+      ∃ event ∈ (adaptiveRun 3).search.events,
+        event.origin ≠ .heavy ∧ ¬ 5 ≤ weight event.origin := by
+  constructor
+  · intro item member
+    change item ∈ ([] : List Node) at member
+    simp at member
+  · exact ⟨⟨.light, 1⟩, by decide, by decide, by decide⟩
 
 end LightFirst
 
@@ -720,6 +1080,84 @@ theorem emits_heavy_first :
   · decide
 
 end Suboptimal
+
+/-! ## Negative control: without the law the certificate misses the best answer
+
+Coefficients under multiplication, larger is better, with one factor above
+one.  After three best-first steps rain (27/50) is emitted and the only live
+item weighs 1/10, so the certificate holds; the sprinkler derivation it
+leads to weighs 1/10 * 20 = 2 and is strictly better. -/
+
+namespace LawBroken
+
+inductive Node where
+  | root
+  | sprinklerStep
+  | rainStep
+  | sprinkler
+  | rain
+deriving DecidableEq, Repr
+
+def coefficient : Node → ℚ
+  | .root => 1
+  | .sprinklerStep => 1 / 10
+  | .rainStep => 9 / 10
+  | .sprinkler => 1 / 10 * 20
+  | .rain => 9 / 10 * (6 / 10)
+
+def system : BranchingSystem Node Unit where
+  emit
+    | .sprinkler => some ()
+    | .rain => some ()
+    | _ => none
+  successors
+    | .root => [.sprinklerStep, .rainStep]
+    | .sprinklerStep => [.sprinkler]
+    | .rainStep => [.rain]
+    | _ => []
+
+/-- Larger coefficients first. -/
+def rank (left right : Node) : Prop := coefficient right ≤ coefficient left
+
+instance : DecidableRel rank := fun left right =>
+  inferInstanceAs (Decidable (coefficient right ≤ coefficient left))
+
+instance : IsTrans Node rank := ⟨fun _ _ _ hleft hright => le_trans hright hleft⟩
+
+instance : Std.Total rank := ⟨fun left right => le_total (coefficient right) (coefficient left)⟩
+
+theorem run_three :
+    run system (orderScheduler rank) 3 (initial [.root]) =
+      ⟨[⟨.rain, ()⟩], [.sprinklerStep]⟩ := by
+  decide +kernel
+
+/-- No live item beats the emitted rain answer. -/
+theorem certificate_holds :
+    ∀ item ∈ (run system (orderScheduler rank) 3 (initial [.root])).frontier,
+      coefficient item ≤ coefficient .rain := by
+  rw [run_three]
+  intro item hitem
+  simp only [List.mem_singleton] at hitem
+  subst hitem
+  norm_num [coefficient]
+
+theorem sprinkler_generated : Generated system [.root] .sprinkler :=
+  Generated.successor (parent := .sprinklerStep)
+    (Generated.successor (parent := .root) (Generated.root (by simp)) (by simp [system]))
+    (by simp [system])
+
+theorem sprinkler_better : coefficient .rain < coefficient .sprinkler := by
+  norm_num [coefficient]
+
+/-- The law fails at the factor above one: that step raises the coefficient. -/
+theorem not_monotone :
+    ¬ ∀ parent child, child ∈ system.successors parent →
+      coefficient child ≤ coefficient parent := by
+  intro hmono
+  have h := hmono .sprinklerStep .sprinkler (by simp [system])
+  norm_num [coefficient] at h
+
+end LawBroken
 
 /-! ## Negative control: one returning weight-zero item starves a neighbour -/
 

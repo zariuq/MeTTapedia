@@ -42,14 +42,14 @@ that are proven to improve expected utility.
 
 ### 2. Fixed-Model Policy Optimality (from SolomonoffBridge.lean)
 
-**Theorem (solomonoff_godelMachine_k_optimal)**: A Gödel Machine using the
-Solomonoff bridge is optimal, at the empty history, among policies evaluated
-against the same Solomonoff-model data.
+**Theorem (policyWithinTolerance_of_qreOptimal)**: A Gödel Machine using the
+Solomonoff bridge inherits a utility-tolerance bound from the supplied exact
+policy-optimality hypothesis, under the same model data.
 
 ```
 ∀ G : SolomonoffGodelMachine, ∀ π' : SelfModPolicy,
   policyExpectedUtilityFromStart G G.policy ≥
-    policyExpectedUtilityFromStart G π' - machineComplexity G
+    policyExpectedUtilityFromStart G π' - G.utilityTolerance
 ```
 
 ### 3. Exchangeable Collapse + Efficiency (from PLNSpecialCase.lean)

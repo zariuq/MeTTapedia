@@ -56,7 +56,7 @@ theorem sourceSemanticPatternKeyAt_eq_of_fvarAligned
     simpa only [CostStaticRegionNode.thinning] using
       congrArg
         (fun targetBound =>
-          (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+          (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
             targetBound).thickenAmbientBVars depth pattern)
         sameBound
   have mapped : FvarAligned nameRelation
@@ -168,7 +168,7 @@ noncomputable def sourceCanonicalPatternLeafAligned_of_fvarAligned
   apply canonicalAligned.toPatternLeafAligned
   intro leftName rightName related sourceDepth
   simpa [relation, cospan, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars] using
+    CostStaticTypeThinning.thickenAmbientBVars_fvar] using
       commonRestores related
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

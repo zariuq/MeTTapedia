@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeGradeAttachment
+import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeOrdinalAdvice
 
 /-!
 # Binding, sharing and zero-role controls for native grades
@@ -139,6 +140,39 @@ def finishedZeroScore : Score :=
   | [] => score
 
 theorem zero_is_a_priority_proposal : priorityProposal finishedZeroScore = some 0 := by decide +kernel
+
+/-- The ordinal readout inspects the same native score machine after it runs. -/
+def finishedOrdinalScore (key : Atom) : Score :=
+  let score := answerCapture.score key
+  match runFrontier (specification loopProgram) 100 [score.machine] with
+  | machine :: _ => { score with machine := machine }
+  | [] => score
+
+theorem ordinal_score_is_not_eager :
+    NativeOrdinalAdvice.priorityProposal "Ordinal"
+      (answerCapture.score (NativeOrdinalAdvice.termsAtom "Ordinal" [(1, 1)])) = none := rfl
+
+theorem actual_completed_ordinal_score :
+    (NativeOrdinalAdvice.priorityProposal "Ordinal"
+      (finishedOrdinalScore (NativeOrdinalAdvice.termsAtom "Ordinal" [(1, 1)]))).map Prod.fst =
+        some [(1, 1)] := by
+  decide +kernel
+
+theorem malformed_completed_ordinal_score :
+    NativeOrdinalAdvice.priorityProposal "Ordinal"
+      (finishedOrdinalScore (NativeOrdinalAdvice.termsAtom "Ordinal" [(1, 1), (1, 1)])) = none := by
+  decide +kernel
+
+def malformedOrdinalAdviceRun :=
+  InferenceControl.Snapshot.run (NativeCandidateGrades.system loopProgram) fifo 100
+    (InferenceControl.Snapshot.initial fifo
+      (NativeCandidateGrades.admit [answerCapture]
+        (fun _ => NativeOrdinalAdvice.termsAtom "Ordinal" [(1, 1), (1, 1)])))
+
+theorem malformed_ordinal_advice_keeps_body :
+    resultValues (malformedOrdinalAdviceRun.search.events.map (fun event => event.value.1)) =
+      [integer 7] := by
+  decide +kernel
 
 theorem semantic_zero_disables_captured_edge :
     edgeGrade (.scalar (0 : Nat)) loopInput answerCapture.body = 0 := by decide +kernel

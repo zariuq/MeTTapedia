@@ -153,11 +153,4 @@ theorem committed_zero_nonunit_annotation :
       literalWord (FreeMonoid.of zeroOrigin) ≠ 1 :=
   ⟨authority_annotation zeroOrigin, zero_atom_nonunit⟩
 
-#print axioms source_associated_refinement
-#print axioms source_associated_fold
-#print axioms underInput_full_source
-#print axioms unit_signed_control
-#print axioms quoted_account_substitution
-#print axioms quoted_committed_account_substitution
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls

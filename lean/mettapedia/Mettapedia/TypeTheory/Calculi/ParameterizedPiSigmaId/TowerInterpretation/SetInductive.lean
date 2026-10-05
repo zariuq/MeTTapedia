@@ -10,6 +10,16 @@ A simple inductive type has constructors whose fields are the type itself or clo
 constructors (`ZFSetInductive.carrier`). This module reads the declaration of such a type in
 the set tower, and shows that a package extended by one has a set model.
 
+**A constructor is read by its name.** The value of a constructor at its arguments is the pair
+of the code of its name (`ZFSetInductive.nameCode`) with the tuple of the arguments
+(`ZFSetInductive.constructorValue`). Its position among the constructors of its declaration
+does not enter, and neither does the declaration. So a constructor term is the same set in
+every declaration that has the constructor, constructors with different names give different
+sets, and the sets of two declarations with no constructor name in common are disjoint
+(`signature_carrier_disjoint`, `InductiveReading.disjoint`). The recursor tells the
+constructors apart by their tags, so what concerns the recursor asks that the constructor
+names of the declaration are distinct (`signature_distinct`).
+
 **Curried trace functions.** A constructor and a method of the recursor take their arguments
 one by one. Over the fields of a constructor, `curriedGraph` is the curried traced graph of a
 function of argument lists and `curriedSet` the set of such trace functions into a family of
@@ -17,11 +27,11 @@ sets; `applyList` applies a trace function to a list of values. Applied to argum
 the fields, the graph gives the function's value (`applyList_curriedGraph`), and a member of
 the set gives a member of the family (`applyList_mem`).
 
-**The recursor.** A method for constructor `i` over a motive `P` takes the fields and one
+**The recursor.** A method for a constructor over a motive `P` takes the fields and one
 member of `P a` for each recursive field `a`, and returns a member of `P` at the constructor's
 value (`caseSet`). Recursion with such methods (`methodStep`) stays in the motive
 (`recursion_mem`), by induction on the carrier, and computes at a constructor by the method
-(`ZFSetInductive.recFun_constructor`).
+(`ZFSetInductive.recFun_constructor`), for a signature with distinct tags.
 
 **Telescopes as lists.** The declared types of the constructors and of the recursor are
 dependent function types over telescopes given entry by entry (`ofEntries`). An environment of
@@ -30,9 +40,10 @@ it satisfies the telescope exactly when each value lies in the value of its entr
 values before it (`sat_ofEntries`).
 
 **The reading of a declaration** (`InductiveReading`): the type is the carrier of its
-signature (`signature`: a closed field is read as the set of its type), each constructor is
-the traced graph of its constructor values, and the recursor is the traced graph of the
-recursion with the methods. Under a reading
+signature (`signature`: the tag of a constructor is the code of its name, and a closed field
+is read as the set of its type), each constructor is the traced graph of its constructor
+values, and the recursor is the traced graph of the recursion with the methods. Under a
+reading, and with distinct constructor names where the recursor is concerned,
 
 * a constructor lies in the value of its declared type and gives its constructor value at
   arguments that fit (`ctor_mem`, `ctor_apply`);
@@ -56,19 +67,34 @@ natural numbers and the sets of the closed field types.
 an assignment with the same sets at the type, the constructors and the recursor, and the same
 sets of the closed field types, is a reading too. So the model of an extension is a model at
 every such assignment at which the base has one (`extension_setModel_at`), which is what lets
-a further declaration be added.
+a further declaration be added. The reading does not read the order of the constructors
+either: the value of a constructor is the same under every declaration that has it.
 
 The validity of the computation rules uses one fact about the annotation of their left sides:
 typed instances satisfy the telescope of the metavariables (the hypothesis `satisfies` of
 `inductive_setModel`). It holds for every declaration with distinct names and closed field
 types without abstraction (`iotaLeft_known`), which gives `inductive_setModel_distinct`.
 
+**A typed data term means its set.** A first-order data term (`ZFSetInductive.DataTerm`) has
+a term, the constant of its name applied to the terms of its arguments (`dataTm`), and a set,
+the constructor value of the code of its name at the sets of its arguments
+(`DataTerm.toSet`). When each of its names is read as a constructor with as many fields as
+the name has arguments, and no field takes the empty set as an argument (`DataRead`), the
+value of the term is the set of the data term, or the empty set (`DataRead.value_eq`): a
+constructor applied to arguments that do not fit its fields gives the empty set
+(`ctor_apply_outside`). So in a set model the value of a typed data term is its set, whenever
+the set of its type has no empty member (`DataRead.typed_value`), as the set of a declared
+datatype has none (`InductiveReading.empty_not_mem`). No inversion of the typing derivation
+is used.
+
 Positive example: the lists of numbers over the object package of the MeTTa candidate
 (`objectLists_model`, in the executable model of the candidate). Negative examples: a set of
 values that does not fit the fields is not an environment of the constructor's telescope
-(`sat_ctorTele`), and a signature whose only constructor is recursive has the empty carrier
+(`sat_ctorTele`); a signature whose only constructor is recursive has the empty carrier
 (`ZFSetInductive.loop_carrier_empty`), so a declaration without a base case is read as the
-empty type.
+empty type; a constructor value under a name the declaration does not have is not a member of
+its set (`InductiveReading.foreign_not_mem`); and with one name on two constructors the
+recursion has no solution (`ZFSetInductive.sharedTag_no_recursion`).
 -/
 
 set_option autoImplicit false
@@ -81,8 +107,10 @@ open Presentation.TypedEquality.Impredicative.Domain (pisCtx)
 open Presentation.TelescopeAbstraction (closeType)
 open Mettapedia.Logic.HOL.Embedding
 open ZFSetDependentProducts (graph)
-open ZFSetTraceProducts (traceLam traceApp tracePiSet traceApp_graph_beta tracePiSet_congr)
-open ZFSetInductive (Fits FitsPred constructorValue carrier recFun mapRec)
+open ZFSetTraceProducts (traceLam traceApp tracePiSet traceApp_graph_beta tracePiSet_congr
+  traceApp_graph_outside traceApp_empty)
+open ZFSetInductive (Fits FitsPred constructorValue carrier recFun mapRec nameCode DistinctTags
+  DataTerm)
 
 universe u
 
@@ -221,12 +249,12 @@ theorem applyList_arrowsGraph {Ds ys : List ZFSet.{u}}
 
 /-! ## The recursor of a simple inductive type -/
 
-/-- **The methods for constructor `i` over a motive**: curried trace functions that take the
-fields, then a member of the motive at each recursive field, and return a member of the motive
-at the constructor's value. -/
-noncomputable def caseSet (X : ZFSet.{u}) (P : ZFSet.{u} → ZFSet.{u}) (i : Nat)
+/-- **The methods for a constructor with tag `t` over a motive**: curried trace functions that
+take the fields, then a member of the motive at each recursive field, and return a member of
+the motive at the constructor's value. -/
+noncomputable def caseSet (X : ZFSet.{u}) (P : ZFSet.{u} → ZFSet.{u}) (t : ZFSet.{u})
     (fs : List ZFSetInductive.Field.{u}) : ZFSet.{u} :=
-  curriedSet X fs fun args => arrowsSet (mapRec P fs args) (P (constructorValue i args))
+  curriedSet X fs fun args => arrowsSet (mapRec P fs args) (P (constructorValue t args))
 
 /-- **What the recursor does at constructor `i`**: the method at `i`, applied to the
 arguments and then to the results at the recursive arguments. -/
@@ -245,11 +273,13 @@ theorem fits_and_results {X : ZFSet.{u}} {f P : ZFSet.{u} → ZFSet.{u}}
   | recursive holds _ ih => exact ⟨.recursive holds.1 ih.1, .cons holds.2 ih.2⟩
   | ofSet member _ ih => exact ⟨.ofSet member ih.1, ih.2⟩
 
-/-- **Recursion stays in the motive**: with a method in the methods' set for each
-constructor, the recursion's value at a member of the carrier lies in the motive there. -/
-theorem recursion_mem {sig : ZFSetInductive.Signature.{u}} {P : ZFSet.{u} → ZFSet.{u}}
-    {methods : List ZFSet.{u}}
-    (typed : ∀ i c, sig[i]? = some c → methods.getD i ∅ ∈ caseSet (carrier sig) P i c)
+/-- **Recursion stays in the motive**, for a signature with distinct tags: with a method in
+the methods' set for each constructor, the recursion's value at a member of the carrier lies
+in the motive there. -/
+theorem recursion_mem {sig : ZFSetInductive.Signature.{u}} (distinct : DistinctTags sig)
+    {P : ZFSet.{u} → ZFSet.{u}} {methods : List ZFSet.{u}}
+    (typed : ∀ (i : Nat) (c : ZFSetInductive.Constructor.{u}), sig[i]? = some c →
+      methods.getD i ∅ ∈ caseSet (carrier sig) P c.tag c.fields)
     {t : ZFSet.{u}} (member : t ∈ carrier sig) :
     recFun (sig := sig) (methodStep methods) t ∈ P t := by
   refine (ZFSetInductive.carrier_induct
@@ -257,9 +287,9 @@ theorem recursion_mem {sig : ZFSetInductive.Signature.{u}} {P : ZFSet.{u} → ZF
     (fun i c args atIndex fitting => ?_) member).2
   obtain ⟨fits, results⟩ := fits_and_results fitting
   refine ⟨ZFSetInductive.constructor_mem_carrier atIndex fits, ?_⟩
-  rw [ZFSetInductive.recFun_constructor (methodStep methods) atIndex fits]
+  rw [ZFSetInductive.recFun_constructor distinct (methodStep methods) atIndex fits]
   show applyList (methods.getD i ∅)
-    (args ++ mapRec (recFun (sig := sig) (methodStep methods)) c args) ∈ _
+    (args ++ mapRec (recFun (sig := sig) (methodStep methods)) c.fields args) ∈ _
   rw [applyList_append]
   exact applyList_arrows results (applyList_mem fits (typed i c atIndex))
 
@@ -270,14 +300,14 @@ noncomputable def methodValue (X : ZFSet.{u}) (P : ZFSet.{u} → ZFSet.{u})
     ZFSet.{u} :=
   curriedGraph X fs fun args => arrowsGraph (mapRec P fs args) fun results => body args results
 
-/-- It is a method for constructor `i` when the function's values lie in the motive at the
-constructor's value. -/
-theorem methodValue_mem {X : ZFSet.{u}} {P : ZFSet.{u} → ZFSet.{u}} {i : Nat}
+/-- It is a method for a constructor with tag `t` when the function's values lie in the motive
+at the constructor's value. -/
+theorem methodValue_mem {X : ZFSet.{u}} {P : ZFSet.{u} → ZFSet.{u}} {t : ZFSet.{u}}
     {fs : List ZFSetInductive.Field.{u}} {body : List ZFSet.{u} → List ZFSet.{u} → ZFSet.{u}}
     (typed : ∀ args, Fits X fs args → ∀ results,
       List.Forall₂ (fun y D => y ∈ D) results (mapRec P fs args) →
-        body args results ∈ P (constructorValue i args)) :
-    methodValue X P fs body ∈ caseSet X P i fs :=
+        body args results ∈ P (constructorValue t args)) :
+    methodValue X P fs body ∈ caseSet X P t fs :=
   curriedGraph_mem fs fun args fits =>
     arrowsGraph_mem (mapRec P fs args) fun results members => typed args fits results members
 
@@ -440,20 +470,23 @@ noncomputable def fieldSig : DeclField Head → ZFSetInductive.Field.{u}
   | .recursive => .recursive
   | .closed F => .ofSet (ev heads consts (liftTm F) Fin.elim0)
 
-/-- The signature of the constructors of a declaration. -/
+/-- **The signature of the constructors of a declaration**: a constructor carries the code of
+its name as its tag, and its fields are read by `fieldSig`. -/
 noncomputable def signature (ctors : List (DeclName × List (DeclField Head))) :
     ZFSetInductive.Signature.{u} :=
-  ctors.map fun entry => entry.2.map (fieldSig heads consts)
+  ctors.map fun entry => ⟨nameCode entry.1, entry.2.map (fieldSig heads consts)⟩
 
 theorem signature_getElem? {ctors : List (DeclName × List (DeclField Head))} {i : Nat}
     {k : DeclName} {fields : List (DeclField Head)} (entry : ctors[i]? = some (k, fields)) :
-    (signature heads consts ctors)[i]? = some (fields.map (fieldSig heads consts)) := by
+    (signature heads consts ctors)[i]? =
+      some ⟨nameCode k, fields.map (fieldSig heads consts)⟩ := by
   rw [signature, List.getElem?_map, entry]
   rfl
 
 theorem exists_of_signature_getElem? {ctors : List (DeclName × List (DeclField Head))} {i : Nat}
     {c : ZFSetInductive.Constructor.{u}} (entry : (signature heads consts ctors)[i]? = some c) :
-    ∃ k fields, ctors[i]? = some (k, fields) ∧ c = fields.map (fieldSig heads consts) := by
+    ∃ k fields, ctors[i]? = some (k, fields) ∧
+      c = ⟨nameCode k, fields.map (fieldSig heads consts)⟩ := by
   rw [signature, List.getElem?_map] at entry
   cases found : ctors[i]? with
   | none =>
@@ -462,6 +495,29 @@ theorem exists_of_signature_getElem? {ctors : List (DeclName × List (DeclField 
   | some pair =>
     rw [found] at entry
     exact ⟨pair.1, pair.2, rfl, (Option.some.inj entry).symm⟩
+
+/-- The tags of the signature of a declaration are the codes of the names of its
+constructors. -/
+theorem signature_tags (ctors : List (DeclName × List (DeclField Head))) :
+    (signature heads consts ctors).map ZFSetInductive.Constructor.tag =
+      (ctors.map (·.1)).map nameCode := by
+  rw [signature, List.map_map, List.map_map]
+  rfl
+
+/-- **Distinct constructor names give distinct tags.** -/
+theorem signature_distinct {ctors : List (DeclName × List (DeclField Head))}
+    (names : (ctors.map (·.1)).Nodup) : DistinctTags (signature heads consts ctors) := by
+  show ((signature heads consts ctors).map ZFSetInductive.Constructor.tag).Nodup
+  rw [signature_tags]
+  exact names.map ZFSetInductive.nameCode_injective
+
+/-- A constructor of the signature of a declaration carries the code of the name of a
+constructor of the declaration. -/
+theorem tag_of_mem_signature {ctors : List (DeclName × List (DeclField Head))}
+    {c : ZFSetInductive.Constructor.{u}} (member : c ∈ signature heads consts ctors) :
+    ∃ k, k ∈ ctors.map (·.1) ∧ c.tag = nameCode k := by
+  obtain ⟨entry, memberEntry, rfl⟩ := List.mem_map.mp member
+  exact ⟨entry.1, List.mem_map.mpr ⟨entry, memberEntry, rfl⟩, rfl⟩
 
 /-- The set a field takes its argument from, the recursive fields from `X`. -/
 noncomputable def fieldMembers (X : ZFSet.{u}) : DeclField Head → ZFSet.{u}
@@ -568,31 +624,32 @@ variable {heads consts}
 as the carrier and the constructor as the traced graph of its constructor values. -/
 theorem ctor_mem {T k : DeclName} {fields : List (DeclField Head)} {i : Nat}
     {sig : ZFSetInductive.Signature.{u}} (type : consts T = carrier sig)
-    (atIndex : sig[i]? = some (fields.map (fieldSig heads consts)))
+    (atIndex : sig[i]? = some ⟨nameCode k, fields.map (fieldSig heads consts)⟩)
     (value : consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-      constructorValue i (envList η)) :
+      constructorValue (nameCode k) (envList η)) :
     consts k ∈ ev heads consts (liftTm (ctorType T fields)) Fin.elim0 := by
   rw [value, ctorType, liftTm_closeType]
   apply telescopeGraph_mem_pisCtx
   intro η sat
   rw [← envOf_envList η] at sat
   have fits := (sat_ctorTele heads consts T fields (envList η) (envList_length η)).mp sat
-  show constructorValue i (envList η) ∈ consts T
+  show constructorValue (nameCode k) (envList η) ∈ consts T
   rw [type] at fits ⊢
   exact ZFSetInductive.constructor_mem_carrier atIndex fits
 
-/-- **A constructor applied to arguments that fit its fields** gives its constructor value. -/
-theorem ctor_apply {T k : DeclName} {fields : List (DeclField Head)} {i : Nat}
+/-- **A constructor applied to arguments that fit its fields** gives its constructor value:
+the code of its name paired with the tuple of the arguments. -/
+theorem ctor_apply {T k : DeclName} {fields : List (DeclField Head)}
     (value : consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-      constructorValue i (envList η))
+      constructorValue (nameCode k) (envList η))
     {args : List ZFSet.{u}} (fits : Fits (consts T) (fields.map (fieldSig heads consts)) args) :
-    applyList (consts k) args = constructorValue i args := by
+    applyList (consts k) args = constructorValue (nameCode k) args := by
   have length : args.length = fields.length := ((fits_iff heads consts fields args).mp fits).1
   have sat := (sat_ctorTele heads consts T fields args length).mpr fits
   have listed : envList (envOf args fields.length) = args := by
     rw [envList_envOf args fields.length (le_of_eq length.symm), ← length, List.take_length]
   have applied := applyValues_telescopeGraph heads consts (liftCtx (ctorTele T fields))
-    (fun η => constructorValue i (envList η)) (envOf args fields.length) sat
+    (fun η => constructorValue (nameCode k) (envList η)) (envOf args fields.length) sat
   rw [← value, ← applyList_envList, listed] at applied
   exact applied
 
@@ -747,12 +804,12 @@ theorem ev_caseFields (T k : DeclName) (fs : List (DeclField Head)) :
 /-- **The value of the type of a method** is the set of the methods for its constructor over
 the motive's value, when the constructor applied to fitting arguments gives its constructor
 value. -/
-theorem ev_caseType {T k : DeclName} {fields : List (DeclField Head)} {i : Nat}
+theorem ev_caseType {T k : DeclName} {fields : List (DeclField Head)}
     (apply : ∀ args, Fits (consts T) (fields.map (fieldSig heads consts)) args →
-      applyList (consts k) args = constructorValue i args)
+      applyList (consts k) args = constructorValue (nameCode k) args)
     {n : Nat} (p : Tm Head n) (ρ : Env.{u} n) :
     ev heads consts (liftTm (caseType T k fields p)) ρ =
-      caseSet (consts T) (fun a => traceApp (ev heads consts (liftTm p) ρ) a) i
+      caseSet (consts T) (fun a => traceApp (ev heads consts (liftTm p) ρ) a) (nameCode k)
         (fields.map (fieldSig heads consts)) := by
   rw [caseType, ev_caseFields T k fields p [] [] ρ]
   refine curriedSet_congr _ fun args fits => ?_
@@ -777,14 +834,16 @@ constructor value. -/
 def ConstructorsApply : Prop :=
   ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)}, ctors[i]? = some (k, fields) →
     ∀ args, Fits (consts T) (fields.map (fieldSig heads consts)) args →
-      applyList (consts k) args = constructorValue i args
+      applyList (consts k) args = constructorValue (nameCode k) args
 
 /-- **The arguments of the recursor**, as a list of values: a motive, a method for each
 constructor over it, and a member of the type. -/
 structure RecursorArguments (values : List ZFSet.{u}) : Prop where
   motive : values.getD 0 ∅ ∈ tracePiSet (consts T) fun _ => heads v
-  methods : ∀ i c, (signature heads consts ctors)[i]? = some c →
-    values.getD (i + 1) ∅ ∈ caseSet (consts T) (fun a => traceApp (values.getD 0 ∅) a) i c
+  methods : ∀ (i : Nat) (c : ZFSetInductive.Constructor.{u}),
+    (signature heads consts ctors)[i]? = some c →
+      values.getD (i + 1) ∅ ∈
+        caseSet (consts T) (fun a => traceApp (values.getD 0 ∅) a) c.tag c.fields
   scrutinee : values.getD (ctors.length + 1) ∅ ∈ consts T
 
 /-- The oldest variable of an environment read from a list has the list's first value. -/
@@ -836,10 +895,11 @@ theorem sat_recTele (apply : ConstructorsApply heads consts T ctors) (values : L
 
 variable {rec : DeclName}
 
-/-- **The recursor's value lies in the value of its declared type**, when the type is read as
-the carrier, the constructors give their constructor values, and the recursor is the traced
-graph of the recursion with the methods. -/
-theorem rec_mem (type : consts T = carrier (signature heads consts ctors))
+/-- **The recursor's value lies in the value of its declared type**, when the constructor names
+are distinct, the type is read as the carrier, the constructors give their constructor values,
+and the recursor is the traced graph of the recursion with the methods. -/
+theorem rec_mem (names : (ctors.map (·.1)).Nodup)
+    (type : consts T = carrier (signature heads consts ctors))
     (apply : ConstructorsApply heads consts T ctors)
     (value : consts rec = telescopeGraph heads consts (liftCtx (recTele T v ctors)) fun η =>
       recFun (sig := signature heads consts ctors)
@@ -861,7 +921,8 @@ theorem rec_mem (type : consts T = carrier (signature heads consts ctors))
       (methodStep (methodsOf (envList η) ctors.length)) (η 0) ∈
     traceApp (η (Fin.last (ctors.length + 1))) (η 0)
   rw [motive, scrutinee]
-  refine recursion_mem (P := fun a => traceApp ((envList η).getD 0 ∅) a)
+  refine recursion_mem (signature_distinct heads consts names)
+    (P := fun a => traceApp ((envList η).getD 0 ∅) a)
     (fun i c atIndex => ?_) (by rw [← type]; exact arguments.scrutinee)
   have below : i < ctors.length := by
     have := ZFSetInductive.some_index_lt atIndex
@@ -890,10 +951,12 @@ theorem rec_apply (apply : ConstructorsApply heads consts T ctors)
   rw [← value, ← applyList_envList, listed] at applied
   exact applied
 
-/-- **The computation of the recursor at a constructor**: applied to a motive, methods and a
-constructor at arguments that fit its fields, the recursor gives the constructor's method
-applied to the arguments and to the recursor's values at the recursive arguments. -/
-theorem rec_iota (type : consts T = carrier (signature heads consts ctors))
+/-- **The computation of the recursor at a constructor**, for distinct constructor names:
+applied to a motive, methods and a constructor at arguments that fit its fields, the recursor
+gives the constructor's method applied to the arguments and to the recursor's values at the
+recursive arguments. -/
+theorem rec_iota (names : (ctors.map (·.1)).Nodup)
+    (type : consts T = carrier (signature heads consts ctors))
     (apply : ConstructorsApply heads consts T ctors)
     (value : consts rec = telescopeGraph heads consts (liftCtx (recTele T v ctors)) fun η =>
       recFun (sig := signature heads consts ctors)
@@ -902,8 +965,9 @@ theorem rec_iota (type : consts T = carrier (signature heads consts ctors))
     {fields : List (DeclField Head)} (entry : ctors[i]? = some (k, fields))
     (count : methods.length = ctors.length)
     (motiveTyped : motive ∈ tracePiSet (consts T) fun _ => heads v)
-    (methodsTyped : ∀ j c, (signature heads consts ctors)[j]? = some c →
-      methods.getD j ∅ ∈ caseSet (consts T) (fun a => traceApp motive a) j c)
+    (methodsTyped : ∀ (j : Nat) (c : ZFSetInductive.Constructor.{u}),
+      (signature heads consts ctors)[j]? = some c →
+        methods.getD j ∅ ∈ caseSet (consts T) (fun a => traceApp motive a) c.tag c.fields)
     (fits : Fits (consts T) (fields.map (fieldSig heads consts)) args) :
     applyList (consts rec) (motive :: methods ++ [applyList (consts k) args]) =
       applyList (methods.getD i ∅)
@@ -930,18 +994,20 @@ theorem rec_iota (type : consts T = carrier (signature heads consts ctors))
       have same : (methods ++ [t]).getD j ∅ = methods.getD j ∅ := by
         rw [List.getD_eq_getElem?_getD, List.getElem?_append_left below,
           ← List.getD_eq_getElem?_getD]
-      show (methods ++ [t]).getD j ∅ ∈ caseSet (consts T) (fun a => traceApp motive a) j c
+      show (methods ++ [t]).getD j ∅ ∈
+        caseSet (consts T) (fun a => traceApp motive a) c.tag c.fields
       rw [same]
       exact methodsTyped j c atIndex
     rw [rec_apply v apply value length arguments, last, these]
   have atIndex := signature_getElem? heads consts entry
   have fits' : Fits (carrier (signature heads consts ctors))
       (fields.map (fieldSig heads consts)) args := type ▸ fits
-  have member : constructorValue i args ∈ consts T := by
+  have member : constructorValue (nameCode k) args ∈ consts T := by
     rw [type]
     exact ZFSetInductive.constructor_mem_carrier atIndex fits'
-  rw [apply entry args fits, atMember _ member,
-    ZFSetInductive.recFun_constructor (methodStep methods) atIndex fits']
+  rw [apply entry args fits, atMember _ member]
+  refine (ZFSetInductive.recFun_constructor (signature_distinct heads consts names)
+    (methodStep methods) atIndex fits').trans ?_
   show applyList (methods.getD i ∅) (args ++ _) = _
   congr 2
   exact ZFSetInductive.mapRec_congr fits fun a ha => (atMember a ha).symm
@@ -959,14 +1025,15 @@ variable (heads consts) (T : DeclName) (v : Head)
   (ctors : List (DeclName × List (DeclField Head))) (rec : DeclName)
 
 /-- **The reading of a declaration in the set tower**: the type is the carrier of its
-signature, each constructor is the traced graph of its constructor values, and the recursor is
-the traced graph of the recursion with the methods. -/
+signature, each constructor is the traced graph of its constructor values, whose tag is the
+code of the constructor's name, and the recursor is the traced graph of the recursion with the
+methods. -/
 structure InductiveReading : Prop where
   type : consts T = carrier (signature heads consts ctors)
   ctor : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
     ctors[i]? = some (k, fields) →
       consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-        constructorValue i (envList η)
+        constructorValue (nameCode k) (envList η)
   recursor : consts rec = telescopeGraph heads consts (liftCtx (recTele T v ctors)) fun η =>
     recFun (sig := signature heads consts ctors)
       (methodStep (methodsOf (envList η) ctors.length)) (η 0)
@@ -976,6 +1043,49 @@ variable {heads consts T v ctors rec}
 theorem InductiveReading.apply (reading : InductiveReading heads consts T v ctors rec) :
     ConstructorsApply heads consts T ctors :=
   fun entry _ fits => ctor_apply (reading.ctor entry) fits
+
+/-- **The value of a constructor without fields**: the constructor value of the code of its
+name at no argument. -/
+theorem InductiveReading.constant_value (reading : InductiveReading heads consts T v ctors rec)
+    {i : Nat} {k : DeclName} (entry : ctors[i]? = some (k, [])) :
+    consts k = constructorValue (nameCode k) [] :=
+  ctor_apply (reading.ctor entry) (args := []) .nil
+
+/-- A constructor value under a name that is not a constructor name of the declaration is not
+a member of the declaration's set. -/
+theorem InductiveReading.foreign_not_mem (reading : InductiveReading heads consts T v ctors rec)
+    {k : DeclName} (foreign : k ∉ ctors.map (·.1)) (args : List ZFSet.{u}) :
+    constructorValue (nameCode k) args ∉ consts T := by
+  rw [reading.type]
+  refine ZFSetInductive.constructorValue_not_mem_carrier fun c member same => ?_
+  obtain ⟨k', declared, tag⟩ := tag_of_mem_signature heads consts member
+  exact foreign (ZFSetInductive.nameCode_injective (tag.symm.trans same) ▸ declared)
+
+/-- **The sets of two declarations with no constructor name in common are disjoint**, whatever
+their fields and whatever the assignments they are read at. -/
+theorem signature_carrier_disjoint {Head' : Type} {heads' : Head' → ZFSet.{u}}
+    {consts' : DeclName → ZFSet.{u}} {ctors' : List (DeclName × List (DeclField Head'))}
+    (apart : ∀ k, k ∈ ctors.map (·.1) → k ∉ ctors'.map (·.1)) {x : ZFSet.{u}}
+    (member : x ∈ carrier (signature heads consts ctors)) :
+    x ∉ carrier (signature heads' consts' ctors') := by
+  refine ZFSetInductive.carrier_disjoint (fun c inFirst d inSecond same => ?_) member
+  obtain ⟨k, declared, tag⟩ := tag_of_mem_signature heads consts inFirst
+  obtain ⟨k', declared', tag'⟩ := tag_of_mem_signature heads' consts' inSecond
+  have sameName : k = k' :=
+    ZFSetInductive.nameCode_injective (tag.symm.trans (same.trans tag'))
+  exact apart k declared (sameName ▸ declared')
+
+/-- **Datatypes with no constructor name in common are disjoint sets**: under readings of two
+declarations at one assignment, no set is a member of both types. -/
+theorem InductiveReading.disjoint {T' : DeclName} {v' : Head}
+    {ctors' : List (DeclName × List (DeclField Head))} {rec' : DeclName}
+    (reading : InductiveReading heads consts T v ctors rec)
+    (reading' : InductiveReading heads consts T' v' ctors' rec')
+    (apart : ∀ k, k ∈ ctors.map (·.1) → k ∉ ctors'.map (·.1)) {x : ZFSet.{u}}
+    (member : x ∈ consts T) : x ∉ consts T' := by
+  rw [reading.type] at member
+  rw [reading'.type]
+  exact signature_carrier_disjoint apart member
 
 variable (heads consts)
 
@@ -1069,9 +1179,11 @@ theorem ev_iotaRight (c : Nat) {i : Nat} (below : i < c) (fields : List (DeclFie
 
 variable {heads consts}
 
-/-- **A computation rule of the recursor is valid at its typed instances**, when typed
-instances of its left side satisfy the telescope of its metavariables. -/
-theorem iota_valid (reading : InductiveReading heads consts T v ctors rec)
+/-- **A computation rule of the recursor is valid at its typed instances**, when the
+constructor names are distinct and typed instances of its left side satisfy the telescope of
+its metavariables. -/
+theorem iota_valid (names : (ctors.map (·.1)).Nodup)
+    (reading : InductiveReading heads consts T v ctors rec)
     (decls : DeclName → Option (CTm Head 0)) {i : Nat} {k : DeclName}
     {fields : List (DeclField Head)} (entry : ctors[i]? = some (k, fields))
     (satisfies : ∀ η : Env.{u} (1 + ctors.length + fields.length),
@@ -1112,9 +1224,10 @@ theorem iota_valid (reading : InductiveReading heads consts T v ctors rec)
         if_pos (Nat.zero_le _)
       rw [unfolded] at member
       exact member
-    have methodsTyped : ∀ j c, (signature heads consts ctors)[j]? = some c →
-        (rest.take ctors.length).getD j ∅ ∈
-          caseSet (consts T) (fun a => traceApp motive a) j c := by
+    have methodsTyped : ∀ (j : Nat) (c : ZFSetInductive.Constructor.{u}),
+        (signature heads consts ctors)[j]? = some c →
+          (rest.take ctors.length).getD j ∅ ∈
+            caseSet (consts T) (fun a => traceApp motive a) c.tag c.fields := by
       intro j c atIndex
       obtain ⟨kj, fieldsj, entryj, rfl⟩ := exists_of_signature_getElem? heads consts atIndex
       have belowj : j < ctors.length := ZFSetInductive.some_index_lt entryj
@@ -1148,17 +1261,19 @@ theorem iota_valid (reading : InductiveReading heads consts T v ctors rec)
         (rest.take ctors.length).getD i ∅ := by
       rw [Nat.add_comm, List.getD_cons_succ]
     rw [method]
-    exact rec_iota v reading.type reading.apply reading.recursor entry count motiveTyped
+    exact rec_iota v names reading.type reading.apply reading.recursor entry count motiveTyped
       methodsTyped fits
 
 /-- **The package of a simple inductive declaration has a set model** at every reading of the
 declaration in which the type's set is a member of its universe: the constructors and the
 recursor lie in their declared types, and the computation rules of the recursor hold at their
-typed instances. The closed field types have no abstraction, and typed instances of the left
-sides satisfy the telescopes of their metavariables. -/
+typed instances. The constructor names are distinct, the closed field types have no
+abstraction, and typed instances of the left sides satisfy the telescopes of their
+metavariables. -/
 theorem inductive_setModel {w : Head} (target : Rules Head)
     (universes : ZFSetReplayInterpretation.UniverseModel target heads)
     (headEq : ∀ {h h' : Head}, target.headEq h h' → heads h = heads h')
+    (names : (ctors.map (·.1)).Nodup)
     (free : FieldsLamFree ctors) (reading : InductiveReading heads consts T v ctors rec)
     (typeMember : consts T ∈ heads w)
     (satisfies : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
@@ -1175,11 +1290,11 @@ theorem inductive_setModel {w : Head} (target : Rules Head)
       ⟨rfl, rfl⟩ | ⟨i, fields, entry, rfl⟩ | ⟨rfl, rfl⟩
     · exact typeMember
     · exact ctor_mem reading.type (signature_getElem? heads consts entry) (reading.ctor entry)
-    · exact rec_mem v reading.type reading.apply reading.recursor
+    · exact rec_mem v names reading.type reading.apply reading.recursor
   · intro arity L R rule
     obtain ⟨i, name, fields, entry, same⟩ := rule
     cases same
-    exact iota_valid reading _ entry (satisfies entry)
+    exact iota_valid names reading _ entry (satisfies entry)
 
 /-- **The same for every declaration with distinct names**: the knowledge of each left side is
 the telescope of its metavariables (`iotaLeft_known`). -/
@@ -1189,7 +1304,7 @@ theorem inductive_setModel_distinct {w : Head} (target : Rules Head)
     (distinct : DistinctNames T ctors rec) (free : FieldsLamFree ctors)
     (reading : InductiveReading heads consts T v ctors rec) (typeMember : consts T ∈ heads w) :
     SetModel heads consts (inductiveChurch target T w ctors rec v) :=
-  inductive_setModel target universes headEq free reading typeMember
+  inductive_setModel target universes headEq distinct.ctorsNodup free reading typeMember
     fun entry _ typed => typed.sat (iotaLeft_known distinct free entry)
 
 end Package
@@ -1216,75 +1331,81 @@ structure FreshDeclaration : Prop extends DistinctNames T ctors rec where
       ev heads consts (liftTm F) Fin.elim0 = ev heads base (liftTm F) Fin.elim0
 
 /-- The constructors read over an assignment: each is the traced graph of its constructor
-values. -/
+values, whose tag is the code of its name. -/
 noncomputable def withCtors (consts : DeclName → ZFSet.{u}) :
-    List (DeclName × List (DeclField Head)) → Nat → DeclName → ZFSet.{u}
-  | [], _ => consts
-  | (k, fields) :: rest, i =>
-      Function.update (withCtors consts rest (i + 1)) k
+    List (DeclName × List (DeclField Head)) → DeclName → ZFSet.{u}
+  | [] => consts
+  | (k, fields) :: rest =>
+      Function.update (withCtors consts rest) k
         (telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-          constructorValue i (envList η))
+          constructorValue (nameCode k) (envList η))
 
 /-- **The assignment that reads a declaration over a base**: the type is the carrier, the
 constructors are their graphs, and the recursor is the graph of the recursion. -/
 noncomputable def inductiveConsts : DeclName → ZFSet.{u} :=
   Function.update
-    (withCtors heads T (Function.update base T (carrier (signature heads base ctors))) ctors 0)
+    (withCtors heads T (Function.update base T (carrier (signature heads base ctors))) ctors)
     rec
     (telescopeGraph heads
-      (withCtors heads T (Function.update base T (carrier (signature heads base ctors))) ctors 0)
+      (withCtors heads T (Function.update base T (carrier (signature heads base ctors))) ctors)
       (liftCtx (recTele T v ctors)) fun η =>
         recFun (sig := signature heads
             (withCtors heads T (Function.update base T (carrier (signature heads base ctors)))
-              ctors 0) ctors)
+              ctors) ctors)
           (methodStep (methodsOf (envList η) ctors.length)) (η 0))
 
 variable {heads base T v ctors rec}
 
 theorem withCtors_of_not_mem (consts : DeclName → ZFSet.{u}) :
-    ∀ (rest : List (DeclName × List (DeclField Head))) (i : Nat) {name : DeclName},
-      name ∉ rest.map (·.1) → withCtors heads T consts rest i name = consts name
-  | [], _, _, _ => rfl
-  | (k, fields) :: rest, i, name, absent => by
+    ∀ (rest : List (DeclName × List (DeclField Head))) {name : DeclName},
+      name ∉ rest.map (·.1) → withCtors heads T consts rest name = consts name
+  | [], _, _ => rfl
+  | (k, fields) :: rest, name, absent => by
     have other : name ≠ k := fun same => absent (by rw [same]; exact List.mem_cons_self)
-    show Function.update (withCtors heads T consts rest (i + 1)) k _ name = _
+    show Function.update (withCtors heads T consts rest) k _ name = _
     rw [Function.update_of_ne other]
-    exact withCtors_of_not_mem consts rest (i + 1)
+    exact withCtors_of_not_mem consts rest
       fun member => absent (List.mem_cons_of_mem _ member)
 
 theorem withCtors_at (consts : DeclName → ZFSet.{u}) :
-    ∀ (rest : List (DeclName × List (DeclField Head))) (i : Nat) {j : Nat} {k : DeclName}
+    ∀ (rest : List (DeclName × List (DeclField Head))) {j : Nat} {k : DeclName}
       {fields : List (DeclField Head)}, (rest.map (·.1)).Nodup → rest[j]? = some (k, fields) →
-        withCtors heads T consts rest i k =
+        withCtors heads T consts rest k =
           telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-            constructorValue (i + j) (envList η)
-  | (k', fields') :: rest, i, 0, k, fields, _, entry => by
+            constructorValue (nameCode k) (envList η)
+  | (k', fields') :: rest, 0, k, fields, _, entry => by
     obtain ⟨rfl, rfl⟩ : k' = k ∧ fields' = fields := by simpa using entry
-    show Function.update (withCtors heads T consts rest (i + 1)) k' _ k' = _
+    show Function.update (withCtors heads T consts rest) k' _ k' = _
     rw [Function.update_self]
-    rfl
-  | (k', fields') :: rest, i, j + 1, k, fields, nodup, entry => by
+  | (k', fields') :: rest, j + 1, k, fields, nodup, entry => by
     have entry' : rest[j]? = some (k, fields) := by simpa using entry
     have present : k ∈ rest.map (·.1) :=
       List.mem_map.mpr ⟨(k, fields), List.mem_of_getElem? entry', rfl⟩
     have nodup' := List.nodup_cons.mp nodup
     have other : k ≠ k' := fun same => nodup'.1 (same ▸ present)
-    show Function.update (withCtors heads T consts rest (i + 1)) k' _ k = _
-    rw [Function.update_of_ne other, withCtors_at consts rest (i + 1) nodup'.2 entry',
-      show i + 1 + j = i + (j + 1) by omega]
+    show Function.update (withCtors heads T consts rest) k' _ k = _
+    rw [Function.update_of_ne other, withCtors_at consts rest nodup'.2 entry']
 
-/-- The field sets are the base's at every assignment that agrees with it outside the names
-of a fresh declaration. -/
-theorem signature_of_agrees (fresh : FreshDeclaration heads base T ctors rec)
-    {consts : DeclName → ZFSet.{u}} (agrees : AgreesOutside base T ctors rec consts) :
-    signature heads consts ctors = signature heads base ctors := by
-  refine List.map_congr_left fun entry member => ?_
+/-- The field sets of one constructor are the base's at every assignment that agrees with it
+outside the names of a fresh declaration. -/
+theorem fieldSigs_of_agrees (fresh : FreshDeclaration heads base T ctors rec)
+    {consts : DeclName → ZFSet.{u}} (agrees : AgreesOutside base T ctors rec consts)
+    {entry : DeclName × List (DeclField Head)} (member : entry ∈ ctors) :
+    entry.2.map (fieldSig heads consts) = entry.2.map (fieldSig heads base) := by
   refine List.map_congr_left fun field memberField => ?_
   cases field with
   | recursive => rfl
   | closed F =>
     show ZFSetInductive.Field.ofSet _ = ZFSetInductive.Field.ofSet _
     rw [fresh.fields consts agrees entry member F memberField]
+
+/-- The field sets are the base's at every assignment that agrees with it outside the names
+of a fresh declaration. -/
+theorem signature_of_agrees (fresh : FreshDeclaration heads base T ctors rec)
+    {consts : DeclName → ZFSet.{u}} (agrees : AgreesOutside base T ctors rec consts) :
+    signature heads consts ctors = signature heads base ctors :=
+  List.map_congr_left fun _ member =>
+    congrArg (ZFSetInductive.Constructor.mk _) (fieldSigs_of_agrees fresh agrees member)
 
 theorem fieldMembers_of_agrees (fresh : FreshDeclaration heads base T ctors rec)
     {consts : DeclName → ZFSet.{u}} (agrees : AgreesOutside base T ctors rec consts)
@@ -1314,19 +1435,6 @@ theorem telescopeGraph_ofEntries_congr {consts consts' : DeclName → ZFSet.{u}}
     funext η
     rw [same n (Nat.lt_succ_self n) η]
 
-/-- The field sets of one constructor are the base's at every assignment that agrees with it
-outside the names of a fresh declaration. -/
-theorem fieldSigs_of_agrees (fresh : FreshDeclaration heads base T ctors rec)
-    {consts : DeclName → ZFSet.{u}} (agrees : AgreesOutside base T ctors rec consts)
-    {entry : DeclName × List (DeclField Head)} (member : entry ∈ ctors) :
-    entry.2.map (fieldSig heads consts) = entry.2.map (fieldSig heads base) := by
-  refine List.map_congr_left fun field memberField => ?_
-  cases field with
-  | recursive => rfl
-  | closed F =>
-    show ZFSetInductive.Field.ofSet _ = ZFSetInductive.Field.ofSet _
-    rw [fresh.fields consts agrees entry member F memberField]
-
 /-- The value of an entry of a constructor's telescope, at an assignment that agrees with the
 base outside the names of a fresh declaration. -/
 theorem ev_ctorEntry_of_agrees (fresh : FreshDeclaration heads base T ctors rec)
@@ -1345,7 +1453,7 @@ theorem inductiveConsts_reading (fresh : FreshDeclaration heads base T ctors rec
     InductiveReading heads (inductiveConsts heads base T v ctors rec) T v ctors rec := by
   -- The three stages: the type, the constructors, the recursor.
   generalize typedEq : Function.update base T (carrier (signature heads base ctors)) = typed
-  generalize builtEq : withCtors heads T typed ctors 0 = built
+  generalize builtEq : withCtors heads T typed ctors = built
   have finalEq : inductiveConsts heads base T v ctors rec =
       Function.update built rec (telescopeGraph heads built (liftCtx (recTele T v ctors))
         fun η => recFun (sig := signature heads built ctors)
@@ -1355,7 +1463,7 @@ theorem inductiveConsts_reading (fresh : FreshDeclaration heads base T ctors rec
   have typedAgrees : AgreesOutside base T ctors rec typed := fun c notT _ _ => by
     rw [← typedEq, Function.update_of_ne notT]
   have builtAgrees : AgreesOutside base T ctors rec built := fun c notT notCtor notRec => by
-    rw [← builtEq, withCtors_of_not_mem typed ctors 0 notCtor]
+    rw [← builtEq, withCtors_of_not_mem typed ctors notCtor]
     exact typedAgrees c notT notCtor notRec
   have finalAgrees : AgreesOutside base T ctors rec final := fun c notT notCtor notRec => by
     rw [finalEq, Function.update_of_ne notRec]
@@ -1363,7 +1471,7 @@ theorem inductiveConsts_reading (fresh : FreshDeclaration heads base T ctors rec
   have typedT : typed T = carrier (signature heads base ctors) := by
     rw [← typedEq, Function.update_self]
   have builtT : built T = typed T := by
-    rw [← builtEq, withCtors_of_not_mem typed ctors 0 fresh.typeNotCtor]
+    rw [← builtEq, withCtors_of_not_mem typed ctors fresh.typeNotCtor]
   have finalT : final T = built T := by
     rw [finalEq, Function.update_of_ne fresh.recNotType.symm]
   have finalCtor : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
@@ -1376,8 +1484,7 @@ theorem inductiveConsts_reading (fresh : FreshDeclaration heads base T ctors rec
   refine ⟨?_, fun {i k fields} entry => ?_, ?_⟩
   · rw [finalT, builtT, typedT, signature_of_agrees fresh finalAgrees]
   · have member : (k, fields) ∈ ctors := List.mem_of_getElem? entry
-    rw [finalCtor entry, ← builtEq, withCtors_at typed ctors 0 fresh.ctorsNodup entry,
-      Nat.zero_add]
+    rw [finalCtor entry, ← builtEq, withCtors_at typed ctors fresh.ctorsNodup entry]
     refine telescopeGraph_ofEntries_congr (ctorEntry T fields) fields.length _ fun j _ ρ => ?_
     rw [ev_ctorEntry_of_agrees fresh typedAgrees member j ρ,
       ev_ctorEntry_of_agrees fresh finalAgrees member j ρ, finalT, builtT]
@@ -1414,7 +1521,7 @@ names. -/
 theorem inductiveConsts_agrees :
     AgreesOutside base T ctors rec (inductiveConsts heads base T v ctors rec) :=
   fun c notT notCtor notRec => by
-    rw [inductiveConsts, Function.update_of_ne notRec, withCtors_of_not_mem _ ctors 0 notCtor,
+    rw [inductiveConsts, Function.update_of_ne notRec, withCtors_of_not_mem _ ctors notCtor,
       Function.update_of_ne notT]
 
 /-- The type's set is a member of a closed universe that holds the natural numbers and the
@@ -1426,15 +1533,19 @@ theorem inductiveConsts_type_mem (fresh : FreshDeclaration heads base T ctors re
     inductiveConsts heads base T v ctors rec T ∈ U := by
   rw [(inductiveConsts_reading (v := v) fresh).type,
     signature_of_agrees fresh (inductiveConsts_agrees heads base T v ctors rec)]
-  refine ZFSetInductive.carrier_mem closed omega fun c member A field => ?_
-  obtain ⟨entry, memberEntry, rfl⟩ := List.mem_map.mp member
-  obtain ⟨declared, memberField, same⟩ := List.mem_map.mp field
-  cases declared with
-  | recursive => exact nomatch same
-  | closed F =>
-    obtain rfl : ev heads base (liftTm F) Fin.elim0 = A := by
-      injection same
-    exact fieldSets entry memberEntry F memberField
+  refine ZFSetInductive.carrier_mem closed omega (fun c member => ?_)
+    fun c member A field => ?_
+  · obtain ⟨entry, -, rfl⟩ := List.mem_map.mp member
+    exact ZFSetInductive.nameCode_mem closed omega entry.1
+  · obtain ⟨entry, memberEntry, rfl⟩ := List.mem_map.mp member
+    obtain ⟨declared, memberField, same⟩ := List.mem_map.mp
+      (field : ZFSetInductive.Field.ofSet A ∈ entry.2.map (fieldSig heads base))
+    cases declared with
+    | recursive => exact nomatch same
+    | closed F =>
+      obtain rfl : ev heads base (liftTm F) Fin.elim0 = A := by
+        injection same
+      exact fieldSets entry memberEntry F memberField
 
 /-- **A reading reads only the declaration's names and field types**: an assignment with the
 same sets at the type, the constructors and the recursor, and the same sets of the closed field
@@ -1455,7 +1566,8 @@ theorem InductiveReading.of_agrees {consts consts' : DeclName → ZFSet.{u}}
       show ZFSetInductive.Field.ofSet _ = ZFSetInductive.Field.ofSet _
       rw [fields entry member F memberField]
   have signatures : signature heads consts' ctors = signature heads consts ctors :=
-    List.map_congr_left fun entry member => fieldSigs entry member
+    List.map_congr_left fun entry member =>
+      congrArg (ZFSetInductive.Constructor.mk _) (fieldSigs entry member)
   have entries : ∀ entry ∈ ctors, ∀ (j : Nat) (ρ : Env.{u} j),
       ev heads consts (liftTm (ctorEntry T entry.2 j)) ρ =
         ev heads consts' (liftTm (ctorEntry T entry.2 j)) ρ := by
@@ -1519,6 +1631,158 @@ theorem extension_setModel {R : Rules Head} (B : ChurchRules R) {w : Head}
     (inductiveConsts_type_mem fresh closed omega fieldSets)
 
 end Existence
+
+/-! ## A typed data term means its set -/
+
+section DataTerms
+
+variable (heads consts)
+
+/-- **Outside its telescope a traced graph gives the empty set**: applied to the values of an
+environment that does not satisfy the telescope. -/
+theorem applyValues_telescopeGraph_outside :
+    ∀ {k : Nat} (Θ : CCtx Head k) (body : Env.{u} k → ZFSet.{u}) (η : Env.{u} k),
+      ¬ Sat heads consts Θ η → applyValues (telescopeGraph heads consts Θ body) k η = ∅
+  | _, .nil, _, η, outside => absurd (sat_nil heads consts η) outside
+  | _, .snoc Θ A, body, η, outside => by
+      show traceApp (applyValues (telescopeGraph heads consts Θ fun η =>
+          traceLam (graph (ev heads consts A η) fun x => body (extend η x))) _ (η ∘ Fin.succ))
+        (η 0) = ∅
+      by_cases older : Sat heads consts Θ (η ∘ Fin.succ)
+      · rw [applyValues_telescopeGraph heads consts Θ _ (η ∘ Fin.succ) older]
+        refine traceApp_graph_outside _ fun newest => outside ?_
+        rw [← extend_tail_head η]
+        exact (sat_snoc heads consts).mpr ⟨older, newest⟩
+      · rw [applyValues_telescopeGraph_outside Θ _ (η ∘ Fin.succ) older, traceApp_empty]
+
+variable {heads consts}
+
+/-- **A constructor applied to as many arguments as it has fields gives the empty set when
+the arguments do not fit the fields.** -/
+theorem ctor_apply_outside {T k : DeclName} {fields : List (DeclField Head)}
+    (value : consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
+      constructorValue (nameCode k) (envList η))
+    {args : List ZFSet.{u}} (length : args.length = fields.length)
+    (outside : ¬ Fits (consts T) (fields.map (fieldSig heads consts)) args) :
+    applyList (consts k) args = ∅ := by
+  have notSat : ¬ Sat heads consts (liftCtx (ctorTele T fields)) (envOf args fields.length) :=
+    fun sat => outside ((sat_ctorTele heads consts T fields args length).mp sat)
+  have listed : envList (envOf args fields.length) = args := by
+    rw [envList_envOf args fields.length (le_of_eq length.symm), ← length, List.take_length]
+  have applied := applyValues_telescopeGraph_outside heads consts (liftCtx (ctorTele T fields))
+    (fun η => constructorValue (nameCode k) (envList η)) (envOf args fields.length) notSat
+  rw [← value, ← applyList_envList, listed] at applied
+  exact applied
+
+mutual
+
+/-- **The term of a data term**: the constant of its name applied to the terms of its
+arguments. -/
+def dataTm {n : Nat} : DataTerm → Tm Head n
+  | .app k args => appSpine (.const k) (dataTms args)
+
+/-- The terms of a list of data terms. -/
+def dataTms {n : Nat} : List DataTerm → List (Tm Head n)
+  | [] => []
+  | d :: ds => dataTm d :: dataTms ds
+
+end
+
+theorem dataTm_app {n : Nat} (k : DeclName) (args : List DataTerm) :
+    (dataTm (.app k args) : Tm Head n) = appSpine (.const k) (dataTms args) := by
+  rw [dataTm]
+
+/-- The terms of a list of data terms are the terms of its members. -/
+theorem dataTms_eq_map {n : Nat} : ∀ ds : List DataTerm,
+    (dataTms ds : List (Tm Head n)) = ds.map dataTm
+  | [] => by
+      rw [dataTms]
+      rfl
+  | d :: ds => by
+      rw [dataTms, dataTms_eq_map ds]
+      rfl
+
+/-- The value of the term of a data term: the value of its constant applied to the values of
+the terms of its arguments. -/
+theorem ev_dataTm {n : Nat} (k : DeclName) (args : List DataTerm) (ρ : Env.{u} n) :
+    ev heads consts (liftTm (dataTm (.app k args) : Tm Head n)) ρ =
+      applyList (consts k)
+        (args.map fun a => ev heads consts (liftTm (dataTm a : Tm Head n)) ρ) := by
+  rw [dataTm_app, ev_appSpine, dataTms_eq_map, List.map_map]
+  rfl
+
+variable (heads consts)
+
+/-- **A data term is read by the constructors of an assignment**: each of its names is read
+as a constructor with as many fields as the name has arguments, and no field of that
+constructor takes the empty set as an argument. -/
+inductive DataRead : DataTerm → Prop
+  | app {T k : DeclName} {fields : List (DeclField Head)} {args : List DataTerm}
+      (value : consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
+        constructorValue (nameCode k) (envList η))
+      (length : args.length = fields.length)
+      (inhabited : ∀ field ∈ fields,
+        (∅ : ZFSet.{u}) ∉ fieldMembers heads consts (consts T) field)
+      (rest : ∀ a ∈ args, DataRead a) : DataRead (.app k args)
+
+variable {heads consts}
+
+/-- **A data term read by constructors means its set, or nothing**: the value of its term is
+the set of the data term, unless that value is the empty set. -/
+theorem DataRead.value_eq {d : DataTerm} (read : DataRead heads consts d) :
+    ∀ {n : Nat} (ρ : Env.{u} n), ev heads consts (liftTm (dataTm d : Tm Head n)) ρ ≠ ∅ →
+      ev heads consts (liftTm (dataTm d : Tm Head n)) ρ = d.toSet := by
+  induction read with
+  | @app T k fields args value length inhabited _ ih =>
+      intro n ρ nonempty
+      rw [ev_dataTm] at nonempty ⊢
+      have sameLength : (args.map fun a =>
+          ev heads consts (liftTm (dataTm a : Tm Head n)) ρ).length = fields.length := by
+        rw [List.length_map]
+        exact length
+      have fits : Fits (consts T) (fields.map (fieldSig heads consts))
+          (args.map fun a => ev heads consts (liftTm (dataTm a : Tm Head n)) ρ) := by
+        by_contra outside
+        exact nonempty (ctor_apply_outside value sameLength outside)
+      have members := ((fits_iff heads consts fields _).mp fits).2
+      rw [ctor_apply value fits, DataTerm.toSet_app_map]
+      congr 1
+      refine List.map_congr_left fun a member => ih a member ρ fun empty => ?_
+      obtain ⟨j, below, rfl⟩ := List.getElem_of_mem member
+      have inFields : j < fields.length := length ▸ below
+      have valueAt : (args.map fun a =>
+          ev heads consts (liftTm (dataTm a : Tm Head n)) ρ).getD j ∅ =
+          ev heads consts (liftTm (dataTm args[j] : Tm Head n)) ρ := by
+        rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem below]
+        rfl
+      have fieldHere : fields.getD j .recursive ∈ fields := by
+        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem inFields]
+        exact List.getElem_mem inFields
+      have atJ := members j inFields
+      rw [valueAt, empty] at atJ
+      exact inhabited _ fieldHere atJ
+
+/-- **A typed data term means its set**: in a set model of a package, a data term read by the
+constructors of the assignment, whose term has a type whose set has no empty member, has the
+set of the data term as its value. -/
+theorem DataRead.typed_value {R : Rules Head} {P : ChurchRules R}
+    (model : SetModel heads consts P) {d : DataTerm} (read : DataRead heads consts d)
+    {A : CTm Head 0} (typed : CTyped P .nil (liftTm (dataTm d)) A)
+    (inhabited : (∅ : ZFSet.{u}) ∉ ev heads consts A Fin.elim0) :
+    ev heads consts (liftTm (dataTm d : Tm Head 0)) Fin.elim0 = d.toSet :=
+  read.value_eq Fin.elim0 fun empty =>
+    inhabited (empty ▸ CDerivable.inhabited model typed)
+
+/-- The set of a declared type has no empty member, under a reading of the declaration. -/
+theorem InductiveReading.empty_not_mem {T : DeclName} {v : Head}
+    {ctors : List (DeclName × List (DeclField Head))} {rec : DeclName}
+    (reading : InductiveReading heads consts T v ctors rec) : (∅ : ZFSet.{u}) ∉ consts T := by
+  rw [reading.type]
+  intro member
+  obtain ⟨_, c, args, _, _, value⟩ := ZFSetInductive.exists_inversion member
+  exact ZFSetInductive.constructorValue_ne_empty c.tag args value
+
+end DataTerms
 
 end Reading
 

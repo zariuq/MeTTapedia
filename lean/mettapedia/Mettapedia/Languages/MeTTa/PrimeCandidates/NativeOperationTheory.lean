@@ -142,4 +142,44 @@ theorem native_nested_operation_linear {S : Type} [CommSemiring S]
   rw [native_nested_operation_handler]
   exact WeightedLinearInterpretation.evaluate_reindex _ observe valuation
 
+/-- Authored coefficients and predicates use the same open operation
+construction. Finite observations retain their declared residual readout. -/
+def authoredOperation (program : Program) (annotation : Row → Option AuthoredClause)
+    (interpretation : Outcome → Option V) (fuel : Nat) {n m : Nat}
+    (initial : Fin m → AuthoredWork) (observe : AuthoredResult ⊕ AuthoredWork → Fin n) :
+    sourceArity AuthoredWork V n ⟶ sourceArity AuthoredWork V m :=
+  sourceOperation (authoredSource program annotation interpretation) fuel initial observe
+
+theorem native_authored_operation_handler (program : Program)
+    (annotation : Row → Option AuthoredClause) (interpretation : Outcome → Option V)
+    (fuel : Nat) {n m : Nat} (initial : Fin m → AuthoredWork)
+    (observe : AuthoredResult ⊕ AuthoredWork → Fin n) (inputIndex : Fin m) :
+    (terms ((ResumptionOperationTheory.handler WeightedBranchingResumption.catalogue).map
+      (authoredOperation program annotation interpretation fuel initial observe)) inputIndex).run =
+      (WeightedBranchingResumption.contributions (authoredSource program annotation interpretation)
+        fuel (initial inputIndex)).map (fun leaf => (observe leaf.1, leaf.2)) :=
+  source_operation_handler _ _ _ _ _
+
+/-- The phased native execution has the same qualified weighted linear
+meaning. The observer declares how complete and retained states are read;
+it grants neither closure nor a dependent typing judgment. -/
+theorem native_authored_operation_linear {S : Type} [CommSemiring S]
+    (program : Program) (annotation : Row → Option AuthoredClause)
+    (interpretation : Outcome → Option S) (fuel : Nat) {n m : Nat}
+    (initial : Fin m → AuthoredWork) (observe : AuthoredResult ⊕ AuthoredWork → Fin n)
+    (valuation : Fin n → S) (inputIndex : Fin m) :
+    WeightedLinearInterpretation.operationLinearMap
+        ((ResumptionOperationTheory.handler WeightedBranchingResumption.catalogue).map
+          (authoredOperation program annotation interpretation fuel initial observe))
+        valuation inputIndex =
+      WeightedLinearInterpretation.evaluate
+        (WeightedBranchingResumption.contributions (authoredSource program annotation interpretation)
+          fuel (initial inputIndex)) (fun leaf => valuation (observe leaf)) := by
+  change WeightedLinearInterpretation.evaluate
+    (terms ((ResumptionOperationTheory.handler WeightedBranchingResumption.catalogue).map
+      (authoredOperation program annotation interpretation fuel initial observe)) inputIndex).run
+      valuation = _
+  rw [native_authored_operation_handler]
+  exact WeightedLinearInterpretation.evaluate_reindex _ observe valuation
+
 end Mettapedia.Languages.MeTTa.PrimeCandidates.NativeOperationTheory

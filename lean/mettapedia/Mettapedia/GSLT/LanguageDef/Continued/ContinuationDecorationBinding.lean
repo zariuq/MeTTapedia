@@ -92,8 +92,4 @@ theorem continuation_substitution_avoids_capture :
       .lambda none (.bvar 0) := by
   decide +kernel
 
-#print axioms WellSorted.HasType.instantiateBVarAt
-#print axioms ContinuationDecorationProfile.mapContractum_instantiateBVarAt
-#print axioms continuation_substitution_avoids_capture
-
 end Mettapedia.GSLT.LanguageDef

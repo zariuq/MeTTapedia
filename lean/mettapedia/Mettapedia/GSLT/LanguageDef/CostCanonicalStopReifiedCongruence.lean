@@ -293,7 +293,7 @@ mutual
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith,
-          CostStaticBinderThinning.thickenAmbientBVars]
+          CostStaticTypeThinning.thickenAmbientBVars_bvar]
     | _, _, .fvar name, availableDepth, scopeDepth, rootDepth => by
         simpa only [CostStaticAtomEnvironment.reify] using
           mapFvar availableDepth scopeDepth rootDepth name
@@ -314,8 +314,7 @@ mutual
           beq_eq_false_iff_ne.mpr ne
         simp only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
           finishNormalizeReflectiveApply, notQuoteBeq, Bool.false_eq_true,
-          if_false, mapPattern,
-          CostStaticBinderThinning.thickenAmbientBVars,
+          if_false, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_apply,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith]
@@ -326,7 +325,7 @@ mutual
           CostStaticAtomKeyCospan.reifyRight] using normalizedArguments
     | _, _, .lambda binder body, availableDepth, scopeDepth, rootDepth => by
         simpa only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
-          mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+          mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -338,7 +337,7 @@ mutual
     | _, _, .multiLambda arity binders body, availableDepth, scopeDepth,
         rootDepth => by
         simpa only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
-          mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+          mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -349,7 +348,7 @@ mutual
                 (scopeDepth + arity) (rootDepth + arity)))
     | _, _, .subst body replacement, availableDepth, scopeDepth, rootDepth => by
         simpa only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
-          mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+          mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -375,7 +374,7 @@ mutual
         simpa [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
           Function.comp_def, canonicalizeByDepths,
           canonicalizeListByDepths_eq_map, mapPattern,
-          CostStaticBinderThinning.thickenAmbientBVars,
+          CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith, notParallelBeq] using
@@ -391,7 +390,7 @@ mutual
         simpa [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
           Function.comp_def, canonicalizeByDepths,
           canonicalizeListByDepths_eq_map, mapPattern,
-          CostStaticBinderThinning.thickenAmbientBVars,
+          CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -643,7 +642,7 @@ mutual
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith,
-          CostStaticBinderThinning.thickenAmbientBVars]
+          CostStaticTypeThinning.thickenAmbientBVars_bvar]
     | _, _, .fvar name, availableDepth, scopeDepth, restorationDepth, keyDepth => by
         simpa only [CostStaticAtomEnvironment.reify] using
           mapFvar availableDepth scopeDepth restorationDepth keyDepth name
@@ -669,8 +668,7 @@ mutual
           beq_eq_false_iff_ne.mpr ne
         simp only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
           finishNormalizeReflectiveApply, notQuoteBeq, Bool.false_eq_true,
-          if_false, mapPattern,
-          CostStaticBinderThinning.thickenAmbientBVars,
+          if_false, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_apply,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith]
@@ -681,7 +679,7 @@ mutual
           CostStaticAtomKeyCospan.reifyRight] using normalizedArguments
     | _, _, .lambda binder body, availableDepth, scopeDepth, restorationDepth, keyDepth => by
         simpa only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
-          mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+          mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -693,7 +691,7 @@ mutual
     | _, _, .multiLambda arity binders body, availableDepth, scopeDepth,
         restorationDepth, keyDepth => by
         simpa only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
-          mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+          mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -704,7 +702,7 @@ mutual
                 (scopeDepth + arity) (restorationDepth + arity) (keyDepth + arity)))
     | _, _, .subst body replacement, availableDepth, scopeDepth, restorationDepth, keyDepth => by
         simpa only [CostStaticAtomEnvironment.reify, canonicalizeByDepths,
-          mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+          mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using
@@ -730,7 +728,7 @@ mutual
         simpa [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
           Function.comp_def, canonicalizeByDepths,
           canonicalizeListByDepths_eq_map, mapPattern,
-          CostStaticBinderThinning.thickenAmbientBVars,
+          CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith, notParallelBeq] using
@@ -746,7 +744,7 @@ mutual
         simpa [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
           Function.comp_def, canonicalizeByDepths,
           canonicalizeListByDepths_eq_map, mapPattern,
-          CostStaticBinderThinning.thickenAmbientBVars,
+          CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
           CostStaticAtomKeyCospan.reifyLeft,
           CostStaticAtomKeyCospan.reifyRight,
           CostStaticAtomKeyCospan.reifyWith] using

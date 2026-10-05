@@ -131,9 +131,4 @@ theorem current_funding_not_admitted (stack : Pattern) :
     ¬ CurrentLayerCode (.apply costFundingConstructorName [stack]) :=
   funding_not_currentLayerCode stack
 
-#print axioms grafted_tree_inhabited
-#print axioms grafted_boundary_count
-#print axioms grafted_restoration
-#print axioms grafted_currentLayerCode
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls

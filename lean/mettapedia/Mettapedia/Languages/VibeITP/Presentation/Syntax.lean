@@ -1,5 +1,5 @@
 import Mettapedia.Languages.VibeITP.Spec.Derivation
-import Mettapedia.Languages.VibeITP.Presentation.FirstOrder
+import Mettapedia.GSLT.LanguageDef.FirstOrderRules
 
 /-!
 # Vibe-ITP presentation: data constructors, judgments, and encodings

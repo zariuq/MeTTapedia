@@ -93,43 +93,12 @@ theorem decodeCostBaseSortName_encode (name : String) :
     decodeCostBaseSortName (costBaseSortName name) = some name := by
   exact decodeTaggedPayload_append _ _
 
-/-- Decode the type action of one static Cost copy.  In the wrapped copy the
-distinguished interacting sort is represented by the single wrapped carrier;
-every other base sort remains in the tagged base fiber. -/
-def decodeCostStaticTypeExpr (source : CIGSLT)
-    (color : CostStaticColor) (type : TypeExpr) : Option TypeExpr :=
-  CostStaticTypeImage.decode source.theory color type
-
-/-- Decoding is a computable left inverse of either exact static type action.
-The wrapped interacting sort is separated from every tagged base sort by the
-reserved namespace theorem of the generated signature. -/
-@[simp]
-theorem decodeCostStaticTypeExpr_mapTypeExpr (source : CIGSLT)
-    (color : CostStaticColor) (type : TypeExpr) :
-    decodeCostStaticTypeExpr source color
-        (mapTypeExpr (color.symbols source) type) = some type := by
-  simpa only [decodeCostStaticTypeExpr, CostStaticColor.symbols_eq_symbolsOf] using
-    CostStaticTypeImage.decode_mapTypeExpr source.theory color type
-
-/-- A successfully decoded static type lies in the exact image of the
-selected Cost fiber.  In the wrapped fiber the base-tagged interacting sort
-is deliberately rejected: its only image is the distinguished wrapped sort.
-Together with `decodeCostStaticTypeExpr_mapTypeExpr`, this makes decoding a
-partial equivalence rather than a merely one-sided parser. -/
-theorem mapTypeExpr_decodeCostStaticTypeExpr (source : CIGSLT)
-    (color : CostStaticColor) {target sourceType : TypeExpr}
-    (decoded : decodeCostStaticTypeExpr source color target =
-      some sourceType) :
-    mapTypeExpr (color.symbols source) sourceType = target := by
-  simpa only [CostStaticColor.symbols_eq_symbolsOf] using
-    CostStaticTypeImage.mapTypeExpr_decode source.theory color decoded
-
 /-- Each static type action is injective. -/
 theorem mapTypeExpr_costStatic_injective (source : CIGSLT)
     (color : CostStaticColor) :
     Function.Injective (mapTypeExpr (color.symbols source)) := by
   intro left right equality
-  have decoded := congrArg (decodeCostStaticTypeExpr source color) equality
+  have decoded := congrArg (CostStaticTypeImage.decode source.theory color) equality
   simpa using decoded
 
 mutual
@@ -492,21 +461,21 @@ theorem mergeBindings_mapCostStaticBindings (source : CIGSLT)
 
 /-- Translate an authored matcher pattern into one static Cost copy.  Schema
 variables and constructor symbols occupy independent injective namespaces. -/
-def mapCostStaticSchemaPattern (source : CIGSLT)
+def mapCostStaticSchemaPattern (source : WrappableIGSLT)
     (color : CostStaticColor) (pattern : Pattern) : Pattern :=
   mapPatternSchemaNames costSourceSchemaName
     (mapPattern (color.symbols source) pattern)
 
 /-- The authored equation declaration selected by one generated static
 fiber. -/
-def costStaticEquationDecl (source : CIGSLT) (color : CostStaticColor)
+def costStaticEquationDecl (source : WrappableIGSLT) (color : CostStaticColor)
     (equation : Equation) : Equation :=
   match color with
   | .base => costBaseEquationDecl equation
   | .wrapped => costWrappedEquationDecl source.theory equation
 
 @[simp]
-theorem costStaticEquationDecl_left (source : CIGSLT)
+theorem costStaticEquationDecl_left (source : WrappableIGSLT)
     (color : CostStaticColor) (equation : Equation) :
     (costStaticEquationDecl source color equation).left =
       mapCostStaticSchemaPattern source color equation.left := by
@@ -514,7 +483,7 @@ theorem costStaticEquationDecl_left (source : CIGSLT)
     rfl
 
 @[simp]
-theorem costStaticEquationDecl_right (source : CIGSLT)
+theorem costStaticEquationDecl_right (source : WrappableIGSLT)
     (color : CostStaticColor) (equation : Equation) :
     (costStaticEquationDecl source color equation).right =
       mapCostStaticSchemaPattern source color equation.right := by
@@ -558,7 +527,7 @@ theorem mem_costStaticEquations_iff_exists_source
         sourceEquation ∈
             source.theory.presentation.presentation.language.equations ∧
           target = costStaticEquationDecl source color sourceEquation := by
-  rw [CIGSLT.costStaticEquations, List.mem_append]
+  rw [WrappableIGSLT.costStaticEquations_def, List.mem_append]
   constructor
   · rintro (baseMembership | wrappedMembership)
     · obtain ⟨sourceEquation, membership, equality⟩ :=
@@ -625,7 +594,7 @@ theorem mem_costStaticReflectivePresentations_iff_exists_source
         sourceDeclaration ∈ source.reflection.1.presentations ∧
           target = costStaticReflectivePresentationDecl source color
             sourceDeclaration := by
-  rw [CIGSLT.costStaticReflectivePresentations, List.mem_append]
+  rw [WrappableIGSLT.costStaticReflectivePresentations_def, List.mem_append]
   constructor
   · rintro (baseMembership | wrappedMembership)
     · obtain ⟨sourceDeclaration, membership, equality⟩ :=
@@ -1557,8 +1526,7 @@ theorem canonicalize_costStatic_factor (source : CIGSLT)
           simp [mapPattern,
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
-            Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-            CostStaticColor.symbols_constructor, mappedDropNeQuote]
+            Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply, mappedDropNeQuote]
         · have sourceDoesNotCollapse :
               Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply
                   declaration declaration.quoteConstructor normalizedArguments =
@@ -3962,7 +3930,7 @@ def costStaticAbstractionFreeContext (source : CIGSLT)
   fun name =>
     match decodeCostRegionSourceVariableName name with
     | some sourceName =>
-        (targetFree sourceName).bind (decodeCostStaticTypeExpr source color)
+        (targetFree sourceName).bind (CostStaticTypeImage.decode source.theory color)
     | none =>
         (resolveCostRegionBoundaryData boundary regions name).map (·.type)
 
@@ -3975,7 +3943,7 @@ theorem costStaticAbstractionFreeContext_source
     (sourceName : String) :
     costStaticAbstractionFreeContext source color targetFree boundary regions
         (costRegionSourceVariableName sourceName) =
-      (targetFree sourceName).bind (decodeCostStaticTypeExpr source color) := by
+      (targetFree sourceName).bind (CostStaticTypeImage.decode source.theory color) := by
   simp [costStaticAbstractionFreeContext]
 
 /-- Boundary-variable names are outside the namespace used to preserve
@@ -4027,7 +3995,7 @@ def typedCostStaticAbstractionFreeContext (source : CIGSLT)
   fun name =>
     match decodeCostRegionSourceVariableName name with
     | some sourceName =>
-        (targetFree sourceName).bind (decodeCostStaticTypeExpr source color)
+        (targetFree sourceName).bind (CostStaticTypeImage.decode source.theory color)
     | none =>
         (resolveTypedCostRegionBoundaryData boundary regions name).map
           (fun typedBoundary => typedBoundary.boundary.type)
@@ -4048,7 +4016,7 @@ def mappedCostStaticAbstractionFreeContext (source : CIGSLT)
     match decodeCostRegionSourceVariableName name with
     | some sourceName =>
         ((targetFree sourceName).bind
-          (decodeCostStaticTypeExpr source color)).map
+          (CostStaticTypeImage.decode source.theory color)).map
             (mapTypeExpr (color.symbols source))
     | none =>
         (resolveTypedCostRegionBoundaryData boundary regions name).map
@@ -4133,7 +4101,7 @@ def costStaticSupportedAssignment (source : CIGSLT)
               at lookup
         | some targetType =>
             cases decodedType :
-                decodeCostStaticTypeExpr source color targetType with
+                CostStaticTypeImage.decode source.theory color targetType with
             | none =>
                 simp [mappedCostStaticAbstractionFreeContext,
                   decodedName, targetLookup, decodedType] at lookup
@@ -4141,7 +4109,7 @@ def costStaticSupportedAssignment (source : CIGSLT)
                 have encodedType :
                     mapTypeExpr (color.symbols source) sourceType =
                       targetType :=
-                  mapTypeExpr_decodeCostStaticTypeExpr source color decodedType
+                  CostStaticTypeImage.mapTypeExpr_decode source.theory color decodedType
                 have mappedType :
                     mapTypeExpr (color.symbols source) sourceType = type := by
                   simpa [mappedCostStaticAbstractionFreeContext,

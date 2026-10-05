@@ -1,3 +1,4 @@
+import Mettapedia.Computability.KolmogorovComplexity.ReferenceMachine
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Order.Lattice.Nat
 import Mathlib.Data.Nat.Digits.Defs
@@ -26,6 +27,7 @@ open scoped Classical BigOperators ENNReal
 
 open Mettapedia.UniversalAI.SolomonoffPrior
 open Mettapedia.UniversalAI.SolomonoffInduction
+open KolmogorovComplexity (ReferenceMachine)
 
 open FiniteHorizon
 open HutterEnumerationTheoremSemimeasure
@@ -37,8 +39,8 @@ namespace HutterV3Kpf
 We pull back the Kraft-summable weights `x ↦ 2^{-Kpf[U](x)}` along an injection from codes
 to binary strings.
 
-Any injection would work (all choices differ by an additive constant in complexity), but using
-`Nat.digits 2` keeps the proof elementary and self-contained.
+Any injection gives the pullback Kraft bound. Using `Nat.digits 2` keeps the
+encoding and its injectivity proof elementary.
 -/
 
 private def boolToDigit : Bool → ℕ
@@ -130,14 +132,14 @@ def codesFor (μ : PrefixMeasure) : Set Nat.Partrec.Code :=
   {c | HutterEnumerationTheoremSemimeasure.evalLSC c = μ.toSemimeasure}
 
 /-- Complexity of a code, measured via `Kpf` after encoding it as a binary string. -/
-noncomputable def codeK (U : PrefixFreeMachine) [UniversalPFM U] (c : Nat.Partrec.Code) : ℕ :=
+noncomputable def codeK (U : PrefixFreeMachine) (c : Nat.Partrec.Code) : ℕ :=
   KolmogorovComplexity.prefixComplexity U (codeToBinString c)
 
 /-- Environment complexity: the minimum `codeK` among all codes enumerating `μ`.
 
 For non‑LSC `μ` this set may be empty, in which case `sInf` returns `0`; all theorems using
 `Kμ` assume lower semicomputability and thus nonemptiness. -/
-noncomputable def Kμ (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure) : ℕ :=
+noncomputable def Kμ (U : PrefixFreeMachine) (μ : PrefixMeasure) : ℕ :=
   sInf (codeK (U := U) '' codesFor μ)
 
 theorem codesFor_nonempty (μ : PrefixMeasure)
@@ -154,14 +156,14 @@ theorem codesFor_nonempty (μ : PrefixMeasure)
   refine ⟨code, ?_⟩
   simpa [codesFor] using hcode
 
-theorem image_codeK_nonempty (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem image_codeK_nonempty (U : PrefixFreeMachine) (μ : PrefixMeasure)
     (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
     (codeK (U := U) '' codesFor μ).Nonempty := by
   rcases codesFor_nonempty (μ := μ) hμ with ⟨code, hcode⟩
   refine ⟨codeK (U := U) code, ?_⟩
   exact ⟨code, hcode, rfl⟩
 
-theorem exists_code_of_minK (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem exists_code_of_minK (U : PrefixFreeMachine) (μ : PrefixMeasure)
     (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
     ∃ code : Nat.Partrec.Code,
       code ∈ codesFor μ ∧ codeK (U := U) code = Kμ (U := U) μ := by
@@ -176,11 +178,11 @@ theorem exists_code_of_minK (U : PrefixFreeMachine) [UniversalPFM U] (μ : Prefi
 /-! ## V3 weights and the universal mixture `M₃` -/
 
 /-- V3 weight for codes: pull back `kpfWeight` along `codeToBinString`. -/
-noncomputable def codeWeight (U : PrefixFreeMachine) [UniversalPFM U] (c : Nat.Partrec.Code) :
+noncomputable def codeWeight (U : PrefixFreeMachine) (c : Nat.Partrec.Code) :
     ENNReal :=
   kpfWeight (U := U) (codeToBinString c)
 
-theorem tsum_codeWeight_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem tsum_codeWeight_le_one (U : PrefixFreeMachine) [OutputComplete U] :
     (∑' c : Nat.Partrec.Code, codeWeight (U := U) c) ≤ 1 := by
   have hsub :
       (∑' c : Nat.Partrec.Code, codeWeight (U := U) c) ≤
@@ -192,7 +194,7 @@ theorem tsum_codeWeight_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
 
 /-- `M₃`: the Hutter V3 universal semimeasure using `2^{-Kpf}` weights on the **semimeasure**
 enumeration. -/
-noncomputable def M₃ (U : PrefixFreeMachine) [UniversalPFM U] : Semimeasure :=
+noncomputable def M₃ (U : PrefixFreeMachine) [OutputComplete U] : Semimeasure :=
   xiSemimeasure
     (ν := fun c : Nat.Partrec.Code => HutterEnumerationTheoremSemimeasure.evalLSC c)
     (w := codeWeight (U := U))
@@ -210,19 +212,19 @@ theorem log_inv_two_zpow_neg (K : ℕ) :
   rw [zpow_natCast, ENNReal.toReal_pow]
   simp [Real.log_pow]
 
-theorem log_inv_codeWeight (U : PrefixFreeMachine) [UniversalPFM U] (c : Nat.Partrec.Code) :
+theorem log_inv_codeWeight (U : PrefixFreeMachine) (c : Nat.Partrec.Code) :
     Real.log (1 / (codeWeight (U := U) c).toReal) =
       (KolmogorovComplexity.prefixComplexity U (codeToBinString c) : ℝ) * Real.log 2 := by
   simpa [codeWeight, kpfWeight] using
     (log_inv_two_zpow_neg (K := KolmogorovComplexity.prefixComplexity U (codeToBinString c)))
 
-theorem log_inv_codeWeight' (U : PrefixFreeMachine) [UniversalPFM U] (c : Nat.Partrec.Code) :
+theorem log_inv_codeWeight' (U : PrefixFreeMachine) (c : Nat.Partrec.Code) :
     -Real.log (codeWeight (U := U) c).toReal =
       (KolmogorovComplexity.prefixComplexity U (codeToBinString c) : ℝ) * Real.log 2 := by
   have h := log_inv_codeWeight (U := U) c
   simpa [one_div] using h
 
-theorem relEntropy_le_codeK_log2_of_code (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem relEntropy_le_codeK_log2_of_code (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (code : Nat.Partrec.Code) (hcode : HutterEnumerationTheoremSemimeasure.evalLSC code = μ.toSemimeasure)
     (n : ℕ) :
     relEntropy μ (M₃ (U := U)) n ≤ (codeK (U := U) code : ℝ) * Real.log 2 := by
@@ -254,7 +256,7 @@ theorem relEntropy_le_codeK_log2_of_code (U : PrefixFreeMachine) [UniversalPFM U
   have hlog' := log_inv_codeWeight' (U := U) code
   simpa [codeK, hlog'] using hbound
 
-theorem relEntropy_le_Kμ_log2 (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem relEntropy_le_Kμ_log2 (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) (n : ℕ) :
     relEntropy μ (M₃ (U := U)) n ≤ (Kμ (U := U) μ : ℝ) * Real.log 2 := by
   rcases exists_code_of_minK (U := U) (μ := μ) hμ with ⟨code, hcode, hk⟩
@@ -266,16 +268,16 @@ theorem relEntropy_le_Kμ_log2 (U : PrefixFreeMachine) [UniversalPFM U] (μ : Pr
 
 Hutter’s V3 constants are machine-dependent but only up to an additive constant.
 
-We prove this for `Kμ`: switching between universal prefix-free machines changes `Kμ` by at most a
-constant independent of `μ`.
+We prove this for `Kμ`: switching between effective reference machines changes
+`Kμ` by at most a constant independent of `μ`.
 -/
 
-theorem codeK_le_codeK_add_const (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V]
+theorem codeK_le_codeK_add_const (U V : ReferenceMachine)
     (c : Nat.Partrec.Code) :
     codeK (U := U) c ≤ codeK (U := V) c + Classical.choose (KolmogorovComplexity.invariance_Kpf U V) :=
   (Classical.choose_spec (KolmogorovComplexity.invariance_Kpf U V)) (codeToBinString c)
 
-theorem Kμ_le_Kμ_add (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V]
+theorem Kμ_le_Kμ_add (U V : ReferenceMachine)
     (μ : PrefixMeasure) (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
     Kμ (U := U) μ ≤ Kμ (U := V) μ + Classical.choose (KolmogorovComplexity.invariance_Kpf U V) := by
   classical
@@ -295,7 +297,7 @@ theorem Kμ_le_Kμ_add (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM 
       _ = Kμ (U := V) μ + Classical.choose (KolmogorovComplexity.invariance_Kpf U V) := by simp [hkV]
   exact this
 
-theorem invariance_Kμ (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V] :
+theorem invariance_Kμ (U V : ReferenceMachine) :
     ∃ c : ℕ, ∀ μ : PrefixMeasure,
       HutterEnumeration.LowerSemicomputablePrefixMeasure μ →
         Kμ (U := U) μ ≤ Kμ (U := V) μ + c ∧ Kμ (U := V) μ ≤ Kμ (U := U) μ + c := by
@@ -313,7 +315,7 @@ theorem invariance_Kμ (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM 
 
 /-! ## “Occam factor” dominance in the `2^{-K(μ)}` form -/
 
-theorem dominates_M₃_of_code (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem dominates_M₃_of_code (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (code : Nat.Partrec.Code) (hcode : HutterEnumerationTheoremSemimeasure.evalLSC code = μ.toSemimeasure) :
     Dominates (M₃ (U := U)) μ (codeWeight (U := U) code) := by
   intro x
@@ -333,7 +335,7 @@ theorem dominates_M₃_of_code (U : PrefixFreeMachine) [UniversalPFM U] (μ : Pr
   simpa [hμx] using hdom'
 
 /-- Hutter’s V3 dominance statement in the canonical `2^{-K(μ)}` form. -/
-theorem dominates_M₃_of_LSC_Kμ (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem dominates_M₃_of_LSC_Kμ (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
     Dominates (M₃ (U := U)) μ ((2 : ENNReal) ^ (-(Kμ (U := U) μ : ℤ))) := by
   classical
@@ -352,7 +354,7 @@ theorem dominates_M₃_of_LSC_Kμ (U : PrefixFreeMachine) [UniversalPFM U] (μ :
     simp [codeWeight, kpfWeight, hk']
   simpa [hwt] using hdom
 
-theorem relEntropy_le_codeKpf_log2_M₃ (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem relEntropy_le_codeKpf_log2_M₃ (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) (n : ℕ) :
     ∃ code : Nat.Partrec.Code,
       Dominates (M₃ (U := U)) μ (codeWeight (U := U) code) ∧

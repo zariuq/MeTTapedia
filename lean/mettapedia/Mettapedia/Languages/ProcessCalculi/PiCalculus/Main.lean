@@ -1,6 +1,12 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Syntax
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredSemantics
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredRFComparison
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredControls
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.ReflectionControls
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.StaticEquationFamily
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PresentationBoundary
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.RhoEncoding
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.ForwardSimulation
@@ -11,6 +17,8 @@ import Mettapedia.Languages.ProcessCalculi.PiCalculus.BranchingBisim
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.OpenMapBridgeRegression
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.BackwardAdminReflection
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoScopedControls
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoScopedAllocationRunsControls
 
 /-!
 # π-Calculus Formalization
@@ -21,13 +29,22 @@ Main entry point that re-exports the core π-calculus modules plus open-map brid
 - Syntax: Process syntax and names
 - StructuralCongruence: α-equivalence and ≡ relation
 - Reduction: Operational semantics
+- AuthoredStepReflection / FrontierCompleteness: exact internal execution and complete finite frontiers
+- EquationAdequacy / ObservationBoundary: declared monoid equations and atomic native observations
+- StaticEquationFamily: intrinsic scope and guarded unfolding laws joined with generated parallel laws
 - MultiStep: Reflexive-transitive closure of reduction
 - ForwardSimulation: π→ρ simulation infrastructure
 - WeakBisim / WeakBisimDerived: restricted weak bisimilarity
 - WeakBisimOpenMapBridge / BranchingBisim: generalized open-map bridges
 - OpenMapBridgeRegression: theorem-level bridge regressions
-- RhoEncoding: Encoding π → ρ (Lybech 2022)
+- RhoEncoding: maintained restriction-free comparison and separate derived-extension sketch
+- RhoScopedServers / RhoScopedNamed / RhoScopedAllocation: actual core server and allocator firing blocks
 -/
+
+/-! The older non-RF administrative theorems below concern the explicitly
+derived rho relation. They do not establish core-rho scoped compilation or
+reflection of arbitrary target endpoints. The core replacement blocks are
+available from the scoped bridges above, with their own stated observations. -/
 
 namespace Mettapedia.Languages.ProcessCalculi.PiCalculus
 

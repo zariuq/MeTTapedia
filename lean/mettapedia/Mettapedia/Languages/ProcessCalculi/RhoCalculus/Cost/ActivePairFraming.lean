@@ -205,8 +205,4 @@ theorem grouped_source_not_literal (channel body sent after : Pattern) (rest : L
       flatSource channel body sent after rest := by
   simp [ActivePair.sourcePair, flatSource]
 
-#print axioms original_step_with_rest
-#print axioms generated_parallel_step
-#print axioms original_rest_factorization
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairFraming

@@ -568,7 +568,7 @@ noncomputable def ofAlignedAbstracts
         rightView.node.thinning.thickenAmbientBVars depth pattern := by
     simpa only [CostStaticRegionNode.thinning] using congrArg
       (fun targetBound =>
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color targetBound)
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color targetBound)
           |>.thickenAmbientBVars depth pattern)
       (leftView.targetBound_eq_targetBound rightView)
   have apex :=
@@ -726,7 +726,7 @@ noncomputable def ofAlignedAbstracts
         rightView.node.thinning.thickenAmbientBVars depth pattern := by
     simpa only [CostStaticRegionNode.thinning] using congrArg
       (fun targetBound =>
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color targetBound)
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color targetBound)
           |>.thickenAmbientBVars depth pattern)
       (leftView.targetBound_eq_targetBound rightView)
   have apex :=
@@ -1369,7 +1369,7 @@ theorem RhoCanonicalRawStop.foreign_sourceQuoteArguments_alignedBelow
               (leftRendered.trans rightRendered.symm)
           subst rightConstructor
           have preimageEq : leftPreimage = rightPreimage :=
-            CostStaticConstructorPreimage.eq _ _
+            Subsingleton.elim _ _
           subst rightPreimage
           have leftRawArgumentsEq : leftRawArguments =
               leftGeneratedArguments :=
@@ -1516,7 +1516,7 @@ theorem RhoCanonicalRawStop.foreign_sourceQuoteArguments_alignedBelow
                   leftConstructor
             · intro targetBare
               exact leftNotBare
-                (leftPreimage.source_usesBareCollection leftCurrent targetBare)
+                (leftPreimage.usesBareCollection_iff.mp targetBare)
             · rw [leftPreimage.parametersMap]
               exact List.mem_map_of_mem parameterMembership
             · simp [WellSorted.parameterType?_mapTermParam,
@@ -1790,7 +1790,7 @@ noncomputable def ofSourcePatternLeafAligned
         rightNode.thinning.thickenAmbientBVars depth pattern := by
     simpa only [CostStaticRegionNode.thinning] using congrArg
       (fun targetBound =>
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
           targetBound).thickenAmbientBVars depth pattern) sameBound
   have targetAligned : PatternLeafAligned
       (fun leftLeaf rightLeaf =>
@@ -2644,7 +2644,7 @@ noncomputable def boundaryPair_sourcePatternLeafAligned_of_closeSmaller
             simpa [leftAtRoot, rightAtRoot] using smaller) (by
             simpa [rightAtRoot] using rightAdmissible) closeSmaller depth)
   simpa [relation, cospan, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars,
+    CostStaticTypeThinning.thickenAmbientBVars_fvar,
     CostStaticAtomEnvironment.reifyName,
     CostStaticPlanStopped.boundaryOccurrence_name,
     leftSelectedBoundary, rightSelectedBoundary] using restores
@@ -3420,7 +3420,7 @@ noncomputable def ofProvenancedRawAlignment
               leftEnvironment rightEnvironment name leftMembership
               rightMembership targetDeclaration callbackRoot
             simpa [canonicalizeByDepths, mapPattern,
-              CostStaticBinderThinning.thickenAmbientBVars,
+              CostStaticTypeThinning.thickenAmbientBVars_fvar,
               CostStaticAtomKeyCospan.reifyLeft,
               CostStaticAtomKeyCospan.reifyRight, targetDeclaration,
               costStaticReflectivePresentationDecl_eq_map] using apex)

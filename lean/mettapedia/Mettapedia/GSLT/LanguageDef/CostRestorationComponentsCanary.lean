@@ -44,7 +44,7 @@ theorem sourceFVar_key_ne_boundaryValue_key_of_sourceSupport_ne_nil
     (name : String) (sourceType targetType : TypeExpr)
     (targetLookup : targetFree name = some targetType)
     (decodedType :
-      decodeCostStaticTypeExpr source color targetType = some sourceType)
+      CostStaticTypeImage.decode source.theory color targetType = some sourceType)
     (boundary : TypedCostRegionBoundary source color targetFree)
     (value : ReflectiveWellSorted.OpenPattern
       source.costWholeReflectionProfile source.costWholeLanguage targetFree

@@ -393,8 +393,8 @@ theorem facts : FormFacts (rules lv) roles :=
 /-- The recursor's computation rules preserve typing. -/
 theorem roots : RootPreserving (rules lv) := by
   intro n Γ l r A formed step typing
-  exact (declares lv fun _ => 0).step_preserves (TowerNumbersModel.facts lv) (RulesSub.refl _)
-    formed step typing
+  exact (declares lv fun _ => 0).toRecursor.step_preserves (TowerNumbersModel.facts lv)
+    (RulesSub.refl _) formed step typing
 
 /-- Head equality steps preserve typing. -/
 theorem heads : HeadPreserving (rules lv) := by

@@ -59,8 +59,8 @@ private theorem generatedName_not_constructor (profile : ContinuationDecorationP
   obtain ⟨suffix, prefixed⟩ := profile.costCoreTerm_label_has_costPrefix term termMember
   have namePrefix : name = "$cost:" ++ suffix := same.symm.trans prefixed
   rcases generated with ⟨original, rfl⟩ | ⟨administrative, rfl⟩
-  · exact CIGSLT.costSourceSchemaName_ne_costPrefix original suffix namePrefix
-  · exact CIGSLT.costAdministrativeSchemaName_ne_costPrefix administrative suffix namePrefix
+  · exact WrappableIGSLT.costSourceSchemaName_ne_costPrefix original suffix namePrefix
+  · exact WrappableIGSLT.costAdministrativeSchemaName_ne_costPrefix administrative suffix namePrefix
 
 @[simp]
 theorem costWholeRedexSource_freeFvarNames (profile : ContinuationDecorationProfile cut) :
@@ -185,6 +185,7 @@ theorem costWholeRedexTypeContext_baseName_mem (profile : ContinuationDecoration
     name ∈ profile.costWholeRedexLanguage.typeNames := by
   rcases List.mem_append.mp entryMember with source | administrative
   · obtain ⟨original, originalMember, rfl⟩ := List.mem_map.mp source
+    rw [variableChoice_eq] at member
     exact retypedType_baseName_mem profile original.2
       (rewriteTypeContext_baseName_mem_of_validate_eq_nil _
         theory.presentation.presentation.valid theory.presentation.interactionRewrite.1
@@ -255,14 +256,6 @@ theorem costWholeRedexRewrite_validate (profile : ContinuationDecorationProfile 
       (profile.costCoreLanguage_validate noDuplicates))
     (profile.costWholeRedexRewrite_certificate redexTyped contractumTyped)
 
-private theorem costCoreTerm_syntaxPattern_eq_nil (profile : ContinuationDecorationProfile cut)
-    (term : GrammarRule) (member : term ∈ profile.costCoreLanguage.terms) :
-    term.syntaxPattern = [] := by
-  rcases List.mem_append.mp member with generated | apparatus
-  · exact profile.generatedTerm_syntaxPattern_eq_nil term generated
-  · simp only [costCoreConstructors, List.mem_cons, List.not_mem_nil, or_false] at apparatus
-    rcases apparatus with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
-
 /-- The exact selected-cut language validates at the ordinary public gate.
 Other source rules and reflective annotations remain separate obligations. -/
 theorem costWholeRedexLanguage_validate (profile : ContinuationDecorationProfile cut)
@@ -278,7 +271,7 @@ theorem costWholeRedexLanguage_validate (profile : ContinuationDecorationProfile
   · exact LanguageDef.termCategory_mem_of_validate_eq_nil profile.costCoreLanguage coreValid
   · exact LanguageDef.termParam_baseName_mem_of_validate_eq_nil profile.costCoreLanguage coreValid
   · intro term member
-    exact Or.inl (costCoreTerm_syntaxPattern_eq_nil profile term member)
+    exact Or.inl (profile.costCoreTerm_syntaxPattern_eq_nil term member)
   · intro rule member
     obtain rfl := List.mem_singleton.mp member
     exact profile.costWholeRedexRewrite_validate noDuplicates redexTyped contractumTyped
@@ -291,8 +284,5 @@ def costWholeRedexPresentation (profile : ContinuationDecorationProfile cut)
     ValidatedLanguageDef where
   language := profile.costWholeRedexLanguage
   valid := profile.costWholeRedexLanguage_validate noDuplicates redexTyped contractumTyped
-
-#print axioms costWholeRedexRewrite_validate
-#print axioms costWholeRedexLanguage_validate
 
 end Mettapedia.GSLT.LanguageDef.ContinuationDecorationProfile

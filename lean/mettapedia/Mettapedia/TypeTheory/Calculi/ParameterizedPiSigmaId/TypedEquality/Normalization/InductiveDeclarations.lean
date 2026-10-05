@@ -358,6 +358,32 @@ structure DeclaresInductive (S : Setting Head L) (R₀ R₁ R₂ : Rules Head) (
     S.R.computation.step (recApp rec (p :: ms) (appSpine (.const k) args))
       (appSpine m (args ++ (recArgs fields args).map (recApp rec (p :: ms))))
 
+/-- **A package declares the recursor `rec` of the simple inductive type `T`** with the
+constructors `ctors`, into the universe `v`: its role computes on its last argument, each
+constructor and the recursor are declared at their types, and the recursor's type is a type of a
+universe. These are the facts about a recursor that its typing and its computation rules need;
+a declaration in stages has them (`DeclaresInductive.toRecursor`). -/
+structure DeclaresRecursor (S : Setting Head L) (T : DeclName)
+    (ctors : List (DeclName × List (Field Head))) (rec : DeclName) (v : Head) : Prop where
+  recRole : S.roles rec =
+    .computes (ctors.length + 2) (.split (ctors.length + 1) .constructor fun _ => .leaf)
+  ctorDeclared : ∀ {k : DeclName} {fields : List (Field Head)}, (k, fields) ∈ ctors →
+    S.R.constantType k = some (ctorType T fields)
+  recDeclared : S.R.constantType rec = some (recType T v ctors)
+  recTyped : ∃ w, S.R.isUniverse w ∧ Typed S.R .nil (recType T v ctors) (.head w)
+
+/-- A declaration in stages declares its recursor. -/
+theorem DeclaresInductive.toRecursor {S : Setting Head L} {R₀ R₁ R₂ : Rules Head}
+    {T : DeclName} {u : Head} {ctors : List (DeclName × List (Field Head))} {rec : DeclName}
+    {v : Head} (decl : DeclaresInductive S R₀ R₁ R₂ T u ctors rec v) :
+    DeclaresRecursor S T ctors rec v where
+  recRole := decl.recRole
+  ctorDeclared := decl.ctorDeclared
+  recDeclared := decl.recDeclared
+  recTyped := by
+    obtain ⟨w, hw, typed⟩ := decl.recTyped
+    exact ⟨w, hw, Derivable.mono decl.sub₂ typed⟩
+
 end Normalization
 end TypedEquality
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation

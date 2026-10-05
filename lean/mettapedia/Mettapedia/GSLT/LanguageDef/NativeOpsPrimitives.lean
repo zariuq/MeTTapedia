@@ -16,6 +16,26 @@ namespace Mettapedia.GSLT.LanguageDef.NativeOps
 
 open NativeWord64 (Fault encode)
 
+/-- Scalar conditions inspect a number's zero value, a Boolean, or pointer
+nullness. They grant no permission to dereference a non-null pointer. -/
+def sourceScalarCondition : SourceValue → Option Bool
+  | .word value => some (decide (value.val ≠ 0))
+  | .byte value => some (decide (value.val ≠ 0))
+  | .bool value => some value
+  | .reference address => some address.isSome
+  | _ => none
+
+def targetScalarCondition : TargetValue → Option Bool
+  | .word value => some (decide (value.toNat ≠ 0))
+  | .byte value => some (decide (value.toNat ≠ 0))
+  | .bool value => some value
+  | .reference address => some address.isSome
+  | _ => none
+
+theorem scalar_condition_correspondence (value : SourceValue) :
+    targetScalarCondition (encodeValue value) = sourceScalarCondition value := by
+  cases value <;> rfl
+
 def sourceUnaryOp : Unary → SourceValue → Option SourceValue
   | .not, .bool value => some (.bool (!value))
   | .complement, .word value => some (.word (NativeWord64.sourceComplement value))

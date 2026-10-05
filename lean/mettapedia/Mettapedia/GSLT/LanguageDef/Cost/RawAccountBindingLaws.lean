@@ -231,11 +231,4 @@ theorem substitute_account_sound {Γ Δ : Ctx S} {sort : S.Srt}
   apply congrArg (fun sourceEnv => SourceAccountSubstitution.substitute Q accountSort sourceEnv word)
   exact source_interpretedEnvironment Q accountSort base target generator env
 
-#print axioms interpret_liftEnvironment
-#print axioms interpret_substituteArguments
-#print axioms substitute_identity_sound
-#print axioms substitute_comp_sound
-#print axioms substitute_operation_sound
-#print axioms substitute_account_sound
-
 end Mettapedia.GSLT.LanguageDef.Cost.RawAccountBindingLaws

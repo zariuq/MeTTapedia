@@ -29,6 +29,14 @@ inductive ControlFlowRelated (loops : List LoopLabels) (default : TargetValue) :
   | continued {current : LoopLabels} {outer : List LoopLabels} (active : loops = current :: outer) :
       ControlFlowRelated loops default .continued (.jumped current.entry)
 
+/-- Normal completion is reflected as well as preserved. Fault, return,
+    break and continue cannot become a normal continuation. -/
+theorem control_flow_normal_iff {loops : List LoopLabels} {default : TargetValue}
+    {source : SourceFlow} {target : TargetFlow}
+    (related : ControlFlowRelated loops default source target) :
+    source = .normal ↔ target = .normal := by
+  cases related <;> simp
+
 structure ControlOutcomeRelated {SourceWorld TargetWorld : Type}
     (worldRelated : SourceWorld → TargetWorld → Prop) (loops : List LoopLabels) (default : TargetValue)
     (source : SourceBlockOutcome SourceWorld) (target : TargetBlockOutcome TargetWorld) : Prop where

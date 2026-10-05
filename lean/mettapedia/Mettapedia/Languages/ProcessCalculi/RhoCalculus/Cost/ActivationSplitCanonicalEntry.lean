@@ -2,13 +2,13 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationSplitCanon
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationAtomicPurseImage
 
 /-!
-# Actual generated readbacks for canonical split execution
+# Readouts for the canonical split firing
 
-The existing configuration parser reads separately signed endpoints and their
-two distinct funding occurrences. Canonical runtime completeness constructs
-the existing split firing and an actual occurrence path. Its complete cost
-observation agrees with a parsed successor readout, with both temporal tails
-retained. No new generated R2/R3 rewrite is asserted.
+The configuration readout reads separately signed endpoints and their two purses. The firing
+(`NameImage.split_canonical_entry_path_rhs`) is `ConfigImage.funded_redex_fires_readback` with
+split funding and an empty frame: one step spends both keys, and the successor, with both tails
+kept, is observed as a readout of generated syntax. No generated rewrite is asserted for split
+funding.
 -/
 
 set_option autoImplicit false
@@ -49,7 +49,7 @@ theorem NameImage.split_canonical_target_observation
   rw [tailReadout] at observed
   exact ⟨target, fuel, parsed, observed⟩
 
-/-- Actual source and successor parser readbacks support a real canonical split candidate and path. -/
+/-- Readouts of source and successor, a candidate spending both keys, and a path of one step. -/
 theorem NameImage.split_canonical_entry_path_rhs
     {channelSource bodySource payloadSource recvSignatureSource sendSignatureSource recvTailSource sendTailSource : Pattern}
     {location : CostName LiteralAuthority} {body payload : CostTerm LiteralAuthority}
@@ -78,32 +78,16 @@ theorem NameImage.split_canonical_entry_path_rhs
       (∃ path : CostPath 0 (initialTraceComponents source) 1
           (applyTracedStep (initialTraceComponents source) step 0), path.depth = 1) ∧
       rawConfigStructuralDenote ((applyTracedStep (initialTraceComponents source) step 0).map
-        RawTraceComponent.term) = rawConfigStructuralDenote (literalEncodeTerm target).normalizeConfig := by
-  have sourceImage := split_receiver_config_image channelImage bodyImage payloadImage
-    recvSignature recvAccepted sendSignature sendAccepted recvTailImage sendTailImage
-  obtain ⟨sourceFuel, sourceReadback⟩ := sourceImage.parser_eventually
-    channelImage.purseInventory_zero channelImage.runtimeSupported
-  obtain ⟨target, fuel, parsed, targetObservation⟩ :=
-    channelImage.split_canonical_target_observation bodyImage payloadImage recvTailImage sendTailImage
-  let source := literalEncodeTerm
-    (decodedSplitReceiver location body payload recvSignature.val sendSignature.val recvTail sendTail)
-  have sourceSupported : source.supported = true := sourceImage.literal_supported channelImage
-  have publicCandidates : runtimeCostCandidates source =
-      some (runtimeCostCandidatesFromConfig source.normalizeConfig) := by
-    rw [runtimeCostCandidates, sourceSupported]
-    rfl
-  have sourceValid : source.wellFormed = true :=
-    ((RawCostTerm.supported_iff source).mp sourceSupported).1
-  have runtime := locatedSplitEntry_canonical_runtime
-    (recvAuthority := literalAuthorityKey recvSignatureSource) (sendAuthority := literalAuthorityKey sendSignatureSource)
-    channelImage.literal_wellFormed bodyImage.literal_wellFormed payloadImage.literal_wellFormed
-    recvTailImage.literal_wellFormed sendTailImage.literal_wellFormed
-  rw [locatedSplitEntry_authored_readout location body payload recvSignature sendSignature recvTail sendTail] at runtime
-  change RuntimeCostStepComplete source.normalizeConfig _ _ _ at runtime
-  obtain ⟨step, enabled, located, spent, frame, path, observed⟩ :=
-    canonical_runtime_complete_path sourceValid runtime
-  exact ⟨sourceFuel, step, target, fuel, sourceReadback sourceFuel (le_refl sourceFuel),
-    publicCandidates, parsed, enabled, located, spent, frame, path, observed.trans targetObservation⟩
+        RawTraceComponent.term) = rawConfigStructuralDenote (literalEncodeTerm target).normalizeConfig :=
+  (split_receiver_config_image channelImage bodyImage payloadImage recvSignature recvAccepted sendSignature
+    sendAccepted recvTailImage sendTailImage).funded_redex_fires_readback channelImage bodyImage payloadImage
+    (.split recvSignature sendSignature recvTail sendTail) 0 (add_zero _).symm
+    (fun result => .par (locatedContact location (.par result .nil) recvTail)
+      (.par (locatedContact location .nil sendTail) .nil))
+    (fun resultImage => .collection (.cons (receiver_contractum_image resultImage recvTailImage)
+      (.cons (.contact .zero sendTailImage) .nil)))
+    (fun result => by
+      simp [CostTerm.components, locatedContact, Funding.residue])
 
 /-- The two admitted funding occurrences consume two cells in one actual firing, with exact two-atom debit. -/
 theorem NameImage.split_canonical_entry_resource_balance

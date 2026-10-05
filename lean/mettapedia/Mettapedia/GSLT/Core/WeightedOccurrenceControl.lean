@@ -290,6 +290,26 @@ namespace PortfolioFrontier
 
 variable {Node : Type*} {count : Nat}
 
+/-- Transport every lane view together with the shared live store. Mapping
+payloads does not deduplicate occurrences or reset a lane's order. -/
+def map {NextNode : Type*} (mapping : Node → NextNode)
+    (frontier : PortfolioFrontier Node count) : PortfolioFrontier NextNode count where
+  live := frontier.live.map mapping
+  queues lane := (frontier.queues lane).map mapping
+  queue_complete lane := (frontier.queue_complete lane).map mapping
+
+@[simp] theorem map_id (frontier : PortfolioFrontier Node count) :
+    frontier.map id = frontier := by
+  cases frontier
+  simp [map]
+
+theorem map_comp {NextNode FinalNode : Type*}
+    (first : Node → NextNode) (second : NextNode → FinalNode)
+    (frontier : PortfolioFrontier Node count) :
+    (frontier.map first).map second = frontier.map (second ∘ first) := by
+  cases frontier
+  simp [map, List.map_map]
+
 def initial (disciplines : Fin count → QueueDiscipline Node)
     (roots : List Node) : PortfolioFrontier Node count where
   live := roots
@@ -301,6 +321,24 @@ def initial (disciplines : Fin count → QueueDiscipline Node)
 def selected (frontier : PortfolioFrontier Node count) (lane : Fin count) :
     Option Node :=
   (frontier.queues lane).head?
+
+@[simp] theorem selected_map {NextNode : Type*} (mapping : Node → NextNode)
+    (frontier : PortfolioFrontier Node count) (lane : Fin count) :
+    (frontier.map mapping).selected lane = (frontier.selected lane).map mapping := by
+  simp [selected, map]
+
+theorem initial_map {NextNode : Type*} (mapping : Node → NextNode)
+    (first : Fin count → QueueDiscipline Node)
+    (second : Fin count → QueueDiscipline NextNode)
+    (integrates : ∀ lane pending generated,
+      ((first lane).integrate pending generated).map mapping =
+        (second lane).integrate (pending.map mapping) (generated.map mapping))
+    (roots : List Node) :
+    (initial first roots).map mapping = initial second (roots.map mapping) := by
+  simp only [initial, map]
+  congr 1
+  funext lane
+  simpa using integrates lane [] roots
 
 theorem selected_mem {frontier : PortfolioFrontier Node count}
     {lane : Fin count} {node : Node}
@@ -330,6 +368,24 @@ def advance [DecidableEq Node]
     exact ((disciplines lane).integrate_complete _ _).trans
       (((frontier.queue_complete lane).erase selected).append_right generated)
 
+/-- Removing an occurrence commutes with relocation when the key map is
+injective. Equality of payload observations alone does not meet this premise. -/
+theorem advance_map {NextNode : Type*} [DecidableEq Node] [DecidableEq NextNode]
+    (mapping : Node → NextNode) (injective : Function.Injective mapping)
+    (first : Fin count → QueueDiscipline Node)
+    (second : Fin count → QueueDiscipline NextNode)
+    (integrates : ∀ lane pending generated,
+      ((first lane).integrate pending generated).map mapping =
+        (second lane).integrate (pending.map mapping) (generated.map mapping))
+    (frontier : PortfolioFrontier Node count) (selected : Node) (generated : List Node) :
+    (frontier.advance first selected generated).map mapping =
+      (frontier.map mapping).advance second (mapping selected) (generated.map mapping) := by
+  simp only [advance, map, List.map_append, List.map_erase injective]
+  congr 1
+  funext lane
+  simpa only [List.map_erase injective] using
+    integrates lane ((frontier.queues lane).erase selected) generated
+
 end PortfolioFrontier
 
 /-- Events, exact selection receipts, the independent portfolio frontier, and
@@ -345,11 +401,47 @@ namespace PortfolioSnapshot
 
 variable {Node Answer : Type*} {count : Nat}
 
+/-- Published events, selected occurrences, every lane and the current phase
+are part of the same resumed checkpoint. -/
+def mapNodes {NextNode : Type*} (mapping : Node → NextNode)
+    (snapshot : PortfolioSnapshot Node Answer count) :
+    PortfolioSnapshot NextNode Answer count :=
+  ⟨snapshot.events.map (Emission.mapOrigin mapping), snapshot.selections.map mapping,
+    snapshot.frontier.map mapping, snapshot.cursor⟩
+
+@[simp] theorem mapNodes_id (snapshot : PortfolioSnapshot Node Answer count) :
+    snapshot.mapNodes id = snapshot := by
+  cases snapshot
+  simp [mapNodes]
+
+theorem mapNodes_comp {NextNode FinalNode : Type*}
+    (first : Node → NextNode) (second : NextNode → FinalNode)
+    (snapshot : PortfolioSnapshot Node Answer count) :
+    (snapshot.mapNodes first).mapNodes second = snapshot.mapNodes (second ∘ first) := by
+  simp only [mapNodes, List.map_map, PortfolioFrontier.map_comp]
+  congr 1
+
 def initial [NeZero count]
     (disciplines : Fin count → QueueDiscipline Node)
     (roots : List Node) (start : Fin count) :
     PortfolioSnapshot Node Answer count :=
   ⟨[], [], PortfolioFrontier.initial disciplines roots, start⟩
+
+theorem initial_map {NextNode : Type*} [NeZero count] (mapping : Node → NextNode)
+    (first : Fin count → QueueDiscipline Node)
+    (second : Fin count → QueueDiscipline NextNode)
+    (integrates : ∀ lane pending generated,
+      ((first lane).integrate pending generated).map mapping =
+        (second lane).integrate (pending.map mapping) (generated.map mapping))
+    (roots : List Node) (start : Fin count) :
+    (initial (Answer := Answer) first roots start).mapNodes mapping =
+      initial second (roots.map mapping) start := by
+  simp [initial, mapNodes, PortfolioFrontier.initial_map mapping first second integrates]
+
+theorem mapped_live_empty_iff {NextNode : Type*} (mapping : Node → NextNode)
+    (snapshot : PortfolioSnapshot Node Answer count) :
+    (snapshot.mapNodes mapping).frontier.live = [] ↔ snapshot.frontier.live = [] := by
+  simp [mapNodes, PortfolioFrontier.map]
 
 private def eventFor (node : Node) : Option Answer → List (Emission Node Answer)
   | none => []
@@ -380,6 +472,56 @@ def run [NeZero count] [DecidableEq Node]
   | 0, snapshot => snapshot
   | fuel + 1, snapshot =>
       tick system disciplines (run system disciplines fuel snapshot)
+
+section Translation
+
+variable {NextNode : Type*} [DecidableEq Node] [DecidableEq NextNode] [NeZero count]
+  (mapping : Node → NextNode) (injective : Function.Injective mapping)
+  (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+  (first : Fin count → QueueDiscipline Node) (second : Fin count → QueueDiscipline NextNode)
+  (emits : ∀ node, source.emit node = target.emit (mapping node))
+  (successors : ∀ node,
+    (source.successors node).map mapping = target.successors (mapping node))
+  (integrates : ∀ lane pending generated,
+    ((first lane).integrate pending generated).map mapping =
+      (second lane).integrate (pending.map mapping) (generated.map mapping))
+
+include injective emits successors integrates
+
+/-- Local source, target and lane laws imply whole-checkpoint transport. The
+target authority is supplied independently; no equality of runs is assumed. -/
+theorem tick_mapNodes (snapshot : PortfolioSnapshot Node Answer count) :
+    (tick source first snapshot).mapNodes mapping =
+      tick target second (snapshot.mapNodes mapping) := by
+  cases selected : snapshot.frontier.selected snapshot.cursor with
+  | none => simp [tick, mapNodes, selected]
+  | some node =>
+      have advance := PortfolioFrontier.advance_map mapping injective first second
+        integrates snapshot.frontier node (source.successors node)
+      rw [successors node] at advance
+      simp only [tick, mapNodes, selected, PortfolioFrontier.selected_map,
+        Option.map_some, List.map_append, List.map_cons, List.map_nil]
+      rw [advance]
+      congr 1
+      cases emitted : source.emit node <;> simp [eventFor, ← emits node, emitted,
+        Emission.mapOrigin]
+
+theorem run_mapNodes (fuel : Nat) (snapshot : PortfolioSnapshot Node Answer count) :
+    (run source first fuel snapshot).mapNodes mapping =
+      run target second fuel (snapshot.mapNodes mapping) := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel ih =>
+      simp only [run, tick_mapNodes mapping injective source target first second emits
+        successors integrates, ih]
+
+theorem run_initial_map (fuel : Nat) (roots : List Node) (start : Fin count) :
+    (run source first fuel (initial first roots start)).mapNodes mapping =
+      run target second fuel (initial second (roots.map mapping) start) := by
+  rw [run_mapNodes mapping injective source target first second emits successors integrates,
+    initial_map mapping first second integrates]
+
+end Translation
 
 theorem run_add [NeZero count] [DecidableEq Node]
     (system : BranchingSystem Node Answer)
@@ -1016,6 +1158,155 @@ theorem depth_first_still_starves (fuel : Nat) :
   exact BranchingTemporal.Starvation.depthFirst_starves_answer fuel
 
 end Canaries
+
+namespace Canaries.FrontierTranslation
+
+inductive Target where
+  | stored : Nat → Target
+  | external : Target
+  deriving DecidableEq
+
+def relocate (node : Nat) : Target := .stored (node + 10)
+
+def source : BranchingSystem Nat Nat where
+  emit node := if node = 1 ∨ node = 2 then some 7 else none
+  successors node := if node = 0 then [1, 2] else []
+
+/-- The independently authored target also has behavior outside the image. -/
+def target : BranchingSystem Target Nat where
+  emit
+    | .stored 11 | .stored 12 => some 7
+    | .external => some 999
+    | _ => none
+  successors
+    | .stored 10 => [.stored 11, .stored 12]
+    | .external => [.external]
+    | _ => []
+
+def lanes {Node : Type*} : Fin 2 → QueueDiscipline Node :=
+  fun lane => if lane = 0 then QueueDiscipline.depthFirst else QueueDiscipline.breadthFirst
+
+private theorem relocate_injective : Function.Injective relocate := by
+  intro first second equal
+  have sum := Target.stored.inj equal
+  exact Nat.add_right_cancel sum
+
+private theorem emits (node : Nat) : source.emit node = target.emit (relocate node) := by
+  by_cases one : node = 1
+  · subst node; rfl
+  by_cases two : node = 2
+  · subst node; rfl
+  have notEleven : node + 10 ≠ 11 := by omega
+  have notTwelve : node + 10 ≠ 12 := by omega
+  simp [source, target, relocate, one, two, notEleven, notTwelve]
+
+private theorem successors (node : Nat) :
+    (source.successors node).map relocate = target.successors (relocate node) := by
+  by_cases zero : node = 0
+  · subst node; rfl
+  simp [source, target, relocate, zero]
+
+private theorem integrates (lane : Fin 2) (pending generated : List Nat) :
+    ((lanes lane).integrate pending generated).map relocate =
+      (lanes lane).integrate (pending.map relocate) (generated.map relocate) := by
+  by_cases first : lane = 0 <;>
+    simp [lanes, first, QueueDiscipline.depthFirst, QueueDiscipline.breadthFirst]
+
+def initial : PortfolioSnapshot Nat Nat 2 :=
+  PortfolioSnapshot.initial lanes [0, 9] 0
+
+def paused : PortfolioSnapshot Nat Nat 2 := PortfolioSnapshot.run source lanes 1 initial
+
+/-- The two saved lane orders genuinely differ; both remain complete. -/
+theorem paused_has_independent_orders :
+    paused.frontier.live = [9, 1, 2] ∧ paused.frontier.queues 0 = [1, 2, 9] ∧
+      paused.frontier.queues 1 = [9, 1, 2] ∧ paused.cursor = 1 := by
+  decide
+
+/-- Every finite continuation of this paused source has the full mapped state
+of the independent target, not merely the same projected answer bag. -/
+theorem resumed_transport (fuel : Nat) :
+    (PortfolioSnapshot.run source lanes fuel paused).mapNodes relocate =
+      PortfolioSnapshot.run target lanes fuel (paused.mapNodes relocate) :=
+  PortfolioSnapshot.run_mapNodes relocate relocate_injective source target lanes lanes
+    emits successors integrates fuel paused
+
+theorem initial_transport (fuel : Nat) :
+    (PortfolioSnapshot.run source lanes fuel initial).mapNodes relocate =
+      PortfolioSnapshot.run target lanes fuel
+        (PortfolioSnapshot.initial lanes [.stored 10, .stored 19] 0) := by
+  simpa only [initial, List.map_cons, List.map_nil, relocate] using
+    PortfolioSnapshot.run_initial_map relocate relocate_injective source target lanes lanes
+      emits successors integrates fuel [0, 9] 0
+
+/-- Duplicate answer values keep distinct origins and selection receipts. -/
+theorem resumed_duplicate_answers :
+    let finished := PortfolioSnapshot.run target lanes 3 (paused.mapNodes relocate)
+    finished.events = [⟨.stored 11, 7⟩, ⟨.stored 12, 7⟩] ∧
+      finished.selections = [.stored 10, .stored 19, .stored 11, .stored 12] ∧
+      finished.frontier.live = [] ∧ finished.cursor = 0 := by
+  decide
+
+theorem pending_checkpoint_keeps_complete_residual :
+    let after := PortfolioSnapshot.run target lanes 1 (paused.mapNodes relocate)
+    after.events = [] ∧ after.selections = [.stored 10, .stored 19] ∧
+      after.frontier.live = [.stored 11, .stored 12] ∧
+      after.frontier.queues 0 = [.stored 11, .stored 12] ∧
+      after.frontier.queues 1 = [.stored 11, .stored 12] ∧ after.cursor = 0 := by
+  decide
+
+/-- Resetting only the scheduler phase changes the very next selected
+occurrence, although all saved payloads and queues are identical. -/
+theorem resetting_phase_changes_next_delivery :
+    let relocated := paused.mapNodes relocate
+    let reset := { relocated with cursor := 0 }
+    (PortfolioSnapshot.tick target lanes relocated).selections = [.stored 10, .stored 19] ∧
+      (PortfolioSnapshot.tick target lanes reset).selections = [.stored 10, .stored 11] ∧
+      (PortfolioSnapshot.tick target lanes relocated).events = [] ∧
+      (PortfolioSnapshot.tick target lanes reset).events = [⟨.stored 11, 7⟩] := by
+  decide
+
+def collidingFrontier : PortfolioFrontier Nat 2 where
+  live := [0, 2, 1]
+  queues lane := if lane = 0 then [0, 2, 1] else [1, 2, 0]
+  queue_complete lane := by
+    by_cases first : lane = 0
+    · simp [first]
+    · simp only [first, if_false]
+      exact List.reverse_perm [0, 2, 1]
+
+def collapseKey (node : Nat) : Nat := if node = 1 then 0 else node
+
+/-- Mapping still preserves every queue's permutation certificate under a
+lossy key map, but removal selects the wrong first equal key. -/
+theorem lossy_keys_break_resume :
+    let sourceNext := collidingFrontier.advance lanes 1 []
+    let targetNext := (collidingFrontier.map collapseKey).advance lanes 0 []
+    (sourceNext.map collapseKey).live = [0, 2] ∧ targetNext.live = [2, 0] ∧
+      (sourceNext.map collapseKey).selected 0 = some 0 ∧ targetNext.selected 0 = some 2 := by
+  decide
+
+end Canaries.FrontierTranslation
+
+#print axioms PortfolioFrontier.map_id
+#print axioms PortfolioFrontier.map_comp
+#print axioms PortfolioFrontier.selected_map
+#print axioms PortfolioFrontier.initial_map
+#print axioms PortfolioFrontier.advance_map
+#print axioms PortfolioSnapshot.mapNodes_id
+#print axioms PortfolioSnapshot.mapNodes_comp
+#print axioms PortfolioSnapshot.initial_map
+#print axioms PortfolioSnapshot.mapped_live_empty_iff
+#print axioms PortfolioSnapshot.tick_mapNodes
+#print axioms PortfolioSnapshot.run_mapNodes
+#print axioms PortfolioSnapshot.run_initial_map
+#print axioms Canaries.FrontierTranslation.paused_has_independent_orders
+#print axioms Canaries.FrontierTranslation.resumed_transport
+#print axioms Canaries.FrontierTranslation.initial_transport
+#print axioms Canaries.FrontierTranslation.resumed_duplicate_answers
+#print axioms Canaries.FrontierTranslation.pending_checkpoint_keeps_complete_residual
+#print axioms Canaries.FrontierTranslation.resetting_phase_changes_next_delivery
+#print axioms Canaries.FrontierTranslation.lossy_keys_break_resume
 
 #print axioms completed_controllers_weighted_bag_agree
 #print axioms completed_controllers_answerWeight_agree

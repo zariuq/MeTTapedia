@@ -150,6 +150,15 @@ theorem successor_world_eq_or_reference
   | returned outcome stack => exact Or.inr (by simpa only [step, control] using member)
   | halted outcome => exact Or.inr (by simpa only [step, control] using member)
 
+theorem step_receipts_valid
+    (extension : Extension Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (machine next : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (valid : machine.world.receipts.Valid) (present : next ∈ step extension machine) :
+    next.world.receipts.Valid := by
+  rcases successor_world_eq_or_reference extension machine present with same | reference
+  · simpa only [same] using valid
+  · exact NeedReference.step_receipts_valid extension.reference machine next valid reference
+
 theorem step_preserves_completed
     {successor : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
     (member : successor ∈ step extension machine)

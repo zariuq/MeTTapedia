@@ -13,6 +13,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInter
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInterpretation.LevelDecoders
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInterpretation.LevelNamesModel
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInterpretation.ComputationControls
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInterpretation.ClosedChains
 
 /-!
 # The set-tower interpretation, instantiated
@@ -109,4 +110,14 @@ is in `TowerInterpretation`. This file gathers its concrete instantiation:
   (`deltaPackage_no_setModel`), yet it is valid at its typed instances
   (`delta_valid_at_typed`); and the value of a dependent function type does not
   determine its domain (`tracePiSet_domain_invisible`).
+* `ClosedChains`: the tower read by any chain of closed universes, each a member
+  of every later one (`ClosedChain`, `chain_setModel`), also with bounds on the
+  level parameters (`chain_setModel_bounded`). The least closed universes are one
+  such chain; no least closed universe is closed under the universe operation
+  (`univOf_not_closed_under_univOf`).
+
+These are set-model instances under their named hypotheses. They do not select
+Prime's native set theory. The Megalodon HOTG package and its associated
+examples are collected separately by `Instances.MegalodonHOTG`, which this
+aggregate does not import.
 -/

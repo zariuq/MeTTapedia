@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeCandidateGrades
 import Mettapedia.GSLT.Core.WeightedMuScheduler
+import Mettapedia.GSLT.Core.RouteTrace
 import Mettapedia.GSLT.Logic.GradedSupport
 import Mettapedia.GSLT.Dynamics.SemiringTraversal
 import Mettapedia.GSLT.Dynamics.ProvenanceInterpretation
@@ -105,6 +106,95 @@ theorem native_choice_iff_activation (program : Program) (head : String)
       (application_capture_choice program head arguments machine cell stack capture admitted).trans
         (congrArg some same)⟩
 
+/-- Every equation receipt extracted from an actual native transition comes
+from a suspended application and an independently admitted source activation.
+Cached observations, allocation and administrative steps cannot forge a row. -/
+theorem native_row_has_activation (program : Program) (before after : NativeMachine)
+    (row : Row) (member : after ∈ NeedReference.step (specification program) before)
+    (chosen : newRow before after = some row) :
+    ∃ (cell : CellId) (stack : List (Frame Resume)) (head : String) (arguments : List CellId),
+      before.control = .force cell stack ∧
+      before.world.heap.lookup cell = some ⟨.application head arguments, .suspended⟩ ∧
+      Activates program head arguments (.equation row.index)
+        (.evaluate row.body row.environment) := by
+  rcases before with ⟨world, control, work⟩
+  cases control with
+  | halted outcome => simp [NeedReference.step] at member
+  | force cell stack =>
+      simp only [NeedReference.step] at member
+      split at member
+      · simp only [List.mem_singleton] at member
+        subst after
+        simp [newRow, retryMachine, finished, recorded, World.record, ReceiptGraph.append] at chosen
+      · rename_i record present
+        rcases record with ⟨origin, cache⟩
+        cases cache with
+        | value value =>
+            simp only [List.mem_singleton] at member
+            subst after
+            simp [newRow, finished, recorded, World.record, ReceiptGraph.append] at chosen
+        | stableFault fault => cases fault
+        | evaluating owner =>
+            simp only [List.mem_singleton] at member
+            subst after
+            simp [newRow, retryMachine, finished, recorded, World.record, ReceiptGraph.append] at chosen
+        | suspended =>
+            cases origin with
+            | expression term environment =>
+                simp only [specification, alternatives, branchAlternatives, List.mem_cons,
+                  List.not_mem_nil, or_false] at member
+                subst after
+                cases started : start program term environment <;>
+                  simp [newRow, finished, recorded, World.record, World.fork,
+                    World.setKnownCache, ReceiptGraph.append, started] at chosen
+            | application head arguments =>
+                by_cases noRows : rowCandidates program head arguments = []
+                · simp only [specification, alternatives, noRows, List.mem_singleton] at member
+                  subst after
+                  simp [newRow, retryMachine, finished, recorded, World.record,
+                    ReceiptGraph.append] at chosen
+                · refine ⟨cell, stack, head, arguments, rfl, present, ?_⟩
+                  exact (native_choice_iff_activation program head arguments
+                    ⟨world, .force cell stack, work⟩ cell stack rfl present noRows row).mp
+                    ⟨after, by simpa only [NeedReference.step, present] using member, chosen⟩
+  | run state stack =>
+      simp only [NeedReference.step] at member
+      split at member <;>
+        repeat' first
+          | split at member
+          | simp only [List.mem_singleton] at member
+            subst after
+            simp [newRow, retryMachine, finished, recorded, World.record,
+              ReceiptGraph.append] at chosen
+      all_goals
+        first
+        | cases_type Empty
+        | rename_i action source resume actionEq recordOption record present
+            allocation allocatedWorld allocatedCell allocationEq
+          guard_hyp actionEq : (specification program).action state = .resample source resume
+          cases next : afterAllocation resume allocatedCell <;>
+            simp [specification, next] at chosen
+        | skip
+      all_goals
+        rename_i action origin resume actionEq allocation allocatedWorld allocatedCell allocationEq
+        simp only [World.allocate?] at allocationEq
+        split at allocationEq
+        · contradiction
+        · simp only [Option.some.injEq, Prod.mk.injEq] at allocationEq
+          rw [← allocationEq.1] at chosen
+          cases advanced : (specification program).afterAllocation resume allocatedCell <;>
+            simp [World.record, ReceiptGraph.append, advanced] at chosen
+  | returned outcome stack =>
+      simp only [NeedReference.step] at member
+      split at member <;>
+        repeat' first
+          | split at member
+          | simp only [List.mem_singleton] at member
+            subst after
+            simp [newRow, retryMachine, finished, recorded, World.record,
+              ReceiptGraph.append, World.setKnownCache] at chosen
+
+
 theorem unchanged_receipts_no_grade (before after : NativeMachine)
     (same : after.world.receipts.nextSerial = before.world.receipts.nextSerial) :
     newRow before after = none := by simp [newRow, same]
@@ -206,13 +296,10 @@ theorem coefficient_source_path {V : Type} [Semiring V] [DecidableEq V]
 
 /-- Source paths decorated by the actual newly observed physical choices.
 This relation also retains administrative steps, which contribute no cause. -/
-inductive RowTrace (program : Program) :
-    Nat → NativeMachine → NativeMachine → List Row → Prop where
-  | refl (machine : NativeMachine) : RowTrace program 0 machine machine []
-  | cons {count before middle after choices}
-      (edge : StepOccurrence (specification program) before middle)
-      (rest : RowTrace program count middle after choices) :
-      RowTrace program (count + 1) before after ((newRow before middle).toList ++ choices)
+abbrev RowTrace (program : Program) :=
+  Mettapedia.GSLT.Ultrainfinite.Route.ObservedTrace
+    (Step := StepOccurrence (specification program))
+    (fun {before after} _ => (newRow before after).toList)
 
 theorem row_trace_source (program : Program) {count : Nat} {before after : NativeMachine}
     {choices : List Row} (trace : RowTrace program count before after choices) :
@@ -229,6 +316,21 @@ theorem source_has_row_trace (program : Program) {count : Nat} {before after : N
   | cons edge _ ih =>
       obtain ⟨choices, trace⟩ := ih
       exact ⟨_, .cons edge trace⟩
+
+/-- Every recorded row is licensed by the authored program with its captured
+arguments. The trace still distinguishes repeated firings of the same row. -/
+theorem row_trace_admitted (program : Program) {count : Nat} {before after : NativeMachine}
+    {choices : List Row} (trace : RowTrace program count before after choices)
+    (row : Row) (member : row ∈ choices) :
+    ∃ (head : String) (arguments : List CellId),
+      Activates program head arguments (.equation row.index)
+        (.evaluate row.body row.environment) := by
+  obtain ⟨source, target, edge, reported⟩ :=
+    Mettapedia.GSLT.Ultrainfinite.Route.ObservedTrace.mem_has_step _ trace row member
+  have chosen : newRow source target = some row := by simpa using reported
+  obtain ⟨_, _, head, arguments, _, _, admitted⟩ :=
+    native_row_has_activation program source target row (edge.mem _) chosen
+  exact ⟨head, arguments, admitted⟩
 
 def interpret {V : Type} [Semiring V] (clause : WeighClause V Row)
     (choices : List Row) : V := ProvenanceInterpretation.interpDeriv (fun row => WeighClause.eval row clause) choices

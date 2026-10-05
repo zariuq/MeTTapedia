@@ -29,10 +29,21 @@ definition by recursion, the datatype it recurses on was declared before it and 
 (`laterArguments_setModel`); at an explicit definition the body is typed in the package before
 it (`explicit_setModel`). Each datatype of the list is read at every assignment that agrees
 on the declared names: its type is the carrier of its signature, its constructors and its
-recursor are the graphs of their values.
+recursor are the graphs of their values. A constructor is read by its name, and the
+constructor names of a datatype of an admissible list are distinct (`declarations_ctorsNodup`),
+which the recursion on it needs.
 
 Consequences: every derivable statement holds in the model (`declarations_sound`), and a
-closed type with an empty set has no closed term (`declarations_no_closed_inhabitant`).
+closed type with an empty set has no closed term (`declarations_no_closed_inhabitant`). The
+assignment that reads an admissible list keeps the values of the names the base package
+declares (`declarationsConsts_base`), and the assignment that reads a longer admissible list
+keeps the values of the names declared before (`declarationsConsts_after`).
+
+**A typed data term means its set** (`declarations_dataTerm_value`). A data term over the
+datatypes of the list (`DataOver`: each name is a constructor of a datatype of the list, with
+as many arguments as fields, and the closed fields of that constructor are datatypes of the
+list) whose term has the type of a datatype of the list has, in the model, the set of the data
+term as its value: the constructor value of the code of its name at the sets of its arguments.
 
 Positive example: the empty list, whose model is the base package's
 (`declarations_setModel_nil`). Negative examples: a datatype whose field type the package
@@ -219,6 +230,13 @@ end DefinitionStage
 
 /-! ## Lists -/
 
+/-- The constructors of a datatype of an admissible list have distinct names. -/
+theorem declarations_ctorsNodup {B : ChurchRules R} {ds : List (Declaration Head)}
+    {d : Datatype Head} (admissible : AdmissibleDeclarations B ds)
+    (member : Declaration.datatype d ∈ ds) : (d.ctors.map (·.1)).Nodup := by
+  obtain ⟨pre, post, rfl⟩ := List.append_of_mem member
+  exact admissible.datatype_split.2.distinct.ctorsNodup
+
 /-- **Every datatype of an admissible list is read at every assignment that agrees on the
 names the package declares** with the assignment that reads the declarations: its type is the
 carrier of its signature, its constructors are the graphs of their constructor values, and its
@@ -245,6 +263,54 @@ theorem declarations_reading (B : ChurchRules R) :
     · exact declarations_reading B ds earlier d inRest consts fun c declared =>
         (agrees c (declared_withDefinition declared)).trans
           (definition_readKept stage.new declared)
+
+/-- A name a package declares is declared in the package with a list of declarations. -/
+theorem declared_withDeclarations (B : ChurchRules R) {c : DeclName}
+    (declared : B.constantType c ≠ none) :
+    ∀ ds : List (Declaration Head), (withDeclarations B ds).constantType c ≠ none
+  | [] => declared
+  | .datatype _ :: ds => declared_withInductive (declared_withDeclarations B declared ds)
+  | .definition _ :: ds => declared_withDefinition (declared_withDeclarations B declared ds)
+
+/-- **The assignment that reads an admissible list of declarations keeps the values of the
+names the package declares.** -/
+theorem declarationsConsts_base (B : ChurchRules R) {c : DeclName}
+    (declared : B.constantType c ≠ none) :
+    ∀ ds : List (Declaration Head), AdmissibleDeclarations B ds →
+      declarationsConsts heads base ds c = base c
+  | [], _ => rfl
+  | .datatype _ :: ds, admissible =>
+      (admissible_readKept admissible.2 (declared_withDeclarations B declared ds)).trans
+        (declarationsConsts_base B declared ds admissible.1)
+  | .definition _ :: ds, admissible =>
+      (definition_readKept admissible.2.new (declared_withDeclarations B declared ds)).trans
+        (declarationsConsts_base B declared ds admissible.1)
+
+/-- A name declared before some declarations is declared after them. -/
+theorem declared_withDeclarations_after {B : ChurchRules R} (pre : List (Declaration Head))
+    {post : List (Declaration Head)} {c : DeclName}
+    (declared : (withDeclarations B post).constantType c ≠ none) :
+    (withDeclarations B (pre ++ post)).constantType c ≠ none := by
+  cases found : (withDeclarations B post).constantType c with
+  | none => exact absurd found declared
+  | some type =>
+    rw [(withDeclarations_sub B post pre).constantType found]
+    exact Option.some_ne_none type
+
+/-- **The assignment that reads a longer admissible list keeps the values of the names
+declared before.** -/
+theorem declarationsConsts_after {B : ChurchRules R} {post : List (Declaration Head)} :
+    ∀ pre : List (Declaration Head), AdmissibleDeclarations B (pre ++ post) →
+      ∀ {c : DeclName}, (withDeclarations B post).constantType c ≠ none →
+        declarationsConsts heads base (pre ++ post) c = declarationsConsts heads base post c
+  | [], _, _, _ => rfl
+  | .datatype _ :: pre, admissible, _, declared =>
+      (admissible_readKept (heads := heads) admissible.2
+        (declared_withDeclarations_after pre declared)).trans
+        (declarationsConsts_after pre admissible.1 declared)
+  | .definition _ :: pre, admissible, _, declared =>
+      (definition_readKept admissible.2.new (declared_withDeclarations_after pre declared)).trans
+        (declarationsConsts_after pre admissible.1 declared)
 
 section Model
 
@@ -287,6 +353,7 @@ theorem declarations_setModel (B : ChurchRules R)
         rw [earlier.type_declared declaredBefore]
         exact Option.some_ne_none _
       exact laterArguments_setModel (levelsWith levels ds) (withDeclarations B ds) before
+        (declarations_ctorsNodup earlier declaredBefore)
         (fun consts agrees =>
           declarations_reading B ds earlier δ.datatype declaredBefore consts agrees)
         stage.new typeDeclared family (earlier.fieldsFormed declaredBefore) stage.formed
@@ -344,5 +411,58 @@ theorem declarations_setModel_nil (B : ChurchRules R)
     (fun _ member => nomatch member)
 
 end Model
+
+/-! ## Data terms over the datatypes of a list -/
+
+open ZFSetInductive (DataTerm) in
+/-- **A data term over the datatypes of a list of declarations**: each of its names is a
+constructor of a datatype of the list, with as many arguments as the constructor has fields,
+and the closed fields of that constructor are the types of datatypes of the list. -/
+inductive DataOver (ds : List (Declaration Head)) : DataTerm → Prop
+  | app {d : Datatype Head} {i : Nat} {k : DeclName} {fields : List (DeclField Head)}
+      {args : List DataTerm}
+      (declared : Declaration.datatype d ∈ ds) (entry : d.ctors[i]? = some (k, fields))
+      (length : args.length = fields.length)
+      (pure : ∀ F, (.closed F : DeclField Head) ∈ fields →
+        ∃ e : Datatype Head, Declaration.datatype e ∈ ds ∧ F = .const e.type)
+      (rest : ∀ a ∈ args, DataOver ds a) : DataOver ds (.app k args)
+
+open ZFSetInductive (DataTerm) in
+/-- A data term over the datatypes of an admissible list is read by the constructors of every
+assignment that agrees on the declared names with the assignment that reads the list. -/
+theorem DataOver.read (B : ChurchRules R) {ds : List (Declaration Head)}
+    (admissible : AdmissibleDeclarations B ds) {consts : DeclName → ZFSet.{u}}
+    (agrees : ∀ c, (withDeclarations B ds).constantType c ≠ none →
+      consts c = declarationsConsts heads base ds c)
+    {t : DataTerm} (covered : DataOver ds t) : DataRead heads consts t := by
+  induction covered with
+  | @app d i k fields args declared entry length pure _ ih =>
+      have reading := declarations_reading (heads := heads) (base := base) B ds admissible d
+        declared consts agrees
+      refine .app (T := d.type) (reading.ctor entry) length (fun field member => ?_) ih
+      cases field with
+      | recursive => exact reading.empty_not_mem
+      | closed F =>
+          obtain ⟨e, declaredE, rfl⟩ := pure F member
+          exact (declarations_reading (heads := heads) (base := base) B ds admissible e
+            declaredE consts agrees).empty_not_mem
+
+open ZFSetInductive (DataTerm) in
+/-- **A typed data term means its set.** In a set model of a package with an admissible list
+of declarations, at an assignment that reads the list: a data term over the datatypes of the
+list whose term has the type of a datatype of the list has the set of the data term as its
+value. -/
+theorem declarations_dataTerm_value (B : ChurchRules R) {ds : List (Declaration Head)}
+    (admissible : AdmissibleDeclarations B ds) {consts : DeclName → ZFSet.{u}}
+    (agrees : ∀ c, (withDeclarations B ds).constantType c ≠ none →
+      consts c = declarationsConsts heads base ds c)
+    (model : SetModel heads consts (withDeclarations B ds))
+    {t : DataTerm} (covered : DataOver ds t) {e : Datatype Head}
+    (declared : Declaration.datatype e ∈ ds)
+    (typed : CTyped (withDeclarations B ds) .nil (liftTm (dataTm t)) (.const e.type)) :
+    ev heads consts (liftTm (dataTm t : Tm Head 0)) Fin.elim0 = t.toSet :=
+  (covered.read (heads := heads) (base := base) B admissible agrees).typed_value model typed
+    (declarations_reading (heads := heads) (base := base) B ds admissible e declared consts
+      agrees).empty_not_mem
 
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation

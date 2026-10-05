@@ -69,8 +69,4 @@ theorem synchronous_not_all_rules_selected :
   have premises := congrArg RewriteRule.premises same
   contradiction
 
-#print axioms rho_base_rules
-#print axioms synchronous_base_rules
-#print axioms rho_not_all_rules_selected
-
 end Mettapedia.GSLT.LanguageDef.Cost.InteractionCoverage

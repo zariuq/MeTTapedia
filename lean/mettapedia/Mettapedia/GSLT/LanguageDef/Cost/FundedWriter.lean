@@ -1,6 +1,4 @@
-import Mettapedia.CategoryTheory.WriterActionAdjunction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ResourceTransition
-import Mathlib.Algebra.FreeMonoid.Basic
 
 /-!
 # Chronological writer observation of funded executions
@@ -21,6 +19,7 @@ open CategoryTheory
 namespace Mettapedia.GSLT.LanguageDef.Cost.FundedWriter
 
 open Mettapedia.CategoryTheory.WriterActionAdjunction
+open Mettapedia.Effects
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
 set_option autoImplicit false
@@ -29,23 +28,26 @@ set_option autoImplicit false
 abbrev ReceiptAccount := FreeMonoid RawEmittedEvent
 
 /-- Observe an already certified funded execution.  Resource indices and
-the transition evidence remain in the input, before this readout is taken. -/
+the transition evidence remain in the input, before this readout is taken.
+This is the chronological emission account of the run, read with the result. -/
 def interpret {Result : Type} {source target : FundedState}
     (execution : FundedExecution source target Result) :
     (writerMonad ReceiptAccount).obj Result :=
-  (FreeMonoid.ofList execution.transition.rawEmission, execution.result)
+  ResourceTransition.emissionAccount.read execution
 
 /-- Parameterized pure return is observed by the ordinary writer unit. -/
 theorem interpret_pure {Result : Type} (state : FundedState) (result : Result) :
-    interpret (FundedExecution.pure state result) =
-      (writerMonad ReceiptAccount).η.app Result result := rfl
+    interpret (Execution.pure state result) =
+      (writerMonad ReceiptAccount).η.app Result result :=
+  ResourceTransition.emissionAccount.read_pure state result
 
 /-- Returning a mapped result retains the entire chronological account. -/
 theorem interpret_map {Result NextResult : Type}
     {source target : FundedState} (function : Result → NextResult)
     (execution : FundedExecution source target Result) :
     interpret (execution.map function) =
-      (writerMonad ReceiptAccount).map (TypeCat.ofHom function) (interpret execution) := rfl
+      (writerMonad ReceiptAccount).map (TypeCat.ofHom function) (interpret execution) :=
+  ResourceTransition.emissionAccount.read_map function execution
 
 /-- Certified bind concatenates emissions in execution order before the
 writer multiplication returns the continuation's result. -/
@@ -56,14 +58,8 @@ theorem interpret_bind {Result NextResult : Type}
     interpret (first.bind next) =
       (writerMonad ReceiptAccount).μ.app NextResult
         ((writerMonad ReceiptAccount).map
-          (TypeCat.ofHom fun result => interpret (next result)) (interpret first)) := by
-  change (FreeMonoid.ofList (first.bind next).transition.rawEmission,
-      (next first.result).result) =
-    (FreeMonoid.ofList first.transition.rawEmission *
-      FreeMonoid.ofList (next first.result).transition.rawEmission,
-      (next first.result).result)
-  rw [FundedExecution.bind_rawEmission]
-  rfl
+          (TypeCat.ofHom fun result => interpret (next result)) (interpret first)) :=
+  ResourceTransition.emissionAccount.read_bind first next
 
 /-- A computation with the same complete resource state at both ends has
 the pure account: genuine firing would advance the retained event counter. -/
@@ -71,13 +67,9 @@ theorem interpret_endomorphism {Result : Type} (state : FundedState)
     (execution : FundedExecution state state Result) :
     interpret execution =
       (writerMonad ReceiptAccount).η.app Result execution.result := by
-  unfold interpret
+  change (FreeMonoid.ofList (CostPath.rawEmission execution.transition),
+      execution.result) = (1, execution.result)
   rw [FundedExecution.endomorphism_transition_eq_identity]
   rfl
-
-#print axioms interpret_pure
-#print axioms interpret_map
-#print axioms interpret_bind
-#print axioms interpret_endomorphism
 
 end Mettapedia.GSLT.LanguageDef.Cost.FundedWriter

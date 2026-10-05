@@ -24,7 +24,7 @@ open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
-namespace CostStaticBinderThinning
+namespace CostStaticTypeThinning
 
 /-- Ambient binder insertion changes de Bruijn indices but preserves every
 ordinary free-variable name. -/
@@ -38,25 +38,25 @@ theorem freeFvarNames_thickenAmbientBVars
       pattern.freeFvarNames := by
   induction pattern using Pattern.inductionOn generalizing depth with
   | hbvar index =>
-      simp [thickenAmbientBVars, Pattern.freeFvarNames]
+      simp [thickenAmbientBVars_bvar, Pattern.freeFvarNames]
   | hfvar name =>
-      simp [thickenAmbientBVars, Pattern.freeFvarNames]
+      simp [thickenAmbientBVars_fvar, Pattern.freeFvarNames]
   | happly constructor arguments inductionHypothesis =>
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames,
+      simp only [thickenAmbientBVars_apply, Pattern.freeFvarNames,
         List.flatMap_map]
       exact List.flatMap_congr fun argument membership =>
         inductionHypothesis argument membership depth
   | hlambda binder body inductionHypothesis =>
-      simpa [thickenAmbientBVars, Pattern.freeFvarNames] using
+      simpa [thickenAmbientBVars_bvar, thickenAmbientBVars_fvar, thickenAmbientBVars_apply, thickenAmbientBVars_lambda, thickenAmbientBVars_multiLambda, thickenAmbientBVars_subst, thickenAmbientBVars_collection, Pattern.freeFvarNames] using
         inductionHypothesis (depth + 1)
   | hmultiLambda arity binders body inductionHypothesis =>
-      simpa [thickenAmbientBVars, Pattern.freeFvarNames] using
+      simpa [thickenAmbientBVars_bvar, thickenAmbientBVars_fvar, thickenAmbientBVars_apply, thickenAmbientBVars_lambda, thickenAmbientBVars_multiLambda, thickenAmbientBVars_subst, thickenAmbientBVars_collection, Pattern.freeFvarNames] using
         inductionHypothesis (depth + arity)
   | hsubst body replacement bodyInduction replacementInduction =>
-      simp [thickenAmbientBVars, Pattern.freeFvarNames,
+      simp [thickenAmbientBVars_subst, Pattern.freeFvarNames,
         bodyInduction (depth + 1), replacementInduction depth]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames,
+      simp only [thickenAmbientBVars_collection, Pattern.freeFvarNames,
         List.flatMap_map]
       rw [List.flatMap_congr fun element membership =>
         inductionHypothesis element membership depth]
@@ -73,30 +73,30 @@ theorem constructorsWithin_thickenAmbientBVars
     (supported : ConstructorsWithin allowed pattern) (depth : Nat) :
     ConstructorsWithin allowed (thinning.thickenAmbientBVars depth pattern) := by
   induction pattern using Pattern.inductionOn generalizing depth with
-  | hbvar index => simp [thickenAmbientBVars]
-  | hfvar name => simp [thickenAmbientBVars]
+  | hbvar index => simp [thickenAmbientBVars_bvar]
+  | hfvar name => simp [thickenAmbientBVars_fvar]
   | happly constructor arguments inductionHypothesis =>
-      simp only [thickenAmbientBVars, constructorsWithin_apply]
+      simp only [thickenAmbientBVars_apply, constructorsWithin_apply]
       exact ⟨supported.1, supported.2.map fun argument membership =>
         inductionHypothesis argument membership
           (supported.2.of_mem membership) depth⟩
   | hlambda binder body inductionHypothesis =>
-      simpa only [thickenAmbientBVars, constructorsWithin_lambda] using
+      simpa only [thickenAmbientBVars_bvar, thickenAmbientBVars_fvar, thickenAmbientBVars_apply, thickenAmbientBVars_lambda, thickenAmbientBVars_multiLambda, thickenAmbientBVars_subst, thickenAmbientBVars_collection, constructorsWithin_lambda] using
         inductionHypothesis supported (depth + 1)
   | hmultiLambda arity binders body inductionHypothesis =>
-      simpa only [thickenAmbientBVars, constructorsWithin_multiLambda] using
+      simpa only [thickenAmbientBVars_bvar, thickenAmbientBVars_fvar, thickenAmbientBVars_apply, thickenAmbientBVars_lambda, thickenAmbientBVars_multiLambda, thickenAmbientBVars_subst, thickenAmbientBVars_collection, constructorsWithin_multiLambda] using
         inductionHypothesis supported (depth + arity)
   | hsubst body replacement bodyInduction replacementInduction =>
-      simpa only [thickenAmbientBVars, constructorsWithin_subst] using
+      simpa only [thickenAmbientBVars_bvar, thickenAmbientBVars_fvar, thickenAmbientBVars_apply, thickenAmbientBVars_lambda, thickenAmbientBVars_multiLambda, thickenAmbientBVars_subst, thickenAmbientBVars_collection, constructorsWithin_subst] using
         And.intro (bodyInduction supported.1 (depth + 1))
           (replacementInduction supported.2 depth)
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [thickenAmbientBVars, constructorsWithin_collection]
+      simp only [thickenAmbientBVars_collection, constructorsWithin_collection]
       exact supported.map fun element membership =>
         inductionHypothesis element membership
           (supported.of_mem membership) depth
 
-end CostStaticBinderThinning
+end CostStaticTypeThinning
 
 namespace CostStaticAtomEnvironment
 
@@ -373,26 +373,26 @@ theorem reify_thickenAmbientBVars
       thinning.thickenAmbientBVars depth (environment.reify pattern) := by
   induction pattern using Pattern.inductionOn generalizing depth with
   | hbvar index =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reify]
+      simp [CostStaticTypeThinning.thickenAmbientBVars_bvar, reify]
   | hfvar name =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reify]
+      simp [CostStaticTypeThinning.thickenAmbientBVars_fvar, reify]
   | happly constructor arguments inductionHypothesis =>
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, reify,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_apply, reify,
         List.map_map, Pattern.apply.injEq, true_and]
       apply List.map_congr_left
       intro argument membership
       exact inductionHypothesis argument membership depth
   | hlambda binder body inductionHypothesis =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reify,
+      simp [CostStaticTypeThinning.thickenAmbientBVars_lambda, reify,
         inductionHypothesis]
   | hmultiLambda arity binders body inductionHypothesis =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reify,
+      simp [CostStaticTypeThinning.thickenAmbientBVars_multiLambda, reify,
         inductionHypothesis]
   | hsubst body replacement bodyInduction replacementInduction =>
-      simp [CostStaticBinderThinning.thickenAmbientBVars, reify,
+      simp [CostStaticTypeThinning.thickenAmbientBVars_subst, reify,
         bodyInduction, replacementInduction]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [CostStaticBinderThinning.thickenAmbientBVars, reify,
+      simp only [CostStaticTypeThinning.thickenAmbientBVars_collection, reify,
         List.map_map, Pattern.collection.injEq, true_and]
       exact ⟨List.map_congr_left (fun element membership =>
         inductionHypothesis element membership depth), trivial⟩

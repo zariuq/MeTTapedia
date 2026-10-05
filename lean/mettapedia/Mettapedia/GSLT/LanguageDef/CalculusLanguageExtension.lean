@@ -238,7 +238,7 @@ private def appendedTarget : CalculusLanguageDef :=
     equations := []
     rewrites := [] }
 
-private def appended : AppendOnlyCalculusRefinement source appendedTarget where
+private theorem appended : AppendOnlyCalculusRefinement source appendedTarget where
   types := by simp [source, appendedTarget]
   terms := by simp [source, appendedTarget]
   equations := by simp [source, appendedTarget]

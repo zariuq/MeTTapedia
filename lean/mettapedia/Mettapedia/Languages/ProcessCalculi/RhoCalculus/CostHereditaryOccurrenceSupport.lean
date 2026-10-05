@@ -934,7 +934,7 @@ inductive CostStaticSemanticLeafSafeAt
       {decodesName : decodeCostRegionSourceVariableName occurrence.name =
         some sourceName}
       {targetLookup : targetFree sourceName = some targetType}
-      {decodesType : decodeCostStaticTypeExpr source color targetType =
+      {decodesType : CostStaticTypeImage.decode source.theory color targetType =
         some sourceType}
       {bound : List TypeExpr}
       (safe : (WellSorted.HasType.fvar
@@ -1751,7 +1751,7 @@ theorem collectionElementsSafe
     cases color with
     | base =>
         have parameterEquality :=
-          costBaseConstructor_params_eq_map_of_mem_wrappedLabels source rule
+          costBaseConstructor_params_eq_map_of_mem_wrappedLabels source.continuationRetyping rule
             ruleMembership wrappedMembership
         have targetShape : (costBaseConstructor source.cut rule).params =
             [.simple parameterName
@@ -1759,7 +1759,7 @@ theorem collectionElementsSafe
                 (mapTypeExpr (CostStaticColor.base.symbols source)
                   sourceElementType))] := by
           simp [parameterEquality, parameterShape,
-            mapTermParam_costBaseStaticSymbols, CostStaticColor.symbols,
+            mapTermParam_costBaseStaticSymbols, CostStaticColor.symbols, CostStaticColor.symbolsOf,
             mapParameterType, costBaseTypeExpr]
         have selectedSafe :
             (WellSorted.HasType.collectionConstructor (rest := rest)
@@ -1791,7 +1791,7 @@ theorem collectionElementsSafe
                   (mapTypeExpr (CostStaticColor.wrapped.symbols source)
                     sourceElementType))] := by
           simp [costWrappedConstructor, parameterShape,
-            CostStaticColor.symbols, mapParameterType, costWrappedTypeExpr]
+            CostStaticColor.symbols, CostStaticColor.symbolsOf, mapParameterType, costWrappedTypeExpr]
         have selectedSafe :
             (WellSorted.HasType.collectionConstructor (rest := rest)
               (source.costWrappedConstructor_mem_costWhole authored

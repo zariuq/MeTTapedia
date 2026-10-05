@@ -108,6 +108,49 @@ theorem rejected_canonical_occurrence_changes_result
       canonicalRun canonical [occurrence] := by
   simp [canonicalRun, indexed, matched, rejected]
 
+/-! ## Bounded subtree indexes followed by the binding-producing matcher -/
+
+open MatchDecisionContract (Path)
+open MatchDecisionContract.Shaped (Candidate Skeleton Term Realizes forgetSubtrees conflictsOn)
+
+/-- Retain original occurrence records: cuts belong only to the index's
+observations, never to the terms passed to the canonical matcher. -/
+def prunedCandidates {V : Type*} [DecidableEq V] (samples : List Path)
+    (query : Skeleton V) (cuts : Candidate V → List Path)
+    (source : List (Candidate V)) : List (Candidate V) :=
+  source.filter fun occurrence =>
+    !(conflictsOn samples query (forgetSubtrees (cuts occurrence) occurrence.pat))
+
+/-- Residual verification preserves the exact ordered binding lists, not just
+membership or a count. The premise is the matcher's structural soundness:
+each answer supplies a common realization of query and stored pattern.
+Candidate retention is derived from that premise and the cut construction. -/
+theorem verify_prunedCandidates_exact {V Answer : Type*} [DecidableEq V]
+    (samples : List Path) (query : Skeleton V) (cuts : Candidate V → List Path)
+    (verify : Candidate V → List Answer)
+    (sound : ∀ occurrence answer, answer ∈ verify occurrence →
+      ∃ term : Term V, Realizes term query ∧ Realizes term occurrence.pat)
+    (source : List (Candidate V)) :
+    (prunedCandidates samples query cuts source).flatMap verify = source.flatMap verify := by
+  induction source with
+  | nil => rfl
+  | cons occurrence rest ih =>
+      let keep := !(conflictsOn samples query
+        (forgetSubtrees (cuts occurrence) occurrence.pat))
+      by_cases retained : keep = true
+      · simp only [prunedCandidates, List.filter_cons]
+        rw [if_pos retained]
+        simpa only [List.flatMap_cons, prunedCandidates] using congrArg (verify occurrence ++ ·) ih
+      · have empty : verify occurrence = [] := by
+          apply List.eq_nil_iff_forall_not_mem.mpr
+          intro answer member
+          obtain ⟨term, queryRealized, patternRealized⟩ := sound occurrence answer member
+          exact retained (MatchDecisionContract.Shaped.pruned_index_retains
+            queryRealized patternRealized (cuts occurrence) samples)
+        simp only [prunedCandidates, List.filter_cons]
+        rw [if_neg retained]
+        simpa only [List.flatMap_cons, empty, List.nil_append, prunedCandidates] using ih
+
 /-! ## Exact local cost boundary -/
 
 /-- Cost of deferring exact rejection to the canonical matcher. -/
@@ -185,6 +228,7 @@ example :
       canonicalRun multipleOfFour [4, 8, 4] := by
   decide
 
+#print axioms verify_prunedCandidates_exact
 #print axioms canonicalRun_indexed_exact
 #print axioms canonicalRun_two_indices_exact
 #print axioms defer_preverification_exact

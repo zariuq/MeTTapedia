@@ -488,6 +488,12 @@ def rigid (levels : LevelModel R L) (hu₀ : R.isUniverse u₀) (t₀ : R.headTy
   suc := suc
   holds_typed := fun Γ => ⟨u₀, hu₀, holds_typed levels hu₀ t₀ Γ⟩
   ground := fun g => ∃ h, g = .head h ∧ ¬ R.isUniverse h
+  data := fun d => d = num
+  params := fun _ => []
+  ctor := fun d c fs => d = num ∧ (c = zero ∧ fs = [] ∨ c = suc ∧ fs = [.self])
+  ctor_data := fun h => h.1
+  zero_ctor := ⟨rfl, .inl ⟨rfl, rfl⟩⟩
+  suc_ctor := ⟨rfl, .inr ⟨rfl, rfl⟩⟩
 
 section Reduction
 
@@ -512,9 +518,13 @@ def reduction : HeadReduction (church u₀ v₀ P) (rigid levels hu₀ t₀) whe
   refl_normal := fun _ _ =>
     CoreStep.not_of_shape noSteps (fun _ _ => nofun) (fun _ => nofun) (fun _ => nofun)
   prop_normal := fun _ => CoreStep.not_const noSteps
-  num_normal := fun _ => CoreStep.not_const noSteps
-  zero_normal := fun _ => CoreStep.not_const noSteps
-  suc_normal := fun _ _ => CoreStep.not_suc noSteps suc_ne_holds
+  data_normal := fun _ _ => CoreStep.not_const noSteps
+  ctor_normal := fun {_ _ _ _ ms} _ hc hl => by
+    obtain ⟨-, ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩⟩ := hc
+    · match ms, hl with
+      | [], _ => exact CoreStep.not_const noSteps
+    · match ms, hl with
+      | [_], _ => exact CoreStep.not_suc noSteps suc_ne_holds
   fstPair := .fstPair
   sndPair := .sndPair
   fst := .fst

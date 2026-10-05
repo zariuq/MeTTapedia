@@ -115,7 +115,7 @@ theorem nat_not_mem_fam_junk {k : Kind} {y : Ideal} (hy : ¬ y.Mem (.tag .univ))
   unfold junkFam at hm
   cases hZu : hasTag .univ Z
   · rw [hZu] at hm
-    change ent [] (.tag .nat) = true at hm
+    change ent ([] : List Tok) (.tag .nat) = true at hm
     rw [ent_tag] at hm
     cases hm
   · exact hy (hZ _ (hasTag_iff.1 hZu))
@@ -256,7 +256,7 @@ theorem junk_code_not_fixed : projT codesIdeal (former .pi natI junkFam) ≠ for
   unfold junkFam at hj
   cases hXu : hasTag .univ X'
   · rw [hXu] at hj
-    change ent [] (.tag .nat) = true at hj
+    change ent ([] : List Tok) (.tag .nat) = true at hj
     rw [ent_tag] at hj
     cases hj
   · have hunivX := hasTag_iff.1 hXu

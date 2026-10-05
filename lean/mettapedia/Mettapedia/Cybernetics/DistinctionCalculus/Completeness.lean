@@ -21,40 +21,41 @@ universe u
 
 namespace Mettapedia.Cybernetics.DistinctionCalculus
 
-variable {V : Type u}
+variable {V : Type u} {R : Type} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
 /-- Łukasiewicz (capped) path composition on distances. -/
-def combine (r s : ℚ) : ℚ := min (1 : ℚ) (r + s)
+def combine (r s : R) : R := min (1 : R) (r + s)
 
-theorem combine_nonneg {r s : ℚ} (hr : 0 ≤ r) (hs : 0 ≤ s) : 0 ≤ combine r s :=
+theorem combine_nonneg {r s : R} (hr : 0 ≤ r) (hs : 0 ≤ s) : 0 ≤ combine r s :=
   le_min (by norm_num) (add_nonneg hr hs)
 
-theorem combine_le_one (r s : ℚ) : combine r s ≤ 1 := min_le_left _ _
+omit [IsStrictOrderedRing R] in
+theorem combine_le_one (r s : R) : combine r s ≤ 1 := min_le_left _ _
 
-theorem combine_mono {r r' s s' : ℚ} (hr : r ≤ r') (hs : s ≤ s') :
+theorem combine_mono {r r' s s' : R} (hr : r ≤ r') (hs : s ≤ s') :
     combine r s ≤ combine r' s' :=
   min_le_min le_rfl (add_le_add hr hs)
 
 /-- Capped cost of a node list. -/
-def pathCost [DecidableEq V] (a : Tolerance V) : List V → ℚ
+def pathCost [DecidableEq V] (a : Tolerance V R) : List V → R
   | [] => 0
   | [_] => 0
   | x :: y :: rest => combine (a.distance x y) (pathCost a (y :: rest))
 
-theorem pathCost_nonneg [DecidableEq V] (a : Tolerance V) :
+theorem pathCost_nonneg [DecidableEq V] (a : Tolerance V R) :
     ∀ p, 0 ≤ pathCost a p
   | [] => by simp [pathCost]
   | [_] => by simp [pathCost]
   | x :: y :: rest =>
       combine_nonneg (a.distance_nonnegative x y) (pathCost_nonneg a (y :: rest))
 
-theorem pathCost_le_one [DecidableEq V] (a : Tolerance V) :
+theorem pathCost_le_one [DecidableEq V] (a : Tolerance V R) :
     ∀ p, pathCost a p ≤ 1
   | [] => by simp [pathCost]
   | [_] => by simp [pathCost]
   | x :: y :: rest => combine_le_one _ _
 
-theorem pathCost_pair [DecidableEq V] (a : Tolerance V) (x y : V) :
+theorem pathCost_pair [DecidableEq V] (a : Tolerance V R) (x y : V) :
     pathCost a [x, y] = a.distance x y := by
   have := a.distance_nonnegative x y
   have := a.distance_bounded x y
@@ -108,7 +109,7 @@ theorem getLast?_cons_of_ne_nil {α : Type u} (x : α) {p : List α} (hp : p ≠
   | cons _ _ => simp
 
 /-- A metric extension cannot undercut any seed path. -/
-theorem metric_le_path [DecidableEq V] {a model : Tolerance V}
+theorem metric_le_path [DecidableEq V] {a model : Tolerance V R}
     (metric : model.Metric) (hExt : a.Extends model) :
     ∀ p x y, p ≠ [] → p.head? = some x → p.getLast? = some y →
       model.distance x y ≤ pathCost a p
@@ -160,28 +161,28 @@ theorem produceSeed_checks [DecidableEq V] (a : Tolerance V) (x y : V) :
   · simp [infer]
 
 /-- Uncapped path cost. `pathCost` is this value capped at 1. -/
-def rawPathCost [DecidableEq V] (a : Tolerance V) : List V → ℚ
+def rawPathCost [DecidableEq V] (a : Tolerance V R) : List V → R
   | [] => 0
   | [_] => 0
   | x :: y :: rest => a.distance x y + rawPathCost a (y :: rest)
 
-theorem rawPathCost_nonneg [DecidableEq V] (a : Tolerance V) :
+theorem rawPathCost_nonneg [DecidableEq V] (a : Tolerance V R) :
     ∀ p, 0 ≤ rawPathCost a p
   | [] => by simp [rawPathCost]
   | [_] => by simp [rawPathCost]
   | x :: y :: rest =>
       add_nonneg (a.distance_nonnegative x y) (rawPathCost_nonneg a (y :: rest))
 
-theorem min_one_add_min_one {d s : ℚ} (hd : 0 ≤ d) (_hs : 0 ≤ s) :
-    min (1 : ℚ) (d + min 1 s) = min 1 (d + s) := by
+theorem min_one_add_min_one {d s : R} (hd : 0 ≤ d) (_hs : 0 ≤ s) :
+    min (1 : R) (d + min 1 s) = min 1 (d + s) := by
   cases le_total s 1 with
   | inl h => rw [min_eq_right h]
   | inr h =>
-      have h1 : (1 : ℚ) ≤ d + 1 := by linarith
-      have h2 : (1 : ℚ) ≤ d + s := by linarith
+      have h1 : (1 : R) ≤ d + 1 := by linarith
+      have h2 : (1 : R) ≤ d + s := by linarith
       rw [min_eq_left h, min_eq_left h1, min_eq_left h2]
 
-theorem pathCost_eq_min_raw [DecidableEq V] (a : Tolerance V) :
+theorem pathCost_eq_min_raw [DecidableEq V] (a : Tolerance V R) :
     ∀ p, pathCost a p = min 1 (rawPathCost a p)
   | [] => by simp [pathCost, rawPathCost]
   | [_] => by simp [pathCost, rawPathCost]
@@ -192,7 +193,7 @@ theorem pathCost_eq_min_raw [DecidableEq V] (a : Tolerance V) :
       simp [pathCost, rawPathCost, combine, ih]
       exact min_one_add_min_one hd hs
 
-theorem rawPathCost_concat_cons [DecidableEq V] (a : Tolerance V) :
+theorem rawPathCost_concat_cons [DecidableEq V] (a : Tolerance V R) :
     ∀ (ys : List V) (x : V) (tail : List V),
       rawPathCost a (ys ++ x :: tail) =
         rawPathCost a (ys ++ [x]) + rawPathCost a (x :: tail)
@@ -208,7 +209,7 @@ theorem rawPathCost_concat_cons [DecidableEq V] (a : Tolerance V) :
         _ = rawPathCost a (y :: z :: rest ++ [x]) + rawPathCost a (x :: tail) := by
           simp [rawPathCost, add_assoc]
 
-theorem rawPathCost_drop_cycle [DecidableEq V] (a : Tolerance V)
+theorem rawPathCost_drop_cycle [DecidableEq V] (a : Tolerance V R)
     (pre mid post : List V) (x : V) :
     rawPathCost a (pre ++ x :: post) ≤
       rawPathCost a (pre ++ x :: mid ++ x :: post) := by
@@ -265,7 +266,7 @@ theorem getLast?_drop_cycle {α : Type u} (pre mid post : List α) (x : α) :
   rw [List.getLast?_eq_some_getLast (List.cons_ne_nil x post)]
   simp
 
-theorem exists_simple_le [DecidableEq V] (a : Tolerance V) (p : List V) :
+theorem exists_simple_le [DecidableEq V] (a : Tolerance V R) (p : List V) :
     ∃ q, q.Nodup ∧ q.head? = p.head? ∧ q.getLast? = p.getLast? ∧
       rawPathCost a q ≤ rawPathCost a p ∧ (p ≠ [] → q ≠ []) := by
   generalize hlen : p.length = n
@@ -347,16 +348,16 @@ theorem simplePaths_nonempty [Fintype V] [DecidableEq V] (x y : V) :
     exact ⟨[x], singleton_mem_simplePaths x⟩
   · exact ⟨[x, y], pair_mem_simplePaths hxy⟩
 
-def shortestDistance [Fintype V] [DecidableEq V] (a : Tolerance V) (x y : V) : ℚ :=
+def shortestDistance [Fintype V] [DecidableEq V] (a : Tolerance V R) (x y : V) : R :=
   (simplePaths x y).inf' (simplePaths_nonempty x y) (pathCost a)
 
-theorem shortestDistance_le [Fintype V] [DecidableEq V] (a : Tolerance V)
+theorem shortestDistance_le [Fintype V] [DecidableEq V] (a : Tolerance V R)
     {x y : V} {p : List V} (hp : p ∈ simplePaths x y) :
     shortestDistance a x y ≤ pathCost a p :=
   Finset.inf'_le (pathCost a) hp
 
-theorem le_shortestDistance [Fintype V] [DecidableEq V] (a : Tolerance V)
-    {x y : V} {r : ℚ} (h : ∀ p ∈ simplePaths x y, r ≤ pathCost a p) :
+theorem le_shortestDistance [Fintype V] [DecidableEq V] (a : Tolerance V R)
+    {x y : V} {r : R} (h : ∀ p ∈ simplePaths x y, r ≤ pathCost a p) :
     r ≤ shortestDistance a x y :=
   (Finset.le_inf'_iff _ _).mpr h
 
@@ -368,7 +369,7 @@ theorem reverse_mem_simplePaths [Fintype V] [DecidableEq V] {x y : V} {p : List 
   · simpa [List.head?_reverse] using hl
   · simpa [List.getLast?_reverse] using hh
 
-theorem rawPathCost_snoc [DecidableEq V] (a : Tolerance V) (p : List V) (x : V)
+theorem rawPathCost_snoc [DecidableEq V] (a : Tolerance V R) (p : List V) (x : V)
     (hp : p ≠ []) :
     rawPathCost a (p ++ [x]) =
       rawPathCost a p + a.distance (p.getLast hp) x := by
@@ -381,7 +382,7 @@ theorem rawPathCost_snoc [DecidableEq V] (a : Tolerance V) (p : List V) (x : V)
   rw [rawPathCost_concat_cons]
   simp [rawPathCost]
 
-theorem rawPathCost_reverse [DecidableEq V] (a : Tolerance V) :
+theorem rawPathCost_reverse [DecidableEq V] (a : Tolerance V R) :
     ∀ p, rawPathCost a p.reverse = rawPathCost a p
   | [] => by simp [rawPathCost]
   | [x] => by simp [rawPathCost]
@@ -397,11 +398,11 @@ theorem rawPathCost_reverse [DecidableEq V] (a : Tolerance V) :
       simp [rawPathCost]
       abel
 
-theorem pathCost_reverse [DecidableEq V] (a : Tolerance V) (p : List V) :
+theorem pathCost_reverse [DecidableEq V] (a : Tolerance V R) (p : List V) :
     pathCost a p.reverse = pathCost a p := by
   simp [pathCost_eq_min_raw, rawPathCost_reverse]
 
-theorem shortestDistance_symm [Fintype V] [DecidableEq V] (a : Tolerance V)
+theorem shortestDistance_symm [Fintype V] [DecidableEq V] (a : Tolerance V R)
     (x y : V) : shortestDistance a x y = shortestDistance a y x := by
   refine le_antisymm ?_ ?_
   · apply le_shortestDistance
@@ -414,7 +415,7 @@ theorem shortestDistance_symm [Fintype V] [DecidableEq V] (a : Tolerance V)
     simpa [pathCost_reverse] using this
 
 theorem shortestDistance_le_seed [Fintype V] [DecidableEq V]
-    (a : Tolerance V) (x y : V) :
+    (a : Tolerance V R) (x y : V) :
     shortestDistance a x y ≤ a.distance x y := by
   by_cases hxy : x = y
   · subst hxy
@@ -423,30 +424,30 @@ theorem shortestDistance_le_seed [Fintype V] [DecidableEq V]
   · simpa [pathCost_pair] using shortestDistance_le a (pair_mem_simplePaths hxy)
 
 theorem shortestDistance_nonneg [Fintype V] [DecidableEq V]
-    (a : Tolerance V) (x y : V) : 0 ≤ shortestDistance a x y :=
+    (a : Tolerance V R) (x y : V) : 0 ≤ shortestDistance a x y :=
   le_shortestDistance a fun p _ => pathCost_nonneg a p
 
 theorem shortestDistance_le_one [Fintype V] [DecidableEq V]
-    (a : Tolerance V) (x y : V) : shortestDistance a x y ≤ 1 := by
+    (a : Tolerance V R) (x y : V) : shortestDistance a x y ≤ 1 := by
   obtain ⟨p, hp⟩ := simplePaths_nonempty (x := x) (y := y)
   exact (shortestDistance_le a hp).trans (pathCost_le_one a p)
 
 theorem shortestDistance_self [Fintype V] [DecidableEq V]
-    (a : Tolerance V) (x : V) : shortestDistance a x x = 0 := by
+    (a : Tolerance V R) (x : V) : shortestDistance a x x = 0 := by
   refine le_antisymm ?_ (shortestDistance_nonneg a x x)
   simpa [a.distance_self] using shortestDistance_le_seed a x x
 
-theorem min_one_add {a b : ℚ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
-    min (1 : ℚ) (a + b) ≤ min 1 a + min 1 b := by
-  have hmina : 0 ≤ min (1 : ℚ) a := le_min (by norm_num) ha
-  have hminb : 0 ≤ min (1 : ℚ) b := le_min (by norm_num) hb
+theorem min_one_add {a b : R} (ha : 0 ≤ a) (hb : 0 ≤ b) :
+    min (1 : R) (a + b) ≤ min 1 a + min 1 b := by
+  have hmina : 0 ≤ min (1 : R) a := le_min (by norm_num) ha
+  have hminb : 0 ≤ min (1 : R) b := le_min (by norm_num) hb
   cases le_total (a + b) 1 with
   | inl h =>
       have ha1 : a ≤ 1 := by linarith
       have hb1 : b ≤ 1 := by linarith
       simp [min_eq_right h, min_eq_right ha1, min_eq_right hb1]
   | inr h =>
-      have : (1 : ℚ) ≤ min 1 a + min 1 b := by
+      have : (1 : R) ≤ min 1 a + min 1 b := by
         cases le_total a 1 with
         | inl ha1 =>
             cases le_total b 1 with
@@ -461,7 +462,7 @@ theorem min_one_add {a b : ℚ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
             exact le_add_of_nonneg_right hminb
       simpa [min_eq_left h] using this
 
-theorem rawPathCost_join [DecidableEq V] (a : Tolerance V) {p q : List V}
+theorem rawPathCost_join [DecidableEq V] (a : Tolerance V R) {p q : List V}
     (hp : p ≠ []) (hq : q ≠ []) (hjoin : p.getLast? = q.head?) :
     rawPathCost a (p ++ q.tail) = rawPathCost a p + rawPathCost a q := by
   cases q with
@@ -481,7 +482,7 @@ theorem rawPathCost_join [DecidableEq V] (a : Tolerance V) {p q : List V}
         rw [← hlast, hsplit]
       simp [hpre]
 
-theorem pathCost_join [DecidableEq V] (a : Tolerance V) {p q : List V}
+theorem pathCost_join [DecidableEq V] (a : Tolerance V R) {p q : List V}
     (hp : p ≠ []) (hq : q ≠ []) (hjoin : p.getLast? = q.head?) :
     pathCost a (p ++ q.tail) ≤ pathCost a p + pathCost a q := by
   have hraw := rawPathCost_join a hp hq hjoin
@@ -494,7 +495,7 @@ theorem ne_nil_of_head? {α : Type u} {p : List α} {x : α}
   simp [hnil] at h
 
 theorem shortestDistance_triangle [Fintype V] [DecidableEq V]
-    (a : Tolerance V) (x y z : V) :
+    (a : Tolerance V R) (x y z : V) :
     shortestDistance a x z ≤ shortestDistance a x y + shortestDistance a y z := by
   obtain ⟨px, hpx, hcx⟩ :=
     Finset.exists_mem_eq_inf' (simplePaths_nonempty (x := x) (y := y)) (pathCost a)
@@ -547,7 +548,7 @@ theorem shortestDistance_triangle [Fintype V] [DecidableEq V]
         simp [shortestDistance, hcx, hcy]
 
 theorem shortestDistance_le_pathCost [Fintype V] [DecidableEq V]
-    (a : Tolerance V) {p : List V} {x y : V} (_hp : p ≠ [])
+    (a : Tolerance V R) {p : List V} {x y : V} (_hp : p ≠ [])
     (hx : p.head? = some x) (hy : p.getLast? = some y) :
     shortestDistance a x y ≤ pathCost a p := by
   obtain ⟨q, qnd, qh, ql, qcost, qne⟩ := exists_simple_le a p
@@ -559,7 +560,7 @@ theorem shortestDistance_le_pathCost [Fintype V] [DecidableEq V]
     exact min_le_min le_rfl qcost
   exact (shortestDistance_le a hqmem).trans hle
 
-def shortestTolerance [Fintype V] [DecidableEq V] (a : Tolerance V) : Tolerance V where
+def shortestTolerance [Fintype V] [DecidableEq V] (a : Tolerance V R) : Tolerance V R where
   similarity x y := 1 - shortestDistance a x y
   nonnegative x y := sub_nonneg.mpr (shortestDistance_le_one a x y)
   bounded x y := by
@@ -569,16 +570,16 @@ def shortestTolerance [Fintype V] [DecidableEq V] (a : Tolerance V) : Tolerance 
   symmetric x y := by simp [shortestDistance_symm a x y]
 
 @[simp] theorem shortestTolerance_distance [Fintype V] [DecidableEq V]
-    (a : Tolerance V) (x y : V) :
+    (a : Tolerance V R) (x y : V) :
     (shortestTolerance a).distance x y = shortestDistance a x y := by
   simp [Tolerance.distance, shortestTolerance]
 
-theorem shortestTolerance_metric [Fintype V] [DecidableEq V] (a : Tolerance V) :
+theorem shortestTolerance_metric [Fintype V] [DecidableEq V] (a : Tolerance V R) :
     (shortestTolerance a).Metric := by
   intro x y z
   simpa [shortestTolerance_distance] using shortestDistance_triangle a x y z
 
-theorem shortestTolerance_extends [Fintype V] [DecidableEq V] (a : Tolerance V) :
+theorem shortestTolerance_extends [Fintype V] [DecidableEq V] (a : Tolerance V R) :
     a.Extends (shortestTolerance a) := by
   intro x y
   have := shortestDistance_le_seed a x y
@@ -586,7 +587,7 @@ theorem shortestTolerance_extends [Fintype V] [DecidableEq V] (a : Tolerance V) 
   linarith
 
 /-- The simple-path infimum is the least metric extension of the seed. -/
-theorem shortestTolerance_is_least [Fintype V] [DecidableEq V] (a : Tolerance V) :
+theorem shortestTolerance_is_least [Fintype V] [DecidableEq V] (a : Tolerance V R) :
     LeastMetricExtension a (shortestTolerance a) := by
   refine ⟨shortestTolerance_extends a, shortestTolerance_metric a, ?_⟩
   intro other hExt hMet x y

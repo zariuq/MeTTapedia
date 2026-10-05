@@ -222,10 +222,10 @@ theorem CostStaticPlanReached.exists_visibleQuoteRootTree
       rhoReflectivePresentation.quoteConstructor) :
     ∃ (sealed : List TypeExpr)
         (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
-          (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+          (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color
             reached.sourceAvailable)
           reached.sourceAvailable
-          (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+          (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
             reached.sourceAvailable)
           reached.sourceAvailable .hole payload reached.sourceType)
         (_rootStatic : rootPlan.isStaticRoot = true)
@@ -255,10 +255,10 @@ theorem CostStaticPlanReached.exists_visibleQuoteRootTree
     rhoReflectivePresentation.quoteConstructor at quoteRoot
   change ∃ (sealed : List TypeExpr)
       (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
-        (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+        (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color
           state.sourceAvailable)
         state.sourceAvailable
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
           state.sourceAvailable)
         state.sourceAvailable .hole payload state.sourceType)
       (_rootStatic : rootPlan.isStaticRoot = true)
@@ -328,10 +328,10 @@ theorem CostStaticPlanReached.exists_visibleParallelRootTree
       (mapTypeExpr (color.symbols rhoCIGSLT) reached.sourceType)) :
     ∃ (sealed : List TypeExpr)
         (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
-          (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+          (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color
             reached.sourceAvailable)
           reached.sourceAvailable
-          (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+          (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
             reached.sourceAvailable)
           reached.sourceAvailable .hole payload reached.sourceType)
         (_rootStatic : rootPlan.isStaticRoot = true)
@@ -363,10 +363,10 @@ theorem CostStaticPlanReached.exists_visibleParallelRootTree
     (mapTypeExpr (color.symbols rhoCIGSLT) state.sourceType) at admissible
   change ∃ (sealed : List TypeExpr)
       (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
-        (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+        (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color
           state.sourceAvailable)
         state.sourceAvailable
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
           state.sourceAvailable)
         state.sourceAvailable .hole payload state.sourceType)
       (_rootStatic : rootPlan.isStaticRoot = true)
@@ -2423,7 +2423,7 @@ theorem CostStaticPlanReached.parentCanonicalFrame_atomCovered
           environment)
         rhoReflectivePresentation availableDepth scopeDepth
         (environment.reify reached.plan.abstractPattern)).freeFvarNames := by
-    simpa [CostStaticBinderThinning.freeFvarNames_thickenAmbientBVars,
+    simpa [CostStaticTypeThinning.freeFvarNames_thickenAmbientBVars,
       StructuralMorphism.mapPattern_freeFvarNames] using membership
   have reachedMembership : name ∈
       (environment.reify reached.plan.abstractPattern).freeFvarNames :=
@@ -2456,7 +2456,7 @@ theorem CostStaticPlanReached.parentCanonicalFrame_atomCovered
       (parentNode.reifyTargetFrame environment).freeFvarNames := by
     rw [parentNode.reifyTargetFrame_eq_map_reifiedSourceFrame]
     simpa [reify, CostStaticRegionNode.reifiedSourceFrame,
-      CostStaticBinderThinning.freeFvarNames_thickenAmbientBVars,
+      CostStaticTypeThinning.freeFvarNames_thickenAmbientBVars,
       StructuralMorphism.mapPattern_freeFvarNames] using rootMembership
   exact parentNode.reifyTargetFrame_atomCovered environment name
     targetMembership
@@ -2761,8 +2761,7 @@ noncomputable def boundaryQuotePlanStops_sourcePatternLeafAligned_withCospan_of_
   intro sourceDepth
   unfold ReflectiveContextSupport.RestoresTogether
   intro restorationDepth
-  simp only [mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars]
+  simp only [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   have leftName : leftEnvironment.reifyName
       (costRegionBoundaryVariableName
         leftBoundary.stopped.certified.typed.boundary) =
@@ -2798,7 +2797,7 @@ noncomputable def boundaryQuotePlanStops_sourcePatternLeafAligned_withCospan_of_
           (rightEnvironment.reify
             rightReached.plan.abstractPattern)).freeFvarNames := by
       simpa [rightFrame,
-        CostStaticBinderThinning.freeFvarNames_thickenAmbientBVars,
+        CostStaticTypeThinning.freeFvarNames_thickenAmbientBVars,
         StructuralMorphism.mapPattern_freeFvarNames] using
           membership
     have reachedMembership : name ∈
@@ -2835,7 +2834,7 @@ noncomputable def boundaryQuotePlanStops_sourcePatternLeafAligned_withCospan_of_
         (rightNode.reifyTargetFrame rightEnvironment).freeFvarNames := by
       rw [rightNode.reifyTargetFrame_eq_map_reifiedSourceFrame]
       simpa [rightReify, CostStaticRegionNode.reifiedSourceFrame,
-        CostStaticBinderThinning.freeFvarNames_thickenAmbientBVars,
+        CostStaticTypeThinning.freeFvarNames_thickenAmbientBVars,
         StructuralMorphism.mapPattern_freeFvarNames] using
           rootMembership
     exact rightNode.reifyTargetFrame_atomCovered rightEnvironment name

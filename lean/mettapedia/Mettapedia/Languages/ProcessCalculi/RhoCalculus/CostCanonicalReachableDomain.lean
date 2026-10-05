@@ -209,11 +209,11 @@ theorem rho_generatedParameter_reachable {rule : GrammarRule}
   suffices reachable : rhoReachableParam parameter = true by
     simpa [rhoReachableParam, parameterTyped] using reachable
   have memberships := membership
-  rw [CIGSLT.costWholeLanguage_terms] at memberships
+  rw [WrappableIGSLT.costWholeLanguage_terms] at memberships
   have split : rule ∈ rhoCIGSLT.continuationRetyping.generatedLanguage.terms ∨
       rule ∈ costCoreConstructors
         rhoCIGSLT.theory.presentation.interactingSort.1.name := by
-    simpa [CIGSLT.costCoreLanguage, List.mem_append] using memberships
+    simpa [WrappableIGSLT.costCoreLanguage_terms, List.mem_append] using memberships
   rcases split with generated | apparatus
   · rw [show rhoCIGSLT.continuationRetyping.generatedLanguage.terms =
         rhoCalc.terms.map (costBaseConstructor rhoInteractionCut) ++

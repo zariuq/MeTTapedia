@@ -57,7 +57,7 @@ reflexivity. -/
 abbrev IdentityReceipt : Prop :=
   HasType (.nil : Ctx 0) (.refl .u0) (.id .u1 .u0 .u0)
 
-def identityReceipt : IdentityReceipt :=
+theorem identityReceipt : IdentityReceipt :=
   .refl_intro (.u0_type (.nil : Ctx 0))
 
 theorem identity_is_inhabited : Nonempty IdentityReceipt :=

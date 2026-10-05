@@ -248,6 +248,21 @@ def StepModuloEquations
       Step base language redex contractum ∧
         EquationEquiv base language contractum target
 
+/-- Changing an equation-equivalent source retains the supplied target
+exactly. Saturation at both endpoints is stronger than the abstract GSLT
+response law, which permits an equivalent target witness. -/
+theorem stepModuloEquations_change_source
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {source source' target : Pattern}
+    (equivalent : EquationEquiv base language source source')
+    (step : StepModuloEquations base language source target) :
+    StepModuloEquations base language source' target := by
+  obtain ⟨redex, contractum, before, firing, after⟩ := step
+  exact ⟨redex, contractum,
+    (equationSetoid base language).iseqv.trans
+      ((equationSetoid base language).iseqv.symm equivalent) before,
+    firing, after⟩
+
 /-- Closure under equations makes a change of source representative admissible. -/
 theorem stepModuloEquations_resp_left
     (base : BasePremiseEvaluator) (language : LanguageDef) :
@@ -256,13 +271,9 @@ theorem stepModuloEquations_resp_left
       StepModuloEquations base language source target →
       ∃ target', StepModuloEquations base language source' target' ∧
         EquationEquiv base language target target' := by
-  intro source source' target sourceEquivalent
-  rintro ⟨redex, contractum, redexEquivalent, primitive, targetEquivalent⟩
-  refine ⟨target, ⟨redex, contractum, ?_, primitive, targetEquivalent⟩, ?_⟩
-  · exact (equationSetoid base language).iseqv.trans
-      ((equationSetoid base language).iseqv.symm sourceEquivalent)
-      redexEquivalent
-  · exact (equationSetoid base language).iseqv.refl target
+  intro source source' target sourceEquivalent step
+  exact ⟨target, stepModuloEquations_change_source sourceEquivalent step,
+    (equationSetoid base language).iseqv.refl target⟩
 
 /-- Closure under equations makes a change of target representative admissible. -/
 theorem stepModuloEquations_resp_right

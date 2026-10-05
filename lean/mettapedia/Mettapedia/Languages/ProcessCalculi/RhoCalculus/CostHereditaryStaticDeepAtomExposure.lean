@@ -110,7 +110,7 @@ theorem CostStaticRegionNode.canonicalizeReifiedTargetFrame_atomShell
   rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
     node environment, reifiedFrame]
   rw [RhoCanonicalAtomShell.canonicalizeByDepths_fill_fvar _ _ shell]
-  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
 
 /-- An exact stopped occurrence beneath an arbitrary atom shell determines
 the complete canonical-frame equation for its semantic slot. -/

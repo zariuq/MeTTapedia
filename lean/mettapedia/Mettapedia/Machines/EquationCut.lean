@@ -153,6 +153,54 @@ theorem trunc_trunc {α : Type*} {c b : ℕ} {fs : List α} (hcb : c ≤ b) (hb 
 theorem trunc_length {α : Type*} (fs : List α) : trunc fs.length fs = fs := by
   simp [trunc]
 
+/-! A representation change may replace one frame by several target frames,
+or remove a marker that has no target frame. A cut must retain the image of
+its old stack prefix, rather than retain its old numerical height. These
+laws concern ordered stack boundaries; translating each frame's computation,
+bindings and ownership is a separate obligation. -/
+
+/-- The target height of a barrier after replacing each source frame by an
+ordered block of target frames. Stacks here have their newest frame first. -/
+def expandedBarrier {α β : Type*} (blocks : α → List β) (b : ℕ) (fs : List α) : ℕ :=
+  ((trunc b fs).flatMap blocks).length
+
+theorem trunc_append_length {α : Type*} (newer older : List α) :
+    trunc older.length (newer ++ older) = older := by
+  simp [trunc]
+
+/-- Expanding the stack and rebasing its barrier commutes with commitment.
+The result preserves every retained occurrence, including duplicates. -/
+theorem trunc_expanded {α β : Type*} (blocks : α → List β) (b : ℕ) (fs : List α) :
+    trunc (expandedBarrier blocks b fs) (fs.flatMap blocks) =
+      (trunc b fs).flatMap blocks := by
+  have split : fs.flatMap blocks =
+      (fs.take (fs.length - b)).flatMap blocks ++ (trunc b fs).flatMap blocks := by
+    rw [← List.flatMap_append]
+    simp [trunc]
+  unfold expandedBarrier
+  rw [split]
+  exact trunc_append_length _ _
+
+/-- The rebased barrier remains inside the translated stack. -/
+theorem expandedBarrier_le_length {α β : Type*} (blocks : α → List β)
+    (b : ℕ) (fs : List α) : expandedBarrier blocks b fs ≤ (fs.flatMap blocks).length := by
+  have split : fs.flatMap blocks =
+      (fs.take (fs.length - b)).flatMap blocks ++ (trunc b fs).flatMap blocks := by
+    rw [← List.flatMap_append]
+    simp [trunc]
+  rw [split, List.length_append]
+  exact Nat.le_add_left _ _
+
+/-- Translating a stack in two stages rebases the barrier in two stages too. -/
+theorem expandedBarrier_compose {α β γ : Type*} (first : α → List β)
+    (second : β → List γ) (b : ℕ) (fs : List α) :
+    expandedBarrier second (expandedBarrier first b fs) (fs.flatMap first) =
+      expandedBarrier (fun frame => (first frame).flatMap second) b fs := by
+  change ((trunc (expandedBarrier first b fs) (fs.flatMap first)).flatMap second).length =
+    ((trunc b fs).flatMap fun frame => (first frame).flatMap second).length
+  rw [trunc_expanded]
+  simp only [List.flatMap_assoc]
+
 /-- The frame machine, its equation frames resumed with the barrier `lift` of
 the frame's index (the index itself in `step`). -/
 def stepWith (P : Program S) (lift : ℕ → ℕ) : Config S → Option S × Config S
@@ -417,6 +465,22 @@ theorem run_answers (P : Program S) (k n : ℕ) (body : Body S) (s : S)
 /-! ## Controls -/
 
 namespace Controls
+
+/-- Keeping the old height after expanding an older frame drops one of its
+retained occurrences. The rebased height keeps both. -/
+theorem expansion_needs_rebased_barrier :
+    trunc 1 ([2, 1].flatMap fun n : Nat => [n, n]) = [1] ∧
+      trunc (expandedBarrier (fun n : Nat => [n, n]) 1 [2, 1])
+        ([2, 1].flatMap fun n : Nat => [n, n]) = [1, 1] := by
+  decide
+
+/-- Removing the older marker has the opposite hazard: an unchanged height
+keeps an alternative which the original cut discarded. -/
+theorem contraction_needs_rebased_barrier :
+    let blocks := fun n : Nat => if n = 1 then [] else [n]
+    trunc 1 ([2, 1].flatMap blocks) = [2] ∧
+      trunc (expandedBarrier blocks 1 [2, 1]) ([2, 1].flatMap blocks) = [] := by
+  decide
 
 /-- Relation 0 has an equation that cuts and one that does not; the query calls
 it once. -/

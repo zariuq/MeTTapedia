@@ -69,6 +69,4 @@ theorem costWholeRedex_instances_typed
     profile.hasType_costWholeRedexLanguage
       (profile.costWholeRedexTarget_instantiated_hasType contractumTyped assignment)⟩
 
-#print axioms costWholeRedex_instances_typed
-
 end Mettapedia.GSLT.LanguageDef.ContinuationDecorationProfile

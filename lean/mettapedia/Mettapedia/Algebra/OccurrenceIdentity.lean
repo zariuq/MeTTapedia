@@ -1,6 +1,7 @@
 import Mathlib.Logic.Equiv.Defs
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.BitVec
+import Mathlib.Data.List.Perm.Subperm
 import Lean.Elab.Tactic.Omega
 
 /-!
@@ -523,6 +524,145 @@ theorem spurious_failure_is_not_exhaustion :
 end Controls
 
 end WeakReservation
+
+/-! ## Checked coverage of keyed occurrences -/
+
+section Coverage
+
+variable {Entry Key Destination : Type*} [DecidableEq Entry] [DecidableEq Key]
+
+/-- Preparation may enumerate entries in a different order, but must name
+every actual occurrence exactly once. Payload equality is not the key. -/
+def coverageCheck (key : Entry → Key) (actual proposed : List Entry) : Bool :=
+  decide (proposed.length = actual.length) &&
+    proposed.all (fun entry => decide (entry ∈ actual)) &&
+    decide (proposed.map key).Nodup
+
+/-- Complete coverage preserves all entry fields and multiplicities; the
+independent key condition prevents submitting one occurrence twice. -/
+def CompleteCoverage (key : Entry → Key) (actual proposed : List Entry) : Prop :=
+  proposed.Perm actual ∧ (actual.map key).Nodup
+
+theorem coverageCheck_iff (key : Entry → Key) (actual proposed : List Entry) :
+    coverageCheck key actual proposed = true ↔ CompleteCoverage key actual proposed := by
+  simp only [coverageCheck, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
+  constructor
+  · rintro ⟨⟨lengths, members⟩, distinct⟩
+    have subset : proposed ⊆ actual := fun _ member => members _ member
+    have permutation := (List.Nodup.of_map key distinct).subperm subset
+    have exactEntries := permutation.perm_of_length_le (by omega)
+    exact ⟨exactEntries, (exactEntries.map key).nodup_iff.mp distinct⟩
+  · rintro ⟨permutation, distinct⟩
+    exact ⟨⟨permutation.length_eq, fun entry member => permutation.mem_iff.mp member⟩,
+      (permutation.map key).nodup_iff.mpr distinct⟩
+
+/-- A checked representation change preserves and reflects complete coverage.
+Injectivity concerns complete entries; the key law preserves logical identity. -/
+theorem coverageCheck_map [DecidableEq Destination] (key : Entry → Key)
+    (destinationKey : Destination → Key) (mapping : Entry → Destination)
+    (injective : Function.Injective mapping)
+    (keyLaw : ∀ entry, destinationKey (mapping entry) = key entry)
+    (actual proposed : List Entry) :
+    coverageCheck destinationKey (actual.map mapping) (proposed.map mapping) =
+      coverageCheck key actual proposed := by
+  apply Bool.eq_iff_iff.mpr
+  rw [coverageCheck_iff, coverageCheck_iff]
+  have keys : (actual.map mapping).map destinationKey = actual.map key := by
+    simp only [List.map_map]
+    exact List.map_congr_left (fun entry _ => keyLaw entry)
+  simp only [CompleteCoverage, keys, List.map_perm_map_iff injective]
+
+namespace CoverageControls
+
+def actual : List (Nat × Nat) := [(1, 7), (2, 7)]
+
+/-- Equal answer values still name two distinct prepared occurrences. -/
+theorem duplicate_values_have_complete_coverage :
+    coverageCheck Prod.fst actual [(2, 7), (1, 7)] = true ∧
+      actual.map Prod.snd = [7, 7] := by decide
+
+/-- Length and membership alone accept an omitted occurrence replaced by
+a repeated one. The distinct-key check rejects that preparation. -/
+theorem repeated_occurrence_does_not_cover :
+    ([(1, 7), (1, 7)] : List (Nat × Nat)).length = actual.length ∧
+      ([(1, 7), (1, 7)] : List (Nat × Nat)).all (fun entry => decide (entry ∈ actual)) = true ∧
+      coverageCheck Prod.fst actual [(1, 7), (1, 7)] = false := by decide
+
+/-- Correct counts and occurrence keys do not authorize a changed payload. -/
+theorem same_keys_wrong_payload_refused :
+    ([(1, 8), (2, 7)] : List (Nat × Nat)).map Prod.fst = actual.map Prod.fst ∧
+      coverageCheck Prod.fst actual [(1, 8), (2, 7)] = false := by decide
+
+end CoverageControls
+
+end Coverage
+
+/-! ## Ordered first encounters
+
+An injective change of identities preserves the first-encounter sequence,
+including the prefix already seen by a resumed computation. This concerns a
+memo/census keyed by complete identities, not deduplication of authored rule
+occurrences by their answer values. Copying and validation costs are separate
+from the number of first encounters.
+-/
+
+theorem eraseDups_map_injective {A B : Type*} [BEq A] [LawfulBEq A]
+    [BEq B] [LawfulBEq B] (mapping : A → B) (injective : Function.Injective mapping)
+    (entries : List A) :
+    (entries.map mapping).eraseDups = entries.eraseDups.map mapping := by
+  match entries with
+  | [] => rfl
+  | head :: tail =>
+      have comparison : (fun entry => !(mapping entry == mapping head)) =
+          (fun entry => !(entry == head)) := by
+        funext entry
+        have equal : (mapping entry == mapping head) = (entry == head) := by
+          apply Bool.eq_iff_iff.mpr
+          simp only [beq_iff_eq, injective.eq_iff]
+        exact congrArg Bool.not equal
+      simp only [List.map_cons, List.eraseDups_cons, List.filter_map]
+      change mapping head ::
+          ((tail.filter (fun entry => !(mapping entry == mapping head))).map mapping).eraseDups =
+        mapping head :: (tail.filter (fun entry => !(entry == head))).eraseDups.map mapping
+      rw [comparison, eraseDups_map_injective mapping injective]
+termination_by entries.length
+decreasing_by
+  exact Nat.lt_succ_of_le (List.length_filter_le _ _)
+
+theorem first_seen_count_relocated {A B : Type*} [BEq A] [LawfulBEq A]
+    [BEq B] [LawfulBEq B] (mapping : A → B) (injective : Function.Injective mapping)
+    (entries : List A) :
+    (entries.map mapping).eraseDups.length = entries.eraseDups.length := by
+  rw [eraseDups_map_injective mapping injective, List.length_map]
+
+theorem first_seen_resumed_account {A B : Type*} [BEq A] [LawfulBEq A]
+    [BEq B] [LawfulBEq B] (mapping : A → B) (injective : Function.Injective mapping)
+    (earlier suffix : List A) :
+    ((earlier.map mapping ++ suffix.map mapping).eraseDups).length =
+      earlier.eraseDups.length + (suffix.removeAll earlier).eraseDups.length := by
+  rw [← List.map_append, first_seen_count_relocated mapping injective, List.eraseDups_append,
+    List.length_append]
+
+namespace FirstSeenControls
+
+def source : List Nat := [0, 1, 0, 2, 1]
+def destination : Nat → Nat := fun identity => 3 * identity + 7
+
+theorem moved_repeated_identities_preserve_first_order :
+    (source.map destination).eraseDups = [7, 10, 13] ∧
+      source.eraseDups = [0, 1, 2] := by decide +kernel
+
+theorem equal_payload_projection_collapses_productions :
+    (([(0, 7), (1, 7), (0, 7)] : List (Nat × Nat)).map Prod.fst).eraseDups.length = 2 ∧
+      (([(0, 7), (1, 7), (0, 7)] : List (Nat × Nat)).map Prod.snd).eraseDups.length = 1 :=
+  by decide +kernel
+
+theorem copied_carriers_can_split_a_shared_production :
+    ([0, 0, 0] : List Nat).eraseDups.length = 1 ∧
+      ([7, 8, 7] : List Nat).eraseDups.length = 2 := by decide +kernel
+
+end FirstSeenControls
+
 
 end OccurrenceIdentity
 

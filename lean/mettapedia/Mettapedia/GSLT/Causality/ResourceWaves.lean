@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Causality.ResourceReads
+import Mettapedia.Algebra.ParallelCrossover
 import Mathlib.Algebra.BigOperators.Group.Multiset.Basic
 
 /-!
@@ -45,6 +46,46 @@ theorem stepEnables_add_iff_count (M : Multiset R) (U V : Multiset S.Entry) :
   rw [S.stepConsume_add, S.stepRead_add, Multiset.le_iff_count]
   simp only [Multiset.count_add, Multiset.count_union]
   constructor <;> intro checked resource <;> have fits := checked resource <;> omega
+
+/-- Atomic linear rendering changes the wave's shared-read maximum into a
+sum of all readers' demands. This is the extra resource requirement that
+sequential step equivalence does not remove. -/
+theorem takeRepublish_stepEnables_iff (M : Multiset R) (U : Multiset S.Entry) :
+    S.takeRepublish.StepEnables M U ↔
+      S.stepConsume U + (U.map fun entry => S.read entry.2).sum ≤ M := by
+  have noReads : S.takeRepublish.stepRead U = 0 := by
+    apply le_antisymm ?_ zero_le
+    apply Multiset.sup_le.mpr
+    intro read member
+    obtain ⟨entry, _, rfl⟩ := Multiset.mem_map.mp member
+    exact le_rfl
+  unfold StepEnables
+  rw [noReads, add_zero]
+  simp [stepConsume, takeRepublish, Multiset.sum_map_add]
+
+/-- Every wave admitted by the linear rendering is a source wave. The
+converse requires enough copies for the sum of its read demands. -/
+theorem stepEnables_of_takeRepublish {M : Multiset R} {U : Multiset S.Entry}
+    (enabled : S.takeRepublish.StepEnables M U) : S.StepEnables M U := by
+  rw [S.takeRepublish_stepEnables_iff] at enabled
+  have readsFit : S.stepRead U ≤ (U.map fun entry => S.read entry.2).sum := by
+    unfold stepRead
+    apply Multiset.sup_le.mpr
+    intro read member
+    obtain ⟨rest, equal⟩ := Multiset.exists_cons_of_mem member
+    rw [equal, Multiset.sum_cons]
+    exact Multiset.le_add_right _ _
+  exact le_trans (add_le_add le_rfl readsFit) enabled
+
+/-- When persistent-read overlap contributes no saving, the rendering also
+preserves batch admission. The premise is about the actual resource demands,
+not merely disjoint rule names or writes. -/
+theorem takeRepublish_stepEnables_iff_of_reads_additive (M : Multiset R)
+    (U : Multiset S.Entry)
+    (readsAdditive : (U.map fun entry => S.read entry.2).sum = S.stepRead U) :
+    S.takeRepublish.StepEnables M U ↔ S.StepEnables M U := by
+  rw [S.takeRepublish_stepEnables_iff, readsAdditive]
+  rfl
 
 /-- Removing candidate occurrences cannot increase a wave's resource demand. -/
 theorem stepEnables_of_le {M : Multiset R} {U V : Multiset S.Entry}
@@ -117,7 +158,7 @@ theorem selectWaveAux_enabled (M : Multiset R) :
 theorem selectWave_enabled (M : Multiset R) (candidates : List S.Entry) :
     S.StepEnables M (S.selectWave M candidates).1 := by
   simpa [selectWave] using S.selectWaveAux_enabled M candidates []
-    (by simpa [StepEnables, stepConsume, stepRead] using (Multiset.zero_le M))
+    (by simp [StepEnables, stepConsume, stepRead])
 
 /-- No accepted occurrence is invented or reordered. -/
 theorem selectWave_selected_sublist (M : Multiset R) (candidates : List S.Entry) :
@@ -362,5 +403,61 @@ theorem disjoint_writes_do_not_remove_read_conflicts :
     decide +kernel
 
 end WaveControls
+
+namespace ReadWaveControls
+
+open Controls (CallRes oneEquation twoCalls callEntry)
+
+def first : oneEquation.Entry := callEntry 1
+def second : oneEquation.Entry := callEntry 2
+
+/-- The source executes both readers in one wave. The linear rendering
+retains the second reader, then executes it in the next wave. Both reach the
+same complete bag, but their unit-duration wave spans are one and two. -/
+theorem one_shared_wave_becomes_two :
+    oneEquation.selectWave twoCalls [first, second] = ([first, second], []) ∧
+      oneEquation.takeRepublish.selectWave twoCalls [first, second] = ([first], [second]) ∧
+      oneEquation.takeRepublish.selectWave
+        (oneEquation.takeRepublish.waveTarget twoCalls [first]) [second] = ([second], []) ∧
+      oneEquation.takeRepublish.waveTarget
+        (oneEquation.takeRepublish.waveTarget twoCalls [first]) [second] =
+        oneEquation.waveTarget twoCalls [first, second] := by decide +kernel
+
+/-- With two stored copies the linear protocol can admit both readers. This
+is a capacity change, not a proof that the original singleton suffices. -/
+theorem extra_read_copy_restores_wave :
+    oneEquation.takeRepublish.selectWave
+      (CallRes.equation ::ₘ twoCalls) [first, second] = ([first, second], []) := by
+  decide +kernel
+
+/-- Equal sequential endpoints cannot justify replacing source wave
+admission with the linear rendering's stricter test. -/
+theorem read_rendering_changes_wave_authority :
+    oneEquation.StepEnables twoCalls [first, second] ∧
+      ¬ oneEquation.takeRepublish.StepEnables twoCalls [first, second] := by
+  decide +kernel
+
+open Mettapedia.Algebra
+
+/-- One unit-duration lane per selected firing. Selection has already checked
+its resource authority; this readout assumes enough workers and no overhead. -/
+def unitWaveCost (selected : List oneEquation.Entry) : WorkSpan :=
+  ParallelCrossover.workers (selected.map fun _ => 1)
+
+def sourceCost : WorkSpan :=
+  unitWaveCost (oneEquation.selectWave twoCalls [first, second]).1
+
+def renderedCost : WorkSpan :=
+  let initial := oneEquation.takeRepublish.selectWave twoCalls [first, second]
+  let world := oneEquation.takeRepublish.waveTarget twoCalls initial.1
+  let following := oneEquation.takeRepublish.selectWave world initial.2
+  WorkSpan.sequential (unitWaveCost initial.1) (unitWaveCost following.1)
+
+/-- The independently selected schedules retain the same firing work but
+different spans, even before charging any transport or synchronization. -/
+theorem read_translation_work_span :
+    sourceCost = ⟨2, 1⟩ ∧ renderedCost = ⟨2, 2⟩ := by decide +kernel
+
+end ReadWaveControls
 
 end Mettapedia.GSLT.Causality.ResourceInteraction

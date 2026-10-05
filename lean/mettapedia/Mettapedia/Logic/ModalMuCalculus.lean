@@ -412,7 +412,7 @@ theorem satisfies_congr
       exact or_congr (leftHypothesis environment state)
         (rightHypothesis environment state)
   | diamond action formula inductionHypothesis =>
-      simp only [satisfies, LTS.successors, Set.mem_setOf_eq]
+      simp only [satisfies, LTS.successors, Set.mem_ofPred_eq]
       constructor
       · rintro ⟨target, transition, satisfied⟩
         exact ⟨target, (transitions _ _ _).mp transition,
@@ -421,7 +421,7 @@ theorem satisfies_congr
         exact ⟨target, (transitions _ _ _).mpr transition,
           (inductionHypothesis environment target).mpr satisfied⟩
   | box action formula inductionHypothesis =>
-      simp only [satisfies, LTS.successors, Set.mem_setOf_eq]
+      simp only [satisfies, LTS.successors, Set.mem_ofPred_eq]
       constructor
       · intro allTargets target transition
         exact (inductionHypothesis environment target).mp
@@ -466,7 +466,7 @@ theorem satisfies_congr
 theorem diamond_box_dual (lts : LTS S Act) (ρ : Env S n) (a : Act) (φ : Formula Act n) (s : S) :
     satisfies lts ρ (Formula.diamond a φ) s ↔
     ¬ satisfies lts ρ (Formula.box a (Formula.neg φ)) s := by
-  simp only [satisfies, LTS.successors, Set.mem_setOf_eq]
+  simp only [satisfies, LTS.successors, Set.mem_ofPred_eq]
   constructor
   · intro ⟨s', htrans, hsat⟩ hall
     exact absurd hsat (hall s' htrans)
@@ -478,7 +478,7 @@ theorem diamond_box_dual (lts : LTS S Act) (ρ : Env S n) (a : Act) (φ : Formul
 theorem box_as_neg_diamond_neg (lts : LTS S Act) (ρ : Env S n) (a : Act) (φ : Formula Act n) (s : S) :
     satisfies lts ρ (Formula.box a φ) s ↔
     ¬ satisfies lts ρ (Formula.diamond a (Formula.neg φ)) s := by
-  simp only [satisfies, LTS.successors, Set.mem_setOf_eq]
+  simp only [satisfies, LTS.successors, Set.mem_ofPred_eq]
   constructor
   · intro hall ⟨s', htrans, hnsat⟩
     exact hnsat (hall s' htrans)

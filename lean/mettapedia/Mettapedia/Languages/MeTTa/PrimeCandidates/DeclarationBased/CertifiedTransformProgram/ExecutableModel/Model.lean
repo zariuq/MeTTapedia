@@ -559,7 +559,8 @@ theorem roots_in {S : Setting Tower.Head ℕ} (factsS : FormFacts S.R S.roles)
   simp only [computations, List.mem_cons, List.not_mem_nil, or_false] at listedEntry
   have laws₀ := laws fun _ => 0
   rcases listedEntry with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · exact (declaresNum (E := declarative rules) fun _ => 0).step_preserves factsS sub formed h
+  · exact (declaresNum (E := declarative rules) fun _ => 0).toRecursor.step_preserves factsS sub
+      formed h
       typing
   · obtain ⟨k, fields, σ, as, memk, has, rfl, rfl⟩ := h
     exact (declaresAdd (fun _ => 0) laws₀).rule_preserves factsS (declaresNum fun _ => 0) sub

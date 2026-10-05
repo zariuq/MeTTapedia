@@ -2,12 +2,13 @@ import Mettapedia.GSLT.LanguageDef.NativeOpsSourceComposition
 import Mettapedia.GSLT.LanguageDef.NativeOpsSourceControl
 
 /-!
-# Exact source execution of constant-return dispatch
+# Exact source dispatch and constant-return arms
 
 These inversion and construction laws execute the existing expression and
-statement relations. A selected arm returns its word without changing any
-memory, fault, local binding or external effect. Selection remains the source
-machine's ordered case lookup; no second dispatch evaluator is introduced.
+statement relations. General dispatch distinguishes a selected block from a
+selector fault. Constant-return arms retain memory, fault, local bindings and
+external effects. Selection remains the source machine's ordered case lookup;
+no second dispatch evaluator is introduced.
 -/
 
 set_option autoImplicit false
@@ -143,6 +144,27 @@ theorem source_return_switch_block_exact {World : Type} {interface : Interface}
     exact .stop ((source_return_switch_statement_exact read selected _).mpr rfl)
       (by intro bad; cases bad)
 
+theorem source_switch_statement_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World}
+    (selector : Expr) (arms : List (Word × List Statement)) (otherwise : List Statement)
+    (frame : SourceFrame) (before : SourceState World) (out : SourceBlockOutcome World) :
+    SourceStatementEval interface heap calls (.switch selector arms otherwise) frame before out ↔
+      (∃ value middle inner,
+        SourceExprEval interface heap calls frame selector before ⟨.ok (.word value), middle⟩ ∧
+        SourceBlockEval interface heap calls (sourceSelectCase value arms otherwise) frame middle inner ∧
+        out = sourceCloseBlock frame inner) ∨
+      (∃ fault after,
+        SourceExprEval interface heap calls frame selector before ⟨.error fault, after⟩ ∧
+        out = ⟨.fault fault, frame, after⟩) := by
+  constructor
+  · intro ran
+    cases ran with
+    | switch read body => exact Or.inl ⟨_, _, _, read, body, rfl⟩
+    | switchFault read => exact Or.inr ⟨_, _, read, rfl⟩
+  · rintro (⟨value, middle, inner, read, body, same⟩ | ⟨fault, after, read, same⟩)
+    · subst out; exact .switch read body
+    · subst out; exact .switchFault read
+
 theorem source_select_return_map {Item : Type} (items : List Item)
     (key result : Item → Word) (selector default : Word) :
     sourceSelectCase selector
@@ -156,5 +178,83 @@ theorem source_select_return_map {Item : Type} (items : List Item)
       by_cases selected : key item == selector
       · simp [sourceSelectCase, selected]
       · simpa [sourceSelectCase, selected] using ih
+
+theorem source_returning_cases_all {arms : List (Word × List Statement)}
+    (checked : returnsCases arms = true) : ∀ arm ∈ arms, returnsBlock arm.2 = true := by
+  induction arms with
+  | nil => intro arm member; cases member
+  | cons arm rest ih =>
+      rcases arm with ⟨key, body⟩
+      simp only [returnsCases, Bool.and_eq_true] at checked
+      intro selected member
+      rcases List.mem_cons.mp member with same | old
+      · cases same; exact checked.1
+      · exact ih checked.2 selected old
+
+/-- The static return test is a sufficient condition for every finite
+    authored execution to end abruptly. It does not assert termination. -/
+theorem source_returning_statement_not_normal {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World}
+    {statement : Statement} {frame : SourceFrame} {state : SourceState World}
+    {out : SourceBlockOutcome World} (checked : returnsStatement statement = true)
+    (ran : SourceStatementEval interface heap calls statement frame state out) : out.flow ≠ .normal := by
+  revert checked
+  induction ran using SourceStatementEval.rec
+    (motive_2 := fun body _ _ out _ => returnsBlock body = true → out.flow ≠ .normal)
+  all_goals first
+    | (intro impossible; simp only [returnsStatement, Bool.false_eq_true] at impossible; done)
+    | skip
+  case returnUnit => intro _ bad; cases bad
+  case returnValue => intro _ bad; cases bad
+  case returnFault => intro _ bad; cases bad
+  case block =>
+    rename_i bodyRan bodyIH
+    intro checked
+    exact bodyIH (by simpa only [returnsStatement] using checked)
+  case branchFault => intro _ bad; cases bad
+  case switchFault => intro _ bad; cases bad
+  case nil =>
+    rename_i impossible
+    simp only [returnsBlock, Bool.false_eq_true] at impossible
+  case branch =>
+    rename_i bodyRan bodyIH
+    intro checked
+    simp only [returnsStatement, Bool.and_eq_true] at checked
+    apply bodyIH
+    split
+    · exact checked.1
+    · exact checked.2
+  case switch =>
+    rename_i bodyRan bodyIH
+    intro checked
+    simp only [returnsStatement, Bool.and_eq_true] at checked
+    apply bodyIH
+    exact source_select_case_property (fun body => returnsBlock body = true) _
+      (source_returning_cases_all checked.2) checked.1
+  case cons =>
+    rename_i headIH tailIH checked
+    simp only [returnsBlock, Bool.or_eq_true] at checked
+    rcases checked with headChecked | tailChecked
+    · exact False.elim ((headIH headChecked) rfl)
+    · exact tailIH tailChecked
+  case stop =>
+    rename_i abrupt _headIH _checked
+    exact abrupt
+
+theorem source_returning_block_not_normal {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World}
+    {body : List Statement} {frame : SourceFrame} {state : SourceState World}
+    {out : SourceBlockOutcome World} (checked : returnsBlock body = true)
+    (ran : SourceBlockEval interface heap calls body frame state out) : out.flow ≠ .normal := by
+  induction body generalizing frame state with
+  | nil => simp only [returnsBlock, Bool.false_eq_true] at checked
+  | cons first rest ih =>
+      simp only [returnsBlock, Bool.or_eq_true] at checked
+      cases ran with
+      | cons head tail =>
+          rcases checked with headChecked | tailChecked
+          · exact False.elim ((source_returning_statement_not_normal headChecked head) rfl)
+          · exact ih tailChecked tail
+      | stop _ abrupt => exact abrupt
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

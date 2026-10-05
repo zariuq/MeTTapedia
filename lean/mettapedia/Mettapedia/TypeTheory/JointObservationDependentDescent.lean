@@ -105,7 +105,9 @@ theorem image_allFamiliesDescend_iff_injective
 
 /-! ## Indexed families of observations -/
 
-/-- Heterogeneous observations of one source carrier. -/
+set_option linter.checkUnivs false in
+/-- Heterogeneous observations of one source carrier. The index and target
+levels are independent fields; the enclosing record combines them in its sort. -/
 structure ObservationFamily (Source : Type uSource) where
   Index : Type uIndex
   Target : Index -> Type uTarget

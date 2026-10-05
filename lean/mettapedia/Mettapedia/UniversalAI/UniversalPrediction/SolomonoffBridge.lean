@@ -89,7 +89,7 @@ noncomputable abbrev M₂ : Semimeasure :=
 
 /-- Universal mixture over lower-semicomputable **semimeasures** using `2^{-Kpf}` weights
 (Hutter-style V3 with an explicit universal prefix-free machine `U`). -/
-noncomputable abbrev M₃ (U : PrefixFreeMachine) [UniversalPFM U] : Semimeasure :=
+noncomputable abbrev M₃ (U : PrefixFreeMachine) [OutputComplete U] : Semimeasure :=
   HutterV3Kpf.M₃ (U := U)
 
 /-! ## Part 2: Dominance/Regret (Theorem-grade, no axiomatized dominance) -/
@@ -208,7 +208,7 @@ For the `kpfWeight` mixture `M₃(U)`, the dominance constant is literally `2^{-
 and the regret bound becomes `Kpf * log 2` directly. -/
 
 /-- Code-level dominance→regret bound for `M₃(U)`, stated in the `Kpf * log 2` form. -/
-theorem relEntropy_le_codeKpf_log2_M₃ (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem relEntropy_le_codeKpf_log2_M₃ (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (hμ : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ)
     (n : ℕ) :
     ∃ code : Nat.Partrec.Code,
@@ -220,7 +220,7 @@ theorem relEntropy_le_codeKpf_log2_M₃ (U : PrefixFreeMachine) [UniversalPFM U]
 
 /-- Hutter-style V3 bound, stated using the *minimum* complexity `K(μ)` among all codes
 enumerating `μ`. -/
-theorem relEntropy_le_Kμ_log2_M₃ (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem relEntropy_le_Kμ_log2_M₃ (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (hμ : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ)
     (n : ℕ) :
     relEntropy μ (M₃ (U := U)) n ≤ (HutterV3Kpf.Kμ (U := U) μ : ℝ) * Real.log 2 := by
@@ -228,7 +228,7 @@ theorem relEntropy_le_Kμ_log2_M₃ (U : PrefixFreeMachine) [UniversalPFM U] (μ
 
 /-- Machine invariance: `K(μ)` changes by at most an additive constant when switching universal
 machines. -/
-theorem invariance_Kμ (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V] :
+theorem invariance_Kμ (U V : KolmogorovComplexity.ReferenceMachine) :
     ∃ c : ℕ, ∀ μ : PrefixMeasure,
       Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ →
         HutterV3Kpf.Kμ (U := U) μ ≤ HutterV3Kpf.Kμ (U := V) μ + c ∧
@@ -236,7 +236,7 @@ theorem invariance_Kμ (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM 
   HutterV3Kpf.invariance_Kμ (U := U) (V := V)
 
 /-- Hutter’s V3 dominance constant can be taken to be exactly `2^{-K(μ)}`. -/
-theorem dominates_M₃_of_LSC_Kμ (U : PrefixFreeMachine) [UniversalPFM U] (μ : PrefixMeasure)
+theorem dominates_M₃_of_LSC_Kμ (U : PrefixFreeMachine) [OutputComplete U] (μ : PrefixMeasure)
     (hμ : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure μ) :
     Dominates (M₃ (U := U)) μ ((2 : ENNReal) ^ (-(HutterV3Kpf.Kμ (U := U) μ : ℤ))) := by
   simpa [M₃] using (HutterV3Kpf.dominates_M₃_of_LSC_Kμ (U := U) (μ := μ) hμ)
@@ -316,14 +316,15 @@ The relationship between algorithmic probability M(x) and Kolmogorov complexity 
 
     The shortest program for x contributes at least 2^{-K(x)} to M(x).
 -/
-theorem levin_lower_bound (U : PrefixFreeMachine) [UniversalPFM U]
+theorem levin_lower_bound (U : PrefixFreeMachine)
     (M : Mettapedia.UniversalAI.SolomonoffInduction.Semimeasure) (x : BinString)
-    (_hx : ∃ p, U.compute p = some x)
+    (hx : ∃ p, U.compute p = some x)
     (hM_contains : ∀ p, U.compute p = some x →
       (2 : ENNReal)^(-(p.length : ℤ)) ≤ M x) :
     (2 : ENNReal)^(-(KolmogorovComplexity.prefixComplexity U x : ℤ)) ≤ M x := by
   -- Use the shortest program and its properties
-  have ⟨hp_comp, hp_len⟩ := KolmogorovComplexity.shortestProgram_spec U x
+  obtain ⟨program, hp_comp, hp_len⟩ :=
+    Mettapedia.UniversalAI.SolomonoffPrior.exists_program_of_complexity U x hx
   have h := hM_contains _ hp_comp
   rw [hp_len] at h
   exact h
@@ -347,48 +348,11 @@ theorem semimeasure_le_one (M : Mettapedia.UniversalAI.SolomonoffInduction.Semim
           | true => exact le_of_add_le_right h
       _ ≤ 1 := ih
 
-/-- Levin's Coding Theorem (Upper Bound): M(x) ≤ c · 2^{-K(x)}
-
-    **The Coding Theorem (Levin 1974)**:
-    For the universal semimeasure M(x) = Σ_{p: U(p)=x} 2^{-|p|}:
-
-      K(x) = -log M(x) ± O(1)
-
-    Equivalently: there exists a universal constant c such that
-      M(x) ≤ c · 2^{-K(x)}
-
-    **Proof Sketch** (from Li & Vitányi "An Introduction to Kolmogorov Complexity"):
-    1. Programs outputting x form a prefix-free set
-    2. The shortest program contributes 2^{-K(x)} to M(x)
-    3. Longer programs contribute less individually, but there could be many
-    4. The key insight: by prefix-freeness, the total contribution from
-       programs of length K(x)+k is bounded by 2^k · 2^{-(K(x)+k)} · f(k)
-       where f(k) accounts for the structure of prefix-free codes
-    5. Summing over k gives M(x) ≤ c · 2^{-K(x)} for universal c
-
-    **In this formalization**: We require M to be bounded by some multiple of 2^{-K(x)}.
-    The constant c encapsulates the Coding Theorem.
-
-    References:
-    - Levin (1974): "Laws of information conservation"
-    - Li & Vitányi (2008): "An Introduction to Kolmogorov Complexity", Theorem 4.3.3
-    - Scholarpedia: https://www.scholarpedia.org/article/Algorithmic_probability
--/
-theorem levin_upper_bound (U : PrefixFreeMachine) [UniversalPFM U]
-    (M : Mettapedia.UniversalAI.SolomonoffInduction.Semimeasure) (x : BinString)
-    (_hx : ∃ p, U.compute p = some x)
-    -- Hypothesis: M satisfies the Coding Theorem bound with constant c
-    (hM_coding : ∃ c : ENNReal, c ≠ 0 ∧ c ≠ ⊤ ∧
-      M x ≤ c * (2 : ENNReal)^(-(KolmogorovComplexity.prefixComplexity U x : ℤ))) :
-    M x ≤ (Classical.choose hM_coding) *
-      (2 : ENNReal)^(-(KolmogorovComplexity.prefixComplexity U x : ℤ)) :=
-  (Classical.choose_spec hM_coding).2.2
-
 /-- For any semimeasure, we can always take c = 2^{K(x)} to satisfy the upper bound.
     This gives a non-universal but always valid constant. -/
-theorem levin_upper_bound_nonuniversal (U : PrefixFreeMachine) [UniversalPFM U]
+theorem semimeasure_le_reciprocal_complexity_weight (U : PrefixFreeMachine)
     (M : Mettapedia.UniversalAI.SolomonoffInduction.Semimeasure) (x : BinString)
-    (_hx : ∃ p, U.compute p = some x) :
+    :
     M x ≤ (2 : ENNReal)^(KolmogorovComplexity.prefixComplexity U x : ℤ) *
       (2 : ENNReal)^(-(KolmogorovComplexity.prefixComplexity U x : ℤ)) := by
   -- 2^K(x) · 2^{-K(x)} = 2^K(x) · (2^K(x))⁻¹ = 1 ≥ M(x)

@@ -14,7 +14,7 @@ candidate estimate is checked; confidence is kept as a separate coordinate.
 namespace Mettapedia.PLN.InferenceControl.CertifiedChaining.DependenceAwareChainComposition
 
 open scoped BigOperators ENNReal NNReal
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.PLN.InferenceControl.CertifiedChaining.EstimatorEnvelope
 open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathDependency
 open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathFrechet

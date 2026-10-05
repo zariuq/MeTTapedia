@@ -142,8 +142,7 @@ def transportFiber {source target : CostElaborationBase}
     CostElaborationFiber target.toLayer.source.toCIGSLT :=
   mapCostElaborationFiber
     morphism.underlying.underlying.underlying
-    (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
-      morphism.underlying.compactMapLaws)
+    morphism.underlying.compactMapLaws.preservesGeneratedReflectiveScope
     morphism.reindexLaws fiber
 
 /-- The transported total object over the codomain of a conservative cost layer
@@ -164,8 +163,7 @@ def transportLift {source target : CostElaborationBase}
   decoration_natural :=
     (mapCostElaborationFiber_decoration
       morphism.underlying.underlying.underlying
-      (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
-        morphism.underlying.compactMapLaws)
+      morphism.underlying.compactMapLaws.preservesGeneratedReflectiveScope
       morphism.reindexLaws fiber).symm
 
 /-- The chosen structural lift lies over exactly the requested base arrow. -/
@@ -210,8 +208,7 @@ def transportFactor
       simpa [transportObject, transportFiber, decoration] using
         (mapCostElaborationFiber_decoration
           morphism.underlying.underlying.underlying
-          (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
-            morphism.underlying.compactMapLaws)
+          morphism.underlying.compactMapLaws.preservesGeneratedReflectiveScope
           morphism.reindexLaws fiber)
     calc
       (transportObject morphism fiber).decoration.map

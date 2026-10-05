@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeCandidateCostInterface
 import Mettapedia.Languages.MeTTa.PrimeCandidates.SelectedCostLayerIterationBoundary
+import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeCostLayerPaidRuns
 
 /-!
 # The reflective-rho Cost annex for candidate
@@ -9,6 +10,11 @@ unconditional reflective-rho cost layer domain object and its selected cost-laye
 cache/replay boundary.  It is intentionally separate from the
 language-independent interface so candidate and dependent type theory can develop
 against Cost contracts without importing a concrete language provider.
+
+Compiled rho schedules also have funded occurrence runs with the same receipts,
+payment and event work. The wave structure supplies span; the firing list alone
+does not determine it. This comparison does not identify payment or event work
+with the native evaluator's instruction metric.
 -/
 
 #check Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoHereditaryCostLayer

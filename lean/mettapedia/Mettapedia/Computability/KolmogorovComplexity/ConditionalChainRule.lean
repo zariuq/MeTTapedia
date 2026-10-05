@@ -324,15 +324,6 @@ noncomputable def UpperConditionalChainRule.ofPairSimulation
       Nat.add_comm] at bound ⊢
     exact bound
 
-/-- Strong conditional universality discharges the constructive upper chain
-rule by uniformly compiling the concatenating pair machine. -/
-noncomputable def UpperConditionalChainRule.ofUniformUniversality
-    {U : ConditionalPrefixFreeMachine}
-    [UniformlyUniversalConditionalPFM U] :
-    UpperConditionalChainRule U :=
-  UpperConditionalChainRule.ofPairSimulation
-    (UniformlyUniversalConditionalPFM.simulates (U := U) (chainPairMachine U))
-
 /-- Once the lower Kraft--Chaitin bound is supplied, the proved upper rule and
 lower rule combine using the maximum of their constants. -/
 def StrongConditionalChainRule.ofUpperLower
@@ -357,7 +348,6 @@ def StrongConditionalChainRule.ofUpperLower
 
 #print axioms chainPairMachine_program
 #print axioms UpperConditionalChainRule.ofPairSimulation
-#print axioms UpperConditionalChainRule.ofUniformUniversality
 #print axioms StrongConditionalChainRule.ofUpperLower
 
 end KolmogorovComplexity

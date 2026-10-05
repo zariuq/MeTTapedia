@@ -10,10 +10,10 @@ its motive instead of casting it (`tmodelC`).
 
 * The daimon is a fresh constant `⋆` that no rule of the package declares; it is
   rigid.
-* The roles are model C's, with six fresh constants that no rule of the
+* The roles are model C's, with five fresh constants that no rule of the
   package declares, like the daimon: `coe` inspects its target for a head
-  form, and `coeU`, `coeNum`, `coeProp`, `coePi`, `coeSigma` inspect its
-  source. `holds` stays rigid.
+  form, and `coeU`, `coeConst`, `coePi`, `coeSigma` inspect its source.
+  `holds` stays rigid.
 * The reduction is model C's, with the cast of identity elimination replaced by
   `J A x P d y e ⟶ coe (P x (refl x)) (P y e) d`, and the rows of the transport
   table added; the row of `coeU` compares universe levels at the valuation.
@@ -22,6 +22,12 @@ The package is root-shaped and deterministic, has the laws of a consistency
 model, and has the transport table with the daimon (`tmodel_coeTable`), so every
 row of the table holds on the skeleton-free value side over it
 (`vmodel_coeRules`).
+
+The model is built from its roles and its computations (`tmodelOf`), and the rows
+of the transport read the roles (`tmodelComputationsAt`): a value side with more
+inductive types, read by other roles, has the same construction, its transport
+rows reading its own type constants. The transport value model is the instance at
+model C's roles (`tmodelC`).
 -/
 
 set_option autoImplicit false
@@ -58,10 +64,9 @@ theorem modelRoles_star : modelRoles starN = .rigid :=
 def coeN : DeclName := .mkSimple "coe"
 /-- The transport into a universe, once the target is read. -/
 def coeUN : DeclName := .mkSimple "coe-univ"
-/-- The transport into the numbers, once the target is read. -/
-def coeNumN : DeclName := .mkSimple "coe-num"
-/-- The transport into the codes, once the target is read. -/
-def coePropN : DeclName := .mkSimple "coe-prop"
+/-- The transport into a type constant, the codes or an inductive type, once the
+target is read. -/
+def coeConstN : DeclName := .mkSimple "coe-const"
 /-- The transport into a dependent function type, once the target is read. -/
 def coePiN : DeclName := .mkSimple "coe-pi"
 /-- The transport into a dependent pair type, once the target is read. -/
@@ -71,13 +76,12 @@ def coeSigmaN : DeclName := .mkSimple "coe-sigma"
 def coeNames : CoeNames where
   coe := coeN
   coeU := coeUN
-  coeNum := coeNumN
-  coeProp := coePropN
+  coeConst := coeConstN
   coePi := coePiN
   coeSigma := coeSigmaN
 
 /-- The transport's constants, as a list. -/
-abbrev coeNameList : List DeclName := [coeN, coeUN, coeNumN, coePropN, coePiN, coeSigmaN]
+abbrev coeNameList : List DeclName := [coeN, coeUN, coeConstN, coePiN, coeSigmaN]
 
 /-- **The transport's constants are fresh**: neither the package nor the
 object package declares them, they are no code instance, and they differ from
@@ -94,8 +98,7 @@ constants inspecting their type arguments for head forms. -/
 def tmodelRoles : Roles Tower.Head := fun name =>
   if name = coeN then .computes 3 (headAt 1)
   else if name = coeUN then .computes 3 headAtBoth
-  else if name = coeNumN then .computes 2 (headAt 0)
-  else if name = coePropN then .computes 2 (headAt 0)
+  else if name = coeConstN then .computes 3 (headAt 1)
   else if name = coePiN then .computes 4 (headAt 2)
   else if name = coeSigmaN then .computes 4 (headAt 2)
   else modelRoles name
@@ -103,9 +106,9 @@ def tmodelRoles : Roles Tower.Head := fun name =>
 theorem tmodelRoles_eq {name : DeclName} (fresh : name ∉ coeNameList) :
     tmodelRoles name = modelRoles name := by
   simp only [coeNameList, List.mem_cons, List.not_mem_nil, or_false, not_or] at fresh
-  obtain ⟨h₁, h₂, h₃, h₄, h₅, h₆⟩ := fresh
+  obtain ⟨h₁, h₂, h₃, h₄, h₅⟩ := fresh
   unfold tmodelRoles
-  rw [if_neg h₁, if_neg h₂, if_neg h₃, if_neg h₄, if_neg h₅, if_neg h₆]
+  rw [if_neg h₁, if_neg h₂, if_neg h₃, if_neg h₄, if_neg h₅]
 
 theorem tmodelRoles_coe : tmodelRoles coeN = .computes 3 (headAt 1) := by
   unfold tmodelRoles
@@ -115,23 +118,18 @@ theorem tmodelRoles_coeU : tmodelRoles coeUN = .computes 3 headAtBoth := by
   unfold tmodelRoles
   rw [if_neg (by decide), if_pos rfl]
 
-theorem tmodelRoles_coeNum : tmodelRoles coeNumN = .computes 2 (headAt 0) := by
+theorem tmodelRoles_coeConst : tmodelRoles coeConstN = .computes 3 (headAt 1) := by
   unfold tmodelRoles
   rw [if_neg (by decide), if_neg (by decide), if_pos rfl]
 
-theorem tmodelRoles_coeProp : tmodelRoles coePropN = .computes 2 (headAt 0) := by
-  unfold tmodelRoles
-  rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), if_pos rfl]
-
 theorem tmodelRoles_coePi : tmodelRoles coePiN = .computes 4 (headAt 2) := by
   unfold tmodelRoles
-  rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), if_neg (by decide),
-    if_pos rfl]
+  rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), if_pos rfl]
 
 theorem tmodelRoles_coeSigma : tmodelRoles coeSigmaN = .computes 4 (headAt 2) := by
   unfold tmodelRoles
   rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), if_neg (by decide),
-    if_neg (by decide), if_pos rfl]
+    if_pos rfl]
 
 theorem tmodelRoles_num : tmodelRoles numN = .inductive ctors :=
   (tmodelRoles_eq (by decide)).trans modelRoles_num
@@ -200,11 +198,10 @@ theorem tmodelRoles_inductive {T : DeclName} {cs : List (DeclName × List CtorFi
   by_cases fresh : T ∈ coeNameList
   · exfalso
     simp only [coeNameList, List.mem_cons, List.not_mem_nil, or_false] at fresh
-    rcases fresh with rfl | rfl | rfl | rfl | rfl | rfl
+    rcases fresh with rfl | rfl | rfl | rfl | rfl
     · rw [tmodelRoles_coe] at role; cases role
     · rw [tmodelRoles_coeU] at role; cases role
-    · rw [tmodelRoles_coeNum] at role; cases role
-    · rw [tmodelRoles_coeProp] at role; cases role
+    · rw [tmodelRoles_coeConst] at role; cases role
     · rw [tmodelRoles_coePi] at role; cases role
     · rw [tmodelRoles_coeSigma] at role; cases role
   · rw [tmodelRoles_eq fresh] at role
@@ -226,23 +223,123 @@ theorem tmodelConstructorsDeclared : ConstructorsDeclared tmodelRoles where
 theorem tmodelRoles_num_stuck : ∀ arity inspect, tmodelRoles numN ≠ .computes arity inspect :=
   fun _ _ h => nomatch tmodelRoles_num.symm.trans h
 
-theorem tmodelRoles_prop_stuck : ∀ arity inspect, tmodelRoles propN ≠ .computes arity inspect :=
-  fun _ _ h => nomatch tmodelRoles_prop.symm.trans h
+/-! ## Roles that extend the transport value model's -/
+
+/-- **Roles extending the transport value model's by new names**: they agree with
+`tmodelRoles` at every other name, and no new name is declared by the package or its
+codes, is a code instance, a constant of the transport, or the daimon. -/
+structure TExtends (roles : Roles Tower.Head) (names : List DeclName) : Prop where
+  old : ∀ {c : DeclName}, c ∉ names → roles c = tmodelRoles c
+  fresh : ∀ c ∈ names, objectRules.constantType c = none ∧ c ∉ coeNameList ∧ c ≠ starN ∧
+    SetProfile.allInstance? c = none ∧ SetProfile.eqInstance? c = none
+
+/-- The transport value model's roles extend themselves by no name. -/
+theorem tmodelRoles_extends : TExtends tmodelRoles [] :=
+  ⟨fun _ => rfl, fun _ h => nomatch h⟩
+
+namespace TExtends
+
+variable {roles : Roles Tower.Head} {names : List DeclName} (ext : TExtends roles names)
+include ext
+
+/-- A name the package or its codes declare, a code instance, a constant of the transport
+or the daimon keeps its role. -/
+theorem keep {c : DeclName}
+    (known : objectRules.constantType c ≠ none ∨ c ∈ coeNameList ∨ c = starN ∨
+      SetProfile.allInstance? c ≠ none ∨ SetProfile.eqInstance? c ≠ none) :
+    roles c = tmodelRoles c := by
+  refine ext.old fun mem => ?_
+  obtain ⟨declared, notCoe, notStar, notAll, notEq⟩ := ext.fresh c mem
+  rcases known with h | h | h | h | h
+  · exact h declared
+  · exact notCoe h
+  · exact notStar h
+  · exact h notAll
+  · exact h notEq
+
+theorem num : roles numN = .inductive ctors := (ext.keep (.inl (by decide))).trans tmodelRoles_num
+theorem zero : roles zeroN = .constructor 0 := (ext.keep (.inl (by decide))).trans tmodelRoles_zero
+theorem suc : roles sucN = .constructor 1 := (ext.keep (.inl (by decide))).trans tmodelRoles_suc
+theorem numRec :
+    roles numRecName = .computes 4 (.split 3 .constructor fun _ => .leaf) :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_numRec
+theorem add : roles addN = .computes 2 (.split 1 .constructor fun _ => .leaf) :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_add
+theorem pow : roles powN = .computes 2 (.split 0 .constructor fun _ => .leaf) :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_pow
+theorem j : roles jName = .computes 6 .leaf := (ext.keep (.inl (by decide))).trans tmodelRoles_j
+theorem eqAt : roles eqAtName = .computes 1 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_eqAt
+theorem sucMove : roles sucMoveName = .computes 2 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_sucMove
+theorem keepRole : roles keepName = .computes 4 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_keep
+theorem transport : roles transportName = .computes 6 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_transport
+theorem compose : roles composeName = .computes 6 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_compose
+theorem iter : roles iterName = .computes 6 (.split 0 .constructor fun _ => .leaf) :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_iter
+theorem returnIter : roles returnIterName = .computes 1 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_returnIter
+theorem sucStep : roles sucStepName = .computes 2 .leaf :=
+  (ext.keep (.inl (by decide))).trans tmodelRoles_sucStep
+theorem coe : roles coeN = .computes 3 (headAt 1) :=
+  (ext.keep (.inr (.inl (by decide)))).trans tmodelRoles_coe
+theorem coeU : roles coeUN = .computes 3 headAtBoth :=
+  (ext.keep (.inr (.inl (by decide)))).trans tmodelRoles_coeU
+theorem coeConst : roles coeConstN = .computes 3 (headAt 1) :=
+  (ext.keep (.inr (.inl (by decide)))).trans tmodelRoles_coeConst
+theorem coePi : roles coePiN = .computes 4 (headAt 2) :=
+  (ext.keep (.inr (.inl (by decide)))).trans tmodelRoles_coePi
+theorem coeSigma : roles coeSigmaN = .computes 4 (headAt 2) :=
+  (ext.keep (.inr (.inl (by decide)))).trans tmodelRoles_coeSigma
+theorem imp : roles impN = .constructor 2 := (ext.keep (.inl (by decide))).trans tmodelRoles_imp
+theorem prop : roles propN = .rigid := (ext.keep (.inl (by decide))).trans tmodelRoles_prop
+theorem holds : roles holdsN = .rigid := (ext.keep (.inl (by decide))).trans tmodelRoles_holds
+theorem star : roles starN = .rigid :=
+  (ext.keep (.inr (.inr (.inl rfl)))).trans tmodelRoles_star
+theorem setRigid : roles setN = .rigid :=
+  (ext.keep (.inl (by decide))).trans ((tmodelRoles_eq (by decide)).trans
+    ((modelRoles_of (name := setN) (by decide) (by decide) (by decide) (by decide)).trans
+      roles_set))
+
+theorem allCode {name : DeclName} {type : HOL.Ty SetProfile.SetBase}
+    (found : SetProfile.allInstance? name = some type) : roles name = .constructor 1 :=
+  (ext.keep (.inr (.inr (.inr (.inl (by rw [found]; exact Option.some_ne_none _)))))).trans
+    (tmodelRoles_all found)
+
+theorem eqCode {name : DeclName} {type : HOL.Ty SetProfile.SetBase}
+    (found : SetProfile.eqInstance? name = some type) : roles name = .constructor 2 :=
+  (ext.keep (.inr (.inr (.inr (.inr (by rw [found]; exact Option.some_ne_none _)))))).trans
+    (tmodelRoles_eqCode found)
+
+theorem num_stuck : ∀ arity inspect, roles numN ≠ .computes arity inspect :=
+  fun _ _ h => nomatch ext.num.symm.trans h
+
+theorem prop_stuck : ∀ arity inspect, roles propN ≠ .computes arity inspect :=
+  fun _ _ h => nomatch ext.prop.symm.trans h
+
+end TExtends
 
 /-! ## The reduction -/
 
-/-- The parameters of the transport table at the valuation `v`. -/
-def tcoeParams (v : Nat → Nat) : CoeParams Tower.Head ℕ where
-  roles := tmodelRoles
+/-- The parameters of the transport table at the valuation `v`, with the roles that tell
+which constants are type constants and which forms are head forms. -/
+def tcoeParamsAt (roles : Roles Tower.Head) (v : Nat → Nat) : CoeParams Tower.Head ℕ where
+  roles := roles
   isUniverse := Tower.rules.isUniverse
   level := (TowerModel.levels v).level
-  num := numN
   prop := propN
   star := starN
 
+/-- The parameters of the transport table at the valuation `v`. -/
+abbrev tcoeParams (v : Nat → Nat) : CoeParams Tower.Head ℕ := tcoeParamsAt tmodelRoles v
+
 /-- Model C's computations, with the transport in place of the cast of identity
-elimination, and the rows of the transport table. -/
-def tmodelComputations (v : Nat → Nat) : List (DeclName × RootComputation Tower.Head) :=
+elimination, and the rows of the transport table read with the roles `roles`. -/
+def tmodelComputationsAt (roles : Roles Tower.Head) (v : Nat → Nat) :
+    List (DeclName × RootComputation Tower.Head) :=
   [(numRecName, iotaComputation numRecName ctors),
    (addN, recursionComputation addN ctors addEntries 1 0 addBody),
    (powN, recursionComputation powN ctors powEntries 0 1 powBody),
@@ -255,66 +352,57 @@ def tmodelComputations (v : Nat → Nat) : List (DeclName × RootComputation Tow
    (iterName, recursionComputation iterName ctors iterEntries 0 5 iterBody),
    (returnIterName, definitionComputation returnIterName returnIterTele returnIterRhs),
    (sucStepName, definitionComputation sucStepName Package.eqAtTelescope sucStepRhs),
-   (coeN, coeComputation (tcoeParams v) coeNames),
-   (coeUN, coeUComputation (tcoeParams v) coeNames),
-   (coeNumN, coeConstComputation (tcoeParams v) coeNumN numN),
-   (coePropN, coeConstComputation (tcoeParams v) coePropN propN),
-   (coePiN, coePiComputation (tcoeParams v) coeNames),
-   (coeSigmaN, coeSigmaComputation (tcoeParams v) coeNames)]
+   (coeN, coeComputation (tcoeParamsAt roles v) coeNames),
+   (coeUN, coeUComputation (tcoeParamsAt roles v) coeNames),
+   (coeConstN, coeConstComputation (tcoeParamsAt roles v) coeNames),
+   (coePiN, coePiComputation (tcoeParamsAt roles v) coeNames),
+   (coeSigmaN, coeSigmaComputation (tcoeParamsAt roles v) coeNames)]
 
-/-- The reduction package of the transport value model. -/
-def tmodelRules (v : Nat → Nat) : Rules Tower.Head :=
+/-- Model C's computations, with the transport in place of the cast of identity
+elimination, and the rows of the transport table. -/
+abbrev tmodelComputations (v : Nat → Nat) : List (DeclName × RootComputation Tower.Head) :=
+  tmodelComputationsAt tmodelRoles v
+
+/-- A reduction package over the tower: the executable package's declared types and the
+given computations. -/
+def tmodelRulesOf (comps : List (DeclName × RootComputation Tower.Head)) : Rules Tower.Head :=
   { Tower.rules with
     constantType := allTypes
-    computation := RootComputation.unionAll (tmodelComputations v) }
+    computation := RootComputation.unionAll comps }
 
-theorem tmodelComputations_names (v : Nat → Nat) :
-    (tmodelComputations v).map Prod.fst =
+/-- The reduction package of the transport value model. -/
+abbrev tmodelRules (v : Nat → Nat) : Rules Tower.Head := tmodelRulesOf (tmodelComputations v)
+
+theorem tmodelComputationsAt_names (roles : Roles Tower.Head) (v : Nat → Nat) :
+    (tmodelComputationsAt roles v).map Prod.fst =
       [numRecName, addN, powN, jName, eqAtName, sucMoveName, keepName, transportName,
-        composeName, iterName, returnIterName, sucStepName, coeN, coeUN, coeNumN, coePropN,
+        composeName, iterName, returnIterName, sucStepName, coeN, coeUN, coeConstN,
         coePiN, coeSigmaN] :=
   rfl
 
-theorem tmodelComputations_distinct (v : Nat → Nat) :
-    ((tmodelComputations v).map Prod.fst).Nodup := by
-  rw [tmodelComputations_names]
+theorem tmodelComputationsAt_distinct (roles : Roles Tower.Head) (v : Nat → Nat) :
+    ((tmodelComputationsAt roles v).map Prod.fst).Nodup := by
+  rw [tmodelComputationsAt_names]
   decide
 
-theorem tmodelComputations_spine (v : Nat → Nat) :
-    ∀ entry ∈ tmodelComputations v, SpineShaped tmodelRoles entry.2 := by
+/-- Each computation is headed by a name the package declares or a constant of the
+transport. -/
+theorem tmodelComputationsAt_known (roles : Roles Tower.Head) (v : Nat → Nat) :
+    ∀ entry ∈ tmodelComputationsAt roles v,
+      objectRules.constantType entry.1 ≠ none ∨ entry.1 ∈ coeNameList := by
   intro entry mem
-  simp only [tmodelComputations, List.mem_cons, List.not_mem_nil, or_false] at mem
-  rcases mem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl
-  · exact fun _ _ _ step =>
-      IotaStep.spine tmodelRoles_num tmodelRoles_numRec tmodelConstructorsDeclared step
-  · exact fun _ _ _ step =>
-      RecursionStep.spine tmodelRoles_num tmodelConstructorsDeclared tmodelRoles_add step
-  · exact fun _ _ _ step =>
-      RecursionStep.spine tmodelRoles_num tmodelConstructorsDeclared tmodelRoles_pow step
-  · exact transportJ_spine tmodelRoles_j
-  · exact definitionComputation_spine tmodelRoles_eqAt
-  · exact definitionComputation_spine tmodelRoles_sucMove
-  · exact definitionComputation_spine tmodelRoles_keep
-  · exact definitionComputation_spine tmodelRoles_transport
-  · exact definitionComputation_spine tmodelRoles_compose
-  · exact fun _ _ _ step =>
-      RecursionStep.spine tmodelRoles_num tmodelConstructorsDeclared tmodelRoles_iter step
-  · exact definitionComputation_spine tmodelRoles_returnIter
-  · exact definitionComputation_spine tmodelRoles_sucStep
-  · exact coeComputation_spine tmodelRoles_coe tmodelRoles_num_stuck tmodelRoles_prop_stuck
-  · exact coeUComputation_spine tmodelRoles_coeU
-  · exact coeConstComputation_spine tmodelRoles_coeNum tmodelRoles_num_stuck
-  · exact coeConstComputation_spine tmodelRoles_coeProp tmodelRoles_prop_stuck
-  · exact coePiComputation_spine tmodelRoles_coePi
-  · exact coeSigmaComputation_spine tmodelRoles_coeSigma
+  have name := List.mem_map_of_mem (f := Prod.fst) mem
+  rw [tmodelComputationsAt_names] at name
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at name
+  rcases name with h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h <;>
+    rw [h] <;> decide
 
-theorem tmodelComputations_headed (v : Nat → Nat) :
-    ∀ entry ∈ tmodelComputations v, HeadedBy entry.1 entry.2 := by
+theorem tmodelComputationsAt_headed (roles : Roles Tower.Head) (v : Nat → Nat) :
+    ∀ entry ∈ tmodelComputationsAt roles v, HeadedBy entry.1 entry.2 := by
   intro entry mem
-  simp only [tmodelComputations, List.mem_cons, List.not_mem_nil, or_false] at mem
+  simp only [tmodelComputationsAt, List.mem_cons, List.not_mem_nil, or_false] at mem
   rcases mem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl
+    rfl | rfl | rfl | rfl | rfl
   · exact iotaComputation_headed
   · exact recursionComputation_headed
   · exact recursionComputation_headed
@@ -330,48 +418,87 @@ theorem tmodelComputations_headed (v : Nat → Nat) :
   · exact coeComputation_headed
   · exact coeUComputation_headed
   · exact coeConstComputation_headed
-  · exact coeConstComputation_headed
   · exact coePiComputation_headed
   · exact coeSigmaComputation_headed
 
-theorem tmodelComputations_deterministic (v : Nat → Nat) :
-    ∀ entry ∈ tmodelComputations v, Deterministic entry.2 := by
+section Extension
+
+variable {roles : Roles Tower.Head} {names : List DeclName} (ext : TExtends roles names)
+  (declared : ConstructorsDeclared roles)
+include ext declared
+
+theorem tmodelComputationsAt_spine (v : Nat → Nat) :
+    ∀ entry ∈ tmodelComputationsAt roles v, SpineShaped roles entry.2 := by
   intro entry mem
-  simp only [tmodelComputations, List.mem_cons, List.not_mem_nil, or_false] at mem
+  simp only [tmodelComputationsAt, List.mem_cons, List.not_mem_nil, or_false] at mem
   rcases mem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl
-  · exact fun _ _ _ _ step step' =>
-      IotaStep.deterministic (T := numN) tmodelRoles_num tmodelConstructorsDeclared step step'
-  · exact fun _ _ _ _ step step' =>
-      RecursionStep.deterministic tmodelRoles_num tmodelConstructorsDeclared step step'
-  · exact fun _ _ _ _ step step' =>
-      RecursionStep.deterministic tmodelRoles_num tmodelConstructorsDeclared step step'
+    rfl | rfl | rfl | rfl | rfl
+  · exact fun _ _ _ step => IotaStep.spine ext.num ext.numRec declared step
+  · exact fun _ _ _ step => RecursionStep.spine ext.num declared ext.add step
+  · exact fun _ _ _ step => RecursionStep.spine ext.num declared ext.pow step
+  · exact transportJ_spine ext.j
+  · exact definitionComputation_spine ext.eqAt
+  · exact definitionComputation_spine ext.sucMove
+  · exact definitionComputation_spine ext.keepRole
+  · exact definitionComputation_spine ext.transport
+  · exact definitionComputation_spine ext.compose
+  · exact fun _ _ _ step => RecursionStep.spine ext.num declared ext.iter step
+  · exact definitionComputation_spine ext.returnIter
+  · exact definitionComputation_spine ext.sucStep
+  · exact coeComputation_spine ext.coe ext.prop_stuck
+  · exact coeUComputation_spine ext.coeU
+  · exact coeConstComputation_spine ext.coeConst ext.prop_stuck
+  · exact coePiComputation_spine ext.coePi
+  · exact coeSigmaComputation_spine ext.coeSigma
+
+omit ext in
+theorem tmodelComputationsAt_deterministic (v : Nat → Nat) (num : roles numN = .inductive ctors) :
+    ∀ entry ∈ tmodelComputationsAt roles v, Deterministic entry.2 := by
+  intro entry mem
+  simp only [tmodelComputationsAt, List.mem_cons, List.not_mem_nil, or_false] at mem
+  rcases mem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl | rfl
+  · exact fun _ _ _ _ step step' => IotaStep.deterministic (T := numN) num declared step step'
+  · exact fun _ _ _ _ step step' => RecursionStep.deterministic num declared step step'
+  · exact fun _ _ _ _ step step' => RecursionStep.deterministic num declared step step'
   · exact transportJ_deterministic
   · exact definitionComputation_deterministic
   · exact definitionComputation_deterministic
   · exact definitionComputation_deterministic
   · exact definitionComputation_deterministic
   · exact definitionComputation_deterministic
-  · exact fun _ _ _ _ step step' =>
-      RecursionStep.deterministic tmodelRoles_num tmodelConstructorsDeclared step step'
+  · exact fun _ _ _ _ step step' => RecursionStep.deterministic num declared step step'
   · exact definitionComputation_deterministic
   · exact definitionComputation_deterministic
-  · exact coeComputation_deterministic (show numN ≠ propN by decide)
+  · exact coeComputation_deterministic
   · exact coeUComputation_deterministic
-  · exact coeConstComputation_deterministic
   · exact coeConstComputation_deterministic
   · exact coePiComputation_deterministic
   · exact coeSigmaComputation_deterministic
 
+end Extension
+
+/-- **A reduction package over the tower is root-shaped and deterministic** when each of its
+computations is spine-shaped, headed by its name and deterministic, and the names are
+distinct. -/
+theorem tmodelShapeOf {roles : Roles Tower.Head} {comps : List (DeclName × RootComputation Tower.Head)}
+    (spine : ∀ entry ∈ comps, SpineShaped roles entry.2)
+    (headed : ∀ entry ∈ comps, HeadedBy entry.1 entry.2)
+    (deterministic : ∀ entry ∈ comps, Deterministic entry.2)
+    (distinct : (comps.map Prod.fst).Nodup) : RootShape (tmodelRulesOf comps) roles where
+  spine := fun step => RootComputation.unionAll_spine spine step
+  deterministic := by
+    intro n t u u' step step'
+    exact (RootComputation.unionAll_deterministic distinct headed deterministic step step').symm
+
 /-- **The transport value model's reduction is root-shaped and deterministic**:
 its root steps occur at computing spines of exact arity whose inspected values
 have the shapes their skeletons require, and at most one applies. -/
-theorem tmodelShape (v : Nat → Nat) : RootShape (tmodelRules v) tmodelRoles where
-  spine := fun step => RootComputation.unionAll_spine (tmodelComputations_spine v) step
-  deterministic := by
-    intro n t u u' step step'
-    exact (RootComputation.unionAll_deterministic (tmodelComputations_distinct v)
-      (tmodelComputations_headed v) (tmodelComputations_deterministic v) step step').symm
+theorem tmodelShape (v : Nat → Nat) : RootShape (tmodelRules v) tmodelRoles :=
+  tmodelShapeOf (tmodelComputationsAt_spine tmodelRoles_extends tmodelConstructorsDeclared v)
+    (tmodelComputationsAt_headed tmodelRoles v)
+    (tmodelComputationsAt_deterministic tmodelConstructorsDeclared v tmodelRoles_num)
+    (tmodelComputationsAt_distinct tmodelRoles v)
 
 /-- Weak-head reduction of the transport value model is deterministic. -/
 theorem tmodel_whStep_deterministic (v : Nat → Nat) {n : Nat} {t u u' : Tower.Tm n}
@@ -379,23 +506,36 @@ theorem tmodel_whStep_deterministic (v : Nat → Nat) {n : Nat} {t u u' : Tower.
     (second : WhStep (tmodelRules v) tmodelRoles t u') : u' = u :=
   WhStep.deterministic (tmodelShape v) first second
 
+/-- A computation listed in a reduction package over the tower computes in it. -/
+theorem tmodelOf_step {comps : List (DeclName × RootComputation Tower.Head)}
+    {entry : DeclName × RootComputation Tower.Head} (mem : entry ∈ comps) {n : Nat}
+    {l r : Tower.Tm n} (h : entry.2.step l r) : (tmodelRulesOf comps).computation.step l r :=
+  RootComputation.step_unionAll mem h
+
 theorem tmodel_step (v : Nat → Nat) {entry : DeclName × RootComputation Tower.Head}
     (mem : entry ∈ tmodelComputations v) {n : Nat} {l r : Tower.Tm n} (h : entry.2.step l r) :
     (tmodelRules v).computation.step l r :=
-  RootComputation.step_unionAll mem h
+  tmodelOf_step mem h
 
-theorem tmodelComputations_length (v : Nat → Nat) : (tmodelComputations v).length = 18 :=
+theorem tmodelComputationsAt_length (roles : Roles Tower.Head) (v : Nat → Nat) :
+    (tmodelComputationsAt roles v).length = 17 :=
   rfl
 
-theorem tmodelListed (v : Nat → Nat) (i : Nat) (h : i < 18) :
-    (tmodelComputations v)[i]'(by rw [tmodelComputations_length]; exact h) ∈
-      tmodelComputations v :=
+theorem tmodelListedAt (roles : Roles Tower.Head) (v : Nat → Nat) (i : Nat) (h : i < 17) :
+    (tmodelComputationsAt roles v)[i]'(by rw [tmodelComputationsAt_length]; exact h) ∈
+      tmodelComputationsAt roles v :=
   List.getElem_mem _
+
+theorem tmodelListed (v : Nat → Nat) (i : Nat) (h : i < 17) :
+    (tmodelComputations v)[i]'(by rw [tmodelComputationsAt_length]; exact h) ∈
+      tmodelComputations v :=
+  tmodelListedAt tmodelRoles v i h
 
 /-! ## The model -/
 
-/-- The tower's level model, for the transport value model's reduction. -/
-def tmodelLevels (valuation : Nat → Nat) : LevelModel (tmodelRules valuation) ℕ where
+/-- The tower's level model, for a reduction package over the tower. -/
+def tmodelLevelsOf (valuation : Nat → Nat) (comps : List (DeclName × RootComputation Tower.Head)) :
+    LevelModel (tmodelRulesOf comps) ℕ where
   level := (TowerModel.levels valuation).level
   successor := (TowerModel.levels valuation).successor
   universe_typing := (TowerModel.levels valuation).universe_typing
@@ -410,10 +550,12 @@ def tmodelLevels (valuation : Nat → Nat) : LevelModel (tmodelRules valuation) 
   headEq_trans := (TowerModel.levels valuation).headEq_trans
   universe_decided := (TowerModel.levels valuation).universe_decided
 
-/-- The value side of the transport value model. -/
-def tmodelC (v : Nat → Nat) : Model Tower.Head ℕ where
-  rules := tmodelRules v
-  roles := tmodelRoles
+/-- **A value side over the tower**: model C's numbers, codes and decoder, with the given
+roles and computations, its levels at the valuation `v`. -/
+def tmodelOf (v : Nat → Nat) (roles : Roles Tower.Head)
+    (comps : List (DeclName × RootComputation Tower.Head)) : Model Tower.Head ℕ where
+  rules := tmodelRulesOf comps
+  roles := roles
   zero := zeroN
   suc := sucN
   imp := impN
@@ -422,30 +564,40 @@ def tmodelC (v : Nat → Nat) : Model Tower.Head ℕ where
   num := numN
   prop := propN
   holds := holdsN
-  levels := tmodelLevels v
+  levels := tmodelLevelsOf v comps
 
-theorem tmodelC_laws (v : Nat → Nat) : (tmodelC v).Laws where
+/-- The value side of the transport value model. -/
+def tmodelC (v : Nat → Nat) : Model Tower.Head ℕ := tmodelOf v tmodelRoles (tmodelComputations v)
+
+/-- **A value side over the tower with roles extending the transport value model's, and
+root shape, has the laws of a consistency model.** -/
+theorem tmodelOf_laws (v : Nat → Nat) {roles : Roles Tower.Head} {names : List DeclName}
+    (ext : TExtends roles names) {comps : List (DeclName × RootComputation Tower.Head)}
+    (shape : RootShape (tmodelRulesOf comps) roles) : (tmodelOf v roles comps).Laws where
   truth :=
-    { shape := tmodelShape v
-      zero := tmodelRoles_zero
-      suc := tmodelRoles_suc
-      imp := tmodelRoles_imp
+    { shape := shape
+      zero := ext.zero
+      suc := ext.suc
+      imp := ext.imp
       all := by
         intro a A carrier
         change (SetProfile.allInstance? a).map carrierOf = some A at carrier
         cases found : SetProfile.allInstance? a with
         | none => rw [found] at carrier; cases carrier
-        | some _ => exact tmodelRoles_all found
+        | some _ => exact ext.allCode found
       eq := by
         intro e A carrier
         change (SetProfile.eqInstance? e).map carrierOf = some A at carrier
         cases found : SetProfile.eqInstance? e with
         | none => rw [found] at carrier; cases carrier
-        | some _ => exact tmodelRoles_eqCode found
+        | some _ => exact ext.eqCode found
       impNotEq := (model_laws v).truth.impNotEq }
-  num := tmodelRoles_num
-  prop := tmodelRoles_prop
-  holds := tmodelRoles_holds
+  num := ext.num
+  prop := ext.prop
+  holds := ext.holds
+
+theorem tmodelC_laws (v : Nat → Nat) : (tmodelC v).Laws :=
+  tmodelOf_laws v tmodelRoles_extends (tmodelShape v)
 
 /-- On the value side, identity elimination transports its method along its
 motive. -/
@@ -454,21 +606,28 @@ theorem tmodel_j_step (v : Nat → Nat) {n : Nat} (A x P d y e : Tower.Tm n) :
       (coeApp coeN (.app (.app P x) (.refl x)) (.app (.app P y) e) d) :=
   .root (tmodel_step v (tmodelListed v 3 (by decide)) (transportJ_step A x P d y e))
 
+/-- **A value side over the tower with roles extending the transport value model's, whose
+computations contain the transport's rows read with its roles, has the transport table**, with
+the daimon as the rows' stuck value. -/
+theorem tmodelOf_coeTable (v : Nat → Nat) {roles : Roles Tower.Head} {names : List DeclName}
+    (ext : TExtends roles names) {comps : List (DeclName × RootComputation Tower.Head)}
+    (listed : ∀ entry ∈ tmodelComputationsAt roles v, entry ∈ comps) :
+    CoeTable (tmodelOf v roles comps) starN coeNames where
+  roleCoe := ext.coe
+  roleU := ext.coeU
+  roleConst := ext.coeConst
+  rolePi := ext.coePi
+  roleSigma := ext.coeSigma
+  stepCoe := fun h => tmodelOf_step (listed _ (tmodelListedAt roles v 12 (by decide))) h
+  stepU := fun h => tmodelOf_step (listed _ (tmodelListedAt roles v 13 (by decide))) h
+  stepConst := fun h => tmodelOf_step (listed _ (tmodelListedAt roles v 14 (by decide))) h
+  stepPi := fun h => tmodelOf_step (listed _ (tmodelListedAt roles v 15 (by decide))) h
+  stepSigma := fun h => tmodelOf_step (listed _ (tmodelListedAt roles v 16 (by decide))) h
+
 /-- **The transport value model has the transport table**, with the daimon as
 the rows' stuck value. -/
-theorem tmodel_coeTable (v : Nat → Nat) : CoeTable (tmodelC v) starN coeNames where
-  roleCoe := tmodelRoles_coe
-  roleU := tmodelRoles_coeU
-  roleNum := tmodelRoles_coeNum
-  roleProp := tmodelRoles_coeProp
-  rolePi := tmodelRoles_coePi
-  roleSigma := tmodelRoles_coeSigma
-  stepCoe := fun h => tmodel_step v (tmodelListed v 12 (by decide)) h
-  stepU := fun h => tmodel_step v (tmodelListed v 13 (by decide)) h
-  stepNum := fun h => tmodel_step v (tmodelListed v 14 (by decide)) h
-  stepProp := fun h => tmodel_step v (tmodelListed v 15 (by decide)) h
-  stepPi := fun h => tmodel_step v (tmodelListed v 16 (by decide)) h
-  stepSigma := fun h => tmodel_step v (tmodelListed v 17 (by decide)) h
+theorem tmodel_coeTable (v : Nat → Nat) : CoeTable (tmodelC v) starN coeNames :=
+  tmodelOf_coeTable v tmodelRoles_extends fun _ mem => mem
 
 end CodeModel
 

@@ -277,7 +277,4 @@ theorem open_scoped_firing : applyRuleAt Mettapedia.OSLF.MeTTaIL.Engine.Relation
 theorem absent_ambient_rejected : applyRuleAt Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
     language 0 rule openSource = [] := by decide +kernel
 
-#print axioms scoped_match_pair
-#print axioms typed_scoped_firing_pair
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair

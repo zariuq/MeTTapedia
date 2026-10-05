@@ -24,7 +24,7 @@ open StructuralMorphism
 open WellSorted
 open ContinuationRetypingPlan
 
-namespace CIGSLT
+namespace WrappableIGSLT
 
 mutual
   /-- Renaming schema-local names leaves the visible constructor fragment
@@ -73,14 +73,14 @@ end
 
 /-- Sort action used to close a generated Cost interaction under another
 Cost application. -/
-def costClosureSortName (_source : CIGSLT) (sort : String) : String :=
+def costClosureSortName (_source : WrappableIGSLT) (sort : String) : String :=
   if sort = costWrappedSortName then costWrappedSortName
   else costBaseSortName sort
 
 /-- Constructor action for a second Cost layer.  The two ordered
 introductions stay in the base fiber; all other constructors receive wrapped
 copies so continuation-bearing arguments are transformed hereditarily. -/
-def costClosureConstructorName (source : CIGSLT) (constructor : String) :
+def costClosureConstructorName (source : WrappableIGSLT) (constructor : String) :
     String :=
   if constructor = source.costInteractionCut.program.constructor.1.label ∨
       constructor =
@@ -90,7 +90,7 @@ def costClosureConstructorName (source : CIGSLT) (constructor : String) :
     costWrappedConstructorName constructor
 
 /-- Total symbol action underlying repeated Cost retyping. -/
-def costClosureSymbols (source : CIGSLT) : LanguageDefSymbolMap where
+def costClosureSymbols (source : WrappableIGSLT) : LanguageDefSymbolMap where
   sort := source.costClosureSortName
   constructor := source.costClosureConstructorName
   relation := id
@@ -100,7 +100,7 @@ def costClosureSymbols (source : CIGSLT) : LanguageDefSymbolMap where
 /-- Negative canary for a tempting but false uniform-transport proof:
 closure retyping sends the non-principal signed apparatus to the wrapped
 constructor fiber, whereas redex retyping needs its next base copy. -/
-theorem costClosureConstructorName_signed_ne_base (source : CIGSLT) :
+theorem costClosureConstructorName_signed_ne_base (source : WrappableIGSLT) :
     source.costClosureConstructorName costSignedConstructorName ≠
       costBaseConstructorName costSignedConstructorName := by
   have notProgram :
@@ -120,17 +120,17 @@ theorem costClosureConstructorName_signed_ne_base (source : CIGSLT) :
   exact (costBaseConstructorName_ne_wrapped _ _).symm
 
 @[simp]
-theorem costClosureSortName_wrapped (source : CIGSLT) :
+theorem costClosureSortName_wrapped (source : WrappableIGSLT) :
     source.costClosureSortName costWrappedSortName = costWrappedSortName := by
   simp [costClosureSortName]
 
-theorem costClosureSortName_of_ne (source : CIGSLT) (sort : String)
+theorem costClosureSortName_of_ne (source : WrappableIGSLT) (sort : String)
     (inequality : sort ≠ costWrappedSortName) :
     source.costClosureSortName sort = costBaseSortName sort := by
   simp [costClosureSortName, inequality]
 
 @[simp]
-theorem mapTypeExpr_costClosureSymbols (source : CIGSLT)
+theorem mapTypeExpr_costClosureSymbols (source : WrappableIGSLT)
     (type : TypeExpr) :
     mapTypeExpr source.costClosureSymbols type =
       costWrappedTypeExpr costWrappedSortName type := by
@@ -148,7 +148,7 @@ theorem mapTypeExpr_costClosureSymbols (source : CIGSLT)
       simp [mapTypeExpr, costWrappedTypeExpr, inductionHypothesis]
 
 @[simp]
-theorem mapTermParam_costClosureSymbols (source : CIGSLT)
+theorem mapTermParam_costClosureSymbols (source : WrappableIGSLT)
     (parameter : TermParam) :
     mapTermParam source.costClosureSymbols parameter =
       mapParameterType (costWrappedTypeExpr costWrappedSortName) parameter := by
@@ -159,7 +159,7 @@ theorem mapTermParam_costClosureSymbols (source : CIGSLT)
 /-- Closing an already-base-tagged sort adds exactly one further base tag.
 This is the non-interacting branch of repeated Cost retyping. -/
 @[simp]
-theorem costClosureSortName_costBaseSortName (source : CIGSLT)
+theorem costClosureSortName_costBaseSortName (source : WrappableIGSLT)
     (sort : String) :
     source.costClosureSortName (costBaseSortName sort) =
       costBaseSortName (costBaseSortName sort) := by
@@ -178,7 +178,7 @@ theorem costWrappedTypeExpr_wrapped_costBaseTypeExpr (type : TypeExpr) :
 
 /-- Away from the distinguished wrapped carrier, the closure action sends
 one complete type declaration to its next tagged base copy. -/
-theorem mapTypeDecl_costClosure_of_ne (source : CIGSLT)
+theorem mapTypeDecl_costClosure_of_ne (source : WrappableIGSLT)
     (declaration : TypeDecl)
     (inequality : declaration.name ≠ costWrappedSortName) :
     mapTypeDecl source.costClosureSymbols declaration =
@@ -189,7 +189,7 @@ theorem mapTypeDecl_costClosure_of_ne (source : CIGSLT)
 /-- The distinguished wrapped carrier is stable under repeated Cost
 retyping. -/
 @[simp]
-theorem mapTypeDecl_costClosure_wrapped (source : CIGSLT) :
+theorem mapTypeDecl_costClosure_wrapped (source : WrappableIGSLT) :
     mapTypeDecl source.costClosureSymbols
         (TypeDecl.plain costWrappedSortName) =
       TypeDecl.plain costWrappedSortName := by
@@ -199,7 +199,7 @@ theorem mapTypeDecl_costClosure_wrapped (source : CIGSLT) :
 next-layer continuation signature.  Base, wrapped, and fixed apparatus
 declarations are kept distinct in the proof. -/
 theorem mapTypeDecl_costClosure_mem_generated
-    (source : CIGSLT) (declaration : TypeDecl)
+    (source : WrappableIGSLT) (declaration : TypeDecl)
     (membership :
       List.Mem declaration source.costWholeLanguage.types) :
     List.Mem (mapTypeDecl source.costClosureSymbols declaration)
@@ -248,7 +248,7 @@ theorem mapTypeDecl_costClosure_mem_generated
 retyping of a retained base constructor.  Selection at the second layer is
 the same indexed selection as at the first layer. -/
 theorem mapTermParam_costClosure_costBaseParameter
-    (source : CIGSLT) (rule : GrammarRule)
+    (source : WrappableIGSLT) (rule : GrammarRule)
     (membership :
       rule ∈ source.theory.presentation.presentation.language.terms)
     (parameter : TermParam) (index : Nat) :
@@ -273,12 +273,7 @@ theorem mapTermParam_costClosure_costBaseParameter
     cases parameter <;>
       simp [mapTermParam, mapParameterType,
         source.mapTypeExpr_costClosureSymbols]
-  · change
-      mapTermParam source.costClosureSymbols
-          (mapParameterType costBaseTypeExpr parameter) =
-        mapParameterType costBaseTypeExpr
-          (mapParameterType costBaseTypeExpr parameter)
-    cases parameter <;>
+  · cases parameter <;>
       simp [mapTermParam, mapParameterType,
         source.mapTypeExpr_costClosureSymbols,
         costWrappedTypeExpr_wrapped_costBaseTypeExpr]
@@ -287,7 +282,7 @@ theorem mapTermParam_costClosure_costBaseParameter
 `mapTermParam_costClosure_costBaseParameter`. -/
 @[simp]
 theorem map_costClosure_costBaseConstructor_params
-    (source : CIGSLT) (rule : GrammarRule)
+    (source : WrappableIGSLT) (rule : GrammarRule)
     (membership :
       rule ∈ source.theory.presentation.presentation.language.terms) :
     (costBaseConstructor source.cut rule).params.map
@@ -307,7 +302,7 @@ theorem map_costClosure_costBaseConstructor_params
     exact source.mapTermParam_costClosure_costBaseParameter
       rule membership (rule.params[index]'(sourceBounds)) index
 
-theorem costClosureConstructorName_of_nonprincipal (source : CIGSLT)
+theorem costClosureConstructorName_of_nonprincipal (source : WrappableIGSLT)
     (constructor : GrammarRule)
     (notProgram : constructor.label ≠
       source.costInteractionCut.program.constructor.1.label)
@@ -320,7 +315,7 @@ theorem costClosureConstructorName_of_nonprincipal (source : CIGSLT)
   exact fun equality => equality.elim notProgram notEnvironment
 
 @[simp]
-theorem costClosureConstructorName_program (source : CIGSLT) :
+theorem costClosureConstructorName_program (source : WrappableIGSLT) :
     source.costClosureConstructorName
       source.costInteractionCut.program.constructor.1.label =
       costBaseConstructorName
@@ -328,7 +323,7 @@ theorem costClosureConstructorName_program (source : CIGSLT) :
   simp [costClosureConstructorName]
 
 @[simp]
-theorem costClosureConstructorName_environment (source : CIGSLT) :
+theorem costClosureConstructorName_environment (source : WrappableIGSLT) :
     source.costClosureConstructorName
       source.costInteractionCut.environment.constructor.1.label =
       costBaseConstructorName
@@ -338,7 +333,7 @@ theorem costClosureConstructorName_environment (source : CIGSLT) :
 /-- A retained principal introduction has the typing profile of its next
 base copy.  The declaration's algebra metadata is not part of a typing map. -/
 theorem costClosure_costBaseConstructor_typingProfile_of_principal
-    (source : CIGSLT) (rule : GrammarRule)
+    (source : WrappableIGSLT) (rule : GrammarRule)
     (membership :
       rule ∈ source.theory.presentation.presentation.language.terms)
     (principal :
@@ -369,7 +364,7 @@ theorem costClosure_costBaseConstructor_typingProfile_of_principal
 
 /-- The retained program introduction has its next base copy's typing
 profile. -/
-theorem costClosure_program_typingProfile (source : CIGSLT) :
+theorem costClosure_program_typingProfile (source : WrappableIGSLT) :
     let current := source.costInteractionCut.program.constructor.1
     let target := costBaseConstructor source.costInteractionCut current
     target.label = source.costClosureSymbols.constructor current.label ∧
@@ -387,7 +382,7 @@ theorem costClosure_program_typingProfile (source : CIGSLT) :
 
 /-- The retained environment introduction has its next base copy's typing
 profile. -/
-theorem costClosure_environment_typingProfile (source : CIGSLT) :
+theorem costClosure_environment_typingProfile (source : WrappableIGSLT) :
     let current := source.costInteractionCut.environment.constructor.1
     let target := costBaseConstructor source.costInteractionCut current
     target.label = source.costClosureSymbols.constructor current.label ∧
@@ -405,7 +400,7 @@ theorem costClosure_environment_typingProfile (source : CIGSLT) :
       source.cut.environment.constructor.2 (Or.inr equality.symm)
 
 theorem costClosureConstructorName_of_nonprincipalAuthored
-    (source : CIGSLT)
+    (source : WrappableIGSLT)
     (constructor :
       DeclaredConstructor source.costIGSLT.presentation.presentation)
     (notProgram : constructor ≠
@@ -424,10 +419,10 @@ theorem costClosureConstructorName_of_nonprincipalAuthored
       (ContinuationRetypingPlan.authoredConstructorLabel_injective
         source.costIGSLT.presentation.presentation equality)
 
-theorem costCoreTerm_evalPolicy_eq_none (source : CIGSLT)
+theorem costCoreTerm_evalPolicy_eq_none (source : WrappableIGSLT)
     (term : GrammarRule) (membership : term ∈ source.costCoreLanguage.terms) :
     term.evalPolicy? = none := by
-  dsimp only [costCoreLanguage] at membership
+  rw [costCoreLanguage_terms] at membership
   simp only [List.mem_append] at membership
   rcases membership with generatedMembership | apparatusMembership
   · rw [ContinuationRetypingPlan.generatedLanguage_terms] at generatedMembership
@@ -446,7 +441,7 @@ theorem costCoreTerm_evalPolicy_eq_none (source : CIGSLT)
 /-- A non-principal declaration has the typing profile of its hereditary
 wrapped copy.  Algebra annotations may refer to a different constructor
 fiber, so no equality of complete declarations is asserted. -/
-theorem costClosure_nonprincipal_typingProfile (source : CIGSLT)
+theorem costClosure_nonprincipal_typingProfile (source : WrappableIGSLT)
     (constructor :
       DeclaredConstructor source.costIGSLT.presentation.presentation)
     (notProgram : constructor ≠
@@ -473,7 +468,7 @@ theorem costClosure_nonprincipal_typingProfile (source : CIGSLT)
 continuation signature with the required typing profile.  The two principal
 introductions use base copies; all other declarations use wrapped copies. -/
 theorem costClosure_typingProfile_mem_generated
-    (source : CIGSLT) (rule : GrammarRule)
+    (source : WrappableIGSLT) (rule : GrammarRule)
     (membership : rule ∈ source.costWholeLanguage.terms) :
     ∃ target, target ∈
         source.costContinuationRetyping.generatedLanguage.terms ∧
@@ -518,7 +513,7 @@ theorem costClosure_typingProfile_mem_generated
 It transports sorts and constructor parameter profiles, which suffice for
 redex, contractum and reflective retyping.  Equational transport is a
 separate contract. -/
-def costClosureTyping (source : CIGSLT) :
+def costClosureTyping (source : WrappableIGSLT) :
     TypingMorphism source.costWholePresentation
       source.costContinuationRetyping.generatedPresentation where
   symbols := source.costClosureSymbols
@@ -531,7 +526,7 @@ def costClosureTyping (source : CIGSLT) :
 the next contractum translation is exactly the closure constructor action.
 Unknown raw labels are deliberately outside this statement. -/
 theorem costClosureConstructorChoice
-    (source : CIGSLT) (rule : GrammarRule)
+    (source : WrappableIGSLT) (rule : GrammarRule)
     (membership : rule ∈ source.costWholeLanguage.terms) :
     (if rule.label ∈ source.costContinuationRetyping.wrappedLabels then
         costWrappedConstructorName rule.label
@@ -594,7 +589,7 @@ mutual
   the total closure symbol action.  Typing supplies the declaration witness
   needed to exclude the unknown-label counterexample. -/
   theorem mapContractum_eq_mapPattern_of_hasType
-      {source : CIGSLT}
+      {source : WrappableIGSLT}
       {free : FreeTypeContext} {bound : List TypeExpr}
       {pattern : Pattern} {type : TypeExpr}
       (typed :
@@ -624,14 +619,14 @@ mutual
         rw [map_mapContractum_eq_mapPattern_of_elements elementsTyped]
         simp only [mapPatternList_eq_map]
     | collectionConstructor membership shape elementsTyped =>
-        simp only [ContinuationRetypingPlan.mapContractum_apply, mapPattern]
+        simp only [ContinuationRetypingPlan.mapContractum_collection, mapPattern]
         rw [map_mapContractum_eq_mapPattern_of_elements elementsTyped]
         simp only [mapPatternList_eq_map]
 
   /-- Ordered-argument companion to
   `mapContractum_eq_mapPattern_of_hasType`. -/
   theorem map_mapContractum_eq_mapPattern_of_arguments
-      {source : CIGSLT}
+      {source : WrappableIGSLT}
       {free : FreeTypeContext} {bound : List TypeExpr}
       {arguments : List Pattern} {parameters : List TermParam}
       (typed :
@@ -649,7 +644,7 @@ mutual
   /-- Collection-element companion to
   `mapContractum_eq_mapPattern_of_hasType`. -/
   theorem map_mapContractum_eq_mapPattern_of_elements
-      {source : CIGSLT}
+      {source : WrappableIGSLT}
       {free : FreeTypeContext} {bound : List TypeExpr}
       {elements : List Pattern} {elementType : TypeExpr}
       (typed :
@@ -669,7 +664,7 @@ end
 whole-redex context agrees with the next continuation plan's exact generated
 context. -/
 theorem costClosureMappedFreeContext_source
-    (source : CIGSLT) (name : String) :
+    (source : WrappableIGSLT) (name : String) :
     (source.costWholeRedexFreeContext.map source.costClosureSymbols)
         (costSourceSchemaName name) =
       source.costContinuationRetyping.generatedFreeContext
@@ -689,7 +684,7 @@ theorem costClosureMappedFreeContext_source
         (costSourceSchemaName name))
   rw [source.costInteractionCut_program_continuationVariable_name,
     source.costInteractionCut_environment_continuationVariable_name]
-  rw [CIGSLT.costWholeRedexTypeContext, lookupTypeContext_append,
+  rw [WrappableIGSLT.costWholeRedexTypeContext_def, lookupTypeContext_append,
     source.lookup_costRetypedSourceContext]
   rw [ContinuationRetypingPlan.generatedFreeContext_apply]
   generalize lookup : lookupTypeContext
@@ -715,11 +710,11 @@ theorem costClosureMappedFreeContext_source
         · simp [program, environment,
             costSourceSchemaName_injective.eq_iff,
             source.mapTypeExpr_costClosureSymbols,
-            CIGSLT.costWrappedTypeExpr_wrapped_costBaseTypeExpr]
+            WrappableIGSLT.costWrappedTypeExpr_wrapped_costBaseTypeExpr]
 
 /-- The generated signature variable remains outside the continuation slots
 and is base-tagged again at the next Cost layer. -/
-theorem costClosureMappedFreeContext_signature (source : CIGSLT) :
+theorem costClosureMappedFreeContext_signature (source : WrappableIGSLT) :
     (source.costWholeRedexFreeContext.map source.costClosureSymbols)
         source.costSignatureVariable =
       source.costContinuationRetyping.generatedFreeContext
@@ -758,7 +753,7 @@ theorem costClosureMappedFreeContext_signature (source : CIGSLT) :
 
 /-- The generated token-stack tail is likewise base-tagged again and never
 mistaken for a selected continuation. -/
-theorem costClosureMappedFreeContext_stackTail (source : CIGSLT) :
+theorem costClosureMappedFreeContext_stackTail (source : WrappableIGSLT) :
     (source.costWholeRedexFreeContext.map source.costClosureSymbols)
         source.costStackTailVariable =
       source.costContinuationRetyping.generatedFreeContext
@@ -822,7 +817,7 @@ mutual
   language: wrapped-image constructors and administrative constructors do
   not satisfy the same constructor action. -/
   theorem mapCostBaseImageClosure
-      (source : CIGSLT)
+      (source : WrappableIGSLT)
       {free : FreeTypeContext} {bound : List TypeExpr}
       {pattern : Pattern} {type : TypeExpr}
       (typed :
@@ -1005,13 +1000,13 @@ mutual
                 (rest := rest) targetMembership targetShape targetElements
             simpa only [mapPattern, mapPatternList_eq_map, List.map_map,
               Function.comp_def, mapTypeExpr, costClosureSymbols,
-              ContinuationRetypingPlan.generatedPresentation,
+              ContinuationRetypingPlan.generatedPresentation_language,
               targetCategory'] using target
 
   /-- Ordered-argument companion to
   `HasType.mapCostBaseImageClosure`. -/
   theorem mapCostBaseImageClosureArguments
-      (source : CIGSLT)
+      (source : WrappableIGSLT)
       {free : FreeTypeContext} {bound : List TypeExpr}
       {patterns : List Pattern} {parameters : List TermParam}
       (typed :
@@ -1070,7 +1065,7 @@ mutual
   /-- Homogeneous-collection companion to
   `HasType.mapCostBaseImageClosure`. -/
   theorem mapCostBaseImageClosureElements
-      (source : CIGSLT)
+      (source : WrappableIGSLT)
       {free : FreeTypeContext} {bound : List TypeExpr}
       {patterns : List Pattern} {type : TypeExpr}
       (typed :
@@ -1112,7 +1107,7 @@ end
 /-- The exact generated Cost contractum remains in the wrapped carrier at the
 next Cost layer.  The proof transports its current typing derivation and then
 changes only the unused part of the free-variable context. -/
-theorem costWrappable (source : CIGSLT) :
+theorem costWrappable (source : WrappableIGSLT) :
     source.costContinuationRetyping.Wrappable := by
   have current :
       HasSort source.costWholeLanguage source.costWholeRedexFreeContext []
@@ -1134,6 +1129,7 @@ theorem costWrappable (source : CIGSLT) :
     rw [source.mapContractum_eq_mapPattern_of_hasType current]
     simpa [source.mapTypeExpr_costClosureSymbols,
       costWrappedTypeExpr] using mapped
+  rw [ContinuationRetypingPlan.wrappable_def]
   apply mappedTyped.recontextualizeFree
   intro name freeType membership lookup
   rw [source.costContinuationRetyping.mapContractum_freeFvarNames,
@@ -1153,7 +1149,7 @@ theorem costWrappable (source : CIGSLT) :
 the position-sensitive base-image transport needed by the next Cost layer.
 Schema renaming then aligns the transported source variables with the next
 generated free context. -/
-theorem costBaseMappedRedex_retyped (source : CIGSLT) :
+theorem costBaseMappedRedex_retyped (source : WrappableIGSLT) :
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
       (mapPattern costBaseLanguageDefSymbolMap
@@ -1191,7 +1187,7 @@ theorem costBaseMappedRedex_retyped (source : CIGSLT) :
     costBaseSortName_ne_wrapped, if_false] using renamed
 
 private theorem costApparatusConstructor_not_selected
-    (source : CIGSLT) (rule : GrammarRule) (suffix : String)
+    (source : WrappableIGSLT) (rule : GrammarRule) (suffix : String)
     (label : rule.label = costApparatusConstructorName suffix)
     (index : Nat) :
     isSelectedContinuation source.costInteractionCut rule index = false := by
@@ -1239,7 +1235,7 @@ private theorem costBaseConstructor_params_eq_map_of_notSelected
 
 /-- The next Cost layer's signature variable has the twice-generated
 signature sort. -/
-theorem costClosureSignatureVariable_hasType (source : CIGSLT) :
+theorem costClosureSignatureVariable_hasType (source : WrappableIGSLT) :
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
       (.fvar source.costSignatureVariable)
@@ -1257,7 +1253,7 @@ theorem costClosureSignatureVariable_hasType (source : CIGSLT) :
 
 /-- The next Cost layer's residual token-stack variable has the
 twice-generated token-stack sort. -/
-theorem costClosureStackTailVariable_hasType (source : CIGSLT) :
+theorem costClosureStackTailVariable_hasType (source : WrappableIGSLT) :
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
       (.fvar source.costStackTailVariable)
@@ -1274,7 +1270,7 @@ theorem costClosureStackTailVariable_hasType (source : CIGSLT) :
     notWrapped]
 
 private theorem costBaseApparatusConstructor_mem_generated
-    (source : CIGSLT) (rule : GrammarRule)
+    (source : WrappableIGSLT) (rule : GrammarRule)
     (membership : rule ∈
       costCoreConstructors
         source.theory.presentation.interactingSort.1.name) :
@@ -1287,7 +1283,7 @@ private theorem costBaseApparatusConstructor_mem_generated
 
 /-- The next Cost layer types the signed redex operand once its transported
 body has the twice-generated interacting sort. -/
-theorem costClosureSigned_hasType (source : CIGSLT) {body : Pattern}
+theorem costClosureSigned_hasType (source : WrappableIGSLT) {body : Pattern}
     (bodyTyped :
       HasSort source.costContinuationRetyping.generatedLanguage
         source.costContinuationRetyping.generatedFreeContext []
@@ -1335,7 +1331,7 @@ theorem costClosureSigned_hasType (source : CIGSLT) {body : Pattern}
 
 /-- The next Cost layer types the apparatus cell that restores the consumed
 signature to the residual token stack. -/
-theorem costClosureTokenStackCons_hasType (source : CIGSLT) :
+theorem costClosureTokenStackCons_hasType (source : WrappableIGSLT) :
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
       (.apply (costBaseConstructorName costTokenStackConsConstructorName)
@@ -1375,7 +1371,7 @@ theorem costClosureTokenStackCons_hasType (source : CIGSLT) :
 
 /-- The next Cost layer types a funding apparatus around a typed token
 stack. -/
-theorem costClosureFunding_hasType (source : CIGSLT) {stack : Pattern}
+theorem costClosureFunding_hasType (source : WrappableIGSLT) {stack : Pattern}
     (stackTyped :
       HasSort source.costContinuationRetyping.generatedLanguage
         source.costContinuationRetyping.generatedFreeContext []
@@ -1410,7 +1406,7 @@ theorem costClosureFunding_hasType (source : CIGSLT) {stack : Pattern}
 
 /-- The next Cost layer types the outer contact apparatus from two wrapped
 operands. -/
-theorem costClosureContact_hasType (source : CIGSLT)
+theorem costClosureContact_hasType (source : WrappableIGSLT)
     {left right : Pattern}
     (leftTyped :
       HasSort source.costContinuationRetyping.generatedLanguage
@@ -1456,9 +1452,9 @@ theorem costClosureContact_hasType (source : CIGSLT)
 transformation.  Its prior interaction core uses the restricted base-image
 transport, while the fixed outer Cost apparatus is typed constructor by
 constructor. -/
-theorem costRedexRetypable (source : CIGSLT) :
+theorem costRedexRetypable (source : WrappableIGSLT) :
     source.costContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
@@ -1473,10 +1469,10 @@ theorem costRedexRetypable (source : CIGSLT) :
       (costClosureFunding_hasType source
         (costClosureTokenStackCons_hasType source))
 
-/-- The selected program introduction cannot use a bare collection: the
-continued-object law would place it in the wrapped fragment, while the cut
-definition excludes that principal constructor. -/
-theorem programConstructor_not_usesBareCollection (source : CIGSLT) :
+/-- The selected program introduction cannot use a bare collection: the law
+that bare-collection constructors are wrapped would place it in the wrapped
+fragment, while the cut definition excludes that principal constructor. -/
+theorem programConstructor_not_usesBareCollection (source : WrappableIGSLT) :
     ¬ WellSorted.UsesBareCollection source.cut.program.constructor.1 := by
   intro bare
   have labelMembership :=
@@ -1490,7 +1486,7 @@ theorem programConstructor_not_usesBareCollection (source : CIGSLT) :
 
 /-- The selected environment introduction is likewise never a bare
 collection constructor. -/
-theorem environmentConstructor_not_usesBareCollection (source : CIGSLT) :
+theorem environmentConstructor_not_usesBareCollection (source : WrappableIGSLT) :
     ¬ WellSorted.UsesBareCollection
       source.cut.environment.constructor.1 := by
   intro bare
@@ -1506,7 +1502,7 @@ theorem environmentConstructor_not_usesBareCollection (source : CIGSLT) :
 
 /-- Every bare collection constructor of the generated Cost language belongs
 to the hereditary non-principal fragment of the next Cost layer. -/
-theorem costBareCollectionConstructorsWrapped (source : CIGSLT) :
+theorem costBareCollectionConstructorsWrapped (source : WrappableIGSLT) :
     ∀ rule ∈ source.costWholeLanguage.terms,
       WellSorted.UsesBareCollection rule →
         rule.label ∈ source.costContinuationRetyping.wrappedLabels := by
@@ -1542,8 +1538,8 @@ theorem costBareCollectionConstructorsWrapped (source : CIGSLT) :
         source.cut source.cut.environment.constructor.1).1 environmentBare)
 
 /-- The complete generated interaction envelope remains outside the retained
-continuation slots, exactly as required by the next continued object. -/
-theorem costSourceEnvelopeStable (source : CIGSLT) :
+continuation slots, exactly as required of a wrappable theory. -/
+theorem costSourceEnvelopeStable (source : WrappableIGSLT) :
     ContinuationStableContext source.costInteractionCut
       source.costInteractionCut.coreContact.sort.1.name
       source.costIGSLT.presentation.interactingSort.1.name
@@ -1556,7 +1552,7 @@ theorem costSourceEnvelopeStable (source : CIGSLT) :
 /-- Raw declaration membership plus exclusion of the two retained
 introductions is exactly enough to enter the next hereditary continuation
 fragment. -/
-theorem costContinuationLabel_mem_of_ne_principals (source : CIGSLT)
+theorem costContinuationLabel_mem_of_ne_principals (source : WrappableIGSLT)
     (rule : GrammarRule) (membership : rule ∈ source.costWholeLanguage.terms)
     (notProgram :
       rule ≠ source.costInteractionCut.program.constructor.1)
@@ -1578,7 +1574,7 @@ theorem costContinuationLabel_mem_of_ne_principals (source : CIGSLT)
 /-- Either static image of an authored non-principal constructor remains
 non-principal at the next Cost layer. -/
 theorem costStaticConstructorLabel_mem_costContinuationLabels
-    (source : CIGSLT) (color : CostStaticColor)
+    (source : WrappableIGSLT) (color : CostStaticColor)
     (rule : GrammarRule)
     (membership :
       rule ∈ source.theory.presentation.presentation.language.terms)
@@ -1630,7 +1626,7 @@ one visible constructor label into either static fiber of the next Cost
 layer.  Validation makes the label projection faithful, so no declaration
 identity is guessed here. -/
 theorem costStaticConstructorLabel_mem_costContinuationLabels_of_mem
-    (source : CIGSLT) (color : CostStaticColor) (constructor : String)
+    (source : WrappableIGSLT) (color : CostStaticColor) (constructor : String)
     (wrapped :
       constructor ∈ source.continuationRetyping.wrappedLabels) :
     (color.symbols source).constructor constructor ∈
@@ -1647,7 +1643,7 @@ remains in the hereditary continuation fragment of the next Cost layer.
 The proof transports the source declaration's validated wrapped support
 through the same static color that produced the generated declaration. -/
 theorem costStaticReflectivePresentation_constructorLabels_mem
-    (source : CIGSLT) (declaration : ReflectivePresentationDecl)
+    (source : WrappableIGSLT) (declaration : ReflectivePresentationDecl)
     (membership :
       declaration ∈ source.costStaticReflectivePresentations) :
     declaration.quoteConstructor ∈
@@ -1656,7 +1652,7 @@ theorem costStaticReflectivePresentation_constructorLabels_mem
         source.costContinuationRetyping.wrappedLabels ∧
       declaration.parallelUnitConstructor ∈
         source.costContinuationRetyping.wrappedLabels := by
-  rw [costStaticReflectivePresentations, List.mem_append] at membership
+  rw [costStaticReflectivePresentations_def, List.mem_append] at membership
   rcases membership with baseMembership | wrappedMembership
   · rcases List.mem_map.mp baseMembership with
       ⟨sourceDeclaration, sourceMembership, rfl⟩
@@ -1687,7 +1683,7 @@ theorem costStaticReflectivePresentation_constructorLabels_mem
 /-- The complete generated reflective theory satisfies the same exact
 validator-based hereditary retyping obligation required by another Cost
 layer. -/
-theorem costReflectivePresentationsRetypable (source : CIGSLT) :
+theorem costReflectivePresentationsRetypable (source : WrappableIGSLT) :
     ReflectivePresentationsRetypable source.costContinuationRetyping
       source.costWholeReflectionProfile := by
   intro declaration membership
@@ -1704,7 +1700,7 @@ theorem costReflectivePresentationsRetypable (source : CIGSLT) :
 visible constructor support into the hereditary fragment of the next Cost
 layer. -/
 theorem costStaticSchemaPattern_constructorsWithin
-    (source : CIGSLT) (color : CostStaticColor) {pattern : Pattern}
+    (source : WrappableIGSLT) (color : CostStaticColor) {pattern : Pattern}
     (supported :
       ConstructorsWithin
         (· ∈ source.continuationRetyping.wrappedLabels) pattern) :
@@ -1723,9 +1719,10 @@ theorem costStaticSchemaPattern_constructorsWithin
 /-- Each finalized static equation declaration admits proof-relevant
 constructor typing in the complete Cost language.  Visible constructor
 support is recovered from the already-certified wrapped source image;
-hidden bare-collection choices are covered by the continued-object law. -/
+hidden bare-collection choices are covered by the law that bare-collection
+constructors are wrapped. -/
 theorem costStaticEquationDecl_wellSortedWithConstructors
-    (source : CIGSLT) (color : CostStaticColor) (equation : Equation)
+    (source : WrappableIGSLT) (color : CostStaticColor) (equation : Equation)
     (membership : equation ∈
       source.theory.presentation.presentation.language.equations) :
     ∃ type,
@@ -1779,7 +1776,7 @@ theorem costStaticEquationDecl_wellSortedWithConstructors
 /-- Either next-layer static image of a finalized source-layer equation is
 well sorted in the bare generated continuation signature. -/
 theorem costStaticEquationDecl_mapCostStaticGenerated_wellSorted
-    (source : CIGSLT) (sourceColor targetColor : CostStaticColor)
+    (source : WrappableIGSLT) (sourceColor targetColor : CostStaticColor)
     (equation : Equation)
     (membership : equation ∈
       source.theory.presentation.presentation.language.equations) :
@@ -1821,12 +1818,12 @@ theorem costStaticEquationDecl_mapCostStaticGenerated_wellSorted
 /-- The complete static equation theory generated by `Cost` satisfies the
 same premise, instantiation, matching, and two-color typing obligations
 required for another Cost layer. -/
-theorem costEquationsRetypable (source : CIGSLT) :
+theorem costEquationsRetypable (source : WrappableIGSLT) :
     EquationsRetypable source.costContinuationRetyping := by
   intro generated membership
   change generated ∈ source.costWholeLanguage.equations at membership
   rw [source.costWholeLanguage_equations] at membership
-  simp only [costStaticEquations, List.mem_append] at membership
+  simp only [costStaticEquations_def, List.mem_append] at membership
   rcases membership with baseMembership | wrappedMembership
   · rcases List.mem_map.mp baseMembership with
       ⟨equation, sourceMembership, rfl⟩
@@ -1886,7 +1883,37 @@ theorem costEquationsRetypable (source : CIGSLT) :
         costWrappedEquation, mapEquation] using
           sourceRetypable.rightMatchCorrect
 
-end CIGSLT
+/-- **The Cost image of a wrappable interactive GSLT.**  Every field is
+generated from the cut and the retyping plan of the source.  No section of
+the source is read and none is produced, so the construction applies to its
+own output. -/
+def cost (source : WrappableIGSLT) : WrappableIGSLT where
+  theory := source.costIGSLT
+  reflection := source.costWholeAdmittedReflection
+  cut := source.costInteractionCut
+  continuationRetyping := source.costContinuationRetyping
+  bareCollectionConstructorsWrapped :=
+    source.costBareCollectionConstructorsWrapped
+  equationsRetypable := source.costEquationsRetypable
+  reflectivePresentationsRetypable :=
+    source.costReflectivePresentationsRetypable
+  sourceEnvelopeStable := source.costSourceEnvelopeStable
+  redexRetypable := source.costRedexRetypable
+  wrappable := source.costWrappable
+
+@[simp] theorem cost_theory (source : WrappableIGSLT) :
+    source.cost.theory = source.costIGSLT :=
+  rfl
+
+/-- Cost applied `count` times. -/
+abbrev costIterate (count : Nat) (source : WrappableIGSLT) : WrappableIGSLT :=
+  cost^[count] source
+
+@[simp] theorem costIterate_succ (count : Nat) (source : WrappableIGSLT) :
+    costIterate (count + 1) source = (costIterate count source).cost :=
+  Function.iterate_succ_apply' cost count source
+
+end WrappableIGSLT
 
 /-- Exact object laws for one explicitly selected Cost normalizer.
 
@@ -1972,24 +1999,23 @@ construction; only the open-section implementation is parameterized. -/
 def costCIGSLTWith (source : CIGSLT)
     (normalizeOpen : CostOpenNormalizer source)
     (laws : Cost.CompactOpenNormalizer.Laws source normalizeOpen) : CIGSLT where
-  theory := source.costIGSLT
-  reflection := source.costWholeAdmittedReflection
-  cut := source.costInteractionCut
+  toWrappableIGSLT := source.toWrappableIGSLT.cost
   openCanonical :=
     source.costContextualOpenSectionWith normalizeOpen
       laws.toCostOpenSectionLawsFor
-  continuationRetyping := source.costContinuationRetyping
-  bareCollectionConstructorsWrapped :=
-    source.costBareCollectionConstructorsWrapped
   openCanonicalPreservesWrappedConstructorTyping :=
     source.costContextualOpenSectionWith_preservesWrappedConstructorTyping
       normalizeOpen laws
-  equationsRetypable := source.costEquationsRetypable
-  reflectivePresentationsRetypable :=
-    source.costReflectivePresentationsRetypable
-  sourceEnvelopeStable := source.costSourceEnvelopeStable
-  redexRetypable := source.costRedexRetypable
-  wrappable := source.costWrappable
+
+/-- The continued theory built from a lawful normalizer is the Cost image of
+the source together with a section: clause (ii) is the only part the
+normalizer supplies. -/
+@[simp] theorem costCIGSLTWith_toWrappableIGSLT (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source)
+    (laws : Cost.CompactOpenNormalizer.Laws source normalizeOpen) :
+    (source.costCIGSLTWith normalizeOpen laws).toWrappableIGSLT =
+      source.toWrappableIGSLT.cost :=
+  rfl
 
 /-- Build the continued Cost object directly from a lawful static kernel.
 This is the generic construction used by concrete languages: no rho syntax,

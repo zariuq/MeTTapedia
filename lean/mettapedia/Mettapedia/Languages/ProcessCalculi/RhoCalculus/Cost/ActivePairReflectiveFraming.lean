@@ -160,7 +160,4 @@ theorem reflective_body_not_ordinary :
     instantiateBVar (.apply "NQuote" [.apply "PZero" []]) (.apply "PDrop" [.bvar 0]) ≠
       activatedBody (.apply "PDrop" [.bvar 0]) (.apply "PZero" []) := by decide +kernel
 
-#print axioms original_step_with_rest
-#print axioms original_rest_factorization
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectiveFraming

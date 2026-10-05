@@ -684,27 +684,4 @@ theorem action_nontrivial :
 
 end LambdaBindingComparison
 
-#print axioms modelCategory
-#print axioms forget
-#print axioms pure_forget
-#print axioms fibre
-#print axioms fibre_forget
-#print axioms accountSubstitution_identity
-#print axioms accountSubstitution_comp
-#print axioms fibreSubstitution
-#print axioms fibreSubstitutionObserved
-#print axioms fibreSubstitution_comp_apply
-#print axioms OccurrenceMarker.instantiateHom
-#print axioms OccurrenceMarker.comparison
-#print axioms OccurrenceMarker.comparison_fibre_nontrivial
-#print axioms RhoSourceComparison.source_equations
-#print axioms RhoSourceComparison.observe_source
-#print axioms RhoSourceComparison.canonical_source_observation_act
-#print axioms RhoSourceComparison.marked_input_source
-#print axioms RhoSourceComparison.marked_body_instantiation
-#print axioms RhoSourceComparison.action_nontrivial
-#print axioms RhoSourceComparison.comparison_loses_account_order
-#print axioms LambdaBindingComparison.marked_self_application_source
-#print axioms LambdaBindingComparison.marked_self_application_keeps_occurrence
-
 end Mettapedia.GSLT.LanguageDef.Cost.AccountBindingAlgebra

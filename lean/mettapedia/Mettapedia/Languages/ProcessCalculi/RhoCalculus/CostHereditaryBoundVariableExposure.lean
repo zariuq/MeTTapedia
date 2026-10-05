@@ -49,7 +49,7 @@ theorem CostStaticRegionNode.normalizeHereditaryRawWithInventory_bvar_of_sourceC
   rw [canonicalizeByDepths_eq_bvar_of_canonicalize_eq
     (CostStaticRegionNode.sourceSemanticPatternKeyAt node environment)
       rhoReflectivePresentation node.targetBound.length 0 collapse]
-  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars,
+  simp [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar,
     CostStaticAtomEnvironment.restore, CostStaticAtomEnvironment.restoreAt,
     ReflectiveContextSupport.substituteAt]
 

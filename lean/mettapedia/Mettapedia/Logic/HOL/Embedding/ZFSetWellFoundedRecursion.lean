@@ -14,6 +14,18 @@ The set face thus carries a recursion the type face does not have to take as
 a scheme. When every recursive call of a written right side lands on an
 earlier member, the function satisfies the equation as written. On the
 natural numbers this supplies `half` and `log2`.
+
+**Equations by cases with a bound.** A definition by cases gives, for each case,
+an argument and a right side that reads the function being defined. Order the
+arguments by a bound into a set with a well-founded relation `below`
+(`boundBefore`, well-founded by `boundBefore_wf`). If every right side reads the
+function only at arguments whose bound is below the bound of its own argument
+(`ReadsBefore`), cases with one argument have one right side, and the right sides
+land in the codomain, then a function satisfies every case (`cases_solution`).
+When the cases cover the domain, it is the only one (`cases_solution_unique`).
+Negative examples: `f n = suc (f n)` reads `f` at `n` itself and has no solution
+(`no_self_successor`); `f n = f (suc n)` reads it above and has many
+(`constants_satisfy`).
 -/
 
 set_option autoImplicit false
@@ -24,7 +36,7 @@ open ZFSetHenkinInterpretation ZFSetUniverseClosure ZFSetDependentProducts
 open ZFSetTraceProducts
 open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation
   (numeral numeral_injective numeral_mem_omega numeral_succ natOf
-    numeral_natOf natOf_numeral insert_mem_omega)
+    numeral_natOf natOf_numeral insert_mem_omega traceLam_graph_mem tracePiSet_ext)
 open scoped ZFSet
 open Classical
 
@@ -48,21 +60,6 @@ theorem mem_earlier {A : ZFSet.{u}} {r : ZFSet.{u} → ZFSet.{u} → Prop}
     {y x : ZFSet.{u}} : y ∈ earlier A r x ↔ before A r y x := by
   unfold earlier before
   exact ZFSet.mem_sep
-
-/-- Two maps that agree on a set have the same graph. This belongs with the
-graph operations; it is proved here so this module need not import the
-inductive development. -/
-theorem graph_congr {a : ZFSet.{u}} {f g : ZFSet.{u} → ZFSet.{u}}
-    (h : ∀ x, x ∈ a → f x = g x) : graph a f = graph a g := by
-  apply ZFSet.ext
-  intro z
-  constructor
-  · intro hz
-    obtain ⟨x, hx, rfl⟩ := mem_graph.mp hz
-    exact mem_graph.mpr ⟨x, hx, by rw [h x hx]⟩
-  · intro hz
-    obtain ⟨x, hx, rfl⟩ := mem_graph.mp hz
-    exact mem_graph.mpr ⟨x, hx, by rw [← h x hx]⟩
 
 /-! ## The unique solution -/
 
@@ -251,6 +248,84 @@ theorem equation_finite {A : ZFSet.{u}} {r : ZFSet.{u} → ZFSet.{u} → Prop}
   refine (solution_eq hwf step hx).trans ?_
   rw [hstep x (traceLam (graph (earlier A r x) (solution A r hwf step))) hx]
   rw [readAll_graph (solution A r hwf step) (calls x) (hcalls x hx)]
+
+/-! ## Equations by cases with a bound -/
+
+/-- `y` comes before `x` when the bound of `y` is below the bound of `x`. -/
+def boundBefore (below : ZFSet.{u} → ZFSet.{u} → Prop) (bound : ZFSet.{u} → ZFSet.{u})
+    (y x : ZFSet.{u}) : Prop :=
+  below (bound y) (bound x)
+
+/-- **A bound orders the arguments well**: if `below` is well-founded on `T` and the bound maps
+`A` into `T`, comparing bounds is well-founded on `A`. -/
+theorem boundBefore_wf {A T : ZFSet.{u}} {below : ZFSet.{u} → ZFSet.{u} → Prop}
+    (wf : WellFounded (before T below)) {bound : ZFSet.{u} → ZFSet.{u}}
+    (into : ∀ x, x ∈ A → bound x ∈ T) :
+    WellFounded (before A (boundBefore below bound)) :=
+  Subrelation.wf (fun {_ _} earlier => ⟨into _ earlier.1, earlier.2⟩) (InvImage.wf bound wf)
+
+section Cases
+
+variable {A B : ZFSet.{u}} {r : ZFSet.{u} → ZFSet.{u} → Prop} {I : Sort*}
+  (arg : I → ZFSet.{u}) (rhs : I → ZFSet.{u} → ZFSet.{u})
+
+/-- **The right side of each case reads the function only before its argument**: two
+functions with the same values at the members of `A` that `r` places before the argument give
+the right side one value. -/
+def ReadsBefore (A : ZFSet.{u}) (r : ZFSet.{u} → ZFSet.{u} → Prop) : Prop :=
+  ∀ i F G, (∀ y, before A r y (arg i) → traceApp F y = traceApp G y) → rhs i F = rhs i G
+
+/-- The step of a definition by cases: at the argument of a case, its right side read on the
+values before the argument and on a given function elsewhere; at an argument of no case, the
+value of the given function. -/
+private def casesStep (A : ZFSet.{u}) (r : ZFSet.{u} → ZFSet.{u} → Prop) (fallback : ZFSet.{u})
+    (x prev : ZFSet.{u}) : ZFSet.{u} :=
+  if covered : ∃ i, arg i = x then
+    rhs (Classical.choose covered)
+      (traceLam (graph A fun y => if before A r y x then traceApp prev y else traceApp fallback y))
+  else traceApp fallback x
+
+/-- **Existence.** If each case's argument lies in `A`, cases with one argument have one right
+side, each right side reads the function only before its argument, and right sides read on a
+function from `A` into `B` lie in `B`, then some function from `A` into `B` satisfies every
+case. The function `fallback` gives the values at the arguments of no case. -/
+theorem cases_solution (hwf : WellFounded (before A r)) (arg_mem : ∀ i, arg i ∈ A)
+    (agree : ∀ i j, arg i = arg j → ∀ F, rhs i F = rhs j F) (reads : ReadsBefore arg rhs A r)
+    (lands : ∀ i F, F ∈ tracePiSet A (fun _ => B) → rhs i F ∈ B)
+    {fallback : ZFSet.{u}} (filler : fallback ∈ tracePiSet A fun _ => B) :
+    ∃ F ∈ tracePiSet A (fun _ => B), ∀ i, traceApp F (arg i) = rhs i F := by
+  refine ⟨traceLam (graph A (solution A r hwf (casesStep arg rhs A r fallback))),
+    solution_pack hwf _ fun x prev hx hprev => ?_, fun i => ?_⟩
+  · unfold casesStep
+    split
+    · refine lands _ _ (traceLam_graph_mem fun y hy => ?_)
+      split
+      · exact traceApp_mem ⟨prev, hprev⟩ ⟨y, mem_earlier.mpr ‹_›⟩
+      · exact traceApp_mem ⟨fallback, filler⟩ ⟨y, hy⟩
+    · exact traceApp_mem ⟨fallback, filler⟩ ⟨x, hx⟩
+  · have covered : ∃ j, arg j = arg i := ⟨i, rfl⟩
+    rw [traceApp_graph_beta _ (arg_mem i), solution_eq hwf _ (arg_mem i), casesStep,
+      dif_pos covered, agree _ i (Classical.choose_spec covered)]
+    refine reads i _ _ fun y earlier => ?_
+    rw [traceApp_graph_beta _ earlier.1, if_pos earlier,
+      traceApp_graph_beta _ (mem_earlier.mpr earlier), traceApp_graph_beta _ earlier.1]
+
+/-- **Uniqueness.** If the cases cover `A` and each right side reads the function only before
+its argument, two functions from `A` into `B` that satisfy every case are equal. -/
+theorem cases_solution_unique (hwf : WellFounded (before A r))
+    (cover : ∀ x, x ∈ A → ∃ i, arg i = x) (reads : ReadsBefore arg rhs A r)
+    {F G : ZFSet.{u}} (hF : F ∈ tracePiSet A fun _ => B) (hG : G ∈ tracePiSet A fun _ => B)
+    (solvesF : ∀ i, traceApp F (arg i) = rhs i F)
+    (solvesG : ∀ i, traceApp G (arg i) = rhs i G) :
+    F = G := by
+  refine tracePiSet_ext hF hG fun x hx => ?_
+  refine WellFounded.induction hwf (C := fun w => w ∈ A → traceApp F w = traceApp G w) x
+    (fun w ih hw => ?_) hx
+  obtain ⟨i, rfl⟩ := cover w hw
+  rw [solvesF, solvesG]
+  exact reads i F G fun y earlier => ih y earlier earlier.1
+
+end Cases
 
 /-! ## The order of the natural numbers -/
 

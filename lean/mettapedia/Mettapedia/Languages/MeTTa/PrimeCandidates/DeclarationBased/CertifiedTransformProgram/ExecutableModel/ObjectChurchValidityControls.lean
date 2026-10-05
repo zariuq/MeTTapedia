@@ -224,8 +224,8 @@ the second pair's first component `add 0 (add 0 0)`, the reflexivity's point mus
 related at the tag of zero to that endpoint, which takes no core step. -/
 theorem pairs_not_symm : ¬ RT coreReduction Γ true symmToken sigId pairStuck pairRefl := by
   intro h
-  have notVac : ent [] (.arg .refl 0 [] (.tag .zero)) = false := by
-    cases e : ent [] (.arg .refl 0 [] (.tag .zero)) with
+  have notVac : ent ([] : List Tok) (.arg .refl 0 [] (.tag .zero)) = false := by
+    cases e : ent ([] : List Tok) (.arg .refl 0 [] (.tag .zero)) with
     | false => rfl
     | true =>
         have e' := vacuous_arg e
@@ -277,7 +277,7 @@ theorem pairs_symm_objectHeadReduction :
     RT objectHeadReduction Γ true symmToken sigId pairRefl pairStuck ∧
       RT objectHeadReduction Γ true symmToken sigId pairStuck pairRefl := by
   have stuckRed : CRedTm objectHeadReduction Γ stuckZero czero cnum :=
-    ⟨(Relation.ReflTransGen.single (objectHeadReduction_add
+    ⟨(Relation.ReflTransGen.single (objectExtension.head_add
       (objectHeadReduction.root (caddZero_step czero)))).tail
         (objectHeadReduction.root (caddZero_step czero)), stuckZero_eq⟩
   have fstRefl : CRedTm objectHeadReduction Γ (.fst pairRefl) czero cnum :=

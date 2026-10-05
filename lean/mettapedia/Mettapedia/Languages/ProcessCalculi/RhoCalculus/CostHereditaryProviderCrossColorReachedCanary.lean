@@ -106,16 +106,16 @@ private theorem wrappedQuoteOutsideBase :
 
 private noncomputable def rightBoundaryPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer rightPattern (.base "Name") :=
   .boundaryApplication wrappedQuoteDeclared rfl wrappedQuoteOutsideBase
     rightBoundaryCertificate rightBoundaryCertificate_spec
 
 private noncomputable def reachedDropPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer
       (.apply (costBaseConstructorName "PDrop") [rightPattern])
       (.base "Proc") := by
@@ -130,8 +130,8 @@ private noncomputable def reachedDropPlan (outer : OneHoleContext) :
 
 private noncomputable def reachedPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer reachedPattern (.base "Name") := by
   apply CostStaticRegionPlan.application rhoBreadthBaseQuoteDeclared rfl
     rhoBreadthBaseQuoteRole rhoBreadthBaseQuotePreimage
@@ -144,8 +144,8 @@ private noncomputable def reachedPlan (outer : OneHoleContext) :
 
 private noncomputable def outerDropPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] outer
       (.apply (costBaseConstructorName "PDrop") [reachedPattern])
       (.base "Proc") := by
@@ -161,8 +161,8 @@ private noncomputable def outerDropPlan (outer : OneHoleContext) :
 /-- The genuine base-colour static plan for the two-shell endpoint. -/
 noncomputable def leftPlan :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole leftPattern (.base "Name") := by
   apply CostStaticRegionPlan.application rhoBreadthBaseQuoteDeclared rfl
     rhoBreadthBaseQuoteRole rhoBreadthBaseQuotePreimage
@@ -195,7 +195,8 @@ noncomputable def leftReached :
     simp only [CostStaticRegionPlan.abstractPattern,
       CostStaticArgumentPlan.abstractPatterns, OneHoleContext.fill,
       rhoBreadthBaseQuotePreimage, rhoBreadthBaseDropPreimage,
-      costStaticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
+      costStaticConstructorPreimage,
+      ContinuationDecorationProfile.staticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
       rhoBreadthBaseDropDeclared, rhoCalc, List.nil_append]
     rfl
 
@@ -205,7 +206,7 @@ def rightStaticShape :
       (.base (costBaseSortName "Name")) := by
   apply CostStaticRootShape.application .wrapped wrappedQuoteDeclared
   · simpa [rightPattern, wrappedQuoteDeclared, wrappedQuoteConstructor,
-      CIGSLT.renderDeclaredCostConstructor,
+      CIGSLT.renderDeclaredCostConstructor, ContinuationDecorationProfile.renderDeclaredCostConstructor,
       CIGSLT.renderGeneratedCostConstructor, CostConstructor.render, rhoCalc] using
       rhoCIGSLT.decodeDeclaredCostConstructor_render wrappedQuoteDeclared
   · exact wrappedQuoteRole
@@ -256,7 +257,8 @@ noncomputable def terminalStopped :
     simp only [CostStaticRegionPlan.abstractPattern,
       CostStaticArgumentPlan.abstractPatterns, OneHoleContext.fill,
       rhoBreadthBaseQuotePreimage, rhoBreadthBaseDropPreimage,
-      costStaticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
+      costStaticConstructorPreimage,
+      ContinuationDecorationProfile.staticConstructorPreimage, rhoBreadthBaseQuoteDeclared,
       rhoBreadthBaseDropDeclared, rhoCalc, List.nil_append]
     rfl
 

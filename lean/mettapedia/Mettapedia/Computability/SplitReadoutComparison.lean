@@ -100,7 +100,7 @@ def canonicalConstraint {Source Target : Type u}
 
 /-- The canonical representatives are exactly related to the complete target
 by the readout. -/
-def canonicalBridge {Source Target : Type u}
+theorem canonicalBridge {Source Target : Type u}
     (readout : SplitReadout Source Target) :
     ExactBridge (readoutMap readout) (canonicalConstraint readout)
       (Constraint.total (targetFace Target)) where
@@ -129,7 +129,7 @@ def canonicalBridge {Source Target : Type u}
       _ = right := rightCanonical
 
 /-- Identity is exact on the complete extensional target face. -/
-def targetIdentityBridge {Target : Type u} :
+theorem targetIdentityBridge {Target : Type u} :
     ExactBridge (𝟙 (targetFace Target))
       (Constraint.total (targetFace Target))
       (Constraint.total (targetFace Target)) :=
@@ -149,7 +149,7 @@ def canonicalExactComparison {Source Target : Type u}
 /-! ## Global exactness -/
 
 /-- Faithfulness upgrades the complete source fragment to an exact bridge. -/
-def totalBridgeOfFaithful {Source Target : Type u}
+theorem totalBridgeOfFaithful {Source Target : Type u}
     (readout : SplitReadout Source Target) (faithful : readout.Faithful) :
     ExactBridge (readoutMap readout)
       (Constraint.total (sourceFace Source))

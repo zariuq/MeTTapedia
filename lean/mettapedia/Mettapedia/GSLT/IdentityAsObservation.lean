@@ -6,6 +6,7 @@ import Mettapedia.TypeTheory.Calculi.BooleanSTLC.WitnessIdentity
 import Mettapedia.TypeTheory.OneToOneCorrespondence
 import Mettapedia.GSLT.Logic.EliminatorObservers
 import Mettapedia.GSLT.Logic.QuotientObservers
+import Mettapedia.GSLT.Logic.Views
 
 /-!
 # Identity as observation
@@ -34,4 +35,10 @@ import Mettapedia.GSLT.Logic.QuotientObservers
 * `Logic.QuotientObservers`: quotients as bubbles whose admissible observers
   respect the relation; proof irrelevance and propositional extensionality as
   quotients.
+* `Logic.Views`: families of views of one subject; translations as
+  factorizations, what they forget as non-trivial fibres; finest views as a
+  class of lossless views, common coarsenings and the joint view; the
+  two-valued observations and the diagonal limit.  The instances (propositions,
+  the computational trinity, values equal to their own negation, table runs)
+  are in `Logic.ViewPluralism`.
 -/

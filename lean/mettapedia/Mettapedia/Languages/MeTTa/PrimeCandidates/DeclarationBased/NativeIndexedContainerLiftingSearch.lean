@@ -142,7 +142,7 @@ def identityEquiv
     exact .same (fun _ => ⟨⟨rfl⟩⟩)
   left_inv := by
     intro evidence
-    letI : ∀ (left right : Object),
+    let : ∀ (left right : Object),
         Subsingleton ((Rel.graph id).evidence left right) :=
       fun _ _ => instSubsingletonEqWitness _ _
     exact @Subsingleton.elim
@@ -254,7 +254,7 @@ def graphEquiv
     exact .same (fun _ => ⟨⟨rfl⟩⟩)
   left_inv := by
     intro evidence
-    letI : ∀ (left : Source) (right : Target),
+    let : ∀ (left : Source) (right : Target),
         Subsingleton ((Rel.graph function).evidence left right) :=
       fun _ _ => instSubsingletonEqWitness _ _
     exact @Subsingleton.elim
@@ -434,12 +434,12 @@ theorem reader_choice_has_no_finite_provider :
         (readerLifting.lift IntrinsicMILNativeSearch.Canary.choice)) := by
   rintro ⟨provider⟩
   let fibre := provider.fibre readerSource
-  letI : Fintype
+  let : Fintype
       (AnswerOccurrence
         (readerLifting.lift IntrinsicMILNativeSearch.Canary.choice)
         readerSource) :=
     Fintype.ofEquiv fibre.Index fibre.occurrenceEquiv
-  letI : Fintype Nat :=
+  let : Fintype Nat :=
     Fintype.ofInjective spikeOccurrence spikeOccurrence_injective
   exact not_finite Nat
 

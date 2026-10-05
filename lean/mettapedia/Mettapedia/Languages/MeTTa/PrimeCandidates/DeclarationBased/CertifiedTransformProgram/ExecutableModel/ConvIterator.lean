@@ -218,26 +218,26 @@ end Reductions
 
 section Model
 
-variable (v : Nat → Nat) {T : RealizerSide Tower.Head ℕ}
+variable (X : TExtension) (v : Nat → Nat) {T : RealizerSide Tower.Head ℕ}
 
 /-! ## Values -/
 
 section Values
 
-variable {m : Nat} {ξ : World (nmodel v T).reading m} {A : Tower.Tm m}
-  {B : Tower.Tm (m + 1)} {R RS : NPack (nmodel v T) m}
+variable {m : Nat} {ξ : World (nmodel X v T).reading m} {A : Tower.Tm m}
+  {B : Tower.Tm (m + 1)} {R RS : NPack (nmodel X v T) m}
 
 /-- A step related to another, applied to related values and related evidence,
 gives related pairs. -/
 theorem iterStep_related {s s' x x' e e' : Tower.Tm m}
-    (den : DenN (nmodel v T) ξ (.sigma A B) R)
-    (denS : DenN (nmodel v T) ξ (stepOver A B) RS) (hs : RS.rel s s')
-    (hx : ∀ {RA : NPack (nmodel v T) m}, DenN (nmodel v T) ξ A RA →
+    (den : DenN (nmodel X v T) ξ (.sigma A B) R)
+    (denS : DenN (nmodel X v T) ξ (stepOver A B) RS) (hs : RS.rel s s')
+    (hx : ∀ {RA : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ A RA →
       RA.rel x x')
-    (he : ∀ {RB : NPack (nmodel v T) m},
-      DenN (nmodel v T) ξ (Presentation.inst0 x B) RB → RB.rel e e') :
+    (he : ∀ {RB : NPack (nmodel X v T) m},
+      DenN (nmodel X v T) ξ (Presentation.inst0 x B) RB → RB.rel e e') :
     R.rel (.app (.app s x) e) (.app (.app s' x') e') := by
-  have vlaws := (nmodel_laws v T).value
+  have vlaws := (nmodel_laws X v T).value
   obtain ⟨R₁, den₁, h₁⟩ := ValueSide.DenS.pi_app_exists vlaws denS hs hx
   rw [step_application_type] at den₁
   obtain ⟨R₂, den₂, h₂⟩ := ValueSide.DenS.pi_app_exists vlaws den₁ h₁ he
@@ -249,16 +249,16 @@ theorem iterStep_related {s s' x x' e e' : Tower.Tm m}
 pair type, at counts of one shape, related values and related evidence, give
 related pairs, whatever carrier and family they carry along. -/
 theorem iter_related {s s' K F K' F' : Tower.Tm m}
-    (den : DenN (nmodel v T) ξ (.sigma A B) R)
-    (denS : DenN (nmodel v T) ξ (stepOver A B) RS) (hs : RS.rel s s')
+    (den : DenN (nmodel X v T) ξ (.sigma A B) R)
+    (denS : DenN (nmodel X v T) ξ (stepOver A B) RS) (hs : RS.rel s s')
     (sh : NumShape) :
-    ∀ {c c' x x' e e' : Tower.Tm m}, VShape v c sh → VShape v c' sh →
-      (∀ {RA : NPack (nmodel v T) m}, DenN (nmodel v T) ξ A RA →
+    ∀ {c c' x x' e e' : Tower.Tm m}, X.VShape v c sh → X.VShape v c' sh →
+      (∀ {RA : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ A RA →
         RA.rel x x') →
-      (∀ {RB : NPack (nmodel v T) m},
-        DenN (nmodel v T) ξ (Presentation.inst0 x B) RB → RB.rel e e') →
+      (∀ {RB : NPack (nmodel X v T) m},
+        DenN (nmodel X v T) ξ (Presentation.inst0 x B) RB → RB.rel e e') →
       R.rel (iterApp c K F s x e) (iterApp c' K' F' s' x' e') := by
-  have vlaws := (nmodel_laws v T).value
+  have vlaws := (nmodel_laws X v T).value
   have expansive := ValueSide.DenS.expansive vlaws den
   induction sh with
   | zero =>
@@ -268,11 +268,11 @@ theorem iter_related {s s' K F K' F' : Tower.Tm m}
           cases hc' with
           | zero red' =>
               refine expansive.left
-                (Relation.ReflTransGen.tail (viter_scrutinee v K F s x e red)
-                  (viter_zero_step v K F s x e))
+                (Relation.ReflTransGen.tail (X.iter_scrutinee v K F s x e red)
+                  (X.iter_zero_step v K F s x e))
                 (expansive.right
-                  (Relation.ReflTransGen.tail (viter_scrutinee v K' F' s' x' e' red')
-                    (viter_zero_step v K' F' s' x' e')) ?_)
+                  (Relation.ReflTransGen.tail (X.iter_scrutinee v K' F' s' x' e' red')
+                    (X.iter_zero_step v K' F' s' x' e')) ?_)
               exact ValueSide.DenS.sigma_pair vlaws den hx he
   | suc sh ih =>
       intro c c' x x' e e' hc hc' hx he
@@ -280,17 +280,17 @@ theorem iter_related {s s' K F K' F' : Tower.Tm m}
       | @suc _ a _ red ha =>
           cases hc' with
           | @suc _ a' _ red' ha' =>
-              have hp := iterStep_related v den denS hs hx he
+              have hp := iterStep_related X v den denS hs hx he
               refine expansive.left
                 (Relation.ReflTransGen.tail
-                  (Relation.ReflTransGen.tail (viter_scrutinee v K F s x e red)
-                    (viter_suc_step v a K F s x e))
-                  (vshared_beta_step v (iterPartial a K F s) s x e))
+                  (Relation.ReflTransGen.tail (X.iter_scrutinee v K F s x e red)
+                    (X.iter_suc_step v a K F s x e))
+                  (X.shared_beta_step v (iterPartial a K F s) s x e))
                 (expansive.right
                   (Relation.ReflTransGen.tail
-                    (Relation.ReflTransGen.tail (viter_scrutinee v K' F' s' x' e' red')
-                      (viter_suc_step v a' K' F' s' x' e'))
-                    (vshared_beta_step v (iterPartial a' K' F' s') s' x' e')) ?_)
+                    (Relation.ReflTransGen.tail (X.iter_scrutinee v K' F' s' x' e' red')
+                      (X.iter_suc_step v a' K' F' s' x' e'))
+                    (X.shared_beta_step v (iterPartial a' K' F' s') s' x' e')) ?_)
               exact ih ha ha' (ValueSide.DenS.sigma_fst vlaws den hp)
                 (ValueSide.DenS.sigma_snd vlaws den hp)
   | star =>
@@ -299,10 +299,10 @@ theorem iter_related {s s' K F K' F' : Tower.Tm m}
       | star red daimonic =>
           cases hc' with
           | star red' daimonic' =>
-              refine expansive.left (viter_scrutinee v K F s x e red)
-                (expansive.right (viter_scrutinee v K' F' s' x' e' red') ?_)
-              have role : (nmodel v T).roles iterName =
-                  .computes 6 (.split 0 .constructor fun _ => .leaf) := tmodelRoles_iter
+              refine expansive.left (X.iter_scrutinee v K F s x e red)
+                (expansive.right (X.iter_scrutinee v K' F' s' x' e' red') ?_)
+              have role : (nmodel X v T).roles iterName =
+                  .computes 6 (.split 0 .constructor fun _ => .leaf) := X.extends_.iter
               exact ValueSide.DenS.daimonic_related vlaws den
                 (Daimonic.stuck (before := []) (after := [K, F, s, x, e]) role rfl daimonic)
                 (Daimonic.stuck (before := []) (after := [K', F', s', x', e']) role rfl
@@ -318,12 +318,12 @@ include ext
 /-! ## Validity -/
 
 /-- **The iterator is valid** in the conversion model. -/
-theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
-  have laws := nmodel_laws v T
+theorem valid_iter : ValidTmN (nmodel X v T) .nil (.const iterName) iterType := by
+  have laws := nmodel_laws X v T
   have vlaws := laws.value
-  obtain ⟨validT, partsT, _⟩ := Derivable.validTN (numStage_typedSoundN v ext)
+  obtain ⟨validT, partsT, _⟩ := Derivable.validTN (numStage_typedSoundN X v ext)
     (iterType_typed (names := [numN]) (List.mem_cons_self ..)) trivial
-  have validType : ValidTyN (nmodel v T) .nil iterType :=
+  have validType : ValidTyN (nmodel X v T) .nil iterType :=
     validT.validTy (LevelTower.IsUniverse.sort _) (ext.isUniverse_sort _)
   obtain ⟨ctx, validResult, _⟩ := ValidTyN.close_parts iterTele (C := iterResult) validType partsT
   have typedIter : Typed T.R .nil (.const iterName) iterType := by
@@ -343,16 +343,16 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
   obtain ⟨⟨⟨⟨⟨⟨-, RN, denN, hN, rN⟩, RT, -, -, rT⟩, RF, -, -, rF⟩,
     RS, denS, hS, rS⟩, RX, denX, hX, rX⟩, RE, denE, hE, rE⟩ := e₀
   -- The count.
-  change DenN (nmodel v T) ξ numT RN at denN
+  change DenN (nmodel X v T) ξ numT RN at denN
   change RN.rel (σ 5) (σ' 5) at hN
   change (RN.real (σ 5)).rel Δ numT (ς 5) (ς' 5) at rN
   -- The carrier and the family.
   change (RT.real (σ 4)).rel Δ U0 (ς 4) (ς' 4) at rT
   change (RF.real (σ 3)).rel Δ (.pi (ς 4) U0) (ς 3) (ς' 3) at rF
   -- The step.
-  have denS' : DenN (nmodel v T) ξ
+  have denS' : DenN (nmodel X v T) ξ
       (stepOver (σ 4) (.app (Presentation.rename wk (σ 3)) (.var 0))) RS := by
-    change DenN (nmodel v T) ξ (Presentation.subst (tailSub (tailSub (tailSub σ)))
+    change DenN (nmodel X v T) ξ (Presentation.subst (tailSub (tailSub (tailSub σ)))
       (stepOver (.var 1) (.app (.var 1) (.var 0)))) RS at denS
     rw [subst_stepOver] at denS
     exact denS
@@ -371,14 +371,14 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
     rw [subst_stepOver] at h
     exact h
   -- The value and its evidence.
-  change DenN (nmodel v T) ξ (σ 4) RX at denX
+  change DenN (nmodel X v T) ξ (σ 4) RX at denX
   change RX.rel (σ 1) (σ' 1) at hX
   change (RX.real (σ 1)).rel Δ (ς 4) (ς 1) (ς' 1) at rX
-  change DenN (nmodel v T) ξ (.app (σ 3) (σ 1)) RE at denE
+  change DenN (nmodel X v T) ξ (.app (σ 3) (σ 1)) RE at denE
   rw [← inst0_familyApp] at denE
   change RE.rel (σ 0) (σ' 0) at hE
   change (RE.real (σ 0)).rel Δ (.app (ς 3) (ς 1)) (ς 0) (ς' 0) at rE
-  change DenN (nmodel v T) ξ
+  change DenN (nmodel X v T) ξ
     (.sigma (σ 4) (.app (Presentation.rename wk (σ 3)) (.var 0))) R at den
   show R.rel (iterApp (σ 5) (σ 4) (σ 3) (σ 2) (σ 1) (σ 0))
       (iterApp (σ' 5) (σ' 4) (σ' 3) (σ' 2) (σ' 1) (σ' 0)) ∧
@@ -386,10 +386,10 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
       (.sigma (ς 4) (.app (Presentation.rename wk (ς 3)) (.var 0)))
       (iterApp (ς 5) (ς 4) (ς 3) (ς 2) (ς 1) (ς 0))
       (iterApp (ς' 5) (ς' 4) (ς' 3) (ς' 2) (ς' 1) (ς' 0))
-  rw [num_den v denN] at hN
+  rw [num_den X v denN] at hN
   obtain ⟨sh, hc, hc'⟩ := ValueSide.numIndPack_rel.mp hN
   have hS' := ValueSide.DenS.refl_left vlaws denS' hS
-  refine ⟨iter_related v den denS' hS sh hc hc'
+  refine ⟨iter_related X v den denS' hS sh hc hc'
     (fun d => by rw [ValueSide.DenS.deterministic vlaws d denX]; exact hX)
     (fun d => by rw [ValueSide.DenS.deterministic vlaws d denE]; exact hE), ?_⟩
   -- Equal instances of the carrier and the family, and the two result types.
@@ -414,12 +414,12 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
     SubstMor.cons (SubstMor.cons (SubstMor.cons (SubstMor.cons (SubstMor.cons
       (SubstMor.cons (fun i => Fin.elim0 i) tq) (typed' 4)) (typed' 3)) (typed' 2)) tu) tw
   -- The realizer claim, by induction on the count's shape.
-  have claim : ∀ (sh : NumShape) {c₀ x₀ e₀ : Tower.Tm m}, VShape v c₀ sh →
+  have claim : ∀ (sh : NumShape) {c₀ x₀ e₀ : Tower.Tm m}, X.VShape v c₀ sh →
       ∀ {q q' u u' w w' : Tower.Tm r},
         NumShapeRel T numN zeroN sucN sh Δ numT q q' →
-        (∀ {RA : NPack (nmodel v T) m}, DenN (nmodel v T) ξ (σ 4) RA →
+        (∀ {RA : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ (σ 4) RA →
           RA.Val x₀ ∧ (RA.real x₀).rel Δ (ς 4) u u') →
-        (∀ {RB : NPack (nmodel v T) m}, DenN (nmodel v T) ξ
+        (∀ {RB : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ
             (Presentation.inst0 x₀ (.app (Presentation.rename wk (σ 3)) (.var 0))) RB →
           RB.Val e₀ ∧ (RB.real e₀).rel Δ (.app (ς 3) u) w w') →
         (R.real (iterApp c₀ (σ 4) (σ 3) (σ 2) x₀ e₀)).rel Δ
@@ -427,9 +427,9 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
           (iterApp q (ς 4) (ς 3) (ς 2) u w) (iterApp q' (ς' 4) (ς' 3) (ς' 2) u' w') := by
     -- The realizers of the value and of its evidence are typed on both sides.
     have typings : ∀ {x₀ e₀ : Tower.Tm m} {u u' w w' : Tower.Tm r},
-        (∀ {RA : NPack (nmodel v T) m}, DenN (nmodel v T) ξ (σ 4) RA →
+        (∀ {RA : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ (σ 4) RA →
           RA.Val x₀ ∧ (RA.real x₀).rel Δ (ς 4) u u') →
-        (∀ {RB : NPack (nmodel v T) m}, DenN (nmodel v T) ξ
+        (∀ {RB : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ
             (Presentation.inst0 x₀ (.app (Presentation.rename wk (σ 3)) (.var 0))) RB →
           RB.Val e₀ ∧ (RB.real e₀).rel Δ (.app (ς 3) u) w w') →
         (Typed T.R Δ u (ς 4) ∧ Typed T.R Δ u' (ς' 4)) ∧
@@ -446,9 +446,9 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
     -- Counts reaching neutral terms: both applications reach neutral spines.
     have neutralCase : ∀ {c₀ x₀ e₀ : Tower.Tm m} {q q' u u' w w' : Tower.Tm r},
         NeRel T Δ numT q q' →
-        (∀ {RA : NPack (nmodel v T) m}, DenN (nmodel v T) ξ (σ 4) RA →
+        (∀ {RA : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ (σ 4) RA →
           RA.Val x₀ ∧ (RA.real x₀).rel Δ (ς 4) u u') →
-        (∀ {RB : NPack (nmodel v T) m}, DenN (nmodel v T) ξ
+        (∀ {RB : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ
             (Presentation.inst0 x₀ (.app (Presentation.rename wk (σ 3)) (.var 0))) RB →
           RB.Val e₀ ∧ (RB.real e₀).rel Δ (.app (ς 3) u) w w') →
         (R.real (iterApp c₀ (σ 4) (σ 3) (σ 2) x₀ e₀)).rel Δ
@@ -498,8 +498,8 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
             have hpair : R.rel (.pair x₀ e₀) (.pair x₀ e₀) :=
               ValueSide.DenS.sigma_pair vlaws den (fun d => (hx d).1) (fun d => (he d).1)
             rw [ValueSide.DenS.real_eq_of_rel vlaws den ((ValueSide.DenS.expansive vlaws den).left
-              (Relation.ReflTransGen.tail (viter_scrutinee v (σ 4) (σ 3) (σ 2) x₀ e₀ red)
-                (viter_zero_step v (σ 4) (σ 3) (σ 2) x₀ e₀)) hpair)]
+              (Relation.ReflTransGen.tail (X.iter_scrutinee v (σ 4) (σ 3) (σ 2) x₀ e₀ red)
+                (X.iter_zero_step v (σ 4) (σ 3) (σ 2) x₀ e₀)) hpair)]
             have red₀ :=
               (iter_scrutinee_red ext (mor r₀.source tu tw) (mor r₀.target tu tw) r₀).trans
               (iter_zero_red ext (mor r₀.target tu tw) typeResult)
@@ -520,7 +520,7 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
             obtain ⟨⟨tu, tu'⟩, ⟨tw, tw'⟩⟩ := typings hx he
             -- One use of the step on the value side: the computed pair and its
             -- projections.
-            have hp := iterStep_related v den denS' hS' (fun d => (hx d).1)
+            have hp := iterStep_related X v den denS' hS' (fun d => (hx d).1)
               (fun d => (he d).1)
             -- The step's realizers applied to the realizers of the value and the
             -- evidence realize the computed pair.
@@ -559,15 +559,15 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
                   (.snd (.app (.app (σ 2) x₀) e₀)))
                 (iterApp c (σ 4) (σ 3) (σ 2) (.fst (.app (.app (σ 2) x₀) e₀))
                   (.snd (.app (.app (σ 2) x₀) e₀))) :=
-              iter_related v den denS' hS' sh hc hc
+              iter_related X v den denS' hS' sh hc hc
                 (ValueSide.DenS.sigma_fst vlaws den hp) (ValueSide.DenS.sigma_snd vlaws den hp)
             rw [ValueSide.DenS.real_eq_of_rel vlaws den ((ValueSide.DenS.expansive vlaws den).left
               (Relation.ReflTransGen.tail
-                (Relation.ReflTransGen.tail (viter_scrutinee v (σ 4) (σ 3) (σ 2) x₀ e₀ red)
-                  (viter_suc_step v c (σ 4) (σ 3) (σ 2) x₀ e₀))
-                (vshared_beta_step v (iterPartial c (σ 4) (σ 3) (σ 2)) (σ 2) x₀ e₀)) hrec)]
+                (Relation.ReflTransGen.tail (X.iter_scrutinee v (σ 4) (σ 3) (σ 2) x₀ e₀ red)
+                  (X.iter_suc_step v c (σ 4) (σ 3) (σ 2) x₀ e₀))
+                (X.shared_beta_step v (iterPartial c (σ 4) (σ 3) (σ 2)) (σ 2) x₀ e₀)) hrec)]
             -- Both realizer applications compute to the iteration from the projections.
-            have hkReal := (num_real v ext ⟨0, num_interp v 0 ξ⟩ hc Δ numT k k').mpr hk
+            have hkReal := (num_real X v ext ⟨0, num_interp X v 0 ξ⟩ hc Δ numT k k').mpr hk
             obtain ⟨tk, tk'⟩ := ECand.typed _ hkReal
             have red₁ :=
               (iter_scrutinee_red ext (mor r₀.source tu tw) (mor r₀.target tu tw) r₀).trans
@@ -579,7 +579,7 @@ theorem valid_iter : ValidTmN (nmodel v T) .nil (.const iterName) iterType := by
     | star =>
         intro c₀ x₀ e₀ _ q q' u u' w w' hq hx he
         exact neutralCase hq hx he
-  exact claim sh hc ((num_real v ext denN hc Δ numT _ _).mp rN)
+  exact claim sh hc ((num_real X v ext denN hc Δ numT _ _).mp rN)
     (fun d => by
       rw [ValueSide.DenS.deterministic vlaws d denX]
       exact ⟨ValueSide.DenS.refl_left vlaws denX hX, rX⟩)

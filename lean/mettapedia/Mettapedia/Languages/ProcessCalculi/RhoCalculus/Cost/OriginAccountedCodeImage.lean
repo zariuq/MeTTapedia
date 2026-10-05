@@ -548,13 +548,4 @@ theorem CodeRefinement.decoded {depth : Nat} {source : Pattern}
     ∃ fuel, (ActivationGenerated.code? fuel depth source).map Subtype.val = some term :=
   code_parser_iff_image.mpr image.structural_image
 
-#print axioms NameRefinement.reification
-#print axioms CodeRefinement.observation
-#print axioms ProcessRefinement.observation
-#print axioms CodeRefinement.canonical_observation
-#print axioms CodeRefinement.interpret_substitute
-#print axioms ProcessRefinement.interpret_substitute
-#print axioms CodeRefinement.interpret_comp
-#print axioms CodeRefinement.interpret_observation
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage

@@ -86,7 +86,7 @@ def reindex {source : CIGSLT} {color : CostStaticColor}
   subst pattern₂
   subst sourceType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   exact plan
 
@@ -118,7 +118,7 @@ theorem reindex_occurrences {source : CIGSLT} {color : CostStaticColor}
   subst pattern₂
   subst sourceType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   simp [reindex]
 
@@ -155,7 +155,7 @@ theorem reindex_boundaryTable {source : CIGSLT} {color : CostStaticColor}
   subst pattern₂
   subst sourceType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   simp [reindex]
 
@@ -224,7 +224,7 @@ def reindex {source : CIGSLT} {color : CostStaticColor}
   subst arguments₂
   subst parameters₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   exact plan
 
@@ -262,7 +262,7 @@ theorem reindex_occurrences {source : CIGSLT} {color : CostStaticColor}
   subst arguments₂
   subst parameters₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   simp [reindex]
 
@@ -302,7 +302,7 @@ theorem reindex_boundaryTable {source : CIGSLT} {color : CostStaticColor}
   subst arguments₂
   subst parameters₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   simp [reindex]
 
@@ -377,7 +377,7 @@ def reindex {source : CIGSLT} {color : CostStaticColor}
   subst rest₂
   subst sourceElementType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   exact plan
 
@@ -420,7 +420,7 @@ theorem reindex_occurrences {source : CIGSLT} {color : CostStaticColor}
   subst rest₂
   subst sourceElementType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   simp [reindex]
 
@@ -468,7 +468,7 @@ theorem reindex_boundaryTable {source : CIGSLT} {color : CostStaticColor}
   subst rest₂
   subst sourceElementType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   simp [reindex]
 
@@ -537,7 +537,7 @@ theorem CostStaticConstructorPreimage.map_sourceType {source target : CIGSLT}
 mutual
   def mapCostStaticRegionPlan {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -571,9 +571,9 @@ mutual
             (Option.map
               (mapTypeExpr
                 morphism.underlying.structural.structural.symbols)) lookup
-        · rw [CostStaticBinderThinning.toSourceIndex?_map]
+        · rw [CostStaticTypeThinning.toSourceIndex?_map]
           exact correspondence
-        · rw [CostStaticBinderThinning.sourceContextOfTarget_natural]
+        · rw [CostStaticTypeThinning.sourceContextOfTarget_natural]
           simpa using availableScope
     | @fvar sourceBound targetBound sourceAvailable thinning outer name
         sourceType lookup =>
@@ -763,7 +763,7 @@ mutual
           simp only [CIGSLT.mapOneHoleContext_contextComp,
             CIGSLT.mapOneHoleContext]
         let mappedBody' := CostStaticRegionPlan.reindex
-          (thinning₂ := CostStaticBinderThinning.mapped
+          (thinning₂ := CostStaticTypeThinning.mapped
             (mapTypeExpr
               morphism.underlying.structural.structural.symbols domain)
             (thinning.map morphism color))
@@ -826,7 +826,7 @@ mutual
           simp only [CIGSLT.mapOneHoleContext_contextComp,
             CIGSLT.mapOneHoleContext]
         let mappedBody' := CostStaticRegionPlan.reindex
-          (thinning₂ := CostStaticBinderThinning.prependMapped arity
+          (thinning₂ := CostStaticTypeThinning.prependMapped arity
             (mapTypeExpr
               morphism.underlying.structural.structural.symbols domain)
             (thinning.map morphism color))
@@ -967,7 +967,7 @@ mutual
 
   def mapCostStaticArgumentPlan {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1005,7 +1005,7 @@ mutual
         representation parameterType head tail =>
         have objectParts := WellSorted.objectList_cons objects
         apply CostStaticArgumentPlan.cons
-        · exact (CIGSLT.matchesParameterRepresentation_mixed_map_iff
+        · exact (WrappableIGSLT.matchesParameterRepresentation_mixed_map_iff
             morphism.underlying.structural.structural.symbols
             morphism.costWholeStructural.symbols parameter argument).2
               representation
@@ -1056,7 +1056,7 @@ mutual
 
   def mapCostStaticElementPlan {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1178,7 +1178,7 @@ mutual
   chronological position. -/
   theorem mapCostStaticRegionPlan_occurrences {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1256,7 +1256,7 @@ mutual
   sequence. -/
   theorem mapCostStaticArgumentPlan_occurrences {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1299,7 +1299,7 @@ mutual
   sequence. -/
   theorem mapCostStaticElementPlan_occurrences {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1345,7 +1345,7 @@ mutual
   not merely its occurrence index. -/
   theorem mapCostStaticRegionPlan_boundaryPacket {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1443,7 +1443,7 @@ mutual
   /-- Argument-spine mapping retains every boundary certificate in order. -/
   theorem mapCostStaticArgumentPlan_boundaryPacket {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1496,7 +1496,7 @@ mutual
   /-- Collection-spine mapping retains every boundary certificate in order. -/
   theorem mapCostStaticElementPlan_boundaryPacket {source target : CIGSLT}
       (morphism : source.Morphism target)
-      (scope : CostGeneratedReflectiveScopePreserving morphism)
+      (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
       (laws : CostElaborationReindexLaws morphism)
       {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
@@ -1579,14 +1579,14 @@ theorem CostStaticRegionPlan.reindex_isStaticRoot
   subst pattern₂
   subst sourceType₂
   have thinning : thinning₁ = thinning₂ :=
-    CostStaticBinderThinning.all_eq _ _
+    CostStaticTypeThinning.all_eq _ _
   subst thinning₂
   rfl
 
 /-- Structural plan mapping preserves maximal-static-root classification. -/
 theorem mapCostStaticRegionPlan_isStaticRoot {source target : CIGSLT}
     (morphism : source.Morphism target)
-    (scope : CostGeneratedReflectiveScopePreserving morphism)
+    (scope : CostGeneratedReflectiveScopePreserving morphism.toMorphism)
     (laws : CostElaborationReindexLaws morphism)
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}

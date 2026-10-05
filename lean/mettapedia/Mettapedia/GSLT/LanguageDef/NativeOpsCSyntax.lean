@@ -32,14 +32,18 @@ inductive BinaryOperator where
 inductive CExpr where
   | identifier (name : Name)
   | decimal (value : Nat)
+  | unsignedInteger (value : Nat)
   | word (value : BitVec 64)
   | byte (value : BitVec 8)
   | bool (value : Bool)
   | null
   | zero (type : CType)
+  | aggregate (type : CType) (initializers : List CExpr)
   | sizeOf (type : CType)
+  | sizeOfExpr (operand : CExpr)
   | call (name : Name) (arguments : List CExpr)
   | unary (operator : UnaryOperator) (operand : CExpr)
+  | postIncrement (operand : CExpr)
   | cast (type : CType) (operand : CExpr)
   | binary (operator : BinaryOperator) (left right : CExpr)
   | conditional (condition whenTrue whenFalse : CExpr)
@@ -50,11 +54,14 @@ inductive CExpr where
 inductive CStatement where
   | empty
   | declare (type : CType) (name : Name) (value : CExpr)
+  | declarePointeeConst (type : CType) (name : Name) (value : CExpr)
   | assign (location value : CExpr)
+  | compoundAssign (operator : BinaryOperator) (location value : CExpr)
   | effect (value : CExpr)
   | branch (condition : CExpr) (whenTrue whenFalse : List CStatement)
   | forLoop (type : CType) (counter : Name) (initial condition increment : CExpr)
       (body : List CStatement)
+  | whileLoop (condition : CExpr) (body : List CStatement)
   | switch (selector : CExpr) (cases : List (CExpr × List CStatement))
       (otherwise : List CStatement)
   | block (body : List CStatement)
@@ -64,17 +71,43 @@ inductive CStatement where
   | return (value : Option CExpr)
   deriving Repr
 
+/-- Header syntax of a declaration-initialized loop. Execution must still
+check its condition before each iteration and discard the increment result. -/
+structure CForHeader where
+  type : CType
+  counter : Name
+  initial : CExpr
+  condition : CExpr
+  increment : CExpr
+  deriving Repr
+
 structure CParameter where
   type : CType
   name : Name
   deriving DecidableEq, Repr
 
-structure CFunction where
+structure CFunctionSyntax (ParameterSyntax : Type) where
   result : CType
   name : Name
-  parameters : List CParameter
+  parameters : List ParameterSyntax
   body : List CStatement
   deriving Repr
+
+abbrev CFunction := CFunctionSyntax CParameter
+
+/-- Qualification of the pointee is retained separately from the unqualified
+value type. This profile has one pointer level; it does not interpret volatile,
+atomic, restrict or pointer-level qualifiers. -/
+structure CQualifiedParameter where
+  parameter : CParameter
+  pointeeConst : Bool
+  deriving DecidableEq, Repr
+
+abbrev CQualifiedFunction := CFunctionSyntax CQualifiedParameter
+
+def CQualifiedFunction.unqualified (function : CQualifiedFunction) : CFunction :=
+  ⟨function.result, function.name, function.parameters.map CQualifiedParameter.parameter,
+    function.body⟩
 
 structure CUnit where
   includeHeader : Name
@@ -84,9 +117,24 @@ structure CUnit where
 /-- This table is checked against the separately admitted declaration layout. -/
 abbrev TypeNames := List Name
 
+/-- Decimal recognition excludes a multi-digit leading zero. Such a C token
+is octal syntax and cannot be interpreted by a decimal-only profile. -/
 def decimalChars? (characters : List Char) : Option Nat :=
-  if characters.isEmpty || !characters.all digit then none
+  if characters.isEmpty || !characters.all digit ||
+      (characters.head? == some '0' && 1 < characters.length) then none
   else some (characters.foldl (fun value c => 10 * value + (c.toNat - '0'.toNat)) 0)
+
+/-- The supported unsigned suffix retains a magnitude rather than asserting
+a particular machine width. Leading zero selects C's octal radix. Hexadecimal
+and long suffixes remain outside the lexer and this recognition profile. -/
+def unsignedChars? (characters : List Char) : Option Nat := do
+  let reversed ← match characters.reverse with
+    | 'u' :: rest | 'U' :: rest => some rest
+    | _ => none
+  let digits := reversed.reverse
+  let radix := if digits.head? == some '0' then 8 else 10
+  if digits.isEmpty || !digits.all (fun c => digit c && c.toNat - '0'.toNat < radix) then none
+  else some (digits.foldl (fun value c => radix * value + (c.toNat - '0'.toNat)) 0)
 
 def wordChars? (characters : List Char) : Option (BitVec 64) := do
   let value ← decimalChars? characters
@@ -117,6 +165,19 @@ def binaryOperator? : Name → Option (BinaryOperator × Nat)
   | ['%'] => some (.mod, 10)
   | _ => none
 
+/-- A compound assignment retains one lvalue occurrence. Its evaluation is
+not represented by duplicating that expression in a binary assignment. This
+fragment admits the two-character operators supported by its lexer. -/
+def compoundAssignmentOperator? : Name → Option BinaryOperator
+  | ['+', '='] => some .add
+  | ['-', '='] => some .sub
+  | ['*', '='] => some .mul
+  | ['%', '='] => some .mod
+  | ['&', '='] => some .bitAnd
+  | ['|', '='] => some .bitOr
+  | ['^', '='] => some .bitXor
+  | _ => none
+
 def pointerSuffix : List Token → Nat × List Token
   | .punctuation ['*'] :: rest =>
       let next := pointerSuffix rest
@@ -138,6 +199,21 @@ theorem decimal_word_overflow_refused : wordChars? "18446744073709551616".toList
   by decide +kernel
 
 theorem malformed_decimal_refused : decimalChars? "12_3".toList = none :=
+  by decide +kernel
+
+theorem decimal_zero_retained : decimalChars? "0".toList = some 0 :=
+  by decide +kernel
+
+theorem octal_not_interpreted_as_decimal : decimalChars? "077".toList = none :=
+  by decide +kernel
+
+theorem invalid_octal_not_interpreted_as_decimal : decimalChars? "09".toList = none :=
+  by decide +kernel
+
+theorem unsigned_octal_magnitude : unsignedChars? "077u".toList = some 63 :=
+  by decide +kernel
+
+theorem invalid_unsigned_octal_refused : unsignedChars? "09u".toList = none :=
   by decide +kernel
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC

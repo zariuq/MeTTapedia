@@ -4,9 +4,9 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Annota
 /-!
 # The fundamental lemma at the object package, stage by stage
 
-**The fundamental lemma at the object package** (`objectChurch_valid`): if the allowed
-constants are adequate, every statement derivable within them is valid over a formed
-context.
+Every statement here is about a package containing the object package (`ObjectExtension`),
+the object package itself among them. The fundamental lemma within adequate constants of the
+object package is `ObjectExtension.valid_within`.
 
 **Stage 0: the numbers.** `num`, `zero` and `suc` are adequate (`constAdequateAt_num`,
 `constAdequateAt_zero`, `constAdequateAt_suc`). **Addition** is adequate
@@ -49,22 +49,13 @@ open Mettapedia.Logic
 
 namespace CodeModel
 
-/-! ## The fundamental lemma at the object package -/
-
-/-- **The fundamental lemma at the object package**: if the allowed constants are adequate,
-every statement derivable within them is valid over a formed context. -/
-theorem objectChurch_valid {allowed : DeclName → Bool}
-    (consts : ∀ {c : DeclName}, allowed c = true →
-      ConstAdequateAt objectChurchReading objectHeadReduction c)
-    {J : CStatement Tower.Head} (derivation : CDerivable (objectChurch.restrict allowed) J)
-    (formed : J.CtxFormed objectChurch) : J.Valid objectChurchReading objectHeadReduction :=
-  CDerivable.valid ConvRules.objectLevels objectChurchReading_valid objectRigid_groundHeads
-    objectRules_groundHeadEq objectHeadReduction_decoderStuck consts derivation formed
+variable (X : ObjectExtension)
 
 /-- The constants of a list are adequate when each is. -/
-theorem consts_allowedIn {H : HeadReduction objectChurch objectRigid} {names : List DeclName}
-    (h : ∀ c ∈ names, ConstAdequateAt objectChurchReading H c) :
-    ∀ {c : DeclName}, allowedIn names c = true → ConstAdequateAt objectChurchReading H c :=
+theorem consts_allowedIn {R' : Rules Tower.Head} {P : ChurchRules R'} {K : RigidTypes P}
+    {Rd : Reading Tower.Head} {H : HeadReduction P K} {names : List DeclName}
+    (h : ∀ c ∈ names, ConstAdequateAt Rd H c) :
+    ∀ {c : DeclName}, allowedIn names c = true → ConstAdequateAt Rd H c :=
   fun hc => h _ (of_decide_eq_true hc)
 
 /-! ## Stage 0: the numbers -/
@@ -72,43 +63,46 @@ theorem consts_allowedIn {H : HeadReduction objectChurch objectRigid} {names : L
 section Numbers
 
 /-- **`num` is adequate**: the numbers are an adequate type of `U₀`. -/
-theorem constAdequateAt_num : ConstAdequateAt objectChurchReading objectHeadReduction numN :=
-  ConstAdequateAt.of_adequate (objectChurch_declared (c := numN) (T := Package.U0) (by decide) rfl)
-    ((adequateType_typeAt (.base .num) (.nil : CCtx Tower.Head 0)).adequate ConvRules.objectLevels
-      objectChurch_soundnessFacts (.sort Tower.zero))
+theorem constAdequateAt_num : ConstAdequateAt X.reading X.head numN :=
+  ConstAdequateAt.of_adequate
+    (X.sub.constantType (objectChurch_declared (c := numN) (T := Package.U0) (by decide) rfl))
+    ((adequateType_typeAt X (.base .num) (.nil : CCtx Tower.Head 0)).adequate X.levels
+      X.soundnessFacts (X.sort Tower.zero))
 
 /-- **`zero` is adequate.** -/
-theorem constAdequateAt_zero : ConstAdequateAt objectChurchReading objectHeadReduction zeroN :=
-  ConstAdequateAt.of_adequate (objectChurch_declared (c := zeroN) (T := Package.numT) (by decide)
-    rfl) adequate_czero
+theorem constAdequateAt_zero : ConstAdequateAt X.reading X.head zeroN :=
+  ConstAdequateAt.of_adequate
+    (X.sub.constantType (objectChurch_declared (c := zeroN) (T := Package.numT) (by decide) rfl))
+    (adequate_czero X)
 
 /-- The relation of a variable of type `num`, at every token of the projection of its value
 onto the numbers. -/
 theorem SubstRel.numVar {n m : Nat} {Γ : CCtx Tower.Head n} {ρ : Env n}
     {Δ : CCtx Tower.Head m} {σ σ' : CSub Tower.Head n m} {i : Fin n} (hi : Γ.lookup i = cnum)
-    (hσ : SubstRel objectChurchReading objectHeadReduction Γ ρ Δ σ σ') :
-    ∀ y, (projT natI (ρ i)).Mem y → RT objectHeadReduction Δ true y cnum (σ i) (σ' i) := by
+    (hσ : SubstRel X.reading X.head Γ ρ Δ σ σ') :
+    ∀ y, (projT natI (ρ i)).Mem y → RT X.head Δ true y cnum (σ i) (σ' i) := by
   intro y hy
   obtain ⟨v, hv, hvT, e⟩ := Ideal.projT_eq_iSup.1 hy
   refine RT.closed' e fun t ht => ?_
-  have h := (hσ.2 i).2.2 t (hv t ht) (by rw [hi, cinterp_cnum]; exact hvT t ht)
+  have h := (hσ.2 i).2.2 t (hv t ht) (by rw [hi, X.cinterp_cnum]; exact hvT t ht)
   rwa [hi] at h
 
 /-- **The successor at an adequate number is adequate**: a token of a successor is its tag
 or a predecessor token of a token of the projection of its argument onto the numbers, at
 which the arguments are related. -/
 theorem adequate_sucVar :
-    Adequate objectChurchReading objectHeadReduction (.snoc .nil cnum) (csuc (.var 0)) cnum := by
+    Adequate X.reading X.head (.snoc .nil cnum) (csuc (.var 0)) cnum := by
   intro ρ fits m Δ σ σ' formed hσ s hs _
-  change (Ideal.app (objectChurchReading.const sucN) (ρ 0)).Mem s at hs
-  rw [objectChurchReading_suc, app_sucConst objectChurchReading numNames
+  change (Ideal.app (X.reading.const sucN) (ρ 0)).Mem s at hs
+  rw [X.reading_const (by decide), objectChurchReading_suc, app_sucConst objectChurchReading numNames
     objectChurchReading_num] at hs
-  have h0 := SubstRel.numVar (i := 0) rfl hσ
-  have e0 : CEqual objectChurch Δ (σ 0) (σ' 0) cnum := hσ.1.2 0
-  obtain ⟨t0, t0'⟩ := CEqual.typed ConvRules.objectLevels e0 formed
-  have red : SuccRed objectHeadReduction Δ cnum (csuc (σ 0)) (csuc (σ' 0)) (σ 0) (σ' 0) :=
-    ⟨CRedTy.refl ⟨_, .sort _, cnum_typed⟩, CRedTm.refl (csuc_typed t0),
-      CRedTm.refl (csuc_typed t0'), e0⟩
+  have h0 := SubstRel.numVar X (i := 0) rfl hσ
+  have e0 : CEqual X.church Δ (σ 0) (σ' 0) cnum := hσ.1.2 0
+  obtain ⟨t0, t0'⟩ := CEqual.typed X.levels e0 formed
+  have red : SuccRed X.head Δ cnum (csuc (σ 0)) (csuc (σ' 0)) (σ 0) (σ' 0) :=
+    ⟨CRedTy.refl ⟨_, X.sort _, X.lift cnum_typed⟩,
+      CRedTm.refl (.appElim (B := cnum) (X.lift csucConst_typed) t0),
+      CRedTm.refl (.appElim (B := cnum) (X.lift csucConst_typed) t0'), e0⟩
   obtain ⟨v, hv, e⟩ := hs
   refine RT.closed' e fun t ht => ?_
   rcases hv t ht with rfl | ⟨r, rfl, hr⟩
@@ -117,11 +111,11 @@ theorem adequate_sucVar :
       fun _ => h0 r hr⟩)
 
 /-- **`suc` is adequate**, from its spine at a variable. -/
-theorem constAdequateAt_suc : ConstAdequateAt objectChurchReading objectHeadReduction sucN :=
-  ConstAdequateAt.of_spine (Θ := .snoc .nil cnum) (T := cnum) ConvRules.objectLevels
-    objectChurch_soundnessFacts
-    (objectChurch_declared (c := sucN) (T := .pi Package.numT Package.numT) (by decide) rfl)
-    (csuc_typed (.var 0)) adequate_sucVar
+theorem constAdequateAt_suc : ConstAdequateAt X.reading X.head sucN :=
+  ConstAdequateAt.of_spine (Θ := .snoc .nil cnum) (T := cnum) X.levels X.soundnessFacts
+    (X.sub.constantType
+      (objectChurch_declared (c := sucN) (T := .pi Package.numT Package.numT) (by decide) rfl))
+    (X.lift (csuc_typed (.var 0))) (adequate_sucVar X)
 
 end Numbers
 
@@ -137,11 +131,11 @@ abbrev addRecStep : Ideal → Ideal → Ideal :=
 second summand onto the numbers, from the projection of the first, projected onto the
 numbers. -/
 theorem cinterp_cadd {n : Nat} (x y : CTm Tower.Head n) (ρ : Env n) :
-    cinterp objectChurchReading (cadd x y) ρ =
-      projT natI (natRec (projT natI (cinterp objectChurchReading x ρ)) addRecStep
-        (projT natI (cinterp objectChurchReading y ρ))) := by
-  change Ideal.app (Ideal.app (objectChurchReading.const addN) _) _ = _
-  rw [objectChurchReading_add]
+    cinterp X.reading (cadd x y) ρ =
+      projT natI (natRec (projT natI (cinterp X.reading x ρ)) addRecStep
+        (projT natI (cinterp X.reading y ρ))) := by
+  change Ideal.app (Ideal.app (X.reading.const addN) _) _ = _
+  rw [X.reading_const (by decide), objectChurchReading_add]
   change Ideal.app (Ideal.app (projT (Ideal.cpi natI fun _ => Ideal.cpi natI fun _ => natI)
     (addRaw (sucConst objectChurchReading numNames))) _) _ = _
   rw [Ideal.app_projT_cpi (Ideal.Cont.const _)]
@@ -153,25 +147,26 @@ theorem cinterp_cadd {n : Nat} (x y : CTm Tower.Head n) (ρ : Env n) :
 variable {m : Nat} {Δ : CCtx Tower.Head m}
 
 /-- The typed reduction of a sum whose second summand reduces to zero, to the first. -/
-theorem CRedTm.addZero {M Q : CTm Tower.Head m} (tM : CTyped objectChurch Δ M cnum)
-    (hQ : CRedTm objectHeadReduction Δ Q czero cnum) :
-    CRedTm objectHeadReduction Δ (cadd M Q) M cnum := by
-  refine ⟨(Relation.ReflTransGen.lift (fun q => cadd M q) (fun _ _ s => objectHeadReduction_add s)
-    _ _ hQ.1).tail (objectHeadReduction.root (caddZero_step M)), ?_⟩
+theorem CRedTm.addZero {M Q : CTm Tower.Head m} (tM : CTyped X.church Δ M cnum)
+    (hQ : CRedTm X.head Δ Q czero cnum) :
+    CRedTm X.head Δ (cadd M Q) M cnum := by
+  refine ⟨(Relation.ReflTransGen.lift (fun q => cadd M q) (fun _ _ s => X.head_add s)
+    _ _ hQ.1).tail (X.head.root (X.within.step (caddZero_step M))), ?_⟩
   exact .trans (.appCong (A := cnum) (B := cnum)
-    (.refl (.appElim (B := .pi cnum cnum) caddConst_typed tM)) hQ.2)
-    (.rootAdmitted (caddZero_step M) (caddZero_admits tM) (cadd_typed tM czero_typed) tM)
+    (.refl (.appElim (B := .pi cnum cnum) (X.lift caddConst_typed) tM)) hQ.2)
+    (.rootAdmitted (X.within.step (caddZero_step M)) (caddZero_admits tM X.within)
+      (X.cadd_typed tM (X.lift czero_typed)) tM)
 
 /-- The typed reduction of a sum whose second summand reduces to a successor. -/
-theorem CRedTm.addSuc {M Q q : CTm Tower.Head m} (tM : CTyped objectChurch Δ M cnum)
-    (tq : CTyped objectChurch Δ q cnum) (hQ : CRedTm objectHeadReduction Δ Q (csuc q) cnum) :
-    CRedTm objectHeadReduction Δ (cadd M Q) (csuc (cadd M q)) cnum := by
-  refine ⟨(Relation.ReflTransGen.lift (fun q => cadd M q) (fun _ _ s => objectHeadReduction_add s)
-    _ _ hQ.1).tail (objectHeadReduction.root (caddSuc_step M q)), ?_⟩
+theorem CRedTm.addSuc {M Q q : CTm Tower.Head m} (tM : CTyped X.church Δ M cnum)
+    (tq : CTyped X.church Δ q cnum) (hQ : CRedTm X.head Δ Q (csuc q) cnum) :
+    CRedTm X.head Δ (cadd M Q) (csuc (cadd M q)) cnum := by
+  refine ⟨(Relation.ReflTransGen.lift (fun q => cadd M q) (fun _ _ s => X.head_add s)
+    _ _ hQ.1).tail (X.head.root (X.within.step (caddSuc_step M q))), ?_⟩
   exact .trans (.appCong (A := cnum) (B := cnum)
-    (.refl (.appElim (B := .pi cnum cnum) caddConst_typed tM)) hQ.2)
-    (.rootAdmitted (caddSuc_step M q) (caddSuc_admits tM tq) (cadd_typed tM (csuc_typed tq))
-      (csuc_typed (cadd_typed tM tq)))
+    (.refl (.appElim (B := .pi cnum cnum) (X.lift caddConst_typed) tM)) hQ.2)
+    (.rootAdmitted (X.within.step (caddSuc_step M q)) (caddSuc_admits tM tq X.within)
+      (X.cadd_typed tM (X.csuc_typed tq)) (X.csuc_typed (X.cadd_typed tM tq)))
 
 /-- **Addition, by recursion on the approximants of its numeral recursion.** Let the first
 summands be related as far as the zero case observes. For second summands related as far
@@ -179,16 +174,16 @@ as a numeral observes, the sums are related as far as every token of the `k`-th
 approximant of the recursion at the numeral observes: at zero both sums reduce to the
 first summands, and at a successor to successors of the sums at the predecessors, related
 by the recursion at `k`. -/
-theorem add_claim (formed : CCtxFormed objectChurch Δ) {z : Ideal} {M M' : CTm Tower.Head m}
-    (eM : CEqual objectChurch Δ M M' cnum)
-    (hz : ∀ y, z.Mem y → RT objectHeadReduction Δ true y cnum M M') :
-    ∀ (k : Nat) (ν : Ideal) (Q Q' : CTm Tower.Head m), CEqual objectChurch Δ Q Q' cnum →
-      (∀ x, ν.Mem x → RT objectHeadReduction Δ true x cnum Q Q') →
+theorem add_claim (formed : CCtxFormed X.church Δ) {z : Ideal} {M M' : CTm Tower.Head m}
+    (eM : CEqual X.church Δ M M' cnum)
+    (hz : ∀ y, z.Mem y → RT X.head Δ true y cnum M M') :
+    ∀ (k : Nat) (ν : Ideal) (Q Q' : CTm Tower.Head m), CEqual X.church Δ Q Q' cnum →
+      (∀ x, ν.Mem x → RT X.head Δ true x cnum Q Q') →
       ∀ y, (natRecApprox z addRecStep k ν).Mem y →
-        RT objectHeadReduction Δ true y cnum (cadd M Q) (cadd M' Q')
+        RT X.head Δ true y cnum (cadd M Q) (cadd M' Q')
   | 0, _, _, _, _, _, _, hy => RT.of_vacuous hy
   | k + 1, ν, Q, Q', eQ, hν, y, hy => by
-      obtain ⟨tM, tM'⟩ := CEqual.typed ConvRules.objectLevels eM formed
+      obtain ⟨tM, tM'⟩ := CEqual.typed X.levels eM formed
       obtain ⟨v, hv, e⟩ := hy
       refine RT.closed' e fun t ht => ?_
       rcases hv t ht with ⟨w, hw, et⟩ | ⟨w, hw, et⟩
@@ -196,17 +191,17 @@ theorem add_claim (formed : CCtxFormed objectChurch Δ) {z : Ideal} {M M' : CTm 
         refine RT.closed' et fun r hr => ?_
         obtain ⟨hz0, hrz⟩ := hw r hr
         obtain ⟨-, hQ0, hQ'0⟩ := RT.tm_zero_iff.1 (hν _ hz0)
-        exact RT.expand ConvRules.objectLevels formed (CRedTm.addZero tM hQ0)
-          (CRedTm.addZero tM' (hQ'0.convType ⟨_, .sort Tower.zero, .refl cnum_typed⟩))
+        exact RT.expand X.levels formed (CRedTm.addZero X tM hQ0)
+          (CRedTm.addZero X tM' (hQ'0.convType ⟨_, X.sort Tower.zero, .refl (X.lift cnum_typed)⟩))
           (hz r hrz)
       · -- successor: both sums reduce to successors of the sums at the predecessors
         refine RT.closed' et fun r hr => ?_
         obtain ⟨hs0, hr'⟩ := hw r hr
         obtain ⟨q, q', hT, hQs, hQ's, eq⟩ := RT.tm_succTag_iff.1 (hν _ hs0)
-        obtain ⟨tq, tq'⟩ := CEqual.typed ConvRules.objectLevels eq formed
+        obtain ⟨tq, tq'⟩ := CEqual.typed X.levels eq formed
         -- the predecessors, related as far as the predecessor observes
         have hpred : ∀ x, (Ideal.predI ν).Mem x →
-            RT objectHeadReduction Δ true x cnum q q' := by
+            RT X.head Δ true x cnum q q' := by
           intro x hx
           obtain ⟨u, hu, ex⟩ := hx
           refine RT.closed' ex fun s hs => ?_
@@ -222,15 +217,15 @@ theorem add_claim (formed : CCtxFormed objectChurch Δ) {z : Ideal} {M M' : CTm 
           have h := hr'
           change (Ideal.app (sucConst objectChurchReading numNames) _).Mem r at h
           rwa [app_sucConst objectChurchReading numNames objectChurchReading_num] at h
-        have eSum : CEqual objectChurch Δ (cadd M q) (cadd M' q') cnum :=
+        have eSum : CEqual X.church Δ (cadd M q) (cadd M' q') cnum :=
           .appCong (A := cnum) (B := cnum)
-            (.appCong (A := cnum) (B := .pi cnum cnum) (.refl caddConst_typed) eM) eq
-        have red : SuccRed objectHeadReduction Δ cnum (csuc (cadd M q)) (csuc (cadd M' q'))
+            (.appCong (A := cnum) (B := .pi cnum cnum) (.refl (X.lift caddConst_typed)) eM) eq
+        have red : SuccRed X.head Δ cnum (csuc (cadd M q)) (csuc (cadd M' q'))
             (cadd M q) (cadd M' q') :=
-          ⟨CRedTy.refl ⟨_, .sort Tower.zero, cnum_typed⟩,
-            CRedTm.refl (csuc_typed (cadd_typed tM tq)),
-            CRedTm.refl (csuc_typed (cadd_typed tM' tq')), eSum⟩
-        have hsum : RT objectHeadReduction Δ true r cnum (csuc (cadd M q)) (csuc (cadd M' q')) := by
+          ⟨CRedTy.refl ⟨_, X.sort Tower.zero, X.lift cnum_typed⟩,
+            CRedTm.refl (X.csuc_typed (X.cadd_typed tM tq)),
+            CRedTm.refl (X.csuc_typed (X.cadd_typed tM' tq')), eSum⟩
+        have hsum : RT X.head Δ true r cnum (csuc (cadd M q)) (csuc (cadd M' q')) := by
           obtain ⟨u, hu, er⟩ := hr''
           refine RT.closed' er fun s hs => ?_
           rcases hu s hs with rfl | ⟨p, rfl, hp⟩
@@ -239,26 +234,27 @@ theorem add_claim (formed : CCtxFormed objectChurch Δ) {z : Ideal} {M M' : CTm 
               fun _ => ?_⟩)
             obtain ⟨u', hu', -, ep⟩ := Ideal.projT_eq_iSup.1 hp
             exact RT.closed' ep fun p' hp' => ih p' (hu' p' hp')
-        exact RT.expand ConvRules.objectLevels formed (CRedTm.addSuc tM tq hQs)
-          (CRedTm.addSuc tM' tq' (hQ's.convType ⟨_, .sort Tower.zero, .refl cnum_typed⟩)) hsum
+        exact RT.expand X.levels formed (CRedTm.addSuc X tM tq hQs)
+          (CRedTm.addSuc X tM' tq' (hQ's.convType ⟨_, X.sort Tower.zero, .refl (X.lift cnum_typed)⟩))
+          hsum
 
 /-- **The sum of two variables of type `num` is adequate** (`add_claim`). -/
 theorem adequate_addVars :
-    Adequate objectChurchReading objectHeadReduction (.snoc (.snoc .nil cnum) cnum)
-      (cadd (.var 1) (.var 0)) cnum := by
+    Adequate X.reading X.head (.snoc (.snoc .nil cnum) cnum) (cadd (.var 1) (.var 0)) cnum := by
   intro ρ fits m Δ σ σ' formed hσ s hs _
-  rw [cinterp_cadd] at hs
+  rw [cinterp_cadd X] at hs
   obtain ⟨v, hv, -, e⟩ := Ideal.projT_eq_iSup.1 hs
   refine RT.closed' e fun t ht => ?_
   obtain ⟨k, hk⟩ := (Ideal.mem_natRec (cont₂_constStep _)).1 (hv t ht)
-  exact add_claim formed (hσ.1.2 1) (SubstRel.numVar (i := 1) rfl hσ) k _ (σ 0) (σ' 0) (hσ.1.2 0)
-    (SubstRel.numVar (i := 0) rfl hσ) t hk
+  exact add_claim X formed (hσ.1.2 1) (SubstRel.numVar X (i := 1) rfl hσ) k _ (σ 0) (σ' 0)
+    (hσ.1.2 0) (SubstRel.numVar X (i := 0) rfl hσ) t hk
 
 /-- **Addition is adequate**, from its spine at two variables. -/
-theorem constAdequateAt_add : ConstAdequateAt objectChurchReading objectHeadReduction addN :=
-  ConstAdequateAt.of_spine (Θ := .snoc (.snoc .nil cnum) cnum) (T := cnum) ConvRules.objectLevels
-    objectChurch_soundnessFacts (objectChurch_declared (c := addN) (T := addType) (by decide) rfl)
-    (cadd_typed (.var 1) (.var 0)) adequate_addVars
+theorem constAdequateAt_add : ConstAdequateAt X.reading X.head addN :=
+  ConstAdequateAt.of_spine (Θ := .snoc (.snoc .nil cnum) cnum) (T := cnum) X.levels
+    X.soundnessFacts (X.sub.constantType (objectChurch_declared (c := addN) (T := addType)
+      (by decide) rfl))
+    (X.lift (cadd_typed (.var 1) (.var 0))) (adequate_addVars X)
 
 end Addition
 
@@ -405,15 +401,14 @@ abbrev eqAtAllowed : DeclName → Bool := allowedIn [numN, zeroN, sucN, addN]
 
 /-- The constants of the stage of `eqAt` are adequate. -/
 theorem eqAtAllowed_adequate :
-    ∀ {c : DeclName}, eqAtAllowed c = true →
-      ConstAdequateAt objectChurchReading objectHeadReduction c :=
+    ∀ {c : DeclName}, eqAtAllowed c = true → ConstAdequateAt X.reading X.head c :=
   consts_allowedIn fun c hc => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
     rcases hc with rfl | rfl | rfl | rfl
-    · exact constAdequateAt_num
-    · exact constAdequateAt_zero
-    · exact constAdequateAt_suc
-    · exact constAdequateAt_add
+    · exact constAdequateAt_num X
+    · exact constAdequateAt_zero X
+    · exact constAdequateAt_suc X
+    · exact constAdequateAt_add X
 
 /-- **The right side of `eqAt` is typed within its constants**:
 `n : num ⊢ Id num (add zero n) n : U₀`. -/
@@ -441,24 +436,32 @@ theorem objectChurchReading_eqAt :
   rw [h, e]
   rfl
 
+/-- `eqAt` is read in every extension as in the object package. -/
+theorem ObjectExtension.reading_eqAt :
+    X.reading.const eqAtName =
+      defConst X.reading (.snoc .nil cnum) cU0 (.id cnum (cadd czero (.var 0)) (.var 0)) := by
+  rw [X.reading_const (by decide), objectChurchReading_eqAt,
+    X.defConst_eq _ _ _ (by decide) (by decide)]
+
 /-- **The applications of `eqAt` reduce to its right side**, by its root step, at `U₀`. -/
-theorem eqAt_teleReduces {K : RigidTypes objectChurch} (H : HeadReduction objectChurch K)
+theorem eqAt_teleReduces {K : RigidTypes X.church} (H : HeadReduction X.church K)
     {m : Nat} {Δ : CCtx Tower.Head m} :
     TeleReduces H Δ (CCtx.toTele (.snoc .nil cnum)) cU0 (.id cnum (cadd czero (.var 0)) (.var 0))
       (.const eqAtName) fun i => .var (Fin.elim0 i) := by
   intro N tN
-  exact ⟨.single (H.root (ceqAt_step N)), .rootAdmitted (ceqAt_step N) (ceqAt_admits tN)
-    (ceqAt_typed tN)
-    (cidT cnum_typed (cadd_typed czero_typed tN) tN)⟩
+  exact ⟨.single (H.root (X.within.step (ceqAt_step N))),
+    .rootAdmitted (X.within.step (ceqAt_step N)) (ceqAt_admits tN X.within)
+      (.appElim (B := cU0) (X.lift (ceqAtConst_typed)) tN)
+      (X.cidT (X.lift cnum_typed) (X.cadd_typed (X.lift czero_typed) tN) tN)⟩
 
 /-- **`eqAt` is adequate**: its right side's typing within `num`, `zero`, `suc` and `add` is
 valid by the fundamental lemma. -/
-theorem constAdequateAt_eqAt : ConstAdequateAt objectChurchReading objectHeadReduction eqAtName :=
-  ConstAdequateAt.ofDefinition ConvRules.objectLevels objectChurch_soundnessFacts eqAt_declared
-    objectChurchReading_eqAt
-    (objectChurch_valid eqAtAllowed_adequate ceqAtRhs_typed_within
-      (.snoc .nil ⟨_, .sort _, cnum_typed⟩)).1
-    fun _ => eqAt_teleReduces objectHeadReduction
+theorem constAdequateAt_eqAt : ConstAdequateAt X.reading X.head eqAtName :=
+  ConstAdequateAt.ofDefinition X.levels X.soundnessFacts (X.sub.constantType eqAt_declared)
+    X.reading_eqAt
+    (X.valid_within (eqAtAllowed_adequate X) ceqAtRhs_typed_within
+      (.snoc .nil ⟨_, X.sort _, X.lift cnum_typed⟩)).1
+    fun _ => eqAt_teleReduces X X.head
 
 end EqAt
 
@@ -477,17 +480,18 @@ theorem cjVars_typed :
 /-- The hypotheses of the eliminator's case at the variables of its telescope: each
 variable is typed and adequate at its type. -/
 theorem jCase_vars :
-    JCase objectHeadReduction cJTypeTele (.var 5) (.var 4) (.var 3) (.var 2) (.var 1) (.var 0) :=
+    JCase X X.head cJTypeTele (.var 5) (.var 4) (.var 3) (.var 2) (.var 1) (.var 0) :=
   ⟨.var 5, .var 4, .var 3, .var 2, .var 1, .var 0, (CStatement.Valid.var 3).1,
     (CStatement.Valid.var 2).1, (CStatement.Valid.var 0).1, (CStatement.Valid.var 5).1⟩
 
 /-- **The identity eliminator is adequate**: its spine at the variables of its telescope is
-adequate by the eliminator's case of the fundamental lemma (`Adequate.objectJ_head`). -/
-theorem constAdequateAt_j : ConstAdequateAt objectChurchReading objectHeadReduction jName :=
+adequate by the eliminator's case of the fundamental lemma (`Adequate.objectJ`), its path
+congruence that of the extension's reduction (`ObjectExtension.head_jPath`). -/
+theorem constAdequateAt_j : ConstAdequateAt X.reading X.head jName :=
   ConstAdequateAt.of_spine (Θ := cJTypeTele) (T := .app (.app (.var 3) (.var 1)) (.var 0))
-    ConvRules.objectLevels objectChurch_soundnessFacts
-    (objectChurch_declared (c := jName) (T := Package.jType) (by decide) rfl) cjVars_typed
-    (Adequate.objectJ_head ConvRules.objectLevels jCase_vars)
+    X.levels X.soundnessFacts
+    (X.sub.constantType (objectChurch_declared (c := jName) (T := Package.jType) (by decide) rfl))
+    (X.lift cjVars_typed) (Adequate.objectJ X.levels (fun s => X.head_jPath s) (jCase_vars X))
 
 end Eliminator
 
@@ -501,17 +505,16 @@ abbrev sucMoveAllowed : DeclName → Bool := allowedIn [numN, zeroN, sucN, addN,
 
 /-- The constants of the stage of `sucMove` are adequate. -/
 theorem sucMoveAllowed_adequate :
-    ∀ {c : DeclName}, sucMoveAllowed c = true →
-      ConstAdequateAt objectChurchReading objectHeadReduction c :=
+    ∀ {c : DeclName}, sucMoveAllowed c = true → ConstAdequateAt X.reading X.head c :=
   consts_allowedIn fun c hc => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
     rcases hc with rfl | rfl | rfl | rfl | rfl | rfl
-    · exact constAdequateAt_num
-    · exact constAdequateAt_zero
-    · exact constAdequateAt_suc
-    · exact constAdequateAt_add
-    · exact constAdequateAt_j
-    · exact constAdequateAt_eqAt
+    · exact constAdequateAt_num X
+    · exact constAdequateAt_zero X
+    · exact constAdequateAt_suc X
+    · exact constAdequateAt_add X
+    · exact constAdequateAt_j X
+    · exact constAdequateAt_eqAt X
 
 /-- **The right side of `sucMove` is typed within its constants**, at its codomain
 `eqAt (suc n)`: the typing of its template, whose conversions are β, the equation of `eqAt`
@@ -597,15 +600,13 @@ theorem cEqAtTele_formed : CCtxFormed objectChurch cEqAtTele :=
 /-- **The typing of the right side of `sucMove` at its codomain is valid**, by the fundamental
 lemma within `num`, `zero`, `suc`, `add`, `J` and `eqAt`. -/
 theorem csucMoveRhs_valid :
-    (CStatement.typing cEqAtTele cSucMoveRhs cSucMoveCod).Valid objectChurchReading
-      objectHeadReduction :=
-  objectChurch_valid sucMoveAllowed_adequate csucMoveRhs_typed_within cEqAtTele_formed
+    (CStatement.typing cEqAtTele cSucMoveRhs cSucMoveCod).Valid X.reading X.head :=
+  X.valid_within (sucMoveAllowed_adequate X) csucMoveRhs_typed_within (X.liftFormed cEqAtTele_formed)
 
 /-- **The successor move is adequate**, with no hypothesis: the one hypothesis of
 `constAdequateAt_sucMove` is `csucMoveRhs_valid`. -/
-theorem constAdequateAt_sucMove' :
-    ConstAdequateAt objectChurchReading objectHeadReduction sucMoveName :=
-  constAdequateAt_sucMove csucMoveRhs_valid
+theorem constAdequateAt_sucMove' : ConstAdequateAt X.reading X.head sucMoveName :=
+  constAdequateAt_sucMove X (csucMoveRhs_valid X)
 
 end SucMove
 

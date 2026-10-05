@@ -120,6 +120,15 @@ def cField? (representation : Representation) (record : String) (name : Name) :
   let field ← declaration.fields[index]?
   some (index, field.type)
 
+/-- Authored C fields use their declared spelling. Generated C has a separate
+encoded-name lookup. Repeated matching declarations are ambiguous and refused. -/
+def authoredField? (representation : Representation) (record : String) (name : Name) :
+    Option (Nat × NativeType) := do
+  let declaration ← lookupRecord representation.interface record
+  match declaration.fields.zipIdx.filter (fun entry => entry.1.name.toList == name) with
+  | [(field, index)] => some (index, field.type)
+  | _ => none
+
 def nativeBinary? : BinaryOperator → Option Binary
   | .add => some (.word .add) | .sub => some (.word .sub) | .mul => some (.word .mul)
   | .div => some (.word .div) | .mod => some (.word .mod)

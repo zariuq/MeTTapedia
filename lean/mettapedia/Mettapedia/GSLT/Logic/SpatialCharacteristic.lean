@@ -2,6 +2,7 @@ import Mathlib.Data.Multiset.Basic
 import Mathlib.Data.Multiset.AddSub
 import Mathlib.Data.Multiset.ZeroCons
 import Mathlib.Order.Defs.Unbundled
+import Mettapedia.GSLT.Logic.SeparationAlgebra
 
 /-!
 # Spatial formulas over an atomic soup
@@ -13,10 +14,13 @@ by its shape together with formulas for its arguments.
 
 The composition connective is read on bags, never on positions.  A bag splits
 into two sub-bags with no order between them, which is what makes the
-connective a separating conjunction rather than a concatenation.  Everything a
-separating conjunction is expected to satisfy — symmetry, associativity, the
-unit — is inherited from the commutative monoid of multisets and never has to be
-stated as a law.
+connective a separating conjunction rather than a concatenation.  Bags under sum
+are a separation algebra in which every two bags are separate, and the
+composition connective *is* that algebra's separating conjunction
+(`sat_sep_eq_sepConj`), with the empty-bag formula its unit (`sat_nil_eq_emp`).
+Symmetry, associativity and the unit law of composition are therefore the
+algebra's laws, read through that identity (`sat_sep_comm`, `sat_sep_assoc`,
+`sat_sep_nil`), and never have to be proved again for a particular carrier.
 
 An atom's arguments are again terms, so the logic descends into them.  This is
 what lets a formula built from a term recognize that term *hereditarily*: a
@@ -132,6 +136,36 @@ theorem sat_atom_iff {shape : Shape} {arguments : List (Formula Shape)} {bag : M
   · intro h; cases h with
     | atom hs hargs => exact ⟨_, rfl, hs, hargs⟩
   · rintro ⟨a, rfl, hs, hargs⟩; exact .atom hs hargs
+
+/-! ## Composition is the separating conjunction of bags -/
+
+open Mettapedia.GSLT.SeparationAlgebra
+
+/-- The empty-bag formula is the unit of the bag separation algebra. -/
+theorem sat_nil_eq_emp : Sat S .nil = emp :=
+  funext fun _ => propext sat_nil_iff
+
+/-- **The composition connective is the separating conjunction** of the
+separation algebra of bags. -/
+theorem sat_sep_eq_sepConj (left right : Formula Shape) :
+    Sat S (.sep left right) = (Sat S left ∗ Sat S right) :=
+  funext fun _ => propext (sat_sep_iff.trans (sepConj_iff_of_total (fun _ _ => trivial)).symm)
+
+/-- Composition is symmetric: the commutativity of the separating
+conjunction. -/
+theorem sat_sep_comm (left right : Formula Shape) :
+    Sat S (.sep left right) = Sat S (.sep right left) := by
+  rw [sat_sep_eq_sepConj, sat_sep_eq_sepConj, sepConj_comm]
+
+/-- Composition is associative. -/
+theorem sat_sep_assoc (first second third : Formula Shape) :
+    Sat S (.sep (.sep first second) third) = Sat S (.sep first (.sep second third)) := by
+  simp only [sat_sep_eq_sepConj, sepConj_assoc]
+
+/-- The empty-bag formula is a unit for composition. -/
+theorem sat_sep_nil (formula : Formula Shape) :
+    Sat S (.sep formula .nil) = Sat S formula := by
+  rw [sat_sep_eq_sepConj, sat_nil_eq_emp, sepConj_emp]
 
 /-- Argument satisfaction is pointwise; stated by recursion on the derivation,
 since the derivations are mutually inductive. -/

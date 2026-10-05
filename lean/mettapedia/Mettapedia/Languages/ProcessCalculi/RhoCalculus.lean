@@ -21,6 +21,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Outcomes
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhometaReduction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ParallelWave
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CommFootprint
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SpiceRule
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CommRule
@@ -32,6 +33,9 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Bridges
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.TypedCommunicationVerticalBraid
 import Mettapedia.OSLF.Framework.RhoInstance
+import Mettapedia.OSLF.Bridges.GSLT.RhoSeparation
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Bridges.SeparationLogic
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Bridges.SeparationLogicControls
 
 /-!
 # Process Calculi: ρ-Calculus

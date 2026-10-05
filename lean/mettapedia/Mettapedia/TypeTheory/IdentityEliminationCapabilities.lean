@@ -189,7 +189,7 @@ open Mettapedia.TypeTheory.IdentityRouteCapabilities.Canary
 
 /-- Lifted ordinary equality has the expected propositional identity
 eliminator. -/
-def liftedEqualityElimination :
+theorem liftedEqualityElimination :
     ExternalPropositionalIdentityElimination liftedEquality where
   eliminate := by
     intro source motive base target route

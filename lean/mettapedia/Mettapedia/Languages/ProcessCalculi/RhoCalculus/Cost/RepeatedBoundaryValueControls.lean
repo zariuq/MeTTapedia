@@ -41,16 +41,16 @@ theorem selected : choice ∈ costStaticCollectionTypingChoices rhoCIGSLT .base
     (.base (costBaseSortName "Proc")) := by decide +kernel
 
 def plan : CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-    (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
-    (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base []) []
+    (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base []) []
+    (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base []) []
     .hole originalPattern (.base "Proc") :=
   .collection choice selected
     (.cons (StaticLeafBoundaryRefinement.replacementPlan
-      (thinning := CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (thinning := CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       inputPrincipal input_not_static inputArguments input_admitted
       (.collection .hashBag [] .hole [inputPattern] none))
       (.cons (StaticLeafBoundaryRefinement.replacementPlan
-        (thinning := CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+        (thinning := CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
         inputPrincipal input_not_static inputArguments input_admitted
         (.collection .hashBag [inputPattern] .hole [] none)) .nil))
 
@@ -191,17 +191,5 @@ theorem retained_children_different :
     child.2.1) secondEqual
   have different : zeroPattern ≠ inputPattern := by decide +kernel
   exact different patternsEqual
-
-#print axioms distinct_occurrences
-#print axioms repeated_entries
-#print axioms original_restoration
-#print axioms positional_second_values
-#print axioms current_values_different
-#print axioms positional_second_update
-#print axioms independent_updates_commute
-#print axioms positional_second_tree_update
-#print axioms resolve_same
-#print axioms restoration_same
-#print axioms retained_children_different
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls

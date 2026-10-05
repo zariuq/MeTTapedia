@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Core.InteractionEvent
+import Mathlib.Combinatorics.Quiver.Path
 
 /-!
 # Composition of proof-relevant interaction events
@@ -20,7 +21,7 @@ open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionEvent
 open Mettapedia.GSLT.Core.InteractionEvent.InteractionPresentation
 
-universe uSite uEvent uResult uFirst uSecond uThird uA uB uC uD
+universe uSite uEvent uResult uFirst uSecond uThird uA uB uC uD uVertex uEdge
 
 variable {theory : GSLT}
   (presentation : InteractionPresentation.{uSite, uEvent} theory)
@@ -84,6 +85,63 @@ def append {source middle target : theory.Term} :
   | nil => simp [append, pathLength]
   | cons event rest inductionHypothesis =>
       simp [append, pathLength, inductionHypothesis, Nat.add_assoc]
+
+section QuiverPaths
+
+variable {Vertex : Type uVertex} [Quiver.{uEdge} Vertex]
+  (mapState : Vertex → theory.Term)
+  (mapEvent : {before after : Vertex} → (before ⟶ after) →
+    Σ site : presentation.Site, presentation.Event site (mapState before) (mapState after))
+
+/-- Interpret an existing graph path using its supplied endpoint and primitive
+event maps. No reachability witness is selected from endpoint equality. -/
+def ofQuiverPath : {before after : Vertex} → Quiver.Path before after →
+    EventPath presentation (mapState before) (mapState after)
+  | before, _, .nil => .nil (presentation := presentation) (mapState before)
+  | _, after, .cons past event =>
+    append presentation (ofQuiverPath past)
+      (.cons (presentation := presentation) (site := (mapEvent event).1) (mapEvent event).2
+        (.nil (presentation := presentation) (mapState after)))
+
+theorem ofQuiverPath_nil (before : Vertex) :
+    ofQuiverPath presentation mapState mapEvent (.nil : Quiver.Path before before) =
+      .nil (mapState before) := by
+  simp only [ofQuiverPath]
+
+/-- Extending a graph history appends its mapped primitive event. -/
+theorem ofQuiverPath_cons {before middle after : Vertex}
+    (past : Quiver.Path before middle) (event : middle ⟶ after) :
+    ofQuiverPath presentation mapState mapEvent (past.cons event) =
+      append presentation (ofQuiverPath presentation mapState mapEvent past)
+        (.cons (site := (mapEvent event).1) (mapEvent event).2
+          (.nil (presentation := presentation) (mapState after))) := by
+  simp only [ofQuiverPath]
+
+/-- Interpreting concatenated histories keeps chronological composition. -/
+theorem ofQuiverPath_comp {before middle after : Vertex}
+    (first : Quiver.Path before middle) (second : Quiver.Path middle after) :
+    ofQuiverPath presentation mapState mapEvent (first.comp second) =
+      append presentation (ofQuiverPath presentation mapState mapEvent first)
+        (ofQuiverPath presentation mapState mapEvent second) := by
+  induction second with
+  | nil => simp only [Quiver.Path.comp, ofQuiverPath, append_nil]
+  | cons past event ih =>
+    simp only [Quiver.Path.comp, ofQuiverPath]
+    rw [ih, append_assoc]
+
+/-- The supplied map contributes exactly one authenticated event for every
+original graph edge, including edges with equal endpoints. -/
+theorem ofQuiverPath_length {before after : Vertex} (path : Quiver.Path before after) :
+    pathLength presentation (ofQuiverPath presentation mapState mapEvent path) =
+      path.length := by
+  induction path with
+  | nil => simp only [ofQuiverPath, pathLength, Quiver.Path.length]
+  | cons past event ih =>
+    simp only [ofQuiverPath, pathLength_append, pathLength, ih, Nat.add_zero,
+      Quiver.Path.length]
+
+
+end QuiverPaths
 
 /-- Forget event identity while retaining the authorized GSLT rewrite path. -/
 def erase : {source target : theory.Term} →

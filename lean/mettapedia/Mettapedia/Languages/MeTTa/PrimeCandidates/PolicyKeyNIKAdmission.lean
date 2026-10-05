@@ -37,6 +37,9 @@ universe uState uPolicy uValue uKey uCoarse uOther uObservation
 
 /-! ## Requests -/
 
+-- Policy indices and their value fibres retain independent universes.
+-- The bundled request itself necessarily lives in their maximum.
+set_option linter.checkUnivs false in
 /-- A family of observations requested from one retained semantic state.
 Values may depend on the policy index.  Exact replay is a separate capability,
 not silently inferred from the policy family. -/

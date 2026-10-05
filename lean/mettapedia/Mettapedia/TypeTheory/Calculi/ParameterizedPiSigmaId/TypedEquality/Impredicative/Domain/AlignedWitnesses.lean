@@ -87,12 +87,12 @@ theorem typedPoint_of_args {T p : Ideal} {w : List Tok}
             obtain ⟨-, rfl, -⟩ := tyTok_reflPoint.1 hat
             cases hd
         | succ i =>
-            refine absurd hat ?_
-            rw [TyTok]
-            · exact id
-            all_goals
-              intro h₁ h₂
-              first | exact Kind.noConfusion h₁ | exact Nat.noConfusion h₂
+            -- the slots read one by one, without choice
+            refine absurd hat (tyTok_arg_other (fun hm => ?_) id)
+            simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+            rcases hm with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ |
+              ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
+            all_goals first | (cases h₁; done) | cases h₂
     | fn k C X Y =>
         simp only [Tok.kind] at hk
         subst hk

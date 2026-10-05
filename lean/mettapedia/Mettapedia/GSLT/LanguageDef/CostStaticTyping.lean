@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.ConstructorSupport
+import Mettapedia.GSLT.LanguageDef.ConstructorFragmentSupport
 import Mettapedia.GSLT.LanguageDef.ContextSupport
-import Mettapedia.GSLT.LanguageDef.CostInteractionClosure
+import Mettapedia.GSLT.LanguageDef.Cost.FiniteReflection
 
 /-!
 # Typed transport of declaration-derived Cost static fragments
@@ -15,6 +16,8 @@ The restriction is load-bearing for the base fiber: the two interaction
 principals have position-sensitive continuation types and are therefore
 opaque region boundaries, not uniformly mapped static constructors.
 -/
+
+set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef
 
@@ -34,10 +37,10 @@ def symbolsOf (theory : IGSLT) : CostStaticColor → LanguageDefSymbolMap
   | .base => costBaseStaticSymbols
   | .wrapped => costWrappedStaticSymbols theory
 
-/-- Uniform presentation action that embeds one static copy. -/
-def symbols (source : CIGSLT) : CostStaticColor → LanguageDefSymbolMap
-  | .base => costBaseStaticSymbols
-  | .wrapped => costWrappedStaticSymbols source.theory
+/-- Uniform presentation action that embeds one static copy of a continued
+theory: the action determined by its underlying theory. -/
+abbrev symbols (source : WrappableIGSLT) (color : CostStaticColor) : LanguageDefSymbolMap :=
+  color.symbolsOf source.theory
 
 /-- The exact hereditary constructor image of one static Cost colour.  The
 source witness belongs to the cut-derived non-principal fragment; recording
@@ -98,18 +101,6 @@ theorem reflectiveSymbols_rewrite (source : CIGSLT)
       (color.symbols source).rewrite name := by
   cases color <;> rfl
 
-theorem symbols_eq_symbolsOf (source : CIGSLT) (color : CostStaticColor) :
-    color.symbols source = color.symbolsOf source.theory := by
-  cases color <;> rfl
-
-@[simp]
-theorem symbols_constructor (source : CIGSLT) (color : CostStaticColor)
-    (constructor : String) :
-    (color.symbols source).constructor constructor =
-      color.constructorTag ++ constructor := by
-  cases color <;>
-    rfl
-
 @[simp]
 theorem symbolsOf_constructor (theory : IGSLT) (color : CostStaticColor)
     (constructor : String) :
@@ -118,14 +109,11 @@ theorem symbolsOf_constructor (theory : IGSLT) (color : CostStaticColor)
   cases color <;>
     rfl
 
-/-- Each static Cost color embeds the source constructor namespace
-injectively. -/
-theorem symbols_constructor_injective (source : CIGSLT)
-    (color : CostStaticColor) :
-    Function.Injective (color.symbols source).constructor := by
-  cases color with
-  | base => exact costBaseConstructorName_injective
-  | wrapped => exact costWrappedConstructorName_injective
+theorem symbols_constructor (source : CIGSLT) (color : CostStaticColor)
+    (constructor : String) :
+    (color.symbols source).constructor constructor =
+      color.constructorTag ++ constructor :=
+  symbolsOf_constructor source.theory color constructor
 
 /-- The theory-indexed static constructor action is injective in either
 generated namespace. -/
@@ -136,18 +124,33 @@ theorem symbolsOf_constructor_injective (theory : IGSLT)
   | base => exact costBaseConstructorName_injective
   | wrapped => exact costWrappedConstructorName_injective
 
+/-- Each static Cost color embeds the source constructor namespace
+injectively. -/
+theorem symbols_constructor_injective (source : CIGSLT)
+    (color : CostStaticColor) :
+    Function.Injective (color.symbols source).constructor :=
+  symbolsOf_constructor_injective source.theory color
+
 /-- Quotation-aware scope is transported exactly inside either injectively
 tagged static Cost fiber. -/
 @[simp]
+theorem binderSafeAt_mapPattern_symbolsOf (theory : IGSLT)
+    (color : CostStaticColor) (quoteConstructor : String)
+    (depth : Nat) (pattern : Pattern) :
+    binderSafeAt ((color.symbolsOf theory).constructor quoteConstructor) depth
+        (mapPattern (color.symbolsOf theory) pattern) =
+      binderSafeAt quoteConstructor depth pattern :=
+  WellSorted.binderSafeAt_mapPattern_of_constructor_injective
+    (color.symbolsOf theory) (color.symbolsOf_constructor_injective theory)
+    quoteConstructor depth pattern
+
 theorem binderSafeAt_mapPattern_symbols (source : CIGSLT)
     (color : CostStaticColor) (quoteConstructor : String)
     (depth : Nat) (pattern : Pattern) :
     binderSafeAt ((color.symbols source).constructor quoteConstructor) depth
         (mapPattern (color.symbols source) pattern) =
       binderSafeAt quoteConstructor depth pattern :=
-  WellSorted.binderSafeAt_mapPattern_of_constructor_injective
-    (color.symbols source) (color.symbols_constructor_injective source)
-    quoteConstructor depth pattern
+  binderSafeAt_mapPattern_symbolsOf source.theory color quoteConstructor depth pattern
 
 /-- The sort action of either static Cost fiber lands in the exact generated
 Cost language.  The wrapped color sends only the distinguished interacting
@@ -164,10 +167,10 @@ def mapLangSort (source : CIGSLT) (color : CostStaticColor)
   | wrapped =>
       by_cases interacting :
           sort.1 = source.theory.presentation.interactingSort.1.name
-      · simp only [CostStaticColor.symbols, costWrappedStaticSymbols,
+      · simp only [CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
           interacting, if_pos]
         exact source.costWrappedSortName_mem_costWhole
-      · simp only [CostStaticColor.symbols, costWrappedStaticSymbols,
+      · simp only [CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
           interacting]
         exact source.costBaseSortName_mem_costWhole sort.1 sort.2
 
@@ -212,7 +215,7 @@ theorem mapTypeExpr_base_eq_wrapped_iff (source : CIGSLT)
     mapTypeExpr (CostStaticColor.base.symbols source) type =
         mapTypeExpr (CostStaticColor.wrapped.symbols source) type ↔
       source.theory.presentation.interactingSort.1.name ∉ type.baseNames := by
-  simp only [CostStaticColor.symbols, mapTypeExpr_costBaseStaticSymbols,
+  simp only [CostStaticColor.symbols, CostStaticColor.symbolsOf, mapTypeExpr_costBaseStaticSymbols,
     mapTypeExpr_costWrappedStaticSymbols]
   rw [eq_comm]
   exact costWrappedTypeExpr_eq_costBaseTypeExpr_iff _ _
@@ -234,7 +237,7 @@ theorem mapTypeExpr_base_eq_wrapped_iff_eq (source : CIGSLT)
     have rawEquality :
         costBaseTypeExpr left =
           costWrappedTypeExpr interactingSort right := by
-      simpa [CostStaticColor.symbols,
+      simpa [CostStaticColor.symbols, CostStaticColor.symbolsOf,
         mapTypeExpr_costBaseStaticSymbols,
         mapTypeExpr_costWrappedStaticSymbols, interactingSort] using
           equality
@@ -349,17 +352,17 @@ theorem mapLangSort_injective (source : CIGSLT) (color : CostStaticColor) :
             second.1 = source.theory.presentation.interactingSort.1.name
         · exact firstInteracting.trans secondInteracting.symm
         · have impossible : costWrappedSortName = costBaseSortName second.1 := by
-            simpa [CostStaticColor.symbols, costWrappedStaticSymbols,
+            simpa [CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
               firstInteracting, secondInteracting] using nameEquality
           exact (costBaseSortName_ne_wrapped second.1 impossible.symm).elim
       · by_cases secondInteracting :
             second.1 = source.theory.presentation.interactingSort.1.name
         · have impossible : costBaseSortName first.1 = costWrappedSortName := by
-            simpa [CostStaticColor.symbols, costWrappedStaticSymbols,
+            simpa [CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
               firstInteracting, secondInteracting] using nameEquality
           exact (costBaseSortName_ne_wrapped first.1 impossible).elim
         · exact costBaseSortName_injective (by
-            simpa [CostStaticColor.symbols, costWrappedStaticSymbols,
+            simpa [CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
               firstInteracting, secondInteracting] using nameEquality)
 
 /-- On the distinguished interacting sort, the generated target sort also
@@ -383,7 +386,7 @@ theorem color_eq_of_mapLangSort_eq_of_interacting (source : CIGSLT)
         costBaseSortName
             source.theory.presentation.interactingSort.1.name =
           costWrappedSortName := by
-      simpa [CostStaticColor.mapLangSort_name, CostStaticColor.symbols,
+      simpa [CostStaticColor.mapLangSort_name, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
         costWrappedStaticSymbols, firstInteracting, secondInteracting] using
         nameEquality
@@ -392,7 +395,7 @@ theorem color_eq_of_mapLangSort_eq_of_interacting (source : CIGSLT)
         costWrappedSortName =
           costBaseSortName
             source.theory.presentation.interactingSort.1.name := by
-      simpa [CostStaticColor.mapLangSort_name, CostStaticColor.symbols,
+      simpa [CostStaticColor.mapLangSort_name, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
         costWrappedStaticSymbols, firstInteracting, secondInteracting] using
         nameEquality
@@ -400,6 +403,167 @@ theorem color_eq_of_mapLangSort_eq_of_interacting (source : CIGSLT)
   · rfl
 
 end CostStaticColor
+
+namespace ContinuationDecorationProfile
+
+open WellSorted
+
+/-- Static Cost transport preserves every authored reflective scope boundary.
+The selected color transports the corresponding source quotation exactly;
+the opposite color is disjoint from every constructor in the mapped term and
+therefore contributes only the ordinary locally nameless scope check. -/
+theorem reflectiveScopeSafeAt_mapStatic
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (profile : ContinuationDecorationProfile cut)
+    (reflection : ReflectionProfile) (color : CostStaticColor)
+    {depth : Nat} {pattern : Pattern}
+    (sourceSafe : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      reflection depth pattern)
+    (mappedOrdinaryScope :
+      (mapPattern (color.symbolsOf theory) pattern).isWellScopedAt depth = true) :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt
+      (profile.costWholeReflectionProfile reflection) depth
+      (mapPattern (color.symbolsOf theory) pattern) := by
+  intro targetPresentation targetMembership
+  rw [costWholeReflectionProfile,
+    costStaticReflectivePresentations, List.mem_append]
+    at targetMembership
+  rcases targetMembership with baseMembership | wrappedMembership
+  · rcases List.mem_map.mp baseMembership with
+      ⟨sourcePresentation, sourceMembership, rfl⟩
+    cases color with
+    | base =>
+        simpa [costBaseReflectivePresentationDecl,
+          mapReflectivePresentation, CostStaticColor.symbolsOf,
+          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+          costBaseLanguageDefSymbolMap] using
+          (show binderSafeAt
+              ((CostStaticColor.base.symbolsOf theory).constructor
+                sourcePresentation.quoteConstructor) depth
+              (mapPattern (CostStaticColor.base.symbolsOf theory) pattern) = true
+            from by
+              rw [CostStaticColor.binderSafeAt_mapPattern_symbolsOf]
+              exact sourceSafe sourcePresentation sourceMembership)
+    | wrapped =>
+        have scopeEquality :=
+          WellSorted.binderSafeAt_mapPattern_of_constructor_avoids
+            (CostStaticColor.wrapped.symbolsOf theory)
+            (costBaseConstructorName sourcePresentation.quoteConstructor)
+            (fun constructor equality =>
+              costBaseConstructorName_ne_wrapped
+                sourcePresentation.quoteConstructor constructor equality.symm)
+            depth pattern
+        simpa [costBaseReflectivePresentationDecl,
+          mapReflectivePresentation, CostStaticColor.symbolsOf,
+          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+          costBaseLanguageDefSymbolMap] using
+          (scopeEquality.trans mappedOrdinaryScope)
+  · rcases List.mem_map.mp wrappedMembership with
+      ⟨sourcePresentation, sourceMembership, rfl⟩
+    cases color with
+    | base =>
+        have scopeEquality :=
+          WellSorted.binderSafeAt_mapPattern_of_constructor_avoids
+            (CostStaticColor.base.symbolsOf theory)
+            (costWrappedConstructorName sourcePresentation.quoteConstructor)
+            (fun constructor =>
+              costBaseConstructorName_ne_wrapped constructor
+                sourcePresentation.quoteConstructor)
+            depth pattern
+        simpa [costWrappedReflectivePresentationDecl,
+          mapReflectivePresentation, CostStaticColor.symbolsOf,
+          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols] using
+          (scopeEquality.trans mappedOrdinaryScope)
+    | wrapped =>
+        simpa [costWrappedReflectivePresentationDecl,
+          mapReflectivePresentation, CostStaticColor.symbolsOf,
+          costWrappedStaticReflectiveSymbols] using
+          (show binderSafeAt
+              ((CostStaticColor.wrapped.symbolsOf theory).constructor
+                sourcePresentation.quoteConstructor) depth
+              (mapPattern (CostStaticColor.wrapped.symbolsOf theory) pattern) = true
+            from by
+              rw [CostStaticColor.binderSafeAt_mapPattern_symbolsOf]
+              exact sourceSafe sourcePresentation sourceMembership)
+
+
+@[simp]
+theorem reflectiveIsQuoteConstructor_mapStatic
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (profile : ContinuationDecorationProfile cut) (reflection : ReflectionProfile)
+    (color : CostStaticColor) (constructor : String) :
+    ReflectiveContextSupport.isQuoteConstructor
+        (profile.costWholeReflectionProfile reflection)
+        ((color.symbolsOf theory).constructor constructor) =
+      ReflectiveContextSupport.isQuoteConstructor
+        reflection constructor := by
+  unfold ReflectiveContextSupport.isQuoteConstructor
+  simp only [costWholeReflectionProfile, costStaticReflectivePresentations, List.any_append]
+  cases color with
+  | base =>
+      rw [Bool.eq_iff_iff]
+      simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
+        List.any_eq_true, beq_iff_eq]
+      constructor
+      · rintro (⟨declaration, membership, equality⟩ |
+          ⟨declaration, _membership, equality⟩)
+        · refine ⟨declaration, membership, ?_⟩
+          apply costBaseConstructorName_injective
+          simpa [CostStaticColor.symbolsOf,
+            costBaseReflectivePresentationDecl, mapReflectivePresentation,
+            costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+            costBaseLanguageDefSymbolMap] using equality
+        · have impossible :
+              costWrappedConstructorName declaration.quoteConstructor =
+                costBaseConstructorName constructor := by
+            simpa [CostStaticColor.symbolsOf,
+              costWrappedReflectivePresentationDecl,
+              mapReflectivePresentation, costWrappedStaticSymbols,
+              costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
+              costBaseLanguageDefSymbolMap] using equality
+          exact False.elim
+            (costBaseConstructorName_ne_wrapped constructor
+              declaration.quoteConstructor impossible.symm)
+      · rintro ⟨declaration, membership, equality⟩
+        left
+        refine ⟨declaration, membership, ?_⟩
+        simp [CostStaticColor.symbolsOf,
+          costBaseReflectivePresentationDecl, mapReflectivePresentation,
+          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+          costBaseLanguageDefSymbolMap, equality]
+  | wrapped =>
+      rw [Bool.eq_iff_iff]
+      simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
+        List.any_eq_true, beq_iff_eq]
+      constructor
+      · rintro (⟨declaration, _membership, equality⟩ |
+          ⟨declaration, membership, equality⟩)
+        · have impossible :
+              costBaseConstructorName declaration.quoteConstructor =
+                costWrappedConstructorName constructor := by
+            simpa [CostStaticColor.symbolsOf,
+              costBaseReflectivePresentationDecl, mapReflectivePresentation,
+              costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+              costBaseLanguageDefSymbolMap,
+              costWrappedStaticSymbols] using equality
+          exact False.elim
+            (costBaseConstructorName_ne_wrapped
+              declaration.quoteConstructor constructor impossible)
+        · refine ⟨declaration, membership, ?_⟩
+          apply costWrappedConstructorName_injective
+          simpa [CostStaticColor.symbolsOf,
+            costWrappedReflectivePresentationDecl,
+            mapReflectivePresentation, costWrappedStaticSymbols,
+            costWrappedStaticReflectiveSymbols] using equality
+      · rintro ⟨declaration, membership, equality⟩
+        right
+        refine ⟨declaration, membership, ?_⟩
+        simp [CostStaticColor.symbolsOf,
+          costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
+          equality]
+
+end ContinuationDecorationProfile
 
 /-- Static Cost transport preserves every authored reflective scope boundary.
 The selected color transports the corresponding source quotation exactly;
@@ -414,68 +578,10 @@ theorem reflectiveScopeSafeAt_mapCostStatic
       (mapPattern (color.symbols source) pattern).isWellScopedAt depth = true) :
     ReflectiveWellSorted.ReflectiveScopeSafeAt
       source.costWholeReflectionProfile depth
-      (mapPattern (color.symbols source) pattern) := by
-  intro targetPresentation targetMembership
-  rw [CIGSLT.costWholeReflectionProfile_presentations,
-    CIGSLT.costStaticReflectivePresentations, List.mem_append]
-    at targetMembership
-  rcases targetMembership with baseMembership | wrappedMembership
-  · rcases List.mem_map.mp baseMembership with
-      ⟨sourcePresentation, sourceMembership, rfl⟩
-    cases color with
-    | base =>
-        simpa [costBaseReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbols,
-          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBaseLanguageDefSymbolMap] using
-          (show binderSafeAt
-              ((CostStaticColor.base.symbols source).constructor
-                sourcePresentation.quoteConstructor) depth
-              (mapPattern (CostStaticColor.base.symbols source) pattern) = true
-            from by
-              rw [CostStaticColor.binderSafeAt_mapPattern_symbols]
-              exact sourceSafe sourcePresentation sourceMembership)
-    | wrapped =>
-        have scopeEquality :=
-          WellSorted.binderSafeAt_mapPattern_of_constructor_avoids
-            (CostStaticColor.wrapped.symbols source)
-            (costBaseConstructorName sourcePresentation.quoteConstructor)
-            (fun constructor equality =>
-              costBaseConstructorName_ne_wrapped
-                sourcePresentation.quoteConstructor constructor equality.symm)
-            depth pattern
-        simpa [costBaseReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbols,
-          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBaseLanguageDefSymbolMap] using
-          (scopeEquality.trans mappedOrdinaryScope)
-  · rcases List.mem_map.mp wrappedMembership with
-      ⟨sourcePresentation, sourceMembership, rfl⟩
-    cases color with
-    | base =>
-        have scopeEquality :=
-          WellSorted.binderSafeAt_mapPattern_of_constructor_avoids
-            (CostStaticColor.base.symbols source)
-            (costWrappedConstructorName sourcePresentation.quoteConstructor)
-            (fun constructor =>
-              costBaseConstructorName_ne_wrapped constructor
-                sourcePresentation.quoteConstructor)
-            depth pattern
-        simpa [costWrappedReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbols,
-          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols] using
-          (scopeEquality.trans mappedOrdinaryScope)
-    | wrapped =>
-        simpa [costWrappedReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbols,
-          costWrappedStaticReflectiveSymbols] using
-          (show binderSafeAt
-              ((CostStaticColor.wrapped.symbols source).constructor
-                sourcePresentation.quoteConstructor) depth
-              (mapPattern (CostStaticColor.wrapped.symbols source) pattern) = true
-            from by
-              rw [CostStaticColor.binderSafeAt_mapPattern_symbols]
-              exact sourceSafe sourcePresentation sourceMembership)
+      (mapPattern (color.symbols source) pattern) :=
+  (ContinuationDecorationProfile.ofRetypingPlan
+    source.continuationRetyping).reflectiveScopeSafeAt_mapStatic source.reflection.1 color
+      sourceSafe mappedOrdinaryScope
 
 /-- Static tagging preserves exactly the authored quotation boundaries.
 The opposite static color cannot contribute a false positive because the
@@ -487,73 +593,10 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
         source.costWholeReflectionProfile
         ((color.symbols source).constructor constructor) =
       ReflectiveContextSupport.isQuoteConstructor
-        source.reflection.1 constructor := by
-  unfold ReflectiveContextSupport.isQuoteConstructor
-  rw [CIGSLT.costWholeReflectionProfile_presentations]
-  rw [CIGSLT.costStaticReflectivePresentations, List.any_append]
-  cases color with
-  | base =>
-      rw [Bool.eq_iff_iff]
-      simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
-        List.any_eq_true, beq_iff_eq]
-      constructor
-      · rintro (⟨declaration, membership, equality⟩ |
-          ⟨declaration, _membership, equality⟩)
-        · refine ⟨declaration, membership, ?_⟩
-          apply costBaseConstructorName_injective
-          simpa [CostStaticColor.symbols,
-            costBaseReflectivePresentationDecl, mapReflectivePresentation,
-            costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-            costBaseLanguageDefSymbolMap] using equality
-        · have impossible :
-              costWrappedConstructorName declaration.quoteConstructor =
-                costBaseConstructorName constructor := by
-            simpa [CostStaticColor.symbols,
-              costWrappedReflectivePresentationDecl,
-              mapReflectivePresentation, costWrappedStaticSymbols,
-              costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
-              costBaseLanguageDefSymbolMap] using equality
-          exact False.elim
-            (costBaseConstructorName_ne_wrapped constructor
-              declaration.quoteConstructor impossible.symm)
-      · rintro ⟨declaration, membership, equality⟩
-        left
-        refine ⟨declaration, membership, ?_⟩
-        simp [CostStaticColor.symbols,
-          costBaseReflectivePresentationDecl, mapReflectivePresentation,
-          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBaseLanguageDefSymbolMap, equality]
-  | wrapped =>
-      rw [Bool.eq_iff_iff]
-      simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
-        List.any_eq_true, beq_iff_eq]
-      constructor
-      · rintro (⟨declaration, _membership, equality⟩ |
-          ⟨declaration, membership, equality⟩)
-        · have impossible :
-              costBaseConstructorName declaration.quoteConstructor =
-                costWrappedConstructorName constructor := by
-            simpa [CostStaticColor.symbols,
-              costBaseReflectivePresentationDecl, mapReflectivePresentation,
-              costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-              costBaseLanguageDefSymbolMap,
-              costWrappedStaticSymbols] using equality
-          exact False.elim
-            (costBaseConstructorName_ne_wrapped
-              declaration.quoteConstructor constructor impossible)
-        · refine ⟨declaration, membership, ?_⟩
-          apply costWrappedConstructorName_injective
-          simpa [CostStaticColor.symbols,
-            costWrappedReflectivePresentationDecl,
-            mapReflectivePresentation, costWrappedStaticSymbols,
-            costWrappedStaticReflectiveSymbols] using equality
-      · rintro ⟨declaration, membership, equality⟩
-        right
-        refine ⟨declaration, membership, ?_⟩
-        simp [CostStaticColor.symbols,
-          costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
-          equality]
+        source.reflection.1 constructor :=
+  (ContinuationDecorationProfile.ofRetypingPlan
+    source.continuationRetyping).reflectiveIsQuoteConstructor_mapStatic source.reflection.1
+      color constructor
 
 /-- The sole extra law required by typed static transport: declarations
 whose bare collection representation hides its label must belong to the
@@ -573,45 +616,6 @@ theorem CIGSLT.bareCollectionConstructorsWrappedForPlan (source : CIGSLT) :
     source.continuationRetyping.BareCollectionConstructorsWrapped :=
   source.bareCollectionConstructorsWrapped
 
-/-- A constructor in the cut-derived wrapped fragment is not either selected
-interaction principal, so none of its argument positions is a selected
-continuation. -/
-theorem isSelectedContinuation_eq_false_of_mem_wrappedLabelsFor
-    {theory : IGSLT} {cut : InteractionCutPresentation theory}
-    (plan : ContinuationRetypingPlan cut) (rule : GrammarRule)
-    (membership : rule ∈ theory.presentation.presentation.language.terms)
-    (wrapped : rule.label ∈ plan.wrappedLabels)
-    (index : Nat) :
-    isSelectedContinuation cut rule index = false := by
-  let authored : DeclaredConstructor theory.presentation.presentation :=
-    ⟨rule, membership⟩
-  have wrappedConstructor : authored ∈ plan.wrappedConstructors :=
-    (plan.mem_wrappedLabels_iff authored).mp wrapped
-  have inequalities :=
-    (plan.mem_wrappedConstructors_iff authored).mp wrappedConstructor
-  have programNe : rule ≠ cut.program.constructor.1 := by
-    intro equality
-    apply inequalities.1
-    apply Subtype.ext
-    exact equality
-  have environmentNe : rule ≠ cut.environment.constructor.1 := by
-    intro equality
-    apply inequalities.2
-    apply Subtype.ext
-    exact equality
-  simp [isSelectedContinuation, programNe, environmentNe]
-
-theorem isSelectedContinuation_eq_false_of_mem_wrappedLabels
-    (source : CIGSLT) (rule : GrammarRule)
-    (membership : rule ∈
-      source.theory.presentation.presentation.language.terms)
-    (wrapped : rule.label ∈
-      source.continuationRetyping.wrappedLabels)
-    (index : Nat) :
-    isSelectedContinuation source.cut rule index = false := by
-  exact isSelectedContinuation_eq_false_of_mem_wrappedLabelsFor
-    source.continuationRetyping rule membership wrapped index
-
 @[simp]
 theorem mapTermParam_costBaseStaticSymbols (parameter : TermParam) :
     mapTermParam costBaseStaticSymbols parameter =
@@ -621,18 +625,7 @@ theorem mapTermParam_costBaseStaticSymbols (parameter : TermParam) :
       mapTypeExpr_costBaseStaticSymbols]
 
 @[simp]
-theorem mapTermParam_costWrappedStaticSymbols (source : CIGSLT)
-    (parameter : TermParam) :
-    mapTermParam (costWrappedStaticSymbols source.theory) parameter =
-      mapParameterType
-        (costWrappedTypeExpr
-          source.theory.presentation.interactingSort.1.name) parameter := by
-  cases parameter <;>
-    simp [mapTermParam, mapParameterType,
-      mapTypeExpr_costWrappedStaticSymbols]
-
-@[simp]
-theorem mapTermParam_costWrappedStaticSymbolsFor (theory : IGSLT)
+theorem mapTermParam_costWrappedStaticSymbols (theory : IGSLT)
     (parameter : TermParam) :
     mapTermParam (costWrappedStaticSymbols theory) parameter =
       mapParameterType
@@ -642,35 +635,68 @@ theorem mapTermParam_costWrappedStaticSymbolsFor (theory : IGSLT)
     simp [mapTermParam, mapParameterType,
       mapTypeExpr_costWrappedStaticSymbols]
 
-/-- Generic parameter transport before a complete continued object exists. -/
-theorem costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
+namespace ContinuationDecorationProfile
+
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
+
+/-- Additional slots still belong to the selected principal declarations. -/
+theorem selectedParameter_eq_false_of_nonprincipal
+    (profile : ContinuationDecorationProfile cut) (constructor : GrammarRule)
+    (notProgram : constructor ≠ cut.program.constructor.1)
+    (notEnvironment : constructor ≠ cut.environment.constructor.1) (index : Nat) :
+    profile.selectedParameter constructor index = false := by
+  simp [selectedParameter, isSelectedContinuation, notProgram, notEnvironment]
+
+/-- No parameter is positionally retyped in a nonprincipal base row. -/
+theorem baseConstructor_params_eq_map_of_nonprincipal
+    (profile : ContinuationDecorationProfile cut) (constructor : GrammarRule)
+    (notProgram : constructor ≠ cut.program.constructor.1)
+    (notEnvironment : constructor ≠ cut.environment.constructor.1) :
+    (profile.baseConstructor constructor).params =
+      constructor.params.map (mapTermParam costBaseStaticSymbols) := by
+  apply List.ext_getElem
+  · simp [baseConstructor]
+  · intro index leftBound rightBound
+    rw [baseConstructor_parameter _ _ _ (by simpa [baseConstructor] using leftBound)]
+    simp [List.getElem_map, baseParameter,
+      profile.selectedParameter_eq_false_of_nonprincipal constructor notProgram notEnvironment]
+
+/-- The two-slot profile of a retyping plan contains neither principal. -/
+theorem ofRetypingPlan_nonprincipal (plan : ContinuationRetypingPlan cut) :
+    ∀ constructor ∈ (ofRetypingPlan plan).constructorClosure,
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor :=
+  fun constructor included => (plan.mem_wrappedConstructors_iff constructor).mp included
+
+/-- A row of an inventory without the two principals keeps the uniform base
+parameter map. -/
+theorem baseConstructor_params_eq_map_of_mem_wrappedLabels
+    (profile : ContinuationDecorationProfile cut)
+    (nonprincipal : ∀ constructor ∈ profile.constructorClosure,
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor)
+    (rule : GrammarRule)
+    (member : rule ∈ theory.presentation.presentation.language.terms)
+    (supported : rule.label ∈ profile.wrappedLabels) :
+    (profile.baseConstructor rule).params =
+      rule.params.map (mapTermParam costBaseStaticSymbols) := by
+  have excluded := nonprincipal ⟨rule, member⟩
+    ((profile.mem_wrappedLabels_iff ⟨rule, member⟩).mp supported)
+  exact profile.baseConstructor_params_eq_map_of_nonprincipal rule
+    (fun same => excluded.1 (Subtype.ext same))
+    (fun same => excluded.2 (Subtype.ext same))
+
+end ContinuationDecorationProfile
+
+/-- Away from the two selected principals, base-constructor parameter
+retyping is exactly the uniform base static symbol action. -/
+theorem costBaseConstructor_params_eq_map_of_mem_wrappedLabels
     {theory : IGSLT} {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut) (rule : GrammarRule)
     (membership : rule ∈ theory.presentation.presentation.language.terms)
     (wrapped : rule.label ∈ plan.wrappedLabels) :
     (costBaseConstructor cut rule).params =
-      rule.params.map (mapTermParam costBaseStaticSymbols) := by
-  apply List.ext_getElem
-  · simp [costBaseConstructor_def]
-  · intro index leftBound rightBound
-    rw [costBaseConstructor_parameter cut rule index (by
-      simpa [costBaseConstructor] using leftBound)]
-    simp [List.getElem_map, costBaseParameter_def,
-      isSelectedContinuation_eq_false_of_mem_wrappedLabelsFor plan rule
-        membership wrapped index]
-
-/-- Away from the two selected principals, base-constructor parameter
-retyping is exactly the uniform base static symbol action. -/
-theorem costBaseConstructor_params_eq_map_of_mem_wrappedLabels
-    (source : CIGSLT) (rule : GrammarRule)
-    (membership : rule ∈
-      source.theory.presentation.presentation.language.terms)
-    (wrapped : rule.label ∈
-      source.continuationRetyping.wrappedLabels) :
-    (costBaseConstructor source.cut rule).params =
-      rule.params.map (mapTermParam costBaseStaticSymbols) := by
-  exact costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
-    source.continuationRetyping rule membership wrapped
+      rule.params.map (mapTermParam costBaseStaticSymbols) :=
+  (ContinuationDecorationProfile.ofRetypingPlan plan).baseConstructor_params_eq_map_of_mem_wrappedLabels
+    (ContinuationDecorationProfile.ofRetypingPlan_nonprincipal plan) rule membership wrapped
 
 /-- If a generated constructor has a wrapped-tagged label, its untagged
 source label belongs to the exact hereditary continuation fragment.
@@ -786,7 +812,7 @@ theorem reflectiveRetypingLanguage_equationNames_nodup
             (·.name)).map costBaseEquationName ++
           (theory.presentation.presentation.language.equations.map
             (·.name)).map costWrappedEquationName := by
-    simp [reflectiveRetypingLanguage, Function.comp_def,
+    simp [reflectiveRetypingLanguage_def, Function.comp_def,
       costBaseEquation, costWrappedEquation, mapEquation,
       costBaseStaticSymbols, costWrappedStaticSymbols]
   rw [names, List.nodup_append]
@@ -900,7 +926,7 @@ theorem validateReflectivePresentation_costBase_of_wrapped
   have targetEquationMembership :
       targetEquation ∈ (reflectiveRetypingLanguage plan).equations := by
     change costBaseEquation witness.equation ∈ _
-    rw [reflectiveRetypingLanguage]
+    rw [reflectiveRetypingLanguage_def]
     exact List.mem_append_left _
       (List.mem_map.mpr ⟨witness.equation, equationMembership, rfl⟩)
   have targetEquationName :
@@ -949,7 +975,7 @@ theorem validateReflectivePresentation_costBase_of_wrapped
          change (costBaseConstructor cut witness.quote).params =
            [.simple witness.quoteParameter
              (.base (costBaseSortName declaration.processSort))]
-         rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
+         rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabels
            plan witness.quote quoteMembership
              (by simpa [quoteLabel] using quoteWrapped)]
          rw [witness.quoteParameters]
@@ -963,7 +989,7 @@ theorem validateReflectivePresentation_costBase_of_wrapped
          change (costBaseConstructor cut witness.drop).params =
            [.simple witness.dropParameter
              (.base (costBaseSortName declaration.nameSort))]
-         rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
+         rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabels
            plan witness.drop dropMembership
              (by simpa [dropLabel] using dropWrapped)]
          rw [witness.dropParameters]
@@ -975,7 +1001,7 @@ theorem validateReflectivePresentation_costBase_of_wrapped
          rw [witness.unitCategory]
        unitParameters := by
          change (costBaseConstructor cut witness.unit).params = []
-         rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
+         rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabels
            plan witness.unit unitMembership
              (by simpa [unitLabel] using unitWrapped)]
          simp [witness.unitParameters]
@@ -1110,7 +1136,7 @@ theorem validateReflectivePresentation_costWrapped_of_wrapped
   have targetEquationMembership :
       targetEquation ∈ (reflectiveRetypingLanguage plan).equations := by
     change costWrappedEquation theory witness.equation ∈ _
-    rw [reflectiveRetypingLanguage]
+    rw [reflectiveRetypingLanguage_def]
     exact List.mem_append_right _
       (List.mem_map.mpr ⟨witness.equation, equationMembership, rfl⟩)
   have targetEquationName :
@@ -1446,502 +1472,199 @@ mutual
                     inductionHypothesis nested (by simp [membership]))⟩
 end
 
-mutual
-  /-- Non-circular static transport into the bare generated continuation
-  signature.  It depends only on the authored theory, cut, and retyping
-  plan; a completed continued object is not required. -/
-  theorem WellSorted.HasTypeWithConstructors.mapCostStaticGenerated
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {pattern : Pattern} {type : TypeExpr}
-      (typed : WellSorted.HasTypeWithConstructors
-        theory.presentation.presentation.language
-        (· ∈ plan.wrappedLabels) free bound pattern type) :
-      WellSorted.HasType plan.generatedLanguage
-        (free.map (color.symbolsOf theory))
-        (bound.map (mapTypeExpr (color.symbolsOf theory)))
-        (mapPattern (color.symbolsOf theory) pattern)
-        (mapTypeExpr (color.symbolsOf theory) type) := by
-    cases typed with
-    | @bvar bound index type lookup =>
-        have mappedLookup :
-            (bound.map (mapTypeExpr (color.symbolsOf theory)))[index]? =
-              some (mapTypeExpr (color.symbolsOf theory) type) := by
-          simpa using congrArg
-            (Option.map (mapTypeExpr (color.symbolsOf theory))) lookup
-        simpa [mapPattern] using
-          (WellSorted.HasType.bvar
-            (free := free.map (color.symbolsOf theory)) mappedLookup)
-    | @fvar bound name type lookup =>
-        have mappedLookup :
-            (free.map (color.symbolsOf theory)) name =
-              some (mapTypeExpr (color.symbolsOf theory) type) := by
-          simp [WellSorted.FreeTypeContext.map, lookup]
-        simpa [mapPattern] using
-          (WellSorted.HasType.fvar
-            (bound := bound.map (mapTypeExpr (color.symbolsOf theory)))
-            mappedLookup)
-    | @constructor bound rule arguments labelSupported membership notBare
-        argumentsTyped =>
-        let authored : DeclaredConstructor theory.presentation.presentation :=
-          ⟨rule, membership⟩
-        have wrappedConstructor : authored ∈ plan.wrappedConstructors :=
-          (plan.mem_wrappedLabels_iff authored).mp labelSupported
-        cases color with
-        | base =>
-            have mappedArguments :=
-              argumentsTyped.mapCostStaticGenerated plan .base
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
-                plan rule membership labelSupported
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes plan.generatedLanguage
-                  (free.map
-                    (CostStaticColor.base.symbolsOf theory))
-                  (bound.map
-                    (mapTypeExpr
-                      (CostStaticColor.base.symbolsOf theory)))
-                  (arguments.map
-                    (mapPattern
-                      (CostStaticColor.base.symbolsOf theory)))
-                  (costBaseConstructor cut rule).params := by
-              simpa only [parameterEquality, CostStaticColor.symbolsOf] using
-                mappedArguments
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costBaseConstructor cut rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costBaseConstructor_iff cut rule).mp
-                  targetBare)
-            simpa [mapPattern, CostStaticColor.symbolsOf,
-              costBaseConstructor_def, costBaseStaticSymbols,
-              costBaseLanguageDefSymbolMap, mapTypeExpr] using
-              (WellSorted.HasType.constructor
-                (plan.costBaseConstructor_mem_generated rule membership)
-                targetNotBare targetArguments)
-        | wrapped =>
-            have mappedArguments :=
-              argumentsTyped.mapCostStaticGenerated plan .wrapped
-            have parameterMapEquality :
-                rule.params.map
-                    (mapTermParam (costWrappedStaticSymbols theory)) =
-                  rule.params.map
-                    (mapParameterType
-                      (costWrappedTypeExpr
-                        theory.presentation.interactingSort.1.name)) := by
-              apply List.map_congr_left
-              intro parameter _membership
-              exact mapTermParam_costWrappedStaticSymbolsFor theory parameter
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes plan.generatedLanguage
-                  (free.map
-                    (CostStaticColor.wrapped.symbolsOf theory))
-                  (bound.map
-                    (mapTypeExpr
-                      (CostStaticColor.wrapped.symbolsOf theory)))
-                  (arguments.map
-                    (mapPattern
-                      (CostStaticColor.wrapped.symbolsOf theory)))
-                  (costWrappedConstructor (theory := theory) rule).params := by
-              simpa only [costWrappedConstructor,
-                CostStaticColor.symbolsOf, parameterMapEquality] using
-                mappedArguments
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costWrappedConstructor (theory := theory) rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costWrappedConstructor_iff
-                  (theory := theory) rule).mp targetBare)
-            simpa [mapPattern, CostStaticColor.symbolsOf,
-              costWrappedStaticSymbols, costWrappedConstructor, mapTypeExpr,
-              costWrappedTypeExpr] using
-              (WellSorted.HasType.constructor
-                (plan.costWrappedConstructor_mem_generated authored
-                  wrappedConstructor)
-                targetNotBare targetArguments)
-    | @lambda bound binder body domain codomain bodyTyped =>
-        have mappedBody := bodyTyped.mapCostStaticGenerated plan color
-        simpa [mapPattern, mapTypeExpr] using
-          WellSorted.HasType.lambda mappedBody
-    | @multiLambda bound arity binders body domain codomain bodyTyped =>
-        have mappedBody := bodyTyped.mapCostStaticGenerated plan color
-        have mappedBody' :
-            WellSorted.HasType plan.generatedLanguage
-              (free.map (color.symbolsOf theory))
-              (List.replicate arity
-                  (mapTypeExpr (color.symbolsOf theory) domain) ++
-                bound.map (mapTypeExpr (color.symbolsOf theory)))
-              (mapPattern (color.symbolsOf theory) body)
-              (mapTypeExpr (color.symbolsOf theory) codomain) := by
-          simpa [List.map_append, List.map_replicate] using mappedBody
-        simpa [mapPattern, mapTypeExpr] using
-          WellSorted.HasType.multiLambda mappedBody'
-    | @subst bound body replacement domain codomain bodyTyped replacementTyped =>
-        have mappedBody :=
-          bodyTyped.mapCostStaticGenerated plan color
-        have mappedReplacement :=
-          replacementTyped.mapCostStaticGenerated plan color
-        simpa [mapPattern] using
-          WellSorted.HasType.subst mappedBody mappedReplacement
-    | @collection bound collectionType elements rest elementType elementsTyped =>
-        have mappedElements :=
-          elementsTyped.mapCostStaticGenerated plan color
-        simpa [mapPattern, mapTypeExpr] using
-          (WellSorted.HasType.collection (rest := rest) mappedElements)
-    | @collectionConstructor bound rule parameterName collectionType elements
-        rest elementType labelSupported membership parameterShape
-        elementsTyped =>
-        let authored : DeclaredConstructor theory.presentation.presentation :=
-          ⟨rule, membership⟩
-        have wrappedConstructor : authored ∈ plan.wrappedConstructors :=
-          (plan.mem_wrappedLabels_iff authored).mp labelSupported
-        cases color with
-        | base =>
-            have mappedElements :=
-              elementsTyped.mapCostStaticGenerated plan .base
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabelsFor
-                plan rule membership labelSupported
-            have targetShape :
-                (costBaseConstructor cut rule).params =
-                  [.simple parameterName
-                    (.collection collectionType
-                      (mapTypeExpr
-                        (CostStaticColor.base.symbolsOf theory)
-                        elementType))] := by
-              simp [parameterEquality, parameterShape,
-                mapTermParam_costBaseStaticSymbols,
-                CostStaticColor.symbolsOf, mapParameterType,
-                costBaseTypeExpr]
-            simpa [mapPattern, CostStaticColor.symbolsOf,
-              costBaseConstructor_def, costBaseStaticSymbols,
-              costBaseLanguageDefSymbolMap, mapTypeExpr] using
-              (WellSorted.HasType.collectionConstructor
-                (plan.costBaseConstructor_mem_generated rule membership)
-                targetShape mappedElements)
-        | wrapped =>
-            have mappedElements :=
-              elementsTyped.mapCostStaticGenerated plan .wrapped
-            have targetShape :
-                (costWrappedConstructor (theory := theory) rule).params =
-                  [.simple parameterName
-                    (.collection collectionType
-                      (mapTypeExpr
-                        (CostStaticColor.wrapped.symbolsOf theory)
-                        elementType))] := by
-              simp [costWrappedConstructor, parameterShape,
-                CostStaticColor.symbolsOf, mapParameterType,
-                costWrappedTypeExpr]
-            simpa [mapPattern, CostStaticColor.symbolsOf,
-              costWrappedStaticSymbols, costWrappedConstructor, mapTypeExpr,
-              costWrappedTypeExpr] using
-              (WellSorted.HasType.collectionConstructor
-                (plan.costWrappedConstructor_mem_generated authored
-                  wrappedConstructor)
-                targetShape mappedElements)
+namespace ContinuationDecorationProfile
 
-  /-- Ordered-argument companion to non-circular generated transport. -/
-  theorem WellSorted.ArgumentsHaveTypesWithConstructors.mapCostStaticGenerated
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {arguments : List Pattern} {parameters : List TermParam}
-      (typed : WellSorted.ArgumentsHaveTypesWithConstructors
-        theory.presentation.presentation.language
-        (· ∈ plan.wrappedLabels) free bound arguments parameters) :
-      WellSorted.ArgumentsHaveTypes plan.generatedLanguage
-        (free.map (color.symbolsOf theory))
-        (bound.map (mapTypeExpr (color.symbolsOf theory)))
-        (arguments.map (mapPattern (color.symbolsOf theory)))
-        (parameters.map (mapTermParam (color.symbolsOf theory))) := by
-    cases typed with
-    | nil => exact .nil
-    | @cons bound argument arguments parameter parameters expected
-        representation parameterType argumentTyped argumentsTyped =>
-        have mappedParameterType :
-            WellSorted.parameterType?
-                (mapTermParam (color.symbolsOf theory) parameter) =
-              some (mapTypeExpr (color.symbolsOf theory) expected) := by
-          rw [WellSorted.parameterType?_mapTermParam, parameterType]
-          rfl
-        exact .cons
-          ((WellSorted.matchesParameterRepresentation_map_iff
-            (color.symbolsOf theory) parameter argument).2 representation)
-          mappedParameterType
-          (argumentTyped.mapCostStaticGenerated plan color)
-          (argumentsTyped.mapCostStaticGenerated plan color)
+open WellSorted
 
-  /-- Homogeneous-element companion to non-circular generated transport. -/
-  theorem WellSorted.ElementsHaveTypeWithConstructors.mapCostStaticGenerated
-      {theory : IGSLT} {cut : InteractionCutPresentation theory}
-      (plan : ContinuationRetypingPlan cut) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {elements : List Pattern} {elementType : TypeExpr}
-      (typed : WellSorted.ElementsHaveTypeWithConstructors
-        theory.presentation.presentation.language
-        (· ∈ plan.wrappedLabels) free bound elements elementType) :
-      WellSorted.ElementsHaveType plan.generatedLanguage
-        (free.map (color.symbolsOf theory))
-        (bound.map (mapTypeExpr (color.symbolsOf theory)))
-        (elements.map (mapPattern (color.symbolsOf theory)))
-        (mapTypeExpr (color.symbolsOf theory) elementType) := by
-    cases typed with
-    | nil => exact .nil _ _
-    | cons elementTyped elementsTyped =>
-        exact .cons
-          (elementTyped.mapCostStaticGenerated plan color)
-          (elementsTyped.mapCostStaticGenerated plan color)
-end
+variable {theory : IGSLT} {cut : InteractionCutPresentation theory}
 
-mutual
-  /-- Typed source terms in the declaration-derived non-principal fragment
-  transport into either generated Cost static namespace. -/
-  theorem WellSorted.HasTypeWithConstructors.mapCostStatic
-      (source : CIGSLT) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {pattern : Pattern} {type : TypeExpr}
-      (typed : WellSorted.HasTypeWithConstructors
-        source.theory.presentation.presentation.language
-        (· ∈ source.continuationRetyping.wrappedLabels)
-        free bound pattern type) :
-      WellSorted.HasType source.costWholeLanguage
-        (free.map (color.symbols source))
-        (bound.map (mapTypeExpr (color.symbols source)))
-        (mapPattern (color.symbols source) pattern)
-        (mapTypeExpr (color.symbols source) type) := by
-    cases typed with
-    | @bvar bound index type lookup =>
-        have mappedLookup :
-            (bound.map (mapTypeExpr (color.symbols source)))[index]? =
-              some (mapTypeExpr (color.symbols source) type) := by
-          simpa using congrArg
-            (Option.map (mapTypeExpr (color.symbols source))) lookup
-        simpa [mapPattern] using
-          (WellSorted.HasType.bvar
-            (free := free.map (color.symbols source)) mappedLookup)
-    | @fvar bound name type lookup =>
-        have mappedLookup :
-            (free.map (color.symbols source)) name =
-              some (mapTypeExpr (color.symbols source) type) := by
-          simp [WellSorted.FreeTypeContext.map, lookup]
-        simpa [mapPattern] using
-          (WellSorted.HasType.fvar
-            (bound := bound.map (mapTypeExpr (color.symbols source)))
-            mappedLookup)
-    | @constructor bound rule arguments labelSupported membership notBare
-        argumentsTyped =>
-        let authored : DeclaredConstructor
-            source.theory.presentation.presentation := ⟨rule, membership⟩
-        have wrappedConstructor : authored ∈
-            source.continuationRetyping.wrappedConstructors :=
-          (source.continuationRetyping.mem_wrappedLabels_iff authored).mp
-            labelSupported
-        cases color with
-        | base =>
-            have mappedArguments :=
-              argumentsTyped.mapCostStatic source .base
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
-                rule membership labelSupported
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-                  (free.map (CostStaticColor.base.symbols source))
-                  (bound.map
-                    (mapTypeExpr (CostStaticColor.base.symbols source)))
-                  (arguments.map
-                    (mapPattern (CostStaticColor.base.symbols source)))
-                  (costBaseConstructor source.cut rule).params := by
-              simpa only [parameterEquality, CostStaticColor.symbols] using
-                mappedArguments
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costBaseConstructor source.cut rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costBaseConstructor_iff source.cut rule).mp
-                  targetBare)
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
-              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
-              mapTypeExpr] using
-              (WellSorted.HasType.constructor
-                (source.costBaseConstructor_mem_costWhole rule membership)
-                targetNotBare targetArguments)
-        | wrapped =>
-            have mappedArguments :=
-              argumentsTyped.mapCostStatic source .wrapped
-            have parameterMapEquality :
-                rule.params.map
-                    (mapTermParam (costWrappedStaticSymbols source.theory)) =
-                  rule.params.map
-                    (mapParameterType
-                      (costWrappedTypeExpr
-                        source.theory.presentation.interactingSort.1.name)) := by
-              apply List.map_congr_left
-              intro parameter _membership
-              exact mapTermParam_costWrappedStaticSymbols source parameter
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-                  (free.map (CostStaticColor.wrapped.symbols source))
-                  (bound.map
-                    (mapTypeExpr (CostStaticColor.wrapped.symbols source)))
-                  (arguments.map
-                    (mapPattern (CostStaticColor.wrapped.symbols source)))
-                  (costWrappedConstructor
-                    (theory := source.theory) rule).params := by
-              simpa only [costWrappedConstructor, CostStaticColor.symbols,
-                parameterMapEquality] using mappedArguments
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costWrappedConstructor (theory := source.theory) rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costWrappedConstructor_iff
-                  (theory := source.theory) rule).mp targetBare)
-            simpa [mapPattern, CostStaticColor.symbols,
-              costWrappedStaticSymbols, costWrappedConstructor, mapTypeExpr,
-              costWrappedTypeExpr] using
-              (WellSorted.HasType.constructor
-                (source.costWrappedConstructor_mem_costWhole authored
-                  wrappedConstructor)
-                targetNotBare targetArguments)
-    | @lambda bound binder body domain codomain bodyTyped =>
-        have mappedBody := bodyTyped.mapCostStatic source color
-        simpa [mapPattern, mapTypeExpr] using
-          WellSorted.HasType.lambda mappedBody
-    | @multiLambda bound arity binders body domain codomain bodyTyped =>
-        have mappedBody := bodyTyped.mapCostStatic source color
-        have mappedBody' :
-            WellSorted.HasType source.costWholeLanguage
-              (free.map (color.symbols source))
-              (List.replicate arity
-                  (mapTypeExpr (color.symbols source) domain) ++
-                bound.map (mapTypeExpr (color.symbols source)))
-              (mapPattern (color.symbols source) body)
-              (mapTypeExpr (color.symbols source) codomain) := by
-          simpa [List.map_append, List.map_replicate] using mappedBody
-        simpa [mapPattern, mapTypeExpr] using
-          WellSorted.HasType.multiLambda mappedBody'
-    | @subst bound body replacement domain codomain bodyTyped replacementTyped =>
-        have mappedBody := bodyTyped.mapCostStatic source color
-        have mappedReplacement :=
-          replacementTyped.mapCostStatic source color
-        simpa [mapPattern] using
-          WellSorted.HasType.subst mappedBody mappedReplacement
-    | @collection bound collectionType elements rest elementType elementsTyped =>
-        have mappedElements :=
-          elementsTyped.mapCostStatic source color
-        simpa [mapPattern, mapTypeExpr] using
-          (WellSorted.HasType.collection (rest := rest) mappedElements)
-    | @collectionConstructor bound rule parameterName collectionType elements
-        rest elementType labelSupported membership parameterShape
-        elementsTyped =>
-        let authored : DeclaredConstructor
-            source.theory.presentation.presentation := ⟨rule, membership⟩
-        have wrappedConstructor : authored ∈
-            source.continuationRetyping.wrappedConstructors :=
-          (source.continuationRetyping.mem_wrappedLabels_iff authored).mp
-            labelSupported
-        cases color with
-        | base =>
-            have mappedElements :=
-              elementsTyped.mapCostStatic source .base
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
-                rule membership labelSupported
-            have targetShape :
-                (costBaseConstructor source.cut rule).params =
-                  [.simple parameterName
-                    (.collection collectionType
-              (mapTypeExpr
-                        (CostStaticColor.base.symbols source) elementType))] := by
-              simp [parameterEquality, parameterShape,
-                mapTermParam_costBaseStaticSymbols,
-                CostStaticColor.symbols, mapParameterType,
-                costBaseTypeExpr]
-            simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor_def,
-              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
-              mapTypeExpr] using
-              (WellSorted.HasType.collectionConstructor
-                (source.costBaseConstructor_mem_costWhole rule membership)
-                targetShape mappedElements)
-        | wrapped =>
-            have mappedElements :=
-              elementsTyped.mapCostStatic source .wrapped
-            have targetShape :
-                (costWrappedConstructor (theory := source.theory) rule).params =
-                  [.simple parameterName
-                    (.collection collectionType
-                      (mapTypeExpr
-                        (CostStaticColor.wrapped.symbols source)
-                        elementType))] := by
-              simp [costWrappedConstructor, parameterShape,
-                CostStaticColor.symbols, mapParameterType,
-                costWrappedTypeExpr]
-            simpa [mapPattern, CostStaticColor.symbols,
-              costWrappedStaticSymbols, costWrappedConstructor, mapTypeExpr,
-              costWrappedTypeExpr] using
-              (WellSorted.HasType.collectionConstructor
-                (source.costWrappedConstructor_mem_costWhole authored
-                  wrappedConstructor)
-                targetShape mappedElements)
+/-- Row transport is derived from the actual closure inventory, including
+bare collection declarations whose labels are absent from raw patterns. -/
+theorem staticRows (profile : ContinuationDecorationProfile cut)
+    (nonprincipal : ∀ constructor ∈ profile.constructorClosure,
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor)
+    (color : CostStaticColor) (rule : GrammarRule)
+    (member : rule ∈ theory.presentation.presentation.language.terms)
+    (supported : rule.label ∈ profile.wrappedLabels) :
+    ∃ targetRule ∈ profile.generatedLanguage.terms,
+      targetRule.label = (color.symbolsOf theory).constructor rule.label ∧
+      targetRule.category = (color.symbolsOf theory).sort rule.category ∧
+      targetRule.params = rule.params.map (mapTermParam (color.symbolsOf theory)) := by
+  let authored : DeclaredConstructor theory.presentation.presentation := ⟨rule, member⟩
+  have included : authored ∈ profile.constructorClosure :=
+    (profile.mem_wrappedLabels_iff authored).mp supported
+  cases color with
+  | base =>
+      refine ⟨profile.baseConstructor rule, profile.baseConstructor_mem rule member,
+        rfl, rfl, ?_⟩
+      exact profile.baseConstructor_params_eq_map_of_mem_wrappedLabels nonprincipal
+        rule member supported
+  | wrapped =>
+      refine ⟨costWrappedConstructor (theory := theory) rule,
+        profile.wrappedConstructor_mem authored included, rfl, rfl, ?_⟩
+      simp [costWrappedConstructor, CostStaticColor.symbolsOf]
 
-  /-- Ordered constructor arguments transport pointwise with their exact
-  constructor-support certificate. -/
-  theorem WellSorted.ArgumentsHaveTypesWithConstructors.mapCostStatic
-      (source : CIGSLT) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {arguments : List Pattern} {parameters : List TermParam}
-      (typed : WellSorted.ArgumentsHaveTypesWithConstructors
-        source.theory.presentation.presentation.language
-        (· ∈ source.continuationRetyping.wrappedLabels)
-        free bound arguments parameters) :
-      WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-        (free.map (color.symbols source))
-        (bound.map (mapTypeExpr (color.symbols source)))
-        (arguments.map (mapPattern (color.symbols source)))
-        (parameters.map (mapTermParam (color.symbols source))) := by
-    cases typed with
-    | nil => exact .nil
-    | @cons bound argument arguments parameter parameters expected
-        representation parameterType argumentTyped argumentsTyped =>
-        have mappedParameterType :
-            WellSorted.parameterType?
-                (mapTermParam (color.symbols source) parameter) =
-              some (mapTypeExpr (color.symbols source) expected) := by
-          rw [WellSorted.parameterType?_mapTermParam, parameterType]
-          rfl
-        exact .cons
-          ((WellSorted.matchesParameterRepresentation_map_iff
-            (color.symbols source) parameter argument).2 representation)
-          mappedParameterType
-          (argumentTyped.mapCostStatic source color)
-          (argumentsTyped.mapCostStatic source color)
+/-- Uniform static transport into the actual finite generated signature. -/
+theorem mapStatic_hasType_generated (profile : ContinuationDecorationProfile cut)
+    (nonprincipal : ∀ constructor ∈ profile.constructorClosure,
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor)
+    (color : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : HasTypeWithConstructors theory.presentation.presentation.language
+      (· ∈ profile.wrappedLabels) free bound pattern type) :
+    HasType profile.generatedLanguage (free.map (color.symbolsOf theory))
+      (bound.map (mapTypeExpr (color.symbolsOf theory)))
+      (mapPattern (color.symbolsOf theory) pattern) (mapTypeExpr (color.symbolsOf theory) type) :=
+  typed.mapRows (color.symbolsOf theory) (profile.staticRows nonprincipal color)
 
-  /-- Collection elements transport pointwise with their exact constructor
-  support certificate. -/
-  theorem WellSorted.ElementsHaveTypeWithConstructors.mapCostStatic
-      (source : CIGSLT) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {elements : List Pattern} {elementType : TypeExpr}
-      (typed : WellSorted.ElementsHaveTypeWithConstructors
-        source.theory.presentation.presentation.language
-        (· ∈ source.continuationRetyping.wrappedLabels)
-        free bound elements elementType) :
-      WellSorted.ElementsHaveType source.costWholeLanguage
-        (free.map (color.symbols source))
-        (bound.map (mapTypeExpr (color.symbols source)))
-        (elements.map (mapPattern (color.symbols source)))
-        (mapTypeExpr (color.symbols source) elementType) := by
-    cases typed with
-    | nil => exact .nil _ _
-    | cons elementTyped elementsTyped =>
-        exact .cons
-          (elementTyped.mapCostStatic source color)
-          (elementsTyped.mapCostStatic source color)
-end
+/-- The same derivation lives in the generated Cost language with its
+apparatus, source equations, and selected funded rule. -/
+theorem mapStatic_hasType (profile : ContinuationDecorationProfile cut)
+    (nonprincipal : ∀ constructor ∈ profile.constructorClosure,
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor)
+    (color : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : HasTypeWithConstructors theory.presentation.presentation.language
+      (· ∈ profile.wrappedLabels) free bound pattern type) :
+    HasType profile.costWholeLanguage (free.map (color.symbolsOf theory))
+      (bound.map (mapTypeExpr (color.symbolsOf theory)))
+      (mapPattern (color.symbolsOf theory) pattern) (mapTypeExpr (color.symbolsOf theory) type) :=
+  (profile.mapStatic_hasType_generated nonprincipal color typed).weakenTerms
+    profile.generatedTerms_mem_costWhole
+
+/-- A principal introduction cannot be smuggled into the uniform static
+fragment by retaining its label alone. -/
+theorem principal_labels_excluded (profile : ContinuationDecorationProfile cut)
+    (nonprincipal : ∀ constructor ∈ profile.constructorClosure,
+      constructor ≠ cut.program.constructor ∧ constructor ≠ cut.environment.constructor) :
+    cut.program.constructor.1.label ∉ profile.wrappedLabels ∧
+      cut.environment.constructor.1.label ∉ profile.wrappedLabels := by
+  constructor
+  · intro supported
+    exact (nonprincipal cut.program.constructor
+      ((profile.mem_wrappedLabels_iff _).mp supported)).1 rfl
+  · intro supported
+    exact (nonprincipal cut.environment.constructor
+      ((profile.mem_wrappedLabels_iff _).mp supported)).2 rfl
+
+end ContinuationDecorationProfile
+
+/-- Every row of the cut-derived non-principal fragment has its uniformly
+mapped row in the complete Cost language of a continued theory. -/
+theorem CIGSLT.costStaticRows (source : CIGSLT) (color : CostStaticColor)
+    (rule : GrammarRule)
+    (member : rule ∈ source.theory.presentation.presentation.language.terms)
+    (supported : rule.label ∈ source.continuationRetyping.wrappedLabels) :
+    ∃ targetRule ∈ source.costWholeLanguage.terms,
+      targetRule.label = (color.symbols source).constructor rule.label ∧
+      targetRule.category = (color.symbols source).sort rule.category ∧
+      targetRule.params = rule.params.map (mapTermParam (color.symbols source)) := by
+  obtain ⟨targetRule, targetMember, rest⟩ :=
+    (ContinuationDecorationProfile.ofRetypingPlan source.continuationRetyping).staticRows
+      (ContinuationDecorationProfile.ofRetypingPlan_nonprincipal source.continuationRetyping)
+      color rule member supported
+  exact ⟨targetRule, List.mem_append_left _ targetMember, rest⟩
+
+/-- Non-circular static transport into the bare generated continuation
+signature.  It depends only on the authored theory, cut, and retyping
+plan; a completed continued object is not required. -/
+theorem WellSorted.HasTypeWithConstructors.mapCostStaticGenerated
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      theory.presentation.presentation.language
+      (· ∈ plan.wrappedLabels) free bound pattern type) :
+    WellSorted.HasType plan.generatedLanguage
+      (free.map (color.symbolsOf theory))
+      (bound.map (mapTypeExpr (color.symbolsOf theory)))
+      (mapPattern (color.symbolsOf theory) pattern)
+      (mapTypeExpr (color.symbolsOf theory) type) :=
+  typed.mapRows (color.symbolsOf theory)
+    ((ContinuationDecorationProfile.ofRetypingPlan plan).staticRows
+      (ContinuationDecorationProfile.ofRetypingPlan_nonprincipal plan) color)
+
+theorem WellSorted.ArgumentsHaveTypesWithConstructors.mapCostStaticGenerated
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {arguments : List Pattern} {parameters : List TermParam}
+    (typed : WellSorted.ArgumentsHaveTypesWithConstructors
+      theory.presentation.presentation.language
+      (· ∈ plan.wrappedLabels) free bound arguments parameters) :
+    WellSorted.ArgumentsHaveTypes plan.generatedLanguage
+      (free.map (color.symbolsOf theory))
+      (bound.map (mapTypeExpr (color.symbolsOf theory)))
+      (arguments.map (mapPattern (color.symbolsOf theory)))
+      (parameters.map (mapTermParam (color.symbolsOf theory))) :=
+  typed.mapRows (color.symbolsOf theory)
+    ((ContinuationDecorationProfile.ofRetypingPlan plan).staticRows
+      (ContinuationDecorationProfile.ofRetypingPlan_nonprincipal plan) color)
+
+theorem WellSorted.ElementsHaveTypeWithConstructors.mapCostStaticGenerated
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {elements : List Pattern} {elementType : TypeExpr}
+    (typed : WellSorted.ElementsHaveTypeWithConstructors
+      theory.presentation.presentation.language
+      (· ∈ plan.wrappedLabels) free bound elements elementType) :
+    WellSorted.ElementsHaveType plan.generatedLanguage
+      (free.map (color.symbolsOf theory))
+      (bound.map (mapTypeExpr (color.symbolsOf theory)))
+      (elements.map (mapPattern (color.symbolsOf theory)))
+      (mapTypeExpr (color.symbolsOf theory) elementType) :=
+  typed.mapRows (color.symbolsOf theory)
+    ((ContinuationDecorationProfile.ofRetypingPlan plan).staticRows
+      (ContinuationDecorationProfile.ofRetypingPlan_nonprincipal plan) color)
+
+/-- Typed source terms in the declaration-derived non-principal fragment
+transport into either generated Cost static namespace. -/
+theorem WellSorted.HasTypeWithConstructors.mapCostStatic
+    (source : CIGSLT) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type) :
+    WellSorted.HasType source.costWholeLanguage
+      (free.map (color.symbols source))
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (mapPattern (color.symbols source) pattern)
+      (mapTypeExpr (color.symbols source) type) :=
+  typed.mapRows (color.symbols source) (source.costStaticRows color)
+
+theorem WellSorted.ArgumentsHaveTypesWithConstructors.mapCostStatic
+    (source : CIGSLT) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {arguments : List Pattern} {parameters : List TermParam}
+    (typed : WellSorted.ArgumentsHaveTypesWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound arguments parameters) :
+    WellSorted.ArgumentsHaveTypes source.costWholeLanguage
+      (free.map (color.symbols source))
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (arguments.map (mapPattern (color.symbols source)))
+      (parameters.map (mapTermParam (color.symbols source))) :=
+  typed.mapRows (color.symbols source) (source.costStaticRows color)
+
+theorem WellSorted.ElementsHaveTypeWithConstructors.mapCostStatic
+    (source : CIGSLT) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {elements : List Pattern} {elementType : TypeExpr}
+    (typed : WellSorted.ElementsHaveTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound elements elementType) :
+    WellSorted.ElementsHaveType source.costWholeLanguage
+      (free.map (color.symbols source))
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (elements.map (mapPattern (color.symbols source)))
+      (mapTypeExpr (color.symbols source) elementType) :=
+  typed.mapRows (color.symbols source) (source.costStaticRows color)
 
 mutual
   /-- Re-express source reflective support in one generated Cost binder
@@ -2044,580 +1767,83 @@ mutual
           (elementsSafe.mapCostStaticSupport source color)
 end
 
-mutual
-  /-- A reflectively support-safe source derivation whose visible
-  constructors lie in the declaration-derived non-principal fragment has a
-  support-safe image in either static Cost fiber.  Reflective support already
-  lives in the target binder codomain: source binders are interpreted by the
-  selected static type map, while foreign target binders remain unchanged.
-  The result is existential in its proof term because typing derivations are
-  proof-irrelevant. -/
-  theorem WellSorted.HasType.ReflectiveSupportSafeAt.mapCostStatic
-      (source : CIGSLT) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {pattern : Pattern} {type : TypeExpr}
-      {typed : WellSorted.HasType
-        source.theory.presentation.presentation.language
-        free bound pattern type}
-      {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
-        (mapTypeExpr (color.symbols source)))
-      (supported : ConstructorsWithin
-        (· ∈ source.continuationRetyping.wrappedLabels) pattern) :
-      ∃ targetTyped : WellSorted.HasType source.costWholeLanguage
-          (free.map (color.symbols source))
-          (bound.map (mapTypeExpr (color.symbols source)))
-          (mapPattern (color.symbols source) pattern)
-          (mapTypeExpr (color.symbols source) type),
-        targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
-          support available := by
-    cases safe with
-    | @bvar bound index type lookup available _binderImage =>
-        have mappedLookup :
-            (bound.map (mapTypeExpr (color.symbols source)))[index]? =
-              some (mapTypeExpr (color.symbols source) type) := by
-          simpa using congrArg
-            (Option.map (mapTypeExpr (color.symbols source))) lookup
-        let targetTyped : WellSorted.HasType source.costWholeLanguage
-            (free.map (color.symbols source))
-            (bound.map (mapTypeExpr (color.symbols source)))
-            (.bvar index) (mapTypeExpr (color.symbols source) type) :=
-          WellSorted.HasType.bvar mappedLookup
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          .bvar mappedLookup _
-        simp only [mapPattern]
-        exact ⟨targetTyped, targetSafe⟩
-    | @fvar bound name type lookup available _binderImage shape =>
-        have mappedLookup :
-            (free.map (color.symbols source)) name =
-              some (mapTypeExpr (color.symbols source) type) := by
-          unfold WellSorted.FreeTypeContext.map
-          rw [lookup]
-          rfl
-        let targetTyped := WellSorted.HasType.fvar
-          (language := source.costWholeLanguage)
-          (bound := bound.map (mapTypeExpr (color.symbols source)))
-          mappedLookup
-        simp only [mapPattern]
-        refine ⟨targetTyped, .fvar mappedLookup _ ?_⟩
-        exact shape
-    | @constructorQuote bound rule arguments membership notBare argumentsTyped
-        available _binderImage quoted argumentsSafe =>
-        obtain ⟨mappedArguments, mappedArgumentsSafe⟩ :=
-          argumentsSafe.mapCostStatic (bound := bound) source color supported.2
-        have labelSupported :
-            rule.label ∈ source.continuationRetyping.wrappedLabels :=
-          supported.1
-        cases color with
-        | base =>
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
-                rule membership labelSupported
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-                  (free.map (CostStaticColor.base.symbols source))
-                  (bound.map
-                    (mapTypeExpr (CostStaticColor.base.symbols source)))
-                  (arguments.map
-                    (mapPattern (CostStaticColor.base.symbols source)))
-                  (costBaseConstructor source.cut rule).params := by
-              simpa only [parameterEquality, CostStaticColor.symbols] using
-                mappedArguments
-            have targetArgumentsSafe :
-                targetArguments.ReflectiveSupportSafeAt
-                  source.costWholeReflectionProfile support [] := by
-              have mappedArgumentsSafe' :
-                  targetArguments.ReflectiveSupportSafeAt
-                    source.costWholeReflectionProfile support [] := by
-                simpa only [parameterEquality, CostStaticColor.symbols,
-                  List.map_nil] using
-                  mappedArgumentsSafe
-              exact mappedArgumentsSafe'
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costBaseConstructor source.cut rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costBaseConstructor_iff source.cut rule).mp
-                  targetBare)
-            have targetQuoted :
-                ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeReflectionProfile
-                    ((CostStaticColor.base.symbols source).constructor
-                      rule.label) = true := by
-              rw [reflectiveIsQuoteConstructor_mapCostStatic]
-              exact quoted
-            let targetTyped := WellSorted.HasType.constructor
-              (source.costBaseConstructor_mem_costWhole rule membership)
-              targetNotBare targetArguments
-            have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                source.costWholeReflectionProfile support available :=
-              WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote
-                (membership :=
-                  source.costBaseConstructor_mem_costWhole rule membership)
-                (notBare := targetNotBare)
-                (argumentsTyped := targetArguments)
-                targetQuoted targetArgumentsSafe
-            simpa [targetTyped, mapPattern, CostStaticColor.symbols,
-              costBaseConstructor_def, costBaseStaticSymbols,
-              costBaseLanguageDefSymbolMap, mapTypeExpr] using
-                Exists.intro targetTyped targetSafe
-        | wrapped =>
-            let authored : DeclaredConstructor
-                source.theory.presentation.presentation := ⟨rule, membership⟩
-            have wrappedConstructor : authored ∈
-                source.continuationRetyping.wrappedConstructors :=
-              (source.continuationRetyping.mem_wrappedLabels_iff authored).mp
-                labelSupported
-            have parameterMapEquality :
-                rule.params.map
-                    (mapTermParam (costWrappedStaticSymbols source.theory)) =
-                  rule.params.map
-                    (mapParameterType
-                      (costWrappedTypeExpr
-                        source.theory.presentation.interactingSort.1.name)) := by
-              apply List.map_congr_left
-              intro parameter _membership
-              exact mapTermParam_costWrappedStaticSymbols source parameter
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-                  (free.map (CostStaticColor.wrapped.symbols source))
-                  (bound.map
-                    (mapTypeExpr (CostStaticColor.wrapped.symbols source)))
-                  (arguments.map
-                    (mapPattern (CostStaticColor.wrapped.symbols source)))
-                  (costWrappedConstructor
-                    (theory := source.theory) rule).params := by
-              simpa only [costWrappedConstructor, CostStaticColor.symbols,
-                parameterMapEquality] using mappedArguments
-            have targetArgumentsSafe :
-                targetArguments.ReflectiveSupportSafeAt
-                  source.costWholeReflectionProfile support [] := by
-              have mappedArgumentsSafe' :
-                  targetArguments.ReflectiveSupportSafeAt
-                    source.costWholeReflectionProfile support [] := by
-                simpa only [costWrappedConstructor, CostStaticColor.symbols,
-                  parameterMapEquality, List.map_nil] using
-                  mappedArgumentsSafe
-              exact mappedArgumentsSafe'
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costWrappedConstructor (theory := source.theory) rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costWrappedConstructor_iff
-                  (theory := source.theory) rule).mp targetBare)
-            have targetQuoted :
-                ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeReflectionProfile
-                    ((CostStaticColor.wrapped.symbols source).constructor
-                      rule.label) = true := by
-              rw [reflectiveIsQuoteConstructor_mapCostStatic]
-              exact quoted
-            let targetTyped := WellSorted.HasType.constructor
-              (source.costWrappedConstructor_mem_costWhole authored
-                wrappedConstructor)
-              targetNotBare targetArguments
-            have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                source.costWholeReflectionProfile support available :=
-              WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote
-                (membership :=
-                  source.costWrappedConstructor_mem_costWhole authored
-                    wrappedConstructor)
-                (notBare := targetNotBare)
-                (argumentsTyped := targetArguments)
-                targetQuoted targetArgumentsSafe
-            simpa [targetTyped, mapPattern, CostStaticColor.symbols,
-              costWrappedConstructor, costWrappedStaticSymbols,
-              mapTypeExpr, costWrappedTypeExpr] using
-                Exists.intro targetTyped targetSafe
-    | @constructorOrdinary bound rule arguments membership notBare
-        argumentsTyped available _binderImage ordinary argumentsSafe =>
-        obtain ⟨mappedArguments, mappedArgumentsSafe⟩ :=
-          argumentsSafe.mapCostStatic (bound := bound) source color supported.2
-        have labelSupported :
-            rule.label ∈ source.continuationRetyping.wrappedLabels :=
-          supported.1
-        cases color with
-        | base =>
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
-                rule membership labelSupported
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-                  (free.map (CostStaticColor.base.symbols source))
-                  (bound.map
-                    (mapTypeExpr (CostStaticColor.base.symbols source)))
-                  (arguments.map
-                    (mapPattern (CostStaticColor.base.symbols source)))
-                  (costBaseConstructor source.cut rule).params := by
-              simpa only [parameterEquality, CostStaticColor.symbols] using
-                mappedArguments
-            have targetArgumentsSafe :
-                targetArguments.ReflectiveSupportSafeAt
-                  source.costWholeReflectionProfile support available := by
-              have mappedArgumentsSafe' :
-                  targetArguments.ReflectiveSupportSafeAt
-                    source.costWholeReflectionProfile support available := by
-                simpa only [parameterEquality, CostStaticColor.symbols] using
-                  mappedArgumentsSafe
-              exact mappedArgumentsSafe'
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costBaseConstructor source.cut rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costBaseConstructor_iff source.cut rule).mp
-                  targetBare)
-            have targetOrdinary :
-                ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeReflectionProfile
-                    ((CostStaticColor.base.symbols source).constructor
-                      rule.label) = false := by
-              rw [reflectiveIsQuoteConstructor_mapCostStatic]
-              exact ordinary
-            let targetTyped := WellSorted.HasType.constructor
-              (source.costBaseConstructor_mem_costWhole rule membership)
-              targetNotBare targetArguments
-            have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                source.costWholeReflectionProfile support available :=
-              WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary
-                (membership :=
-                  source.costBaseConstructor_mem_costWhole rule membership)
-                (notBare := targetNotBare)
-                (argumentsTyped := targetArguments)
-                targetOrdinary targetArgumentsSafe
-            simpa [targetTyped, mapPattern, CostStaticColor.symbols,
-              costBaseConstructor_def, costBaseStaticSymbols,
-              costBaseLanguageDefSymbolMap, mapTypeExpr] using
-                Exists.intro targetTyped targetSafe
-        | wrapped =>
-            let authored : DeclaredConstructor
-                source.theory.presentation.presentation := ⟨rule, membership⟩
-            have wrappedConstructor : authored ∈
-                source.continuationRetyping.wrappedConstructors :=
-              (source.continuationRetyping.mem_wrappedLabels_iff authored).mp
-                labelSupported
-            have parameterMapEquality :
-                rule.params.map
-                    (mapTermParam (costWrappedStaticSymbols source.theory)) =
-                  rule.params.map
-                    (mapParameterType
-                      (costWrappedTypeExpr
-                        source.theory.presentation.interactingSort.1.name)) := by
-              apply List.map_congr_left
-              intro parameter _membership
-              exact mapTermParam_costWrappedStaticSymbols source parameter
-            have targetArguments :
-                WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-                  (free.map (CostStaticColor.wrapped.symbols source))
-                  (bound.map
-                    (mapTypeExpr (CostStaticColor.wrapped.symbols source)))
-                  (arguments.map
-                    (mapPattern (CostStaticColor.wrapped.symbols source)))
-                  (costWrappedConstructor
-                    (theory := source.theory) rule).params := by
-              simpa only [costWrappedConstructor, CostStaticColor.symbols,
-                parameterMapEquality] using mappedArguments
-            have targetArgumentsSafe :
-                targetArguments.ReflectiveSupportSafeAt
-                  source.costWholeReflectionProfile support available := by
-              have mappedArgumentsSafe' :
-                  targetArguments.ReflectiveSupportSafeAt
-                    source.costWholeReflectionProfile support available := by
-                simpa only [costWrappedConstructor, CostStaticColor.symbols,
-                  parameterMapEquality] using mappedArgumentsSafe
-              exact mappedArgumentsSafe'
-            have targetNotBare :
-                ¬ WellSorted.UsesBareCollection
-                  (costWrappedConstructor (theory := source.theory) rule) := by
-              intro targetBare
-              exact notBare
-                ((usesBareCollection_costWrappedConstructor_iff
-                  (theory := source.theory) rule).mp targetBare)
-            have targetOrdinary :
-                ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeReflectionProfile
-                    ((CostStaticColor.wrapped.symbols source).constructor
-                      rule.label) = false := by
-              rw [reflectiveIsQuoteConstructor_mapCostStatic]
-              exact ordinary
-            let targetTyped := WellSorted.HasType.constructor
-              (source.costWrappedConstructor_mem_costWhole authored
-                wrappedConstructor)
-              targetNotBare targetArguments
-            have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                source.costWholeReflectionProfile support available :=
-              WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary
-                (membership :=
-                  source.costWrappedConstructor_mem_costWhole authored
-                    wrappedConstructor)
-                (notBare := targetNotBare)
-                (argumentsTyped := targetArguments)
-                targetOrdinary targetArgumentsSafe
-            simpa [targetTyped, mapPattern, CostStaticColor.symbols,
-              costWrappedConstructor, costWrappedStaticSymbols,
-              mapTypeExpr, costWrappedTypeExpr] using
-                Exists.intro targetTyped targetSafe
-    | @lambda bound binder body domain codomain bodyTyped available
-        _binderImage bodySafe =>
-        obtain ⟨mappedBody, mappedBodySafe⟩ :=
-          bodySafe.mapCostStatic (bound := domain :: bound) source color supported
-        have mappedBodySafe' :
-            mappedBody.ReflectiveSupportSafeAt
-              source.costWholeReflectionProfile support
-              (mapTypeExpr (color.symbols source) domain :: available) :=
-          mappedBodySafe
-        let targetTyped := WellSorted.HasType.lambda
-          (binder := binder) mappedBody
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          .lambda mappedBodySafe'
-        simp only [mapPattern, mapTypeExpr]
-        exact ⟨targetTyped, targetSafe⟩
-    | @multiLambda bound arity binders body domain codomain bodyTyped available
-        _binderImage bodySafe =>
-        obtain ⟨mappedBody, mappedBodySafe⟩ :=
-          bodySafe.mapCostStatic
-            (bound := List.replicate arity domain ++ bound)
-            source color supported
-        have mappedBody' : WellSorted.HasType source.costWholeLanguage
-            (free.map (color.symbols source))
-            (List.replicate arity
-                (mapTypeExpr (color.symbols source) domain) ++
-              bound.map (mapTypeExpr (color.symbols source)))
-            (mapPattern (color.symbols source) body)
-            (mapTypeExpr (color.symbols source) codomain) := by
-          simpa [List.map_append, List.map_replicate] using mappedBody
-        have mappedBodySafe' : mappedBody'.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support
-            (List.replicate arity
-                (mapTypeExpr (color.symbols source) domain) ++
-              available) :=
-          by
-            simpa [List.map_append, List.map_replicate] using mappedBodySafe
-        let targetTyped := WellSorted.HasType.multiLambda
-          (binders := binders) mappedBody'
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          .multiLambda mappedBodySafe'
-        simp only [mapPattern, mapTypeExpr]
-        exact ⟨targetTyped, targetSafe⟩
-    | @subst bound body replacement domain codomain bodyTyped replacementTyped
-        available _binderImage bodySafe replacementSafe =>
-        obtain ⟨mappedBody, mappedBodySafe⟩ :=
-          bodySafe.mapCostStatic (bound := domain :: bound)
-            source color supported.1
-        obtain ⟨mappedReplacement, mappedReplacementSafe⟩ :=
-          replacementSafe.mapCostStatic (bound := bound)
-            source color supported.2
-        have mappedBodySafe' :
-            mappedBody.ReflectiveSupportSafeAt
-              source.costWholeReflectionProfile support
-              (mapTypeExpr (color.symbols source) domain :: available) :=
-          mappedBodySafe
-        let targetTyped := WellSorted.HasType.subst mappedBody mappedReplacement
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          .subst mappedBodySafe' mappedReplacementSafe
-        simp only [mapPattern]
-        exact ⟨targetTyped, targetSafe⟩
-    | @collection bound collectionType elements rest elementType elementsTyped
-        available _binderImage elementsSafe =>
-        obtain ⟨mappedElements, mappedElementsSafe⟩ :=
-          elementsSafe.mapCostStatic (bound := bound) source color supported
-        let targetTyped := WellSorted.HasType.collection
-          (collectionType := collectionType) (rest := rest) mappedElements
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          .collection mappedElementsSafe
-        simp only [mapPattern, mapPatternList_eq_map, mapTypeExpr]
-        exact ⟨targetTyped, targetSafe⟩
-    | @collectionConstructor bound rule parameterName collectionType elements
-        rest elementType membership parameterShape elementsTyped available
-        _binderImage elementsSafe =>
-        obtain ⟨mappedElements, mappedElementsSafe⟩ :=
-          elementsSafe.mapCostStatic (bound := bound) source color supported
-        have bare : WellSorted.UsesBareCollection rule :=
-          ⟨parameterName, collectionType, elementType, parameterShape⟩
-        have labelSupported :
-            rule.label ∈ source.continuationRetyping.wrappedLabels :=
-          source.bareCollectionConstructorsWrapped rule membership bare
-        cases color with
-        | base =>
-            have parameterEquality :=
-              costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
-                rule membership labelSupported
-            have targetShape :
-                (costBaseConstructor source.cut rule).params =
-                  [.simple parameterName
-                    (.collection collectionType
-                      (mapTypeExpr (CostStaticColor.base.symbols source)
-                        elementType))] := by
-              simp [parameterEquality, parameterShape,
-                mapTermParam_costBaseStaticSymbols, CostStaticColor.symbols,
-                mapParameterType, costBaseTypeExpr]
-            let targetTyped := WellSorted.HasType.collectionConstructor
-              (rest := rest)
-              (source.costBaseConstructor_mem_costWhole rule membership)
-              targetShape mappedElements
-            have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                source.costWholeReflectionProfile support available :=
-              WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor
-                (rule := costBaseConstructor source.cut rule)
-                (parameterName := parameterName)
-                (membership :=
-                  source.costBaseConstructor_mem_costWhole rule membership)
-                (parameterShape := targetShape)
-                (elementsTyped := mappedElements)
-                mappedElementsSafe
-            simpa [targetTyped, mapPattern, mapPatternList_eq_map,
-              CostStaticColor.symbols,
-              costBaseConstructor_def, costBaseStaticSymbols,
-              costBaseLanguageDefSymbolMap, mapTypeExpr] using
-                Exists.intro targetTyped targetSafe
-        | wrapped =>
-            let authored : DeclaredConstructor
-                source.theory.presentation.presentation := ⟨rule, membership⟩
-            have wrappedConstructor : authored ∈
-                source.continuationRetyping.wrappedConstructors :=
-              (source.continuationRetyping.mem_wrappedLabels_iff authored).mp
-                labelSupported
-            have targetShape :
-                (costWrappedConstructor (theory := source.theory) rule).params =
-                  [.simple parameterName
-                    (.collection collectionType
-                      (mapTypeExpr (CostStaticColor.wrapped.symbols source)
-                        elementType))] := by
-              simp [costWrappedConstructor, parameterShape,
-                CostStaticColor.symbols, mapParameterType,
-                costWrappedTypeExpr]
-            let targetTyped := WellSorted.HasType.collectionConstructor
-              (rest := rest)
-              (source.costWrappedConstructor_mem_costWhole authored
-                wrappedConstructor)
-              targetShape mappedElements
-            have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                source.costWholeReflectionProfile support available :=
-              WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor
-                (rule := costWrappedConstructor (theory := source.theory) rule)
-                (parameterName := parameterName)
-                (membership :=
-                  source.costWrappedConstructor_mem_costWhole authored
-                    wrappedConstructor)
-                (parameterShape := targetShape)
-                (elementsTyped := mappedElements)
-                mappedElementsSafe
-            simpa [targetTyped, mapPattern, mapPatternList_eq_map,
-              CostStaticColor.symbols,
-              costWrappedConstructor, costWrappedStaticSymbols,
-              mapTypeExpr, costWrappedTypeExpr] using
-                Exists.intro targetTyped targetSafe
+/-- A reflectively support-safe source derivation whose visible
+constructors lie in the declaration-derived non-principal fragment has a
+support-safe image in either static Cost fiber.  Reflective support already
+lives in the target binder codomain: source binders are interpreted by the
+selected static type map, while foreign target binders remain unchanged.
+The result is existential in its proof term because typing derivations are
+proof-irrelevant. -/
+theorem WellSorted.HasType.ReflectiveSupportSafeAt.mapCostStatic
+    (source : CIGSLT) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {pattern : Pattern} {type : TypeExpr}
+    {typed : WellSorted.HasType
+      source.theory.presentation.presentation.language
+      free bound pattern type}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
+      (mapTypeExpr (color.symbols source)))
+    (supported : ConstructorsWithin
+      (· ∈ source.continuationRetyping.wrappedLabels) pattern) :
+    ∃ targetTyped : WellSorted.HasType source.costWholeLanguage
+        (free.map (color.symbols source))
+        (bound.map (mapTypeExpr (color.symbols source)))
+        (mapPattern (color.symbols source) pattern)
+        (mapTypeExpr (color.symbols source) type),
+      targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+        support available :=
+  safe.mapRows (color.symbols source) (source.costStaticRows color)
+    source.bareCollectionConstructorsWrapped
+    (fun rule _ _ => reflectiveIsQuoteConstructor_mapCostStatic source color rule.label)
+    supported
 
-  /-- Argument-spine companion to static reflective-support transport. -/
-  theorem WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.mapCostStatic
-      (source : CIGSLT) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {arguments : List Pattern} {parameters : List TermParam}
-      {typed : WellSorted.ArgumentsHaveTypes
-        source.theory.presentation.presentation.language
-        free bound arguments parameters}
-      {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
-        (mapTypeExpr (color.symbols source)))
-      (supported : ConstructorListWithin
-        (· ∈ source.continuationRetyping.wrappedLabels) arguments) :
-      ∃ targetTyped : WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-          (free.map (color.symbols source))
-          (bound.map (mapTypeExpr (color.symbols source)))
-          (arguments.map (mapPattern (color.symbols source)))
-          (parameters.map (mapTermParam (color.symbols source))),
-        targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
-          support available := by
-    cases safe with
-    | nil =>
-        let targetTyped := WellSorted.ArgumentsHaveTypes.nil
-          (language := source.costWholeLanguage)
-          (free := free.map (color.symbols source))
-          (bound := bound.map (mapTypeExpr (color.symbols source)))
-        exact ⟨targetTyped, .nil _ _⟩
-    | @cons bound argument arguments parameter parameters expected
-        representation parameterType argumentTyped argumentsTyped available
-        _binderImage argumentSafe argumentsSafe =>
-        obtain ⟨mappedArgument, mappedArgumentSafe⟩ :=
-          argumentSafe.mapCostStatic (bound := bound) source color supported.1
-        obtain ⟨mappedArguments, mappedArgumentsSafe⟩ :=
-          argumentsSafe.mapCostStatic (bound := bound) source color supported.2
-        have mappedParameterType :
-            WellSorted.parameterType?
-                (mapTermParam (color.symbols source) parameter) =
-              some (mapTypeExpr (color.symbols source) expected) := by
-          rw [WellSorted.parameterType?_mapTermParam, parameterType]
-          rfl
-        have mappedRepresentation :
-            WellSorted.MatchesParameterRepresentation
-              (mapTermParam (color.symbols source) parameter)
-              (mapPattern (color.symbols source) argument) :=
-          (WellSorted.matchesParameterRepresentation_map_iff
-            (color.symbols source) parameter argument).2 representation
-        let targetTyped := WellSorted.ArgumentsHaveTypes.cons
-          mappedRepresentation
-          mappedParameterType mappedArgument mappedArguments
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.cons
-            (representation := mappedRepresentation)
-            (parameterType := mappedParameterType)
-            (argumentTyped := mappedArgument)
-            (argumentsTyped := mappedArguments)
-            mappedArgumentSafe mappedArgumentsSafe
-        exact ⟨targetTyped, targetSafe⟩
+theorem WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.mapCostStatic
+    (source : CIGSLT) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {arguments : List Pattern} {parameters : List TermParam}
+    {typed : WellSorted.ArgumentsHaveTypes
+      source.theory.presentation.presentation.language
+      free bound arguments parameters}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
+      (mapTypeExpr (color.symbols source)))
+    (supported : ConstructorListWithin
+      (· ∈ source.continuationRetyping.wrappedLabels) arguments) :
+    ∃ targetTyped : WellSorted.ArgumentsHaveTypes source.costWholeLanguage
+        (free.map (color.symbols source))
+        (bound.map (mapTypeExpr (color.symbols source)))
+        (arguments.map (mapPattern (color.symbols source)))
+        (parameters.map (mapTermParam (color.symbols source))),
+      targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+        support available :=
+  safe.mapRows (color.symbols source) (source.costStaticRows color)
+    source.bareCollectionConstructorsWrapped
+    (fun rule _ _ => reflectiveIsQuoteConstructor_mapCostStatic source color rule.label)
+    supported
 
-  /-- Collection-spine companion to static reflective-support transport. -/
-  theorem WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.mapCostStatic
-      (source : CIGSLT) (color : CostStaticColor)
-      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
-      {elements : List Pattern} {elementType : TypeExpr}
-      {typed : WellSorted.ElementsHaveType
-        source.theory.presentation.presentation.language
-        free bound elements elementType}
-      {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
-        (mapTypeExpr (color.symbols source)))
-      (supported : ConstructorListWithin
-        (· ∈ source.continuationRetyping.wrappedLabels) elements) :
-      ∃ targetTyped : WellSorted.ElementsHaveType source.costWholeLanguage
-          (free.map (color.symbols source))
-          (bound.map (mapTypeExpr (color.symbols source)))
-          (elements.map (mapPattern (color.symbols source)))
-          (mapTypeExpr (color.symbols source) elementType),
-        targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
-          support available := by
-    cases safe with
-    | nil =>
-        let targetTyped := WellSorted.ElementsHaveType.nil
-          (language := source.costWholeLanguage)
-          (free := free.map (color.symbols source))
-          (bound.map (mapTypeExpr (color.symbols source)))
-          (mapTypeExpr (color.symbols source) elementType)
-        exact ⟨targetTyped, .nil _ _ _⟩
-    | @cons bound element elements elementType elementTyped elementsTyped
-        available _binderImage elementSafe elementsSafe =>
-        obtain ⟨mappedElement, mappedElementSafe⟩ :=
-          elementSafe.mapCostStatic (bound := bound) source color supported.1
-        obtain ⟨mappedElements, mappedElementsSafe⟩ :=
-          elementsSafe.mapCostStatic (bound := bound) source color supported.2
-        let targetTyped := WellSorted.ElementsHaveType.cons
-          mappedElement mappedElements
-        have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            source.costWholeReflectionProfile support available :=
-          WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.cons
-            (elementTyped := mappedElement)
-            (elementsTyped := mappedElements)
-            mappedElementSafe mappedElementsSafe
-        exact ⟨targetTyped, targetSafe⟩
-end
-
+theorem WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.mapCostStatic
+    (source : CIGSLT) (color : CostStaticColor)
+    {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {elements : List Pattern} {elementType : TypeExpr}
+    {typed : WellSorted.ElementsHaveType
+      source.theory.presentation.presentation.language
+      free bound elements elementType}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
+      (mapTypeExpr (color.symbols source)))
+    (supported : ConstructorListWithin
+      (· ∈ source.continuationRetyping.wrappedLabels) elements) :
+    ∃ targetTyped : WellSorted.ElementsHaveType source.costWholeLanguage
+        (free.map (color.symbols source))
+        (bound.map (mapTypeExpr (color.symbols source)))
+        (elements.map (mapPattern (color.symbols source)))
+        (mapTypeExpr (color.symbols source) elementType),
+      targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+        support available :=
+  safe.mapRows (color.symbols source) (source.costStaticRows color)
+    source.bareCollectionConstructorsWrapped
+    (fun rule _ _ => reflectiveIsQuoteConstructor_mapCostStatic source color rule.label)
+    supported
 
 end Mettapedia.GSLT.LanguageDef

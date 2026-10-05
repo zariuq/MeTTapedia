@@ -1,4 +1,5 @@
 import Mettapedia.PLN.Bridges.GSLT.EvidenceCostReadout
+import Mettapedia.PLN.Evidence.EvidentialLedger
 import Mathlib.Data.Complex.Basic
 
 /-!
@@ -152,6 +153,15 @@ instance : CommSemiring BinaryEvidence where
     ext
     · simp [BinaryEvidence.tensor_def]
     · simp [BinaryEvidence.tensor_def]
+
+/-- Exact natural counts preserve both alternative addition and tensor
+composition in the existing evidence algebra. Revision authority is separate. -/
+def countSemiringHom : Mettapedia.PLN.Evidence.BinEvNat →+* BinaryEvidence where
+  toFun := Mettapedia.PLN.Evidence.EvidentialLedger.BinEvNat.toBinaryEvidence
+  map_zero' := Mettapedia.PLN.Evidence.EvidentialLedger.BinEvNat.toBinaryEvidence_zero
+  map_one' := Mettapedia.PLN.Evidence.EvidentialLedger.BinEvNat.toBinaryEvidence_one
+  map_add' := Mettapedia.PLN.Evidence.EvidentialLedger.BinEvNat.toBinaryEvidence_add
+  map_mul' := Mettapedia.PLN.Evidence.EvidentialLedger.BinEvNat.toBinaryEvidence_mul
 
 /-- Revision is NOT idempotent: revising with the same packet again raises
 the counts (confidence grows; only the strength projection can appear fixed).

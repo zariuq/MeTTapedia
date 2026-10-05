@@ -23,6 +23,17 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impred
   itself at the universe of codes (`allCode_related`), and the polymorphic
   identity `λP. λp. p` is related to itself at it (`polyId_related`): its
   instances at every two codes observed alike are related.
+* **Declared datatypes and constructors, positive and negative.** At the lists of
+  numbers, the empty list is related to itself as far as its tag observes
+  (`nil_related`), and it is not related to a non-empty list: two different
+  constructors (`nil_cons_unrelated`). One-element lists are related as far as the
+  token saying that the tail is empty observes (`single_tail_related`), and `[a]` and
+  `[a, b]`, whose tails are not related there, are not (`single_pair_unrelated`).
+  Closure under entailment needs the field tokens: the tag of `cons` relates `[a]` and
+  `[a, b]`, and the tag with the field token entails the field token, which does not
+  (`closed_needs_fields`). As types, the lists of numbers are related to themselves at
+  the token saying that the parameter is the numbers (`listNat_param_related`), and
+  not to the lists of lists of numbers (`listNat_listList_unrelated`).
 -/
 
 set_option autoImplicit false
@@ -39,13 +50,14 @@ open Ideal InterpControls
 
 section Eta
 
-variable {S : Ideal} (hpi : ¬ S.Mem (.tag .pi)) (hU : ¬ IsUnivI S) (hs : S.Mem (.tag .sigma))
-include hpi hU hs
+variable {S : Ideal} (hpi : ¬ S.Mem (.tag .pi)) (hd : ∀ d, ¬ S.Mem (.tag (.data d)))
+  (hU : ¬ IsUnivI S) (hs : S.Mem (.tag .sigma))
+include hpi hd hU hs
 
 /-- An element is related to the η-expansion of an element it is related to. -/
 theorem eta_component {u : List Tok} {y y' : Ideal} (h : Rel S u y y') :
     Rel S u y (Ideal.pair (Ideal.fst y') (Ideal.snd y')) := by
-  refine Rel.of_components hpi hU ?_ ?_
+  refine Rel.of_components hpi hd hU ?_ ?_
   · rw [fst_pair]; exact h.fst hs
   · rw [snd_pair]; exact h.snd hs
 
@@ -55,14 +67,16 @@ theorem eta_related :
       (interp unitReading etaPairFun emptyEnv) := by
   have hTs : ¬ (former .pi S fun _ => S).Mem (.tag .sigma) := fun h =>
     absurd (former_mem_tag_iff.1 h) (by decide)
+  have hTd : ∀ d, ¬ (former .pi S fun _ => S).Mem (.tag (.data d)) := fun _ h =>
+    absurd (former_mem_tag_iff.1 h) nofun
   have hTU : ¬ IsUnivI (former .pi S fun _ => S) := by
     rintro (h | h)
     · exact absurd (former_mem_tag_iff.1 h) (by decide)
     · exact absurd (former_mem_tag_iff.1 h) (by decide)
   intro u hu t ht
   cases t with
-  | tag k => exact RT.of_not_lam hTs hTU fun _ _ _ e => Tok.noConfusion e
-  | arg k i C s => exact RT.of_not_lam hTs hTU fun _ _ _ e => Tok.noConfusion e
+  | tag k => exact RT.of_not_lam hTs hTd hTU fun _ _ _ e => nomatch e
+  | arg k i C s => exact RT.of_not_lam hTs hTd hTU fun _ _ _ e => nomatch e
   | fn k C Z Y =>
     by_cases hk : k = .lam
     · subst hk
@@ -70,10 +84,10 @@ theorem eta_related :
       rw [dom_former] at hZ
       rw [fam_former_const, idFun, etaPairFun, app_interp_lam, app_interp_lam]
       show RT true s S y (Ideal.pair (Ideal.fst y') (Ideal.snd y'))
-      have hY : Below Y (principal Z) :=
+      have hY : Ideal.Below Y (principal Z) :=
         below_of_mem_lam (interp_family_monotone unitReading (.var 0) emptyEnv) (hu _ ht)
-      exact eta_component hpi hU hs (Rel.mono (T := S) hZ fun r hr => hY r hr) s hsY
-    · exact RT.of_not_lam hTs hTU fun _ _ _ e => hk (Tok.fn.inj e).1
+      exact eta_component hpi hd hU hs (Rel.mono (T := S) hZ fun r hr => hY r hr) s hsY
+    · exact RT.of_not_lam hTs hTd hTU fun _ _ _ e => hk (Tok.fn.inj e).1
 
 end Eta
 
@@ -109,7 +123,7 @@ theorem not_related_id_constant :
       (principal w) := by
     intro s hs
     rw [List.mem_singleton.1 hs, dom_former]
-    exact RT.tag_iff.2 fun _ => RT.ty_tag_iff.2 fun _ =>
+    exact (RT.tag_iff (k := .pi) fun _ _ _ e => nomatch e).2 fun _ => RT.ty_tag_iff.2 fun _ =>
       ⟨ent_of_mem List.mem_cons_self, ent_of_mem List.mem_cons_self⟩
   have hout := (RT.lam_iff.1 hrel).1 (mem_former_tag _ _ _) (principal w) (principal w) hin
     (.tag .pi) List.mem_cons_self
@@ -149,6 +163,11 @@ theorem propI_not_sigma : ¬ propI.Mem (.tag .sigma) := by
   change ent Elem.codes (.tag .sigma) = true at h
   simp [Elem.codes, ent_tag, hasTag] at h
 
+theorem propI_not_data (d : DeclName) : ¬ propI.Mem (.tag (.data d)) := by
+  intro h
+  change ent Elem.codes (.tag (.data d)) = true at h
+  simp [Elem.codes, ent_tag, hasTag] at h
+
 /-- Every token of the universe of codes relates it to itself. -/
 theorem propI_self {d : Tok} (hd : propI.Mem d) : RT false d bot propI propI := by
   refine RT.closed false Elem.codes d bot propI propI hd fun s hs => ?_
@@ -169,10 +188,11 @@ theorem body_related {Z : List Tok} {y y' : Ideal} (hZ : TyRel Z y y') {s : Tok}
   refine RT.of_mem_closure (fun g hg => ?_) hs
   rcases hg with rfl | ⟨d, rfl, hd⟩ | ⟨D, Z', W, rfl, hD, hW⟩
   · exact RT.ty_tag_iff.2 fun _ => ⟨mem_former_tag _ _ _, mem_former_tag _ _ _⟩
-  · refine RT.ty_arg_iff.2 fun _ => ⟨fun c hc => absurd hc List.not_mem_nil, fun _ => ?_⟩
+  · refine RT.ty_arg_iff.2 ⟨fun _ => ⟨fun c hc => absurd hc List.not_mem_nil, fun _ => ?_⟩,
+      fun _ e => nomatch e⟩
     rw [dom_body, dom_body]
     exact RT.closed false Z d bot y y' hd hZ
-  · refine RT.ty_fn_iff.2 fun _ => ⟨fun c hc => ?_, fun v v' _ s' hs' => ?_⟩
+  · refine RT.ty_fn_iff.2 ⟨fun _ => ⟨fun c hc => ?_, fun v v' _ s' hs' => ?_⟩, fun _ e => nomatch e⟩
     · rw [dom_body, dom_body]
       exact RT.closed false Z c bot y y' (hD c hc) hZ
     · rw [fam_body, fam_body]
@@ -186,10 +206,11 @@ theorem allCode_selfTy : STy (interp codesReading allCode emptyEnv)
   refine RT.of_mem_closure (fun g hg => ?_) (hu t ht)
   rcases hg with rfl | ⟨d, rfl, hd⟩ | ⟨D, Z, W, rfl, hD, hW⟩
   · exact RT.ty_tag_iff.2 fun _ => ⟨mem_former_tag _ _ _, mem_former_tag _ _ _⟩
-  · refine RT.ty_arg_iff.2 fun _ => ⟨fun c hc => absurd hc List.not_mem_nil, fun _ => ?_⟩
+  · refine RT.ty_arg_iff.2 ⟨fun _ => ⟨fun c hc => absurd hc List.not_mem_nil, fun _ => ?_⟩,
+      fun _ e => nomatch e⟩
     rw [allCode, dom_interp_pi]
     exact propI_self hd
-  · refine RT.ty_fn_iff.2 fun _ => ⟨fun c hc => ?_, fun y y' hZ s hs => ?_⟩
+  · refine RT.ty_fn_iff.2 ⟨fun _ => ⟨fun c hc => ?_, fun y y' hZ s hs => ?_⟩, fun _ e => nomatch e⟩
     · rw [allCode, dom_interp_pi]
       exact propI_self (hD c hc)
     · rw [allCode, dom_interp_pi] at hZ
@@ -200,7 +221,8 @@ theorem allCode_selfTy : STy (interp codesReading allCode emptyEnv)
 `∀ P : Prop. P → P` is related to itself at `Prop`. -/
 theorem allCode_related : Sem propI (interp codesReading allCode emptyEnv)
     (interp codesReading allCode emptyEnv) :=
-  fun u hu t ht => RT.of_univ propI_not_pi propI_not_sigma fun _ => allCode_selfTy u hu t ht
+  fun u hu t ht => RT.of_univ propI_not_pi propI_not_sigma propI_not_data fun _ =>
+    allCode_selfTy u hu t ht
 
 /-- The identity is related to itself at `Π _ : P. P`, for every `P`. -/
 theorem id_related_body (y : Ideal) :
@@ -237,6 +259,90 @@ theorem polyId_related : Sem (interp codesReading allCode emptyEnv)
   rw [allCode, fam_interp_pi, polyId, app_interp_lam, app_interp_lam]
   exact id_related_body y [s] (fun r hr => by rw [List.mem_singleton.1 hr]; exact hY s hs) s
     List.mem_cons_self
+
+/-! ## Declared datatypes and constructors -/
+
+section Declared
+
+local notation "listK" => Kind.data `list
+local notation "nilK" => Kind.ctor `list `nil []
+local notation "consK" => Kind.ctor `list `cons [FieldShape.param 0, FieldShape.self]
+local notation "listNatI" => ctorI listK [natI]
+
+theorem listNatI_mem : (listNatI).Mem (.tag listK) := ctorI_mem_tag _ _
+
+theorem natI_mem_nat : natI.Mem (.tag .nat) := mem_principal_tag.2 rfl
+
+theorem listNatI_not_univ : ¬ IsUnivI listNatI := by
+  rintro (h | h) <;> exact absurd (ctorI_mem_tag_iff.1 h) nofun
+
+/-- **Positive**: the lists of numbers are related to themselves as types, as far as the token
+saying that their parameter is the numbers observes. -/
+theorem listNat_param_related :
+    RT false (.arg listK 0 [] (.tag .nat)) bot listNatI listNatI := by
+  refine RT.ty_arg_iff.2 ⟨fun h => by rcases h with h | h <;> exact absurd h nofun,
+    fun d hd => ⟨fun c hc => absurd hc List.not_mem_nil, ?_⟩⟩
+  rw [fieldI_ctorI]
+  exact RT.ty_tag_iff.2 fun _ => ⟨natI_mem_nat, natI_mem_nat⟩
+
+/-- **Negative**: the lists of numbers and the lists of lists of numbers are not related as
+types, as far as the token saying that the parameter is the numbers observes. -/
+theorem listNat_listList_unrelated :
+    ¬ RT false (.arg listK 0 [] (.tag .nat)) bot listNatI (ctorI listK [listNatI]) := by
+  intro h
+  have h₀ := ((RT.ty_arg_iff.1 h).2 _ rfl).2
+  rw [fieldI_ctorI, fieldI_ctorI] at h₀
+  exact absurd (ctorI_mem_tag_iff.1 ((RT.ty_tag_iff.1 h₀ trivial).2)) nofun
+
+/-- **Positive**: the empty list is related to itself, as far as its tag observes. -/
+theorem nil_related : RT true (.tag nilK) listNatI (ctorI nilK []) (ctorI nilK []) :=
+  RT.ctorTag_iff.2 ⟨fun _ => ⟨ctorI_mem_tag _ _, ctorI_mem_tag _ _⟩,
+    fun h => absurd h listNatI_not_univ⟩
+
+/-- **Negative**: two different constructors are not related: the empty list and a non-empty
+one, as far as the tag of the empty list observes. -/
+theorem nil_cons_unrelated (a l : Ideal) :
+    ¬ RT true (.tag nilK) listNatI (ctorI nilK []) (ctorI consK [a, l]) := by
+  intro h
+  exact absurd (ctorI_mem_tag_iff.1 ((RT.ctorTag_iff.1 h).1 listNatI_mem).2) (by decide)
+
+/-- **Positive**: one-element lists are related, as far as the token saying that the tail is the
+empty list observes. -/
+theorem single_tail_related (a a' : Ideal) :
+    RT true (.arg consK 1 [] (.tag nilK)) listNatI (ctorI consK [a, ctorI nilK []])
+      (ctorI consK [a', ctorI nilK []]) := by
+  refine RT.ctorArg_iff.2 ⟨fun _ => ⟨fun r hr => absurd hr List.not_mem_nil, fun f hf => ?_⟩,
+    fun h => absurd h listNatI_not_univ⟩
+  simp only [List.getElem?_cons_succ, List.getElem?_cons_zero, Option.some.injEq] at hf
+  subst hf
+  rw [fieldI_ctorI, fieldI_ctorI]
+  exact nil_related
+
+/-- **Negative**: a constructor applied to fields that are not related is not related: `[a]` and
+`[a, b]` have the tails `[]` and `[b]`, two different constructors, so they are not related as
+far as the token saying that the tail is the empty list observes. -/
+theorem single_pair_unrelated (a b : Ideal) :
+    ¬ RT true (.arg consK 1 [] (.tag nilK)) listNatI (ctorI consK [a, ctorI nilK []])
+      (ctorI consK [a, ctorI consK [b, ctorI nilK []]]) := by
+  intro h
+  have h₁ := ((RT.ctorArg_iff.1 h).1 listNatI_mem).2 .self rfl
+  rw [fieldI_ctorI, fieldI_ctorI] at h₁
+  exact nil_cons_unrelated b (ctorI nilK []) h₁
+
+/-- **Negative**: closure under entailment needs the field tokens of a constructor. The tag of
+`cons` and the token saying that the tail is the empty list entail that token, and `[a]` and
+`[a, b]` are related as far as the tag observes, but not as far as the token observes. -/
+theorem closed_needs_fields : ¬ ∀ (v : List Tok) (t : Tok) (T x x' : Ideal), ent v t = true →
+    (∀ s ∈ v, s = .tag t.kind → RT true s T x x') → RT true t T x x' := by
+  intro h
+  refine single_pair_unrelated natI natI (h [.tag consK, .arg consK 1 [] (.tag nilK)]
+    (.arg consK 1 [] (.tag nilK)) listNatI _ _ (ent_of_mem (List.mem_cons_of_mem _
+      List.mem_cons_self)) fun s _ e => ?_)
+  subst e
+  exact RT.ctorTag_iff.2 ⟨fun _ => ⟨ctorI_mem_tag _ _, ctorI_mem_tag _ _⟩,
+    fun h' => absurd h' listNatI_not_univ⟩
+
+end Declared
 
 end RelationControls
 end Domain

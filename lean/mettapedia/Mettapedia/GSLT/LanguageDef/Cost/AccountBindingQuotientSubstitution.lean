@@ -189,9 +189,4 @@ theorem liftEnvironment_represented {Γ Δ : Ctx S}
           ((algebra Q accountSort base).liftEnvironment env binders sort old)
       rw [← liftEnvironment_represented env binders sort old, weaken_project]
 
-#print axioms substituteRaw_environment_congr
-#print axioms substitute_comp
-#print axioms algebra
-#print axioms liftEnvironment_represented
-
 end Mettapedia.GSLT.LanguageDef.Cost.AccountBindingQuotientSubstitution

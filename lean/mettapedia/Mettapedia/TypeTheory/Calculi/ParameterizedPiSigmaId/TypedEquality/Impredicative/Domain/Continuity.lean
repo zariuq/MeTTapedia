@@ -24,6 +24,15 @@ value at a finite approximation of the environment.
   compact elements.
 * A function whose value depends continuously on a parameter depends continuously
   on it as a function (`Ideal.cont_lam_param`).
+
+The join of two ideals (`Ideal.join`) and case analysis on a tag (`Ideal.whenTag`) are
+defined over any type of kinds, like the ideals themselves; continuity is stated for the
+domain's kinds.
+
+Examples. Positive: a constant map and the identity are continuous (`Ideal.Cont.const`,
+`Ideal.Cont.id`), and case analysis on a tag that is present returns its branch
+(`Ideal.whenTag_of_mem`). Negative: case analysis on a tag that is absent returns the least
+element whatever the branch (`Ideal.whenTag_of_not_mem`).
 -/
 
 set_option autoImplicit false
@@ -187,21 +196,40 @@ theorem cont₂_pair : Cont₂ pair where
       · exact ⟨[s], fun r hr => by rw [List.mem_singleton.1 hr]; exact hs,
           .inr ⟨C, s, rfl, hC, ent_of_mem List.mem_cons_self⟩⟩
 
+section JoinTag
+
+variable {κ : Type} [DecidableEq κ]
+
 /-- The join of two ideals. -/
-def join (I J : Ideal) : Ideal := closure fun t => I.Mem t ∨ J.Mem t
+def join (I J : Ideal κ) : Ideal κ := closure fun t => I.Mem t ∨ J.Mem t
 
-theorem le_join_left (I J : Ideal) : I ≤ join I J := fun _ h => subset_closure (.inl h)
+theorem le_join_left (I J : Ideal κ) : I ≤ join I J := fun _ h => subset_closure (.inl h)
 
-theorem le_join_right (I J : Ideal) : J ≤ join I J := fun _ h => subset_closure (.inr h)
+theorem le_join_right (I J : Ideal κ) : J ≤ join I J := fun _ h => subset_closure (.inr h)
 
-theorem join_le {I J K : Ideal} (hI : I ≤ K) (hJ : J ≤ K) : join I J ≤ K :=
+theorem join_le {I J K : Ideal κ} (hI : I ≤ K) (hJ : J ≤ K) : join I J ≤ K :=
   closure_le fun t ht => ht.elim (hI t) (hJ t)
 
-theorem join_bot (I : Ideal) : join I bot = I :=
+theorem join_bot (I : Ideal κ) : join I bot = I :=
   le_antisymm (join_le (le_refl I) (bot_le I)) (le_join_left I bot)
 
-theorem bot_join (I : Ideal) : join bot I = I :=
+theorem bot_join (I : Ideal κ) : join bot I = I :=
   le_antisymm (join_le (bot_le I) (le_refl I)) (le_join_right bot I)
+
+/-- `I` when `ν` has the tag of kind `k`, the least element otherwise. -/
+def whenTag (k : κ) (ν I : Ideal κ) : Ideal κ := closure fun t => ν.Mem (.tag k) ∧ I.Mem t
+
+theorem whenTag_of_mem {k : κ} {ν : Ideal κ} (h : ν.Mem (.tag k)) (I : Ideal κ) :
+    whenTag k ν I = I :=
+  le_antisymm (closure_le fun _ ht => ht.2) fun _ ht => subset_closure ⟨h, ht⟩
+
+theorem whenTag_of_not_mem {k : κ} {ν : Ideal κ} (h : ¬ ν.Mem (.tag k)) (I : Ideal κ) :
+    whenTag k ν I = bot :=
+  le_antisymm (closure_le fun _ ht => absurd ht.1 h) (bot_le _)
+
+theorem whenTag_le (k : κ) (ν I : Ideal κ) : whenTag k ν I ≤ I := closure_le fun _ ht => ht.2
+
+end JoinTag
 
 theorem cont₂_join : Cont₂ join where
   left J := Cont.of_closure (P := fun I t => I.Mem t ∨ J.Mem t)
@@ -218,19 +246,6 @@ theorem cont₂_join : Cont₂ join where
       · exact ⟨[], fun _ h => absurd h List.not_mem_nil, .inl ht⟩
       · exact ⟨[t], fun r hr => by rw [List.mem_singleton.1 hr]; exact ht,
           .inr (ent_of_mem List.mem_cons_self)⟩
-
-/-- `I` when `ν` has the tag of kind `k`, the least element otherwise. -/
-def whenTag (k : Kind) (ν I : Ideal) : Ideal := closure fun t => ν.Mem (.tag k) ∧ I.Mem t
-
-theorem whenTag_of_mem {k : Kind} {ν : Ideal} (h : ν.Mem (.tag k)) (I : Ideal) :
-    whenTag k ν I = I :=
-  le_antisymm (closure_le fun _ ht => ht.2) fun _ ht => subset_closure ⟨h, ht⟩
-
-theorem whenTag_of_not_mem {k : Kind} {ν : Ideal} (h : ¬ ν.Mem (.tag k)) (I : Ideal) :
-    whenTag k ν I = bot :=
-  le_antisymm (closure_le fun _ ht => absurd ht.1 h) (bot_le _)
-
-theorem whenTag_le (k : Kind) (ν I : Ideal) : whenTag k ν I ≤ I := closure_le fun _ ht => ht.2
 
 theorem cont₂_whenTag (k : Kind) : Cont₂ (whenTag k) where
   left I := Cont.of_closure (P := fun ν t => ν.Mem (.tag k) ∧ I.Mem t)

@@ -142,7 +142,7 @@ noncomputable def ofProvenancedAlignedAbstracts
         rightView.node.thinning.thickenAmbientBVars depth pattern := by
     simpa only [CostStaticRegionNode.thinning] using congrArg
       (fun targetBound =>
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color targetBound)
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color targetBound)
           |>.thickenAmbientBVars depth pattern)
       (leftView.targetBound_eq_targetBound rightView)
   have apex :=
@@ -188,7 +188,7 @@ noncomputable def ofProvenancedAlignedAbstracts
               rightMembership targetDeclaration rootDepth
             simpa [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
               canonicalizeByDepths, mapPattern,
-              CostStaticBinderThinning.thickenAmbientBVars,
+              CostStaticTypeThinning.thickenAmbientBVars_fvar,
               CostStaticAtomKeyCospan.reifyLeft,
               CostStaticAtomKeyCospan.reifyRight, targetDeclaration,
               costStaticReflectivePresentationDecl_eq_map] using memberApex

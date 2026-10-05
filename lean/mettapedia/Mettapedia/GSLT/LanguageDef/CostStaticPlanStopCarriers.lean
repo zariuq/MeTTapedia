@@ -222,18 +222,18 @@ theorem exists_rootPlanSealedAlignment
     (admission : reached.plan.RawAdmission) :
     ∃ (sealed : List TypeExpr)
         (rootPlan : CostStaticRegionPlan source color targetFree
-          (CostStaticBinderThinning.sourceContextOfTarget source color
+          (CostStaticTypeThinning.sourceContextOfTarget source.theory color
             reached.sourceAvailable)
           reached.sourceAvailable
-          (CostStaticBinderThinning.ofTargetThinning source color
+          (CostStaticTypeThinning.ofTargetThinning source.theory color
             reached.sourceAvailable)
           reached.sourceAvailable .hole payload reached.sourceType),
       reached.targetBound = reached.sourceAvailable ++ sealed ∧
         buildCostStaticRegionPlan? source color targetFree
-            (CostStaticBinderThinning.sourceContextOfTarget source color
+            (CostStaticTypeThinning.sourceContextOfTarget source.theory color
               reached.sourceAvailable)
             reached.sourceAvailable
-            (CostStaticBinderThinning.ofTargetThinning source color
+            (CostStaticTypeThinning.ofTargetThinning source.theory color
               reached.sourceAvailable)
             reached.sourceAvailable .hole payload reached.sourceType =
           some rootPlan ∧

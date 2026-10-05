@@ -30,6 +30,34 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureCanonicalSection
 import Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction
 import Mettapedia.GSLT.Meredith.InteractiveGSLT
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathConservation
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathControls
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePair
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairContext
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairContextualReflection
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairFraming
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairMatchCoverage
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairReflectionScope
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairReflectionTyping
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairReflectiveFraming
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairScoped
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteContinuationControls
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteRestBoundary
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteWhole
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.PreSigningProcessReadout
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SignatureAlgebraBoundary
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls
 
 /-!
 # Cost-rho theorem dependency audit
@@ -113,9 +141,9 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 #print axioms ResourceTransition.comp_rawEmission
 #print axioms ResourceTransition.comp_rawAccount
 #print axioms ResourceTransition.rawAccountFunctor
-#print axioms FundedExecution.pure_bind
-#print axioms FundedExecution.bind_pure
-#print axioms FundedExecution.bind_assoc
+#print axioms Mettapedia.Effects.Execution.pure_bind
+#print axioms Mettapedia.Effects.Execution.bind_pure
+#print axioms Mettapedia.Effects.Execution.bind_assoc
 #print axioms FundedExecution.bind_rawEmission
 #print axioms FundedExecution.bind_rawAccount
 #print axioms FundedExecution.bind_additiveValue
@@ -135,7 +163,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 #print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.mul_not_injective2
 #print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.list_append_not_injective
 #print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.list_append_forgets_nonempty_boundary
-#print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.writerFlatten_not_injective
+#print axioms Mettapedia.CategoryTheory.WriterActionAdjunction.multiplication_not_injective
 #print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.multiset_add_forgets_nonempty_boundary
 #print axioms ResourceTransitionExamples.exists_one_step_funded_execution
 #print axioms ResourceTransitionExamples.no_nonempty_identity_execution
@@ -372,3 +400,186 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 #print axioms StaticDeploymentAnalysisExamples.zero_bound_analysis_incomplete
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.sourceFold
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.program_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.readout_canonical_observation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.closedSource
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.readoutAuthority_literal
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.distinct_authorities_equal_annotation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.sendUnderInput_readout
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.AccountedGeneratedReadout.sendUnderInput_program_nonzero
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathConservation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.CostStep.stored_signatures_balance
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.CostStepPath.length_add_remaining_cells_le
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.CostStepPath.stored_signatures_balance
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.CostStepPath.account_balance
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathControls
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathControls.compiled_duplication_accounting
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathControls.unrestricted_duplication_breaks_accounting
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePair
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair.binding_declarations_valid
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair.source_pair_is_authored
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair.framed_reflective_reducts
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairContext
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContext.funded_left_step
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContext.trapped_without_context
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContext.resumes_continuation
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairContextualReflection
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContextualReflection.corrected_open_firing
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContextualReflection.closed_operation_agrees
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairContextualReflection.open_body_scope_preserved
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairFraming
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairFraming.original_step_with_rest
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairFraming.generated_parallel_step
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairFraming.original_rest_factorization
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairMatchCoverage
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairMatchCoverage.matched_pair_positions
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairMatchCoverage.actual_match_factorization
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairReflectionScope
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionScope.actual_reflective_reducts
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionScope.not_open_reflective_subject_reduction
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairReflectionTyping
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionTyping.typed_name_atomicOrClosed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionTyping.typed_namesAdmitted
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionTyping.operation_hasType
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionTyping.typed_firing_pair
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectionTyping.source_selected_typed_firing
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairReflectiveFraming
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectiveFraming.original_step_with_rest
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePairReflectiveFraming.original_rest_factorization
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ActivePairScoped
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair.scoped_match_pair
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair.typed_scoped_firing_pair
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation.sourceAtom_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation.sourceWord_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation.annotate_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation.readoutOrigin_key
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ClosedOriginAccountInterpretation.input_origin_key_distinct
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.FiniteContinuationControls
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.communicationDecoration_validate
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.instantiatedContractum_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteContinuationControls.actual_contractum_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteContinuationControls.localBody_not_closed
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary.candidate_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary.ordinary_no_step
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary.full_reflection_admitted
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary.reflective_reducts_nonempty
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.FiniteReflectionBoundary.full_reflection_not_admitted_by_finite_fragment
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.FiniteRestBoundary
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteRestBoundary.source_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteRestBoundary.actual_reducts
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteRestBoundary.target_not_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteRestBoundary.not_unrestricted_reflective_subject_reduction
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.FiniteWhole
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.language_valid
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.reflection_valid
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.source_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.target_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.reflective_reducts_exact
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.empty_stack_blocks
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.FiniteWhole.wrong_key_blocks
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls.source_associated_refinement
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls.source_associated_fold
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls.underInput_full_source
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls.unit_signed_control
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls.quoted_account_substitution
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeControls.quoted_committed_account_substitution
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.NameRefinement.reification
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.CodeRefinement.observation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.ProcessRefinement.observation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.CodeRefinement.canonical_observation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.CodeRefinement.interpret_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.ProcessRefinement.interpret_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.CodeRefinement.interpret_comp
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginAccountedCodeImage.CodeRefinement.interpret_observation
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement.Image.annotation
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement.Image.sourceAccount_substitute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement.Image.accepted
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement.repeated_commitment_control
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.OriginSignatureRefinement.unit_boundary_control
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.PreSigningProcessReadout
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.PreSigningProcessReadout.receiverPair_readout
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.PreSigningProcessReadout.readout_canonical
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.PreSigningProcessReadout.origin_signature
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening.nestedUnit_no_structural_flattening
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening.admitted_nonempty_boundary_collision
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening.flattenFundingReadout_not_injective
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening.flattenedFunding_typed
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.QuotedFlattening.flattenedFundingKey_reachable
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.distinct_occurrences
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.repeated_entries
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.original_restoration
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.positional_second_values
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.current_values_different
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.positional_second_update
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.independent_updates_commute
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.positional_second_tree_update
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.resolve_same
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.restoration_same
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RepeatedBoundaryValueControls.retained_children_different
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls.grafted_tree_inhabited
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls.grafted_boundary_count
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls.grafted_restoration
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RetainedBoundaryGraftControls.grafted_currentLayerCode
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification.name_image_readout
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification.code_image_readout
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification.code_readout_canonical
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.RuntimeSourceReification.code_readout_quoteSafe
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.SignatureAlgebraBoundary
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SignatureAlgebraBoundary.signature_unit_product_keys_distinct
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SignatureAlgebraBoundary.signature_unit_product_not_equivalent
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.admitted_origin
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.source_decodes
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.funded_step
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.path
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.exact_receipt
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.canonical_entry_path_rhs
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.authored_runtime_agreement
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.example_funded_step
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceAssociatedCommitmentExecution.example_source_key_changes
+
+-- Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls.compiler_image_inhabited
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls.parallel_compile_ne_zero
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls.parallel_image_key_eq_zero
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls.freeDrop_image_key_ne_zero
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls.normalize_parallel_image_key
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.SourceIndexedImageControls.closedInput_not_certified

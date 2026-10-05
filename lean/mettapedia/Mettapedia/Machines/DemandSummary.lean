@@ -86,7 +86,8 @@ theorem Extends.some_of_some {a b : Cache Summary} (ab : Extends a b)
   | none => simp [h] at present
   | some value => simp [ab i value h]
 
-/-- The accounting counts summary combinations, not cache lookup or edge costs. -/
+/-- Construction accounting. Request/edge accounting is supplied separately by
+`demandRequests_eq` and `demandRequests_le_uncached_edges`. -/
 structure Valid (g : Graph Label) (combine : Label → List Summary → Summary)
     (before : Cache Summary) (result : Result Value Summary)
     (expected : Value) (bound : Nat) : Prop where
@@ -279,6 +280,87 @@ theorem demand_combinations_le_uncached_reachable (g : Graph Label)
   exact Finset.mem_filter.mpr
     ⟨demand_computed_reachable g combine i cache j member,
       by simp [valid.fresh j member]⟩
+
+/-- Number of cache requests made by a sequence, threading the actual
+post-request cache from the existing evaluator. -/
+def sequenceRequests {A : Type w} (xs : List A)
+    (step : A → Cache Summary → Result Summary Summary)
+    (requests : A → Cache Summary → Nat) (cache : Cache Summary) : Nat :=
+  match xs with
+  | [] => 0
+  | x :: rest => requests x cache +
+      sequenceRequests rest step requests (step x cache).cache
+
+/-- One lookup on entry; a miss requests each physical outgoing edge in
+order. Cache hits issue no descendant requests. -/
+def demandRequests (graph : Graph Label) (combine : Label → List Summary → Summary)
+    (root : Nat) (cache : Cache Summary) : Nat :=
+  match cache root with
+  | some _ => 1
+  | none => 1 + sequenceRequests (graph.children root)
+      (fun child current => demand graph combine child.val current)
+      (fun child current => demandRequests graph combine child.val current) cache
+termination_by root
+
+/-- Ordered duplicate edges count separately even when their target is shared. -/
+def edgeCount (graph : Graph Label) (nodes : List Nat) : Nat :=
+  (nodes.map fun node => (graph.children node).length).sum
+
+@[simp] theorem edgeCount_append (graph : Graph Label) (first second : List Nat) :
+    edgeCount graph (first ++ second) = edgeCount graph first + edgeCount graph second := by
+  simp [edgeCount, List.map_append, List.sum_append]
+
+theorem sequenceRequests_eq {A : Type w} (graph : Graph Label)
+    (xs : List A) (step : A → Cache Summary → Result Summary Summary)
+    (requests : A → Cache Summary → Nat)
+    (each : ∀ item ∈ xs, ∀ cache, requests item cache =
+      1 + edgeCount graph (step item cache).computed) (cache : Cache Summary) :
+    sequenceRequests xs step requests cache =
+      xs.length + edgeCount graph (sequence xs step cache).computed := by
+  induction xs generalizing cache with
+  | nil => simp [sequenceRequests, sequence, edgeCount]
+  | cons first rest ih =>
+      simp only [sequenceRequests, sequence, List.length_cons, edgeCount_append]
+      rw [each first (by simp), ih (fun item member => each item (by simp [member]))]
+      omega
+
+/-- The operational request count equals one root lookup plus exactly one
+lookup for each outgoing edge of a newly computed node. -/
+theorem demandRequests_eq (graph : Graph Label)
+    (combine : Label → List Summary → Summary) (root : Nat) (cache : Cache Summary) :
+    demandRequests graph combine root cache =
+      1 + edgeCount graph (demand graph combine root cache).computed := by
+  induction root using Nat.strong_induction_on generalizing cache with
+  | h root ih =>
+      rw [demandRequests, demand]
+      cases present : cache root with
+      | some value => simp [edgeCount]
+      | none =>
+          simp only
+          rw [sequenceRequests_eq graph _ _ _ (fun child _ current =>
+            ih child.val child.isLt current), edgeCount_append]
+          simp [edgeCount, Nat.add_comm]
+
+/-- Distinct computed nodes contribute all their physical child slots once.
+Cache-table operations themselves are not charged as constant-time here. -/
+theorem demandRequests_le_uncached_edges (graph : Graph Label)
+    (combine : Label → List Summary → Summary) (root : Nat) (cache : Cache Summary)
+    (sound : Sound graph combine cache) :
+    demandRequests graph combine root cache ≤
+      1 + ∑ node ∈ (reachable graph root).filter (fun node => (cache node).isNone),
+        (graph.children node).length := by
+  rw [demandRequests_eq]
+  apply Nat.add_le_add_left
+  unfold edgeCount
+  have valid := demand_valid graph combine root cache sound
+  rw [← List.sum_toFinset _ valid.nodup]
+  apply Finset.sum_le_sum_of_subset
+  intro node member
+  have computed : node ∈ (demand graph combine root cache).computed := by
+    simpa using member
+  exact Finset.mem_filter.mpr
+    ⟨demand_computed_reachable graph combine root cache node computed,
+      by simp [valid.fresh node computed]⟩
 
 /-- Dependency testing uses actual edges even when all caches are empty. -/
 def affected (g : Graph Label) (changed : Nat → Bool) (i : Nat) : Bool :=
@@ -550,6 +632,18 @@ theorem absent_cache_does_not_mean_absent_variable :
 cannot justify treating a constructor as a leaf during tracing. -/
 theorem uncached_node_has_live_edges :
     (none : Option Nat).isNone = true ∧ 0 ∈ reachable diamond 3 := by decide +kernel
+
+/-- Sharing avoids duplicate construction, but each duplicate edge still
+issues a request. A count of four nodes alone would omit three lookups. -/
+theorem shared_leaf_requests_include_duplicate_edges :
+    demandRequests Controls.diamond Controls.addSummary 3 (fun _ => none) = 7 ∧
+    (demand Controls.diamond Controls.addSummary 3 (fun _ => none)).computed.length = 4 := by
+  decide +kernel
+
+theorem cached_root_one_request :
+    demandRequests Controls.diamond Controls.addSummary 3
+      (demand Controls.diamond Controls.addSummary 3 (fun _ => none)).cache = 1 := by
+  rw [demandRequests, demand_stores]
 
 end Controls
 

@@ -132,6 +132,86 @@ theorem scan_append (state : LexState) (first second : List Char) :
     (first ++ second).foldl step state = second.foldl step (first.foldl step state) :=
   List.foldl_append
 
+/-- Completed tokens do not affect the scanning of later characters. -/
+def withEarlierTokens (state : LexState) (earlier : List Token) : LexState :=
+  { state with tokensRev := state.tokensRev ++ earlier }
+
+theorem with_earlier_mode (state : LexState) (earlier : List Token) :
+    (withEarlierTokens state earlier).mode = state.mode := rfl
+
+theorem with_earlier_current (state : LexState) (earlier : List Token) :
+    (withEarlierTokens state earlier).currentRev = state.currentRev := rfl
+
+theorem with_earlier_fault (state : LexState) (earlier : List Token) :
+    (withEarlierTokens state earlier).fault = state.fault := rfl
+
+theorem emit_with_earlier_tokens (state : LexState) (earlier : List Token) (token : Token) :
+    emit (withEarlierTokens state earlier) token =
+      withEarlierTokens (emit state token) earlier := by
+  cases state
+  rfl
+
+theorem idle_with_earlier_tokens (state : LexState) (earlier : List Token) (c : Char) :
+    idle (withEarlierTokens state earlier) c = withEarlierTokens (idle state c) earlier := by
+  unfold idle
+  split_ifs <;> rfl
+
+theorem step_with_earlier_tokens (state : LexState) (earlier : List Token) (c : Char) :
+    step (withEarlierTokens state earlier) c = withEarlierTokens (step state c) earlier := by
+  cases state with
+  | mk mode current tokens fault =>
+    cases fault with
+    | some fault => rfl
+    | none =>
+      cases mode <;> simp only [step, with_earlier_mode, with_earlier_current,
+        with_earlier_fault, Option.isSome_none, Bool.false_eq_true, if_false,
+        emit_with_earlier_tokens, idle_with_earlier_tokens]
+      all_goals split_ifs <;> rfl
+
+theorem scan_with_earlier_tokens (state : LexState) (earlier : List Token)
+    (characters : List Char) :
+    characters.foldl step (withEarlierTokens state earlier) =
+      withEarlierTokens (characters.foldl step state) earlier := by
+  induction characters generalizing state with
+  | nil => rfl
+  | cons c rest ih =>
+      simp only [List.foldl_cons, step_with_earlier_tokens, ih]
+
+/-- A segment ending between tokens can be composed without rechecking the
+already completed prefix. This does not split a pending token or comment. -/
+def completed (tokens : List Token) : LexState :=
+  { tokensRev := tokens.reverse }
+
+theorem completed_segments (first second : List Char) (firstTokens secondTokens : List Token)
+    (firstScan : first.foldl step initial = completed firstTokens)
+    (secondScan : second.foldl step initial = completed secondTokens) :
+    (first ++ second).foldl step initial = completed (firstTokens ++ secondTokens) := by
+  rw [scan_append, firstScan]
+  change second.foldl step (withEarlierTokens initial firstTokens.reverse) = _
+  rw [scan_with_earlier_tokens, secondScan]
+  simp [withEarlierTokens, completed, List.reverse_append]
+
+/-- Finite source pieces compose only when each ends between tokens. Each
+piece retains its independently supplied token list and scanner certificate. -/
+theorem completed_pieces (pieces : List (List Char × List Token))
+    (scanned : List.Forall (fun piece =>
+      piece.1.foldl step initial = completed piece.2) pieces) :
+    (pieces.flatMap Prod.fst).foldl step initial =
+      completed (pieces.flatMap Prod.snd) := by
+  induction pieces with
+  | nil => rfl
+  | cons piece rest ih =>
+    have parts := (List.forall_cons _ piece rest).mp scanned
+    exact completed_segments piece.1 (rest.flatMap Prod.fst)
+      piece.2 (rest.flatMap Prod.snd) parts.1 (ih parts.2)
+
+theorem lex_of_completed (characters : List Char) (tokens : List Token)
+    (scanned : characters.foldl step initial = completed tokens) :
+    lex characters = .ok tokens := by
+  unfold lex
+  rw [scanned]
+  simp [finish, completed]
+
 theorem failed_step (state : LexState) (fault : LexFault)
     (failed : state.fault = some fault) (c : Char) : step state c = state := by
   simp [step, failed]

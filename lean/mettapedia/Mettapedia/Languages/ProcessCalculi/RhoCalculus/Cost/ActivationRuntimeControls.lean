@@ -8,6 +8,12 @@ An authored compiler-image receiver copies a nonempty compiler-image payload.
 One real purse cell containing two signing atoms funds that communication.
 The existing unrestricted purse-payload execution supplies the contrasting
 failure of physical conservation outside resource separation.
+
+A receiver that sends on the name it receives meets a sender of a dequoted
+name. The executable step and the funded firing of its event leave the same
+purses, but not the same configuration: the step adds its contractum
+normalized, the event its contractum as substituted. A meeting under no seal
+fires with no purse; no funded event spends nothing.
 -/
 
 set_option autoImplicit false
@@ -95,5 +101,111 @@ theorem authority_payload_source_not_separated :
   exact authority_payload_breaks_runtime_inventory.1
     (ActivationControls.authorityDuplicationRun.2.2.executable_physical_cells_balance
       (initialTraceComponents_canonical ActivationControls.authorityDuplication) separated)
+
+/-! ## The funded event of an executable step -/
+
+/-- A receiver that sends on the name it receives, meeting a sender of the name
+`*@0`, under the seal `a`. -/
+def renamingMeeting : RawCostTerm :=
+  .signed (.par (.recv (.quote .nil) (.signed (.send (.bvar 0) .nil) ["a"]))
+    (.send (.quote .nil) (.drop (.quote .nil)))) ["a"]
+
+/-- One purse on the channel, holding one cell `a`. -/
+def renamingPurse : RawCostTerm := .purse (.quote .nil) [["a"]]
+
+/-- The runtime presentation of the meeting with its purse: the purse first. -/
+def renamingComponents : List RawTraceComponent :=
+  initialTraceComponents (.par renamingMeeting renamingPurse)
+
+/-- The contractum of the meeting, normalized: `@*@0` becomes `@0`. -/
+def renamingContractum : RawCostTerm :=
+  (RawCostTerm.commSubst (.signed (.send (.bvar 0) .nil) ["a"]) (.drop (.quote .nil))).normalize
+
+/-- The one executable step: the meeting at index 1, paid by the purse at
+index 0. -/
+def renamingStep : RawRuntimeStep where
+  shape := .wholeRecvSend
+  location := .quote .nil
+  spend := ["a"]
+  participantIndices := [1]
+  selectedPurses := [⟨0, .quote .nil, ["a"], []⟩]
+  contractum := renamingContractum
+  residual := residualFor (renamingComponents.map RawTraceComponent.term) [1]
+    [⟨0, .quote .nil, ["a"], []⟩] renamingContractum
+
+/-- The meeting as a funded event, paid by the one cell of the purse. -/
+def renamingEvent : CostedEvent String :=
+  .wholeRecvSend (.quote .nil) (.signed (.send (.bvar 0) .nil) {"a"}) (.drop (.quote .nil)) {"a"}
+    (Multiset.singleton_ne_zero _) ⟨{⟨{"a"}, .empty, Multiset.singleton_ne_zero _⟩}, by decide⟩
+
+/-- The step embeds as that funded event. -/
+def renamingEmbedding : RuntimeEventEmbedding (renamingComponents.map RawTraceComponent.term) where
+  step := renamingStep
+  enabled := by decide +kernel
+  event := renamingEvent
+  picked := [(renamingMeeting, 1), (renamingPurse, 0)]
+  indices_eq := rfl
+  picked_source := by decide +kernel
+  consumed_eq := by decide +kernel
+
+theorem renaming_separated :
+    (decodeRawConfig (renamingComponents.map RawTraceComponent.term)).ResourceSeparated := by
+  apply initialTraceComponents_resourceSeparated
+  intro term member
+  simp only [renamingMeeting, renamingPurse, decodeCostTerm, CostTerm.components,
+    Multiset.mem_add, Multiset.mem_cons, Multiset.notMem_zero, or_false] at member
+  rcases member with rfl | rfl <;> rfl
+
+/-- **The step and the funded firing leave the same purses**: the purse,
+emptied. -/
+theorem renaming_purses_agree :
+    CostConfig.purses (decodeRawConfig
+        ((applyTracedStep renamingComponents renamingStep 0).map RawTraceComponent.term)) =
+      CostConfig.purses ((costResourceSystem String).fire
+        (decodeRawConfig (renamingComponents.map RawTraceComponent.term))
+        (site := renamingEvent.location) ⟨renamingEvent, rfl⟩) ∧
+    CostConfig.purses (decodeRawConfig
+        ((applyTracedStep renamingComponents renamingStep 0).map RawTraceComponent.term)) =
+      {(.quote .nil, [])} :=
+  ⟨(renamingEmbedding.fire_purses (initialTraceComponents_canonical _) renaming_separated 0).2.1,
+    by decide +kernel⟩
+
+/-- **The step and the funded firing leave different configurations.** After
+the step the sender's channel is `@0`, normalized; after the funded firing it is
+`@*@0`, as substituted. The two contracta differ in exactly this way. -/
+theorem renaming_configurations_differ :
+    decodeRawConfig ((applyTracedStep renamingComponents renamingStep 0).map RawTraceComponent.term) ≠
+      (costResourceSystem String).fire
+        (decodeRawConfig (renamingComponents.map RawTraceComponent.term))
+        (site := renamingEvent.location) ⟨renamingEvent, rfl⟩ ∧
+    (decodeCostTerm renamingContractum).components =
+      {.signed (.send (.quote .nil) .nil) {"a"}} ∧
+    renamingEvent.contractum = {.signed (.send (.quote (.drop (.quote .nil))) .nil) {"a"}} := by
+  decide +kernel
+
+/-! ## A step with no purse -/
+
+/-- A meeting under no seal. -/
+def unsealedComponents : List RawTraceComponent :=
+  initialTraceComponents (.signed (.par (.recv (.quote .nil) .nil) (.send (.quote .nil) .nil)) [])
+
+/-- **A step with no purse.** The unsealed meeting is not well formed, yet the
+configuration is canonical and separated and a step is enabled; it selects no
+purse and spends nothing, and no funded event spends nothing. -/
+theorem unsealed_step_unpaid :
+    (decodeRawConfig (unsealedComponents.map RawTraceComponent.term)).ResourceSeparated ∧
+      ¬ TraceComponentsWellFormed unsealedComponents ∧
+      (∃ step ∈ runtimeCostCandidatesFromConfig (unsealedComponents.map RawTraceComponent.term),
+        step.selectedPurses = [] ∧ step.spend = []) ∧
+      ∀ event : CostedEvent String, event.spend ≠ decodeCostSig [] := by
+  refine ⟨?_, ?_, by decide +kernel, fun event => event.spend_valid⟩
+  · apply initialTraceComponents_resourceSeparated
+    intro term member
+    simp only [decodeCostTerm, CostTerm.components, Multiset.mem_cons, Multiset.notMem_zero,
+      or_false] at member
+    subst member
+    rfl
+  · unfold TraceComponentsWellFormed
+    decide +kernel
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationRuntimeControls

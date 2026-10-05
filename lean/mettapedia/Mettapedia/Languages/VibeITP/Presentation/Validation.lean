@@ -17,6 +17,8 @@ set_option maxHeartbeats 2000000
 
 namespace Mettapedia.Languages.VibeITP.Presentation
 
+open Mettapedia.GSLT.LanguageDef.FirstOrderRules
+
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef
@@ -86,15 +88,6 @@ theorem theoryRules_foPackage (T : Theory) (allocated : Nat) :
     obtain ⟨id, p, rfl, hp⟩ := closed r hr
     exact isData_fragment _ hp
 
-theorem FOPackage.append {first second : List FORule}
-    (hf : FOPackage first) (hs : FOPackage second) : FOPackage (first ++ second) := by
-  constructor
-  · intro r hr
-    exact (List.mem_append.mp hr).elim (hf.nodup r) (hs.nodup r)
-  · intro r hr
-    exact (List.mem_append.mp hr).elim (hf.premisesFragment r) (hs.premisesFragment r)
-  · intro r hr
-    exact (List.mem_append.mp hr).elim (hf.conclusionFragment r) (hs.conclusionFragment r)
 
 def KernelDataValid (p : Pattern) : Prop :=
   fixedConstructorsValid kernelDefinition.toLanguageDef p = true

@@ -256,15 +256,41 @@ def costWrappedReflectivePresentationDecl (theory : IGSLT)
 /-- Exact intermediate language used to validate reflective static transport.
 It adds no Cost apparatus or reduction: only the two declaration-derived
 images of the source equations and reflective presentations. -/
-def reflectiveRetypingLanguage {theory : IGSLT}
+def ContinuationDecorationProfile.reflectiveRetypingLanguage {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
-    (plan : ContinuationRetypingPlan cut) : LanguageDef :=
-  { plan.generatedLanguage with
+    (profile : ContinuationDecorationProfile cut) : LanguageDef :=
+  { profile.generatedLanguage with
     equations :=
       theory.presentation.presentation.language.equations.map
           costBaseEquation ++
         theory.presentation.presentation.language.equations.map
           (costWrappedEquation theory) }
+
+/-- The intermediate language of the two-slot plan. -/
+def reflectiveRetypingLanguage {theory : IGSLT}
+    {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) : LanguageDef :=
+  (ContinuationDecorationProfile.ofRetypingPlan plan).reflectiveRetypingLanguage
+
+theorem reflectiveRetypingLanguage_def {theory : IGSLT}
+    {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) :
+    reflectiveRetypingLanguage plan =
+      { plan.generatedLanguage with
+        equations :=
+          theory.presentation.presentation.language.equations.map
+              costBaseEquation ++
+            theory.presentation.presentation.language.equations.map
+              (costWrappedEquation theory) } :=
+  rfl
+
+@[simp]
+theorem ContinuationDecorationProfile.ofRetypingPlan_reflectiveRetypingLanguage
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut) :
+    (ContinuationDecorationProfile.ofRetypingPlan plan).reflectiveRetypingLanguage =
+      Mettapedia.GSLT.LanguageDef.reflectiveRetypingLanguage plan :=
+  rfl
 
 mutual
   /-- A schema contains no open collection-tail metavariable.  Such tails

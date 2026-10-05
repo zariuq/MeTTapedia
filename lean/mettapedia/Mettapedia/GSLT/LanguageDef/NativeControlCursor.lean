@@ -112,6 +112,74 @@ theorem chunk_exact (pull : HState → Pull HState Answer) (first second : Nat)
         (packet pull cursor reversed)) :=
   advance_add _ _ _ first second _
 
+/-- A local conservation law for the unfinished answer sequence gives a
+sound completed collection. Suspended work is included in `remaining`; it
+cannot be replaced by just the rows already prepared for publication. -/
+theorem collect_sound (pull : HState → Pull HState Answer)
+    (remaining : HState → List Answer)
+    (preserves : ∀ state, match pull state with
+      | .done => remaining state = []
+      | .suspend next => remaining state = remaining next
+      | .yield answer next => remaining state = answer :: remaining next)
+    (fuel : Nat) (state : HState) (answers : List Answer)
+    (completed : collect pull fuel state = some answers) :
+    answers = remaining state := by
+  induction fuel generalizing state answers with
+  | zero => simp [collect] at completed
+  | succ fuel ih =>
+      have conserved := preserves state
+      cases moved : pull state with
+      | done =>
+          simp only [moved] at conserved
+          simpa [collect, moved, conserved] using completed.symm
+      | suspend next =>
+          simp only [moved] at conserved
+          simp only [collect, moved] at completed
+          exact (ih next answers completed).trans conserved.symm
+      | yield answer next =>
+          simp only [moved] at conserved
+          simp only [collect, moved] at completed
+          cases found : collect pull fuel next with
+          | none => simp [found] at completed
+          | some tail =>
+              simp only [found, Option.map_some, Option.some.injEq] at completed
+              subst answers
+              rw [ih next tail found, conserved]
+
+/-- A decreasing finite work measure proves exhaustion of a conserving
+provider. This bound counts provider polls, not the work inside a primitive
+or the time taken by that primitive. The running cursor need not compute it. -/
+theorem collect_complete (pull : HState → Pull HState Answer)
+    (remaining : HState → List Answer)
+    (preserves : ∀ state, match pull state with
+      | .done => remaining state = []
+      | .suspend next => remaining state = remaining next
+      | .yield answer next => remaining state = answer :: remaining next)
+    (rank : HState → Nat)
+    (decreases : ∀ state, match pull state with
+      | .done => rank state = 0
+      | .suspend next => rank next < rank state
+      | .yield _ next => rank next < rank state)
+    (fuel : Nat) (state : HState) (enough : rank state < fuel) :
+    collect pull fuel state = some (remaining state) := by
+  induction fuel generalizing state with
+  | zero => omega
+  | succ fuel ih =>
+      have conserved := preserves state
+      have decrease := decreases state
+      cases moved : pull state with
+      | done =>
+          simp only [moved] at conserved
+          simp [collect, moved, conserved]
+      | suspend next =>
+          simp only [moved] at conserved decrease
+          have small : rank next < fuel := by omega
+          simp [collect, moved, ih next small, conserved]
+      | yield answer next =>
+          simp only [moved] at conserved decrease
+          have small : rank next < fuel := by omega
+          simp [collect, moved, ih next small, conserved]
+
 namespace Controls
 
 def delayed : Nat → Pull Nat Nat

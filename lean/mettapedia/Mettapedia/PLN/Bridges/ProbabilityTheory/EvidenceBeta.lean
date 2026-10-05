@@ -1038,7 +1038,7 @@ noncomputable def betaCredibleInterval_normal_approx
         rw [max_eq_right h]
         exact le_min h_lower_le_one h_raw
       · -- Case: raw_lower < 0, so max 0 raw_lower = 0
-        push_neg at h
+        push Not at h
         rw [max_eq_left (le_of_lt h)]
         exact le_min (by norm_num : (0 : ℝ) ≤ 1) h_upper_nonneg
     lower_nonneg := by exact le_max_left 0 _

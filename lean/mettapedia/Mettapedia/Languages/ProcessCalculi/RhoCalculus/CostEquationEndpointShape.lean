@@ -121,7 +121,7 @@ theorem rho_isQuoteConstructor_cases {constructor : String}
     constructor = costBaseConstructorName "NQuote" ∨
       constructor = costWrappedConstructorName "NQuote" := by
   unfold ReflectiveContextSupport.isQuoteConstructor at isQuote
-  rw [CIGSLT.costWholeReflectionProfile_presentations] at isQuote
+  rw [WrappableIGSLT.costWholeReflectionProfile_presentations] at isQuote
   have tableShape : rhoCIGSLT.costStaticReflectivePresentations =
       [costStaticReflectivePresentationDecl rhoCIGSLT .base
         rhoReflectivePresentation.toReflectivePresentationDecl,

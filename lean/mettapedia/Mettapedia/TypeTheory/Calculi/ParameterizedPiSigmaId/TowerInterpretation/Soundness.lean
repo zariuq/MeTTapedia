@@ -47,7 +47,7 @@ namespace Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretati
 
 open Presentation Presentation.TypedEquality Presentation.TypedEquality.Annotated
 open Mettapedia.Logic.HOL.Embedding
-open ZFSetDependentProducts (graph sigmaSet mem_sigmaSet sigmaSet_congr)
+open ZFSetDependentProducts (graph graph_congr sigmaSet mem_sigmaSet sigmaSet_congr)
 open ZFSetTraceProducts (traceLam traceApp tracePiSet traceApp_graph_beta tracePiSet_congr)
 open ZFSetTraceProofDecoding (truthCode)
 open ZFSetReplayInterpretation (UniverseModel)

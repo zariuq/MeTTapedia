@@ -163,7 +163,8 @@ theorem counter_function_source_admitted : NativeC.primitiveFunctionText?
     counterSource = some counterFunction := by
   rw [counter_function_text_parts]
   have normalized : NativeC.primitiveStatements? counterBindings .word
-      (counterSource.length + 1) counterStatements ⟨3⟩ = some (counterCode, ⟨7⟩) := by
+      (counterSource.length + 1) counterStatements ⟨3⟩ [] counterRepresentation =
+      some (counterCode, ⟨7⟩) := by
     have length : counterSource.length + 1 = 204 := by decide +kernel
     rw [length]
     simp only [counterStatements, NativeC.primitiveStatements?, NativeC.primitiveStatement?,
@@ -1080,7 +1081,7 @@ theorem counter_call_source_refused (source : List Char) (callee : NativeC.Name)
   rw [parsed]
   exact NativeC.primitiveStatements_return_call_refused _ _ _ _ _ _
 
-/-! ## The actual disabled receipt wrapper
+/-! ## The actual receipt wrapper
 
 The active-scope query and observed charge have separately declared types.
 Admitting the wrapper does not certify either service implementation. The
@@ -1116,6 +1117,9 @@ def chargeGuardFunction : NativeIR.Function :=
     [.temporary 1 (.named "CostKind") (.readLocal "kind"),
      .temporary 2 .word (.readLocal "units")] ++ chargeGuardCode, 4⟩
 
+def chargeGuardProgram : NativeIR.Program :=
+  ⟨chargeGuardRepresentation.moduleName, chargeGuardRepresentation.interface, [chargeGuardFunction]⟩
+
 private def chargeGuardTokens : List NativeC.Token :=
   [.identifier "static".toList, .identifier "inline".toList,
    .identifier "uint64_t".toList, .identifier "cetta_native_cost_charge".toList,
@@ -1136,7 +1140,7 @@ private def chargeGuardParsed : NativeC.CFunction :=
     [.return (some (.conditional (.call "cetta_native_cost_active".toList [])
       (.call "cetta_native_cost_charge_observed".toList
         [.identifier "kind".toList, .identifier "units".toList])
-      (.cast ⟨"unsigned".toList, 0⟩ (.decimal 0))))]⟩
+      (.unsignedInteger 0)))]⟩
 
 private theorem chargeGuard_lexed : NativeC.lex chargeGuardSource = .ok chargeGuardTokens :=
   by decide +kernel
@@ -1148,66 +1152,71 @@ private theorem chargeGuard_parsed : NativeC.function?
 private def chargeGuardBindings : NativeC.PrimitiveBindings :=
   [("kind".toList, .temporary 1 (.named "CostKind")), ("units".toList, .temporary 2 .word)]
 
-private theorem chargeGuard_active_normalized : NativeC.primitiveExpression?
+private theorem chargeGuard_active_normalized (representation : NativeC.Representation) :
+    NativeC.primitiveExpression?
     chargeGuardBindings 193 (.call "cetta_native_cost_active".toList []) ⟨2⟩
-    [chargeGuardActive, chargeGuardObserved] =
+    [chargeGuardActive, chargeGuardObserved] representation =
     some ⟨[.call (some (.temporary 3 .bool)) (.external "cetta_native_cost_active") []],
       .temporary 3 .bool, ⟨3⟩⟩ := by
   simp only [NativeC.primitiveExpression?]
   rfl
 
-private theorem chargeGuard_observed_normalized : NativeC.primitiveExpression?
+private theorem chargeGuard_observed_normalized (representation : NativeC.Representation) :
+    NativeC.primitiveExpression?
     chargeGuardBindings 192 (.call "cetta_native_cost_charge_observed".toList
       [.identifier "kind".toList, .identifier "units".toList]) ⟨3⟩
-    [chargeGuardActive, chargeGuardObserved] =
+    [chargeGuardActive, chargeGuardObserved] representation =
     some ⟨[.call (some (.temporary 4 .word)) (.external "cetta_native_cost_charge_observed")
       [.temporary 1 (.named "CostKind"), .temporary 2 .word]],
       .temporary 4 .word, ⟨4⟩⟩ := by
   simp only [NativeC.primitiveExpression?]
   rfl
 
-private theorem chargeGuard_observed_return_normalized : NativeC.primitiveStatement?
+private theorem chargeGuard_observed_return_normalized (representation : NativeC.Representation) :
+    NativeC.primitiveStatement?
     chargeGuardBindings .word 193
     (.return (some (.call "cetta_native_cost_charge_observed".toList
       [.identifier "kind".toList, .identifier "units".toList]))) ⟨3⟩
-    [chargeGuardActive, chargeGuardObserved] =
+    [chargeGuardActive, chargeGuardObserved] representation =
     some ([.call (some (.temporary 4 .word)) (.external "cetta_native_cost_charge_observed")
       [.temporary 1 (.named "CostKind"), .temporary 2 .word],
       .return (.temporary 4 .word)], ⟨4⟩) := by
   simp only [NativeC.primitiveStatement?, chargeGuard_observed_normalized]
   rfl
 
-private theorem chargeGuard_conditional_normalized : NativeC.primitiveStatement?
+private theorem chargeGuard_conditional_normalized (representation : NativeC.Representation) :
+    NativeC.primitiveStatement?
     chargeGuardBindings .word 194
     (.return (some (.conditional (.call "cetta_native_cost_active".toList [])
       (.call "cetta_native_cost_charge_observed".toList
         [.identifier "kind".toList, .identifier "units".toList])
-      (.cast ⟨"unsigned".toList, 0⟩ (.decimal 0))))) ⟨2⟩
-    [chargeGuardActive, chargeGuardObserved] = some (chargeGuardCode, ⟨4⟩) := by
+      (.unsignedInteger 0)))) ⟨2⟩
+    [chargeGuardActive, chargeGuardObserved] representation = some (chargeGuardCode, ⟨4⟩) := by
   rw [NativeC.primitiveStatement?, chargeGuard_active_normalized]
   dsimp only [bind, Option.bind]
   change (do
     let first ← NativeC.primitiveStatement? chargeGuardBindings .word 193
       (.return (some (.call "cetta_native_cost_charge_observed".toList
         [.identifier "kind".toList, .identifier "units".toList]))) ⟨3⟩
-      [chargeGuardActive, chargeGuardObserved]
+      [chargeGuardActive, chargeGuardObserved] representation
     let second ← NativeC.primitiveStatement? chargeGuardBindings .word 193
-      (.return (some (.cast ⟨"unsigned".toList, 0⟩ (.decimal 0)))) first.2
-      [chargeGuardActive, chargeGuardObserved]
+      (.return (some (.unsignedInteger 0))) first.2
+      [chargeGuardActive, chargeGuardObserved] representation
     some ([Instruction.call (some (.temporary 3 .bool)) (.external "cetta_native_cost_active") []] ++
       [Instruction.branch (.value (.temporary 3 .bool)) first.1 second.1], second.2)) = _
   rw [chargeGuard_observed_return_normalized]
   rfl
 
-private theorem chargeGuard_body_normalized : NativeC.primitiveStatements?
+private theorem chargeGuard_body_normalized (representation : NativeC.Representation) :
+    NativeC.primitiveStatements?
     chargeGuardBindings .word 195 chargeGuardParsed.body ⟨2⟩
-    [chargeGuardActive, chargeGuardObserved] = some (chargeGuardCode, ⟨4⟩) := by
+    [chargeGuardActive, chargeGuardObserved] representation = some (chargeGuardCode, ⟨4⟩) := by
   change NativeC.primitiveStatements? chargeGuardBindings .word 195
     [.return (some (.conditional (.call "cetta_native_cost_active".toList [])
       (.call "cetta_native_cost_charge_observed".toList
         [.identifier "kind".toList, .identifier "units".toList])
-      (.cast ⟨"unsigned".toList, 0⟩ (.decimal 0))))] ⟨2⟩
-    [chargeGuardActive, chargeGuardObserved] = _
+      (.unsignedInteger 0)))] ⟨2⟩
+    [chargeGuardActive, chargeGuardObserved] representation = _
   rw [NativeC.primitiveStatements?, chargeGuard_conditional_normalized]
   rfl
 
@@ -1224,7 +1233,7 @@ theorem chargeGuard_source_admitted : NativeC.primitiveFunctionText?
   · rfl
   · have length : chargeGuardSource.length + 1 = 195 := by decide +kernel
     rw [length]
-    exact chargeGuard_body_normalized
+    exact chargeGuard_body_normalized chargeGuardRepresentation
 
 /-- The same source without explicit action declarations cannot be admitted,
 even though the active query and conditional syntax have been recognized. -/
@@ -1239,15 +1248,18 @@ theorem chargeGuard_missing_catalogue_refused : NativeC.primitiveFunctionText?
   have length : chargeGuardSource.length + 1 = 195 := by decide +kernel
   rw [length]
   have bodyRefused : NativeC.primitiveStatements? chargeGuardBindings .word 195
-      chargeGuardParsed.body ⟨2⟩ = none := by
+      chargeGuardParsed.body ⟨2⟩ []
+      { chargeGuardRepresentation with interface :=
+        { chargeGuardRepresentation.interface with externals := [] } } = none := by
     dsimp only [chargeGuardParsed]
     rw [NativeC.primitiveStatements?, NativeC.primitiveStatement?,
-      NativeC.primitiveExpression_call_refused]
+      NativeC.primitiveExpression?]
     rfl
   exact NativeC.primitive_function_body_refused _ chargeGuardHeader [] 195 chargeGuardParsed
     .word (by rfl) (by rfl) (by rfl) bodyRefused
 
-private def chargeGuardBound {World : Type} (state : TargetState World) (storage : Nat)
+/-- The wrapper's two ordinary by-value parameter cells at invocation entry. -/
+def chargeGuardBound {World : Type} (state : TargetState World) (storage : Nat)
     (kind : TargetValue) (units : BitVec 64) : TargetFrame × TargetState World :=
   let first := targetDeclareLocal (targetEmptyFrame storage) state "kind" (.named "CostKind") kind
   targetDeclareLocal first.1 first.2 "units" .word (.word units)
@@ -1269,6 +1281,41 @@ private theorem chargeGuard_parameters_readback {World : Type} (state : TargetSt
   simp [chargeGuardBound, targetDeclareLocal, targetEmptyFrame, targetLocalValue,
     targetLocalAddress, targetRead, targetStoreCell, targetReadPath]
 
+/-- Both arms use the same argument-capture prefix, before the query runs. -/
+private theorem chargeGuard_capture_prefix_exact {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (state : TargetState World) (storage : Nat) (kind : TargetValue) (units : BitVec 64)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls .word root chargeGuardFunction.body
+      (chargeGuardBound state storage kind units).1 (chargeGuardBound state storage kind units).2 out ↔
+      TargetRun interface heap calls .word root chargeGuardCode
+        (chargeGuardCaptured (chargeGuardBound state storage kind units).1 kind units)
+        (chargeGuardBound state storage kind units).2 out := by
+  let bound := chargeGuardBound state storage kind units
+  obtain ⟨kindRead, unitsRead⟩ := chargeGuard_parameters_readback state storage kind units
+  change TargetRun interface heap calls .word root
+    (.temporary 1 (.named "CostKind") (.readLocal "kind") ::
+     .temporary 2 .word (.readLocal "units") :: chargeGuardCode) bound.1 bound.2 out ↔ _
+  rw [target_normal_then_exact (target_temporary_instruction_exact
+    (by rfl : bound.1.temporaryNames.contains 1 = false) (.local kindRead))]
+  rw [target_normal_then_exact (target_temporary_instruction_exact
+    (by rfl : (targetDeclareTemporary bound.1 1 kind).temporaryNames.contains 2 = false)
+    (.local unitsRead))]
+  rfl
+
+private theorem chargeGuard_captured_operands {World : Type} (interface : Interface)
+    (frame : TargetFrame) (kind : TargetValue) (units : BitVec 64) (queried : TargetState World) :
+    TargetAtomsEval interface
+      (targetDeclareTemporary (chargeGuardCaptured frame kind units) 3 (.bool true)) queried
+      [.temporary 1 (.named "CostKind"), .temporary 2 .word] [kind, .word units] := by
+  constructor
+  · exact .temporary (by simp [chargeGuardCaptured, targetDeclareTemporary])
+      (by simp [chargeGuardCaptured, targetDeclareTemporary])
+  · constructor
+    · exact .temporary (by simp [chargeGuardCaptured, targetDeclareTemporary])
+        (by simp [chargeGuardCaptured, targetDeclareTemporary])
+    · exact .nil
+
 /-- Captured ordinary arguments precede the active query. Returning false
 skips the observed service even when the query has a nontrivial post-state. -/
 private theorem chargeGuard_body_inactive_exact {World : Type} (interface : Interface)
@@ -1283,15 +1330,8 @@ private theorem chargeGuard_body_inactive_exact {World : Type} (interface : Inte
     TargetRun interface heap calls .word root chargeGuardFunction.body bound.1 bound.2 out ↔
       out = chargeGuardOutcome bound.1 kind units post := by
   let bound := chargeGuardBound state storage kind units
-  obtain ⟨kindRead, unitsRead⟩ := chargeGuard_parameters_readback state storage kind units
-  change TargetRun interface heap calls .word root
-    (.temporary 1 (.named "CostKind") (.readLocal "kind") ::
-     .temporary 2 .word (.readLocal "units") :: chargeGuardCode) bound.1 bound.2 out ↔ _
-  rw [target_normal_then_exact (target_temporary_instruction_exact
-    (by rfl : bound.1.temporaryNames.contains 1 = false) (.local kindRead))]
-  rw [target_normal_then_exact (target_temporary_instruction_exact
-    (by rfl : (targetDeclareTemporary bound.1 1 kind).temporaryNames.contains 2 = false)
-    (.local unitsRead))]
+  dsimp only
+  rw [chargeGuard_capture_prefix_exact]
   have complete : ∀ candidate,
       (chargeGuardCaptured bound.1 kind units).temporaryNames.contains candidate = false →
         (chargeGuardCaptured bound.1 kind units).temporaries candidate = none :=
@@ -1300,6 +1340,42 @@ private theorem chargeGuard_body_inactive_exact {World : Type} (interface : Inte
   exact target_inactive_call_guard_exact
     (by rfl : (chargeGuardCaptured bound.1 kind units).temporaryNames.contains 3 = false)
     complete query root out
+
+private def chargeGuardActiveOutcome {World : Type} (frame : TargetFrame)
+    (kind : TargetValue) (units : BitVec 64) (value : TargetValue)
+    (post : TargetState World) : TargetBlockOutcome World :=
+  ⟨.returned value,
+    targetDeclareTemporary (chargeGuardCaptured frame kind units) 3 (.bool true), post⟩
+
+/-- The enabled arm forwards the captured arguments and returns each actual
+accounting result. The query's post-state precedes that service, whose whole
+post-state survives the branch. -/
+private theorem chargeGuard_body_active_exact {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (state : TargetState World) (storage : Nat) (kind : TargetValue) (units : BitVec 64)
+    (queried : TargetState World)
+    (query : ∀ raw after, calls (.external "cetta_native_cost_active") []
+      (chargeGuardBound state storage kind units).2 raw after ↔
+        raw = .bool true ∧ after = queried)
+    (root : List Instruction) (out : TargetBlockOutcome World) :
+    let bound := chargeGuardBound state storage kind units
+    TargetRun interface heap calls .word root chargeGuardFunction.body bound.1 bound.2 out ↔
+      ∃ value post, calls (.external "cetta_native_cost_charge_observed")
+        [kind, .word units] queried value post ∧
+        out = chargeGuardActiveOutcome bound.1 kind units value post := by
+  let bound := chargeGuardBound state storage kind units
+  dsimp only
+  rw [chargeGuard_capture_prefix_exact]
+  have complete : ∀ candidate,
+      (chargeGuardCaptured bound.1 kind units).temporaryNames.contains candidate = false →
+        (chargeGuardCaptured bound.1 kind units).temporaries candidate = none :=
+    target_declared_names_complete _ _ _
+      (target_declared_names_complete _ _ _ (by intro _ _; rfl))
+  exact target_active_call_guard_exact
+    (by rfl : (chargeGuardCaptured bound.1 kind units).temporaryNames.contains 3 = false)
+    (by rfl : (targetDeclareTemporary (chargeGuardCaptured bound.1 kind units)
+      3 (.bool true)).temporaryNames.contains 4 = false)
+    complete query (chargeGuard_captured_operands interface bound.1 kind units queried) root out
 
 private theorem chargeGuard_teardown {World : Type} (state : TargetState World)
     (storage : Nat) (kind : TargetValue) (units : BitVec 64)
@@ -1317,6 +1393,35 @@ private theorem chargeGuard_teardown {World : Type} (state : TargetState World)
   change { bound.2 with memory := targetDropLocals bound.2.memory storage 0 2 } = state
   change targetDropLocals bound.2.memory storage 0 2 = state.memory at released
   rw [released, stateExact]
+
+/-- A single actual false query realizes the wrapper and returns its full
+post-state after releasing parameter cells. The observed service is absent
+from the premises and from the executed branch. -/
+theorem chargeGuard_inactive_function_of_call {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState World) (storage : Nat)
+    (post : TargetState World) (fresh : targetFreshFrame state.memory storage)
+    (query : calls (.external "cetta_native_cost_active") []
+      (chargeGuardBound state storage kind units).2 (.bool false) post) :
+    TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state
+      ⟨.word 0, { post with memory := targetDropLocals post.memory storage 0 2 }⟩ := by
+  let bound := chargeGuardBound state storage kind units
+  have complete : ∀ candidate,
+      (chargeGuardCaptured bound.1 kind units).temporaryNames.contains candidate = false →
+        (chargeGuardCaptured bound.1 kind units).temporaries candidate = none :=
+    target_declared_names_complete _ _ _
+      (target_declared_names_complete _ _ _ (by intro _ _; rfl))
+  have body : TargetRun interface heap calls .word chargeGuardFunction.body chargeGuardFunction.body
+      bound.1 bound.2 (chargeGuardOutcome bound.1 kind units post) := by
+    apply (chargeGuard_capture_prefix_exact interface heap calls state storage kind units _ _).mpr
+    exact target_inactive_call_guard_of_call
+      (by rfl : (chargeGuardCaptured bound.1 kind units).temporaryNames.contains 3 = false)
+      complete query chargeGuardFunction.body
+  have executed : TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state
+      ⟨.word 0, (targetLeaveScope (targetEmptyFrame storage)
+        (chargeGuardOutcome bound.1 kind units post).frame post).2⟩ :=
+    .run fresh (by rfl) body rfl
+  exact executed
 
 /-- The actual admitted wrapper returns zero and preserves every caller
 field when the active query is state-preserving on the caller's world.
@@ -1380,6 +1485,376 @@ theorem chargeGuard_inactive_function_realization {World : Type} (interface : In
   (chargeGuard_inactive_function_exact interface heap calls kind units state query _).mpr
     ⟨target_finite_fresh finite, rfl⟩
 
+/-- Two actual service responses suffice to realize the admitted wrapper.
+Unlike a global service contract, these witnesses can name exact ordered
+invocations. The observed response starts from the query's full post-state. -/
+theorem chargeGuard_active_function_of_calls {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState World) (storage : Nat)
+    (queried post : TargetState World) (value : TargetValue)
+    (fresh : targetFreshFrame state.memory storage)
+    (query : calls (.external "cetta_native_cost_active") []
+      (chargeGuardBound state storage kind units).2 (.bool true) queried)
+    (observed : calls (.external "cetta_native_cost_charge_observed")
+      [kind, .word units] queried value post) :
+    TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state
+      ⟨value, { post with memory := targetDropLocals post.memory storage 0 2 }⟩ := by
+  let bound := chargeGuardBound state storage kind units
+  have complete : ∀ candidate,
+      (chargeGuardCaptured bound.1 kind units).temporaryNames.contains candidate = false →
+        (chargeGuardCaptured bound.1 kind units).temporaries candidate = none :=
+    target_declared_names_complete _ _ _
+      (target_declared_names_complete _ _ _ (by intro _ _; rfl))
+  have body : TargetRun interface heap calls .word chargeGuardFunction.body chargeGuardFunction.body
+      bound.1 bound.2 (chargeGuardActiveOutcome bound.1 kind units value post) := by
+    apply (chargeGuard_capture_prefix_exact interface heap calls state storage kind units _ _).mpr
+    exact target_active_call_guard_of_calls
+      (by rfl : (chargeGuardCaptured bound.1 kind units).temporaryNames.contains 3 = false)
+      (by rfl : (targetDeclareTemporary (chargeGuardCaptured bound.1 kind units)
+        3 (.bool true)).temporaryNames.contains 4 = false)
+      complete query (chargeGuard_captured_operands interface bound.1 kind units queried)
+      observed chargeGuardFunction.body
+  have executed : TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state
+      ⟨value, (targetLeaveScope (targetEmptyFrame storage)
+        (chargeGuardActiveOutcome bound.1 kind units value post).frame post).2⟩ :=
+    .run fresh (by rfl) body rfl
+  exact executed
+
+/-- The enabled wrapper's two service occurrences, including their complete
+intermediate states. Their external contracts are checked separately. -/
+def chargeGuardActiveChildren {World : Type} (state : TargetState World) (storage : Nat)
+    (kind : TargetValue) (units : BitVec 64) (queried post : TargetState World)
+    (value : TargetValue) : List (TargetCallTree World) :=
+  [.primitive "cetta_native_cost_active" [] (chargeGuardBound state storage kind units).2
+      (.bool true) queried,
+   .primitive "cetta_native_cost_charge_observed" [kind, .word units] queried value post]
+
+/-- The disabled wrapper retains just its false query occurrence. -/
+def chargeGuardInactiveChildren {World : Type} (state : TargetState World) (storage : Nat)
+    (kind : TargetValue) (units : BitVec 64) (post : TargetState World) : List (TargetCallTree World) :=
+  [.primitive "cetta_native_cost_active" [] (chargeGuardBound state storage kind units).2
+      (.bool false) post]
+
+/-- A disabled invocation consumes exactly its query child. No charge child
+or observed-service hypothesis is needed to execute the actual body. -/
+theorem chargeGuard_inactive_function_node {World : Type} (heap : TargetHeapSemantics World)
+    (state : TargetState World) (storage : Nat) (kind : TargetValue) (units : BitVec 64)
+    (post : TargetState World) (position : Nat) (fresh : targetFreshFrame state.memory storage) :
+    targetFunctionNode chargeGuardProgram heap chargeGuardHeader.name [kind, .word units] state (.word 0)
+      { post with memory := targetDropLocals post.memory storage 0 2 }
+      (chargeGuardInactiveChildren state storage kind units post) position := by
+  let children := chargeGuardInactiveChildren state storage kind units post
+  let first : TargetStampedCall World :=
+    ⟨.primitive "cetta_native_cost_active" [] (chargeGuardBound state storage kind units).2
+      (.bool false) post, position + 1, position + 2⟩
+  have member : first ∈ targetStampChildren children (position + 1) := List.mem_cons_self
+  refine ⟨chargeGuardFunction, rfl, ?_⟩
+  exact chargeGuard_inactive_function_of_call chargeGuardProgram.interface (targetHeapWithCursor heap)
+    (targetLedgerCall children (position + 1)) kind units (targetWithCursor state (position + 1))
+    storage (targetWithCursor post (position + 2)) fresh (target_ledger_call_of_member member)
+
+/-- An actual false service response validates the disabled call tree without
+any assumption on the unexecuted accounting service. -/
+theorem chargeGuard_inactive_call_tree_valid {World : Type} (heap : TargetHeapSemantics World)
+    (external : TargetExternalSemantics World) (state : TargetState World) (storage : Nat)
+    (kind : TargetValue) (units : BitVec 64) (post : TargetState World)
+    (position : Nat) (fresh : targetFreshFrame state.memory storage)
+    (query : external.call "cetta_native_cost_active" []
+      (chargeGuardBound state storage kind units).2 (.bool false) post) :
+    targetValidCallTree chargeGuardProgram heap external
+      (.function chargeGuardHeader.name [kind, .word units] state (.word 0)
+        { post with memory := targetDropLocals post.memory storage 0 2 }
+        (chargeGuardInactiveChildren state storage kind units post)) position := by
+  rw [targetValidCallTree]
+  constructor
+  · exact chargeGuard_inactive_function_node heap state storage kind units post position fresh
+  · simp only [chargeGuardInactiveChildren, targetValidChildren, targetValidCallTree]
+    exact ⟨⟨⟨chargeGuardActive, rfl⟩, query⟩, trivial⟩
+
+/-- The admitted C wrapper consumes the query and observed call in order.
+This constructs the existing invocation certificate by executing its body;
+the cursor is not an assumed annotation on the returned value. -/
+theorem chargeGuard_active_function_node {World : Type} (heap : TargetHeapSemantics World)
+    (state : TargetState World) (storage : Nat) (kind : TargetValue) (units : BitVec 64)
+    (queried post : TargetState World) (value : TargetValue) (position : Nat)
+    (fresh : targetFreshFrame state.memory storage) :
+    targetFunctionNode chargeGuardProgram heap chargeGuardHeader.name [kind, .word units] state value
+      { post with memory := targetDropLocals post.memory storage 0 2 }
+      (chargeGuardActiveChildren state storage kind units queried post value) position := by
+  let children := chargeGuardActiveChildren state storage kind units queried post value
+  let first : TargetStampedCall World :=
+    ⟨.primitive "cetta_native_cost_active" [] (chargeGuardBound state storage kind units).2
+      (.bool true) queried, position + 1, position + 2⟩
+  let second : TargetStampedCall World :=
+    ⟨.primitive "cetta_native_cost_charge_observed" [kind, .word units] queried value post,
+      position + 2, position + 3⟩
+  have firstMember : first ∈ targetStampChildren children (position + 1) := List.mem_cons_self
+  have secondMember : second ∈ targetStampChildren children (position + 1) :=
+    List.mem_cons_of_mem _ List.mem_cons_self
+  have query := target_ledger_call_of_member firstMember
+  have observed := target_ledger_call_of_member secondMember
+  refine ⟨chargeGuardFunction, rfl, ?_⟩
+  exact chargeGuard_active_function_of_calls chargeGuardProgram.interface (targetHeapWithCursor heap)
+    (targetLedgerCall children (position + 1)) kind units (targetWithCursor state (position + 1))
+    storage (targetWithCursor queried (position + 2)) (targetWithCursor post (position + 3)) value
+    fresh query observed
+
+/-- Actual admitted service responses validate the ordered invocation tree.
+The hypotheses concern the two primitive leaves, not wrapper correctness. -/
+theorem chargeGuard_active_call_tree_valid {World : Type} (heap : TargetHeapSemantics World)
+    (external : TargetExternalSemantics World) (state : TargetState World) (storage : Nat)
+    (kind : TargetValue) (units : BitVec 64) (queried post : TargetState World)
+    (value : TargetValue) (position : Nat) (fresh : targetFreshFrame state.memory storage)
+    (query : external.call "cetta_native_cost_active" []
+      (chargeGuardBound state storage kind units).2 (.bool true) queried)
+    (observed : external.call "cetta_native_cost_charge_observed" [kind, .word units]
+      queried value post) :
+    targetValidCallTree chargeGuardProgram heap external
+      (.function chargeGuardHeader.name [kind, .word units] state value
+        { post with memory := targetDropLocals post.memory storage 0 2 }
+        (chargeGuardActiveChildren state storage kind units queried post value)) position := by
+  rw [targetValidCallTree]
+  constructor
+  · exact chargeGuard_active_function_node heap state storage kind units queried post value position fresh
+  · simp only [chargeGuardActiveChildren, targetValidChildren, targetValidCallTree]
+    exact ⟨⟨⟨chargeGuardActive, rfl⟩, query⟩,
+      ⟨⟨⟨chargeGuardObserved, rfl⟩, observed⟩, trivial⟩⟩
+
+/-- An enabled invocation has exactly the observed service's result relation.
+It supplies the original by-value arguments and releases its two parameter
+cells afterwards. The query post-state is explicit, so recording its call
+may advance an invocation cursor. External effects, faults, allocator observations and all
+other storage remain in the service's actual post-state. The service itself
+is not certified by this wrapper theorem. -/
+theorem chargeGuard_active_function_post_exact {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState World)
+    (queryPost : TargetState World → TargetState World)
+    (query : ∀ middle, middle.external = state.external → ∀ raw after,
+      calls (.external "cetta_native_cost_active") [] middle raw after ↔
+        raw = .bool true ∧ after = queryPost middle)
+    (result : TargetRawResult World) :
+    TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state result ↔
+      ∃ storage value post, targetFreshFrame state.memory storage ∧
+        calls (.external "cetta_native_cost_charge_observed") [kind, .word units]
+          (queryPost (chargeGuardBound state storage kind units).2) value post ∧
+        result = ⟨value, { post with memory := targetDropLocals post.memory storage 0 2 }⟩ := by
+  constructor
+  · intro ran
+    cases ran with
+    | @run storage frame bound out raw fresh parameters body returned =>
+      have parameterPair : (frame, bound) = chargeGuardBound state storage kind units :=
+        (Option.some.inj parameters).symm
+      have frameEq : frame = (chargeGuardBound state storage kind units).1 :=
+        congrArg Prod.fst parameterPair
+      have stateEq : bound = (chargeGuardBound state storage kind units).2 :=
+        congrArg Prod.snd parameterPair
+      subst frame
+      subst bound
+      obtain ⟨value, post, called, executed⟩ :=
+        (chargeGuard_body_active_exact interface heap calls state storage kind units
+          (queryPost (chargeGuardBound state storage kind units).2) (query _ rfl)
+          chargeGuardFunction.body out).mp body
+      have rawExact : raw = value := TargetFlow.returned.inj
+        (returned.symm.trans (congrArg TargetBlockOutcome.flow executed))
+      refine ⟨storage, value, post, fresh, called, ?_⟩
+      rw [rawExact, executed]
+      rfl
+  · rintro ⟨storage, value, post, fresh, called, rfl⟩
+    let bound := chargeGuardBound state storage kind units
+    have executed : TargetFunctionBody interface heap calls chargeGuardFunction
+        [kind, .word units] state
+        ⟨value, (targetLeaveScope (targetEmptyFrame storage)
+          (chargeGuardActiveOutcome bound.1 kind units value post).frame post).2⟩ :=
+      .run fresh (by rfl)
+      ((chargeGuard_body_active_exact interface heap calls state storage kind units (queryPost bound.2)
+        (query _ rfl) chargeGuardFunction.body _).mpr ⟨value, post, called, rfl⟩) rfl
+    exact executed
+
+/-- A state-preserving enabled query is the ordinary uninstrumented instance
+of the complete query/service sequencing law. -/
+theorem chargeGuard_active_function_exact {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState World)
+    (query : ∀ middle, middle.external = state.external → ∀ raw after,
+      calls (.external "cetta_native_cost_active") [] middle raw after ↔
+        raw = .bool true ∧ after = middle)
+    (result : TargetRawResult World) :
+    TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state result ↔
+      ∃ storage value post, targetFreshFrame state.memory storage ∧
+        calls (.external "cetta_native_cost_charge_observed") [kind, .word units]
+          (chargeGuardBound state storage kind units).2 value post ∧
+        result = ⟨value, { post with memory := targetDropLocals post.memory storage 0 2 }⟩ :=
+  chargeGuard_active_function_post_exact interface heap calls kind units state id query result
+
+/-- Finite caller storage and an actual service response produce an enabled
+wrapper invocation. No totality is inferred from the service's signature. -/
+theorem chargeGuard_active_function_realization {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState World)
+    (finite : TargetFiniteStorage state.memory)
+    (query : ∀ middle, middle.external = state.external → ∀ raw after,
+      calls (.external "cetta_native_cost_active") [] middle raw after ↔
+        raw = .bool true ∧ after = middle)
+    (responds : ∀ middle, middle.external = state.external →
+      ∃ value post, calls (.external "cetta_native_cost_charge_observed")
+        [kind, .word units] middle value post) :
+    ∃ result, TargetFunctionBody interface heap calls chargeGuardFunction
+      [kind, .word units] state result := by
+  obtain ⟨storage, fresh⟩ := target_finite_fresh finite
+  obtain ⟨value, post, called⟩ := responds (chargeGuardBound state storage kind units).2 rfl
+  exact ⟨_, (chargeGuard_active_function_exact interface heap calls kind units state query _).mpr
+    ⟨storage, value, post, fresh, called, rfl⟩⟩
+
+/-- An active query does not invent a successful accounting response when
+the observed service is unavailable. -/
+theorem chargeGuard_missing_active_service_refused {World : Type} (interface : Interface)
+    (heap : TargetHeapSemantics World) (calls : TargetCalls World)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState World)
+    (query : ∀ middle, middle.external = state.external → ∀ raw after,
+      calls (.external "cetta_native_cost_active") [] middle raw after ↔
+        raw = .bool true ∧ after = middle)
+    (missing : ∀ middle value post, ¬ calls (.external "cetta_native_cost_charge_observed")
+      [kind, .word units] middle value post) (result : TargetRawResult World) :
+    ¬ TargetFunctionBody interface heap calls chargeGuardFunction [kind, .word units] state result := by
+  intro ran
+  obtain ⟨_, _, _, _, called, _⟩ :=
+    (chargeGuard_active_function_exact interface heap calls kind units state query result).mp ran
+  exact missing _ _ _ called
+
+namespace GuardControls
+
+/-- Reversing the same two call records prevents the first query, even
+when the supplied result word and final program state are unchanged. -/
+theorem reordered_query_refused {World : Type} (state : TargetState World) (storage : Nat)
+    (kind : TargetValue) (units : BitVec 64) (queried post : TargetState World)
+    (value : TargetValue) (position : Nat) (after : TargetState (World × Nat)) :
+    ¬ targetLedgerCall (chargeGuardActiveChildren state storage kind units queried post value).reverse
+      (position + 1) (.external "cetta_native_cost_active") []
+      (targetWithCursor (chargeGuardBound state storage kind units).2 (position + 1))
+      (.bool true) after := by
+  intro called
+  change targetLedgerCall
+    [.primitive "cetta_native_cost_charge_observed" [kind, .word units] queried value post,
+     .primitive "cetta_native_cost_active" [] (chargeGuardBound state storage kind units).2
+       (.bool true) queried] (position + 1) (.external "cetta_native_cost_active") []
+    (targetWithCursor (chargeGuardBound state storage kind units).2 (position + 1))
+    (.bool true) after at called
+  rcases (target_ledger_call_cons_iff _ _ _ _ _ _ _ _).mp called with first | later
+  · have mismatch := first.2.1
+    simp [TargetCallTree.target] at mismatch
+  · rcases (target_ledger_call_cons_iff _ _ _ _ _ _ _ _).mp later with second | absent
+    · have cursor := second.1
+      change position + 1 + 1 = position + 1 at cursor
+      omega
+    · exact empty_target_ledger_refuses_call _ _ _ _ _ _ absent
+
+/-- Dropping the query record cannot be repaired by retaining the charge's
+record alone. The query is an occurrence, not an inferred service result. -/
+theorem omitted_query_refused {World : Type} (queried post : TargetState World)
+    (kind : TargetValue) (units : BitVec 64) (value : TargetValue) (position : Nat)
+    (before after : TargetState (World × Nat)) :
+    ¬ targetLedgerCall [.primitive "cetta_native_cost_charge_observed"
+        [kind, .word units] queried value post] position
+      (.external "cetta_native_cost_active") [] before (.bool true) after := by
+  intro called
+  rcases (target_ledger_call_cons_iff _ _ _ _ _ _ _ _).mp called with first | absent
+  · have mismatch := first.2.1
+    simp [TargetCallTree.target] at mismatch
+  · exact empty_target_ledger_refuses_call _ _ _ _ _ _ absent
+
+/-- A concrete service pair makes invocation effects observable independently
+of its zero return value. This is a control for wrapper execution, not a model
+of the full native ledger implementation. -/
+def countingServices (kind : TargetValue) (units : BitVec 64) : TargetCalls Nat :=
+  fun target arguments before raw after =>
+    (target = .external "cetta_native_cost_active" ∧ arguments = [] ∧
+      raw = .bool true ∧ after = before) ∨
+    (target = .external "cetta_native_cost_charge_observed" ∧
+      arguments = [kind, .word units] ∧ raw = .word 0 ∧
+      after = { before with external := before.external + 1 })
+
+/-- The same concrete service control supplies primitive leaves to the
+independent ordered-call validator. -/
+def countingExternal (kind : TargetValue) (units : BitVec 64) : TargetExternalSemantics Nat :=
+  ⟨fun name arguments before raw after =>
+    countingServices kind units (.external name) arguments before raw after⟩
+
+/-- Finite caller storage realizes the complete enabled program call with
+two checked primitive children. Its zero result retains one service effect. -/
+theorem active_program_service_realized (heap : TargetHeapSemantics Nat)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState Nat)
+    (finite : TargetFiniteStorage state.memory) :
+    ∃ post, targetProgramCall chargeGuardProgram heap (countingExternal kind units)
+      (.function chargeGuardHeader.name) [kind, .word units] state (.word 0) post ∧
+      post.external = state.external + 1 := by
+  obtain ⟨storage, fresh⟩ := target_finite_fresh finite
+  let bound := (chargeGuardBound state storage kind units).2
+  let observed := { bound with external := bound.external + 1 }
+  let post := { observed with memory := targetDropLocals observed.memory storage 0 2 }
+  refine ⟨post, ?_, rfl⟩
+  refine ⟨.function chargeGuardHeader.name [kind, .word units] state (.word 0) post
+      (chargeGuardActiveChildren state storage kind units bound observed (.word 0)),
+    rfl, rfl, rfl, rfl, rfl, ?_⟩
+  apply chargeGuard_active_call_tree_valid heap (countingExternal kind units)
+    state storage kind units bound observed (.word 0) 0 fresh
+  · exact Or.inl ⟨rfl, rfl, rfl, rfl⟩
+  · exact Or.inr ⟨rfl, rfl, rfl, rfl⟩
+
+private theorem counting_query (kind : TargetValue) (units : BitVec 64)
+    (before : TargetState Nat) (raw : TargetValue) (after : TargetState Nat) :
+    countingServices kind units (.external "cetta_native_cost_active") [] before raw after ↔
+      raw = .bool true ∧ after = before := by
+  simp [countingServices]
+
+/-- Every execution of the admitted wrapper preserves this service's return
+word and exactly one externally visible increment. -/
+theorem active_keeps_service_effect (interface : Interface) (heap : TargetHeapSemantics Nat)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState Nat)
+    (result : TargetRawResult Nat)
+    (ran : TargetFunctionBody interface heap (countingServices kind units)
+      chargeGuardFunction [kind, .word units] state result) :
+    result.value = .word 0 ∧ result.state.external = state.external + 1 := by
+  obtain ⟨storage, value, post, _, called, same⟩ :=
+    (chargeGuard_active_function_exact interface heap (countingServices kind units)
+      kind units state (fun _ _ => counting_query kind units _) result).mp ran
+  have effect : value = .word 0 ∧
+      post = { (chargeGuardBound state storage kind units).2 with
+        external := state.external + 1 } := by
+    simpa [countingServices, chargeGuardBound, targetDeclareLocal] using called
+  rcases effect with ⟨rfl, rfl⟩
+  subst result
+  exact ⟨rfl, rfl⟩
+
+/-- The control is inhabited for every finite caller store. Its two temporary
+parameter cells are released, while the independent service effect survives. -/
+theorem active_service_realized (interface : Interface) (heap : TargetHeapSemantics Nat)
+    (kind : TargetValue) (units : BitVec 64) (state : TargetState Nat)
+    (finite : TargetFiniteStorage state.memory) :
+    ∃ result, TargetFunctionBody interface heap (countingServices kind units)
+      chargeGuardFunction [kind, .word units] state result ∧
+      result.value = .word 0 ∧ result.state.external = state.external + 1 := by
+  obtain ⟨result, ran⟩ := chargeGuard_active_function_realization interface heap
+    (countingServices kind units) kind units state finite
+    (fun _ _ => counting_query kind units _) (by
+      intro middle _
+      exact ⟨.word 0, { middle with external := middle.external + 1 },
+        Or.inr ⟨rfl, rfl, rfl, rfl⟩⟩)
+  exact ⟨result, ran, active_keeps_service_effect interface heap kind units state result ran⟩
+
+/-- Keeping only the returned word and resetting the post-state would erase
+an actual accounting invocation. The admitted wrapper rejects that result. -/
+theorem discarded_service_effect_rejected (interface : Interface)
+    (heap : TargetHeapSemantics Nat) (kind : TargetValue) (units : BitVec 64)
+    (state : TargetState Nat) :
+    ¬ TargetFunctionBody interface heap (countingServices kind units)
+      chargeGuardFunction [kind, .word units] state ⟨.word 0, state⟩ := by
+  intro ran
+  have impossible := (active_keeps_service_effect interface heap kind units state _ ran).2
+  exact Nat.ne_of_lt (Nat.lt_succ_self state.external) impossible
+
+end GuardControls
+
 /-- A false query can still change its world. This execution of the actual
 wrapper distinguishes a disabled branch from a state-preserving query. -/
 theorem chargeGuard_false_query_can_change_world (interface : Interface)
@@ -1401,5 +1876,158 @@ theorem chargeGuard_false_query_can_change_world (interface : Interface)
     rfl
   · simp only [chargeGuardOutcome, post, inactive]
     decide
+
+
+/-! ## Issued-return registry source
+
+The complete deployed search body retains its guard, ordinal table position,
+charge call, const pointer alias, selected return and exhausted return. Text
+recognition is separate from operational lowering: the scalar profile does
+not yet admit this loop or certify its physical pointer-to-array view.
+-/
+
+namespace IssuedReturnSource
+
+private def text0 : List Char := "static size_t continuation_lease_index(const CettaContinuationStore *store,\n".toList
+private def tokens0 : List NativeC.Token := [.identifier "static".toList, .identifier "size_t".toList, .identifier "continuation_lease_index".toList, .punctuation "(".toList, .identifier "const".toList, .identifier "CettaContinuationStore".toList, .punctuation "*".toList, .identifier "store".toList, .punctuation ",".toList]
+private theorem scanned0 : text0.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens0 := by decide +kernel
+
+private def text1 : List Char := "                                      const CettaOwnedContinuation *owned) {\n".toList
+private def tokens1 : List NativeC.Token := [.identifier "const".toList, .identifier "CettaOwnedContinuation".toList, .punctuation "*".toList, .identifier "owned".toList, .punctuation ")".toList, .punctuation "{".toList]
+private theorem scanned1 : text1.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens1 := by decide +kernel
+
+private def text2 : List Char := "    if (!store || !owned || !owned->resume_store ||\n".toList
+private def tokens2 : List NativeC.Token := [.identifier "if".toList, .punctuation "(".toList, .punctuation "!".toList, .identifier "store".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "owned".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "owned".toList, .punctuation "->".toList, .identifier "resume_store".toList, .punctuation "||".toList]
+private theorem scanned2 : text2.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens2 := by decide +kernel
+
+private def text3 : List Char := "        owned->resume_store != store->identity || !owned->resume_lease)\n".toList
+private def tokens3 : List NativeC.Token := [.identifier "owned".toList, .punctuation "->".toList, .identifier "resume_store".toList, .punctuation "!=".toList, .identifier "store".toList, .punctuation "->".toList, .identifier "identity".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "owned".toList, .punctuation "->".toList, .identifier "resume_lease".toList, .punctuation ")".toList]
+private theorem scanned3 : text3.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens3 := by decide +kernel
+
+private def text4 : List Char := "        return SIZE_MAX;\n".toList
+private def tokens4 : List NativeC.Token := [.identifier "return".toList, .identifier "SIZE_MAX".toList, .punctuation ";".toList]
+private theorem scanned4 : text4.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens4 := by decide +kernel
+
+private def text5 : List Char := "    for (size_t i = 0u; i < store->lease_length; i++) {\n".toList
+private def tokens5 : List NativeC.Token := [.identifier "for".toList, .punctuation "(".toList, .identifier "size_t".toList, .identifier "i".toList, .punctuation "=".toList, .number "0u".toList, .punctuation ";".toList, .identifier "i".toList, .punctuation "<".toList, .identifier "store".toList, .punctuation "->".toList, .identifier "lease_length".toList, .punctuation ";".toList, .identifier "i".toList, .punctuation "++".toList, .punctuation ")".toList, .punctuation "{".toList]
+private theorem scanned5 : text5.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens5 := by decide +kernel
+
+private def text6 : List Char := "        cetta_native_cost_charge(CETTA_COST_QUEUE_VISIT,1u);\n".toList
+private def tokens6 : List NativeC.Token := [.identifier "cetta_native_cost_charge".toList, .punctuation "(".toList, .identifier "CETTA_COST_QUEUE_VISIT".toList, .punctuation ",".toList, .number "1u".toList, .punctuation ")".toList, .punctuation ";".toList]
+private theorem scanned6 : text6.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens6 := by decide +kernel
+
+private def text7 : List Char := "        const CettaContinuationLease *lease = &store->leases[i];\n".toList
+private def tokens7 : List NativeC.Token := [.identifier "const".toList, .identifier "CettaContinuationLease".toList, .punctuation "*".toList, .identifier "lease".toList, .punctuation "=".toList, .punctuation "&".toList, .identifier "store".toList, .punctuation "->".toList, .identifier "leases".toList, .punctuation "[".toList, .identifier "i".toList, .punctuation "]".toList, .punctuation ";".toList]
+private theorem scanned7 : text7.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens7 := by decide +kernel
+
+private def text8 : List Char := "        if (lease->occurrence == owned->occurrence_id && lease->lease == owned->resume_lease &&\n".toList
+private def tokens8 : List NativeC.Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "lease".toList, .punctuation "->".toList, .identifier "occurrence".toList, .punctuation "==".toList, .identifier "owned".toList, .punctuation "->".toList, .identifier "occurrence_id".toList, .punctuation "&&".toList, .identifier "lease".toList, .punctuation "->".toList, .identifier "lease".toList, .punctuation "==".toList, .identifier "owned".toList, .punctuation "->".toList, .identifier "resume_lease".toList, .punctuation "&&".toList]
+private theorem scanned8 : text8.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens8 := by decide +kernel
+
+private def text9 : List Char := "            lease->payload == owned->payload && lease->provider == owned->provider)\n".toList
+private def tokens9 : List NativeC.Token := [.identifier "lease".toList, .punctuation "->".toList, .identifier "payload".toList, .punctuation "==".toList, .identifier "owned".toList, .punctuation "->".toList, .identifier "payload".toList, .punctuation "&&".toList, .identifier "lease".toList, .punctuation "->".toList, .identifier "provider".toList, .punctuation "==".toList, .identifier "owned".toList, .punctuation "->".toList, .identifier "provider".toList, .punctuation ")".toList]
+private theorem scanned9 : text9.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens9 := by decide +kernel
+
+private def text10 : List Char := "            return i;\n".toList
+private def tokens10 : List NativeC.Token := [.identifier "return".toList, .identifier "i".toList, .punctuation ";".toList]
+private theorem scanned10 : text10.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens10 := by decide +kernel
+
+private def text11 : List Char := "    }\n".toList
+private def tokens11 : List NativeC.Token := [.punctuation "}".toList]
+private theorem scanned11 : text11.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens11 := by decide +kernel
+
+private def text12 : List Char := "    return SIZE_MAX;\n".toList
+private def tokens12 : List NativeC.Token := [.identifier "return".toList, .identifier "SIZE_MAX".toList, .punctuation ";".toList]
+private theorem scanned12 : text12.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens12 := by decide +kernel
+
+private def text13 : List Char := "}".toList
+private def tokens13 : List NativeC.Token := [.punctuation "}".toList]
+private theorem scanned13 : text13.foldl NativeC.step NativeC.initial =
+    NativeC.completed tokens13 := by decide +kernel
+
+private def pieces : List (List Char × List NativeC.Token) :=
+  [(text0, tokens0), (text1, tokens1), (text2, tokens2), (text3, tokens3), (text4, tokens4), (text5, tokens5), (text6, tokens6), (text7, tokens7), (text8, tokens8), (text9, tokens9), (text10, tokens10), (text11, tokens11), (text12, tokens12), (text13, tokens13)]
+
+def source : List Char := pieces.flatMap Prod.fst
+private def tokens : List NativeC.Token := pieces.flatMap Prod.snd
+
+private theorem scanned : List.Forall (fun piece =>
+    piece.1.foldl NativeC.step NativeC.initial = NativeC.completed piece.2) pieces :=
+  ⟨scanned0, ⟨scanned1, ⟨scanned2, ⟨scanned3, ⟨scanned4, ⟨scanned5, ⟨scanned6, ⟨scanned7, ⟨scanned8, ⟨scanned9, ⟨scanned10, ⟨scanned11, ⟨scanned12, scanned13⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩
+
+private theorem lexed : NativeC.lex source = .ok tokens :=
+  NativeC.lex_of_completed source tokens (NativeC.completed_pieces pieces scanned)
+
+def types : NativeC.TypeNames :=
+  ["size_t".toList, "CettaContinuationStore".toList,
+   "CettaOwnedContinuation".toList, "CettaContinuationLease".toList]
+
+private def member (name field : String) : NativeC.CExpr :=
+  .field (.identifier name.toList) field.toList true
+
+private def guard : NativeC.CExpr :=
+  .binary .or
+    (.binary .or
+      (.binary .or
+        (.binary .or (.unary .not (.identifier "store".toList))
+          (.unary .not (.identifier "owned".toList)))
+        (.unary .not (member "owned" "resume_store")))
+      (.binary .ne (member "owned" "resume_store") (member "store" "identity")))
+    (.unary .not (member "owned" "resume_lease"))
+
+private def rowMatches : NativeC.CExpr :=
+  .binary .and
+    (.binary .and
+      (.binary .and
+        (.binary .eq (member "lease" "occurrence") (member "owned" "occurrence_id"))
+        (.binary .eq (member "lease" "lease") (member "owned" "resume_lease")))
+      (.binary .eq (member "lease" "payload") (member "owned" "payload")))
+    (.binary .eq (member "lease" "provider") (member "owned" "provider"))
+
+def body : List NativeC.CStatement :=
+  [.branch guard [.return (some (.identifier "SIZE_MAX".toList))] [],
+   .forLoop ⟨"size_t".toList, 0⟩ ['i'] (.unsignedInteger 0)
+     (.binary .lt (.identifier ['i']) (member "store" "lease_length"))
+     (.postIncrement (.identifier ['i']))
+     [.effect (.call "cetta_native_cost_charge".toList
+       [.identifier "CETTA_COST_QUEUE_VISIT".toList, .unsignedInteger 1]),
+      .declarePointeeConst ⟨"CettaContinuationLease".toList, 1⟩ "lease".toList
+        (.unary .address (.index (member "store" "leases") (.identifier ['i']))),
+      .branch rowMatches [.return (some (.identifier ['i']))] []],
+   .return (some (.identifier "SIZE_MAX".toList))]
+
+def parsed : NativeC.CQualifiedFunction :=
+  ⟨⟨"size_t".toList, 0⟩, "continuation_lease_index".toList,
+   [⟨⟨⟨"CettaContinuationStore".toList, 1⟩, "store".toList⟩, true⟩,
+    ⟨⟨⟨"CettaOwnedContinuation".toList, 1⟩, "owned".toList⟩, true⟩], body⟩
+
+private theorem token_count : tokens.length = 123 := by decide +kernel
+
+private theorem parsed_exact : NativeC.qualifiedFunction?
+    (2 * tokens.length + 4) types (NativeC.ordinaryFunctionTokens tokens) =
+      some (parsed, []) := by
+  rw [token_count]
+  rfl
+
+/-- Complete source consumption keeps both qualified parameters and all
+branches of the actual scan; it is not a compiled-C execution theorem. -/
+theorem source_recognized : NativeC.qualifiedFunctionText? types source = some parsed :=
+  NativeC.function_text_using_of_parts (NativeC.qualifiedParameter? types) types source
+    tokens parsed lexed parsed_exact
+
+end IssuedReturnSource
 
 end Mettapedia.Languages.MeTTa.CeTTaNativeCost

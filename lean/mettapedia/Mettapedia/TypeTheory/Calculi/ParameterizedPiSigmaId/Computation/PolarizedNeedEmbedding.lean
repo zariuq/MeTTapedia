@@ -1,5 +1,8 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Computation.PolarizedNeedMachine
 import Mettapedia.Machines.BranchLocalNeed.Representation
+import Mettapedia.Machines.BranchLocalNeed.InferenceControl
+import Mettapedia.Machines.BranchLocalNeed.LocalStepPaths
+import Mettapedia.GSLT.Causality.OccurrenceMachineHistory
 
 /-!
 # Exact preservation of the native scoped Need machine
@@ -246,6 +249,93 @@ theorem step_map
   rw [extension_step_eq_reference]
   exact (compatible primitive).step_map machine
 
+section Histories
+
+open Mettapedia.GSLT.Causality.OccurrenceMachineHistory
+open Mettapedia.OSLF.Binding
+
+variable
+  (primitive : Operation → Tm Head m → Produced (Tm Head m) StableFault NativeFault)
+  (initial : ScopedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m)
+
+local notation "sourcePaths" =>
+  NeedInferenceControl.Reference.pathMachine (ScopedNeedMachine.spec primitive) initial
+local notation "targetPaths" =>
+  NeedLocalSteps.pathMachine (PolarizedNeedMachine.extension primitive)
+    (representation.mapMachine initial)
+
+/-- The existing history functor acts on actual machine successors. No
+target-only local steps are inserted into the represented old fragment. -/
+def historyMap :
+    RewriteEventHistory.ForwardEvidenceMap (system sourcePaths) (system targetPaths) :=
+  forward sourcePaths targetPaths representation.mapMachine
+    (fun machine => (step_map primitive machine).symm)
+
+theorem history_indices
+    {before after : RewriteEventHistory.State (system sourcePaths)}
+    (history : Quiver.Path before after) :
+    indices targetPaths ((historyMap primitive initial).histories.map history) =
+      indices sourcePaths history :=
+  forward_indices sourcePaths targetPaths representation.mapMachine
+    (fun machine => (step_map primitive machine).symm) history
+
+/-- Successful and failed replay commute with the independently executable
+polarized machine. The observation retains the complete endpoint machine. -/
+theorem replay_map
+    (machine : ScopedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m)
+    (trace : List Nat) :
+    (targetPaths).follow (representation.mapMachine machine) trace =
+      ((sourcePaths).follow machine trace).map representation.mapMachine :=
+  follow_map sourcePaths targetPaths representation.mapMachine
+    (fun machine => (step_map primitive machine).symm) machine trace
+
+/-- A replay from an old image cannot reach an unexplained new endpoint.
+The witness retains the old heap, receipts, controls and work account. -/
+theorem replay_covered
+    {machine : ScopedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m}
+    {endpoint : PolarizedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m}
+    {trace : List Nat}
+    (accepted : (targetPaths).follow (representation.mapMachine machine) trace = some endpoint) :
+    ∃ original, (sourcePaths).follow machine trace = some original ∧
+      representation.mapMachine original = endpoint :=
+  replay_reflects sourcePaths targetPaths representation.mapMachine
+    (fun machine => (step_map primitive machine).symm) accepted
+
+/-- Exact work is preserved at every replay endpoint, not only in an
+answer-only projection. -/
+theorem replay_work
+    {machine : ScopedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m}
+    {endpoint : PolarizedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m}
+    {trace : List Nat}
+    (accepted : (targetPaths).follow (representation.mapMachine machine) trace = some endpoint) :
+    ∃ original, (sourcePaths).follow machine trace = some original ∧
+      original.work = endpoint.work := by
+  obtain ⟨original, replay, rfl⟩ := replay_covered primitive initial accepted
+  exact ⟨original, replay, rfl⟩
+
+/-- The ordered record of complete semantic work counters agrees at every
+event. The free monoid retains event order and does not identify repeated
+snapshots or discard administrative transitions. -/
+theorem history_work_account :
+    (eventAccount targetPaths (fun _ after _ => FreeMonoid.of after.work)).comap
+        (historyMap primitive initial).histories =
+      eventAccount sourcePaths (fun _ after _ => FreeMonoid.of after.work) := by
+  exact eventAccount_forward sourcePaths targetPaths representation.mapMachine
+    (fun machine => (step_map primitive machine).symm)
+    (fun _ after _ => FreeMonoid.of after.work)
+    (fun _ after _ => FreeMonoid.of after.work) (MonoidHom.id _) (fun _ _ _ _ => rfl)
+
+/-- Missing occurrence indices are still rejected after the embedding. -/
+theorem replay_missing
+    (machine : ScopedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m)
+    (trace : List Nat) :
+    (targetPaths).follow (representation.mapMachine machine) trace = none ↔
+      (sourcePaths).follow machine trace = none := by
+  rw [replay_map]
+  exact Option.map_eq_none_iff
+
+end Histories
+
 theorem advance_map
     (primitive : Operation → Tm Head m → Produced (Tm Head m) StableFault NativeFault)
     (machine : ScopedNeedMachine.NeedMachine Head Operation Effect StableFault NativeFault m) :
@@ -399,6 +489,12 @@ theorem thunk_force_outside_state_image {n v k : Nat}
 #print axioms compatible
 #print axioms localStep_state
 #print axioms step_map
+#print axioms history_indices
+#print axioms replay_map
+#print axioms replay_covered
+#print axioms replay_work
+#print axioms history_work_account
+#print axioms replay_missing
 #print axioms runFrontier_map
 #print axioms answers_map
 #print axioms closure_injective

@@ -18,7 +18,8 @@ body is a function of the field values and of the results at the recursive field
 (`recursionFun`) is a function on the set of `T`, and `recursionValue` is its traced graph.
 
 **Typing and computation**, at an assignment that reads the datatype (`InductiveReading`) and
-is a set model of the package in which the bodies are typed:
+is a set model of the package in which the bodies are typed, for a datatype whose constructor
+names are distinct (the recursion tells the constructors apart by the codes of their names):
 
 * an environment of a method's context is a list of field values that fit and of results in
   the result family at the recursive fields (`sat_methodCtx`);
@@ -35,12 +36,12 @@ The value reads only the names of the package in which the motive, the field typ
 bodies are typed (`recursionValue_congr`).
 
 **The theorem** (`recursion_setModel`): let a package have a set model at every assignment
-that agrees with a given one on the names it declares, and a reading of a declared datatype at
-each of them. A new constant defined by structural recursion on that datatype, with result
-family and bodies typed in the package, gives a package with a set model at every assignment
-that agrees, on the names it declares, with the base assignment extended by the recursion's
-value. So definitions and declarations can follow one another, and the package is consistent
-(`recursion_no_closed_inhabitant`).
+that agrees with a given one on the names it declares, and a reading of a declared datatype
+with distinct constructor names at each of them. A new constant defined by structural
+recursion on that datatype, with result family and bodies typed in the package, gives a
+package with a set model at every assignment that agrees, on the names it declares, with the
+base assignment extended by the recursion's value. So definitions and declarations can follow
+one another, and the package is consistent (`recursion_no_closed_inhabitant`).
 
 Positive examples: the doubling of a number and the append of two lists as definitions by
 recursion over declared datatypes (`ObjectRecursiveDefinitions.lean`, in the executable model
@@ -59,7 +60,7 @@ open Presentation.TypedEquality.Normalization (ctorTele appSpine recPositions wk
 open Mettapedia.Logic.HOL.Embedding
 open ZFSetDependentProducts (graph)
 open ZFSetTraceProducts (traceLam traceApp tracePiSet traceApp_graph_beta)
-open ZFSetInductive (Fits constructorValue carrier recFun mapRec)
+open ZFSetInductive (Fits constructorValue carrier recFun mapRec nameCode)
 
 universe u
 
@@ -169,13 +170,13 @@ variable {heads consts}
 
 /-- **The constructor form in the context of a method** has the constructor's value at the
 field values. -/
-theorem ev_ctorAt {T k : DeclName} {fields : List (DeclField Head)} {i : Nat}
+theorem ev_ctorAt {T k : DeclName} {fields : List (DeclField Head)}
     (value : consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-      constructorValue i (envList η))
+      constructorValue (nameCode k) (envList η))
     {args : List ZFSet.{u}} (fits : Fits (consts T) (fields.map (fieldSig heads consts)) args)
     (recs : List ZFSet.{u}) (r : Nat) :
     ev heads consts (ctorAt k fields.length r) (envOf (args ++ recs) (fields.length + r)) =
-      constructorValue i args := by
+      constructorValue (nameCode k) args := by
   have length : args.length = fields.length := ((fits_iff heads consts fields args).mp fits).1
   have restricted : envOf (args ++ recs) (fields.length + r) ∘ wkN r =
       envOf args fields.length := by
@@ -236,15 +237,16 @@ section Model
 variable {R : Rules Head} {B : ChurchRules R} {v : Head} {rec : DeclName}
 
 /-- **A typed body gives a method of the recursion.** -/
-theorem bodyMethod_mem (model : SetModel heads consts B) {i : Nat} {k : DeclName}
+theorem bodyMethod_mem (model : SetModel heads consts B) {k : DeclName}
     {fields : List (DeclField Head)}
     (ctorValue : consts k = telescopeGraph heads consts (liftCtx (ctorTele T fields)) fun η =>
-      constructorValue i (envList η))
+      constructorValue (nameCode k) (envList η))
     {b : CTm Head (fields.length + (recPositions fields).length)}
     (typed : CTyped B (methodCtx T M fields (recPositions fields).length) b
       (M.subst fun _ => ctorAt k fields.length (recPositions fields).length)) :
     bodyMethod heads consts T M fields b ∈
-      caseSet (consts T) (resultSet heads consts M) i (fields.map (fieldSig heads consts)) := by
+      caseSet (consts T) (resultSet heads consts M) (nameCode k)
+        (fields.map (fieldSig heads consts)) := by
   refine methodValue_mem fun args fits results members => ?_
   have length : args.length = fields.length := ((fits_iff heads consts fields args).mp fits).1
   rw [mapRec_positions heads consts (resultSet heads consts M) fields args length] at members
@@ -271,13 +273,13 @@ theorem bodyMethod_mem (model : SetModel heads consts B) {i : Nat} {k : DeclName
   have atConstructor : (fun _ : Fin 1 => ev heads consts
       (ctorAt k fields.length (recPositions fields).length)
       (envOf (args ++ results) (fields.length + (recPositions fields).length))) =
-      fun _ => constructorValue i args :=
+      fun _ => constructorValue (nameCode k) args :=
     funext fun _ => ev_ctorAt ctorValue fits results _
   rw [atConstructor] at member
   exact member
 
 /-- **The recursion's values lie in the result family.** -/
-theorem recursionFun_mem (model : SetModel heads consts B)
+theorem recursionFun_mem (model : SetModel heads consts B) (names : (ctors.map (·.1)).Nodup)
     (reading : InductiveReading heads consts T v ctors rec)
     (bodies : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
       ctors[i]? = some (k, fields) →
@@ -286,13 +288,13 @@ theorem recursionFun_mem (model : SetModel heads consts B)
     {x : ZFSet.{u}} (member : x ∈ consts T) :
     recursionFun heads consts T M ctors body x ∈ resultSet heads consts M x := by
   rw [reading.type] at member
-  refine recursion_mem (fun i c atIndex => ?_) member
+  refine recursion_mem (signature_distinct heads consts names) (fun i c atIndex => ?_) member
   obtain ⟨k, fields, entry, rfl⟩ := exists_of_signature_getElem? heads consts atIndex
   rw [bodyMethods_getD entry, ← reading.type]
   exact bodyMethod_mem model (reading.ctor entry) (bodies entry)
 
 /-- **The value of the definition lies in the set of its declared type.** -/
-theorem recursionValue_mem (model : SetModel heads consts B)
+theorem recursionValue_mem (model : SetModel heads consts B) (names : (ctors.map (·.1)).Nodup)
     (reading : InductiveReading heads consts T v ctors rec)
     (bodies : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
       ctors[i]? = some (k, fields) →
@@ -304,12 +306,12 @@ theorem recursionValue_mem (model : SetModel heads consts B)
     tracePiSet (consts T) fun x => ev heads consts M (extend Fin.elim0 x)
   refine traceLam_graph_mem fun x member => ?_
   rw [← env_one]
-  exact recursionFun_mem model reading bodies member
+  exact recursionFun_mem model names reading bodies member
 
 /-- **The recursion at a constructor value**: the body at the field values and the results at
 the recursive fields. -/
 theorem recursionFun_constructor (model : SetModel heads consts B)
-    (reading : InductiveReading heads consts T v ctors rec)
+    (names : (ctors.map (·.1)).Nodup) (reading : InductiveReading heads consts T v ctors rec)
     (bodies : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
       ctors[i]? = some (k, fields) →
         CTyped B (methodCtx T M fields (recPositions fields).length) (body k fields)
@@ -317,7 +319,7 @@ theorem recursionFun_constructor (model : SetModel heads consts B)
     {i : Nat} {k : DeclName} {fields : List (DeclField Head)}
     (entry : ctors[i]? = some (k, fields)) {args : List ZFSet.{u}}
     (fits : Fits (consts T) (fields.map (fieldSig heads consts)) args) :
-    recursionFun heads consts T M ctors body (constructorValue i args) =
+    recursionFun heads consts T M ctors body (constructorValue (nameCode k) args) =
       ev heads consts (body k fields)
         (envOf (args ++ (recPositions fields).map fun p =>
             recursionFun heads consts T M ctors body (args.getD p ∅))
@@ -329,13 +331,13 @@ theorem recursionFun_constructor (model : SetModel heads consts B)
   have results : List.Forall₂ (fun y D => y ∈ D)
       (mapRec (recursionFun heads consts T M ctors body) (fields.map (fieldSig heads consts)) args)
       (mapRec (resultSet heads consts M) (fields.map (fieldSig heads consts)) args) :=
-    mapRec_mem fits fun x member => recursionFun_mem model reading bodies member
-  have unfolded : recursionFun heads consts T M ctors body (constructorValue i args) =
+    mapRec_mem fits fun x member => recursionFun_mem model names reading bodies member
+  have unfolded : recursionFun heads consts T M ctors body (constructorValue (nameCode k) args) =
       applyList ((bodyMethods heads consts T M ctors body).getD i ∅)
         (args ++ mapRec (recursionFun heads consts T M ctors body)
           (fields.map (fieldSig heads consts)) args) :=
-    ZFSetInductive.recFun_constructor (methodStep (bodyMethods heads consts T M ctors body))
-      atIndex fitsCarrier
+    ZFSetInductive.recFun_constructor (signature_distinct heads consts names)
+      (methodStep (bodyMethods heads consts T M ctors body)) atIndex fitsCarrier
   rw [unfolded, bodyMethods_getD entry, bodyMethod, applyList_methodValue _ fits results,
     mapRec_positions heads consts _ fields args length]
 
@@ -343,7 +345,7 @@ theorem recursionFun_constructor (model : SetModel heads consts B)
 constructor's fields, the defined constant at the constructor form and the body with the
 recursive calls in place of the hypotheses have one value. -/
 theorem recursionEquation_valid (model : SetModel heads consts B)
-    (reading : InductiveReading heads consts T v ctors rec)
+    (names : (ctors.map (·.1)).Nodup) (reading : InductiveReading heads consts T v ctors rec)
     (bodies : ∀ {i : Nat} {k : DeclName} {fields : List (DeclField Head)},
       ctors[i]? = some (k, fields) →
         CTyped B (methodCtx T M fields (recPositions fields).length) (body k fields)
@@ -368,16 +370,16 @@ theorem recursionEquation_valid (model : SetModel heads consts B)
     rw [value, recursionValue, traceApp_graph_beta _ member]
   -- The left side.
   have ctorHere : ev heads consts (liftTm (appSpine (.const k) (metaVars fields.length))) η =
-      constructorValue i (envList η) := by
+      constructorValue (nameCode k) (envList η) := by
     rw [ev_appSpine, ev_metaVars]
     exact ctor_apply (reading.ctor entry) fits
-  have inCarrier : constructorValue i (envList η) ∈ consts T := by
+  have inCarrier : constructorValue (nameCode k) (envList η) ∈ consts T := by
     rw [reading.type]
     exact ZFSetInductive.constructor_mem_carrier (signature_getElem? heads consts entry)
       (reading.type ▸ fits)
   have left : ev heads consts
       (.app (.const f) (liftTm (appSpine (.const k) (metaVars fields.length)))) η =
-      recursionFun heads consts T M ctors body (constructorValue i (envList η)) := by
+      recursionFun heads consts T M ctors body (constructorValue (nameCode k) (envList η)) := by
     show traceApp (consts f) (ev heads consts
       (liftTm (appSpine (.const k) (metaVars fields.length))) η) = _
     rw [ctorHere]
@@ -435,7 +437,7 @@ theorem recursionEquation_valid (model : SetModel heads consts B)
       (.const .anonymous) (∅ : ZFSet.{u}), allValues]
     rfl
   rw [left, ev_subst, right]
-  exact recursionFun_constructor model reading bodies entry fits
+  exact recursionFun_constructor model names reading bodies entry fits
 
 end Model
 
@@ -469,7 +471,8 @@ theorem recursionValue_congr (same : ∀ c, B.constantType c ≠ none → consts
       show ZFSetInductive.Field.ofSet _ = ZFSetInductive.Field.ofSet _
       rw [CDerivable.ev_congr_declared heads same typed Fin.elim0]
   have signatures : signature heads consts ctors = signature heads consts' ctors :=
-    List.map_congr_left fun entry member => fieldSigs entry member
+    List.map_congr_left fun entry member =>
+      congrArg (ZFSetInductive.Constructor.mk _) (fieldSigs entry member)
   have results : resultSet heads consts M = resultSet heads consts' M :=
     funext fun x => CDerivable.ev_congr_declared heads same motive _
   have methods : bodyMethods heads consts T M ctors body =
@@ -504,13 +507,15 @@ variable {R : Rules Head} {base : DeclName → ZFSet.{u}} {v : Head} {rec f : De
 
 /-- **A definition by structural recursion on a declared datatype has a set model.** The
 package before the definition has a set model, and a reading of the datatype, at every
-assignment that agrees with the base assignment on the names it declares; the defined name is
-new to it; and the result family, the closed field types and the bodies are typed in it. The
+assignment that agrees with the base assignment on the names it declares; the constructor
+names of the datatype are distinct; the defined name is new to the package; and the result
+family, the closed field types and the bodies are typed in it. The
 model is at every assignment that agrees, on the names the package with the definition
 declares, with the base assignment extended by the value of the recursion. -/
 theorem recursion_setModel (B : ChurchRules R)
     (baseModel : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) → SetModel heads consts B)
+    (names : (ctors.map (·.1)).Nodup)
     (readings : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) →
         InductiveReading heads consts T v ctors rec)
@@ -536,16 +541,19 @@ theorem recursion_setModel (B : ChurchRules R)
     (fun consts agreesBase _ => ?_) (fun consts agreesBase atDefined e member η sat => ?_)
     consts agrees
   · rw [valueAt consts agreesBase]
-    exact recursionValue_mem (baseModel consts agreesBase) (readings consts agreesBase) bodies
+    exact recursionValue_mem (baseModel consts agreesBase) names (readings consts agreesBase)
+      bodies
   · obtain ⟨i, k, fields, entry, rfl⟩ := mem_recursionEquations member
-    exact recursionEquation_valid (baseModel consts agreesBase) (readings consts agreesBase)
-      bodies (atDefined.trans (valueAt consts agreesBase)) entry η sat
+    exact recursionEquation_valid (baseModel consts agreesBase) names
+      (readings consts agreesBase) bodies (atDefined.trans (valueAt consts agreesBase)) entry η
+      sat
 
 /-- **Consistency**: a closed type whose set is empty has no closed term in a package with a
 definition by structural recursion. -/
 theorem recursion_no_closed_inhabitant (B : ChurchRules R)
     (baseModel : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) → SetModel heads consts B)
+    (names : (ctors.map (·.1)).Nodup)
     (readings : ∀ consts : DeclName → ZFSet.{u},
       (∀ c, B.constantType c ≠ none → consts c = base c) →
         InductiveReading heads consts T v ctors rec)
@@ -563,8 +571,8 @@ theorem recursion_no_closed_inhabitant (B : ChurchRules R)
     ¬ CTyped (withDefinition B f (.pi (.const T) M) (recursionEquations f T ctors body)) .nil
       t A :=
   CDerivable.no_closed_inhabitant
-    (recursion_setModel B baseModel readings new typeDeclared motive fieldsFormed bodies _
-      fun _ _ => rfl)
+    (recursion_setModel B baseModel names readings new typeDeclared motive fieldsFormed bodies
+      _ fun _ _ => rfl)
     empty t
 
 end Theorem

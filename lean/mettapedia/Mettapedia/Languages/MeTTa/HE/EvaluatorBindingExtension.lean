@@ -238,9 +238,21 @@ theorem preparedPackageTypeService_bindingLaws
 
 /-! ## Mutual evaluator preservation -/
 
-/-- Every raw evaluator derivation extends its input binding theory.  The
-mutual induction simultaneously proves the same invariant for expression,
-function, argument, tuple, and call subderivations. -/
+/-- Producer completion suppresses interpretation, not the type service's
+binding refinement. Both held values and cast results extend the input. -/
+theorem completedNativeReturnRel_bindingTheoryExtends
+    {space : Space} {typing : EvalTypeService} {value expectedType : Atom}
+    {input : Bindings} {result : ResultPair}
+    (laws : EvalTypeServiceBindingLaws typing)
+    (returned : CompletedNativeReturnRel space typing value expectedType input result) :
+    BindingTheoryExtends input result.2 := by
+  cases returned with
+  | keep => exact BindingTheoryExtends.refl _
+  | cast _ cast => exact laws.typeCast cast
+
+/-- Every raw evaluator derivation extends its input binding theory. The
+mutual induction also covers minimal invocation, function completion, and
+continuations, so a full call cannot forget constraints in its emitted body. -/
 theorem evalAtomRawRel_bindingTheoryExtends
     {space : Space} {dispatch : Spec.Eval.GroundedDispatch}
     {live : List Atom}
@@ -253,133 +265,60 @@ theorem evalAtomRawRel_bindingTheoryExtends
   have generalized : typing = typing →
       BindingTheoryExtends input result.2 := by
     apply EvalAtomRawRel.rec
-      (motive_1 := fun _ _ input result _protectedScope currentTyping _ =>
+      (motive_1 := fun _space _dispatch _live _ _ input result _protectedScope currentTyping _ =>
         currentTyping = typing → BindingTheoryExtends input result.2)
-      (motive_2 := fun _ _ input result currentTyping _ =>
+      (motive_2 := fun _space _dispatch _live _ _ input result currentTyping _ =>
         currentTyping = typing → BindingTheoryExtends input result.2)
-      (motive_3 := fun _ _ _ input result currentTyping _ =>
+      (motive_3 := fun _space _dispatch _live _ _ _ input result currentTyping _ =>
         currentTyping = typing → BindingTheoryExtends input result.2)
-      (motive_4 := fun _ _ input result currentTyping _ =>
+      (motive_4 := fun _space _dispatch _live _ _ input result currentTyping _ =>
         currentTyping = typing → BindingTheoryExtends input result.2)
-      (motive_5 := fun _ input result currentTyping _ =>
+      (motive_5 := fun _space _dispatch _live _ input result currentTyping _ =>
         currentTyping = typing → BindingTheoryExtends input result.2)
-      (motive_6 := fun _ _ input result currentTyping _ =>
+      (motive_6 := fun _space _dispatch _live _ _ input result currentTyping _ =>
+        currentTyping = typing → BindingTheoryExtends input result.2)
+      (motive_7 := fun _space _dispatch _live _ input result currentTyping _ =>
+        currentTyping = typing → BindingTheoryExtends input result.2)
+      (motive_8 := fun _space _dispatch _live _ input result currentTyping _ =>
+        currentTyping = typing → BindingTheoryExtends input result.2)
+      (motive_9 := fun _space _dispatch _live _ input result currentTyping _ =>
+        currentTyping = typing → BindingTheoryExtends input result.2)
+      (motive_10 := fun _space _dispatch _live _ input result currentTyping _ =>
+        currentTyping = typing → BindingTheoryExtends input result.2)
+      (motive_11 := fun _space _dispatch _live _ input result currentTyping _ =>
         currentTyping = typing → BindingTheoryExtends input result.2)
       (t := derivation)
-    · intros
+    all_goals
+      intros
       subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact laws.typeCast (by assumption)
-    · intros
-      subst_vars
-      solve_by_elim [rfl]
-    · intros
-      subst_vars
-      solve_by_elim [rfl]
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (laws.candidateScanSuccess (by assumption))
-        (BindingTheoryExtends.trans
-          (by solve_by_elim [rfl]) (by solve_by_elim [rfl]))
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      solve_by_elim [rfl]
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      solve_by_elim [rfl]
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      solve_by_elim [rfl]
-    · intros
-      subst_vars
-      solve_by_elim [rfl]
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact unifyStep_bindingTheoryExtends (by assumption)
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact switchStep_bindingTheoryExtends (by assumption)
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (mergeRel_extends_right (by assumption))
-        (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.trans
-        (equationQueryCandidateRel_bindingTheoryExtends (by assumption))
-        (by solve_by_elim [rfl])
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
-    · intros
-      subst_vars
-      exact BindingTheoryExtends.refl _
+      first
+        | exact BindingTheoryExtends.refl _
+        | exact laws.typeCast (by assumption)
+        | exact unifyStep_bindingTheoryExtends (by assumption)
+        | exact switchStep_bindingTheoryExtends (by assumption)
+        | exact mergeRel_extends_right (by assumption)
+        | solve_by_elim [rfl]
+        | exact BindingTheoryExtends.trans
+            (mergeRel_extends_right (by assumption))
+            (completedNativeReturnRel_bindingTheoryExtends laws (by assumption))
+        | exact BindingTheoryExtends.trans
+            (laws.candidateScanSuccess (by assumption))
+            (BindingTheoryExtends.trans
+              (by solve_by_elim [rfl]) (by solve_by_elim [rfl]))
+        | exact BindingTheoryExtends.trans
+            (mergeRel_extends_right (by assumption))
+            (BindingTheoryExtends.trans
+              (by solve_by_elim [rfl]) (by solve_by_elim [rfl]))
+        | exact BindingTheoryExtends.trans
+            (equationQueryCandidateRel_bindingTheoryExtends (by assumption))
+            (BindingTheoryExtends.trans
+              (by solve_by_elim [rfl]) (by solve_by_elim [rfl]))
+        | exact BindingTheoryExtends.trans
+            (by solve_by_elim [rfl]) (by solve_by_elim [rfl])
   exact generalized rfl
 
 /-- The repaired evaluator service therefore preserves every incoming
-binding constraint throughout all six semantic judgments. -/
+binding constraint across the shared full/minimal semantic judgments. -/
 theorem prepared_evalAtomRawRel_bindingTheoryExtends
     {oracle : TypePreparationOracle}
     {space : Space} {dispatch : Spec.Eval.GroundedDispatch}

@@ -41,7 +41,7 @@ theorem object_coherence (P : ChurchRules objectRules) (formers : CFormerFacts P
     (typing : CTyped P Γ t A) (typing' : CTyped P Γ t' A) (same : t.erase = t'.erase) :
     CEqual P Γ t t' A :=
   coherence (object_coherenceFacts P formers) ConvRules.objectLevels
-    ConvRules.objectRules_algebra formed typing typing' same
+    (ConvRules.realRules_algebra objectTExt) formed typing typing' same
 
 end CodeModel
 

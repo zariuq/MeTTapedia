@@ -12,10 +12,10 @@ by the fundamental lemma at their formations (`CCtxFormed.ctxAdequate`).
 
 **A type former is read off its own denotation.** The denotation of a type former carries
 the former's tag in every environment: `Π`, `Σ` and identity types their tags, a universe
-the tag of universes, a ground head the tag of ground types, and the numbers the tag of
-numbers. At that tag the relation reduces both types to the former, with judgmentally equal
-components; a type that takes no head step is then the former itself
-(`CTypeEq.formersMatch_of_normal`, `CTypeEq.inductive_of_normal`).
+the tag of universes, a ground head the tag of ground types, the numbers the tag of
+numbers, and a declared datatype its own tag. At that tag the relation reduces both types to
+the former, with judgmentally equal components; a type that takes no head step is then the
+former itself (`CTypeEq.formersMatch_of_normal`, `CTypeEq.inductive_of_normal`).
 
 **Neutral types.** A type whose erasure is neutral takes no head step
 (`HeadReduction.NeutralNormal`), and every weak-head form is normal
@@ -52,12 +52,13 @@ variable {P : ChurchRules R} {K : RigidTypes P}
 def HeadReduction.NeutralNormal (H : HeadReduction P K) (roles : Roles Head) : Prop :=
   ∀ {n : Nat} {A : CTm Head n}, Neutral roles A.erase → H.Normal A
 
-/-- **The inductive types are the numbers**: the type constant of every inductive type is
-the rigid type of numbers, read with the tag of numbers. -/
-def RigidTypes.InductiveNumbers (K : RigidTypes P) (roles : Roles Head) (Rd : Reading Head) :
+/-- **The inductive types are read with their datatype's tag**: the type constant of every
+inductive type is the rigid type of numbers, read with the tag of numbers, or a declared
+datatype, read with its own tag. -/
+def RigidTypes.InductivesRead (K : RigidTypes P) (roles : Roles Head) (Rd : Reading Head) :
     Prop :=
   ∀ {T : DeclName} {ctors : List (DeclName × List (Field Head))}, roles T = .inductive ctors →
-    T = K.num ∧ (Rd.const T).Mem (.tag .nat)
+    (T = K.num ∧ (Rd.const T).Mem (.tag .nat)) ∨ (K.data T ∧ (Rd.const T).Mem (.tag (.data T)))
 
 end Conditions
 
@@ -68,10 +69,10 @@ section Normal
 variable {Rd : Reading Head} {P : ChurchRules R} {K : RigidTypes P} {H : HeadReduction P K}
   {roles : Roles Head}
 
-/-- **Every weak-head form of a type is normal**: type formers and the numbers by the
+/-- **Every weak-head form of a type is normal**: type formers and the inductive types by the
 reduction's normal forms, neutral types by the condition. -/
 theorem normal_of_typeForm (neutral : H.NeutralNormal roles)
-    (inductives : K.InductiveNumbers roles Rd) {n : Nat} {A : CTm Head n}
+    (inductives : K.InductivesRead roles Rd) {n : Nat} {A : CTm Head n}
     (form : IsTypeForm roles A.erase) : H.Normal A := by
   rcases typeForm_erase_cases form with former | ⟨T, ctors, role, rfl⟩ | hA
   · cases former with
@@ -79,8 +80,10 @@ theorem normal_of_typeForm (neutral : H.NeutralNormal roles)
     | pi D E => exact H.normal_pi D E
     | sigma D E => exact H.normal_sigma D E
     | id C a b => exact H.normal_id C a b
-  · rw [(inductives role).1]
-    exact H.normal_num
+  · rcases inductives role with ⟨hT, -⟩ | ⟨hd, -⟩
+    · rw [hT]
+      exact H.normal_num
+    · exact H.normal_data hd
   · exact neutral hA
 
 end Normal
@@ -214,15 +217,21 @@ theorem CTypeEq.formersMatch_of_normal {n : Nat} {Γ : CCtx Head n} {A B : CTm H
 
 include levels valid heads ground stuck sub consts in
 /-- **The type constant of an inductive type is read off its own denotation**: equal to a
-type that takes no head step, it is that type. -/
-theorem CTypeEq.inductive_of_normal {roles : Roles Head} (inductives : K.InductiveNumbers roles Rd)
+type that takes no head step, it is that type. The numbers are read at the tag of numbers,
+a declared datatype at its own tag. -/
+theorem CTypeEq.inductive_of_normal {roles : Roles Head} (inductives : K.InductivesRead roles Rd)
     {n : Nat} {Γ : CCtx Head n} {T : DeclName} {ctors : List (DeclName × List (Field Head))}
     {B : CTm Head n} (equal : CTypeEq Q Γ (.const T) B) (formed : CCtxFormed Q Γ)
     (role : roles T = .inductive ctors) (normal : H.Normal B) : B = .const T := by
-  obtain ⟨hT, mem⟩ := inductives role
-  obtain ⟨-, hB⟩ := RT.ty_nat_iff.1
-    (equal.relatedBot levels valid heads ground stuck sub consts formed mem (tyTok_univ_tag trivial))
-  rw [← H.red_normal normal hB.1, hT]
+  rcases inductives role with ⟨hT, mem⟩ | ⟨-, mem⟩
+  · obtain ⟨-, hB⟩ := RT.ty_nat_iff.1
+      (equal.relatedBot levels valid heads ground stuck sub consts formed mem
+        (tyTok_univ_tag trivial))
+    rw [← H.red_normal normal hB.1, hT]
+  · obtain ⟨-, -, hB⟩ := RT.ty_data_iff.1
+      (equal.relatedBot levels valid heads ground stuck sub consts formed mem
+        (tyTok_univ_tag trivial))
+    exact (H.red_normal normal hB.1).symm
 
 include levels valid heads ground stuck sub consts in
 /-- **A neutral type is equal to no type former**, by an equation derivable in the
@@ -238,7 +247,7 @@ include levels valid heads ground stuck sub consts in
 /-- **A neutral type is equal to no type constant of an inductive type**, by an equation
 derivable in the sub-package over a context formed there. -/
 theorem CTypeEq.neutral_not_inductive_sub {roles : Roles Head} (neutral : H.NeutralNormal roles)
-    (inductives : K.InductiveNumbers roles Rd) {n : Nat} {Γ : CCtx Head n} {A : CTm Head n}
+    (inductives : K.InductivesRead roles Rd) {n : Nat} {Γ : CCtx Head n} {A : CTm Head n}
     {T : DeclName} {ctors : List (DeclName × List (Field Head))} (equal : CTypeEq Q Γ A (.const T))
     (formed : CCtxFormed Q Γ) (hA : Neutral roles A.erase) (role : roles T = .inductive ctors) :
     False :=
@@ -252,7 +261,7 @@ whose declared constants are adequate, over a context formed there. A type forme
 numbers are read off their own side; a neutral type is matched from the other side, which is
 neutral too. -/
 theorem CTypeEq.formsMatch_sub {roles : Roles Head} (neutral : H.NeutralNormal roles)
-    (inductives : K.InductiveNumbers roles Rd) {n : Nat} {Γ : CCtx Head n} {A B : CTm Head n}
+    (inductives : K.InductivesRead roles Rd) {n : Nat} {Γ : CCtx Head n} {A B : CTm Head n}
     (equal : CTypeEq Q Γ A B) (formed : CCtxFormed Q Γ) (formA : IsTypeForm roles A.erase)
     (formB : IsTypeForm roles B.erase) : CFormsMatch P roles Γ A B := by
   have nB := normal_of_typeForm neutral inductives formB
@@ -279,12 +288,12 @@ variable {Rd : Reading Head} {P : ChurchRules R} {K : RigidTypes P} {H : HeadRed
 
 /-- **The facts about the weak-head forms of types, from the relation**: for a valid
 reading, rigid ground heads, head equality trivial on them, the decoder stuck at universes,
-neutral types normal and the numbers the only inductive type, if every declared constant is
-adequate then equal types of a formed context in weak-head form match. -/
+neutral types normal and the inductive types read with their datatype's tag, if every
+declared constant is adequate then equal types of a formed context in weak-head form match. -/
 theorem CFormFacts.of_constAdequate {roles : Roles Head} (levels : LevelModel R L)
     (valid : ReadingValid Rd P) (heads : K.GroundHeads Rd) (ground : GroundHeadEq R)
     (stuck : H.DecoderStuckAtUniverses) (neutral : H.NeutralNormal roles)
-    (inductives : K.InductiveNumbers roles Rd) (consts : ConstAdequate Rd H) :
+    (inductives : K.InductivesRead roles Rd) (consts : ConstAdequate Rd H) :
     CFormFacts P roles where
   forms equal formed formA formB :=
     CTypeEq.formsMatch_sub levels valid heads ground stuck (Q := P) (ChurchRulesSub.refl P)

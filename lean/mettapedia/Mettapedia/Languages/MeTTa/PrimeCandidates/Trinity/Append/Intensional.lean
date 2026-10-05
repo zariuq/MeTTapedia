@@ -173,7 +173,7 @@ theorem one_not_typedEqual_two (h : CofinalInaccessibles.{u}) :
     (ListExpr.toTerm_typed .nil) Fin.elim0 (sat_nil _ _ _)
   have zeroValue : ev (objHeads h) (objectDeclarationsConsts h listProgram) (ccons czero cnil)
         Fin.elim0 =
-      ZFSetInductive.constructorValue 1
+      ZFSetInductive.constructorValue (ZFSetInductive.nameCode consN)
         [ev (objHeads h) (objectDeclarationsConsts h listProgram) czero Fin.elim0,
           ev (objHeads h) (objectDeclarationsConsts h listProgram) cnil Fin.elim0] :=
     ctor_apply (reading.ctor (i := 1) rfl)
@@ -185,7 +185,7 @@ theorem one_not_typedEqual_two (h : CofinalInaccessibles.{u}) :
       | 1, _ => exact empty⟩)
   have oneValue : ev (objHeads h) (objectDeclarationsConsts h listProgram)
         (ccons (csuc czero) cnil) Fin.elim0 =
-      ZFSetInductive.constructorValue 1
+      ZFSetInductive.constructorValue (ZFSetInductive.nameCode consN)
         [ev (objHeads h) (objectDeclarationsConsts h listProgram) (csuc czero) Fin.elim0,
           ev (objHeads h) (objectDeclarationsConsts h listProgram) cnil Fin.elim0] :=
     ctor_apply (reading.ctor (i := 1) rfl)

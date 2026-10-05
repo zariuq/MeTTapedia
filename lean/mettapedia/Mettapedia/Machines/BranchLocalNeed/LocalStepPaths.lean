@@ -1,4 +1,5 @@
 import Mettapedia.Machines.BranchLocalNeed.LocalSteps
+import Mettapedia.Machines.OccurrenceMachine
 
 /-!
 # Finite occurrence paths for the local-step Need extension
@@ -15,6 +16,22 @@ set_option autoImplicit false
 namespace Mettapedia.Machines.BranchLocalNeed.NeedLocalSteps
 
 open NeedReference
+
+/-- Replay uses the extension's actual successors, including local steps.
+The answer observation retains both values and fault outcomes. -/
+def pathMachine
+    {Origin Local Resume Rule Value StableFault RetryableFault Effect : Type}
+    (extension : Extension Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (initial : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Mettapedia.Machines.OccurrenceMachineCore Unit
+      (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+      (Produced Value StableFault RetryableFault) where
+  load _ := initial
+  next := step extension
+  answer := haltedOutcome
+  answer_final machine answer returned := by
+    cases control : machine.control <;>
+      simp [haltedOutcome, control, step, NeedReference.step] at returned ⊢
 
 variable {Origin Local Resume Rule Value StableFault RetryableFault Effect : Type*}
 

@@ -1,6 +1,6 @@
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 import Mathlib.Data.ENNReal.Real
-import Mettapedia.Computability.KolmogorovComplexity.Prefix
+import Mettapedia.Computability.KolmogorovComplexity.ReferenceMachine
 
 /-!
 # Prefix-free Kolmogorov Complexity (Chapter 2 bridge)
@@ -22,7 +22,7 @@ open scoped Classical BigOperators
 open Mettapedia.UniversalAI.SolomonoffPrior
 
 abbrev PrefixFreeMachine := Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine
-abbrev UniversalPFM := Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM
+abbrev OutputComplete := Mettapedia.UniversalAI.SolomonoffPrior.OutputComplete
 
 /-- Prefix-free Kolmogorov complexity relative to a prefix-free machine `U`. -/
 noncomputable abbrev prefixComplexity (U : PrefixFreeMachine) (x : BinString) : ℕ :=
@@ -30,44 +30,26 @@ noncomputable abbrev prefixComplexity (U : PrefixFreeMachine) (x : BinString) : 
 
 notation "Kpf[" U "](" x ")" => prefixComplexity U x
 
-/-- A universal prefix-free machine can output any finite binary string. -/
-theorem universalPFM_has_program (U : PrefixFreeMachine) [UniversalPFM U] (x : BinString) :
-    ∃ p : BinString, U.compute p = some x := by
-  classical
-  let Mx : PrefixFreeMachine :=
-    { compute := fun p => if p = [] then some x else none
-      prefix_free := by
-        intro p q _ hpne hp
-        have hp0 : p = [] := by
-          by_contra hp0
-          have : (if p = [] then some x else none) = none := by simp [hp0]
-          exact hp this
-        subst hp0
-        have hq0 : q ≠ [] := by
-          intro hq0
-          apply hpne
-          simp [hq0]
-        simp [hq0] }
-  obtain ⟨_c, hc⟩ := UniversalPFM.universal (U := U) (M := Mx)
-  have hm : Mx.compute [] = some x := by simp [Mx]
-  obtain ⟨q, hq, _hq_len⟩ := hc [] x hm
-  exact ⟨q, hq⟩
+/-- Output completeness supplies a program for every finite output. -/
+theorem outputComplete_has_program (U : PrefixFreeMachine) [OutputComplete U]
+    (x : BinString) : ∃ p : BinString, U.compute p = some x :=
+  OutputComplete.has_program x
 
-/-- A chosen shortest program for `x` under a universal prefix-free machine. -/
-noncomputable def shortestProgram (U : PrefixFreeMachine) [UniversalPFM U] (x : BinString) : BinString :=
+/-- A chosen shortest program for `x` under a prefix-free machine with every output represented. -/
+noncomputable def shortestProgram (U : PrefixFreeMachine) [OutputComplete U] (x : BinString) : BinString :=
   Classical.choose
     (Mettapedia.UniversalAI.SolomonoffPrior.exists_program_of_complexity (U := U) (x := x)
-      (h := universalPFM_has_program (U := U) x))
+      (h := outputComplete_has_program (U := U) x))
 
-theorem shortestProgram_spec (U : PrefixFreeMachine) [UniversalPFM U] (x : BinString) :
+theorem shortestProgram_spec (U : PrefixFreeMachine) [OutputComplete U] (x : BinString) :
     U.compute (shortestProgram U x) = some x ∧ (shortestProgram U x).length = Kpf[U](x) := by
   classical
   simpa [shortestProgram, prefixComplexity] using
     (Classical.choose_spec
       (Mettapedia.UniversalAI.SolomonoffPrior.exists_program_of_complexity (U := U) (x := x)
-        (h := universalPFM_has_program (U := U) x)))
+        (h := outputComplete_has_program (U := U) x)))
 
-theorem shortestProgram_injective (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem shortestProgram_injective (U : PrefixFreeMachine) [OutputComplete U] :
     Function.Injective (shortestProgram U) := by
   intro x y hxy
   have hx := (shortestProgram_spec (U := U) x).1
@@ -78,14 +60,10 @@ theorem shortestProgram_injective (U : PrefixFreeMachine) [UniversalPFM U] :
       (some x : Option BinString) = U.compute (shortestProgram U y) := hx'.symm
       _ = some y := hy
 
-/-- Invariance: universal prefix-free machines agree up to an additive constant. -/
-theorem invariance_Kpf (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V] :
-    ∃ c : ℕ, ∀ x : BinString, Kpf[U](x) ≤ Kpf[V](x) + c := by
-  obtain ⟨c, hc⟩ := Mettapedia.UniversalAI.SolomonoffPrior.invariance (U := U) (V := V)
-  refine ⟨c, ?_⟩
-  intro x
-  have hx : ∃ p, V.compute p = some x := universalPFM_has_program (U := V) x
-  exact hc x hx
+/-- Effective reference machines agree up to an additive compiler constant. -/
+theorem invariance_Kpf (U V : ReferenceMachine) :
+    ∃ c : ℕ, ∀ x : BinString, Kpf[U](x) ≤ Kpf[V](x) + c :=
+  ReferenceMachine.invariance_le U V
 
 /-- Convert the real weight `2^{-n}` into the `ENNReal`-native expression. -/
 theorem ofReal_two_zpow_neg_nat (n : ℕ) :
@@ -107,7 +85,7 @@ theorem two_zpow_neg_nat (n : ℕ) : (2 : ENNReal) ^ (-(n : ℤ)) = ((2 : ENNRea
       simp [zpow_negSucc]
 
 /-- Finite Kraft bound for the weights `2^{-Kpf[U](x)}`. -/
-theorem sum_weightByKpf_le_one (U : PrefixFreeMachine) [UniversalPFM U] (s : Finset BinString) :
+theorem sum_weightByKpf_le_one (U : PrefixFreeMachine) [OutputComplete U] (s : Finset BinString) :
     (∑ x ∈ s, ENNReal.ofReal ((2 : ℝ) ^ (-(Kpf[U](x) : ℤ)))) ≤ 1 := by
   classical
   let progSet : Finset BinString := s.image (shortestProgram U)
@@ -177,12 +155,12 @@ theorem sum_weightByKpf_le_one (U : PrefixFreeMachine) [UniversalPFM U] (s : Fin
     _ = 1 := by simp
 
 /-- Finite Kraft bound, using `ENNReal` powers (matches Chapter 3 weights). -/
-theorem sum_weightByKpf_le_one_ennreal (U : PrefixFreeMachine) [UniversalPFM U] (s : Finset BinString) :
+theorem sum_weightByKpf_le_one_ennreal (U : PrefixFreeMachine) [OutputComplete U] (s : Finset BinString) :
     (∑ x ∈ s, (2 : ENNReal) ^ (-(Kpf[U](x) : ℤ))) ≤ 1 := by
   simpa [two_zpow_neg_nat] using (sum_weightByKpf_le_one (U := U) s)
 
 /-- Kraft/summability: `∑' x, 2^{-Kpf[U](x)} ≤ 1`. -/
-theorem tsum_weightByKpf_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem tsum_weightByKpf_le_one (U : PrefixFreeMachine) [OutputComplete U] :
     (∑' x : BinString, ENNReal.ofReal ((2 : ℝ) ^ (-(Kpf[U](x) : ℤ)))) ≤ 1 := by
   classical
   rw [ENNReal.tsum_eq_iSup_sum]
@@ -191,7 +169,7 @@ theorem tsum_weightByKpf_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
   simpa using (sum_weightByKpf_le_one (U := U) s)
 
 /-- Kraft/summability: `∑' x, 2^{-Kpf[U](x)} ≤ 1` using `ENNReal` powers. -/
-theorem tsum_weightByKpf_le_one_ennreal (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem tsum_weightByKpf_le_one_ennreal (U : PrefixFreeMachine) [OutputComplete U] :
     (∑' x : BinString, (2 : ENNReal) ^ (-(Kpf[U](x) : ℤ))) ≤ 1 := by
   classical
   rw [ENNReal.tsum_eq_iSup_sum]

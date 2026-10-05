@@ -214,9 +214,4 @@ def setoid (Γ : Ctx S) (sort : S.Srt) : Setoid (Raw Q accountSort base Γ sort)
       symm := fun ⟨witness⟩ => ⟨.symm witness⟩
       trans := fun ⟨first⟩ ⟨second⟩ => ⟨.trans first second⟩ }
 
-#print axioms equation_sound
-#print axioms derivation_sound
-#print axioms derivation_observe
-#print axioms setoid
-
 end Mettapedia.GSLT.LanguageDef.Cost.AccountBindingCongruence

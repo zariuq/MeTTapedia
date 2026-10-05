@@ -287,7 +287,7 @@ theorem mapPattern_canonicalizeByDepths
             (costStaticReflectivePresentationDecl source color declaration).quoteConstructor) =
           (constructor == declaration.quoteConstructor) := by
         simp [costStaticReflectivePresentationDecl_eq_map,
-          mapReflectivePresentation, CostStaticColor.symbols_constructor]
+          mapReflectivePresentation]
       have listFactor :
           (canonicalizeListByDepths
               (fun availableDepth scopeDepth pattern =>
@@ -411,39 +411,32 @@ theorem thickenAmbientBVars_finishNormalizeReflectiveApply
   · subst constructor
     cases arguments with
     | nil =>
-        simp [finishNormalizeReflectiveApply,
-          CostStaticBinderThinning.thickenAmbientBVars]
+        simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply]
     | cons argument arguments =>
         cases arguments with
         | cons second remainder =>
-            simp [finishNormalizeReflectiveApply,
-              CostStaticBinderThinning.thickenAmbientBVars]
+            simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply]
         | nil =>
             cases argument with
             | apply nestedConstructor nestedArguments =>
                 cases nestedArguments with
                 | nil =>
-                    simp [finishNormalizeReflectiveApply,
-                      CostStaticBinderThinning.thickenAmbientBVars]
+                    simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply]
                 | cons name tail =>
                     cases tail with
                     | cons second remainder =>
-                        simp [finishNormalizeReflectiveApply,
-                          CostStaticBinderThinning.thickenAmbientBVars]
+                        simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply]
                     | nil =>
                         by_cases isDrop :
                             nestedConstructor = declaration.dropConstructor
                         · subst nestedConstructor
-                          simp [finishNormalizeReflectiveApply,
-                            CostStaticBinderThinning.thickenAmbientBVars]
-                        · simp [finishNormalizeReflectiveApply,
-                            CostStaticBinderThinning.thickenAmbientBVars,
+                          simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply]
+                        · simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply,
                             isDrop]
             | _ =>
                 simp [finishNormalizeReflectiveApply,
-                  CostStaticBinderThinning.thickenAmbientBVars]
-  · simp [finishNormalizeReflectiveApply,
-      CostStaticBinderThinning.thickenAmbientBVars, isQuote]
+                  CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection]
+  · simp [finishNormalizeReflectiveApply, CostStaticTypeThinning.thickenAmbientBVars_apply, isQuote]
 
 /-- Ambient-binder insertion preserves and reflects the selected parallel
 unit shape. -/
@@ -456,7 +449,7 @@ theorem thickenAmbientBVars_eq_parallelUnit_iff
         .apply unitConstructor [] ↔
       pattern = .apply unitConstructor [] := by
   cases pattern <;>
-    simp [CostStaticBinderThinning.thickenAmbientBVars]
+    simp [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection]
 
 /-- Ambient-binder insertion commutes with the one-layer parallel splice. -/
 theorem thickenAmbientBVars_parallelSplice
@@ -471,25 +464,23 @@ theorem thickenAmbientBVars_parallelSplice
         (thinning.thickenAmbientBVars depth pattern) := by
   cases pattern with
   | bvar index =>
-      simp [parallelSplice, CostStaticBinderThinning.thickenAmbientBVars]
+      simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_bvar]
   | fvar name =>
-      simp [parallelSplice, CostStaticBinderThinning.thickenAmbientBVars]
+      simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   | apply constructor arguments =>
-      simp [parallelSplice, CostStaticBinderThinning.thickenAmbientBVars]
+      simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_apply]
   | lambda binder body =>
-      simp [parallelSplice, CostStaticBinderThinning.thickenAmbientBVars]
+      simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_lambda]
   | multiLambda arity binders body =>
-      simp [parallelSplice, CostStaticBinderThinning.thickenAmbientBVars]
+      simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_multiLambda]
   | subst body replacement =>
-      simp [parallelSplice, CostStaticBinderThinning.thickenAmbientBVars]
+      simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_subst]
   | collection collectionType elements rest =>
       cases rest with
       | some restName =>
-          simp [parallelSplice,
-            CostStaticBinderThinning.thickenAmbientBVars]
+          simp [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_collection]
       | none =>
-          simp only [parallelSplice,
-            CostStaticBinderThinning.thickenAmbientBVars]
+          simp only [parallelSplice, CostStaticTypeThinning.thickenAmbientBVars_collection]
           by_cases isParallel :
               collectionType = declaration.parallelCollection
           · subst collectionType
@@ -497,8 +488,7 @@ theorem thickenAmbientBVars_parallelSplice
           · have notParallelBool :
                 (collectionType == declaration.parallelCollection) = false :=
               beq_eq_false_iff_ne.mpr isParallel
-            simp [notParallelBool,
-              CostStaticBinderThinning.thickenAmbientBVars]
+            simp [notParallelBool, CostStaticTypeThinning.thickenAmbientBVars_collection]
 
 /-- Ambient-binder insertion commutes with deleting the selected parallel
 unit. -/
@@ -529,7 +519,7 @@ theorem thickenAmbientBVars_filter_ne_parallelUnit
                 (thinning.thickenAmbientBVars depth
                     (.apply declaration.parallelUnitConstructor []) ≠
                   .apply declaration.parallelUnitConstructor []) = false := by
-          simp [CostStaticBinderThinning.thickenAmbientBVars]
+          simp [CostStaticTypeThinning.thickenAmbientBVars_apply]
         simp only [List.filter_cons, List.map_cons]
         rw [sourceDecision, targetDecision]
         simpa using
@@ -612,14 +602,12 @@ theorem thickenAmbientBVars_collapseParallel
         (patterns.map (thinning.thickenAmbientBVars depth)) := by
   cases patterns with
   | nil =>
-      simp [collapseParallel,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [collapseParallel, CostStaticTypeThinning.thickenAmbientBVars_apply]
   | cons first remaining =>
       cases remaining with
       | nil => rfl
       | cons second tail =>
-          simp [collapseParallel,
-            CostStaticBinderThinning.thickenAmbientBVars]
+          simp [collapseParallel, CostStaticTypeThinning.thickenAmbientBVars_collection]
 
 /-- Two-depth keyed canonicalization is strictly natural under a certified
 ambient-binder insertion when the input key is pulled back along insertion at
@@ -645,10 +633,9 @@ theorem thickenAmbientBVars_canonicalizeByDepths
       scopeDepth with
   | hbvar index =>
       simp [canonicalizeByDepths,
-        CostStaticBinderThinning.thickenAmbientBVars]
+        CostStaticTypeThinning.thickenAmbientBVars_bvar]
   | hfvar name =>
-      simp [canonicalizeByDepths,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   | happly constructor arguments inductionHypothesis =>
       let childAvailableDepth :=
         if constructor == declaration.quoteConstructor then 0
@@ -670,8 +657,7 @@ theorem thickenAmbientBVars_canonicalizeByDepths
         intro argument membership
         exact inductionHypothesis argument membership childAvailableDepth
           scopeDepth
-      simp only [canonicalizeByDepths,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp only [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_apply]
       change thinning.thickenAmbientBVars scopeDepth
           (finishNormalizeReflectiveApply declaration constructor
             (canonicalizeListByDepths
@@ -681,19 +667,16 @@ theorem thickenAmbientBVars_canonicalizeByDepths
               declaration childAvailableDepth scopeDepth arguments)) = _
       rw [thickenAmbientBVars_finishNormalizeReflectiveApply, listFactor]
   | hlambda binder body inductionHypothesis =>
-      simp only [canonicalizeByDepths,
-        CostStaticBinderThinning.thickenAmbientBVars,
+      simp only [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_lambda,
         Pattern.lambda.injEq, true_and]
       exact inductionHypothesis (availableDepth + 1) (scopeDepth + 1)
   | hmultiLambda arity binders body inductionHypothesis =>
-      simp only [canonicalizeByDepths,
-        CostStaticBinderThinning.thickenAmbientBVars,
+      simp only [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_multiLambda,
         Pattern.multiLambda.injEq, true_and]
       exact inductionHypothesis (availableDepth + arity)
         (scopeDepth + arity)
   | hsubst body replacement bodyInduction replacementInduction =>
-      simp only [canonicalizeByDepths,
-        CostStaticBinderThinning.thickenAmbientBVars,
+      simp only [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_subst,
         Pattern.subst.injEq]
       exact ⟨bodyInduction (availableDepth + 1) (scopeDepth + 1),
         replacementInduction availableDepth scopeDepth⟩
@@ -716,16 +699,14 @@ theorem thickenAmbientBVars_canonicalizeByDepths
         exact inductionHypothesis element membership availableDepth scopeDepth
       cases rest with
       | some restName =>
-          simp only [canonicalizeByDepths,
-            CostStaticBinderThinning.thickenAmbientBVars,
+          simp only [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_collection,
             Pattern.collection.injEq, true_and]
           exact ⟨listFactor, trivial⟩
       | none =>
           by_cases isParallel :
               collectionType = declaration.parallelCollection
           · subst collectionType
-            simp only [canonicalizeByDepths,
-              CostStaticBinderThinning.thickenAmbientBVars,
+            simp only [canonicalizeByDepths, CostStaticTypeThinning.thickenAmbientBVars_collection,
               beq_self_eq_true, if_true]
             rw [thickenAmbientBVars_collapseParallel]
             rw [thickenAmbientBVars_normalizeParallelElementsBy, listFactor]
@@ -733,7 +714,7 @@ theorem thickenAmbientBVars_canonicalizeByDepths
                 (collectionType == declaration.parallelCollection) = false :=
               beq_eq_false_iff_ne.mpr isParallel
             simpa [canonicalizeByDepths, notParallel, isParallel,
-              CostStaticBinderThinning.thickenAmbientBVars] using
+              CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
               congrArg
                 (fun normalizedElements =>
                   Pattern.collection collectionType normalizedElements none)

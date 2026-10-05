@@ -226,7 +226,7 @@ theorem silent_costBaseAct_params :
 /-- The left side of the silent rule stays sorted when the two continuations
 are moved to the wrapped fibre. -/
 theorem silentRetyping_redexRetypable : silentRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType silentRetyping.generatedLanguage silentRetyping.generatedFreeContext []
     (.apply (costBaseConstructorName "Comp")
       [.apply (costBaseConstructorName "Act") [.fvar "a", .fvar "b", .fvar "p"],
@@ -259,7 +259,7 @@ theorem silentRetyping_redexRetypable : silentRetyping.RedexRetypable := by
 /-- The silent contractum, the composition of the two continuations, has the
 wrapped sort. -/
 theorem silentRetyping_wrappable : silentRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   have wrapped : "Comp" ∈ silentRetyping.wrappedLabels := by
     decide +kernel
   have translated :

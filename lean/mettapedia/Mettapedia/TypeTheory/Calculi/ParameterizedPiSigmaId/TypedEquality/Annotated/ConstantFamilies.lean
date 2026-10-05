@@ -12,7 +12,10 @@ types, given as a function from names to types, and as computation steps the ins
 family's equations. An instance requires the typings of the instances of its metavariables
 along the equation's telescope, as for a single definition.
 
-A family is usually written as a table of names and types (`tableLookup`).
+A family is usually written as a table of names and types (`tableLookup`); the lookup in
+two tables one after the other is the lookup in the first, then in the second
+(`tableLookup_append`), and two tables with the same names miss the same names
+(`tableLookup_eq_none_of_names`).
 
 **In the judgment**, in every package that contains the family's steps, an instance of an
 equation at a substitution typed along the equation's telescope is an equality at every type
@@ -74,6 +77,40 @@ theorem tableLookup_mem {α : Type*} : ∀ {table : List (DeclName × α)} {c : 
         exact same ▸ List.mem_cons_self
       · rw [if_neg same] at found
         exact List.mem_cons_of_mem _ (tableLookup_mem found)
+
+/-- The lookup in two tables one after the other: the first, then the second. -/
+theorem tableLookup_append {α : Type*} (first second : List (DeclName × α)) (c : DeclName) :
+    tableLookup (first ++ second) c = (tableLookup first c).or (tableLookup second c) := by
+  induction first with
+  | nil => rfl
+  | cons row rest ih =>
+    obtain ⟨name, entry⟩ := row
+    show (if c = name then some entry else tableLookup (rest ++ second) c) =
+      (if c = name then some entry else tableLookup rest c).or (tableLookup second c)
+    by_cases same : c = name
+    · rw [if_pos same, if_pos same]
+      rfl
+    · rw [if_neg same, if_neg same, ih]
+
+/-- Two tables with the same names have no entry at the same names. -/
+theorem tableLookup_eq_none_of_names {α β : Type*} :
+    ∀ {first : List (DeclName × α)} {second : List (DeclName × β)},
+      first.map Prod.fst = second.map Prod.fst → ∀ {c : DeclName},
+        tableLookup first c = none → tableLookup second c = none
+  | [], [], _, _, _ => rfl
+  | [], _ :: _, names, _, _ => nomatch names
+  | _ :: _, [], names, _, _ => nomatch names
+  | (name, a) :: rest, (name', b) :: rest', names, c, missing => by
+    obtain ⟨same, names'⟩ := List.cons.inj names
+    have same : name = name' := same
+    show (if c = name' then some b else tableLookup rest' c) = none
+    have missing' : (if c = name then some a else tableLookup rest c) = none := missing
+    by_cases here : c = name
+    · rw [if_pos here] at missing'
+      exact nomatch missing'
+    · rw [if_neg here] at missing'
+      rw [if_neg (same ▸ here)]
+      exact tableLookup_eq_none_of_names names' missing'
 
 variable {R : Rules Head}
 

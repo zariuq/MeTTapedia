@@ -27,52 +27,6 @@ universe uValue uOwner
 variable {Address : Type} {Value : Type uValue} {Owner : Type uOwner}
   [DecidableEq Address]
 
-/-- A successful finite walk necessarily observes the actual endpoint lookup. -/
-theorem walk_success_lookup (heap : Heap Address Value) (path : List Address)
-    {start endpoint : Address} {cell : Cell Address Value}
-    (success : walk heap start path = some (endpoint, cell)) :
-    heap.lookup endpoint = some cell := by
-  induction path generalizing start with
-  | nil =>
-      cases found : heap.lookup start with
-      | none => simp [walk, found] at success
-      | some initial =>
-          simp only [walk, found, Option.map_some, Option.some.injEq, Prod.mk.injEq] at success
-          rcases success with ⟨rfl, rfl⟩
-          exact found
-  | cons next rest ih =>
-      cases found : heap.lookup start with
-      | none => simp [walk, found] at success
-      | some initial =>
-          simp only [walk, found, Option.bind_some] at success
-          split at success
-          next _ => exact ih success
-          next _ => cases success
-
-/-- Following a successful prefix continues from its observed endpoint. -/
-theorem walk_append_of_success (heap : Heap Address Value) (path suffix : List Address)
-    {start endpoint : Address} {cell : Cell Address Value}
-    (success : walk heap start path = some (endpoint, cell)) :
-    walk heap start (path ++ suffix) = walk heap endpoint suffix := by
-  induction path generalizing start with
-  | nil =>
-      cases found : heap.lookup start with
-      | none => simp [walk, found] at success
-      | some initial =>
-          simp only [walk, found, Option.map_some, Option.some.injEq, Prod.mk.injEq] at success
-          rcases success with ⟨rfl, rfl⟩
-          rfl
-  | cons next rest ih =>
-      cases found : heap.lookup start with
-      | none => simp [walk, found] at success
-      | some initial =>
-          simp only [walk, found, Option.bind_some] at success
-          split at success
-          next reference =>
-            simpa only [List.cons_append, walk, found, Option.bind_some, if_pos reference] using
-              ih success
-          next _ => cases success
-
 /-- Every reachable resource has a finite successful path from an actual,
 allocated owner-root. Shared graphs and cycles need no acyclicity premise. -/
 theorem live_path_witness (heap : Heap Address Value) (roots : Roots Owner Address)

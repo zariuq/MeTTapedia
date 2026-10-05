@@ -78,17 +78,22 @@ theorem tyTok_below_ident {A I J : Ideal} {a : List Tok} (ha : Ideal.Below a (Id
     · exact notTag (by decide) h
   cases t with
   | tag k =>
-      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl
+      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl | hk
       · exact absurd ((tyTok_tag_former hk).1 ht) notUniv
       · exact absurd (tyTok_tag_zero.1 ht) (notTag (by decide))
       · exact absurd (tyTok_tag_succ.1 ht) (notTag (by decide))
       · exact .inl rfl
       · exact absurd ht tyTok_tag_lam
       · exact absurd ht tyTok_tag_pair
+      · obtain ⟨d, c, fs, rfl⟩ := hk
+        exact absurd (tyTok_tag_ctor.1 ht) (notTag (k := .data _) nofun)
   | arg k i C s =>
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact absurd ht (tyTok_arg_other hother)
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · exact absurd (tyTok_param.1 ht).1 notUniv
+        · exact absurd (tyTok_field.1 ht).1 (notTag (k := .data _) nofun)
+        · exact absurd ht (tyTok_arg_other hother hk)
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩

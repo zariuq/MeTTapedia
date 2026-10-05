@@ -302,9 +302,4 @@ theorem retained_strictlyRefines_collapsed :
 
 end ReplayKey.Examples
 
-#print axioms ReplayKey.hasRealization_iff_supports_of_split
-#print axioms ReplayKey.isExact_iff_hasIdentityRealization
-#print axioms ReplayKey.Examples.collapsed_not_exact
-#print axioms ReplayKey.Examples.retained_strictlyRefines_collapsed
-
 end Mettapedia.GSLT.LanguageDef.Cost.Elaboration

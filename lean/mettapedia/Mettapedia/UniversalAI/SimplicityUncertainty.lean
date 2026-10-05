@@ -29,10 +29,10 @@ open Mettapedia.Computability.Hutter
 open Mettapedia.UniversalAI.SolomonoffPrior
 open Mettapedia.UniversalAI.SolomonoffInduction
 open Mettapedia.UniversalAI.UniversalPrediction
+open KolmogorovComplexity (ReferenceMachine)
 
 abbrev BinString := Mettapedia.UniversalAI.SolomonoffPrior.BinString
 abbrev PrefixFreeMachine := Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine
-abbrev UniversalPFM := Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM
 abbrev MonotoneMachine := Mettapedia.UniversalAI.SolomonoffPrior.MonotoneMachine
 abbrev Semimeasure := Mettapedia.UniversalAI.SolomonoffInduction.Semimeasure
 
@@ -43,12 +43,12 @@ We use the prefix-free complexity `Kpf` from
 -/
 
 /-- Invariance theorem for prefix-free complexity (machine-independence up to an additive constant). -/
-theorem invariance_Kpf (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V] :
+theorem invariance_Kpf (U V : ReferenceMachine) :
     ∃ c : ℕ, ∀ x : BinString, Kpf[U](x) ≤ Kpf[V](x) + c :=
   KolmogorovComplexity.invariance_Kpf (U := U) (V := V)
 
 /-- Kraft/summability for the algorithmic-style weights `2^{-Kpf}`. -/
-theorem tsum_two_pow_neg_Kpf_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem tsum_two_pow_neg_Kpf_le_one (U : PrefixFreeMachine) [OutputComplete U] :
     (∑' x : BinString, (2 : ENNReal) ^ (-(Kpf[U](x) : ℤ))) ≤ 1 :=
   KolmogorovComplexity.tsum_weightByKpf_le_one_ennreal (U := U)
 
@@ -94,16 +94,16 @@ background and is tracked as a separate checklist item.
 -/
 
 /-- Algorithmic prior weight `w(i) = 2^{-Kpf(i)}` (ENNReal form). -/
-noncomputable abbrev kpfWeight (U : PrefixFreeMachine) [UniversalPFM U] (i : BinString) : ENNReal :=
+noncomputable abbrev kpfWeight (U : PrefixFreeMachine) (i : BinString) : ENNReal :=
   Mettapedia.UniversalAI.UniversalPrediction.kpfWeight (U := U) i
 
 /-- The universal mixture `ξ` built from a `BinString`-indexed family of semimeasures. -/
-noncomputable abbrev xiKpf (U : PrefixFreeMachine) [UniversalPFM U] (ν : BinString → Semimeasure) :
+noncomputable abbrev xiKpf (U : PrefixFreeMachine) [OutputComplete U] (ν : BinString → Semimeasure) :
     Semimeasure :=
   Mettapedia.UniversalAI.UniversalPrediction.xiKpfSemimeasure (U := U) ν
 
 /-- Dominance of `ξ` over each component (Hutter Eq. (2.27)). -/
-theorem xiKpf_dominates_index (U : PrefixFreeMachine) [UniversalPFM U]
+theorem xiKpf_dominates_index (U : PrefixFreeMachine) [OutputComplete U]
     (ν : BinString → Semimeasure) (i x : BinString) :
     kpfWeight U i * ν i x ≤ (xiKpf (U := U) ν) x := by
   simpa [kpfWeight, xiKpf] using

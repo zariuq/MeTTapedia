@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.WellSortedFillInversion
-import Mettapedia.GSLT.LanguageDef.CostInteractionClosure
+import Mettapedia.GSLT.LanguageDef.Cost.FiniteReflection
 
 /-!
 # Label determinism of the generated Cost language
@@ -20,7 +20,7 @@ theorem CIGSLT.costWholeLanguage_labelDeterministic (source : CIGSLT) :
   intro left right leftMembership rightMembership labelEq
   have labelsNodup :
       (source.costWholeLanguage.terms.map (·.label)).Nodup := by
-    rw [CIGSLT.costWholeLanguage_terms]
+    rw [WrappableIGSLT.costWholeLanguage_terms]
     exact LanguageDef.constructorLabels_nodup_of_validate_eq_nil
       source.costCoreLanguage source.costCoreLanguage_validate
   exact List.inj_on_of_nodup_map labelsNodup leftMembership rightMembership

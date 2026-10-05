@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
+import Mettapedia.Languages.MeTTa.OSLFCore.Atom
 
 /-!
 # MeTTa Type System (Minimal Fragment)
@@ -47,6 +48,16 @@ namespace Mettapedia.Languages.MeTTa.PeTTa
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
+
+/-- Literal `Atom` domains retain the supplied syntax. The declaration is
+inspected before any binding, so a formal variable is not a raw domain. -/
+@[simp] def formalArgumentIsRaw (formal : OSLFCore.Atom) : Bool :=
+  formal == .symbol "Atom"
+
+/-- A missing domain cannot request raw syntax. -/
+@[simp] theorem optional_formalArgumentIsRaw (formal : Option OSLFCore.Atom) :
+    formal.any formalArgumentIsRaw = (formal == some (.symbol "Atom")) := by
+  cases formal <;> simp
 
 /-! ## Special Type Atoms -/
 
@@ -205,8 +216,9 @@ theorem all_spaces_well_typed (s : PeTTaSpace) : s.isWellTyped :=
 theorem addAnnotation_wellTyped (s : PeTTaSpace) (p₀ t₀ : Pattern) :
     (s.addAtom (typeAnnotationPat p₀ t₀)).isWellTyped := by
   intro p t h
-  simp only [PeTTaSpace.addAtom, List.mem_cons] at h
-  rcases h with heq | hh
+  simp only [PeTTaSpace.addAtom, List.mem_append, List.mem_singleton] at h
+  rcases h with hh | heq
+  · exact MeTTaType.typeAnnotation p t (PeTTaSpace.mem_facts_addAtom hh)
   · -- heq : typeAnnotationPat p t = typeAnnotationPat p₀ t₀
     -- inject through .apply ":" [_, _]
     have hinj : p = p₀ ∧ t = t₀ := by
@@ -222,8 +234,6 @@ theorem addAnnotation_wellTyped (s : PeTTaSpace) (p₀ t₀ : Pattern) :
     obtain ⟨rfl, rfl⟩ := hinj
     -- After subst, p = p₀ and t = t₀, so the goal uses p and t
     exact MeTTaType.typeAnnotation p t (PeTTaSpace.mem_facts_addAtom_self s _)
-  · -- hh : typeAnnotationPat p t ∈ s.facts — old annotation
-    exact MeTTaType.typeAnnotation p t (List.mem_cons_of_mem _ hh)
 
 /-! ## Type Monotonicity -/
 

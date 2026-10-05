@@ -153,7 +153,7 @@ This is the “third layer” in the semantics → Hook‑B mixture → Solomono
 -/
 theorem relEntropy_le_mixture_add_Kμ_log2_M₃
     (U : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
+    [Mettapedia.UniversalAI.SolomonoffPrior.OutputComplete U]
     (μ : PrefixMeasure)
     (hη : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure mixture)
     (n : ℕ) :

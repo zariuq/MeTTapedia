@@ -46,18 +46,17 @@ H(p) = -Σ pᵢ log pᵢ = ∫ (-log(dμ_p/d(counting))) dμ_p
 ## Main Results
 
 * `ProbVec.toFinMeasure` - Embed ProbVec into Measure (Fin n)
-* `ProbVec.toFinMeasure_isProbability` - The measure is a probability measure
+* `ProbVec.toFinMeasure_univ` - Total mass is one
 * `ProbVec.toFinMeasure_ac_count` - Absolutely continuous w.r.t. counting
-* `shannonEntropy_eq_integral` - Shannon entropy = measure-theoretic formula
-* `klDivergence_eq_klDiv` - Discrete KL = measure-theoretic KL
+* `shannonEntropy_eq_integral_neglog` - Shannon entropy = measure-theoretic formula
+* `klDivergence_eq_mathlib_klDiv` - Discrete KL = measure-theoretic KL
 
 ## Mathematical Foundation
 
-Shannon, Stacy, Knuth, and Skilling would approve because:
-1. The axiomatic characterization (Faddeev minimal, 4 axioms) uniquely determines the formula
-2. The formula equals the measure-theoretic definition when specialized to counting measure
-3. K&S variational derivation yields the same `klFun` as mathlib (DivergenceMathlib.lean)
-4. Everything connects via explicit, proven isomorphisms with no gaps
+Faddeev's characterization determines the finite entropy formula. The finite
+probability-measure construction identifies this formula with integration
+against counting measure. The KL bridge separately identifies the finite
+log-ratio sum with mathlib's `klDiv` under the stated support hypothesis.
 
 -/
 
@@ -127,7 +126,7 @@ theorem ProbVec.toFinMeasure_ac_count {n : ℕ} (p : ProbVec n) :
   have hs_empty : s = ∅ := by
     by_contra hne
     rw [Set.eq_empty_iff_forall_notMem] at hne
-    push_neg at hne
+    push Not at hne
     obtain ⟨x, hx⟩ := hne
     have h2 : Measure.count ({x} : Set (Fin n)) = 1 := Measure.count_singleton x
     have hpos : 0 < Measure.count s := by
@@ -250,11 +249,11 @@ theorem klDivergence_eq_mathlib_klDiv {n : ℕ} (P Q : ProbVec n)
 
   have hw_sum : Summable w := by
     classical
-    refine summable_of_finite_support ?_
+    refine summable_of_hasFiniteSupport ?_
     exact (Set.finite_univ.subset (Set.subset_univ _))
   have hu_sum : Summable u := by
     classical
-    refine summable_of_finite_support ?_
+    refine summable_of_hasFiniteSupport ?_
     exact (Set.finite_univ.subset (Set.subset_univ _))
   have hSum :
       Summable (fun i : Fin n =>
@@ -262,7 +261,7 @@ theorem klDivergence_eq_mathlib_klDiv {n : ℕ} (P Q : ProbVec n)
             (u i)) :=
     by
       classical
-      refine summable_of_finite_support ?_
+      refine summable_of_hasFiniteSupport ?_
       exact (Set.finite_univ.subset (Set.subset_univ _))
 
   -- Bridge: `klDiv` of the corresponding discrete measures is the (real) divergence sum.

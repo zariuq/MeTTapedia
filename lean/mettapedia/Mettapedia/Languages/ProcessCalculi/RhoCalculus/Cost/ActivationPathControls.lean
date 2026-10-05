@@ -53,7 +53,4 @@ theorem unrestricted_duplication_breaks_cell_bound :
       unrestrictedSource.physicalPurseCells) := by
   decide +kernel
 
-#print axioms compiled_duplication_accounting
-#print axioms unrestricted_duplication_breaks_accounting
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationPathControls

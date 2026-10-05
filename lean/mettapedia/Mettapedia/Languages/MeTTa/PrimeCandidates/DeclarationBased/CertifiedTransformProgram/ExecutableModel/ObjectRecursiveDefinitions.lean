@@ -172,7 +172,8 @@ noncomputable def lengthConsts : DeclName → ZFSet.{u} :=
 /-- **The package with the length defined by its equations has a set model**, relative to
 `CofinalInaccessibles`. -/
 theorem objectLength_model : SetModel (objHeads h) (lengthConsts h) objectLength :=
-  recursion_setModel objectLists (objectLists_baseModel h) (listReadings h) length_new
+  recursion_setModel objectLists (objectLists_baseModel h) lists_distinct.ctorsNodup
+    (listReadings h) length_new
     list_declared lengthMotive_typed lists_fieldsFormedHere lengthBodies _ fun _ _ => rfl
 
 include h in
@@ -314,7 +315,8 @@ noncomputable def appendFnConsts : DeclName → ZFSet.{u} :=
 /-- **The package with the append defined by recursion has a set model**, relative to
 `CofinalInaccessibles`. No term was written for the function. -/
 theorem objectAppendFn_model : SetModel (objHeads h) (appendFnConsts h) objectAppendFn :=
-  recursion_setModel objectLists (objectLists_baseModel h) (listReadings h) append_new
+  recursion_setModel objectLists (objectLists_baseModel h) lists_distinct.ctorsNodup
+    (listReadings h) append_new
     list_declared appendFnMotive_typed lists_fieldsFormedHere appendFnBodies _ fun _ _ => rfl
 
 include h in
@@ -538,7 +540,7 @@ theorem objectAppend_model_general (h : CofinalInaccessibles.{u}) :
     SetModel (objHeads h) (appendWrittenConsts h) objectAppend :=
   laterArguments_setModel (Ξ := appendLater) (C := clist) (body := appendWrittenBody)
     (LevelModel.sum ConvRules.objectLevels _) objectLists
-    (objectLists_baseModel h) (listReadings h) append_new list_declared
+    (objectLists_baseModel h) lists_distinct.ctorsNodup (listReadings h) append_new list_declared
     (motive := (listFn_typed_one : CTyped objectLists (.snoc .nil clist)
       (clistFn : CTm Tower.Head 1) cU1))
     lists_fieldsFormedHere appendWritten_formed appendWritten_resultType appendWritten_bodies _
@@ -691,7 +693,8 @@ theorem objectProvedLength_model :
     SetModel (objHeads h) (provedLengthConsts h) objectProvedLength :=
   laterArguments_setModel (Ξ := selfIdentity) (C := (cnum : CTm Tower.Head 2))
     (body := provedLengthBody) (LevelModel.sum ConvRules.objectLevels _) objectLists
-    (objectLists_baseModel h) (listReadings h) provedLength_new list_declared
+    (objectLists_baseModel h) lists_distinct.ctorsNodup (listReadings h) provedLength_new
+    list_declared
     (motive := (provedLengthMotive_typed : CTyped objectLists (.snoc .nil clist)
       (.pi (.id clist (.var 0) (.var 0)) (cnum : CTm Tower.Head 2)) cU1))
     lists_fieldsFormedHere provedLength_formed provedLength_resultType provedLength_bodies _

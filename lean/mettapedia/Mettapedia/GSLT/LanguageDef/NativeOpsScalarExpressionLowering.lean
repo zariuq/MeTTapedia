@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.NativeOpsLoweringComposition
+import Mettapedia.GSLT.LanguageDef.NativeOpsScalarObservation
 import Mettapedia.GSLT.LanguageDef.NativeOpsScalarExpressionFacts
 
 /-!
@@ -6,7 +8,9 @@ import Mettapedia.GSLT.LanguageDef.NativeOpsScalarExpressionFacts
 The source's bounded natural arithmetic and the target's bit-vector operations
 are independent. Operand runs retain their order and private by-value results.
 All memory, ownership, allocator counters and external state are preserved by
-this pure fragment. Clear entry is explicit at its public expression boundary;
+the pure fragment. Stateful unary and strict binary composition additionally retain
+the complete post-states and faults of independently justified effectful operands.
+Clear entry is explicit at the pure public expression boundary;
 raw target-state preservation does not require clear entry.
 -/
 
@@ -543,5 +547,279 @@ theorem scalar_expression_reflection {SourceWorld TargetWorld : Type}
   refine ⟨⟨.ok value, source⟩, sourceRan, normal, unchanged,
     temporary_protection_preserves_source_frame frames protection, protection, afterBounded, ?_⟩
   simpa only [sourceObserve, clear] using observation_correspondence states value
+
+
+/-- The actual unary emitter composes with an effectful operand comparison.
+Only the operation itself preserves the operand post-state. -/
+theorem stateful_unary_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (operation : Unary) (operand : Expr)
+    (child : StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default operand) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.unary operation operand) := by
+  have declaration {frame : TargetFrame} {supply : NativeIR.Supply}
+      (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+      (value : TargetValue) :
+      TemporaryProtection supply.next frame
+        (targetDeclareTemporary frame (NativeIR.fresh supply).1 value) ∧
+      TemporaryNamesBound (targetDeclareTemporary frame (NativeIR.fresh supply).1 value)
+        (NativeIR.fresh supply).2.next ∧
+      TemporariesScoped (targetDeclareTemporary frame (NativeIR.fresh supply).1 value) :=
+    declared_temporary_frame_profile bounded hscope (NativeIR.fresh_strict supply)
+      (Nat.le_refl _) value
+  refine ⟨?_, ?_, ?_⟩
+  · intro supply output compiled
+    obtain ⟨type, operandOutput, _, emitted, shape⟩ := scalar_unary_lowering_exact compiled
+    subst output
+    exact ⟨(child.bounds emitted).1.trans (Nat.le_of_lt (NativeIR.fresh_strict operandOutput.supply)),
+      Nat.le_refl _⟩
+  · intro root supply output frame target compiled frames states bounded hscope sourceOut sourceRan
+    obtain ⟨type, operandOutput, _, emitted, shape⟩ := scalar_unary_lowering_exact compiled
+    subst output
+    have grew := (child.bounds emitted).1
+    have jumpFree := expression_lowering_jump_free interface (sourceFrameScope sourceFrame)
+      operand supply operandOutput emitted
+    rcases (source_unary_expression_stateful_exact operation operand source sourceOut).mp sourceRan with
+      ⟨raw, middle, value, operandRan, computed, same⟩ | ⟨fault, post, operandRan, same⟩
+    · subst sourceOut
+      obtain ⟨⟨flow, middleFrame, middleState⟩, operandTarget, related, protection, middleBounded, middleScoped⟩ :=
+        child.forward root emitted frames states bounded hscope operandRan
+      rcases related with ⟨postRelated, clear, normal, read⟩
+      change flow = .normal at normal
+      subst flow
+      obtain ⟨lastProtection, lastBounded, lastScoped⟩ := declaration middleBounded middleScoped (encodeValue value)
+      refine ⟨⟨.normal, targetDeclareTemporary middleFrame (NativeIR.fresh operandOutput.supply).1
+        (encodeValue value), middleState⟩, ?_, ?_,
+        temporary_protection_trans protection (temporary_protection_weaken grew lastProtection), lastBounded, lastScoped⟩
+      · exact target_append_normal root operandOutput.code _ jumpFree operandTarget
+          ((lowered_unary_success_exact operation raw value read
+            (temporary_bound_fresh middleBounded (NativeIR.fresh_strict operandOutput.supply))
+            computed root _).mpr rfl)
+      · exact ⟨postRelated, clear, rfl, declared_temporary_atom interface middleFrame middleState
+          (NativeIR.fresh operandOutput.supply).1 type (encodeValue value)⟩
+    · subst sourceOut
+      obtain ⟨⟨flow, postFrame, postState⟩, operandTarget, related, protection, postBounded, postScoped⟩ :=
+        child.forward root emitted frames states bounded hscope operandRan
+      rcases related with ⟨postRelated, faulted, returned⟩
+      change flow = .returned default at returned
+      subst flow
+      exact ⟨⟨.returned default, postFrame, postState⟩,
+        target_append_returned root operandOutput.code _ jumpFree operandTarget,
+        ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict operandOutput.supply)) postBounded,
+        postScoped⟩
+  · intro root supply output frame target compiled frames states bounded hscope out ran
+    obtain ⟨type, operandOutput, _, emitted, shape⟩ := scalar_unary_lowering_exact compiled
+    subst output
+    have grew := (child.bounds emitted).1
+    have jumpFree := expression_lowering_jump_free interface (sourceFrameScope sourceFrame)
+      operand supply operandOutput emitted
+    rcases (target_run_append_exact interface targetHeap targetCalls result root operandOutput.code
+      _ jumpFree frame target out).mp ran with
+      ⟨middleFrame, middleState, operandTarget, suffix⟩ |
+      ⟨returnedValue, postFrame, postState, operandTarget, same⟩
+    · obtain ⟨operandSource, operandRan, related, protection, middleBounded, middleScoped⟩ :=
+        child.backward root emitted frames states bounded hscope operandTarget
+      obtain ⟨raw, success, clear, postRelated, read⟩ := checked_result_normal related rfl
+      rcases operandSource with ⟨answer, middle⟩
+      cases success
+      obtain ⟨actual, pure, same⟩ := (target_pure_temporary_any_exact interface targetHeap targetCalls
+        result root middleFrame middleState (NativeIR.fresh operandOutput.supply).1 type
+        (.unary operation operandOutput.result)
+        (temporary_bound_fresh middleBounded (NativeIR.fresh_strict operandOutput.supply)) out).mp suffix
+      cases pure with
+      | unary otherRead calculated =>
+          cases target_atom_unique read otherRead
+          let value := decodeValue actual
+          have computed : sourceUnaryOp operation raw = some value := by
+            apply (unary_value_result_iff operation raw value).mp
+            simpa only [value, encode_decode_value] using calculated
+          subst out
+          obtain ⟨lastProtection, lastBounded, lastScoped⟩ := declaration middleBounded middleScoped actual
+          refine ⟨⟨.ok value, middle⟩,
+            (source_unary_expression_stateful_exact operation operand source _).mpr
+              (.inl ⟨raw, middle, value, operandRan, computed, rfl⟩),
+            ⟨postRelated, clear, rfl, ?_⟩,
+            temporary_protection_trans protection (temporary_protection_weaken grew lastProtection),
+            lastBounded, lastScoped⟩
+          simpa only [value, encode_decode_value, NativeLowering.prependCode, NativeLowering.pureTemporary] using
+            declared_temporary_atom interface middleFrame middleState (NativeIR.fresh operandOutput.supply).1 type actual
+    · subst out
+      obtain ⟨operandSource, operandRan, related, protection, postBounded, postScoped⟩ :=
+        child.backward root emitted frames states bounded hscope operandTarget
+      obtain ⟨fault, failed, faulted, postRelated, returned⟩ := checked_result_returned related rfl
+      rcases operandSource with ⟨answer, post⟩
+      cases failed
+      cases returned
+      exact ⟨⟨.error fault, post⟩,
+        (source_unary_expression_stateful_exact operation operand source _).mpr
+          (.inr ⟨fault, post, operandRan, rfl⟩),
+        ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict operandOutput.supply)) postBounded,
+        postScoped⟩
+
+
+theorem source_unchecked_binary_stateful_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {operation : Binary} (unchecked : UncheckedScalarBinary operation) (left right : Expr)
+    (before : SourceState World) (out : SourceOutcome World) :
+    SourceExprEval interface heap calls frame (.binary operation left right) before out ↔
+      (∃ first second middle value,
+        SourceArgumentsEval interface heap calls frame [left, right] before ⟨.ok [first, second], middle⟩ ∧
+        sourceBinaryOp operation first second = some (.ok value) ∧ out = sourceObserve middle value) ∨
+      (∃ fault after,
+        SourceArgumentsEval interface heap calls frame [left, right] before ⟨.error fault, after⟩ ∧
+        out = ⟨.error fault, after⟩) := by
+  rw [source_strict_expression_exact _ _ (scalar_binary_operands unchecked _ _)]
+  constructor
+  · rintro (⟨values, middle, arguments, primitive⟩ | ⟨fault, after, arguments, same⟩)
+    · cases values with
+      | nil => cases primitive
+      | cons first rest =>
+          cases rest with
+          | nil => cases primitive
+          | cons second tail =>
+              cases tail with
+              | nil =>
+                  obtain ⟨answer, _, _, computed, same⟩ := primitive
+                  obtain ⟨value, resultSame⟩ := unchecked_scalar_source_result unchecked first second computed
+                  subst answer
+                  exact .inl ⟨first, second, middle, value, arguments, computed, same⟩
+              | cons extra rest => cases primitive
+    · exact .inr ⟨fault, after, arguments, same⟩
+  · rintro (⟨first, second, middle, value, arguments, computed, same⟩ | ⟨fault, after, arguments, same⟩)
+    · exact .inl ⟨[first, second], middle, arguments, .ok value,
+        unchecked_scalar_not_and unchecked, unchecked_scalar_not_or unchecked, computed, same⟩
+    · exact .inr ⟨fault, after, arguments, same⟩
+
+/-- Strict scalar operations compose two ordered effectful operands. The
+operation consumes saved private values in their complete joint post-state. -/
+theorem stateful_unchecked_binary_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) {operation : Binary}
+    (unchecked : UncheckedScalarBinary operation) (left right : Expr)
+    (children : ∀ expression ∈ [left, right], ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default expression) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.binary operation left right) := by
+  have argumentBounds (supply : NativeIR.Supply) (operands : NativeLowering.Arguments)
+      (compiled : NativeLowering.arguments? interface (sourceFrameScope sourceFrame) [left, right] supply = some operands) :
+      supply.next ≤ operands.supply.next :=
+    (stateful_arguments_bounds interface (sourceFrameScope sourceFrame) [left, right]
+      (fun expression member _ _ emitted => (children expression member source clear).bounds emitted)
+      supply operands compiled).1
+  refine ⟨?_, ?_, ?_⟩
+  · intro supply output compiled
+    obtain ⟨type, first, second, _, firstCompiled, secondCompiled, shape⟩ :=
+      scalar_binary_lowering_exact unchecked compiled
+    subst output
+    have argsCompiled := arguments_lowering_pair interface (sourceFrameScope sourceFrame) left right firstCompiled secondCompiled
+    exact ⟨(argumentBounds supply _ argsCompiled).trans (Nat.le_of_lt (NativeIR.fresh_strict second.supply)), Nat.le_refl _⟩
+  · intro root supply output frame target compiled frames states bounded hscope sourceOut sourceRan
+    obtain ⟨type, first, second, _, firstCompiled, secondCompiled, shape⟩ :=
+      scalar_binary_lowering_exact unchecked compiled
+    subst output
+    let operands : NativeLowering.Arguments := ⟨first.code ++ second.code, [first.result, second.result], second.supply⟩
+    have argsCompiled := arguments_lowering_pair interface (sourceFrameScope sourceFrame) left right firstCompiled secondCompiled
+    have grew := argumentBounds supply operands argsCompiled
+    have jumpFree := arguments_lowering_jump_free interface (sourceFrameScope sourceFrame) [left, right] supply operands argsCompiled
+    rcases (source_unchecked_binary_stateful_exact unchecked left right source sourceOut).mp sourceRan with
+      ⟨rawLeft, rawRight, middle, value, argsRan, computed, same⟩ | ⟨fault, post, argsRan, same⟩
+    · obtain ⟨⟨flow, middleFrame, middleState⟩, targetArgs, related, protection, middleBounded, middleScoped⟩ :=
+        stateful_arguments_forward worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope argsRan
+      rcases related with ⟨postRelated, middleClear, normal, reads⟩
+      change flow = .normal at normal
+      subst flow
+      change middle.fault = none at middleClear
+      have outputSame : sourceOut = ⟨.ok value, middle⟩ := by
+        simpa only [sourceObserve, middleClear] using same
+      clear same
+      subst sourceOut
+      obtain ⟨leftValue, rightValue, valuesSame, readLeft, readRight⟩ := target_two_encoded_arguments reads
+      cases valuesSame
+      have pure : TargetPureEval interface middleFrame middleState
+          (.binary operation first.result second.result) (encodeValue value) :=
+        .binary readLeft readRight ((unchecked_scalar_value_result_iff unchecked rawLeft rawRight value).mpr computed)
+      obtain ⟨lastProtection, lastBounded, lastScoped⟩ := declared_temporary_frame_profile
+        middleBounded middleScoped (NativeIR.fresh_strict second.supply) (Nat.le_refl _) (encodeValue value)
+      refine ⟨⟨.normal, targetDeclareTemporary middleFrame (NativeIR.fresh second.supply).1 (encodeValue value), middleState⟩,
+        target_append_normal root operands.code _ jumpFree targetArgs
+          (.next (.temporary (temporary_bound_fresh middleBounded (NativeIR.fresh_strict second.supply)) pure) (.nil _ _ _)),
+        ⟨postRelated, middleClear, rfl, declared_temporary_atom interface middleFrame middleState
+          (NativeIR.fresh second.supply).1 type (encodeValue value)⟩,
+        temporary_protection_trans protection (temporary_protection_weaken grew lastProtection), lastBounded, lastScoped⟩
+    · subst sourceOut
+      obtain ⟨⟨flow, postFrame, postState⟩, targetArgs, related, protection, postBounded, postScoped⟩ :=
+        stateful_arguments_forward worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope argsRan
+      rcases related with ⟨postRelated, faulted, returned⟩
+      change flow = .returned default at returned
+      subst flow
+      exact ⟨⟨.returned default, postFrame, postState⟩,
+        target_append_returned root operands.code _ jumpFree targetArgs, ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict second.supply)) postBounded, postScoped⟩
+  · intro root supply output frame target compiled frames states bounded hscope out ran
+    obtain ⟨type, first, second, _, firstCompiled, secondCompiled, shape⟩ :=
+      scalar_binary_lowering_exact unchecked compiled
+    subst output
+    let operands : NativeLowering.Arguments := ⟨first.code ++ second.code, [first.result, second.result], second.supply⟩
+    have argsCompiled := arguments_lowering_pair interface (sourceFrameScope sourceFrame) left right firstCompiled secondCompiled
+    have grew := argumentBounds supply operands argsCompiled
+    have jumpFree := arguments_lowering_jump_free interface (sourceFrameScope sourceFrame) [left, right] supply operands argsCompiled
+    rcases (target_run_append_exact interface targetHeap targetCalls result root operands.code _ jumpFree frame target out).mp ran with
+      ⟨middleFrame, middleState, targetArgs, suffix⟩ | ⟨returnedValue, postFrame, postState, targetArgs, same⟩
+    · obtain ⟨sourceArgs, argsRan, related, protection, middleBounded, middleScoped⟩ :=
+        stateful_arguments_reflection worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope targetArgs
+      obtain ⟨values, success, middleClear, postRelated, reads⟩ := checked_result_normal related rfl
+      rcases sourceArgs with ⟨answer, middle⟩
+      change middle.fault = none at middleClear
+      cases success
+      obtain ⟨rawLeft, rawRight, valuesSame, readLeft, readRight⟩ := target_two_encoded_arguments reads
+      subst values
+      obtain ⟨actual, pure, same⟩ := (target_pure_temporary_any_exact interface targetHeap targetCalls result root
+        middleFrame middleState (NativeIR.fresh second.supply).1 type (.binary operation first.result second.result)
+        (temporary_bound_fresh middleBounded (NativeIR.fresh_strict second.supply)) out).mp suffix
+      cases pure with
+      | binary otherLeft otherRight calculated =>
+          cases target_atom_unique readLeft otherLeft
+          cases target_atom_unique readRight otherRight
+          let value := decodeValue actual
+          have computed : sourceBinaryOp operation rawLeft rawRight = some (.ok value) := by
+            apply (unchecked_scalar_value_result_iff unchecked rawLeft rawRight value).mp
+            simpa only [value, encode_decode_value] using calculated
+          subst out
+          obtain ⟨lastProtection, lastBounded, lastScoped⟩ := declared_temporary_frame_profile
+            middleBounded middleScoped (NativeIR.fresh_strict second.supply) (Nat.le_refl _) actual
+          refine ⟨⟨.ok value, middle⟩,
+            (source_unchecked_binary_stateful_exact unchecked left right source _).mpr
+              (.inl ⟨rawLeft, rawRight, middle, value, argsRan, computed, ?_⟩),
+            ⟨postRelated, middleClear, rfl, ?_⟩,
+            temporary_protection_trans protection (temporary_protection_weaken grew lastProtection), lastBounded, lastScoped⟩
+          · simp only [sourceObserve, middleClear]
+          · simpa only [value, encode_decode_value, NativeLowering.prependCode, NativeLowering.pureTemporary] using
+              declared_temporary_atom interface middleFrame middleState (NativeIR.fresh second.supply).1 type actual
+    · subst out
+      obtain ⟨sourceArgs, argsRan, related, protection, postBounded, postScoped⟩ :=
+        stateful_arguments_reflection worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default [left, right] children root clear argsCompiled frames states bounded hscope targetArgs
+      obtain ⟨fault, failed, faulted, postRelated, returned⟩ := checked_result_returned related rfl
+      rcases sourceArgs with ⟨answer, post⟩
+      cases failed
+      cases returned
+      exact ⟨⟨.error fault, post⟩,
+        (source_unchecked_binary_stateful_exact unchecked left right source _).mpr (.inr ⟨fault, post, argsRan, rfl⟩),
+        ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken (Nat.le_of_lt (NativeIR.fresh_strict second.supply)) postBounded, postScoped⟩
+
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

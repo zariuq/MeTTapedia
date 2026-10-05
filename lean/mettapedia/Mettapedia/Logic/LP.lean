@@ -23,6 +23,8 @@ import Mettapedia.Logic.LP.CertifyingDatalogBridge
 import Mettapedia.Logic.LP.Provenance
 import Mettapedia.Logic.LP.PathMapBridge
 import Mettapedia.Logic.LP.RangeRestriction
+import Mettapedia.Logic.LP.Narrowing
+import Mettapedia.Logic.LP.NarrowingLift
 
 /-!
 # Logic Programming Kernel
@@ -54,4 +56,6 @@ Barrel import for the LP module stack:
 | `Provenance` | K-relations, T_P_K_LP, semiring homomorphism theorem |
 | `PathMapBridge` | Conjunctive queries, evidence counting, monotonicity |
 | `RangeRestriction` | `isUnit`, `isRangeRestricted`, unit-KB LHM characterization |
+| `Narrowing` | Rules used left to right: narrowing (unification may instantiate the query), rewriting as the narrowing that fixes it, paramodulation into a unit equation, soundness in models; `a ⟶ b`, `a ⟶ c` give `b = c` by paramodulation and no rewriting between `b` and `c`; `f x ⟶ f (g x)` has no reduction order |
+| `NarrowingLift` | A rewrite of an instantiated query at a non-variable subterm is an instance of a narrowing by a most general unifier |
 -/

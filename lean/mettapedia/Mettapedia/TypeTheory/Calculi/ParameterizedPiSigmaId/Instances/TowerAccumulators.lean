@@ -809,8 +809,8 @@ theorem roots : RootPreserving (rules lv) := by
   obtain ⟨entry, mem, step⟩ := RootComputation.unionAll_step step
   simp only [computations, List.mem_cons, List.not_mem_nil, or_false] at mem
   rcases mem with rfl | rfl | rfl
-  · exact (declares lv fun _ => 0).step_preserves (TowerAccumulatorsModel.facts lv) (RulesSub.refl _)
-      formed step typing
+  · exact (declares lv fun _ => 0).toRecursor.step_preserves (TowerAccumulatorsModel.facts lv)
+      (RulesSub.refl _) formed step typing
   · obtain ⟨k, fields, σ, as, mem, has, rfl, rfl⟩ := step
     exact (declaresFirst lv fun _ => 0).rule_preserves (TowerAccumulatorsModel.facts lv) (declares
         lv fun _ => 0) (RulesSub.refl _) formed mem σ as has typing

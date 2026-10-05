@@ -82,6 +82,16 @@ theorem checkReads_iff [DecidableEq Value] (store : Key → Value) (reads : Read
     checkReads store reads = true ↔ Agrees store reads := by
   simp [checkReads, Agrees]
 
+theorem agrees_append (store : Key → Value) (first second : Reads Key Value) :
+    Agrees store (first ++ second) ↔ Agrees store first ∧ Agrees store second := by
+  simp [Agrees, List.mem_append, or_imp, forall_and]
+
+/-- Nested observations retain both read certificates, in execution order. -/
+theorem checkReads_append [DecidableEq Value] (store : Key → Value)
+    (first second : Reads Key Value) :
+    checkReads store (first ++ second) = (checkReads store first && checkReads store second) := by
+  simp [checkReads, List.all_append]
+
 /-- A successful executable validation licenses reuse of the old result. -/
 theorem validated_answer [DecidableEq Value] (first second : Key → Value)
     (program : Program Key Value Answer)
@@ -130,6 +140,37 @@ theorem run_bind (store : Key → Value) (program : Program Key Value Answer)
   induction program with
   | pure answer => rfl
   | read key more ih => simp [bind, run, ih]
+
+/-- Checking a returned nested computation includes every read made by its
+answer-selected continuation, including reads that produced no matches. -/
+theorem checkReads_bind [DecidableEq Value] (first second : Key → Value)
+    (program : Program Key Value Answer) (next : Answer → Program Key Value Other) :
+    checkReads second (run first (bind program next)).reads =
+      (checkReads second (run first program).reads &&
+        checkReads second (run first (next (run first program).answer)).reads) := by
+  rw [run_bind]
+  exact checkReads_append _ _ _
+
+/-- Validation of both certificates preserves the entire composed observation,
+not only its returned answer. The continuation is selected by the first answer. -/
+theorem validated_bind [DecidableEq Value] (first second : Key → Value)
+    (program : Program Key Value Answer) (next : Answer → Program Key Value Other)
+    (parentValid : checkReads second (run first program).reads = true)
+    (childValid : checkReads second (run first (next (run first program).answer)).reads = true) :
+    run second (bind program next) = run first (bind program next) := by
+  apply run_eq_of_agrees first second (bind program next)
+  apply (checkReads_iff _ _).mp
+  rw [checkReads_bind, parentValid, childValid]
+  rfl
+
+/-- A stable caller cannot license publication after a child dependency changed. -/
+theorem changed_child_rejects_bind [DecidableEq Value] (first second : Key → Value)
+    (program : Program Key Value Answer) (next : Answer → Program Key Value Other)
+    (childChanged : checkReads second
+      (run first (next (run first program).answer)).reads = false) :
+    checkReads second (run first (bind program next)).reads = false := by
+  rw [checkReads_bind, childChanged]
+  exact Bool.and_false _
 
 def map (f : Answer → Other) (program : Program Key Value Answer) :
     Program Key Value Other := bind program fun answer => .pure (f answer)
@@ -180,6 +221,51 @@ theorem negative_lookup_must_be_recorded :
       checkReads (Function.update (fun _ => none) 4 (some 9))
         (run (fun _ => none) absenceQuery).reads = false := by
   decide
+
+/-- The complete ordered answer list is one read value, including emptiness
+and repeated physical answers. Merely recording a returned witness is weaker. -/
+def matchesAt (key : Nat) : Program Nat (List Nat) (List Nat) :=
+  .read key fun values => .pure values
+
+def originalMatches : Nat → List Nat
+  | 0 => [3]
+  | 1 => [7, 7]
+  | _ => []
+
+theorem nested_complete_matches_recorded :
+    (run originalMatches (bind (matchesAt 0) fun _ => matchesAt 1)).reads =
+      [(0, [3]), (1, [7, 7])] ∧
+    (run originalMatches (bind (matchesAt 0) fun _ => matchesAt 1)).answer = [7, 7] := by
+  decide
+
+theorem child_match_insertion_invalidates :
+    let changed := Function.update originalMatches 1 [7, 7, 8]
+    checkReads changed (run originalMatches (matchesAt 0)).reads = true ∧
+    checkReads changed
+      (run originalMatches (bind (matchesAt 0) fun _ => matchesAt 1)).reads = false ∧
+    (run changed (bind (matchesAt 0) fun _ => matchesAt 1)).answer = [7, 7, 8] := by
+  decide
+
+theorem empty_child_match_insertion_invalidates :
+    let changed := Function.update originalMatches 2 [8]
+    checkReads changed (run originalMatches (matchesAt 0)).reads = true ∧
+    (run originalMatches (matchesAt 2)).answer = [] ∧
+    checkReads changed
+      (run originalMatches (bind (matchesAt 0) fun _ => matchesAt 2)).reads = false := by
+  decide
+
+theorem unrelated_match_write_preserves_composition :
+    let changed := Function.update originalMatches 2 [8]
+    checkReads changed
+      (run originalMatches (bind (matchesAt 0) fun _ => matchesAt 1)).reads = true ∧
+    run changed (bind (matchesAt 0) fun _ => matchesAt 1) =
+      run originalMatches (bind (matchesAt 0) fun _ => matchesAt 1) := by
+  dsimp
+  constructor
+  · decide
+  · apply validated_bind
+    · decide
+    · decide
 
 end Controls
 

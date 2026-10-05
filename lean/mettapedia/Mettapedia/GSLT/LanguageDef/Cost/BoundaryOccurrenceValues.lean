@@ -144,14 +144,4 @@ theorem setTree_packedChildren {occurrences : List CostRegionOccurrence}
                 exact congrArg (List.cons ⟨_, _, _, head⟩)
                   (inductionHypothesis values tailChildren next replacement replacementTree)
 
-#print axioms get
-#print axioms set
-#print axioms get_set
-#print axioms set_get
-#print axioms get_set_other
-#print axioms set_commute
-#print axioms getTree
-#print axioms setTree
-#print axioms setTree_packedChildren
-
 end Mettapedia.GSLT.LanguageDef.Cost.BoundaryOccurrenceValues

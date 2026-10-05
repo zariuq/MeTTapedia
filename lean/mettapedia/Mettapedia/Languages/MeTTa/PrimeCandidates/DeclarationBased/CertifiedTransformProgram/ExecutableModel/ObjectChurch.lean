@@ -124,12 +124,30 @@ theorem objectChurch_step_of_decoder {k n : Nat} {L R : Tm Tower.Head k}
       ((elabRight objectDecls L R).subst σ) :=
   CSchemaStep.instantiate ⟨L, R, Or.inr rule, rfl, rfl⟩ σ
 
+/-- **A package with the object package's root computation has its steps and their
+premises.** -/
+theorem objectChurch_within {R' : Rules Tower.Head} {Q : ChurchRules R'}
+    (same : Q.computation = objectChurch.computation) : StepsWithin objectChurch Q where
+  step := fun step => by rw [same]; exact step
+  requires := fun _ required => by rw [same]; exact required
+
+/-- The premises an instance of an elaborated schema requires are required by every package with
+the object package's steps and their premises. -/
+theorem objectChurch_requires_within {R' : Rules Tower.Head} {Q : ChurchRules R'}
+    (within : StepsWithin objectChurch Q) {n : Nat} {l r : CTm Tower.Head n}
+    {premises : List (CPremise Tower.Head n)}
+    (requires : CSchemaRequires objectDecls objectSchemas l r premises) :
+    Q.computation.requires l r premises := by
+  cases requires with
+  | instantiate rule σ =>
+    exact within.requires (CSchemaStep.instantiate ⟨_, _, rule, rfl, rfl⟩ σ) (.instantiate rule σ)
+
 /-- **An instance of a schema of a declared computation is admitted** by every package with
-the object package's root computation, in a context where the instances of the schema's
+the object package's steps and their premises, in a context where the instances of the schema's
 metavariables have the types its left side's positions require and the equations of its
 reflexivity positions hold. -/
 theorem objectChurch_admits_of_spec {R' : Rules Tower.Head} {Q : ChurchRules R'}
-    (same : Q.computation = objectChurch.computation)
+    (within : StepsWithin objectChurch Q)
     {p : DeclName × DeclaredComputation Tower.Head} (mem : p ∈ computationSpecs) {k n : Nat}
     {L R : Tm Tower.Head k} (rule : p.2.schemas L R) {Γ : CCtx Tower.Head n}
     (σ : CSub Tower.Head k n)
@@ -138,28 +156,28 @@ theorem objectChurch_admits_of_spec {R' : Rules Tower.Head} {Q : ChurchRules R'}
     (equations : ∀ e ∈ patternEquations objectDecls none L,
       CEqual Q Γ (e.1.subst σ) (e.2.1.subst σ) (e.2.2.subst σ)) :
     Q.Admits Γ ((elabLeft objectDecls L).subst σ) ((elabRight objectDecls L R).subst σ) :=
-  CSchemaRequires.admits (fun requires => by rw [same]; exact requires)
+  CSchemaRequires.admits (objectChurch_requires_within within)
     (Or.inl (DeclaredComputation.schemaUnionAll_of_mem rule mem)) σ typings equations
 
 /-- An instance of a schema without reflexivity positions is admitted along a typed
 substitution from the telescope its left side's positions require. -/
 theorem objectChurch_admits_of_mor {R' : Rules Tower.Head} {Q : ChurchRules R'}
-    (same : Q.computation = objectChurch.computation)
+    (within : StepsWithin objectChurch Q)
     {p : DeclName × DeclaredComputation Tower.Head} (mem : p ∈ computationSpecs) {k n : Nat}
     {L R : Tm Tower.Head k} (rule : p.2.schemas L R) {Γ : CCtx Tower.Head n}
     (σ : CSub Tower.Head k n) {Θ : CCtx Tower.Head k}
     (known : ∀ i, patternKnowledge objectDecls none L i = some (Θ.lookup i))
     (noEquations : patternEquations objectDecls none L = []) (mor : CSubstMor Q Θ Γ σ) :
     Q.Admits Γ ((elabLeft objectDecls L).subst σ) ((elabRight objectDecls L R).subst σ) :=
-  objectChurch_admits_of_spec same mem rule σ (CSubstMor.patternTypings known mor)
+  objectChurch_admits_of_spec within mem rule σ (CSubstMor.patternTypings known mor)
     (fun e member => by rw [noEquations] at member; cases member)
 
 /-- **An instance of a decoding schema is admitted** by every package with the object
-package's root computation, in a context where the instances of the schema's metavariables
+package's steps and their premises, in a context where the instances of the schema's metavariables
 have the types its left side's positions require and the equations of its reflexivity
 positions hold. -/
 theorem objectChurch_admits_of_decoder {R' : Rules Tower.Head} {Q : ChurchRules R'}
-    (same : Q.computation = objectChurch.computation) {k n : Nat} {L R : Tm Tower.Head k}
+    (within : StepsWithin objectChurch Q) {k n : Nat} {L R : Tm Tower.Head k}
     (rule : decoderSchema programCodes.decoders L R) {Γ : CCtx Tower.Head n}
     (σ : CSub Tower.Head k n)
     (typings : ∀ i T, patternKnowledge objectDecls none L i = some T →
@@ -167,8 +185,7 @@ theorem objectChurch_admits_of_decoder {R' : Rules Tower.Head} {Q : ChurchRules 
     (equations : ∀ e ∈ patternEquations objectDecls none L,
       CEqual Q Γ (e.1.subst σ) (e.2.1.subst σ) (e.2.2.subst σ)) :
     Q.Admits Γ ((elabLeft objectDecls L).subst σ) ((elabRight objectDecls L R).subst σ) :=
-  CSchemaRequires.admits (fun requires => by rw [same]; exact requires) (Or.inr rule) σ typings
-    equations
+  CSchemaRequires.admits (objectChurch_requires_within within) (Or.inr rule) σ typings equations
 
 /-- **Root lifting for the object package**: every root step of the erasure of an
 annotated term is the erasure of an annotated root step of that term. -/

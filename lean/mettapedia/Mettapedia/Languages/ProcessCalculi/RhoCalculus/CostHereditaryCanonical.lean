@@ -1149,8 +1149,7 @@ theorem normalizeHereditaryRawWithInventory_quoteDrop_restore
     inventory, reifiedFrame]
   unfold rhoCostStaticActionAt
   rw [canonicalizeByDepths_quote_drop _ rhoReflectivePresentation (by decide)]
-  simp only [canonicalizeByDepths, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars]
+  simp only [canonicalizeByDepths, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   rfl
 
 /-- Total-inventory form of the open hereditary Quote/Drop root bridge.  The
@@ -1402,7 +1401,7 @@ theorem canonicalizeReifiedTargetFrame_wrappedParallelTwoDrops
     simp [sourceSemanticPatternKeyAt,
       Mettapedia.GSLT.LanguageDef.CostStaticRegionNode.semanticPatternKeyAt,
       CostStaticAtomEnvironment.restoreAt, mapPattern,
-      CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+      CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
         node.thinning closed,
       ReflectiveContextSupport.substituteAt, costWrappedConstructorName,
       CostStaticColor.constructorTag]
@@ -1416,7 +1415,7 @@ theorem canonicalizeReifiedTargetFrame_wrappedParallelTwoDrops
     simp [sourceSemanticPatternKeyAt,
       Mettapedia.GSLT.LanguageDef.CostStaticRegionNode.semanticPatternKeyAt,
       CostStaticAtomEnvironment.restoreAt, mapPattern,
-      CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+      CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
         node.thinning closed,
       ReflectiveContextSupport.substituteAt, costWrappedConstructorName,
       CostStaticColor.constructorTag]
@@ -1453,12 +1452,11 @@ theorem canonicalizeReifiedTargetFrame_wrappedParallelTwoDrops
     rw [sortPatternsBy_pair_eq_of_le _ _ _ keyOrderLiteral]
   rw [canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize node
     environment]
-  rw [CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+  rw [CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
     node.thinning closed]
   have targetDepth : node.targetBound.length = 0 := by simp [closed]
   rw [targetDepth, reifiedFrame, canonicalized]
-  simp [mapPattern, mapPatternList_eq_map,
-    CostStaticColor.symbols_constructor, CostStaticColor.constructorTag,
+  simp [mapPattern, mapPatternList_eq_map, CostStaticColor.constructorTag,
     costWrappedConstructorName, rhoReflectivePresentation]
   exact ⟨rfl, rfl⟩
 
@@ -1850,7 +1848,7 @@ theorem rhoCommonSourceAction_canonicalize_eq
     (rightNode.reifiedSourceTerm rightEnvironment)
   let sourceBoundEq : leftNode.sourceBound = rightNode.sourceBound :=
     congrArg
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color)
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color)
       sameTargetBound
   let rightCommon := rightCommonRaw.reindex sourceBoundEq sameTargetBound rfl
   have leftPattern := leftEnvironment.reifySourceTermToCommon_pattern cospan

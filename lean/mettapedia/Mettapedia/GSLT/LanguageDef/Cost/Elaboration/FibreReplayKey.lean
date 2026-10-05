@@ -110,8 +110,4 @@ theorem provenanceKey_supports
       (provenanceKey (source := source) (term := term)) observation :=
   provenanceKey_isExact.supports observation
 
-#print axioms compactFibreKey_hasRealization_iff_constant
-#print axioms compactFibreKey_supports_iff_constant
-#print axioms provenanceKey_isExact
-
 end Mettapedia.GSLT.LanguageDef.Cost.Elaboration

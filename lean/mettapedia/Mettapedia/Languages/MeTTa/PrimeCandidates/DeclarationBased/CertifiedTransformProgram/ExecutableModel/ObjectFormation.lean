@@ -13,6 +13,8 @@ counterpart of the formation lemmas of the unannotated package's stages:
   annotation is themselves (`objectChurch_declared`), and each is formed in the
   empty context (`cnumRecType_formed`, `cjType_formed`, `csucMoveType_formed`,
   `ctransportType_formed`, `citerType_formed`).
+
+A closed numeral is `zero` or the successor of a closed numeral (`cnumeral`), in any context.
 -/
 
 set_option autoImplicit false
@@ -46,6 +48,11 @@ abbrev cadd (a b : CTm Tower.Head n) : CTm Tower.Head n := .app (.app (.const ad
 abbrev ceqAt (x : CTm Tower.Head n) : CTm Tower.Head n := .app (.const eqAtName) x
 
 end Terms
+
+/-- The numeral `k` in any context: `zero`, or the successor of the numeral before it. -/
+def cnumeral {n : Nat} : Nat → CTm Tower.Head n
+  | 0 => czero
+  | k + 1 => csuc (cnumeral k)
 
 /-! ## Formation at a universe level -/
 

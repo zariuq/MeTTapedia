@@ -1,13 +1,15 @@
-import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ObjectChurchModel
+import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ObjectExtension
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.Domain.AlignedWitnesses
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.Domain.Carriers
 
 /-!
-# The eliminator's case of the relation, at the object reading
+# The eliminator's case of the relation, in every extension of the object package
 
-The object reading reads the identity eliminator as its function at the reflexivity
-point. At the witnesses of that reading, the relation's motive conversion at the
-reflexivity point applies.
+Every package containing the object package (`ObjectExtension`) reads the identity eliminator
+as the object reading does, as its function at the reflexivity point
+(`ObjectExtension.reading_j`). At the witnesses of that reading, the relation's motive
+conversion at the reflexivity point applies. The object package is the extension with nothing
+added.
 
 **Typings of the eliminator's spines** (`cjSpine5_typed`, `cjSpine6_typed`): from typed
 arguments, `J A x M d y : Π (p : Id A x y). M y p` and `J A x M d y p : M y p`.
@@ -83,12 +85,12 @@ def jArgs (A x M d y p : CTm Tower.Head n) : CSub Tower.Head 6 n :=
     (CTm.consSub A Fin.elim0)))))
 
 /-- Typed arguments of the eliminator are a typed substitution of its context. -/
-theorem jArgs_mor {A x M d y p : CTm Tower.Head n}
-    (tA : CTyped objectChurch Γ A cU0) (tx : CTyped objectChurch Γ x A)
-    (tM : CTyped objectChurch Γ M (.pi A (.pi (.id (A.rename wk) (x.rename wk) (.var 0)) cU0)))
-    (td : CTyped objectChurch Γ d (.app (.app M x) (.refl x))) (ty : CTyped objectChurch Γ y A)
-    (tp : CTyped objectChurch Γ p (.id A x y)) :
-    CSubstMor objectChurch cJTypeTele Γ (jArgs A x M d y p) := by
+theorem jArgs_mor {R' : Rules Tower.Head} {P : ChurchRules R'} {A x M d y p : CTm Tower.Head n}
+    (tA : CTyped P Γ A cU0) (tx : CTyped P Γ x A)
+    (tM : CTyped P Γ M (.pi A (.pi (.id (A.rename wk) (x.rename wk) (.var 0)) cU0)))
+    (td : CTyped P Γ d (.app (.app M x) (.refl x))) (ty : CTyped P Γ y A)
+    (tp : CTyped P Γ p (.id A x y)) :
+    CSubstMor P cJTypeTele Γ (jArgs A x M d y p) := by
   intro i
   refine Fin.cases ?_ (fun i => ?_) i
   · exact tp
@@ -106,19 +108,19 @@ theorem jArgs_mor {A x M d y p : CTm Tower.Head n}
 
 /-- **The eliminator at its first five arguments**:
 `J A x M d y : Π (p : Id A x y). M y p`. -/
-theorem cjSpine5_typed {A x M d y p : CTm Tower.Head n}
-    (mor : CSubstMor objectChurch cJTypeTele Γ (jArgs A x M d y p)) :
-    CTyped objectChurch Γ (CTm.appSpine (.const jName) [A, x, M, d, y])
+theorem cjSpine5_typed {R' : Rules Tower.Head} {P : ChurchRules R'} {A x M d y p : CTm Tower.Head n}
+    (mor : CSubstMor P cJTypeTele Γ (jArgs A x M d y p))
+    (sub : ChurchRulesSub objectChurch P := by exact ChurchRulesSub.refl _) :
+    CTyped P Γ (CTm.appSpine (.const jName) [A, x, M, d, y])
       (.pi (.id A x y) (.app (.app (M.rename wk) (y.rename wk)) (.var 0))) :=
-  cjSpine_typed.substitute mor
+  CTyped.substitute (CDerivable.mono sub cjSpine_typed) mor
 
 /-- **The eliminator at all its arguments**: `J A x M d y p : M y p`. -/
-theorem cjSpine6_typed {A x M d y p : CTm Tower.Head n}
-    (mor : CSubstMor objectChurch cJTypeTele Γ (jArgs A x M d y p))
-    (tp : CTyped objectChurch Γ p (.id A x y)) :
-    CTyped objectChurch Γ (CTm.appSpine (.const jName) [A, x, M, d, y, p])
-      (.app (.app M y) p) := by
-  have h := CDerivable.appElim (cjSpine5_typed mor) tp
+theorem cjSpine6_typed {R' : Rules Tower.Head} {P : ChurchRules R'} {A x M d y p : CTm Tower.Head n}
+    (mor : CSubstMor P cJTypeTele Γ (jArgs A x M d y p)) (tp : CTyped P Γ p (.id A x y))
+    (sub : ChurchRulesSub objectChurch P := by exact ChurchRulesSub.refl _) :
+    CTyped P Γ (CTm.appSpine (.const jName) [A, x, M, d, y, p]) (.app (.app M y) p) := by
+  have h := CDerivable.appElim (cjSpine5_typed mor sub) tp
   rwa [inst0_motive_family] at h
 
 /-- The motive's type, substituted. -/
@@ -136,8 +138,8 @@ end Typings
 
 section Step
 
-variable {L : Type} [LevelOrder L] (levels : LevelModel objectRules L)
-  {H : HeadReduction objectChurch objectRigid}
+variable {X : ObjectExtension} {L : Type} [LevelOrder L] (levels : LevelModel X.rules L)
+  {K : RigidTypes X.church} {H : HeadReduction X.church K}
 
 /-- Finitely many tokens, each typed at one of finitely many compact types, are typed at
 one compact type. -/
@@ -173,38 +175,38 @@ theorem typed_points_with {S : List Tok} {Q : Tok → Prop}
 
 /-- The hypotheses of the eliminator's case, over a context: typed arguments, and an
 adequate motive, method, path and carrier. -/
-structure JCase (H : HeadReduction objectChurch objectRigid) {n : Nat} (Γ : CCtx Tower.Head n)
+structure JCase (X : ObjectExtension) {K : RigidTypes X.church} (H : HeadReduction X.church K) {n : Nat} (Γ : CCtx Tower.Head n)
     (A x M d y p : CTm Tower.Head n) : Prop where
-  tA : CTyped objectChurch Γ A cU0
-  tx : CTyped objectChurch Γ x A
-  tM : CTyped objectChurch Γ M (.pi A (.pi (.id (A.rename wk) (x.rename wk) (.var 0)) cU0))
-  td : CTyped objectChurch Γ d (.app (.app M x) (.refl x))
-  ty : CTyped objectChurch Γ y A
-  tp : CTyped objectChurch Γ p (.id A x y)
-  hM : Adequate objectChurchReading H Γ M
+  tA : CTyped X.church Γ A cU0
+  tx : CTyped X.church Γ x A
+  tM : CTyped X.church Γ M (.pi A (.pi (.id (A.rename wk) (x.rename wk) (.var 0)) cU0))
+  td : CTyped X.church Γ d (.app (.app M x) (.refl x))
+  ty : CTyped X.church Γ y A
+  tp : CTyped X.church Γ p (.id A x y)
+  hM : Adequate X.reading H Γ M
     (.pi A (.pi (.id (A.rename wk) (x.rename wk) (.var 0)) cU0))
-  hd : Adequate objectChurchReading H Γ d (.app (.app M x) (.refl x))
-  hp : Adequate objectChurchReading H Γ p (.id A x y)
-  hA : Adequate objectChurchReading H Γ A cU0
+  hd : Adequate X.reading H Γ d (.app (.app M x) (.refl x))
+  hp : Adequate X.reading H Γ p (.id A x y)
+  hA : Adequate X.reading H Γ A cU0
 
 variable {n : Nat} {Γ : CCtx Tower.Head n} {A x M d y p : CTm Tower.Head n}
   {ρ : Env n} {m : Nat} {Δ : CCtx Tower.Head m} {σ σ' : CSub Tower.Head n m}
 
 /-- The spine facts of the eliminator's spine in an environment fitting its context. -/
-theorem JCase.spine (J : JCase H Γ A x M d y p) (fits : Fits objectChurchReading Γ ρ) :
-    SpineTyped (jTypeI objectChurchReading (.sort Tower.zero))
-      [cinterp objectChurchReading A ρ, cinterp objectChurchReading x ρ,
-        cinterp objectChurchReading M ρ, cinterp objectChurchReading d ρ,
-        cinterp objectChurchReading y ρ, cinterp objectChurchReading p ρ] := by
-  obtain ⟨-, -, sJ⟩ := CTyped.sound objectChurchReading_valid
-    (cjSpine6_typed (jArgs_mor J.tA J.tx J.tM J.td J.ty J.tp) J.tp) fits
+theorem JCase.spine (J : JCase X H Γ A x M d y p) (fits : Fits X.reading Γ ρ) :
+    SpineTyped (jTypeI X.reading (.sort Tower.zero))
+      [cinterp X.reading A ρ, cinterp X.reading x ρ,
+        cinterp X.reading M ρ, cinterp X.reading d ρ,
+        cinterp X.reading y ρ, cinterp X.reading p ρ] := by
+  obtain ⟨-, -, sJ⟩ := CTyped.sound X.valid
+    (cjSpine6_typed (jArgs_mor J.tA J.tx J.tM J.td J.ty J.tp) J.tp X.sub) fits
   exact (SpineFacts.constSpine
-    (objectChurch_declared (c := jName) (T := Package.jType) (by decide) rfl) sJ).1.2
+    (X.sub.constantType (objectChurch_declared (c := jName) (T := Package.jType) (by decide) rfl)) sJ).1.2
 
 /-- The path's reflexivity tag relates the substituted paths. -/
-theorem JCase.reflTag (J : JCase H Γ A x M d y p) (fits : Fits objectChurchReading Γ ρ)
-    (formed : CCtxFormed objectChurch Δ) (hσ : SubstRel objectChurchReading H Γ ρ Δ σ σ')
-    (hpTag : (cinterp objectChurchReading p ρ).Mem (.tag .refl)) :
+theorem JCase.reflTag (J : JCase X H Γ A x M d y p) (fits : Fits X.reading Γ ρ)
+    (formed : CCtxFormed X.church Δ) (hσ : SubstRel X.reading H Γ ρ Δ σ σ')
+    (hpTag : (cinterp X.reading p ρ).Mem (.tag .refl)) :
     RT H Δ true (.tag .refl) (.id (A.subst σ) (x.subst σ) (y.subst σ)) (p.subst σ)
       (p.subst σ') :=
   J.hp ρ fits formed hσ (.tag .refl) hpTag ⟨[.tag .ident],
@@ -217,12 +219,12 @@ as far as every token of a type witness below the motive at the path's point and
 reflexivity observes: the motive's conversion at the reflexivity point, at the typed
 point tokens of the path, whose carrier is related to itself by the carrier's
 adequacy. -/
-theorem RT.objectJ_motive (J : JCase H Γ A x M d y p) (fits : Fits objectChurchReading Γ ρ)
-    (formed : CCtxFormed objectChurch Δ) (hσ : SubstRel objectChurchReading H Γ ρ Δ σ σ')
-    (hpTag : (cinterp objectChurchReading p ρ).Mem (.tag .refl))
-    {a : List Tok} (haBelow : Ideal.Below a (Ideal.app (Ideal.app (cinterp objectChurchReading M ρ)
-      (Ideal.reflPoint (cinterp objectChurchReading p ρ)))
-      (Ideal.refl (Ideal.reflPoint (cinterp objectChurchReading p ρ)))))
+theorem RT.objectJ_motive (J : JCase X H Γ A x M d y p) (fits : Fits X.reading Γ ρ)
+    (formed : CCtxFormed X.church Δ) (hσ : SubstRel X.reading H Γ ρ Δ σ σ')
+    (hpTag : (cinterp X.reading p ρ).Mem (.tag .refl))
+    {a : List Tok} (haBelow : Ideal.Below a (Ideal.app (Ideal.app (cinterp X.reading M ρ)
+      (Ideal.reflPoint (cinterp X.reading p ρ)))
+      (Ideal.refl (Ideal.reflPoint (cinterp X.reading p ρ)))))
     (hau : Ty a Elem.univ) :
     ∀ c ∈ a, RT H Δ false c
       (.app (.app (M.subst σ) (x.subst σ)) (.refl (x.subst σ)))
@@ -230,16 +232,16 @@ theorem RT.objectJ_motive (J : JCase H Γ A x M d y p) (fits : Fits objectChurch
       (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ)) := by
   obtain ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩ := J
   have hpElem :
-      projT (cinterp objectChurchReading (.id A x y) ρ) (cinterp objectChurchReading p ρ) =
-        cinterp objectChurchReading p ρ :=
-    (CTyped.sound objectChurchReading_valid tp fits).2.1
-  have hMElem := (CTyped.sound objectChurchReading_valid tM fits).2.1
+      projT (cinterp X.reading (.id A x y) ρ) (cinterp X.reading p ρ) =
+        cinterp X.reading p ρ :=
+    (CTyped.sound X.valid tp fits).2.1
+  have hMElem := (CTyped.sound X.valid tM fits).2.1
   -- the substituted typings
-  have tMσ : CTyped objectChurch Δ (M.subst σ) (.pi (A.subst σ)
+  have tMσ : CTyped X.church Δ (M.subst σ) (.pi (A.subst σ)
       (.pi (.id ((A.subst σ).rename wk) ((x.subst σ).rename wk) (.var 0)) cU0)) := by
     have h := tM.substitute hσ.1.1
     rwa [motiveType_subst] at h
-  have tpσ : CTyped objectChurch Δ (p.subst σ) (.id (A.subst σ) (x.subst σ) (y.subst σ)) :=
+  have tpσ : CTyped X.church Δ (p.subst σ) (.id (A.subst σ) (x.subst σ) (y.subst σ)) :=
     tp.substitute hσ.1.1
   -- the path's reflexivity tag
   have hpRefl := JCase.reflTag ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩ fits formed hσ hpTag
@@ -248,8 +250,8 @@ theorem RT.objectJ_motive (J : JCase H Γ A x M d y p) (fits : Fits objectChurch
     (CRedTy.refl (CTyped.isType levels tpσ formed)) hred.1
   obtain ⟨-, rp, -, erx, ery, -⟩ := hred
   -- the path's typed point tokens relate its point to the endpoints
-  have points : ∀ q, Ideal.TypedPoint (cinterp objectChurchReading (.id A x y) ρ)
-      (cinterp objectChurchReading p ρ) q →
+  have points : ∀ q, Ideal.TypedPoint (cinterp X.reading (.id A x y) ρ)
+      (cinterp X.reading p ρ) q →
       RT H Δ true q (A.subst σ) r (x.subst σ) ∧
         RT H Δ true q (A.subst σ) r (y.subst σ) := by
     intro q ⟨hq, hqT⟩
@@ -272,7 +274,7 @@ theorem RT.objectJ_motive (J : JCase H Γ A x M d y p) (fits : Fits objectChurch
       (Q := fun q => RT H Δ false q (A.subst σ) (A.subst σ) (A.subst σ)) fun q hq => by
     obtain ⟨-, b, hb, hbu, hbq⟩ := hS q hq
     refine ⟨args .ident 0 b, ty_args_ident hbu, (tyTok_reflPoint.1 hbq).2.2.1, fun r hr => ?_⟩
-    exact Adequate.toType levels objectChurch_soundnessFacts (.sort _) hA fits formed hσ.left
+    exact Adequate.toType levels X.soundnessFacts (X.sort _) hA fits formed hσ.left
       (Ideal.below_args_ident hb r hr) (ty_args_ident hbu r hr)
   have hMentry : RT H Δ true (.fn .lam [] Z₁ [.fn .lam [] Z₂ [c]])
       (.pi (A.subst σ) (.pi (.id ((A.subst σ).rename wk) ((x.subst σ).rename wk) (.var 0))
@@ -282,7 +284,7 @@ theorem RT.objectJ_motive (J : JCase H Γ A x M d y p) (fits : Fits objectChurch
     have h := RT.closed' hwe fun e he => hM ρ fits formed hσ e (hwM e he) (hwT e he)
     rw [motiveType_subst] at h
     exact RT.left h
-  exact RT.motive_reflPoint levels formed (.sort Tower.zero) tMσ hMentry rp erx ery hcS hSc hAc
+  exact RT.motive_reflPoint levels formed (X.sort Tower.zero) tMσ hMentry rp erx ery hcS hSc hAc
     (fun q hq => (points q (hS q hq)).1) (fun q hq => (points q (hS q hq)).2) h₁ h₂
     (fun w hw => by rw [List.mem_singleton.1 hw]; exact hau c hc) c List.mem_cons_self
 
@@ -295,13 +297,13 @@ theorem RT.objectJ_at
     (jPath : ∀ {m : Nat} {A x M d y q q' : CTm Tower.Head m}, H.step q q' →
       H.step (.app (CTm.appSpine (.const jName) [A, x, M, d, y]) q)
         (.app (CTm.appSpine (.const jName) [A, x, M, d, y]) q'))
-    (J : JCase H Γ A x M d y p) (fits : Fits objectChurchReading Γ ρ)
-    (formed : CCtxFormed objectChurch Δ) (hσ : SubstRel objectChurchReading H Γ ρ Δ σ σ')
-    {t : Tok} (hpTag : (cinterp objectChurchReading p ρ).Mem (.tag .refl))
-    (htd : (cinterp objectChurchReading d ρ).Mem t)
-    {a : List Tok} (haBelow : Ideal.Below a (Ideal.app (Ideal.app (cinterp objectChurchReading M ρ)
-      (Ideal.reflPoint (cinterp objectChurchReading p ρ)))
-      (Ideal.refl (Ideal.reflPoint (cinterp objectChurchReading p ρ)))))
+    (J : JCase X H Γ A x M d y p) (fits : Fits X.reading Γ ρ)
+    (formed : CCtxFormed X.church Δ) (hσ : SubstRel X.reading H Γ ρ Δ σ σ')
+    {t : Tok} (hpTag : (cinterp X.reading p ρ).Mem (.tag .refl))
+    (htd : (cinterp X.reading d ρ).Mem t)
+    {a : List Tok} (haBelow : Ideal.Below a (Ideal.app (Ideal.app (cinterp X.reading M ρ)
+      (Ideal.reflPoint (cinterp X.reading p ρ)))
+      (Ideal.refl (Ideal.reflPoint (cinterp X.reading p ρ)))))
     (hau : Ty a Elem.univ) (hat : TyTok a t) :
     RT H Δ true t (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ))
       (CTm.appSpine (.const jName) [A.subst σ, x.subst σ, M.subst σ, d.subst σ, y.subst σ,
@@ -312,26 +314,26 @@ theorem RT.objectJ_at
       (d.subst σ') := by
   obtain ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩ := J
   have hpElem :
-      projT (cinterp objectChurchReading (.id A x y) ρ) (cinterp objectChurchReading p ρ) =
-        cinterp objectChurchReading p ρ :=
-    (CTyped.sound objectChurchReading_valid tp fits).2.1
+      projT (cinterp X.reading (.id A x y) ρ) (cinterp X.reading p ρ) =
+        cinterp X.reading p ρ :=
+    (CTyped.sound X.valid tp fits).2.1
   have hle := (Ideal.reflPoint_le_endpoints hpElem).1
   -- the substituted typings
-  have tAσ : CTyped objectChurch Δ (A.subst σ) cU0 := tA.substitute hσ.1.1
-  have txσ : CTyped objectChurch Δ (x.subst σ) (A.subst σ) := tx.substitute hσ.1.1
-  have tMσ : CTyped objectChurch Δ (M.subst σ) (.pi (A.subst σ)
+  have tAσ : CTyped X.church Δ (A.subst σ) cU0 := tA.substitute hσ.1.1
+  have txσ : CTyped X.church Δ (x.subst σ) (A.subst σ) := tx.substitute hσ.1.1
+  have tMσ : CTyped X.church Δ (M.subst σ) (.pi (A.subst σ)
       (.pi (.id ((A.subst σ).rename wk) ((x.subst σ).rename wk) (.var 0)) cU0)) := by
     have h := tM.substitute hσ.1.1
     rwa [motiveType_subst] at h
-  have tdσ : CTyped objectChurch Δ (d.subst σ)
+  have tdσ : CTyped X.church Δ (d.subst σ)
       (.app (.app (M.subst σ) (x.subst σ)) (.refl (x.subst σ))) := td.substitute hσ.1.1
-  have tdσ' : CTyped objectChurch Δ (d.subst σ')
+  have tdσ' : CTyped X.church Δ (d.subst σ')
       (.app (.app (M.subst σ) (x.subst σ)) (.refl (x.subst σ))) :=
     (CEqual.typed levels (CDerivable.functional td hσ.1) formed).2
-  have tyσ : CTyped objectChurch Δ (y.subst σ) (A.subst σ) := ty.substitute hσ.1.1
-  have tpσ : CTyped objectChurch Δ (p.subst σ) (.id (A.subst σ) (x.subst σ) (y.subst σ)) :=
+  have tyσ : CTyped X.church Δ (y.subst σ) (A.subst σ) := ty.substitute hσ.1.1
+  have tpσ : CTyped X.church Δ (p.subst σ) (.id (A.subst σ) (x.subst σ) (y.subst σ)) :=
     tp.substitute hσ.1.1
-  have epσ : CEqual objectChurch Δ (p.subst σ) (p.subst σ')
+  have epσ : CEqual X.church Δ (p.subst σ) (p.subst σ')
       (.id (A.subst σ) (x.subst σ) (y.subst σ)) := CDerivable.functional tp hσ.1
   -- the path's reflexivity tag
   have hpRefl := JCase.reflTag ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩ fits formed hσ hpTag
@@ -340,7 +342,7 @@ theorem RT.objectJ_at
     (CRedTy.refl (CTyped.isType levels tpσ formed)) hred.1
   obtain ⟨-, rp, -, erx, ery, -⟩ := hred
   -- the method, related at the motive at the base point
-  have htdT : TypedAt (cinterp objectChurchReading (.app (.app M x) (.refl x)) ρ) t :=
+  have htdT : TypedAt (cinterp X.reading (.app (.app M x) (.refl x)) ρ) t :=
     ⟨a, fun c hc => Ideal.app_mono (Ideal.app_mono (Ideal.le_refl _) hle)
       (Ideal.refl_mono hle) c (haBelow c hc), hau, hat⟩
   have hdσ := hd ρ fits formed hσ t htd htdT
@@ -348,9 +350,9 @@ theorem RT.objectJ_at
   have motive := RT.objectJ_motive levels ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩ fits formed hσ
     hpTag haBelow hau
   -- the motive's instances are equal types
-  have eAB : CTypeEq objectChurch Δ (.app (.app (M.subst σ) (x.subst σ)) (.refl (x.subst σ)))
+  have eAB : CTypeEq X.church Δ (.app (.app (M.subst σ) (x.subst σ)) (.refl (x.subst σ)))
       (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ)) := by
-    have exy : CEqual objectChurch Δ (x.subst σ) (y.subst σ) (A.subst σ) :=
+    have exy : CEqual X.church Δ (x.subst σ) (y.subst σ) (A.subst σ) :=
       .trans (.symm erx) ery
     have hE : CTm.inst0 (x.subst σ)
         (.pi (.id ((A.subst σ).rename wk) ((x.subst σ).rename wk) (.var 0)) cU0) =
@@ -360,23 +362,23 @@ theorem RT.objectJ_at
       rw [CTm.inst0_rename_wk, CTm.inst0_rename_wk]
     have e₁ := CDerivable.appCong (.refl tMσ) exy
     rw [hE] at e₁
-    have eId : CTypeEq objectChurch Δ (.id (A.subst σ) (x.subst σ) (y.subst σ))
+    have eId : CTypeEq X.church Δ (.id (A.subst σ) (x.subst σ) (y.subst σ))
         (.id (A.subst σ) (x.subst σ) (x.subst σ)) :=
-      ⟨.sort Tower.zero, .sort _,
-        .idCong (.refl tAσ) (.sort _) (.refl txσ) (.trans (.symm ery) erx)⟩
-    have e₂ : CEqual objectChurch Δ (.refl (x.subst σ)) (p.subst σ)
+      ⟨.sort Tower.zero, X.sort _,
+        .idCong (.refl tAσ) (X.sort _) (.refl txσ) (.trans (.symm ery) erx)⟩
+    have e₂ : CEqual X.church Δ (.refl (x.subst σ)) (p.subst σ)
         (.id (A.subst σ) (x.subst σ) (x.subst σ)) :=
       .trans (.reflCong (.symm erx)) (CEqual.convType (.symm rp.2) eId)
-    exact ⟨.sort Tower.zero, .sort _, CDerivable.appCong e₁ e₂⟩
+    exact ⟨.sort Tower.zero, X.sort _, CDerivable.appCong e₁ e₂⟩
   have hdConv := (RT.conv_iff levels formed hau hat motive eAB).1 hdσ
   -- the eliminator's step
-  have tS := cjSpine5_typed (jArgs_mor tAσ txσ tMσ tdσ tyσ tpσ)
-  have tS' := cjSpine5_typed (jArgs_mor tAσ txσ tMσ tdσ' tyσ tpσ)
-  exact ⟨RT.objectEliminator levels formed jPath tAσ txσ tMσ tdσ tdσ' tyσ tS tS' epσ hpRefl
+  have tS := cjSpine5_typed (jArgs_mor tAσ txσ tMσ tdσ tyσ tpσ) X.sub
+  have tS' := cjSpine5_typed (jArgs_mor tAσ txσ tMσ tdσ' tyσ tpσ) X.sub
+  exact ⟨RT.objectEliminator X.within (X.sort _) levels formed jPath tAσ txσ tMσ tdσ tdσ' tyσ tS tS' epσ hpRefl
     hdConv, hdConv⟩
 
 include levels in
-/-- **The eliminator's step of the relation at the object reading's witnesses.** For an
+/-- **The eliminator's step of the relation at the witnesses of an extension's reading.** For an
 adequate motive, method and path, at every token of the denotation of `J A x M d y p` the
 spines `J A x M d y p` and `J A x M d' y p'` are related at `M y p`, where `d'` and `p'` are
 substituted by the right one of two related substitutions and everything else by the left
@@ -385,25 +387,25 @@ theorem RT.objectJAligned
     (jPath : ∀ {m : Nat} {A x M d y q q' : CTm Tower.Head m}, H.step q q' →
       H.step (.app (CTm.appSpine (.const jName) [A, x, M, d, y]) q)
         (.app (CTm.appSpine (.const jName) [A, x, M, d, y]) q'))
-    (J : JCase H Γ A x M d y p) (fits : Fits objectChurchReading Γ ρ)
-    (formed : CCtxFormed objectChurch Δ) (hσ : SubstRel objectChurchReading H Γ ρ Δ σ σ')
+    (J : JCase X H Γ A x M d y p) (fits : Fits X.reading Γ ρ)
+    (formed : CCtxFormed X.church Δ) (hσ : SubstRel X.reading H Γ ρ Δ σ σ')
     {s : Tok}
-    (hs : (cinterp objectChurchReading (CTm.appSpine (.const jName) [A, x, M, d, y, p]) ρ).Mem s) :
+    (hs : (cinterp X.reading (CTm.appSpine (.const jName) [A, x, M, d, y, p]) ρ).Mem s) :
     RT H Δ true s (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ))
       (CTm.appSpine (.const jName) [A.subst σ, x.subst σ, M.subst σ, d.subst σ, y.subst σ,
         p.subst σ])
       (CTm.appSpine (.const jName) [A.subst σ, x.subst σ, M.subst σ, d.subst σ', y.subst σ,
         p.subst σ']) := by
   rw [cinterp_appSpine] at hs
-  change (Ideal.appSpine (objectChurchReading.const jName) _).Mem s at hs
-  rw [objectChurchReading_j] at hs
+  change (Ideal.appSpine (X.reading.const jName) _).Mem s at hs
+  rw [X.reading_j] at hs
   obtain ⟨v, hvs, hv⟩ := mem_appSpine_jAlignedConst (J.spine fits) hs
   refine RT.closed' hvs fun t ht => ?_
   obtain ⟨hpTag, htd, a, haBelow, hau, hat⟩ := hv t ht
   exact (RT.objectJ_at levels jPath J fits formed hσ hpTag htd haBelow hau hat).1
 
 include levels in
-/-- **The eliminator's case of the fundamental lemma, at the object reading.** For an
+/-- **The eliminator's case of the fundamental lemma, in an extension.** For an
 adequate motive, method and path, the eliminator's spine `J A x M d y p` is adequate at
 `M y p`: related substitutions send it to related spines, as far as every token of its
 denotation observes. The spine with only the method and the path substituted by the right
@@ -414,15 +416,15 @@ theorem Adequate.objectJ
     (jPath : ∀ {m : Nat} {A x M d y q q' : CTm Tower.Head m}, H.step q q' →
       H.step (.app (CTm.appSpine (.const jName) [A, x, M, d, y]) q)
         (.app (CTm.appSpine (.const jName) [A, x, M, d, y]) q'))
-    (J : JCase H Γ A x M d y p) :
-    Adequate objectChurchReading H Γ (CTm.appSpine (.const jName) [A, x, M, d, y, p])
+    (J : JCase X H Γ A x M d y p) :
+    Adequate X.reading H Γ (CTm.appSpine (.const jName) [A, x, M, d, y, p])
       (.app (.app M y) p) := by
   intro ρ fits m Δ σ σ' formed hσ s hs _
   obtain ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩ := J
-  have J : JCase H Γ A x M d y p := ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩
+  have J : JCase X H Γ A x M d y p := ⟨tA, tx, tM, td, ty, tp, hM, hd, hp, hA⟩
   rw [cinterp_appSpine] at hs
-  change (Ideal.appSpine (objectChurchReading.const jName) _).Mem s at hs
-  rw [objectChurchReading_j] at hs
+  change (Ideal.appSpine (X.reading.const jName) _).Mem s at hs
+  rw [X.reading_j] at hs
   obtain ⟨v, hvs, hv⟩ := mem_appSpine_jAlignedConst (J.spine fits) hs
   refine RT.closed' hvs fun t ht => ?_
   obtain ⟨hpTag, htd, a, haBelow, hau, hat⟩ := hv t ht
@@ -435,54 +437,54 @@ theorem Adequate.objectJ
       (RT.objectJ_motive levels J fits formed hσ hpTag haBelow hau c hc))
   -- the substituted typings, left and right
   have hσr := hσ.symm levels formed
-  have tAσ : CTyped objectChurch Δ (A.subst σ) cU0 := tA.substitute hσ.1.1
-  have txσ : CTyped objectChurch Δ (x.subst σ) (A.subst σ) := tx.substitute hσ.1.1
-  have tMσ : CTyped objectChurch Δ (M.subst σ) (.pi (A.subst σ)
+  have tAσ : CTyped X.church Δ (A.subst σ) cU0 := tA.substitute hσ.1.1
+  have txσ : CTyped X.church Δ (x.subst σ) (A.subst σ) := tx.substitute hσ.1.1
+  have tMσ : CTyped X.church Δ (M.subst σ) (.pi (A.subst σ)
       (.pi (.id ((A.subst σ).rename wk) ((x.subst σ).rename wk) (.var 0)) cU0)) := by
     have h := tM.substitute hσ.1.1
     rwa [motiveType_subst] at h
-  have tdσ' : CTyped objectChurch Δ (d.subst σ')
+  have tdσ' : CTyped X.church Δ (d.subst σ')
       (.app (.app (M.subst σ) (x.subst σ)) (.refl (x.subst σ))) :=
     (CEqual.typed levels (CDerivable.functional td hσ.1) formed).2
-  have tyσ : CTyped objectChurch Δ (y.subst σ) (A.subst σ) := ty.substitute hσ.1.1
-  have tpσ : CTyped objectChurch Δ (p.subst σ) (.id (A.subst σ) (x.subst σ) (y.subst σ)) :=
+  have tyσ : CTyped X.church Δ (y.subst σ) (A.subst σ) := ty.substitute hσ.1.1
+  have tpσ : CTyped X.church Δ (p.subst σ) (.id (A.subst σ) (x.subst σ) (y.subst σ)) :=
     tp.substitute hσ.1.1
-  have tAσ' : CTyped objectChurch Δ (A.subst σ') cU0 := tA.substitute hσr.1.1
-  have txσ' : CTyped objectChurch Δ (x.subst σ') (A.subst σ') := tx.substitute hσr.1.1
-  have tMσ' : CTyped objectChurch Δ (M.subst σ') (.pi (A.subst σ')
+  have tAσ' : CTyped X.church Δ (A.subst σ') cU0 := tA.substitute hσr.1.1
+  have txσ' : CTyped X.church Δ (x.subst σ') (A.subst σ') := tx.substitute hσr.1.1
+  have tMσ' : CTyped X.church Δ (M.subst σ') (.pi (A.subst σ')
       (.pi (.id ((A.subst σ').rename wk) ((x.subst σ').rename wk) (.var 0)) cU0)) := by
     have h := tM.substitute hσr.1.1
     rwa [motiveType_subst] at h
-  have tdσ'' : CTyped objectChurch Δ (d.subst σ')
+  have tdσ'' : CTyped X.church Δ (d.subst σ')
       (.app (.app (M.subst σ') (x.subst σ')) (.refl (x.subst σ'))) := td.substitute hσr.1.1
-  have tyσ' : CTyped objectChurch Δ (y.subst σ') (A.subst σ') := ty.substitute hσr.1.1
+  have tyσ' : CTyped X.church Δ (y.subst σ') (A.subst σ') := ty.substitute hσr.1.1
   have tpσ' :
-      CTyped objectChurch Δ (p.subst σ') (.id (A.subst σ') (x.subst σ') (y.subst σ')) :=
+      CTyped X.church Δ (p.subst σ') (.id (A.subst σ') (x.subst σ') (y.subst σ')) :=
     tp.substitute hσr.1.1
   -- the equalities between the two substitutions
-  have eA : CTypeEq objectChurch Δ (A.subst σ) (A.subst σ') :=
-    ⟨.sort Tower.zero, .sort _, CDerivable.functional tA hσ.1⟩
-  have ex : CEqual objectChurch Δ (x.subst σ) (x.subst σ') (A.subst σ) :=
+  have eA : CTypeEq X.church Δ (A.subst σ) (A.subst σ') :=
+    ⟨.sort Tower.zero, X.sort _, CDerivable.functional tA hσ.1⟩
+  have ex : CEqual X.church Δ (x.subst σ) (x.subst σ') (A.subst σ) :=
     CDerivable.functional tx hσ.1
-  have ey : CEqual objectChurch Δ (y.subst σ) (y.subst σ') (A.subst σ) :=
+  have ey : CEqual X.church Δ (y.subst σ) (y.subst σ') (A.subst σ) :=
     CDerivable.functional ty hσ.1
-  have tId : CTyped objectChurch Γ (.id A x y) cU0 := cidT tA tx ty
-  have eId : CTypeEq objectChurch Δ (.id (A.subst σ) (x.subst σ) (y.subst σ))
+  have tId : CTyped X.church Γ (.id A x y) cU0 := .idForm tA (X.sort _) tx ty
+  have eId : CTypeEq X.church Δ (.id (A.subst σ) (x.subst σ) (y.subst σ))
       (.id (A.subst σ') (x.subst σ') (y.subst σ')) :=
-    ⟨.sort Tower.zero, .sort _, CDerivable.functional tId hσ.1⟩
-  have tFam : CTyped objectChurch Γ (.app (.app M y) p) cU0 := by
+    ⟨.sort Tower.zero, X.sort _, CDerivable.functional tId hσ.1⟩
+  have tFam : CTyped X.church Γ (.app (.app M y) p) cU0 := by
     have h := CDerivable.appElim tM ty
     rw [show CTm.inst0 y (.pi (.id (A.rename wk) (x.rename wk) (.var 0)) cU0) =
         (.pi (.id A x y) cU0 : CTm Tower.Head n) from by
       change CTm.pi (.id (CTm.inst0 y (A.rename wk)) (CTm.inst0 y (x.rename wk)) y) cU0 = _
       rw [CTm.inst0_rename_wk, CTm.inst0_rename_wk]] at h
     exact CDerivable.appElim h tp
-  have eFam : CTypeEq objectChurch Δ (.app (.app (M.subst σ') (y.subst σ')) (p.subst σ'))
+  have eFam : CTypeEq X.church Δ (.app (.app (M.subst σ') (y.subst σ')) (p.subst σ'))
       (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ)) :=
-    ⟨.sort Tower.zero, .sort _, .symm (CDerivable.functional tFam hσ.1)⟩
-  have epσ : CEqual objectChurch Δ (p.subst σ) (p.subst σ')
+    ⟨.sort Tower.zero, X.sort _, .symm (CDerivable.functional tFam hσ.1)⟩
+  have epσ : CEqual X.church Δ (p.subst σ) (p.subst σ')
       (.id (A.subst σ) (x.subst σ) (y.subst σ)) := CDerivable.functional tp hσ.1
-  have eFamp : CTypeEq objectChurch Δ (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ'))
+  have eFamp : CTypeEq X.church Δ (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ'))
       (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ)) := by
     have tMy := CDerivable.appElim tMσ tyσ
     rw [show CTm.inst0 (y.subst σ) (.pi (.id ((A.subst σ).rename wk) ((x.subst σ).rename wk)
@@ -491,21 +493,21 @@ theorem Adequate.objectJ
         change CTm.pi (.id (CTm.inst0 (y.subst σ) ((A.subst σ).rename wk))
           (CTm.inst0 (y.subst σ) ((x.subst σ).rename wk)) (y.subst σ)) cU0 = _
         rw [CTm.inst0_rename_wk, CTm.inst0_rename_wk]] at tMy
-    exact ⟨.sort Tower.zero, .sort _, CDerivable.appCong (.refl tMy) (.symm epσ)⟩
+    exact ⟨.sort Tower.zero, X.sort _, CDerivable.appCong (.refl tMy) (.symm epσ)⟩
   -- the right path reduces to a reflexivity whose point equals the endpoints
   have hpRefl := JCase.reflTag J fits formed hσ hpTag
   obtain ⟨B, x₁, y₁, r, r', hred⟩ := RT.tm_reflTag_iff.1 hpRefl
   obtain ⟨rfl, rfl, rfl⟩ := CRedTy.id_align
     (CRedTy.refl (CTyped.isType levels tpσ formed)) hred.1
   obtain ⟨-, -, rp', erx, ery, err⟩ := hred
-  have er'x : CEqual objectChurch Δ r' (x.subst σ) (A.subst σ) := .trans (.symm err) erx
-  have er'y : CEqual objectChurch Δ r' (y.subst σ) (A.subst σ) := .trans (.symm err) ery
-  have tr' : CTyped objectChurch Δ r' (A.subst σ) := (CEqual.typed levels er'x formed).1
+  have er'x : CEqual X.church Δ r' (x.subst σ) (A.subst σ) := .trans (.symm err) erx
+  have er'y : CEqual X.church Δ r' (y.subst σ) (A.subst σ) := .trans (.symm err) ery
+  have tr' : CTyped X.church Δ r' (A.subst σ) := (CEqual.typed levels er'x formed).1
   -- the spine with the right method and path contracts to the right method
   have redMix : CRedTm H Δ (CTm.appSpine (.const jName) [A.subst σ, x.subst σ, M.subst σ,
       d.subst σ', y.subst σ, p.subst σ']) (d.subst σ')
       (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ)) := by
-    have mor : CSubstMor objectChurch cJTele Δ (CTm.consSub r' (CTm.consSub (y.subst σ)
+    have mor : CSubstMor X.church cJTele Δ (CTm.consSub r' (CTm.consSub (y.subst σ)
       (CTm.consSub (d.subst σ') (CTm.consSub (M.subst σ) (CTm.consSub (x.subst σ)
         (CTm.consSub (A.subst σ) Fin.elim0)))))) := fun i => by
       refine Fin.cases ?_ (fun i => ?_) i
@@ -521,12 +523,12 @@ theorem Adequate.objectJ
       refine Fin.cases ?_ (fun i => ?_) i
       · exact tAσ
       exact i.elim0
-    have contractum := objectJ_contractum formed mor er'x er'y
-    have jStep := objectChurch_jStep (CTm.consSub r' (CTm.consSub (y.subst σ) (CTm.consSub (d.subst σ')
+    have contractum := objectJ_contractum (X.sort _) formed mor er'x er'y
+    have jStep := X.within.step <| objectChurch_jStep (CTm.consSub r' (CTm.consSub (y.subst σ) (CTm.consSub (d.subst σ')
         (CTm.consSub (M.subst σ) (CTm.consSub (x.subst σ)
           (CTm.consSub (A.subst σ) Fin.elim0))))))
-    have c := CRedTm.eliminator levels formed jStep (objectChurch_jAdmits mor er'x er'y)
-      jPath (cjSpine5_typed (jArgs_mor tAσ txσ tMσ tdσ' tyσ tpσ)) rp'
+    have c := CRedTm.eliminator levels formed jStep (objectChurch_jAdmits mor er'x er'y X.within)
+      jPath (cjSpine5_typed (jArgs_mor tAσ txσ tMσ tdσ' tyσ tpσ) X.sub) rp'
       (by rw [inst0_motive_family]; exact contractum)
     rw [inst0_motive_family] at c
     exact c.convType eFamp
@@ -534,12 +536,12 @@ theorem Adequate.objectJ
   have redRight : CRedTm H Δ (CTm.appSpine (.const jName) [A.subst σ', x.subst σ', M.subst σ',
       d.subst σ', y.subst σ', p.subst σ']) (d.subst σ')
       (.app (.app (M.subst σ) (y.subst σ)) (p.subst σ)) := by
-    have er'x' : CEqual objectChurch Δ r' (x.subst σ') (A.subst σ') :=
+    have er'x' : CEqual X.church Δ r' (x.subst σ') (A.subst σ') :=
       CEqual.convType (.trans er'x ex) eA
-    have er'y' : CEqual objectChurch Δ r' (y.subst σ') (A.subst σ') :=
+    have er'y' : CEqual X.church Δ r' (y.subst σ') (A.subst σ') :=
       CEqual.convType (.trans er'y ey) eA
-    have tr'' : CTyped objectChurch Δ r' (A.subst σ') := (CEqual.typed levels er'x' formed).1
-    have mor : CSubstMor objectChurch cJTele Δ (CTm.consSub r' (CTm.consSub (y.subst σ')
+    have tr'' : CTyped X.church Δ r' (A.subst σ') := (CEqual.typed levels er'x' formed).1
+    have mor : CSubstMor X.church cJTele Δ (CTm.consSub r' (CTm.consSub (y.subst σ')
       (CTm.consSub (d.subst σ') (CTm.consSub (M.subst σ') (CTm.consSub (x.subst σ')
         (CTm.consSub (A.subst σ') Fin.elim0)))))) := fun i => by
       refine Fin.cases ?_ (fun i => ?_) i
@@ -555,12 +557,12 @@ theorem Adequate.objectJ
       refine Fin.cases ?_ (fun i => ?_) i
       · exact tAσ'
       exact i.elim0
-    have contractum := objectJ_contractum formed mor er'x' er'y'
-    have jStep := objectChurch_jStep (CTm.consSub r' (CTm.consSub (y.subst σ') (CTm.consSub (d.subst σ')
+    have contractum := objectJ_contractum (X.sort _) formed mor er'x' er'y'
+    have jStep := X.within.step <| objectChurch_jStep (CTm.consSub r' (CTm.consSub (y.subst σ') (CTm.consSub (d.subst σ')
         (CTm.consSub (M.subst σ') (CTm.consSub (x.subst σ') (CTm.consSub (A.subst σ')
           Fin.elim0))))))
-    have c := CRedTm.eliminator levels formed jStep (objectChurch_jAdmits mor er'x' er'y')
-      jPath (cjSpine5_typed (jArgs_mor tAσ' txσ' tMσ' tdσ'' tyσ' tpσ')) (rp'.convType eId)
+    have c := CRedTm.eliminator levels formed jStep (objectChurch_jAdmits mor er'x' er'y' X.within)
+      jPath (cjSpine5_typed (jArgs_mor tAσ' txσ' tMσ' tdσ'' tyσ' tpσ') X.sub) (rp'.convType eId)
       (by rw [inst0_motive_family]; exact contractum)
     rw [inst0_motive_family] at c
     exact c.convType eFam

@@ -10,8 +10,8 @@ stateful space operations that PeTTa exposes through `PeTTaCmd`.
 
 These rules map the MeTTa-level commands to MORK sink templates:
 
-- `(add-atom &self X)` → `[.remove cmd, .add X, .add ()]`
-- `(remove-atom &self X)` → `[.remove cmd, .remove X, .add ()]`
+- `(add-atom &self X)` → `[.remove cmd, .add X, .add True]`
+- `(remove-atom &self X)` → `[.remove cmd, .remove X, .add True]`
 
 The MORK execution infrastructure (sinks, `applySink`, `fireExecFact`) handles
 these templates natively. The only gap that remains is the `matchAtom`
@@ -22,7 +22,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
-open Mettapedia.Languages.MeTTa.PeTTa (unitAtom)
+open Mettapedia.Languages.MeTTa.PeTTa (unitAtom mutationSuccess)
 
 private abbrev ILPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 
@@ -30,6 +30,9 @@ private abbrev ILPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 
 /-- The MORK atom for `()` (unit return value). -/
 abbrev unitMorkAtom : Atom := morkPatternToAtom unitAtom
+
+/-- Boolean result of an ordinary PeTTa space mutation. -/
+abbrev mutationSuccessMorkAtom : Atom := morkPatternToAtom mutationSuccess
 
 /-- `unitMorkAtom` is ground. -/
 theorem unitMorkAtom_ground : isGroundAtom unitMorkAtom = true := by
@@ -43,7 +46,7 @@ abbrev addAtomCmdAtom : Atom :=
 
 /-- MORK source exec rule for `(add-atom &self X)`.
 
-Template: remove the command expression, add the argument, add `()`.
+Template: remove the command expression, add the argument, add `True`.
 This is structurally a degenerate unfold step: `[.remove, .add, .add]`. -/
 def addAtomSourceExecRule : SourceExecRule where
   priority := 40
@@ -52,7 +55,7 @@ def addAtomSourceExecRule : SourceExecRule where
   guards   := []
   tmpl     := mkTemplate [mkRemove addAtomCmdAtom,
                            mkAdd (morkPatternToAtom (.fvar "x")),
-                           mkAdd unitMorkAtom]
+                           mkAdd mutationSuccessMorkAtom]
 
 theorem addAtomSourceExecRule_guards : addAtomSourceExecRule.guards = [] := rfl
 
@@ -64,7 +67,7 @@ abbrev removeAtomCmdAtom : Atom :=
 
 /-- MORK source exec rule for `(remove-atom &self X)`.
 
-Template: remove the command expression, remove the argument, add `()`.
+Template: remove the command expression, remove the argument, add `True`.
 The argument removal is the space-mutation side effect. -/
 def removeAtomSourceExecRule : SourceExecRule where
   priority := 40
@@ -73,7 +76,7 @@ def removeAtomSourceExecRule : SourceExecRule where
   guards   := []
   tmpl     := mkTemplate [mkRemove removeAtomCmdAtom,
                            mkRemove (morkPatternToAtom (.fvar "x")),
-                           mkAdd unitMorkAtom]
+                           mkAdd mutationSuccessMorkAtom]
 
 theorem removeAtomSourceExecRule_guards : removeAtomSourceExecRule.guards = [] := rfl
 

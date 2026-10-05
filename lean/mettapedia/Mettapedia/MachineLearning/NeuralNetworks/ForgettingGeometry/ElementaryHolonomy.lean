@@ -128,7 +128,7 @@ theorem scalar_smul_trivialRotationProxy_iff
     (monodromy : Matrix Index Index ℝ) :
     TrivialRotationProxy (scale • monodromy) ↔
       TrivialRotationProxy monodromy := by
-  letI := invertibleOfNonzero hscale
+  let := invertibleOfNonzero hscale
   exact Matrix.isSymm_smul_iff scale
 
 /-- Adding independent scalar identity shifts to both task Hessians leaves

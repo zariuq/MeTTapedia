@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeEquationWork
 import Mettapedia.GSLT.Core.AdvisoryWork
+import Mettapedia.Machines.BranchLocalNeed.Representation
 
 /-!
 # Native candidate capture and resumable advisory grades
@@ -31,7 +32,7 @@ structure Row where
   index : Nat
   body : Atom
   environment : Environment
-  deriving Repr
+  deriving Repr, DecidableEq
 
 def Row.alternative (row : Row) : Rule × Local :=
   (.equation row.index, .evaluate row.body row.environment)
@@ -299,5 +300,109 @@ theorem body_closure_complete {Memory : Type} (program : Program)
         (InferenceControl.Snapshot.initial controller (admit captures grade))).search).events :=
   AdvisoryWork.semantic_closure_complete (occurrenceSystem program) (scoreStep program)
     controller _ _ fuel closed node answer generated emits
+
+
+/-! ## Finite capture views
+
+All maps in a live capture are justified by their retained update histories.
+The finite views include the original row and the complete suspended control;
+the scoring view also includes its evolving machine.
+-/
+
+namespace Captured
+
+abbrev RecordedView := Row ×
+  World.RecordedView Origin Rule Atom Empty String Empty × List (Frame Resume) × Work
+
+instance instDecidableEqRecordedView : DecidableEq RecordedView :=
+  inferInstanceAs (DecidableEq (Row ×
+    World.RecordedView Origin Rule Atom Empty String Empty × List (Frame Resume) × Work))
+
+def Recorded (capture : Captured) : Prop := capture.world.heap.Recorded
+
+def recordedView (capture : Captured) : RecordedView :=
+  (capture.row, capture.world.recordedView, capture.returns, capture.work)
+
+def ofRecordedView (view : RecordedView) : Captured :=
+  ⟨view.1, World.ofRecordedView view.2.1, view.2.2.1, view.2.2.2⟩
+
+theorem ofRecordedView_recorded (view : RecordedView) : (ofRecordedView view).Recorded :=
+  World.ofRecordedView_recorded _
+
+@[simp] theorem recordedView_ofRecordedView (view : RecordedView) :
+    (ofRecordedView view).recordedView = view := rfl
+
+theorem ofRecordedView_recordedView (capture : Captured) (valid : capture.Recorded) :
+    ofRecordedView capture.recordedView = capture := by
+  cases capture with
+  | mk row world returns work =>
+      simp only [ofRecordedView, recordedView]
+      rw [World.ofRecordedView_recordedView world valid]
+
+theorem recordedView_injective (left right : Captured)
+    (leftValid : left.Recorded) (rightValid : right.Recorded)
+    (same : left.recordedView = right.recordedView) : left = right := by
+  rw [← ofRecordedView_recordedView left leftValid,
+    ← ofRecordedView_recordedView right rightValid, same]
+
+instance : DecidableEq {capture : Captured // capture.Recorded} := fun left right =>
+  if same : left.val.recordedView = right.val.recordedView then
+    isTrue (Subtype.ext (recordedView_injective _ _ left.property right.property same))
+  else isFalse (fun equal => same (congrArg (fun capture => capture.val.recordedView) equal))
+
+end Captured
+
+namespace Score
+
+abbrev RecordedView := Captured.RecordedView × Atom ×
+  Machine.RecordedView Origin Local Resume Rule Atom Empty String Empty
+
+instance instDecidableEqRecordedView : DecidableEq RecordedView :=
+  inferInstanceAs (DecidableEq (Captured.RecordedView × Atom ×
+    Machine.RecordedView Origin Local Resume Rule Atom Empty String Empty))
+
+def Recorded (score : Score) : Prop :=
+  score.origin.Recorded ∧ score.machine.world.heap.Recorded
+
+def recordedView (score : Score) : RecordedView :=
+  (score.origin.recordedView, score.expression, score.machine.recordedView)
+
+def ofRecordedView (view : RecordedView) : Score :=
+  ⟨Captured.ofRecordedView view.1, view.2.1, Machine.ofRecordedView view.2.2⟩
+
+theorem ofRecordedView_recorded (view : RecordedView) : (ofRecordedView view).Recorded :=
+  ⟨Captured.ofRecordedView_recorded _, Machine.ofRecordedView_recorded _⟩
+
+@[simp] theorem recordedView_ofRecordedView (view : RecordedView) :
+    (ofRecordedView view).recordedView = view := rfl
+
+theorem ofRecordedView_recordedView (score : Score) (valid : score.Recorded) :
+    ofRecordedView score.recordedView = score := by
+  cases score with
+  | mk origin expression machine =>
+      simp only [ofRecordedView, recordedView]
+      rw [Captured.ofRecordedView_recordedView origin valid.1,
+        Machine.ofRecordedView_recordedView machine valid.2]
+
+theorem recordedView_injective (left right : Score)
+    (leftValid : left.Recorded) (rightValid : right.Recorded)
+    (same : left.recordedView = right.recordedView) : left = right := by
+  rw [← ofRecordedView_recordedView left leftValid,
+    ← ofRecordedView_recordedView right rightValid, same]
+
+instance : DecidableEq {score : Score // score.Recorded} := fun left right =>
+  if same : left.val.recordedView = right.val.recordedView then
+    isTrue (Subtype.ext (recordedView_injective _ _ left.property right.property same))
+  else isFalse (fun equal => same (congrArg (fun score => score.val.recordedView) equal))
+
+end Score
+
+theorem Captured.score_recorded (capture : Captured) (expression : Atom)
+    (valid : capture.Recorded) : (capture.score expression).Recorded := ⟨valid, valid⟩
+
+theorem score_step_recorded (program : Program) (before after : Score)
+    (valid : before.Recorded) (step : after ∈ scoreStep program before) : after.Recorded := by
+  obtain ⟨machine, member, rfl⟩ := (score_step_iff program before after).mp step
+  exact ⟨valid.1, NeedReference.step_heap_recorded (specification program) _ _ valid.2 member⟩
 
 end Mettapedia.Languages.MeTTa.PrimeCandidates.NativeCandidateGrades

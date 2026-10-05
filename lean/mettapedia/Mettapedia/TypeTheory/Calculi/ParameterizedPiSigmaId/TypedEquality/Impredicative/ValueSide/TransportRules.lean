@@ -16,7 +16,8 @@ about weak-head reduction (`CoeTable.coeRules`):
   daimon (`Daimonic.typeStuck`);
 * every weak-head normal form of an interpreted type is a head form or stuck on
   the daimon (`ValueSide.TypeForm.split`), so the rows cover every pair of
-  interpreted types, when the numbers are the only inductive type.
+  interpreted types. The type constants are read from the roles, so every
+  inductive type has its row, whatever inductive types the roles declare.
 
 The table is a property of a consistency model with a daimon; its rows hold on
 every value side over such a model (`CoeTable.coeRules`).
@@ -137,28 +138,26 @@ theorem TypeForm.split {n : Nat} {w : Tm Head n} (form : TypeForm V w) :
 method. -/
 theorem MethodForm.coeTarget (N : CoeNames) {n : Nat} {X w d : Tm Head n}
     (form : MethodForm V w) : CoeTarget (coeParamsOf V.toModel V.star) N X w d d := by
-  rcases form with ⟨h, rfl, hh⟩ | ⟨A, a, b, rfl⟩ | ⟨c, rfl⟩ |
-    ⟨T, args, rfl, role, notProp, notHolds⟩
+  have notConst : ∀ c, (coeParamsOf V.toModel V.star).TypeConst c → w ≠ .const c :=
+    fun _ hc => form.ne_typeConst hc
+  rcases form with ⟨h, rfl, hh⟩ | ⟨A, a, b, rfl⟩ | ⟨c, rfl⟩ | ⟨T, args, rfl, role, -, -⟩
   · exact .ground hh
-  · exact .method ⟨⟨_, .id A a b⟩, fun _ => nofun, fun _ _ => nofun, fun _ _ => nofun, nofun,
-      nofun⟩
+  · exact .method ⟨⟨_, .id A a b⟩, fun _ => nofun, fun _ _ => nofun, fun _ _ => nofun, notConst⟩
   · exact .method ⟨MethodForm.headForm laws (.inr (.inr (.inl ⟨c, rfl⟩))), fun _ => nofun,
-      fun _ _ => nofun, fun _ _ => nofun, nofun, nofun⟩
-  · refine .method ⟨⟨_, .spine args fun _ _ h => nomatch role.symm.trans h⟩,
+      fun _ _ => nofun, fun _ _ => nofun, notConst⟩
+  · exact .method ⟨⟨_, .spine args fun _ _ h => nomatch role.symm.trans h⟩,
       fun _ => appSpine_const_ne_head, fun _ _ => appSpine_const_ne_pi,
-      fun _ _ => appSpine_const_ne_sigma, fun e => ?_, fun e => ?_⟩
-    · obtain ⟨rfl, -⟩ := appSpine_const_eq_const e
-      exact nomatch role.symm.trans laws.values.num
-    · obtain ⟨rfl, -⟩ := appSpine_const_eq_const e
-      exact notProp rfl
+      fun _ _ => appSpine_const_ne_sigma, notConst⟩
 
 /-- A daimonic head form is a form at which `coe` returns its method. -/
 theorem methodTarget_of_daimonic {n : Nat} {w : Tm Head n}
     (daimonic : Daimonic V.roles V.star w) (form : HeadForm V.roles w) :
     MethodTarget (coeParamsOf V.toModel V.star) w :=
   ⟨form, fun _ => daimonic.ne_head, fun _ _ => daimonic.ne_pi, fun _ _ => daimonic.ne_sigma,
-    laws.daimonic_ne_inductive daimonic laws.values.num (args := []),
-    laws.daimonic_ne_prop daimonic⟩
+    fun c hc => by
+      rcases hc with rfl | ⟨cs, role⟩
+      · exact laws.daimonic_ne_prop daimonic
+      · exact laws.daimonic_ne_inductive daimonic role (args := [])⟩
 
 end Forms
 
@@ -181,18 +180,15 @@ steps of the value side. -/
 structure CoeTable (M : Consistency.Model Head L) (star : DeclName) (N : CoeNames) : Prop where
   roleCoe : M.roles N.coe = .computes 3 (headAt 1)
   roleU : M.roles N.coeU = .computes 3 headAtBoth
-  roleNum : M.roles N.coeNum = .computes 2 (headAt 0)
-  roleProp : M.roles N.coeProp = .computes 2 (headAt 0)
+  roleConst : M.roles N.coeConst = .computes 3 (headAt 1)
   rolePi : M.roles N.coePi = .computes 4 (headAt 2)
   roleSigma : M.roles N.coeSigma = .computes 4 (headAt 2)
   stepCoe : ∀ {n : Nat} {l r : Tm Head n}, (coeComputation (coeParamsOf M star) N).step l r →
     M.rules.computation.step l r
   stepU : ∀ {n : Nat} {l r : Tm Head n}, (coeUComputation (coeParamsOf M star) N).step l r →
     M.rules.computation.step l r
-  stepNum : ∀ {n : Nat} {l r : Tm Head n},
-    (coeConstComputation (coeParamsOf M star) N.coeNum M.num).step l r → M.rules.computation.step l r
-  stepProp : ∀ {n : Nat} {l r : Tm Head n},
-    (coeConstComputation (coeParamsOf M star) N.coeProp M.prop).step l r → M.rules.computation.step l r
+  stepConst : ∀ {n : Nat} {l r : Tm Head n},
+    (coeConstComputation (coeParamsOf M star) N).step l r → M.rules.computation.step l r
   stepPi : ∀ {n : Nat} {l r : Tm Head n}, (coePiComputation (coeParamsOf M star) N).step l r →
     M.rules.computation.step l r
   stepSigma : ∀ {n : Nat} {l r : Tm Head n}, (coeSigmaComputation (coeParamsOf M star) N).step l r →
@@ -233,15 +229,10 @@ theorem red_univ {n : Nat} {T X X' d : Tm Head n} {key : InspectKey}
         (.headForm (before := []) (after := [_, d]) rfl viewT
           (.here (before := [T]) (after := [d]) rfl)) step)
 
-theorem red_num {n : Nat} {X X' d : Tm Head n} (red : WhRed M.rules M.roles X X') :
-    WhRed M.rules M.roles (appSpine (.const N.coeNum) [X, d])
-      (appSpine (.const N.coeNum) [X', d]) :=
-  whRed_headAt (before := []) (after := [d]) table.roleNum (fun _ => rfl) red
-
-theorem red_prop {n : Nat} {X X' d : Tm Head n} (red : WhRed M.rules M.roles X X') :
-    WhRed M.rules M.roles (appSpine (.const N.coeProp) [X, d])
-      (appSpine (.const N.coeProp) [X', d]) :=
-  whRed_headAt (before := []) (after := [d]) table.roleProp (fun _ => rfl) red
+theorem red_const {n : Nat} {C X X' d : Tm Head n} (red : WhRed M.rules M.roles X X') :
+    WhRed M.rules M.roles (appSpine (.const N.coeConst) [C, X, d])
+      (appSpine (.const N.coeConst) [C, X', d]) :=
+  whRed_headAt (before := [C]) (after := [d]) table.roleConst (fun _ => rfl) red
 
 theorem red_pi {n : Nat} {A' B'' X X' f : Tm Head n} (red : WhRed M.rules M.roles X X') :
     WhRed M.rules M.roles (appSpine (.const N.coePi) [A', B'', X, f])
@@ -263,13 +254,9 @@ theorem step_univ {n : Nat} {T X d r : Tm Head n} (h : CoeUniv (coeParamsOf M st
     WhStep M.rules M.roles (appSpine (.const N.coeU) [T, X, d]) r :=
   .root (table.stepU ⟨[T, X, d], rfl, T, X, d, rfl, h⟩)
 
-theorem step_num {n : Nat} {X d r : Tm Head n} (h : CoeConst (coeParamsOf M star) M.num X d r) :
-    WhStep M.rules M.roles (appSpine (.const N.coeNum) [X, d]) r :=
-  .root (table.stepNum ⟨[X, d], rfl, X, d, rfl, h⟩)
-
-theorem step_prop {n : Nat} {X d r : Tm Head n} (h : CoeConst (coeParamsOf M star) M.prop X d r) :
-    WhStep M.rules M.roles (appSpine (.const N.coeProp) [X, d]) r :=
-  .root (table.stepProp ⟨[X, d], rfl, X, d, rfl, h⟩)
+theorem step_const {n : Nat} {C X d r : Tm Head n} (h : CoeConst (coeParamsOf M star) C X d r) :
+    WhStep M.rules M.roles (appSpine (.const N.coeConst) [C, X, d]) r :=
+  .root (table.stepConst ⟨[C, X, d], rfl, C, X, d, rfl, h⟩)
 
 theorem step_pi {n : Nat} {A' B'' X f r : Tm Head n}
     (h : CoePiRow (coeParamsOf M star) N A' B'' X f r) :
@@ -301,15 +288,10 @@ theorem daimonic_univ {n : Nat} {T w d : Tm Head n} {key : InspectKey}
     (.headForm (before := []) (after := [w, d]) rfl viewT
       (.here (before := [T]) (after := [d]) rfl)) daimonic notHead
 
-theorem daimonic_num {n : Nat} {w d : Tm Head n} (daimonic : Daimonic M.roles star w)
+theorem daimonic_const {n : Nat} {C w d : Tm Head n} (daimonic : Daimonic M.roles star w)
     (notHead : ¬ HeadForm M.roles w) :
-    Daimonic M.roles star (appSpine (.const N.coeNum) [w, d]) :=
-  .typeStuck table.roleNum rfl (.here (before := []) (after := [d]) rfl) daimonic notHead
-
-theorem daimonic_prop {n : Nat} {w d : Tm Head n} (daimonic : Daimonic M.roles star w)
-    (notHead : ¬ HeadForm M.roles w) :
-    Daimonic M.roles star (appSpine (.const N.coeProp) [w, d]) :=
-  .typeStuck table.roleProp rfl (.here (before := []) (after := [d]) rfl) daimonic notHead
+    Daimonic M.roles star (appSpine (.const N.coeConst) [C, w, d]) :=
+  .typeStuck table.roleConst rfl (.here (before := [C]) (after := [d]) rfl) daimonic notHead
 
 theorem daimonic_pi {n : Nat} {A' B'' w f : Tm Head n} (daimonic : Daimonic M.roles star w)
     (notHead : ¬ HeadForm M.roles w) :
@@ -326,13 +308,10 @@ theorem daimonic_sigma {n : Nat} {A' B'' w p : Tm Head n} (daimonic : Daimonic M
 
 omit table in
 /-- **The transport table holds.** On a value side over a consistency model with
-the transport table, whose only inductive type is the numbers, `coe` reduces by
-every row of `CoeRules`. -/
+the transport table, `coe` reduces by every row of `CoeRules`, at every type
+constant its roles declare. -/
 theorem coeRules {V : ValueSide.Model Head L} (table : CoeTable V.toModel V.star N)
-    (laws : V.Laws)
-    (onlyNum : ∀ {c : DeclName} {cs : List (DeclName × List (Field Head))},
-      V.roles c = .inductive cs → c = V.num) :
-    ValueSide.CoeRules V N.coe where
+    (laws : V.Laws) : ValueSide.CoeRules V N.coe where
   univ := by
     intro n X Y d u u' rY hu rX hu' le
     exact (table.red_target rY).trans (.head (table.step_coe (.univ hu))
@@ -351,28 +330,16 @@ theorem coeRules {V : ValueSide.Model Head L} (table : CoeTable V.toModel V.star
     · exact ⟨_, pre, table.daimonic_univ (.head u) dw nw⟩
   const := by
     intro n X Y d c hc rY rX
-    rcases hc with rfl | ⟨cs, role⟩
-    · exact (table.red_target rY).trans (.head (table.step_coe .prop)
-        ((table.red_prop rX).tail (table.step_prop .method)))
-    · obtain rfl := onlyNum role
-      exact (table.red_target rY).trans (.head (table.step_coe .num)
-        ((table.red_num rX).tail (table.step_num .method)))
+    exact (table.red_target rY).trans (.head (table.step_coe (.const hc))
+      ((table.red_const rX).tail (table.step_const (.method hc))))
   constOther := by
     intro n X Y d w c hc rY rX form ne
-    rcases hc with rfl | ⟨cs, role⟩
-    · have pre : WhRed V.rules V.roles (coeApp N.coe X Y d)
-          (appSpine (.const N.coeProp) [w, d]) :=
-        (table.red_target rY).trans (.head (table.step_coe .prop) (table.red_prop rX))
-      rcases ValueSide.TypeForm.split laws form with hw | ⟨dw, nw⟩
-      · exact ⟨_, pre.tail (table.step_prop (.star hw ne)), .star⟩
-      · exact ⟨_, pre, table.daimonic_prop dw nw⟩
-    · obtain rfl := onlyNum role
-      have pre : WhRed V.rules V.roles (coeApp N.coe X Y d)
-          (appSpine (.const N.coeNum) [w, d]) :=
-        (table.red_target rY).trans (.head (table.step_coe .num) (table.red_num rX))
-      rcases ValueSide.TypeForm.split laws form with hw | ⟨dw, nw⟩
-      · exact ⟨_, pre.tail (table.step_num (.star hw ne)), .star⟩
-      · exact ⟨_, pre, table.daimonic_num dw nw⟩
+    have pre : WhRed V.rules V.roles (coeApp N.coe X Y d)
+        (appSpine (.const N.coeConst) [.const c, w, d]) :=
+      (table.red_target rY).trans (.head (table.step_coe (.const hc)) (table.red_const rX))
+    rcases ValueSide.TypeForm.split laws form with hw | ⟨dw, nw⟩
+    · exact ⟨_, pre.tail (table.step_const (.star hw ne)), .star⟩
+    · exact ⟨_, pre, table.daimonic_const dw nw⟩
   pi := by
     intro n X Y d A A' B B' rY rX
     refine ⟨piBody N.coe A' (.lam B') A B d, ?_, fun ρ a => ?_⟩

@@ -23,37 +23,6 @@ open Mettapedia.TypeTheory.IndexedPolynomial
 
 universe u
 
-/-- A local equality of receipts transports through any adaptive client. -/
-theorem Hom.advance_charge
-    {Base : Type u} {Index : Base → Type u}
-    {P : IndexedPolynomial.{u, u, u, u} Base Index}
-    {Return : (base : Base) → Index base → Type u}
-    {source target : Provider P}
-    (C : Client (P := P) (Return := Return)) (h : Hom source target)
-    (sourceCost : Charge source) (targetCost : Charge target)
-    (localCharge : ∀ {base index} (state : source.State base index)
-      (request : P.Shape base index), sourceCost state request = targetCost (h.map state) request)
-    (fuel : Nat) {base : Base} (packet : Packet source C base) :
-    (Cursor.advance source C sourceCost fuel packet).1 =
-      (Cursor.advance target C targetCost fuel (h.packet C packet)).1 := by
-  induction fuel generalizing packet with
-  | zero => rfl
-  | succ fuel ih =>
-      rcases packet with ⟨index, control, state⟩
-      change (Cursor.advance source C sourceCost (fuel + 1) ⟨index, control, state⟩).1 =
-        (Cursor.advance target C targetCost (fuel + 1) ⟨index, control, h.map state⟩).1
-      cases eq : C.str base index control with
-      | mk shape children =>
-          cases shape with
-          | inl value => simp [Cursor.advance, eq]
-          | inr request =>
-              dsimp only [withHoles] at children
-              simp only [Cursor.advance, eq]
-              dsimp only [withHoles]
-              rw [← h.step state request, localCharge]
-              exact congrArg (fun n => targetCost (h.map state) request + n)
-                (ih ⟨_, children (source.step state request).1, (source.step state request).2⟩)
-
 namespace SequenceCost
 
 variable (Item : Type)

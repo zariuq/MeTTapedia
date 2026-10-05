@@ -369,7 +369,7 @@ namespace PredicateControlDeclClause
 
 /-- Whether a string begins with `&` (kernel-reducible, unlike `String.startsWith`). -/
 private def startsWithAmp (s : String) : Bool :=
-  match s.data with
+  match s.toList with
   | '&' :: _ => true
   | _ => false
 
@@ -598,7 +598,7 @@ theorem predicate_translatePredicate_positive :
       PredicateControlDeclClause.decodePredicateQuery?
         (.apply "Predicate" [.apply "p" []]) = some (.apply "p" []) := by
     simp [PredicateControlDeclClause.decodePredicateQuery?,
-          PredicateControlDeclClause.startsWithAmp]; rfl
+          PredicateControlDeclClause.startsWithAmp]
   have hsm :
       ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace).spaceMatch (.apply "p" []) (.apply "p" []) =
       [.apply "p" []] := by
@@ -642,7 +642,7 @@ theorem predicate_catch_positive :
     exact PredicateControlDeclClause.translatePredicate_noDecode_intro
       ({ facts := [], rules := [] } : PeTTaSpace) (.apply "&unknown" [])
       (by simp [PredicateControlDeclClause.decodePredicateQuery?,
-                PredicateControlDeclClause.startsWithAmp]; rfl)
+                PredicateControlDeclClause.startsWithAmp])
   have hfb :
       PeTTaEval ({ facts := [], rules := [] } : PeTTaSpace)
         (.apply "fallback" []) [.apply "fallback" []] := by
@@ -668,12 +668,12 @@ inductive CoreDecl : EvalState → Pattern → EvalState → Answers → Prop wh
       CoreDecl s
         (.apply "add-atom" [.apply "&self" [], p])
         (s.addAtom p)
-        [unitAtom]
+        [mutationSuccess]
   | removeAtom (s : EvalState) (p : Pattern) :
       CoreDecl s
         (.apply "remove-atom" [.apply "&self" [], p])
         (s.removeAtom p)
-        [unitAtom]
+        [mutationSuccess]
   | getAtoms (s : EvalState) :
       CoreDecl s
         (.apply "get-atoms" [.apply "&self" []])

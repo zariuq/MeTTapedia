@@ -239,7 +239,7 @@ theorem CostStaticAtomKeyCospan.reifyWith_eq_of_free
 so it does not disturb the name set.  With
 `StructuralMorphism.mapPattern_freeFvarNames` this lets leg agreement be
 demanded on a frame's own names rather than on the reified argument's. -/
-theorem CostStaticBinderThinning.thickenAmbientBVars_freeFvarNames
+theorem CostStaticTypeThinning.thickenAmbientBVars_freeFvarNames
     {source : CIGSLT} {color : CostStaticColor}
     {sourceBound targetBound : List TypeExpr}
     (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
@@ -248,29 +248,29 @@ theorem CostStaticBinderThinning.thickenAmbientBVars_freeFvarNames
         pattern.freeFvarNames := by
   intro pattern
   induction pattern using Pattern.inductionOn with
-  | hbvar index => intro depth; simp [thickenAmbientBVars, Pattern.freeFvarNames]
-  | hfvar name => intro depth; simp [thickenAmbientBVars, Pattern.freeFvarNames]
+  | hbvar index => intro depth; simp [thickenAmbientBVars_bvar, Pattern.freeFvarNames]
+  | hfvar name => intro depth; simp [thickenAmbientBVars_fvar, Pattern.freeFvarNames]
   | happly constructor arguments inductionHypothesis =>
       intro depth
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames, List.flatMap_map]
+      simp only [thickenAmbientBVars_apply, Pattern.freeFvarNames, List.flatMap_map]
       apply List.flatMap_congr
       intro argument membership
       exact inductionHypothesis argument membership depth
   | hlambda binder body inductionHypothesis =>
       intro depth
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames]
+      simp only [thickenAmbientBVars_lambda, Pattern.freeFvarNames]
       exact inductionHypothesis (depth + 1)
   | hmultiLambda arity binders body inductionHypothesis =>
       intro depth
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames]
+      simp only [thickenAmbientBVars_multiLambda, Pattern.freeFvarNames]
       exact inductionHypothesis (depth + arity)
   | hsubst body replacement bodyHypothesis replacementHypothesis =>
       intro depth
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames]
+      simp only [thickenAmbientBVars_subst, Pattern.freeFvarNames]
       rw [bodyHypothesis (depth + 1), replacementHypothesis depth]
   | hcollection collectionType elements rest inductionHypothesis =>
       intro depth
-      simp only [thickenAmbientBVars, Pattern.freeFvarNames, List.flatMap_map]
+      simp only [thickenAmbientBVars_collection, Pattern.freeFvarNames, List.flatMap_map]
       congr 1
       apply List.flatMap_congr
       intro element membership

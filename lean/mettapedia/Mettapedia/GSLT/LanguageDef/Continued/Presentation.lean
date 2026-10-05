@@ -9,7 +9,8 @@ import Mettapedia.GSLT.LanguageDef.Interaction.Controls.ContactContinued
 The definition of a continued interactive GSLT has three clauses: a
 presentation of the dynamics in interaction-cut form, a section of the static
 equivalence on the interacting sort, and wrappability of the contraction.
-`ContinuedPresentation` records these over one iGSLT. Continuation decoration
+`WrappableCut` records the first and the third over one iGSLT, and
+`ContinuedPresentation` adds the second. Continuation decoration
 can select a finite bundle on each operand, and its constructor closure is
 independent of that selection. Both the redex and contractum sorting laws
 are checked for that exact generated signature.
@@ -33,12 +34,10 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open EquationSemantics
 open WellSorted
 
-/-- The three clauses, over one iGSLT. -/
-structure ContinuedPresentation (theory : IGSLT) where
+/-- Clauses (i) and (iii), over one iGSLT: a wrappable interaction cut. -/
+structure WrappableCut (theory : IGSLT) where
   /-- (i) The selected rule in interaction-cut form. -/
   cut : InteractionCutPresentation theory
-  /-- (ii) A section of the static equivalence of the interacting fibre. -/
-  canonical : ComputableCanonicalSection theory
   /-- (iii) The finite continuation bundle and its declaration-derived
   constructor closure. -/
   retyping : ContinuationDecorationProfile cut
@@ -46,6 +45,22 @@ structure ContinuedPresentation (theory : IGSLT) where
   redexRetypable : retyping.RedexRetypable
   /-- ...and the contractum has the wrapped sort. -/
   wrappable : retyping.Wrappable
+
+/-- The three clauses, over one iGSLT. -/
+structure ContinuedPresentation (theory : IGSLT) extends WrappableCut theory where
+  /-- (ii) A section of the static equivalence of the interacting fibre. -/
+  canonical : ComputableCanonicalSection theory
+
+/-- The wrappable cut of a wrappable interactive GSLT: its plan read as the
+two-slot continuation bundle. -/
+def WrappableIGSLT.wrappableCut (theory : WrappableIGSLT) :
+    WrappableCut theory.theory where
+  cut := theory.cut
+  retyping := ContinuationDecorationProfile.ofRetypingPlan theory.continuationRetyping
+  redexRetypable :=
+    (ContinuationDecorationProfile.ofRetypingPlan_redexRetypable_iff _).mpr theory.redexRetypable
+  wrappable :=
+    (ContinuationDecorationProfile.ofRetypingPlan_wrappable_iff _).mpr theory.wrappable
 
 /-- The theory satisfies the three clauses for some choice of the data. -/
 def IsContinued (theory : IGSLT) : Prop := Nonempty (ContinuedPresentation theory)
@@ -157,13 +172,8 @@ def closedSection (free : theory.ReflectionFree) :
 /-- **A reflection-free continued theory satisfies the three clauses.** -/
 def toContinuedPresentation (free : theory.ReflectionFree) :
     ContinuedPresentation theory.theory where
-  cut := theory.cut
+  toWrappableCut := theory.toWrappableIGSLT.wrappableCut
   canonical := theory.closedSection free
-  retyping := ContinuationDecorationProfile.ofRetypingPlan theory.continuationRetyping
-  redexRetypable :=
-    (ContinuationDecorationProfile.ofRetypingPlan_redexRetypable_iff _).mpr theory.redexRetypable
-  wrappable :=
-    (ContinuationDecorationProfile.ofRetypingPlan_wrappable_iff _).mpr theory.wrappable
 
 end CIGSLT
 

@@ -16,7 +16,30 @@ set_option autoImplicit false
 namespace List
 
 universe u v
-variable {α : Type u} {β : Type v} [DecidableEq α] {k : Nat}
+variable {α : Type u} {β : Type v} {k : Nat}
+
+/-- Reversing a search is harmless when every matching entry has the same
+    value. This compares values, without identifying their occurrences. -/
+theorem find?_reverse_of_unique_matches (entries : List α) (p : α → Bool)
+    (unique : ∀ a ∈ entries, ∀ b ∈ entries, p a = true → p b = true → a = b) :
+    entries.reverse.find? p = entries.find? p := by
+  induction entries with
+  | nil => rfl
+  | cons first rest ih =>
+      have tail := ih (fun a ma b mb => unique a (mem_cons_of_mem first ma)
+        b (mem_cons_of_mem first mb))
+      rw [reverse_cons, find?_append, tail]
+      by_cases head : p first = true
+      · cases found : rest.find? p with
+        | none => simp [head]
+        | some chosen =>
+            have same := unique chosen (mem_cons_of_mem first (mem_of_find?_eq_some found))
+              first mem_cons_self (find?_some found) head
+            cases same
+            simp [head]
+      · simp [head]
+
+variable [DecidableEq α]
 
 def findPositions (entries : List α) (required : Fin k → α) : Option (Fin k → Nat) :=
   Fin.sequenceOption k (fun index => entries.findIdx? (fun entry => decide (entry = required index)))

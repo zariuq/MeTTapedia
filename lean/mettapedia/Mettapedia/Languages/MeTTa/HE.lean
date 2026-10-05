@@ -1,5 +1,7 @@
 import Mettapedia.Languages.MeTTa.HE.Types
 import Mettapedia.Languages.MeTTa.HE.Space
+import Mettapedia.Languages.MeTTa.HE.ModuleSpace
+import Mettapedia.Languages.MeTTa.HE.ModuleInvalidation
 import Mettapedia.Languages.MeTTa.HE.Matching
 import Mettapedia.Languages.MeTTa.HE.TypeCheck
 import Mettapedia.Languages.MeTTa.HE.EvalSpec

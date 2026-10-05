@@ -1,10 +1,10 @@
 import Mettapedia.GSLT.LanguageDef.CostInteractive
 
 /-!
-# Continued closure of the generic Cost construction
+# The Cost image is again wrappable
 
 The funded interaction is factored through the ordered cut retained by the
-source continued theory.  Its inner contact and introductions are the tagged
+source theory.  Its inner contact and introductions are the tagged
 base copies of the source declarations; the signed term and funding stack are
 ordinary signature-derived envelopes around that core.  Their exposed fields
 have the source-process and token-stack sorts, respectively, so they are not
@@ -69,10 +69,10 @@ theorem costBaseSchemaPattern_selected
       mapPatternSchemaNames, mapPatternListSchemaNames_eq_map,
       List.getElem?_map]
 
-namespace CIGSLT
+namespace WrappableIGSLT
 
 /-- A source sort selected from the exact generated Cost presentation. -/
-def costBaseDeclaredSort (source : CIGSLT)
+def costBaseDeclaredSort (source : WrappableIGSLT)
     (sort : DeclaredSort source.theory.presentation.presentation) :
     DeclaredSort source.costIGSLT.presentation.presentation :=
   ⟨{ sort.1 with name := costBaseSortName sort.1.name }, by
@@ -85,7 +85,7 @@ def costBaseDeclaredSort (source : CIGSLT)
     exact List.mem_map.mpr ⟨sort.1, sort.2, rfl⟩⟩
 
 /-- A source constructor selected from the exact generated Cost presentation. -/
-def costBaseDeclaredConstructor (source : CIGSLT)
+def costBaseDeclaredConstructor (source : WrappableIGSLT)
     (constructor :
       DeclaredConstructor source.theory.presentation.presentation) :
     DeclaredConstructor source.costIGSLT.presentation.presentation :=
@@ -100,7 +100,7 @@ def costBaseDeclaredConstructor (source : CIGSLT)
 Only labels and sort annotations change; arity and bare-collection shape do
 not. -/
 theorem representedBy_costBase
-    (source : CIGSLT) (constructor : GrammarRule) (pattern : Pattern)
+    (source : WrappableIGSLT) (constructor : GrammarRule) (pattern : Pattern)
     (represented : RepresentedBy constructor pattern) :
     RepresentedBy (costBaseConstructor source.cut constructor)
       (costBaseSchemaPattern pattern) := by
@@ -139,7 +139,7 @@ theorem representedBy_costBase
 introductions retain their constructor representation; a direct operand
 remains exactly its continuation while its owning contact position is
 re-sorted by the same declaration-level constructor translation. -/
-def costBaseOperand (source : CIGSLT)
+def costBaseOperand (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -218,20 +218,20 @@ def costBaseOperand (source : CIGSLT)
 
 /-- The transported program introduction retains the exact continuation
 selected by the source cut. -/
-def costProgramOperand (source : CIGSLT) :
+def costProgramOperand (source : WrappableIGSLT) :
     InteractionOperandProfile source.costIGSLT.presentation :=
   source.costBaseOperand source.cut.program (by
     simp [isSelectedContinuation])
 
 /-- The transported environment introduction retains the exact continuation
 selected by the source cut. -/
-def costEnvironmentOperand (source : CIGSLT) :
+def costEnvironmentOperand (source : WrappableIGSLT) :
     InteractionOperandProfile source.costIGSLT.presentation :=
   source.costBaseOperand source.cut.environment (by
     simp [isSelectedContinuation])
 
 @[simp]
-theorem costBaseOperand_schemaTerm (source : CIGSLT)
+theorem costBaseOperand_schemaTerm (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -256,7 +256,7 @@ theorem costBaseOperand_schemaTerm (source : CIGSLT)
   | direct same => simp [costBaseOperand]
 
 @[simp]
-theorem costBaseOperand_continuationPattern (source : CIGSLT)
+theorem costBaseOperand_continuationPattern (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -272,7 +272,7 @@ theorem costBaseOperand_continuationPattern (source : CIGSLT)
   | direct same => simp [costBaseOperand]
 
 @[simp]
-theorem costBaseOperand_subject_pattern (source : CIGSLT)
+theorem costBaseOperand_subject_pattern (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -287,41 +287,41 @@ theorem costBaseOperand_subject_pattern (source : CIGSLT)
   | direct same => rfl
 
 @[simp]
-theorem costProgramOperand_schemaTerm (source : CIGSLT) :
+theorem costProgramOperand_schemaTerm (source : WrappableIGSLT) :
     source.costProgramOperand.schemaTerm =
       costBaseSchemaPattern source.cut.program.schemaTerm := by
   simp [costProgramOperand]
 
 @[simp]
-theorem costEnvironmentOperand_schemaTerm (source : CIGSLT) :
+theorem costEnvironmentOperand_schemaTerm (source : WrappableIGSLT) :
     source.costEnvironmentOperand.schemaTerm =
       costBaseSchemaPattern source.cut.environment.schemaTerm := by
   simp [costEnvironmentOperand]
 
 @[simp]
-theorem costProgramOperand_continuationPattern (source : CIGSLT) :
+theorem costProgramOperand_continuationPattern (source : WrappableIGSLT) :
     source.costProgramOperand.continuationPattern =
       costBaseSchemaPattern source.cut.program.continuationPattern := by
   simp [costProgramOperand]
 
 @[simp]
-theorem costEnvironmentOperand_continuationPattern (source : CIGSLT) :
+theorem costEnvironmentOperand_continuationPattern (source : WrappableIGSLT) :
     source.costEnvironmentOperand.continuationPattern =
       costBaseSchemaPattern source.cut.environment.continuationPattern := by
   simp [costEnvironmentOperand]
 
 @[simp]
-theorem costProgramOperand_subject_pattern (source : CIGSLT) :
+theorem costProgramOperand_subject_pattern (source : WrappableIGSLT) :
     source.costProgramOperand.subject.pattern = none := by
   simp [costProgramOperand]
 
 @[simp]
-theorem costEnvironmentOperand_subject_pattern (source : CIGSLT) :
+theorem costEnvironmentOperand_subject_pattern (source : WrappableIGSLT) :
     source.costEnvironmentOperand.subject.pattern = none := by
   simp [costEnvironmentOperand]
 
 @[simp]
-theorem costBaseOperand_constructor (source : CIGSLT)
+theorem costBaseOperand_constructor (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -344,7 +344,7 @@ theorem costBaseOperand_constructor (source : CIGSLT)
   | direct same => simp [costBaseOperand]
 
 @[simp]
-theorem costBaseOperand_continuation_index (source : CIGSLT)
+theorem costBaseOperand_continuation_index (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -367,7 +367,7 @@ theorem costBaseOperand_continuation_index (source : CIGSLT)
   | direct same => simp [costBaseOperand]
 
 @[simp]
-theorem costBaseOperand_continuationVariable_name (source : CIGSLT)
+theorem costBaseOperand_continuationVariable_name (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -390,7 +390,7 @@ theorem costBaseOperand_continuationVariable_name (source : CIGSLT)
   | direct same => simp [costBaseOperand]
 
 @[simp]
-theorem costBaseOperand_kind (source : CIGSLT)
+theorem costBaseOperand_kind (source : WrappableIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
@@ -414,13 +414,13 @@ theorem costBaseOperand_kind (source : CIGSLT)
       simp [costBaseOperand, InteractionOperandProfile.kind]
 
 @[simp]
-theorem costProgramOperand_kind (source : CIGSLT) :
+theorem costProgramOperand_kind (source : WrappableIGSLT) :
     source.costProgramOperand.kind = source.cut.program.kind := by
   exact source.costBaseOperand_kind source.cut.program (by
     simp [isSelectedContinuation])
 
 @[simp]
-theorem costEnvironmentOperand_kind (source : CIGSLT) :
+theorem costEnvironmentOperand_kind (source : WrappableIGSLT) :
     source.costEnvironmentOperand.kind = source.cut.environment.kind := by
   exact source.costBaseOperand_kind source.cut.environment (by
     simp [isSelectedContinuation])
@@ -450,7 +450,7 @@ private theorem costBaseParameter_collection_shape
   split <;> exact ⟨_, rfl⟩
 
 private theorem coreContactRepresentation_costBaseConstructor
-    (source : CIGSLT) (sort : TypeDecl) (constructor : GrammarRule)
+    (source : WrappableIGSLT) (sort : TypeDecl) (constructor : GrammarRule)
     (representation : ContactRepresentation)
     (represented : coreContactRepresentation? sort constructor =
       some representation) :
@@ -517,7 +517,7 @@ private theorem coreContactRepresentation_costBaseConstructor
         | cons third tail => simp at represented
   · simp [coreContactRepresentation?, categoryEquality] at represented
 
-theorem costBaseCore_representsCore (source : CIGSLT) :
+theorem costBaseCore_representsCore (source : WrappableIGSLT) :
     coreContactRepresentation?
         (source.costBaseDeclaredSort source.cut.coreContact.sort).1
         (source.costBaseDeclaredConstructor
@@ -529,7 +529,7 @@ theorem costBaseCore_representsCore (source : CIGSLT) :
 
 /-- The exact base copy of the source contact selected from the generated
 Cost presentation. -/
-def costBaseCoreContact (source : CIGSLT) :
+def costBaseCoreContact (source : WrappableIGSLT) :
     CoreContactPresentation source.costIGSLT.presentation.presentation where
   sort := source.costBaseDeclaredSort source.cut.coreContact.sort
   constructor := source.costBaseDeclaredConstructor
@@ -540,7 +540,7 @@ def costBaseCoreContact (source : CIGSLT) :
 /-- The ordered source interaction core transports without changing binary
 versus collection contact shape. -/
 private theorem CutSourceShape.costBase
-    (source : CIGSLT) {program environment core : Pattern}
+    (source : WrappableIGSLT) {program environment core : Pattern}
     (shape : CutSourceShape source.cut.coreContact program environment core) :
     CutSourceShape source.costBaseCoreContact
       (costBaseSchemaPattern program) (costBaseSchemaPattern environment)
@@ -568,7 +568,7 @@ private theorem CutSourceShape.costBase
             (context.map (mapPattern costBaseLanguageDefSymbolMap)))
           (rest.map costSourceSchemaName) collectionContact)
 
-theorem costBaseCoreShape (source : CIGSLT) :
+theorem costBaseCoreShape (source : WrappableIGSLT) :
     CutSourceShape source.costBaseCoreContact
       source.costProgramOperand.schemaTerm
       source.costEnvironmentOperand.schemaTerm
@@ -580,7 +580,7 @@ theorem costBaseCoreShape (source : CIGSLT) :
 /-- The source cut's envelope remains a constructor-derived context in the
 complete generated Cost signature.  Schema alpha-renaming changes local names
 but neither constructor positions nor sorts. -/
-theorem costBaseSourceEnvelopeInSignature (source : CIGSLT) :
+theorem costBaseSourceEnvelopeInSignature (source : WrappableIGSLT) :
     SignatureContext source.costWholeLanguage
       (costBaseSortName source.cut.coreContact.sort.1.name)
       (costBaseSortName source.theory.presentation.interactingSort.1.name)
@@ -596,7 +596,7 @@ theorem costBaseSourceEnvelopeInSignature (source : CIGSLT) :
 /-- The signing and funding apparatus is itself generated by two ordinary
 constructor slots: first the signed-body slot, then the left operand of the
 wrapped contact. -/
-theorem costFundingEnvelopeInSignature (source : CIGSLT) :
+theorem costFundingEnvelopeInSignature (source : WrappableIGSLT) :
     SignatureContext source.costWholeLanguage
       (costBaseSortName source.theory.presentation.interactingSort.1.name)
       costWrappedSortName source.costFundingEnvelope := by
@@ -645,7 +645,7 @@ theorem costFundingEnvelopeInSignature (source : CIGSLT) :
 
 /-- The complete whole-redex envelope is a signature-derived context from the
 transported interaction core to the generated wrapped carrier. -/
-theorem costWholeRedexEnvelopeInSignature (source : CIGSLT) :
+theorem costWholeRedexEnvelopeInSignature (source : WrappableIGSLT) :
     SignatureContext source.costWholeLanguage
       (costBaseSortName source.cut.coreContact.sort.1.name)
       costWrappedSortName source.costWholeRedexEnvelope := by
@@ -654,7 +654,7 @@ theorem costWholeRedexEnvelopeInSignature (source : CIGSLT) :
 
 /-- Base transport is injective on authored constructors.  Validation makes
 source labels unique, and the reserved Cost base prefix is injective. -/
-theorem costBaseDeclaredConstructor_injective (source : CIGSLT) :
+theorem costBaseDeclaredConstructor_injective (source : WrappableIGSLT) :
     Function.Injective source.costBaseDeclaredConstructor := by
   intro left right equality
   apply ContinuationRetypingPlan.authoredConstructorLabel_injective
@@ -667,7 +667,7 @@ theorem costBaseDeclaredConstructor_injective (source : CIGSLT) :
 
 /-- The generated rule retains the transported ordered interaction core below
 its explicit signing/funding envelope. -/
-def costWholeCutSource (source : CIGSLT) :
+def costWholeCutSource (source : WrappableIGSLT) :
     EnvelopedCutSource source.costBaseCoreContact
       source.costProgramOperand.schemaTerm
       source.costEnvironmentOperand.schemaTerm
@@ -675,12 +675,12 @@ def costWholeCutSource (source : CIGSLT) :
   core := source.costBaseInteractionCore
   coreShape := source.costBaseCoreShape
   envelope := source.costWholeRedexEnvelope
-  fillsSource := rfl
+  fillsSource := source.costWholeRedexSource_eq_fill.symm
 
 /-- A declaration from the continuation signature cannot be confused with
 the administrative contact constructor.  The proof uses the two disjoint
 generated constructor namespaces, not a string scan over equation text. -/
-theorem generatedTerm_label_ne_costContact (source : CIGSLT)
+theorem generatedTerm_label_ne_costContact (source : WrappableIGSLT)
     (rule : GrammarRule)
     (membership :
       rule ∈ source.continuationRetyping.generatedLanguage.terms) :
@@ -700,7 +700,7 @@ theorem generatedTerm_label_ne_costContact (source : CIGSLT)
 
 /-- A pattern sorted in the declaration-derived continuation signature has
 no reference to the later administrative contact constructor. -/
-theorem generatedPattern_contactConstructor_absent (source : CIGSLT)
+theorem generatedPattern_contactConstructor_absent (source : WrappableIGSLT)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {pattern : Pattern} {type : TypeExpr}
     (typed : HasType source.continuationRetyping.generatedLanguage
@@ -717,13 +717,13 @@ theorem generatedPattern_contactConstructor_absent (source : CIGSLT)
 contact constructor on both subjects.  Equations are retained exactly; their
 prior sorting in the generated continuation signature supplies the exclusion
 witness required by structural subject matching. -/
-theorem costStaticEquation_contactFree (source : CIGSLT)
+theorem costStaticEquation_contactFree (source : WrappableIGSLT)
     (equation : Equation) (membership : equation ∈ source.costStaticEquations) :
     (costContactConstructorName, costContactConstructor.params.length) ∉
         equation.left.constructorRefs ∧
       (costContactConstructorName, costContactConstructor.params.length) ∉
         equation.right.constructorRefs := by
-  simp only [costStaticEquations, List.mem_append, List.mem_map] at membership
+  simp only [costStaticEquations_def, List.mem_append, List.mem_map] at membership
   rcases membership with
     ⟨sourceEquation, sourceMembership, rfl⟩ |
       ⟨sourceEquation, sourceMembership, rfl⟩
@@ -749,7 +749,7 @@ theorem costStaticEquation_contactFree (source : CIGSLT)
 /-- The exact funded interaction closes back into the ordered cut interface.
 The selected rewrite remains the singleton rewrite of the generated validated
 `LanguageDef`; no contraction callback is introduced. -/
-def costInteractionCut (source : CIGSLT) :
+def costInteractionCut (source : WrappableIGSLT) :
     InteractionCutPresentation source.costIGSLT where
   program := source.costProgramOperand
   environment := source.costEnvironmentOperand
@@ -825,44 +825,44 @@ def costInteractionCut (source : CIGSLT) :
     exact source.costStaticEquation_contactFree equation membership)
 
 @[simp]
-theorem costInteractionCut_program_constructor (source : CIGSLT) :
+theorem costInteractionCut_program_constructor (source : WrappableIGSLT) :
     source.costInteractionCut.program.constructor =
       source.costBaseDeclaredConstructor source.cut.program.constructor := by
   simp [costInteractionCut, costProgramOperand]
 
 @[simp]
-theorem costInteractionCut_environment_constructor (source : CIGSLT) :
+theorem costInteractionCut_environment_constructor (source : WrappableIGSLT) :
     source.costInteractionCut.environment.constructor =
       source.costBaseDeclaredConstructor source.cut.environment.constructor := by
   simp [costInteractionCut, costEnvironmentOperand]
 
 @[simp]
-theorem costInteractionCut_program_continuation_index (source : CIGSLT) :
+theorem costInteractionCut_program_continuation_index (source : WrappableIGSLT) :
     source.costInteractionCut.program.continuation.index =
       source.cut.program.continuation.index := by
   simp [costInteractionCut, costProgramOperand]
 
 @[simp]
-theorem costInteractionCut_environment_continuation_index (source : CIGSLT) :
+theorem costInteractionCut_environment_continuation_index (source : WrappableIGSLT) :
     source.costInteractionCut.environment.continuation.index =
       source.cut.environment.continuation.index := by
   simp [costInteractionCut, costEnvironmentOperand]
 
 @[simp]
 theorem costInteractionCut_program_continuationVariable_name
-    (source : CIGSLT) :
+    (source : WrappableIGSLT) :
     source.costInteractionCut.program.continuationVariable.name =
       costSourceSchemaName source.cut.program.continuationVariable.name := by
   simp [costInteractionCut, costProgramOperand]
 
 @[simp]
 theorem costInteractionCut_environment_continuationVariable_name
-    (source : CIGSLT) :
+    (source : WrappableIGSLT) :
     source.costInteractionCut.environment.continuationVariable.name =
       costSourceSchemaName source.cut.environment.continuationVariable.name := by
   simp [costInteractionCut, costEnvironmentOperand]
 
-theorem costBaseConstructor_eq_program_iff (source : CIGSLT)
+theorem costBaseConstructor_eq_program_iff (source : WrappableIGSLT)
     (rule : GrammarRule)
     (membership : rule ∈ source.theory.presentation.presentation.language.terms) :
     costBaseConstructor source.cut rule =
@@ -885,7 +885,7 @@ theorem costBaseConstructor_eq_program_iff (source : CIGSLT)
     rw [costInteractionCut_program_constructor]
     rfl
 
-theorem costBaseConstructor_eq_environment_iff (source : CIGSLT)
+theorem costBaseConstructor_eq_environment_iff (source : WrappableIGSLT)
     (rule : GrammarRule)
     (membership : rule ∈ source.theory.presentation.presentation.language.terms) :
     costBaseConstructor source.cut rule =
@@ -911,7 +911,7 @@ theorem costBaseConstructor_eq_environment_iff (source : CIGSLT)
 
 /-- Base transport preserves exactly which constructor positions are the two
 selected continuations of the retained ordered cut. -/
-theorem isSelectedContinuation_costBase (source : CIGSLT)
+theorem isSelectedContinuation_costBase (source : WrappableIGSLT)
     (rule : GrammarRule)
     (membership : rule ∈ source.theory.presentation.presentation.language.terms)
     (index : Nat) :
@@ -926,7 +926,7 @@ theorem isSelectedContinuation_costBase (source : CIGSLT)
     costInteractionCut_program_continuation_index,
     costInteractionCut_environment_continuation_index]
 
-theorem costContactConstructor_not_selected (source : CIGSLT)
+theorem costContactConstructor_not_selected (source : WrappableIGSLT)
     (index : Nat) :
     isSelectedContinuation source.costInteractionCut costContactConstructor
       index = false := by
@@ -952,7 +952,7 @@ theorem costContactConstructor_not_selected (source : CIGSLT)
   · exact notProgram selected.1
   · exact notEnvironment selected.1
 
-theorem costSignedConstructor_not_selected (source : CIGSLT)
+theorem costSignedConstructor_not_selected (source : WrappableIGSLT)
     (index : Nat) :
     isSelectedContinuation source.costInteractionCut
         (costSignedConstructor
@@ -986,7 +986,7 @@ theorem costSignedConstructor_not_selected (source : CIGSLT)
 /-- The source cut's stable envelope transports into the base fiber of the
 generated cut, with schema variables alpha-renamed into the reserved Cost
 namespace. -/
-theorem costBaseSourceEnvelopeStable (source : CIGSLT) :
+theorem costBaseSourceEnvelopeStable (source : WrappableIGSLT) :
     ContinuationStableContext source.costInteractionCut
       (costBaseSortName source.cut.coreContact.sort.1.name)
       (costBaseSortName source.theory.presentation.interactingSort.1.name)
@@ -1005,7 +1005,7 @@ theorem costBaseSourceEnvelopeStable (source : CIGSLT) :
 
 /-- The generated signing/contact envelope stays outside the two retained
 source-continuation slots. -/
-theorem costFundingEnvelopeStable (source : CIGSLT) :
+theorem costFundingEnvelopeStable (source : WrappableIGSLT) :
     ContinuationStableContext source.costInteractionCut
       (costBaseSortName source.theory.presentation.interactingSort.1.name)
       costWrappedSortName source.costFundingEnvelope := by
@@ -1050,24 +1050,24 @@ theorem costFundingEnvelopeStable (source : CIGSLT) :
 /-- The complete generated redex envelope is stable under another Cost
 application: the original stable envelope is retained below two generated
 apparatus frames, and all three parts avoid the selected continuations. -/
-theorem costWholeRedexEnvelopeStable (source : CIGSLT) :
+theorem costWholeRedexEnvelopeStable (source : WrappableIGSLT) :
     ContinuationStableContext source.costInteractionCut
       (costBaseSortName source.cut.coreContact.sort.1.name)
       costWrappedSortName source.costWholeRedexEnvelope := by
   exact ContinuationStableContext.comp source.costFundingEnvelopeStable
     source.costBaseSourceEnvelopeStable
 
-/-! ## Continued closure data for another Cost application -/
+/-! ## Closure data for another Cost application -/
 
 @[simp]
-theorem costProgramOperand_category (source : CIGSLT) :
+theorem costProgramOperand_category (source : WrappableIGSLT) :
     source.costProgramOperand.constructor.1.category =
       costBaseSortName source.cut.program.constructor.1.category := by
   rw [costProgramOperand, costBaseOperand_constructor]
   rfl
 
 @[simp]
-theorem costEnvironmentOperand_category (source : CIGSLT) :
+theorem costEnvironmentOperand_category (source : WrappableIGSLT) :
     source.costEnvironmentOperand.constructor.1.category =
       costBaseSortName source.cut.environment.constructor.1.category := by
   rw [costEnvironmentOperand, costBaseOperand_constructor]
@@ -1076,7 +1076,7 @@ theorem costEnvironmentOperand_category (source : CIGSLT) :
 /-- The generated interaction has the canonical hereditary continuation plan:
 every constructor except the retained program and environment introductions
 receives a wrapped copy at the next Cost layer. -/
-theorem costContinuationRetyping (source : CIGSLT) :
+theorem costContinuationRetyping (source : WrappableIGSLT) :
     ContinuationRetypingPlan source.costInteractionCut where
   residualCovered := by
     change (show DeclaredConstructor
@@ -1104,6 +1104,6 @@ theorem costContinuationRetyping (source : CIGSLT) :
         costWholeContactConstructor, costContactConstructor,
         costContactConstructorName] using labelEquality.symm
 
-end CIGSLT
+end WrappableIGSLT
 
 end Mettapedia.GSLT.LanguageDef

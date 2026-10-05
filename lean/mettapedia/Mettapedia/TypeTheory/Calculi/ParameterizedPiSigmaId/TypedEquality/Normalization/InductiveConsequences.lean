@@ -292,15 +292,14 @@ section Preservation
 
 variable {S₀ : Setting Head L} (facts : FormFacts S.R S.roles) {T : DeclName}
   {v : Head} {ctors : List (DeclName × List (Field Head))} {rec : DeclName}
-  {R₀ R₁ R₂ : Rules Head} {u : Head} (decl : DeclaresInductive S₀ R₀ R₁ R₂ T u ctors rec v)
-  (sub : RulesSub S₀.R S.R)
+  (decl : DeclaresRecursor S₀ T ctors rec v) (sub : RulesSub S₀.R S.R)
 include facts decl sub
 
 /-- A computation rule of the recursor preserves typing, in every package
 containing the declaring one: in a typed application of the recursor to a
 constructor form, the method applied to the fields and to the recursive calls
 has the application's type. -/
-theorem DeclaresInductive.iota_preserves {n : Nat} {Γ : Ctx Head n} (formed : CtxFormed S.R Γ)
+theorem DeclaresRecursor.iota_preserves {n : Nat} {Γ : Ctx Head n} (formed : CtxFormed S.R Γ)
     {p : Tm Head n} {ms : List (Tm Head n)} {i : Nat} {k : DeclName}
     {fields : List (Field Head)} {as : List (Tm Head n)} {mt A : Tm Head n}
     (hms : ms.length = ctors.length) (hi : ctors[i]? = some (k, fields))

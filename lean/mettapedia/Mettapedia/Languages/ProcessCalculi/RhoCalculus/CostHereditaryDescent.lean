@@ -98,7 +98,7 @@ everything else. -/
 theorem costStaticColor_symbols_sort_wrapped (t : String) :
     (CostStaticColor.symbols rhoCIGSLT .wrapped).sort t =
       (if t = "Proc" then costWrappedSortName else costBaseSortName t) := by
-  simp only [CostStaticColor.symbols, costWrappedStaticSymbols,
+  simp only [CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
     rho_interactingSort_name]
 
 theorem mapTypeExpr_cross_base_eq_of_ne_interacting (color : CostStaticColor)
@@ -163,15 +163,15 @@ theorem rho_costWhole_rule_category_of_dropWire (color : CostStaticColor)
             ⟨CostConstructor.base ⟨rhoCalc.terms[1],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PDrop" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-          rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>
       have labelRendered :
@@ -180,14 +180,14 @@ theorem rho_costWhole_rule_category_of_dropWire (color : CostStaticColor)
                 List.getElem_mem (by simp [rhoCalc])⟩,
               rho_drop_mem_wrappedConstructors⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .wrapped).constructor "PDrop" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
-          rhoCalc, CostStaticColor.symbols, costWrappedStaticSymbols]
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costWrappedStaticSymbols, rho_interactingSort_name]
 
 /-- The whole-language rule behind a colour-static quote wire is rho's
@@ -205,15 +205,15 @@ theorem rho_costWhole_rule_category_of_quoteWire (color : CostStaticColor)
             ⟨CostConstructor.base ⟨rhoCalc.terms[2],
                 List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "NQuote" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-          rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
           costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap]
   | wrapped =>
       have labelRendered :
@@ -222,14 +222,14 @@ theorem rho_costWhole_rule_category_of_quoteWire (color : CostStaticColor)
                 List.getElem_mem (by simp [rhoCalc])⟩,
               rho_quote_mem_wrappedConstructors⟩).label =
             (CostStaticColor.symbols rhoCIGSLT .wrapped).constructor "NQuote" := by
-        simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
-          rhoCalc, CostStaticColor.symbols, costWrappedStaticSymbols]
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
+          rhoCalc, CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
-      simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
-        rhoCalc, mapTypeExpr, CostStaticColor.symbols,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costWrappedStaticSymbols, rho_interactingSort_name]
 
 /-- The interacting sort never coincides across the two colour actions. -/
@@ -311,14 +311,14 @@ theorem not_eq_iterDrop_of_escape {color : CostStaticColor} {level : Nat}
       exact notApply _ _ equation
 
 /-- The opposite colour cannot read this colour's tagging of the interacting
-sort.  Flipped instance of `rho_decodeCostStaticTypeExpr_flip_process_eq_none`. -/
+sort.  Flipped instance of `rho_costStaticTypeDecode_flip_process_eq_none`. -/
 theorem rho_decode_flipProcess_eq_none (color : CostStaticColor) :
-    decodeCostStaticTypeExpr rhoCIGSLT color
+    CostStaticTypeImage.decode rhoCIGSLT.theory color
         (.base
           (costStaticReflectivePresentationDecl rhoCIGSLT color.flip
             rhoReflectivePresentation.toReflectivePresentationDecl
             ).processSort) = none := by
-  have flipped := rho_decodeCostStaticTypeExpr_flip_process_eq_none color.flip
+  have flipped := rho_costStaticTypeDecode_flip_process_eq_none color.flip
   simpa [CostStaticColor.flip_flip] using flipped
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus
@@ -334,8 +334,8 @@ theorem mapTypeExpr_flipProc_ne (color : CostStaticColor) (sourceType : TypeExpr
     mapTypeExpr (color.flip.symbols rhoCIGSLT) (.base "Proc") ≠
       mapTypeExpr (color.symbols rhoCIGSLT) sourceType := by
   intro equation
-  have decoded := congrArg (decodeCostStaticTypeExpr rhoCIGSLT color) equation
-  rw [decodeCostStaticTypeExpr_mapTypeExpr] at decoded
+  have decoded := congrArg (CostStaticTypeImage.decode rhoCIGSLT.theory color) equation
+  rw [CostStaticTypeImage.decode_mapTypeExpr] at decoded
   rw [show mapTypeExpr (color.flip.symbols rhoCIGSLT) (TypeExpr.base "Proc") =
       .base (costStaticReflectivePresentationDecl rhoCIGSLT color.flip
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort from
@@ -413,15 +413,15 @@ theorem rho_boundaryCollection_choices_absurd (color : CostStaticColor)
         (mapTypeExpr (color.symbols rhoCIGSLT) sourceType) = []) :
     False := by
   unfold costStaticCollectionTypingChoices at oppositeSelected currentRejected
-  rw [decodeCostStaticTypeExpr_mapTypeExpr] at currentRejected
-  cases flipDecoded : decodeCostStaticTypeExpr rhoCIGSLT color.flip
+  rw [CostStaticTypeImage.decode_mapTypeExpr] at currentRejected
+  cases flipDecoded : CostStaticTypeImage.decode rhoCIGSLT.theory color.flip
       (mapTypeExpr (color.symbols rhoCIGSLT) sourceType) with
   | none =>
       rw [flipDecoded] at oppositeSelected
       simp at oppositeSelected
   | some flipExpected =>
       rw [flipDecoded] at oppositeSelected
-      have back := mapTypeExpr_decodeCostStaticTypeExpr rhoCIGSLT color.flip
+      have back := CostStaticTypeImage.mapTypeExpr_decode rhoCIGSLT.theory color.flip
         flipDecoded
       cases flipExpected with
       | base sort =>
@@ -568,7 +568,7 @@ theorem bare_whole_rule_category {rule : GrammarRule}
         (usesBareCollection_costBaseConstructor_iff rhoInteractionCut
           sourceConstructor.1).mp bare
       left
-      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor_def,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costBaseConstructor_def,
         rho_bare_src_category sourceConstructor.1 sourceConstructor.2
           sourceBare]
   | wrapped sourceConstructor =>
@@ -576,7 +576,7 @@ theorem bare_whole_rule_category {rule : GrammarRule}
         (usesBareCollection_costWrappedConstructor_iff sourceConstructor.1
           ).mp bare
       right
-      simp [CIGSLT.materializeDeclaredCostConstructor, costWrappedConstructor,
+      simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor, costWrappedConstructor,
         rho_bare_src_category sourceConstructor.1 sourceConstructor.2
           sourceBare, rho_interactingSort_name]
   | apparatus kind =>
@@ -2165,7 +2165,7 @@ theorem rho_dropTower_typed_chain
               with ⟨inner, mappedEq, resultEq⟩ | resultEq
             · rw [typeEquality.trans categoryForm]
               cases color <;>
-                simp [CostStaticColor.symbols, mapTypeExpr,
+                simp [CostStaticColor.symbols, CostStaticColor.symbolsOf, mapTypeExpr,
                   costBaseStaticSymbols, costWrappedStaticSymbols,
                   costBaseLanguageDefSymbolMap, rho_interactingSort_name]
               · exact .nameLeaf
@@ -2188,11 +2188,11 @@ theorem rho_dropTower_typed_chain
             rw [typeEquality.trans categoryForm]
             cases color with
             | base =>
-                simp [CostStaticColor.symbols, mapTypeExpr,
+                simp [CostStaticColor.symbols, CostStaticColor.symbolsOf, mapTypeExpr,
                   costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
                 exact .procLeafBase
             | wrapped =>
-                simp [CostStaticColor.symbols, mapTypeExpr,
+                simp [CostStaticColor.symbols, CostStaticColor.symbolsOf, mapTypeExpr,
                   costWrappedStaticSymbols, rho_interactingSort_name]
                 exact .procLeafWrapped
       | collection collectionType elements rest =>

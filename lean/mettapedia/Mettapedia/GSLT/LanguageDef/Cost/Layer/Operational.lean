@@ -391,16 +391,4 @@ theorem oneWave_ne_serial_of_wide {Ground : Type uGround}
   simp [ParallelCostSchedule.serialBaseline] at spans
   omega
 
-#print axioms OperationalSchedule.workSpan_append
-#print axioms OperationalSchedule.workSpan_ofIndexed
-#print axioms OperationalSchedule.receipt_ofIndexed
-#print axioms OperationalSchedule.count_ofIndexed
-#print axioms OperationalSchedule.waves_ofIndexed
-#print axioms NormalizationEvent.erases_equivalent
-#print axioms Realization.realizePath_append
-#print axioms Realization.workSpan_append
-#print axioms Realization.compact_key_requires_injectivity
-#print axioms oneWave_workSpan
-#print axioms oneWave_ne_serial_of_wide
-
 end Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational

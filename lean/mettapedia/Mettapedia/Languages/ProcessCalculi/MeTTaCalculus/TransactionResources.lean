@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CausalInteraction
 import Mettapedia.GSLT.Causality.ResourceReads
 import Mettapedia.GSLT.Causality.ResourceFrontier
+import Mettapedia.GSLT.Causality.ResourceProduct
 
 /-!
 # Guarded transactions as interaction on a bag of located atoms
@@ -23,6 +24,11 @@ For single located requests, which publish nothing, a commuting square of the
 two orders is exactly concurrency. A transaction that publishes again what it
 claimed has a commuting square with a second copy of itself without being
 concurrent with it.
+
+Requests and transactions do not pay. Paying is the product with a purse, with
+the price as a parameter: a paid firing is enabled exactly when the firing is
+enabled and its price is in the purse. Readers share a fact; they do not share
+a token.
 -/
 
 set_option autoImplicit false
@@ -769,6 +775,133 @@ theorem republishing_square_not_concurrent :
   · unfold System.Concurrent; decide
 
 end Controls
+
+/-! ## Paid requests and paid transactions
+
+Paying is the product with a purse. The price is a parameter: nothing here
+says what a request should cost. -/
+
+section Paid
+
+variable {Token Cell : Type}
+
+/-- Requests that pay from an unordered purse: each request also takes its
+price in tokens. -/
+def paidRequests (price : Request Location Atom → Multiset Token) :
+    System ((Location × Atom) ⊕ Token) :=
+  funded requests fun request => price request
+
+/-- Requests that pay from a purse at their location: each request also takes
+the cell `key request` from the top of a purse there. -/
+def paidRequestsAt (key : Request Location Atom → Cell) :
+    System ((Location × Atom) ⊕ (Location × List Cell)) :=
+  fundedAt requests (fun request => request.location) fun request => key request
+
+/-- Guarded transactions that pay from an unordered purse: each firing of a
+command also takes the price of the command in tokens. -/
+def paidTransactions (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (price : Command Location Atom Pattern Environment → Multiset Token) :
+    System ((Location × Atom) ⊕ Token) :=
+  funded (transactions selects enabled) fun {command} _ => price command.1
+
+omit [DecidableEq Location] [DecidableEq Atom] in
+/-- A paid request is enabled exactly when the request is enabled and its price
+is in the purse. -/
+theorem paidRequests_enables_iff (price : Request Location Atom → Multiset Token)
+    (A : Multiset (Location × Atom)) (B : Multiset Token) (request : Request Location Atom) :
+    (paidRequests price).Enables (marking A B) (site := ()) request ↔
+      requests.Enables A (asFiring request) ∧ price request ≤ B :=
+  funded_enables_iff requests _ A B (asFiring request)
+
+omit [DecidableEq Location] [DecidableEq Atom] in
+/-- Two paid requests are concurrent exactly when the requests are concurrent
+and both prices are in the purse together. -/
+theorem paidRequests_concurrent_iff (price : Request Location Atom → Multiset Token)
+    (A : Multiset (Location × Atom)) (B : Multiset Token)
+    (first second : Request Location Atom) :
+    (paidRequests price).Concurrent (marking A B) (site₁ := ()) (site₂ := ()) first second ↔
+      requests.Concurrent A (asFiring first) (asFiring second) ∧
+        price first + price second ≤ B :=
+  funded_concurrent_iff requests _ A B (asFiring first) (asFiring second)
+
+omit [DecidableEq Location] [DecidableEq Atom] in
+/-- A request paying from a purse at its location is enabled exactly when the
+request is enabled and the purse it names is at its location, with its key on
+top. -/
+theorem paidRequestsAt_enables_iff (key : Request Location Atom → Cell)
+    (A : Multiset (Location × Atom)) (B : Multiset (Location × List Cell))
+    (request : Request Location Atom) (rest : List Cell) :
+    (paidRequestsAt key).Enables (marking A B) (site := ()) (request, rest) ↔
+      requests.Enables A (asFiring request) ∧ (request.location, key request :: rest) ∈ B :=
+  fundedAt_enables_iff requests _ _ A B (asFiring request) rest
+
+/-- Two paid transactions are concurrent exactly when the transactions are
+concurrent and both prices are in the purse together. -/
+theorem paidTransactions_concurrent_iff (selects : Selection Location Atom Pattern Environment)
+    (enabled : Command Location Atom Pattern Environment → Prop)
+    (price : Command Location Atom Pattern Environment → Multiset Token)
+    (A : Multiset (Location × Atom)) (B : Multiset Token)
+    {first second : {command // enabled command}}
+    (firing : (transactions selects enabled).Instance first)
+    (firing' : (transactions selects enabled).Instance second) :
+    (paidTransactions selects enabled price).Concurrent (marking A B) firing firing' ↔
+      (transactions selects enabled).Concurrent A firing firing' ∧
+        price first.1 + price second.1 ≤ B :=
+  funded_concurrent_iff (transactions selects enabled) _ A B firing firing'
+
+end Paid
+
+namespace PaidControls
+
+open Canary Controls
+
+/-- Looking at the fact, without claiming it. -/
+def look : Request CanaryLocation CanaryAtom := ⟨.observe, .data, .fact⟩
+
+/-- **A fact is shared by its readers; a token is not.** Two requests that only
+read the one fact are concurrent. Paying one token each, they are concurrent
+from a purse of two tokens and not from a purse of one. -/
+theorem readers_share_a_fact_not_a_token :
+    requests.Concurrent oneFact (asFiring look) (asFiring look) ∧
+      (paidRequests fun _ => ({()} : Multiset Unit)).Concurrent (marking oneFact {(), ()})
+        (site₁ := ()) (site₂ := ()) look look ∧
+      ¬ (paidRequests fun _ => ({()} : Multiset Unit)).Concurrent (marking oneFact {()})
+        (site₁ := ()) (site₂ := ()) look look := by
+  have shared : requests.Concurrent oneFact (asFiring look) (asFiring look) := by
+    unfold System.Concurrent; decide
+  refine ⟨shared, ?_, ?_⟩
+  · exact (paidRequests_concurrent_iff _ oneFact _ look look).mpr ⟨shared, by decide⟩
+  · exact fun concurrent =>
+      absurd ((paidRequests_concurrent_iff _ oneFact _ look look).mp concurrent).2 (by decide)
+
+/-- **A purse at the location of a request pays for it; a purse elsewhere does
+not.** The request reads the fact kept at `data`, and pays with a `true` cell. -/
+theorem purse_at_the_location_pays (rest : List Bool) :
+    (paidRequestsAt fun _ => true).Enables
+        (marking oneFact {(CanaryLocation.data, [true, false])}) (site := ()) (look, [false]) ∧
+      ¬ (paidRequestsAt fun _ => true).Enables
+        (marking oneFact {(CanaryLocation.output, [true, false])}) (site := ()) (look, rest) := by
+  refine ⟨(paidRequestsAt_enables_iff _ oneFact _ look [false]).mpr
+    ⟨by unfold System.Enables; decide, by decide⟩, fun enabled => ?_⟩
+  have member := ((paidRequestsAt_enables_iff _ oneFact _ look rest).mp enabled).2
+  cases Multiset.mem_singleton.mp member
+
+/-- **Transactions that share a fact do not share a token.** The two directives
+read one fact and are concurrent. Paying one token each, they are concurrent
+from a purse of two tokens and not from a purse of one. -/
+theorem transactions_share_a_fact_not_a_token :
+    (paidTransactions exactSelection always fun _ => ({()} : Multiset Unit)).Concurrent
+        (marking twoDirectives {(), ()}) firstFiring secondFiring ∧
+      ¬ (paidTransactions exactSelection always fun _ => ({()} : Multiset Unit)).Concurrent
+        (marking twoDirectives {()}) firstFiring secondFiring := by
+  refine ⟨?_, fun concurrent => ?_⟩
+  · exact (paidTransactions_concurrent_iff exactSelection always _ twoDirectives _ firstFiring
+      secondFiring).mpr ⟨shared_fact_concurrent, by decide⟩
+  · exact absurd ((paidTransactions_concurrent_iff exactSelection always _ twoDirectives _
+      firstFiring secondFiring).mp concurrent).2 (by decide)
+
+end PaidControls
 
 #print axioms count_networkOf
 #print axioms consumes_sound

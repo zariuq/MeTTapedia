@@ -166,7 +166,7 @@ theorem not_restoresTogether_transported_fvar_bvar
       (cospan.reifyWith rightResolve rightLeg
         (rightThinning.thickenAmbientBVars sourceDepth
           (mapPattern (color.symbols source) (.bvar index)))) := by
-  simp only [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp only [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   exact cospan.not_restoresTogether_reifyWith_fvar_bvar profile leftResolve
     leftLeg rightResolve rightLeg name _
 
@@ -197,7 +197,7 @@ theorem not_restoresTogether_transported_bvar_fvar
       (cospan.reifyWith rightResolve rightLeg
         (rightThinning.thickenAmbientBVars sourceDepth
           (mapPattern (color.symbols source) (.fvar name)))) := by
-  simp only [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
+  simp only [mapPattern, CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   exact cospan.not_restoresTogether_reifyWith_bvar_fvar profile leftResolve
     leftLeg rightResolve rightLeg _ name
 
@@ -1700,7 +1700,7 @@ noncomputable def stoppedPair_sourcePatternLeafAligned_of_closeSmaller
             simpa [leftAtRoot, rightAtRoot] using smaller) (by
             simpa [rightAtRoot] using rightAdmissible) closeSmaller depth)
   simpa [relation, cospan, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars] using restores
+    CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using restores
 
 /-! ## A certified boundary facing an escaped process frame -/
 
@@ -1809,10 +1809,10 @@ theorem CostStaticPlanReached.exists_staticRootPlanSealedAlignment_of_quoteRoot
       rhoReflectivePresentation.quoteConstructor) :
     ∃ (sealed : List TypeExpr)
         (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
-          (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+          (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color
             reached.sourceAvailable)
           reached.sourceAvailable
-          (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+          (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
             reached.sourceAvailable)
           reached.sourceAvailable .hole payload reached.sourceType),
       reached.targetBound = reached.sourceAvailable ++ sealed ∧
@@ -1829,10 +1829,10 @@ theorem CostStaticPlanReached.exists_staticRootPlanSealedAlignment_of_quoteRoot
       quoteRoot
   let planFamily := fun pattern =>
     CostStaticRegionPlan rhoCIGSLT color targetFree
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory color
         reached.sourceAvailable)
       reached.sourceAvailable
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color
         reached.sourceAvailable)
       reached.sourceAvailable .hole pattern reached.sourceType
   let applicationPlan : planFamily (.apply wireName arguments) :=
@@ -3213,7 +3213,7 @@ noncomputable def boundarySourceVariablePlanStops_sourcePatternLeafAligned_of_cl
       rightEnvironment leftSlot rightSlot (leftNormal.trans rightNormal.symm)
       (by rw [leftNormal]; rfl) depth
   simpa [relation, cospan, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars,
+    CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
     CostStaticAtomEnvironment.reifyName, leftSelectedBoundary,
     rightSelectedSource] using restores
 
@@ -3467,7 +3467,7 @@ noncomputable def sourceVariableBoundaryPlanStops_sourcePatternLeafAligned_of_cl
       rightEnvironment leftSlot rightSlot (leftNormal.trans rightNormal.symm)
       (by rw [leftNormal]; rfl) depth
   simpa [relation, cospan, mapPattern,
-    CostStaticBinderThinning.thickenAmbientBVars,
+    CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection,
     CostStaticAtomEnvironment.reifyName, leftSelectedSource,
     rightSelectedBoundary] using restores
 

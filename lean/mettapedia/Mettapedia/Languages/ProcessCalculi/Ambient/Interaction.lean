@@ -228,7 +228,7 @@ theorem ambient_costBaseAmb_params :
 /-- The left side of the dissolution rule stays sorted when the two
 continuations are moved to the wrapped fibre. -/
 theorem dissolutionRetyping_redexRetypable : dissolutionRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType dissolutionRetyping.generatedLanguage dissolutionRetyping.generatedFreeContext []
     (.collection .hashBag
       [.apply (costBaseConstructorName "AOpen") [.fvar "n", .fvar "p"],
@@ -259,7 +259,7 @@ theorem dissolutionRetyping_redexRetypable : dissolutionRetyping.RedexRetypable 
 /-- The contractum, the two continuations side by side, has the wrapped
 sort. -/
 theorem dissolutionRetyping_wrappable : dissolutionRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   change HasType dissolutionRetyping.generatedLanguage dissolutionRetyping.generatedFreeContext []
     (.collection .hashBag [.fvar "p", .fvar "q"] (some "rest")) (.base costWrappedSortName)
   exact HasType.collectionConstructor

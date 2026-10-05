@@ -166,6 +166,19 @@ theorem remaining_pi {entry : (j : Nat) → Tm Head j} {n : Nat} {C : Tm Head n}
   | all => exact False.elim (Nat.lt_irrefl _ hj)
   | before hR => exact ⟨_, hR, rfl⟩
 
+/-- The type remaining after a prefix lies within the telescope. -/
+theorem Remaining.le {entry : (j : Nat) → Tm Head j} {n : Nat} {C : Tm Head n} :
+    ∀ {j : Nat} {R : Tm Head j}, Remaining entry n C j R → j ≤ n
+  | _, _, .all => Nat.le_refl n
+  | _, _, .before h => Nat.le_of_succ_le h.le
+
+/-- After the whole telescope, the remaining type is its body. -/
+theorem Remaining.eq_body {entry : (j : Nat) → Tm Head j} {n : Nat} {C R : Tm Head n}
+    (h : Remaining entry n C n R) : R = C := by
+  cases h with
+  | all => rfl
+  | before h => exact absurd h.le (Nat.not_succ_le_self n)
+
 /-! ## Entries at a spine -/
 
 /-- The substitution sending each variable of an entry of arity `k` to the

@@ -1,5 +1,6 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Impredicative.StrongNormalizationModel.Fundamental
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.ConstantRenaming
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.ConstantInstantiation
 
 /-!
 # Model SN read through a renaming of constants
@@ -23,12 +24,69 @@ So a term typed in a formed context is strongly normalizing once renamed
 (`Typed.snR`).
 
 With the identity renaming this is the fundamental lemma of model SN.
+
+**Constants that never compute** (`Typed.sn_of_noSteps`). Let the daimon of the model be
+rigid on the realizer side. Then it is a valid term of every valid closed type
+(`ValidTmS.daimon`): it is a valid value of every denoted type, and, inert and with no step,
+it is in every Kripke candidate. Read every constant of a package as the daimon. The package
+restricted to the constants whose declared types are valid in that reading (`validConstants`)
+is sound for the model through it (`validConstants_sound`). Every derivation of the package is
+a derivation of the restriction (`Derivable.toValidConstants`, by instantiating each constant
+by itself): a constant is typed only from a typing of its declared type, and the fundamental
+lemma makes the reading of that type valid. So **every term typed in a formed context of a
+package with the model's universe rules and no root step is strongly normalizing**, whatever
+constants the package declares and at whatever types. No order of the declarations is asked
+for: a declared type may mention any declared constant.
+
+Positive example: over the cumulative tower, with the model of System F, the hypotheses hold
+for every package that only adds constants to the tower (`SystemF.noSteps_sn`). Negative
+example: the hypothesis of no root step is needed; a declared constant with an equation that
+unfolds again at every step has a typed term with an infinite reduction
+(`MegalodonHOTG.Streams.iter_typed_not_sn`).
+
+Lemmas that belong with inert terms and with the instantiation of constants
+(`StrongNormalization.Inert.const_of_rigid`, `Tm.instConsts_const`,
+`Statement.instConsts_const`) are stated here under their names.
 -/
 
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation
+
+/-- Instantiating every constant by itself leaves a term unchanged. -/
+theorem Tm.instConsts_const {Head : Type} {n : Nat} (t : Tm Head n) :
+    t.instConsts (fun c => .const c) = t := by
+  have h := Tm.instConsts_mapConst (fun c => c) t
+  rw [Tm.mapConst_id] at h
+  exact h
+
 namespace TypedEquality
+
+/-- Instantiating every constant by itself leaves a statement unchanged. -/
+theorem Statement.instConsts_const {Head : Type} (st : Statement Head) :
+    st.instConsts (fun c => .const c) = st := by
+  rw [Statement.instConsts_mapConst (fun c => c) st]
+  cases st <;> simp only [Statement.mapConst, Tm.mapConst_id, Ctx.mapConst_id]
+
+/-- A rigid constant is inert. -/
+theorem StrongNormalization.Inert.const_of_rigid {Head : Type}
+    {roles : Normalization.Roles Head} {c : DeclName} (rigid : roles c = .rigid) {n : Nat} :
+    StrongNormalization.Inert roles (.const c : Tm Head n) := by
+  unfold StrongNormalization.Inert
+  refine ⟨fun b e => ?_, fun a b e => ?_, fun a e => ?_,
+    fun k arity args role e => ?_, fun c' arity scrutinee args role _ e => ?_⟩
+  · cases e
+  · cases e
+  · cases e
+  · obtain ⟨rfl, -⟩ := Normalization.appSpine_const_injective
+      (show Normalization.appSpine (.const c) [] = Normalization.appSpine (.const k) args from e)
+    rw [rigid] at role
+    cases role
+  · obtain ⟨rfl, -⟩ := Normalization.appSpine_const_injective
+      (show Normalization.appSpine (.const c) [] = Normalization.appSpine (.const c') args from e)
+    rw [rigid] at role
+    cases role
+
 namespace Impredicative
 namespace ModelSN
 
@@ -557,6 +615,136 @@ theorem SpineFactsR.spineFacts {R R₀ : Rules Head} {f : DeclName → DeclName}
   have h := facts rfl declared eq
   simp only [List.map_map, Function.comp_def] at h ⊢
   exact h
+
+
+/-! ## Constants that never compute -/
+
+/-- **The daimon is a valid term of every valid closed type**, when it is rigid on the
+realizer side: it is a valid value of every denoted type, and an inert term with no step is in
+every Kripke candidate. -/
+theorem ValidTmS.daimon (laws : M.Laws) (rigid : M.realizers.roles M.star = .rigid)
+    {T : Tm Head 0} (valid : ValidTyS M .nil T) : ValidTmS M .nil (.const M.star) T := by
+  refine ⟨valid, fun {m r ξ σ σ' ς} _ {P} den => ⟨?_, ?_⟩⟩
+  · exact DenS.star_val laws.value den
+  · exact KCand.normal (P.real _) (Inert.const_of_rigid rigid)
+      (const_normal M.realizers.shape (fun _ _ role => by rw [rigid] at role; cases role))
+
+open Classical in
+/-- **The package restricted to the constants whose declared types are valid** once their
+constants are renamed by `f`: the same universe rules and root steps, and only those
+declarations. -/
+noncomputable def validConstants (M : SNModel Head L) (f : DeclName → DeclName)
+    (R : Rules Head) : Rules Head :=
+  { R with
+    constantType := fun c =>
+      match R.constantType c with
+      | some T => if ValidTyS M .nil (T.mapConst f) then some T else none
+      | none => none }
+
+open Classical in
+/-- A constant of the restriction is a constant of the package whose renamed declared type is
+valid. -/
+theorem validConstants_declared {f : DeclName → DeclName} {R : Rules Head} {c : DeclName}
+    {T : Tm Head 0} :
+    (validConstants M f R).constantType c = some T ↔
+      R.constantType c = some T ∧ ValidTyS M .nil (T.mapConst f) := by
+  show (match R.constantType c with
+      | some T => if ValidTyS M .nil (T.mapConst f) then some T else none
+      | none => none) = some T ↔ _
+  cases R.constantType c with
+  | none => simp
+  | some T' =>
+      by_cases v : ValidTyS M .nil (T'.mapConst f)
+      · simp only [v, if_true, Option.some.injEq]
+        constructor
+        · rintro rfl
+          exact ⟨rfl, v⟩
+        · rintro ⟨rfl, -⟩
+          rfl
+      · simp only [v, if_false, Option.some.injEq]
+        constructor
+        · intro h
+          cases h
+        · rintro ⟨rfl, v'⟩
+          exact (v @v').elim
+
+section NoSteps
+
+variable {R : Rules Head}
+  (headTyping : ∀ {h u : Head}, R.headTyping h u → M.rules.headTyping h u)
+  (isUniverse : ∀ {u : Head}, R.isUniverse u → M.rules.isUniverse u)
+  (join : ∀ {u v w : Head}, R.join u v w → M.rules.join u v w)
+  (cumulative : ∀ {u v : Head}, R.cumulative u v → M.rules.cumulative u v)
+  (headEq : ∀ {h h' : Head}, R.headEq h h' → M.rules.headEq h h')
+  (noSteps : ∀ {n : Nat} {l r : Tm Head n}, ¬ R.computation.step l r)
+
+include headTyping isUniverse join cumulative headEq noSteps in
+/-- **The restriction is sound for the model**, every constant read as the daimon: its
+universe rules are the model's, it has no root step, and each of its constants has a valid
+declared type, at which the daimon is valid. -/
+theorem validConstants_sound (laws : M.Laws) (rigid : M.realizers.roles M.star = .rigid) :
+    TypedSoundSR (validConstants M (fun _ => M.star) R) M (fun _ => M.star) where
+  laws := laws
+  headTyping := headTyping
+  isUniverse := isUniverse
+  join := join
+  cumulative := cumulative
+  headEq := headEq
+  root := fun step => (noSteps step).elim
+  constants := fun declared => ValidTmS.daimon laws rigid @(validConstants_declared.1 declared).2
+
+include isUniverse noSteps in
+/-- **Every derivation of the package is a derivation of its restriction.** Each constant is
+instantiated by itself; a constant is typed only from a typing of its declared type in the
+restriction, which the fundamental lemma makes valid once read. -/
+theorem Derivable.toValidConstants
+    (sound : TypedSoundSR (validConstants M (fun _ => M.star) R) M (fun _ => M.star))
+    {st : Statement Head} (derivation : Derivable R st) :
+    Derivable (validConstants M (fun _ => M.star) R) st := by
+  have inst : RulesInstance R (validConstants M (fun _ => M.star) R) (fun c => .const c) :=
+    { headTyping := id
+      isUniverse := id
+      join := id
+      cumulative := id
+      headEq := id
+      typed := fun {c T u} declared typing hu => by
+        rw [Tm.instConsts_const] at typing ⊢
+        have valid : ValidTyS M .nil (T.mapConst fun _ => M.star) :=
+          (Typed.validSR sound typing trivial).validTy (isUniverse hu)
+        have declared' : (validConstants M (fun _ => M.star) R).constantType c = some T :=
+          validConstants_declared.2 ⟨declared, @valid⟩
+        have typed := Derivable.const (Γ := .nil) declared' typing hu
+        rwa [Tm.liftClosed_at_zero] at typed
+      computation := fun step => (noSteps step).elim }
+  have instantiated := Derivable.instConsts inst derivation
+  rwa [Statement.instConsts_const] at instantiated
+
+include isUniverse noSteps in
+/-- Every context formed in the package is formed in its restriction. -/
+theorem CtxFormed.toValidConstants
+    (sound : TypedSoundSR (validConstants M (fun _ => M.star) R) M (fun _ => M.star)) :
+    ∀ {n : Nat} {Γ : Ctx Head n}, CtxFormed R Γ →
+      CtxFormed (validConstants M (fun _ => M.star) R) Γ
+  | _, _, .nil => .nil
+  | _, _, .snoc formed ⟨u, hu, typed⟩ =>
+      .snoc (CtxFormed.toValidConstants sound formed)
+        ⟨u, hu, Derivable.toValidConstants isUniverse noSteps sound typed⟩
+
+include headTyping isUniverse join cumulative headEq noSteps in
+/-- **Strong normalization of a package whose constants never compute**: in a model whose
+daimon is rigid on the realizer side, every term typed in a formed context of a package with
+the model's universe rules and no root step is strongly normalizing, whatever constants the
+package declares and at whatever types. -/
+theorem Typed.sn_of_noSteps (laws : M.Laws) (rigid : M.realizers.roles M.star = .rigid)
+    {n : Nat} {Γ : Ctx Head n} {t A : Tm Head n} (formed : CtxFormed R Γ)
+    (typed : Typed R Γ t A) : SN R t := by
+  have sound := validConstants_sound headTyping isUniverse join cumulative headEq noSteps laws
+    rigid
+  have sn := (Typed.snR sound (CtxFormed.toValidConstants isUniverse noSteps sound formed)
+    (Derivable.toValidConstants isUniverse noSteps sound typed)).1
+  exact SN.of_mapConst_by_instConsts (fun step => (noSteps step).elim) sn
+
+end NoSteps
 
 end ModelSN
 end Impredicative

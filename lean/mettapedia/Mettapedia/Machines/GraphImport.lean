@@ -13,7 +13,7 @@ import context supplies each name's image throughout one invocation.
 Keeping that context fixed permits source-node memoization. Reusing the same
 node-only cache with another context or freshening scope is unsound.
 
-The results concern term denotation and the number of algebra combinations.
+The results concern term denotation, algebra combinations and graph requests.
 They do not prove C pointer relocation, allocation order, lifetime management,
 or an effectful fresh-cell allocator correct.
 -/
@@ -223,6 +223,79 @@ theorem run_combinations_le_rank (graph : DemandSummary.Graph (Label V L))
       exact Finset.mem_range.mpr (valid.bounded node (by simpa [run] using member))
     _ = root + 1 := Finset.card_range _
 
+/-- Related roots use one cache and one interpretation, in their original
+order. Repeating a root repeats its output occurrence, without reconstructing
+its nodes. -/
+def runMany (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) :
+    DemandSummary.Result (List (Term W L)) (Term W L) :=
+  DemandSummary.sequence roots
+    (fun root cache => DemandSummary.demand graph (algebra image) root cache)
+    (fun _ => none)
+
+private theorem runMany_valid (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) :
+    DemandSummary.Valid graph (algebra image) (fun _ => none)
+      (runMany graph image roots)
+      (roots.map (DemandSummary.eager graph (algebra image))) (roots.sum + 1) := by
+  apply DemandSummary.sequence_valid
+  · intro root member cache sound
+    have one := DemandSummary.demand_valid graph (algebra image) root cache sound
+    refine { one with bounded := ?_ }
+    intro node computed
+    exact (one.bounded node computed).trans_le
+      (Nat.add_le_add_right (List.le_sum_of_mem member) 1)
+  · exact DemandSummary.empty_sound _ _
+
+/-- The reference independently unfolds and substitutes each requested root.
+List equality retains duplicate roots and the order of all child edges. -/
+theorem runMany_exact (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) :
+    (runMany graph image roots).value =
+      roots.map (fun root => substitute image (unfold graph root)) := by
+  rw [(runMany_valid graph image roots).value_eq]
+  apply List.map_congr_left
+  intro root _
+  exact (substitution_unfold graph image root).symm
+
+theorem runMany_computes_each_node_once (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) :
+    (runMany graph image roots).computed.Nodup :=
+  (runMany_valid graph image roots).nodup
+
+def runManyRequests (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) : Nat :=
+  DemandSummary.sequenceRequests roots
+    (fun root cache => DemandSummary.demand graph (algebra image) root cache)
+    (fun root cache => DemandSummary.demandRequests graph (algebra image) root cache)
+    (fun _ => none)
+
+theorem runManyRequests_eq (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) :
+    runManyRequests graph image roots = roots.length +
+      DemandSummary.edgeCount graph (runMany graph image roots).computed := by
+  exact DemandSummary.sequenceRequests_eq graph _ _ _
+    (fun root _ cache => DemandSummary.demandRequests_eq graph (algebra image) root cache) _
+
+/-- One request per root and per physical edge of the reachable graph.
+Payload construction and memo-table representation have separate costs. -/
+theorem runManyRequests_le_reachable_edges (graph : DemandSummary.Graph (Label V L))
+    (image : V → Term W L) (roots : List Nat) :
+    runManyRequests graph image roots ≤ roots.length +
+      ∑ node ∈ roots.toFinset.biUnion (DemandSummary.reachable graph),
+        (graph.children node).length := by
+  rw [runManyRequests_eq]
+  apply Nat.add_le_add_left
+  unfold DemandSummary.edgeCount
+  rw [← List.sum_toFinset _ (runMany_computes_each_node_once graph image roots)]
+  apply Finset.sum_le_sum_of_subset
+  intro node member
+  have computed : node ∈ (runMany graph image roots).computed := by simpa using member
+  obtain ⟨root, root_mem, cache, reached⟩ :=
+    DemandSummary.sequence_computed_source _ _ _ node computed
+  exact Finset.mem_biUnion.mpr ⟨root, by simpa using root_mem,
+    DemandSummary.demand_computed_reachable graph (algebra image) root cache node reached⟩
+
 end Terms
 
 /-! ## Context and sharing controls -/
@@ -320,6 +393,21 @@ theorem doubled_import_linear_combinations_exponential_occurrences (answer root 
     (run doubled (fresh answer) root).computed.length ≤ root + 1 ∧
     occurrences (run doubled (fresh answer) root).value + 1 = 2 ^ (root + 1) := by
   exact ⟨run_combinations_le_rank _ _ _, by rw [run_exact]; exact doubled_unfold_occurrences _ _⟩
+
+/-- Two observations remain two, although their construction is shared. -/
+theorem duplicate_roots_share_construction_not_occurrences :
+    (runMany doubled (fresh 7) [3, 3]).value.length = 2 ∧
+    (runMany doubled (fresh 7) [3, 3]).computed = [0, 1, 2, 3] ∧
+    runManyRequests doubled (fresh 7) [3, 3] = 8 := by
+  decide +kernel
+
+theorem deduplicating_requested_roots_changes_observation :
+    (runMany doubled (fresh 7) [3, 3]).value ≠
+      (runMany doubled (fresh 7) [3]).value := by
+  intro same
+  have lengths := congrArg List.length same
+  change 2 = 1 at lengths
+  omega
 
 end Examples
 

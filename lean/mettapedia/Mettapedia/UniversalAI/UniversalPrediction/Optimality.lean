@@ -1597,49 +1597,30 @@ This is the `O(1)` robustness that underlies Hutter’s “optimal weights” di
 any bound that is monotone in `log(1 / w_U x)` changes by at most an additive constant when
 switching the reference universal machine. -/
 theorem universalWeights_mul_le_of_invariance
-    (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM V] :
+    (U V : KolmogorovComplexity.ReferenceMachine) :
     ∃ c : ℕ, ∀ x : BinString,
       kpfWeight (U := V) x * (2 : ENNReal) ^ (-(c : ℤ)) ≤ kpfWeight (U := U) x := by
   simpa using (kpfWeight_mul_le_of_invariance (U := U) (V := V))
 
-/-- **Theorem 3.70 (Optimal choice of weights)** (Hutter 2005, §3.6.4, around eq. (1547)).
-
-Hutter considers the class `V` of *enumerable* weight functions `v` with short description and
-`∑ v_ν ≤ 1`, and argues that Solomonoff–Levin weights `w_ν := 2^{-K(ν)}` are an “optimal compromise”:
-the regret bounds depending on `ln(1 / w_ν)` are at most `O(1)` worse than those depending on
-`ln(1 / v_ν)`.
-
-In a multiplicative form (avoiding logs), this can be read as:
-`v_ν ≤ C · w_ν` for some constant `C` depending only on `v` (and the choice of universal machine),
-uniformly for all indices `ν`.
-
-In this development, the corresponding *core quantitative statement* would be a corollary of a
-formal analogue of Hutter Theorem 2.10(iii) ("coding theorem" inequality), specialized to
-distributions over indices. We record the statement here as a theorem stub.
--/
-theorem optimalChoiceOfWeights_hutter
-    (U : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
-    [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]
+/-- Effective discrete weight presentations satisfy the finite multiplicative
+comparison underlying the optimal-weight argument. The presentation carries
+computable finite approximants, support and budget laws; arbitrary mathematical
+weights are not assumed to have such a description. -/
+theorem optimalChoiceOfWeights_of_effectivePresentation
+    (U : KolmogorovComplexity.ReferenceMachine)
+    (approximation : KolmogorovComplexity.KraftChaitin.EffectiveDiscreteDyadic)
     (v : BinString → ENNReal)
-    (hv_sum : (∑' x : BinString, v x) ≤ 1) :
-    ∃ C : ENNReal, C ≠ 0 ∧ ∀ x : BinString, v x ≤ C * kpfWeight (U := U) x := by
-  -- NOTE: This is a purely Kraft-style inequality (dyadic coding) that holds for any `v`
-  -- with `∑ v ≤ 1`. A fully faithful formalization of Hutter's §3.6.4 discussion would
-  -- additionally track the *description length* / complexity of `v` (via an enumeration of
-  -- lower-semicomputable semimeasures); see `HutterEnumerationTheorem.lean` for the concrete
-  -- enumeration bridge used in this project.
-  simpa using OptimalWeights.exists_const_mul_kpfWeight (U := U) (v := v) hv_sum
+    (representation : ∀ x, v x = EffectiveWeights.presentedWeight approximation x) :
+    ∃ C : ENNReal, C ≠ 0 ∧ C ≠ ⊤ ∧
+      ∀ x : BinString, v x ≤ C * kpfWeight (U := U) x :=
+  OptimalWeights.exists_const_mul_kpfWeight U approximation v representation
 
 /-- **V3 (Hutter/Levin enumeration)**: dominance→regret for lower-semicomputable environments.
 
-This is the “real machine model” layer (Hutter 2005, Chapter 2):
-we fix a concrete, surjective enumeration of **lower semicomputable** prefix measures and apply
-the Chapter‑3 dominance→regret theorem to its universal mixture.
-
-This is not a full formalization of Hutter's Theorem 2.10(iii) coding-theorem inequality on
-weights, but it is the key computability bridge needed to make “universal prediction” non-toy.
+A surjective semantic enumeration of lower semicomputable prefix measures
+supplies the dominance constant for the Chapter‑3 regret theorem. This result
+does not assert uniform effective evaluation of the enumeration, or lower
+semicomputability of its mixture.
 -/
 theorem relEntropy_le_log_inv_of_LSC_hutterV3 (μ : PrefixMeasure)
     (hμ : HutterEnumeration.LowerSemicomputablePrefixMeasure μ) (n : ℕ) :

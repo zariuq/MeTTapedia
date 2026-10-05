@@ -1,19 +1,26 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 import Mettapedia.Languages.ProcessCalculi.MORK.MatchSpec
+import Mettapedia.Languages.ProcessCalculi.MORK.MatchCursor
 import Mettapedia.GSLT.LanguageDef.NativeControlCursor
+import Mettapedia.Machines.Cursor.Scheduling
 
 /-!
 # Resumable MM2 input matching
 
 The cursor retains a stack of factor joins and source-entry scans. It never
-materializes the join before starting. A poll opens one factor, tries one
-finite structural atom match, backtracks, or yields one complete row.
+materializes the join before starting. The recursive reference cursor tries
+one finite atom match per poll. The structural cursor retains that match's
+unfinished syntax on the same owned stack, and is used by the batch and
+private-worker interfaces.
 Witnesses retain source positions, including equal atoms at different positions.
 
 The local atom matcher traverses finite syntax and substitutions; a poll is
 not a constant-time CPU claim. Recursive evaluation and foreign sources are
 not operations of this input fragment. Whole-firing publication belongs to
-the separate batch boundary.
+the separate batch boundary. Privately prepared quanta reuse the shared cursor
+scheduler and private-write kernel, preserving every owned packet and its pull
+account. This finite atom matcher does not implement the C epoch worklist or
+its node, arena, thread-state and invalidation boundaries.
 -/
 
 set_option autoImplicit false
@@ -169,50 +176,23 @@ theorem pull_cost (space : List Entry) (state : State) :
 /-- Finite inputs exhaust after a stated finite number of real polls. -/
 theorem collect_complete (space : List Entry) (fuel : Nat) (state : State)
     (enough : remainingCost space state < fuel) :
-    collect (pull space) fuel state = some (residualRows space state) := by
-  induction fuel generalizing state with
-  | zero => omega
-  | succ fuel ih =>
-      have sound := pull_rows space state
-      have decrease := pull_cost space state
-      cases moved : pull space state with
-      | done =>
-          simp only [moved] at sound
-          simp [collect, moved, sound]
-      | suspend next =>
-          simp only [moved] at sound decrease
-          have small : remainingCost space next < fuel := by omega
-          simp [collect, moved, ih next small, sound]
-      | yield row next =>
-          simp only [moved] at sound decrease
-          have small : remainingCost space next < fuel := by omega
-          simp [collect, moved, ih next small, sound]
+    collect (pull space) fuel state = some (residualRows space state) :=
+  NativeControlCursor.collect_complete (pull space) (residualRows space)
+    (fun state => by cases moved : pull space state <;>
+      simpa only [moved] using pull_rows space state)
+    (remainingCost space)
+    (fun state => by cases moved : pull space state <;>
+      simpa only [moved] using pull_cost space state)
+    fuel state enough
 
 /-- Insufficient fuel never fabricates a partial collection as the full join. -/
 theorem collect_sound (space : List Entry) (fuel : Nat) (state : State)
     (result : List Row) (completed : collect (pull space) fuel state = some result) :
-    result = residualRows space state := by
-  induction fuel generalizing state result with
-  | zero => simp [collect] at completed
-  | succ fuel ih =>
-      have sound := pull_rows space state
-      cases moved : pull space state with
-      | done =>
-          simp only [moved] at sound
-          simpa [collect, moved, sound] using completed.symm
-      | suspend next =>
-          simp only [moved] at sound
-          simp only [collect, moved] at completed
-          exact (ih next result completed).trans sound.symm
-      | yield row next =>
-          simp only [moved] at sound
-          simp only [collect, moved] at completed
-          cases found : collect (pull space) fuel next with
-          | none => simp [found] at completed
-          | some tail =>
-              simp only [found, Option.map_some, Option.some.injEq] at completed
-              subst result
-              rw [ih next tail found, sound]
+    result = residualRows space state :=
+  NativeControlCursor.collect_sound (pull space) (residualRows space)
+    (fun state => by cases moved : pull space state <;>
+      simpa only [moved] using pull_rows space state)
+    fuel state result completed
 
 abbrev provider (space : List Entry) := NativeControlCursor.provider (pull space)
 
@@ -445,6 +425,7 @@ theorem finite_completion (space : List Atom) (input : InputSpec) (substitution 
     residualRows (entries space) (start space input substitution), ?_, start_rows_erase ..⟩
   exact collect_complete _ _ _ (Nat.lt_succ_self _)
 
+
 namespace Controls
 
 def atom (name : String) : Atom := .symbol name
@@ -495,6 +476,380 @@ theorem explicit_sources_thread_bindings :
 
 end Controls
 
+/-! ## Structural matcher quanta inside the same join cursor -/
+
+namespace StructuralQuanta
+
+abbrev OuterWork := MM2MatchingCursor.Work
+
+/-- Only the current atom meeting gets a local matching cursor. The parent
+scan and all sibling joins remain on the original owned stack. -/
+inductive Work where
+  | outer (work : OuterWork)
+  | matching (remaining : List SourceFactor) (item : Entry) (witnesses : List Entry)
+      (cursor : MatchCursor.State)
+  deriving Repr
+
+abbrev State := List Work
+
+def start (space : List Atom) (input : InputSpec) (substitution : Subst := []) : State :=
+  (MM2MatchingCursor.start space input substitution).map Work.outer
+
+def pull (space : List Entry) : State → Pull State Row
+  | [] => .done
+  | .outer (.join [] substitution witnesses) :: pending =>
+      .yield (substitution, witnesses) pending
+  | .outer (.join (source :: rest) substitution witnesses) :: pending =>
+      let selected := candidates space substitution source
+      .suspend (.outer (.scan selected.1 rest selected.2 substitution witnesses) :: pending)
+  | .outer (.scan _ _ [] _ _) :: pending => .suspend pending
+  | .outer (.scan pattern rest (item :: remaining) substitution witnesses) :: pending =>
+      .suspend (.matching rest item witnesses (MatchCursor.start substitution pattern item.1) ::
+        .outer (.scan pattern rest remaining substitution witnesses) :: pending)
+  | .matching rest item witnesses cursor :: pending =>
+      match MatchCursor.pull cursor with
+      | .done => .suspend pending
+      | .suspend next => .suspend (.matching rest item witnesses next :: pending)
+      | .yield substitution _ =>
+          .suspend (.outer (.join rest substitution (item :: witnesses)) :: pending)
+
+abbrev provider (space : List Entry) := NativeControlCursor.provider (pull space)
+
+def workRows (space : List Entry) : Work → List Row
+  | .outer work => MM2MatchingCursor.workRows space work
+  | .matching remaining item witnesses cursor =>
+      (MatchCursor.residualAnswers cursor).flatMap
+        (fun substitution => rows space remaining substitution (item :: witnesses))
+
+def residualRows (space : List Entry) (state : State) : List Row :=
+  state.flatMap (workRows space)
+
+/-- Pending local syntax, bindings, parent scans and complete rows all belong
+to the same answer-conservation law. No coefficient/body is activated early. -/
+theorem pull_rows (space : List Entry) (state : State) :
+    match pull space state with
+    | .done => residualRows space state = []
+    | .suspend next => residualRows space state = residualRows space next
+    | .yield row next => residualRows space state = row :: residualRows space next := by
+  cases state with
+  | nil => rfl
+  | cons work pending =>
+      cases work with
+      | outer work =>
+          cases work with
+          | join remaining substitution witnesses => cases remaining <;> rfl
+          | scan pattern remaining pool substitution witnesses =>
+              cases pool with
+              | nil => rfl
+              | cons item rest =>
+                  cases matched : matchAtom substitution pattern item.1 <;>
+                    simp [pull, residualRows, workRows, MM2MatchingCursor.workRows,
+                      MatchCursor.start_answers, matched, List.append_assoc]
+      | matching remaining item witnesses cursor =>
+          have conserved := MatchCursor.pull_answers cursor
+          cases moved : MatchCursor.pull cursor with
+          | done =>
+              simp only [moved] at conserved
+              simp [pull, moved, residualRows, workRows, conserved]
+          | suspend next =>
+              simp only [moved] at conserved
+              simp [pull, moved, residualRows, workRows, conserved]
+          | yield substitution next =>
+              have exhausted := MatchCursor.yield_residual cursor substitution next moved
+              subst next
+              simp only [moved] at conserved
+              change MatchCursor.residualAnswers cursor = [substitution] at conserved
+              simp [pull, moved, residualRows, workRows, conserved,
+                MM2MatchingCursor.workRows]
+
+/-- A proof bound counting join administration and local structural polls.
+Atomic comparison primitives keep their independent complexity. -/
+noncomputable def joinCost (space : List Entry) : List SourceFactor → Subst → Nat
+  | [], _ => 1
+  | source :: remaining, substitution =>
+      let selected := candidates space substitution source
+      2 + (selected.2.map fun item =>
+        2 + MatchCursor.remainingCost (MatchCursor.start substitution selected.1 item.1) +
+          match matchAtom substitution selected.1 item.1 with
+          | none => 0
+          | some next => joinCost space remaining next).sum
+
+noncomputable def workCost (space : List Entry) : Work → Nat
+  | .outer (.join remaining substitution _) => joinCost space remaining substitution
+  | .outer (.scan pattern remaining pool substitution _) =>
+      1 + (pool.map fun item =>
+        2 + MatchCursor.remainingCost (MatchCursor.start substitution pattern item.1) +
+          match matchAtom substitution pattern item.1 with
+          | none => 0
+          | some next => joinCost space remaining next).sum
+  | .matching remaining _ _ cursor =>
+      1 + MatchCursor.remainingCost cursor +
+        ((MatchCursor.residualAnswers cursor).map (joinCost space remaining)).sum
+
+noncomputable def remainingCost (space : List Entry) (state : State) : Nat :=
+  (state.map (workCost space)).sum
+
+theorem pull_cost (space : List Entry) (state : State) :
+    match pull space state with
+    | .done => remainingCost space state = 0
+    | .suspend next => remainingCost space next < remainingCost space state
+    | .yield _ next => remainingCost space next < remainingCost space state := by
+  cases state with
+  | nil => rfl
+  | cons work pending =>
+      cases work with
+      | outer work =>
+          cases work with
+          | join remaining substitution witnesses =>
+              cases remaining with
+              | nil => simp [pull, remainingCost, workCost, joinCost]
+              | cons source rest =>
+                  simp only [pull, remainingCost, List.map_cons, List.sum_cons,
+                    workCost, joinCost]
+                  omega
+          | scan pattern remaining pool substitution witnesses =>
+              cases pool with
+              | nil => simp [pull, remainingCost, workCost]
+              | cons item rest =>
+                  cases matched : matchAtom substitution pattern item.1 <;>
+                    simp [pull, remainingCost, workCost, MatchCursor.start_answers,
+                      matched, List.sum_cons] <;> omega
+      | matching remaining item witnesses cursor =>
+          have conserved := MatchCursor.pull_answers cursor
+          have decrease := MatchCursor.pull_cost cursor
+          cases moved : MatchCursor.pull cursor with
+          | done =>
+              simp only [moved] at conserved decrease
+              simp [pull, moved, remainingCost, workCost, conserved, decrease]
+          | suspend next =>
+              simp only [moved] at conserved decrease
+              simp only [pull, moved, remainingCost, List.map_cons, List.sum_cons, workCost]
+              rw [conserved]
+              omega
+          | yield substitution next =>
+              have exhausted := MatchCursor.yield_residual cursor substitution next moved
+              subst next
+              simp only [moved] at conserved
+              change MatchCursor.residualAnswers cursor = [substitution] at conserved
+              simp [pull, moved, remainingCost, workCost, conserved]
+
+theorem collect_sound (space : List Entry) (fuel : Nat) (state : State)
+    (result : List Row) (completed : collect (pull space) fuel state = some result) :
+    result = residualRows space state :=
+  NativeControlCursor.collect_sound (pull space) (residualRows space)
+    (fun state => by cases moved : pull space state <;>
+      simpa only [moved] using pull_rows space state)
+    fuel state result completed
+
+theorem collect_complete (space : List Entry) (fuel : Nat) (state : State)
+    (enough : remainingCost space state < fuel) :
+    collect (pull space) fuel state = some (residualRows space state) :=
+  NativeControlCursor.collect_complete (pull space) (residualRows space)
+    (fun state => by cases moved : pull space state <;>
+      simpa only [moved] using pull_rows space state)
+    (remainingCost space)
+    (fun state => by cases moved : pull space state <;>
+      simpa only [moved] using pull_cost space state)
+    fuel state enough
+
+/-- The local decomposition changes polling boundaries, while the independent
+join denotation and the ordered physical witness list remain exact. -/
+theorem start_rows (space : List Atom) (input : InputSpec) (substitution : Subst) :
+    residualRows (entries space) (start space input substitution) =
+      MM2MatchingCursor.residualRows (entries space)
+        (MM2MatchingCursor.start space input substitution) := rfl
+
+theorem start_rows_erase (space : List Atom) (input : InputSpec) (substitution : Subst) :
+    (residualRows (entries space) (start space input substitution)).map eraseRow =
+      cmatchInputSpec substitution space input := by
+  rw [start_rows]
+  exact MM2MatchingCursor.start_rows_erase ..
+
+theorem completed_rows (space : List Atom) (input : InputSpec) (substitution : Subst)
+    (fuel : Nat) (result : List Row)
+    (completed : collect (pull (entries space)) fuel
+      (start space input substitution) = some result) :
+    result = MM2MatchingCursor.residualRows (entries space)
+      (MM2MatchingCursor.start space input substitution) :=
+  (collect_sound _ _ _ _ completed).trans (start_rows space input substitution)
+
+theorem completed_rows_erase (space : List Atom) (input : InputSpec) (substitution : Subst)
+    (fuel : Nat) (result : List Row)
+    (completed : collect (pull (entries space)) fuel
+      (start space input substitution) = some result) :
+    result.map eraseRow = cmatchInputSpec substitution space input := by
+  rw [completed_rows _ _ _ _ _ completed]
+  exact MM2MatchingCursor.start_rows_erase ..
+
+theorem pause_resume_exact (space : List Entry) (first later : Nat)
+    (state : State) (reversed : List Row) :
+    Mettapedia.Machines.Cursor.advance (NativeControlCursor.provider (pull space))
+      (NativeControlCursor.client Row) (fun _ _ => 1) (first + later)
+      (NativeControlCursor.packet (pull space) state reversed) =
+    Mettapedia.Machines.Cursor.resume (NativeControlCursor.provider (pull space))
+      (NativeControlCursor.client Row) (fun _ _ => 1) later
+      (Mettapedia.Machines.Cursor.advance (NativeControlCursor.provider (pull space))
+        (NativeControlCursor.client Row) (fun _ _ => 1) first
+        (NativeControlCursor.packet (pull space) state reversed)) :=
+  NativeControlCursor.chunk_exact _ _ _ _ _
+
+namespace Controls
+
+theorem local_matching_cannot_publish_the_join :
+    collect (pull (entries MM2MatchingCursor.Controls.diamond)) 3
+      (start MM2MatchingCursor.Controls.diamond MM2MatchingCursor.Controls.joined) = none := rfl
+
+theorem duplicated_rows_keep_their_positions :
+    collect (pull (entries [.symbol "a", .symbol "a"])) 32
+      (start [.symbol "a", .symbol "a"] (.compat ⟨[.var "x"]⟩)) =
+      some [([("x", .symbol "a")], [(.symbol "a", 0)]),
+        ([("x", .symbol "a")], [(.symbol "a", 1)])] := by decide
+
+theorem split_join_keeps_both_paths :
+    collect (pull (entries MM2MatchingCursor.Controls.diamond)) 256
+      (start MM2MatchingCursor.Controls.diamond MM2MatchingCursor.Controls.joined) =
+      some [
+        ([("middle", .symbol "B")],
+          [(MM2MatchingCursor.Controls.edge (.symbol "B") (.symbol "C"), 1),
+           (MM2MatchingCursor.Controls.edge (.symbol "A") (.symbol "B"), 0)]),
+        ([("middle", .symbol "D")],
+          [(MM2MatchingCursor.Controls.edge (.symbol "D") (.symbol "C"), 3),
+           (MM2MatchingCursor.Controls.edge (.symbol "A") (.symbol "D"), 2)])] := by decide
+
+end Controls
+
+end StructuralQuanta
+
+/-! ## Privately prepared matcher quanta -/
+
+namespace PrivateQuanta
+open Mettapedia.Machines.Cursor
+open Scheduling
+
+variable {Id : Type} [DecidableEq Id]
+
+/-- Independent active queries read one captured physical input list. Selection
+ * and later sink commits do not occur in this matching-only pool. -/
+def initialPool (space : List Atom) (inputs : Id → InputSpec)
+    (substitutions : Id → Subst) :
+    Scheduling.Pool (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) Id () :=
+  fun id => (0, .paused (NativeControlCursor.packet (StructuralQuanta.pull (entries space))
+    (StructuralQuanta.start space (inputs id) (substitutions id)) []))
+
+def prepare (space : List Atom) (schedule : List (Scheduling.Command Id))
+    (pool : Scheduling.Pool (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) Id ()) :=
+  Scheduling.prepareQuanta (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row)
+    (fun _ _ => 1) schedule pool
+
+def install (space : List Atom)
+    (writes : List (Id × Scheduling.Cell (StructuralQuanta.provider (entries space))
+      (NativeControlCursor.client Row) ()))
+    (pool : Scheduling.Pool (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) Id ()) :=
+  Scheduling.installQuanta (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) writes pool
+
+/-- The real MM2 cursor retains its complete join stack, collected rows and
+ * cumulative pull charge through private preparation and installation. -/
+theorem full_state_agreement (space : List Atom) (schedule : List (Scheduling.Command Id))
+    (pool : Scheduling.Pool (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) Id ())
+    (distinct : (schedule.map Prod.fst).Nodup) (id : Id) :
+    install space (prepare space schedule pool) pool id =
+      resume (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) (fun _ _ => 1)
+        (Scheduling.allocation id schedule) (pool id) :=
+  Scheduling.prepared_quanta_at _ _ _ schedule pool distinct id
+
+/-- The actual matcher participates in the tagged-packet pool through the
+ * constant-family comparison, retaining its full residual and accumulated rows. -/
+theorem packed_matching_agreement (space : List Atom)
+    (schedule : List (Scheduling.Command Id))
+    (pool : Scheduling.Pool (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) Id ())
+    (distinct : (schedule.map Prod.fst).Nodup) (id : Id) :
+    Scheduling.installPackedQuanta (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row)
+      (Scheduling.preparePackedQuanta (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row)
+        (fun _ _ => 1) schedule (fun id => ⟨(), pool id⟩))
+      (fun id => ⟨(), pool id⟩) id =
+      ⟨(), install space (prepare space schedule pool) pool id⟩ :=
+  Scheduling.prepared_packed_constant_family _ _ _ schedule pool distinct id
+
+/-- A sufficient allocated prefix publishes exactly the independently recursive
+ * physical-row denotation. Preparation alone never asserts closure. -/
+theorem completed_rows (space : List Atom) (inputs : Id → InputSpec)
+    (substitutions : Id → Subst) (schedule : List (Scheduling.Command Id))
+    (distinct : (schedule.map Prod.fst).Nodup) (id : Id) (fuel : Nat)
+    (allocated : Scheduling.allocation id schedule = fuel + 1)
+    (enough : StructuralQuanta.remainingCost (entries space)
+      (StructuralQuanta.start space (inputs id) (substitutions id)) < fuel) :
+    NativeControlCursor.published (StructuralQuanta.pull (entries space))
+      (install space (prepare space schedule (initialPool space inputs substitutions))
+        (initialPool space inputs substitutions) id).2 =
+      some (StructuralQuanta.residualRows (entries space) (StructuralQuanta.start space (inputs id) (substitutions id))) := by
+  rw [full_state_agreement space schedule _ distinct id, allocated]
+  change NativeControlCursor.published _
+    (advance (StructuralQuanta.provider (entries space)) (NativeControlCursor.client Row) (fun _ _ => 1)
+      (fuel + 1) (NativeControlCursor.packet (StructuralQuanta.pull (entries space))
+        (StructuralQuanta.start space (inputs id) (substitutions id)) [])).2 = _
+  rw [NativeControlCursor.advance_collect, StructuralQuanta.collect_complete _ _ _ enough]
+  simp
+
+/-- Erasing positions agrees with the existing executable input semantics;
+ * the full-state and row observations above retain those physical positions. -/
+theorem completed_input (space : List Atom) (inputs : Id → InputSpec)
+    (substitutions : Id → Subst) (schedule : List (Scheduling.Command Id))
+    (distinct : (schedule.map Prod.fst).Nodup) (id : Id) (fuel : Nat)
+    (allocated : Scheduling.allocation id schedule = fuel + 1)
+    (enough : StructuralQuanta.remainingCost (entries space)
+      (StructuralQuanta.start space (inputs id) (substitutions id)) < fuel) :
+    (NativeControlCursor.published (StructuralQuanta.pull (entries space))
+      (install space (prepare space schedule (initialPool space inputs substitutions))
+        (initialPool space inputs substitutions) id).2).map (List.map eraseRow) =
+      some (cmatchInputSpec (substitutions id) space (inputs id)) := by
+  rw [completed_rows space inputs substitutions schedule distinct id fuel allocated enough]
+  simp only [Option.map_some, StructuralQuanta.start_rows_erase]
+
+namespace Controls
+open MM2MatchingCursor.Controls (atom)
+
+def duplicateSpace := [atom "a", atom "a"]
+def duplicateInput : InputSpec := .compat ⟨[.var "x"]⟩
+def duplicatePool := initialPool duplicateSpace (fun (_ : Bool) => duplicateInput)
+  (fun _ => [])
+def observed (pool : Scheduling.Pool (StructuralQuanta.provider (entries duplicateSpace))
+    (NativeControlCursor.client Row) Bool ()) (id : Bool) : Nat × Option (List Row) :=
+  ((pool id).1, NativeControlCursor.published (StructuralQuanta.pull (entries duplicateSpace)) (pool id).2)
+
+theorem independent_equal_queries_keep_both_occurrences :
+    let pool := install duplicateSpace (prepare duplicateSpace
+      [(false, 16), (true, 16)] duplicatePool) duplicatePool
+    observed pool false = (11, some [
+      ([("x", atom "a")], [(atom "a", 0)]),
+      ([("x", atom "a")], [(atom "a", 1)])]) ∧
+    observed pool true = observed pool false := by
+  constructor <;> cbv
+
+theorem prepared_progress_is_not_closed :
+    observed (install duplicateSpace
+      (prepare duplicateSpace [(false, 1)] duplicatePool) duplicatePool) false =
+      (1, none) := rfl
+
+/-- Equal queries cannot use the same writable cursor cell in one private batch. -/
+theorem shared_owner_overwrites_matching_progress :
+    observed (install duplicateSpace
+      (prepare duplicateSpace [(false, 9), (false, 9)] duplicatePool) duplicatePool) false =
+      (9, none) ∧
+    (observed (Scheduling.execute (StructuralQuanta.provider (entries duplicateSpace))
+      (NativeControlCursor.client Row) (fun _ _ => 1)
+      [(false, 9), (false, 9)] duplicatePool) false).2 ≠ none := by
+  constructor
+  · cbv
+  · cbv
+    simp
+
+end Controls
+end PrivateQuanta
+
+
+#print axioms PrivateQuanta.full_state_agreement
+#print axioms PrivateQuanta.packed_matching_agreement
+#print axioms PrivateQuanta.completed_input
 #print axioms completed_input_iff
 #print axioms finite_completion
 #print axioms completed_witness_positions

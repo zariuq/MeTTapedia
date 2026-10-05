@@ -212,8 +212,4 @@ theorem empty_stack_rejected : rewriteStepWithReflection presentation.reflection
 theorem wrong_key_rejected : rewriteStepWithReflection presentation.reflection.1
     language (FiniteWhole.sourceWithStack FiniteWhole.wrongStack) = [] := by decide +kernel
 
-#print axioms binding_declarations_valid
-#print axioms source_pair_is_authored
-#print axioms framed_reflective_reducts
-
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous.ActivePair

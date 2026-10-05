@@ -24,6 +24,9 @@ open Mettapedia.GSLT.HennessyMilner
 
 universe uContext uRule uAtom
 
+-- Contexts and authored rules have separate carrier sizes in the fields.
+-- The bundled result sort records their maximum.
+set_option linter.checkUnivs false in
 /-- Context composition and rule-indexed firing for one GSLT.  Rule identity
 is retained because minimality is relative to the rule being enabled.  The
 plug laws hold up to the equations, as every law of a GSLT does; a syntactic

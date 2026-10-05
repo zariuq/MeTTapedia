@@ -20,6 +20,9 @@ namespace Mettapedia.GSLT.Core
 
 universe uState uPolicy uResult uReadout
 
+-- Policy codes and their result fibres can occupy different universes.
+-- Keep those levels independent in the bundled family's projections.
+set_option linter.checkUnivs false in
 /-- A dependent family of decisions or observations over one retained state
 space.  Different policies may return values of different types. -/
 structure PolicyFamily (State : Type uState) where

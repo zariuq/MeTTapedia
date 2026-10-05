@@ -60,16 +60,20 @@ instance [Fintype V] (a b : Tolerance V) : Decidable (a.Extends b) := by
   unfold Tolerance.Extends
   infer_instance
 
+section Semantic
+
+variable {R : Type} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+
 /-- A universal property independent of the checking algorithm. -/
-def LeastMetricExtension (base candidate : Tolerance V) : Prop :=
+def LeastMetricExtension (base candidate : Tolerance V R) : Prop :=
   base.Extends candidate ∧ candidate.Metric ∧
-    ∀ other : Tolerance V, base.Extends other → other.Metric → candidate.Extends other
+    ∀ other : Tolerance V R, base.Extends other → other.Metric → candidate.Extends other
 
 /-- The semantic model class is never empty. This upper bound is not claimed
 to be the least completion; graded controls explicitly refute that shortcut. -/
-theorem exists_metric_extension (base : Tolerance V) :
-    ∃ model : Tolerance V, base.Extends model ∧ model.Metric := by
-  refine ⟨Tolerance.ofReport (fun _ : V => false), ?_, Tolerance.ofReport_metric _⟩
+theorem exists_metric_extension (base : Tolerance V R) :
+    ∃ model : Tolerance V R, base.Extends model ∧ model.Metric := by
+  refine ⟨Tolerance.ofReport (fun _ : V => false) R, ?_, Tolerance.ofReport_metric _⟩
   intro x y
   simpa [Tolerance.ofReport] using base.bounded x y
 
@@ -90,7 +94,7 @@ theorem completionCheck_sound [Fintype V] [DecidableEq V]
   dsimp [Tolerance.distance] at bound
   linarith
 
-theorem leastMetricExtension_unique {base first second : Tolerance V}
+theorem leastMetricExtension_unique {base first second : Tolerance V R}
     (left : LeastMetricExtension base first) (right : LeastMetricExtension base second) :
     first.similarity = second.similarity := by
   funext x y
@@ -98,9 +102,11 @@ theorem leastMetricExtension_unique {base first second : Tolerance V}
     (right.2.2 first left.1 left.2.1 x y)
 
 /-- A coherent seed is its own least completion. -/
-theorem metric_leastMetricExtension (base : Tolerance V) (metric : base.Metric) :
+theorem metric_leastMetricExtension (base : Tolerance V R) (metric : base.Metric) :
     LeastMetricExtension base base :=
   ⟨fun _ _ => le_rfl, metric, fun _ hExt _ => hExt⟩
+
+end Semantic
 
 /-- Accepted completion cannot change a seed that was already coherent. -/
 theorem completionCheck_fixed [Fintype V] [DecidableEq V]

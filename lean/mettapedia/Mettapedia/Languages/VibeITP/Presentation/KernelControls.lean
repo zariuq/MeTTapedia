@@ -25,6 +25,8 @@ set_option maxHeartbeats 2000000
 
 namespace Mettapedia.Languages.VibeITP.Presentation.KernelControls
 
+open Mettapedia.GSLT.LanguageDef.FirstOrderRules
+
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker

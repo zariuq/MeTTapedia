@@ -124,8 +124,8 @@ private theorem rhoParallelChoice_mem :
 
 private def rhoBaseEmptyPlan :
     CostStaticRegionPlan rhoCIGSLT .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base [])
-      [] (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base [])
+      [] (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base [])
       [] .hole (.collection .hashBag [] none) (.base rhoProc.1) :=
   .collection rhoParallelChoice rhoParallelChoice_mem .nil
 
@@ -165,7 +165,7 @@ private theorem rhoBaseEmptyNode_normalizedThickenedSkeletonRaw :
       .apply (costBaseConstructorName "PZero") [] := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoBaseEmptyNode.thinning rfl]
   unfold normalizeCostStaticStratum
   change mapPattern (CostStaticColor.base.symbols rhoCIGSLT)
@@ -322,20 +322,20 @@ private theorem wrappedChoice_mem
 
 private def basePlan (configuration : RhoCostLayerConfiguration) :
     CostStaticRegionPlan (configuration.source) .base FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget
-        (configuration.source) .base [])
-      [] (CostStaticBinderThinning.ofTargetThinning
-        (configuration.source) .base [])
+      (CostStaticTypeThinning.sourceContextOfTarget
+        (configuration.source).theory .base [])
+      [] (CostStaticTypeThinning.ofTargetThinning
+        (configuration.source).theory .base [])
       [] .hole (.collection .hashBag [] none)
       (.base (sourceSort configuration).1) :=
   .collection parallelChoice (baseChoice_mem configuration) .nil
 
 private def wrappedPlan (configuration : RhoCostLayerConfiguration) :
     CostStaticRegionPlan (configuration.source) .wrapped FreeTypeContext.empty
-      (CostStaticBinderThinning.sourceContextOfTarget
-        (configuration.source) .wrapped [])
-      [] (CostStaticBinderThinning.ofTargetThinning
-        (configuration.source) .wrapped [])
+      (CostStaticTypeThinning.sourceContextOfTarget
+        (configuration.source).theory .wrapped [])
+      [] (CostStaticTypeThinning.ofTargetThinning
+        (configuration.source).theory .wrapped [])
       [] .hole (.collection .hashBag [] none)
       (.base (sourceSort configuration).1) :=
   .collection parallelChoice (wrappedChoice_mem configuration) .nil
@@ -348,7 +348,7 @@ private theorem nextBaseParallelRule_params
           (mapTypeExpr (CostStaticColor.base.symbols (configuration.source))
             (.base (costBaseSortName "Proc"))))] := by
   rw [costBaseConstructor_params_eq_map_of_mem_wrappedLabels
-    (configuration.source) baseParallelRule (baseParallelRule_mem configuration)
+    (configuration.source).continuationRetyping baseParallelRule (baseParallelRule_mem configuration)
       (baseParallelRule_wrapped configuration), baseParallelRule_params]
   rfl
 
@@ -374,7 +374,7 @@ private theorem emptyParallel_typed
         baseParallelRule (baseParallelRule_mem configuration)
     · exact nextBaseParallelRule_params configuration
     · exact .nil [] _
-  simpa [sourceSort, CostStaticColor.mapLangSort, CostStaticColor.symbols, costBaseStaticSymbols,
+  simpa [sourceSort, CostStaticColor.mapLangSort, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
     costBaseLanguageDefSymbolMap, costBaseConstructor_def] using typed
 
 private def emptyParallel
@@ -430,10 +430,10 @@ private theorem baseNode_sourceBound
     (configuration : RhoCostLayerConfiguration) :
     (baseNode configuration).sourceBound = [] := by
   change
-    CostStaticBinderThinning.sourceContextOfTarget (configuration.source) .base
+    CostStaticTypeThinning.sourceContextOfTarget (configuration.source).theory .base
       (baseNode configuration).targetBound = []
   rw [show (baseNode configuration).targetBound = [] by rfl]
-  simp [CostStaticBinderThinning.sourceContextOfTarget]
+  simp [CostStaticTypeThinning.sourceContextOfTarget]
 
 private theorem wrappedNode_sourceSort
     (configuration : RhoCostLayerConfiguration) :
@@ -446,10 +446,10 @@ private theorem wrappedNode_sourceBound
     (configuration : RhoCostLayerConfiguration) :
     (wrappedNode configuration).sourceBound = [] := by
   change
-    CostStaticBinderThinning.sourceContextOfTarget (configuration.source) .wrapped
+    CostStaticTypeThinning.sourceContextOfTarget (configuration.source).theory .wrapped
       (wrappedNode configuration).targetBound = []
   rw [show (wrappedNode configuration).targetBound = [] by rfl]
-  simp [CostStaticBinderThinning.sourceContextOfTarget]
+  simp [CostStaticTypeThinning.sourceContextOfTarget]
 
 private theorem baseNode_skeleton_pattern_eq
     (configuration : RhoCostLayerConfiguration) :
@@ -488,10 +488,10 @@ private def rhoBaseEmptyPlanAt
       FreeTypeContext.empty) :
     CostStaticRegionPlan rhoCIGSLT .base
       node.boundaryTable.sourceFreeContext
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      (CostStaticTypeThinning.sourceContextOfTarget rhoCIGSLT.theory .base
         node.sourceBound)
       node.sourceBound
-      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base
+      (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory .base
         node.sourceBound)
       node.sourceBound .hole
       (.collection .hashBag [] none) (.base rhoProc.1) :=
@@ -599,7 +599,7 @@ private theorem rhoBaseEmptyNodeAt_normalizedThickenedSkeletonRaw
       .apply (costBaseConstructorName "PZero") [] := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       (rhoBaseEmptyNodeAt configuration node).thinning sourceBoundEq]
   unfold normalizeCostStaticStratum
   change mapPattern (CostStaticColor.base.symbols rhoCIGSLT)
@@ -757,9 +757,9 @@ private theorem rhoBaseEmptyElaborationAt_normalizedHereditary_pattern
           collapseParallel]
         unfold CostCanonicalLaws.rhoCostStaticActionAt
         rw [
-          CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+          CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
             emptyNode.thinning targetBoundEq]
-        simp [rhoReflectivePresentation, CostStaticColor.symbols,
+        simp [rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
           costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
           ReflectiveContextSupport.substituteAt]
   unfold CostRegionTree.normalizeHereditary
@@ -885,9 +885,9 @@ theorem rhoCostNormalizeOpenHereditary_baseEmptyRepresentative :
         List.flatMap_nil, List.filter_nil, List.mergeSort_nil,
         collapseParallel]
       unfold CostCanonicalLaws.rhoCostStaticActionAt
-      rw [CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+      rw [CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
         rhoBaseEmptyNode.thinning rfl]
-      simp [rhoReflectivePresentation, CostStaticColor.symbols,
+      simp [rhoReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf,
         costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
         ReflectiveContextSupport.substituteAt]
 
@@ -1010,7 +1010,7 @@ private theorem baseNode_normalizedThickenedSkeletonRaw
         (costBaseConstructorName (costBaseConstructorName "PZero")) [] := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       (baseNode configuration).thinning (by rfl)]
   unfold normalizeCostStaticStratum
   rw [baseNode_sourceCanonical configuration representative]
@@ -1024,7 +1024,7 @@ private theorem wrappedNode_normalizedThickenedSkeletonRaw
         (costWrappedConstructorName (costBaseConstructorName "PZero")) [] := by
   unfold CostStaticRegionNode.normalizedThickenedSkeletonRaw
   rw [
-    CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    CostStaticTypeThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       (wrappedNode configuration).thinning (by rfl)]
   unfold normalizeCostStaticStratum
   rw [wrappedNode_sourceCanonical configuration representative]

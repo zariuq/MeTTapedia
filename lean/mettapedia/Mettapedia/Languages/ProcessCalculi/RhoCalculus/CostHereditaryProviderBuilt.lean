@@ -353,7 +353,7 @@ theorem restorationAligned_of_framesEq_of_frameNames
         rightView.node.thinning.thickenAmbientBVars depth pattern := by
     simpa only [CostStaticRegionNode.thinning] using congrArg
       (fun targetBound =>
-        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color targetBound)
+        (CostStaticTypeThinning.ofTargetThinning rhoCIGSLT.theory color targetBound)
           |>.thickenAmbientBVars depth pattern)
       (leftView.targetBound_eq_targetBound rightView)
   apply RhoStaticFramesRestorationAligned.ofSourceCanonicalAlignment
@@ -363,7 +363,7 @@ theorem restorationAligned_of_framesEq_of_frameNames
   rw [framesEq, thickenEq depth,
     CostStaticAtomKeyCospan.reifyWith_eq_of_free _ _ _ _
       (fun name inThickened => names name (by
-        rwa [CostStaticBinderThinning.thickenAmbientBVars_freeFvarNames,
+        rwa [CostStaticTypeThinning.thickenAmbientBVars_freeFvarNames,
           StructuralMorphism.mapPattern_freeFvarNames] at inThickened))]
   exact fun _ => rfl
 

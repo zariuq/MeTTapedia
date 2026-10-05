@@ -6,8 +6,9 @@ import KnuthSkilling.Information.InformationEntropy
 /-!
 # Unified Entropy Axiom Interface
 
-This file provides a unified view of the different axiomatizations of Shannon entropy,
-showing their relationships and the key insight that **Faddeev's axioms are minimal**.
+This file compares finite Shannon-entropy axiom systems and transfers their
+derived properties. Faddeev's binary-continuity formulation derives full
+continuity, maximality and expansibility instead of assuming them.
 
 ## Unified Interface
 
@@ -18,30 +19,31 @@ This file also bridges different probability distribution representations:
 The bridge (`probVecEquivProbDist`) shows they are equivalent, allowing unified
 definitions of entropy and KL divergence across all formalization approaches:
 1. **Mathlib** - `stdSimplex`, `negMulLog`, `klFun`
-2. **Axiomatics** - Faddeev (4 axioms), Shannon-Khinchin (5 axioms)
+2. **Axiomatics** - Faddeev (4 clauses), Shannon-Khinchin (5 clauses plus relabeling)
 3. **K&S Derivation** - Shannon entropy derived from variational framework
 
-## Axiom Systems Hierarchy (from MINIMAL to REDUNDANT)
+## Axiom Presentations
 
-### Faddeev (1956) - 4 Axioms ✓ MINIMAL
+### Faddeev (1956) - 4 Clauses
 - **F1**: Binary continuity ONLY (H(p, 1-p) is continuous)
 - **F2**: Symmetry (permutation invariance)
 - **F3**: Recursivity (chain rule / grouping property)
 - **F4**: Normalization H(1/2, 1/2) = 1
 
-### Shannon-Khinchin (1957) - 5 Axioms
+### Shannon-Khinchin (1957) - 5 Named Clauses, Plus Relabeling
+- **Relabeling**: Symmetry is an explicit field for ordered probability vectors
 - **SK1**: FULL continuity (on ALL distributions)
 - **SK2**: Maximality (uniform distribution maximizes entropy)
 - **SK3**: Expansibility (adding zero probability doesn't change entropy)
 - **SK4**: Strong additivity (= recursivity)
 - **SK5**: Normalization
 
-### Shannon (1948) - 5 Axioms
+### Shannon (1948) - 4 Clauses, with Normalization Separate
 - Relabeling invariance
 - FULL continuity
 - Monotonicity on uniform distributions
 - Grouping (= recursivity)
-- Normalization
+- Optional fair-coin normalization (not a field of `Shannon1948Entropy`)
 
 ## Key Insight: Faddeev DERIVES What Others ASSUME
 
@@ -49,12 +51,15 @@ definitions of entropy and KL divergence across all formalization approaches:
 |----------|---------|---------|------------------|
 | Binary continuity | **ASSUMES** | - | - |
 | Full continuity | **DERIVES** | ASSUMES | ASSUMES |
-| Symmetry | ASSUMES | ASSUMES | - |
+| Symmetry | ASSUMES | ASSUMES | ASSUMES (relabeling) |
 | Recursivity | ASSUMES | ASSUMES | ASSUMES |
 | Monotonicity | **DERIVES** | ASSUMES | - |
 | Maximality | **DERIVES** | - | ASSUMES |
 | Expansibility | **DERIVES** | - | ASSUMES |
-| **Axiom Count** | **4** | 5 | 5 |
+| Named clauses | 4 | 4, plus optional normalization | 5, plus relabeling |
+
+These counts describe the presentations used here, not independence of their
+assumptions or an absolute minimum number of axioms.
 
 ## Main Results
 
@@ -65,7 +70,7 @@ definitions of entropy and KL divergence across all formalization approaches:
 
 ## References
 
-* Faddeev, D.K. "On the concept of entropy" (1956) - Minimal characterization
+* Faddeev, D.K. "On the concept of entropy" (1956) - Binary-continuity characterization
 * Shannon, C.E. "A Mathematical Theory of Communication" (1948) - Original axioms
 * Khinchin, A.I. "Mathematical Foundations of Information Theory" (1957) - Reformulation
 -/
@@ -74,17 +79,16 @@ namespace Mettapedia.InformationTheory
 
 open Finset Real
 
-/-! ## The Minimality Theorems
+/-! ## Derived Axioms
 
 These theorems demonstrate that Faddeev's axioms derive properties that Shannon and
-Shannon-Khinchin explicitly assume. This makes Faddeev's characterization the **minimal**
-axiomatization of Shannon entropy.
+Shannon-Khinchin explicitly assume. They are consequences of the normalized
+entropy uniqueness theorem, not merely comparisons of presentation sizes.
 -/
 
 /-- **KEY THEOREM**: Faddeev axioms imply Shannon's monotonicity axiom.
 
-Faddeev does NOT assume monotonicity - he PROVES it!
-This is the main content of Faddeev's 1956 theorem. -/
+Monotonicity follows from the uniform-entropy formula and is not assumed. -/
 theorem faddeev_implies_shannon_monotonicity (E : FaddeevEntropy) :
     ∀ (m n : ℕ) (hm : 0 < m) (hn : 0 < n), m ≤ n →
     E.H (uniformDist m hm) ≤ E.H (uniformDist n hn) :=
@@ -92,8 +96,8 @@ theorem faddeev_implies_shannon_monotonicity (E : FaddeevEntropy) :
 
 /-- **KEY THEOREM**: Faddeev axioms imply Shannon-Khinchin's maximality axiom.
 
-Once F(n) = log₂(n) is proven, maximality follows from the chain rule:
-any non-uniform distribution has strictly less entropy than the uniform. -/
+Full entropy uniqueness transfers Shannon entropy's uniform upper bound.
+The statement is weak maximality; it does not assert a strict inequality. -/
 theorem faddeev_implies_sk_maximality (E : FaddeevEntropy) :
     ∀ (n : ℕ) (hn : 0 < n) (p : ProbVec n),
     E.H p ≤ E.H (uniformDist n hn) := by
@@ -109,24 +113,30 @@ theorem faddeev_implies_sk_expansibility (E : FaddeevEntropy) :
   intro n p
   simpa using faddeev_expansibility (n := n) E p
 
-/-! ## Axiom Count Comparison -/
+/-! ## Presentation Count Comparison
 
-/-- The number of primitive axioms in Faddeev's system. -/
+The historical names below are retained. The theorems compare the named-clause
+counts only; they are not proofs of axiom independence or absolute minimality.
+-/
+
+/-- Number of the four Faddeev clauses in this presentation. -/
 def faddeev_axiom_count : ℕ := 4
 
-/-- The number of primitive axioms in Shannon's 1948 system. -/
+/-- Number of clauses in the normalized Shannon presentation: four structural
+    clauses plus optional normalization, which is not a `Shannon1948Entropy` field. -/
 def shannon1948_axiom_count : ℕ := 5
 
-/-- The number of primitive axioms in Shannon-Khinchin's system. -/
+/-- Number of clauses labeled SK1-SK5; the explicit relabeling field is separate. -/
 def shannonKhinchin_axiom_count : ℕ := 5
 
-/-- Faddeev's system is strictly more minimal than Shannon's. -/
+/-- Four Faddeev clauses are fewer than the five clauses in the normalized
+    Shannon presentation counted here. -/
 theorem faddeev_more_minimal_than_shannon :
     faddeev_axiom_count < shannon1948_axiom_count := by
   simp only [faddeev_axiom_count, shannon1948_axiom_count]
   norm_num
 
-/-- Faddeev's system is strictly more minimal than Shannon-Khinchin's. -/
+/-- Four Faddeev clauses are fewer than the five clauses labeled SK1-SK5. -/
 theorem faddeev_more_minimal_than_shannonKhinchin :
     faddeev_axiom_count < shannonKhinchin_axiom_count := by
   simp only [faddeev_axiom_count, shannonKhinchin_axiom_count]
@@ -157,7 +167,7 @@ noncomputable def FaddeevEntropy.toShannonKhinchin (E : FaddeevEntropy) :
   -- SK5: Normalization (identical)
   normalization := E.normalization
 
-/-! ## Summary: The Power of Minimal Axioms
+/-! ## Summary: From Binary Continuity to Full Uniqueness
 
 Faddeev's 1956 result is remarkable: with just 4 axioms (and notably, only
 **binary** continuity instead of full continuity), he uniquely characterized
@@ -169,10 +179,12 @@ The proof strategy (formalized in Faddeev.lean):
 3. From binary continuity: The "entropy increment" λₙ = F(n) - F(n-1) → 0
 4. Via prime power analysis (Lemma 8-9): All c_p = F(p)/log(p) are equal
 5. Conclusion: F(n) = log₂(n) for all n ≥ 1
-6. From F = log₂: Monotonicity, full continuity, maximality all follow!
+6. Grouping determines rational binary entropy; continuity and density give all
+   binary distributions, and recursivity extends uniqueness to every arity
+7. Uniform monotonicity, full continuity, maximality and expansibility follow
 
-The key insight is that binary continuity + recursivity is enough to force
-F to be logarithmic, from which all other properties follow trivially.
+Together with symmetry and normalization, binary continuity and recursivity
+force the normalized Shannon formula on every finite probability vector.
 -/
 
 /-! ## Bridge: ProbVec ↔ ProbDist

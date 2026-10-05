@@ -990,24 +990,24 @@ theorem CostRegionBoundaryFibers.AvailabilitySuffix.append_cast
 
 /-- Contracting a target index in the retained prefix is independent of an
 appended target suffix. -/
-theorem CostStaticBinderThinning.targetToSourceIndex?_append_of_lt
+theorem CostStaticTypeThinning.targetToSourceIndex?_append_of_lt
     (source : CIGSLT) (color : CostStaticColor)
     (retained suffix : List TypeExpr) (index : Nat)
     (inside : index < retained.length) :
-    CostStaticBinderThinning.targetToSourceIndex? source color
+    CostStaticTypeThinning.targetToSourceIndex? source color
         (retained ++ suffix) index =
-      CostStaticBinderThinning.targetToSourceIndex? source color retained
+      CostStaticTypeThinning.targetToSourceIndex? source color retained
         index := by
   induction retained generalizing index with
   | nil => simp at inside
   | cons targetType retained inductionHypothesis =>
       cases index with
-      | zero => simp [CostStaticBinderThinning.targetToSourceIndex?]
+      | zero => simp [CostStaticTypeThinning.targetToSourceIndex?]
       | succ index =>
           have tailInside : index < retained.length := by
             simpa using inside
-          cases decoded : decodeCostStaticTypeExpr source color targetType <;>
-            simp [CostStaticBinderThinning.targetToSourceIndex?, decoded,
+          cases decoded : CostStaticTypeImage.decode source.theory color targetType <;>
+            simp [CostStaticTypeThinning.targetToSourceIndex?, decoded,
               inductionHypothesis index tailInside]
 
 set_option maxHeartbeats 800000 in
@@ -1062,9 +1062,9 @@ mutual
             largeAvailableScope =>
             have targetInside : targetIndex < smallTargetBound.length := by
               simpa [Pattern.isWellScopedAt] using scope
-            rw [CostStaticBinderThinning.toSourceIndex?_eq_targetToSourceIndex?]
+            rw [CostStaticTypeThinning.toSourceIndex?_eq_targetToSourceIndex?]
               at correspondence largeCorrespondence
-            rw [CostStaticBinderThinning.targetToSourceIndex?_append_of_lt
+            rw [CostStaticTypeThinning.targetToSourceIndex?_append_of_lt
               source color smallTargetBound ambient targetIndex targetInside]
               at largeCorrespondence
             have sourceIndexEq : sourceIndex = largeSourceIndex :=
@@ -1118,7 +1118,7 @@ mutual
                 (smallRendered.trans largeRendered.symm)
             subst largeConstructor
             have preimageEq : smallPreimage = largePreimage :=
-              CostStaticConstructorPreimage.eq _ _
+              Subsingleton.elim _ _
             have childSuffix : CostStaticAvailabilityAt ambient
                 (if ReflectiveContextSupport.isQuoteConstructor
                     source.reflection.1

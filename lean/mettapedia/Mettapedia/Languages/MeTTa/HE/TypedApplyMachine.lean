@@ -771,4 +771,501 @@ example : TypedApplyStep
     ⟨[], [(.expression [.symbol "f"], Bindings.empty)]⟩ :=
   .applyComplete _ _ _ (Nat.le_refl _)
 
+/-! ## Ordered residual correspondence
+
+The direct evaluator and the worklist have separate definitions. A paused
+consumer owns all of its remaining argument occurrences, including duplicates
+and failure branches. Published occurrences followed by this residual have the
+same meaning as direct typed application. This is stronger than membership or
+bag soundness, and applies even when an administrative budget ends mid-call.
+-/
+
+/-- The direct continuation for an already completed argument frontier. -/
+def typedConsumerDirect
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool)
+    (pending : ResultList) (origArg argType : Atom) (st : TypedApplyState) : ResultList :=
+  pending.flatMap fun (argVal, evalEnv) =>
+    match mergeEnv st.env evalEnv with
+    | none => []
+    | some mergedEnv =>
+      if isEmptyOrError argVal && decide (argVal ≠ origArg) then
+        [(argVal, mergedEnv)]
+      else
+        match extendBinder mergedEnv argType argVal with
+        | none => []
+        | some extEnv =>
+          typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial
+            (st.advance argVal extEnv)
+
+def TypedApplyFrame.meaning
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool) :
+    TypedApplyFrame → ResultList
+  | .apply st => typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st
+  | .argConsumer pending origArg argType st =>
+      typedConsumerDirect eval1 applyEnv mergeEnv extendBinder isTrivial
+        pending origArg argType st
+
+/-- Observations already published, followed by the exact ordered residual. -/
+def TypedApplyConfig.observations
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool)
+    (cfg : TypedApplyConfig) : ResultList :=
+  cfg.emitted ++ cfg.worklist.flatMap
+    (TypedApplyFrame.meaning eval1 applyEnv mergeEnv extendBinder isTrivial)
+
+theorem typedApplyStep_preserves_observations (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    {before after : TypedApplyConfig}
+    (step : TypedApplyStep eval1 applyEnv mergeEnv extendBinder isTrivial before after) :
+    before.observations eval1 applyEnv mergeEnv extendBinder isTrivial =
+      after.observations eval1 applyEnv mergeEnv extendBinder isTrivial := by
+  cases step with
+  | applyComplete st rest emitted done =>
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+        base_case eval1 applyEnv mergeEnv extendBinder isTrivial st done,
+        List.append_assoc]
+  | applyTrivialOk st rest emitted boundArg argType env' lt trivial bound typ extended =>
+      have direct : typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st =
+          typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial
+            (st.advance boundArg env') := by
+        conv_lhs => unfold typedApplyDirect
+        simp only [show ¬st.idx ≥ st.origArgs.length by omega, dite_false]
+        rw [← typ, ← bound]
+        simp [trivial, extended, TypedApplyState.advance]
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning, direct]
+  | applyTrivialFail st rest emitted boundArg argType lt trivial bound typ extended =>
+      have direct : typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st = [] := by
+        conv_lhs => unfold typedApplyDirect
+        simp only [show ¬st.idx ≥ st.origArgs.length by omega, dite_false]
+        rw [← typ, ← bound]
+        simp [trivial, extended]
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning, direct]
+  | applyEval st rest emitted origArg argType boundArg results lt nontrivial orig typ bound vals =>
+      have direct : typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st =
+          typedConsumerDirect eval1 applyEnv mergeEnv extendBinder isTrivial
+            results origArg argType st := by
+        conv_lhs => unfold typedApplyDirect
+        simp only [show ¬st.idx ≥ st.origArgs.length by omega, dite_false]
+        rw [← typ, ← orig]
+        have condition : (isTrivial argType || origArg.isVariable) = false := by
+          simpa only [Bool.or_eq_false_iff, Bool.not_eq_true, not_or] using nontrivial
+        simp only [condition, Bool.false_eq_true, ite_false]
+        rw [← bound, ← vals]
+        rfl
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning, direct]
+  | consumeMergeFail argVal evalEnv pending origArg argType st rest emitted merged =>
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+        typedConsumerDirect, merged]
+  | consumeError argVal evalEnv pending origArg argType st rest emitted mergedEnv merged err changed =>
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+        typedConsumerDirect, merged, err, changed, List.append_assoc]
+  | consumeBinderFail argVal evalEnv pending origArg argType st rest emitted mergedEnv merged ok extended =>
+      rcases ok with ok | rfl
+      · simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+          typedConsumerDirect, merged, ok, extended]
+      · simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+          typedConsumerDirect, merged, extended]
+  | consumeOk argVal evalEnv pending origArg argType st rest emitted mergedEnv extEnv merged ok extended =>
+      rcases ok with ok | rfl
+      · simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+          typedConsumerDirect, merged, ok, extended, List.append_assoc]
+      · simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+          typedConsumerDirect, merged, extended, List.append_assoc]
+  | consumeExhausted origArg argType st rest emitted =>
+      simp [TypedApplyConfig.observations, TypedApplyFrame.meaning, typedConsumerDirect]
+
+theorem typedApplyReaches_preserves_observations (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    {before after : TypedApplyConfig}
+    (run : TypedApplyReaches eval1 applyEnv mergeEnv extendBinder isTrivial before after) :
+    before.observations eval1 applyEnv mergeEnv extendBinder isTrivial =
+      after.observations eval1 applyEnv mergeEnv extendBinder isTrivial := by
+  induction run with
+  | refl => rfl
+  | step one rest ih =>
+      exact (typedApplyStep_preserves_observations _ _ _ _ _ one).trans ih
+
+/-- Ending an administrative run early retains precisely the undelivered
+suffix. The budget controls machine steps, not the argument evaluator's fuel. -/
+theorem typedApplyMachine_budget_residual (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    (st : TypedApplyState) (budget : Nat) :
+    typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st =
+      (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial
+        (.initial st) budget).observations eval1 applyEnv mergeEnv extendBinder isTrivial := by
+  have conserved := typedApplyReaches_preserves_observations _ _ _ _ _
+    (machineRun_reaches eval1 applyEnv mergeEnv extendBinder isTrivial (.initial st) budget)
+  simpa [TypedApplyConfig.observations, TypedApplyConfig.initial, TypedApplyFrame.meaning]
+    using conserved
+
+/-- An exhausted machine publishes exactly the independent direct evaluator's
+ordered occurrences and bindings. -/
+theorem typedApplyMachine_complete_eq_direct (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    (st : TypedApplyState) (budget : Nat)
+    (done : (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial
+      (.initial st) budget).worklist = []) :
+    (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial
+      (.initial st) budget).emitted =
+        typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st := by
+  simpa [TypedApplyConfig.observations, done] using
+    (typedApplyMachine_budget_residual eval1 applyEnv mergeEnv extendBinder isTrivial
+      st budget).symm
+
+theorem typedApplyMachine_done_stable (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    (cfg : TypedApplyConfig) (budget : Nat) (done : cfg.isDone = true) :
+    machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget = cfg := by
+  cases budget <;> simp [machineRun, done]
+
+/-- Resumption continues the saved machine rather than entering its original
+source again. The two runs compose at their exact administrative budgets. -/
+theorem typedApplyMachine_pause_resume (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    (cfg : TypedApplyConfig) (first second : Nat) :
+    machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg (first + second) =
+      machineRun eval1 applyEnv mergeEnv extendBinder isTrivial
+        (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg first) second := by
+  induction first generalizing cfg with
+  | zero => simp [machineRun]
+  | succ first ih =>
+      by_cases done : cfg.isDone = true
+      · rw [typedApplyMachine_done_stable _ _ _ _ _ cfg _ done,
+            typedApplyMachine_done_stable _ _ _ _ _ cfg _ done,
+            typedApplyMachine_done_stable _ _ _ _ _ cfg _ done]
+      · simpa only [Nat.succ_add, machineRun, if_neg done] using
+          ih (stepConfig eval1 applyEnv mergeEnv extendBinder isTrivial cfg)
+
+/-- Cancellation at a saved boundary keeps an ordered prefix of the direct
+observations. It cannot invent answers or erase an already delivered duplicate. -/
+theorem typedApplyMachine_cancel_prefix (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    (st : TypedApplyState) (budget : Nat) :
+    ∃ residual : ResultList,
+      typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st =
+        (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial
+          (.initial st) budget).emitted ++ residual := by
+  refine ⟨_, typedApplyMachine_budget_residual
+    eval1 applyEnv mergeEnv extendBinder isTrivial st budget⟩
+
+private def duplicateArgument : Atom → Atom → Bindings → ResultList :=
+  fun _ _ env => [(.symbol "value", env), (.symbol "value", env)]
+
+/-- Two equal argument occurrences produce two equal calls in source order. -/
+theorem typedApplyMachine_duplicate_occurrences :
+    (machineRun duplicateArgument (fun _ atom => atom)
+      (fun _ env => some env) (fun env _ _ => some env) (fun _ => false)
+      (.initial (.initial (.symbol "f") [.symbol "source"] [.symbol "T"] Bindings.empty))
+      6).emitted =
+    [(.expression [.symbol "f", .symbol "value"], Bindings.empty),
+     (.expression [.symbol "f", .symbol "value"], Bindings.empty)] := by
+  decide
+
+/-- A consumer that throws away its second pending occurrence is observably
+different, even when both occurrences contain the same atom and bindings. -/
+theorem typedApplyMachine_dropped_duplicate_changes_observation :
+    TypedApplyConfig.observations duplicateArgument (fun _ atom => atom)
+      (fun _ env => some env) (fun env _ _ => some env) (fun _ => false)
+      ⟨[.argConsumer [(.symbol "value", Bindings.empty), (.symbol "value", Bindings.empty)]
+        (.symbol "source") (.symbol "T")
+        (.initial (.symbol "f") [.symbol "source"] [.symbol "T"] Bindings.empty)], []⟩ ≠
+    TypedApplyConfig.observations duplicateArgument (fun _ atom => atom)
+      (fun _ env => some env) (fun env _ _ => some env) (fun _ => false)
+      ⟨[.argConsumer [(.symbol "value", Bindings.empty)]
+        (.symbol "source") (.symbol "T")
+        (.initial (.symbol "f") [.symbol "source"] [.symbol "T"] Bindings.empty)], []⟩ := by
+  simp [TypedApplyConfig.observations, TypedApplyFrame.meaning,
+    typedConsumerDirect, typedApplyDirect, TypedApplyState.initial,
+    TypedApplyState.advance, isEmptyOrError, isEmptyAtom, isErrorAtom, Atom.empty]
+
+/-! ## Administrative and argument-service work
+
+The potential is the work of the independently defined recursive argument
+tree, including every failed and successful consumer occurrence. An argument
+service's supplied cost is charged at `applyEval`; every other transition is
+one administrative step. This account does not equate administrative fuel
+with the dialect evaluator's fuel or assume that a native service is free.
+-/
+
+def typedConsumerWork
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool) (evalCost : Atom → Atom → Bindings → Nat)
+    (pending : ResultList) (origArg argType : Atom) (st : TypedApplyState) : Nat :=
+  1 + (pending.map fun (argVal, evalEnv) =>
+    1 + match mergeEnv st.env evalEnv with
+    | none => 0
+    | some mergedEnv =>
+      if isEmptyOrError argVal && decide (argVal ≠ origArg) then 0
+      else
+        match extendBinder mergedEnv argType argVal with
+        | none => 0
+        | some extEnv => typedApplyWork eval1 applyEnv mergeEnv extendBinder
+            isTrivial evalCost (st.advance argVal extEnv)).sum
+
+def TypedApplyFrame.work
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool) (evalCost : Atom → Atom → Bindings → Nat) :
+    TypedApplyFrame → Nat
+  | .apply st => typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost st
+  | .argConsumer pending origArg argType st =>
+      typedConsumerWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost
+        pending origArg argType st
+
+def TypedApplyConfig.work
+    (eval1 : Atom → Atom → Bindings → ResultList)
+    (applyEnv : Bindings → Atom → Atom)
+    (mergeEnv : Bindings → Bindings → Option Bindings)
+    (extendBinder : Bindings → Atom → Atom → Option Bindings)
+    (isTrivial : Atom → Bool) (evalCost : Atom → Atom → Bindings → Nat)
+    (cfg : TypedApplyConfig) : Nat :=
+  (cfg.worklist.map (TypedApplyFrame.work
+    eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)).sum
+
+def TypedApplyConfig.serviceCost (applyEnv : Bindings → Atom → Atom)
+    (isTrivial : Atom → Bool) (evalCost : Atom → Atom → Bindings → Nat)
+    (cfg : TypedApplyConfig) : Nat :=
+  match cfg.worklist with
+  | .apply st :: _ =>
+      if h : st.idx < st.origArgs.length then
+        if isTrivial (getArgType st) || st.origArgs[st.idx].isVariable then 0
+        else evalCost (applyEnv st.env st.origArgs[st.idx]) (getArgType st) st.env
+      else 0
+  | _ => 0
+
+theorem typedApplyStep_work (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    {before after : TypedApplyConfig}
+    (step : TypedApplyStep eval1 applyEnv mergeEnv extendBinder isTrivial before after) :
+    before.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost =
+      1 + before.serviceCost applyEnv isTrivial evalCost +
+        after.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost := by
+  cases step with
+  | applyComplete st rest emitted done =>
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        typedApplyWork, done]
+  | applyTrivialOk st rest emitted boundArg argType env' lt trivial bound typ extended =>
+      have direct : typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost st =
+          1 + typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost
+            (st.advance boundArg env') := by
+        conv_lhs => unfold typedApplyWork
+        simp only [show ¬st.idx ≥ st.origArgs.length by omega, dite_false]
+        rw [← typ, ← bound]
+        simp [trivial, extended, TypedApplyState.advance]
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        direct, getArgType, lt, ← typ, trivial, Nat.add_assoc]
+  | applyTrivialFail st rest emitted boundArg argType lt trivial bound typ extended =>
+      have direct : typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost st = 1 := by
+        conv_lhs => unfold typedApplyWork
+        simp only [show ¬st.idx ≥ st.origArgs.length by omega, dite_false]
+        rw [← typ, ← bound]
+        simp [trivial, extended]
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        direct, getArgType, lt, ← typ, trivial]
+  | applyEval st rest emitted origArg argType boundArg results lt nontrivial orig typ bound vals =>
+      have direct : typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost st =
+          1 + evalCost boundArg argType st.env +
+            typedConsumerWork eval1 applyEnv mergeEnv extendBinder isTrivial evalCost
+              results origArg argType st := by
+        conv_lhs => unfold typedApplyWork
+        simp only [show ¬st.idx ≥ st.origArgs.length by omega, dite_false]
+        rw [← typ, ← orig]
+        have condition : (isTrivial argType || origArg.isVariable) = false := by
+          simpa only [Bool.or_eq_false_iff, Bool.not_eq_true, not_or] using nontrivial
+        simp only [condition, Bool.false_eq_true, ite_false]
+        rw [← bound, ← vals]
+        simp only [typedConsumerWork, TypedApplyState.advance]
+        change (1 + 1) + _ + _ = 1 + _ + (1 + _)
+        ac_rfl
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        direct, getArgType, lt, ← typ, ← orig, nontrivial, bound, Nat.add_assoc]
+  | consumeMergeFail argVal evalEnv pending origArg argType st rest emitted merged =>
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        typedConsumerWork, merged, Nat.add_left_comm, Nat.add_comm]
+  | consumeError argVal evalEnv pending origArg argType st rest emitted mergedEnv merged err changed =>
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        typedConsumerWork, merged, err, changed,
+        Nat.add_left_comm, Nat.add_comm]
+  | consumeBinderFail argVal evalEnv pending origArg argType st rest emitted mergedEnv merged ok extended =>
+      rcases ok with ok | rfl
+      · simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+          typedConsumerWork, merged, ok, extended,
+          Nat.add_left_comm, Nat.add_comm]
+      · simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+          typedConsumerWork, merged, extended,
+          Nat.add_left_comm, Nat.add_comm]
+  | consumeOk argVal evalEnv pending origArg argType st rest emitted mergedEnv extEnv merged ok extended =>
+      rcases ok with ok | rfl
+      · simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+          typedConsumerWork, merged, ok, extended,
+          Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+      · simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+          typedConsumerWork, merged, extended,
+          Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+  | consumeExhausted origArg argType st rest emitted =>
+      simp [TypedApplyConfig.work, TypedApplyFrame.work, TypedApplyConfig.serviceCost,
+        typedConsumerWork]
+
+theorem typedApplyFrame_work_positive (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (frame : TypedApplyFrame) :
+    0 < frame.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost := by
+  cases frame with
+  | apply st => exact typedApplyWork_positive _ _ _ _ _ _ st
+  | argConsumer pending origArg argType st =>
+      simp only [TypedApplyFrame.work, typedConsumerWork]
+      omega
+
+theorem typedApplyConfig_work_zero_iff (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (cfg : TypedApplyConfig) :
+    cfg.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost = 0 ↔ cfg.worklist = [] := by
+  cases cfg with
+  | mk worklist emitted =>
+      cases worklist with
+      | nil => simp [TypedApplyConfig.work]
+      | cons frame rest =>
+          have positive := typedApplyFrame_work_positive
+            eval1 applyEnv mergeEnv extendBinder isTrivial evalCost frame
+          simp only [TypedApplyConfig.work, List.map_cons, List.sum_cons,
+            List.cons_ne_nil, iff_false]
+          omega
+
+/-- Each live continuation contributes positive work to the independently
+defined argument tree. Thus a width of pending alternatives cannot create
+unaccounted frames. This bounds frames, not the bytes of their reachable data. -/
+theorem typedApplyConfig_frames_le_work (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (cfg : TypedApplyConfig) :
+    cfg.worklist.length ≤ cfg.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost := by
+  rcases cfg with ⟨frames, emitted⟩
+  induction frames with
+  | nil => simp [TypedApplyConfig.work]
+  | cons frame rest ih =>
+      have positive := typedApplyFrame_work_positive
+        eval1 applyEnv mergeEnv extendBinder isTrivial evalCost frame
+      simp only [List.length_cons, TypedApplyConfig.work, List.map_cons, List.sum_cons] at *
+      omega
+
+theorem typedApplyMachine_work_le (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (cfg : TypedApplyConfig) (budget : Nat) :
+    (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).work
+        eval1 applyEnv mergeEnv extendBinder isTrivial evalCost ≤
+      cfg.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost := by
+  induction budget generalizing cfg with
+  | zero => simp [machineRun]
+  | succ budget ih =>
+      by_cases done : cfg.isDone = true
+      · simp [machineRun, done]
+      · have pending : cfg.worklist ≠ [] := by
+          simpa [TypedApplyConfig.isDone, List.isEmpty_iff] using done
+        have decreases := typedApplyStep_work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost
+          (stepConfig_spec eval1 applyEnv mergeEnv extendBinder isTrivial cfg pending)
+        simpa [machineRun, done] using (ih
+          (stepConfig eval1 applyEnv mergeEnv extendBinder isTrivial cfg)).trans (by omega)
+
+/-- Every paused frontier's frame count is bounded by the original direct
+tree's work account, even when service evaluation returns duplicates. -/
+theorem typedApplyMachine_frontier_bound (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (cfg : TypedApplyConfig) (budget : Nat) :
+    (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).worklist.length ≤
+      cfg.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost :=
+  (typedApplyConfig_frames_le_work _ _ _ _ _ _ _).trans
+    (typedApplyMachine_work_le _ _ _ _ _ _ _ _)
+
+theorem typedApplyMachine_complete_of_work_le (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (cfg : TypedApplyConfig) (budget : Nat)
+    (enough : cfg.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost ≤ budget) :
+    (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).worklist = [] := by
+  induction budget generalizing cfg with
+  | zero =>
+      have done := (typedApplyConfig_work_zero_iff
+        eval1 applyEnv mergeEnv extendBinder isTrivial evalCost cfg).mp (by omega)
+      simpa [machineRun] using done
+  | succ budget ih =>
+      by_cases done : cfg.isDone = true
+      · simpa [typedApplyMachine_done_stable _ _ _ _ _ cfg _ done,
+          TypedApplyConfig.isDone] using done
+      · have pending : cfg.worklist ≠ [] := by
+          simpa [TypedApplyConfig.isDone, List.isEmpty_iff] using done
+        have decreases := typedApplyStep_work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost
+          (stepConfig_spec eval1 applyEnv mergeEnv extendBinder isTrivial cfg pending)
+        simpa [machineRun, done] using ih
+          (stepConfig eval1 applyEnv mergeEnv extendBinder isTrivial cfg) (by omega)
+
+/-- Zero argument-service charges give an administrative completion budget
+derived from the independent direct tree, not from running the same machine. -/
+theorem typedApplyMachine_work_budget_eq_direct (eval1 applyEnv mergeEnv extendBinder isTrivial)
+    (st : TypedApplyState) :
+    (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial (.initial st)
+      (typedApplyWork eval1 applyEnv mergeEnv extendBinder isTrivial (fun _ _ _ => 0) st)).emitted =
+        typedApplyDirect eval1 applyEnv mergeEnv extendBinder isTrivial st := by
+  apply typedApplyMachine_complete_eq_direct
+  apply typedApplyMachine_complete_of_work_le _ _ _ _ _ (fun _ _ _ => 0)
+  simp [TypedApplyConfig.work, TypedApplyConfig.initial, TypedApplyFrame.work]
+
+/-! ## Native roots of the typed argument frontier
+
+Each logical argument frame is assigned its native field inventory. This
+connects the independent direct-tree work bound to graph retention; bytes and
+transitive descendants remain explicit, as a small number of roots can reach a
+large graph. The inventory function is a native correspondence parameter, not a
+claim that C root discovery follows from the abstract machine alone.
+-/
+
+def TypedApplyConfig.ownedFrontier {Address : Type}
+    (inventory : TypedApplyFrame → HeOwnedRoots Address)
+    (cfg : TypedApplyConfig) : HeOwnedFrontier Address :=
+  cfg.worklist.zipIdx.map fun entry => (entry.2, inventory entry.1)
+
+theorem typedApplyConfig_ownedFrontier_length {Address : Type}
+    (inventory : TypedApplyFrame → HeOwnedRoots Address) (cfg : TypedApplyConfig) :
+    (cfg.ownedFrontier inventory).length = cfg.worklist.length := by
+  simp [TypedApplyConfig.ownedFrontier]
+
+open Mettapedia.Machines.ResourceOwnership in
+/-- Paused storage is bounded by independently accounted argument-tree work,
+including both native frame headers and every transitively retained payload. -/
+theorem typedApplyMachine_retention_bound {Address Value : Type} [DecidableEq Address]
+    (eval1 applyEnv mergeEnv extendBinder isTrivial evalCost)
+    (cfg : TypedApplyConfig) (budget : Nat) (heap : Heap Address Value)
+    (inventory : TypedApplyFrame → HeOwnedRoots Address)
+    (slots descendants payloadBytes frameBytes : Nat)
+    (slotBound : ∀ frame ∈
+      (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).worklist,
+      (inventory frame).slots.length ≤ slots)
+    (descendantBound : ∀ pair ∈ heFrontierRoots
+      ((machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).ownedFrontier inventory),
+      (footprint heap {pair}).card ≤ descendants)
+    (byteBound : ∀ a ∈ footprint heap (heFrontierRoots
+      ((machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).ownedFrontier inventory)),
+      cellBytes heap a ≤ payloadBytes) :
+    retainedBytes heap (heFrontierRoots
+      ((machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).ownedFrontier inventory)) +
+        (machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget).worklist.length * frameBytes ≤
+      cfg.work eval1 applyEnv mergeEnv extendBinder isTrivial evalCost *
+        (slots * descendants * payloadBytes + frameBytes) := by
+  let paused := machineRun eval1 applyEnv mergeEnv extendBinder isTrivial cfg budget
+  have fields : ∀ entry ∈ paused.ownedFrontier inventory, entry.2.slots.length ≤ slots := by
+    intro entry member
+    obtain ⟨original, present, equal⟩ := List.mem_map.mp member
+    subst entry
+    exact slotBound original.1 (List.fst_mem_of_mem_zipIdx present)
+  have retained := heFrontier_retention_bound heap (paused.ownedFrontier inventory)
+    slots descendants payloadBytes fields descendantBound byteBound
+  rw [typedApplyConfig_ownedFrontier_length] at retained
+  have frames := typedApplyMachine_frontier_bound
+    eval1 applyEnv mergeEnv extendBinder isTrivial evalCost cfg budget
+  calc
+    _ ≤ paused.worklist.length * slots * descendants * payloadBytes +
+        paused.worklist.length * frameBytes := Nat.add_le_add_right retained _
+    _ = paused.worklist.length * (slots * descendants * payloadBytes + frameBytes) := by
+      simp only [Nat.mul_add, Nat.mul_assoc]
+    _ ≤ _ := Nat.mul_le_mul_right _ frames
+
 end Mettapedia.Languages.MeTTa.HE

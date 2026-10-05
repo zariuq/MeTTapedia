@@ -17,7 +17,8 @@ Injectivity after fixing either argument is cancellation.  Injectivity in both
 arguments jointly is much stronger: for any nontrivial type, it is incompatible
 with a two-sided unit.  Consequently, neither a cancellative signature monoid
 nor the free monoid of event words can make flattening globally injective on
-factorizations.
+factorizations.  For the writer monad of accounts the same fact is
+`WriterActionAdjunction.multiplication_not_injective`.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction
@@ -71,26 +72,6 @@ theorem list_append_forgets_nonempty_boundary (first second third : α) :
     have lengthEquality := congrArg (fun pair => pair.1.length) pairEquality
     simp at lengthEquality
   · rfl
-
-/-- Writer-style multiplication combines the outer and inner accounts and
-forgets which unit embedding supplied a nontrivial account. -/
-def writerFlatten {M X : Type*} [Monoid M] (value : M × (M × X)) : M × X :=
-  (value.1 * value.2.1, value.2.2)
-
-/-- Writer multiplication is not injective for a nontrivial account monoid.
-The two monad-unit embeddings already supply a collision. -/
-theorem writerFlatten_not_injective {M X : Type*} [Monoid M] [Nontrivial M]
-    (value : X) : ¬Function.Injective (writerFlatten (M := M) (X := X)) := by
-  intro injective
-  obtain ⟨account, account_ne⟩ := exists_ne (1 : M)
-  have nestedEquality :
-      ((1, (account, value)) : M × (M × X)) =
-        (account, (1, value)) := by
-    apply injective
-    simp [writerFlatten]
-  have outerEquality : (1 : M) = account :=
-    congrArg Prod.fst nestedEquality
-  exact account_ne outerEquality.symm
 
 /-- Free commutative-monoid addition forgets a nonempty factor boundary even
 though it retains every element and multiplicity. -/

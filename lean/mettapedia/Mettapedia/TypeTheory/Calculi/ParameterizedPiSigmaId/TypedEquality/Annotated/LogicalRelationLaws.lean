@@ -20,6 +20,12 @@ transport the arguments along the domains, which is conversion at a shallower
 token. At an identity type, conversion reads the endpoint relation off the type
 witness, whose endpoint tokens entail the point of a typed reflexivity token.
 
+At a constructor of a declared datatype, conversion moves the reduct of the type to the
+datatype and keeps the fields, whose types do not depend on the type; symmetry and
+transitivity of a field token read the field's type off the type witness, the datatype
+itself for a recursive field and its parameter witness for a parameter field
+(`RT.field_self`).
+
 At a dependent pair type `Σ D E`, the second projections of two terms are related at
 `E` at the first projection of the left one. Symmetry and transitivity move them to
 `E` at the first projection of the other, which is conversion along the family,
@@ -56,7 +62,11 @@ theorem tyTok_univ_of_typeKind {t : Tok} (htk : typeKind t.kind = true) {a : Lis
   | arg k i C s =>
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact absurd ht (tyTok_arg_other hother)
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · obtain ⟨hu, hC, hs⟩ := tyTok_param.1 ht
+          exact ⟨hu, tyTok_param.2 ⟨Elem.isUniv_univ, hC, hs⟩⟩
+        · cases htk
+        · exact absurd ht (tyTok_arg_other hother hk)
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
@@ -78,47 +88,66 @@ theorem tyTok_univ_of_typeKind {t : Tok} (htk : typeKind t.kind = true) {a : Lis
       · cases htk
       · exact absurd ht (tyTok_fn_other hother)
 
+/-- A component outside the typed slots: the slots are read one by one, the kind or the
+component told apart by its constructor, without choice. -/
+theorem not_mem_argSlots {k : Kind} {i : Nat}
+    (h : ∀ {k' : Kind} {i' : Nat}, k' = k → i' = i → (k', i') ∈ argSlots → False) :
+    (k, i) ∉ argSlots :=
+  h rfl rfl
+
 /-- A reflexivity token has a single point component. -/
 theorem tyTok_reflPoint_succ {a : List Tok} {i : Nat} {C : List Tok} {t : Tok} :
-    ¬ TyTok a (.arg .refl (i + 1) C t) := by
-  rw [TyTok]
-  · exact id
-  all_goals intro h₁ h₂; first | exact Kind.noConfusion h₁ | exact Nat.noConfusion h₂
+    ¬ TyTok a (.arg .refl (i + 1) C t) :=
+  tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id
 
 /-- A successor token has a single predecessor component. -/
 theorem tyTok_pred_succ {a : List Tok} {i : Nat} {C : List Tok} {t : Tok} :
-    ¬ TyTok a (.arg .succ (i + 1) C t) := by
-  rw [TyTok]
-  · exact id
-  all_goals intro h₁ h₂; first | exact Kind.noConfusion h₁ | exact Nat.noConfusion h₂
+    ¬ TyTok a (.arg .succ (i + 1) C t) :=
+  tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id
 
 /-- A dependent function type token has a single domain component. -/
 theorem tyTok_argPi_succ {a : List Tok} {i : Nat} {C : List Tok} {t : Tok} :
-    ¬ TyTok a (.arg .pi (i + 1) C t) := by
-  rw [TyTok]
-  · exact id
-  all_goals intro h₁ h₂; first | exact Kind.noConfusion h₁ | exact Nat.noConfusion h₂
+    ¬ TyTok a (.arg .pi (i + 1) C t) :=
+  tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id
 
 /-- A dependent pair type token has a single domain component. -/
 theorem tyTok_argSigma_succ {a : List Tok} {i : Nat} {C : List Tok} {t : Tok} :
-    ¬ TyTok a (.arg .sigma (i + 1) C t) := by
-  rw [TyTok]
-  · exact id
-  all_goals intro h₁ h₂; first | exact Kind.noConfusion h₁ | exact Nat.noConfusion h₂
+    ¬ TyTok a (.arg .sigma (i + 1) C t) :=
+  tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id
 
 /-- An identity type token has a carrier and two endpoint components. -/
 theorem tyTok_argIdent_high {a : List Tok} {i : Nat} {C : List Tok} {t : Tok} :
-    ¬ TyTok a (.arg .ident (i + 3) C t) := by
-  rw [TyTok]
-  · exact id
-  all_goals intro h₁ h₂; first | exact Kind.noConfusion h₁ | omega
+    ¬ TyTok a (.arg .ident (i + 3) C t) :=
+  tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id
 
 /-- A pair token has two components. -/
 theorem tyTok_pair_high {a : List Tok} {i : Nat} {C : List Tok} {t : Tok} :
-    ¬ TyTok a (.arg .pair (i + 2) C t) := by
-  rw [TyTok]
-  · exact id
-  all_goals intro h₁ h₂; first | exact Kind.noConfusion h₁ | omega
+    ¬ TyTok a (.arg .pair (i + 2) C t) :=
+  tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id
 
 /-- The carrier witnesses of an identity-type witness are types. -/
 theorem ty_args_ident {a : List Tok} (ha : Ty a Elem.univ) : Ty (args .ident 0 a) Elem.univ := by
@@ -138,9 +167,31 @@ theorem ty_args_ident {a : List Tok} (ha : Ty a Elem.univ) : Ty (args .ident 0 a
             cases hd
         | 1, h => exact ((tyTok_endpoint (.inl rfl)).1 h).2.1 s hd
         | 2, h => exact ((tyTok_endpoint (.inr rfl)).1 h).2.1 s hd
-        | i + 3, h => exact absurd h (tyTok_arg_other (by simp [argSlots]))
+        | i + 3, h => exact absurd h (tyTok_arg_other (not_mem_argSlots fun h₁ h₂ hm => by
+    simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hm
+    rcases hm with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
+      ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    all_goals first | (cases h₁; done) | cases h₂) id)
     | fn k C X Y =>
         change k = .ident at htk
+        subst htk
+        exact absurd (ha _ ht) (tyTok_fn_other (by simp))
+
+/-- The parameter witnesses of a datatype witness are types. -/
+theorem ty_args_data {a : List Tok} (ha : Ty a Elem.univ) (d : DeclName) (j : Nat) :
+    Ty (args (.data d) j a) Elem.univ := by
+  intro s hs
+  rcases mem_args_iff.1 hs with ⟨C, hC⟩ | ⟨-, t, ht, htk, hd⟩
+  · exact (tyTok_param.1 (ha _ hC)).2.2
+  · cases t with
+    | tag => cases hd
+    | arg k i C q =>
+        change k = .data d at htk
+        subst htk
+        obtain ⟨-, rfl, -⟩ := tyTok_param.1 (ha _ ht)
+        cases hd
+    | fn k C X Y =>
+        change k = .data d at htk
         subst htk
         exact absurd (ha _ ht) (tyTok_fn_other (by simp))
 
@@ -204,6 +255,26 @@ theorem RT.sigma_fam_at {a X : List Tok} {T D N N' : CTm Head n} {E : CTm Head (
 
 variable {L : Type} [LevelOrder L] (levels : LevelModel R L) (formed : CCtxFormed P Γ)
 include levels formed
+
+omit formed in
+/-- **The type witness of a typed field relates the field's type to itself**: the
+datatype's witness, reduced to the datatype, for a recursive field; its parameter witness, at
+the parameter, for a parameter field. -/
+theorem RT.field_self {a : List Tok} (ha : Ty a Elem.univ) {d c : DeclName}
+    {fs : List FieldShape} {T M M' : CTm Head n} {ms ms' : List (CTm Head n)}
+    (hs : CtorRed H Γ d c fs T M M' ms ms') (hT : ∀ s ∈ a, RT H Γ false s T T T) {i : Nat}
+    {f : FieldShape} (hf : fs[i]? = some f) {A : CTm Head n}
+    (hA : ∃ f', fs[i]? = some f' ∧ K.fieldType d f' = some A) :
+    Ty (f.typeAt d a) Elem.univ ∧ ∀ q ∈ f.typeAt d a, RT H Γ false q A A A := by
+  obtain ⟨f', hf', hA⟩ := hA
+  rw [hf] at hf'
+  cases hf'
+  cases f with
+  | self =>
+      cases hA
+      exact ⟨ha, fun q hq => RT.reduce_ty levels hs.2.1 hs.2.1 (hT q hq)⟩
+  | param j =>
+      exact ⟨ty_args_data ha d j, fun q hq => RT.data_params (fun s hs _ => hT s hs) j q hq A hA⟩
 
 /-- Terms related as far as a token observes stay related when the right one is
 replaced by a term with a common reduct. -/
@@ -274,6 +345,13 @@ theorem ReflRed.conv' {A B M M' B₁ y₁ z₁ B₂ y₂ z₂ r r' : CTm Head n}
   obtain ⟨_, rM, rM', e₁, e₂, e₃⟩ := hr
   exact ⟨rA, rM.convType eAB.symm, rM'.convType eAB.symm, (e₁.convType eB.symm).trans ey.symm,
     (e₂.convType eB.symm).trans ez.symm, e₃.convType eB.symm⟩
+
+/-- A constructor form at one type is one at an equal type reducing to the same datatype; the
+fields keep their types. -/
+theorem CtorRed.conv {d c : DeclName} {fs : List FieldShape} {A B M M' : CTm Head n}
+    {ms ms' : List (CTm Head n)} (hs : CtorRed H Γ d c fs A M M' ms ms')
+    (rB : CRedTy H Γ B (.const d)) (eAB : CTypeEq P Γ A B) : CtorRed H Γ d c fs B M M' ms ms' :=
+  ⟨hs.1, rB, hs.2.2.1.convType eAB, hs.2.2.2.1.convType eAB, hs.2.2.2.2⟩
 
 include levels formed in
 /-- **Conversion** at the tokens of depth below `N + 1`, from the laws below `N`. -/
@@ -346,17 +424,30 @@ theorem LawsBelow.conv_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t.
           obtain ⟨m, m', _, r₁, r₂, e⟩ := RT.tm_succTag_iff.1 h
           exact RT.tm_succTag_iff.2 ⟨m, m', rA, r₁.convType eAB.symm, r₂.convType eAB.symm, e⟩
       case pair => exact absurd hta tyTok_tag_pair
+      case ctor d c fs =>
+        obtain ⟨-, rA, rB⟩ := RT.ty_data_iff.1 (hAB _ (tyTok_tag_ctor.1 hta))
+        constructor
+        · intro h
+          obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+          exact RT.tm_ctorTag_iff.2 ⟨ms, ms', hs.conv rB eAB⟩
+        · intro h
+          obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+          exact RT.tm_ctorTag_iff.2 ⟨ms, ms', hs.conv rA eAB.symm⟩
       all_goals
-        exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
-            (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e),
-          fun _ => RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
-            (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)⟩
+        exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => nomatch e)
+            (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e),
+          fun _ => RT.tm_other htk (fun _ _ _ e => nomatch e)
+            (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)⟩
   | arg k i C d =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-      · exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-            (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e),
-          fun _ => RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-            (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)⟩
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+      · exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+            (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e),
+          fun _ => RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+            (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+            (fun _ _ _ e => nomatch e)⟩
       · match i, hta with
         | 0, hta =>
           obtain ⟨hid, hC, hsa, h1, h2⟩ := tyTok_reflPoint.1 hta
@@ -492,12 +583,23 @@ theorem LawsBelow.conv_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t.
             exact (famConv tN₁ (fun c hc => RT.self_of_join levels formed (RT.left (hC₁ c hc))
               hQ hNQ)).2 (h1 rfl N₁ Q hQ₂ hNQ₂)
         | i + 2, hta => exact absurd hta tyTok_pair_high
-      · exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2,
-          fun _ => RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2⟩
+      · obtain ⟨hdat, -, -⟩ := tyTok_field.1 hta
+        obtain ⟨-, rA, rB⟩ := RT.ty_data_iff.1 (hAB _ hdat)
+        constructor
+        · intro h
+          rcases RT.tm_field_iff.1 h with hvac | ⟨ms, ms', hs, rest⟩
+          · exact RT.of_vacuous hvac
+          · exact RT.tm_field_iff.2 (.inr ⟨ms, ms', hs.conv rB eAB, rest⟩)
+        · intro h
+          rcases RT.tm_field_iff.1 h with hvac | ⟨ms, ms', hs, rest⟩
+          · exact RT.of_vacuous hvac
+          · exact RT.tm_field_iff.2 (.inr ⟨ms, ms', hs.conv rA eAB.symm, rest⟩)
+      · exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2,
+          fun _ => RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2⟩
   | fn k C X Y =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
       · obtain ⟨hpi, -, hX, hY⟩ := tyTok_lam.1 hta
         obtain ⟨D₁, E₁, D₂, E₂, hp⟩ := RT.ty_pi_iff.1 (hAB _ hpi)
         have hdom : ∀ r ∈ args .pi 0 a, RT H Γ false r D₁ D₁ D₂ :=
@@ -554,10 +656,11 @@ theorem LawsBelow.conv_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t.
       · exact absurd hta (tyTok_fn_other (by simp))
       · exact absurd hta (tyTok_fn_other (by simp))
       · exact absurd hta (tyTok_fn_other (by simp))
+      · exact absurd hta (tyTok_fn_other (by simp))
       · exact ⟨fun _ => RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2,
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2,
           fun _ => RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-            (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2⟩
+            (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2⟩
 
 end Conversion
 
@@ -638,14 +741,58 @@ theorem ReflRed.trans {T M₁ M₂ M₃ B x y B' x' y' r₁ r₂ r₂' r₃ : CT
   obtain rfl := CRedTm.refl_align h₁.2.2.1 h₂.2.1
   exact ⟨h₁.1, h₁.2.1, h₂.2.2.1, h₁.2.2.2.1, h₁.2.2.2.2.1, .trans h₁.2.2.2.2.2 h₂.2.2.2.2.2⟩
 
+theorem FieldsEqual.symm {d : DeclName} {fs : List FieldShape} {ms ms' : List (CTm Head n)}
+    (h : FieldsEqual K Γ d fs ms ms') : FieldsEqual K Γ d fs ms' ms := by
+  induction h with
+  | nil => exact .nil
+  | cons hf e _ ih => exact .cons hf (.symm e) ih
+
+theorem FieldsEqual.trans {d : DeclName} {fs : List FieldShape} {ms₁ ms₂ ms₃ : List (CTm Head n)}
+    (h₁ : FieldsEqual K Γ d fs ms₁ ms₂) (h₂ : FieldsEqual K Γ d fs ms₂ ms₃) :
+    FieldsEqual K Γ d fs ms₁ ms₃ := by
+  induction h₁ generalizing ms₃ with
+  | nil =>
+      cases h₂
+      exact .nil
+  | cons hf e _ ih =>
+      cases h₂ with
+      | cons hf' e' rest =>
+          rw [hf] at hf'
+          cases hf'
+          exact .cons hf (.trans e e') (ih rest)
+
+theorem CtorRed.symm {d c : DeclName} {fs : List FieldShape} {T M M' : CTm Head n}
+    {ms ms' : List (CTm Head n)} (h : CtorRed H Γ d c fs T M M' ms ms') :
+    CtorRed H Γ d c fs T M' M ms' ms :=
+  ⟨h.1, h.2.1, h.2.2.2.1, h.2.2.1, h.2.2.2.2.symm⟩
+
+theorem CtorRed.trans {d c : DeclName} {fs : List FieldShape} {T M₁ M₂ M₃ : CTm Head n}
+    {ms₁ ms₂ ms₂' ms₃ : List (CTm Head n)} (h₁ : CtorRed H Γ d c fs T M₁ M₂ ms₁ ms₂)
+    (h₂ : CtorRed H Γ d c fs T M₂ M₃ ms₂' ms₃) : CtorRed H Γ d c fs T M₁ M₃ ms₁ ms₃ := by
+  obtain rfl := CRedTm.ctor_align h₁.1 h₁.2.2.2.2.length.2 h₂.2.2.2.2.length.1 h₁.2.2.2.1 h₂.2.2.1
+  exact ⟨h₁.1, h₁.2.1, h₁.2.2.1, h₂.2.2.2.1, h₁.2.2.2.2.trans h₂.2.2.2.2⟩
+
+/-- The field `i` of a first and a third list of fields, with a second list as long as the
+first: the field `i` of the second lies between them. -/
+theorem FieldAt.split {d : DeclName} {fs : List FieldShape} {ms₁ ms₂ ms₃ : List (CTm Head n)}
+    {i : Nat} {A m₁ m₃ : CTm Head n} (hl : ms₂.length = ms₁.length)
+    (h : FieldAt K d fs ms₁ ms₃ i A m₁ m₃) :
+    ∃ m₂, FieldAt K d fs ms₁ ms₂ i A m₁ m₂ ∧ FieldAt K d fs ms₂ ms₃ i A m₂ m₃ := by
+  obtain ⟨hf, h₁, h₃⟩ := h
+  have hi : i < ms₂.length := by
+    rw [hl]
+    exact (List.getElem?_eq_some_iff.1 h₁).1
+  exact ⟨ms₂[i], ⟨hf, h₁, List.getElem?_eq_getElem hi⟩, ⟨hf, List.getElem?_eq_getElem hi, h₃⟩⟩
+
+/-- **The numbers as an instance**: symmetry of successor forms is symmetry of constructor
+forms. -/
 theorem SuccRed.symm {T M M' m m' : CTm Head n} (h : SuccRed H Γ T M M' m m') :
     SuccRed H Γ T M' M m' m :=
-  ⟨h.1, h.2.2.1, h.2.1, .symm h.2.2.2⟩
+  SuccRed.iff_ctorRed.2 (SuccRed.iff_ctorRed.1 h).symm
 
 theorem SuccRed.trans {T M₁ M₂ M₃ m₁ m₂ m₂' m₃ : CTm Head n} (h₁ : SuccRed H Γ T M₁ M₂ m₁ m₂)
-    (h₂ : SuccRed H Γ T M₂ M₃ m₂' m₃) : SuccRed H Γ T M₁ M₃ m₁ m₃ := by
-  obtain rfl := CRedTm.suc_align h₁.2.2.1 h₂.2.1
-  exact ⟨h₁.1, h₁.2.1, h₂.2.2.1, .trans h₁.2.2.2 h₂.2.2.2⟩
+    (h₂ : SuccRed H Γ T M₂ M₃ m₂' m₃) : SuccRed H Γ T M₁ M₃ m₁ m₃ :=
+  SuccRed.iff_ctorRed.2 ((SuccRed.iff_ctorRed.1 h₁).trans (SuccRed.iff_ctorRed.1 h₂))
 
 end Shapes
 
@@ -657,9 +804,11 @@ variable {L : Type} [LevelOrder L] (levels : LevelModel R L) {n : Nat} {Γ : CCt
 
 /-- The type relation carries no clause at the other tags. -/
 private theorem tag_other_ne {k : Kind} (h1 : k ≠ .univ) (h2 : k ≠ .codes) (h3 : k ≠ .nat)
-    (h4 : k ≠ .pi) (h5 : k ≠ .ident) (h6 : k ≠ .ground) (h7 : k ≠ .sigma) :
-    k ≠ .univ ∧ k ≠ .codes ∧ k ≠ .nat ∧ k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .ground ∧ k ≠ .sigma :=
-  ⟨h1, h2, h3, h4, h5, h6, h7⟩
+    (h4 : k ≠ .pi) (h5 : k ≠ .ident) (h6 : k ≠ .ground) (h7 : k ≠ .sigma)
+    (h8 : ∀ d, k ≠ .data d) :
+    k ≠ .univ ∧ k ≠ .codes ∧ k ≠ .nat ∧ k ≠ .pi ∧ k ≠ .ident ∧ k ≠ .ground ∧ k ≠ .sigma ∧
+      ∀ d, k ≠ .data d :=
+  ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩
 
 include levels in
 /-- **Symmetry of the type relation** at the tokens of depth below `N + 1`. -/
@@ -690,11 +839,14 @@ theorem LawsBelow.symmTy_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : 
       case sigma =>
         obtain ⟨D, E, D', E', hp⟩ := RT.ty_sigma_iff.1 h
         exact RT.ty_sigma_iff.2 ⟨D', E', D, E, hp.symm⟩
+      case data d =>
+        obtain ⟨hd, r, r'⟩ := RT.ty_data_iff.1 h
+        exact RT.ty_data_iff.2 ⟨hd, r', r⟩
       all_goals exact RT.ty_tag_other (tag_other_ne (by intro e; cases e) (by intro e; cases e)
         (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
-        (by intro e; cases e))
+        (by intro e; cases e) (fun _ e => nomatch e))
   | arg k i C d =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · match i, hty with
         | 0, hty =>
           obtain ⟨-, rfl, hd⟩ := (tyTok_dom (.inl rfl)).1 hty
@@ -746,9 +898,12 @@ theorem LawsBelow.symmTy_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : 
             fun c hc => absurd hc List.not_mem_nil,
             fun _ => IH.symmTy (sub (depth_lt_arg _ _ _ _)) hd (hdd rfl)⟩)
         | i + 1, hty => exact absurd hty tyTok_argSigma_succ
+      · rcases RT.ty_param_iff.1 h with hvac | ⟨⟨hd, r, r'⟩, rest⟩
+        · exact RT.of_vacuous hvac
+        · exact RT.ty_param_iff.2 (.inr ⟨⟨hd, r', r⟩, rest⟩)
       · exact RT.ty_arg_other hk
   | fn k C Z W =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · obtain ⟨-, hC, hZ, hW⟩ := (tyTok_family (.inl rfl)).1 hty
         rcases RT.ty_fnPi_iff.1 h with hvac | ⟨D, E, D', E', hp, hc, hf, hg⟩
         · exact RT.of_vacuous hvac
@@ -781,6 +936,7 @@ theorem LawsBelow.symmTy_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : 
           exact ⟨h2, h1⟩
         · exact IH.symmTy (sub (depth_lt_fn_right hw)) (hW w hw)
             (hg N₁ (tN.convType eD) (zConv hz) w hw)
+      · exact absurd hty (tyTok_fn_other (by simp))
       · exact RT.ty_fn_other hk
 
 include levels in
@@ -813,11 +969,15 @@ theorem LawsBelow.transTy_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht :
         obtain ⟨D₁, E₁, D₂, E₂, hp₁⟩ := RT.ty_sigma_iff.1 h₁
         obtain ⟨D₂', E₂', D₃, E₃, hp₂⟩ := RT.ty_sigma_iff.1 h₂
         exact RT.ty_sigma_iff.2 ⟨D₁, E₁, D₃, E₃, SigmaRed.trans levels hp₁ hp₂⟩
+      case data d =>
+        obtain ⟨hd, r₁, -⟩ := RT.ty_data_iff.1 h₁
+        obtain ⟨-, -, r₃⟩ := RT.ty_data_iff.1 h₂
+        exact RT.ty_data_iff.2 ⟨hd, r₁, r₃⟩
       all_goals exact RT.ty_tag_other (tag_other_ne (by intro e; cases e) (by intro e; cases e)
         (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
-        (by intro e; cases e))
+        (by intro e; cases e) (fun _ e => nomatch e))
   | arg k i C d =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · match i, hty with
         | 0, hty =>
           obtain ⟨-, rfl, hd⟩ := (tyTok_dom (.inl rfl)).1 hty
@@ -895,9 +1055,14 @@ theorem LawsBelow.transTy_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht :
             fun c hc => absurd hc List.not_mem_nil,
             fun _ => IH.transTy (sub (depth_lt_arg _ _ _ _)) hd (hd₁ rfl) (hd₂ rfl)⟩)
         | i + 1, hty => exact absurd hty tyTok_argSigma_succ
+      · rcases RT.ty_param_iff.1 h₁ with hvac | ⟨⟨hd, r₁, -⟩, rest⟩
+        · exact RT.of_vacuous hvac
+        rcases RT.ty_param_iff.1 h₂ with hvac | ⟨⟨-, -, r₃⟩, -⟩
+        · exact RT.of_vacuous hvac
+        exact RT.ty_param_iff.2 (.inr ⟨⟨hd, r₁, r₃⟩, rest⟩)
       · exact RT.ty_arg_other hk
   | fn k C Z W =>
-      rcases kind_cases_tySigma k with rfl | rfl | rfl | hk
+      rcases kind_cases_tySigma k with rfl | rfl | rfl | ⟨dn, rfl⟩ | hk
       · obtain ⟨-, hC, hZ, hW⟩ := (tyTok_family (.inl rfl)).1 hty
         rcases RT.ty_fnPi_iff.1 h₁ with hvac | ⟨D₁, E₁, D₂, E₂, hp₁, hc₁, hf₁, hg₁⟩
         · exact RT.of_vacuous hvac
@@ -933,6 +1098,7 @@ theorem LawsBelow.transTy_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht :
             (hf₂ N₁ N₁' (hNN.convType eD) (zConv hz) w hw).2⟩,
           fun N₁ tN hz w hw => IH.transTy (sub (depth_lt_fn_right hw)) (hW w hw)
             (hg₁ N₁ tN hz w hw) (hg₂ N₁ (tN.convType eD) (zConv hz) w hw)⟩)
+      · exact absurd hty (tyTok_fn_other (by simp))
       · exact RT.ty_fn_other hk
 
 end TypeLaws
@@ -975,13 +1141,18 @@ theorem LawsBelow.symm_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t.
         obtain ⟨m, m', hs⟩ := RT.tm_succTag_iff.1 h
         exact RT.tm_succTag_iff.2 ⟨m', m, hs.symm⟩
       case pair => exact absurd hta tyTok_tag_pair
+      case ctor d c fs =>
+        obtain ⟨ms, ms', hs⟩ := RT.tm_ctorTag_iff.1 h
+        exact RT.tm_ctorTag_iff.2 ⟨ms', ms, hs.symm⟩
       all_goals
-        exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
+        exact RT.tm_other htk (fun _ _ _ e => nomatch e)
           (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+          (fun _ _ _ e => nomatch e)
   | arg k i C d =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-          (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+          (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+          (fun _ _ _ e => nomatch e)
       · match i, hta with
         | 0, hta =>
           obtain ⟨hid, rfl, hsa, -, -⟩ := tyTok_reflPoint.1 hta
@@ -1051,10 +1222,18 @@ theorem LawsBelow.symm_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t.
           exact (IH.conv hd hfamTy hsa (RT.sigma_fam_at hp hT eMN toN)
             (hE.instantiateEq tM eMN)).1 base
         | i + 2, hta => exact absurd hta tyTok_pair_high
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+      · obtain ⟨-, rfl, f, hf, hsa⟩ := tyTok_field.1 hta
+        have hd : d.depth < N := sub (depth_lt_arg (.ctor dn cn fs) i [] d)
+        rcases RT.tm_field_iff.1 h with hvac | ⟨ms, ms', hs, -, hfd⟩
+        · exact RT.of_vacuous hvac
+        refine RT.tm_field_iff.2 (.inr ⟨ms', ms, hs.symm, fun c hc => absurd hc List.not_mem_nil,
+          fun A m' m hA => ?_⟩)
+        obtain ⟨hTy, hself⟩ := RT.field_self levels ha hs hT hf hA.1
+        exact IH.symm hd hTy hsa hself (hfd A m m' ⟨hA.1, hA.2.2, hA.2.1⟩)
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
   | fn k C X Y =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
       · obtain ⟨hpi, -, -, hY⟩ := tyTok_lam.1 hta
         rcases RT.tm_lam_iff.1 h with hvac | hcl
         · exact RT.of_vacuous hvac
@@ -1068,8 +1247,9 @@ theorem LawsBelow.symm_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t.
       · exact absurd hta (tyTok_fn_other (by simp))
       · exact absurd hta (tyTok_fn_other (by simp))
       · exact absurd hta (tyTok_fn_other (by simp))
+      · exact absurd hta (tyTok_fn_other (by simp))
       · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 include levels formed in
 /-- **Transitivity of the term relation** at the tokens of depth below `N + 1`, at a
@@ -1114,13 +1294,19 @@ theorem LawsBelow.trans_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t
         obtain ⟨_, m₃, hs₂⟩ := RT.tm_succTag_iff.1 h₂
         exact RT.tm_succTag_iff.2 ⟨m₁, m₃, hs₁.trans hs₂⟩
       case pair => exact absurd hta tyTok_tag_pair
+      case ctor d c fs =>
+        obtain ⟨ms₁, ms₂, hs₁⟩ := RT.tm_ctorTag_iff.1 h₁
+        obtain ⟨_, ms₃, hs₂⟩ := RT.tm_ctorTag_iff.1 h₂
+        exact RT.tm_ctorTag_iff.2 ⟨ms₁, ms₃, hs₁.trans hs₂⟩
       all_goals
-        exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e)
+        exact RT.tm_other htk (fun _ _ _ e => nomatch e)
           (by intro e; cases e) (by intro e; cases e) (by intro e; cases e) (by intro e; cases e)
+          (fun _ _ _ e => nomatch e)
   | arg k i C d =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) (by intro e; cases e)
-          (fun e => Tok.noConfusion e) (by intro e; cases e) (by intro e; cases e)
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) (by intro e; cases e)
+          (fun e => nomatch e) (by intro e; cases e) (by intro e; cases e)
+          (fun _ _ _ e => nomatch e)
       · match i, hta with
         | 0, hta =>
           obtain ⟨hid, rfl, hsa, -, -⟩ := tyTok_reflPoint.1 hta
@@ -1208,10 +1394,24 @@ theorem LawsBelow.trans_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t
             (RT.sigma_fam_at hp hT (CEqual.left hNQ.2) selfN)
             (h1₁ rfl N₁ Q hQ hNQ) step₂
         | i + 2, hta => exact absurd hta tyTok_pair_high
-      · exact RT.tm_other htk (fun _ _ _ e => Tok.noConfusion e) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+      · obtain ⟨-, rfl, f, hf, hsa⟩ := tyTok_field.1 hta
+        have hd : d.depth < N := sub (depth_lt_arg (.ctor dn cn fs) i [] d)
+        rcases RT.tm_field_iff.1 h₁ with hvac | ⟨ms₁, ms₂, hs₁, -, hd₁⟩
+        · exact RT.of_vacuous hvac
+        rcases RT.tm_field_iff.1 h₂ with hvac | ⟨ms₂', ms₃, hs₂, -, hd₂⟩
+        · exact RT.of_vacuous hvac
+        obtain rfl := CRedTm.ctor_align hs₁.1 hs₁.2.2.2.2.length.2 hs₂.2.2.2.2.length.1
+          hs₁.2.2.2.1 hs₂.2.2.1
+        refine RT.tm_field_iff.2 (.inr ⟨_, _, hs₁.trans hs₂,
+          fun c hc => absurd hc List.not_mem_nil, fun A m₁ m₃ hA => ?_⟩)
+        obtain ⟨m₂, hA₁, hA₂⟩ :=
+          FieldAt.split (hs₁.2.2.2.2.length.2.trans hs₁.2.2.2.2.length.1.symm) hA
+        obtain ⟨hTy, hself⟩ := RT.field_self levels ha hs₁ hT hf hA.1
+        exact IH.trans hd hTy hsa hself (hd₁ A m₁ m₂ hA₁) (hd₂ A m₂ m₃ hA₂)
+      · exact RT.tm_other htk (fun _ _ _ e => nomatch e) hk.2.1
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
   | fn k C X Y =>
-      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | hk
+      rcases kind_cases_tmPair k with rfl | rfl | rfl | rfl | ⟨dn, cn, fs, rfl⟩ | hk
       · obtain ⟨hpi, -, -, hY⟩ := tyTok_lam.1 hta
         rcases RT.tm_lam_iff.1 h₁ with hvac | hcl₁
         · exact RT.of_vacuous hvac
@@ -1229,8 +1429,9 @@ theorem LawsBelow.trans_step {N : Nat} (IH : LawsBelow H Γ N) {t : Tok} (ht : t
       · exact absurd hta (tyTok_fn_other (by simp))
       · exact absurd hta (tyTok_fn_other (by simp))
       · exact absurd hta (tyTok_fn_other (by simp))
+      · exact absurd hta (tyTok_fn_other (by simp))
       · exact RT.tm_other htk (fun _ _ _ e => by cases e; exact hk.1 rfl) hk.2.1
-          (fun e => Tok.noConfusion e) hk.2.2.1 hk.2.2.2
+          (fun e => nomatch e) hk.2.2.1 hk.2.2.2.1 hk.2.2.2.2
 
 end TermLaws
 

@@ -58,6 +58,7 @@ import Mettapedia.GSLT.Logic.HigherOrderHMLControls
 import Mettapedia.GSLT.Logic.HennessyMilnerBehavioralCoverControls
 import Mettapedia.GSLT.Logic.HigherOrderContextClosure
 import Mettapedia.GSLT.Logic.HigherOrderContextClosureControls
+import Mettapedia.GSLT.Logic.SeparationAlgebra
 import Mettapedia.GSLT.Core.WeightedMuScheduler
 import Mettapedia.GSLT.Core.WeightedOccurrenceControl
 import Mettapedia.GSLT.Core.BranchCaptureAlgebra

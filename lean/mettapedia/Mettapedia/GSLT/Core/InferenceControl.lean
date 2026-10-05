@@ -114,6 +114,28 @@ def mapNodes {NextNode : Type*} (mapping : Node → NextNode)
   search := snapshot.search.mapNodes mapping
   memory := snapshot.memory
 
+/-- Transport occurrence representations and controller memory together.
+Ordered emissions and the entire frontier use the existing node transport;
+the memory map must separately preserve the controller's future operations. -/
+def mapState {NextNode NextMemory : Type*} (mapping : Node → NextNode)
+    (transfer : Memory → NextMemory) (snapshot : Snapshot Node Answer Memory) :
+    Snapshot NextNode Answer NextMemory :=
+  (snapshot.mapNodes mapping).mapMemory transfer
+
+@[simp] theorem mapState_id (snapshot : Snapshot Node Answer Memory) :
+    snapshot.mapState id id = snapshot := by
+  cases snapshot
+  simp [mapState, mapNodes, mapMemory]
+
+theorem mapState_comp {NextNode FinalNode NextMemory FinalMemory : Type*}
+    (first : Node → NextNode) (second : NextNode → FinalNode)
+    (one : Memory → NextMemory) (two : NextMemory → FinalMemory)
+    (snapshot : Snapshot Node Answer Memory) :
+    (snapshot.mapState first one).mapState second two =
+      snapshot.mapState (second ∘ first) (two ∘ one) := by
+  simp [mapState, mapNodes, mapMemory, BranchingTemporal.Snapshot.mapNodes,
+    Emission.mapOrigin, List.map_map, Function.comp_def]
+
 def initial (controller : Controller Node Answer Memory) (roots : List Node) :
     Snapshot Node Answer Memory where
   search := BranchingTemporal.initial roots
@@ -134,8 +156,47 @@ def tick (system : BranchingSystem Node Answer)
           controller.advance snapshot.memory node (system.emit node)
             (system.successors node) }
 
-/-- A stateful realization must preserve the selected observations and the
-controller update, as well as both ordered scheduler operations. -/
+/-- A state translation compares independently supplied branching authorities
+and controllers. Local emission, successor, selection, integration and memory
+update laws determine the whole step; equality of checkpoints is not assumed. -/
+theorem tick_mapState {NextNode NextMemory : Type*} (mapping : Node → NextNode)
+    (transfer : Memory → NextMemory)
+    (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+    (first : Controller Node Answer Memory) (second : Controller NextNode Answer NextMemory)
+    (emits : ∀ node, source.emit node = target.emit (mapping node))
+    (successors : ∀ node,
+      (source.successors node).map mapping = target.successors (mapping node))
+    (reorders : ∀ memory nodes,
+      ((first.scheduler memory).reorder nodes).map mapping =
+        (second.scheduler (transfer memory)).reorder (nodes.map mapping))
+    (integrates : ∀ memory pending generated,
+      ((first.scheduler memory).integrate pending generated).map mapping =
+        (second.scheduler (transfer memory)).integrate
+          (pending.map mapping) (generated.map mapping))
+    (advances : ∀ memory node emission generated,
+      transfer (first.advance memory node emission generated) =
+        second.advance (transfer memory) (mapping node) emission (generated.map mapping))
+    (snapshot : Snapshot Node Answer Memory) :
+    (tick source first snapshot).mapState mapping transfer =
+      tick target second (snapshot.mapState mapping transfer) := by
+  have searchEquality := BranchingTemporal.tick_mapNodes mapping source target
+    (first.scheduler snapshot.memory) (second.scheduler (transfer snapshot.memory))
+    emits successors (reorders snapshot.memory) (integrates snapshot.memory) snapshot.search
+  have memoryEquality : transfer (tick source first snapshot).memory =
+      (tick target second (snapshot.mapState mapping transfer)).memory := by
+    simp only [tick, mapState, mapNodes, mapMemory, BranchingTemporal.Snapshot.mapNodes]
+    rw [← reorders]
+    cases ordered : (first.scheduler snapshot.memory).reorder snapshot.search.frontier with
+    | nil => rfl
+    | cons node pending =>
+        simp only [List.map_cons]
+        rw [← emits, ← successors]
+        exact advances _ _ _ _
+  exact congrArg₂ (fun search memory => (⟨search, memory⟩ : Snapshot NextNode Answer NextMemory))
+    searchEquality memoryEquality
+
+/-- The node-only comparison is the identity-memory instance of the common
+state translation, retaining its original interface. -/
 theorem tick_mapNodes {NextNode : Type*} (mapping : Node → NextNode)
     (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
     (first : Controller Node Answer Memory) (second : Controller NextNode Answer Memory)
@@ -153,22 +214,9 @@ theorem tick_mapNodes {NextNode : Type*} (mapping : Node → NextNode)
         second.advance memory (mapping node) emission (generated.map mapping))
     (snapshot : Snapshot Node Answer Memory) :
     (tick source first snapshot).mapNodes mapping =
-      tick target second (snapshot.mapNodes mapping) := by
-  have searchEquality := BranchingTemporal.tick_mapNodes mapping source target
-    (first.scheduler snapshot.memory) (second.scheduler snapshot.memory)
-    emits successors (reorders snapshot.memory) (integrates snapshot.memory) snapshot.search
-  have memoryEquality : (tick source first snapshot).memory =
-      (tick target second (snapshot.mapNodes mapping)).memory := by
-    simp only [tick, mapNodes, BranchingTemporal.Snapshot.mapNodes]
-    rw [← reorders]
-    cases ordered : (first.scheduler snapshot.memory).reorder snapshot.search.frontier with
-    | nil => rfl
-    | cons node pending =>
-        simp only [List.map_cons]
-        rw [← emits, ← successors]
-        exact advances _ _ _ _
-  exact congrArg₂ (fun search memory => (⟨search, memory⟩ : Snapshot NextNode Answer Memory))
-    searchEquality memoryEquality
+      tick target second (snapshot.mapNodes mapping) :=
+  tick_mapState mapping id source target first second emits successors reorders integrates
+    advances snapshot
 
 /-- Observe a bounded number of globally scheduled work occurrences. -/
 def run (system : BranchingSystem Node Answer)
@@ -176,6 +224,35 @@ def run (system : BranchingSystem Node Answer)
     Nat → Snapshot Node Answer Memory → Snapshot Node Answer Memory
   | 0, snapshot => snapshot
   | fuel + 1, snapshot => tick system controller (run system controller fuel snapshot)
+
+/-- Local state-translation laws preserve every finite prefix, including its
+ordered answer occurrences, still-live frontier and transferred continuation. -/
+theorem run_mapState {NextNode NextMemory : Type*} (mapping : Node → NextNode)
+    (transfer : Memory → NextMemory)
+    (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+    (first : Controller Node Answer Memory) (second : Controller NextNode Answer NextMemory)
+    (emits : ∀ node, source.emit node = target.emit (mapping node))
+    (successors : ∀ node,
+      (source.successors node).map mapping = target.successors (mapping node))
+    (reorders : ∀ memory nodes,
+      ((first.scheduler memory).reorder nodes).map mapping =
+        (second.scheduler (transfer memory)).reorder (nodes.map mapping))
+    (integrates : ∀ memory pending generated,
+      ((first.scheduler memory).integrate pending generated).map mapping =
+        (second.scheduler (transfer memory)).integrate
+          (pending.map mapping) (generated.map mapping))
+    (advances : ∀ memory node emission generated,
+      transfer (first.advance memory node emission generated) =
+        second.advance (transfer memory) (mapping node) emission (generated.map mapping))
+    (fuel : Nat) (snapshot : Snapshot Node Answer Memory) :
+    (run source first fuel snapshot).mapState mapping transfer =
+      run target second fuel (snapshot.mapState mapping transfer) := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel ih =>
+      rw [run, tick_mapState mapping transfer source target first second emits successors
+        reorders integrates advances, ih]
+      rfl
 
 /-- Stateful observation budgets compose exactly.  Resumption carries both
 the live search occurrences and the controller's memory; neither component is
@@ -457,6 +534,112 @@ theorem event_mem_tick_of_selected
       (tick system controller snapshot).search.events := by
   exact BranchingTemporal.event_mem_tick_of_selected system
     (controller.scheduler snapshot.memory) snapshot.search selection emits
+
+/-! ## Finite coverage, including captured controller states -/
+
+/-- A live node is selected now or remains live after the controlled tick.
+Changing controller memory cannot discard a waiting node. -/
+theorem member_selected_or_live (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory) {node : Node}
+    (member : node ∈ snapshot.search.frontier) :
+    selected controller snapshot = some node ∨
+      node ∈ (tick system controller snapshot).search.frontier := by
+  have orderedMember :=
+    ((controller.scheduler snapshot.memory).reorder_complete _).mem_iff.mpr member
+  cases ordered : (controller.scheduler snapshot.memory).reorder
+      snapshot.search.frontier with
+  | nil => simp [ordered] at orderedMember
+  | cons head pending =>
+      rw [ordered] at orderedMember
+      rcases List.mem_cons.mp orderedMember with equal | waiting
+      · subst node
+        exact Or.inl (by simp [selected, BranchingTemporal.selected, ordered])
+      · right
+        change node ∈ (BranchingTemporal.tick system
+          (controller.scheduler snapshot.memory) snapshot.search).frontier
+        simp only [BranchingTemporal.tick, ordered]
+        exact ((controller.scheduler snapshot.memory).integrate_complete _ _).mem_iff.mpr
+          (List.mem_append_left _ waiting)
+
+/-- A node live at a captured boundary is selected during the following
+interval or remains live at its end. No fairness premise is required. -/
+theorem entry_selected_or_live (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory) (start extra : Nat) {node : Node}
+    (member : node ∈ (run system controller start snapshot).search.frontier) :
+    (∃ index, start ≤ index ∧ index < start + extra ∧
+      selected controller (run system controller index snapshot) = some node) ∨
+      node ∈ (run system controller (start + extra) snapshot).search.frontier := by
+  induction extra with
+  | zero => exact Or.inr (by simpa using member)
+  | succ extra inductionHypothesis =>
+      rcases inductionHypothesis with ⟨index, afterStart, beforeEnd, selection⟩ | live
+      · exact Or.inl ⟨index, afterStart, by omega, selection⟩
+      · rcases member_selected_or_live system controller _ live with selection | waiting
+        · exact Or.inl ⟨start + extra, by omega, by omega, selection⟩
+        · exact Or.inr (by simpa [Nat.add_assoc, run] using waiting)
+
+/-- Every node generated from the captured frontier has already been selected
+or is still reachable from the current frontier. This also applies after
+resumption with noninitial controller memory. -/
+theorem generated_selected_or_reachable (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory) (fuel : Nat) {node : Node}
+    (generated : Generated system snapshot.search.frontier node) :
+    (∃ index, index < fuel ∧
+      selected controller (run system controller index snapshot) = some node) ∨
+      Generated system (run system controller fuel snapshot).search.frontier node := by
+  induction generated generalizing fuel with
+  | root member =>
+      have enters : _ ∈ (run system controller 0 snapshot).search.frontier := member
+      rcases entry_selected_or_live system controller snapshot 0 fuel enters with
+        ⟨index, _, beforeEnd, selection⟩ | live
+      · exact Or.inl ⟨index, by simpa using beforeEnd, selection⟩
+      · exact Or.inr (Generated.root (by simpa using live))
+  | successor _ childMember inductionHypothesis =>
+      rcases inductionHypothesis fuel with ⟨index, beforeEnd, selection⟩ | reachable
+      · have enters := successor_mem_tick_of_selected system controller _ selection childMember
+        obtain ⟨extra, endEq⟩ := Nat.le.dest (Nat.succ_le_of_lt beforeEnd)
+        rcases entry_selected_or_live system controller snapshot (index + 1) extra enters with
+          ⟨next, _, nextBeforeEnd, nextSelection⟩ | live
+        · exact Or.inl ⟨next, by omega, nextSelection⟩
+        · exact Or.inr (Generated.root (by simpa [endEq] using live))
+      · exact Or.inr (Generated.successor reachable childMember)
+
+/-- An emitting node selected before a finite boundary has its event in that
+boundary's retained stream, regardless of later controller changes. -/
+theorem selected_emission_mem_run (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory) {index fuel : Nat} {node : Node} {answer : Answer}
+    (beforeEnd : index < fuel)
+    (selection : selected controller (run system controller index snapshot) = some node)
+    (emits : system.emit node = some answer) :
+    (⟨node, answer⟩ : Emission Node Answer) ∈
+      (run system controller fuel snapshot).search.events := by
+  have event := event_mem_tick_of_selected system controller _ selection emits
+  obtain ⟨extra, endEq⟩ := Nat.le.dest (Nat.succ_le_of_lt beforeEnd)
+  rw [← endEq, run_add]
+  obtain ⟨tail, prefixEq⟩ := events_prefix_run system controller extra
+    (run system controller (index + 1) snapshot)
+  rw [← prefixEq]
+  exact List.mem_append_left _ event
+
+/-- A generated emitting node is represented by a retained event or remains
+reachable from pending work. An emitted value may itself encode unresolved
+work; interpreting that value as success is a separate observation. -/
+theorem generated_emitted_or_reachable (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory) (fuel : Nat) {node : Node} {answer : Answer}
+    (generated : Generated system snapshot.search.frontier node)
+    (emits : system.emit node = some answer) :
+    (⟨node, answer⟩ : Emission Node Answer) ∈
+      (run system controller fuel snapshot).search.events ∨
+      Generated system (run system controller fuel snapshot).search.frontier node := by
+  rcases generated_selected_or_reachable system controller snapshot fuel generated with
+    ⟨index, beforeEnd, selection⟩ | reachable
+  · exact Or.inl (selected_emission_mem_run system controller snapshot beforeEnd selection emits)
+  · exact Or.inr reachable
 
 /-- Stateful fairness reaches every finitely generated occurrence, not merely
 the occurrences present in the initial frontier. -/
@@ -815,12 +998,56 @@ structure Capture (Node Answer : Type*) where
   input : Node
   emission : Option Answer
   generated : List Node
+deriving DecidableEq, Repr
+
+namespace Capture
+
+/-- Preserve the recorded input and ordered generated occurrences under a
+node representation map. This transport does not authenticate the payload. -/
+def mapNodes {NextNode : Type*} (mapping : Node → NextNode)
+    (frame : Capture Node Answer) : Capture NextNode Answer :=
+  ⟨mapping frame.input, frame.emission, frame.generated.map mapping⟩
+
+@[simp] theorem mapNodes_id (frame : Capture Node Answer) : frame.mapNodes id = frame := by
+  cases frame
+  simp [mapNodes]
+
+theorem mapNodes_comp {NextNode FinalNode : Type*}
+    (first : Node → NextNode) (second : NextNode → FinalNode)
+    (frame : Capture Node Answer) :
+    (frame.mapNodes first).mapNodes second = frame.mapNodes (second ∘ first) := by
+  simp [mapNodes, List.map_map]
+
+theorem mapNodes_injective {NextNode : Type*} (mapping : Node → NextNode)
+    (faithful : Function.Injective mapping) : Function.Injective (mapNodes (Answer := Answer) mapping) := by
+  intro first second equal
+  have input := faithful (congrArg Capture.input equal)
+  have emission := congrArg Capture.emission equal
+  have generated := (List.map_injective_iff.mpr faithful) (congrArg Capture.generated equal)
+  cases first
+  cases second
+  simp only [mapNodes] at input emission generated
+  cases input
+  cases emission
+  cases generated
+  rfl
+
+end Capture
 
 abbrev Cache (Key Node Answer : Type*) := Key → Option (Capture Node Answer)
 
 /-- Compute a captured expansion from the branching authority. -/
 def capture (system : BranchingSystem Node Answer) (node : Node) :
     Capture Node Answer := ⟨node, system.emit node, system.successors node⟩
+
+omit [DecidableEq Key] in
+theorem capture_mapNodes {NextNode : Type*} (mapping : Node → NextNode)
+    (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+    (emits : ∀ node, source.emit node = target.emit (mapping node))
+    (successors : ∀ node,
+      (source.successors node).map mapping = target.successors (mapping node))
+    (node : Node) : (capture source node).mapNodes mapping = capture target (mapping node) := by
+  simp [capture, Capture.mapNodes, emits, successors]
 
 /-- The existing private-write kernel supplies preparation. Distinct keys
 permit physical reordering; logical occurrence identity belongs in the key. -/
@@ -1593,5 +1820,13 @@ end Examples
 #print axioms Preparation.Checkpoint.run_add
 #print axioms Preparation.Checkpoint.run_refused
 #print axioms Preparation.Checkpoint.run_agrees
+#print axioms Snapshot.mapState_id
+#print axioms Snapshot.mapState_comp
+#print axioms Snapshot.tick_mapState
+#print axioms Snapshot.run_mapState
+#print axioms Preparation.Capture.mapNodes_id
+#print axioms Preparation.Capture.mapNodes_comp
+#print axioms Preparation.Capture.mapNodes_injective
+#print axioms Preparation.capture_mapNodes
 
 end Mettapedia.GSLT.Core.InferenceControl

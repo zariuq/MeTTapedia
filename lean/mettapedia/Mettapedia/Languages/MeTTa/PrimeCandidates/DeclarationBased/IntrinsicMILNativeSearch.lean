@@ -487,7 +487,7 @@ noncomputable def admittedChoice :=
   choiceProvider.admitObservedAt choiceDependencies false (fun _ => True)
     choiceTrace
 
-noncomputable def activeChoice : admittedChoice.Active false :=
+theorem activeChoice : admittedChoice.Active false :=
   admittedChoice.activate (choiceDependencies.sameDependencies_refl false)
 
 /-- Native finite search supports nondeterminism without falsely representing
@@ -579,7 +579,7 @@ theorem no_finite_provider_for_infinite_fibre :
       right_inv := fun _ => rfl }
   let indexEquivNat : fibre.Index ≃ Nat :=
     fibre.occurrenceEquiv.trans occurrenceEquivNat
-  letI : Fintype Nat := Fintype.ofEquiv fibre.Index indexEquivNat
+  let : Fintype Nat := Fintype.ofEquiv fibre.Index indexEquivNat
   exact not_finite Nat
 
 /-- The existing nondeterministic intrinsic vocabulary earns finite native

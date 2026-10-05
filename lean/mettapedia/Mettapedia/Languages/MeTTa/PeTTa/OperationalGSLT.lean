@@ -148,10 +148,10 @@ state-preserving pure source cannot license. -/
 theorem addAtom_core_not_pure :
     CoreDecl EvalState.empty
         (.apply "add-atom" [.apply "&self" [], foo])
-        (EvalState.empty.addAtom foo) [unitAtom] ∧
+        (EvalState.empty.addAtom foo) [mutationSuccess] ∧
       ¬ pureSource.Evaluates EvalState.empty
         (.apply "add-atom" [.apply "&self" [], foo])
-        (EvalState.empty.addAtom foo) [unitAtom] := by
+        (EvalState.empty.addAtom foo) [mutationSuccess] := by
   constructor
   · exact CoreDecl.addAtom _ _
   · rintro ⟨stateEqual, _⟩

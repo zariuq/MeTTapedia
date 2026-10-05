@@ -5,7 +5,7 @@ import Mettapedia.Languages.VibeITP.Spec.Instr
 import Mettapedia.Languages.VibeITP.Spec.Encode
 import Mettapedia.Languages.VibeITP.Spec.Protocol
 import Mettapedia.Languages.VibeITP.Spec.Controls
-import Mettapedia.Languages.VibeITP.Presentation.FirstOrder
+import Mettapedia.GSLT.LanguageDef.FirstOrderRules
 import Mettapedia.Languages.VibeITP.Presentation.Syntax
 import Mettapedia.Languages.VibeITP.Presentation.Rules
 import Mettapedia.Languages.VibeITP.Presentation.Package

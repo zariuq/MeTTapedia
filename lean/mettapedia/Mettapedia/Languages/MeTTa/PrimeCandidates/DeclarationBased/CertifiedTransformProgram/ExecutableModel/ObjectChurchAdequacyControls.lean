@@ -182,7 +182,7 @@ theorem impZero_decodes_pi :
   have valid := objectChurch_fundamental cImpZero_typed CCtxFormed.nil
   have rel := valid.1 Env.nil trivial CCtxFormed.nil SubstRel.nil (.tag .pi) cImpZero_mem_pi
     (by rw [cinterp_propT]; exact typedAt_codes_piTag)
-  have codes := RT.toCodes rfl propRed rel
+  have codes := RT.toCodes rfl (propRed objectExtension) rel
   obtain ⟨D, E, -, -, red, -⟩ := RT.ty_pi_iff.1 codes
   exact ⟨D, E, red⟩
 
@@ -231,7 +231,7 @@ theorem natImpReading_adequateType :
     AdequateType natImpReading objectHeadReduction .nil impDecl := by
   intro ρ _ m Δ σ σ' formed hσ r hr hrU
   rw [natImpReading_cinterp_impDecl] at hr
-  exact adequateType_typeAt (H := objectHeadReduction) (.arr .prop (.arr .prop .prop)) .nil
+  exact adequateType_typeAt objectExtension (H := objectHeadReduction) (.arr .prop (.arr .prop .prop)) .nil
     Env.nil trivial formed ⟨hσ.1, fun i => i.elim0⟩ r hr hrU
 
 /-- The reading's token: at any two codes, the tag of the numbers. -/
@@ -329,7 +329,7 @@ theorem natImpReading_not_constAdequate : ¬ ConstAdequateAt natImpReading objec
   rcases (RT.tm_type_iff rfl).1 h₂ with hvac | ⟨u, -, hU, -⟩ | ⟨-, hnum⟩
   · rw [ent_nil_tag] at hvac
     cases hvac
-  · exact CRedTy.head_ne_prop hU propRed
+  · exact CRedTy.head_ne_prop hU (propRed objectExtension)
   · obtain ⟨redNum, -⟩ := RT.ty_nat_iff.1 hnum
     have e := CRedTy.nf_unique redNum impVars_decode_red objectHeadReduction.normal_num
       (objectHeadReduction.normal_pi _ _)
@@ -516,7 +516,7 @@ theorem recAllowed_not_adequate_core :
     ¬ ∀ {c : DeclName}, recAllowed c = true → ConstAdequateAt objectChurchReading coreReduction c :=
   fun consts => by
     have valid := CDerivable.valid ConvRules.objectLevels objectChurchReading_valid
-      objectRigid_groundHeads objectRules_groundHeadEq coreReduction_decoderStuck consts
+      objectExtension.groundHeads objectRules_groundHeadEq coreReduction_decoderStuck consts
       (recStuck_typed_within rfl rfl rfl rfl) CCtxFormed.nil
     have rel := valid.1 Env.nil trivial (Δ := .nil) .nil SubstRel.nil (.tag .succ)
       recStuck_mem_succ typedAt_motiveIdZero_succ
@@ -568,7 +568,7 @@ theorem numRec_not_constAdequate_core :
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
   rcases hc with rfl | rfl | rfl | rfl
   · exact ConstAdequateAt.of_adequate (objectChurch_declared (c := numN) (T := Package.U0)
-      (by decide) rfl) ((adequateType_typeAt (H := coreReduction) (.base .num)
+      (by decide) rfl) ((adequateType_typeAt objectExtension (H := coreReduction) (.base .num)
         (.nil : CCtx Tower.Head 0)).adequate ConvRules.objectLevels objectChurch_soundnessFacts
           (.sort Tower.zero))
   · exact ConstAdequateAt.of_adequate (objectChurch_declared (c := zeroN) (T := Package.numT)

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Causality.ResourceWaves
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Parallel
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.PaidResourceSystem
 
 /-!
 # Resource selection for located funded rho events
@@ -21,15 +21,6 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 open Mettapedia.GSLT.Causality.ResourceInteraction
 
 universe u
-
-/-- The resource semantics of the three actual funded communication shapes.
-The site index is the original rho location, not a fresh scheduling identity. -/
-def costResourceSystem (Ground : Type u) : System (CostTerm Ground) where
-  Site := CostName Ground
-  Instance := fun location => {event : CostedEvent Ground // event.location = location}
-  consume := fun event => event.val.consumed
-  read := fun _ => 0
-  produce := fun event => event.val.produced
 
 namespace CostedEvent
 
@@ -65,13 +56,13 @@ theorem stepConsume_eq (entries : List (costResourceSystem Ground).Entry) :
     (costResourceSystem Ground).stepConsume entries =
       ((entries.map event).map CostedEvent.consumed).sum := by
   simp only [System.stepConsume, Multiset.map_coe, Multiset.sum_coe, List.map_map]
-  rfl
+  exact congrArg List.sum (List.map_congr_left fun entry _ => costResourceSystem_consume entry.2)
 
 theorem stepProduce_eq (entries : List (costResourceSystem Ground).Entry) :
     (costResourceSystem Ground).stepProduce entries =
       ((entries.map event).map CostedEvent.produced).sum := by
   simp only [System.stepProduce, Multiset.map_coe, Multiset.sum_coe, List.map_map]
-  rfl
+  exact congrArg List.sum (List.map_congr_left fun entry _ => costResourceSystem_produce entry.2)
 
 theorem stepRead_eq [DecidableEq Ground]
     (entries : List (costResourceSystem Ground).Entry) :
@@ -108,9 +99,10 @@ theorem concurrent_iff_compatible [DecidableEq Ground] (source : CostConfig Grou
     (left right : CostedEvent Ground) :
     (costResourceSystem Ground).Concurrent source left.resourceEntry.2
         right.resourceEntry.2 ↔ CostCompatibleAt source left right := by
-  change (left.consumed + right.consumed + 0 ≤ source ∧
-    left.consumed + right.consumed + 0 ≤ source) ↔ _
-  simp only [add_zero, and_self, Multiset.le_iff_exists_add,
+  unfold System.Concurrent
+  rw [costResourceSystem_consume, costResourceSystem_consume, costResourceSystem_read,
+    costResourceSystem_read]
+  simp only [CostedEvent.resourceEntry, add_zero, and_self, Multiset.le_iff_exists_add,
     CostCompatibleAt, costWaveSource, List.map_cons, List.map_nil,
     List.sum_cons, List.sum_nil]
 
@@ -122,11 +114,14 @@ theorem enabled_costStep [DecidableEq Ground] (source : CostConfig Ground)
     CostStep source entry.1 (event entry).spend
       ((costResourceSystem Ground).fire source entry.2) := by
   have fits : (event entry).consumed ≤ source := by
-    simpa [System.Enables, costResourceSystem, event] using enabled
+    unfold System.Enables at enabled
+    rwa [costResourceSystem_consume, costResourceSystem_read, add_zero] at enabled
   have source_eq : (source - (event entry).consumed) + (event entry).consumed =
       source := tsub_add_cancel_of_le fits
   have step := (event entry).toCostStepIn (source - (event entry).consumed)
   rw [source_eq, event_location] at step
+  unfold System.fire
+  rw [costResourceSystem_consume, costResourceSystem_produce]
   exact step
 
 /-- Scan a finite catalogue using the common resource-wave selector. Both
@@ -202,13 +197,13 @@ theorem empty_iff [DecidableEq Ground] (source : CostConfig Ground)
   constructor
   · intro noneEnabled e member fits
     apply noneEnabled e.resourceEntry (List.mem_map.mpr ⟨e, member, rfl⟩)
-    simpa only [System.Enables, costResourceSystem, CostedEvent.resourceEntry,
-      add_zero] using fits
+    unfold System.Enables
+    rwa [costResourceSystem_consume, costResourceSystem_read, add_zero]
   · intro noneEnabled entry member enabled
     obtain ⟨e, inCandidates, rfl⟩ := List.mem_map.mp member
     apply noneEnabled e inCandidates
-    simpa only [System.Enables, costResourceSystem, CostedEvent.resourceEntry,
-      add_zero] using enabled
+    unfold System.Enables at enabled
+    rwa [costResourceSystem_consume, costResourceSystem_read, add_zero] at enabled
 
 /-- The selector constructs a matching with the untouched source remainder. -/
 def matching [DecidableEq Ground] (source : CostConfig Ground)
@@ -268,5 +263,23 @@ theorem resourceTarget (matching : CostMatching Ground) :
   exact add_comm _ _
 
 end CostMatching
+
+/-- A source containing only one occurrence of a purse term cannot support two
+events that both select that occurrence in the same matching. This is the
+conflict law of resource systems: two instances that consume a resource present
+once are not concurrent. -/
+theorem shared_single_purse_conflicts {Ground : Type u}
+    [DecidableEq Ground]
+    {source : CostConfig Ground} {left right : CostedEvent Ground}
+    (purse : CostTerm Ground)
+    (source_count : source.count purse = 1)
+    (left_uses : purse ∈ left.fundingBefore)
+    (right_uses : purse ∈ right.fundingBefore) :
+    ¬CostCompatibleAt source left right := fun compatible =>
+  (costResourceSystem Ground).not_concurrent_of_shared_consumption source
+    left.resourceEntry.2 right.resourceEntry.2 purse
+    ((costResourceSystem_consume _).symm ▸ Multiset.mem_add.mpr (Or.inr left_uses))
+    ((costResourceSystem_consume _).symm ▸ Multiset.mem_add.mpr (Or.inr right_uses))
+    source_count.le ((CostResourceWave.concurrent_iff_compatible source left right).mpr compatible)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost

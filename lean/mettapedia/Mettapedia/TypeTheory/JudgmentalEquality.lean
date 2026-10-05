@@ -52,7 +52,7 @@ abbrev Support {index : Index}
   Relation.EqvGen (StepSupport computation) source target
 
 /-- Erasing a conversion receipt retains only reachability support. -/
-def toSupport {index : Index} {source target : computation.State index} :
+theorem toSupport {index : Index} {source target : computation.State index} :
     ConversionEvidence computation source target →
       Support computation source target
   | .step evidence => .rel _ _ ⟨evidence⟩
@@ -117,7 +117,7 @@ def TotalConversion (source target : TotalState computation) :
     ConversionEvidence computation
       (castState computation sameIndex.down source.2) target.2
 
-def TotalConversion.indexEquality
+theorem TotalConversion.indexEquality
     {source target : TotalState computation}
     (conversion : TotalConversion computation source target) :
     source.1 = target.1 :=

@@ -7,7 +7,7 @@ import Mettapedia.UniversalAI.TimeBoundedAIXI.ProofEnumeration
 # The effective boundary of universal prefix machines
 
 The standard invariance theorem ranges over an effectively enumerable class of
-partial computable prefix machines.  The historical `UniversalPFM` interface in
+partial computable prefix machines.  Unrestricted additive simulation of all functions in
 this development instead ranges over every `PrefixFreeMachine`, whose `compute`
 field is an unrestricted set-theoretic function.  This file proves that no
 machine can satisfy that stronger interface.
@@ -117,10 +117,11 @@ theorem diagonalMachine_compute (U : PrefixFreeMachine) (index : BinString) :
 
 /-- No prefix machine can additively simulate every arbitrary set-theoretic
 prefix machine.  Effective universality must restrict the competitor class. -/
-theorem no_unrestrictedUniversalPFM (U : PrefixFreeMachine) :
-    ¬ UniversalPFM U := by
+theorem no_unrestrictedSimulation (U : PrefixFreeMachine) :
+    ¬ (∀ M : PrefixFreeMachine, ∃ c : Nat, ∀ p x,
+      M.compute p = some x → ∃ q, U.compute q = some x ∧ q.length ≤ p.length + c) := by
   intro universal
-  obtain ⟨constant, simulation⟩ := universal.universal (M := diagonalMachine U)
+  obtain ⟨constant, simulation⟩ := universal (diagonalMachine U)
   let index : BinString := List.replicate (constant + 1) false
   let program : BinString := e1encode index
   let output : BinString :=
@@ -137,15 +138,21 @@ theorem no_unrestrictedUniversalPFM (U : PrefixFreeMachine) :
   exact freshBoundedOutput_not_produced U (2 * program.length) hostProgram
     hostBound hostComputes
 
-/-- The corresponding unrestricted conditional interface is also uninhabited:
-its empty-condition slice would instantiate the impossible ordinary one. -/
-theorem no_unrestrictedUniformlyUniversalConditionalPFM
+/-- Unrestricted conditional simulation would give unrestricted ordinary
+simulation on the empty-condition slice, which the diagonal machine rules out. -/
+theorem no_unrestrictedConditionalSimulation
     (U : ConditionalPrefixFreeMachine) :
-    UniformlyUniversalConditionalPFM U → False := by
+    ¬ (∀ M : ConditionalPrefixFreeMachine, Nonempty (UniformlySimulates U M)) := by
   intro universal
-  letI : UniformlyUniversalConditionalPFM U := universal
-  exact no_unrestrictedUniversalPFM (conditionalSlice U [])
-    (inferInstance : UniversalPFM (conditionalSlice U []))
+  apply no_unrestrictedSimulation (conditionalSlice U [])
+  intro M
+  obtain ⟨simulation⟩ := universal (conditionBlindLift M)
+  refine ⟨simulation.compilerPrefix.length, fun p x computes => ?_⟩
+  refine ⟨simulation.compilerPrefix ++ p, ?_, ?_⟩
+  · change U.compute (simulation.compilerPrefix ++ p) [] = some x
+    rw [simulation.compute_eq]
+    exact computes
+  · simp [List.length_append, Nat.add_comm]
 
 /-! ## Consequences of the effective indexed replacement
 
@@ -226,8 +233,8 @@ theorem nowhereIndexedSimulation_compute
   exact nowhereIndexedSimulation.compute_eq index program condition
 
 #print axioms freshBoundedOutput_not_produced
-#print axioms no_unrestrictedUniversalPFM
-#print axioms no_unrestrictedUniformlyUniversalConditionalPFM
+#print axioms no_unrestrictedSimulation
+#print axioms no_unrestrictedConditionalSimulation
 #print axioms upperConditionalChainRule_of_indexedUniversality
 #print axioms effectiveConditionalPrefixMachine_has_fixedCompiler
 #print axioms exists_effectiveIndexedUniversalConditionalPFM

@@ -93,10 +93,10 @@ theorem tsum_encodeWeight_le_one {ι : Type*} [Encodable ι] :
   simpa using (ENNReal.mul_inv_cancel h2ne0 h2neinf)
 
 /-- Algorithmic weights using prefix-free Kolmogorov complexity `Kpf`. -/
-noncomputable def kpfWeight (U : PrefixFreeMachine) [UniversalPFM U] (x : BinString) : ENNReal :=
+noncomputable def kpfWeight (U : PrefixFreeMachine) (x : BinString) : ENNReal :=
   (2 : ENNReal) ^ (-(KolmogorovComplexity.prefixComplexity U x : ℤ))
 
-theorem tsum_kpfWeight_le_one (U : PrefixFreeMachine) [UniversalPFM U] :
+theorem tsum_kpfWeight_le_one (U : PrefixFreeMachine) [OutputComplete U] :
     (∑' x : BinString, kpfWeight (U := U) x) ≤ 1 := by
   simpa [kpfWeight] using (KolmogorovComplexity.tsum_weightByKpf_le_one_ennreal (U := U))
 
@@ -337,18 +337,18 @@ theorem xiEncode_dominates_index {ι : Type*} [Encodable ι] (ν : ι → Semime
 /-! ## The `Kpf` mixture -/
 
 /-- Universal mixture over a `BinString`-indexed family, using the `2^{-Kpf}` weights. -/
-noncomputable def xiKpfSemimeasure (U : PrefixFreeMachine) [UniversalPFM U]
+noncomputable def xiKpfSemimeasure (U : PrefixFreeMachine) [OutputComplete U]
     (ν : BinString → Semimeasure) : Semimeasure :=
   xiSemimeasure ν (kpfWeight (U := U)) (tsum_kpfWeight_le_one (U := U))
 
-theorem xiKpf_dominates_index (U : PrefixFreeMachine) [UniversalPFM U]
+theorem xiKpf_dominates_index (U : PrefixFreeMachine) [OutputComplete U]
     (ν : BinString → Semimeasure) (i : BinString) (x : BinString) :
     kpfWeight (U := U) i * ν i x ≤ (xiKpfSemimeasure (U := U) ν) x := by
   simpa [xiKpfSemimeasure, xiSemimeasure] using xi_dominates_index ν (kpfWeight (U := U)) i x
 
 /-! ### Invariance (machine-independence) of `2^{-Kpf}` weights -/
 
-theorem kpfWeight_mul_le_of_invariance (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V] :
+theorem kpfWeight_mul_le_of_invariance (U V : KolmogorovComplexity.ReferenceMachine) :
     ∃ c : ℕ, ∀ x : BinString,
       kpfWeight (U := V) x * (2 : ENNReal) ^ (-(c : ℤ)) ≤ kpfWeight (U := U) x := by
   classical
@@ -393,7 +393,7 @@ theorem kpfWeight_mul_le_of_invariance (U V : PrefixFreeMachine) [UniversalPFM U
     _ = kpfWeight (U := U) x := by
         simp [kpfWeight]
 
-theorem xiKpfSemimeasure_mul_le_of_invariance (U V : PrefixFreeMachine) [UniversalPFM U] [UniversalPFM V]
+theorem xiKpfSemimeasure_mul_le_of_invariance (U V : KolmogorovComplexity.ReferenceMachine)
     (ν : BinString → Semimeasure) :
     ∃ c : ℕ, ∀ x : BinString,
       (2 : ENNReal) ^ (-(c : ℤ)) * (xiKpfSemimeasure (U := V) ν) x ≤

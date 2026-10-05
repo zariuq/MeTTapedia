@@ -30,7 +30,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.IndexedOperational
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.OSLF.Framework.IndexedModalFunctor
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
@@ -40,7 +40,7 @@ universe uTerm uSourceTerm uMiddleTerm uTargetTerm
 /-! ## Proof-relevant paths and proposition-valued closure -/
 
 /-- Forget only the proof relevance of a finite execution path. -/
-def executionPathToMultiStep {system : GSLT.{uTerm}}
+theorem executionPathToMultiStep {system : GSLT.{uTerm}}
     {source target : system.Term} :
     ExecutionPath system source target -> system.MultiStep source target
   | .refl object => .refl object
@@ -97,7 +97,7 @@ def executionPathToRewritePath {system : GSLT}
         inductionHypothesis, Nat.add_comm]
 
 /-- Concatenate proposition-valued finite runs. -/
-def multiStepAppend {system : GSLT.{uTerm}}
+theorem multiStepAppend {system : GSLT.{uTerm}}
     {source middle target : system.Term} :
     system.MultiStep source middle -> system.MultiStep middle target ->
       system.MultiStep source target
@@ -129,7 +129,7 @@ theorem ext {source : GSLT.{uSourceTerm}} {target : GSLT.{uTargetTerm}}
 until the final, explicitly lossy erasure into proposition-valued target
 reachability.  No inverse is claimed: a proposition does not determine which
 proof occurrence produced it. -/
-def mapMultiStep
+theorem mapMultiStep
     {source : GSLT.{uSourceTerm}} {target : GSLT.{uTargetTerm}}
     (realization : OperationalRealization source target) :
     {sourceTerm targetTerm : source.Term} ->

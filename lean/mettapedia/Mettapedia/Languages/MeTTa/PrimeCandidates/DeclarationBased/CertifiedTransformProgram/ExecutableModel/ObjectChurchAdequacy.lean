@@ -3,6 +3,9 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTran
 /-!
 # Adequacy of the object package's constants: the sets, the codes and the definitions
 
+Every statement here is about a package containing the object package (`ObjectExtension`),
+the object package itself among them.
+
 **The sets are observed by nothing.** No token is typed at a ground type
 (`not_typedAt_groundI`): the typing of a token names a universe, the numbers, a dependent
 type or an identity type among the tags of its type, and a ground type has only its own
@@ -51,6 +54,8 @@ open Mettapedia.Logic
 
 namespace CodeModel
 
+variable (X : ObjectExtension)
+
 /-! ## Nothing is typed at a ground type -/
 
 /-- **No token is typed by the ground element**: every clause of the typing of a token
@@ -64,17 +69,22 @@ theorem not_tyTok_ground (t : Tok) : ¬ TyTok Elem.ground t := by
   intro ht
   cases t with
   | tag k =>
-      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl
+      rcases tag_cases k with hk | rfl | rfl | rfl | rfl | rfl | hk
       · exact nuniv ((tyTok_tag_former hk).1 ht)
       · exact nmem (by decide) (tyTok_tag_zero.1 ht)
       · exact nmem (by decide) (tyTok_tag_succ.1 ht)
       · exact nmem (by decide) (tyTok_tag_refl.1 ht)
       · exact tyTok_tag_lam ht
       · exact tyTok_tag_pair ht
+      · obtain ⟨d, c, fs, rfl⟩ := hk
+        exact nmem (k := .data _) nofun (tyTok_tag_ctor.1 ht)
   | arg k i C s =>
       rcases Decidable.em ((k, i) ∈ argSlots) with hs | hother
       swap
-      · exact tyTok_arg_other hother ht
+      · rcases decl_cases k with ⟨d, rfl⟩ | ⟨d, c, fs, rfl⟩ | hk
+        · exact nuniv (tyTok_param.1 ht).1
+        · exact nmem (k := .data _) nofun (tyTok_field.1 ht).1
+        · exact tyTok_arg_other hother hk ht
       simp only [argSlots, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hs
       rcases hs with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ |
         ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
@@ -101,24 +111,27 @@ theorem not_typedAt_groundI (t : Tok) : ¬ TypedAt groundI t := by
 
 /-- **Every term of type `set` is adequate there**: no token is typed at the sets. -/
 theorem adequate_cset {k : Nat} {Θ : CCtx Tower.Head k} (t : CTm Tower.Head k) :
-    Adequate objectChurchReading objectHeadReduction Θ t cset := by
+    Adequate X.reading X.head Θ t cset := by
   intro ρ _ m Δ σ σ' _ _ s _ hsT
-  rw [cinterp_cset] at hsT
-  exact (not_typedAt_groundI s hsT).elim
+  have hsT' : TypedAt groundI s := by
+    rw [← X.reading_set]
+    exact hsT
+  exact (not_typedAt_groundI s hsT').elim
 
 /-- **The power set is adequate**, through its spine at a variable of type `set`. -/
-theorem constAdequateAt_power : ConstAdequateAt objectChurchReading objectHeadReduction powerN :=
-  ConstAdequateAt.of_spine (Θ := .snoc .nil cset) (T := cset) ConvRules.objectLevels
-    objectChurch_soundnessFacts
-    (objectChurch_declared (c := powerN) (T := powerType) (by decide) rfl)
-    (.appElim (B := cset) cpowerConst_typed (.var 0)) (adequate_cset _)
+theorem constAdequateAt_power : ConstAdequateAt X.reading X.head powerN :=
+  ConstAdequateAt.of_spine (Θ := .snoc .nil cset) (T := cset) X.levels X.soundnessFacts
+    (X.sub.constantType (objectChurch_declared (c := powerN) (T := powerType) (by decide) rfl))
+    (X.lift (.appElim (B := cset) cpowerConst_typed (.var 0))) (adequate_cset X _)
 
 /-- **The iterated power set is adequate**, through its spine at a number and a set. -/
-theorem constAdequateAt_pow : ConstAdequateAt objectChurchReading objectHeadReduction powN :=
-  ConstAdequateAt.of_spine (Θ := .snoc (.snoc .nil cnum) cset) (T := cset) ConvRules.objectLevels
-    objectChurch_soundnessFacts (objectChurch_declared (c := powN) (T := powType) (by decide) rfl)
-    (CDerivable.appElim (CDerivable.appElim (cpowConst_typed (Γ := .snoc (.snoc .nil cnum) cset))
-      (.var 1)) (.var 0)) (adequate_cset _)
+theorem constAdequateAt_pow : ConstAdequateAt X.reading X.head powN :=
+  ConstAdequateAt.of_spine (Θ := .snoc (.snoc .nil cnum) cset) (T := cset) X.levels
+    X.soundnessFacts
+    (X.sub.constantType (objectChurch_declared (c := powN) (T := powType) (by decide) rfl))
+    (X.lift (CDerivable.appElim (CDerivable.appElim
+      (cpowConst_typed (Γ := .snoc (.snoc .nil cnum) cset)) (.var 1)) (.var 0)))
+    (adequate_cset X _)
 
 /-! ## Codes through their decodings -/
 
@@ -128,23 +141,27 @@ variable {k : Nat} {Θ : CCtx Tower.Head k}
 
 /-- The type of proposition codes reduces to itself, in every context. -/
 theorem propRed {m : Nat} {Δ : CCtx Tower.Head m} :
-    CRedTy objectHeadReduction Δ (.const propN) (.const propN) :=
-  CRedTy.refl ⟨_, .sort _, const_U0_typed (by decide)⟩
+    CRedTy X.head Δ (.const propN) (.const propN) :=
+  CRedTy.refl ⟨_, X.sort _, X.lift (const_U0_typed (c := propN) (by decide))⟩
 
 /-- **The decoder applied to a code variable is an adequate type**: a type token of the
 decoded value is entailed by typed code tokens of the variable's value, at which the
 substituted codes are related; their decodings are then related as types. -/
 theorem adequateType_holdsVar (i : Fin k) (hi : Θ.lookup i = .const propN) :
-    AdequateType objectChurchReading objectHeadReduction Θ (.app (.const holdsN) (.var i)) := by
+    AdequateType X.reading X.head Θ (.app (.const holdsN) (.var i)) := by
   intro ρ _ m Δ σ σ' _ hσ r hr _
-  change (Ideal.app (objectChurchReading.const holdsN) (ρ i)).Mem r at hr
-  rw [objectChurchReading_holds, Ideal.app_holdsConst_eq] at hr
+  change (Ideal.app (X.reading.const holdsN) (ρ i)).Mem r at hr
+  rw [X.reading_const (by decide), objectChurchReading_holds, Ideal.app_holdsConst_eq] at hr
   obtain ⟨v, hv, hvT, e⟩ := Ideal.projT_eq_iSup.1 hr
   refine RT.closed' e fun g hg => ?_
   have hgU : TyTok Elem.univ g := Ideal.typedAt_codes_iff.1 (hvT g hg)
-  have rel := (hσ.2 i).2.2 g (hv g hg) (by rw [hi, cinterp_propT]; exact hvT g hg)
+  have rel := (hσ.2 i).2.2 g (hv g hg) (by
+    rw [hi]
+    show TypedAt (X.reading.const propN) g
+    rw [X.reading_prop]
+    exact hvT g hg)
   rw [hi] at rel
-  exact RT.toCodes (typeKind_of_tyTok_univ hgU) propRed rel
+  exact RT.toCodes (typeKind_of_tyTok_univ hgU) (propRed X) rel
 
 /-- **A code is adequate through its decoding.** Let the code `c` be typed at `prop`, its
 decoding `D` be typed at `U₀`, the decoder applied to every instance of `c` take a root
@@ -152,26 +169,28 @@ step to the instance of `D`, admitted at the typed instances, `D` be an adequate
 the decoding's denotation. Then `c` is adequate at `prop`: its instances are related by
 the clause of the codes, their decodings head-expanded along the root steps. -/
 theorem Adequate.ofDecoding {c D : CTm Tower.Head k}
-    (tc : CTyped objectChurch Θ c (.const propN)) (tD : CTyped objectChurch Θ D cU0)
+    (tc : CTyped X.church Θ c (.const propN)) (tD : CTyped X.church Θ D cU0)
     (step : ∀ {m : Nat} (σ : CSub Tower.Head k m),
-      objectChurch.computation.step (.app (.const holdsN) (c.subst σ)) (D.subst σ))
+      X.church.computation.step (.app (.const holdsN) (c.subst σ)) (D.subst σ))
     (admits : ∀ {m : Nat} {Δ : CCtx Tower.Head m} {σ : CSub Tower.Head k m},
-      CSubstMor objectChurch Θ Δ σ →
-        objectChurch.Admits Δ (.app (.const holdsN) (c.subst σ)) (D.subst σ))
-    (hD : AdequateType objectChurchReading objectHeadReduction Θ D)
-    (den : ∀ ρ, Fits objectChurchReading Θ ρ → ∀ s, (cinterp objectChurchReading c ρ).Mem s →
-      TyTok Elem.univ s → (cinterp objectChurchReading D ρ).Mem s) :
-    Adequate objectChurchReading objectHeadReduction Θ c (.const propN) := by
+      CSubstMor X.church Θ Δ σ →
+        X.church.Admits Δ (.app (.const holdsN) (c.subst σ)) (D.subst σ))
+    (hD : AdequateType X.reading X.head Θ D)
+    (den : ∀ ρ, Fits X.reading Θ ρ → ∀ s, (cinterp X.reading c ρ).Mem s →
+      TyTok Elem.univ s → (cinterp X.reading D ρ).Mem s) :
+    Adequate X.reading X.head Θ c (.const propN) := by
   intro ρ fits m Δ σ σ' formed hσ s hs hsT
-  rw [cinterp_propT] at hsT
-  have hsU := Ideal.typedAt_codes_iff.1 hsT
-  have red : ∀ {τ : CSub Tower.Head k m}, CSubstMor objectChurch Θ Δ τ →
-      CRedTy objectHeadReduction Δ (.app (.const holdsN) (c.subst τ)) (D.subst τ) := fun mor =>
-    ⟨.single (objectHeadReduction.root (step _)), _, .sort _,
-      .rootAdmitted (step _) (admits mor) (holds_app_typed (tc.substitute mor))
+  have hsT' : TypedAt codesIdeal s := by
+    rw [← X.reading_prop]
+    exact hsT
+  have hsU := Ideal.typedAt_codes_iff.1 hsT'
+  have red : ∀ {τ : CSub Tower.Head k m}, CSubstMor X.church Θ Δ τ →
+      CRedTy X.head Δ (.app (.const holdsN) (c.subst τ)) (D.subst τ) := fun mor =>
+    ⟨.single (X.head.root (step _)), _, X.sort _,
+      .rootAdmitted (step _) (admits mor) (.appElim (X.lift holds_typed) (tc.substitute mor))
         (tD.substitute mor)⟩
-  exact RT.ofCodes (typeKind_of_tyTok_univ hsU) propRed
-    (RT.expand_ty ConvRules.objectLevels (red hσ.1.1) (red (hσ.symm ConvRules.objectLevels formed).1.1)
+  exact RT.ofCodes (typeKind_of_tyTok_univ hsU) (propRed X)
+    (RT.expand_ty X.levels (red hσ.1.1) (red (hσ.symm X.levels formed).1.1)
       (hD ρ fits formed hσ s (den ρ fits s hs hsU) hsU))
 
 end Codes
@@ -180,13 +199,12 @@ end Codes
 
 /-- **The decoder is adequate**, through its spine at a code variable: the decoded
 variable is an adequate type, hence adequate at `U₀`. -/
-theorem constAdequateAt_holds : ConstAdequateAt objectChurchReading objectHeadReduction holdsN :=
-  ConstAdequateAt.of_spine (Θ := .snoc .nil (.const propN)) (T := cU0) ConvRules.objectLevels
-    objectChurch_soundnessFacts
-    (objectChurch_declared (c := holdsN) (T := programCodes.holdsType) (by decide) rfl)
-    (holds_app_typed (.var 0))
-    ((adequateType_holdsVar 0 rfl).adequate ConvRules.objectLevels objectChurch_soundnessFacts
-      (.sort Tower.zero))
+theorem constAdequateAt_holds : ConstAdequateAt X.reading X.head holdsN :=
+  ConstAdequateAt.of_spine (Θ := .snoc .nil (.const propN)) (T := cU0) X.levels X.soundnessFacts
+    (X.sub.constantType
+      (objectChurch_declared (c := holdsN) (T := programCodes.holdsType) (by decide) rfl))
+    (X.lift (holds_app_typed (.var 0)))
+    ((adequateType_holdsVar X 0 rfl).adequate X.levels X.soundnessFacts (X.sort Tower.zero))
 
 /-! ## Implication -/
 
@@ -215,10 +233,10 @@ theorem objectChurch_decodeImp {n : Nat} (p q : CTm Tower.Head n) :
 theorem objectChurch_decodeImp_admits {R' : Rules Tower.Head} {Q : ChurchRules R'} {n : Nat}
     {Γ : CCtx Tower.Head n} {p q : CTm Tower.Head n} (tp : CTyped Q Γ p (.const propN))
     (tq : CTyped Q Γ q (.const propN))
-    (same : Q.computation = objectChurch.computation := by rfl) :
+    (within : StepsWithin objectChurch Q := by exact objectChurch_within rfl) :
     Q.Admits Γ (.app (.const holdsN) (.app (.app (.const impN) p) q))
       (.pi (.app (.const holdsN) p) (.app (.const holdsN) (q.rename wk))) := by
-  have a := objectChurch_admits_of_decoder same (Or.inl rfl) (Γ := Γ)
+  have a := objectChurch_admits_of_decoder within (Or.inl rfl) (Γ := Γ)
     (CTm.consSub q (CTm.consSub p fun i => .var (Fin.elim0 i)))
     (CSubstMor.patternTypings imp_knowledge (fun i => by
       refine Fin.cases ?_ (fun j => ?_) i
@@ -252,41 +270,42 @@ theorem cimpSpine_typed :
       (.var 1)) (.var 0)
 
 /-- The decoding of implication is an adequate type over two codes. -/
-theorem adequateType_impDecoding :
-    AdequateType objectChurchReading objectHeadReduction cImpTele cImpDecoding :=
-  AdequateType.pi ConvRules.objectLevels objectChurch_soundnessFacts
-    ⟨_, .sort _, .piForm (holds_app_typed (.var 1)) (.sort _) (holds_app_typed (.var 1)) (.sort _)
-      (.sorts _ _)⟩
-    (adequateType_holdsVar 1 rfl) (adequateType_holdsVar 1 rfl)
+theorem adequateType_impDecoding : AdequateType X.reading X.head cImpTele cImpDecoding :=
+  AdequateType.pi X.levels X.soundnessFacts
+    ⟨_, X.sort _, X.lift (.piForm (holds_app_typed (.var 1)) (.sort _) (holds_app_typed (.var 1))
+      (.sort _) (.sorts _ _))⟩
+    (adequateType_holdsVar X 1 rfl) (adequateType_holdsVar X 1 rfl)
 
 /-- The typed tokens of implication at two codes are tokens of its decoding: the
 implication of two codes is the code of the dependent function type with a constant
 family, projected onto the codes. -/
-theorem impDecoding_den : ∀ ρ, Fits objectChurchReading cImpTele ρ → ∀ s,
-    (cinterp objectChurchReading (.app (.app (.const impN) (.var 1)) (.var 0) : CTm Tower.Head 2)
-      ρ).Mem s → TyTok Elem.univ s → (cinterp objectChurchReading cImpDecoding ρ).Mem s := by
+theorem impDecoding_den : ∀ ρ, Fits X.reading cImpTele ρ → ∀ s,
+    (cinterp X.reading (.app (.app (.const impN) (.var 1)) (.var 0) : CTm Tower.Head 2)
+      ρ).Mem s → TyTok Elem.univ s → (cinterp X.reading cImpDecoding ρ).Mem s := by
   intro ρ _ s hs _
-  change (Ideal.appSpine (objectChurchReading.const impN) [ρ 1, ρ 0]).Mem s at hs
-  rw [objectChurchReading_imp, Ideal.appSpine_impConst] at hs
+  change (Ideal.appSpine (X.reading.const impN) [ρ 1, ρ 0]).Mem s at hs
+  rw [X.reading_const (by decide), objectChurchReading_imp, Ideal.appSpine_impConst] at hs
   have hs' := Ideal.projT_le _ _ s hs
-  change (Ideal.cpi (Ideal.app (objectChurchReading.const holdsN) (ρ 1))
-    fun _ => Ideal.app (objectChurchReading.const holdsN) (ρ 0)).Mem s
-  rw [objectChurchReading_holds, Ideal.app_holdsConst_eq, Ideal.app_holdsConst_eq]
+  change (Ideal.cpi (Ideal.app (X.reading.const holdsN) (ρ 1))
+    fun _ => Ideal.app (X.reading.const holdsN) (ρ 0)).Mem s
+  rw [X.reading_const (by decide), objectChurchReading_holds, Ideal.app_holdsConst_eq,
+    Ideal.app_holdsConst_eq]
   exact hs'
 
 /-- **Implication is adequate**, through its spine at two code variables: its decoding
 `holds p → holds q` is an adequate type, and the implication's typed tokens are tokens of
 the decoding's denotation. -/
-theorem constAdequateAt_imp : ConstAdequateAt objectChurchReading objectHeadReduction impN :=
-  ConstAdequateAt.of_spine (Θ := cImpTele) (T := .const propN) ConvRules.objectLevels
-    objectChurch_soundnessFacts
-    (objectChurch_declared (c := impN) (T := programCodes.impType) (by decide) rfl) cimpSpine_typed
-    (Adequate.ofDecoding cimpSpine_typed
-      (.sub (.piForm (holds_app_typed (.var 1)) (.sort _) (holds_app_typed (.var 1)) (.sort _)
-        (.sorts _ _)) (.subUniv cumulative_max_zero))
-      (fun σ => objectChurch_decodeImp (σ 1) (σ 0))
-      (fun mor => objectChurch_decodeImp_admits (mor 1) (mor 0)) adequateType_impDecoding
-      impDecoding_den)
+theorem constAdequateAt_imp : ConstAdequateAt X.reading X.head impN :=
+  ConstAdequateAt.of_spine (Θ := cImpTele) (T := .const propN) X.levels X.soundnessFacts
+    (X.sub.constantType
+      (objectChurch_declared (c := impN) (T := programCodes.impType) (by decide) rfl))
+    (X.lift cimpSpine_typed)
+    (Adequate.ofDecoding X (X.lift cimpSpine_typed)
+      (X.lift (.sub (.piForm (holds_app_typed (.var 1)) (.sort _) (holds_app_typed (.var 1))
+        (.sort _) (.sorts _ _)) (.subUniv cumulative_max_zero)))
+      (fun σ => X.within.step (objectChurch_decodeImp (σ 1) (σ 0)))
+      (fun mor => objectChurch_decodeImp_admits (mor 1) (mor 0) X.within)
+      (adequateType_impDecoding X) (impDecoding_den X))
 
 /-! ## The equations -/
 
@@ -355,7 +374,7 @@ theorem objectChurch_decodeEq_admits {R' : Rules Tower.Head} {Q : ChurchRules R'
     {Γ : CCtx Tower.Head n} {x y : CTm Tower.Head n}
     (tx : CTyped Q Γ x (liftTm (typeAt SetProfile.types n type)))
     (ty : CTyped Q Γ y (liftTm (typeAt SetProfile.types n type)))
-    (same : Q.computation = objectChurch.computation := by rfl) :
+    (within : StepsWithin objectChurch Q := by exact objectChurch_within rfl) :
     Q.Admits Γ (.app (.const holdsN) (.app (.app (.const (SetProfile.eqName type)) x) y))
       (.id (liftTm (typeAt SetProfile.types n type)) x y) := by
   have carrier : programCodes.decoders.eqCarrier (SetProfile.eqName type) = some (typeTerm type) := by
@@ -363,7 +382,7 @@ theorem objectChurch_decodeEq_admits {R' : Rules Tower.Head} {Q : ChurchRules R'
       else none) = some (typeTerm type)
     rw [if_pos rfl, SetProfile.eqInstance?_eqName]
     rfl
-  have a := objectChurch_admits_of_decoder same
+  have a := objectChurch_admits_of_decoder within
     (Or.inr (Or.inr ⟨SetProfile.eqName type, typeTerm type, carrier, rfl⟩)) (Γ := Γ)
     (CTm.consSub y (CTm.consSub x fun i => .var (Fin.elim0 i)))
     (CSubstMor.patternTypings (eq_knowledge type) (fun i => by
@@ -433,69 +452,71 @@ theorem ceqSpine_typed :
 /-- The decoding of the equation is an adequate type over two elements of the simple type:
 an identity type of an adequate carrier between adequate variables. -/
 theorem adequateType_eqDecoding :
-    AdequateType objectChurchReading objectHeadReduction (cEqTele type) (cEqDecoding type) := by
-  have t1 : CTyped objectChurch (cEqTele type) (.var 1) (liftTm (typeAt SetProfile.types 2 type)) := by
+    AdequateType X.reading X.head (cEqTele type) (cEqDecoding type) := by
+  have t1 : CTyped X.church (cEqTele type) (.var 1) (liftTm (typeAt SetProfile.types 2 type)) := by
     rw [← cEqTele_lookup type 1]
     exact .var 1
-  have t0 : CTyped objectChurch (cEqTele type) (.var 0) (liftTm (typeAt SetProfile.types 2 type)) := by
+  have t0 : CTyped X.church (cEqTele type) (.var 0) (liftTm (typeAt SetProfile.types 2 type)) := by
     rw [← cEqTele_lookup type 0]
     exact .var 0
-  have v1 : Adequate objectChurchReading objectHeadReduction (cEqTele type) (.var 1)
+  have v1 : Adequate X.reading X.head (cEqTele type) (.var 1)
       (liftTm (typeAt SetProfile.types 2 type)) := by
     rw [← cEqTele_lookup type 1]
     exact (CStatement.Valid.var 1).1
-  have v0 : Adequate objectChurchReading objectHeadReduction (cEqTele type) (.var 0)
+  have v0 : Adequate X.reading X.head (cEqTele type) (.var 0)
       (liftTm (typeAt SetProfile.types 2 type)) := by
     rw [← cEqTele_lookup type 0]
     exact (CStatement.Valid.var 0).1
-  exact AdequateType.ident ConvRules.objectLevels (.sort _) (typeAt_formed type _) t1 t0
-    (adequateType_typeAt type _) v1 v0
+  exact AdequateType.ident X.levels (X.sort _) (X.lift (typeAt_formed type _)) t1 t0
+    (adequateType_typeAt X type _) v1 v0
 
 /-- The typed tokens of the equation at two elements are tokens of its decoding, the
 identity type between them. -/
-theorem eqDecoding_den : ∀ ρ, Fits objectChurchReading (cEqTele type) ρ → ∀ s,
-    (cinterp objectChurchReading
+theorem eqDecoding_den : ∀ ρ, Fits X.reading (cEqTele type) ρ → ∀ s,
+    (cinterp X.reading
       (.app (.app (.const (SetProfile.eqName type)) (.var 1)) (.var 0) : CTm Tower.Head 2) ρ).Mem s →
-    TyTok Elem.univ s → (cinterp objectChurchReading (cEqDecoding type) ρ).Mem s := by
+    TyTok Elem.univ s → (cinterp X.reading (cEqDecoding type) ρ).Mem s := by
   intro ρ fits s hs _
-  change (Ideal.appSpine (objectChurchReading.const (SetProfile.eqName type)) [ρ 1, ρ 0]).Mem s at hs
-  rw [objectChurchReading_eq, Ideal.appSpine_eqConst] at hs
+  change (Ideal.appSpine (X.reading.const (SetProfile.eqName type)) [ρ 1, ρ 0]).Mem s at hs
+  rw [X.reading_const (by rw [declared_eqName type]; rfl), objectChurchReading_eq,
+    Ideal.appSpine_eqConst] at hs
   have hs' := Ideal.projT_le _ _ s hs
   have f1 : projT (simpleI type) (ρ 1) = ρ 1 := by
     have h := (fits.1.2.2 : projT _ (ρ 1) = ρ 1)
-    rwa [cinterp_objectTypeAt] at h
+    rwa [X.cinterp_objectTypeAt] at h
   have f0 : projT (simpleI type) (ρ 0) = ρ 0 := by
     have h := (fits.2.2 : projT _ (ρ 0) = ρ 0)
-    rwa [cinterp_objectTypeAt] at h
+    rwa [X.cinterp_objectTypeAt] at h
   rw [f1, f0] at hs'
-  change (Ideal.ident (cinterp objectChurchReading (liftTm (typeAt SetProfile.types 2 type)) ρ)
+  change (Ideal.ident (cinterp X.reading (liftTm (typeAt SetProfile.types 2 type)) ρ)
     (ρ 1) (ρ 0)).Mem s
-  rw [cinterp_objectTypeAt]
+  rw [X.cinterp_objectTypeAt]
   exact hs'
 
 /-- **The equation's spine is adequate at `prop`**, through its decoding. -/
-theorem adequate_eqSpine : Adequate objectChurchReading objectHeadReduction (cEqTele type)
+theorem adequate_eqSpine : Adequate X.reading X.head (cEqTele type)
     (.app (.app (.const (SetProfile.eqName type)) (.var 1)) (.var 0)) (.const propN) := by
-  have t1 : CTyped objectChurch (cEqTele type) (.var 1) (liftTm (typeAt SetProfile.types 2 type)) := by
+  have t1 : CTyped X.church (cEqTele type) (.var 1) (liftTm (typeAt SetProfile.types 2 type)) := by
     rw [← cEqTele_lookup type 1]
     exact .var 1
-  have t0 : CTyped objectChurch (cEqTele type) (.var 0) (liftTm (typeAt SetProfile.types 2 type)) := by
+  have t0 : CTyped X.church (cEqTele type) (.var 0) (liftTm (typeAt SetProfile.types 2 type)) := by
     rw [← cEqTele_lookup type 0]
     exact .var 0
-  exact Adequate.ofDecoding (ceqSpine_typed type) (.idForm (typeAt_formed type _) (.sort _) t1 t0)
+  exact Adequate.ofDecoding X (X.lift (ceqSpine_typed type))
+    (.idForm (X.lift (typeAt_formed type _)) (X.sort _) t1 t0)
     (fun σ => by
-      have h := objectChurch_decodeEq type (σ 1) (σ 0)
+      have h := X.within.step (objectChurch_decodeEq type (σ 1) (σ 0))
       rwa [← subst_liftTm_typeAt σ type] at h)
     (fun {m Δ σ} mor => by
-      have s1 : CTyped objectChurch Δ (σ 1) (liftTm (typeAt SetProfile.types m type)) := by
+      have s1 : CTyped X.church Δ (σ 1) (liftTm (typeAt SetProfile.types m type)) := by
         have h := mor 1
         rwa [cEqTele_lookup, subst_liftTm_typeAt] at h
-      have s0 : CTyped objectChurch Δ (σ 0) (liftTm (typeAt SetProfile.types m type)) := by
+      have s0 : CTyped X.church Δ (σ 0) (liftTm (typeAt SetProfile.types m type)) := by
         have h := mor 0
         rwa [cEqTele_lookup, subst_liftTm_typeAt] at h
-      have h := objectChurch_decodeEq_admits type s1 s0
+      have h := objectChurch_decodeEq_admits type s1 s0 X.within
       rwa [← subst_liftTm_typeAt σ type] at h)
-    (adequateType_eqDecoding type) (eqDecoding_den type)
+    (adequateType_eqDecoding X type) (eqDecoding_den X type)
 
 /-- The equation at a simple type is declared at `A → A → prop`. -/
 theorem eq_declared : objectChurch.constantType (SetProfile.eqName type) =
@@ -505,10 +526,9 @@ theorem eq_declared : objectChurch.constantType (SetProfile.eqName type) =
 /-- **The equation at a simple type is adequate**, through its spine at two variables: its
 decoding, the identity type between them, is an adequate type, and the equation's typed
 tokens are tokens of that identity type. -/
-theorem constAdequateAt_eq :
-    ConstAdequateAt objectChurchReading objectHeadReduction (SetProfile.eqName type) :=
-  ConstAdequateAt.of_spine (Θ := cEqTele type) (T := .const propN) ConvRules.objectLevels
-    objectChurch_soundnessFacts (eq_declared type) (ceqSpine_typed type) (adequate_eqSpine type)
+theorem constAdequateAt_eq : ConstAdequateAt X.reading X.head (SetProfile.eqName type) :=
+  ConstAdequateAt.of_spine (Θ := cEqTele type) (T := .const propN) X.levels X.soundnessFacts
+    (X.sub.constantType (eq_declared type)) (X.lift (ceqSpine_typed type)) (adequate_eqSpine X type)
 
 end Equations
 
@@ -646,6 +666,12 @@ theorem objectChurchReading_transport :
   rw [h, e]
   rfl
 
+/-- `transport` is read in every extension as in the object package. -/
+theorem ObjectExtension.reading_transport :
+    X.reading.const transportName = defConst X.reading cTransportTele cTransportCod cTransportRhs := by
+  rw [X.reading_const (by decide), objectChurchReading_transport,
+    X.defConst_eq _ _ _ (by decide) (by decide)]
+
 /-- The spine of `transportCert` at the variables of its telescope is typed at its
 codomain. -/
 theorem ctransportSpine_typed :
@@ -661,10 +687,10 @@ theorem ctransportSpine_typed :
 
 /-- **The applications of `transportCert` reduce to its right side**, by its root step. -/
 theorem transport_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
-    TeleReduces objectHeadReduction Δ (CCtx.toTele cTransportTele) cTransportCod cTransportRhs
+    TeleReduces X.head Δ (CCtx.toTele cTransportTele) cTransportCod cTransportRhs
       (.const transportName) fun i => .var (Fin.elim0 i) := by
   intro A tA P tP f tf mv tmv x tx e te
-  have mor : CSubstMor objectChurch cTransportTele Δ (CTm.consSub e (CTm.consSub x
+  have mor : CSubstMor X.church cTransportTele Δ (CTm.consSub e (CTm.consSub x
       (CTm.consSub mv (CTm.consSub f (CTm.consSub P (CTm.consSub A
         fun i => .var (Fin.elim0 i))))))) := by
     intro i
@@ -690,7 +716,7 @@ theorem transport_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (applyClosed transportTelescope Presentation.ids (.const transportName)) transportRhs =
       cTransportRhs := by
     decide
-  have step : objectChurch.computation.step
+  have step : X.church.computation.step
       ((CTm.appSpine (.const transportName) [.var 5, .var 4, .var 3, .var 2, .var 1, .var 0] :
         CTm Tower.Head 6).subst (CTm.consSub e (CTm.consSub x (CTm.consSub mv (CTm.consSub f
           (CTm.consSub P (CTm.consSub A fun i => .var (Fin.elim0 i))))))))
@@ -703,14 +729,14 @@ theorem transport_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (CTm.consSub e (CTm.consSub x (CTm.consSub mv (CTm.consSub f (CTm.consSub P
         (CTm.consSub A fun i => .var (Fin.elim0 i)))))))
     rw [eL, eR] at s
-    exact s
-  have admits : objectChurch.Admits Δ
+    exact X.within.step s
+  have admits : X.church.Admits Δ
       ((CTm.appSpine (.const transportName) [.var 5, .var 4, .var 3, .var 2, .var 1, .var 0] :
         CTm Tower.Head 6).subst (CTm.consSub e (CTm.consSub x (CTm.consSub mv (CTm.consSub f
           (CTm.consSub P (CTm.consSub A fun i => .var (Fin.elim0 i))))))))
       (cTransportRhs.subst (CTm.consSub e (CTm.consSub x (CTm.consSub mv (CTm.consSub f
         (CTm.consSub P (CTm.consSub A fun i => .var (Fin.elim0 i)))))))) := by
-    have a := objectChurch_admits_of_mor rfl
+    have a := objectChurch_admits_of_mor X.within
       (List.getElem_mem (l := computationSpecs) (n := 7) (by decide))
       (L := applyClosed transportTelescope Presentation.ids (.const transportName))
       (R := transportRhs) rfl
@@ -718,19 +744,18 @@ theorem transport_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
         (CTm.consSub A fun i => .var (Fin.elim0 i))))))) (by decide) (by decide) mor
     rw [eL, eR] at a
     exact a
-  exact ⟨.single (objectHeadReduction.root step), .rootAdmitted step admits (ctransportSpine_typed.substitute mor)
-    (CTyped.substitute (CDerivable.mono ChurchRules.restrict_sub
+  exact ⟨.single (X.head.root step), .rootAdmitted step admits (CTyped.substitute (X.lift ctransportSpine_typed) mor)
+    (CTyped.substitute (X.lift <| CDerivable.mono ChurchRules.restrict_sub
       (ctransportRhs_typed_within (A := fun _ => false))) mor)⟩
 
 /-- **`transportCert` is adequate**: its right side is typed with no constant, hence
 adequate by the fundamental lemma, and its applications reduce to it. -/
-theorem constAdequateAt_transport :
-    ConstAdequateAt objectChurchReading objectHeadReduction transportName :=
-  ConstAdequateAt.ofDefinition ConvRules.objectLevels objectChurch_soundnessFacts transport_declared
-    objectChurchReading_transport
-    (objectChurch_valid (allowed := fun _ => false) (fun h => absurd h Bool.false_ne_true)
-      ctransportRhs_typed_within cTransportTele_formed).1
-    fun _ => transport_teleReduces
+theorem constAdequateAt_transport : ConstAdequateAt X.reading X.head transportName :=
+  ConstAdequateAt.ofDefinition X.levels X.soundnessFacts (X.sub.constantType transport_declared)
+    X.reading_transport
+    (X.valid_within (allowed := fun _ => false) (fun h => absurd h Bool.false_ne_true)
+      ctransportRhs_typed_within (X.liftFormed cTransportTele_formed)).1
+    fun _ => transport_teleReduces X
 
 end Transport
 
@@ -821,6 +846,12 @@ theorem objectChurchReading_compose :
   rw [h, e]
   rfl
 
+/-- `compose` is read in every extension as in the object package. -/
+theorem ObjectExtension.reading_compose :
+    X.reading.const composeName = defConst X.reading cComposeTele cComposeCod cComposeRhs := by
+  rw [X.reading_const (by decide), objectChurchReading_compose,
+    X.defConst_eq _ _ _ (by decide) (by decide)]
+
 /-- The spine of `composeCert` at the variables of its telescope is typed at its
 codomain. -/
 theorem ccomposeSpine_typed :
@@ -836,10 +867,10 @@ theorem ccomposeSpine_typed :
 
 /-- **The applications of `composeCert` reduce to its right side**, by its root step. -/
 theorem compose_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
-    TeleReduces objectHeadReduction Δ (CCtx.toTele cComposeTele) cComposeCod cComposeRhs
+    TeleReduces X.head Δ (CCtx.toTele cComposeTele) cComposeCod cComposeRhs
       (.const composeName) fun i => .var (Fin.elim0 i) := by
   intro A tA P tP f tf g tg x tx e te
-  have mor : CSubstMor objectChurch cComposeTele Δ (CTm.consSub e (CTm.consSub x
+  have mor : CSubstMor X.church cComposeTele Δ (CTm.consSub e (CTm.consSub x
       (CTm.consSub g (CTm.consSub f (CTm.consSub P (CTm.consSub A
         fun i => .var (Fin.elim0 i))))))) := by
     intro i
@@ -865,7 +896,7 @@ theorem compose_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (applyClosed composeTelescope Presentation.ids (.const composeName)) composeRhs =
       cComposeRhs := by
     decide
-  have step : objectChurch.computation.step
+  have step : X.church.computation.step
       ((CTm.appSpine (.const composeName) [.var 5, .var 4, .var 3, .var 2, .var 1, .var 0] :
         CTm Tower.Head 6).subst (CTm.consSub e (CTm.consSub x (CTm.consSub g (CTm.consSub f
           (CTm.consSub P (CTm.consSub A fun i => .var (Fin.elim0 i))))))))
@@ -878,14 +909,14 @@ theorem compose_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (CTm.consSub e (CTm.consSub x (CTm.consSub g (CTm.consSub f (CTm.consSub P
         (CTm.consSub A fun i => .var (Fin.elim0 i)))))))
     rw [eL, eR] at s
-    exact s
-  have admits : objectChurch.Admits Δ
+    exact X.within.step s
+  have admits : X.church.Admits Δ
       ((CTm.appSpine (.const composeName) [.var 5, .var 4, .var 3, .var 2, .var 1, .var 0] :
         CTm Tower.Head 6).subst (CTm.consSub e (CTm.consSub x (CTm.consSub g (CTm.consSub f
           (CTm.consSub P (CTm.consSub A fun i => .var (Fin.elim0 i))))))))
       (cComposeRhs.subst (CTm.consSub e (CTm.consSub x (CTm.consSub g (CTm.consSub f
         (CTm.consSub P (CTm.consSub A fun i => .var (Fin.elim0 i)))))))) := by
-    have a := objectChurch_admits_of_mor rfl
+    have a := objectChurch_admits_of_mor X.within
       (List.getElem_mem (l := computationSpecs) (n := 8) (by decide))
       (L := applyClosed composeTelescope Presentation.ids (.const composeName))
       (R := composeRhs) rfl
@@ -893,19 +924,18 @@ theorem compose_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
         (CTm.consSub A fun i => .var (Fin.elim0 i))))))) (by decide) (by decide) mor
     rw [eL, eR] at a
     exact a
-  exact ⟨.single (objectHeadReduction.root step), .rootAdmitted step admits (ccomposeSpine_typed.substitute mor)
-    (CTyped.substitute (CDerivable.mono ChurchRules.restrict_sub
+  exact ⟨.single (X.head.root step), .rootAdmitted step admits (CTyped.substitute (X.lift ccomposeSpine_typed) mor)
+    (CTyped.substitute (X.lift <| CDerivable.mono ChurchRules.restrict_sub
       (ccomposeRhs_typed_within (A := fun _ => false))) mor)⟩
 
 /-- **`composeCert` is adequate**: its right side is typed with no constant, hence
 adequate by the fundamental lemma, and its applications reduce to it. -/
-theorem constAdequateAt_compose :
-    ConstAdequateAt objectChurchReading objectHeadReduction composeName :=
-  ConstAdequateAt.ofDefinition ConvRules.objectLevels objectChurch_soundnessFacts compose_declared
-    objectChurchReading_compose
-    (objectChurch_valid (allowed := fun _ => false) (fun h => absurd h Bool.false_ne_true)
-      ccomposeRhs_typed_within cComposeTele_formed).1
-    fun _ => compose_teleReduces
+theorem constAdequateAt_compose : ConstAdequateAt X.reading X.head composeName :=
+  ConstAdequateAt.ofDefinition X.levels X.soundnessFacts (X.sub.constantType compose_declared)
+    X.reading_compose
+    (X.valid_within (allowed := fun _ => false) (fun h => absurd h Bool.false_ne_true)
+      ccomposeRhs_typed_within (X.liftFormed cComposeTele_formed)).1
+    fun _ => compose_teleReduces X
 
 end Compose
 
@@ -1019,12 +1049,18 @@ theorem objectChurchReading_returnIter :
   rw [h, e]
   rfl
 
+/-- `returnIter` is read in every extension as in the object package. -/
+theorem ObjectExtension.reading_returnIter :
+    X.reading.const returnIterName = defConst X.reading (.snoc .nil cU0) cReturnIterCod cReturnIterRhs := by
+  rw [X.reading_const (by decide), objectChurchReading_returnIter,
+    X.defConst_eq _ _ _ (by decide) (by decide)]
+
 /-- **The applications of `returnIter` reduce to its right side**, by its root step. -/
 theorem returnIter_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
-    TeleReduces objectHeadReduction Δ (CCtx.toTele (.snoc .nil cU0)) cReturnIterCod cReturnIterRhs
+    TeleReduces X.head Δ (CCtx.toTele (.snoc .nil cU0)) cReturnIterCod cReturnIterRhs
       (.const returnIterName) fun i => .var (Fin.elim0 i) := by
   intro C tC
-  have mor : CSubstMor objectChurch (.snoc .nil cU0) Δ
+  have mor : CSubstMor X.church (.snoc .nil cU0) Δ
       (CTm.consSub C fun i => .var (Fin.elim0 i)) := by
     intro i
     refine Fin.cases ?_ (fun i => ?_) i
@@ -1038,7 +1074,7 @@ theorem returnIter_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (applyClosed returnIterTele Presentation.ids (.const returnIterName)) returnIterRhs =
       cReturnIterRhs := by
     decide
-  have step : objectChurch.computation.step
+  have step : X.church.computation.step
       ((.app (.const returnIterName) (.var 0) : CTm Tower.Head 1).subst
         (CTm.consSub C fun i => .var (Fin.elim0 i)))
       (cReturnIterRhs.subst (CTm.consSub C fun i => .var (Fin.elim0 i))) := by
@@ -1047,12 +1083,12 @@ theorem returnIter_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (L := applyClosed returnIterTele Presentation.ids (.const returnIterName))
       (R := returnIterRhs) rfl (CTm.consSub C fun i => .var (Fin.elim0 i))
     rw [eL, eR] at s
-    exact s
-  have admits : objectChurch.Admits Δ
+    exact X.within.step s
+  have admits : X.church.Admits Δ
       ((.app (.const returnIterName) (.var 0) : CTm Tower.Head 1).subst
         (CTm.consSub C fun i => .var (Fin.elim0 i)))
       (cReturnIterRhs.subst (CTm.consSub C fun i => .var (Fin.elim0 i))) := by
-    have a := objectChurch_admits_of_mor rfl
+    have a := objectChurch_admits_of_mor X.within
       (List.getElem_mem (l := computationSpecs) (n := 10) (by decide))
       (L := applyClosed returnIterTele Presentation.ids (.const returnIterName))
       (R := returnIterRhs) rfl (CTm.consSub C fun i => .var (Fin.elim0 i)) (by decide) (by decide) mor
@@ -1061,25 +1097,24 @@ theorem returnIter_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
   have tl : CTyped objectChurch (.snoc .nil cU0) (.app (.const returnIterName) (.var 0))
       cReturnIterCod :=
     CDerivable.appElim (creturnIter_typed (Γ := .snoc .nil cU0)) (.var 0)
-  exact ⟨.single (objectHeadReduction.root step), .rootAdmitted step admits (tl.substitute mor)
-    (CTyped.substitute (CDerivable.mono ChurchRules.restrict_sub
+  exact ⟨.single (X.head.root step), .rootAdmitted step admits (CTyped.substitute (X.lift tl) mor)
+    (CTyped.substitute (X.lift <| CDerivable.mono ChurchRules.restrict_sub
       (creturnIterRhs_typed_within (A := fun _ => true) rfl rfl)) mor)⟩
 
 /-- **`returnIter` is adequate**: its right side is typed within the numbers and the
 iterator, both adequate, so the fundamental lemma makes it adequate; its applications
 reduce to it. -/
-theorem constAdequateAt_returnIter :
-    ConstAdequateAt objectChurchReading objectHeadReduction returnIterName :=
-  ConstAdequateAt.ofDefinition ConvRules.objectLevels objectChurch_soundnessFacts
-    returnIter_declared objectChurchReading_returnIter
-    (objectChurch_valid (allowed := allowedIn [numN, iterName])
+theorem constAdequateAt_returnIter : ConstAdequateAt X.reading X.head returnIterName :=
+  ConstAdequateAt.ofDefinition X.levels X.soundnessFacts (X.sub.constantType returnIter_declared)
+    X.reading_returnIter
+    (X.valid_within (allowed := allowedIn [numN, iterName])
       (consts_allowedIn fun c hc => by
         simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
         rcases hc with rfl | rfl
-        · exact constAdequateAt_num
-        · exact constAdequateAt_iter)
-      (creturnIterRhs_typed_within rfl rfl) (.snoc .nil ⟨_, .sort _, cU0_typed⟩)).1
-    fun _ => returnIter_teleReduces
+        · exact constAdequateAt_num X
+        · exact constAdequateAt_iter X)
+      (creturnIterRhs_typed_within rfl rfl) (.snoc .nil ⟨_, X.sort _, X.lift cU0_typed⟩)).1
+    fun _ => returnIter_teleReduces X
 
 end ReturnIter
 
@@ -1136,12 +1171,18 @@ theorem objectChurchReading_sucStep :
   rw [h, e]
   rfl
 
+/-- `sucStep` is read in every extension as in the object package. -/
+theorem ObjectExtension.reading_sucStep :
+    X.reading.const sucStepName = defConst X.reading cEqAtTele cSucStepCod cSucStepRhs := by
+  rw [X.reading_const (by decide), objectChurchReading_sucStep,
+    X.defConst_eq _ _ _ (by decide) (by decide)]
+
 /-- **The applications of `sucStep` reduce to its right side**, by its root step. -/
 theorem sucStep_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
-    TeleReduces objectHeadReduction Δ (CCtx.toTele cEqAtTele) cSucStepCod cSucStepRhs
+    TeleReduces X.head Δ (CCtx.toTele cEqAtTele) cSucStepCod cSucStepRhs
       (.const sucStepName) fun i => .var (Fin.elim0 i) := by
   intro N tN e te
-  have mor : CSubstMor objectChurch cEqAtTele Δ
+  have mor : CSubstMor X.church cEqAtTele Δ
       (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i))) := by
     intro i
     refine Fin.cases ?_ (fun j => ?_) i
@@ -1156,7 +1197,7 @@ theorem sucStep_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (applyClosed eqAtTelescope Presentation.ids (.const sucStepName)) sucStepRhs =
       cSucStepRhs := by
     decide
-  have step : objectChurch.computation.step
+  have step : X.church.computation.step
       ((.app (.app (.const sucStepName) (.var 1)) (.var 0) : CTm Tower.Head 2).subst
         (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i))))
       (cSucStepRhs.subst (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i)))) := by
@@ -1165,12 +1206,12 @@ theorem sucStep_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
       (L := applyClosed eqAtTelescope Presentation.ids (.const sucStepName))
       (R := sucStepRhs) rfl (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i)))
     rw [eL, eR] at s
-    exact s
-  have admits : objectChurch.Admits Δ
+    exact X.within.step s
+  have admits : X.church.Admits Δ
       ((.app (.app (.const sucStepName) (.var 1)) (.var 0) : CTm Tower.Head 2).subst
         (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i))))
       (cSucStepRhs.subst (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i)))) := by
-    have a := objectChurch_admits_of_mor rfl
+    have a := objectChurch_admits_of_mor X.within
       (List.getElem_mem (l := computationSpecs) (n := 11) (by decide))
       (L := applyClosed eqAtTelescope Presentation.ids (.const sucStepName))
       (R := sucStepRhs) rfl (CTm.consSub e (CTm.consSub N fun i => .var (Fin.elim0 i))) (by decide) (by decide) mor
@@ -1179,28 +1220,27 @@ theorem sucStep_teleReduces {m : Nat} {Δ : CCtx Tower.Head m} :
   have tl : CTyped objectChurch cEqAtTele (.app (.app (.const sucStepName) (.var 1)) (.var 0))
       cSucStepCod :=
     CDerivable.appElim (CDerivable.appElim (csucStep_typed (Γ := cEqAtTele)) (.var 1)) (.var 0)
-  exact ⟨.single (objectHeadReduction.root step), .rootAdmitted step admits (tl.substitute mor)
-    (CTyped.substitute (CDerivable.mono ChurchRules.restrict_sub
+  exact ⟨.single (X.head.root step), .rootAdmitted step admits (CTyped.substitute (X.lift tl) mor)
+    (CTyped.substitute (X.lift <| CDerivable.mono ChurchRules.restrict_sub
       (csucStepRhs_typed_within (A := fun _ => true) rfl rfl rfl rfl rfl)) mor)⟩
 
 /-- **`sucStep` is adequate**: its right side is typed within the numbers, the successor,
 `eqAt`, the successor move and `transportCert`, all adequate, so the fundamental lemma makes
 it adequate; its applications reduce to it. -/
-theorem constAdequateAt_sucStep :
-    ConstAdequateAt objectChurchReading objectHeadReduction sucStepName :=
-  ConstAdequateAt.ofDefinition ConvRules.objectLevels objectChurch_soundnessFacts
-    sucStep_declared objectChurchReading_sucStep
-    (objectChurch_valid (allowed := allowedIn [numN, sucN, eqAtName, sucMoveName, transportName])
+theorem constAdequateAt_sucStep : ConstAdequateAt X.reading X.head sucStepName :=
+  ConstAdequateAt.ofDefinition X.levels X.soundnessFacts (X.sub.constantType sucStep_declared)
+    X.reading_sucStep
+    (X.valid_within (allowed := allowedIn [numN, sucN, eqAtName, sucMoveName, transportName])
       (consts_allowedIn fun c hc => by
         simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
         rcases hc with rfl | rfl | rfl | rfl | rfl
-        · exact constAdequateAt_num
-        · exact constAdequateAt_suc
-        · exact constAdequateAt_eqAt
-        · exact constAdequateAt_sucMove'
-        · exact constAdequateAt_transport)
-      (csucStepRhs_typed_within rfl rfl rfl rfl rfl) cEqAtTele_formed).1
-    fun _ => sucStep_teleReduces
+        · exact constAdequateAt_num X
+        · exact constAdequateAt_suc X
+        · exact constAdequateAt_eqAt X
+        · exact constAdequateAt_sucMove' X
+        · exact constAdequateAt_transport X)
+      (csucStepRhs_typed_within rfl rfl rfl rfl rfl) (X.liftFormed cEqAtTele_formed)).1
+    fun _ => sucStep_teleReduces X
 
 end SucStep
 

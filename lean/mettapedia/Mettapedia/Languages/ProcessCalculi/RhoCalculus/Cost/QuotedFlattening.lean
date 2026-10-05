@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.Cost.QuotedFlattening
 import Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction
-import Mettapedia.Languages.MeTTa.PrimeCandidates.SelectedCostLayerIterationBoundary
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySupportedIterationObstruction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopRestoration
 
 /-!
 # Admitted nested Cost wrappers and their structural flattening obstruction
@@ -20,11 +21,10 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open Mettapedia.OSLF.MeTTaIL.PatternCode
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.Framework.ConstructorCategory
-open Mettapedia.Languages.MeTTa.PrimeCandidates.SelectedCostLayerIterationBoundary
 
 noncomputable section
 
-abbrev source : CIGSLT := rhoSelectedCostLayerConfiguration.source
+abbrev source : CIGSLT := rhoHereditaryCostLayer.compactOutput.toCIGSLT
 
 def nestedUnitPattern : Pattern :=
   .apply costSignedConstructorName
@@ -288,12 +288,6 @@ theorem readUnitStack_rejects_nested_wrapper :
     readUnitStack costTokenStackEmptyConstructorName costTokenStackConsConstructorName
       costSignatureUnitConstructorName nestedUnitPattern = none := by
   decide +kernel
-
-#print axioms nestedUnit_no_structural_flattening
-#print axioms admitted_nonempty_boundary_collision
-#print axioms flattenFundingReadout_not_injective
-#print axioms flattenedFunding_typed
-#print axioms flattenedFundingKey_reachable
 
 end
 

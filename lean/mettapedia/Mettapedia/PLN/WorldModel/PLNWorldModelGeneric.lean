@@ -44,7 +44,11 @@ class AdditiveWorldModel (State Query Ev : Type*) [EvidenceType State] [AddCommM
 namespace AdditiveWorldModel
 
 variable {State Query Ev : Type*}
-variable [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
+variable [EvidenceType State]
+
+section Additive
+
+variable [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Convenience form of the additive extraction law. -/
 theorem extract_add' (W₁ W₂ : State) (q : Query) :
@@ -77,9 +81,11 @@ theorem GMQueryEq.trans {q₁ q₂ q₃ : Query} :
   intro h12 h23 W
   simpa [h12 W] using h23 W
 
+end Additive
+
 section Conjugate
 
-variable [ConjugateEvidence Ev]
+variable [ConjugateEvidence Ev] [AdditiveWorldModel State Query Ev]
 
 /-- Observation-count view of a generic query. -/
 noncomputable def queryObservationCount (W : State) (q : Query) : ℝ≥0∞ :=
@@ -157,7 +163,7 @@ carrier `Ev`, not just binary `BinaryEvidence`.
 -/
 
 /-- Any atomic `Ev`-valued contribution induces a multiset-based generic world model. -/
-noncomputable def genericWorldModelOfAtomicEvidence
+@[instance_reducible] noncomputable def genericWorldModelOfAtomicEvidence
     {Obs Query Ev : Type*} [AddCommMonoid Ev]
     (a : GenAtomicEvidenceContribution Obs Query Ev) :
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
@@ -176,7 +182,7 @@ theorem queryObservationCount_of_unit
     (σ : Multiset Obs) (q : Query) :
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
     @queryObservationCount (Multiset Obs) Query Ev _ _
-      (genericWorldModelOfAtomicEvidence a) _ σ q = (σ.card : ℝ≥0∞) := by
+      (genericWorldModelOfAtomicEvidence a) σ q = (σ.card : ℝ≥0∞) := by
   simp only [queryObservationCount]
   exact observationCount_genAdditiveExtension_of_unit a hunit σ q
 
@@ -190,7 +196,7 @@ theorem queryObservationConfidence_of_unit
     (σ : Multiset Obs) (q : Query) :
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
     @queryObservationConfidence (Multiset Obs) Query Ev _ _
-      (genericWorldModelOfAtomicEvidence a) _ κ σ q =
+      (genericWorldModelOfAtomicEvidence a) κ σ q =
         (σ.card : ℝ≥0∞) / ((σ.card : ℝ≥0∞) + κ) := by
   simp only [queryObservationConfidence]
   exact observationConfidence_genAdditiveExtension_of_unit κ a hunit σ q
@@ -236,7 +242,7 @@ theorem dirichlet_queryObservationCount_of_single {k : ℕ}
     (σ : Multiset Obs) (q : Query) :
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
     @queryObservationCount (Multiset Obs) Query (MultiEvidence k) _ _
-      (genericWorldModelOfAtomicEvidence a) _ σ q = (σ.card : ℝ≥0∞) := by
+      (genericWorldModelOfAtomicEvidence a) σ q = (σ.card : ℝ≥0∞) := by
   have hobs : ∀ o q, ConjugateEvidence.observationCount (a o q) = 1 := by
     intro o q
     show (↑(a o q).total : ℝ≥0∞) = 1

@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Computation.PolarizedNeedMachine
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Computation.PolarizedNeedEmbedding
 
 /-!
 # Executed first-class closure and sharing discriminators
@@ -258,6 +259,40 @@ theorem sequence_unit_does_not_preserve_full_frontier :
     sequence_unit_not_exact_allocation_equality.2] at same
   contradiction
 
+namespace EmbeddedReplay
+
+private def duplicateOld : ScopedNeedMachine.NeedMachine Nat Unit Nat Unit Unit 0 where
+  world := ⟨0, [], .empty, .empty, 0, 0⟩
+  control := .run (.evaluate
+    ⟨0, 0, .choose (.returnValue (.head 10)) (.returnValue (.head 10)), ids, Fin.elim0⟩
+    .done) []
+
+private def paths :=
+  NeedLocalSteps.pathMachine machineExtension (PolarizedNeedEmbedding.representation.mapMachine duplicateOld)
+
+/-- Equal producer bodies retain two concrete branch indices. Three machine
+events include allocation and demand, not just the authored choice. -/
+theorem duplicate_occurrences_and_work :
+    ((paths.pendingTraces 3 (PolarizedNeedEmbedding.representation.mapMachine duplicateOld)).map
+      (fun (machine, trace) => (trace, machine.work.transitions))) =
+        [([0, 0, 0], 3), ([0, 0, 1], 3)] := by
+  rfl
+
+/-- An earlier frontier keeps the complete pending machine; it cannot claim
+the choice has already occurred. -/
+theorem short_cut_keeps_pending_prefix :
+    (paths.pendingTraces 2 (PolarizedNeedEmbedding.representation.mapMachine duplicateOld)).map
+      Prod.snd = [[0, 0]] := by
+  rfl
+
+/-- Replay refuses an invented third alternative, although both real
+alternatives have the same authored value. -/
+theorem invented_alternative_rejected :
+    paths.follow (PolarizedNeedEmbedding.representation.mapMachine duplicateOld) [0, 0, 2] = none := by
+  exact (PolarizedNeedEmbedding.replay_missing primitive duplicateOld duplicateOld [0, 0, 2]).mpr rfl
+
+end EmbeddedReplay
+
 #print axioms ordinary_forcing_reexecutes
 #print axioms explicit_need_shares_execution
 #print axioms ordinary_force_is_not_shared_force
@@ -277,6 +312,9 @@ theorem sequence_unit_does_not_preserve_full_frontier :
 #print axioms sequence_unit_at_native_observation
 #print axioms sequence_unit_not_exact_allocation_equality
 #print axioms sequence_unit_does_not_preserve_full_frontier
+#print axioms EmbeddedReplay.duplicate_occurrences_and_work
+#print axioms EmbeddedReplay.short_cut_keeps_pending_prefix
+#print axioms EmbeddedReplay.invented_alternative_rejected
 
 end PolarizedNeedMachineExamples
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation

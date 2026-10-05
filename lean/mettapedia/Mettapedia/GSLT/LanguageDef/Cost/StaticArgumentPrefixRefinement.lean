@@ -146,11 +146,4 @@ theorem CostStaticElementPlan.reprefix_entries
       exact congrArg₂ List.append (head.recontextualizeEntriesEq _)
         (tail.reprefix_entries _)
 
-#print axioms CostStaticArgumentPlan.reprefix
-#print axioms CostStaticArgumentPlan.reprefix_abstractPatterns
-#print axioms CostStaticArgumentPlan.reprefix_entries
-#print axioms CostStaticElementPlan.reprefix
-#print axioms CostStaticElementPlan.reprefix_abstractPatterns
-#print axioms CostStaticElementPlan.reprefix_entries
-
 end Mettapedia.GSLT.LanguageDef

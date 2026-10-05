@@ -80,7 +80,7 @@ theorem rho_costReflectiveNameResultsQuoted :
         costBaseSortName "Name" := by
     cases color <;>
       simp [costStaticReflectivePresentationDecl_eq_map,
-        mapReflectivePresentation, CostStaticColor.symbols, costBaseStaticSymbols,
+        mapReflectivePresentation, CostStaticColor.symbols, CostStaticColor.symbolsOf, costBaseStaticSymbols,
         costBaseLanguageDefSymbolMap, costWrappedStaticSymbols,
         rhoReflectivePresentation, interactingName,
         show "Name" ≠ "Proc" by decide]
@@ -96,7 +96,7 @@ theorem rho_costReflectiveNameResultsQuoted :
       rcases sourceConstructor with ⟨sourceRule, sourceRuleMembership⟩
       have sourceCategory : sourceRule.category = "Name" := by
         apply costBaseSortName_injective
-        simpa [CIGSLT.materializeDeclaredCostConstructor,
+        simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
           costBaseConstructor_def] using ruleCategoryBase
       obtain ⟨sourceLabel, sourceNotBare⟩ :=
         EquationSubstitution.rho_reflectiveNameResultSealed
@@ -112,7 +112,7 @@ theorem rho_costReflectiveNameResultsQuoted :
             using costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
               rhoReflectivePresentation.toReflectivePresentationDecl
                 sourceMembership
-        · simp [CIGSLT.materializeDeclaredCostConstructor,
+        · simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
             costBaseConstructor_def, costStaticReflectivePresentationDecl,
             costBaseReflectivePresentationDecl, mapReflectivePresentation,
             costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
@@ -121,20 +121,20 @@ theorem rho_costReflectiveNameResultsQuoted :
         exact sourceNotBare
           ((usesBareCollection_costBaseConstructor_iff rhoCIGSLT.cut
             sourceRule).mp (by
-              simpa [CIGSLT.materializeDeclaredCostConstructor] using
+              simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor] using
                 targetBare))
   | wrapped sourceConstructor =>
       rcases sourceConstructor with ⟨sourceRule, sourceRuleMembership⟩
       have sourceCategory : sourceRule.category = "Name" := by
         by_cases interacting : sourceRule.category = "Proc"
         · have impossible : costWrappedSortName = costBaseSortName "Name" := by
-            simpa [CIGSLT.materializeDeclaredCostConstructor,
+            simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
               costWrappedConstructor, interacting, interactingName] using
                 ruleCategoryBase
           exact False.elim
             (costBaseSortName_ne_wrapped "Name" impossible.symm)
         · apply costBaseSortName_injective
-          simpa [CIGSLT.materializeDeclaredCostConstructor,
+          simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
             costWrappedConstructor, interacting, interactingName] using
               ruleCategoryBase
       obtain ⟨sourceLabel, sourceNotBare⟩ :=
@@ -151,7 +151,7 @@ theorem rho_costReflectiveNameResultsQuoted :
             using costStaticReflectivePresentationDecl_mem rhoCIGSLT .wrapped
               rhoReflectivePresentation.toReflectivePresentationDecl
                 sourceMembership
-        · simp [CIGSLT.materializeDeclaredCostConstructor,
+        · simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
             costWrappedConstructor, costStaticReflectivePresentationDecl,
             costWrappedReflectivePresentationDecl, mapReflectivePresentation,
             costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
@@ -159,32 +159,32 @@ theorem rho_costReflectiveNameResultsQuoted :
       · intro targetBare
         exact sourceNotBare
           ((usesBareCollection_costWrappedConstructor_iff sourceRule).mp (by
-            simpa [CIGSLT.materializeDeclaredCostConstructor] using
+            simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor] using
               targetBare))
   | apparatus kind =>
       cases kind with
       | signatureUnit | signatureProduct | signatureCommit =>
           exact False.elim (costBaseSortName_ne_apparatus "Name" "signature"
-            (by simpa [CIGSLT.materializeDeclaredCostConstructor,
+            (by simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
               CostApparatusConstructor.grammarRule,
               costSignatureUnitConstructor, costSignatureProductConstructor,
               costSignatureCommitConstructor,
               costSignatureSortName] using ruleCategoryBase.symm))
       | keyLeaf | keyBranch =>
           exact False.elim (costBaseSortName_ne_apparatus "Name" "key"
-            (by simpa [CIGSLT.materializeDeclaredCostConstructor,
+            (by simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
               CostApparatusConstructor.grammarRule,
               costKeyLeafConstructor, costKeyBranchConstructor,
               costKeySortName] using ruleCategoryBase.symm))
       | signed | funding | contact =>
           exact False.elim (costBaseSortName_ne_wrapped "Name"
-            (by simpa [CIGSLT.materializeDeclaredCostConstructor,
+            (by simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
               CostApparatusConstructor.grammarRule, costSignedConstructor,
               costFundingConstructor, costContactConstructor]
                 using ruleCategoryBase.symm))
       | tokenStackEmpty | tokenStackCons =>
           exact False.elim (costBaseSortName_ne_apparatus "Name" "token-stack"
-            (by simpa [CIGSLT.materializeDeclaredCostConstructor,
+            (by simpa [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
               CostApparatusConstructor.grammarRule,
               costTokenStackEmptyConstructor, costTokenStackConsConstructor,
               costTokenStackSortName] using ruleCategoryBase.symm))
@@ -385,7 +385,7 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
     simpa [declaration, costStaticReflectivePresentationDecl,
       costBaseReflectivePresentationDecl, mapReflectivePresentation,
       costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
-      CostStaticColor.symbols, CostStaticColor.constructorTag,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, CostStaticColor.constructorTag,
       rhoReflectivePresentation] using typed
   obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
     typed'.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
@@ -402,7 +402,7 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
     simpa [declaration, costStaticReflectivePresentationDecl,
       costBaseReflectivePresentationDecl, mapReflectivePresentation,
       costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
-      CostStaticColor.symbols, CostStaticColor.constructorTag,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, CostStaticColor.constructorTag,
       rhoReflectivePresentation] using argumentTyped
   have typeEquality := HasType.apply_type_unique_of_validate_eq_nil
     rhoCIGSLT.costWholeLanguage_validate baseTyped rhoCostWrappedZero_typed
@@ -436,7 +436,7 @@ private theorem rhoCostMixedColorCanonicalDrop_not_typed :
   have declarationNameSort :
       declaration.nameSort = costBaseSortName "Name" := by
     simp [declaration, mapReflectivePresentation,
-      CostStaticColor.symbols, costWrappedStaticSymbols,
+      CostStaticColor.symbols, CostStaticColor.symbolsOf, costWrappedStaticSymbols,
       rhoReflectivePresentation, rhoCIGSLT, rhoIGSLT,
       rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
       TypeDecl.plain]
@@ -668,7 +668,7 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
       isObjectPattern
           (thinning.thickenAmbientBVars inner.length
             (mapPattern (color.symbols rhoCIGSLT) name)) = true := by
-    rw [CostStaticBinderThinning.isObjectPattern_thickenAmbientBVars,
+    rw [CostStaticTypeThinning.isObjectPattern_thickenAmbientBVars,
       WellSorted.isObjectPattern_mapPattern]
     exact object
   have cancellation :=
@@ -684,7 +684,7 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
   simpa only [declaration, costStaticReflectivePresentationDecl_eq_map,
     mapReflectivePresentation, mapPattern, mapPatternList_eq_map,
     CostStaticColor.reflectiveSymbols_constructor,
-    CostStaticBinderThinning.thickenAmbientBVars, List.length_map,
+    CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection, List.length_map,
     List.map_cons, List.map_nil, rhoReflectivePresentation]
     using cancellation
 
@@ -1008,8 +1008,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
                 payload] := by
         rw [targetDeclarationQuote]
         simp [rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
           targetQuoteStatusTag]
       by_cases dropShape : ∃ name,
           Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -1172,8 +1171,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
               (patterns.map (rhoCostStaticActionAt thinning assignment
                 currentInner currentAvailable)) := by
         simp [rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
           targetOrdinaryStatusTag, List.map_map, Function.comp_def]
       have canonicalApplication :
           Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -1201,7 +1199,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
       simpa [rhoCostStaticActionAt,
         ReflectiveContextSupport.substituteAt,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
-        CostStaticBinderThinning.thickenAmbientBVars, mapPattern]
+        CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern]
         using congrArg (Pattern.lambda binder) bodyEquality)
     (by
       intro bound arity binders body domain codomain bodyTyped currentAvailable
@@ -1218,7 +1216,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
       simpa [rhoCostStaticActionAt,
         ReflectiveContextSupport.substituteAt,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
-        CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+        CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
         List.length_append, List.length_replicate,
         Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
         using congrArg (Pattern.multiLambda arity binders) bodyEquality)
@@ -1243,8 +1241,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
           action (.collection selectedCollectionType patterns none) =
             .collection selectedCollectionType (patterns.map action) none := by
         simp [action, rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
           List.map_map, Function.comp_def]
       by_cases parallelShape :
           collectionType = rhoReflectivePresentation.parallelCollection
@@ -1257,15 +1254,13 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
                 (patterns.map action) none := by
           intro patterns
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
             mapReflectivePresentation]
         have mapUnit :
             action (.apply rhoReflectivePresentation.parallelUnitConstructor []) =
               .apply targetDeclaration.parallelUnitConstructor [] := by
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
             mapReflectivePresentation]
         have childrenEquality :
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -1354,8 +1349,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
           action (.collection selectedCollectionType patterns none) =
             .collection selectedCollectionType (patterns.map action) none := by
         simp [action, rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
           List.map_map, Function.comp_def]
       by_cases parallelShape :
           collectionType = rhoReflectivePresentation.parallelCollection
@@ -1368,15 +1362,13 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
                 (patterns.map action) none := by
           intro patterns
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
             mapReflectivePresentation]
         have mapUnit :
             action (.apply rhoReflectivePresentation.parallelUnitConstructor []) =
               .apply targetDeclaration.parallelUnitConstructor [] := by
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
             mapReflectivePresentation]
         have childrenEquality :
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -1753,8 +1745,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
                       payload] := by
               rw [targetDeclarationQuote]
               simp [rhoCostStaticActionAt,
-                ReflectiveContextSupport.substituteAt,
-                CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+                ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
                 targetQuoteStatusTag]
             by_cases dropShape : ∃ name,
                 Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -1902,8 +1893,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
               (patterns.map (rhoCostStaticActionAt thinning assignment
                 currentInner currentAvailable)) := by
         simp [rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
           targetOrdinaryStatusTag, List.map_map, Function.comp_def]
       have canonicalApplication :
           Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -1932,7 +1922,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       simpa [rhoCostStaticActionAt,
         ReflectiveContextSupport.substituteAt,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
-        CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+        CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
         Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill] using lifted)
     (by
       intro bound arity binders body domain codomain bodyTyped currentAvailable
@@ -1951,7 +1941,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       simpa [rhoCostStaticActionAt,
         ReflectiveContextSupport.substituteAt,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
-        CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+        CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
         Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill,
         List.length_append, List.length_replicate,
         Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using lifted)
@@ -1978,8 +1968,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           action (.collection selectedCollectionType patterns none) =
             .collection selectedCollectionType (patterns.map action) none := by
         simp [action, rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
           List.map_map, Function.comp_def]
       by_cases parallelShape :
           collectionType = rhoReflectivePresentation.parallelCollection
@@ -1992,15 +1981,13 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
                 (patterns.map action) none := by
           intro patterns
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
             mapReflectivePresentation]
         have mapUnit :
             action (.apply rhoReflectivePresentation.parallelUnitConstructor []) =
               .apply targetDeclaration.parallelUnitConstructor [] := by
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
             mapReflectivePresentation]
         have normalized :=
           ReflectiveParallelSubstitution.normalizationMapEquivalentBetween
@@ -2077,8 +2064,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           action (.collection selectedCollectionType patterns none) =
             .collection selectedCollectionType (patterns.map action) none := by
         simp [action, rhoCostStaticActionAt,
-          ReflectiveContextSupport.substituteAt,
-          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
           List.map_map, Function.comp_def]
       by_cases parallelShape :
           collectionType = rhoReflectivePresentation.parallelCollection
@@ -2091,15 +2077,13 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
                 (patterns.map action) none := by
           intro patterns
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_collection, mapPattern,
             mapReflectivePresentation]
         have mapUnit :
             action (.apply rhoReflectivePresentation.parallelUnitConstructor []) =
               .apply targetDeclaration.parallelUnitConstructor [] := by
           simp [action, rhoCostStaticActionAt, targetDeclaration,
-            ReflectiveContextSupport.substituteAt,
-            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            ReflectiveContextSupport.substituteAt, CostStaticTypeThinning.thickenAmbientBVars_apply, mapPattern,
             mapReflectivePresentation]
         have normalized :=
           ReflectiveParallelSubstitution.normalizationMapEquivalentBetween
@@ -2373,7 +2357,7 @@ private theorem rho_costAlgebraRule_shape
       materializedBare
   let preimage := costStaticConstructorPreimage rhoCIGSLT color constructor role
   obtain ⟨sourceParameterName, sourceCollectionType, sourceElementType,
-      sourceShape⟩ := preimage.source_usesBareCollection role materializedBare
+      sourceShape⟩ := preimage.usesBareCollection_iff.mp materializedBare
   have sourceRuleEquality : preimage.sourceConstructor.1 = rhoCalc.terms[3] :=
     rho_sourceBareRule_eq_parallel preimage.sourceConstructor.2 sourceShape
   have mappedShape := preimage.parametersMap
@@ -2434,7 +2418,7 @@ private theorem rho_costCollectionCarrierRule_hashSet_false
       materializedBare
   let preimage := costStaticConstructorPreimage rhoCIGSLT color constructor role
   obtain ⟨sourceParameterName, sourceCollectionType, sourceElementType,
-      sourceShape⟩ := preimage.source_usesBareCollection role materializedBare
+      sourceShape⟩ := preimage.usesBareCollection_iff.mp materializedBare
   have sourceRuleEquality : preimage.sourceConstructor.1 = rhoCalc.terms[3] :=
     rho_sourceBareRule_eq_parallel preimage.sourceConstructor.2 sourceShape
   have mappedShape := preimage.parametersMap
@@ -2771,7 +2755,7 @@ theorem rho_costStaticMappedThickenedGeneratorFiberAction
       (left.mappedThickenedAvailable thinning).pattern
       (right.mappedThickenedAvailable thinning).pattern
   simpa only [CostStaticSourceTerm.mappedThickenedAvailable_pattern,
-    CostStaticBinderThinning.thickenAmbientBVars_eq_renameAmbientBVarsAt]
+    CostStaticTypeThinning.thickenAmbientBVars_eq_renameAmbientBVarsAt]
     using thickened
 
 /-- Every source-authored rho equation generator acts soundly after mapping
@@ -2933,7 +2917,8 @@ theorem rho_costStaticCollectionUnambiguous
     cases sourceExpected <;>
       simp +instances [bareCostStaticCollectionTypingChoices,
         List.filterMap, CostCandidateFamilyUnambiguous, rhoCalc,
-        ContinuationRetypingPlan.wrappedLabels, ContinuationRetypingPlan.wrappedConstructors,
+        ContinuationRetypingPlan.wrappedLabels, ContinuationDecorationProfile.wrappedLabels,
+        ContinuationDecorationProfile.ofRetypingPlan, ContinuationDecorationProfile.primary,
         rhoCIGSLT,
         WellSorted.bareCollectionElementType?, TypeExpr.name, TypeExpr.proc,
         TypeExpr.bag, TypeExpr.baseType]

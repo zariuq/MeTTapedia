@@ -1165,7 +1165,7 @@ theorem DeclaresInductive.recursor_typed {m : Nat} {Δ : Ctx Head m} {pre : Sub 
     forall₂_map_self _ ctors (fun c hc =>
       method_typed S.levels ind.hu ind.hv typeT scrutinee motiveTyped (ind.ctor_typing hc)
         (bodyTyped hc) (fun hF => Derivable.mono ind.sub₀ (ind.fieldTyped hc hF)) mor)
-  exact Typed.convType (recApp_typed ind.rec_typing tP tms ht)
+  exact Typed.convType (recApp_typed ind.toRecursor.rec_typing tP tms ht)
     (recMotive_beta S.levels ind.hu ind.hv typeT scrutinee motiveTyped mor ht)
 
 variable (facts : FormFacts S.R S.roles)

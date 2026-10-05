@@ -487,7 +487,7 @@ def soundLowerBound : Bool → Nat
   | false => 1
   | true => 2
 
-def lazyCertificate :
+theorem lazyCertificate :
     LazyCertificate priority soundLowerBound [false, true] [false] false where
   winner_evaluated := by simp
   evaluated_subset := by simp

@@ -148,13 +148,12 @@ section Preservation
 
 variable {S S₀ : Setting Head L} (facts : FormFacts S.R S.roles)
   {T : DeclName} {v : Head} {ctors : List (DeclName × List (Field Head))} {rec : DeclName}
-  {R₀ R₁ R₂ : Rules Head} {u : Head} (decl : DeclaresInductive S₀ R₀ R₁ R₂ T u ctors rec v)
-  (sub : RulesSub S₀.R S.R)
+  (decl : DeclaresRecursor S₀ T ctors rec v) (sub : RulesSub S₀.R S.R)
 include facts decl sub
 
 /-- The computation rules of a declared recursor preserve typing, in every
 package containing the declaring one. -/
-theorem DeclaresInductive.step_preserves {n : Nat} {Γ : Ctx Head n} (formed : CtxFormed S.R Γ)
+theorem DeclaresRecursor.step_preserves {n : Nat} {Γ : Ctx Head n} (formed : CtxFormed S.R Γ)
     {l r A : Tm Head n} (step : IotaStep rec ctors l r) (typing : Typed S.R Γ l A) :
     Typed S.R Γ r A := by
   obtain ⟨p, ms, i, k, fields, args, mt, hms, hi, has, hm, rfl, rfl⟩ := step

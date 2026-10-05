@@ -110,10 +110,4 @@ theorem swap_changes_account_atom (sort : S.Srt) :
   change [Term.var (Var.succ Var.zero)] = [Term.var Var.zero] at atoms
   cases List.cons.inj atoms |>.1
 
-#print axioms substitute_identity
-#print axioms substitute_comp
-#print axioms substitute_length
-#print axioms map_substitute
-#print axioms swap_changes_account_atom
-
 end Mettapedia.GSLT.LanguageDef.Cost.SourceAccountSubstitution

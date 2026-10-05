@@ -191,7 +191,7 @@ theorem robustPatternBank_congr_of_canonicalSchema_eq
     (equal : canonicalSchema left = canonicalSchema right) :
     left ∈ robustPatternBank family meaning ↔
       right ∈ robustPatternBank family meaning := by
-  simp only [robustPatternBank, Set.mem_setOf_eq]
+  simp only [robustPatternBank, Set.mem_ofPred_eq]
   rw [equal]
 
 /-- Equal canonical representatives have identical provisional status. -/
@@ -202,7 +202,7 @@ theorem provisionalPatternBank_congr_of_canonicalSchema_eq
     (equal : canonicalSchema left = canonicalSchema right) :
     left ∈ provisionalPatternBank family meaning ↔
       right ∈ provisionalPatternBank family meaning := by
-  simp only [provisionalPatternBank, Set.mem_setOf_eq]
+  simp only [provisionalPatternBank, Set.mem_ofPred_eq]
   rw [equal]
 
 /-- Equal canonical representatives have identical rejected status. -/
@@ -213,7 +213,7 @@ theorem rejectedPatternBank_congr_of_canonicalSchema_eq
     (equal : canonicalSchema left = canonicalSchema right) :
     left ∈ rejectedPatternBank family meaning ↔
       right ∈ rejectedPatternBank family meaning := by
-  simp only [rejectedPatternBank, Set.mem_setOf_eq]
+  simp only [rejectedPatternBank, Set.mem_ofPred_eq]
   rw [equal]
 
 /-- Alpha-equivalent raw patterns have identical membership in all three

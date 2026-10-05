@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ObjectRecursiveDefinitions
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.SetDefinitions
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TowerInterpretation.SetDefinitionsBySolution
 
 /-!
 # The endless stream by its written equation, admitted on its solution in sets
@@ -20,12 +20,18 @@ and `from n` is the function `k ↦ n + k`.
 
 A definition by equations asks three different things: that both sides of each equation have
 one type; that some value satisfies the equations; that the equations stop when run as rules.
-For this stream the first two hold and the third fails. This module admits `scons` and `from`
-into the candidate with exactly the equations above as their computation steps, on the
-evidence that a set value satisfies them (`scons_valid`, `from_valid`), by the general
-criterion `definition_setModel_of_value`. So the package with both has a set model
-(`objectFrom_model`) and is consistent (`objectFrom_consistent`), relative to
-`CofinalInaccessibles`.
+For this stream the first two hold and the third fails: `from n` reaches no term that takes
+no step (`from_no_normal_form`, proved with the observations). This module admits `scons` and `from`
+into the candidate with exactly the equations above as their computation steps, on evidence
+about sets. The set value of `scons` satisfies its two equations (`scons_valid`, by
+`definition_setModel_of_value`). `from` is admitted on the evidence that an admission on a set
+solution asks for, with the witness `λ n k. n + k`. Its result is a stream, so the evidence is
+given position by position: at every number `n` and position `k`, `from n` and
+`scons n (from (suc n))` hold one number (`fromEquation_atPosition`). Both sides are streams
+(`fromEquation_functions`), so the written equation holds (`fromEquation_holds`, by
+`equationHolds_iff_atPosition`), and `definition_setModel_of_solution` gives the set model. So
+the package with both has a set model (`objectFrom_model`) and is consistent
+(`objectFrom_consistent`), relative to `CofinalInaccessibles`.
 
 **Finite observations are derivable**: in the judgment the first element of `from n` is `n`
 (`from_first`) and its second is `suc n` (`from_second`), each by finitely many uses of the
@@ -199,19 +205,16 @@ theorem fromStream_apply {n k : ZFSet.{u}} (hk : k ∈ ZFSet.omega) :
     traceApp (fromStream n) k = numeral (natOf n + natOf k) :=
   traceApp_graph_beta _ hk
 
-/-- **The written equation between sets**: the stream from `n` on is `n` before the stream from
-its successor on. Position by position: `n + 0 = n`, and `n + (j + 1) = (n + 1) + j`. -/
-theorem fromStream_unfold {n : ZFSet.{u}} (hn : n ∈ ZFSet.omega) :
-    fromStream n = sconsStream n (fromStream (insert n n)) := by
-  unfold fromStream sconsStream
-  refine congrArg traceLam (graph_congr fun k _ => ?_)
-  show numeral (natOf n + natOf k) =
-    sconsAt n (traceLam (graph ZFSet.omega fun j => numeral (natOf (insert n n) + natOf j))) k
+/-- **The written equation between sets, position by position**: at every position `k`, the
+stream from `n` on and `n` before the stream from its successor on hold one number: `n + 0 = n`,
+and `n + (j + 1) = (n + 1) + j`. -/
+theorem fromStream_unfold_at {n k : ZFSet.{u}} (hn : n ∈ ZFSet.omega) (hk : k ∈ ZFSet.omega) :
+    traceApp (fromStream n) k = traceApp (sconsStream n (fromStream (insert n n))) k := by
+  rw [fromStream_apply hk, sconsStream_apply hk]
   unfold sconsAt
   by_cases first : natOf k = 0
   · rw [if_pos first, first, Nat.add_zero, numeral_natOf hn]
-  · rw [if_neg first, traceApp_graph_beta _ (numeral_mem_omega _), natOf_insert hn,
-      natOf_numeral]
+  · rw [if_neg first, fromStream_apply (numeral_mem_omega _), natOf_insert hn, natOf_numeral]
     congr 1
     omega
 
@@ -368,36 +371,6 @@ theorem scons_at {consts : DeclName → ZFSet.{u}}
   rw [agrees sconsN declared]
   exact Function.update_self _ _ _
 
-/-- **The written equation of the endless stream between sets**, at every number: the
-equation that never stops as a rule holds between sets. -/
-theorem fromEquation_valid {consts : DeclName → ZFSet.{u}}
-    (agrees : ∀ c, objectScons.constantType c ≠ none → consts c = sconsConsts h c)
-    (atFrom : consts fromN = fromValue) (η : Env.{u} 1)
-    (sat : Sat (objHeads h) consts (.snoc .nil cnum : CCtx Tower.Head 1) η) :
-    ev (objHeads h) consts (cfrom (.var 0) : CTm Tower.Head 1) η =
-      ev (objHeads h) consts (cscons (.var 0) (cfrom (csuc (.var 0))) : CTm Tower.Head 1) η := by
-  have base := agrees_object h agrees
-  have hn : η 0 ∈ ZFSet.omega := by
-    have member := sat 0
-    change η 0 ∈ consts numN at member
-    rwa [num_value h base] at member
-  show traceApp (consts fromN) (η 0) =
-    traceApp (traceApp (consts sconsN) (η 0))
-      (traceApp (consts fromN) (traceApp (consts sucN) (η 0)))
-  rw [atFrom, scons_at h agrees, suc_value h base hn, fromValue_apply hn,
-    fromValue_apply (insert_mem_omega hn), sconsValue_apply hn (fromStream_mem _)]
-  exact fromStream_unfold hn
-
-/-- **The set value of `from` satisfies its written equation** at every typed instance. -/
-theorem from_valid {consts : DeclName → ZFSet.{u}}
-    (agrees : ∀ c, objectScons.constantType c ≠ none → consts c = sconsConsts h c)
-    (atFrom : consts fromN = fromValue) :
-    ∀ e ∈ [fromEquation], ∀ η : Env.{u} e.arity, Sat (objHeads h) consts e.telescope η →
-      ev (objHeads h) consts e.left η = ev (objHeads h) consts e.right η := by
-  intro e member η sat
-  obtain rfl : e = fromEquation := by simpa using member
-  exact fromEquation_valid h agrees atFrom η sat
-
 /-- The set of the type of `from`. -/
 theorem ev_fromType {consts : DeclName → ZFSet.{u}}
     (agrees : ∀ c, objectChurch.constantType c ≠ none → consts c = objectSetConsts h c) :
@@ -411,16 +384,80 @@ theorem ev_fromType {consts : DeclName → ZFSet.{u}}
 noncomputable def fromConsts : DeclName → ZFSet.{u} :=
   Function.update (sconsConsts h) fromN fromValue
 
+/-- The assignment of the model agrees with the model with `scons`. -/
+theorem fromConsts_agrees :
+    ∀ c, objectScons.constantType c ≠ none → fromConsts h c = sconsConsts h c :=
+  fun c declared => Function.update_of_ne
+    (fun same : c = fromN => declared (by rw [same]; exact from_new)) _ _
+
+/-- **The evidence for `from`, position by position.** With `λ n k. n + k` for `from`, at every
+number `n` and position `k` the two sides of the written equation hold one number. -/
+theorem fromEquation_atPosition :
+    EquationHolds (objHeads h) (fromConsts h) (fromEquation.atPosition cnum) := by
+  intro (η : Env.{u} 2) sat
+  have base := agrees_object h (fromConsts_agrees h)
+  have hn : η 1 ∈ ZFSet.omega := by
+    have member := sat (1 : Fin 2)
+    change η 1 ∈ fromConsts h numN at member
+    rwa [num_value h base] at member
+  have hk : η 0 ∈ ZFSet.omega := by
+    have member := sat (0 : Fin 2)
+    change η 0 ∈ fromConsts h numN at member
+    rwa [num_value h base] at member
+  show traceApp (traceApp (fromConsts h fromN) (η 1)) (η 0) =
+    traceApp (traceApp (traceApp (fromConsts h sconsN) (η 1))
+      (traceApp (fromConsts h fromN) (traceApp (fromConsts h sucN) (η 1)))) (η 0)
+  rw [show fromConsts h fromN = fromValue from Function.update_self _ _ _,
+    scons_at h (fromConsts_agrees h), suc_value h base hn, fromValue_apply hn,
+    fromValue_apply (insert_mem_omega hn), sconsValue_apply hn (fromStream_mem _)]
+  exact fromStream_unfold_at hn hk
+
+/-- **Both sides of the written equation are streams**, at every number. -/
+theorem fromEquation_functions (η : Env.{u} 1)
+    (sat : Sat (objHeads h) (fromConsts h) fromEquation.telescope η) :
+    ev (objHeads h) (fromConsts h) fromEquation.left η ∈
+        ev (objHeads h) (fromConsts h) (.pi cnum cnum) η ∧
+      ev (objHeads h) (fromConsts h) fromEquation.right η ∈
+        ev (objHeads h) (fromConsts h) (.pi cnum cnum) η := by
+  have base := agrees_object h (fromConsts_agrees h)
+  have hn : η 0 ∈ ZFSet.omega := by
+    have member := sat (0 : Fin 1)
+    change η 0 ∈ fromConsts h numN at member
+    rwa [num_value h base] at member
+  have numbers : ev (objHeads h) (fromConsts h) (.pi cnum cnum : CTm Tower.Head 1) η = streams := by
+    show tracePiSet (fromConsts h numN) (fun _ => fromConsts h numN) = _
+    rw [num_value h base]
+    rfl
+  rw [numbers]
+  show traceApp (fromConsts h fromN) (η 0) ∈ streams ∧
+    traceApp (traceApp (fromConsts h sconsN) (η 0))
+      (traceApp (fromConsts h fromN) (traceApp (fromConsts h sucN) (η 0))) ∈ streams
+  rw [show fromConsts h fromN = fromValue from Function.update_self _ _ _,
+    scons_at h (fromConsts_agrees h), suc_value h base hn, fromValue_apply hn,
+    fromValue_apply (insert_mem_omega hn), sconsValue_apply hn (fromStream_mem _)]
+  exact ⟨fromStream_mem _, sconsStream_mem hn (fromStream_mem _)⟩
+
+/-- **The written equation of the endless stream holds in the model**, from the evidence
+position by position: both sides are streams, and streams with the same elements are one. The
+equation that never stops as a rule holds between sets. -/
+theorem fromEquation_holds : EquationHolds (objHeads h) (fromConsts h) fromEquation :=
+  (equationHolds_iff_atPosition (objHeads h) (fromEquation_functions h)).mp
+    (fromEquation_atPosition h)
+
+/-- The definition of `from` mentions only `from` and names that the package with `scons`
+declares. -/
+theorem from_mentions : MentionsDeclared objectScons fromN fromType [fromEquation] :=
+  ⟨by decide, by decide, by decide, by decide⟩
+
 /-- **The package with the endless stream, defined by its written equation, has a set
-model**, relative to `CofinalInaccessibles`. -/
+model**, relative to `CofinalInaccessibles`: it is admitted on the evidence of its solution
+`λ n k. n + k`. -/
 theorem objectFrom_model (consts : DeclName → ZFSet.{u})
     (agrees : ∀ c, objectFrom.constantType c ≠ none → consts c = fromConsts h c) :
     SetModel (objHeads h) consts objectFrom :=
-  definition_setModel_of_value objectScons (objectScons_model h) from_new fromValue
-    (fun _ agreesScons _ => by
-      rw [ev_fromType h (agrees_object h agreesScons)]
-      exact fromValue_mem)
-    (fun _ agreesScons atFrom => from_valid h agreesScons atFrom) consts agrees
+  definition_setModel_of_solution (objHeads h) objectScons (objectScons_model h) from_new
+    from_mentions (by rw [ev_fromType h (agrees_object h fun _ _ => rfl)]; exact fromValue_mem)
+    (List.forall_mem_singleton.mpr (fromEquation_holds h)) consts agrees
 
 /-- The model at the assignment itself. -/
 theorem objectFrom_model_read : SetModel (objHeads h) (fromConsts h) objectFrom :=
@@ -559,13 +596,8 @@ equation. -/
 abbrev objectFromList :=
   withDefinition objectLength fromListN (.pi cnum clist) [fromListEquation]
 
-/-- The numerals of the candidate. -/
-def numeralTerm : Nat → CTm Tower.Head 0
-  | 0 => czero
-  | k + 1 => csuc (numeralTerm k)
-
 /-- `fromList` applied to a numeral. -/
-abbrev fromListAt (k : Nat) : CTm Tower.Head 0 := .app (.const fromListN) (numeralTerm k)
+abbrev fromListAt (k : Nat) : CTm Tower.Head 0 := .app (.const fromListN) (cnumeral k)
 
 section NoList
 
@@ -578,13 +610,13 @@ theorem fromList_typed : CTyped objectFromList .nil (.const fromListN) (.pi cnum
   definition_typed (withDefinition_defined objectLength (by decide))
     (ofLength (ofListsLength (lpiT num_typed_one list_typed_one))) (LevelTower.IsUniverse.sort _)
 
-theorem numeralTerm_typed : ∀ k : Nat, CTyped objectFromList .nil (numeralTerm k) cnum
+theorem cnumeral_typed_fromList : ∀ k : Nat, CTyped objectFromList .nil (cnumeral k) cnum
   | 0 => ofLength (ofListsLength (ofObject czero_typed))
   | k + 1 => .appElim (B := cnum) (ofLength (ofListsLength (ofObject csucConst_typed)))
-      (numeralTerm_typed k)
+      (cnumeral_typed_fromList k)
 
 theorem fromListAt_typed (k : Nat) : CTyped objectFromList .nil (fromListAt k) clist :=
-  .appElim (B := clist) fromList_typed (numeralTerm_typed k)
+  .appElim (B := clist) fromList_typed (cnumeral_typed_fromList k)
 
 theorem lengthAt_typed (k : Nat) : CTyped objectFromList .nil (clength (fromListAt k)) cnum :=
   .appElim (B := cnum) (ofLength length_typed) (fromListAt_typed k)
@@ -594,35 +626,35 @@ the written equation, then the second equation of the length. -/
 theorem length_fromList (k : Nat) :
     CEqual objectFromList .nil (clength (fromListAt k)) (csuc (clength (fromListAt (k + 1))))
       cnum := by
-  have consTyped : CTyped objectFromList .nil (ccons (numeralTerm k) (fromListAt (k + 1))) clist :=
+  have consTyped : CTyped objectFromList .nil (ccons (cnumeral k) (fromListAt (k + 1))) clist :=
     .appElim (B := clist)
       (.appElim (B := .pi clist clist) (ofLength (ofListsLength consConst_typed))
-        (numeralTerm_typed k))
+        (cnumeral_typed_fromList k))
       (fromListAt_typed (k + 1))
   have unfolded : CEqual objectFromList .nil (fromListAt k)
-      (ccons (numeralTerm k) (fromListAt (k + 1))) clist :=
+      (ccons (cnumeral k) (fromListAt (k + 1))) clist :=
     equation_holds _ (StepsWithin.sum_right _ _) (e := fromListEquation) List.mem_cons_self
-      (fun _ => numeralTerm k)
+      (fun _ => cnumeral k)
       (fun j => match j with
-        | ⟨0, _⟩ => numeralTerm_typed k)
+        | ⟨0, _⟩ => cnumeral_typed_fromList k)
       (fromListAt_typed k) consTyped
   have lengths : CEqual objectFromList .nil (clength (fromListAt k))
-      (clength (ccons (numeralTerm k) (fromListAt (k + 1)))) cnum :=
+      (clength (ccons (cnumeral k) (fromListAt (k + 1)))) cnum :=
     .appCong (B := cnum) (.refl (ofLength length_typed)) unfolded
   have typed : CSubstMor objectFromList (CCtx.snoc (.snoc .nil cnum) clist) .nil
-      (fun i : Fin 2 => [fromListAt (k + 1), numeralTerm k].getD i.val (numeralTerm k)) :=
+      (fun i : Fin 2 => [fromListAt (k + 1), cnumeral k].getD i.val (cnumeral k)) :=
     fun j => match j with
       | ⟨0, _⟩ => fromListAt_typed (k + 1)
-      | ⟨1, _⟩ => numeralTerm_typed k
+      | ⟨1, _⟩ => cnumeral_typed_fromList k
   have consRule : CEqual objectFromList .nil
-      (clength (ccons (numeralTerm k) (fromListAt (k + 1))))
+      (clength (ccons (cnumeral k) (fromListAt (k + 1))))
       (csuc (clength (fromListAt (k + 1)))) cnum :=
     equation_holds _
       ((StepsWithin.sum_right objectLists _).trans (StepsWithin.sum_left objectLength _))
       (e := recursionEquation lengthN listN consN [.closed (.const numN), .recursive]
         (lengthBody consN [.closed (.const numN), .recursive]))
       (List.mem_cons_of_mem _ List.mem_cons_self)
-      (fun i => [fromListAt (k + 1), numeralTerm k].getD i.val (numeralTerm k)) typed
+      (fun i => [fromListAt (k + 1), cnumeral k].getD i.val (cnumeral k)) typed
       (.appElim (B := cnum) (ofLength length_typed) consTyped)
       (.appElim (B := cnum) (ofLength (ofListsLength (ofObject csucConst_typed)))
         (lengthAt_typed (k + 1)))

@@ -107,6 +107,65 @@ theorem conditionalComplexity_eq_zero_of_not_hasProgram
     Kc[U](x | condition) = 0 := by
   simp [conditionalComplexity, h]
 
+/-- Freeze the auxiliary input without changing programs or outputs. -/
+def conditionalSlice (U : ConditionalPrefixFreeMachine)
+    (condition : BinString) :
+    Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine where
+  compute := fun program => U.compute program condition
+  prefix_free := U.prefix_free condition
+
+@[simp] theorem conditionalSlice_compute
+    (U : ConditionalPrefixFreeMachine) (condition program : BinString) :
+    (conditionalSlice U condition).compute program = U.compute program condition :=
+  rfl
+
+theorem hasProgram_iff_conditionalSlice
+    (U : ConditionalPrefixFreeMachine) (condition output : BinString) :
+    HasProgram U condition output ↔
+      ∃ program, (conditionalSlice U condition).compute program = some output :=
+  Iff.rfl
+
+/-- Freezing a condition preserves shortest-program length, including the
+convention for outputs outside the represented range. -/
+theorem conditionalComplexity_eq_kolmogorovComplexity_slice
+    (U : ConditionalPrefixFreeMachine) (condition output : BinString) :
+    Kc[U](output | condition) =
+      Mettapedia.UniversalAI.SolomonoffPrior.kolmogorovComplexity
+        (conditionalSlice U condition) output := by
+  by_cases represented : HasProgram U condition output
+  · apply Nat.le_antisymm
+    · obtain ⟨program, computes, lengthEq⟩ :=
+        Mettapedia.UniversalAI.SolomonoffPrior.exists_program_of_complexity
+          (conditionalSlice U condition) output represented
+      have bound := conditionalComplexity_le_program_length U condition output
+        program computes
+      simpa [lengthEq] using bound
+    · obtain ⟨program, computes, lengthEq⟩ :=
+        exists_program_of_conditionalComplexity U condition output represented
+      have bound :=
+        Mettapedia.UniversalAI.SolomonoffPrior.complexity_le_program_length
+          (conditionalSlice U condition) output program computes
+      simpa [lengthEq] using bound
+  · rw [conditionalComplexity_eq_zero_of_not_hasProgram U condition output represented]
+    have absent : ¬ ∃ program,
+        (conditionalSlice U condition).compute program = some output :=
+      fun h => represented h
+    unfold Mettapedia.UniversalAI.SolomonoffPrior.kolmogorovComplexity
+    rw [dif_neg absent]
+
+/-- An ordinary machine can be interpreted while ignoring the auxiliary input.
+This lift does not assert conditional universality. -/
+def conditionBlindLift
+    (M : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine) :
+    ConditionalPrefixFreeMachine where
+  compute := fun program _condition => M.compute program
+  prefix_free := fun _condition => M.prefix_free
+
+@[simp] theorem conditionBlindLift_compute
+    (M : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
+    (program condition : BinString) :
+    (conditionBlindLift M).compute program condition = M.compute program := rfl
+
 /-- For each condition, the halting programs really are prefix-free. -/
 theorem conditionalHaltingPrograms_prefixFree
     (U : ConditionalPrefixFreeMachine) (condition : BinString) :

@@ -685,29 +685,15 @@ theorem selected_abs_error_from_miscalibration_le_width_mul
 
 /-! ## Phase 4: mediation-chain fixtures -/
 
-def toyPositiveFeasibility :
+theorem toyPositiveFeasibility :
     DeductionBranchFeasibility (1/2 : ℝ) (1/2 : ℝ) (1/2 : ℝ)
-      (9/10 : ℝ) (9/10 : ℝ) where
-  AB_nonneg := by norm_num [deductionJointAB]
-  AB_le_B := by norm_num [deductionJointAB]
-  BC_nonneg := by norm_num [deductionJointBC]
-  BC_le_B := by norm_num [deductionJointBC]
-  AnotB_nonneg := by norm_num [deductionJointAB]
-  AnotB_le_notB := by norm_num [deductionJointAB]
-  CnotB_nonneg := by norm_num [deductionJointBC]
-  CnotB_le_notB := by norm_num [deductionJointBC]
+      (9/10 : ℝ) (9/10 : ℝ) := by
+  constructor <;> norm_num [deductionJointAB, deductionJointBC]
 
-def toyNegativeFeasibility :
+theorem toyNegativeFeasibility :
     DeductionBranchFeasibility (1/10 : ℝ) (1/2 : ℝ) (9/20 : ℝ)
-      (9/10 : ℝ) (9/10 : ℝ) where
-  AB_nonneg := by norm_num [deductionJointAB]
-  AB_le_B := by norm_num [deductionJointAB]
-  BC_nonneg := by norm_num [deductionJointBC]
-  BC_le_B := by norm_num [deductionJointBC]
-  AnotB_nonneg := by norm_num [deductionJointAB]
-  AnotB_le_notB := by norm_num [deductionJointAB]
-  CnotB_nonneg := by norm_num [deductionJointBC]
-  CnotB_le_notB := by norm_num [deductionJointBC]
+      (9/10 : ℝ) (9/10 : ℝ) := by
+  constructor <;> norm_num [deductionJointAB, deductionJointBC]
 
 def toyPositiveITV : ITV :=
   deductionCredalStrengthITV (1/2 : ℝ) (1/2 : ℝ) (1/2 : ℝ)

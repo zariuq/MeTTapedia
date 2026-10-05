@@ -26,7 +26,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.GSLTIL.OperationalEquipment
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LooseRelationEquipment

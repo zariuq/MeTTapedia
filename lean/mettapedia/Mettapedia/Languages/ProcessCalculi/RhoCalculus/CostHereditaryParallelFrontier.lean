@@ -667,15 +667,13 @@ theorem commonReifiedMappedThickened_root_stable
   cases pattern with
   | bvar index =>
       simp [Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+        CostStaticTypeThinning.thickenAmbientBVars_bvar]
   | fvar name =>
-      simp [Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [Pattern.renameFVars, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar]
   | apply constructor arguments =>
       constructor
       · intro equality
-        simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-          CostStaticBinderThinning.thickenAmbientBVars] at equality
+        simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_apply] at equality
         have constructorEq :
             (color.symbols rhoCIGSLT).constructor constructor =
               targetDeclaration.parallelUnitConstructor :=
@@ -687,16 +685,14 @@ theorem commonReifiedMappedThickened_root_stable
         have argumentsEq : arguments = [] := by
           have mappedEq := (Pattern.apply.inj equality).2
           simpa [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-            CostStaticBinderThinning.thickenAmbientBVars] using mappedEq
+            CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using mappedEq
         exact stable.1 (by rw [sourceConstructorEq, argumentsEq])
       · constructor
         · intro elements equality
-          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-            CostStaticBinderThinning.thickenAmbientBVars] at equality
+          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_apply] at equality
           cases equality
         · intro quoteArguments equality
-          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-            CostStaticBinderThinning.thickenAmbientBVars] at equality
+          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_apply] at equality
           have constructorEq :
               (color.symbols rhoCIGSLT).constructor constructor =
                 targetDeclaration.quoteConstructor :=
@@ -707,24 +703,19 @@ theorem commonReifiedMappedThickened_root_stable
             exact constructorEq.trans quoteMap
           exact stable.2.2 arguments (by rw [sourceConstructorEq])
   | lambda binder body =>
-      simp [Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [Pattern.renameFVars, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_lambda]
   | multiLambda arity binders body =>
-      simp [Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [Pattern.renameFVars, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_multiLambda]
   | subst body replacement =>
-      simp [Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [Pattern.renameFVars, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_subst]
   | collection collectionType elements rest =>
       constructor
       · intro equality
-        simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-          CostStaticBinderThinning.thickenAmbientBVars] at equality
+        simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_collection] at equality
         cases equality
       · constructor
         · intro framedElements equality
-          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-            CostStaticBinderThinning.thickenAmbientBVars] at equality
+          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_collection] at equality
           have collectionEq : collectionType =
               targetDeclaration.parallelCollection :=
             (Pattern.collection.inj equality).1
@@ -735,8 +726,7 @@ theorem commonReifiedMappedThickened_root_stable
           subst rest
           rw [collectionEq, parallelMap]
         · intro arguments equality
-          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map,
-            CostStaticBinderThinning.thickenAmbientBVars] at equality
+          simp only [Pattern.renameFVars, mapPattern, mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_collection] at equality
           cases equality
 
 mutual
@@ -1051,8 +1041,7 @@ theorem processPlan_commonFrame_parallelSingleton_absorbed
       simp only [frame]
       rw [cospan.reifyWith_eq_renameFVars,
         environment.reify_eq_renameFVars]
-      simp [sourceDeclaration, declaration, Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+      simp [sourceDeclaration, declaration, Pattern.renameFVars, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_apply]
       cases color <;> rfl
     rw [frameEq]
     apply canonicalizeByAt_parallel_singleton_of_not_parallel
@@ -1074,8 +1063,7 @@ theorem processPlan_commonFrame_parallelSingleton_absorbed
         rw [cospan.reifyWith_eq_renameFVars,
           environment.reify_eq_renameFVars]
         simp only [Pattern.renameFVars, mapPattern,
-          mapPatternList_eq_map,
-          CostStaticBinderThinning.thickenAmbientBVars]
+          mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_collection]
         cases color <;> refine ⟨_, rfl⟩
       obtain ⟨framedElements, frameEq⟩ := frameEq
       rw [frameEq]
@@ -1246,31 +1234,31 @@ mutual
         (parallelLeaves declaration pattern).map
           (thinning.thickenAmbientBVars depth)
     | .bvar index => by
-        simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars]
+        simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_bvar]
     | .fvar name => by
-        simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars]
+        simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_fvar]
     | .apply constructor arguments => by
         by_cases unit : constructor = declaration.parallelUnitConstructor ∧
             arguments = []
         · rcases unit with ⟨rfl, rfl⟩
-          simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars]
-        · simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars,
+          simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_apply]
+        · simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_apply,
             unit]
     | .lambda binder body => by
-        simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars]
+        simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_lambda]
     | .multiLambda arity binders body => by
-        simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars]
+        simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_multiLambda]
     | .subst body replacement => by
-        simp [parallelLeaves, CostStaticBinderThinning.thickenAmbientBVars]
+        simp [parallelLeaves, CostStaticTypeThinning.thickenAmbientBVars_subst]
     | .collection collectionType elements rest => by
         by_cases parallel : collectionType = declaration.parallelCollection ∧
             rest = none
         · rcases parallel with ⟨rfl, rfl⟩
-          simp only [CostStaticBinderThinning.thickenAmbientBVars,
+          simp only [CostStaticTypeThinning.thickenAmbientBVars_collection,
             parallelLeaves, and_self, if_true]
           exact parallelLeavesList_thickenAmbientBVars thinning declaration
             depth elements
-        · simp only [CostStaticBinderThinning.thickenAmbientBVars,
+        · simp only [CostStaticTypeThinning.thickenAmbientBVars_collection,
             parallelLeaves, if_neg parallel, List.map_singleton]
 
   /-- List companion of `parallelLeaves_thickenAmbientBVars`. -/
@@ -1735,8 +1723,7 @@ theorem boundaryPlan_commonReifiedMappedThickened_eq_atom
       boundary.stopped.boundaryOccurrence)
   refine ⟨slot, ?_⟩
   rw [boundary.abstract_eq]
-  simp only [CostStaticAtomEnvironment.reify,
-    CostStaticBinderThinning.thickenAmbientBVars, mapPattern]
+  simp only [CostStaticAtomEnvironment.reify, CostStaticTypeThinning.thickenAmbientBVars_fvar, mapPattern]
   unfold CostStaticAtomEnvironment.reifyName
   have selected' : environment.slotOfName?
       (costRegionBoundaryVariableName boundary.stopped.certified.typed.boundary) =
@@ -2092,8 +2079,7 @@ theorem boundaryPlan_commonAtom_normalized_application
         cospan.reifyWith environment.lookupAtom? leg
           (.fvar (environment.atomName slot)) := by
     rw [boundary.abstract_eq]
-    simp only [CostStaticAtomEnvironment.reify,
-      CostStaticBinderThinning.thickenAmbientBVars, mapPattern]
+    simp only [CostStaticAtomEnvironment.reify, CostStaticTypeThinning.thickenAmbientBVars_fvar, mapPattern]
     unfold CostStaticAtomEnvironment.reifyName
     have selected' : environment.slotOfName?
         (costRegionBoundaryVariableName
@@ -2267,7 +2253,7 @@ theorem nonBoundaryPlan_commonFrame_restored_root_cases
       rw [abstractEq]
       simp only [frame, cospan.reifyWith_eq_renameFVars,
         environment.reify_eq_renameFVars, Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars]
+        CostStaticTypeThinning.thickenAmbientBVars_bvar]
     dsimp only [restored, endpoint]
     rw [frameShape]
     simp only [canonicalizeByAt,
@@ -2292,8 +2278,7 @@ theorem nonBoundaryPlan_commonFrame_restored_root_cases
         .fvar (cospan.commonAtomName (leg slot)) := by
       rw [abstractEq]
       simp [frame,
-        Pattern.renameFVars, mapPattern,
-        CostStaticBinderThinning.thickenAmbientBVars,
+        Pattern.renameFVars, mapPattern, CostStaticTypeThinning.thickenAmbientBVars_fvar,
         CostStaticAtomEnvironment.reifyName, selectedAtName,
         CostStaticAtomKeyCospan.reifyNameWith,
         CostStaticAtomEnvironment.lookupAtom?_atomName]
@@ -2319,8 +2304,7 @@ theorem nonBoundaryPlan_commonFrame_restored_root_cases
       rw [show targetWire = (color.symbols rhoCIGSLT).constructor sourceWire
         from targetWireEq]
       simp [frame, Pattern.renameFVars, mapPattern,
-        mapPatternList_eq_map,
-        CostStaticBinderThinning.thickenAmbientBVars]
+        mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_apply]
     have notQuote : targetWire ≠ targetDeclaration.quoteConstructor := by
       intro equality
       apply framedStable.2.2 framedArguments
@@ -2347,8 +2331,7 @@ theorem nonBoundaryPlan_commonFrame_restored_root_cases
           .collection collectionType framedElements rest := by
       rw [abstractEq]
       simp [frame, Pattern.renameFVars, mapPattern,
-        mapPatternList_eq_map,
-        CostStaticBinderThinning.thickenAmbientBVars]
+        mapPatternList_eq_map, CostStaticTypeThinning.thickenAmbientBVars_collection]
     dsimp only [restored, endpoint]
     rw [frameShape]
     by_cases restNone : rest = none

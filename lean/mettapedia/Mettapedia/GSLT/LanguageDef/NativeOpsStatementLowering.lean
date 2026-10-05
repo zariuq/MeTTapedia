@@ -29,6 +29,11 @@ mutual
         (tested : SourceShortCircuitExpression condition)
         (whenTrue : SourceLocalControlBlock yes) (whenFalse : SourceLocalControlBlock no) :
         SourceLocalControlStatement (.branch condition yes no)
+    | switch {selector : Expr} {arms : List (NativeWord64.Word × List Statement)}
+        {otherwise : List Statement} (tested : SourceShortCircuitExpression selector)
+        (cases : ∀ arm ∈ arms, SourceLocalControlBlock arm.2)
+        (fallback : SourceLocalControlBlock otherwise) :
+        SourceLocalControlStatement (.switch selector arms otherwise)
     | while {condition : Expr} {body : List Statement}
         (tested : SourceShortCircuitExpression condition) (iteration : SourceLocalControlBlock body) :
         SourceLocalControlStatement (.while condition body)
@@ -51,6 +56,92 @@ end
 
 def LoopLabelsWithin (bound : Nat) (loops : List LoopLabels) : Prop :=
   ∀ active ∈ loops, active.entry.identity ≤ bound ∧ active.exit.identity ≤ bound
+
+/-- The actual lowerer retains the checked scope. This does not claim that
+    an abrupt execution reaches every declaration in that scope. -/
+theorem statement_lowering_checked_scope {interface : Interface} {result : NativeType}
+    {loops : List LoopLabels} {scope : Scope} {statement : Statement} {supply : Supply}
+    {output : Block}
+    (compiled : NativeLowering.statement? interface result loops scope statement supply = some output) :
+    checkStatement interface result loops.length scope statement = some output.scope := by
+  rw [NativeLowering.statement?] at compiled
+  obtain ⟨nextScope, checked, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+  have same : output.scope = nextScope := by
+    cases statement with
+    | declare name type initializer =>
+        obtain ⟨value, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+    | set location value =>
+        obtain ⟨place, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨value, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+    | branch condition yes no =>
+        obtain ⟨condition, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨yes, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨no, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+    | «while» condition body =>
+        obtain ⟨condition, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨body, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+    | switch selector arms otherwise =>
+        obtain ⟨selector, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨arms, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨otherwise, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+    | «break» =>
+        cases loops with
+        | nil => cases compiled
+        | cons active outer => cases Option.some.inj compiled; rfl
+    | «continue» =>
+        cases loops with
+        | nil => cases compiled
+        | cons active outer => cases Option.some.inj compiled; rfl
+    | effect expression =>
+        obtain ⟨value, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+    | free expression =>
+        obtain ⟨type, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        obtain ⟨value, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases type <;> first
+          | cases Option.some.inj compiled; rfl
+          | cases compiled
+    | «return» expression =>
+        cases expression with
+        | none => cases Option.some.inj compiled; rfl
+        | some expression =>
+            obtain ⟨value, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+            cases Option.some.inj compiled
+            rfl
+    | block body =>
+        obtain ⟨body, _, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+        cases Option.some.inj compiled
+        rfl
+  simpa only [same] using checked
+
+theorem block_lowering_checked_scope {interface : Interface} {result : NativeType}
+    {loops : List LoopLabels} {scope : Scope} {body : List Statement} {supply : Supply}
+    {output : Block}
+    (compiled : NativeLowering.block? interface result loops scope body supply = some output) :
+    checkBlock interface result loops.length scope body = some output.scope := by
+  induction body generalizing scope supply output with
+  | nil =>
+      rw [NativeLowering.block?] at compiled
+      cases Option.some.inj compiled
+      simp only [checkBlock]
+  | cons head rest ih =>
+      rw [NativeLowering.block?] at compiled
+      obtain ⟨first, headCompiled, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+      obtain ⟨tail, restCompiled, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+      cases Option.some.inj compiled
+      rw [checkBlock, statement_lowering_checked_scope headCompiled]
+      exact ih (output := tail) restCompiled
 
 theorem loop_labels_within_weaken {lower upper : Nat} (inside : lower ≤ upper)
     {loops : List LoopLabels} (bounded : LoopLabelsWithin lower loops) : LoopLabelsWithin upper loops :=
@@ -208,6 +299,79 @@ theorem block_statement_lowering_exact {interface : Interface} {result : NativeT
   rcases Option.bind_eq_some_iff.mp compiled with ⟨nextScope, checked, compiled⟩
   rcases Option.bind_eq_some_iff.mp compiled with ⟨value, lowered, compiled⟩
   exact ⟨nextScope, value, checked, lowered, (Option.some.inj compiled).symm⟩
+
+/-- The selector precedes every emitted arm; each arm retains the supply
+    produced by compiling all earlier arms. -/
+theorem switch_lowering_exact {interface : Interface} {result : NativeType}
+    {loops : List LoopLabels} {scope : Scope} {selector : Expr}
+    {arms : List (NativeWord64.Word × List Statement)} {otherwise : List Statement}
+    {supply : Supply} {output : Block}
+    (compiled : NativeLowering.statement? interface result loops scope
+      (.switch selector arms otherwise) supply = some output) :
+    ∃ nextScope test cases fallback,
+      checkStatement interface result loops.length scope (.switch selector arms otherwise) = some nextScope ∧
+      NativeLowering.expression? interface scope selector supply = some test ∧
+      NativeLowering.cases? interface result loops scope arms test.supply = some cases ∧
+      NativeLowering.block? interface result loops scope otherwise cases.supply = some fallback ∧
+      output = ⟨test.code ++ [.switch test.result cases.cases fallback.code], nextScope, fallback.supply⟩ := by
+  rw [NativeLowering.statement?] at compiled
+  obtain ⟨nextScope, checked, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+  obtain ⟨test, tested, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+  obtain ⟨cases, lowered, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+  obtain ⟨fallback, otherwiseCompiled, compiled⟩ := Option.bind_eq_some_iff.mp compiled
+  exact ⟨nextScope, test, cases, fallback, checked, tested, lowered, otherwiseCompiled,
+    (Option.some.inj compiled).symm⟩
+
+theorem switch_checked_type {interface : Interface} {result : NativeType}
+    {loops : Nat} {scope nextScope : Scope} {selector : Expr}
+    {arms : List (NativeWord64.Word × List Statement)} {otherwise : List Statement}
+    (checked : checkStatement interface result loops scope (.switch selector arms otherwise) = some nextScope) :
+    inferExpr interface scope selector = some .word ∧ (arms.map Prod.fst).Nodup ∧ nextScope = scope := by
+  rw [checkStatement] at checked
+  obtain ⟨type, typed, checked⟩ := Option.bind_eq_some_iff.mp checked
+  split at checked
+  · cases checked
+  · rename_i admitted
+    simp only [not_or, Decidable.not_not] at admitted
+    have word : type = .word := admitted.1
+    have distinct : (arms.map Prod.fst).Nodup := admitted.2
+    subst type
+    obtain ⟨_, _, checked⟩ := Option.bind_eq_some_iff.mp checked
+    obtain ⟨_, _, checked⟩ := Option.bind_eq_some_iff.mp checked
+    exact ⟨typed, distinct, (Option.some.inj checked).symm⟩
+
+theorem checked_cases_members {interface : Interface} {result : NativeType}
+    {loops : Nat} {scope : Scope} {arms : List (NativeWord64.Word × List Statement)}
+    (checked : checkCases interface result loops scope arms = some ()) :
+    ∀ arm ∈ arms, ∃ nextScope, checkBlock interface result loops scope arm.2 = some nextScope := by
+  induction arms with
+  | nil => intro arm impossible; cases impossible
+  | cons arm rest ih =>
+      rw [checkCases] at checked
+      obtain ⟨nextScope, bodyChecked, restChecked⟩ := Option.bind_eq_some_iff.mp checked
+      intro selected member
+      rcases List.mem_cons.mp member with first | later
+      · subst selected; exact ⟨nextScope, bodyChecked⟩
+      · exact ih restChecked selected later
+
+theorem switch_checked_selection {interface : Interface} {result : NativeType}
+    {loops : Nat} {scope nextScope : Scope} {selector : Expr}
+    {arms : List (NativeWord64.Word × List Statement)} {otherwise : List Statement}
+    (checked : checkStatement interface result loops scope (.switch selector arms otherwise) = some nextScope)
+    (value : NativeWord64.Word) :
+    ∃ selectedScope, checkBlock interface result loops scope
+      (sourceSelectCase value arms otherwise) = some selectedScope := by
+  rw [checkStatement] at checked
+  obtain ⟨_, _, checked⟩ := Option.bind_eq_some_iff.mp checked
+  split at checked
+  · cases checked
+  · obtain ⟨caseCheck, armsChecked, checked⟩ := Option.bind_eq_some_iff.mp checked
+    cases caseCheck
+    obtain ⟨fallbackScope, fallbackChecked, _⟩ := Option.bind_eq_some_iff.mp checked
+    exact source_select_case_property
+      (fun body => ∃ selectedScope, checkBlock interface result loops scope body = some selectedScope)
+      value (checked_cases_members armsChecked)
+      ⟨fallbackScope, fallbackChecked⟩
 
 theorem block_cons_lowering_exact {interface : Interface} {result : NativeType}
     {loops : List LoopLabels} {scope : Scope} {first : Statement} {rest : List Statement}

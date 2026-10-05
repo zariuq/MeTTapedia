@@ -58,7 +58,7 @@ theorem ccs_costBaseCoAct_params :
 /-- The left side of synchronisation stays sorted when the two continuations
 are moved to the wrapped fibre. -/
 theorem ccsRetyping_redexRetypable : ccsRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   change HasType ccsRetyping.generatedLanguage ccsRetyping.generatedFreeContext []
     (.collection .hashBag
       [.apply (costBaseConstructorName "CAct") [.fvar "a", .fvar "p"],
@@ -90,7 +90,7 @@ theorem ccsRetyping_redexRetypable : ccsRetyping.RedexRetypable := by
 
 /-- The contractum has the wrapped sort. -/
 theorem ccsRetyping_wrappable : ccsRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   change HasType ccsRetyping.generatedLanguage ccsRetyping.generatedFreeContext []
     (.collection .hashBag [.fvar "p", .fvar "q"] (some "rest")) (.base costWrappedSortName)
   exact HasType.collectionConstructor

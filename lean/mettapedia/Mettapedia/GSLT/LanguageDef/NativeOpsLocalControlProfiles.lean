@@ -244,4 +244,46 @@ theorem short_circuit_source_success_tag {World : Type} {interface : Interface}
         exact secondIH rightType continued
       · cases impossible
 
+/-- The local execution invariant retains the allocated-cell counter, binding
+types and actual context fault, including abrupt exits. The checked scope is
+required only when execution reaches the next statement normally. -/
+structure SourceLocalOutcomeProfile {World : Type} (marker : SourceFrame)
+    (nextScope : Scope) (out : SourceBlockOutcome World) : Prop where
+  extended : SourceFrameExtends marker out.frame
+  below : SourceLocalsBelow out.frame
+  coherent : LocalTypesCoherent out.frame.bindings
+  tagged : SourceLocalsTagged out.frame out.state.memory
+  fault : match out.flow with
+    | .fault error => out.state.fault = some error
+    | _ => out.state.fault = none
+  scope : out.flow = .normal → sourceFrameScope out.frame = nextScope
+
+theorem source_local_profile_close {World : Type} {marker : SourceFrame}
+    {nextScope : Scope} {out : SourceBlockOutcome World}
+    (below : SourceLocalsBelow marker) (coherent : LocalTypesCoherent marker.bindings)
+    (profile : SourceLocalOutcomeProfile marker nextScope out) :
+    SourceLocalOutcomeProfile marker (sourceFrameScope marker) (sourceCloseBlock marker out) :=
+  ⟨source_scope_frame_extends profile.extended out.state,
+    source_scope_local_below profile.extended below out.state,
+    source_scope_local_coherent marker out.frame out.state coherent,
+    source_scope_local_tagged profile.extended below out.state profile.tagged,
+    profile.fault, fun _ => rfl⟩
+
+theorem source_local_profile_trans {World : Type} {first middle : SourceFrame}
+    {nextScope : Scope} {out : SourceBlockOutcome World}
+    (extended : SourceFrameExtends first middle)
+    (profile : SourceLocalOutcomeProfile middle nextScope out) :
+    SourceLocalOutcomeProfile first nextScope out :=
+  ⟨source_frame_extends_trans extended profile.extended, profile.below,
+    profile.coherent, profile.tagged, profile.fault, profile.scope⟩
+
+theorem source_close_retains_caller_cell {World : Type} {marker : SourceFrame}
+    {out : SourceBlockOutcome World} (extended : SourceFrameExtends marker out.frame)
+    (position : Nat) (caller : position < marker.nextLocal) :
+    (sourceCloseBlock marker out).state.memory.cells marker.storage position =
+      out.state.memory.cells marker.storage position := by
+  have outside : ¬ marker.nextLocal ≤ position := Nat.not_le_of_gt caller
+  simp only [sourceCloseBlock, sourceLeaveScope, sourceDropLocals,
+    extended.storage, outside, false_and, and_false, if_false]
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

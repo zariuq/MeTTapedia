@@ -213,15 +213,4 @@ theorem readout_eq_of_history_eq
     readout (Schedule.events first) = readout (Schedule.events second) :=
   congrArg readout sameHistory
 
-#print axioms scheduleGrade_append
-#print axioms scheduleGrade_workSpan
-#print axioms chronology_historyGrade
-#print axioms scheduleGrade_chronology
-#print axioms scheduleGrade_withWorkSpan
-#print axioms erase_total_coordinate_recovers_workSpan
-#print axioms annotateSchedule_erases_to_eventBag
-#print axioms filterAnnotatedSchedule_eq_authoredSemanticFilter
-#print axioms no_history_recovery_of_workSpan_collision
-#print axioms readout_eq_of_history_eq
-
 end Mettapedia.GSLT.LanguageDef.Cost.OperationalValuation

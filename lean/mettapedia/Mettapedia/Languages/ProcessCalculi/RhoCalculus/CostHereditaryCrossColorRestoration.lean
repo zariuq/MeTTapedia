@@ -36,7 +36,7 @@ theorem CostStaticRegionPlan.not_bvar_of_available_nil
       targetBound thinning [] outer (.bvar index) sourceType) : False := by
   cases plan with
   | bvar sourceIndex lookup correspondence availableScope =>
-      simp [CostStaticBinderThinning.sourceContextOfTarget] at availableScope
+      simp [CostStaticTypeThinning.sourceContextOfTarget] at availableScope
 
 end Mettapedia.GSLT.LanguageDef
 
@@ -90,7 +90,7 @@ theorem rho_costStaticCollectionTypingChoices_name_eq_nil
         collectionType elements
         (mapTypeExpr (color.symbols rhoCIGSLT) (.base "Name")) = [] := by
   unfold costStaticCollectionTypingChoices
-  rw [decodeCostStaticTypeExpr_mapTypeExpr]
+  rw [CostStaticTypeImage.decode_mapTypeExpr]
   simp only [bareCostStaticCollectionTypingChoices]
   apply List.filterMap_eq_nil_iff.mpr
   intro rule membership
@@ -141,7 +141,7 @@ theorem rho_mapLangSort_eq_nameSort (color : CostStaticColor)
   cases color <;>
     simp [CostStaticColor.mapLangSort,
       ReflectionExtension.mapReflectivePresentation, nameSort,
-      CostStaticColor.reflectiveSymbols, CostStaticColor.symbols,
+      CostStaticColor.reflectiveSymbols, CostStaticColor.symbols, CostStaticColor.symbolsOf,
       costBaseStaticReflectiveSymbols, costWrappedStaticReflectiveSymbols,
       costBaseStaticSymbols, costWrappedStaticSymbols,
       costBaseLanguageDefSymbolMap, rhoReflectivePresentation]

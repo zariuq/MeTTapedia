@@ -55,6 +55,23 @@ def events : {source target : theory.Term} →
         List.cons_append]
       rw [inductionHypothesis]
 
+/-- Every retained occurrence is reached by an actual prefix of the path.
+Membership in an event list does not invent reachability evidence. -/
+theorem mem_events_prefix {source target : theory.Term}
+    (path : Core.InteractionComposition.EventPath presentation source target)
+    (occurrence : Occurrence presentation)
+    (member : occurrence ∈ events presentation path) :
+    Nonempty (Core.InteractionComposition.EventPath presentation source occurrence.1) := by
+  induction path with
+  | nil => simp [events] at member
+  | @cons source middle target site event rest ih =>
+    simp only [events, List.mem_cons] at member
+    rcases member with head | tail
+    · subst occurrence
+      exact ⟨.nil source⟩
+    · obtain ⟨priorPath⟩ := ih tail
+      exact ⟨.cons event priorPath⟩
+
 /-- Value an exact path without changing its endpoints or event evidence. -/
 def grade
     (valuation : Valuation (Occurrence presentation))

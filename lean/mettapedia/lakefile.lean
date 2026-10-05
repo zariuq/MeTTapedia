@@ -50,8 +50,28 @@ input_dir primeMotivationSources where
   text := true
   filter := .extension "metta"
 
-@[default_target] lean_lib Mettapedia where
+@[default_target] lean_lib Mettapedia
+
+-- Only this module quotes the curriculum files. Its importers inherit the
+-- dependency through the normal module graph, without invalidating unrelated
+-- libraries when an authored curriculum file changes.
+lean_lib PrimeMotivationQuotation where
+  roots := #[`Mettapedia.Languages.MeTTa.PrimeCandidates.CandidateMotivationProgramPackages]
   needs := #[`@/primeMotivationSources]
+
+-- Concrete MM2 execution examples are an explicit proof audit, not a
+-- dependency of the routine language umbrellas or the default library.
+lean_lib MetamathProofRegression where
+  roots := #[`Mettapedia.Languages.Metamath.MM2AssembledNormalExecution]
+
+input_dir mm0MeTTaServiceSources where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0"
+  text := true
+  filter := .extension "metta"
+
+lean_lib MM0MeTTaQuotation where
+  roots := #[`Mettapedia.Languages.MM0.MeTTa.Program]
+  needs := #[`@/mm0MeTTaServiceSources]
 
 lean_exe mettapedia where root := `Main
 
@@ -63,3 +83,6 @@ lean_exe checkRFC8259NativeForestExact where
 
 lean_exe sumoNativeSourceCheck where
   root := `Mettapedia.Languages.SUMO.Native.SourceElaborationCheck
+
+lean_exe pettaSourceRun where
+  root := `Mettapedia.Languages.MeTTa.PeTTa.SourceMain

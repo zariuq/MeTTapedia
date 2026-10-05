@@ -1516,7 +1516,7 @@ theorem sameFiber_of_certifies_of_target_eq
       right.typed.boundary.support := by
     exact leftSourceSupport.trans
       ((congrArg
-        (CostStaticBinderThinning.sourceContextOfTarget source color)
+        (CostStaticTypeThinning.sourceContextOfTarget source.theory color)
         supportEq).trans rightSourceSupport.symm)
   have targetTypeEq : left.typed.boundary.targetType =
       right.typed.boundary.targetType :=

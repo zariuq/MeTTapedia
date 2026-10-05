@@ -132,62 +132,62 @@ theorem rules_numRec_suc {n : Nat} (p z s a : Tower.Tm n) :
 
 section Model
 
-variable (v : Nat → Nat) {T : RealizerSide Tower.Head ℕ}
+variable (X : TExtension) (v : Nat → Nat) {T : RealizerSide Tower.Head ℕ}
 
 /-! ## Values -/
 
 /-- Numbers with a common shape are related at every denotation of the numbers. -/
-theorem num_rel {m : Nat} {ξ : World (nmodel v T).reading m} {a b : Tower.Tm m}
-    {sh : NumShape} (left : VShape v a sh) (right : VShape v b sh)
-    {PA : NPack (nmodel v T) m} (den : DenN (nmodel v T) ξ numT PA) :
+theorem num_rel {m : Nat} {ξ : World (nmodel X v T).reading m} {a b : Tower.Tm m}
+    {sh : NumShape} (left : X.VShape v a sh) (right : X.VShape v b sh)
+    {PA : NPack (nmodel X v T) m} (den : DenN (nmodel X v T) ξ numT PA) :
     PA.rel a b := by
-  rw [num_den v den]
+  rw [num_den X v den]
   exact ValueSide.numIndPack_rel.mpr ⟨sh, left, right⟩
 
 /-- A motive related to another at `num → w` sends numbers with a common shape
 to types related in the universe `w`. -/
-theorem motive_related {w : Tower.Head} (hw : (nmodel v T).rules.isUniverse w)
-    {m : Nat} {ξ : World (nmodel v T).reading m}
-    {RP : NPack (nmodel v T) m}
-    (denP : DenN (nmodel v T) ξ (.pi numT (.head w)) RP) {P P' : Tower.Tm m}
-    (related : RP.rel P P') {a b : Tower.Tm m} {sh : NumShape} (left : VShape v a sh)
-    (right : VShape v b sh) :
-    (ValueSide.universeAt (nmodel v T).value
-      ((nmodel v T).value.levels.level w) ξ).rel (.app P a) (.app P' b) := by
-  have laws := (nmodel_laws v T).value
+theorem motive_related {w : Tower.Head} (hw : (nmodel X v T).rules.isUniverse w)
+    {m : Nat} {ξ : World (nmodel X v T).reading m}
+    {RP : NPack (nmodel X v T) m}
+    (denP : DenN (nmodel X v T) ξ (.pi numT (.head w)) RP) {P P' : Tower.Tm m}
+    (related : RP.rel P P') {a b : Tower.Tm m} {sh : NumShape} (left : X.VShape v a sh)
+    (right : X.VShape v b sh) :
+    (ValueSide.universeAt (nmodel X v T).value
+      ((nmodel X v T).value.levels.level w) ξ).rel (.app P a) (.app P' b) := by
+  have laws := (nmodel_laws X v T).value
   obtain ⟨RU, denU, types⟩ := ValueSide.DenS.pi_app_exists laws denP related
-    fun den => num_rel v left right den
-  have denU' : DenN (nmodel v T) ξ (.head w) RU := denU
+    fun den => num_rel X v left right den
+  have denU' : DenN (nmodel X v T) ξ (.head w) RU := denU
   rwa [ValueSide.DenS.sort_inv laws hw denU'] at types
 
 /-- At numbers with a common shape, a motive has one denotation. -/
-theorem motive_den {w : Tower.Head} (hw : (nmodel v T).rules.isUniverse w)
-    {m : Nat} {ξ : World (nmodel v T).reading m}
-    {RP : NPack (nmodel v T) m}
-    (denP : DenN (nmodel v T) ξ (.pi numT (.head w)) RP) {P : Tower.Tm m}
-    (relP : RP.Val P) {a b : Tower.Tm m} {sh : NumShape} (left : VShape v a sh)
-    (right : VShape v b sh) :
-    ∃ R : NPack (nmodel v T) m, DenN (nmodel v T) ξ (.app P a) R ∧
-      DenN (nmodel v T) ξ (.app P b) R := by
+theorem motive_den {w : Tower.Head} (hw : (nmodel X v T).rules.isUniverse w)
+    {m : Nat} {ξ : World (nmodel X v T).reading m}
+    {RP : NPack (nmodel X v T) m}
+    (denP : DenN (nmodel X v T) ξ (.pi numT (.head w)) RP) {P : Tower.Tm m}
+    (relP : RP.Val P) {a b : Tower.Tm m} {sh : NumShape} (left : X.VShape v a sh)
+    (right : X.VShape v b sh) :
+    ∃ R : NPack (nmodel X v T) m, DenN (nmodel X v T) ξ (.app P a) R ∧
+      DenN (nmodel X v T) ξ (.app P b) R := by
   obtain ⟨R, first, second, -⟩ :=
-    ValueSide.universeAt.den (motive_related v hw denP relP left right)
+    ValueSide.universeAt.den (motive_related X v hw denP relP left right)
   exact ⟨R, ⟨_, first⟩, ⟨_, second⟩⟩
 
 /-- A step related to another at `Π n : num. P n → P (suc n)`, applied to
 numbers with a common shape and to values related at the motive, gives values
 related at the motive at the successor. -/
-theorem step_related {m : Nat} {ξ : World (nmodel v T).reading m}
-    {P s s' : Tower.Tm m} {RS : NPack (nmodel v T) m}
-    (denS : DenN (nmodel v T) ξ (vstepType P) RS) (relS : RS.rel s s')
-    {a b h h' : Tower.Tm m} {sh : NumShape} (left : VShape v a sh) (right : VShape v b sh)
-    (values : ∀ {R : NPack (nmodel v T) m},
-      DenN (nmodel v T) ξ (.app P a) R → R.rel h h')
-    {R : NPack (nmodel v T) m}
-    (denSuc : DenN (nmodel v T) ξ (.app P (sucNative a)) R) :
+theorem step_related {m : Nat} {ξ : World (nmodel X v T).reading m}
+    {P s s' : Tower.Tm m} {RS : NPack (nmodel X v T) m}
+    (denS : DenN (nmodel X v T) ξ (vstepType P) RS) (relS : RS.rel s s')
+    {a b h h' : Tower.Tm m} {sh : NumShape} (left : X.VShape v a sh) (right : X.VShape v b sh)
+    (values : ∀ {R : NPack (nmodel X v T) m},
+      DenN (nmodel X v T) ξ (.app P a) R → R.rel h h')
+    {R : NPack (nmodel X v T) m}
+    (denSuc : DenN (nmodel X v T) ξ (.app P (sucNative a)) R) :
     R.rel (.app (.app s a) h) (.app (.app s' b) h') := by
-  have laws := (nmodel_laws v T).value
+  have laws := (nmodel_laws X v T).value
   obtain ⟨R₁, den₁, related₁⟩ := ValueSide.DenS.pi_app_exists laws denS relS
-    fun den => num_rel v left right den
+    fun den => num_rel X v left right den
   rw [vinst0_stepCod] at den₁
   obtain ⟨R₂, den₂, related₂⟩ := ValueSide.DenS.pi_app_exists laws den₁ related₁ values
   rw [vinst0_sucMotive] at den₂
@@ -197,17 +197,17 @@ theorem step_related {m : Nat} {ξ : World (nmodel v T).reading m}
 /-- **The recursor's values**: at a motive related to itself at `num → w`,
 related values at zero and related steps, applied to numbers with a common
 shape, the recursor gives values related at the motive at the first number. -/
-theorem numRec_related {w : Tower.Head} (hw : (nmodel v T).rules.isUniverse w)
-    {m : Nat} {ξ : World (nmodel v T).reading m} {P z z' s s' : Tower.Tm m}
-    {RP RZ RS : NPack (nmodel v T) m}
-    (denP : DenN (nmodel v T) ξ (.pi numT (.head w)) RP) (relP : RP.Val P)
-    (denZ : DenN (nmodel v T) ξ (.app P zeroNative) RZ) (relZ : RZ.rel z z')
-    (denS : DenN (nmodel v T) ξ (vstepType P) RS) (relS : RS.rel s s')
+theorem numRec_related {w : Tower.Head} (hw : (nmodel X v T).rules.isUniverse w)
+    {m : Nat} {ξ : World (nmodel X v T).reading m} {P z z' s s' : Tower.Tm m}
+    {RP RZ RS : NPack (nmodel X v T) m}
+    (denP : DenN (nmodel X v T) ξ (.pi numT (.head w)) RP) (relP : RP.Val P)
+    (denZ : DenN (nmodel X v T) ξ (.app P zeroNative) RZ) (relZ : RZ.rel z z')
+    (denS : DenN (nmodel X v T) ξ (vstepType P) RS) (relS : RS.rel s s')
     (P' : Tower.Tm m) :
-    ∀ (sh : NumShape) {t t' : Tower.Tm m}, VShape v t sh → VShape v t' sh →
-      ∀ {R : NPack (nmodel v T) m}, DenN (nmodel v T) ξ (.app P t) R →
+    ∀ (sh : NumShape) {t t' : Tower.Tm m}, X.VShape v t sh → X.VShape v t' sh →
+      ∀ {R : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ (.app P t) R →
         R.rel (numRecApp P z s t) (numRecApp P' z' s' t') := by
-  have laws := (nmodel_laws v T).value
+  have laws := (nmodel_laws X v T).value
   intro sh
   induction sh with
   | zero =>
@@ -216,14 +216,14 @@ theorem numRec_related {w : Tower.Head} (hw : (nmodel v T).rules.isUniverse w)
       | zero red =>
           cases ht' with
           | zero red' =>
-              obtain ⟨R₀, denT, denZero⟩ := motive_den v hw denP relP
+              obtain ⟨R₀, denT, denZero⟩ := motive_den X v hw denP relP
                 (b := zeroNative) (.zero red) (.zero .refl)
               rw [ValueSide.DenS.deterministic laws den denT]
               have expansive := ValueSide.DenS.expansive laws denT
-              refine expansive.left (Relation.ReflTransGen.tail (vnumRec_scrutinee v P z s red)
-                (vnumRec_zero_step v P z s)) ?_
+              refine expansive.left (Relation.ReflTransGen.tail (X.numRec_scrutinee v P z s red)
+                (X.numRec_zero_step v P z s)) ?_
               refine expansive.right (Relation.ReflTransGen.tail
-                (vnumRec_scrutinee v P' z' s' red') (vnumRec_zero_step v P' z' s')) ?_
+                (X.numRec_scrutinee v P' z' s' red') (X.numRec_zero_step v P' z' s')) ?_
               rw [ValueSide.DenS.deterministic laws denZero denZ]
               exact relZ
   | suc sh ih =>
@@ -232,15 +232,15 @@ theorem numRec_related {w : Tower.Head} (hw : (nmodel v T).rules.isUniverse w)
       | @suc _ a _ red ha =>
           cases ht' with
           | @suc _ a' _ red' ha' =>
-              obtain ⟨R₁, denT, denSuc⟩ := motive_den v hw denP relP
+              obtain ⟨R₁, denT, denSuc⟩ := motive_den X v hw denP relP
                 (b := sucNative a) (.suc red ha) (.suc .refl ha)
               rw [ValueSide.DenS.deterministic laws den denT]
               have expansive := ValueSide.DenS.expansive laws denT
-              refine expansive.left (Relation.ReflTransGen.tail (vnumRec_scrutinee v P z s red)
-                (vnumRec_suc_step v P z s a)) ?_
+              refine expansive.left (Relation.ReflTransGen.tail (X.numRec_scrutinee v P z s red)
+                (X.numRec_suc_step v P z s a)) ?_
               refine expansive.right (Relation.ReflTransGen.tail
-                (vnumRec_scrutinee v P' z' s' red') (vnumRec_suc_step v P' z' s' a')) ?_
-              exact step_related v denS relS ha ha' (ih ha ha') denSuc
+                (X.numRec_scrutinee v P' z' s' red') (X.numRec_suc_step v P' z' s' a')) ?_
+              exact step_related X v denS relS ha ha' (ih ha ha') denSuc
   | star =>
       intro t t' ht ht' R den
       cases ht with
@@ -248,10 +248,10 @@ theorem numRec_related {w : Tower.Head} (hw : (nmodel v T).rules.isUniverse w)
           cases ht' with
           | star red' daimonic' =>
               have expansive := ValueSide.DenS.expansive laws den
-              exact expansive.left (vnumRec_scrutinee v P z s red)
-                (expansive.right (vnumRec_scrutinee v P' z' s' red')
-                  (ValueSide.DenS.daimonic_related laws den (vnumRec_daimonic v P z s daimonic)
-                    (vnumRec_daimonic v P' z' s' daimonic')))
+              exact expansive.left (X.numRec_scrutinee v P z s red)
+                (expansive.right (X.numRec_scrutinee v P' z' s' red')
+                  (ValueSide.DenS.daimonic_related laws den (X.numRec_daimonic v P z s daimonic)
+                    (X.numRec_daimonic v P' z' s' daimonic')))
 
 section Realizers
 
@@ -266,25 +266,25 @@ realizers of a number of a shape is related to its application at the second
 realizers by the realizers of the recursor's value at the number: by induction
 on the shape, the realizers reaching neutral terms, `zero`, or `suc` of the
 predecessor's realizers. -/
-theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
+theorem numRec_real {m r : Nat} {ξ : World (nmodel X v T).reading m}
     {Δ : Tower.Ctx r} (formed : CtxFormed T.R Δ) {P Z S : Tower.Tm m}
-    {RP RZ RS : NPack (nmodel v T) m}
-    (denP : DenN (nmodel v T) ξ (.pi numT U0) RP) (relP : RP.Val P)
-    (denZ : DenN (nmodel v T) ξ (.app P zeroNative) RZ) (relZ : RZ.Val Z)
-    (denS : DenN (nmodel v T) ξ (vstepType P) RS) (relS : RS.Val S)
+    {RP RZ RS : NPack (nmodel X v T) m}
+    (denP : DenN (nmodel X v T) ξ (.pi numT U0) RP) (relP : RP.Val P)
+    (denZ : DenN (nmodel X v T) ξ (.app P zeroNative) RZ) (relZ : RZ.Val Z)
+    (denS : DenN (nmodel X v T) ξ (vstepType P) RS) (relS : RS.Val S)
     {p z s p' z' s' : Tower.Tm r} (realP : (RP.real P).rel Δ (.pi numT U0) p p')
     (realZ : (RZ.real Z).rel Δ (.app p zeroNative) z z')
     (realS : (RS.real S).rel Δ (vstepType p) s s')
     (tz' : Typed T.R Δ z' (.app p' zeroNative)) (ts' : Typed T.R Δ s' (vstepType p'))
     (typeS : IsType T.R Δ (vstepType p)) :
-    ∀ (sh : NumShape) {a : Tower.Tm m}, VShape v a sh → ∀ {t t' : Tower.Tm r},
+    ∀ (sh : NumShape) {a : Tower.Tm m}, X.VShape v a sh → ∀ {t t' : Tower.Tm r},
       NumShapeRel T numN zeroN sucN sh Δ numT t t' →
-      ∀ {Q : NPack (nmodel v T) m}, DenN (nmodel v T) ξ (.app P a) Q →
+      ∀ {Q : NPack (nmodel X v T) m}, DenN (nmodel X v T) ξ (.app P a) Q →
         (Q.real (numRecApp P Z S a)).rel Δ (.app p t) (numRecApp p z s t)
           (numRecApp p' z' s' t') := by
-  have laws := nmodel_laws v T
+  have laws := nmodel_laws X v T
   have vlaws := laws.value
-  have hw : (nmodel v T).rules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
+  have hw : (nmodel X v T).rules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   have levels := T.levels
   obtain ⟨tp, tp'⟩ := ECand.typed _ realP
   obtain ⟨tz, -⟩ := ECand.typed _ realZ
@@ -299,7 +299,7 @@ theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
   -- Realizers reaching neutral terms: both applications reach neutral spines.
   have neutralCase : ∀ {a : Tower.Tm m} {t t' : Tower.Tm r},
       NeRel T Δ numT t t' →
-      ∀ {Q : NPack (nmodel v T) m},
+      ∀ {Q : NPack (nmodel X v T) m},
         (Q.real (numRecApp P Z S a)).rel Δ (.app p t) (numRecApp p z s t)
           (numRecApp p' z' s' t') := by
     intro a t t' ne Q
@@ -336,14 +336,14 @@ theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
       cases ha with
       | zero red =>
           have ett' : Equal T.R Δ t t' numT := T.laws.convTm_sound cv
-          obtain ⟨R₀, denT, denZero⟩ := motive_den v hw denP relP
+          obtain ⟨R₀, denT, denZero⟩ := motive_den X v hw denP relP
             (b := zeroNative) (.zero red) (.zero .refl)
           obtain rfl := ValueSide.DenS.deterministic vlaws den denT
           obtain rfl := ValueSide.DenS.deterministic vlaws denZero denZ
           have value : Q.rel (numRecApp P Z S a) Z :=
             (ValueSide.DenS.expansive vlaws den).left
-              (Relation.ReflTransGen.tail (vnumRec_scrutinee v P Z S red)
-                (vnumRec_zero_step v P Z S)) relZ
+              (Relation.ReflTransGen.tail (X.numRec_scrutinee v P Z S red)
+                (X.numRec_zero_step v P Z S)) relZ
           rw [ValueSide.DenS.real_eq_of_rel vlaws den value]
           -- Both applications compute to the realizers of the value at zero.
           have zeroT : TypeEq T.R Δ (.app p zeroNative) (.app p t) := here (.symm r₀.equal)
@@ -364,24 +364,24 @@ theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
       cases ha with
       | @suc _ c _ red hc =>
           have ett' : Equal T.R Δ t t' numT := T.laws.convTm_sound cv
-          obtain ⟨R₁, denT, denSuc⟩ := motive_den v hw denP relP
+          obtain ⟨R₁, denT, denSuc⟩ := motive_den X v hw denP relP
             (b := sucNative c) (.suc red hc) (.suc .refl hc)
           obtain rfl := ValueSide.DenS.deterministic vlaws den denT
-          have values : ∀ {R : NPack (nmodel v T) m},
-              DenN (nmodel v T) ξ (.app P c) R →
+          have values : ∀ {R : NPack (nmodel X v T) m},
+              DenN (nmodel X v T) ξ (.app P c) R →
                 R.rel (numRecApp P Z S c) (numRecApp P Z S c) :=
-            fun den' => numRec_related v hw denP relP denZ relZ denS relS P sh hc hc
+            fun den' => numRec_related X v hw denP relP denZ relZ denS relS P sh hc hc
               den'
           have value : Q.rel (numRecApp P Z S a) (.app (.app S c) (numRecApp P Z S c)) :=
             (ValueSide.DenS.expansive vlaws den).left
-              (Relation.ReflTransGen.tail (vnumRec_scrutinee v P Z S red)
-                (vnumRec_suc_step v P Z S c))
-              (step_related v denS relS hc hc values denSuc)
+              (Relation.ReflTransGen.tail (X.numRec_scrutinee v P Z S red)
+                (X.numRec_suc_step v P Z S c))
+              (step_related X v denS relS hc hc values denSuc)
           rw [ValueSide.DenS.real_eq_of_rel vlaws den value]
           -- The step's realizers applied to the predecessor's realizers.
           obtain ⟨-, typeCod⟩ := IsType.pi_parts typeS
           obtain ⟨u, hu, tCod⟩ := typeCod
-          have hbReal := (num_real v ext ⟨0, num_interp v 0 ξ⟩ hc Δ numT
+          have hbReal := (num_real X v ext ⟨0, num_interp X v 0 ξ⟩ hc Δ numT
             b b').mpr hb
           have tb : Typed T.R Δ b numT := (ECand.typed _ hbReal).1
           have typeStep : IsType T.R Δ (.pi (.app p b)
@@ -390,12 +390,12 @@ theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
             rw [vinst0_stepCod] at h
             exact ⟨u, hu, h⟩
           obtain ⟨PB, denB, -⟩ := ValueSide.DenS.pi_app_exists vlaws denS relS
-            fun d => num_rel v hc hc d
+            fun d => num_rel X v hc hc d
           have first := DenN.pi_app_real laws denS formed (RedTy.refl typeS) realS
-            (fun d => ⟨num_rel v hc hc d,
-              (num_real v ext d hc Δ numT b b').mpr hb⟩) denB
+            (fun d => ⟨num_rel X v hc hc d,
+              (num_real X v ext d hc Δ numT b b').mpr hb⟩) denB
           rw [vinst0_stepCod] at denB first
-          have denSuc' : DenN (nmodel v T) ξ (Presentation.inst0 (numRecApp P Z S c)
+          have denSuc' : DenN (nmodel X v T) ξ (Presentation.inst0 (numRecApp P Z S c)
               (.app (Presentation.rename wk P) (sucNative (Presentation.rename wk c)))) Q := by
             rw [vinst0_sucMotive]
             exact denSuc
@@ -424,23 +424,23 @@ theorem numRec_real {m r : Nat} {ξ : World (nmodel v T).reading m}
 /-! ## Validity -/
 
 /-- The stage of the numbers and their constructors is sound for the model. -/
-theorem ctorStage_typedSoundN : TypedSoundN ctorStage (nmodel v T) :=
-  stage_typedSoundN_of v ext fun name mem type declared => by
+theorem ctorStage_typedSoundN : TypedSoundN ctorStage (nmodel X v T) :=
+  stage_typedSoundN_of X v ext fun name mem type declared => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
     rcases mem with rfl | rfl | rfl <;> obtain rfl := Option.some.inj declared
-    · exact valid_num v ext
-    · exact valid_zero v ext
-    · exact valid_suc v ext
+    · exact valid_num X v ext
+    · exact valid_zero X v ext
+    · exact valid_suc X v ext
 
 /-- **The recursor on the numbers is valid** in the conversion model. -/
 theorem valid_numRec :
-    ValidTmN (nmodel v T) .nil (.const numRecName) numRecType := by
-  have laws := nmodel_laws v T
+    ValidTmN (nmodel X v T) .nil (.const numRecName) numRecType := by
+  have laws := nmodel_laws X v T
   have vlaws := laws.value
-  have hw : (nmodel v T).rules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
+  have hw : (nmodel X v T).rules.isUniverse (.sort Tower.zero) := LevelTower.IsUniverse.sort _
   obtain ⟨validT, partsT, _⟩ :=
-    Derivable.validTN (ctorStage_typedSoundN v ext) numRecType_typed trivial
-  have validType : ValidTyN (nmodel v T) .nil numRecType :=
+    Derivable.validTN (ctorStage_typedSoundN X v ext) numRecType_typed trivial
+  have validType : ValidTyN (nmodel X v T) .nil numRecType :=
     validT.validTy (LevelTower.IsUniverse.sort _) (ext.isUniverse_sort _)
   obtain ⟨ctx, validResult, _⟩ := ValidTyN.close_parts (.snoc numRecTelescope numT)
     (C := .app (.var 3) (.var 0)) validType partsT
@@ -456,31 +456,31 @@ theorem valid_numRec :
   have typeS : IsType T.R Δ (vstepType (ς 3)) := typesS.left
   obtain ⟨⟨⟨⟨formed, RP, denP, relP, realP⟩, RZ, denZ, relZ, realZ⟩, RS, denS, relS, realS⟩,
     RT, denT, relT, realT⟩ := e
-  change DenN (nmodel v T) ξ (.pi numT U0) RP at denP
+  change DenN (nmodel X v T) ξ (.pi numT U0) RP at denP
   change RP.rel (σ 3) (σ' 3) at relP
   change (RP.real (σ 3)).rel Δ (.pi numT U0) (ς 3) (ς' 3) at realP
-  change DenN (nmodel v T) ξ (.app (σ 3) zeroNative) RZ at denZ
+  change DenN (nmodel X v T) ξ (.app (σ 3) zeroNative) RZ at denZ
   change RZ.rel (σ 2) (σ' 2) at relZ
   change (RZ.real (σ 2)).rel Δ (.app (ς 3) zeroNative) (ς 2) (ς' 2) at realZ
-  change DenN (nmodel v T) ξ (vstepType (σ 3)) RS at denS
+  change DenN (nmodel X v T) ξ (vstepType (σ 3)) RS at denS
   change RS.rel (σ 1) (σ' 1) at relS
   change (RS.real (σ 1)).rel Δ (vstepType (ς 3)) (ς 1) (ς' 1) at realS
-  change DenN (nmodel v T) ξ numT RT at denT
+  change DenN (nmodel X v T) ξ numT RT at denT
   change RT.rel (σ 0) (σ' 0) at relT
   change (RT.real (σ 0)).rel Δ numT (ς 0) (ς' 0) at realT
-  change DenN (nmodel v T) ξ (.app (σ 3) (σ 0)) P at den
+  change DenN (nmodel X v T) ξ (.app (σ 3) (σ 0)) P at den
   show P.rel (numRecApp (σ 3) (σ 2) (σ 1) (σ 0)) (numRecApp (σ' 3) (σ' 2) (σ' 1) (σ' 0)) ∧
     (P.real (numRecApp (σ 3) (σ 2) (σ 1) (σ 0))).rel Δ (.app (ς 3) (ς 0))
       (numRecApp (ς 3) (ς 2) (ς 1) (ς 0)) (numRecApp (ς' 3) (ς' 2) (ς' 1) (ς' 0))
-  rw [num_den v denT] at relT
+  rw [num_den X v denT] at relT
   obtain ⟨sh, shape, shape'⟩ := ValueSide.numIndPack_rel.mp relT
   have relP' := ValueSide.DenS.refl_left vlaws denP relP
   have tz' : Typed T.R Δ (ς' 2) (.app (ς' 3) zeroNative) := typed' 2
   have ts' : Typed T.R Δ (ς' 1) (vstepType (ς' 3)) := typed' 1
-  exact ⟨numRec_related v hw denP relP' denZ relZ denS relS (σ' 3) sh shape shape' den,
-    numRec_real v ext formed denP relP' denZ (ValueSide.DenS.refl_left vlaws denZ relZ)
+  exact ⟨numRec_related X v hw denP relP' denZ relZ denS relS (σ' 3) sh shape shape' den,
+    numRec_real X v ext formed denP relP' denZ (ValueSide.DenS.refl_left vlaws denZ relZ)
       denS (ValueSide.DenS.refl_left vlaws denS relS) realP realZ realS tz' ts' typeS sh shape
-      ((num_real v ext denT shape Δ numT _ _).mp realT) den⟩
+      ((num_real X v ext denT shape Δ numT _ _).mp realT) den⟩
 
 end Realizers
 

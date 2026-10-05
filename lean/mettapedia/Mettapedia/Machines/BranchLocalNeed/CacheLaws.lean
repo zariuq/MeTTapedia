@@ -30,6 +30,10 @@ single case analysis:
   completed cell returns the same outcome; a genuinely fresh demand is
   only possible through `resample`, which allocates a provably distinct
   next-generation cell.
+* **Production attribution** (`production_not_repeated_on_path`): an owner-matched
+  commit and a cached delivery are classified from their actual source instruction.
+  The original transition supplies the receipt and heap effects; one authentic
+  path cannot produce a completed cell again. Sibling paths remain separate.
 * **Sibling isolation** (`sibling_fresh_distinct`): a cell freshly
   allocated in one sibling fork carries that sibling's birth path and is
   provably distinct from the other sibling's fresh cells.
@@ -1363,6 +1367,403 @@ theorem independent_cache_writes_have_different_spines
   have heads := (List.cons.inj same).1
   have cells : second = first := (HeapUpdate.cache.inj heads).1
   exact different cells.symm
+
+/-! ## Production and delivery attribution -/
+
+/-- Completing a cache and reading an already completed cache have different
+roles even when their existing receipt payloads agree. -/
+inductive CompletedReceiptKind where
+  | production
+  | delivery
+deriving DecidableEq, Repr
+
+structure CompletedReceipt (Value StableFault RetryableFault : Type*) where
+  kind : CompletedReceiptKind
+  cell : CellId
+  id : ReceiptId
+  outcome : Produced Value StableFault RetryableFault
+deriving DecidableEq, Repr
+
+def completedReceipt
+    (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (kind : CompletedReceiptKind) (cell : CellId)
+    (outcome : Produced Value StableFault RetryableFault) :
+    CompletedReceipt Value StableFault RetryableFault :=
+  ⟨kind, cell, ⟨machine.world.path, machine.world.receipts.nextSerial⟩, outcome⟩
+
+/-- Classify the existing source instruction. The cache owner is checked
+before attributing a production; retryable outcomes never produce a cache. -/
+def completedReceipt?
+    (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Option (CompletedReceipt Value StableFault RetryableFault) :=
+  match machine.control with
+  | .force cell _ =>
+      match machine.world.heap.lookup cell with
+      | some record =>
+          match record.cache with
+          | .value value => some (completedReceipt machine .delivery cell (.value value))
+          | .stableFault fault =>
+              some (completedReceipt machine .delivery cell (.stableFault fault))
+          | _ => none
+      | none => none
+  | .returned outcome (.commit cell owner :: _) =>
+      match machine.world.heap.lookup cell with
+      | some record =>
+          match record.cache with
+          | .evaluating actual =>
+              if actual = owner then
+                match outcome with
+                | .value value => some (completedReceipt machine .production cell (.value value))
+                | .stableFault fault =>
+                    some (completedReceipt machine .production cell (.stableFault fault))
+                | .retryableFault _ => none
+              else none
+          | _ => none
+      | none => none
+  | _ => none
+
+/-- Independent lifecycle evidence for the four completed-cache events.
+It refers to the source control and heap, rather than the classifier. -/
+inductive CompletedReceiptWitness
+    (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    CompletedReceipt Value StableFault RetryableFault → Prop where
+  | deliveryValue (cell : CellId) (stack : List (Frame Resume)) (origin : Origin) (value : Value)
+      (control : machine.control = .force cell stack)
+      (cached : machine.world.heap.lookup cell = some ⟨origin, .value value⟩) :
+      CompletedReceiptWitness machine (completedReceipt machine .delivery cell (.value value))
+  | deliveryFault (cell : CellId) (stack : List (Frame Resume))
+      (origin : Origin) (fault : StableFault)
+      (control : machine.control = .force cell stack)
+      (cached : machine.world.heap.lookup cell = some ⟨origin, .stableFault fault⟩) :
+      CompletedReceiptWitness machine (completedReceipt machine .delivery cell (.stableFault fault))
+  | productionValue (cell : CellId) (owner : EvaluatorId) (rest : List (Frame Resume))
+      (origin : Origin) (value : Value)
+      (control : machine.control = .returned (.value value) (.commit cell owner :: rest))
+      (owned : machine.world.heap.lookup cell = some ⟨origin, .evaluating owner⟩) :
+      CompletedReceiptWitness machine (completedReceipt machine .production cell (.value value))
+  | productionFault (cell : CellId) (owner : EvaluatorId) (rest : List (Frame Resume))
+      (origin : Origin) (fault : StableFault)
+      (control : machine.control = .returned (.stableFault fault) (.commit cell owner :: rest))
+      (owned : machine.world.heap.lookup cell = some ⟨origin, .evaluating owner⟩) :
+      CompletedReceiptWitness machine (completedReceipt machine .production cell (.stableFault fault))
+
+theorem CompletedReceiptWitness.classified
+    {machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) :
+    completedReceipt? machine = some receipt := by
+  cases witness <;> simp_all [completedReceipt?]
+
+theorem completedReceipt?_witness
+    (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (receipt : CompletedReceipt Value StableFault RetryableFault)
+    (classified : completedReceipt? machine = some receipt) :
+    CompletedReceiptWitness machine receipt := by
+  rcases machine with ⟨world, control, work⟩
+  cases control with
+  | halted outcome => simp [completedReceipt?] at classified
+  | run state stack => simp [completedReceipt?] at classified
+  | force cell stack =>
+      cases found : world.heap.lookup cell with
+      | none => simp [completedReceipt?, found] at classified
+      | some record =>
+          rcases record with ⟨origin, cache⟩
+          cases cache with
+          | suspended => simp [completedReceipt?, found] at classified
+          | evaluating owner => simp [completedReceipt?, found] at classified
+          | value value =>
+              simp only [completedReceipt?, found, Option.some.injEq] at classified
+              subst receipt
+              exact .deliveryValue cell stack origin value rfl found
+          | stableFault fault =>
+              simp only [completedReceipt?, found, Option.some.injEq] at classified
+              subst receipt
+              exact .deliveryFault cell stack origin fault rfl found
+  | returned outcome stack =>
+      cases stack with
+      | nil => simp [completedReceipt?] at classified
+      | cons frame rest =>
+          cases frame with
+          | resume token => simp [completedReceipt?] at classified
+          | commit cell owner =>
+              cases found : world.heap.lookup cell with
+              | none => simp [completedReceipt?, found] at classified
+              | some record =>
+                  rcases record with ⟨origin, cache⟩
+                  cases cache with
+                  | suspended => simp [completedReceipt?, found] at classified
+                  | value value => simp [completedReceipt?, found] at classified
+                  | stableFault fault => simp [completedReceipt?, found] at classified
+                  | evaluating actual =>
+                      by_cases same : actual = owner
+                      · subst actual
+                        cases outcome with
+                        | retryableFault reason => simp [completedReceipt?, found] at classified
+                        | value value =>
+                            simp [completedReceipt?, found] at classified
+                            subst receipt
+                            exact .productionValue cell owner rest origin value rfl found
+                        | stableFault fault =>
+                            simp [completedReceipt?, found] at classified
+                            subst receipt
+                            exact .productionFault cell owner rest origin fault rfl found
+                      · simp [completedReceipt?, found, same] at classified
+
+theorem completedReceipt?_iff
+    (machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (receipt : CompletedReceipt Value StableFault RetryableFault) :
+    completedReceipt? machine = some receipt ↔ CompletedReceiptWitness machine receipt :=
+  ⟨completedReceipt?_witness machine receipt, CompletedReceiptWitness.classified⟩
+
+/-- Each classified event is an actual append by the unchanged reference
+transition. Its fresh position and all previous nodes are retained. -/
+theorem CompletedReceiptWitness.step_receipt
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) (successor : next ∈ step spec machine) :
+    next.world.receipts.nodes =
+      ⟨receipt.id, machine.world.receipts.roots, .observe receipt.cell receipt.outcome⟩ ::
+        machine.world.receipts.nodes ∧
+      next.world.receipts.roots = [receipt.id] ∧
+      next.world.receipts.nextSerial = machine.world.receipts.nextSerial + 1 := by
+  cases witness <;>
+    simp_all [step, finished, recorded, World.record, World.setKnownCache,
+      ReceiptGraph.append, completedReceipt]
+
+theorem completedReceipt?_step_receipt
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (classified : completedReceipt? machine = some receipt) (successor : next ∈ step spec machine) :
+    next.world.receipts.nodes =
+      ⟨receipt.id, machine.world.receipts.roots, .observe receipt.cell receipt.outcome⟩ ::
+        machine.world.receipts.nodes ∧
+      next.world.receipts.roots = [receipt.id] ∧
+      next.world.receipts.nextSerial = machine.world.receipts.nextSerial + 1 :=
+  (completedReceipt?_witness machine receipt classified).step_receipt spec successor
+
+/-- Cache reads retain the complete heap, rather than constructing another
+production with the same answer. -/
+theorem CompletedReceiptWitness.delivery_heap
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) (successor : next ∈ step spec machine)
+    (delivery : receipt.kind = .delivery) : next.world.heap = machine.world.heap := by
+  cases witness <;>
+    simp_all [completedReceipt, step, finished, recorded, World.record, ReceiptGraph.append]
+
+/-- A production is the actual owner-matched cache replacement. The source
+record and all other cells are retained by the existing update primitive. -/
+theorem CompletedReceiptWitness.production_heap
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) (successor : next ∈ step spec machine)
+    (production : receipt.kind = .production) :
+    ∃ (record : CellRecord Origin Value StableFault) (owner : EvaluatorId),
+      machine.world.heap.lookup receipt.cell = some record ∧
+      record.cache = .evaluating owner ∧
+      next.world.heap = machine.world.heap.setKnownCache receipt.cell record
+        (match receipt.outcome with
+          | .value value => .value value
+          | .stableFault fault => .stableFault fault
+          | .retryableFault _ => .suspended) := by
+  cases witness <;>
+    simp_all [completedReceipt, step, finished, recorded, World.record, World.setKnownCache,
+      ReceiptGraph.append]
+
+theorem CompletedReceiptWitness.production_completes_cache
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) (successor : next ∈ step spec machine)
+    (production : receipt.kind = .production) :
+    ∃ record : CellRecord Origin Value StableFault,
+      next.world.heap.lookup receipt.cell = some record ∧ Cache.Completed record.cache := by
+  cases witness with
+  | deliveryValue => simp [completedReceipt] at production
+  | deliveryFault => simp [completedReceipt] at production
+  | productionValue cell owner rest origin value control owned =>
+      simp [step, control, owned] at successor
+      subst next
+      refine ⟨⟨origin, .value value⟩, ?_, .value value⟩
+      simp [finished, recorded, World.record, World.setKnownCache, ReceiptGraph.append,
+        completedReceipt]
+  | productionFault cell owner rest origin fault control owned =>
+      simp [step, control, owned] at successor
+      subst next
+      refine ⟨⟨origin, .stableFault fault⟩, ?_, .stableFault fault⟩
+      simp [finished, recorded, World.record, World.setKnownCache, ReceiptGraph.append,
+        completedReceipt]
+
+theorem CompletedReceiptWitness.stable_outcome
+    {machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) :
+    (∃ value, receipt.outcome = .value value) ∨
+      (∃ fault, receipt.outcome = .stableFault fault) := by
+  cases witness <;> simp [completedReceipt]
+
+/-- Structural graph validity supplies event freshness, not production
+authentication. The lifecycle witness supplies that separate attribution. -/
+theorem CompletedReceiptWitness.fresh
+    {machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (witness : CompletedReceiptWitness machine receipt) (valid : machine.world.receipts.Valid) :
+    receipt.id ∉ machine.world.receipts.toCausalReceipt.known [] := by
+  cases witness <;>
+    exact ReceiptGraph.fresh_receipt_id _ valid.1 _
+
+/-- The classifier cannot label another production of a completed cell. -/
+theorem completed_cache_forbids_production
+    {machine : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {cell : CellId} {record : CellRecord Origin Value StableFault}
+    (cached : machine.world.heap.lookup cell = some record) (completed : Cache.Completed record.cache)
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (classified : completedReceipt? machine = some receipt) (same : receipt.cell = cell) :
+    receipt.kind ≠ .production := by
+  have witness := completedReceipt?_witness machine receipt classified
+  cases witness <;> simp only [completedReceipt] at same ⊢
+  · simp
+  · simp
+  · subst cell
+    rename_i owned
+    rw [owned, Option.some.injEq] at cached
+    subst record
+    cases completed
+  · subst cell
+    rename_i owned
+    rw [owned, Option.some.injEq] at cached
+    subst record
+    cases completed
+
+/-- Forced-once preservation also preserves the production attribution
+boundary through arbitrary authentic execution paths. -/
+theorem steps_completed_cache_forbids_production
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {length : Nat}
+    {initial final : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    (execution : Steps spec length initial final)
+    {cell : CellId} {record : CellRecord Origin Value StableFault}
+    (cached : initial.world.heap.lookup cell = some record) (completed : Cache.Completed record.cache)
+    {receipt : CompletedReceipt Value StableFault RetryableFault}
+    (classified : completedReceipt? final = some receipt) (same : receipt.cell = cell) :
+    receipt.kind ≠ .production :=
+  completed_cache_forbids_production
+    (steps_preserve_completed spec execution cached completed) completed classified same
+
+/-- A single authentic execution path cannot produce the same cell again
+after a successful production. Sibling paths are separate hypotheses. -/
+theorem production_not_repeated_on_path
+    (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next later : Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {first second : CompletedReceipt Value StableFault RetryableFault}
+    (produced : CompletedReceiptWitness machine first) (successor : next ∈ step spec machine)
+    (production : first.kind = .production) {length : Nat}
+    (execution : Steps spec length next later)
+    (classified : completedReceipt? later = some second) (same : second.cell = first.cell) :
+    second.kind ≠ .production := by
+  obtain ⟨record, cached, completed⟩ := produced.production_completes_cache spec successor production
+  exact steps_completed_cache_forbids_production spec execution cached completed classified same
+
+namespace CompletedReceiptControls
+
+private def cell : CellId := ⟨1, [], 0, 0⟩
+
+private def world (cache : Cache Nat Unit) : World Unit Unit Nat Unit Unit Unit :=
+  { lineage := 1
+    path := []
+    heap := {
+      current := fun queried => if queried = cell then some ⟨(), cache⟩ else none
+      spine := [.cache cell cache, .allocate cell ()] }
+    receipts := ReceiptGraph.empty
+    nextCell := 1
+    nextEvaluator := 4 }
+
+def spec : Spec Unit Nat Nat Unit Nat Unit Unit Unit where
+  alternatives _ := []
+  action state := if state < 2 then .demand cell (state + 1) else .done (.value 21)
+  afterDemand token _ := token
+  afterAllocation token _ := token
+
+def start : Machine Unit Nat Nat Unit Nat Unit Unit Unit :=
+  ⟨world (.evaluating 3), .returned (.value 21) [.commit cell 3, .resume 0], {}⟩
+
+private def withControl (control : Control Nat Nat Nat Unit Unit) :
+    Machine Unit Nat Nat Unit Nat Unit Unit Unit :=
+  { start with control := control }
+
+private def suspendedDemand : Machine Unit Nat Nat Unit Nat Unit Unit Unit :=
+  { start with world := world .suspended, control := .force cell [] }
+
+private def lateDelivery : Machine Unit Nat Nat Unit Nat Unit Unit Unit :=
+  { start with world := world (.value 21), control := .force cell [] }
+
+private def siblingProduction (branch : Nat) : Machine Unit Nat Nat Unit Nat Unit Unit Unit :=
+  { start with world := start.world.fork branch }
+
+private def receiptAt (fuel : Nat) : Option (CompletedReceipt Nat Unit Unit) :=
+  ((runFrontier spec fuel [start])[0]?).bind completedReceipt?
+
+/-- One actual commit followed by two actual cache demands. Equal values
+remain three distinct events; the latter two are deliveries. -/
+theorem one_production_two_deliveries :
+    (receiptAt 0).map (fun receipt => (receipt.kind, receipt.id, receipt.outcome)) =
+      some (.production, ⟨[], 0⟩, .value 21) ∧
+    (receiptAt 3).map (fun receipt => (receipt.kind, receipt.id, receipt.outcome)) =
+      some (.delivery, ⟨[], 1⟩, .value 21) ∧
+    (receiptAt 6).map (fun receipt => (receipt.kind, receipt.id, receipt.outcome)) =
+      some (.delivery, ⟨[], 2⟩, .value 21) := by decide
+
+theorem duplicated_delivery_id_refused :
+    (receiptAt 3).map CompletedReceipt.id ≠ (receiptAt 6).map CompletedReceipt.id := by decide
+
+theorem wrong_owner_does_not_produce :
+    completedReceipt? (withControl (.returned (.value 21) [.commit cell 4])) = none :=
+  by decide
+
+theorem retryable_outcome_does_not_produce :
+    completedReceipt? (withControl
+      (.returned (.retryableFault (.domain ())) [.commit cell 3])) = none := by decide
+
+theorem stable_fault_is_production :
+    (completedReceipt? (withControl (.returned (.stableFault ()) [.commit cell 3]))).map
+      (fun receipt => (receipt.kind, receipt.outcome)) = some (.production, .stableFault ()) :=
+  by decide
+
+theorem evaluating_demand_is_not_delivery :
+    completedReceipt? (withControl (.force cell [])) = none := by decide
+
+theorem suspended_demand_is_not_delivery :
+    completedReceipt? suspendedDemand = none :=
+  by decide
+
+/-- The same inherited cell can complete separately in two sibling worlds.
+The forced-once law is path-local, not a global deduplication by cell name. -/
+theorem sibling_productions_remain_distinct :
+    (completedReceipt? (siblingProduction 0)).map CompletedReceipt.id = some ⟨[0], 0⟩ ∧
+    (completedReceipt? (siblingProduction 1)).map CompletedReceipt.id = some ⟨[1], 0⟩ ∧
+    (completedReceipt? (siblingProduction 0)).map CompletedReceipt.id ≠
+      (completedReceipt? (siblingProduction 1)).map CompletedReceipt.id := by decide
+
+/-- A late cached read is a delivery even when no production receipt was
+captured in its initial graph. Its earlier producer is a boundary obligation. -/
+theorem late_delivery_does_not_invent_production :
+    lateDelivery.world.receipts.nodes = [] ∧
+      (completedReceipt? lateDelivery).map CompletedReceipt.kind = some .delivery := by decide
+
+/-- Existing payload graphs can collide between a commit and a late read.
+The actual source transition, not payload equality, supplies the role. -/
+theorem observed_payload_does_not_determine_role :
+    (runFrontier spec 1 [start]).map (fun machine => machine.world.receipts) =
+      (runFrontier spec 1 [lateDelivery]).map (fun machine => machine.world.receipts) ∧
+    (completedReceipt? start).map CompletedReceipt.kind ≠
+      (completedReceipt? lateDelivery).map CompletedReceipt.kind := by decide
+
+end CompletedReceiptControls
+
 
 /-! ## Axiom audits -/
 

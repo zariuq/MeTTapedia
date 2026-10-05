@@ -13,33 +13,30 @@ import Mettapedia.OSLF.Framework.CategoryBridge
 /-!
 # Presheaf semantics of Native Type Theory
 
-This file formalizes the core construction from Williams & Stay's
-"Native Type Theory" (ACT 2021), building on:
+This file develops parts of Williams & Stay's "Native Type Theory"
+(ACT 2021), building on:
 
 1. **Mathlib's CategoryTheory** - Yoneda, Subobject, Grothendieck
 2. **Our LambdaTheory.lean** - SubobjectFibration with Frame fibers
 
-## The NT Functor
+## Constructions and their scope
 
-The Native Type functor NT : λThyₑq^op → Topos is defined as:
+The paper's presheaf construction sends a theory `T` to `Psh(T)` and a
+theory map to precomposition. Its internal-language construction then joins
+the predicate and codomain fibrations by image and comprehension. These
+are distinct from the predicate theory obtained by restricting the
+contravariant subobject indexing along Yoneda and taking its total category.
 
-  NT(T) = ∫ (Sub ∘ y)
+This file contains the older abstract predicate-fibre model, a concrete
+Grothendieck category of presheaf predicates, and comparisons on representable
+objects. Its `nativeTypeFunctor` acts on the abstract fibre model; it is not
+the paper's all-toposes internal-language 2-functor.
 
-where:
-- T is a λ-theory (CCC with finite limits/colimits)
-- y : T → Psh(T) is the Yoneda embedding
-- Sub : Psh(T) → Set is the subobject functor
-- ∫ is the Grothendieck construction
-
-## Construction Strategy
-
-We build NT in two layers:
-
-1. **Abstract NT** (this file): Uses our SubobjectFibration from LambdaTheory.lean,
-   which has Frame-structured fibers (complete Heyting algebras).
-
-2. **Concrete NT**: Would use Mathlib's `CategoryTheory.Grothendieck` with
-   a functor `Sub ∘ y : T ⥤ Cat` (requires more infrastructure).
+The current categorical predicate structure and presheaf theory action are
+in `GSLT.Topos.PresheafPredicateCartesianClosed` and
+`GSLT.Topos.PresheafLogicalTransport`. `InternalLanguage` connects those
+constructions; `Framework.NTTClaimTracker` records the remaining source
+obligations, including the full 2-functor of Theorem 23.
 
 ## References
 
@@ -849,8 +846,9 @@ theorem full_presheaf_comparison_bundle_reachable_fragment {lang : LanguageDef}
 
 The `FullPresheafGrothendieckObj` objects with `FullPresheafGrothendieckHom` morphisms
 form a genuine category: identity, composition, associativity, and unit laws.
-This upgrades the ad hoc construction to a Mathlib-compatible categorical layer,
-closing the paper-parity gap for the "full NT route over presheaf" milestone (NTT Theorem 23).
+This gives a Mathlib-compatible categorical layer at a fixed language.
+It does not by itself construct the action on theories or the coherent
+internal-language 2-functor required by NTT Theorem 23.
 -/
 
 instance fullPresheafGrothendieckCategoryStruct (lang : LanguageDef) :
@@ -1664,9 +1662,10 @@ def theoryMorphismNativeTypeFunctor {L₁ L₂ : LambdaTheory}
     CategoryTheory.Functor (NativeType L₁) (NativeType L₂) :=
   Monotone.functor F.mapNativeType_monotone
 
-/-- The native type functor `LambdaTheory ⥤ Cat`.
+/-- The abstract predicate-fibre functor `LambdaTheory ⥤ Cat`.
     Object map: `L ↦ NativeType L` (preorder category).
-    Morphism map: `F ↦ theoryMorphismNativeTypeFunctor F`. -/
+    Morphism map: `F ↦ theoryMorphismNativeTypeFunctor F`.
+    This is not the presheaf internal-language 2-functor of NTT Theorem 23. -/
 def nativeTypeFunctor :
     CategoryTheory.Functor LambdaTheory CategoryTheory.Cat where
   obj L := CategoryTheory.Cat.of (NativeType L)

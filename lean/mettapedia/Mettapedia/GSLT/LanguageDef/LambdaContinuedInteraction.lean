@@ -295,7 +295,7 @@ theorem lambda_costBaseAbstraction_params :
 abstraction body are moved into the wrapped fiber. -/
 theorem lambdaContinuationRetyping_redexRetypable :
     lambdaContinuationRetyping.RedexRetypable := by
-  unfold ContinuationRetypingPlan.RedexRetypable
+  rw [ContinuationRetypingPlan.redexRetypable_def]
   simp [lambdaIGSLT, lambdaInteractivePresentation, lambdaBetaRewrite,
     lambdaTermSort, lambdaValidatedLanguageDef, lambdaCalc,
     costBaseLanguageDefSymbolMap, TypeDecl.plain]
@@ -338,7 +338,7 @@ theorem lambdaContinuationRetyping_redexRetypable :
 continuation signature. -/
 theorem lambdaContinuationRetyping_wrappable :
     lambdaContinuationRetyping.Wrappable := by
-  unfold ContinuationRetypingPlan.Wrappable
+  rw [ContinuationRetypingPlan.wrappable_def]
   change HasType lambdaContinuationRetyping.generatedLanguage
     lambdaContinuationRetyping.generatedFreeContext []
     (.subst (.fvar "body") (.fvar "arg"))

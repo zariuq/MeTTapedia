@@ -107,8 +107,11 @@ theorem restricted_step_not_preserved (bound : Name) {body reduct : Process}
 /-- A communication: `a(y).0 | a⟨z⟩` reduces to `0`. -/
 theorem exchange_reduces (channel bound datum : Name) :
     Nonempty (PiCalculus.Reduces
-      (.par (.input channel bound .nil) (.output channel datum)) .nil) :=
-  ⟨Reduces.comm channel bound datum .nil⟩
+      (.par (.input channel bound .nil) (.output channel datum)) .nil) := by
+  simpa only [Process.substitute_nil] using
+    (show Nonempty (PiCalculus.Reduces
+      (.par (.input channel bound .nil) (.output channel datum))
+      (Process.nil.substitute bound datum)) from ⟨Reduces.comm channel bound datum .nil⟩)
 
 /-- **The instance.**  `(νx)(a(y).0 | a⟨z⟩)` reduces to `(νx)0`, and its
 encoding at two different names has no reduction. -/
@@ -132,12 +135,24 @@ congruence and communicates. -/
 theorem replicated_exchange_reduces (channel bound datum : Name) (body : Process) :
     Nonempty (PiCalculus.Reduces
       (.par (.replicate channel bound body) (.output channel datum))
-      ((Process.par body (.replicate channel bound body)).substitute bound datum)) :=
-  ⟨Reduces.struct _ _ _ _
+      (.par (body.substitute bound datum) (.replicate channel bound body))) := by
+  let input := Process.input channel bound body
+  let server := Process.replicate channel bound body
+  let output := Process.output channel datum
+  have rearrange : ((input ||| server) ||| output) ≡ ((input ||| output) ||| server) :=
+    StructuralCongruence.trans _ _ _
+      (StructuralCongruence.par_assoc input server output)
+      (StructuralCongruence.trans _ _ _
+        (StructuralCongruence.par_cong _ _ _ _
+          (StructuralCongruence.refl input) (StructuralCongruence.par_comm server output))
+        (StructuralCongruence.symm _ _ (StructuralCongruence.par_assoc input output server)))
+  refine ⟨Reduces.struct _ _ _ _ ?_
+    (Reduces.par_left _ _ server (Reduces.comm channel bound datum body))
+    (StructuralCongruence.refl _)⟩
+  exact StructuralCongruence.trans _ _ _
     (StructuralCongruence.par_cong _ _ _ _
       (StructuralCongruence.replicate_unfold channel bound body)
-      (StructuralCongruence.refl _))
-    (Reduces.comm channel bound datum _) (StructuralCongruence.refl _)⟩
+      (StructuralCongruence.refl output)) rearrange
 
 /-- **In the rho calculus proper the encoding of that process has no
 reduction**: the encoded replication is a constructor without a rule, and

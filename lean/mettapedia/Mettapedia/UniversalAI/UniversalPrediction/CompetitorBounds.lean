@@ -32,7 +32,7 @@ This is the theorem-grade form that Hook B needs: pick a countable family of tra
 (e.g. conjugate priors), take a mixture over them, and then apply this lemma to each component.
 -/
 theorem relEntropy_le_competitor_add_Kμ_log2_M₃
-    (U : PrefixFreeMachine) [UniversalPFM U]
+    (U : PrefixFreeMachine) [OutputComplete U]
     (μ η : PrefixMeasure)
     (hη : Mettapedia.UniversalAI.UniversalPrediction.HutterEnumeration.LowerSemicomputablePrefixMeasure η)
     (hη0 : ∀ x : BinString, η x ≠ 0)

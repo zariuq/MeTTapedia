@@ -22,7 +22,8 @@ for every element list of the matching length.  So on that fragment `sep` *is*
 OSLF's collection cut, and the reuse is proved rather than asserted.
 
 **Where they part, and why it is not a conflation.**  `sep` is symmetric
-(`sat_sep_comm`), because a bag sum is.  OSLF's positional reading of the same
+(`SpatialCharacteristic.sat_sep_comm`), because it is the separating conjunction
+of the bag separation algebra.  OSLF's positional reading of the same
 split is not — `SeparatingConjunction.positional_not_closed_under_swap` is the
 existing counterexample, and `SeparatingConjunction.sepConj_comm` recovers
 symmetry only from the presentation's permutation law.  So `sep` matches OSLF's
@@ -246,15 +247,6 @@ theorem spatial_agrees_enc {φ : Formula Shape} (free : AtomFree φ) (t : Comb) 
 
 /-! ## Where the two part -/
 
-/-- **`sep` is symmetric**, because a bag sum is.  This is the law that
-distinguishes it from the positional reading. -/
-theorem sat_sep_comm {φ ψ : Formula Shape} {m : Multiset Comb} :
-    Sat rhoSoup (.sep φ ψ) m ↔ Sat rhoSoup (.sep ψ φ) m := by
-  rw [sat_sep_iff, sat_sep_iff]
-  constructor
-  · rintro ⟨m₁, m₂, rfl, h₁, h₂⟩; exact ⟨m₂, m₁, add_comm _ _, h₂, h₁⟩
-  · rintro ⟨m₁, m₂, rfl, h₁, h₂⟩; exact ⟨m₂, m₁, add_comm _ _, h₂, h₁⟩
-
 /-- The positional reading is *not* symmetric; the counterexample is the one
 `SeparatingConjunction.lean` already records, cited here so the comparison
 rests on that file rather than on a fresh claim. -/
@@ -295,5 +287,5 @@ end Mettapedia.Languages.ProcessCalculi.RhoCombinators
 #print axioms Mettapedia.Languages.ProcessCalculi.RhoCombinators.OSLFComparison.perm_encList_of_cong
 #print axioms Mettapedia.Languages.ProcessCalculi.RhoCombinators.OSLFComparison.spatial_agrees
 #print axioms Mettapedia.Languages.ProcessCalculi.RhoCombinators.OSLFComparison.spatial_agrees_enc
-#print axioms Mettapedia.Languages.ProcessCalculi.RhoCombinators.OSLFComparison.sat_sep_comm
+#print axioms Mettapedia.GSLT.SpatialCharacteristic.sat_sep_comm
 #print axioms Mettapedia.Languages.ProcessCalculi.RhoCombinators.OSLFComparison.no_headed_at_enc

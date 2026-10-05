@@ -176,11 +176,4 @@ theorem multiplication_not_injective (base : Over Q) {Γ : Ctx S} {sort : S.Srt}
   have same : value = act Q accountSort base word value := distinguished
   exact nontrivial same.symm
 
-#print axioms free
-#print axioms adjunction
-#print axioms accountMonad
-#print axioms multiplication_account
-#print axioms multiplication_substitute
-#print axioms multiplication_not_injective
-
 end Mettapedia.GSLT.LanguageDef.Cost.FreeAccountBindingAdjunction

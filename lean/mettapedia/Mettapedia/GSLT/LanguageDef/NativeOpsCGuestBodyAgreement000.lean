@@ -33,7 +33,7 @@ theorem function_000_characters_lexed :
 theorem function_000_tokens_parsed :
     function? (2 * functionTokens_000.length + 4) candidateTypeNames
       functionTokens_000 = some (function_000, []) := by
-  rfl
+  native_c_parser_reflexivity
 
 theorem function_000_text_checked :
     textBodyAgreement candidateTypeNames representation function_000_characters

@@ -16,7 +16,7 @@ namespace Mettapedia.GSLT.LanguageDef
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-namespace CostStaticBinderThinning
+namespace CostStaticTypeThinning
 
 /-- Erased source-to-target index computation.  It is the total companion of
 `targetToSourceIndex?`, depending only on the target context rather than on a
@@ -25,7 +25,7 @@ def sourceToTargetIndex (source : CIGSLT) (color : CostStaticColor) :
     List TypeExpr → Nat → Nat
   | [], index => index
   | targetType :: targetBound, index =>
-      match decodeCostStaticTypeExpr source color targetType with
+      match CostStaticTypeImage.decode source.theory color targetType with
       | none => sourceToTargetIndex source color targetBound index + 1
       | some _ =>
           match index with
@@ -46,8 +46,7 @@ theorem toTargetIndex_eq_sourceToTargetIndex
   | nil => rfl
   | mapped sourceType tail inductionHypothesis =>
       cases index <;>
-        simp [toTargetIndex, sourceToTargetIndex, inductionHypothesis,
-          decodeCostStaticTypeExpr_mapTypeExpr]
+        simp [toTargetIndex, sourceToTargetIndex, inductionHypothesis]
   | foreign targetType rejected tail inductionHypothesis =>
       simp [toTargetIndex, sourceToTargetIndex, inductionHypothesis, rejected]
 
@@ -56,13 +55,13 @@ already selected from the front. -/
 theorem sourceToTargetIndex_append_of_lt
     (source : CIGSLT) (color : CostStaticColor)
     (front suffix : List TypeExpr) {index : Nat}
-    (inside : index < (sourceContextOfTarget source color front).length) :
+    (inside : index < (sourceContextOfTarget source.theory color front).length) :
     sourceToTargetIndex source color (front ++ suffix) index =
       sourceToTargetIndex source color front index := by
   induction front generalizing index with
   | nil => simp [sourceContextOfTarget] at inside
   | cons targetType front inductionHypothesis =>
-      cases decoded : decodeCostStaticTypeExpr source color targetType with
+      cases decoded : CostStaticTypeImage.decode source.theory color targetType with
       | none =>
           simp only [sourceContextOfTarget, decoded] at inside
           simpa [sourceToTargetIndex, decoded] using
@@ -80,9 +79,9 @@ theorem sourceToTargetIndex_append_of_lt
 theorem ofTargetThinning_append_toTargetIndex_of_lt
     (source : CIGSLT) (color : CostStaticColor)
     (front suffix : List TypeExpr) {index : Nat}
-    (inside : index < (sourceContextOfTarget source color front).length) :
-    (ofTargetThinning source color (front ++ suffix)).toTargetIndex index =
-      (ofTargetThinning source color front).toTargetIndex index := by
+    (inside : index < (sourceContextOfTarget source.theory color front).length) :
+    (ofTargetThinning source.theory color (front ++ suffix)).toTargetIndex index =
+      (ofTargetThinning source.theory color front).toTargetIndex index := by
   rw [toTargetIndex_eq_sourceToTargetIndex,
     toTargetIndex_eq_sourceToTargetIndex]
   exact sourceToTargetIndex_append_of_lt source color front suffix inside
@@ -93,10 +92,10 @@ theorem ofTargetThinning_append_embedIndexAt_of_lt
     (source : CIGSLT) (color : CostStaticColor)
     (front suffix : List TypeExpr) (depth index : Nat)
     (inside : index < depth +
-      (sourceContextOfTarget source color front).length) :
-    (ofTargetThinning source color (front ++ suffix)).embedIndexAt
+      (sourceContextOfTarget source.theory color front).length) :
+    (ofTargetThinning source.theory color (front ++ suffix)).embedIndexAt
         depth index =
-      (ofTargetThinning source color front).embedIndexAt depth index := by
+      (ofTargetThinning source.theory color front).embedIndexAt depth index := by
   unfold embedIndexAt
   by_cases insideDepth : index < depth
   · simp [insideDepth]
@@ -112,40 +111,40 @@ theorem thickenAmbientBVars_ofTargetThinning_append_eq_of_scoped
     (source : CIGSLT) (color : CostStaticColor)
     (front suffix : List TypeExpr) (depth : Nat) (pattern : Pattern)
     (wellScoped : pattern.isWellScopedAt
-      (depth + (sourceContextOfTarget source color front).length) = true) :
-    (ofTargetThinning source color (front ++ suffix)).thickenAmbientBVars
+      (depth + (sourceContextOfTarget source.theory color front).length) = true) :
+    (ofTargetThinning source.theory color (front ++ suffix)).thickenAmbientBVars
         depth pattern =
-      (ofTargetThinning source color front).thickenAmbientBVars
+      (ofTargetThinning source.theory color front).thickenAmbientBVars
         depth pattern := by
   induction pattern using Pattern.inductionOn generalizing depth with
   | hbvar index =>
       simp only [Pattern.isWellScopedAt, decide_eq_true_eq] at wellScoped
-      simpa only [thickenAmbientBVars, Pattern.bvar.injEq] using
+      simpa only [thickenAmbientBVars_bvar, thickenAmbientBVars_fvar, thickenAmbientBVars_apply, thickenAmbientBVars_lambda, thickenAmbientBVars_multiLambda, thickenAmbientBVars_subst, thickenAmbientBVars_collection, Pattern.bvar.injEq] using
         ofTargetThinning_append_embedIndexAt_of_lt source color front suffix
           depth index wellScoped
-  | hfvar name => simp [thickenAmbientBVars]
+  | hfvar name => simp [thickenAmbientBVars_fvar]
   | happly constructor arguments inductionHypothesis =>
       simp only [Pattern.isWellScopedAt] at wellScoped
       rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.isWellScopedListAt_eq_true_iff]
         at wellScoped
-      simp only [thickenAmbientBVars, Pattern.apply.injEq, true_and]
+      simp only [thickenAmbientBVars_apply, Pattern.apply.injEq, true_and]
       apply List.map_congr_left
       intro argument membership
       exact inductionHypothesis argument membership depth
         (wellScoped argument membership)
   | hlambda binder body inductionHypothesis =>
       simp only [Pattern.isWellScopedAt] at wellScoped
-      simp only [thickenAmbientBVars, Pattern.lambda.injEq, true_and]
+      simp only [thickenAmbientBVars_lambda, Pattern.lambda.injEq, true_and]
       apply inductionHypothesis (depth + 1)
       simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using wellScoped
   | hmultiLambda arity binders body inductionHypothesis =>
       simp only [Pattern.isWellScopedAt] at wellScoped
-      simp only [thickenAmbientBVars, Pattern.multiLambda.injEq, true_and]
+      simp only [thickenAmbientBVars_multiLambda, Pattern.multiLambda.injEq, true_and]
       apply inductionHypothesis (depth + arity)
       simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using wellScoped
   | hsubst body replacement bodyInduction replacementInduction =>
       simp only [Pattern.isWellScopedAt, Bool.and_eq_true] at wellScoped
-      simp only [thickenAmbientBVars, Pattern.subst.injEq]
+      simp only [thickenAmbientBVars_subst, Pattern.subst.injEq]
       constructor
       · apply bodyInduction (depth + 1)
         simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
@@ -155,7 +154,7 @@ theorem thickenAmbientBVars_ofTargetThinning_append_eq_of_scoped
       simp only [Pattern.isWellScopedAt] at wellScoped
       rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.isWellScopedListAt_eq_true_iff]
         at wellScoped
-      simp only [thickenAmbientBVars, Pattern.collection.injEq, true_and]
+      simp only [thickenAmbientBVars_collection, Pattern.collection.injEq, true_and]
       constructor
       · apply List.map_congr_left
         intro element membership
@@ -172,16 +171,16 @@ theorem thickenAmbientBVars_ofTargetThinning_eq_append_of_scoped
     (targetEq : largeTarget = front ++ suffix)
     (depth : Nat) (pattern : Pattern)
     (wellScoped : pattern.isWellScopedAt
-      (depth + (sourceContextOfTarget source color front).length) = true) :
-    (ofTargetThinning source color largeTarget).thickenAmbientBVars
+      (depth + (sourceContextOfTarget source.theory color front).length) = true) :
+    (ofTargetThinning source.theory color largeTarget).thickenAmbientBVars
         depth pattern =
-      (ofTargetThinning source color front).thickenAmbientBVars
+      (ofTargetThinning source.theory color front).thickenAmbientBVars
         depth pattern := by
   subst largeTarget
   exact thickenAmbientBVars_ofTargetThinning_append_eq_of_scoped source color
     front suffix depth pattern wellScoped
 
-end CostStaticBinderThinning
+end CostStaticTypeThinning
 
 namespace ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
 
@@ -207,11 +206,11 @@ mutual
           (thinning.thickenAmbientBVars depth small)
           (thinning.thickenAmbientBVars depth large)
     | _, _, _, .fvar smallName largeName restores reexposes => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.fvar smallName largeName
             restores reexposes
     | regime, _, _, .bvar _ index => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.bvar
             (profile := profile) (smallSupport := smallSupport)
             (smallAssignment := smallAssignment)
@@ -219,30 +218,30 @@ mutual
             (largeAssignment := largeAssignment) (ambient := ambient)
             regime (thinning.embedIndexAt depth index)
     | regime, _, _, .apply _ constructor arguments => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.apply regime constructor
             (AvailabilityTransposedPatternAlignedList.thickenAmbientBVars
               thinning depth arguments)
     | regime, _, _, .lambda _ binder body => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.lambda regime binder
             (AvailabilityTransposedPatternAligned.thickenAmbientBVars
               thinning (depth + 1) body)
     | regime, _, _, .multiLambda _ arity binders body => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.multiLambda regime arity
             binders
             (AvailabilityTransposedPatternAligned.thickenAmbientBVars
               thinning (depth + arity) body)
     | regime, _, _, .subst _ body replacement => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.subst regime
             (AvailabilityTransposedPatternAligned.thickenAmbientBVars
               thinning (depth + 1) body)
             (AvailabilityTransposedPatternAligned.thickenAmbientBVars
               thinning depth replacement)
     | regime, _, _, .collection _ collectionType rest elements => by
-        simpa only [CostStaticBinderThinning.thickenAmbientBVars] using
+        simpa only [CostStaticTypeThinning.thickenAmbientBVars_bvar, CostStaticTypeThinning.thickenAmbientBVars_fvar, CostStaticTypeThinning.thickenAmbientBVars_apply, CostStaticTypeThinning.thickenAmbientBVars_lambda, CostStaticTypeThinning.thickenAmbientBVars_multiLambda, CostStaticTypeThinning.thickenAmbientBVars_subst, CostStaticTypeThinning.thickenAmbientBVars_collection] using
           AvailabilityTransposedPatternAligned.collection regime
             collectionType rest
             (AvailabilityTransposedPatternAlignedList.thickenAmbientBVars
@@ -353,7 +352,7 @@ theorem reifyTargetFrame_availabilityTransposedAligned
           (mapPattern (color.symbols source)
             (largeNode.reifiedSourceFrame largeEnvironment).1) := by
     exact
-      CostStaticBinderThinning.thickenAmbientBVars_ofTargetThinning_eq_append_of_scoped
+      CostStaticTypeThinning.thickenAmbientBVars_ofTargetThinning_eq_append_of_scoped
         source color smallNode.targetBound ambient largeNode.targetBound
           targetBoundEq 0 _ (by
           simpa only [Nat.zero_add] using largeMappedScoped)

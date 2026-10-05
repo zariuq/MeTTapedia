@@ -133,11 +133,4 @@ theorem occurrences :
           (before ++ [.apply (source.renderDeclaredCostConstructor principal)
             principalArguments])).occurrences := rfl
 
-#print axioms plan
-#print axioms entries
-#print axioms abstractPatterns
-#print axioms children
-#print axioms children_packedChildren
-#print axioms occurrences
-
 end Mettapedia.GSLT.LanguageDef.Cost.StaticSpineHeadRefinement

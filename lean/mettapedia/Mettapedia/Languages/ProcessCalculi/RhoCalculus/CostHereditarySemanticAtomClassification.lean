@@ -268,21 +268,21 @@ theorem rho_typedBoundary_application_sourceType_name_or_proc
           category | category
       · left
         have decoded := congrArg
-          (decodeCostStaticTypeExpr rhoCIGSLT color) mappedTypeEq
-        rw [decodeCostStaticTypeExpr_mapTypeExpr] at decoded
+          (CostStaticTypeImage.decode rhoCIGSLT.theory color) mappedTypeEq
+        rw [CostStaticTypeImage.decode_mapTypeExpr] at decoded
         cases color <;>
-          simp [CIGSLT.materializeDeclaredCostConstructor,
-            costBaseConstructor_def, category, decodeCostStaticTypeExpr, CostStaticTypeImage.decode,
+          simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+            costBaseConstructor_def, category, CostStaticTypeImage.decode,
             costBaseSortName_ne_wrapped,
             interactingSort] at decoded
         all_goals exact decoded
       · right
         have decoded := congrArg
-          (decodeCostStaticTypeExpr rhoCIGSLT color) mappedTypeEq
-        rw [decodeCostStaticTypeExpr_mapTypeExpr] at decoded
+          (CostStaticTypeImage.decode rhoCIGSLT.theory color) mappedTypeEq
+        rw [CostStaticTypeImage.decode_mapTypeExpr] at decoded
         cases color <;>
-          simp [CIGSLT.materializeDeclaredCostConstructor,
-            costBaseConstructor_def, category, decodeCostStaticTypeExpr, CostStaticTypeImage.decode,
+          simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+            costBaseConstructor_def, category, CostStaticTypeImage.decode,
             costBaseSortName_ne_wrapped,
             interactingSort] at decoded
         all_goals exact decoded
@@ -291,31 +291,31 @@ theorem rho_typedBoundary_application_sourceType_name_or_proc
           category | category
       · left
         have decoded := congrArg
-          (decodeCostStaticTypeExpr rhoCIGSLT color) mappedTypeEq
-        rw [decodeCostStaticTypeExpr_mapTypeExpr] at decoded
+          (CostStaticTypeImage.decode rhoCIGSLT.theory color) mappedTypeEq
+        rw [CostStaticTypeImage.decode_mapTypeExpr] at decoded
         cases color <;>
-          simp [CIGSLT.materializeDeclaredCostConstructor,
-            costWrappedConstructor, category, decodeCostStaticTypeExpr, CostStaticTypeImage.decode,
+          simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+            costWrappedConstructor, category, CostStaticTypeImage.decode,
             costBaseSortName_ne_wrapped,
             interactingSort] at decoded
         all_goals exact decoded
       · right
         have decoded := congrArg
-          (decodeCostStaticTypeExpr rhoCIGSLT color) mappedTypeEq
-        rw [decodeCostStaticTypeExpr_mapTypeExpr] at decoded
+          (CostStaticTypeImage.decode rhoCIGSLT.theory color) mappedTypeEq
+        rw [CostStaticTypeImage.decode_mapTypeExpr] at decoded
         cases color <;>
-          simp [CIGSLT.materializeDeclaredCostConstructor,
-            costWrappedConstructor, category, decodeCostStaticTypeExpr, CostStaticTypeImage.decode,
+          simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+            costWrappedConstructor, category, CostStaticTypeImage.decode,
             interactingSort] at decoded
         all_goals exact decoded
   | apparatus kind =>
       have decoded := congrArg
-        (decodeCostStaticTypeExpr rhoCIGSLT color) mappedTypeEq
-      rw [decodeCostStaticTypeExpr_mapTypeExpr] at decoded
+        (CostStaticTypeImage.decode rhoCIGSLT.theory color) mappedTypeEq
+      rw [CostStaticTypeImage.decode_mapTypeExpr] at decoded
       right
       cases color <;> cases kind <;>
-        simp [CIGSLT.materializeDeclaredCostConstructor,
-          CostApparatusConstructor.grammarRule, decodeCostStaticTypeExpr, CostStaticTypeImage.decode,
+        simp [CIGSLT.materializeDeclaredCostConstructor, ContinuationDecorationProfile.materializeDeclaredCostConstructor,
+          CostApparatusConstructor.grammarRule, CostStaticTypeImage.decode,
           costSignatureSortName,
           costKeySortName, costKeyLeafConstructor, costKeyBranchConstructor,
           costSignatureCommitConstructor,

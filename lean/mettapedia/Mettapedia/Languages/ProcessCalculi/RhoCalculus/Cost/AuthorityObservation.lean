@@ -10,7 +10,13 @@ signature totals and numerical valuations are derived from that receipt.
 
 The direction is deliberate: authority evidence determines pricing data;
 pricing data is not used to reconstruct authority evidence.
+
+The authority receipt is the finest account of a funded run.  The spend total
+and the number of firings are that account read through a monoid
+homomorphism.
 -/
+
+open CategoryTheory
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
@@ -33,18 +39,32 @@ theorem aggregate_append
     aggregate (first ++ second) = aggregate first + aggregate second := by
   simp [aggregate, List.sum_append]
 
-/-- Aggregation is a monoid homomorphism from ordered receipts, viewed in the
-opposite monoid to match categorical composition, to commutative raw spend.
-The homomorphism is intentionally not asserted to be injective. -/
+/-- Aggregation is a monoid homomorphism from ordered receipts to commutative
+raw spend.  The homomorphism is intentionally not asserted to be injective. -/
+def aggregateMonoidHom :
+    FreeMonoid (EmittedEvent EventId Ground Location) →*
+      Multiplicative (CostSig Ground) where
+  toFun receipt := Multiplicative.ofAdd (aggregate (FreeMonoid.toList receipt))
+  map_one' := rfl
+  map_mul' first second := by
+    rw [FreeMonoid.toList_mul, aggregate_append]
+    rfl
+
+/-- Aggregation out of the opposite monoid, which is how a one-object category
+composes.  The target is commutative, so the order does not matter. -/
 def aggregateOppositeMonoidHom :
     MulOpposite (FreeMonoid (EmittedEvent EventId Ground Location)) →*
-      Multiplicative (CostSig Ground) where
-  toFun receipt :=
-    Multiplicative.ofAdd (aggregate (FreeMonoid.toList receipt.unop))
-  map_one' := by
-    rfl
+      Multiplicative (CostSig Ground) :=
+  aggregateMonoidHom.fromOpposite fun _ _ => Commute.all _ _
+
+/-- Counting the events of a receipt is a monoid homomorphism. -/
+def countMonoidHom :
+    FreeMonoid (EmittedEvent EventId Ground Location) →* Multiplicative Nat where
+  toFun receipt := Multiplicative.ofAdd (FreeMonoid.toList receipt).length
+  map_one' := rfl
   map_mul' first second := by
-    simp [FreeMonoid.toList_mul, aggregate_append, add_comm]
+    rw [FreeMonoid.toList_mul, List.length_append]
+    rfl
 
 end ReceiptEmission
 
@@ -108,7 +128,38 @@ end CostPath
 
 namespace ResourceTransition
 
-open CategoryTheory
+open Mettapedia.Effects
+
+/-- The exact authority receipt is an account of funded runs: the word of
+the emitted events, with identities, causes and located contributions, in
+runtime emission order. -/
+def authorityAccount :
+    RunAccount FundedState (FreeMonoid (EmittedEvent Nat String RawCostName)) where
+  of path := FreeMonoid.ofList (CostPath.authorityReceipt path)
+  of_id _ := rfl
+  of_comp first second := by
+    change FreeMonoid.ofList
+        (CostPath.authorityReceipt (CostPath.append first second)) = _
+    rw [CostPath.authorityReceipt_append]
+    rfl
+
+/-- The spend total is the authority receipt, aggregated. -/
+theorem spendAccount_eq_authorityAccount_map :
+    spendAccount = authorityAccount.map ReceiptEmission.aggregateMonoidHom := by
+  refine RunAccount.ext ?_
+  funext source target transition
+  change Multiplicative.ofAdd (CostPath.rawAccount transition) =
+    Multiplicative.ofAdd (CostPath.authorityReceipt transition).aggregate
+  rw [CostPath.rawAccount_eq_authorityReceipt_aggregate]
+
+/-- The number of firings is the authority receipt, counted. -/
+theorem firingAccount_eq_authorityAccount_map :
+    firingAccount = authorityAccount.map ReceiptEmission.countMonoidHom := by
+  refine RunAccount.ext ?_
+  funext source target transition
+  change Multiplicative.ofAdd (CostPath.depth transition) =
+    Multiplicative.ofAdd (CostPath.emission transition).length
+  rw [CostPath.emission_length_eq_depth]
 
 /-- Exact authority receipts form a functor out of funded resource-state
 transitions.  The opposite monoid compensates for the conventional order of
@@ -117,22 +168,8 @@ runtime emission order. -/
 def authorityReceiptFunctor :
     FundedState ⥤
       SingleObj
-        (MulOpposite (FreeMonoid (EmittedEvent Nat String RawCostName))) where
-  obj _ := SingleObj.star _
-  map path := MulOpposite.op (FreeMonoid.ofList path.authorityReceipt)
-  map_id state := by
-    apply MulOpposite.unop_injective
-    change FreeMonoid.ofList (CostPath.emission (𝟙 state)) = 1
-    rw [ResourceTransition.identity_emission]
-    rfl
-  map_comp first second := by
-    change MulOpposite.op
-        (FreeMonoid.ofList
-          (CostPath.authorityReceipt (CostPath.append first second))) =
-      MulOpposite.op (FreeMonoid.ofList second.authorityReceipt) *
-        MulOpposite.op (FreeMonoid.ofList first.authorityReceipt)
-    rw [CostPath.authorityReceipt_append]
-    rfl
+        (MulOpposite (FreeMonoid (EmittedEvent Nat String RawCostName))) :=
+  authorityAccount.toFunctor
 
 /-- The existing raw-account functor is the lossy monoidal observation of the
 exact authority-receipt functor, on every funded transition. -/
@@ -159,7 +196,7 @@ def authorityReceipt
 
 @[simp]
 theorem pure_authorityReceipt (state : FundedState) (result : Result) :
-    (pure state result).authorityReceipt = [] :=
+    authorityReceipt (Mettapedia.Effects.Execution.pure state result) = [] :=
   rfl
 
 /-- Parameterized bind concatenates authority evidence before any pricing
@@ -168,7 +205,7 @@ observation is taken. -/
 theorem bind_authorityReceipt {source middle target : FundedState}
     (first : FundedExecution source middle Result)
     (next : Result → FundedExecution middle target NextResult) :
-    (first.bind next).authorityReceipt =
+    authorityReceipt (first.bind next) =
       first.authorityReceipt ++ (next first.result).authorityReceipt :=
   CostPath.authorityReceipt_append first.transition
     (next first.result).transition
