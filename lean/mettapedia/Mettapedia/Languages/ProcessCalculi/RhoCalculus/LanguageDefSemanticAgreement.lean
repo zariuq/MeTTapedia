@@ -18,7 +18,7 @@ witnesses are transported.
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefSemanticAgreement
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.EquationSemantics

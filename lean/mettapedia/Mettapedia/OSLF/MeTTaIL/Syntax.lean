@@ -5,12 +5,16 @@ import Mettapedia.Util.LinearHash
 /-!
 # MeTTaIL Language Definition Syntax (Locally Nameless)
 
-Formalization of the MeTTaIL `language!` macro structure from the
-`mettail-rust` source tree.
+The authored language-definition format used by Mettapedia's GSLT and OSLF
+constructions. Its notation is based on MeTTaIL's `language!` macro in
+`mettail-rust`; its Lean semantics, dependent extensions and execution
+contracts are defined in this development. This is not an assertion that
+the evolving Rust implementation realizes every Lean construction.
 
 Uses **locally nameless** representation: bound variables are de Bruijn indices
-(`.bvar n`), free variables / metavariables are named (`.fvar x`). Binders
-carry no names — α-equivalent patterns are syntactically identical.
+(`.bvar n`), free variables / metavariables are named (`.fvar x`). Patterns
+retain optional binder display names for source diagnostics. The existing
+alpha-canonicalization boundary erases those names for semantic admission.
 
 ## References
 

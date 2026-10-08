@@ -50,7 +50,7 @@ theorem moment_uniqueness_is_false :
         (∀ m : ℕ, m ≥ 1 → ∫⁻ ω, (f ω) ^ m ∂μ_arg = ∫⁻ ω, (g ω) ^ m ∂μ_arg) →
         f =ᵐ[μ_arg] g) := by
   intro h
-  haveI : IsFiniteMeasure μ := by
+  have : IsFiniteMeasure μ := by
     constructor; simp only [μ, Measure.coe_add, Pi.add_apply, Measure.smul_apply,
       smul_eq_mul, Measure.dirac_apply_of_mem (Set.mem_univ _)]; norm_num
   have hae := h μ f g (measurable_of_finite _) (measurable_of_finite _)
@@ -91,7 +91,7 @@ the bind identity alone.
 
 namespace Mettapedia.ProbabilityTheory.Exchangeability.BindKernelCounterexample
 
-open MeasureTheory Exchangeability
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory.Exchangeability
 
 noncomputable section
 
@@ -163,7 +163,7 @@ This bypasses the difficult disintegration/tail-measurability approach entirely.
 
 namespace Mettapedia.ProbabilityTheory.Exchangeability.CondExpBridge
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 
 /-! ### General conditional expectation lemma -/
 
@@ -231,7 +231,7 @@ By triangle inequality: ∫ |K_μ - K_ν| dν = 0, whence K_μ = K_ν a.e. ν.
 
 namespace Mettapedia.ProbabilityTheory.Exchangeability.DirectingMeasureUniqueness
 
-open MeasureTheory ProbabilityTheory Filter
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory Filter
 open scoped BigOperators
 
 /-! ### L¹ limit uniqueness -/
@@ -282,7 +282,7 @@ theorem ae_eq_of_L1_limits
   have hint_zero : ∫ ω, |f ω - g ω| ∂ν = 0 := by
     apply le_antisymm
     · by_contra h
-      push_neg at h
+      push Not at h
       exact absurd (h_le_eps _ h) (lt_irrefl _)
     · exact integral_nonneg_of_ae (ae_of_all ν (fun _ => abs_nonneg _))
   -- |f - g| = 0 a.e. ν ⟹ f - g = 0 a.e. ν ⟹ f = g a.e. ν
@@ -304,7 +304,7 @@ L¹ Cesaro convergence from the exchangeability library.
 
 namespace Mettapedia.ProbabilityTheory.Exchangeability.DirectingMeasureL1Transfer
 
-open MeasureTheory ProbabilityTheory Filter
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory Filter
 open _root_.Exchangeability _root_.Exchangeability.DeFinetti.ViaMartingale
 open scoped BigOperators
 
@@ -483,7 +483,7 @@ lemma pair_product_integral
         (fun s hs => directingMeasure_measurable_eval X hX_meas s hs)
     rw [Measure.bind_apply (measurableSet_singleton c) hK_meas_pi.aemeasurable]
     congr 1; ext ω
-    haveI : IsProbabilityMeasure (K ω) := directingMeasure_isProb X hX_meas ω
+    have : IsProbabilityMeasure (K ω) := directingMeasure_isProb X hX_meas ω
     rw [Measure.pi_singleton]
     simp [c, Finset.prod_const, sq]
   -- Chain: LHS = RHS by hprod, then use hLHS and hRHS
@@ -698,7 +698,7 @@ theorem directingMeasure_singleton_ae_eq_of_le
     have hces_int : ∀ (π : Measure Ω) [IsProbabilityMeasure π] (m : ℕ),
         Integrable (cesaro m) π := by
       intro π _ m; show Integrable (fun ω => 1 / (m:ℝ) * ∑ i : Fin m, fb (Y ↑i ω)) π
-      exact (integrable_finset_sum (Finset.univ : Finset (Fin m))
+      exact (integrable_finsetSum (Finset.univ : Finset (Fin m))
         (f := fun i ω => fb (Y (↑i) ω))
         (fun i _ => hfbY_int π ↑i)).const_mul _
     -- |Cesaro - condExp| integrable (sub of integrables)
@@ -784,7 +784,7 @@ theorem directingMeasure_singleton_ae_eq_of_smul_le
     have hces_int : ∀ (π : Measure Ω) [IsProbabilityMeasure π] (m : ℕ),
         Integrable (cesaro m) π := by
       intro π _ m; show Integrable (fun ω => 1 / (m:ℝ) * ∑ i : Fin m, fb (Y ↑i ω)) π
-      exact (integrable_finset_sum (Finset.univ : Finset (Fin m))
+      exact (integrable_finsetSum (Finset.univ : Finset (Fin m))
         (f := fun i ω => fb (Y (↑i) ω))
         (fun i _ => hfbY_int π ↑i)).const_mul _
     have habs_int : ∀ m : ℕ,
@@ -840,9 +840,9 @@ theorem directingMeasure_condExp_law_of_smul_le
         directingMeasure (μ := μ) X hX_meas ω {b} =
         directingMeasure (μ := ν) X hX_meas ω {b} := by
       intro b
-      haveI : IsProbabilityMeasure (directingMeasure (μ := μ) X hX_meas ω) :=
+      have : IsProbabilityMeasure (directingMeasure (μ := μ) X hX_meas ω) :=
         directingMeasure_isProb (μ := μ) X hX_meas ω
-      haveI : IsProbabilityMeasure (directingMeasure (μ := ν) X hX_meas ω) :=
+      have : IsProbabilityMeasure (directingMeasure (μ := ν) X hX_meas ω) :=
         directingMeasure_isProb (μ := ν) X hX_meas ω
       exact (ENNReal.toReal_eq_toReal_iff' (measure_ne_top _ _) (measure_ne_top _ _)).mp (hω b)
     -- From singleton ENNReal equality → measure equality (Countable α)

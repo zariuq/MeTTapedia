@@ -29,6 +29,8 @@ namespace Mettapedia.Logic.LP
 
 /-! ## Section 1: Signatures -/
 
+-- The four symbol carriers have independent universe bounds.
+set_option linter.checkUnivs false in
 /-- A logic programming signature: relation symbols, function symbols, and their arities. -/
 structure LPSignature where
   /-- Domain of constant symbols (0-ary terms). -/

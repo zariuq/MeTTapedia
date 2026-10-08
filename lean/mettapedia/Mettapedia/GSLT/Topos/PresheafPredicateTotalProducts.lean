@@ -39,7 +39,7 @@ projection's preservation of a closed structure are not constructed here.
   (fibred products and the structure of total categories).
 -/
 
-open CategoryTheory CategoryTheory.Functor Opposite MonoidalCategory
+open _root_.CategoryTheory _root_.CategoryTheory.Functor Opposite MonoidalCategory
 open CartesianMonoidalCategory
 
 universe u

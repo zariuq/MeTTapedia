@@ -26,6 +26,7 @@ via Beta posterior means.
 
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
+import Mettapedia.Evidence.SourcePacketStore
 
 open Mettapedia.ProbabilityTheory.BayesianNetworks
 open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
@@ -102,5 +103,83 @@ theorem cpt_param_converges_to_strength :
   -- h has mean = (n_pos + 1)/(n_pos + n_neg + 2*1) which equals our goal
   simp only [mul_one] at h
   exact h
+
+/-! ## Source-retaining exact parameter observations -/
+
+open Mettapedia.Evidence.SourcePacketStore
+
+def sourcedEntry {Source : Type*} (store : Store Source (ℕ × ℕ)) : BooleanCPTEntry :=
+  ⟨(counts store).1, (counts store).2⟩
+
+theorem sourcedEntry_insert {Source : Type*} [DecidableEq Source]
+    (store : Store Source (ℕ × ℕ)) (source : Source) (positives negatives : ℕ) :
+    sourcedEntry (store.insert source (positives, negatives)) =
+      ⟨positives + (sourcedEntry (store.erase source)).n_pos,
+       negatives + (sourcedEntry (store.erase source)).n_neg⟩ := by
+  simp [sourcedEntry, counts_insert]
+
+theorem sourcedEntry_repeat {Source : Type*} [DecidableEq Source]
+    (store : Store Source (ℕ × ℕ)) (packet : Packet Source (ℕ × ℕ))
+    (present : store.lookup packet.source = some packet.payload) :
+    (deliver store packet).map sourcedEntry = some (sourcedEntry store) := by
+  rw [deliver_existing store packet present]
+  rfl
+
+theorem sourcedEntry_retract_replacement {Source : Type*} [DecidableEq Source]
+    (store : Store Source (ℕ × ℕ)) (source : Source) (payload : ℕ × ℕ) :
+    sourcedEntry ((store.insert source payload).erase source) = sourcedEntry (store.erase source) := by
+  rw [retract_replacement]
+
+def exactPosteriorMean (alpha beta : ℚ) (entry : BooleanCPTEntry) : ℚ :=
+  (alpha + entry.n_pos) / (alpha + entry.n_pos + (beta + entry.n_neg))
+
+def posteriorPrior (alpha beta : ℚ) (positiveAlpha : 0 < alpha) (positiveBeta : 0 < beta)
+    (entry : BooleanCPTEntry) : Mettapedia.ProbabilityTheory.BetaBernoulliPrior where
+  α := (alpha : ℝ) + entry.n_pos
+  β := (beta : ℝ) + entry.n_neg
+  α_pos := by
+    have positive : (0 : ℝ) < alpha := by exact_mod_cast positiveAlpha
+    have nonnegative : (0 : ℝ) ≤ entry.n_pos := Nat.cast_nonneg _
+    linarith
+  β_pos := by
+    have positive : (0 : ℝ) < beta := by exact_mod_cast positiveBeta
+    have nonnegative : (0 : ℝ) ≤ entry.n_neg := Nat.cast_nonneg _
+    linarith
+
+theorem exactPosteriorMean_refines (alpha beta : ℚ) (positiveAlpha : 0 < alpha)
+    (positiveBeta : 0 < beta) (entry : BooleanCPTEntry) :
+    (exactPosteriorMean alpha beta entry : ℝ) =
+      (posteriorPrior alpha beta positiveAlpha positiveBeta entry).mean := by
+  simp [exactPosteriorMean, posteriorPrior, Mettapedia.ProbabilityTheory.BetaBernoulliPrior.mean]
+
+theorem exactPosteriorMean_mem_unit (alpha beta : ℚ) (positiveAlpha : 0 < alpha)
+    (positiveBeta : 0 < beta) (entry : BooleanCPTEntry) :
+    0 ≤ exactPosteriorMean alpha beta entry ∧ exactPosteriorMean alpha beta entry ≤ 1 := by
+  have den : 0 < alpha + entry.n_pos + (beta + entry.n_neg) := by positivity
+  constructor
+  · unfold exactPosteriorMean
+    apply div_nonneg <;> positivity
+  · rw [exactPosteriorMean, div_le_one den]
+    have nonnegative : (0 : ℚ) ≤ entry.n_neg := Nat.cast_nonneg _
+    linarith
+
+theorem exactPosteriorMean_laplace (entry : BooleanCPTEntry) :
+    (exactPosteriorMean 1 1 entry : ℝ) = evidenceToBernoulliParam entry := by
+  simp [exactPosteriorMean, evidenceToBernoulliParam, BooleanCPTEntry.toLaplaceBeta,
+    withUniformPrior, EvidenceBetaParams.posteriorMean, EvidenceBetaParams.alpha, EvidenceBetaParams.beta]
+
+theorem beta_batch_parameters (prior : Mettapedia.ProbabilityTheory.BetaBernoulliPrior)
+    (outcomes : List Bool) :
+    (outcomes.foldl Mettapedia.ProbabilityTheory.BetaBernoulliPrior.posterior prior).α =
+      prior.α + outcomes.count true ∧
+    (outcomes.foldl Mettapedia.ProbabilityTheory.BetaBernoulliPrior.posterior prior).β =
+      prior.β + outcomes.count false := by
+  induction outcomes generalizing prior with
+  | nil => simp
+  | cons outcome outcomes ih =>
+      have tail := ih (prior.posterior outcome)
+      cases outcome <;>
+        simp [List.foldl_cons, Mettapedia.ProbabilityTheory.BetaBernoulliPrior.posterior] at tail ⊢ <;>
+        constructor <;> linarith [tail.1, tail.2]
 
 end Mettapedia.ProbabilityTheory.BayesianNetworks.CPTLearning

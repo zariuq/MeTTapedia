@@ -25,7 +25,7 @@ noncomputable section
 
 namespace Mettapedia.ProbabilityTheory.Exchangeability
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Preorder
 open scoped ENNReal NNReal
 open MarkovDeFinettiHard
@@ -80,7 +80,7 @@ instance markovInitialKernel_isMarkov : IsMarkovKernel (markovInitialKernel (k :
   refine ⟨?_⟩
   intro θ
   refine ⟨?_⟩
-  rw [markovInitialKernel, ProbabilityTheory.Kernel.finset_sum_apply' Finset.univ
+  rw [markovInitialKernel, ProbabilityTheory.Kernel.finsetSum_apply' Finset.univ
     (fun b : Fin k =>
       ProbabilityTheory.Kernel.withDensity
         (ProbabilityTheory.Kernel.const (MarkovParam k) (Measure.dirac b))
@@ -103,7 +103,7 @@ theorem markovInitialKernel_apply_singleton
     markovInitialKernel (k := k) θ ({b} : Set (Fin k)) =
       initProb (k := k) θ b := by
   classical
-  rw [markovInitialKernel, ProbabilityTheory.Kernel.finset_sum_apply' Finset.univ
+  rw [markovInitialKernel, ProbabilityTheory.Kernel.finsetSum_apply' Finset.univ
     (fun c : Fin k =>
       ProbabilityTheory.Kernel.withDensity
         (ProbabilityTheory.Kernel.const (MarkovParam k) (Measure.dirac c))
@@ -192,7 +192,7 @@ instance markovStepKernel_isMarkov : IsMarkovKernel (markovStepKernel (k := k)) 
   refine ⟨?_⟩
   intro x
   refine ⟨?_⟩
-  rw [markovStepKernel, ProbabilityTheory.Kernel.finset_sum_apply' Finset.univ
+  rw [markovStepKernel, ProbabilityTheory.Kernel.finsetSum_apply' Finset.univ
     (fun b : Fin k =>
       ProbabilityTheory.Kernel.withDensity
         (ProbabilityTheory.Kernel.const (PairState k) (Measure.dirac b))
@@ -215,7 +215,7 @@ theorem markovStepKernel_apply_singleton
     markovStepKernel (k := k) x ({b} : Set (Fin k)) =
       stepProb (k := k) x.1 x.2 b := by
   classical
-  rw [markovStepKernel, ProbabilityTheory.Kernel.finset_sum_apply' Finset.univ
+  rw [markovStepKernel, ProbabilityTheory.Kernel.finsetSum_apply' Finset.univ
     (fun c : Fin k =>
       ProbabilityTheory.Kernel.withDensity
         (ProbabilityTheory.Kernel.const (PairState k) (Measure.dirac c))
@@ -810,7 +810,7 @@ theorem sum_wordProb_prefix_eq_one
     dsimp [μ]
     exact Measure.isProbabilityMeasure_map
       (measurable_frestrictLe (X := fun _ : ℕ => Fin k) n).aemeasurable
-  letI : IsProbabilityMeasure μ := hμprob
+  let : IsProbabilityMeasure μ := hμprob
   have huniv : μ Set.univ = 1 := by
     exact measure_univ
   have hdecomp :
@@ -870,7 +870,7 @@ theorem markovPairedTrajectoryMeasure_constantPairPrefixSupport
     dsimp [μ]
     exact Measure.isProbabilityMeasure_map
       (measurable_frestrictLe (X := fun _ : ℕ => PairState k) n).aemeasurable
-  letI : IsProbabilityMeasure μ := hμprob
+  let : IsProbabilityMeasure μ := hμprob
   have hinj : Function.Injective (pairedPrefixOfState (k := k) θ n) := by
     intro x y hxy
     have := congrArg (statePrefixOfPairPrefix (k := k) n) hxy
@@ -971,14 +971,14 @@ theorem markovSequenceKernel_prefix_eq_wordProb
               (measurableSet_constantPairPrefixSupport (k := k) θ n)).symm]
     exact markovPairedTrajectoryMeasure_constantPairPrefixSupport (k := k) θ n
   have hBcomp : ν Bᶜ = 0 := by
-    letI : IsProbabilityMeasure ν := by infer_instance
+    let : IsProbabilityMeasure ν := by infer_instance
     exact (prob_compl_eq_zero_iff (μ := ν) hBmeas).2 hBone
   have hinter : ν (B ∩ A) = ν A := by
     have hdiff0 : ν (A \ B) = 0 := by
       exact measure_mono_null (fun z hz => hz.2) hBcomp
     have hAeq : ν A = ν (A ∩ B) := by
       calc
-        ν A = ν (A ∩ B) + ν (A \ B) := (measure_inter_add_diff A hBmeas).symm
+        ν A = ν (A ∩ B) + ν (A \ B) := (measure_inter_add_sdiff A hBmeas).symm
         _ = ν (A ∩ B) := by simp [hdiff0]
     simpa [Set.inter_comm] using hAeq.symm
   have hset :
@@ -1029,7 +1029,7 @@ theorem markovSequenceKernel_cylinder_eq_wordProb
   | zero =>
       have hx : List.ofFn x = ([] : List (Fin k)) := by simp
       rw [hx]
-      letI : IsProbabilityMeasure (markovSequenceKernel (k := k) θ) := by infer_instance
+      let : IsProbabilityMeasure (markovSequenceKernel (k := k) θ) := by infer_instance
       rw [MarkovDeFinettiRecurrence.cylinder, wordProb, wordProbNN]
       simp
   | succ n =>

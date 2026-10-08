@@ -394,7 +394,7 @@ theorem abstractConstAt_etaBody
         (Mettapedia.Logic.HOL.substConst f) := by
   simp [weakenHyps, List.map_map, Function.comp, Mettapedia.Logic.HOL.substConst_weaken]
 
-def ofBase {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} :
+theorem ofBase {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} :
     Derivation Const Δ φ → ExtDerivation Const Δ φ
   | .hyp h => .hyp h
   | .topI => .topI

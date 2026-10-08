@@ -35,6 +35,12 @@ universe uIndex uState uCode uObject uElement
 
 /-! ## Observer-indexed extensional and intensional state -/
 
+/-
+The `checkUnivs` linter complains that `uIndex` and `uState` only occur together: the type of a
+bundled structure is `Type (max (uIndex + 1) (uState + 1))`. They are independent fields, and an
+index type may live in a lower universe than the states it indexes, so both are kept.
+-/
+set_option linter.checkUnivs false in
 /-- An indexical family with an extensional state at each index and a further
 intensional fibre over each indexed state. -/
 structure IndexedIntensionalFamily where
@@ -101,6 +107,12 @@ end IndexedIntensionalFamily
 
 /-! ## An extensional algebra of universe objects -/
 
+/-
+The `checkUnivs` linter complains that `uObject` and `uElement` only occur together, for the same
+reason as above. They are independent: `typeAlgebra` below instantiates them at different levels,
+`.{uElement + 1, uElement}`.
+-/
+set_option linter.checkUnivs false in
 /-- The extensional operations that a host must provide in order to interpret
 the selected family-universe profile.  `Object` may be a type of sets, objects
 of a category, or another extensional carrier; `Elements` exposes its semantic

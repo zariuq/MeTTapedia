@@ -25,6 +25,19 @@ def locals (base : Environment Ptr) (index : UInt32) (seen : Bool) : Environment
     else if name = flag then some (.boolean seen) else base name
 
 omit [DecidableEq Ptr] in
+theorem locals_are_scoped_updates (base : Environment Ptr) (index : UInt32) (seen : Bool) :
+    locals base index seen = Function.update
+      (Function.update base flag (some (.boolean seen))) counter (some (.unsigned index)) := by
+  funext name
+  by_cases isCounter : name = counter
+  · subst name
+    simp [locals]
+  · by_cases isFlag : name = flag
+    · subst name
+      simp [locals, counter, flag]
+    · simp [locals, isCounter, isFlag]
+
+omit [DecidableEq Ptr] in
 theorem update_flag (base : Environment Ptr) (index : UInt32) (seen value : Bool) :
     Function.update (locals base index seen) flag (some (.boolean value)) =
       locals base index value := by
@@ -73,7 +86,8 @@ theorem condition_read {base : Environment Ptr} {fields : FieldReader Ptr}
     (expression (locals base index seen) fields (condition limit)).bind truth? =
       some (decide (index < bound) && !seen) := by
   by_cases live : index < bound <;>
-    simp [condition, expression, operands.boundRead, locals, truth?, flag, counter, live]
+    simp [condition, expression, numericBinary, operands.boundRead, locals, truth?,
+      flag, counter, live]
 
 theorem body_read {base : Environment Ptr} {fields : FieldReader Ptr}
     {array limit needle : CExpr} {values : List (Option Ptr)} {bound : UInt32}
@@ -198,6 +212,32 @@ theorem counted_scan_refines_initialized {base : Environment Ptr} {fields : Fiel
       (some (.unsigned savedCounter))))) = _
   rw [update_counter]
 
+/-- The local counter may have no outer binding, or an outer value of another
+type. Its declaration restores that exact binding; only the supplied Boolean
+flag is changed by the initialized scan. -/
+theorem counted_scan_refines_outer_scope {base : Environment Ptr} {fields : FieldReader Ptr}
+    {array limit needle : CExpr} {initialized spare : List (Option Ptr)} {bound : UInt32}
+    {target : Option Ptr}
+    (operands : Operands base fields array limit needle (initialized ++ spare) bound target)
+    (exactExtent : bound.toNat = initialized.length) (seen : Bool) :
+    countedLoop fields initialized.length (Function.update base flag (some (.boolean seen)))
+      (scanStatement array limit needle) = some (.finished (some
+        (Function.update base flag (some (.boolean
+          (decide (seen = true ∨ target ∈ initialized))))))) := by
+  obtain ⟨stopped, completed⟩ := run_refines_initialized [] initialized spare
+    (by simpa using operands) 0 seen initialized.length rfl exactExtent (Nat.le_refl _)
+  change some (restore (run fields (condition limit) step (body array needle)
+    initialized.length (Function.update (Function.update base flag (some (.boolean seen)))
+      counter (some (.unsigned 0)))) counter
+      ((Function.update base flag (some (.boolean seen))) counter)) = _
+  rw [← locals_are_scoped_updates, completed]
+  change some (Result.finished (some (Function.update
+    (locals base stopped (decide (seen = true ∨ target ∈ initialized))) counter
+      ((Function.update base flag (some (.boolean seen))) counter)))) = _
+  rw [Function.update_of_ne (by decide : counter ≠ flag), locals_are_scoped_updates,
+    Function.update_idem]
+  rw [Function.update_comm (by decide : flag ≠ counter), Function.update_eq_self]
+
 theorem counted_scan_refines_membership {base : Environment Ptr} {fields : FieldReader Ptr}
     {array limit needle : CExpr} {values : List (Option Ptr)} {bound : UInt32}
     {target : Option Ptr} (operands : Operands base fields array limit needle values bound target)
@@ -243,6 +283,8 @@ theorem counted_scan_refines_pointer_slots {base : Environment Ptr} {fields : Fi
   simpa only [membership] using result
 
 #print axioms update_flag
+#print axioms locals_are_scoped_updates
+#print axioms counted_scan_refines_outer_scope
 #print axioms update_counter
 #print axioms condition_read
 #print axioms body_read

@@ -1,5 +1,13 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Answers
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Answers
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.ConfigurationEncoding
+import Mettapedia.Languages.MeTTa.PeTTa.ConfigurationLanguageDef
+import Mettapedia.Languages.MeTTa.PeTTa.UpstreamAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Languages.MeTTa.PeTTa.DispatchCoverage
 import Mettapedia.Languages.MeTTa.PeTTa.BodyClosureFusion
@@ -25,30 +33,23 @@ import Mettapedia.Languages.MeTTa.PeTTa.GroundedOracle
 import Mettapedia.Languages.MeTTa.PeTTa.PrologBridge
 import Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr
 import Mettapedia.Languages.MeTTa.PeTTa.ValueOccurrences
+import Mettapedia.Languages.MeTTa.PeTTa.BindingForms
+import Mettapedia.Languages.MeTTa.PeTTa.ExplicitEvaluation
+import Mettapedia.Languages.MeTTa.PeTTa.CallGuardOptimization
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineGroundProvider
 import Mettapedia.Languages.MeTTa.PeTTa.DispatchErrorScope
 import Mettapedia.Languages.MeTTa.PeTTa.RaiseFree
 import Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
-import Mettapedia.Languages.MeTTa.PeTTa.ExecutableBoundary
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.DeclarativeSpec
 import Mettapedia.Languages.MeTTa.PeTTa.SemanticForms
 import Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge
-import Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
-import Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex
-import Mettapedia.Languages.MeTTa.PeTTa.LookupPlan
-import Mettapedia.Languages.MeTTa.PeTTa.ExecutionContract
 import Mettapedia.Languages.MeTTa.PeTTa.ScopeContract
 import Mettapedia.Languages.MeTTa.PeTTa.TransitionSpec
 import Mettapedia.Languages.MeTTa.PeTTa.RewriteIR
 import Mettapedia.Languages.MeTTa.PeTTa.RewriteIRV2
-import Mettapedia.Languages.MeTTa.PeTTa.Artifacts
 import Mettapedia.Languages.MeTTa.PeTTa.CoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.MeTTaZeroExtension
-import Mettapedia.Languages.MeTTa.PeTTa.Unit
-import Mettapedia.Languages.MeTTa.PeTTa.StageIndex
-import Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage
-import Mettapedia.Languages.MeTTa.PeTTa.StageFiber
-import Mettapedia.Languages.MeTTa.PeTTa.BoundaryContract
-import Mettapedia.Languages.MeTTa.PeTTa.SemanticBundle
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardProjection
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardPlan
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardWire
@@ -93,24 +94,40 @@ import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardConformanceCorpus
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardStructuredCExport
 
 /-!
-# PeTTa MeTTa Semantics
+# PeTTa
 
-Public import interface for the PeTTa semantic stack.
+Public import interface for the PeTTa formalization.
 
-## Semantic Layers
+## Semantics of PeTTa programs
 
-- `DeclarativeSpec` — readable declarative expression and command semantics
-- `MinimalInstructions` — operational instruction semantics
-- `ExecutableBoundary` — implementation-facing executable boundary artifacts
-- `SemanticForms` — named public facade over the major semantic layers
-- `SemanticBundle` — canonical stage-indexed semantic object for runtime/proof
-                    alignment
+- `SpaceSemantics`, `Effects`, `StdLib`: reading, programs, ordered selection,
+  named spaces, cells and primitives over `OSLFCore.Atom`.
+- `Answers`: ordered Atom values, preserving duplicate occurrences.
+- `DeclarativeSpec`: independent transitions and finite whole-program judgments.
+- `Eval`: the executable machine, its adequacy theorem and execution laws.
+- `OperationalGSLT`: the judgment as an OSLF-generating GSLT, with executable
+  correspondence and observation laws.
 
-Positive example:
-- PeTTa now exposes a clear declarative layer and a separate executable
-  boundary layer, instead of burying everything in contract internals.
+## Selected Pattern rewrite view
 
-Negative example:
-- the executable boundary does not replace the declarative meaning of PeTTa
-  programs; it refines how the live runtime is organized.
+`PatternRewrite.Answers`, `PatternRewrite.Space`, `PatternRewrite.Commands` and
+`PatternRewrite.OperationalGSLT`, together with `PatternRewrite.DeclarativeSpec`,
+`MeTTaEval`, `TypedEval` and `MinimalInstructions`, state
+one-step rewrite and query relations over `Pattern`. A selected right-hand
+side is not a completed program answer. These relations remain for their
+downstream users.
+
+## Retired modules
+
+The March 2026 stage-indexed OSLF and artifact-export route (`OSLFInstance`,
+`GSLTVertex`, `StageIndex`, `OSLFPackage`, `StageFiber`, `SemanticBundle`,
+`ArtifactBundle`, `ContractCatalog`, `ContractExport`, `BoundaryContract`,
+`ExecutableBoundary`, `ExecutionContract`, `Artifacts`, `Unit`, `LookupPlan`),
+with `Conformance.PeTTaArtifactBridge` and its export scripts, is in
+`_archive/petta-retirement-2026-10-05`. Its OSLF was built from user rewrite
+rules only. The rule-only OSLF is `langOSLF (pettaSpaceToLangDef s) "Expr"`
+from the framework; its LP soundness theorem is `petta_safe_space_ruleApp_lp_sound`
+in `LPSoundness`; its modal laws are the framework's generic ones; the lookup
+plan is `Algorithms.MeTTa.LookupPlans`; the shared-variable `spaceMatch`
+checks are examples in `PatternRewrite.Space`.
 -/

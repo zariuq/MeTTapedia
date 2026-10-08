@@ -50,7 +50,7 @@ projection is recorded only as the object-level identity `expTotal_base`.
 - Mac Lane–Moerdijk, "Sheaves in Geometry and Logic" (1994), Ch. I.6.
 -/
 
-open CategoryTheory MonoidalCategory CartesianMonoidalCategory
+open _root_.CategoryTheory MonoidalCategory CartesianMonoidalCategory
 
 universe u
 

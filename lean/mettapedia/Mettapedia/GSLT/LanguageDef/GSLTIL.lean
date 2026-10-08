@@ -5,7 +5,13 @@ import Mettapedia.GSLT.LanguageDef.TotalGSLT
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
-# The finite authored core of GSLT-IL
+# The authored command core of GSLT-ML
+
+GSLT-ML is Mettapedia's language for computing in and transporting between
+GSLT fibres. Its semantics comes from the indexed operational calculus in
+`GSLT.Core.IndexedOperational`. The `GSLTIL` module family implements its
+command intermediate representation. MeTTaIL supplies the authored
+`LanguageDef` format; it does not supply the command calculus's semantics.
 
 The abstract indexed command calculus has dependent states: a state belongs to
 one GSLT fibre, and a route transports it to another fibre.  This module gives
@@ -295,14 +301,6 @@ private theorem rules_noncontextual :
   rcases ruleMember with rfl | rfl | rfl
   all_goals exact .relationQuery .nil
 
-private theorem rootStep_iff_mem_executor (relations : RelationEnv)
-    (source target : Pattern) :
-    RootStep relations language source target ↔
-      target ∈ rewriteStepWithPremisesUsing
-        relations language source := by
-  simp [RootStep, rewriteStepWithPremisesUsing,
-    applyRuleWithPremisesUsing]
-
 /-- The authored total GSLT and the generic root executor expose the same
 one-step relation. -/
 theorem executionTheory_step_iff_mem_executor (relations : RelationEnv)
@@ -312,9 +310,8 @@ theorem executionTheory_step_iff_mem_executor (relations : RelationEnv)
         relations language source := by
   unfold executionTheory
   rw [languageGSLTUsing_step]
-  unfold langReducesUsing
-  rw [step_iff_rootStep_of_noncontextualRules rules_noncontextual]
-  exact rootStep_iff_mem_executor relations source target
+  exact (mem_rootFrontier_iff_langReducesUsing
+    relations language rules_noncontextual source target).symm
 
 theorem totalTheory_step_iff_mem_executor (catalog : Catalog)
     (source target : Pattern) :

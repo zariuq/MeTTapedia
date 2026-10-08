@@ -23,7 +23,8 @@ neither the presheaf action nor its truth values are replaced by lattice data.
 
 namespace Mettapedia.OSLF.PresheafNativeType.TheoryTranslationCounterexample
 
-open CategoryTheory CategoryTheory.Limits CategoryTheory.MonoidalCategory Opposite
+open _root_.CategoryTheory _root_.CategoryTheory.Limits
+open _root_.CategoryTheory.MonoidalCategory Opposite
 
 noncomputable section
 

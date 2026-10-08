@@ -195,11 +195,28 @@ The engine and the OSLF synthesis pipeline use this canonical representation.
 
 ## MeTTaIL vs runtime boundary
 
-`Mettapedia/OSLF/MeTTaIL` is the semantic IL and export boundary:
+`Mettapedia/OSLF/MeTTaIL` holds this development's authored language-definition
+format, semantic rules and export boundary. Its `language!` notation follows
+[MeTTaIL's Rust language framework](https://github.com/F1R3FLY-io/mettail-rust).
+The Lean construction has its own explicit semantic and execution contracts:
 
 - `Syntax`, `LanguageDef`, declarative/executable reduction bridges
 - OSLF synthesis hooks (`langRewriteSystem`, `langOSLF`, `langGalois`)
 - export-oriented tooling and metadata paths
+
+GSLT-ML is the language for computing in and transporting between GSLT fibres.
+Its semantics comes from the indexed operational theory; the `GSLTIL` module
+family supplies its command intermediate representation. It is authored using
+the shared MeTTaIL `LanguageDef` format. The guest-fibre comparison is in
+`GSLT/LanguageDef/GSLTILFibreExecution`, with explicit equation and premise
+conditions rather than a claim that every relation query is already qualified.
+
+`CoreSyntaxBridge` converts to the separate Algorithms `MeTTailCore` data types.
+It rejects constructs that the flat core cannot represent, including collection
+algebras and rule-local binding declarations, and erases source binder metadata
+where conversion allows it. Its type abbreviations do not make
+the two syntax definitions identical. Consolidating them requires preserving
+their current consumers and the stronger language-definition contracts.
 
 Executable runtime implementations belong in the separate lightweight project:
 

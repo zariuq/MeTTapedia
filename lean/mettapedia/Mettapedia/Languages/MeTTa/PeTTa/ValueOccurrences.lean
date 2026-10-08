@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.SubstitutionAlgebra
+import Mettapedia.Languages.MeTTa.PeTTa.Eval
 
 /-!
 # Value occurrences: environments, substitution and plans
@@ -62,6 +63,27 @@ where
   evalList (P : Program) (σ : Subst) : List Atom → List (List Atom)
     | [] => []
     | a :: as => evalIn P σ a :: evalList P σ as
+
+/-- The variable-occurrence view agrees with an actual executable path,
+including captured expressions whose heads name runnable functions. The
+abstract call interface is immaterial for a value occurrence. -/
+theorem executable_variable_matches_view (program : SpaceSemantics.Program)
+    (view : Program) (state : Effects.State)
+    (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst) (name : String) :
+    Eval.Returns program bindings state (.var name) state
+      (evalIn view (bindings.lookup) (.var name)) := by
+  simpa only [evalIn, Mettapedia.Languages.ProcessCalculi.MORK.applySubst] using
+    Eval.variable_returns program bindings state name
+
+/-- The same observation is a finite whole-program derivation over the shared
+store, not merely a comparison between two occurrence-view evaluators. -/
+theorem executable_variable_derivation (program : SpaceSemantics.Program)
+    (view : Program) (state : Effects.State)
+    (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst) (name : String) :
+    DeclarativeSpec.Runs program { state, control := .evaluate bindings (.var name) }
+      (.complete state (evalIn view bindings.lookup (.var name)) [] []) :=
+  (Eval.completed_derivation_iff_path program _ state _ [] []).mpr
+    (executable_variable_matches_view program view state bindings name)
 
 /-- Evaluation as code: every occurrence is decided from the term itself.
 Applied to a term into which values were substituted, this is the planless

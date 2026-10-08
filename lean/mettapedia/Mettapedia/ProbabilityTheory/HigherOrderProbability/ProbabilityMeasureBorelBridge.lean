@@ -98,9 +98,9 @@ private theorem measurable_apply_closed
     @Measurable (FiniteMeasure Ω) ℝ≥0∞ (borel (FiniteMeasure Ω)) _
       (fun μ : FiniteMeasure Ω => (μ : Measure Ω) F) := by
   -- Work with the Borel measurable space on `FiniteMeasure Ω`.
-  letI : MeasurableSpace (FiniteMeasure Ω) := borel (FiniteMeasure Ω)
-  haveI : BorelSpace (FiniteMeasure Ω) := ⟨rfl⟩
-  haveI : OpensMeasurableSpace (FiniteMeasure Ω) := inferInstance
+  let : MeasurableSpace (FiniteMeasure Ω) := borel (FiniteMeasure Ω)
+  have : BorelSpace (FiniteMeasure Ω) := ⟨rfl⟩
+  have : OpensMeasurableSpace (FiniteMeasure Ω) := inferInstance
   exact (UpperSemicontinuous.measurable
     (f := fun μ : FiniteMeasure Ω => (μ : Measure Ω) F)
     (upperSemicontinuous_apply_closed (Ω := Ω) F hF))
@@ -110,9 +110,9 @@ private theorem measurable_coe_finiteMeasure_of_closed
     @Measurable (FiniteMeasure Ω) (Measure Ω) (borel (FiniteMeasure Ω)) _
       (fun μ : FiniteMeasure Ω => (μ : Measure Ω)) := by
   -- Work with the Borel measurable space on `FiniteMeasure Ω`.
-  letI : MeasurableSpace (FiniteMeasure Ω) := borel (FiniteMeasure Ω)
-  haveI : BorelSpace (FiniteMeasure Ω) := ⟨rfl⟩
-  haveI : OpensMeasurableSpace (FiniteMeasure Ω) := inferInstance
+  let : MeasurableSpace (FiniteMeasure Ω) := borel (FiniteMeasure Ω)
+  have : BorelSpace (FiniteMeasure Ω) := ⟨rfl⟩
+  have : OpensMeasurableSpace (FiniteMeasure Ω) := inferInstance
   refine (Measurable.measure_of_isPiSystem
     (μ := fun μ : FiniteMeasure Ω => (μ : Measure Ω))
     (S := {s : Set Ω | IsClosed s})
@@ -180,10 +180,10 @@ theorem borelSpace_probabilityMeasure_of_levyProkhorov_ofMeasure_measurable
         LevyProkhorov.ofMeasure) :
     BorelSpace (ProbabilityMeasure Ω) := by
   let X := LevyProkhorov (ProbabilityMeasure Ω)
-  letI : PseudoMetricSpace X :=
+  let : PseudoMetricSpace X :=
     MeasureTheory.LevyProkhorov.instPseudoMetricSpaceProbabilityMeasure
-  letI : MeasurableSpace X := borel X
-  letI : BorelSpace X := ⟨rfl⟩
+  let : MeasurableSpace X := borel X
+  let : BorelSpace X := ⟨rfl⟩
   let e : ProbabilityMeasure Ω → X := LevyProkhorov.ofMeasure
   have hinst_le_borel :
       (inferInstance : MeasurableSpace (ProbabilityMeasure Ω)) ≤
@@ -268,7 +268,7 @@ theorem standardBorelSpace_probabilityMeasure_of_levyProkhorov_ofMeasure_measura
         (borel (LevyProkhorov (ProbabilityMeasure Ω)))
         LevyProkhorov.ofMeasure) :
     StandardBorelSpace (ProbabilityMeasure Ω) := by
-  letI : BorelSpace (ProbabilityMeasure Ω) :=
+  let : BorelSpace (ProbabilityMeasure Ω) :=
     borelSpace_probabilityMeasure_of_levyProkhorov_ofMeasure_measurable
       (Ω := Ω) hOfMeasure
   infer_instance
@@ -296,7 +296,7 @@ theorem standardBorelSpace_probabilityMeasure_of_borel_le_inst
     (hborel : borel (ProbabilityMeasure Ω) ≤
       (inferInstance : MeasurableSpace (ProbabilityMeasure Ω))) :
     StandardBorelSpace (ProbabilityMeasure Ω) := by
-  letI : BorelSpace (ProbabilityMeasure Ω) :=
+  let : BorelSpace (ProbabilityMeasure Ω) :=
     borelSpace_probabilityMeasure_of_borel_le_inst (Ω := Ω) hborel
   infer_instance
 
@@ -407,7 +407,7 @@ then `ProbabilityMeasure Ω` is standard Borel via the finite→probability Bore
 theorem standardBorelSpace_probabilityMeasure_of_finiteMeasure
     [BorelSpace (FiniteMeasure Ω)] [PolishSpace (ProbabilityMeasure Ω)] :
     StandardBorelSpace (ProbabilityMeasure Ω) := by
-  letI : BorelSpace (ProbabilityMeasure Ω) :=
+  let : BorelSpace (ProbabilityMeasure Ω) :=
     borelSpace_probabilityMeasure_of_finiteMeasure (Ω := Ω)
   infer_instance
 

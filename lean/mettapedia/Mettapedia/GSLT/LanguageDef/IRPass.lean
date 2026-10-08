@@ -31,7 +31,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.IRPass
 
-open CategoryTheory
+open _root_.CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.HennessyMilner

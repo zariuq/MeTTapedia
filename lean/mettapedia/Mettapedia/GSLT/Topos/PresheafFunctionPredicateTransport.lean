@@ -47,7 +47,7 @@ change.  Nothing here should be read as licensing that widening.
 - Jacobs, "Categorical Logic and Type Theory" (1999), Ch. 1.
 -/
 
-open CategoryTheory MonoidalCategory CartesianMonoidalCategory
+open _root_.CategoryTheory MonoidalCategory CartesianMonoidalCategory
 
 universe u
 

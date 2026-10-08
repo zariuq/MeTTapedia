@@ -62,7 +62,7 @@ count, and none of it is a statement about compiled code.
 
 set_option autoImplicit false
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 namespace Mettapedia.GSLT.Distinction.LevelAccounts
 

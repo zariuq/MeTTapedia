@@ -46,7 +46,7 @@ The comparison is the place to record that boundary, not to hide it.
 - Mac Lane–Moerdijk, "Sheaves in Geometry and Logic" (1994), Ch. I.3.
 -/
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 universe w v u
 

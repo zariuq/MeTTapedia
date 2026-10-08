@@ -14,6 +14,8 @@ namespace Mettapedia.ProbabilityTheory
 
 universe u v
 
+-- Object and morphism universes are independent, as for Category itself.
+set_option linter.checkUnivs false in
 /-- Core Markov-category style interface used by bridge layers.
 
 `comp f g` is "first `f`, then `g`" (category-style order). -/

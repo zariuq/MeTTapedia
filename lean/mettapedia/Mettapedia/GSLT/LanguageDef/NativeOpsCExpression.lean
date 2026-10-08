@@ -71,6 +71,12 @@ mutual
         | .punctuation ['+', '+'] :: rest => do
             let (operand, afterOperand) ← prefix? fuel names rest
             some (.unary .increment operand, afterOperand)
+        | .punctuation ['-', '-'] :: rest => do
+            let (operand, afterOperand) ← prefix? fuel names rest
+            some (.unary .decrement operand, afterOperand)
+        | .punctuation ['-'] :: rest => do
+            let (operand, afterOperand) ← prefix? fuel names rest
+            some (.unary .negate operand, afterOperand)
         | .punctuation ['('] :: rest =>
             match cType? names rest with
             | some (type, .punctuation [')'] :: afterType) =>
@@ -138,6 +144,10 @@ mutual
         match fuel with
         | 0 => none
         | fuel + 1 => postfix? fuel names (.postIncrement base) rest
+    | .punctuation ['-', '-'] :: rest =>
+        match fuel with
+        | 0 => none
+        | fuel + 1 => postfix? fuel names (.postDecrement base) rest
     | .punctuation ['.'] :: .identifier field :: rest =>
         match fuel with
         | 0 => none
@@ -268,5 +278,43 @@ theorem postfix_increment_is_not_prefix : expressionText? exampleTypes "i++".toL
 
 theorem postfix_increment_precedes_addition : expressionText? exampleTypes "i++ + j".toList =
     some (.binary .add (.postIncrement (.identifier ['i'])) (.identifier ['j'])) := by cbv
+
+theorem prefix_decrement_retains_field_location : expressionText? exampleTypes
+    "--store->lease_length".toList =
+      some (.unary .decrement
+        (.field (.identifier "store".toList) "lease_length".toList true)) := by cbv
+
+theorem indexed_prefix_decrement_is_retained : expressionText? exampleTypes
+    "store->leases[--store->lease_length]".toList =
+      some (.index (.field (.identifier "store".toList) "leases".toList true)
+        (.unary .decrement
+          (.field (.identifier "store".toList) "lease_length".toList true))) := by cbv
+
+theorem postfix_decrement_is_distinct : expressionText? exampleTypes "i--".toList =
+    some (.postDecrement (.identifier ['i'])) := by cbv
+
+theorem postfix_decrement_precedes_subtraction : expressionText? exampleTypes
+    "i-- - j".toList =
+      some (.binary .sub (.postDecrement (.identifier ['i'])) (.identifier ['j'])) := by cbv
+
+theorem unary_minus_retains_signed_decimal :
+    expressionText? exampleTypes "-1".toList = some (.unary .negate (.decimal 1)) := by cbv
+
+theorem unary_minus_precedes_multiplication :
+    expressionText? exampleTypes "-1 * 2u".toList =
+      some (.binary .mul (.unary .negate (.decimal 1)) (.unsignedInteger 2)) := by cbv
+
+theorem separated_minus_is_not_decrement :
+    expressionText? exampleTypes "- -1".toList =
+      some (.unary .negate (.unary .negate (.decimal 1))) := by cbv
+
+theorem incomplete_unary_minus_refused :
+    expressionText? exampleTypes "-".toList = none := by cbv
+
+theorem incomplete_prefix_decrement_refused :
+    expressionText? exampleTypes "--".toList = none := by cbv
+
+theorem incomplete_index_decrement_refused :
+    expressionText? exampleTypes "store->leases[--]".toList = none := by cbv
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC

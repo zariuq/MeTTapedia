@@ -37,8 +37,8 @@ For a morphism f : P → Q in Psh(C):
 
 namespace Mettapedia.GSLT.Topos
 
-open CategoryTheory
-open CategoryTheory.Limits
+open _root_.CategoryTheory
+open _root_.CategoryTheory.Limits
 open Opposite
 open Mettapedia.GSLT.Core
 

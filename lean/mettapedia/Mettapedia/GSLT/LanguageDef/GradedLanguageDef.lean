@@ -224,7 +224,7 @@ structure GradedReductionRespectsEquationsUsing
 namespace GradedReductionRespectsEquationsUsing
 
 /-- Rule-stable respect forgets to plain respect. -/
-def toBase {relations : RelationEnv} {language : LanguageDef}
+theorem toBase {relations : RelationEnv} {language : LanguageDef}
     (laws : GradedReductionRespectsEquationsUsing relations language) :
     ReductionRespectsEquationsUsing relations language where
   source := by
@@ -245,7 +245,7 @@ def toBase {relations : RelationEnv} {language : LanguageDef}
 
 /-- For an equation-free presentation the generated equivalence is syntactic
 equality, so rule-stable respect is free. -/
-def of_equation_free (relations : RelationEnv) {language : LanguageDef}
+theorem of_equation_free (relations : RelationEnv) {language : LanguageDef}
     (free : language.isEquationFree = true) :
     GradedReductionRespectsEquationsUsing relations language where
   source := by
@@ -270,7 +270,7 @@ abbrev GradedReductionRespectsEquations (language : LanguageDef) :=
 
 namespace GradedReductionRespectsEquations
 
-def of_equation_free {language : LanguageDef}
+theorem of_equation_free {language : LanguageDef}
     (free : language.isEquationFree = true) :
     GradedReductionRespectsEquations language :=
   GradedReductionRespectsEquationsUsing.of_equation_free RelationEnv.empty

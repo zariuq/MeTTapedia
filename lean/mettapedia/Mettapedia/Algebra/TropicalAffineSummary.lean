@@ -1,5 +1,6 @@
 import Mettapedia.Algebra.AffineMonoid
 import Mathlib.Algebra.Tropical.Basic
+import Mathlib.Data.Rat.Defs
 
 /-!
 # Min-plus affine summaries
@@ -12,6 +13,9 @@ tropical multiplication is `+`. The affine summary `⟨trop a, trop b⟩` theref
 of `Mettapedia.Algebra.AffineMonoid` applies to it: the ordered monoid, the right action, the
 homogeneous `2 × 2` matrices `!![trop a, trop b; 0, 1]` and the fold, bracketing and scan laws.
 
+* `TropicalCoefficient.Value`: an executable tagged representation with a distinct infinity,
+  minimum for alternatives and addition for sequential costs. Its injective interpretation
+  agrees with `Tropical (WithTop G)`; no finite sentinel supplies its additive identity.
 * `act_minPlus`: the action on every state, `⊤` included.
 * `minPlus_mul`: execution-order composition,
   `minPlus a b * minPlus a' b' = minPlus (a + a') (min (b + a') b')`.
@@ -192,3 +196,154 @@ theorem isIdempotentElem_minPlus_top_iff (a : G) : IsIdempotentElem (minPlus a �
 end MinPlus
 
 end Mettapedia.Algebra.AffineSummary
+
+namespace Mettapedia.Algebra.TropicalCoefficient
+
+universe u
+
+/-- Tagged exact costs keep unreachable infinity distinct from every finite cost. -/
+inductive Value (G : Type u) where
+  | infinity
+  | finite : G → Value G
+  deriving DecidableEq, Repr
+
+variable {G : Type u}
+
+def alternative [LinearOrder G] : Value G → Value G → Value G
+  | .infinity, right => right
+  | left, .infinity => left
+  | .finite left, .finite right => .finite (min left right)
+
+def sequential [Add G] : Value G → Value G → Value G
+  | .finite left, .finite right => .finite (left + right)
+  | _, _ => .infinity
+
+def toWithTop : Value G → WithTop G
+  | .infinity => ⊤
+  | .finite value => value
+
+def fromWithTop : WithTop G → Value G
+  | none => .infinity
+  | some value => .finite value
+
+@[simp] theorem from_to (value : Value G) :
+    fromWithTop (toWithTop value) = value := by
+  cases value <;> rfl
+
+@[simp] theorem to_from (value : WithTop G) :
+    toWithTop (fromWithTop value) = value := by
+  cases value <;> rfl
+
+theorem toWithTop_injective : Function.Injective (toWithTop (G := G)) := by
+  intro left right same
+  simpa using congrArg fromWithTop same
+
+def interpret (value : Value G) : Tropical (WithTop G) :=
+  Tropical.trop (toWithTop value)
+
+theorem interpret_injective : Function.Injective (interpret (G := G)) :=
+  Tropical.trop_injective.comp toWithTop_injective
+
+@[simp] theorem interpret_infinity :
+    interpret (.infinity : Value G) = 0 := rfl
+
+@[simp] theorem interpret_finite (value : G) :
+    interpret (.finite value) = Tropical.trop (value : WithTop G) := rfl
+
+@[simp] theorem interpret_unit [Zero G] :
+    interpret (.finite (0 : G)) = 1 := by
+  simp [interpret, toWithTop]
+
+theorem alternative_interpret [LinearOrder G] (left right : Value G) :
+    interpret (alternative left right) = interpret left + interpret right := by
+  cases left <;> cases right <;>
+    apply Tropical.untrop_injective <;>
+    simp [alternative, interpret, toWithTop, Tropical.untrop_add]
+
+theorem sequential_interpret [Add G] (left right : Value G) :
+    interpret (sequential left right) = interpret left * interpret right := by
+  cases left <;> cases right <;>
+    apply Tropical.untrop_injective <;>
+    simp [sequential, interpret, toWithTop, Tropical.untrop_mul, WithTop.coe_add]
+
+section Laws
+
+theorem alternative_associative [LinearOrder G] (first second third : Value G) :
+    alternative (alternative first second) third =
+      alternative first (alternative second third) := by
+  cases first <;> cases second <;> cases third <;> simp [alternative, min_assoc]
+
+theorem alternative_commutative [LinearOrder G] (left right : Value G) :
+    alternative left right = alternative right left := by
+  cases left <;> cases right <;> simp [alternative, min_comm]
+
+theorem alternative_idempotent [LinearOrder G] (value : Value G) :
+    alternative value value = value := by
+  cases value <;> simp [alternative]
+
+theorem alternative_infinity [LinearOrder G] (value : Value G) :
+    alternative .infinity value = value ∧ alternative value .infinity = value := by
+  cases value <;> exact ⟨rfl, rfl⟩
+
+theorem sequential_associative [AddSemigroup G] (first second third : Value G) :
+    sequential (sequential first second) third =
+      sequential first (sequential second third) := by
+  cases first <;> cases second <;> cases third <;> simp [sequential, add_assoc]
+
+theorem sequential_commutative [AddCommMonoid G] (left right : Value G) :
+    sequential left right = sequential right left := by
+  cases left <;> cases right <;> simp [sequential, add_comm]
+
+theorem sequential_unit [AddZeroClass G] (value : Value G) :
+    sequential (.finite 0) value = value ∧ sequential value (.finite 0) = value := by
+  cases value <;> simp [sequential]
+
+theorem sequential_infinity [Add G] (value : Value G) :
+    sequential .infinity value = .infinity ∧ sequential value .infinity = .infinity := by
+  cases value <;> exact ⟨rfl, rfl⟩
+
+theorem sequential_distributes_left [AddCancelCommMonoid G] [LinearOrder G]
+    [IsOrderedAddMonoid G] (first second third : Value G) :
+    sequential first (alternative second third) =
+      alternative (sequential first second) (sequential first third) := by
+  apply interpret_injective
+  simp only [sequential_interpret, alternative_interpret, mul_add]
+
+theorem sequential_distributes_right [AddCancelCommMonoid G] [LinearOrder G]
+    [IsOrderedAddMonoid G] (first second third : Value G) :
+    sequential (alternative first second) third =
+      alternative (sequential first third) (sequential second third) := by
+  apply interpret_injective
+  simp only [sequential_interpret, alternative_interpret, add_mul]
+
+theorem infinity_not_finite (value : G) :
+    (.infinity : Value G) ≠ .finite value := by
+  intro impossible
+  cases impossible
+
+end Laws
+
+/-- A finite sentinel cannot be the additive identity of unbounded exact costs. -/
+theorem finite_sentinel_not_identity (sentinel : ℚ) :
+    alternative (.finite sentinel) (.finite (sentinel + 1)) ≠
+      .finite (sentinel + 1) := by
+  have greater : sentinel < sentinel + 1 := lt_add_of_pos_right sentinel (by decide)
+  simp only [alternative, min_eq_left greater.le]
+  intro same
+  exact (ne_of_lt greater) (Value.finite.inj same)
+
+theorem exact_rational_sequence_control :
+    sequential (.finite (3 / 7 : ℚ)) (.finite (1 / 3)) = .finite (16 / 21) := by
+  decide +kernel
+
+theorem infinity_control :
+    alternative (.infinity : Value ℚ) (.finite 2000000) = .finite 2000000 ∧
+      sequential .infinity (.finite (3 / 7 : ℚ)) = .infinity ∧
+      alternative (.finite (3 / 7 : ℚ)) (.finite (1 / 3)) = .finite (1 / 3) := by
+  decide +kernel
+
+theorem finite_costs_do_not_multiply :
+    sequential (.finite (3 / 7 : ℚ)) (.finite (1 / 3)) ≠ .finite (1 / 7) := by
+  decide +kernel
+
+end Mettapedia.Algebra.TropicalCoefficient

@@ -17,7 +17,7 @@ import Mathlib.Analysis.SpecificLimits.Basic
 
 namespace Mettapedia.CategoryTheory
 
-open CategoryTheory MeasureTheory Filter
+open _root_.Mettapedia.CategoryTheory MeasureTheory Filter
 open scoped ENNReal
 
 -- ============================================================

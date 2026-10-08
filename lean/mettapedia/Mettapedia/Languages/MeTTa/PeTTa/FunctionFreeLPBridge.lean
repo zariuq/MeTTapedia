@@ -2,6 +2,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Logic.LP.Semantics
 import Mettapedia.Logic.LP.FunctionFree
 import Mettapedia.OSLF.MeTTaIL.Substitution
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # Ground PeTTa ↔ Datalog (Function-Free LP) Bridge

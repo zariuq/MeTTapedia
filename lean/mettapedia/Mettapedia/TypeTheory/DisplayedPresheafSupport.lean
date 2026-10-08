@@ -14,7 +14,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.DisplayedPresheafSupport
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.Computability.ComputationalTrinity
 open Mettapedia.GSLT.Topos
 open Mettapedia.TypeTheory.DisplayedPresheafTransport

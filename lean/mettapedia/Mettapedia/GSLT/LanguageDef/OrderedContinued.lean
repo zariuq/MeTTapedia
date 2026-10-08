@@ -11,7 +11,7 @@ construction; Cost layers use it as their ambient source and target category.
 
 namespace Mettapedia.GSLT.LanguageDef
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.PatternCode
 
 namespace CIGSLT

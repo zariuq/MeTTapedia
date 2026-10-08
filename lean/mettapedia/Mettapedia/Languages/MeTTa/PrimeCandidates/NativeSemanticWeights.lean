@@ -2,10 +2,15 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeWeightedControls
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeOperationTheory
 import Mettapedia.GSLT.Dynamics.WeightedResumptionControls
 import Mettapedia.GSLT.Scope.WeightedReadout
+import Mettapedia.GSLT.Core.WriterGSLT
 import Mettapedia.Algebra.SharedCoefficientLedgerControls
 import Mettapedia.Algorithms.OrdinalPriority
 import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeOrdinalAdvice
 import Mettapedia.Algorithms.CertifiedRealCircuit
+import Mettapedia.Algebra.TropicalAffineSummary
+import Mettapedia.Algebra.FiniteCoordinateBuffer
+import Mettapedia.PLN.Bridges.GSLT.EvidenceResolutionAlgebra
+import Mettapedia.PLN.Bridges.GSLT.EvidenceRevisionSufficiency
 import Mettapedia.Machines.NativeCostLedger
 import Mettapedia.Algebra.ParallelCrossover
 import Mettapedia.Languages.MeTTa.CeTTaNativeCostCorrespondence
@@ -30,6 +35,27 @@ finite-arity operation theory. Coefficient erasure recovers ordinary execution;
 ordered factor ledgers preserve sharing; declared readouts obey the common
 scope-descent boundary. Exact rational complex coefficients use Mathlib's
 quadratic algebra, with cancellation and future-interference controls.
+The partial finite Born readout preserves labels and occurrences, refuses zero
+norm, and proves nonnegative normalized probabilities with total one.
+Neutral grading reuses the common writer construction: every base step and
+finite run retains its original endpoint and unit coefficient. This algebra
+law applies to each dialect's own operational graph; compiled adapters keep
+their distinct source-correspondence obligations.
+
+Tagged min-plus coefficients use explicit infinity and exact finite costs;
+no finite sentinel is their additive identity. Coordinate operations retain
+shape and order, including rectangular contraction and noncommuting matrices.
+The shared finite-choice library now compares the recursive Pareto scan with
+the independent undominated-member predicate. Its output is a sublist of the
+complete input packets, retaining all undominated duplicate occurrences and
+ties. Permuting a completed input bag only permutes that output bag. The
+coordinate loop realizes strict componentwise dominance on fixed-shape finite
+functions; mismatched shapes cannot dominate through a truncated comparison.
+These finite readout laws do not certify a prefix against future dominators.
+Nonnegative rational rates have no cancellation; exact real circuits obey
+the real-algebra laws after interpretation while interval comparisons may
+remain unresolved. PLN evidence retains its tensor, additive revision and
+projection boundaries, with independence required for evidential reuse.
 
 Ordinal advice decodes completed native scores into checked finite Cantor
 sums below `ω^ω`. Column scanning agrees with the independent monomial order
@@ -119,6 +145,16 @@ Native classification and serial transport,
 external producer boundaries and complete runtime replay retain separate
 correspondence obligations.
 
+Fresh names may vary across controllers. A common injective renaming preserves
+the complete shared-prefix comparison, successful and refused ledger merges,
+chronological appending and ordered monoid interpretation. When identities and
+dependencies share one name space, one map preserves their cross-field aliases.
+Scoped read transport additionally requires preservation of the claim map;
+renaming productions alone can resurrect an already handled contribution.
+Independent controls expose split shared identities, coalesced factors, changed
+dependencies, lost claims and reordered matrix factors. Literal program data
+does not gain a renaming permission from its constructor spelling.
+
 The actual receipt wrapper is admitted with its declared services. Under a
 state-preserving inactive query it returns zero, restores the complete caller
 state and never invokes observed accounting. Its enabled branch forwards the
@@ -202,6 +238,12 @@ enumeration preserves the entire contribution bag, including duplicate and
 zero-weight leaves, under every lawful agenda. Its selected-node count is
 distinct from unfolding depth and from native instruction cost. Enumerating
 a cut does not turn its pending leaves into completed source answers.
+For source trees certified as finite, the existing certificate builder derives
+both the exhaustion allowance and the completed occurrence bag from actual
+successors. The authored adapter then compares arbitrary completed stateful
+controllers without a global termination or finite-denotation premise. A
+nested native grade/predicate computation supplies a checked certificate and
+an all-controller instance; an insufficient certificate depth is refused.
 The authored native adapter preserves nested caller agreement in live states,
 parked results and retained recordings. The existing completion observations
 continue to distinguish an exhausted agenda from unresolved parked work.

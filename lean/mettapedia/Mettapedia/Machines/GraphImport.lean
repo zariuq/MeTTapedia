@@ -238,14 +238,8 @@ private theorem runMany_valid (graph : DemandSummary.Graph (Label V L))
     DemandSummary.Valid graph (algebra image) (fun _ => none)
       (runMany graph image roots)
       (roots.map (DemandSummary.eager graph (algebra image))) (roots.sum + 1) := by
-  apply DemandSummary.sequence_valid
-  · intro root member cache sound
-    have one := DemandSummary.demand_valid graph (algebra image) root cache sound
-    refine { one with bounded := ?_ }
-    intro node computed
-    exact (one.bounded node computed).trans_le
-      (Nat.add_le_add_right (List.le_sum_of_mem member) 1)
-  · exact DemandSummary.empty_sound _ _
+  exact DemandSummary.sequence_demand_valid graph (algebra image) roots (fun _ => none)
+    (DemandSummary.empty_sound _ _)
 
 /-- The reference independently unfolds and substitutes each requested root.
 List equality retains duplicate roots and the order of all child edges. -/
@@ -284,17 +278,8 @@ theorem runManyRequests_le_reachable_edges (graph : DemandSummary.Graph (Label V
     runManyRequests graph image roots ≤ roots.length +
       ∑ node ∈ roots.toFinset.biUnion (DemandSummary.reachable graph),
         (graph.children node).length := by
-  rw [runManyRequests_eq]
-  apply Nat.add_le_add_left
-  unfold DemandSummary.edgeCount
-  rw [← List.sum_toFinset _ (runMany_computes_each_node_once graph image roots)]
-  apply Finset.sum_le_sum_of_subset
-  intro node member
-  have computed : node ∈ (runMany graph image roots).computed := by simpa using member
-  obtain ⟨root, root_mem, cache, reached⟩ :=
-    DemandSummary.sequence_computed_source _ _ _ node computed
-  exact Finset.mem_biUnion.mpr ⟨root, by simpa using root_mem,
-    DemandSummary.demand_computed_reachable graph (algebra image) root cache node reached⟩
+  exact DemandSummary.sequenceRequests_le_reachable_edges graph (algebra image) roots
+    (fun _ => none) (DemandSummary.empty_sound _ _)
 
 end Terms
 

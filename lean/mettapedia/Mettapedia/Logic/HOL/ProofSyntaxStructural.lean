@@ -190,7 +190,7 @@ theorem mono_nodeCount {Δ' : List (Formula Const Γ)}
   | _ =>
       simp only [mono]
       change 1 + _ = 1 + _
-      simp_all [nodeCount, Fin.sum_univ_succ, weakenHyps]
+      simp_all [nodeCount, weakenHyps]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 800000 in
@@ -207,7 +207,7 @@ theorem rename_nodeCount {Ξ : Ctx Base} (ρ : Rename Base Γ Ξ)
   | _ =>
       simp only [rename, nodeCount_castIndices]
       change 1 + _ = 1 + _
-      simp_all [nodeCount, Fin.sum_univ_succ, weakenHyps]
+      simp_all [nodeCount, weakenHyps]
 
 /-! ## Simultaneous substitution of object terms -/
 

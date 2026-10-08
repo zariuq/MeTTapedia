@@ -40,7 +40,7 @@ positive result below is stated for presheaf morphisms only.
 - Johnstone, "Sketches of an Elephant" (2002), A1.4.
 -/
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 universe w v u
 

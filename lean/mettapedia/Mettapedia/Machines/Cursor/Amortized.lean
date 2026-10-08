@@ -106,4 +106,13 @@ theorem Amortized.comp {third : Provider P}
   dsimp only [Hom.comp] at a b ⊢
   omega
 
+variable (C : Client (P := P) (Return := Return))
+
+/-- A constant retained potential stays constant at both completed and suspended outcomes. -/
+@[simp] theorem outcomePotential_const (amount : Nat) {base : Base}
+    (value : Outcome source C base) :
+    outcomePotential C (fun _ => amount) value = amount := by
+  cases value <;> rfl
+
+
 end Mettapedia.Machines.Cursor

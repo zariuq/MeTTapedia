@@ -1,3 +1,5 @@
+import Lean.Elab.Tactic.Omega
+
 /-!
 # Signature-indexed abstract binding trees
 
@@ -166,6 +168,134 @@ theorem Fields.conforms_lift {Head : Type} (signature : Head → List Nat)
           simp [Fields.lift, Fields.conforms,
             conforms_lift signature (cutoff + depth) amount term,
             Fields.conforms_lift signature expected cutoff amount rest]
+
+end
+
+mutual
+
+/-- A well-scoped tree remains supported in a larger ambient context. -/
+theorem supportedAt_mono {Head : Type} (lower upper : Nat)
+    (within : lower ≤ upper) (term : Term Head)
+    (supported : supportedAt lower term = true) :
+    supportedAt upper term = true := by
+  cases term with
+  | idx index =>
+      simp only [supportedAt, decide_eq_true_eq] at supported ⊢
+      exact Nat.lt_of_lt_of_le supported within
+  | node head fields =>
+      exact Fields.supportedAt_mono lower upper within fields supported
+
+theorem Fields.supportedAt_mono {Head : Type} (lower upper : Nat)
+    (within : lower ≤ upper) (fields : Fields Head)
+    (supported : Fields.supportedAt lower fields = true) :
+    Fields.supportedAt upper fields = true := by
+  cases fields with
+  | nil => rfl
+  | cons depth term rest =>
+      simp only [Fields.supportedAt, Bool.and_eq_true] at supported ⊢
+      exact ⟨supportedAt_mono (lower + depth) (upper + depth)
+          (Nat.add_le_add_right within depth) term supported.1,
+        Fields.supportedAt_mono lower upper within rest supported.2⟩
+
+end
+
+mutual
+
+/-- Shifting above the complete support cannot alter a tree. In particular,
+closed replacements need no physical index shift under a binder. -/
+theorem lift_of_supported {Head : Type} (cutoff amount : Nat)
+    (term : Term Head) (supported : supportedAt cutoff term = true) :
+    lift cutoff amount term = term := by
+  cases term with
+  | idx index =>
+      simp only [supportedAt, decide_eq_true_eq] at supported
+      simp [lift, supported]
+  | node head fields =>
+      simp only [lift, Fields.lift_of_supported cutoff amount fields supported]
+
+theorem Fields.lift_of_supported {Head : Type} (cutoff amount : Nat)
+    (fields : Fields Head) (supported : Fields.supportedAt cutoff fields = true) :
+    Fields.lift cutoff amount fields = fields := by
+  cases fields with
+  | nil => rfl
+  | cons depth term rest =>
+      simp only [Fields.supportedAt, Bool.and_eq_true] at supported
+      simp only [Fields.lift,
+        lift_of_supported (cutoff + depth) amount term supported.1,
+        Fields.lift_of_supported cutoff amount rest supported.2]
+
+end
+
+mutual
+
+/-- Opening the outermost ambient parameter with closed syntax removes
+exactly that parameter. Field-local binders remain in scope. -/
+theorem supportedAt_instantiate_outermost {Head : Type} (depth : Nat)
+    (replacement term : Term Head)
+    (closed : supportedAt 0 replacement = true)
+    (supported : supportedAt (depth + 1) term = true) :
+    supportedAt depth (instantiateAt depth replacement term) = true := by
+  cases term with
+  | idx index =>
+      simp only [supportedAt, decide_eq_true_eq] at supported
+      by_cases below : index < depth
+      · simp [instantiateAt, below, supportedAt]
+      · have equal : index = depth := by omega
+        simp only [instantiateAt, if_neg below, if_pos equal]
+        rw [lift_of_supported 0 depth replacement closed]
+        exact supportedAt_mono 0 depth (Nat.zero_le depth) replacement closed
+  | node head fields =>
+      exact Fields.supportedAt_instantiate_outermost depth replacement fields closed supported
+
+theorem Fields.supportedAt_instantiate_outermost {Head : Type} (depth : Nat)
+    (replacement : Term Head) (fields : Fields Head)
+    (closed : supportedAt 0 replacement = true)
+    (supported : Fields.supportedAt (depth + 1) fields = true) :
+    Fields.supportedAt depth (Fields.instantiateAt depth replacement fields) = true := by
+  cases fields with
+  | nil => rfl
+  | cons fieldDepth term rest =>
+      simp only [Fields.supportedAt, Bool.and_eq_true] at supported
+      simp only [Fields.instantiateAt, Fields.supportedAt, Bool.and_eq_true]
+      exact ⟨supportedAt_instantiate_outermost (depth + fieldDepth) replacement term
+          closed (by simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using supported.1),
+        Fields.supportedAt_instantiate_outermost depth replacement rest closed supported.2⟩
+
+end
+
+mutual
+
+/-- Instantiation preserves a structural signature when its replacement
+conforms to the same signature. -/
+theorem conforms_instantiateAt {Head : Type} (signature : Head → List Nat)
+    (depth : Nat) (replacement term : Term Head)
+    (valid : conforms signature replacement = true) :
+    conforms signature (instantiateAt depth replacement term) = conforms signature term := by
+  cases term with
+  | idx index =>
+      simp only [instantiateAt]
+      split
+      · rfl
+      · split
+        · simpa [conforms] using (conforms_lift signature 0 depth replacement).trans valid
+        · rfl
+  | node head fields =>
+      exact Fields.conforms_instantiateAt signature (signature head) depth replacement fields valid
+
+theorem Fields.conforms_instantiateAt {Head : Type} (signature : Head → List Nat)
+    (expected : List Nat) (depth : Nat) (replacement : Term Head)
+    (fields : Fields Head) (valid : conforms signature replacement = true) :
+    Fields.conforms signature expected (Fields.instantiateAt depth replacement fields) =
+      Fields.conforms signature expected fields := by
+  cases fields with
+  | nil => cases expected <;> rfl
+  | cons fieldDepth term rest =>
+      cases expected with
+      | nil => rfl
+      | cons expectedDepth expected =>
+          simp only [Fields.instantiateAt, Fields.conforms,
+            conforms_instantiateAt signature (depth + fieldDepth) replacement term valid,
+            Fields.conforms_instantiateAt signature expected depth replacement rest valid]
 
 end
 

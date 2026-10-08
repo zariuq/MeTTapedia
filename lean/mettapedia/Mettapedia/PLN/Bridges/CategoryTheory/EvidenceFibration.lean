@@ -47,7 +47,7 @@ Grothendieck machinery from mathlib, which requires bicategories.
 
 namespace Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 
-open CategoryTheory
+open _root_.Mettapedia.PLN.Bridges.CategoryTheory
 open Mettapedia.CategoryTheory.LambdaTheories
 open Mettapedia.CategoryTheory.PLNInstance
 

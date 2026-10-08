@@ -31,7 +31,7 @@ separately, so they cannot drift apart from it.
   reindexing as an adjoint pair) and Ch. 5.
 -/
 
-open CategoryTheory MonoidalCategory CartesianMonoidalCategory
+open _root_.CategoryTheory MonoidalCategory CartesianMonoidalCategory
 
 universe u
 

@@ -57,6 +57,7 @@ Extensions and bridges:
 | `CommRule.lean` | Spice COMM with n-step lookahead (`SpiceCommReduction`, `spice_comm_preserves_reduces`) |
 | `PresentMoment.lean` | Present moment: external + internal channels |
 | `ParallelWave.lean` | Serializability for disjoint COMMs (`disjointComm_diamond`) |
+| `CommFootprint.lean` | COMM as a local bag rule: footprint certificate at its atom kinds, commutation of COMMs on disjoint kinds (`comm_certified`, `comm_commute`), competing receivers as the negative |
 | `RhometaReduction.lean` | Rhometta reduction layer: deferred MeTTa-at-COMM behavior without forking the rho reducer |
 | `RhometaDropObserver.lean` | Auxiliary Rhometta module reserved for future drop-observer proofs |
 | `Basic.lean` | Compact bridge-oriented executable rho model (entry-module convention, not a separate calculus) |

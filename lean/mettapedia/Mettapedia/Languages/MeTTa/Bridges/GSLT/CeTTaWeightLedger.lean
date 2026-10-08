@@ -1,4 +1,6 @@
 import Mettapedia.Algebra.SharedCoefficientLedger
+import Mettapedia.GSLT.Dynamics.WeightedBranchingResumption
+import Mettapedia.Machines.NativeCostLedger
 import Mettapedia.GSLT.LanguageDef.NativeOpsCNormalization
 import Mettapedia.GSLT.LanguageDef.NativeOpsCFunctionComposition
 import Mettapedia.GSLT.LanguageDef.NativeOpsReferenceFieldLowering
@@ -19,7 +21,12 @@ The record layout and live borrowed cells are explicit boundaries. The
 not establish that contract. Fresh parameter storage is allocated and released
 in the target model, preserving the whole caller state. The service's compiled
 implementation, physical layout and concurrent memory are separate obligations.
-This is function correspondence, not whole-ledger or ISO C compiler refinement.
+The readout section connects chronological native factor records and scoped
+claims to the common resumable snapshot fold. Its normalization service and
+complete task carrier are explicit parameters. A callback may change the
+whole supplied world; a pure monoid interpretation is a separate instance.
+These models and finite native service comparisons do not establish whole
+compiled-function or ISO C compiler refinement.
 -/
 
 set_option autoImplicit false
@@ -941,5 +948,284 @@ theorem unequal_coefficients_have_no_true_result {heap : TargetHeapSemantics Nat
   cases flow
 
 end Controls
+
+/-! ## Scoped native readout through the common fold
+
+The factor fields use the native word representation. `Payload` contains the
+remaining observed world and its authority; this section neither reconstructs
+that payload from the coefficient nor supplies a new ownership framework.
+`Job` is the complete retained task, not just its printed expression. Native
+publication and scheduling have their own source-qualified comparisons.
+-/
+
+namespace Readout
+
+open Mettapedia.Algebra
+
+open Mettapedia.GSLT.Dynamics.WeightedBranchingResumption
+open Mettapedia.GSLT.Dynamics.WeightedResumption
+
+variable {V Payload Job Fault Grade : Type}
+
+abbrev World (V Payload : Type) :=
+  Payload × SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64)
+
+abbrev Cursor (V Job : Type) := SnapshotFold.Indexed (Factor V) Job
+abbrev ReferenceCursor (V Job : Type) := SnapshotFold.Listed (Factor V) Job
+
+/-- Validate the captured read world and claim the fixed source snapshot
+before even the algebra's unit is normalized. The payload is retained whole. -/
+def begin [DecidableEq V] (entry : SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64))
+    (received : World V Payload) (owner : BitVec 64) (unit : V)
+    (normalize : V → World V Payload → Job) :
+    Option (World V Payload × Cursor V Job) :=
+  match SharedCoefficientLedger.Scoped.handle? entry received.2 owner with
+  | none => none
+  | some (handled, selected) =>
+      let world := (received.1, handled)
+      some (world, ⟨selected, 0, normalize unit world⟩)
+
+/-- The reference selects a remaining list directly, rather than obtaining
+its state by projecting the indexed execution. It reuses the common claim map. -/
+def referenceBegin [DecidableEq V]
+    (entry : SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64))
+    (received : World V Payload) (owner : BitVec 64) (unit : V)
+    (normalize : V → World V Payload → Job) :
+    Option (World V Payload × ReferenceCursor V Job) :=
+  if SharedCoefficientLedger.Scoped.extendsCapture entry received.2 then
+    let selected := SharedCoefficientLedger.Scoped.selected entry.productions.length received.2
+    let world := (received.1, SharedCoefficientLedger.Scoped.handle entry.productions.length owner received.2)
+    some (world, ⟨selected, 0, selected, normalize unit world⟩)
+  else none
+
+theorem begin_comparison [DecidableEq V]
+    (entry : SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64))
+    (received : World V Payload) (owner : BitVec 64) (unit : V)
+    (normalize : V → World V Payload → Job) :
+    referenceBegin entry received owner unit normalize =
+      (begin entry received owner unit normalize).map
+        (fun prepared => (prepared.1, SnapshotFold.project prepared.2)) := by
+  simp only [referenceBegin, begin, SharedCoefficientLedger.Scoped.handle?]
+  split <;> simp [SnapshotFold.project]
+
+theorem begin_retains_world_and_job [DecidableEq V]
+    (entry : SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64))
+    (received : World V Payload) (owner : BitVec 64) (unit : V)
+    (normalize : V → World V Payload → Job)
+    {prepared : World V Payload × Cursor V Job}
+    (accepted : begin entry received owner unit normalize = some prepared) :
+    prepared.1.1 = received.1 ∧ prepared.1.2.productions = received.2.productions ∧
+      prepared.2.snapshot = SharedCoefficientLedger.Scoped.selected entry.productions.length received.2 ∧
+      prepared.2.index = 0 ∧ prepared.2.callback = normalize unit prepared.1 := by
+  by_cases extended : SharedCoefficientLedger.Scoped.extendsCapture entry received.2 = true
+  · simp only [begin, SharedCoefficientLedger.Scoped.handle?, extended, ite_true] at accepted
+    cases accepted
+    exact ⟨rfl, rfl, rfl, rfl, rfl⟩
+  · simp [begin, SharedCoefficientLedger.Scoped.handle?, extended] at accepted
+
+theorem begin_snapshot_claimed [DecidableEq V]
+    (entry : SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64))
+    (received : World V Payload) (owner : BitVec 64) (unit : V)
+    (normalize : V → World V Payload → Job)
+    {prepared : World V Payload × Cursor V Job}
+    (accepted : begin entry received owner unit normalize = some prepared)
+    {factor : Factor V} (selected : factor ∈ prepared.2.snapshot) :
+    prepared.1.2.claims factor.identity = some owner := by
+  by_cases extended : SharedCoefficientLedger.Scoped.extendsCapture entry received.2 = true
+  · simp only [begin, SharedCoefficientLedger.Scoped.handle?, extended, ite_true] at accepted
+    cases accepted
+    exact SharedCoefficientLedger.Scoped.selected_claimed _ _ _ selected
+  · simp [begin, SharedCoefficientLedger.Scoped.handle?, extended] at accepted
+
+/-- A prefix/claim refusal supplies no fold task. It is not an absent
+normalization reply and gives no licence to discard the native child packet. -/
+theorem refused_capture_does_not_start_fold [DecidableEq V]
+    (entry : SharedCoefficientLedger.Scoped (BitVec 64) (BitVec 64) V (BitVec 64))
+    (received : World V Payload) (owner : BitVec 64) (unit : V)
+    (normalize : V → World V Payload → Job)
+    (refused : SharedCoefficientLedger.Scoped.extendsCapture entry received.2 = false) :
+    begin entry received owner unit normalize = none := by
+  simp [begin, SharedCoefficientLedger.Scoped.handle?, refused]
+
+/-- The native multiplication expression keeps the left accumulator,
+right factor coefficient, descriptor and completed callback world. -/
+def multiplyJob (call : V → V → V → World V Payload → Job) (multiplication : V)
+    (value : V) (factor : Factor V) (world : World V Payload) : Job :=
+  call multiplication value factor.coefficient world
+
+abbrev source [One Grade] (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication : V) :=
+  SnapshotFold.indexedSource callback (multiplyJob call multiplication)
+
+abbrev referenceSource [One Grade]
+    (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication : V) :=
+  SnapshotFold.listedSource callback (multiplyJob call multiplication)
+
+theorem fold_step_comparison [One Grade]
+    (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication : V) (cursor : Cursor V Job) :
+    referenceSource callback call multiplication (SnapshotFold.project cursor) =
+      match source callback call multiplication cursor with
+      | .inl result => .inl result
+      | .inr alternatives =>
+          .inr (alternatives.map fun next => (SnapshotFold.project next.1, next.2)) := by
+  cases inspected : SnapshotFold.indexedSource callback (multiplyJob call multiplication) cursor <;>
+    simpa only [referenceSource, source, inspected] using
+      SnapshotFold.source_comparison callback (multiplyJob call multiplication) cursor
+
+theorem completed_callback_starts_next_job [One Grade]
+    (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication value : V)
+    (cursor : Cursor V Job) (world : World V Payload) (factor : Factor V)
+    (returned : callback cursor.callback = .inl (some (.inr value), world))
+    (next : cursor.snapshot[cursor.index]? = some factor) :
+    source callback call multiplication cursor =
+      .inr [(⟨cursor.snapshot, cursor.index + 1,
+        call multiplication value factor.coefficient world⟩, 1)] := by
+  simp [source, SnapshotFold.indexedSource, returned, next, multiplyJob]
+
+theorem finite_fold_comparison [Monoid Grade]
+    (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication : V)
+    (fuel : Nat) (cursor : Cursor V Job) :
+    contributions (referenceSource callback call multiplication) fuel (SnapshotFold.project cursor) =
+      (contributions (source callback call multiplication) fuel cursor).map
+        (fun leaf => (Sum.map id SnapshotFold.project leaf.1, leaf.2)) :=
+  SnapshotFold.contributions_comparison callback (multiplyJob call multiplication) fuel cursor
+
+structure WeightedValue (V : Type) where
+  subject : V
+  coefficient : V
+  provenance : List (Factor V)
+  deriving DecidableEq, Repr
+
+/-- Only a successful coefficient is wrapped as `Weighted`. Errors are
+forwarded with their complete postworld before another factor is consumed. -/
+def observe (subject : V) (result : SnapshotFold.Result (Factor V) V (World V Payload) Fault) :
+    (Fault ⊕ WeightedValue V) × World V Payload :=
+  (result.outcome.map id (fun value => ⟨subject, value, result.snapshot⟩), result.world)
+
+theorem faults_forward_whole_world (subject : V) (snapshot : List (Factor V))
+    (consumed : Nat) (fault : Fault) (world : World V Payload) :
+    observe subject ⟨snapshot, consumed, .inl fault, world⟩ = (.inl fault, world) := rfl
+
+theorem values_retain_original_provenance (subject value : V) (snapshot : List (Factor V))
+    (consumed : Nat) (world : World V Payload) :
+    observe (Fault := Fault) subject ⟨snapshot, consumed, .inr value, world⟩ =
+      (.inr ⟨subject, value, snapshot⟩, world) := rfl
+
+/-- A pure normalized monoid instance computes the ledger's ordered
+denotation. It is not a law imposed on arbitrary authored normalization. -/
+theorem pure_native_fold_denotation [Monoid V] [Monoid Grade]
+    (snapshot : List (Factor V)) (world : World V Payload) :
+    contributions
+        (SnapshotFold.indexedSource (SnapshotFold.pureCallback (Fault := Fault))
+          (SnapshotFold.pureMultiply SharedCoefficientLedger.Factor.coefficient))
+        (snapshot.length + 1) (⟨snapshot, 0, (1, world)⟩ : Cursor V (V × World V Payload)) =
+      [(.inl ⟨snapshot, snapshot.length, .inr (SharedCoefficientLedger.denote snapshot), world⟩,
+        (1 : Grade))] :=
+  SnapshotFold.pure_indexed_product_complete SharedCoefficientLedger.Factor.coefficient snapshot world
+
+section ObservedRuns
+
+open Mettapedia.GSLT.Core
+open Mettapedia.Machines.NativeCostLedger.Recording (State ScopedCharge scopedController)
+open InferenceControl (Controller Snapshot)
+
+private abbrev FoldResult := SnapshotFold.Result (Factor V) V (World V Payload) Fault × Grade
+
+variable [Monoid Grade]
+
+/-- The indexed native cursor and independently defined remaining-list
+cursor have the same globally scheduled cost-bearing prefixes under FIFO.
+Charge comparison is a local service boundary: identities, destinations and
+retention decisions must agree, not merely their eventual summed work. -/
+theorem scoped_fold_run_comparison (maximum : Nat)
+    (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication : V)
+    (nativeCommands : Unit → Cursor V Job × Grade → Option (FoldResult (V := V)
+      (Payload := Payload) (Fault := Fault) (Grade := Grade)) → List (Cursor V Job × Grade) →
+        List (ScopedCharge 64))
+    (referenceCommands : Unit → ReferenceCursor V Job × Grade → Option (FoldResult (V := V)
+      (Payload := Payload) (Fault := Fault) (Grade := Grade)) → List (ReferenceCursor V Job × Grade) →
+        List (ScopedCharge 64))
+    (commands : ∀ memory node emission generated,
+      nativeCommands memory node emission generated =
+        referenceCommands memory (SnapshotFold.project node.1, node.2) emission
+          (generated.map fun next => (SnapshotFold.project next.1, next.2)))
+    (initialStore : Nat → State 64) (fuel : Nat)
+    (snapshot : Snapshot (Cursor V Job × Grade)
+      (FoldResult (V := V) (Payload := Payload) (Fault := Fault) (Grade := Grade))
+      (Unit × (Nat → State 64))) :
+    (Snapshot.run (Scheduled.system (source callback call multiplication))
+      (scopedController maximum (Controller.fixed BranchingTemporal.Scheduler.breadthFirst)
+        nativeCommands initialStore) fuel snapshot).mapNodes
+          (fun next => (SnapshotFold.project next.1, next.2)) =
+      Snapshot.run (Scheduled.system (referenceSource callback call multiplication))
+        (scopedController maximum (Controller.fixed BranchingTemporal.Scheduler.breadthFirst)
+          referenceCommands initialStore) fuel
+        (snapshot.mapNodes (fun next => (SnapshotFold.project next.1, next.2))) := by
+  apply Mettapedia.Machines.NativeCostLedger.Recording.scopedController_transport
+    (transfer := id)
+  · exact SnapshotFold.system_emissions callback (multiplyJob call multiplication)
+  · exact SnapshotFold.system_successors callback (multiplyJob call multiplication)
+  · intros; rfl
+  · intros; exact List.map_append ..
+  · intros; rfl
+  · exact commands
+
+/-- Recorded native fold prefixes transport the actual selected input,
+emission and ordered successor capture, alongside the whole scoped store.
+The source and reference keep their own fold implementations. Capacity and
+omissions are transported rather than regenerated from successful results. -/
+theorem recorded_scoped_fold_comparison (maximum : Nat)
+    (callback : SnapshotFold.Callback Job V (World V Payload) Fault Grade)
+    (call : V → V → V → World V Payload → Job) (multiplication : V)
+    (nativeCommands : Unit → Cursor V Job × Grade → Option (FoldResult (V := V)
+      (Payload := Payload) (Fault := Fault) (Grade := Grade)) → List (Cursor V Job × Grade) →
+        List (ScopedCharge 64))
+    (referenceCommands : Unit → ReferenceCursor V Job × Grade → Option (FoldResult (V := V)
+      (Payload := Payload) (Fault := Fault) (Grade := Grade)) → List (ReferenceCursor V Job × Grade) →
+        List (ScopedCharge 64))
+    (commands : ∀ memory node emission generated,
+      nativeCommands memory node emission generated =
+        referenceCommands memory (SnapshotFold.project node.1, node.2) emission
+          (generated.map fun next => (SnapshotFold.project next.1, next.2)))
+    (initialStore : Nat → State 64) (capacity : Option Nat) (fuel : Nat)
+    (snapshot : Snapshot (Cursor V Job × Grade)
+      (FoldResult (V := V) (Payload := Payload) (Fault := Fault) (Grade := Grade))
+      ((Unit × (Nat → State 64)) × Option (InferenceControl.Recording.Prefix
+        (InferenceControl.Preparation.Capture (Cursor V Job × Grade)
+          (FoldResult (V := V) (Payload := Payload) (Fault := Fault) (Grade := Grade)))))) :
+    (Snapshot.run (Scheduled.system (source callback call multiplication))
+      (InferenceControl.Recording.controller
+        (scopedController maximum (Controller.fixed BranchingTemporal.Scheduler.breadthFirst)
+          nativeCommands initialStore) InferenceControl.Recording.Replay.observe capacity)
+      fuel snapshot).mapState (fun next => (SnapshotFold.project next.1, next.2))
+        (InferenceControl.Recording.transferMemory id
+          (InferenceControl.Preparation.Capture.mapNodes
+            (fun next => (SnapshotFold.project next.1, next.2)))) =
+      Snapshot.run (Scheduled.system (referenceSource callback call multiplication))
+        (InferenceControl.Recording.controller
+          (scopedController maximum (Controller.fixed BranchingTemporal.Scheduler.breadthFirst)
+            referenceCommands initialStore) InferenceControl.Recording.Replay.observe capacity)
+        fuel (snapshot.mapState (fun next => (SnapshotFold.project next.1, next.2))
+          (InferenceControl.Recording.transferMemory id
+            (InferenceControl.Preparation.Capture.mapNodes
+              (fun next => (SnapshotFold.project next.1, next.2))))) := by
+  apply InferenceControl.Recording.run_transport
+  · exact SnapshotFold.system_emissions callback (multiplyJob call multiplication)
+  · exact SnapshotFold.system_successors callback (multiplyJob call multiplication)
+  · intros; rfl
+  · intros; exact List.map_append ..
+  · intro memory node emission generated
+    simp only [scopedController, Controller.observing, Controller.fixed, commands]
+    rfl
+  · intros; rfl
+
+end ObservedRuns
+
+end Readout
 
 end Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaWeightLedger

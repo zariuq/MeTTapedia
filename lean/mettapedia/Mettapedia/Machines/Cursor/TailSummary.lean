@@ -357,6 +357,23 @@ theorem rollback_releases_tail (mark storage tail : ℕ)
 
 /-! ## Controls -/
 
+/-! ## Full scans of successful all-bit predicates -/
+theorem scanAll_eq_true_iff (bits : List Bool) :
+    scanAll bits = true ↔ false ∉ bits := by
+  rw [scanAll_eq_bitFold]
+  have negative := bitFold_all_eq_false_iff bits
+  cases reading : bitFold .all bits <;> simp_all
+
+theorem scanAllCost_eq_length (bits : List Bool) (all : false ∉ bits) :
+    scanAllCost bits = bits.length := by
+  induction bits with
+  | nil => rfl
+  | cons first rest ih =>
+      have tail : false ∉ rest := fun member => all (List.mem_cons_of_mem first member)
+      cases first with
+      | false => exact (all (List.mem_cons_self)).elim
+      | true => simp only [scanAllCost, List.length_cons, ih tail]
+
 namespace Controls
 
 /-- A departed child holding a disjunction bit leaves the tail's bit

@@ -52,7 +52,7 @@ structure RewriteOccurrence (source target : RhoProcess) where
 namespace RewriteOccurrence
 
 /-- Forget occurrence data to the established rho GSLT step. -/
-def toStep {source target : RhoProcess}
+theorem toStep {source target : RhoProcess}
     (occurrence : RewriteOccurrence source target) :
     rhoLanguageDefGSLT.Step source target :=
   ⟨occurrence.redex, occurrence.contractum,

@@ -2,6 +2,7 @@ import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mathlib.Algebra.Ring.Int.Defs
 import Mathlib.Algebra.Ring.BooleanRing
 import Mathlib.Data.Rat.Defs
+import Mathlib.Algebra.Order.Ring.Rat
 import Mathlib.Tactic
 
 /-!
@@ -308,6 +309,18 @@ theorem nat_noCancellation : NoCancellation ℕ where
   add_eq_zero a b sum := by omega
   mul_eq_zero a b product := Nat.mul_eq_zero.mp product
   one_ne_zero := Nat.one_ne_zero
+
+/-- Exact nonnegative rational rates have neither cancellation nor zero divisors. -/
+theorem nonnegative_rat_noCancellation : NoCancellation ℚ≥0 where
+  add_eq_zero _ _ sum := (add_eq_zero.mp sum).1
+  mul_eq_zero _ _ product := mul_eq_zero.mp product
+  one_ne_zero := one_ne_zero
+
+theorem nonnegative_rat_add_value (left right : ℚ≥0) :
+    ((left + right : ℚ≥0) : ℚ) = (left : ℚ) + (right : ℚ) := rfl
+
+theorem nonnegative_rat_multiply_value (left right : ℚ≥0) :
+    ((left * right : ℚ≥0) : ℚ) = (left : ℚ) * (right : ℚ) := rfl
 
 /-! ## Controls -/
 

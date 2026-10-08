@@ -74,12 +74,11 @@ Tests that `!name` parses as symbol in compatibility mode but as
 `!(eval (name))` in canonical mode; that `(= (f a) b)` → `defineEq`;
 that `(: foo Bar)` → `defineType`; that bare `!` is rejected; etc.
 
-### `PeTTaArtifactBridge.lean` (82 lines, 4 theorems)
+### `PeTTaArtifactBridge.lean` (retired 2026-10-05)
 
-Frozen `PeTTaConfig` round-trips through formal `PeTTaSpace`: facts and
-rewrite rules map correctly both directions. Establishes the artifact
-source-of-truth boundary between runtime lowering and formal
-verification.
+Moved to `_archive/petta-retirement-2026-10-05` with the March PeTTa export
+route. Its round trips of frozen configurations through `PeTTaSpace` are
+instances of the conversions in `Languages/MeTTa/PeTTa/ProfileBridge.lean`.
 
 ### `PeTTaBackendSpaceCompat.lean` (542 lines, 20+ theorems)
 

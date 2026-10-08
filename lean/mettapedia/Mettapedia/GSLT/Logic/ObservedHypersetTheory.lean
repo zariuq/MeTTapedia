@@ -34,6 +34,150 @@ import Mettapedia.TypeTheory.ContextualCollectionStrength
 import Mettapedia.TypeTheory.MaterialSets.Hypersets.ConstructivePowerFinalityObstruction
 import Mettapedia.TypeTheory.MaterialSets.Hypersets.ConstructiveAuthoredRecipient
 import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualAuthoredMaterialWInterpretation
+import Mettapedia.GSLT.Logic.ConstructiveObservedMaterialInterpretation
+import Mettapedia.GSLT.Logic.ConstructiveObservedMaterialFamilies
+import Mettapedia.GSLT.Logic.ConstructiveObservedMaterialControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedIdentityBoundary
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedMaterialComparison
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.UniverseEnlargement
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualFamilyEnlargement
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualAuthoredGeneratedEnclosure
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualAuthoredGeneratedClassification
+import Mettapedia.GSLT.Logic.ConstructiveObservedGeneratedEnclosure
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphBisimulationRealizers
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphSetRealization
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphSetOperations
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphFormulaRealization
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphBoundedFormulaRealization
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedCollection
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedAntiFoundation
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedSetConstructors
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedFullness
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedDeduction
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedSetTheory
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedReceiptFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedSpanFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedContextualFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedContextualSubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedObservedFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedObservedControls
+import Mettapedia.TypeTheory.ContextualFutureSiteLift
+import Mettapedia.TypeTheory.ContextualFutureSiteProducts
+import Mettapedia.TypeTheory.ContextualFutureSiteW
+import Mettapedia.TypeTheory.ContextualFutureSiteWCones
+import Mettapedia.TypeTheory.ContextualSiteWReindexing
+import Mettapedia.TypeTheory.ContextualWSignatureReindexing
+import Mettapedia.TypeTheory.ContextualSmallFamilyWSignatureNaturality
+import Mettapedia.TypeTheory.ContextualSiteWAlgebra
+import Mettapedia.TypeTheory.WiderContextualWSignatureAlgebra
+import Mettapedia.TypeTheory.ContextualFutureSiteWAlgebra
+import Mettapedia.TypeTheory.ContextualSiteW
+import Mettapedia.TypeTheory.ContextualSmallFamilyWSignature
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualWSignatureEquivalence
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualWSignature
+import Mettapedia.TypeTheory.WiderPresheafSignatureEquivalence
+import Mettapedia.TypeTheory.WiderPresheafSignatureInverse
+import Mettapedia.TypeTheory.ContextualSmallFamilyIdentityExt
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedGeneratedUniverse
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedGeneratedIdentity
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.GraphRealizedGeneratedControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMatchingFinality
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphEvidenceTransport
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphEvidenceCoherence
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphCurrentMaterial
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialReflection
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedDeduction
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedDeductionControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedSetConstructors
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedSetTheory
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedSetControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphNonThinControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphReceiptFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphReceiptControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphCollectionControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphDiagrams
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizers
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualRealizedGraphs
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFormulaRealization
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGenerators
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedCollection
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphBoundedRealization
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedSeparation
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedAntiFoundation
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualObservedGraphDiagram
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualObservedGraphFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualObservedGraphControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedFullness
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedSubsetCollection
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFullnessControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualObservedGraphOccurrences
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyRepresentation
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyCones
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilySubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyEnclosure
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyProducts
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyIdentity
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyW
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGeneratedFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGeneratedControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodyNodes
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodyComparison
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphUniverseLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodyControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodyEnclosure
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodySubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodyIdentity
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphFamilyBodyIdentityControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphOrderedPairs
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialProducts
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialSections
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialObservedControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialSubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialFunctionalProducts
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialFunctionalSubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialFunctionalApplication
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialFunctionalSections
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialFunctionalControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphWBranchSpan
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadoutNodes
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphNaturalBodyEmbedding
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadoutComponents
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadoutPairs
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadout
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphWReadout
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphWReadoutControls
+import Mettapedia.TypeTheory.ContextualSmallFamilyWObservation
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWBranchSpan
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWReadout
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGeneratedWReadout
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGeneratedWControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphUniverseLiftPairs
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftSums
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftProducts
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftFunctional
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadoutChildren
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadoutMatching
+import Mettapedia.TypeTheory.ContextualSmallFamilyWObservedSubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWReadoutSubstitution
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWSubstitutionControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftIdentity
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftIdentityControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphMaterialLiftCoherence
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphPolynomialReadoutSiteMatching
+import Mettapedia.TypeTheory.ContextualSmallFamilyWObservedLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWSiteLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWReadoutLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWCarrierLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphSmallWMaterialLiftCoherence
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGeneratedWLift
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphGeneratedWLiftControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualGraphRealizedTheory
 /-!
 # Observed execution, material members and coherent small families
 
@@ -53,6 +197,67 @@ The equivalence between a small witness-cover principle and the corresponding
 Type Collection squares states the remaining arbitrary-witness boundary. Native sieve classifiers
 factor through the actual observed quotient exactly for invariant predicates.
 Each comparison keeps its observer, context and universe hypotheses explicit.
+
+The constructed choice-free observed interpretation retains the declared
+observed class alongside its material value. Its actual continuation families
+have dependent sums, full-future products and W codes. The growing-family
+controls separate present functions from complete future sections and show
+why erased occurrences cannot be recovered by a dependent consumer.
+
+The generated mixed-bound material enclosure has constructed member and
+whole-section decoders, cumulative embeddings and substitution comparisons
+with the actual future-family classifier. Matching witnesses admit a positive
+logical interpretation into the constant material forcing model. Their
+membership actions need not descend to proof-irrelevant material equality.
+The actual receipt decoders recover whole native and material sections;
+generated discrete identity contexts and their dependent J operations have
+constructed inverse comparisons, computation and substitution laws. This does
+not identify graph-matching evidence with those discrete identity witnesses.
+A separately constructed varying graph universe now carries full
+future-indexed equality, membership and first-order realization. Its actual
+empty, pairing, future-origin union, infinity and extensionality laws use
+current existential witnesses and every future arrow. Arbitrary-body Strong
+Collection retains original-small witness origins and path factorizations.
+Literal member families classify and decode over this same universe.
+Bounded Separation uses original-small full-future realizers. Every
+original-small authored graph has a canonical natural decoration, unique up to
+constructed future matching. A full-future receipt-function catalogue validates
+ordinary Subset Collection before its arbitrary relation parameter. Further
+native family representations have naturally inverse literal receipt decoders
+and preserve complete sections, dependent sums and full-future products,
+discrete identity elimination and hereditary W initiality. A constructed
+successor enclosure includes every lower future-family code, with an explicit
+one-level site and graph raise for wider parameters. Literal receipt decoding
+is separate from material equality of the receipt bodies.
+
+Actual attached bodies now retain every node and edge of a natural element
+interpretation. Their material kernel and membership characterization keep
+the literal receipt and its full future matching evidence separate. The
+successor graph lift preserves and reflects matching and membership on its
+lower image; it does not assert recovery of arbitrary upper graphs. For the
+constructed member family of every lower varying graph, the attached upper
+carrier matches the raised original graph. Independently rebuilt substitutions
+compare through complete sections and actual material carrier matching.
+Actual material sums read ordered argument/result pairs. Complete future
+products carry application graphs, with an original-small subfamily of
+uniformly compatible material functions. Their exact kernels, actual
+application, abstraction, beta/eta and substitution comparisons retain native
+receipts. Generated W readings are constructed from actual labels, dependent
+positions and hereditary future trees; matching alone need not preserve an
+arbitrary native fold. Independently formed upper sums, products, discrete
+identity contexts and W families compare through both native and material
+maps, covering arbitrary upper members. Whole sections, arbitrary upper J
+motives, substitution and actual abstraction commute with those comparisons.
+Generated successor-enclosure receipts and material W receipts meet through
+their native decoder, without identifying their different body observations.
+
+Current material equality at every stage still need not supply a persistent
+matching strategy. The actual observed
+continuation family is naturally decoded through the same graph universe; its
+retained observed-class coordinate has the declared kernel, whereas material
+matching alone can merge different terminal results. Validated adoption records
+compute deduction from the proved fragment; the growing and cyclic controls
+rule out excluded-middle and universal self-membership-prohibition adoption.
 
 Declared atom rows are preserved by the observed readout. Future-only
 observations do not authorize predecessor-modal descent, erased occurrence

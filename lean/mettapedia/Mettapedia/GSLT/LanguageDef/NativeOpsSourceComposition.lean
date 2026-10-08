@@ -272,4 +272,17 @@ theorem source_unary_expression_stateful_exact {World : Type} {interface : Inter
     · exact .inl ⟨[raw], middle, .cons child (.nil middle), value, computed, same⟩
     · exact .inr ⟨fault, after, .consFault child, same⟩
 
+theorem source_single_argument_success_exact {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    (argument : Expr) (before after : SourceState World) (value : SourceValue) :
+    SourceArgumentsEval interface heap calls frame [argument] before ⟨.ok [value], after⟩ ↔
+      SourceExprEval interface heap calls frame argument before ⟨.ok value, after⟩ := by
+  rw [source_arguments_cons_success_exact]
+  constructor
+  · rintro ⟨middle, first, tail⟩
+    cases (source_arguments_nil_exact middle _).mp tail
+    exact first
+  · intro first
+    exact ⟨after, first, .nil after⟩
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

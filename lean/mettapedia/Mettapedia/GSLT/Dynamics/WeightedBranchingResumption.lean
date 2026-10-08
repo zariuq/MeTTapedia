@@ -2200,4 +2200,408 @@ theorem nested_selection_change_coefficients {Parked Pending Selected : Type*}
 
 end CoefficientChanges
 
+/-! ## Resumable folds over a retained snapshot
+
+An indexed cursor and an independent remaining-list cursor normalize the
+initial accumulator, then sequence callbacks over a fixed factor snapshot.
+A callback may branch, suspend, fail or change its whole world. Its result
+world is passed to the next callback; it is not replaced with the entry world.
+The original snapshot remains available as provenance after consumption.
+
+These are instances of the existing branching coalgebra and finite-cut
+handler. No second resumption, scheduler or history construction is introduced.
+-/
+
+namespace SnapshotFold
+
+variable {Factor Value World Job Fault Grade : Type*}
+
+structure Indexed (Factor Job : Type*) where
+  snapshot : List Factor
+  index : Nat
+  callback : Job
+  deriving DecidableEq, Repr
+
+structure Listed (Factor Job : Type*) where
+  snapshot : List Factor
+  consumed : Nat
+  remaining : List Factor
+  callback : Job
+  deriving DecidableEq, Repr
+
+structure Result (Factor Value World Fault : Type*) where
+  snapshot : List Factor
+  consumed : Nat
+  outcome : Fault ⊕ Value
+  world : World
+  deriving DecidableEq, Repr
+
+/-- An absent callback reply contributes no answer. This is an explicit
+observation, not a classification of a literal symbol such as `Empty`.
+Errors retain their postworld before another factor can be consumed. -/
+abbrev Callback (Job Value World Fault Grade : Type*) :=
+  Coalgebra Job (Option (Fault ⊕ Value) × World) Grade
+
+def project (state : Indexed Factor Job) : Listed Factor Job :=
+  ⟨state.snapshot, state.index, state.snapshot.drop state.index, state.callback⟩
+
+theorem project_injective : Function.Injective (project (Factor := Factor) (Job := Job)) := by
+  intro first second equal
+  have snapshots := congrArg Listed.snapshot equal
+  have cursors := congrArg Listed.consumed equal
+  have callbacks := congrArg Listed.callback equal
+  cases first
+  cases second
+  cases snapshots
+  cases cursors
+  cases callbacks
+  rfl
+
+/-- Each callback is a real pending computation, including initial
+normalization when the factor snapshot is empty. -/
+def indexedSource [One Grade] (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) :
+    Coalgebra (Indexed Factor Job) (Result Factor Value World Fault) Grade := fun state =>
+  match callback state.callback with
+  | .inr alternatives =>
+      .inr (alternatives.map fun next => ({state with callback := next.1}, next.2))
+  | .inl (none, _) => .inr []
+  | .inl (some (.inl fault), world) =>
+      .inl ⟨state.snapshot, state.index, .inl fault, world⟩
+  | .inl (some (.inr value), world) =>
+      match state.snapshot[state.index]? with
+      | none => .inl ⟨state.snapshot, state.index, .inr value, world⟩
+      | some factor =>
+          .inr [(⟨state.snapshot, state.index + 1, multiply value factor world⟩, 1)]
+
+/-- The reference consumes a list head, independently of indexed lookup.
+It retains the consumed count, original snapshot and complete callback job. -/
+def listedSource [One Grade] (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) :
+    Coalgebra (Listed Factor Job) (Result Factor Value World Fault) Grade := fun state =>
+  match callback state.callback with
+  | .inr alternatives =>
+      .inr (alternatives.map fun next => ({state with callback := next.1}, next.2))
+  | .inl (none, _) => .inr []
+  | .inl (some (.inl fault), world) =>
+      .inl ⟨state.snapshot, state.consumed, .inl fault, world⟩
+  | .inl (some (.inr value), world) =>
+      match state.remaining with
+      | [] => .inl ⟨state.snapshot, state.consumed, .inr value, world⟩
+      | factor :: remaining =>
+          .inr [(⟨state.snapshot, state.consumed + 1, remaining,
+            multiply value factor world⟩, 1)]
+
+/-- The one-step comparison retains every callback alternative in source
+order. The list reference is not defined as the image of indexed execution. -/
+theorem source_comparison [One Grade] (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) (state : Indexed Factor Job) :
+    listedSource callback multiply (project state) =
+      match indexedSource callback multiply state with
+      | .inl result => .inl result
+      | .inr alternatives => .inr (alternatives.map fun next => (project next.1, next.2)) := by
+  cases observed : callback state.callback with
+  | inr alternatives =>
+      simp only [listedSource, indexedSource, project, observed, List.map_map]
+      rfl
+  | inl reply =>
+      rcases reply with ⟨outcome, world⟩
+      cases outcome with
+      | none => simp [listedSource, indexedSource, project, observed]
+      | some outcome =>
+          cases outcome with
+          | inl fault => simp [listedSource, indexedSource, project, observed]
+          | inr value =>
+              cases found : state.snapshot[state.index]? with
+              | none =>
+                  have empty : state.snapshot.drop state.index = [] :=
+                    List.drop_eq_nil_iff.mpr (List.getElem?_eq_none_iff.mp found)
+                  simp [listedSource, indexedSource, project, observed, found, empty]
+              | some factor =>
+                  have split : state.snapshot.drop state.index =
+                      factor :: state.snapshot.drop (state.index + 1) := by
+                    simpa [found] using
+                      (List.drop_eq_getElem?_toList_append
+                        (l := state.snapshot) (i := state.index))
+                  simp [listedSource, indexedSource, project, observed, found, split]
+
+/-- All finite cuts agree on errors, values, original provenance, world,
+physical multiplicities, accumulated grades and complete pending callbacks. -/
+theorem contributions_comparison [Monoid Grade]
+    (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) (fuel : Nat) (state : Indexed Factor Job) :
+    contributions (listedSource callback multiply) fuel (project state) =
+      (contributions (indexedSource callback multiply) fuel state).map fun leaf =>
+        (Sum.map id project leaf.1, leaf.2) := by
+  apply contributions_reindex _ _ project id _ fuel state
+  intro cursor
+  cases inspected : indexedSource callback multiply cursor <;>
+    simpa [inspected] using source_comparison callback multiply cursor
+
+/-- This observation erases only the external path coefficient. Callback
+values, worlds, provenance and every physical contribution remain visible. -/
+theorem coefficient_erasure_comparison [Monoid Grade]
+    (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) (fuel : Nat) (state : Indexed Factor Job) :
+    eraseCoefficients (contributions (listedSource callback multiply) fuel (project state)) =
+      (eraseCoefficients (contributions (indexedSource callback multiply) fuel state)).map
+        (Sum.map id project) := by
+  rw [contributions_comparison]
+  simp [eraseCoefficients, List.map_map]
+
+/-- Splitting a budget resumes the actual pending jobs and cursor, rather
+than restarting the snapshot or the initial normalization. -/
+theorem resumed_comparison [Monoid Grade]
+    (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) (first rest : Nat) (state : Indexed Factor Job) :
+    sequence (contributions (listedSource callback multiply) first (project state))
+        (Sum.elim (fun answer => [(.inl answer, 1)])
+          (contributions (listedSource callback multiply) rest)) =
+      (contributions (indexedSource callback multiply) (first + rest) state).map fun leaf =>
+        (Sum.map id project leaf.1, leaf.2) := by
+  calc
+    _ = contributions (listedSource callback multiply) (first + rest) (project state) :=
+      by
+        rw [contributions_add]
+        apply congrArg (sequence
+          (contributions (listedSource callback multiply) first (project state)))
+        funext leaf
+        cases leaf <;> rfl
+    _ = _ := contributions_comparison callback multiply (first + rest) state
+
+theorem zero_cut_keeps_initial_callback [Monoid Grade]
+    (callback : Callback Job Value World Fault Grade)
+    (multiply : Value → Factor → World → Job) (job : Job) :
+    contributions (indexedSource callback multiply) 0 ⟨[], 0, job⟩ =
+      [(.inr ⟨[], 0, job⟩, 1)] := rfl
+
+/-- A pure interpretation is a further specialization, not a premise
+silently imposed on program-defined readout callbacks. -/
+def pureCallback : Callback (Value × World) Value World Fault Grade :=
+  fun job => .inl (some (.inr job.1), job.2)
+
+def pureMultiply [Mul Value] (coefficient : Factor → Value)
+    (value : Value) (factor : Factor) (world : World) : Value × World :=
+  (value * coefficient factor, world)
+
+theorem pure_complete [Monoid Grade] [Mul Value] (coefficient : Factor → Value)
+    (snapshot remaining : List Factor) (consumed : Nat) (value : Value) (world : World) :
+    contributions (listedSource (pureCallback (Fault := Fault)) (pureMultiply coefficient))
+        (remaining.length + 1) ⟨snapshot, consumed, remaining, (value, world)⟩ =
+      [(.inl ⟨snapshot, consumed + remaining.length,
+        .inr (remaining.foldl (fun prior factor => prior * coefficient factor) value), world⟩,
+        (1 : Grade))] := by
+  induction remaining generalizing consumed value with
+  | nil => simp [contributions, listedSource, pureCallback]
+  | cons factor remaining ih =>
+      simp only [List.length_cons]
+      rw [contributions]
+      simp only [listedSource, pureCallback, WeightedResumption.sequence,
+        List.flatMap_cons, List.flatMap_nil, List.append_nil, pureMultiply]
+      rw [ih]
+      simp [List.foldl_cons]
+      omega
+
+/-- Ordered left multiplication agrees with the monoid product. No
+commutativity is available to exchange two captured factors. -/
+theorem ordered_product [Monoid Value] (coefficient : Factor → Value)
+    (factors : List Factor) (initial : Value) :
+    factors.foldl (fun prior factor => prior * coefficient factor) initial =
+      initial * (factors.map coefficient).prod := by
+  induction factors generalizing initial with
+  | nil => simp
+  | cons factor rest ih =>
+      simp only [List.foldl_cons, List.map_cons, List.prod_cons]
+      rw [ih, mul_assoc]
+
+theorem pure_product_complete [Monoid Grade] [Monoid Value]
+    (coefficient : Factor → Value) (snapshot : List Factor) (world : World) :
+    contributions (listedSource (pureCallback (Fault := Fault)) (pureMultiply coefficient))
+        (snapshot.length + 1) ⟨snapshot, 0, snapshot, (1, world)⟩ =
+      [(.inl ⟨snapshot, snapshot.length,
+        .inr ((snapshot.map coefficient).prod), world⟩, (1 : Grade))] := by
+  simpa [ordered_product] using
+    pure_complete (Fault := Fault) (Grade := Grade) coefficient snapshot snapshot 0 1 world
+
+/-- Recover the indexed execution itself from the independently proved
+remaining-list result. Cursor transport is injective, so it loses no leaves. -/
+theorem pure_indexed_product_complete [Monoid Grade] [Monoid Value]
+    (coefficient : Factor → Value) (snapshot : List Factor) (world : World) :
+    contributions (indexedSource (pureCallback (Fault := Fault)) (pureMultiply coefficient))
+        (snapshot.length + 1) ⟨snapshot, 0, (1, world)⟩ =
+      [(.inl ⟨snapshot, snapshot.length,
+        .inr ((snapshot.map coefficient).prod), world⟩, (1 : Grade))] := by
+  have injective : Function.Injective
+      (fun leaf : (Result Factor Value World Fault ⊕ Indexed Factor (Value × World)) × Grade =>
+        (Sum.map id project leaf.1, leaf.2)) := by
+    intro left right equal
+    apply Prod.ext
+    · exact (Sum.map_injective.mpr ⟨Function.injective_id, project_injective⟩)
+        (congrArg Prod.fst equal)
+    · exact congrArg
+        (fun leaf : (Result Factor Value World Fault ⊕ Listed Factor (Value × World)) × Grade =>
+          leaf.2) equal
+  apply injective.list_map
+  rw [← contributions_comparison]
+  simpa [project] using
+    pure_product_complete (Fault := Fault) (Grade := Grade) coefficient snapshot world
+
+section Histories
+
+variable {F A W J E C : Type} [Monoid C]
+
+open Mettapedia.GSLT.Core
+
+theorem system_emissions (callback : Callback J A W E C)
+    (multiply : A → F → W → J) (state : Indexed F J × C) :
+    (Scheduled.system (indexedSource callback multiply)).emit state =
+      (Scheduled.system (listedSource callback multiply)).emit (project state.1, state.2) := by
+  simp only [Scheduled.system, source_comparison]
+  cases indexedSource callback multiply state.1 <;> rfl
+
+theorem system_successors (callback : Callback J A W E C)
+    (multiply : A → F → W → J) (state : Indexed F J × C) :
+    ((Scheduled.system (indexedSource callback multiply)).successors state).map
+        (fun next => (project next.1, next.2)) =
+      (Scheduled.system (listedSource callback multiply)).successors (project state.1, state.2) := by
+  simp only [Scheduled.system, source_comparison]
+  cases indexedSource callback multiply state.1 <;> simp [List.map_map]
+
+/-- Breadth-first execution compares its own ordered stream and complete
+agenda. It is not identified with a depth-first unfolding cut. -/
+theorem breadthFirst_run_comparison (callback : Callback J A W E C)
+    (multiply : A → F → W → J) (fuel : Nat)
+    (snapshot : InferenceControl.Snapshot (Indexed F J × C)
+      (Result F A W E × C) Unit) :
+    (InferenceControl.Snapshot.run (Scheduled.system (indexedSource callback multiply))
+      (InferenceControl.Controller.fixed BranchingTemporal.Scheduler.breadthFirst)
+      fuel snapshot).mapNodes (fun next => (project next.1, next.2)) =
+    InferenceControl.Snapshot.run (Scheduled.system (listedSource callback multiply))
+      (InferenceControl.Controller.fixed BranchingTemporal.Scheduler.breadthFirst)
+      fuel (snapshot.mapNodes (fun next => (project next.1, next.2))) := by
+  apply InferenceControl.Snapshot.run_mapState (transfer := id)
+  · exact system_emissions callback multiply
+  · exact system_successors callback multiply
+  · intros; rfl
+  · intros; exact List.map_append ..
+  · intros; rfl
+
+/-- A depth-first controller also preserves its stream, origins and frontier
+under the cursor comparison, with its own scheduling order. -/
+theorem depthFirst_run_comparison (callback : Callback J A W E C)
+    (multiply : A → F → W → J) (fuel : Nat)
+    (snapshot : InferenceControl.Snapshot (Indexed F J × C)
+      (Result F A W E × C) Unit) :
+    (InferenceControl.Snapshot.run (Scheduled.system (indexedSource callback multiply))
+      (InferenceControl.Controller.fixed BranchingTemporal.Scheduler.depthFirst)
+      fuel snapshot).mapNodes (fun next => (project next.1, next.2)) =
+    InferenceControl.Snapshot.run (Scheduled.system (listedSource callback multiply))
+      (InferenceControl.Controller.fixed BranchingTemporal.Scheduler.depthFirst)
+      fuel (snapshot.mapNodes (fun next => (project next.1, next.2))) := by
+  apply InferenceControl.Snapshot.run_mapState (transfer := id)
+  · exact system_emissions callback multiply
+  · exact system_successors callback multiply
+  · intros; rfl
+  · intros; exact List.map_append ..
+  · intros; rfl
+
+/-- The actual weighted occurrence machines have the same successor positions
+after changing the fold cursor representation. -/
+theorem next_comparison (callback : Callback J A W E C)
+    (multiply : A → F → W → J) (state : Indexed F J × C) :
+    (Scheduled.pathMachine (listedSource callback multiply)).next
+        (project state.1, state.2) =
+      ((Scheduled.pathMachine (indexedSource callback multiply)).next state).map
+        (fun next => (project next.1, next.2)) := by
+  simp only [Scheduled.pathMachine, Scheduled.system]
+  rw [source_comparison]
+  cases indexedSource callback multiply state.1 <;> simp [List.map_map]
+
+/-- Instantiate the existing event-to-history map; duplicate callbacks keep
+their physical successor indices rather than only their endpoints. -/
+def historyForward (callback : Callback J A W E C) (multiply : A → F → W → J) :=
+  Mettapedia.GSLT.Causality.OccurrenceMachineHistory.forward
+    (Scheduled.pathMachine (indexedSource callback multiply))
+    (Scheduled.pathMachine (listedSource callback multiply))
+    (fun state => (project state.1, state.2)) (next_comparison callback multiply)
+
+open Mettapedia.GSLT.Causality.OccurrenceMachineHistory
+open Mettapedia.OSLF.Binding
+
+theorem history_indices (callback : Callback J A W E C) (multiply : A → F → W → J)
+    {before after : RewriteEventHistory.State
+      (system (Scheduled.pathMachine (indexedSource callback multiply)))}
+    (history : Quiver.Path before after) :
+    indices (Scheduled.pathMachine (listedSource callback multiply))
+        ((historyForward callback multiply).histories.map history) =
+      indices (Scheduled.pathMachine (indexedSource callback multiply)) history :=
+  forward_indices _ _ _ (next_comparison callback multiply) history
+
+theorem history_concatenation (callback : Callback J A W E C)
+    (multiply : A → F → W → J)
+    {before middle after : RewriteEventHistory.State
+      (system (Scheduled.pathMachine (indexedSource callback multiply)))}
+    (first : Quiver.Path before middle) (second : Quiver.Path middle after) :
+    (historyForward callback multiply).histories.map (first.comp second) =
+      ((historyForward callback multiply).histories.map first).comp
+        ((historyForward callback multiply).histories.map second) :=
+  (historyForward callback multiply).histories.map_comp first second
+
+/-- The same occurrence sequence succeeds or fails in both representations.
+This states reflection as well as forward preservation at represented states. -/
+theorem replay_comparison (callback : Callback J A W E C) (multiply : A → F → W → J)
+    (before : Indexed F J × C) (trace : List Nat) :
+    (Scheduled.pathMachine (listedSource callback multiply)).follow
+        (project before.1, before.2) trace =
+      ((Scheduled.pathMachine (indexedSource callback multiply)).follow before trace).map
+        (fun state => (project state.1, state.2)) :=
+  follow_map _ _ _ (next_comparison callback multiply) before trace
+
+end Histories
+
+namespace Controls
+
+private def effectful : Callback (Nat × Nat) Nat Nat Bool Nat :=
+  fun job => .inl (some (.inr job.1), job.2 + 1)
+
+/-- The next callback receives the completed normalization's world.
+Using the entry world instead would lose an observable effect. -/
+theorem callback_postworld_is_used :
+    indexedSource effectful (pureMultiply id) ⟨[3, 5], 0, (2, 10)⟩ =
+      .inr [(⟨[3, 5], 1, (6, 11)⟩, 1)] := rfl
+
+theorem rolling_back_callback_world_changes_next_job :
+    indexedSource effectful (pureMultiply id) ⟨[3, 5], 0, (2, 10)⟩ ≠
+      .inr [(⟨[3, 5], 1, (6, 10)⟩, 1)] := by decide
+
+theorem empty_snapshot_still_normalizes :
+    contributions (indexedSource effectful (pureMultiply id)) 1 ⟨[], 0, (2, 10)⟩ =
+      [(.inl ⟨[], 0, .inr 2, 11⟩, 1)] := rfl
+
+private def duplicates : Callback Bool Nat (List Nat) Bool Nat
+  | false => .inr [(true, 0), (true, 0)]
+  | true => .inl (some (.inr 7), [9])
+
+/-- Equal returned values and zero grades do not collapse two physical
+callback occurrences. Both keep the complete observed postworld. -/
+theorem duplicate_zero_occurrences_remain :
+    contributions (indexedSource duplicates (fun value _ world => value == world.length))
+        2 ⟨([] : List Nat), 0, false⟩ =
+      [(.inl ⟨[], 0, .inr 7, [9]⟩, 0), (.inl ⟨[], 0, .inr 7, [9]⟩, 0)] := rfl
+
+theorem errors_do_not_advance :
+    indexedSource (fun _ : Unit =>
+      .inl (some (.inl true), [9]) : Callback Unit Nat (List Nat) Bool Nat)
+      (fun _ _ _ => ()) ⟨[3, 5], 0, ()⟩ =
+      .inl ⟨[3, 5], 0, .inl true, [9]⟩ := rfl
+
+theorem absent_callback_reply_is_no_answer :
+    contributions (indexedSource (fun _ : Unit =>
+      .inl (none, [9]) : Callback Unit Nat (List Nat) Bool Nat)
+      (fun _ _ _ => ())) 1 ⟨[3, 5], 0, ()⟩ = [] := rfl
+
+end Controls
+
+end SnapshotFold
+
 end Mettapedia.GSLT.Dynamics.WeightedBranchingResumption

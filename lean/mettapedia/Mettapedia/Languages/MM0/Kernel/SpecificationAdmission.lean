@@ -121,13 +121,18 @@ inductive Step : State → ProofDeclaration → State → Prop where
       SpecificationEntry.Matches entry admission → Theory.Step before admission after →
       Step ⟨before, entry :: pending⟩ ⟨admission, false⟩ ⟨after, pending⟩
 
-def step? (state : State) (declaration : ProofDeclaration) : Option State := do
-  let pending ← if declaration.isLocal then
-      if ProofDeclaration.auxiliary declaration.admission then some state.pending else none
-    else match state.pending with
+/-- Specification consumption is checked before theory admission. -/
+def pending? (pending : List SpecificationEntry) (declaration : ProofDeclaration) :
+    Option (List SpecificationEntry) :=
+  if declaration.isLocal then
+      if ProofDeclaration.auxiliary declaration.admission then some pending else none
+    else match pending with
       | [] => none
       | expected :: remaining =>
           if expected.checkMatch declaration.admission then some remaining else none
+
+def step? (state : State) (declaration : ProofDeclaration) : Option State := do
+  let pending ← pending? state.pending declaration
   let theory ← Theory.step? state.theory declaration.admission
   pure ⟨theory, pending⟩
 
@@ -141,35 +146,35 @@ theorem step_eq_some_iff (before after : State) (declaration : ProofDeclaration)
     | true =>
         by_cases auxiliary : ProofDeclaration.auxiliary admission = true
         · cases next : Theory.step? theory admission with
-          | none => simp [step?, auxiliary, next] at accepted
+          | none => simp [step?, pending?, auxiliary, next] at accepted
           | some newTheory =>
               have same : (⟨newTheory, pending⟩ : State) = after := by
-                simpa [step?, auxiliary, next] using accepted
+                simpa [step?, pending?, auxiliary, next] using accepted
               subst after
               exact .auxiliary ((ProofDeclaration.auxiliary_iff _).mp auxiliary)
                 ((Theory.step_eq_some_iff _ _ _).mp next)
-        · simp [step?, auxiliary] at accepted
+        · simp [step?, pending?, auxiliary] at accepted
     | false =>
         cases pending with
-        | nil => simp [step?] at accepted
+        | nil => simp [step?, pending?] at accepted
         | cons expected remaining =>
             by_cases matched : expected.checkMatch admission = true
             · cases next : Theory.step? theory admission with
-              | none => simp [step?, matched, next] at accepted
+              | none => simp [step?, pending?, matched, next] at accepted
               | some newTheory =>
                   have same : (⟨newTheory, remaining⟩ : State) = after := by
-                    simpa [step?, matched, next] using accepted
+                    simpa [step?, pending?, matched, next] using accepted
                   subst after
                   exact .publicDecl ((SpecificationEntry.checkMatch_iff _ _).mp matched)
                     ((Theory.step_eq_some_iff _ _ _).mp next)
-            · simp [step?, matched] at accepted
+            · simp [step?, pending?, matched] at accepted
   · intro checked
     cases checked with
     | auxiliary allowed admitted =>
-        simp [step?, (ProofDeclaration.auxiliary_iff _).mpr allowed,
+        simp [step?, pending?, (ProofDeclaration.auxiliary_iff _).mpr allowed,
           (Theory.step_eq_some_iff _ _ _).mpr admitted]
     | publicDecl matched admitted =>
-        simp [step?, (SpecificationEntry.checkMatch_iff _ _).mpr matched,
+        simp [step?, pending?, (SpecificationEntry.checkMatch_iff _ _).mpr matched,
           (Theory.step_eq_some_iff _ _ _).mpr admitted]
 
 theorem Step.theory_step {before after : State} {declaration : ProofDeclaration}

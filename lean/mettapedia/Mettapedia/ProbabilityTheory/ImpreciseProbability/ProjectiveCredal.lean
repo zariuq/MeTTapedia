@@ -494,7 +494,7 @@ theorem evaluationCoordinate_injective :
 
 /-- Evaluation topology on bounded-measurable precise previsions, induced by
 all bounded-observable evaluations. -/
-def evaluationTopology :
+@[instance_reducible] def evaluationTopology :
     TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
   TopologicalSpace.induced
     (fun P : BoundedMeasurablePrecisePrevision Ω =>
@@ -527,7 +527,7 @@ topology. -/
 theorem eval_continuous (X : BoundedMeasurableGamble Ω) :
     @Continuous (BoundedMeasurablePrecisePrevision Ω) ℝ
       evaluationTopology inferInstance (fun P => P X) := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change @Continuous (BoundedMeasurablePrecisePrevision Ω) ℝ
       evaluationTopology inferInstance
@@ -545,7 +545,7 @@ theorem mix_continuous (t : ℝ) (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
           BoundedMeasurablePrecisePrevision Ω ×
             BoundedMeasurablePrecisePrevision Ω =>
         mix t PQ.1 PQ.2 ht0 ht1) := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change @Continuous
     (BoundedMeasurablePrecisePrevision Ω ×
@@ -580,7 +580,7 @@ theorem isClosed_eval_eq
     (X : BoundedMeasurableGamble Ω) (c : ℝ) :
     @IsClosed (BoundedMeasurablePrecisePrevision Ω) evaluationTopology
       {P | P X = c} := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change IsClosed {P : BoundedMeasurablePrecisePrevision Ω | P X = c}
   exact isClosed_eq (eval_continuous X) continuous_const
@@ -591,7 +591,7 @@ theorem isClosed_eval_le
     (X : BoundedMeasurableGamble Ω) (c : ℝ) :
     @IsClosed (BoundedMeasurablePrecisePrevision Ω) evaluationTopology
       {P | P X ≤ c} := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change IsClosed {P : BoundedMeasurablePrecisePrevision Ω | P X ≤ c}
   exact isClosed_le (eval_continuous X) continuous_const
@@ -602,7 +602,7 @@ theorem isClosed_le_eval
     (X : BoundedMeasurableGamble Ω) (c : ℝ) :
     @IsClosed (BoundedMeasurablePrecisePrevision Ω) evaluationTopology
       {P | c ≤ P X} := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change IsClosed {P : BoundedMeasurablePrecisePrevision Ω | c ≤ P X}
   exact isClosed_le continuous_const (eval_continuous X)
@@ -612,7 +612,7 @@ topology. -/
 theorem isClosed_normalized :
     @IsClosed (BoundedMeasurablePrecisePrevision Ω) evaluationTopology
       {P | P (BoundedMeasurableGamble.const (Ω := Ω) 1) = 1} := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change IsClosed
     {P : BoundedMeasurablePrecisePrevision Ω |
@@ -625,7 +625,7 @@ theorem isClosed_nonnegative_on
     (X : BoundedMeasurableGamble Ω) :
     @IsClosed (BoundedMeasurablePrecisePrevision Ω) evaluationTopology
       {P | 0 ≤ P X} := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   change IsClosed {P : BoundedMeasurablePrecisePrevision Ω | 0 ≤ P X}
   exact isClosed_le_eval X 0
@@ -661,7 +661,7 @@ def coordinateLawSet :
 theorem coordinateLowerBoundSet_isClosed :
     IsClosed (coordinateLowerBoundSet (Ω := Ω)) := by
   unfold coordinateLowerBoundSet
-  simp only [setOf_forall]
+  simp only [ofPred_forall]
   exact isClosed_iInter fun X =>
     isClosed_iInter fun c =>
       isClosed_iInter fun _hc =>
@@ -670,7 +670,7 @@ theorem coordinateLowerBoundSet_isClosed :
 theorem coordinatePosHomogSet_isClosed :
     IsClosed (coordinatePosHomogSet (Ω := Ω)) := by
   unfold coordinatePosHomogSet
-  simp only [setOf_forall]
+  simp only [ofPred_forall]
   exact isClosed_iInter fun r =>
     isClosed_iInter fun X =>
       isClosed_iInter fun _hr =>
@@ -680,7 +680,7 @@ theorem coordinatePosHomogSet_isClosed :
 theorem coordinateAddSet_isClosed :
     IsClosed (coordinateAddSet (Ω := Ω)) := by
   unfold coordinateAddSet
-  simp only [setOf_forall]
+  simp only [ofPred_forall]
   exact isClosed_iInter fun X =>
     isClosed_iInter fun Y =>
       isClosed_eq (continuous_apply (X + Y))
@@ -848,7 +848,7 @@ the carrier. -/
 theorem evaluationTopology_univCompact :
     @IsCompact (BoundedMeasurablePrecisePrevision Ω)
       evaluationTopology Set.univ := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   have hpreCompact :
       IsCompact (((evaluationCoordinate :
@@ -867,7 +867,7 @@ compact space. -/
 theorem evaluationCompactSpace :
     @CompactSpace (BoundedMeasurablePrecisePrevision Ω)
       evaluationTopology := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     evaluationTopology
   exact ⟨by simpa using evaluationTopology_univCompact (Ω := Ω)⟩
 
@@ -953,7 +953,7 @@ theorem boundedMeasurableCredalSet_subset_evaluationClosure
   intro P hP
   change P ∈ @closure (BoundedMeasurablePrecisePrevision Ω)
     (BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)) C
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   exact subset_closure hP
 
@@ -963,7 +963,7 @@ theorem boundedMeasurableCredalSetEvaluationClosure_isClosed
     @IsClosed (BoundedMeasurablePrecisePrevision Ω)
       (BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω))
       (boundedMeasurableCredalSetEvaluationClosure C) := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   exact isClosed_closure
 
@@ -973,7 +973,7 @@ theorem boundedMeasurableCredalSetEvaluationClosure_isCompact
     @IsCompact (BoundedMeasurablePrecisePrevision Ω)
       (BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω))
       (boundedMeasurableCredalSetEvaluationClosure C) := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   exact
     (BoundedMeasurablePrecisePrevision.evaluationTopology_univCompact
@@ -996,7 +996,7 @@ theorem boundedMeasurableCredalSetEvaluationClosure_isConvex
     BoundedMeasurableCredalSet.IsConvex
       (boundedMeasurableCredalSetEvaluationClosure C) := by
   intro t ht0 ht1 P Q hP hQ
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   change BoundedMeasurablePrecisePrevision.mix t P Q ht0 ht1 ∈
     @closure (BoundedMeasurablePrecisePrevision Ω) _ C
@@ -1198,7 +1198,7 @@ theorem boundedMeasurableLowerEnvelope_exists_mem_eq_of_isCompact
     (hC : C.Nonempty) (X : BoundedMeasurableGamble Ω) :
     ∃ P : BoundedMeasurablePrecisePrevision Ω,
       P ∈ C ∧ P X = boundedMeasurableLowerEnvelope C X := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   rcases hCompact.exists_sInf_image_eq hC
       ((BoundedMeasurablePrecisePrevision.eval_continuous X).continuousOn) with
@@ -1215,7 +1215,7 @@ theorem boundedMeasurableUpperEnvelope_exists_mem_eq_of_isCompact
     (hC : C.Nonempty) (X : BoundedMeasurableGamble Ω) :
     ∃ P : BoundedMeasurablePrecisePrevision Ω,
       P ∈ C ∧ P X = boundedMeasurableUpperEnvelope C X := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   rcases hCompact.exists_sSup_image_eq hC
       ((BoundedMeasurablePrecisePrevision.eval_continuous X).continuousOn) with
@@ -1233,7 +1233,7 @@ theorem boundedMeasurableLowerEnvelope_evaluationClosure_eq
     boundedMeasurableLowerEnvelope
         (boundedMeasurableCredalSetEvaluationClosure C) X =
       boundedMeasurableLowerEnvelope C X := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   apply le_antisymm
   · refine le_boundedMeasurableLowerEnvelope_of_forall_le C hC X ?_
@@ -1297,7 +1297,7 @@ theorem boundedMeasurableUpperEnvelope_evaluationClosure_eq
     boundedMeasurableUpperEnvelope
         (boundedMeasurableCredalSetEvaluationClosure C) X =
       boundedMeasurableUpperEnvelope C X := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   apply le_antisymm
   · have hClosed :
@@ -1419,7 +1419,7 @@ theorem boundedMeasurableCredalSetDetermines_evaluationClosure_of_determines
     (hDet : boundedMeasurableCredalSetDetermines C X) :
     boundedMeasurableCredalSetDetermines
       (boundedMeasurableCredalSetEvaluationClosure C) X := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   rcases hC with ⟨R, hR⟩
   have hClosed :
@@ -2377,7 +2377,7 @@ theorem boundedMeasurableDominatingPreciseCompletions_isClosed
     @IsClosed (BoundedMeasurablePrecisePrevision Ω)
       (BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω))
       (boundedMeasurableDominatingPreciseCompletions L) := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   change IsClosed
     {P : BoundedMeasurablePrecisePrevision Ω |
@@ -2402,7 +2402,7 @@ theorem boundedMeasurableDominatingPreciseCompletions_isCompact
     @IsCompact (BoundedMeasurablePrecisePrevision Ω)
       (BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω))
       (boundedMeasurableDominatingPreciseCompletions L) := by
-  letI : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
   exact
     (BoundedMeasurablePrecisePrevision.evaluationTopology_univCompact
@@ -2621,7 +2621,6 @@ theorem boundedMeasurableNaturalExtensionPrevision_dominatingCompletions_eq
     boundedMeasurableDominatingPreciseCompletions L
   have hsubset : C ⊆ D := by
     intro P hP Y
-    change L Y ≤ P Y
     dsimp [L]
     exact boundedMeasurableLowerEnvelope_le_of_mem C Y
       (boundedMeasurableCredalRange_bddBelow C Y) hP
@@ -3326,7 +3325,7 @@ theorem sum_gamble_apply {α : Type*} (s : Finset α)
 theorem sum_gamble_apply_univ {α : Type*} [Fintype α]
     (f : α → Gamble Ω) (ω : Ω) :
     (∑ a, f a) ω = ∑ a, f a ω := by
-  simpa using sum_gamble_apply (Ω := Ω) (Finset.univ : Finset α) f ω
+  exact sum_gamble_apply (Ω := Ω) (Finset.univ : Finset α) f ω
 
 /-- Positive homogeneity plus additivity gives full real homogeneity. -/
 theorem map_smul (P : PrecisePrevision Ω) (r : ℝ) (X : Gamble Ω) :
@@ -3736,7 +3735,7 @@ noncomputable def finiteEvaluationCoordinate
 coordinate map into the standard simplex.  This is the finite-dimensional
 version of the weak*/evaluation topology; it is kept explicit rather than
 installed as a global instance. -/
-noncomputable def finiteEvaluationTopology :
+@[instance_reducible] noncomputable def finiteEvaluationTopology :
     TopologicalSpace (PrecisePrevision Ω) :=
   TopologicalSpace.induced
     (fun P : PrecisePrevision Ω => finiteEvaluationCoordinate P)
@@ -3759,12 +3758,12 @@ topology on precise previsions. -/
 theorem eval_continuous (X : Gamble Ω) :
     @Continuous (PrecisePrevision Ω) ℝ
       finiteEvaluationTopology inferInstance (fun P => P X) := by
-  letI : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
+  let : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
   have hsum :
       Continuous
         (fun P : PrecisePrevision Ω =>
           ∑ ω, (finiteEvaluationCoordinate P).1 ω * X ω) := by
-    refine continuous_finset_sum Finset.univ ?_
+    refine continuous_finsetSum Finset.univ ?_
     intro ω _hω
     have hcoord :
         Continuous
@@ -3809,7 +3808,7 @@ theorem precisePrevisionOfStdSimplex_continuous :
   have h : (fun P : PrecisePrevision Ω => finiteEvaluationCoordinate P) ∘
       precisePrevisionOfStdSimplex = fun w : stdSimplex ℝ Ω => w := by
     funext w
-    simp [Function.comp_def, finiteEvaluationCoordinate_precisePrevisionOfStdSimplex]
+    simp [finiteEvaluationCoordinate_precisePrevisionOfStdSimplex]
   rw [h]
   exact continuous_id
 
@@ -3817,7 +3816,7 @@ theorem precisePrevisionOfStdSimplex_continuous :
 evaluation topology, by transport from the compact standard simplex. -/
 theorem finiteEvaluationTopology_univCompact :
     @IsCompact (PrecisePrevision Ω) finiteEvaluationTopology Set.univ := by
-  letI : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
+  let : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
   have hcont :
       @Continuous (stdSimplex ℝ Ω) (PrecisePrevision Ω)
         inferInstance finiteEvaluationTopology precisePrevisionOfStdSimplex :=
@@ -3844,13 +3843,13 @@ theorem finiteEvaluationTopology_isCompact_of_isClosed
     (C : Set (PrecisePrevision Ω))
     (hClosed : @IsClosed (PrecisePrevision Ω) finiteEvaluationTopology C) :
     @IsCompact (PrecisePrevision Ω) finiteEvaluationTopology C := by
-  letI : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
+  let : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
   exact finiteEvaluationTopology_univCompact.of_isClosed_subset hClosed
     (by intro P _hP; exact Set.mem_univ P)
 
 theorem finiteEvaluationCompactSpace :
     @CompactSpace (PrecisePrevision Ω) finiteEvaluationTopology := by
-  letI : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
+  let : TopologicalSpace (PrecisePrevision Ω) := finiteEvaluationTopology
   exact ⟨by simpa using finiteEvaluationTopology_univCompact (Ω := Ω)⟩
 
 end AtomicRepresentation
@@ -4012,7 +4011,7 @@ theorem ofFiniteProbabilityMeasurePrevision_map_apply
         (Measure.map f μ) (Measure.isProbabilityMeasure_map hf.aemeasurable) X =
       ofFiniteProbabilityMeasurePrevision μ (fun ω => X (f ω)) := by
   classical
-  letI : IsProbabilityMeasure (Measure.map f μ) :=
+  let : IsProbabilityMeasure (Measure.map f μ) :=
     Measure.isProbabilityMeasure_map hf.aemeasurable
   rw [ofFiniteProbabilityMeasurePrevision_eq_ofPMF_toPMF
       (Measure.map f μ)]
@@ -4133,7 +4132,7 @@ theorem supportedOn_isClosed {Ω : Type*} [Fintype Ω] [DecidableEq Ω]
     @IsClosed (PrecisePrevision Ω)
       (FiniteWeights.finiteEvaluationTopology (Ω := Ω))
       {P : PrecisePrevision Ω | supportedOn A P} := by
-  letI : TopologicalSpace (PrecisePrevision Ω) :=
+  let : TopologicalSpace (PrecisePrevision Ω) :=
     FiniteWeights.finiteEvaluationTopology (Ω := Ω)
   change IsClosed
     {P : PrecisePrevision Ω |
@@ -4943,7 +4942,7 @@ theorem credalEnvelope_exists_endpointPairReadout_of_finiteEvaluationCompact_str
         credalEnvelopeWidth C X = Phi X - Plo X ∧
         credalEnvelopeWidthComplement C X = 1 - (Phi X - Plo X) ∧
         credalEnvelopeMidpoint C X = (Plo X + Phi X) / 2 := by
-  letI : TopologicalSpace (PrecisePrevision Ω) :=
+  let : TopologicalSpace (PrecisePrevision Ω) :=
     PrecisePrevision.FiniteWeights.finiteEvaluationTopology (Ω := Ω)
   exact credalEnvelope_exists_endpointPairReadout_of_isCompact_strictWidth
     C hCompact hC X
@@ -6443,8 +6442,6 @@ def cylinderPrevisionOfPrecisePrevision
     exact P.add (S.cylinderGamble i X) (S.cylinderGamble i Y)
   restrict_compat := by
     intro i j hij X
-    change P (S.cylinderGamble j (fun xj => X (S.restrict hij xj))) =
-      P (S.cylinderGamble i X)
     rw [S.cylinderGamble_restrict hij X]
 
 @[simp] theorem cylinderPrevisionOfPrecisePrevision_localPrevision
@@ -10013,7 +10010,7 @@ theorem projectiveLimit_exists_endpointPairReadout_of_finiteEvaluation_fullCarri
         S.globalEnvelopeWidth X = Phi X - Plo X ∧
         S.globalEnvelopeWidthComplement X = 1 - (Phi X - Plo X) ∧
         S.globalEnvelopeMidpoint X = (Plo X + Phi X) / 2 := by
-  letI : TopologicalSpace (PrecisePrevision Global) :=
+  let : TopologicalSpace (PrecisePrevision Global) :=
     PrecisePrevision.FiniteWeights.finiteEvaluationTopology (Ω := Global)
   have hEq : K.limitSet = S.projectiveLimitCredalSet :=
     K.limitSet_eq_projectiveLimitCredalSet_of_carrier_eq_univ hCarrier
@@ -10468,8 +10465,8 @@ for the compact/FIP projective package.  The topology is taken discrete here;
 this is a concrete finite inhabitant, not the full weak* compactness theorem. -/
 theorem boolFalseExact_compactFIP_hasCompatibleCompletion :
     boolFalseExactProjectiveSpec.hasCompatibleCompletion := by
-  letI : TopologicalSpace (PrecisePrevision Bool) := ⊥
-  letI : DiscreteTopology (PrecisePrevision Bool) :=
+  let : TopologicalSpace (PrecisePrevision Bool) := ⊥
+  let : DiscreteTopology (PrecisePrevision Bool) :=
     discreteTopology_bot (PrecisePrevision Bool)
   let K :
       ProjectiveLocalCredalSpec.CompactConvexProjectiveCredalSystem
@@ -10510,7 +10507,7 @@ projective credal system.  The compact carrier is all precise previsions on
 theorem boolUnrestricted_finiteEvaluationCompact_hasCompatibleCompletion :
     boolUnrestrictedProjectiveSpec.hasCompatibleCompletion := by
   classical
-  letI : TopologicalSpace (PrecisePrevision Bool) :=
+  let : TopologicalSpace (PrecisePrevision Bool) :=
     PrecisePrevision.FiniteWeights.finiteEvaluationTopology (Ω := Bool)
   let K :
       ProjectiveLocalCredalSpec.CompactConvexProjectiveCredalSystem
@@ -10918,7 +10915,7 @@ theorem finiteUnrestricted_finiteEvaluationCompact_hasCompatibleCompletion
     (Ω : Type*) [Fintype Ω] [DecidableEq Ω] [Nonempty Ω] :
     (finiteUnrestrictedProjectiveSpec Ω).hasCompatibleCompletion := by
   classical
-  letI : TopologicalSpace (PrecisePrevision Ω) :=
+  let : TopologicalSpace (PrecisePrevision Ω) :=
     PrecisePrevision.FiniteWeights.finiteEvaluationTopology (Ω := Ω)
   obtain ⟨ω₀⟩ := (inferInstance : Nonempty Ω)
   let K :
@@ -10996,6 +10993,9 @@ theorem singletonIdentityProjectiveSpec_hasCompatibleCompletion
 
 /-! ## Profile interface -/
 
+-- Each field retains its own quantified carrier bounds; this packages methods
+-- at independent universe instances rather than a single common state space.
+set_option linter.checkUnivs false in
 /-- Proof-carrying profile for the shared projective credal abstraction.
 
 This packages the reusable spine, including the compact/FIP completion bridge,

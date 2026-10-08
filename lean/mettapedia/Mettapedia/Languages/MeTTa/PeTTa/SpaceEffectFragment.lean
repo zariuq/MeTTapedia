@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 import Mettapedia.Languages.ProcessCalculi.MORK.MatchSpec
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands
 
 /-!
 # PeTTa Space-Effect Fragment → MORK Source Rules

@@ -16,7 +16,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
-open CategoryTheory MonoidalCategory
+open _root_.CategoryTheory _root_.CategoryTheory.MonoidalCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 private def homToTensorNat

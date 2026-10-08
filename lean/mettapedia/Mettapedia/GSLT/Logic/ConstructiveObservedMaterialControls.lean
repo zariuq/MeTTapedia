@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Logic.ConstructiveObservedMaterialFamilies
 import Mettapedia.GSLT.Logic.ContextualObservedCoalgebraControls
+import Mettapedia.TypeTheory.ContextualSmallFamilyWAlgebra
 
 /-!
 # Growing constructive observed continuations
@@ -99,10 +100,14 @@ theorem terminal_values_equal (point : Stagesᵒᵖ) (first second : raw.obj poi
     back := ?_ }, firstTerminal, secondTerminal⟩
   · intro point left right related future child available
     change (left.1.val = 1 ∧ child.1.val = 1) ∨ (left.1.val = 0 ∧ 0 < child.1.val) at available
-    rcases available with ⟨impossible, _⟩ | ⟨impossible, _⟩ <;> omega
+    rcases available with ⟨impossible, _⟩ | ⟨impossible, _⟩
+    · exact False.elim ((by decide : ¬ 2 ≤ (1 : Nat)) (impossible ▸ related.1))
+    · exact False.elim ((by decide : ¬ 2 ≤ (0 : Nat)) (impossible ▸ related.1))
   · intro point left right related future child available
     change (right.1.val = 1 ∧ child.1.val = 1) ∨ (right.1.val = 0 ∧ 0 < child.1.val) at available
-    rcases available with ⟨impossible, _⟩ | ⟨impossible, _⟩ <;> omega
+    rcases available with ⟨impossible, _⟩ | ⟨impossible, _⟩
+    · exact False.elim ((by decide : ¬ 2 ≤ (1 : Nat)) (impossible ▸ related.2))
+    · exact False.elim ((by decide : ¬ 2 ≤ (0 : Nat)) (impossible ▸ related.2))
 
 theorem different_results_retained :
     values.app (world 3) (stageValue 3 2 (by omega) false) =
@@ -121,6 +126,28 @@ theorem duplicate_occurrences_identified (stage index : Nat) (bound : index < st
   refine ⟨(interpretation_kernel worlds arrows dynamics atoms atomCoding _ _ _).mpr
     (equal_indices_observed _ _ _ rfl), ?_⟩
   exact fun same => Bool.false_ne_true (congrArg Prod.snd same)
+
+def receipts : Stagesᵒᵖ ⥤ Type where
+  obj _ := Bool
+  map _ := TypeCat.ofHom id
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+def receipt : NaturalHom raw receipts where
+  app _ argument := argument.2
+  naturality _ _ := rfl
+
+theorem receipt_does_not_descend : ¬ ∃ consumer : NaturalHom
+    (structured worlds arrows dynamics atoms atomCoding) receipts,
+    interpreted.comp consumer = receipt := by
+  rintro ⟨consumer, factors⟩
+  have first := congrArg (fun operation : NaturalHom raw receipts =>
+    operation.app (world 0) (stageValue 0 0 (by omega) false)) factors
+  have second := congrArg (fun operation : NaturalHom raw receipts =>
+    operation.app (world 0) (stageValue 0 0 (by omega) true)) factors
+  have same := congrArg (consumer.app (world 0))
+    (duplicate_occurrences_identified 0 0 (by omega)).1
+  exact Bool.false_ne_true (first.symm.trans (same.trans second))
 
 def task (stage : Nat) : params.Elements :=
   ⟨⟨world stage⟩, interpreted.app (world stage) (stageValue stage 0 (by omega) false)⟩
@@ -190,5 +217,34 @@ theorem dependent_body_varies :
     Nonempty (body.native.obj ⟨(task 2).1, ⟨(task 2).2, cyclicChild⟩⟩) ∧
       ¬ Nonempty (body.native.obj ⟨(task 2).1, ⟨(task 2).2, terminalChild⟩⟩) :=
   ⟨⟨cyclicBodyMember⟩, terminal_body_empty⟩
+
+def presentProduct : (argument : domain.native.obj (task 0)) →
+    body.native.obj ⟨(task 0).1, ⟨(task 0).2, argument⟩⟩ :=
+  fun argument => (initial_continuations_empty ⟨argument⟩).elim
+
+/-- A function valid at every future context cannot be inferred from a
+function over the empty current fibre. -/
+theorem full_future_product_empty :
+    ¬ Nonempty ((continuationPiCode worlds arrows dynamics atoms atomCoding).decode.native.obj (task 0)) := by
+  rintro ⟨function⟩
+  let later := (continuationPiCode worlds arrows dynamics atoms atomCoding).decode.native.map
+    (taskStep (show 0 ≤ 2 by omega)) function
+  exact terminal_body_empty ⟨ContextualSmallFamilyTypeFormers.evaluateValue domain.native
+    (domain.bodyNative body) (task 2) later terminalChild⟩
+
+def cyclicPair : (continuationSigmaCode worlds arrows dynamics atoms atomCoding).decode.native.obj (task 2) :=
+  ⟨cyclicChild, cyclicBodyMember⟩
+
+theorem actual_sigma_member :
+    ((continuationSigmaCode worlds arrows dynamics atoms atomCoding).decode.models (task 2)).value cyclicPair ∈
+      ((continuationSigmaCode worlds arrows dynamics atoms atomCoding).decode.models (task 2)).carrier :=
+  ((continuationSigmaCode worlds arrows dynamics atoms atomCoding).decode.models (task 2)).value_mem cyclicPair
+
+theorem initial_W_empty :
+    ¬ Nonempty ((continuationWCode worlds arrows dynamics atoms atomCoding).decode.native.obj (task 0)) := by
+  rintro ⟨tree⟩
+  have node := ContextualSmallFamilyWAlgebra.destructorValue domain.native (domain.bodyNative body) (task 0) tree
+  exact initial_continuations_empty
+    ⟨(ContextualSmallFamilyUniverse.evaluationEquiv domain.native (task 0).1 (task 0).2) node.1⟩
 
 end Mettapedia.GSLT.ConstructiveObservedMaterialControls

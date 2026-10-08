@@ -1,3 +1,4 @@
+import Mettapedia.CategoryTheory.CartesianClosedFunctorCoherence
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Functor.Basic
 import Mathlib.CategoryTheory.Monoidal.Cartesian.Basic
@@ -22,12 +23,12 @@ construct them from an equational lambda theory or an authored `LanguageDef`.
 ## Main Definitions
 
 * `LambdaTheoryWithEquality` - A lambda-theory with morphisms, CCC structure, and finite limits
-* `LambdaTheoryMorphism` - Functors equipped with finite-limit preservation
+* `LambdaTheoryMorphism` - Finite-limit and canonical exponential preserving functors
 * `SubobjectFibration` - Object-indexed Frame data, without reindexing or a
   proved identification with categorical subobjects
 
-The current morphism record does not include exponential preservation or an
-action on its Frame data. The Frame record alone is not a categorical fibration.
+Morphism exponential preservation uses Mathlib's actual canonical comparison.
+No action on the supplied Frame data is assumed. The Frame record alone is not a categorical fibration.
 Full native-type-theory generation therefore requires further constructions;
 it does not follow from these bundles.
 
@@ -52,8 +53,8 @@ From Williams-Stay "Native Type Theory":
 
 namespace Mettapedia.GSLT.Core
 
-open CategoryTheory
-open CategoryTheory.Limits
+open _root_.CategoryTheory
+open _root_.CategoryTheory.Limits
 
 /-! ## Subobject Fibration with Frame Structure
 
@@ -121,8 +122,8 @@ all the required instances, plus a subobject fibration.
 
 -- The bundled fields intentionally retain separate universes.
 set_option linter.checkUnivs false in
-/-- A category equipped with cartesian closed structure, finite limits, and
-object-indexed Frame data. All structures are supplied, not derived here.
+/-- The legacy enrichment of a cartesian closed, finitely complete category
+with independent object-indexed Frame data. All structures are supplied here.
 Dependent comprehension and dependent products are not consequences of this
 record alone; they require their own construction and coherence laws.
 -/
@@ -175,14 +176,13 @@ end LambdaTheoryWithEquality
 
 /-! ## Lambda-Theory Morphisms
 
-The current morphism interface records finite-limit preservation.
-Preservation of exponentials and action on the Frame data are not included.
+Theory maps preserve finite limits and the canonical exponential comparisons.
+An action on the independent Frame data is not part of this interface.
 -/
 
-/-- A finite-limit-preserving functor between the bundled categories.
-The additional binary-product and terminal fields specialize that property.
-This record does not certify exponential preservation or a map of Frame data.
--/
+/-- A functor preserving finite limits and actual canonical exponential comparisons.
+The binary-product and terminal fields retain the earlier explicit supplied
+interfaces. No map of the independent Frame data is presumed. -/
 structure LambdaTheoryMorphism (T S : LambdaTheoryWithEquality) where
   /-- The underlying functor -/
   functor : T.Obj ⥤ S.Obj
@@ -192,6 +192,13 @@ structure LambdaTheoryMorphism (T S : LambdaTheoryWithEquality) where
   preservesBinaryProducts : PreservesLimitsOfShape (Discrete WalkingPair) functor
   /-- Preserves terminal object -/
   preservesTerminal : PreservesLimit (Functor.empty.{0} T.Obj) functor
+  /-- The canonical exponential comparison is an isomorphism at every domain. -/
+  preservesExponentials : MonoidalClosedFunctor functor
+
+attribute [instance] LambdaTheoryMorphism.preservesFiniteLimits
+attribute [instance] LambdaTheoryMorphism.preservesBinaryProducts
+attribute [instance] LambdaTheoryMorphism.preservesTerminal
+attribute [instance] LambdaTheoryMorphism.preservesExponentials
 
 namespace LambdaTheoryMorphism
 
@@ -201,6 +208,8 @@ def id (T : LambdaTheoryWithEquality) : LambdaTheoryMorphism T T where
   preservesFiniteLimits := inferInstance
   preservesBinaryProducts := inferInstance
   preservesTerminal := inferInstance
+  preservesExponentials :=
+    cartesianClosedFunctorOfLeftAdjointPreservesBinaryProducts _ (Adjunction.id)
 
 /-- Composition of morphisms -/
 def comp {T S U : LambdaTheoryWithEquality}
@@ -220,6 +229,37 @@ def comp {T S U : LambdaTheoryWithEquality}
     let := G.preservesFiniteLimits
     let := Limits.comp_preservesFiniteLimits F.functor G.functor
     infer_instance
+  preservesExponentials :=
+    Mettapedia.CategoryTheory.CartesianClosedFunctorCoherence.closed_composition
+      F.functor G.functor
+
+/-- Preservation witnesses are propositions; the complete functor determines the map. -/
+@[ext] theorem ext {T S : LambdaTheoryWithEquality}
+    {F G : LambdaTheoryMorphism T S} (same : F.functor = G.functor) : F = G := by
+  cases F
+  cases G
+  cases same
+  rfl
+
+/-- The independently chosen exponential objects are joined by the canonical comparison. -/
+noncomputable def exponentialIso {T S : LambdaTheoryWithEquality}
+    (F : LambdaTheoryMorphism T S) (A B : T.Obj) :
+    F.functor.obj ((ihom A).obj B) ≅ (ihom (F.functor.obj A)).obj (F.functor.obj B) :=
+  asIso ((expComparison F.functor A).natTrans.app B)
+
+/-- Actual canonical exponential comparisons compose. -/
+theorem exponential_comp {T S U : LambdaTheoryWithEquality}
+    (G : LambdaTheoryMorphism S U) (F : LambdaTheoryMorphism T S) (A B : T.Obj) :
+    (expComparison (comp G F).functor A).natTrans.app B =
+      G.functor.map ((expComparison F.functor A).natTrans.app B) ≫
+        (expComparison G.functor (F.functor.obj A)).natTrans.app (F.functor.obj B) :=
+  Mettapedia.CategoryTheory.CartesianClosedFunctorCoherence.exponential_composition
+    F.functor G.functor A B
+
+/-- The identity comparison reads the complete exponential object identically. -/
+theorem exponential_id (T : LambdaTheoryWithEquality) (A B : T.Obj) :
+    (expComparison (id T).functor A).natTrans.app B = 𝟙 ((ihom A).obj B) :=
+  Mettapedia.CategoryTheory.CartesianClosedFunctorCoherence.exponential_identity A B
 
 end LambdaTheoryMorphism
 
@@ -230,9 +270,11 @@ The source's intended 2-category λThyₑq has:
 - 1-morphisms: Lambda-theory morphisms (structure-preserving functors)
 - 2-morphisms: Natural transformations
 
-This file supplies identity and composition operations on the current
-finite-limit-preserving records. It does not supply a category instance or
-the full bicategory, nor identify these records with all source morphisms.
+This file supplies the genuinely closed, finite-limit-preserving legacy maps
+and their canonical comparison operations. `LambdaTheory` forgets the Frame
+enrichment and covers every cartesian closed category with pullbacks.
+`LambdaTheoryBicategory` constructs the actual strict 2-category of that
+categorical interface, with natural transformations as its two-cells.
 -/
 
 /-! ## Summary
@@ -241,7 +283,7 @@ This file supplies bundled inputs for categorical constructions:
 
 1. **SubobjectFibration**: Assigns a Frame to each object, without reindexing
 2. **LambdaTheoryWithEquality**: Category + CCC + finite limits + Frame data
-3. **LambdaTheoryMorphism**: Finite-limit-preserving functor records
+3. **LambdaTheoryMorphism**: Finite-limit and canonical exponential preserving functors
 
 **Key Connections to Literature**:
 - The supplied CCC and finite-limit structures are motivated by Williams–Stay

@@ -173,25 +173,23 @@ theorem cache_field_position (captures heapIndex : Bool) :
 
 private def comparisonFrame (frame : TargetFrame) (address : Address) (first : Nat)
     (tag constant : BitVec 64) : TargetFrame :=
-  targetDeclareTemporary (fieldReadFrame frame address 18 first (.word tag))
-    (first + 2) (.bool (tag == constant))
+  fieldEqualFrame frame address 18 first tag constant
 
 private theorem comparison_frame_bound {frame : TargetFrame} {lower first : Nat}
     (bounded : TemporaryNamesBound frame lower) (fresh : lower < first)
     (address : Address) (tag constant : BitVec 64) :
     TemporaryNamesBound (comparisonFrame frame address first tag constant) (first + 2) :=
-  declared_temporary_bound (field_read_frame_bound bounded fresh _ _ _) (by omega) (Nat.le_refl _) _
+  field_equal_frame_bound bounded fresh address 18 tag constant
 
 private theorem comparison_frame_protects {lower first : Nat} (frame : TargetFrame)
     (fresh : lower < first) (address : Address) (tag constant : BitVec 64) :
     TemporaryProtection lower frame (comparisonFrame frame address first tag constant) :=
-  temporary_protection_trans (field_read_frame_protects frame fresh _ _ _)
-    (declare_temporary_protects _ _ (by omega))
+  field_equal_frame_protects frame fresh address 18 tag constant
 
 private theorem comparison_frame_scoped {frame : TargetFrame} (hscope : TemporariesScoped frame)
     (address : Address) (first : Nat) (tag constant : BitVec 64) :
     TemporariesScoped (comparisonFrame frame address first tag constant) :=
-  declared_temporaries_completeNames (field_read_frame_scoped hscope _ _ _ _) _ _
+  field_equal_frame_scoped hscope address 18 first tag constant
 
 private theorem comparison_execution_exact {World : Type} {captures heapIndex : Bool}
     {heap : TargetHeapSemantics World} {calls : TargetCalls World}
@@ -203,23 +201,8 @@ private theorem comparison_execution_exact {World : Type} {captures heapIndex : 
     (root : List Instruction) (out : TargetBlockOutcome World) :
     TargetRun (interface captures heapIndex) heap calls .bool root
       (comparisonCode first constant) frame state out ↔
-      out = ⟨.normal, comparisonFrame frame address first tag constant, state⟩ := by
-  let middle := fieldReadFrame frame address 18 first (.word tag)
-  have readValue : TargetAtomEval (interface captures heapIndex) middle state
-      (.temporary (first + 1) .word) (.word tag) :=
-    declared_temporary_atom (interface captures heapIndex) _ state (first + 1) _ _
-  have middleBound := field_read_frame_bound bounded fresh address 18 (.word tag)
-  have compared : TargetPureEval (interface captures heapIndex) middle state
-      (.binary (.compare .eq) (.temporary (first + 1) .word) (.word constant))
-      (.bool (tag == constant)) := .binary readValue (.word constant) rfl
-  change TargetRun _ _ _ _ _
-    (fieldReadCode frameAtom "NeedFrame" 18 first .word ++
-      [.temporary (first + 2) .bool
-        (.binary (.compare .eq) (.temporary (first + 1) .word) (.word constant))]) _ _ _ ↔ _
-  rw [target_normal_prefix_then_exact
-    (by simp [fieldReadCode, jumpFreeCode, jumpFreeInstruction])
-    (field_read_code_exact read bounded fresh loaded "NeedFrame" root)]
-  exact target_run_temporary_exact (temporary_bound_fresh middleBound (by omega)) compared root out
+      out = ⟨.normal, comparisonFrame frame address first tag constant, state⟩ :=
+  field_equal_code_exact read bounded fresh tag constant loaded "NeedFrame" root out
 
 private def cacheTagFrame {World : Type} (frame : TargetFrame) (state : TargetState World)
     (address : Address) (tag : BitVec 64) : TargetFrame :=
@@ -285,7 +268,7 @@ private theorem cache_tag_frame_read {World : Type} (captures heapIndex : Bool)
       (.temporary 7 .bool) (.bool (tag == 2)) :=
     declared_temporary_atom (interface captures heapIndex) compared state 7 _ _
   have live : current.temporaryNames.contains 7 = true := by
-    simp [current, comparisonFrame, fieldReadFrame, marker, targetDeclareTemporary]
+    simp [current, comparisonFrame, fieldEqualFrame, fieldReadFrame, marker, targetDeclareTemporary]
   exact short_circuit_frame_read false read live rfl
 
 private theorem cache_tag_frame_protects {World : Type}

@@ -577,7 +577,7 @@ theorem deFinettiMoment_antitone (X : ℕ → Ω → Bool) (μ : Measure Ω)
   apply ENNReal.toReal_mono (measure_ne_top _ _)
   apply measure_mono
   intro ω hω
-  simp only [Set.mem_setOf_eq] at hω ⊢
+  simp only [Set.mem_ofPred_eq] at hω ⊢
   intro i
   exact hω ⟨i.val, Nat.lt_of_lt_of_le i.isLt hmn⟩
 
@@ -588,7 +588,7 @@ theorem deFinettiMoment_zero (X : ℕ → Ω → Bool) (μ : Measure Ω)
   simp only [deFinettiMoment]
   have h : {ω : Ω | ∀ i : Fin 0, X i.val ω = true} = Set.univ := by
     ext ω
-    simp only [Set.mem_setOf_eq, Set.mem_univ, iff_true]
+    simp only [Set.mem_ofPred_eq, Set.mem_univ, iff_true]
     intro i
     exact Fin.elim0 i
   rw [h]
@@ -674,7 +674,7 @@ theorem deFinettiMoment_fwdDiffIter_eq_cyl (X : ℕ → Ω → Bool) (μ : Measu
                       μ.real (cyl X (zerosThenOnes n k) \ {ω | X (n + k) ω = true})
                     = μ.real (cyl X (zerosThenOnes n k)) := by
                 have hmi :=
-                  measureReal_inter_add_diff (μ := μ) (s := cyl X (zerosThenOnes n k))
+                  measureReal_inter_add_sdiff (μ := μ) (s := cyl X (zerosThenOnes n k))
                     (t := ({ω | X (n + k) ω = true} : Set Ω)) ht
                 simpa [cyl_zerosThenOnes_succ (X := X) n k] using hmi
               have hdiff :
@@ -833,7 +833,7 @@ theorem deFinetti_infinite (X : ℕ → Ω → Bool) (μ : Measure Ω)
     have integrable_g (n0 k0 : ℕ) :
         Integrable (fun θ : ℝ => θ ^ k0 * (1 - θ) ^ n0) (ν.restrict (Set.Icc (0 : ℝ) 1)) := by
       -- Bounded by `1` on `[0,1]`, hence integrable w.r.t. a finite measure.
-      haveI : IsFiniteMeasure (ν.restrict (Set.Icc (0 : ℝ) 1)) := by infer_instance
+      have : IsFiniteMeasure (ν.restrict (Set.Icc (0 : ℝ) 1)) := by infer_instance
       have hmeas : AEStronglyMeasurable (fun θ : ℝ => θ ^ k0 * (1 - θ) ^ n0)
           (ν.restrict (Set.Icc (0 : ℝ) 1)) := by
         have hmeas' : Measurable (fun θ : ℝ => θ ^ k0 * (1 - θ) ^ n0) := by
@@ -1005,7 +1005,7 @@ theorem exchangeable_iff_bernoulliMixture (X : ℕ → Ω → Bool) (μ : Measur
       -- These are the same set by reindexing.
       congr 1
       ext ω
-      simp only [Set.mem_setOf_eq]
+      simp only [Set.mem_ofPred_eq]
       constructor <;> intro h i
       · have := h (σ.symm i)
         simpa using this
@@ -1141,8 +1141,8 @@ theorem countLikelihood_integrable_restrict_unit
     (M : BernoulliMixture) (k l : ℕ) :
     Integrable (fun θ : ℝ => countLikelihood k l θ)
       (M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)) := by
-  letI : IsProbabilityMeasure M.mixingMeasure := M.isProbability
-  letI : IsFiniteMeasureOnCompacts M.mixingMeasure := by
+  let : IsProbabilityMeasure M.mixingMeasure := M.isProbability
+  let : IsFiniteMeasureOnCompacts M.mixingMeasure := by
     refine ⟨fun K _hK => ?_⟩
     exact measure_lt_top M.mixingMeasure K
   change IntegrableOn (fun θ : ℝ => countLikelihood k l θ)

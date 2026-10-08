@@ -96,4 +96,17 @@ theorem comparison_family (F : C ⥤ D) (A : D ⥤ Type u)
   intro Y arrow argument
   rfl
 
+theorem comparison_id (A : C ⥤ Type u) (B : A.Elements ⥤ Type u) :
+    comparison (𝟭 C) A B = 𝟙 (dependentFunctions A B) := by
+  ext X value
+  exact restrictSection_id A B value
+
+theorem comparison_comp (F : C ⥤ D) (G : D ⥤ E)
+    (A : E ⥤ Type u) (B : A.Elements ⥤ Type u) :
+    comparison (F ⋙ G) A B =
+      Functor.whiskerLeft F (comparison G A B) ≫
+        comparison F (G ⋙ A) (restrictedFamily G A B) := by
+  ext X value
+  exact restrictSection_comp F G A B value
+
 end Mettapedia.TypeTheory.DependentProductRestriction

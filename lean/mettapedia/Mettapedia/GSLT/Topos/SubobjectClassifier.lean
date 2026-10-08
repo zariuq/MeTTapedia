@@ -32,8 +32,8 @@ In a presheaf topos Psh(C):
 
 namespace Mettapedia.GSLT.Topos
 
-open CategoryTheory
-open CategoryTheory.Limits
+open _root_.CategoryTheory
+open _root_.CategoryTheory.Limits
 open Opposite
 
 universe u v

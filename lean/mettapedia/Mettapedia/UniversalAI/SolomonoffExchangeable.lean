@@ -1132,7 +1132,7 @@ theorem restrictedSolomonoff_infiniteExchangeable_of_prefixLaw
         μ {ω | ∀ i : Fin n, ω i = xs i} =
           ENNReal.ofReal (M.μ (List.ofFn xs))) :
     InfiniteExchangeable (fun i ω => ω i) μ := by
-  letI : MeasureTheory.IsProbabilityMeasure μ := hμprob
+  let : MeasureTheory.IsProbabilityMeasure μ := hμprob
   refine ⟨?_⟩
   intro n
   refine ⟨?_⟩
@@ -1196,7 +1196,7 @@ theorem restrictedSolomonoff_infiniteExchangeable_exists_of_totalOutputOnProgram
     simpa [μ, RestrictedSolomonoffPrior.μ] using
       (Mettapedia.UniversalAI.SolomonoffMeasure.isProbabilityMeasure_totalOutputProgramMeasure_of_root_one
         (U := M.U) (programs := M.programs) (htot := htot) hroot)
-  letI : MeasureTheory.IsProbabilityMeasure μ := hμprob
+  let : MeasureTheory.IsProbabilityMeasure μ := hμprob
   have hNoLeak :
       Mettapedia.UniversalAI.SolomonoffMeasure.NoLeakageAtCylindersLaw
         (U := M.U) (programs := M.programs) μ := by
@@ -1687,7 +1687,7 @@ theorem restrictedSolomonoff_nupln_master_chain_of_prefixLaw
         n_pos + n_neg ≥ N → n_pos + n_neg ≠ 0 →
         |Mettapedia.PLN.Evidence.EvidenceCounts.plnStrength n_pos n_neg -
             Mettapedia.PLN.Evidence.EvidenceCounts.uniformPosteriorMean n_pos n_neg| < ε) := by
-  letI : IsProbabilityMeasure μ := hμprob
+  let : IsProbabilityMeasure μ := hμprob
   have hX : ∀ i : ℕ, Measurable (fun ω : InfBinString => ω i) := by
     intro i
     exact measurable_pi_apply i
@@ -1714,7 +1714,7 @@ theorem restrictedSolomonoff_nupln_justification_of_prefixLaw
       Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.Represents B (fun i (ω : InfBinString) => ω i) μ ∧
       (∀ (n : ℕ) (xs₁ xs₂ : Fin n → Bool),
         countTrue xs₁ = countTrue xs₂ → B.prob xs₁ = B.prob xs₂) := by
-  letI : IsProbabilityMeasure μ := hμprob
+  let : IsProbabilityMeasure μ := hμprob
   have hX : ∀ i : ℕ, Measurable (fun ω : InfBinString => ω i) := by
     intro i
     exact measurable_pi_apply i

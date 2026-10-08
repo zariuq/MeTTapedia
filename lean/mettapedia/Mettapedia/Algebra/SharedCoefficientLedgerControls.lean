@@ -56,6 +56,62 @@ theorem repeated_append_refused : append? [factor 1 3] (factor 1 3) = none := by
 theorem zero_append_retained : append? [factor 1 3] (factor 2 0) =
     some [factor 1 3, factor 2 0] := by decide +kernel
 
+/-! ## One renaming for the whole result -/
+
+/-- A different allocation order may choose different names without changing
+the inherited production, fresh suffixes or their ordered interpretation. -/
+theorem common_renaming_preserves_join :
+    merge? (rename (fun name => name + 10) id leftBranch)
+        (rename (fun name => name + 10) id rightBranch) =
+      some (rename (fun name => name + 10) id joined) := by
+  rw [merge_rename (fun _ _ equal => Nat.add_right_cancel equal)
+    Function.injective_id, shared_prefix_charged_once]
+  rfl
+
+/-- Each answer alone has the same coefficient. Independently renaming its
+shared prefix nevertheless makes their future join charge the production twice. -/
+theorem separate_renamings_hide_fractured_sharing :
+    denote (rename (fun name => name + 10) id inherited) = denote inherited ∧
+      denote (rename (fun name => name + 20) id inherited) = denote inherited ∧
+      (merge? (rename (fun name => name + 10) id inherited)
+        (rename (fun name => name + 20) id inherited)).map denote = some 4 ∧
+      (merge? inherited inherited).map denote = some 2 := by
+  decide +kernel
+
+theorem fractured_sharing_has_no_common_renaming :
+    ¬ ∃ name : Nat → Nat,
+      rename name id inherited = rename (fun identity => identity + 10) id inherited ∧
+      rename name id inherited = rename (fun identity => identity + 20) id inherited := by
+  rintro ⟨name, left, right⟩
+  have equal := left.symm.trans right
+  have different : rename (fun identity => identity + 10) id inherited ≠
+      rename (fun identity => identity + 20) id inherited := by decide +kernel
+  exact different equal
+
+/-- Coalescing equal-valued physical factors can keep each individual answer
+unchanged while altering the coefficient of their join. -/
+theorem noninjective_names_change_join :
+    (merge? [factor 1 3] [factor 2 3]).map denote = some 9 ∧
+      (merge? (rename (fun _ => 0) id [factor 1 3])
+        (rename (fun _ => 0) id [factor 2 3])).map denote = some 3 := by
+  decide +kernel
+
+/-- Identity injectivity alone cannot preserve a refusal caused by unequal
+dependency names. -/
+theorem noninjective_dependencies_hide_conflict :
+    merge? [factor 1 2 17] [factor 1 2 18] = none ∧
+      merge? (rename id (fun _ => 0) [factor 1 2 17])
+        (rename id (fun _ => 0) [factor 1 2 18]) = some [factor 1 2] := by
+  decide +kernel
+
+/-- Separate injective maps for two columns are insufficient when both columns
+refer to the same name space. -/
+theorem separate_columns_lose_dependency_alias :
+    (factor 1 3 2).dependency = (factor 2 5 3).identity ∧
+      ((factor 1 3 2).rename (fun name => name + 10) (fun name => name + 20)).dependency ≠
+        ((factor 2 5 3).rename (fun name => name + 10) (fun name => name + 20)).identity := by
+  decide +kernel
+
 /-! ## Scoped reads retain productions and partition their observations -/
 
 def unclaimed (productions : Ledger Nat Nat Nat) : Scoped Nat Nat Nat Nat :=
@@ -117,6 +173,22 @@ theorem callback_factor_remains_outer :
     Scoped.selected 0 { innerHandled with productions := [factor 1 2, factor 2 7] } =
       [factor 2 7] := rfl
 
+/-- Moving a production without its claim resurrects a coefficient already
+consumed by the inner observer. Production renaming by itself is insufficient. -/
+theorem lost_claim_recharges_renamed_production :
+    denote (Scoped.selected 0 innerHandled) = 1 ∧
+      denote (Scoped.selected 0 (unclaimed
+        (rename (fun name => name + 10) id innerHandled.productions))) = 2 := by
+  decide +kernel
+
+def renamedInnerHandled : Scoped Nat Nat Nat Nat :=
+  ⟨rename (fun name => name + 10) id innerHandled.productions,
+    fun identity => if identity = 11 then some 21 else none⟩
+
+theorem renamed_claim_keeps_read_empty :
+    Scoped.selected 0 renamedInnerHandled = [] ∧ renamedInnerHandled.claims 11 = some 21 := by
+  decide +kernel
+
 open Mettapedia.GSLT.Dynamics.WeightedResumptionControls
 
 def matrixFactor (identity : Nat) (coefficient : TwoByTwo) : Factor Nat Nat TwoByTwo :=
@@ -134,5 +206,15 @@ theorem completion_order_changes_denotation :
   simp only [denote, logicalMatrixOrder, completionMatrixOrder, List.map_cons,
     List.map_nil, matrixFactor, List.prod_cons, List.prod_nil, mul_one]
   exact matrix_composition_is_ordered
+
+/-- A common name change preserves an ordered matrix product; reordering its
+factors does not. -/
+theorem renaming_keeps_matrix_order :
+    denote (rename (fun name => name + 10) id logicalMatrixOrder) =
+        denote logicalMatrixOrder ∧
+      denote (rename (fun name => name + 10) id logicalMatrixOrder) ≠
+        denote completionMatrixOrder := by
+  rw [denote_rename]
+  exact ⟨rfl, completion_order_changes_denotation⟩
 
 end Mettapedia.Algebra.SharedCoefficientLedgerControls

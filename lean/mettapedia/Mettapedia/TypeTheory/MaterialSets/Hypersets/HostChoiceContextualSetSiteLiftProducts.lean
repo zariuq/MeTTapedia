@@ -287,6 +287,20 @@ theorem second_member_value (point : (ContextualFutureSiteLift.base P).Elements)
         ((forward parent bodyMap).app point term).2).val :=
   bodyEquiv_value parent bodyMap ⟨point, ULift.up term.1⟩ (ULift.up term.2)
 
+theorem upper_beta (result : (ContextualFutureSiteLift.base P).Elements ⥤ Type h)
+    (operation : Hom (upper parent bodyMap) result) :
+    ContextualSmallFamilyNativeAdjunction.sigmaUncurry (upperDomain parent) (upperBody parent bodyMap)
+      (ContextualSmallFamilyNativeAdjunction.sigmaCurry (upperDomain parent) (upperBody parent bodyMap) operation) =
+        operation :=
+  ContextualSmallFamilyNativeAdjunction.sigma_uncurry_curry _ _ _
+
+theorem upper_eta (result : (ContextualFutureSiteLift.base P).Elements ⥤ Type h)
+    (operation : Hom (upperBody parent bodyMap) (over (upperDomain parent) result)) :
+    ContextualSmallFamilyNativeAdjunction.sigmaCurry (upperDomain parent) (upperBody parent bodyMap)
+      (ContextualSmallFamilyNativeAdjunction.sigmaUncurry (upperDomain parent) (upperBody parent bodyMap) operation) =
+        operation :=
+  ContextualSmallFamilyNativeAdjunction.sigma_curry_uncurry _ _ _
+
 end Sigma
 
 end Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftProducts

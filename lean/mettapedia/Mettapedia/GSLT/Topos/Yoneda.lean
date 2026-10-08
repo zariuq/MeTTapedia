@@ -34,8 +34,8 @@ constructing native types via the Grothendieck construction.
 
 namespace Mettapedia.GSLT.Topos
 
-open CategoryTheory
-open CategoryTheory.Limits
+open _root_.CategoryTheory
+open _root_.CategoryTheory.Limits
 
 universe u v w
 

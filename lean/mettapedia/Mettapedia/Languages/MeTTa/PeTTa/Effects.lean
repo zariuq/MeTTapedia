@@ -1,306 +1,321 @@
-import Mettapedia.Languages.MeTTa.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.Answers
+import Mettapedia.Languages.MeTTa.PeTTa.NamedSpaces
+import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
+import Mathlib.Data.String.Lemmas
 
 /-!
-# PeTTa Stateful Evaluation: Effects and Commands
+# PeTTa state: named spaces, rows and primitive outcomes
 
-Formalizes the **stateful** layer of PeTTa evaluation — the `EvalState` / `PeTTaCmd`
-judgment that adds side-effecting commands on top of the pure `PeTTaEval` core.
-
-## Architecture
-
-```
-PeTTaEval (pure, state-preserving)       ← Eval.lean
-  ↑ embedded via PeTTaCmd.pureEval
-PeTTaCmd (stateful, state-transforming)  ← this file
-```
-
-`PeTTaCmd s₀ expr s₁ answers` means: starting from state `s₀`, evaluating the
-expression `expr` produces answers `answers` and leaves the system in state `s₁`.
-
-## PeTTa Commands Modeled
-
-| PeTTa expression              | PeTTaCmd constructor     | State change           |
-|-------------------------------|--------------------------|------------------------|
-| `(add-atom &self p)`          | `addAtomCmd`             | adds `p` to facts      |
-| `(remove-atom &self p)`       | `removeAtomCmd`          | removes `p` from facts |
-| `(get-atoms &self)`           | `getAtomsCmd`            | no change              |
-| any pure expression           | `pureEval`               | no change              |
-| `(let* ((x e)) body)`         | `letCmd`                 | no change (pure let)   |
-| `(progn e₁ e₂)`               | `prognCmd`               | sequential composition |
-
-## Design Choices
-
-- `EvalState` wraps `PeTTaSpace` (single `&self` space). Multiple named spaces
-  and I/O effects are deferred to future work.
-- All answers are `Answers = List Pattern` (same as `PeTTaEval`).
-- Ordinary `add-atom` and `remove-atom` return Boolean `True`, matching
-  CeTTa PeTTa mode and the upstream Prolog ordinary-fact operations.
-- `(get-atoms &self)` returns all currently stored atoms (facts plus the
-  narrow visible stored-rule slice) as a superposition of answers.
-- `prognCmd` sequences two commands: the second is evaluated in the output state
-  of the first, and the final answers are those of the second.
-
-## References
-
-- PeTTa transpiler: `hyperon/PeTTa/transpiler.pl`, `spaces.pl`
-- PeTTa lib: `hyperon/PeTTa/lib/lib_metta4.metta` (progn, prog1)
-- MeTTa spec: `trueagi-io.github.io/hyperon-experimental/metta/`
+`State` keeps ordered rows of atoms in the `&self` space and in private
+spaces, together with named state cells, using the shared store of
+`NamedSpaces`. A space handle is an opaque grounded value, not an observable
+integer. Insertion appends a row; removal deletes the rows that match an
+expression pattern. A primitive fault is distinct from an empty answer list
+and from the Boolean `False`. The MeTTaIL view of the `&self` command
+judgment over `Pattern` is in `PatternRewrite.Commands`.
 -/
 
-namespace Mettapedia.Languages.MeTTa.PeTTa
+set_option autoImplicit false
 
-open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.Match
 
-/-! ## Evaluation State -/
+namespace Mettapedia.Languages.MeTTa.PeTTa.Effects
 
-/-- The evaluation state: wraps a `PeTTaSpace` (the `&self` atomspace).
-    Future extensions: multiple named spaces, output log, random seed, etc. -/
-structure EvalState where
-  /-- The primary atomspace (`&self`). -/
-  space : PeTTaSpace
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
+open Mettapedia.Languages.ProcessCalculi.MORK (applySubst matchAtom)
+open NamedSpaces (Handle Store)
+open SpaceSemantics (query query_append)
 
-namespace EvalState
+abbrev State := Store (List Atom) Atom
 
-/-- The initial (empty) evaluation state. -/
-def empty : EvalState := { space := PeTTaSpace.empty }
+def empty : State := Store.new [] []
 
-/-- Project the space out. -/
-@[simp] def getSpace (s : EvalState) : PeTTaSpace := s.space
+/-- The store after loading a program: `&self` holds the loaded atoms in source
+order, and there are no private spaces or cells yet. -/
+def loaded (program : SpaceSemantics.Program) : State :=
+  Store.new (SpaceSemantics.loadedAtoms program) []
 
-/-- Update the space in-place (functional update). -/
-def withSpace (s : EvalState) (sp : PeTTaSpace) : EvalState := { s with space := sp }
+/-- Loading a program derives finite cell support from the store constructor. -/
+theorem loaded_finite_cells (program : SpaceSemantics.Program) :
+    Store.FiniteCells (loaded program) := Store.new_finiteCells _ _
 
-/-- Add a fact atom to the state. -/
-def addAtom (s : EvalState) (p : Pattern) : EvalState :=
-  { s with space := s.space.addAtom p }
+theorem empty_finite_cells : Store.FiniteCells empty := Store.new_finiteCells _ _
 
-/-- Remove all occurrences of a fact atom from the state. -/
-def removeAtom (s : EvalState) (p : Pattern) : EvalState :=
-  { s with space := s.space.removeAtom p }
+theorem loaded_empty_tail (program : SpaceSemantics.Program) :
+    Store.EmptyTail (loaded program) [] := Store.new_emptyTail _ _
 
-/-- Add a rewrite rule to the state. -/
-def addRule (s : EvalState) (r : RewriteRule) : EvalState :=
-  { s with space := s.space.addRule r }
+theorem empty_empty_tail : Store.EmptyTail empty [] := Store.new_emptyTail _ _
 
-end EvalState
+def handleValue : Handle → Atom
+  | .self => .symbol "&self"
+  | .privateSpace index =>
+      .grounded (.custom "PeTTa.Space" (String.replicate index '#'))
 
-/-! ## The Unit Atom -/
+def readHandle : Atom → Option Handle
+  | .symbol "&self" => some .self
+  | .grounded (.custom "PeTTa.Space" token) =>
+      if token = String.replicate token.length '#' then
+        some (.privateSpace token.length)
+      else none
+  | _ => none
 
-/-- The unit literal `()`. Ordinary space mutations return `True`. -/
-def unitAtom : Pattern := .apply "()" []
+@[simp] theorem readHandle_handleValue (handle : Handle) :
+    readHandle (handleValue handle) = some handle := by
+  cases handle <;> simp [handleValue, readHandle]
 
-/-- Successful ordinary space mutations return a Boolean. -/
-def mutationSuccess : Pattern := .apply "True" []
+theorem handleValue_injective : Function.Injective handleValue := by
+  intro first second same
+  have := congrArg readHandle same
+  simpa using this
 
-/-! ## Stateful Evaluation Relation -/
+def insert (state : State) (handle : Handle) (atom : Atom) : Option State := do
+  let rows ← state.read handle
+  state.write handle (rows ++ [atom])
 
-/-- **PeTTa command evaluation** (stateful).
+/-- PeTTa removal uses an ordinary expression pattern, without the `cons`
+list-view interpretation used by case selection. This ground-store fragment
+uses the existing matcher; open stored equations require the dialect's scoped
+unifier. A bare variable is not a universal removal request. -/
+def removalMatches (pattern row : Atom) : Bool :=
+  match pattern with
+  | .expression (_ :: _) => (matchAtom [] pattern row).isSome
+  | _ => false
 
-    `PeTTaCmd s₀ expr s₁ answers` means:
-    starting in state `s₀`, evaluating `expr` transitions to state `s₁`
-    and produces nondeterministic answer set `answers`.
+theorem removalMatches_self (first : Atom) (rest : List Atom) :
+    removalMatches (.expression (first :: rest)) (.expression (first :: rest)) = true :=
+  SpaceSemantics.matchAtom_self _
 
-    Constructors cover the effectful PeTTa primitives plus embedding of pure eval. -/
-inductive PeTTaCmd : EvalState → Pattern → EvalState → Answers → Prop where
+def erase (state : State) (handle : Handle) (pattern : Atom) : Option State := do
+  let rows ← state.read handle
+  state.write handle (rows.filter fun row => !removalMatches pattern row)
 
-  /-- **add-atom**: `(add-atom &self p)` adds `p` to the space and returns `True`.
+/-- Physical row shape, independent of the validity or currency of its fields. -/
+def RowsHaveArity (arity : Nat) (rows : List Atom) : Prop :=
+  ∀ row ∈ rows, ∃ fields, row = .expression fields ∧ fields.length = arity
 
-      PeTTa: `'add-atom'(&self, P) :- add_atom_to_space(self, P).`
-      Answer: `[True]`. -/
-  | addAtomCmd (s : EvalState) (p : Pattern) :
-      PeTTaCmd s
-        (.apply "add-atom" [.apply "&self" [], p])
-        (s.addAtom p)
-        [mutationSuccess]
+@[simp] theorem rowsHaveArity_nil (arity : Nat) : RowsHaveArity arity [] := by
+  simp [RowsHaveArity]
 
-  /-- **remove-atom**: `(remove-atom &self p)` removes all copies of `p` from
-      the space and returns `True`.
+theorem rowsHaveArity_append {arity : Nat} {first second : List Atom}
+    (left : RowsHaveArity arity first) (right : RowsHaveArity arity second) :
+    RowsHaveArity arity (first ++ second) := by
+  intro row member
+  rcases List.mem_append.mp member with member | member
+  · exact left row member
+  · exact right row member
 
-      PeTTa: `'remove-atom'(&self, P) :- remove_atom_from_space(self, P).` -/
-  | removeAtomCmd (s : EvalState) (p : Pattern) :
-      PeTTaCmd s
-        (.apply "remove-atom" [.apply "&self" [], p])
-        (s.removeAtom p)
-        [mutationSuccess]
+theorem removalMatches_literal (fields : List Atom) (nonempty : fields ≠ [])
+    (literal : SpaceSemantics.Literal (.expression fields)) (row : Atom) :
+    removalMatches (.expression fields) row = decide (.expression fields = row) := by
+  cases fields with
+  | nil => contradiction
+  | cons first rest =>
+      simp only [removalMatches, SpaceSemantics.matchAtom_literal literal]
+      split <;> simp_all
 
-  /-- **get-atoms**: `(get-atoms &self)` returns all stored atoms in the space as answers.
 
-      PeTTa: `'get-atoms'(&self) :- findall(A, get_atom(self, A), As).`
-      The answers are the individual stored atoms (superposed). -/
-  | getAtomsCmd (s : EvalState) :
-      PeTTaCmd s
-        (.apply "get-atoms" [.apply "&self" []])
-        s
-        s.space.storedAtoms
+theorem insert_reads_back {state after : State} {handle : Handle} {atom : Atom}
+    (inserted : insert state handle atom = some after) :
+    ∃ before, state.read handle = some before ∧
+      after.read handle = some (before ++ [atom]) := by
+  unfold insert at inserted
+  cases read : state.read handle with
+  | none => simp [read] at inserted
+  | some rows =>
+      simp only [read] at inserted
+      exact ⟨rows, rfl, Store.write_reads_back state handle _ after inserted⟩
 
-  /-- **Pure evaluation**: any expression that has a `PeTTaEval` derivation
-      can be evaluated without changing the state.
+theorem insert_read_other {state after : State} {handle other : Handle} {atom : Atom}
+    (inserted : insert state handle atom = some after) (different : other ≠ handle) :
+    after.read other = state.read other := by
+  unfold insert at inserted
+  cases read : state.read handle with
+  | none => simp [read] at inserted
+  | some rows =>
+      simp only [read] at inserted
+      exact Store.write_read_other state handle other _ after inserted different
 
-      This embeds the pure fragment into the stateful layer. -/
-  | pureEval (s : EvalState) (p : Pattern) (answers : Answers)
-      (h : PeTTaEval s.space p answers) :
-      PeTTaCmd s p s answers
+theorem insert_preserves_cells {state after : State} {handle : Handle} {atom : Atom}
+    (inserted : insert state handle atom = some after) : after.cells = state.cells := by
+  unfold insert at inserted
+  cases read : state.read handle with
+  | none => simp [read] at inserted
+  | some rows =>
+      simp only [read] at inserted
+      exact Store.write_preserves_cells state handle _ after inserted
 
-  /-- **Sequential composition** (`progn`): evaluate `e₁` in state `s₀`,
-      getting intermediate state `s₁`, then evaluate `e₂` in `s₁`.
-      The answers of the whole expression are those of `e₂`.
+theorem insert_preserves_empty_tail {state after : State} {handle : Handle} {atom : Atom}
+    (vacant : Store.EmptyTail state []) (inserted : insert state handle atom = some after) :
+    Store.EmptyTail after [] := by
+  unfold insert at inserted
+  cases read : state.read handle with
+  | none => simp [read] at inserted
+  | some rows =>
+      simp only [read] at inserted
+      exact Store.write_emptyTail vacant inserted
 
-      Models `(progn e₁ e₂)` from PeTTa's `lib_metta4.metta`. -/
-  | prognCmd (s₀ s₁ s₂ : EvalState)
-      (e₁ e₂ : Pattern) (ans₁ ans₂ : Answers)
-      (h₁ : PeTTaCmd s₀ e₁ s₁ ans₁)
-      (h₂ : PeTTaCmd s₁ e₂ s₂ ans₂) :
-      PeTTaCmd s₀ (.apply "progn" [e₁, e₂]) s₂ ans₂
+theorem insert_exists_of_read_some {state : State} {handle : Handle} {rows : List Atom}
+    (allocated : state.read handle = some rows) (atom : Atom) :
+    ∃ after, insert state handle atom = some after := by
+  obtain ⟨after, written⟩ := Store.write_exists_of_read_some state handle rows
+    (rows ++ [atom]) allocated
+  exact ⟨after, by simp [insert, allocated, written]⟩
 
-  /-- **prog1**: evaluate `e₁` in state `s₀`, then `e₂` in the resulting state,
-      but return the answers of `e₁` (not `e₂`).
+theorem erase_exists_of_read_some {state : State} {handle : Handle} {rows : List Atom}
+    (allocated : state.read handle = some rows) (atom : Atom) :
+    ∃ after, erase state handle atom = some after := by
+  obtain ⟨after, written⟩ := Store.write_exists_of_read_some state handle rows
+    (rows.filter fun row => !removalMatches atom row) allocated
+  exact ⟨after, by simp [erase, allocated, written]⟩
 
-      Models `(prog1 e₁ e₂)` from PeTTa's `lib_metta4.metta`. -/
-  | prog1Cmd (s₀ s₁ s₂ : EvalState)
-      (e₁ e₂ : Pattern) (ans₁ ans₂ : Answers)
-      (h₁ : PeTTaCmd s₀ e₁ s₁ ans₁)
-      (h₂ : PeTTaCmd s₁ e₂ s₂ ans₂) :
-      PeTTaCmd s₀ (.apply "prog1" [e₁, e₂]) s₂ ans₁
+theorem erase_reads_back {state after : State} {handle : Handle} {atom : Atom}
+    (erased : erase state handle atom = some after) :
+    ∃ before, state.read handle = some before ∧
+      after.read handle = some (before.filter fun row => !removalMatches atom row) := by
+  unfold erase at erased
+  cases read : state.read handle with
+  | none => simp [read] at erased
+  | some rows =>
+      simp only [read] at erased
+      exact ⟨rows, rfl, Store.write_reads_back state handle _ after erased⟩
 
-/-! ## Basic Properties -/
+theorem erase_read_other {state after : State} {handle other : Handle} {atom : Atom}
+    (erased : erase state handle atom = some after) (different : other ≠ handle) :
+    after.read other = state.read other := by
+  unfold erase at erased
+  cases read : state.read handle with
+  | none => simp [read] at erased
+  | some rows =>
+      simp only [read] at erased
+      exact Store.write_read_other state handle other _ after erased different
 
-/-- `pureEval` preserves the state (trivially by construction). -/
-theorem pureEval_lifts (s : EvalState) (p : Pattern) (ans : Answers)
-    (h : PeTTaEval s.space p ans) : PeTTaCmd s p s ans :=
-  PeTTaCmd.pureEval s p ans h
+theorem erase_preserves_cells {state after : State} {handle : Handle} {atom : Atom}
+    (erased : erase state handle atom = some after) : after.cells = state.cells := by
+  unfold erase at erased
+  cases read : state.read handle with
+  | none => simp [read] at erased
+  | some rows =>
+      simp only [read] at erased
+      exact Store.write_preserves_cells state handle _ after erased
 
-/-- `addAtomCmd` strictly extends the fact list. -/
-theorem addAtomCmd_facts (s : EvalState) (p : Pattern) :
-    (s.addAtom p).space.facts = s.space.facts ++ [p] := rfl
+theorem erase_preserves_empty_tail {state after : State} {handle : Handle} {atom : Atom}
+    (vacant : Store.EmptyTail state []) (erased : erase state handle atom = some after) :
+    Store.EmptyTail after [] := by
+  unfold erase at erased
+  cases read : state.read handle with
+  | none => simp [read] at erased
+  | some rows =>
+      simp only [read] at erased
+      exact Store.write_emptyTail vacant erased
 
-/-- The state output by `addAtomCmd` has the added atom as a fact. -/
-theorem addAtomCmd_mem_facts (s : EvalState) (p : Pattern) :
-    p ∈ (s.addAtom p).space.facts :=
-  PeTTaSpace.mem_facts_addAtom_self s.space p
+/-- One pattern pass clears exactly those rows it selects. No field-validity
+assumption is hidden in the frame properties. -/
+theorem erase_all_selected {state : State} {handle : Handle} {rows : List Atom} {pattern : Atom}
+    (allocated : state.read handle = some rows)
+    (selected : ∀ row ∈ rows, removalMatches pattern row = true) :
+    ∃ after, erase state handle pattern = some after ∧
+      after.read handle = some [] ∧
+      (∀ other, other ≠ handle → after.read other = state.read other) ∧
+      after.cells = state.cells := by
+  obtain ⟨after, erased⟩ := erase_exists_of_read_some allocated pattern
+  obtain ⟨before, readBefore, readAfter⟩ := erase_reads_back erased
+  have same : before = rows := Option.some.inj (readBefore.symm.trans allocated)
+  subst before
+  have filtered : rows.filter (fun row => !removalMatches pattern row) = [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro row member
+    simp [selected row member]
+  exact ⟨after, erased, by simpa [filtered] using readAfter,
+    fun other different => erase_read_other erased different, erase_preserves_cells erased⟩
 
-/-- `addAtomCmd` preserves previously existing facts. -/
-theorem addAtomCmd_preserves_facts (s : EvalState) (p q : Pattern)
-    (h : q ∈ s.space.facts) : q ∈ (s.addAtom p).space.facts :=
-  PeTTaSpace.mem_facts_addAtom h
+theorem erase_literal_reads_back {state after : State} {handle : Handle}
+    {fields : List Atom} (nonempty : fields ≠ [])
+    (literal : SpaceSemantics.Literal (.expression fields))
+    (erased : erase state handle (.expression fields) = some after) :
+    ∃ before, state.read handle = some before ∧
+      after.read handle = some (before.filter (· != .expression fields)) := by
+  obtain ⟨before, allocated, result⟩ := erase_reads_back erased
+  refine ⟨before, allocated, ?_⟩
+  have predicates : (fun row => !removalMatches (.expression fields) row) =
+      (fun row => row != .expression fields) := by
+    funext row
+    rw [removalMatches_literal fields nonempty literal]
+    change (!decide (.expression fields = row)) = (!(row == .expression fields))
+    congr 1
+    apply Bool.eq_iff_iff.mpr
+    simp only [decide_eq_true_eq, beq_iff_eq]
+    exact eq_comm
+  simpa only [predicates] using result
 
-/-- `removeAtomCmd` only removes the targeted atom; other facts survive. -/
-theorem removeAtomCmd_subset_facts (s : EvalState) (p q : Pattern)
-    (h : q ∈ (s.removeAtom p).space.facts) : q ∈ s.space.facts :=
-  PeTTaSpace.mem_facts_removeAtom_subset h
+inductive Fault where
+  | invalidSpace
+  | missingCell (name : String)
+  | invalidArguments (head : String)
+  | zeroDivisor
+  deriving DecidableEq, Repr
 
-/-- `prognCmd` is associative in the sense that sequencing produces the last state. -/
-theorem prognCmd_state_is_last (s₀ s₁ s₂ : EvalState) (e₁ e₂ : Pattern)
-    (ans₁ ans₂ : Answers)
-    (h₁ : PeTTaCmd s₀ e₁ s₁ ans₁) (h₂ : PeTTaCmd s₁ e₂ s₂ ans₂) :
-    ∃ ans, PeTTaCmd s₀ (.apply "progn" [e₁, e₂]) s₂ ans :=
-  ⟨ans₂, PeTTaCmd.prognCmd s₀ s₁ s₂ e₁ e₂ ans₁ ans₂ h₁ h₂⟩
+abbrev Result := Except Fault (State × Answers)
 
-/-! ## State Monotonicity via add-atom Sequences -/
+def boolean (value : Bool) : Atom := .grounded (.bool value)
 
-/-- Adding an atom only extends the fact list: old facts are preserved. -/
-theorem addAtom_facts_subset (s : EvalState) (p : Pattern) :
-    ∀ q ∈ s.space.facts, q ∈ (s.addAtom p).space.facts := fun q hq =>
-  addAtomCmd_preserves_facts s p q hq
+theorem fresh_handle_reads_empty (state : State) :
+    ((state.allocate []).2).read (state.allocate []).1 = some [] :=
+  Store.allocation_reads_empty state []
 
-/-! ## Command Shape Analysis -/
+theorem repeated_rows_retain_occurrences (row pattern template : Atom) :
+    query [row, row] pattern template =
+      query [row] pattern template ++ query [row] pattern template :=
+  query_append [row] [row] pattern template
 
-/-- Case analysis on the shape of any `PeTTaCmd` step.
-    Characterizes the expression form and the state transition. -/
-theorem pettaCmd_shape (s s₁ : EvalState) (p : Pattern) (ans : Answers)
-    (h : PeTTaCmd s p s₁ ans) :
-    (∃ q, p = .apply "add-atom" [.apply "&self" [], q] ∧ s₁ = s.addAtom q ∧ ans = [mutationSuccess]) ∨
-    (∃ q, p = .apply "remove-atom" [.apply "&self" [], q] ∧ s₁ = s.removeAtom q ∧ ans = [mutationSuccess]) ∨
-    (p = .apply "get-atoms" [.apply "&self" []] ∧ s₁ = s ∧ ans = s.space.storedAtoms) ∨
-    (s₁ = s ∧ PeTTaEval s.space p ans) ∨
-    (∃ e₁ e₂, p = .apply "progn" [e₁, e₂]) ∨
-    (∃ e₁ e₂, p = .apply "prog1" [e₁, e₂]) := by
-  cases h with
-  | addAtomCmd _ q => exact Or.inl ⟨q, rfl, rfl, rfl⟩
-  | removeAtomCmd _ q => exact Or.inr (Or.inl ⟨q, rfl, rfl, rfl⟩)
-  | getAtomsCmd _ => exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl, rfl⟩))
-  | pureEval _ _ _ hpe => exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, hpe⟩)))
-  | prognCmd _ _ _ e₁ e₂ _ _ _ _ =>
-    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨e₁, e₂, rfl⟩))))
-  | prog1Cmd _ _ _ e₁ e₂ _ _ _ _ =>
-    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨e₁, e₂, rfl⟩))))
+end Mettapedia.Languages.MeTTa.PeTTa.Effects
 
-/-! ## get-atoms completeness -/
+/-! ## Shared execution configurations
 
--- `getAtomsCmd_complete` was removed.  Its statement was
--- `(h : p ∈ s.space.storedAtoms) : p ∈ s.space.storedAtoms := h`, which never
--- mentioned `get-atoms` and so asserted nothing about completeness.  The
--- genuine result is `getAtomsCmd_answers_eq_storedAtoms` immediately below,
--- which does mention the command and its answer set.
-
-/-- The `get-atoms` answer set is exactly the stored-atom list. -/
-theorem getAtomsCmd_answers_eq_storedAtoms (s : EvalState) :
-    ∃ s', PeTTaCmd s (.apply "get-atoms" [.apply "&self" []]) s' s.space.storedAtoms :=
-  ⟨s, PeTTaCmd.getAtomsCmd s⟩
-
-/-! ## Example Derivations -/
-
-/-- Example: add then get returns the added atom.
-    `(progn (add-atom &self (foo)) (get-atoms &self))` from empty state
-    returns `[.apply "foo" []]`. -/
-theorem example_addThenGet :
-    PeTTaCmd EvalState.empty
-      (.apply "progn"
-        [ .apply "add-atom" [.apply "&self" [], .apply "foo" []]
-        , .apply "get-atoms" [.apply "&self" []] ])
-      { space := { facts := [.apply "foo" []], rules := [] } }
-      [.apply "foo" []] :=
-  PeTTaCmd.prognCmd _ _ _  _ _ _ _
-    (PeTTaCmd.addAtomCmd EvalState.empty (.apply "foo" []))
-    (PeTTaCmd.getAtomsCmd _)
-
-/-! ## Summary
-
-**0 sorries. 0 axioms.**
-
-### State
-- `EvalState` — wraps `PeTTaSpace`; `empty`, `addAtom`, `removeAtom`, `addRule`, `withSpace`
-
-### Commands (`PeTTaCmd s₀ expr s₁ answers`)
-- `addAtomCmd`  — `(add-atom &self p)` → adds fact, returns `[True]`
-- `removeAtomCmd` — `(remove-atom &self p)` → removes fact, returns `[True]`
-- `getAtomsCmd` — `(get-atoms &self)` → returns all stored atoms, no state change
-- `pureEval`    — lifts any `PeTTaEval` derivation; no state change
-- `prognCmd`    — `(progn e₁ e₂)` → sequence, return e₂ answers
-- `prog1Cmd`    — `(prog1 e₁ e₂)` → sequence, return e₁ answers
-
-### Properties
-- `addAtomCmd_mem_facts` — the added atom is a fact afterward
-- `addAtomCmd_preserves_facts` — existing facts survive
-- `removeAtomCmd_subset_facts` — remove only removes the target
-- `prognCmd_state_is_last` — sequencing ends in e₂'s output state
-- `pettaCmd_shape` — case analysis on `PeTTaCmd` shape and state transition
-- `getAtomsCmd_answers_eq_storedAtoms` — get-atoms returns exactly the stored-atom list
-- `example_addThenGet` — concrete derivation: add then get
+These are the existing control and continuation carriers, shared by the
+independent operational rules and the executable machine. They carry the same
+store and observations; no second term, state or answer representation is used.
 -/
 
-/-! ## NotReducible and Empty Result Atoms -/
+namespace Mettapedia.Languages.MeTTa.PeTTa.Eval
 
-/-- The `NotReducible` result atom: wraps a pattern that could not be reduced further.
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
+open Mettapedia.Languages.ProcessCalculi.MORK (Subst)
+open SpaceSemantics (Cases)
+open Effects (State Fault)
 
-    In the MeTTa spec, when an expression `p` matches no rewrite rule and is not a
-    grounded function, it is returned as `(NotReducible p)`.
-    This atom is used as a "stuck" marker in the evaluator loop. -/
-def notReducible (p : Pattern) : Pattern :=
-  .apply "NotReducible" [p]
+inductive Target where
+  | function (head : String)
+  | data
+  deriving Repr
 
-/-- The `Empty` result atom: the standard "no answer" marker.
+inductive Control where
+  | evaluate (bindings : Subst) (expression : Atom)
+  | arguments (bindings : Subst) (target : Target)
+      (remaining values : List Atom) (index : Nat)
+  | sequence (remaining : List Control) (answers : Answers)
+  | returned (answers : Answers)
+  | fault (reason : Fault)
+  deriving Repr
 
-    Produced by `case`/`unify` when no branch matches, and by `(empty)` expressions.
-    `mkEmpty` is distinct from `notReducible`: `Empty` signals no answers were produced,
-    while `NotReducible` signals the expression was stuck. -/
-def mkEmpty : Pattern := .apply "Empty" []
+inductive Frame where
+  | bind (bindings : Subst) (pattern body : Atom)
+  | select (bindings : Subst) (cases : Cases)
+  | branch (bindings : Subst) (yes no : Atom)
+  | collect
+  | argument (bindings : Subst) (target : Target)
+      (remaining values : List Atom) (index : Nat)
+  | sequence (remaining : List Control) (answers : Answers)
+  deriving Repr
 
-@[simp]
-theorem notReducible_def (p : Pattern) :
-    notReducible p = .apply "NotReducible" [p] := rfl
+structure Configuration where
+  state : State
+  control : Control
+  frames : List Frame := []
+  input : List Atom := []
+  output : List Atom := []
 
-@[simp]
-theorem mkEmpty_def : mkEmpty = .apply "Empty" [] := rfl
+inductive Outcome where
+  | complete (state : State) (answers : Answers) (input output : List Atom)
+  | exhausted (configuration : Configuration)
+  | fault (reason : Fault)
 
-end Mettapedia.Languages.MeTTa.PeTTa
+end Mettapedia.Languages.MeTTa.PeTTa.Eval

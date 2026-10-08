@@ -211,6 +211,20 @@ theorem directive_decodes (pattern : Pattern) (conclusion : Atom) :
     extractSupportedSourceExecFact (directive pattern conclusion).atom =
       some (directive pattern conclusion) := by rfl
 
+/-- The same positive rule with explicit add sinks, as required by native
+agenda profiles which do not interpret comma-output shorthand. The selected
+control atom is different and remains visible to reflective input patterns. -/
+def explicitDirective (pattern : Pattern) (conclusion : Atom) : SourceExecFact :=
+  let input := .expression (.symbol "," :: pattern.atoms)
+  let output := explicitAddOutput [conclusion]
+  { atom := .expression [.symbol "exec", .symbol "inference", input, output]
+    loc := .symbol "inference"
+    rule := ⟨0, "unnamed", .compat pattern, [], ⟨[.add conclusion]⟩⟩ }
+
+theorem explicit_directive_decodes (pattern : Pattern) (conclusion : Atom) :
+    extractSupportedSourceExecFact (explicitDirective pattern conclusion).atom =
+      some (explicitDirective pattern conclusion) := by rfl
+
 /-- A structurally excluded control atom cannot create an extra premise match. -/
 theorem cmatchPattern_prepend_inert (pattern : Pattern) (control : Atom)
     (space : List Atom)
@@ -233,6 +247,41 @@ theorem cmatchPattern_prepend_inert (pattern : Pattern) (control : Atom)
       intro found _
       exact ih (fun later member => included later (by simp [member])) found.1
         (found.2 :: witnesses)
+
+/-- Elaboration of the selected add-only directive preserves its complete
+firing when the ordinary premises cannot inspect either control spelling.
+Its output data is left literal; this is not a recursive code translation. -/
+theorem explicit_directive_firing_agrees (pattern : Pattern) (conclusion : Atom)
+    (space : List Atom)
+    (commaInert : ∀ substitution premise, premise ∈ pattern.atoms →
+      cmatchAtom substitution premise (directive pattern conclusion).atom = none)
+    (explicitInert : ∀ substitution premise, premise ∈ pattern.atoms →
+      cmatchAtom substitution premise (explicitDirective pattern conclusion).atom = none) :
+    cFireReflectiveSourceExecFact
+      ((explicitDirective pattern conclusion).atom :: space)
+      (explicitDirective pattern conclusion) =
+    cFireReflectiveSourceExecFact ((directive pattern conclusion).atom :: space)
+      (directive pattern conclusion) := by
+  have commaRows := cmatchPattern_prepend_inert pattern
+    (directive pattern conclusion).atom space commaInert
+  have explicitRows := cmatchPattern_prepend_inert pattern
+    (explicitDirective pattern conclusion).atom space explicitInert
+  change cApplyReflectiveTemplate
+    (((explicitDirective pattern conclusion).atom :: space).erase
+      (explicitDirective pattern conclusion).atom)
+    ((cmatchInputSpec []
+      ((explicitDirective pattern conclusion).atom ::
+        (((explicitDirective pattern conclusion).atom :: space).erase
+          (explicitDirective pattern conclusion).atom)) (.compat pattern)).map Prod.fst)
+    ⟨[.add conclusion]⟩ =
+    cApplyReflectiveTemplate
+      (((directive pattern conclusion).atom :: space).erase (directive pattern conclusion).atom)
+      ((cmatchInputSpec []
+        ((directive pattern conclusion).atom ::
+          (((directive pattern conclusion).atom :: space).erase
+            (directive pattern conclusion).atom)) (.compat pattern)).map Prod.fst)
+      ⟨[.add conclusion]⟩
+  simp only [List.erase_cons_head, cmatchInputSpec, commaRows, explicitRows]
 
 /-- The actual MM2 add sink observes the support of generated conclusions.
 Its support observation does not silently become an occurrence bag. -/
@@ -264,6 +313,44 @@ theorem native_activation_support (pattern : Pattern) (conclusion : Atom)
   rw [← List.mem_map (f := WorkOccurrence.state), generated_values, List.mem_filterMap]
   simp only [List.mem_map]
   aesop
+
+/-- The explicit-sink source presentation has exactly the GCL-generated
+support. Distinct generated occurrences may still have the same value. -/
+theorem explicit_activation_support (pattern : Pattern) (conclusion : Atom)
+    (given : Node) (processed : List Node)
+    (commaInert : ∀ substitution premise, premise ∈ pattern.atoms →
+      cmatchAtom substitution premise (directive pattern conclusion).atom = none)
+    (explicitInert : ∀ substitution premise, premise ∈ pattern.atoms →
+      cmatchAtom substitution premise (explicitDirective pattern conclusion).atom = none)
+    (answer : Atom) :
+    answer ∈ cFireReflectiveSourceExecFact
+      ((explicitDirective pattern conclusion).atom :: context given processed)
+      (explicitDirective pattern conclusion) ↔
+      answer ∈ context given processed ∨
+        ∃ child ∈ (system pattern conclusion).generate given processed, child.state = answer := by
+  rw [explicit_directive_firing_agrees pattern conclusion _ commaInert explicitInert]
+  exact native_activation_support pattern conclusion given processed commaInert answer
+
+/-- Completing the actual retained matcher for the explicit directive is
+sufficient; a paused or partial collection cannot satisfy this premise. -/
+theorem explicit_completed_activation_support (pattern : Pattern) (conclusion : Atom)
+    (given : Node) (processed : List Node)
+    (commaInert : ∀ substitution premise, premise ∈ pattern.atoms →
+      cmatchAtom substitution premise (directive pattern conclusion).atom = none)
+    (explicitInert : ∀ substitution premise, premise ∈ pattern.atoms →
+      cmatchAtom substitution premise (explicitDirective pattern conclusion).atom = none)
+    (fuel : Nat) (target : List Atom)
+    (completed : MM2MatchingBatch.publish
+      ((explicitDirective pattern conclusion).atom :: context given processed)
+      (explicitDirective pattern conclusion)
+      (MM2MatchingBatch.run
+        ((explicitDirective pattern conclusion).atom :: context given processed)
+        (explicitDirective pattern conclusion) fuel).2 = some target)
+    (answer : Atom) :
+    answer ∈ target ↔ answer ∈ context given processed ∨
+      ∃ child ∈ (system pattern conclusion).generate given processed, child.state = answer := by
+  rw [MM2MatchingBatch.commit_sound _ _ _ _ completed]
+  exact explicit_activation_support pattern conclusion given processed commaInert explicitInert answer
 
 theorem child_origin (given : Node) (conclusion : Atom) (rows : List Row)
     (first : Nat) (child : Node) (present : child ∈ children given conclusion rows first) :
@@ -464,6 +551,43 @@ theorem actual_mm2_activation_has_the_same_new_fact :
     control_shell_is_not_a_premise answer).2
   exact Or.inr ⟨⟨answer, [7, 0]⟩, by rw [two_derivations_one_value]; simp, rfl⟩
 
+theorem explicit_control_shell_is_not_a_premise (substitution : Subst) (premise : Atom)
+    (present : premise ∈ premises.atoms) :
+    cmatchAtom substitution premise (explicitDirective premises conclusion).atom = none := by
+  simp only [premises, List.mem_cons, List.not_mem_nil, or_false] at present
+  rcases present with rfl | rfl | rfl <;> rfl
+
+theorem explicit_mm2_activation_preserves_generated_support :
+    (cFireReflectiveSourceExecFact
+      ((explicitDirective premises conclusion).atom :: context root processed)
+      (explicitDirective premises conclusion)).toFinset =
+      (context root processed).toFinset ∪ {answer} := by
+  rw [explicit_directive_firing_agrees premises conclusion _
+    control_shell_is_not_a_premise explicit_control_shell_is_not_a_premise]
+  decide
+
+def selfPattern : Pattern := ⟨[term "exec" [symbol "inference",
+  .var "input", .var "output"]]⟩
+def selfConclusion : Atom := term "seen-output" [.var "output"]
+
+/-- Read-copy semantics permits observation of the changed output spelling.
+The inert-control hypothesis cannot be dropped from elaboration correctness. -/
+theorem reflected_read_distinguishes_output_spelling :
+    cFireReflectiveSourceExecFact [(directive selfPattern selfConclusion).atom]
+      (directive selfPattern selfConclusion) ≠
+    cFireReflectiveSourceExecFact [(explicitDirective selfPattern selfConclusion).atom]
+      (explicitDirective selfPattern selfConclusion) := by decide
+
+theorem reflected_comma_read_retains_captured_syntax :
+    cFireReflectiveSourceExecFact [(directive selfPattern selfConclusion).atom]
+      (directive selfPattern selfConclusion) =
+      [term "seen-output" [term "," [selfConclusion]]] := by decide
+
+theorem reflected_explicit_read_retains_captured_syntax :
+    cFireReflectiveSourceExecFact [(explicitDirective selfPattern selfConclusion).atom]
+      (explicitDirective selfPattern selfConclusion) =
+      [term "seen-output" [explicitAddOutput [selfConclusion]]] := by decide
+
 theorem unbound_conclusion_does_not_invent_a_child :
     (system premises (.var "missing")).generate root processed = [] := by decide
 
@@ -472,6 +596,9 @@ end Controls
 #print axioms generates_iff_derives
 #print axioms generation_support_mono
 #print axioms native_activation_support
+#print axioms explicit_directive_firing_agrees
+#print axioms explicit_completed_activation_support
+#print axioms Controls.reflected_read_distinguishes_output_spelling
 #print axioms children_occurrence_nodup
 #print axioms completed_publication
 #print axioms publication_sound

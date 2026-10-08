@@ -12,9 +12,9 @@ actually *evaluate* inside proofs.
 
 Why bother re-implementing it in a proof assistant? Because once the interpreter is
 a Lean function, you can state and check *conformance* facts: "on this input, the
-spec's clause says the result is X" becomes a theorem the kernel verifies by
+applicable spec case says the result is X" becomes a theorem the kernel verifies by
 computation. The spec prose (`metta.md`) and the Rust source agree, and the Lean
-copy lets you prove they agree, clause by clause.
+copy lets you prove they agree, case by case.
 
 **Source precedence:** `interpreter.rs` (ground truth) > `metta.md` (spec prose,
 lines 240-552).
@@ -37,7 +37,7 @@ plus `eval`, the fuel-wrapped public entry point (`fuel := 100` by default).
 `Types.lean` — `Bindings` (assignments + equalities), `ResultPair`, `ResultSet`,
 error codes.
 
-`Conformance.lean` — 48 clause-by-clause conformance theorems (`rfl`/`decide`)
+`Conformance.lean` — 48 case-by-case conformance theorems (`rfl`/`decide`)
 checked against `metta.md`. No source-level `axiom` declarations and no `sorry`
 (comment-stripped), and no `native_decide` in this file — the conformance theorems
 are kernel-checked.
@@ -67,7 +67,7 @@ Own scope is 67 `.lean` files with **0 `sorry`** (comment-stripped). No source-l
 per-theorem `#print axioms` audit, so a theorem can still inherit a Mathlib axiom
 transitively.
 
-**Trusted base — `native_decide`.** The clause-by-clause `Conformance.lean` theorems
+**Trusted base — `native_decide`.** The case-by-case `Conformance.lean` theorems
 are kernel-checked (`rfl`/`decide`). The HE `.lean` scope currently has no
 `native_decide` proof commands; keep the scan below as an audit gate.
 

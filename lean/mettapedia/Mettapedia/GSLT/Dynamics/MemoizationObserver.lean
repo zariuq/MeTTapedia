@@ -1,6 +1,7 @@
 import Mathlib.Logic.Function.Basic
 import Mathlib.Data.Option.Basic
 import Mathlib.Tactic.ByContra
+import Mathlib.Data.List.Basic
 
 /-!
 # Memoization is an observer
@@ -275,5 +276,133 @@ theorem colour_memo_correct_and_evictable :
   · rfl
 
 end Canary
+
+/-! ## Finite retention: per-group counts and a global charge limit
+
+The input list is in the retention policy's priority order. Charges can count
+term words rather than physical memory; the bound below concerns exactly that
+declared charge. Selecting entries preserves their order and never invents an
+entry. Policy ordering and native storage accounting are separate obligations.
+-/
+
+namespace Retention
+
+variable {G : Type uK'} [DecidableEq G]
+
+def charge (weight : K → Nat) : List K → Nat
+  | [] => 0
+  | k :: ks => weight k + charge weight ks
+
+def groupCount (group : K → G) (g : G) : List K → Nat
+  | [] => 0
+  | k :: ks => (if group k = g then 1 else 0) + groupCount group g ks
+
+/-- Keep the next entry if both its group and its charge fit. An oversized
+entry is skipped, so a later affordable entry can still be retained. -/
+def select (group : K → G) (weight : K → Nat) (quota : G → Nat)
+    (budget : Nat) : List K → List K
+  | [] => []
+  | k :: ks =>
+    if 0 < quota (group k) ∧ weight k ≤ budget then
+      k :: select group weight
+        (fun g => if g = group k then quota g - 1 else quota g)
+        (budget - weight k) ks
+    else select group weight quota budget ks
+
+theorem select_sublist (group : K → G) (weight : K → Nat) (quota : G → Nat)
+    (budget : Nat) (keys : List K) :
+    List.Sublist (select group weight quota budget keys) keys := by
+  induction keys generalizing quota budget with
+  | nil => exact List.Sublist.refl _
+  | cons k ks ih =>
+    by_cases h : 0 < quota (group k) ∧ weight k ≤ budget
+    · simpa [select, h] using (ih _ _).cons_cons k
+    · simpa [select, h] using (ih quota budget).cons k
+
+theorem select_charge_le (group : K → G) (weight : K → Nat) (quota : G → Nat)
+    (budget : Nat) (keys : List K) :
+    charge weight (select group weight quota budget keys) ≤ budget := by
+  induction keys generalizing quota budget with
+  | nil => simp [select, charge]
+  | cons k ks ih =>
+    by_cases h : 0 < quota (group k) ∧ weight k ≤ budget
+    · simp only [select, if_pos h, charge]
+      have tail := ih (fun g => if g = group k then quota g - 1 else quota g)
+        (budget - weight k)
+      omega
+    · simpa [select, h] using ih quota budget
+
+theorem select_groupCount_le (group : K → G) (weight : K → Nat) (quota : G → Nat)
+    (budget : Nat) (keys : List K) (g : G) :
+    groupCount group g (select group weight quota budget keys) ≤ quota g := by
+  induction keys generalizing quota budget with
+  | nil => simp [select, groupCount]
+  | cons k ks ih =>
+    by_cases h : 0 < quota (group k) ∧ weight k ≤ budget
+    · simp only [select, if_pos h, groupCount]
+      have tail := ih (fun g => if g = group k then quota g - 1 else quota g)
+        (budget - weight k)
+      by_cases hg : group k = g
+      · simp only [hg, if_true] at *
+        omega
+      · simp only [if_neg hg, if_neg (Ne.symm hg)] at *
+        omega
+    · simpa [select, h] using ih quota budget
+
+section Table
+
+variable [DecidableEq K]
+
+/-- Evict entries outside the selected keys; a retained value is left intact. -/
+def restrict (keys : List K) (table : Table K O) : Table K O :=
+  fun k => if k ∈ keys then table k else none
+
+theorem restrict_subtable (keys : List K) (table : Table K O) :
+    Subtable (restrict keys table) table := by
+  intro k o h
+  by_cases hk : k ∈ keys
+  · simpa [restrict, hk] using h
+  · simp [restrict, hk] at h
+
+/-- The bounded selector is a real eviction operation. It may lose reuse but
+serves precisely the same consumer observation on a coherent table. -/
+theorem bounded_lookup_eq {key : X → K} {obs : X → O} {table : Table K O}
+    (coherent : Coherent key obs table) (group : K → G) (weight : K → Nat)
+    (quota : G → Nat) (budget : Nat) (keys : List K) (x : X) :
+    lookupOrCompute key obs
+      (restrict (select group weight quota budget keys) table) x =
+      lookupOrCompute key obs table x :=
+  lookupOrCompute_evict coherent (restrict_subtable _ _) x
+
+end Table
+
+/-- A tightened charge limit can force every retained entry out. -/
+theorem select_eq_nil_of_overweight (group : K → G) (weight : K → Nat)
+    (quota : G → Nat) (budget : Nat) (keys : List K)
+    (overweight : ∀ k ∈ keys, budget < weight k) :
+    select group weight quota budget keys = [] := by
+  induction keys with
+  | nil => rfl
+  | cons k ks ih =>
+    have large : budget < weight k := overweight k (by simp)
+    have skip : ¬ (0 < quota (group k) ∧ weight k ≤ budget) := by omega
+    simp only [select, if_neg skip]
+    exact ih (fun x hx => overweight x (by simp [hx]))
+
+/-- Separate occurrences stay separate if both fit; the selector is not a
+set conversion. -/
+theorem equal_occurrences_retained :
+    select (fun (_ : Nat) => ()) (fun _ => 1) (fun _ => 3) 3 [7, 7] = [7, 7] := by
+  decide
+
+/-- Keeping a table unchanged merely because no new entry was inserted is
+invalid when its charge limit changes. Re-running selection restores the bound. -/
+theorem stale_limit_control :
+    charge (fun (_ : Nat) => 4) [7, 7] ≤ 8 ∧
+    ¬ charge (fun (_ : Nat) => 4) [7, 7] ≤ 1 ∧
+    select (fun (_ : Nat) => ()) (fun _ => 4) (fun _ => 3) 1 [7, 7] = [] := by
+  decide
+
+end Retention
 
 end Mettapedia.GSLT.Dynamics.MemoizationObserver

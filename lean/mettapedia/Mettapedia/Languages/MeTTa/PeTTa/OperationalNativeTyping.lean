@@ -1,6 +1,8 @@
-import Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
 import Mettapedia.OSLF.Framework.RelationalAnswerTypeSynthesis
+
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
 
 /-!
 # Operationally derived native typing for PeTTa
@@ -25,7 +27,7 @@ source GSLT; a bare rewrite graph cannot reconstruct authored information.
 namespace Mettapedia.Languages.MeTTa.PeTTa.OperationalNativeTyping
 
 open Mettapedia.GSLT.Dynamics.RelationalAnswerEvaluation
-open Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
 open Mettapedia.OSLF.Framework.RelationalAnswerTypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
@@ -57,7 +59,7 @@ def producesAuthoredType (type : Pattern) : CoreOperationalTerm → Prop :=
 theorem producesBareSymbol_request_iff
     (initial : EvalState) (request : Pattern) :
     producesBareSymbol (.request initial request) ↔
-      ∃ (final : EvalState) (answers : Answers),
+      ∃ (final : EvalState) (answers : RewriteResults),
         ∃ occurrence : Fin answers.length,
           CoreDecl initial request final answers ∧
             ∃ name, answers.get occurrence = .apply name [] := by
@@ -69,7 +71,7 @@ theorem producesBareSymbol_request_iff
 theorem producesAuthoredType_request_iff
     (type : Pattern) (initial : EvalState) (request : Pattern) :
     producesAuthoredType type (.request initial request) ↔
-      ∃ (final : EvalState) (answers : Answers),
+      ∃ (final : EvalState) (answers : RewriteResults),
         ∃ occurrence : Fin answers.length,
           CoreDecl initial request final answers ∧
             MeTTaType final.space (answers.get occurrence) type := by
@@ -102,7 +104,7 @@ native type. -/
 theorem groundFoo_producesBareSymbol :
     producesBareSymbol (.request EvalState.empty foo) := by
   rw [producesBareSymbol_request_iff]
-  let occurrence : Fin ([foo] : Answers).length := ⟨0, by simp⟩
+  let occurrence : Fin ([foo] : RewriteResults).length := ⟨0, by simp⟩
   exact ⟨EvalState.empty, [foo], occurrence,
     CoreDecl.pure _ _ _ (PureDecl.ground "foo"), ⟨"foo", rfl⟩⟩
 
@@ -133,7 +135,7 @@ theorem annotatedApplication_producesAuthoredAtom :
     producesAuthoredType atomType
       (.request annotatedApplicationState annotatedApplicationSuperpose) := by
   rw [producesAuthoredType_request_iff]
-  let occurrence : Fin ([appliedFoo] : Answers).length := ⟨0, by simp⟩
+  let occurrence : Fin ([appliedFoo] : RewriteResults).length := ⟨0, by simp⟩
   exact ⟨annotatedApplicationState, [appliedFoo], occurrence,
     CoreDecl.pure _ _ _ (PureDecl.superpose [appliedFoo]),
     annotatedApplication_has_authoredAtom⟩

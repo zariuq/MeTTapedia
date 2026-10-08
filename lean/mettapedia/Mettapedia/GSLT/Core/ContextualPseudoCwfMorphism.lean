@@ -732,8 +732,7 @@ theorem Cwf.pullbackTypePseudofunctor_mapId_hom_app
     change (base.map (𝟙 (⟨Γ⟩ : C.base.Context))).op =
       (𝟙 (base.obj ⟨Γ⟩)).op
     rw [base.map_id]
-  simp only [Cwf.pullbackTypePseudofunctor, Pseudofunctor.comp_mapId,
-    Iso.trans_hom, Cat.Hom₂.comp_app]
+  simp only [Cwf.pullbackTypePseudofunctor, Pseudofunctor.comp_mapId]
   change
     ((TypeOver.reindexingPseudofunctor D).map₂Iso
         (eqToIso locallyDiscreteIdentity)).hom.toNatTrans.app A ≫
@@ -812,8 +811,7 @@ theorem Cwf.pullbackTypePseudofunctor_mapComp_hom_app
         base.map
           (show (⟨Δ⟩ : C.base.Context) ⟶ ⟨Θ⟩ from first)).op
     rw [base.map_comp]
-  simp only [Cwf.pullbackTypePseudofunctor, Pseudofunctor.comp_mapComp,
-    Iso.trans_hom, Cat.Hom₂.comp_app]
+  simp only [Cwf.pullbackTypePseudofunctor, Pseudofunctor.comp_mapComp]
   change
     ((TypeOver.reindexingPseudofunctor D).map₂Iso
         (eqToIso locallyDiscreteComposition)).hom.toNatTrans.app A ≫

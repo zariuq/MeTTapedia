@@ -203,6 +203,69 @@ theorem wordDemandFits_correspondence {width : Nat}
           omega
         simp only [addedDoesNotFit, enough, decide_false]
 
+/-- The selector's read update keeps the larger of a candidate claim and
+the demand already retained by earlier admitted work. -/
+def wordReadMax {width : Nat} (previous claim : BitVec width) : BitVec width :=
+  if claim > previous then claim else previous
+
+theorem wordReadMax_toNat {width : Nat} (previous claim : BitVec width) :
+    (wordReadMax previous claim).toNat = max previous.toNat claim.toNat := by
+  unfold wordReadMax
+  by_cases increased : claim > previous
+  · rw [if_pos increased]
+    have larger := BitVec.lt_def.mp increased
+    omega
+  · rw [if_neg increased]
+    have notLarger : ¬ previous.toNat < claim.toNat := by
+      simpa only [GT.gt, BitVec.lt_def] using increased
+    omega
+
+/-- A successful guarded check licenses the following unsigned addition:
+the consumption update cannot wrap and the complete demand still fits. -/
+theorem wordDemandFits_update_exact {width : Nat}
+    (available read consumed added : BitVec width)
+    (admitted : wordDemandFits available read consumed added = true) :
+    (consumed + added).toNat = consumed.toNat + added.toNat ∧
+      read.toNat + (consumed + added).toNat ≤ available.toNat := by
+  rw [wordDemandFits_correspondence] at admitted
+  have fits := of_decide_eq_true admitted
+  have availableBound := available.isLt
+  have noWrap : consumed.toNat + added.toNat < 2 ^ width := by omega
+  have exactSum : (consumed + added).toNat = consumed.toNat + added.toNat := by
+    rw [BitVec.toNat_add, Nat.mod_eq_of_lt noWrap]
+  exact ⟨exactSum, by omega⟩
+
+/-- When the preexisting word arrays encode the independent finite demand,
+accepted SUM/MAX updates encode its reservation. This compares numerical
+updates, not allocation, indexing or concurrent writes in the C selector. -/
+theorem word_reservation_encodes_demand {R : Type} [DecidableEq R]
+    (demand : Mettapedia.GSLT.Causality.ResourceInteraction.WaveDemand R)
+    (consume read : Multiset R)
+    (supply previousRead previousConsume added claimRead : R → BitVec 64)
+    (encoding : ∀ resource,
+      (previousRead resource).toNat = demand.read.count resource ∧
+      (previousConsume resource).toNat = demand.consume.count resource ∧
+      (added resource).toNat = consume.count resource ∧
+      (claimRead resource).toNat = read.count resource)
+    (admitted : ∀ resource,
+      wordDemandFits (supply resource) (wordReadMax (previousRead resource) (claimRead resource))
+        (previousConsume resource) (added resource) = true) :
+    ∀ resource,
+      (previousConsume resource + added resource).toNat =
+          (demand.reserve consume read).consume.count resource ∧
+        (wordReadMax (previousRead resource) (claimRead resource)).toNat =
+          (demand.reserve consume read).read.count resource := by
+  intro resource
+  obtain ⟨readExact, consumeExact, addedExact, claimExact⟩ := encoding resource
+  have sumExact := (wordDemandFits_update_exact (supply resource)
+    (wordReadMax (previousRead resource) (claimRead resource))
+    (previousConsume resource) (added resource) (admitted resource)).1
+  rw [consumeExact, addedExact] at sumExact
+  have maximum := wordReadMax_toNat (previousRead resource) (claimRead resource)
+  rw [readExact, claimExact] at maximum
+  exact ⟨by simpa [Mettapedia.GSLT.Causality.ResourceInteraction.WaveDemand.reserve] using sumExact,
+    by simpa [Mettapedia.GSLT.Causality.ResourceInteraction.WaveDemand.reserve] using maximum⟩
+
 private def demandBound {World : Type} (state : TargetState World) (storage : Nat)
     (available read consumed added : BitVec 64) : TargetFrame × TargetState World :=
   let first := targetDeclareLocal (targetEmptyFrame storage) state "available" .word (.word available)
@@ -571,5 +634,154 @@ theorem wrapping_read_consume_refused :
 
 theorem read_underflow_refused :
     wordDemandFits (0 : BitVec 64) 1 0 0 = false := by decide +kernel
+
+/-- A later reader with a smaller claim cannot release demand already
+retained by the wave. Overwriting the old read maximum would falsely admit
+the two additional consumers. -/
+theorem lower_read_does_not_release_prior_read :
+    wordReadMax (7 : BitVec 64) 4 = 7 ∧
+      wordDemandFits (10 : BitVec 64) (wordReadMax 7 4) 2 2 = false ∧
+      wordDemandFits (10 : BitVec 64) 4 2 2 = true := by decide +kernel
+
+/-! ## Resource projection of native private preparation -/
+
+namespace Preparation
+
+open Mettapedia.GSLT.Causality.ResourceInteraction
+
+/-- The three namespaces used by the native preparation footprint. A source
+version identifies a persistent read; it does not supply a lifetime pin. -/
+inductive Resource where
+  | occurrence (owner identifier : BitVec 64)
+  | source (instanceId revision : BitVec 64)
+  | worker (owner : BitVec 64)
+deriving DecidableEq
+
+/-- Exact kind/owner/item encoding of the three authored C claim identities. -/
+def identity : Resource → BitVec 64 × BitVec 64 × BitVec 64
+  | .occurrence owner identifier => (0, owner, identifier)
+  | .source instanceId revision => (1, instanceId, revision)
+  | .worker owner => (2, owner, 0)
+
+theorem identity_injective : Function.Injective identity := by
+  intro left right same
+  cases left <;> cases right <;> simp_all [identity]
+
+/-- This system describes admission rights for private preparation, not
+publication of program atoms. Each task uses one physical occurrence and one
+worker credit, while the captured source is shared persistently. -/
+def system (owner instanceId revision : BitVec 64) : System Resource where
+  Site := Unit
+  Instance := fun _ => BitVec 64
+  consume := fun identifier => {.occurrence owner identifier, .worker owner}
+  read := fun _ => {.source instanceId revision}
+  produce := fun _ => 0
+
+def entry (owner instanceId revision identifier : BitVec 64) :
+    (system owner instanceId revision).Entry := ⟨(), identifier⟩
+
+def entries (owner instanceId revision : BitVec 64) (identifiers : List (BitVec 64)) :
+    List (system owner instanceId revision).Entry :=
+  identifiers.map (entry owner instanceId revision)
+
+/-- The complete finite supply passed to wave admission: one resource per
+owned occurrence, one captured-source read and the available worker credits. -/
+def supply (owner instanceId revision : BitVec 64)
+    (identifiers : List (BitVec 64)) (workers : Nat) : Multiset Resource :=
+  (identifiers.map (Resource.occurrence owner) : Multiset Resource) +
+    {Resource.source instanceId revision} + Multiset.replicate workers (.worker owner)
+
+theorem consumption (owner instanceId revision : BitVec 64)
+    (identifiers : List (BitVec 64)) :
+    (system owner instanceId revision).stepConsume (entries owner instanceId revision identifiers) =
+      (identifiers.map (Resource.occurrence owner) : Multiset Resource) +
+        Multiset.replicate identifiers.length (.worker owner) := by
+  induction identifiers with
+  | nil => simp [entries, System.stepConsume]
+  | cons identifier rest ih =>
+      change (system owner instanceId revision).consume identifier +
+          (system owner instanceId revision).stepConsume (entries owner instanceId revision rest) = _
+      rw [ih]
+      simp only [system, List.map_cons, ← Multiset.cons_coe, List.length_cons,
+        Multiset.replicate_succ, ← Multiset.singleton_add]
+      rw [Multiset.insert_eq_cons, ← Multiset.singleton_add]
+      ac_rfl
+
+theorem persistent_read (owner instanceId revision : BitVec 64)
+    (identifiers : List (BitVec 64)) :
+    (system owner instanceId revision).stepRead (entries owner instanceId revision identifiers) =
+      if identifiers = [] then 0 else {Resource.source instanceId revision} := by
+  induction identifiers with
+  | nil => simp [entries, System.stepRead]
+  | cons identifier rest ih =>
+      change (system owner instanceId revision).read identifier ∪
+          (system owner instanceId revision).stepRead (entries owner instanceId revision rest) = _
+      rw [ih]
+      by_cases empty : rest = []
+      · simp [system, empty]
+      · simpa [system, empty] using
+          (Multiset.eq_union_left (s := {Resource.source instanceId revision}) le_rfl)
+
+@[simp] theorem occurrence_count (owner identifier : BitVec 64)
+    (identifiers : List (BitVec 64)) :
+    (identifiers.map (Resource.occurrence owner)).count (.occurrence owner identifier) =
+      identifiers.count identifier := by
+  exact List.count_map_of_injective identifiers (Resource.occurrence owner)
+    (by intro left right same; exact (Resource.occurrence.inj same).2) identifier
+
+@[simp] theorem occurrence_other_count (owner other identifier : BitVec 64)
+    (identifiers : List (BitVec 64)) (different : other ≠ owner) :
+    (identifiers.map (Resource.occurrence owner)).count (.occurrence other identifier) = 0 := by
+  apply List.count_eq_zero.mpr
+  simp only [List.mem_map]
+  rintro ⟨found, _, same⟩
+  exact different (Resource.occurrence.inj same).1.symm
+
+/-- Native private-preparation authority is exactly occurrence availability
+and worker capacity. Adding more readers does not consume more source copies. -/
+theorem enabled_iff (owner instanceId revision : BitVec 64)
+    (catalogue selected : List (BitVec 64)) (workers : Nat) :
+    (system owner instanceId revision).StepEnables
+        (supply owner instanceId revision catalogue workers)
+        (entries owner instanceId revision selected) ↔
+      (selected : Multiset (BitVec 64)) ≤ catalogue ∧ selected.length ≤ workers := by
+  rw [System.StepEnables, consumption, persistent_read, Multiset.le_iff_count]
+  by_cases empty : selected = []
+  · subst selected
+    simp [supply]
+  rw [if_neg empty]
+  constructor
+  · intro fits
+    refine ⟨Multiset.le_iff_count.mpr ?_, ?_⟩
+    · intro identifier
+      have atOccurrence := fits (.occurrence owner identifier)
+      simpa [supply, Multiset.count_replicate] using atOccurrence
+    · have atWorker := fits (.worker owner)
+      simpa [supply, Multiset.count_replicate] using atWorker
+  · rintro ⟨owned, capacity⟩ resource
+    cases resource with
+    | occurrence other identifier =>
+        by_cases sameOwner : other = owner
+        · subst other
+          simpa [supply, Multiset.count_replicate] using (Multiset.le_iff_count.mp owned) identifier
+        · simp [supply, Multiset.count_replicate, sameOwner]
+    | source otherInstance otherRevision =>
+        simp [supply, Multiset.count_replicate]
+    | worker other =>
+        by_cases sameOwner : other = owner
+        · subst other
+          simpa [supply, Multiset.count_replicate] using capacity
+        · simp [supply, Multiset.count_replicate, Ne.symm sameOwner]
+
+/-- Reusing one occurrence twice requires two copies of its authority even
+when two worker credits exist. Distinct tasks can share the one source read. -/
+theorem occurrence_and_shared_read_controls :
+    (system 7 9 11).StepEnables (supply 7 9 11 [1, 2] 2) (entries 7 9 11 [1, 2]) ∧
+      ¬ (system 7 9 11).StepEnables (supply 7 9 11 [1] 2) (entries 7 9 11 [1, 1]) ∧
+      ¬ (system 7 9 11).StepEnables (supply 7 9 11 [1, 2] 1) (entries 7 9 11 [1, 2]) := by
+  rw [enabled_iff, enabled_iff, enabled_iff]
+  decide +kernel
+
+end Preparation
 
 end Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaResourceWave

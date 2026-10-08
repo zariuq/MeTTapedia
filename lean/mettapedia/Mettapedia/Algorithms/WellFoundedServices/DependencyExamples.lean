@@ -188,4 +188,111 @@ def selfLoop : Catalogue Pkg := ⟨[core], fun _ => [core]⟩
 
 example : selfLoop.cycle? = some [core] := by decide
 
+/-! ## Physical-row traversal and retained analysis expense -/
+
+namespace OccurrenceTraversal
+
+open OccurrenceGraph
+
+def sharedGraph : Graph :=
+  ⟨[[⟨1, some 1⟩, ⟨2, some 1⟩], [⟨3, none⟩, ⟨4, none⟩]]⟩
+
+def sharedInitial : State := (init sharedGraph 0).get (by decide)
+
+def sharedCertificate : sharedGraph.catalogue.Acyclic :=
+  sharedGraph.catalogue.acyclic?.get (by decide)
+
+/-- Two physical rows refer to one memoized child. Both contribute. Analysis
+steps and predecessor visits are distinct from the source activation bound. -/
+theorem shared_rows_bound :
+    bound? (run sharedGraph 100 7 sharedInitial) = some 6 ∧
+      (run sharedGraph 100 7 sharedInitial).memo 1 = 2 ∧
+      (run sharedGraph 100 7 sharedInitial).ticks = 7 ∧
+      (run sharedGraph 100 7 sharedInitial).indexVisits = 2 := by decide
+
+theorem shared_bound_has_independent_derivation : sharedGraph.Derived 0 6 := by
+  exact (bound_derived sharedGraph 100 (run sharedGraph 100 7 sharedInitial) 6
+    (run_valid sharedGraph 100 7 sharedInitial
+      (init_valid sharedGraph 100 0 sharedInitial (by rfl))) shared_rows_bound.1).1
+
+theorem shared_bound_matches_existing_fold :
+    6 = sharedGraph.catalogue.unfoldingWork sharedCertificate
+      (fun node => (sharedGraph.rows node).length) 0 := by
+  exact (initialized_run_bound sharedGraph 100 0 7 sharedInitial (by rfl) 6
+    sharedCertificate shared_rows_bound.1).1
+
+/-- The full state, including functional memo and color stores, survives
+splitting the analysis allowance. This is stronger than final bound equality. -/
+theorem shared_resume_complete_state :
+    run sharedGraph 100 4 (run sharedGraph 100 3 sharedInitial) =
+      run sharedGraph 100 7 sharedInitial :=
+  (run_add sharedGraph 100 3 4 sharedInitial).symm
+
+theorem shared_prefix_pending :
+    bound? (run sharedGraph 100 3 sharedInitial) = none ∧
+      (run sharedGraph 100 3 sharedInitial).status = .pending ∧
+      (run sharedGraph 100 3 sharedInitial).ticks = 3 ∧
+      ((run sharedGraph 100 3 sharedInitial).stack.head?.map Frame.total) = some 2 := by decide
+
+def duplicateGraph : Graph :=
+  ⟨[[⟨1, some 1⟩, ⟨1, some 1⟩], [⟨3, none⟩, ⟨4, none⟩]]⟩
+
+def duplicateInitial : State := (init duplicateGraph 0).get (by decide)
+
+/-- Equal physical identities are rejected; this differs from two distinct
+rows that happen to refer to the same completed child. The paid prefix remains. -/
+theorem duplicate_identity_refused :
+    bound? (run duplicateGraph 100 7 duplicateInitial) = none ∧
+      (run duplicateGraph 100 7 duplicateInitial).status = .invalid ∧
+      (run duplicateGraph 100 7 duplicateInitial).memo 1 = 2 ∧
+      (run duplicateGraph 100 7 duplicateInitial).ticks = 6 ∧
+      (run duplicateGraph 100 7 duplicateInitial).indexVisits = 2 := by decide
+
+def cyclicGraph : Graph := ⟨[[⟨1, some 0⟩]]⟩
+
+def cyclicInitial : State := (init cyclicGraph 0).get (by decide)
+
+theorem cycle_does_not_report_bound :
+    bound? (run cyclicGraph 100 1 cyclicInitial) = none ∧
+      (run cyclicGraph 100 1 cyclicInitial).status = .cycle ∧
+      (run cyclicGraph 100 1 cyclicInitial).ticks = 1 := by decide
+
+def overflowGraph : Graph :=
+  ⟨[[⟨1, some 1⟩, ⟨2, some 1⟩], [⟨3, some 2⟩, ⟨4, some 2⟩],
+    [⟨5, none⟩, ⟨6, none⟩]]⟩
+
+def overflowInitial : State := (init overflowGraph 0).get (by decide)
+
+/-- Overflow retains the accepted total and memo; it supplies no wrapped bound. -/
+theorem overflow_does_not_wrap :
+    bound? (run overflowGraph 12 11 overflowInitial) = none ∧
+      (run overflowGraph 12 11 overflowInitial).status = .overflow ∧
+      (run overflowGraph 12 11 overflowInitial).memo 1 = 6 ∧
+      ((run overflowGraph 12 11 overflowInitial).stack.head?.map Frame.total) = some 7 := by decide
+
+def outsideGraph : Graph := ⟨[[⟨1, some 1⟩]]⟩
+
+def outsideInitial : State := (init outsideGraph 0).get (by decide)
+
+theorem missing_successor_is_not_terminal :
+    bound? (run outsideGraph 100 1 outsideInitial) = none ∧
+      (run outsideGraph 100 1 outsideInitial).status = .invalid ∧
+      (run outsideGraph 100 1 outsideInitial).indexVisits = 0 := by decide
+
+def zeroGraph : Graph := ⟨[[⟨0, none⟩]]⟩
+
+def zeroInitial : State := (init zeroGraph 0).get (by decide)
+
+theorem zero_physical_identity_refused :
+    bound? (run zeroGraph 100 1 zeroInitial) = none ∧
+      (run zeroGraph 100 1 zeroInitial).status = .invalid ∧
+      (run zeroGraph 100 1 zeroInitial).indexVisits = 0 := by decide
+
+theorem zero_ticks_do_not_begin_work :
+    bound? (run sharedGraph 0 1 sharedInitial) = none ∧
+      (run sharedGraph 0 1 sharedInitial).status = .invalid ∧
+      (run sharedGraph 0 1 sharedInitial).ticks = 0 := by decide
+
+end OccurrenceTraversal
+
 end Mettapedia.Algorithms.WellFoundedServices.DependencyExamples

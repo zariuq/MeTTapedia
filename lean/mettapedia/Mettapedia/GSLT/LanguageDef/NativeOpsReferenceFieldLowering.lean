@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.NativeOpsReadExpressionLowering
+import Mettapedia.GSLT.LanguageDef.NativeOpsControlContinuation
 
 /-!
 # Checked reference-field addresses and reads
@@ -57,6 +58,31 @@ theorem source_reference_field_primitive_exact {World : Type} {interface : Inter
       · rintro ⟨address, value, pointed, loaded, same⟩
         exact ⟨⟨.ok (sourceFieldAddress address index), (sourceReferenceCall state pointer).state⟩,
           ⟨address, pointed, rfl⟩, value, loaded, same⟩
+
+theorem source_reference_field_primitive_unique {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {reference : Expr} {record member : String} {index : Nat} {pointer : Option Address}
+    {state : SourceState World} {first second : SourceOutcome World}
+    (baseType : inferExpr interface (sourceFrameScope frame) reference = some (.ref (.named record)))
+    (position : NativeLowering.fieldLayout? interface record member = some index)
+    (left : sourcePrimitive interface heap calls frame (.field reference member) [.reference pointer] state first)
+    (right : sourcePrimitive interface heap calls frame (.field reference member) [.reference pointer] state second) :
+    first = second := by
+  have leftExact := (source_reference_field_primitive_exact heap calls frame reference record member index
+    pointer baseType position state first).mp left
+  have rightExact := (source_reference_field_primitive_exact heap calls frame reference record member index
+    pointer baseType position state second).mp right
+  cases failed : (sourceReferenceCall state pointer).state.fault with
+  | some fault =>
+      simp only [failed] at leftExact rightExact
+      exact leftExact.trans rightExact.symm
+  | none =>
+      simp only [failed] at leftExact rightExact
+      obtain ⟨leftAddress, leftValue, leftPointer, leftRead, leftOut⟩ := leftExact
+      obtain ⟨rightAddress, rightValue, rightPointer, rightRead, rightOut⟩ := rightExact
+      cases Option.some.inj (leftPointer.symm.trans rightPointer)
+      cases Option.some.inj (leftRead.symm.trans rightRead)
+      exact leftOut.trans rightOut.symm
 
 theorem target_field_address_exact {World : Type} {interface : Interface}
     {frame : TargetFrame} {state : TargetState World} {atom : Atom} {address : Address}
@@ -637,5 +663,196 @@ theorem field_copies_code_then_iff {World : Type} {interface : Interface}
             (atom_within_enlarged destination destinationWithin (show lower ≤ first + 2 by omega))
             (field_copy_frame_bound bounded fresh _ _ _ _) (show first + 2 < first + 3 by omega)).mpr
             ⟨after, memory, remaining, suffix⟩
+
+def fieldEqualCode (base : NativeIR.Atom) (record : String)
+    (index first : Nat) (constant : BitVec 64) : List Instruction :=
+  fieldReadCode base record index first .word ++
+    [.temporary (first + 2) .bool
+      (.binary (.compare .eq) (.temporary (first + 1) .word) (.word constant))]
+
+def fieldEqualFrame (frame : TargetFrame) (address : Address) (index first : Nat)
+    (value constant : BitVec 64) : TargetFrame :=
+  targetDeclareTemporary (fieldReadFrame frame address index first (.word value))
+    (first + 2) (.bool (value == constant))
+
+theorem field_equal_frame_bound {frame : TargetFrame} {lower first : Nat}
+    (bounded : TemporaryNamesBound frame lower) (fresh : lower < first)
+    (address : Address) (index : Nat) (value constant : BitVec 64) :
+    TemporaryNamesBound (fieldEqualFrame frame address index first value constant) (first + 2) :=
+  declared_temporary_bound (field_read_frame_bound bounded fresh _ _ _)
+    (by omega) (Nat.le_refl _) _
+
+theorem field_equal_frame_protects {lower first : Nat} (frame : TargetFrame)
+    (fresh : lower < first) (address : Address) (index : Nat) (value constant : BitVec 64) :
+    TemporaryProtection lower frame (fieldEqualFrame frame address index first value constant) :=
+  temporary_protection_trans (field_read_frame_protects frame fresh _ _ _)
+    (declare_temporary_protects _ _ (by omega))
+
+theorem field_equal_frame_scoped {frame : TargetFrame} (hscope : TemporariesScoped frame)
+    (address : Address) (index first : Nat) (value constant : BitVec 64) :
+    TemporariesScoped (fieldEqualFrame frame address index first value constant) :=
+  declared_temporaries_completeNames (field_read_frame_scoped hscope _ _ _ _) _ _
+
+theorem field_equal_code_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {base : NativeIR.Atom}
+    {address : Address} {lower first index : Nat}
+    (read : TargetAtomEval interface frame state base (.reference (some address)))
+    (bounded : TemporaryNamesBound frame lower) (fresh : lower < first)
+    (value constant : BitVec 64)
+    (loaded : targetRead state.memory (sourceFieldAddress address index) = some (.word value))
+    (record : String) (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root
+      (fieldEqualCode base record index first constant) frame state out ↔
+      out = ⟨.normal, fieldEqualFrame frame address index first value constant, state⟩ := by
+  let middle := fieldReadFrame frame address index first (.word value)
+  have readValue : TargetAtomEval interface middle state
+      (.temporary (first + 1) .word) (.word value) :=
+    declared_temporary_atom interface _ state (first + 1) _ _
+  have middleBound := field_read_frame_bound bounded fresh address index (.word value)
+  have compared : TargetPureEval interface middle state
+      (.binary (.compare .eq) (.temporary (first + 1) .word) (.word constant))
+      (.bool (value == constant)) := .binary readValue (.word constant) rfl
+  unfold fieldEqualCode
+  rw [target_normal_prefix_then_exact
+    (by simp [fieldReadCode, jumpFreeCode, jumpFreeInstruction])
+    (field_read_code_exact read bounded fresh loaded record root)]
+  exact target_run_temporary_exact (temporary_bound_fresh middleBound (by omega)) compared root out
+
+def wordFieldWriteCode (base : NativeIR.Atom) (record : String)
+    (index identity : Nat) (value : BitVec 64) : List Instruction :=
+  [.temporary identity (.ref .word) (.fieldAddress base record index),
+   .write (.temporary identity (.ref .word)) (.word value)]
+
+/-- A field write retains the actual complete memory, including aliases.
+Its execution uses the existing memory operation rather than a new store. -/
+theorem word_field_write_code_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {base : NativeIR.Atom}
+    {address : Address} {index identity : Nat}
+    (read : TargetAtomEval interface frame state base (.reference (some address)))
+    (unused : frame.temporaryNames.contains identity = false)
+    (record : String) (value : BitVec 64) (root : List Instruction)
+    (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root
+        (wordFieldWriteCode base record index identity value) frame state out ↔
+      ∃ memory, targetWrite state.memory (sourceFieldAddress address index) (.word value) =
+          some memory ∧
+        out = ⟨.normal, targetDeclareTemporary frame identity
+          (.reference (some (sourceFieldAddress address index))), { state with memory := memory }⟩ := by
+  unfold wordFieldWriteCode
+  rw [target_normal_then_exact
+    (target_field_address_instruction_exact read record index identity .word unused)]
+  rw [target_write_then_iff
+    (declared_temporary_atom interface frame state identity (.ref .word)
+      (.reference (some (sourceFieldAddress address index)))) (.word value)]
+  simp only [target_run_empty_exact]
+
+def conditionalWordFieldCode (base : NativeIR.Atom) (record : String)
+    (index first : Nat) (constant replacement : BitVec 64) : List Instruction :=
+  fieldEqualCode base record index first constant ++
+    [.branch (.value (.temporary (first + 2) .bool))
+      (wordFieldWriteCode base record index (first + 3) replacement) []]
+
+/-- The value specification is stated directly on the existing logical
+memory. It mentions neither target instructions nor their execution. -/
+def conditionalWordFieldMemory (memory : TargetMemory) (address : Address)
+    (value constant replacement : BitVec 64) : Option TargetMemory :=
+  if value == constant then targetWrite memory address (.word replacement) else some memory
+
+theorem conditional_word_field_code_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {base : NativeIR.Atom}
+    {address : Address} {lower first index : Nat}
+    (read : TargetAtomEval interface frame state base (.reference (some address)))
+    (within : atomWithin lower base)
+    (bounded : TemporaryNamesBound frame lower) (fresh : lower < first)
+    (hscope : TemporariesScoped frame) (value constant replacement : BitVec 64)
+    (loaded : targetRead state.memory (sourceFieldAddress address index) = some (.word value))
+    (record : String) (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root
+        (conditionalWordFieldCode base record index first constant replacement) frame state out ↔
+      ∃ memory, conditionalWordFieldMemory state.memory
+          (sourceFieldAddress address index) value constant replacement = some memory ∧
+        out = ⟨.normal, fieldEqualFrame frame address index first value constant,
+          { state with memory := memory }⟩ := by
+  let compared := fieldEqualFrame frame address index first value constant
+  let writeCode := wordFieldWriteCode base record index (first + 3) replacement
+  have comparedBound := field_equal_frame_bound bounded fresh address index value constant
+  have comparedScope := field_equal_frame_scoped hscope address index first value constant
+  have comparedRead : TargetAtomEval interface compared state base (.reference (some address)) :=
+    (protection_atom_evaluation
+      (field_equal_frame_protects frame fresh address index value constant)
+      base within state state (.reference (some address))).mp read
+  have unused : compared.temporaryNames.contains (first + 3) = false :=
+    temporary_bound_fresh comparedBound (by omega)
+  have tested : TargetConditionEval interface compared state
+      (.value (.temporary (first + 2) .bool)) (value == constant) :=
+    .value (declared_temporary_atom interface _ state (first + 2) .bool
+      (.bool (value == constant)))
+  have closed (memory : TargetMemory) :
+      targetCloseBlock compared
+        ⟨.normal, targetDeclareTemporary compared (first + 3)
+          (.reference (some (sourceFieldAddress address index))),
+          { state with memory := memory }⟩ =
+      (⟨.normal, compared, { state with memory := memory }⟩ : TargetBlockOutcome World) := by
+    unfold targetCloseBlock
+    rw [target_leave_declared_temporary compared _ (first + 3) _ unused comparedScope]
+  unfold conditionalWordFieldCode
+  rw [target_normal_prefix_then_exact
+    (by simp [fieldEqualCode, fieldReadCode, jumpFreeCode, jumpFreeInstruction])
+    (field_equal_code_exact read bounded fresh value constant loaded record root)]
+  by_cases selected : (value == constant) = true
+  · obtain ⟨written, stored⟩ := targetWrite_defined_of_read loaded (.word replacement)
+    have branchExact (ending : TargetBlockOutcome World) :
+        TargetInstructionEval interface heap calls result
+          (.branch (.value (.temporary (first + 2) .bool)) writeCode []) compared state ending ↔
+        ending = ⟨.normal, compared, { state with memory := written }⟩ := by
+      rw [target_branch_instruction_exact tested]
+      simp only [selected, if_true]
+      constructor
+      · rintro ⟨inner, executed, same⟩
+        obtain ⟨memory, saved, innerSame⟩ :=
+          (word_field_write_code_exact comparedRead unused record replacement writeCode inner).mp executed
+        cases Option.some.inj (stored.symm.trans saved)
+        rw [innerSame, closed] at same
+        exact same
+      · intro same
+        refine ⟨⟨.normal, targetDeclareTemporary compared (first + 3)
+          (.reference (some (sourceFieldAddress address index))),
+          { state with memory := written }⟩, ?_, ?_⟩
+        · exact (word_field_write_code_exact comparedRead unused record replacement writeCode _).mpr
+            ⟨written, stored, rfl⟩
+        · simpa only [closed] using same
+    rw [target_normal_then_exact branchExact root [], target_run_empty_exact]
+    simp only [conditionalWordFieldMemory, selected, if_true, stored,
+      Option.some.injEq]
+    constructor
+    · intro same
+      exact ⟨written, rfl, same⟩
+    · rintro ⟨memory, rfl, same⟩
+      exact same
+  · have declined : (value == constant) = false := Bool.eq_false_iff.mpr selected
+    have branchExact (ending : TargetBlockOutcome World) :
+        TargetInstructionEval interface heap calls result
+          (.branch (.value (.temporary (first + 2) .bool)) writeCode []) compared state ending ↔
+        ending = ⟨.normal, compared, state⟩ := by
+      rw [target_branch_instruction_exact tested]
+      simp only [declined, Bool.false_eq_true, if_false, target_run_empty_exact]
+      constructor
+      · rintro ⟨inner, rfl, same⟩
+        simpa only [target_close_self compared state comparedScope] using same
+      · intro same
+        exact ⟨⟨.normal, compared, state⟩, rfl,
+          by simpa only [target_close_self compared state comparedScope] using same⟩
+    rw [target_normal_then_exact branchExact root [], target_run_empty_exact]
+    simp only [conditionalWordFieldMemory, declined, Bool.false_eq_true, if_false,
+      Option.some.injEq]
+    constructor
+    · intro same
+      exact ⟨state.memory, rfl, same⟩
+    · rintro ⟨memory, rfl, same⟩
+      exact same
+
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

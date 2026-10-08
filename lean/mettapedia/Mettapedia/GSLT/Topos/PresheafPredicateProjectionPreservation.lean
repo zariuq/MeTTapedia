@@ -36,7 +36,7 @@ constraint on which of the base's morphisms survive.
 - Williams & Stay, "Native Type Theory" (ACT 2021), §3.
 -/
 
-open CategoryTheory MonoidalCategory CartesianMonoidalCategory
+open _root_.CategoryTheory MonoidalCategory CartesianMonoidalCategory
 
 universe u
 

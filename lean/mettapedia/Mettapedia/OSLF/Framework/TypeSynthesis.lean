@@ -127,6 +127,19 @@ theorem exec_to_langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef)
 def langReduces (lang : LanguageDef) (p q : Pattern) : Prop :=
   langReducesUsing RelationEnv.empty lang p q
 
+/-- The existing root executor is complete for languages whose premises do
+not recursively invoke the language step relation. Freshness, relation
+queries and quantified base premises use the same premise evaluator. -/
+theorem mem_rootFrontier_iff_langReducesUsing
+    (relations : RelationEnv) (lang : LanguageDef)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    (source target : Pattern) :
+    target ∈ rewriteStepWithPremisesUsing relations lang source ↔
+      langReducesUsing relations lang source target := by
+  unfold langReducesUsing
+  rw [step_iff_rootStep_of_noncontextualRules nonrecursive]
+  simp [RootStep, rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing]
+
 /-! ## Step 2: Modulo-equations GSLT semantics -/
 
 /-- The canonical GSLT generated from a language under an explicit relation
@@ -172,6 +185,20 @@ theorem langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
     langSemanticReducesUsing relEnv lang source target ↔
       langReducesUsing relEnv lang source target :=
   stepModuloEquations_iff_step_of_no_generators equationFree source target
+
+/-- Root enumeration realizes the canonical LangDef GSLT under the two
+explicit structural conditions. The equation-free condition excludes
+generated collection and algebra laws as well as authored equations. -/
+theorem mem_rootFrontier_iff_langGSLTUsing_step
+    (relations : RelationEnv) (lang : LanguageDef)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    (source target : Pattern) :
+    target ∈ rewriteStepWithPremisesUsing relations lang source ↔
+      (langGSLTUsing relations lang).Step source target := by
+  exact (mem_rootFrontier_iff_langReducesUsing relations lang nonrecursive source target).trans
+    (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+      relations equationFree source target).symm
 
 /-- Default-environment form of
 `langSemanticReducesUsing_iff_langReducesUsing_of_equation_free`.  This is a

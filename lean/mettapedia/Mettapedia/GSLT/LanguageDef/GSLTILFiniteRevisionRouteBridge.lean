@@ -33,7 +33,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.GSLTIL.FiniteRevisionRouteBridge
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Dynamics.IndexedQueryRevision
 open Mettapedia.GSLT.Dynamics.QueryRevision
@@ -50,7 +50,7 @@ universe u
 
 /-- Erasing named revisions gives proposition-valued reachability in the
 generated revision GSLT. -/
-def historyToMultiStep
+theorem historyToMultiStep
     {theory : Theory.{u, u, u, u}}
     {revisions : List theory.Revision} {source target : theory.World} :
     theory.HistoryStep revisions source target ->
@@ -104,7 +104,7 @@ namespace NamedHistoryPath
 
 /-- Forget intermediate path data to the established proposition-valued
 history. -/
-def erase {theory : Theory.{u, u, u, u}}
+theorem erase {theory : Theory.{u, u, u, u}}
     {revisions : List theory.Revision} {source target : theory.World} :
     NamedHistoryPath theory revisions source target ->
       theory.HistoryStep revisions source target

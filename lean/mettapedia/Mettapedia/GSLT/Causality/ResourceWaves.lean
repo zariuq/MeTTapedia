@@ -22,6 +22,67 @@ namespace Mettapedia.GSLT.Causality.ResourceInteraction
 
 universe uRes uRule
 
+/-- Finite consumption and persistent-read demand accumulated during a wave
+scan. Consumption adds; readers share the largest demand for each resource. -/
+@[ext] structure WaveDemand (R : Type uRes) where
+  consume : Multiset R
+  read : Multiset R
+
+namespace WaveDemand
+
+variable {R : Type uRes} [DecidableEq R]
+
+def empty : WaveDemand R := ⟨0, 0⟩
+
+def reserve (demand : WaveDemand R) (consume read : Multiset R) : WaveDemand R :=
+  ⟨demand.consume + consume, demand.read ∪ read⟩
+
+def Fits (available : Multiset R) (demand : WaveDemand R) : Prop :=
+  demand.consume + demand.read ≤ available
+
+instance decidableFits (available : Multiset R) (demand : WaveDemand R) :
+    Decidable (demand.Fits available) :=
+  inferInstanceAs (Decidable (demand.consume + demand.read ≤ available))
+
+omit [DecidableEq R] in
+@[simp] theorem empty_fits (available : Multiset R) :
+    (empty : WaveDemand R).Fits available := by simp [Fits, empty]
+
+/-- The independently accumulated demand tests the complete natural-number
+inequality, including reads made by earlier accepted work. -/
+theorem reserve_fits_iff_count (available : Multiset R) (demand : WaveDemand R)
+    (consume read : Multiset R) :
+    (demand.reserve consume read).Fits available ↔ ∀ resource,
+      max (demand.read.count resource) (read.count resource) +
+        demand.consume.count resource + consume.count resource ≤ available.count resource := by
+  unfold Fits reserve
+  rw [Multiset.le_iff_count]
+  simp only [Multiset.count_add, Multiset.count_union]
+  constructor <;> intro checked resource <;> have fits := checked resource <;> omega
+
+/-- An already admitted prefix needs new checks only at the candidate's
+claimed resources. Omitting a nonzero claim violates the coverage premise. -/
+theorem reserve_fits_iff_on (available : Multiset R) (demand : WaveDemand R)
+    (consume read : Multiset R) (resources : Finset R)
+    (prefixFits : demand.Fits available)
+    (covered : ∀ resource, resource ∉ resources →
+      consume.count resource = 0 ∧ read.count resource = 0) :
+    (demand.reserve consume read).Fits available ↔ ∀ resource ∈ resources,
+      max (demand.read.count resource) (read.count resource) +
+        demand.consume.count resource + consume.count resource ≤ available.count resource := by
+  rw [reserve_fits_iff_count]
+  constructor
+  · exact fun checked resource _ => checked resource
+  · intro checked resource
+    by_cases present : resource ∈ resources
+    · exact checked resource present
+    · obtain ⟨noConsume, noRead⟩ := covered resource present
+      have previous := (Multiset.le_iff_count.mp prefixFits) resource
+      simp only [Multiset.count_add] at previous
+      simpa only [noConsume, noRead, max_zero, Nat.add_zero, Nat.add_comm] using previous
+
+end WaveDemand
+
 namespace System
 
 variable {R : Type uRes} [DecidableEq R] (S : System.{uRes, uRule} R)
@@ -117,6 +178,72 @@ def selectWaveAux (M : Multiset R) :
 def selectWave (M : Multiset R) (candidates : List S.Entry) :
     List S.Entry × List S.Entry :=
   S.selectWaveAux M [] candidates
+
+/-- The whole-list resource specification, used to compare the independent
+incremental accumulator with retained source occurrences. -/
+def waveDemand (entries : Multiset S.Entry) : WaveDemand R :=
+  ⟨S.stepConsume entries, S.stepRead entries⟩
+
+@[simp] theorem waveDemand_zero : S.waveDemand (0 : Multiset S.Entry) = .empty := by
+  simp [waveDemand, stepConsume, stepRead, WaveDemand.empty]
+
+theorem waveDemand_reserve (entries : List S.Entry) (entry : S.Entry) :
+    (S.waveDemand entries).reserve (S.consume entry.2) (S.read entry.2) =
+      S.waveDemand (entries ++ [entry]) := by
+  apply WaveDemand.ext
+  · simp [waveDemand, WaveDemand.reserve, stepConsume]
+  · change S.stepRead entries ∪ S.read entry.2 =
+      S.stepRead ((entries : Multiset S.Entry) + {entry})
+    rw [S.stepRead_add]
+    simp [stepRead]
+
+@[simp] theorem waveDemand_fits_iff (available : Multiset R)
+    (entries : Multiset S.Entry) :
+    (S.waveDemand entries).Fits available ↔ S.StepEnables available entries := Iff.rfl
+
+/-- Scan by updating only the accumulated demand of accepted occurrences.
+Rejected work leaves that accumulator unchanged. The output includes the
+final demand as well as both ordered occurrence lists. -/
+def selectWaveDemandAux (available : Multiset R) :
+    WaveDemand R → List S.Entry → (List S.Entry × List S.Entry) × WaveDemand R
+  | demand, [] => (([], []), demand)
+  | demand, entry :: rest =>
+      let next := demand.reserve (S.consume entry.2) (S.read entry.2)
+      if next.Fits available then
+        let later := selectWaveDemandAux available next rest
+        ((entry :: later.1.1, later.1.2), later.2)
+      else
+        let later := selectWaveDemandAux available demand rest
+        ((later.1.1, entry :: later.1.2), later.2)
+
+def selectWaveDemand (available : Multiset R) (candidates : List S.Entry) :
+    (List S.Entry × List S.Entry) × WaveDemand R :=
+  S.selectWaveDemandAux available .empty candidates
+
+/-- Updating consumption by sum and reads by maximum implements the
+independent whole-wave selector. This preserves selected and deferred
+occurrences, their order, and the exact final accumulator. -/
+theorem selectWaveDemandAux_correspondence (available : Multiset R) :
+    ∀ (candidates reserved : List S.Entry),
+      S.selectWaveDemandAux available (S.waveDemand reserved) candidates =
+        (S.selectWaveAux available reserved candidates,
+          S.waveDemand (reserved ++ (S.selectWaveAux available reserved candidates).1))
+  | [], reserved => by simp [selectWaveDemandAux, selectWaveAux]
+  | entry :: rest, reserved => by
+      simp only [selectWaveDemandAux, waveDemand_reserve, waveDemand_fits_iff]
+      by_cases admitted : S.StepEnables available (reserved ++ [entry])
+      · rw [if_pos admitted, selectWaveDemandAux_correspondence available rest (reserved ++ [entry])]
+        simp [selectWaveAux, admitted, List.append_assoc]
+      · rw [if_neg admitted, selectWaveDemandAux_correspondence available rest reserved]
+        simp [selectWaveAux, admitted]
+
+theorem selectWaveDemand_correspondence (available : Multiset R)
+    (candidates : List S.Entry) :
+    S.selectWaveDemand available candidates =
+      (S.selectWave available candidates,
+        S.waveDemand (S.selectWave available candidates).1) := by
+  simpa [selectWaveDemand, selectWave] using
+    S.selectWaveDemandAux_correspondence available candidates []
 
 /-- The accepted occurrences retain their catalogue order. -/
 theorem selectWaveAux_selected_sublist (M : Multiset R) :
@@ -280,6 +407,35 @@ theorem selectWave_every_order {M : Multiset R} {candidates order : List S.Entry
     S.Fires order M (S.waveTarget M (S.selectWave M candidates).1) :=
   (S.step_orders_meet permutation (S.selectWave_enabled M candidates)).2
 
+/-- The incrementally accumulated final demand is collectively enabled. -/
+theorem selectWaveDemand_enabled (available : Multiset R) (candidates : List S.Entry) :
+    (S.selectWaveDemand available candidates).2.Fits available := by
+  rw [S.selectWaveDemand_correspondence]
+  exact S.selectWave_enabled available candidates
+
+/-- Both lists of the incremental selector retain the source occurrence
+partition, including equal entries with different physical occurrences. -/
+theorem selectWaveDemand_partition (available : Multiset R) (candidates : List S.Entry) :
+    ((S.selectWaveDemand available candidates).1.1 ++
+      (S.selectWaveDemand available candidates).1.2).Perm candidates := by
+  rw [S.selectWaveDemand_correspondence]
+  exact S.selectWave_partition available candidates
+
+/-- A deferred occurrence does not fit the completed accumulator. The scan
+is inclusion-maximal at this snapshot; it does not discover uncatalogued work. -/
+theorem selectWaveDemand_maximal (available : Multiset R) (candidates : List S.Entry)
+    (entry : S.Entry) (deferred : entry ∈ (S.selectWaveDemand available candidates).1.2) :
+    ¬ ((S.selectWaveDemand available candidates).2.reserve
+      (S.consume entry.2) (S.read entry.2)).Fits available := by
+  rw [S.selectWaveDemand_correspondence] at deferred ⊢
+  rw [S.waveDemand_reserve, S.waveDemand_fits_iff]
+  have reordered :
+      ((S.selectWave available candidates).1 ++ [entry] : Multiset S.Entry) =
+        (entry :: (S.selectWave available candidates).1 : List S.Entry) :=
+    Multiset.coe_eq_coe.mpr List.perm_append_comm
+  rw [reordered]
+  exact S.selectWave_maximal available candidates entry deferred
+
 end System
 
 /-! ## Resource-sensitive scheduling controls -/
@@ -316,6 +472,28 @@ theorem collective_demand_controls_admission :
         [job 1 1, job 2 1] ∧
       (packing.selectWave twoTokens [job 1 1, job 2 1, job 3 1]).2 = [job 3 1] := by
   exact ⟨rfl, rfl⟩
+
+/-- A rejected third claimant leaves the accumulated two-token demand
+unchanged, while its occurrence remains deferred. -/
+theorem incremental_rejection_retains_demand :
+    (packing.selectWaveDemand twoTokens [job 1 1, job 2 1, job 3 1]).1 =
+        ([job 1 1, job 2 1], [job 3 1]) ∧
+      (packing.selectWaveDemand twoTokens [job 1 1, job 2 1, job 3 1]).2.consume = twoTokens ∧
+      (packing.selectWaveDemand twoTokens [job 1 1, job 2 1, job 3 1]).2.read = 0 := by
+  rw [packing.selectWaveDemand_correspondence]
+  decide +kernel
+
+/-- Checking an empty claim inventory would accept this candidate, even
+though its actual one-token consumption exceeds the empty supply. -/
+theorem missing_claim_coverage_is_unsound :
+    (WaveDemand.empty : WaveDemand Resource).Fits 0 ∧
+      (∀ resource ∈ (∅ : Finset Resource),
+        max ((WaveDemand.empty : WaveDemand Resource).read.count resource) 0 +
+          (WaveDemand.empty : WaveDemand Resource).consume.count resource +
+            ({Resource.token} : Multiset Resource).count resource ≤
+              (0 : Multiset Resource).count resource) ∧
+      ¬ ((WaveDemand.empty : WaveDemand Resource).reserve {Resource.token} 0).Fits 0 := by
+  simp [WaveDemand.empty, WaveDemand.reserve, WaveDemand.Fits]
 
 /-- A greedy priority choice is inclusion-maximal but need not select the
 largest possible number of tasks. Priority is an explicit strategy choice. -/

@@ -106,7 +106,7 @@ Symmetric reflective higher-order concurrent calculus with COMM
 | `Reduction.lean` | COMM with lightweight unifier and REFL with one-step lookahead |
 | `Adequacy.lean` | Premise adequacy bridging IR contract to executable reduction |
 | `Premises.lean` | Premises as PremiseProgram IR with datalog contract |
-| `PaperMap.lean` | Theorem index mapping paper clauses to Lean theorems |
+| `PaperMap.lean` | Theorem index mapping the paper's equations and rules to Lean theorems |
 | `Interoperability.lean` | Bridge from MeTTa quote/drop/parallel to rho/open-map stack |
 | `Regression.lean` | Positive/negative regression corpus with exact expected outputs |
 | `RelationNames.lean` | Single source of truth for relation/builtin identifiers |

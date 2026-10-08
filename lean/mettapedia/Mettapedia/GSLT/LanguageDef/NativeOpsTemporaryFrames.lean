@@ -227,4 +227,49 @@ theorem target_pure_temporary_any_exact {World : Type} (interface : Interface)
     subst out
     exact .next (.temporary unused computed) (.nil _ _ _)
 
+theorem updated_temporary_atom {World : Type} (interface : Interface) (frame : TargetFrame)
+    (state : TargetState World) (identity : Nat) (type : NativeType) (value : TargetValue)
+    (live : frame.temporaryNames.contains identity = true) :
+    TargetAtomEval interface (targetUpdateTemporary frame identity value) state
+      (.temporary identity type) value :=
+  .temporary (by simp only [targetUpdateTemporary, if_true]) live
+
+theorem target_update_temporary_scoped {frame : TargetFrame} (hscope : TemporariesScoped frame)
+    {identity : Nat} (live : frame.temporaryNames.contains identity = true) (value : TargetValue) :
+    TemporariesScoped (targetUpdateTemporary frame identity value) := by
+  intro candidate absent
+  change frame.temporaryNames.contains candidate = false at absent
+  have different : candidate ≠ identity := by
+    intro same
+    subst candidate
+    rw [live] at absent
+    cases absent
+  simp only [targetUpdateTemporary, different, if_false]
+  exact hscope candidate absent
+
+/-- Updating a live newer descriptor preserves older private operands and
+keeps the exact live-name inventory. Runtime memory is a separate state. -/
+theorem updated_temporary_frame_profile {frame : TargetFrame} {lower upper identity : Nat}
+    (bounded : TemporaryNamesBound frame upper) (hscope : TemporariesScoped frame)
+    (live : frame.temporaryNames.contains identity = true) (newer : lower < identity)
+    (value : TargetValue) :
+    TemporaryProtection lower frame (targetUpdateTemporary frame identity value) ∧
+    TemporaryNamesBound (targetUpdateTemporary frame identity value) upper ∧
+    TemporariesScoped (targetUpdateTemporary frame identity value) :=
+  ⟨update_temporary_protects frame value newer, updated_temporary_bound bounded value,
+    target_update_temporary_scoped hscope live value⟩
+
+
+theorem target_atom_read_within {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {bound : Nat}
+    (bounded : TemporaryNamesBound frame bound) {atom : NativeIR.Atom} {value : TargetValue}
+    (read : TargetAtomEval interface frame state atom value) : atomWithin bound atom := by
+  cases read with
+  | temporary _ live => exact bounded _ live
+  | iterationCounter _ live => exact bounded _ live
+  | localAddress _ => trivial
+  | word _ => trivial
+  | zero _ => trivial
+  | unit => trivial
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

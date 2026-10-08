@@ -4,8 +4,8 @@ import Mathlib.Algebra.BigOperators.Fin
 /-!
 # Logic Programming Kernel: Matching (One-Sided Unification)
 
-Matching is the restriction of unification where only one side may contain
-variables.  Given a pattern `p` and a ground target `t`, matching finds
+This module handles the ground-target fragment of one-sided matching.
+Given a pattern `p` and a ground target `t`, matching finds
 `θ` such that `θ(p) = t`.  This is used in:
 
 - Bottom-up evaluation (T_P): matching rule heads against ground atoms.
@@ -121,6 +121,47 @@ def bindingsToSubst {σ : LPSignature} [DecidableEq σ.vars]
 def BindingsConsistent {σ : LPSignature} (bs : List (σ.vars × GroundTerm σ)) : Prop :=
   ∀ v g₁ g₂, (v, g₁) ∈ bs → (v, g₂) ∈ bs → g₁ = g₂
 
+/-- Structural equality of finite ground terms, including their ordered arguments. -/
+def GroundTerm.decEq {σ : LPSignature} [DecidableEq σ.constants]
+    [DecidableEq σ.functionSymbols] : DecidableEq (GroundTerm σ)
+  | .const c, .const d => decidable_of_iff (c = d)
+      ⟨congrArg GroundTerm.const, fun h => by cases h; rfl⟩
+  | .const _, .app _ _ => isFalse (by intro h; cases h)
+  | .app _ _, .const _ => isFalse (by intro h; cases h)
+  | .app f ts, .app g us =>
+    if h : f = g then by
+      subst g
+      letI : (i : Fin (σ.functionArity f)) → Decidable (ts i = us i) :=
+        fun i => GroundTerm.decEq (ts i) (us i)
+      exact decidable_of_iff (∀ i, ts i = us i) (by
+        constructor
+        · intro h; exact congrArg (GroundTerm.app f) (funext h)
+        · intro h; cases h; intro i; rfl)
+    else isFalse (by intro heq; cases heq; exact h rfl)
+
+/-- Check that all occurrences of each pattern variable captured the same term. -/
+def bindingsConsistent? {σ : LPSignature} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (bs : List (σ.vars × GroundTerm σ)) : Bool :=
+  letI := GroundTerm.decEq (σ := σ)
+  bs.all fun left => bs.all fun right =>
+    decide (left.1 = right.1 → left.2 = right.2)
+
+theorem bindingsConsistent?_eq_true {σ : LPSignature} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (bs : List (σ.vars × GroundTerm σ)) :
+    bindingsConsistent? bs = true ↔ BindingsConsistent bs := by
+  simp only [bindingsConsistent?, List.all_eq_true, decide_eq_true_eq]
+  constructor
+  · intro h v g₁ g₂ h₁ h₂
+    exact h (v, g₁) h₁ (v, g₂) h₂ rfl
+  · intro h left hleft right hright heq
+    rcases left with ⟨v, g₁⟩
+    rcases right with ⟨w, g₂⟩
+    dsimp at heq ⊢
+    subst w
+    exact h v g₁ g₂ hleft hright
+
 /-! ## Section 5: Full matching interface -/
 
 /-- Result of a matching attempt. -/
@@ -135,7 +176,8 @@ def matchTerm {σ : LPSignature} [DecidableEq σ.vars] [DecidableEq σ.constants
   | p, gt =>
     match collectBindings p gt with
     | none => .failure
-    | some bs => .success (bindingsToSubst bs)
+    | some bs =>
+      if bindingsConsistent? bs then .success (bindingsToSubst bs) else .failure
 
 /-- Match a pattern atom against a ground atom. -/
 def matchAtom {σ : LPSignature} [DecidableEq σ.vars] [DecidableEq σ.constants]
@@ -144,7 +186,8 @@ def matchAtom {σ : LPSignature} [DecidableEq σ.vars] [DecidableEq σ.constants
   | a, ga =>
     match collectAtomBindings a ga with
     | none => .failure
-    | some bs => .success (bindingsToSubst bs)
+    | some bs =>
+      if bindingsConsistent? bs then .success (bindingsToSubst bs) else .failure
 
 /-! ## Section 6: Binding lookup -/
 
@@ -218,11 +261,9 @@ private theorem finToList_map_pointwise {α₁ α₂ β : Type*} {n : ℕ}
     simp [List.getElem_map, List.getElem_finRange]
   rw [← hlhs, ← hrhs]; exact getElem_congr_coll h
 
-universe u_t u_r
-
 /-- Core soundness: any substitution agreeing with bindings sends patterns
     to their ground counterparts. -/
-theorem collectBindingsList_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}}
+theorem collectBindingsList_sound {σ : LPSignature}
     [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
     (ps : List (Term σ)) (gs : List (GroundTerm σ)) (bs : List (σ.vars × GroundTerm σ))
     (h : collectBindingsList ps gs = some bs)
@@ -303,7 +344,7 @@ theorem collectBindingsList_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}}
       · simp at h
 
 /-- Soundness for single-term matching. -/
-theorem collectBindings_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}} [DecidableEq σ.vars]
+theorem collectBindings_sound {σ : LPSignature} [DecidableEq σ.vars]
     [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
     (p : Term σ) (gt : GroundTerm σ) (bs : List (σ.vars × GroundTerm σ))
     (h : collectBindings p gt = some bs) (hcons : BindingsConsistent bs) :
@@ -313,7 +354,7 @@ theorem collectBindings_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}} [Decidable
   simpa using hsound
 
 /-- Soundness for atom matching. -/
-theorem collectAtomBindings_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}} [DecidableEq σ.vars]
+theorem collectAtomBindings_sound {σ : LPSignature} [DecidableEq σ.vars]
     [DecidableEq σ.constants] [DecidableEq σ.functionSymbols] [DecidableEq σ.relationSymbols]
     (a : Atom σ) (ga : GroundAtom σ) (bs : List (σ.vars × GroundTerm σ))
     (h : collectAtomBindings a ga = some bs) (hcons : BindingsConsistent bs) :
@@ -329,5 +370,147 @@ theorem collectAtomBindings_sound {σ : LPSignature.{u_t, u_t, u_r, u_t}} [Decid
     exact finToList_map_pointwise argsa argsga
       (bindingsToSubst bs).applyTerm GroundTerm.toTerm hsound i
   · simp at h
+
+/-- Every successful public term match instantiates the pattern to its target.
+    Repeated-hole consistency is checked by the operation, not assumed here. -/
+theorem matchTerm_sound {σ : LPSignature} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (p : Term σ) (gt : GroundTerm σ) (θ : Subst σ)
+    (h : matchTerm p gt = .success θ) : θ.applyTerm p = gt.toTerm := by
+  cases hb : collectBindings p gt with
+  | none => simp [matchTerm, hb] at h
+  | some bs =>
+    by_cases hc : bindingsConsistent? bs = true
+    · simp [matchTerm, hb, hc] at h
+      subst θ
+      exact collectBindings_sound p gt bs hb ((bindingsConsistent?_eq_true bs).mp hc)
+    · simp [matchTerm, hb, hc] at h
+
+/-- Every successful public atom match instantiates the whole atom, including
+    repeated variables occurring in different arguments. -/
+theorem matchAtom_sound {σ : LPSignature} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    [DecidableEq σ.relationSymbols]
+    (a : Atom σ) (ga : GroundAtom σ) (θ : Subst σ)
+    (h : matchAtom a ga = .success θ) : θ.applyAtom a = ga.toAtom := by
+  cases hb : collectAtomBindings a ga with
+  | none => simp [matchAtom, hb] at h
+  | some bs =>
+    by_cases hc : bindingsConsistent? bs = true
+    · simp [matchAtom, hb, hc] at h
+      subst θ
+      exact collectAtomBindings_sound a ga bs hb ((bindingsConsistent?_eq_true bs).mp hc)
+    · simp [matchAtom, hb, hc] at h
+
+theorem GroundTerm.toTerm_injective {σ : LPSignature} :
+    Function.Injective (GroundTerm.toTerm (σ := σ)) := by
+  intro left right same
+  induction left generalizing right with
+  | const c => cases right <;> simp_all [GroundTerm.toTerm]
+  | app f args ih =>
+    cases right with
+    | const c => simp [GroundTerm.toTerm] at same
+    | app g rest =>
+      simp only [GroundTerm.toTerm, Term.app.injEq] at same
+      obtain ⟨equal, same⟩ := same
+      subst g
+      simp only [heq_eq_eq] at same
+      congr 1
+      funext i
+      exact ih i (congrFun same i)
+
+/-- Every ground instance can be collected, and every collected binding agrees
+    with its witnessing substitution. Repeated names are retained here. -/
+theorem collectBindingsList_complete {σ : LPSignature}
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (ps : List (Term σ)) (gs : List (GroundTerm σ)) (θ : Subst σ)
+    (same : ps.map θ.applyTerm = gs.map GroundTerm.toTerm) :
+    ∃ bs, collectBindingsList ps gs = some bs ∧
+      ∀ v g, (v, g) ∈ bs → θ v = g.toTerm := by
+  match ps, gs with
+  | [], [] => exact ⟨[], by simp [collectBindingsList], by simp⟩
+  | [], _ :: _ => simp at same
+  | _ :: _, [] => simp at same
+  | .var v :: rest, g :: tail =>
+    simp only [List.map_cons, List.cons.injEq, Subst.applyTerm_var] at same
+    obtain ⟨bs, collected, agree⟩ := collectBindingsList_complete rest tail θ same.2
+    refine ⟨(v, g) :: bs, by simp [collectBindingsList, collected], ?_⟩
+    intro w h member
+    rcases List.mem_cons.mp member with equal | member
+    · cases equal; exact same.1
+    · exact agree w h member
+  | .const c :: rest, .const d :: tail =>
+    simp only [List.map_cons, List.cons.injEq, Subst.applyTerm_const,
+      GroundTerm.toTerm, Term.const.injEq] at same
+    obtain ⟨rfl, same⟩ := same
+    obtain ⟨bs, collected, agree⟩ := collectBindingsList_complete rest tail θ same
+    exact ⟨bs, by simpa [collectBindingsList] using collected, agree⟩
+  | .const _ :: _, .app _ _ :: _ =>
+    simp [Subst.applyTerm, GroundTerm.toTerm] at same
+  | .app _ _ :: _, .const _ :: _ =>
+    simp [Subst.applyTerm, GroundTerm.toTerm] at same
+  | .app f args :: rest, .app g targets :: tail =>
+    simp only [List.map_cons, List.cons.injEq, Subst.applyTerm_app,
+      GroundTerm.toTerm, Term.app.injEq] at same
+    obtain ⟨⟨equal, children⟩, tailEq⟩ := same
+    subst g
+    simp only [heq_eq_eq] at children
+    have childEq : (finToList args).map θ.applyTerm =
+        (finToList targets).map GroundTerm.toTerm := by
+      simp only [finToList, List.map_map]
+      apply List.map_congr_left
+      intro i _
+      exact congrFun children i
+    have next : (finToList args ++ rest).map θ.applyTerm =
+        (finToList targets ++ tail).map GroundTerm.toTerm := by
+      simp only [List.map_append, childEq, tailEq]
+    obtain ⟨bs, collected, agree⟩ := collectBindingsList_complete
+      (finToList args ++ rest) (finToList targets ++ tail) θ next
+    exact ⟨bs, by simpa [collectBindingsList] using collected, agree⟩
+termination_by patternListSize ps
+decreasing_by
+  · simp [patternListSize_cons, Term.size]
+  · simp [patternListSize_cons, Term.size]
+  · exact patternListSize_finToList_app _ _ _
+
+private theorem bindings_consistent_of_agree {σ : LPSignature}
+    (bs : List (σ.vars × GroundTerm σ)) (θ : Subst σ)
+    (agree : ∀ v g, (v, g) ∈ bs → θ v = g.toTerm) : BindingsConsistent bs := by
+  intro v left right hl hr
+  exact GroundTerm.toTerm_injective ((agree v left hl).symm.trans (agree v right hr))
+
+/-- Checking repeated holes rejects exactly non-instances, without losing any
+    ground instance that the former unchecked collector accepted soundly. -/
+theorem matchTerm_complete {σ : LPSignature} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    (pattern : Term σ) (target : GroundTerm σ) (θ : Subst σ)
+    (same : θ.applyTerm pattern = target.toTerm) :
+    ∃ answer, matchTerm pattern target = .success answer := by
+  obtain ⟨bs, collected, agree⟩ := collectBindingsList_complete [pattern] [target] θ
+    (by simpa using same)
+  have checked := (bindingsConsistent?_eq_true bs).mpr (bindings_consistent_of_agree bs θ agree)
+  exact ⟨bindingsToSubst bs, by simp [matchTerm, collectBindings, collected, checked]⟩
+
+theorem matchAtom_complete {σ : LPSignature} [DecidableEq σ.vars]
+    [DecidableEq σ.constants] [DecidableEq σ.functionSymbols]
+    [DecidableEq σ.relationSymbols]
+    (pattern : Atom σ) (target : GroundAtom σ) (θ : Subst σ)
+    (same : θ.applyAtom pattern = target.toAtom) :
+    ∃ answer, matchAtom pattern target = .success answer := by
+  rcases pattern with ⟨f, args⟩
+  rcases target with ⟨g, targets⟩
+  simp only [Subst.applyAtom, GroundAtom.toAtom, Atom.mk.injEq] at same
+  obtain ⟨equal, children⟩ := same
+  subst g
+  simp only [heq_eq_eq] at children
+  have childEq : (finToList args).map θ.applyTerm =
+      (finToList targets).map GroundTerm.toTerm := by
+    simp only [finToList, List.map_map]
+    apply List.map_congr_left
+    intro i _
+    exact congrFun children i
+  obtain ⟨bs, collected, agree⟩ := collectBindingsList_complete _ _ θ childEq
+  have checked := (bindingsConsistent?_eq_true bs).mpr (bindings_consistent_of_agree bs θ agree)
+  exact ⟨bindingsToSubst bs, by simp [matchAtom, collectAtomBindings, collected, checked]⟩
 
 end Mettapedia.Logic.LP

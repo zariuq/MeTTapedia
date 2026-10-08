@@ -64,6 +64,20 @@ def Program.realize (program : Program Node Answer Command Memory)
   scheduler memory := interpret (program.command memory)
   advance := program.advance
 
+/-- Attach a stateful observer to the existing controller. Selection still
+uses the original memory; the observer receives the selected occurrence's
+declared observation and keeps its own complete continuation. This is not an
+authorization to evaluate extra effects or to erase their physical costs. -/
+def observing {Event Observer : Type*} (base : Controller Node Answer Memory)
+    (observe : Memory → Node → Option Answer → List Node → Event)
+    (initial : Observer) (consume : Observer → Event → Observer) :
+    Controller Node Answer (Memory × Observer) where
+  initialMemory := (base.initialMemory, initial)
+  scheduler memory := base.scheduler memory.1
+  advance memory node answer generated :=
+    (base.advance memory.1 node answer generated,
+      consume memory.2 (observe memory.1 node answer generated))
+
 end Controller
 
 /-- Search observations and controller memory evolve together.  Memory is not
@@ -268,6 +282,120 @@ theorem run_add (system : BranchingSystem Node Answer)
       rw [Nat.add_succ]
       simp only [run]
       rw [inductionHypothesis]
+
+/-- Erasing the observer retains the whole selected search step and the
+original controller continuation. It does not erase an observed cost from a
+cost-sensitive client or authorize an effectful observation. -/
+theorem observing_tick_erasure {Event Observer : Type*}
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (observe : Memory → Node → Option Answer → List Node → Event)
+    (initial : Observer) (consume : Observer → Event → Observer)
+    (snapshot : Snapshot Node Answer (Memory × Observer)) :
+    (tick system (base.observing observe initial consume) snapshot).mapMemory Prod.fst =
+      tick system base (snapshot.mapMemory Prod.fst) := by
+  cases snapshot with
+  | mk search memory =>
+      rcases memory with ⟨memory, observer⟩
+      simp only [tick, Controller.observing, mapMemory]
+      cases (base.scheduler memory).reorder search.frontier <;> rfl
+
+theorem observing_run_erasure {Event Observer : Type*}
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (observe : Memory → Node → Option Answer → List Node → Event)
+    (initial : Observer) (consume : Observer → Event → Observer)
+    (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × Observer)) :
+    (run system (base.observing observe initial consume) fuel snapshot).mapMemory Prod.fst =
+      run system base fuel (snapshot.mapMemory Prod.fst) := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel ih => rw [run, observing_tick_erasure, ih]; rfl
+
+/-- Two independent observers can exchange their nesting order while
+retaining both states and the complete search. Each observation reads only
+the original controller memory; a recorder-dependent physical charge is
+outside that premise. -/
+theorem independent_observers_run {FirstEvent SecondEvent FirstObserver SecondObserver : Type*}
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (first : Memory → Node → Option Answer → List Node → FirstEvent)
+    (second : Memory → Node → Option Answer → List Node → SecondEvent)
+    (firstInitial : FirstObserver) (secondInitial : SecondObserver)
+    (firstConsume : FirstObserver → FirstEvent → FirstObserver)
+    (secondConsume : SecondObserver → SecondEvent → SecondObserver)
+    (fuel : Nat) (snapshot : Snapshot Node Answer ((Memory × FirstObserver) × SecondObserver)) :
+    (run system
+      ((base.observing first firstInitial firstConsume).observing
+        (fun memory => second memory.1) secondInitial secondConsume) fuel snapshot).mapMemory
+          (fun memory => ((memory.1.1, memory.2), memory.1.2)) =
+      run system
+        ((base.observing second secondInitial secondConsume).observing
+          (fun memory => first memory.1) firstInitial firstConsume) fuel
+        (snapshot.mapMemory (fun memory => ((memory.1.1, memory.2), memory.1.2))) := by
+  suffices comparison :
+      (run system
+        ((base.observing first firstInitial firstConsume).observing
+          (fun memory => second memory.1) secondInitial secondConsume) fuel snapshot).mapState id
+            (fun memory : (Memory × FirstObserver) × SecondObserver =>
+              ((memory.1.1, memory.2), memory.1.2)) =
+        run system
+          ((base.observing second secondInitial secondConsume).observing
+            (fun memory => first memory.1) firstInitial firstConsume) fuel
+          (snapshot.mapState id
+            (fun memory => ((memory.1.1, memory.2), memory.1.2))) by
+    simpa only [mapState, mapNodes, BranchingTemporal.Snapshot.mapNodes_id] using comparison
+  apply run_mapState (mapping := id)
+    (transfer := fun memory : (Memory × FirstObserver) × SecondObserver =>
+      ((memory.1.1, memory.2), memory.1.2))
+  · intros; rfl
+  · intros; exact List.map_id _
+  · intros; simp only [Controller.observing, List.map_id]
+  · intros; simp only [Controller.observing, List.map_id]
+  · intros; simp only [Controller.observing, List.map_id]; rfl
+
+/-- Transport a stateful observer using local execution, scheduler,
+observation and consume laws. Neither equality of complete runs nor equality
+of the observer's final account is a premise. -/
+theorem observing_run_transport
+    {NextNode NextMemory Event NextEvent Observer NextObserver : Type*}
+    (mapping : Node → NextNode) (transfer : Memory → NextMemory)
+    (eventMap : Event → NextEvent) (observerMap : Observer → NextObserver)
+    (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+    (first : Controller Node Answer Memory) (second : Controller NextNode Answer NextMemory)
+    (sourceObserve : Memory → Node → Option Answer → List Node → Event)
+    (targetObserve : NextMemory → NextNode → Option Answer → List NextNode → NextEvent)
+    (sourceInitial : Observer) (targetInitial : NextObserver)
+    (sourceConsume : Observer → Event → Observer)
+    (targetConsume : NextObserver → NextEvent → NextObserver)
+    (emits : ∀ node, source.emit node = target.emit (mapping node))
+    (successors : ∀ node,
+      (source.successors node).map mapping = target.successors (mapping node))
+    (reorders : ∀ memory nodes,
+      ((first.scheduler memory).reorder nodes).map mapping =
+        (second.scheduler (transfer memory)).reorder (nodes.map mapping))
+    (integrates : ∀ memory pending generated,
+      ((first.scheduler memory).integrate pending generated).map mapping =
+        (second.scheduler (transfer memory)).integrate
+          (pending.map mapping) (generated.map mapping))
+    (advances : ∀ memory node emission generated,
+      transfer (first.advance memory node emission generated) =
+        second.advance (transfer memory) (mapping node) emission (generated.map mapping))
+    (observations : ∀ memory node emission generated,
+      eventMap (sourceObserve memory node emission generated) =
+        targetObserve (transfer memory) (mapping node) emission (generated.map mapping))
+    (consumes : ∀ observer event,
+      observerMap (sourceConsume observer event) =
+        targetConsume (observerMap observer) (eventMap event))
+    (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × Observer)) :
+    (run source (first.observing sourceObserve sourceInitial sourceConsume) fuel snapshot).mapState
+        mapping (fun memory => (transfer memory.1, observerMap memory.2)) =
+      run target (second.observing targetObserve targetInitial targetConsume) fuel
+        (snapshot.mapState mapping (fun memory => (transfer memory.1, observerMap memory.2))) := by
+  apply run_mapState
+  · exact emits
+  · exact successors
+  · intro memory nodes; exact reorders memory.1 nodes
+  · intro memory pending generated; exact integrates memory.1 pending generated
+  · intro memory node emission generated
+    simp only [Controller.observing, advances, consumes, observations]
 
 private theorem reorder_nil (controller : Controller Node Answer Memory)
     (memory : Memory) : (controller.scheduler memory).reorder [] = [] := by
@@ -1801,6 +1929,41 @@ example :
     ((Snapshot.fixed_fair_iff _ _ _).mp fair)
 
 end Examples
+
+namespace ObserverControls
+
+private def source : BranchingSystem Nat Nat where
+  emit _ := some 7
+  successors _ := []
+
+private def base : Controller Nat Nat Unit := Controller.fixed Scheduler.breadthFirst
+
+private def first := base.observing (fun _ _ _ _ => 1) 0 Nat.add
+
+/-- This expense explicitly depends on the first observer's accumulated
+state. It is outside the independent-observer exchange law. -/
+private def coupled := first.observing (fun memory _ _ _ => memory.2) 0 Nat.add
+
+private def forgotten :=
+  (base.observing (fun _ _ _ _ => 0) 0 Nat.add).observing
+    (fun _ _ _ _ => 1) 0 Nat.add
+
+/-- Dropping observer-dependent expense keeps the same complete search
+and first observation. The second account changes despite that agreement. -/
+theorem observer_dependent_expense_cannot_be_erased :
+    let observed := Snapshot.run source coupled 2 (Snapshot.initial coupled [5, 8])
+    let omitted := Snapshot.run source forgotten 2 (Snapshot.initial forgotten [5, 8])
+    observed.search = omitted.search ∧ observed.memory.1.2 = omitted.memory.2 ∧
+      observed.memory.2 = 1 ∧ omitted.memory.1.2 = 0 := by
+  decide
+
+/-- Running beyond exhaustion changes neither observer, even when that
+observer could otherwise consume an additional operation. -/
+theorem exhausted_frontier_has_no_extra_observer_operation :
+    (Snapshot.run source coupled 8 (Snapshot.initial coupled [5, 8])).memory = (((), 2), 1) := by
+  decide
+
+end ObserverControls
 
 #print axioms Snapshot.sound_run
 #print axioms Snapshot.run_add

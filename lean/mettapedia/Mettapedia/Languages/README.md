@@ -64,6 +64,7 @@ and the OSLF instance — see [`MeTTa/README.md`](MeTTa/README.md).
 | `Metamath/` | source bridge + compiler modules | mm-lean4 bridge, file-lowering/grammar data, and conformance fixtures; legacy simulation/crown-jewel modules are excluded from the facade pending retirement |
 | `IMP/` | 5 | the classic IMP imperative language (states, big-/small-step semantics) |
 | `MinskyLite/` | 5 | a Minsky register-machine fragment |
+| `TuringMachine/` | 9 | a transition table as a language definition, one pair of rewrites for each row; its steps and sorts; configurations and their agreement with Mathlib's tape; tables from Turing (1936) and the busy-beaver papers with their runs; the type system generated from a table; one language definition, with the table in its terms, that runs every table |
 | `MM0.lean`, `MM0Lite.lean` | 2 | Metamath Zero (MM0) |
 | `GF.lean`, `MeTTa.lean`, `ProcessCalculi.lean`, `Metamath.lean` | 4 | facade modules re-exporting each sub-tree |
 | `OSLFNTTReadout.lean` | 1 | scoped behavioral/compiler-language readouts; it makes no Metamath source-proof adequacy claim |

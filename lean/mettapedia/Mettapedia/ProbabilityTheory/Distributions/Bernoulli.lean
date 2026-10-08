@@ -59,6 +59,17 @@ theorem mean (d : BernoulliDist) :
   unfold prob
   simp
 
+/-- The centered second moment is the variance. Reusing a draw has this
+moment; drawing twice instead requires an independent product law. -/
+theorem variance (d : BernoulliDist) :
+    (1 - d.p)^2 * d.prob true + (0 - d.p)^2 * d.prob false = d.p * (1-d.p) := by
+  simp [prob]
+  ring
+
+/-- The two outcome masses are complementary. -/
+theorem false_mass_complement (d : BernoulliDist) : d.prob false = 1-d.prob true := by
+  simp [prob]
+
 end BernoulliDist
 
 end Mettapedia.ProbabilityTheory

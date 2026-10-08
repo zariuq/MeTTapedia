@@ -33,7 +33,7 @@ reindexing it is adjoint to, and is not the direct image.
   (reindexing with its two adjoints).
 -/
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 universe w v u
 

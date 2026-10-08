@@ -756,7 +756,7 @@ def readOnlyExpression (catalogue : List External) : Nat → CExpr → Bool
         (match catalogue.filter (fun declaration => declaration.cSymbol.toList == name) with
           | [declaration] => declaration.effect == .pure
           | _ => false) && arguments.all (readOnlyExpression catalogue fuel)
-    | .unary .increment _ | .postIncrement _ => false
+    | .unary .increment _ | .unary .decrement _ | .postIncrement _ | .postDecrement _ => false
     | .unary _ operand | .cast _ operand | .field operand _ _ =>
         readOnlyExpression catalogue fuel operand
     | .binary _ left right | .index left right =>

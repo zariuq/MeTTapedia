@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.MatchStepMachine
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepAdequacyGeneral
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # Match steps and `spaceMatch`

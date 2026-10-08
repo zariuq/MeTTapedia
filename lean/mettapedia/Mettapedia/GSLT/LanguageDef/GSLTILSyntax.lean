@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.GSLTIL
 
 /-!
-# A MeTTa-facing syntax for finite GSLT-IL programs
+# A MeTTa-facing syntax for finite GSLT-ML programs
 
 The indexed command calculus retains dependent source and target indices in
 its proof and compilation IR.  Authors do not need to repeat those indices on
@@ -27,7 +27,7 @@ open Mettapedia.GSLT
 open Mettapedia.GSLT.LanguageDef.GSLTIL
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-! ## Syntax syntax -/
+/-! ## Surface commands -/
 
 def symbol (name : String) : Pattern := .apply name []
 

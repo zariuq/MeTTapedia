@@ -48,6 +48,120 @@ theorem weightedChoice_none [Fintype A] (weights : A → ℝ≥0)
     (h : ∑ a, weights a ≠ 0) : weightedChoice weights none = 0 := by
   simp [weightedChoice, h, PMF.map_apply]
 
+/-- Sampling rows are occurrence identities. Several rows can report the
+same outcome; mapping the normalized row law adds all their masses. -/
+theorem weightedChoice_report [Fintype I] [DecidableEq A] (weights : I → ℝ≥0)
+    (report : I → A) (h : ∑ i, weights i ≠ 0) (a : A) :
+    (weightedChoice weights |>.map (Option.map report)) (some a) =
+      ∑ i, if a = report i then
+        (weights i : ℝ≥0∞) * (∑ j, (weights j : ℝ≥0∞))⁻¹ else 0 := by
+  classical
+  rw [PMF.map_apply, tsum_fintype, Fintype.sum_option]
+  simp [weightedChoice_some weights h]
+
+/-- Reference interval selection for a categorical row vector. Returning an
+index keeps repeated rows distinct until the reported-outcome observation. -/
+def chooseRow : List ℝ → ℝ → Option ℕ
+  | [], _ => none
+  | weight :: rest, position =>
+      if position < weight then some 0
+      else (chooseRow rest (position - weight)).map Nat.succ
+
+/-- Exactly the out-of-support positions are refused. Zero-weight rows do
+not add support. This is an exact real-arithmetic law, separate from a finite
+generator grid or a floating cumulative sum. -/
+theorem chooseRow_none_iff (weights : List ℝ) (position : ℝ)
+    (nonnegative : ∀ weight ∈ weights, 0 ≤ weight) (position_nonnegative : 0 ≤ position) :
+    chooseRow weights position = none ↔ weights.sum ≤ position := by
+  induction weights generalizing position with
+  | nil => simp [chooseRow, position_nonnegative]
+  | cons weight rest ih =>
+    have head_nonnegative := nonnegative weight (by simp)
+    have rest_nonnegative : ∀ w ∈ rest, 0 ≤ w := by
+      intro w member
+      exact nonnegative w (List.mem_cons_of_mem weight member)
+    have sum_nonnegative : 0 ≤ rest.sum := List.sum_nonneg rest_nonnegative
+    by_cases below : position < weight
+    · simp only [chooseRow, below, ↓reduceIte, reduceCtorEq, List.sum_cons]
+      constructor
+      · intro impossible; contradiction
+      · intro bound; linarith
+    · have remainder_nonnegative : 0 ≤ position-weight := by linarith
+      simp only [chooseRow, below, ↓reduceIte, Option.map_eq_none_iff, List.sum_cons]
+      rw [ih (position-weight) rest_nonnegative remainder_nonnegative]
+      constructor <;> intro bound <;> linarith
+
+theorem chooseRow_has_result (weights : List ℝ) (position : ℝ)
+    (nonnegative : ∀ weight ∈ weights, 0 ≤ weight) (position_nonnegative : 0 ≤ position)
+    (within : position < weights.sum) : ∃ index, chooseRow weights position = some index := by
+  have not_none : chooseRow weights position ≠ none := by
+    intro refused
+    exact (not_le.mpr within)
+      ((chooseRow_none_iff weights position nonnegative position_nonnegative).mp refused)
+  cases result : chooseRow weights position with
+  | none => exact False.elim (not_none result)
+  | some index => exact ⟨index, rfl⟩
+
+/-- A chosen row is a real vector occurrence; the search cannot fabricate an
+index beyond the supplied rows. -/
+theorem chooseRow_index_bound (weights : List ℝ) (position : ℝ) (index : ℕ)
+    (selected : chooseRow weights position = some index) : index < weights.length := by
+  induction weights generalizing position index with
+  | nil => simp [chooseRow] at selected
+  | cons weight rest ih =>
+    by_cases below : position < weight
+    · simp [chooseRow, below] at selected
+      subst index; simp
+    · simp only [chooseRow, below, ↓reduceIte] at selected
+      cases choice : chooseRow rest (position-weight) with
+      | none => simp [choice] at selected
+      | some previous =>
+        simp only [choice, Option.map_some, Option.some.injEq] at selected
+        subst index
+        simpa using Nat.succ_lt_succ (ih (position-weight) previous choice)
+
+/-- The selected row owns exactly its half-open cumulative interval. This
+connects indexed sampling to a cumulative table without merging equal rows. -/
+theorem chooseRow_interval (weights : List ℝ) (position : ℝ) (index : ℕ)
+    (nonnegative : ∀ weight ∈ weights, 0 ≤ weight) (position_nonnegative : 0 ≤ position) :
+    chooseRow weights position = some index ↔
+      index < weights.length ∧ (weights.take index).sum ≤ position ∧
+        position < (weights.take (index+1)).sum := by
+  induction weights generalizing position index with
+  | nil => simp [chooseRow]
+  | cons weight rest ih =>
+    have rest_nonnegative : ∀ w ∈ rest, 0 ≤ w := by
+      intro w member
+      exact nonnegative w (List.mem_cons_of_mem weight member)
+    cases index with
+    | zero =>
+      by_cases below : position < weight
+      · simp [chooseRow, below, position_nonnegative]
+      · cases chosen : chooseRow rest (position-weight) <;>
+          simp [chooseRow, below, chosen]
+    | succ index =>
+      by_cases below : position < weight
+      · have prefix_nonnegative : 0 ≤ (rest.take index).sum := by
+          apply List.sum_nonneg
+          intro w member
+          exact rest_nonnegative w (List.mem_of_mem_take member)
+        have impossible : ¬weight + (rest.take index).sum ≤ position := by linarith
+        simp [chooseRow, below, List.take_succ_cons, impossible]
+      · have remainder_nonnegative : 0 ≤ position-weight := by linarith
+        have selection :
+            (chooseRow rest (position-weight)).map Nat.succ = some (index+1) ↔
+              chooseRow rest (position-weight) = some index := by
+          cases chosen : chooseRow rest (position-weight) <;> simp
+        simp only [chooseRow, below, ↓reduceIte, selection]
+        rw [ih (position-weight) index rest_nonnegative remainder_nonnegative]
+        simp only [List.length_cons, Nat.succ_lt_succ_iff, List.take_succ_cons,
+          List.sum_cons]
+        constructor
+        · rintro ⟨bounded, lower, upper⟩
+          exact ⟨bounded, by linarith, by linarith⟩
+        · rintro ⟨bounded, lower, upper⟩
+          exact ⟨bounded, by linarith, by linarith⟩
+
 /-- Real probability mass of a Mathlib probability mass function. -/
 def mass (p : PMF A) (a : A) : ℝ := (p a).toReal
 

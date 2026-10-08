@@ -4,7 +4,7 @@ import Mathlib.Computability.Primrec.List
 import Mathlib.Data.Set.Finite.Basic
 
 /-!
-# Qualified fibre execution in the authored GSLT-IL
+# Qualified fibre execution for GSLT-ML
 
 A finite answer list for each query does not require a finite global state
 space. This module interprets the existing command rules with one selected
@@ -134,6 +134,117 @@ theorem path_reflected (source : GSLT) (stage : Pattern)
     ∃ final, target = atPattern stage (encode final) ∧ source.MultiStep initial final := by
   obtain ⟨final, same, sourcePath⟩ := cover.liftMultiStep path
   exact ⟨final, same.symm, sourcePath⟩
+
+/-! ## LangDef fibres from their authored executor
+
+These comparisons derive query qualification from the existing LangDef
+matcher and premise executor. The source is the canonical `langGSLTUsing`,
+not an independently supplied relation or a sampled finite edge catalog.
+Recursive reduction premises and generated equation saturation require a
+stronger complete query and are not silently erased by this specialization.
+-/
+
+open Mettapedia.GSLT.IndexedOperational
+open Mettapedia.GSLT.LanguageDef.EquationSemantics
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
+open Mettapedia.OSLF.Framework.TypeSynthesis
+
+theorem language_query_qualified
+    (relations : RelationEnv) (lang : LanguageDef)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    (source answer : Pattern) :
+    answer ∈ rewriteStepWithPremisesUsing relations lang source ↔
+      ∃ next, (langGSLTUsing relations lang).Step source next ∧ answer = next := by
+  rw [mem_rootFrontier_iff_langGSLTUsing_step relations lang equationFree nonrecursive]
+  constructor
+  · intro step
+    exact ⟨answer, step, rfl⟩
+  · rintro ⟨next, step, same⟩
+    exact same.symm ▸ step
+
+/-- The actual `at` executor preserves and reflects the source language's
+steps. Reflection ranges over every target Pattern, including candidates
+outside the encoded fibre. -/
+theorem language_stepCover
+    (relations : RelationEnv) (lang : LanguageDef) (stage : Pattern)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises) :
+    StepCover (langGSLTUsing relations lang)
+      (theory stage (rewriteStepWithPremisesUsing relations lang)) (atPattern stage) :=
+  stepCover (langGSLTUsing relations lang) stage id
+    (rewriteStepWithPremisesUsing relations lang)
+    (language_query_qualified relations lang equationFree nonrecursive)
+
+/-- Equation preservation and local behavioral coverage in the existing
+indexed operational category. Its `toBehavioralMorphism` supplies the
+corresponding GSLT morphism. -/
+def language_coveredTranslation
+    (relations : RelationEnv) (lang : LanguageDef) (stage : Pattern)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises) :
+    CoveredTranslation (langGSLTUsing relations lang)
+      (theory stage (rewriteStepWithPremisesUsing relations lang)) where
+  mapTerm := atPattern stage
+  mapEquiv := by
+    intro left right equivalent
+    have same : left = right :=
+      (gsltModuloEquations_equiv_iff_eq_of_no_generators equationFree left right).mp equivalent
+    subst right
+    exact (theory stage (rewriteStepWithPremisesUsing relations lang)).equations.refl _
+  cover := language_stepCover relations lang stage equationFree nonrecursive
+
+theorem language_step_iff
+    (relations : RelationEnv) (lang : LanguageDef) (stage : Pattern)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    (source target : Pattern) :
+    (theory stage (rewriteStepWithPremisesUsing relations lang)).Step
+      (atPattern stage source) target ↔
+        ∃ next, (langGSLTUsing relations lang).Step source next ∧
+          target = atPattern stage next := by
+  rw [step_at_iff]
+  constructor
+  · rintro ⟨next, member, same⟩
+    exact ⟨next, (mem_rootFrontier_iff_langGSLTUsing_step
+      relations lang equationFree nonrecursive source next).mp member, same⟩
+  · rintro ⟨next, step, same⟩
+    exact ⟨next, (mem_rootFrontier_iff_langGSLTUsing_step
+      relations lang equationFree nonrecursive source next).mpr step, same⟩
+
+/-- An arbitrary command path reflects to the actual source endpoint. -/
+theorem language_paths_reflect
+    (relations : RelationEnv) (lang : LanguageDef) (stage : Pattern)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    (initial : Pattern) {target : Pattern}
+    (path : (theory stage (rewriteStepWithPremisesUsing relations lang)).MultiStep
+      (atPattern stage initial) target) :
+    ∃ final, target = atPattern stage final ∧
+      (langGSLTUsing relations lang).MultiStep initial final :=
+  path_reflected (langGSLTUsing relations lang) stage id _
+    (language_stepCover relations lang stage equationFree nonrecursive) initial path
+
+theorem language_paths_preserved
+    (relations : RelationEnv) (lang : LanguageDef) (stage : Pattern)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    {initial final : Pattern}
+    (path : (langGSLTUsing relations lang).MultiStep initial final) :
+    (theory stage (rewriteStepWithPremisesUsing relations lang)).MultiStep
+      (atPattern stage initial) (atPattern stage final) :=
+  path_preserved (langGSLTUsing relations lang) stage id _
+    (language_stepCover relations lang stage equationFree nonrecursive) path
+
+theorem language_normal_iff
+    (relations : RelationEnv) (lang : LanguageDef) (stage : Pattern)
+    (equationFree : lang.isEquationFree = true)
+    (nonrecursive : ∀ rule ∈ lang.rewrites, NoncontextualPremises rule.premises)
+    (state : Pattern) :
+    (langGSLTUsing relations lang).IsNormalForm state ↔
+      (theory stage (rewriteStepWithPremisesUsing relations lang)).IsNormalForm
+        (atPattern stage state) :=
+  (language_stepCover relations lang stage equationFree nonrecursive).normal_iff state
 
 /-- Infinitely many distinct enabled states cannot be covered by a catalog
 of concrete edges. This concerns finite state support, not finite control:

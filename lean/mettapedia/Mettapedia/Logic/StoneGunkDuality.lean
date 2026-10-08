@@ -77,7 +77,7 @@ private theorem mem_basicOpen_or (p : StoneSpace B) (f : AsBoolRing B) :
     p ∈ (basicOpen f : Set (StoneSpace B)) ∨ p ∈ (basicOpen (1 - f) : Set (StoneSpace B)) := by
   simp only [mem_bo]
   by_contra h
-  push_neg at h
+  push Not at h
   exact onesub_notMem h.1 h.2
 
 private theorem basicOpen_disjoint (f : AsBoolRing B) :
@@ -97,7 +97,7 @@ instance : TotallySeparatedSpace (StoneSpace B) := by
   refine ⟨fun p _ q _ hpq => ?_⟩
   obtain ⟨f, hf⟩ : ∃ f, (f ∈ p.asIdeal ∧ f ∉ q.asIdeal) ∨ (f ∈ q.asIdeal ∧ f ∉ p.asIdeal) := by
     by_contra h
-    push_neg at h
+    push Not at h
     exact hpq (PrimeSpectrum.ext (Ideal.ext fun f => ⟨(h f).1, (h f).2⟩))
   rcases hf with ⟨hfp, hfq⟩ | ⟨hfq, hfp⟩
   · exact ⟨(basicOpen (1 - f) : Set _), (basicOpen f : Set _),

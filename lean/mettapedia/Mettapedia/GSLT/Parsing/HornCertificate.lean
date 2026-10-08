@@ -225,7 +225,7 @@ theorem replay_sound
                 (replayed_children_sound inductionHypothesis lengths
                   childrenAccepted)
 
-private def replayedChildrenComplete
+private theorem replayedChildrenComplete
     {program : Program} {fuel : Nat}
     (inductionHypothesis :
       ∀ (goal : GroundAtom), DerivesWithin program fuel goal →

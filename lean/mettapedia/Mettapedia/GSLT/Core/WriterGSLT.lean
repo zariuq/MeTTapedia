@@ -69,6 +69,52 @@ theorem constGrading_total {S : GSLT} {V : Type v} [Monoid V] (grade : V) :
   intro source target step
   exact ⟨grade, step, rfl⟩
 
+
+/-- Neutral grading preserves every authentic step and its accumulator.
+This applies to any base language, including stateful operational graphs. -/
+theorem constGrading_unit_step_iff {S : GSLT} {V : Type v} [Monoid V]
+    {source target : S.Term} {before after : V} :
+    (S.spendLift (constGrading S (1 : V))).Step (source, before) (target, after) ↔
+      S.Step source target ∧ after = before := by
+  constructor
+  · rintro ⟨grade, ⟨step, rfl⟩, accumulated⟩
+    exact ⟨step, by simpa only [mul_one] using accumulated⟩
+  · rintro ⟨step, rfl⟩
+    exact ⟨1, ⟨step, rfl⟩, by simp only [mul_one]⟩
+
+
+/-- Neutral grading also preserves arbitrary finite runs, not merely one
+selected reduction. Observations of the base state retain their full scope. -/
+theorem constGrading_unit_multiStep_iff {S : GSLT} {V : Type v} [Monoid V]
+    {source target : S.Term} {before after : V} :
+    (S.spendLift (constGrading S (1 : V))).MultiStep (source, before) (target, after) ↔
+      S.MultiStep source target ∧ after = before := by
+  constructor
+  · intro path
+    have project (first last : S.Term × V)
+        (run : (S.spendLift (constGrading S (1 : V))).MultiStep first last) :
+        S.MultiStep first.1 last.1 ∧ last.2 = first.2 := by
+      refine @GSLT.MultiStep.rec (S.spendLift (constGrading S (1 : V)))
+        (fun first last _ => S.MultiStep first.1 last.1 ∧ last.2 = first.2)
+        ?_ ?_ first last run
+      · intro state
+        exact ⟨.refl _, rfl⟩
+      · intro first middle last transition _ ih
+        have oneStep := constGrading_unit_step_iff.mp transition
+        exact ⟨.step oneStep.1 ih.1, ih.2.trans oneStep.2⟩
+    exact project _ _ path
+  · rintro ⟨path, equal⟩
+    rw [equal]
+    refine @GSLT.MultiStep.rec S
+      (fun first last _ =>
+        (S.spendLift (constGrading S (1 : V))).MultiStep (first, before) (last, before))
+      ?_ ?_ source target path
+    · intro state
+      exact .refl _
+    · intro first middle last transition _ ih
+      exact .step (constGrading_unit_step_iff.mpr ⟨transition, rfl⟩) ih
+
+
 /-- One-letter word as a grade: the free writer of “a step happened”. -/
 def tickGrading (S : GSLT) : S.StepSpend (List Unit) :=
   constGrading S [()]

@@ -1,6 +1,7 @@
 import Mettapedia.PLN.TruthValues.PLNClassicTruthFunctions
 import Mettapedia.PLN.WorldModel.Provenance.PLNProvenanceInference
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # Classic PLN v0.9 Examples — Formalized with Provenance

@@ -1,759 +1,400 @@
-import Mettapedia.Languages.MeTTa.PeTTa.Effects
-import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
 import Mettapedia.Languages.MeTTa.PeTTa.StdLib
-import Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr
-import Mettapedia.Languages.MeTTa.ExecutionContract
 
 /-!
-# PeTTa Declarative Core Spec (Grammar-Style)
+# PeTTa operational rules and whole-program derivations
 
-This module provides a **clear declarative spec layer** for PeTTa in a style
-close to grammar-like operational rules:
+The rules interpret syntax, argument demand, ordered alternatives, captured
+values, private stores and parsed-line I/O on the existing Atom and execution
+configuration carriers. They are independent of the executable step and fuel
+functions. `Runs` relates an initial configuration to a completed observation
+or a primitive fault. Exhaustion is a machine outcome, not a logical refusal.
 
-- a pure judgment (`PureDecl`) for core expression semantics;
-- a stateful core judgment (`CoreDecl`) for command semantics including
-  `progn` and `prog1`.
-
-The key point is that this is not a separate implementation:
-we prove exact correspondence with existing formal kernels:
-
-- `PureDecl ↔ PeTTaEval`
-- `CoreDecl ↔ PeTTaCmd`
-
-So this file is simultaneously:
-1. a readable declarative specification artifact, and
-2. a machine-checked bridge to the established formalization.
-
-## 3-Layer PeTTa Spec Pack (Audit View)
-
-1. **Pure declarative core**:
-   `PureDecl` with bridge theorem `pureDecl_iff_pettaEval`.
-2. **Stateful declarative core**:
-   `CoreDecl` with bridge theorem `coreDecl_iff_pettaCmd`.
-3. **Operational instruction layer**:
-   `MeTTaStep` (in `MinimalInstructions.lean`) with bridge
-   `evalStep_implies_pettaEval`.
-
-Bridge theorem index in this module:
-- `pureDecl_iff_pettaEval`
-- `coreDecl_iff_pettaCmd`
-- `PredicateControlDeclClause.translatePredicate_query_to_pettaEval_match`
-- `PredicateControlDeclClause.catch_fallback_to_pettaEval`
-
-- There is the intention fro this file to be similar to HE MeTTa specs: https://trueagi-io.github.io/hyperon-experimental/metta/
-
+These rules specify the implemented closed, saturated profile. Open calls,
+run-time function redefinition and the unsupported control forms remain
+separate coverage obligations. The selected Pattern presentation is in
+`PatternRewrite.DeclarativeSpec`; it is not this whole-program judgment.
 -/
 
-namespace Mettapedia.Languages.MeTTa.PeTTa
+set_option autoImplicit false
 
-open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.Languages.MeTTa.ExecutionContract
+namespace Mettapedia.Languages.MeTTa.PeTTa.Eval
 
-/-! ## Numeric Result Shape
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
+open Mettapedia.Languages.ProcessCalculi.MORK (Subst applySubst)
+open SpaceSemantics (Program Cases)
+open Effects (State Fault)
 
-PeTTa inherits the observable integer-vs-float result distinction from the
-actual Prolog implementation in `hyperon/PeTTa/src/metta.pl` together with
-SWI-Prolog arithmetic behavior.
+def ioHead (head : String) : Bool := head ∈ ["readln!", "println!", "eval"]
 
-This belongs in the declarative spec interface because programs can observe it.
+/-- Constructor/list-view patterns cannot invoke the program or a primitive.
+The special `cons` pattern is handled by `SpaceSemantics.matchValue` itself. -/
+def passivePattern (program : Program) (pattern : Atom) : Bool :=
+  (SpaceSemantics.patternHeads pattern).all fun head =>
+    head == "cons" || !(ioHead head || StdLib.known head ||
+      program.equations.any (·.head == head) ||
+      head ∈ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
 
-Positive examples:
-- `(+ 2 3)` returns `5`, not `5.0`
-- `(sqrt-math 9)` returns `3.0`, not `3`
-- `(round-math 5.4)` returns `5`, not `5.0`
+def constructorPatterns (program : Program) : Bool :=
+  (SpaceSemantics.programPatterns program).all (passivePattern program)
 
-Negative example:
-- numeric result shape is not just presentation sugar; it is observable
-  evaluation behavior and therefore part of the language specification.
--/
+def argumentIsRaw (program : Program) (head : String) (index : Nat) : Bool :=
+  if StdLib.known head then StdLib.rawArgument head index
+  else
+    program.declarations.any fun declaration =>
+      match declaration with
+      | .expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)] =>
+          name == head && types[index]?.any formalArgumentIsRaw
+      | _ => false
 
-/-- Operator-class component of PeTTa numeric result-shape semantics.
+/-- Outside the primitive table, raw demand comes from a stored literal `Atom`
+formal at this position. This lookup law does not establish call saturation. -/
+theorem argumentIsRaw_iff_declaredAtom
+    (program : Program) (head : String) (index : Nat)
+    (notPrimitive : StdLib.known head = false) :
+    argumentIsRaw program head index = true ↔
+      ∃ types, .expression [.symbol ":", .symbol head,
+        .expression (.symbol "->" :: types)] ∈ program.declarations ∧
+        types[index]? = some (.symbol "Atom") := by
+  simp only [argumentIsRaw, notPrimitive, Bool.false_eq_true, ↓reduceIte,
+    List.any_eq_true]
+  constructor
+  · rintro ⟨declaration, member, raw⟩
+    split at raw
+    · simp only [Bool.and_eq_true, beq_iff_eq,
+        optional_formalArgumentIsRaw] at raw
+      rcases raw with ⟨rfl, literal⟩
+      exact ⟨_, member, literal⟩
+    · contradiction
+  · rintro ⟨types, member, literal⟩
+    refine ⟨_, member, ?_⟩
+    simp [literal]
 
-This captures the fixed operator-family part. Concrete evaluation still depends
-on the dynamic numeric class of the arguments where noted. -/
-def numericResultShapeOf : String → Option NumericResultShape
-  | "+" => some .preserveIntegralIfExact
-  | "-" => some .preserveIntegralIfExact
-  | "*" => some .preserveIntegralIfExact
-  | "/" => some .preserveIntegralIfExact
-  | "pow-math" => some .preserveIntegralIfExact
-  | "%" => some .alwaysInteger
-  | "round-math" => some .alwaysInteger
-  | "trunc-math" => some .alwaysInteger
-  | "ceil-math" => some .alwaysInteger
-  | "floor-math" => some .alwaysInteger
-  | "sqrt-math" => some .alwaysFloat
-  | "log-math" => some .alwaysFloat
-  | "sin-math" => some .alwaysFloat
-  | "asin-math" => some .alwaysFloat
-  | "cos-math" => some .alwaysFloat
-  | "acos-math" => some .alwaysFloat
-  | "tan-math" => some .alwaysFloat
-  | "atan-math" => some .alwaysFloat
-  | "abs-math" => some .preserveInputNumericClass
+def clauses (program : Program) (head : String) (values : List Atom) : List Control :=
+  program.equations.filterMap fun equation =>
+    if equation.head = head then
+      (SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values)).map
+        fun bindings => .evaluate bindings equation.body
+    else none
+
+def readCases : List Atom → Option Cases
+  | [] => some []
+  | .expression [pattern, body] :: rest =>
+      ((pattern, body) :: ·) <$> readCases rest
   | _ => none
 
-theorem numericResultShapeOf_add :
-    numericResultShapeOf "+" = some .preserveIntegralIfExact := rfl
+def nestedLets : List Atom → Atom → Option Atom
+  | [], body => some body
+  | .expression [pattern, value] :: rest, body =>
+      (.expression [.symbol "let", pattern, value, ·]) <$> nestedLets rest body
+  | _, _ => none
 
-theorem numericResultShapeOf_round :
-    numericResultShapeOf "round-math" = some .alwaysInteger := rfl
+end Mettapedia.Languages.MeTTa.PeTTa.Eval
 
-theorem numericResultShapeOf_sqrt :
-    numericResultShapeOf "sqrt-math" = some .alwaysFloat := rfl
+namespace Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
 
-theorem numericResultShapeOf_abs :
-    numericResultShapeOf "abs-math" = some .preserveInputNumericClass := rfl
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
+open Mettapedia.Languages.ProcessCalculi.MORK (Subst applySubst)
+open SpaceSemantics (Program Cases)
+open Effects (State Fault)
+open Eval
 
-/-! ## Pure Declarative Core -/
-
-/-- Declarative pure core judgment (grammar-style).
-
-`PureDecl s p answers` means: in space `s`, expression `p` produces
-nondeterministic answers `answers`.
--/
-inductive PureDecl (s : PeTTaSpace) : Pattern → Answers → Prop where
-  | var (x : String) :
-      PureDecl s (.fvar x) [.fvar x]
-  | bvar (n : Nat) :
-      PureDecl s (.bvar n) [.bvar n]
-  | ground (c : String) :
-      PureDecl s (.apply c []) [.apply c []]
-  | ruleApp (r : RewriteRule) (bs : Bindings) (p q : Pattern)
-      (hr : r ∈ s.rules)
-      (hprem : r.premises = [])
-      (hm : bs ∈ matchPattern r.left p)
-      (hq : applyBindings bs r.right = q) :
-      PureDecl s p [q]
-  | spaceQuery (pat tmpl : Pattern) (results : Answers)
-      (hres : results = s.spaceMatch pat tmpl) :
-      PureDecl s (.apply "match" [.apply "&self" [], pat, tmpl]) results
-  | superpose (alts : List Pattern) :
-      PureDecl s (.apply "superpose" [.collection .vec alts none]) alts
-  | collapse (p : Pattern) (answers : Answers)
-      (h : PureDecl s p answers) :
-      PureDecl s (.apply "collapse" [p]) [.collection .vec answers none]
-
-theorem PureDecl.toPeTTaEval {s : PeTTaSpace} {p : Pattern} {answers : Answers}
-    (h : PureDecl s p answers) :
-    PeTTaEval s p answers := by
-  cases h with
-  | var x => exact PeTTaEval.var x
-  | bvar n => exact PeTTaEval.bvar n
-  | ground c => exact PeTTaEval.ground c
-  | ruleApp r bs p q hr hprem hm hq =>
-      exact PeTTaEval.ruleApp r bs p q hr hprem hm hq
-  | spaceQuery pat tmpl _ hres =>
-      exact PeTTaEval.spaceQuery pat tmpl _ hres
-  | superpose _ =>
-      exact PeTTaEval.superpose _
-  | collapse p answers h =>
-      exact PeTTaEval.collapse p answers (PureDecl.toPeTTaEval h)
-
-theorem PureDecl.ofPeTTaEval {s : PeTTaSpace} {p : Pattern} {answers : Answers}
-    (h : PeTTaEval s p answers) :
-    PureDecl s p answers := by
-  cases h with
-  | var x => exact PureDecl.var x
-  | bvar n => exact PureDecl.bvar n
-  | ground c => exact PureDecl.ground c
-  | ruleApp r bs p q hr hprem hm hq =>
-      exact PureDecl.ruleApp r bs p q hr hprem hm hq
-  | spaceQuery pat tmpl _ hres =>
-      exact PureDecl.spaceQuery pat tmpl _ hres
-  | superpose _ =>
-      exact PureDecl.superpose _
-  | collapse p answers h =>
-      exact PureDecl.collapse p answers (PureDecl.ofPeTTaEval h)
-
-theorem pureDecl_iff_pettaEval (s : PeTTaSpace) (p : Pattern) (answers : Answers) :
-    PureDecl s p answers ↔ PeTTaEval s p answers :=
-  ⟨PureDecl.toPeTTaEval, PureDecl.ofPeTTaEval⟩
-
-/-! ## Full Declarative Core Rules (`MeTTaEval`) -/
-
-namespace FullDeclClause
-
-/-- Rule form: symbol pass-through (`metta(Symbol, ty, space, bs)`). -/
-def symbolPassThrough (s : PeTTaSpace) (c : String) (ty : Pattern) (bs : Bindings) : Prop :=
-  MeTTaEval s (.apply c []) ty bs [(.apply c [], bs)]
-
-/-- Rule form: variable pass-through. -/
-def varPassThrough (s : PeTTaSpace) (x : String) (ty : Pattern) (bs : Bindings) : Prop :=
-  MeTTaEval s (.fvar x) ty bs [(.fvar x, bs)]
-
-/-- Rule form: error pass-through. -/
-def errorPassThrough (s : PeTTaSpace) (atom msg ty : Pattern) (bs : Bindings) : Prop :=
-  MeTTaEval s (mkError atom msg) ty bs [(mkError atom msg, bs)]
-
-/-- Rule form: rule application with binding threading. -/
-def ruleApp (s : PeTTaSpace) (r : RewriteRule) (bsm : Bindings)
-    (p q ty : Pattern) (input : Bindings) : Prop :=
-  r ∈ s.rules ∧
-  r.premises = [] ∧
-  bsm ∈ matchPattern r.left p ∧
-  applyBindings bsm r.right = q ∧
-  MeTTaEval s p ty input [(q, bsm ++ input)]
-
-/-- Rule form: `(match &self pat tmpl)`. -/
-def spaceQuery (s : PeTTaSpace) (pat tmpl ty : Pattern) (bs : Bindings) (res : EvalResult) : Prop :=
-  res = (s.spaceMatch pat tmpl).map (·, bs) ∧
-  MeTTaEval s (.apply "match" [.apply "&self" [], pat, tmpl]) ty bs res
-
-/-- Rule form: `superpose`. -/
-def superpose (s : PeTTaSpace) (alts : List Pattern) (ty : Pattern) (bs : Bindings) : Prop :=
-  MeTTaEval s (.apply "superpose" [.collection .vec alts none]) ty bs (alts.map (·, bs))
-
-/-- Rule form: `collapse`. -/
-def collapse (s : PeTTaSpace) (p ty : Pattern) (bs : Bindings) (inner : EvalResult) : Prop :=
-  MeTTaEval s p ty bs inner ∧
-  MeTTaEval s (.apply "collapse" [p]) ty bs [(.collection .vec (inner.map Prod.fst) none, bs)]
-
-theorem symbolPassThrough_intro (s : PeTTaSpace) (c : String) (ty : Pattern) (bs : Bindings)
-    (hty : isPassThroughType ty) :
-    symbolPassThrough s c ty bs := by
-  exact MeTTaEval.symbolPassThrough c ty bs hty
-
-theorem varPassThrough_intro (s : PeTTaSpace) (x : String) (ty : Pattern) (bs : Bindings) :
-    varPassThrough s x ty bs := by
-  exact MeTTaEval.varPassThrough x ty bs
-
-theorem errorPassThrough_intro (s : PeTTaSpace) (atom msg ty : Pattern) (bs : Bindings) :
-    errorPassThrough s atom msg ty bs := by
-  exact MeTTaEval.errorPassThrough atom msg ty bs
-
-theorem ruleApp_intro (s : PeTTaSpace) (r : RewriteRule) (bsm : Bindings)
-    (p q ty : Pattern) (input : Bindings)
-    (hr : r ∈ s.rules)
-    (hprem : r.premises = [])
-    (hm : bsm ∈ matchPattern r.left p)
-    (hq : applyBindings bsm r.right = q) :
-    ruleApp s r bsm p q ty input := by
-  refine ⟨hr, hprem, hm, hq, ?_⟩
-  exact MeTTaEval.ruleApp r bsm p q ty input hr hprem hm hq
-
-theorem spaceQuery_intro (s : PeTTaSpace) (pat tmpl ty : Pattern) (bs : Bindings) (res : EvalResult)
-    (hres : res = (s.spaceMatch pat tmpl).map (·, bs)) :
-    spaceQuery s pat tmpl ty bs res := by
-  refine ⟨hres, ?_⟩
-  exact MeTTaEval.spaceQuery pat tmpl ty bs res hres
-
-theorem superpose_intro (s : PeTTaSpace) (alts : List Pattern) (ty : Pattern) (bs : Bindings) :
-    superpose s alts ty bs := by
-  exact MeTTaEval.superpose alts ty bs
-
-theorem collapse_intro (s : PeTTaSpace) (p ty : Pattern) (bs : Bindings) (inner : EvalResult)
-    (h : MeTTaEval s p ty bs inner) :
-    collapse s p ty bs inner := by
-  refine ⟨h, ?_⟩
-  exact MeTTaEval.collapse p ty bs inner h
-
-/-- Declarative rule packaging for `collapse (match &self pat tmpl)`.
-
-This is the clean composition theorem for the first nested certified query
-family: the inner `match &self` query is certified already, and `collapse`
-packages exactly its threaded answers into a singleton collection. -/
-theorem collapse_spaceQuery_intro
-    (s : PeTTaSpace) (pat tmpl ty : Pattern) (bs : Bindings) :
-    collapse s
-      (.apply "match" [.apply "&self" [], pat, tmpl])
-      ty
-      bs
-      ((s.spaceMatch pat tmpl).map (·, bs)) := by
-  exact collapse_intro _ _ _ _
-    ((s.spaceMatch pat tmpl).map (·, bs))
-    (MeTTaEval.spaceQuery pat tmpl ty bs _ rfl)
-
-end FullDeclClause
-
-/-! ## Declarative Control Rules (`if`/`let`/`case`) -/
-
-namespace ControlDeclClause
-
-/-- Rule form: `(if True then else)` selects `then` when `ifTrueRule` is present. -/
-def ifTrueBranch (s : PeTTaSpace) (thenB elseB : Pattern) : Prop :=
-  ifTrueRule ∈ s.rules ∧
-  PeTTaEval s (.apply "if" [.apply "True" [], thenB, elseB]) [thenB]
-
-/-- Rule form: `(if False then else)` selects `else` when `ifFalseRule` is present. -/
-def ifFalseBranch (s : PeTTaSpace) (thenB elseB : Pattern) : Prop :=
-  ifFalseRule ∈ s.rules ∧
-  PeTTaEval s (.apply "if" [.apply "False" [], thenB, elseB]) [elseB]
-
-/-- Rule form: `(let var val body)` rewrites to `(chain val var body)` when `letRule` is present. -/
-def letToChain (s : PeTTaSpace) (varP valP bodyP : Pattern) : Prop :=
-  letRule ∈ s.rules ∧
-  PeTTaEval s (.apply "let" [varP, valP, bodyP]) [.apply "chain" [valP, varP, bodyP]]
-
-/-- Rule form: case-success one-step reduction through `unify`. -/
-def caseSuccessStep (s : PeTTaSpace) (cond pat branch : Pattern) (bs : Bindings) : Prop :=
-  bs ∈ matchPattern pat cond ∧
-  MeTTaStep s
-    (.apply "unify" [cond, pat, branch, .apply "empty" []])
-    (applyBindings bs branch)
-
-/-- Rule form: case-failure one-step reduction through `unify`. -/
-def caseFailureStep (s : PeTTaSpace) (cond pat thenB elseB : Pattern) : Prop :=
-  matchPattern pat cond = [] ∧
-  MeTTaStep s (.apply "unify" [cond, pat, thenB, elseB]) elseB
-
-theorem ifTrueBranch_intro (s : PeTTaSpace) (thenB elseB : Pattern)
-    (hT : ifTrueRule ∈ s.rules) :
-    ifTrueBranch s thenB elseB := by
-  exact ⟨hT, if_true_reduces s thenB elseB hT⟩
-
-theorem ifFalseBranch_intro (s : PeTTaSpace) (thenB elseB : Pattern)
-    (hF : ifFalseRule ∈ s.rules) :
-    ifFalseBranch s thenB elseB := by
-  exact ⟨hF, if_false_reduces s thenB elseB hF⟩
-
-theorem letToChain_intro (s : PeTTaSpace) (varP valP bodyP : Pattern)
-    (hL : letRule ∈ s.rules) :
-    letToChain s varP valP bodyP := by
-  exact ⟨hL, let_to_chain s varP valP bodyP hL⟩
-
-theorem caseSuccessStep_intro (s : PeTTaSpace) (cond pat branch : Pattern) (bs : Bindings)
-    (hm : bs ∈ matchPattern pat cond) :
-    caseSuccessStep s cond pat branch bs := by
-  exact ⟨hm, case_single_branch_reduces s cond pat branch bs hm⟩
-
-theorem caseFailureStep_intro (s : PeTTaSpace) (cond pat thenB elseB : Pattern)
-    (hno : matchPattern pat cond = []) :
-    caseFailureStep s cond pat thenB elseB := by
-  exact ⟨hno, case_single_branch_failure s cond pat thenB elseB hno⟩
-
-end ControlDeclClause
-
-/-! ## Declarative Let* Rules -/
-
-namespace LetStarDeclClause
-
-/-- Rule form: `(let* () body)` base case reduces to `body`. -/
-def base (s : PeTTaSpace) (bodyP : Pattern) : Prop :=
-  letStarBaseRule ∈ s.rules ∧
-  PeTTaEval s (.apply "let*" [.collection .vec [] none, bodyP]) [bodyP]
-
-/-- Rule form: recursive `let*` step reducing to nested `let`. -/
-def recStep (s : PeTTaSpace) (varP valP bodyP restP : Pattern) : Prop :=
-  letStarRecRule ∈ s.rules ∧
-  [("var", varP), ("val", valP), ("rest", restP), ("body", bodyP)] ∈
-    matchPattern letStarRecRule.left
-      (.apply "let*"
-        [ .collection .vec [.apply "pair" [varP, valP]] none
-        , bodyP ]) ∧
-  PeTTaEval s
-    (.apply "let*" [.collection .vec [.apply "pair" [varP, valP]] none, bodyP])
-    [.apply "let" [varP, valP, .apply "let*" [restP, bodyP]]]
-
-theorem base_intro (s : PeTTaSpace) (bodyP : Pattern)
-    (hr : letStarBaseRule ∈ s.rules) :
-    base s bodyP := by
-  exact ⟨hr, let_star_base_reduces s bodyP hr⟩
-
-theorem recStep_intro (s : PeTTaSpace) (varP valP bodyP restP : Pattern)
-    (hr : letStarRecRule ∈ s.rules)
-    (hm : [("var", varP), ("val", valP), ("rest", restP), ("body", bodyP)] ∈
-           matchPattern letStarRecRule.left
-             (.apply "let*"
-               [ .collection .vec [.apply "pair" [varP, valP]] none
-               , bodyP ])) :
-    recStep s varP valP bodyP restP := by
-  exact ⟨hr, hm, let_star_rec_reduces s varP valP bodyP restP hr hm⟩
-
-end LetStarDeclClause
-
-/-! ## Predicate-Control Declarative Rules (`translatePredicate`/`catch`/`progn`) -/
-
-namespace PredicateControlDeclClause
-
-/-- Whether a string begins with `&` (kernel-reducible, unlike `String.startsWith`). -/
-private def startsWithAmp (s : String) : Bool :=
-  match s.toList with
-  | '&' :: _ => true
+/-- Recognition of the control syntax handled before ordinary applications.
+Other arities and shapes continue through the ordinary call/data rules. -/
+def controlForm : Atom → Bool
+  | .expression [.symbol "let", _, _, _]
+  | .expression [.symbol "let*", .expression _, _]
+  | .expression [.symbol "case", _, .expression _]
+  | .expression [.symbol "if", _, _, _]
+  | .expression [.symbol "collapse", _]
+  | .expression [.symbol "superpose", .expression _]
+  | .expression [.symbol "empty"]
+  | .expression [.symbol "quote", _] => true
   | _ => false
 
-/-- Decode a predicate-like query into a match pattern over `&self`. -/
-def decodePredicateQuery? : Pattern → Option Pattern
-  | .apply "Predicate" [inner] =>
-      decodePredicateQuery? inner
-  | .apply "&self" (relHead :: args) =>
-      match relHead with
-      | .apply rel [] => some (.apply rel args)
-      | _ => none
-  | .apply rel args =>
-      if startsWithAmp rel then none else some (.apply rel args)
-  | _ => none
+/-- Syntax-directed transitions. The constructors do not invoke the machine's
+step function, its fuelled runner, or a guest checker's judgment. -/
+inductive Transition (program : Program) : Configuration → Configuration → Prop where
+  | sequence_done {source : Configuration} {answers : List Atom}
+      (control : source.control = .sequence [] answers) :
+      Transition program source { source with control := .returned answers }
+  | sequence_enter {source : Configuration} {first : Control} {rest : List Control}
+      {answers : List Atom} (control : source.control = .sequence (first :: rest) answers) :
+      Transition program source
+        { source with control := first, frames := .sequence rest answers :: source.frames }
+  | construct {source : Configuration} {bindings : Subst} {values : List Atom} {index : Nat}
+      (control : source.control = .arguments bindings .data [] values index) :
+      Transition program source { source with control := .returned [.expression values] }
+  | read_end {source : Configuration} {bindings : Subst} {index : Nat}
+      (control : source.control = .arguments bindings (.function "readln!") [] [] index)
+      (input : source.input = []) :
+      Transition program source { source with control := .returned [.symbol "end_of_file"] }
+  | read_line {source : Configuration} {bindings : Subst} {index : Nat}
+      {first : Atom} {rest : List Atom}
+      (control : source.control = .arguments bindings (.function "readln!") [] [] index)
+      (input : source.input = first :: rest) :
+      Transition program source { source with input := rest, control := .returned [first] }
+  | print {source : Configuration} {bindings : Subst} {index : Nat} {value : Atom}
+      (control : source.control = .arguments bindings (.function "println!") [] [value] index) :
+      Transition program source
+        { source with output := source.output ++ [value], control := .returned [Effects.boolean true] }
+  | evaluate_code {source : Configuration} {bindings : Subst} {index : Nat} {code : Atom}
+      (control : source.control = .arguments bindings (.function "eval") [] [code] index) :
+      Transition program source { source with control := .evaluate [] code }
+  | read_bad {source : Configuration} {bindings : Subst} {index : Nat} {values : List Atom}
+      (control : source.control = .arguments bindings (.function "readln!") [] values index)
+      (invalid : values ≠ []) :
+      Transition program source { source with control := .fault (.invalidArguments "readln!") }
+  | print_bad {source : Configuration} {bindings : Subst} {index : Nat} {values : List Atom}
+      (control : source.control = .arguments bindings (.function "println!") [] values index)
+      (invalid : ∀ value, values ≠ [value]) :
+      Transition program source { source with control := .fault (.invalidArguments "println!") }
+  | eval_bad {source : Configuration} {bindings : Subst} {index : Nat} {values : List Atom}
+      (control : source.control = .arguments bindings (.function "eval") [] values index)
+      (invalid : ∀ value, values ≠ [value]) :
+      Transition program source { source with control := .fault (.invalidArguments "eval") }
+  | primitive {source : Configuration} {bindings : Subst} {head : String}
+      {index : Nat} {values answers : List Atom} {after : State}
+      (control : source.control = .arguments bindings (.function head) [] values index)
+      (ordinary : ioHead head = false) (native : StdLib.known head = true)
+      (result : StdLib.apply source.state head values = .ok (after, answers)) :
+      Transition program source { source with state := after, control := .returned answers }
+  | primitive_fault {source : Configuration} {bindings : Subst} {head : String}
+      {index : Nat} {values : List Atom} {reason : Fault}
+      (control : source.control = .arguments bindings (.function head) [] values index)
+      (ordinary : ioHead head = false) (native : StdLib.known head = true)
+      (result : StdLib.apply source.state head values = .error reason) :
+      Transition program source { source with control := .fault reason }
+  | equations {source : Configuration} {bindings : Subst} {head : String}
+      {index : Nat} {values : List Atom}
+      (control : source.control = .arguments bindings (.function head) [] values index)
+      (ordinary : ioHead head = false) (notNative : StdLib.known head = false) :
+      Transition program source { source with control := .sequence (clauses program head values) [] }
+  | raw_argument {source : Configuration} {bindings : Subst} {target : Target}
+      {first : Atom} {rest values : List Atom} {index : Nat}
+      (control : source.control = .arguments bindings target (first :: rest) values index)
+      (raw : (match target with
+        | .function head => argumentIsRaw program head index
+        | .data => false) = true) :
+      Transition program source
+        { source with
+          control := .returned [applySubst bindings first]
+          frames := .argument bindings target rest values index :: source.frames }
+  | evaluated_argument {source : Configuration} {bindings : Subst} {target : Target}
+      {first : Atom} {rest values : List Atom} {index : Nat}
+      (control : source.control = .arguments bindings target (first :: rest) values index)
+      (demanded : (match target with
+        | .function head => argumentIsRaw program head index
+        | .data => false) = false) :
+      Transition program source
+        { source with
+          control := .evaluate bindings first
+          frames := .argument bindings target rest values index :: source.frames }
+  | value_variable {source : Configuration} {bindings : Subst} {name : String}
+      (control : source.control = .evaluate bindings (.var name)) :
+      Transition program source { source with control := .returned [applySubst bindings (.var name)] }
+  | symbol {source : Configuration} {bindings : Subst} {name : String}
+      (control : source.control = .evaluate bindings (.symbol name)) :
+      Transition program source { source with control := .returned [.symbol name] }
+  | grounded {source : Configuration} {bindings : Subst} {value : GroundedValue}
+      (control : source.control = .evaluate bindings (.grounded value)) :
+      Transition program source { source with control := .returned [.grounded value] }
+  | let_enter {source : Configuration} {bindings : Subst} {pattern value body : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "let", pattern, value, body])) :
+      Transition program source
+        { source with
+          control := .evaluate bindings value
+          frames := .bind bindings pattern body :: source.frames }
+  | let_star {source : Configuration} {bindings : Subst} {pairs : List Atom} {body nested : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "let*", .expression pairs, body]))
+      (expanded : nestedLets pairs body = some nested) :
+      Transition program source { source with control := .evaluate bindings nested }
+  | let_star_bad {source : Configuration} {bindings : Subst} {pairs : List Atom} {body : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "let*", .expression pairs, body]))
+      (invalid : nestedLets pairs body = none) :
+      Transition program source { source with control := .fault (.invalidArguments "let*") }
+  | case_enter {source : Configuration} {bindings : Subst} {value : Atom}
+      {rows : List Atom} {cases : Cases}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "case", value, .expression rows]))
+      (parsed : readCases rows = some cases) :
+      Transition program source
+        { source with
+          control := .evaluate bindings value
+          frames := .select bindings cases :: source.frames }
+  | case_bad {source : Configuration} {bindings : Subst} {value : Atom} {rows : List Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "case", value, .expression rows]))
+      (invalid : readCases rows = none) :
+      Transition program source { source with control := .fault (.invalidArguments "case") }
+  | if_enter {source : Configuration} {bindings : Subst} {condition yes no : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "if", condition, yes, no])) :
+      Transition program source
+        { source with
+          control := .evaluate bindings condition
+          frames := .branch bindings yes no :: source.frames }
+  | collapse_enter {source : Configuration} {bindings : Subst} {expression : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "collapse", expression])) :
+      Transition program source
+        { source with control := .evaluate bindings expression, frames := .collect :: source.frames }
+  | superpose_enter {source : Configuration} {bindings : Subst} {alternatives : List Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "superpose", .expression alternatives])) :
+      Transition program source
+        { source with control := .sequence (alternatives.map (.evaluate bindings)) [] }
+  | empty_enter {source : Configuration} {bindings : Subst}
+      (control : source.control = .evaluate bindings (.expression [.symbol "empty"])) :
+      Transition program source { source with control := .returned [] }
+  | quote_enter {source : Configuration} {bindings : Subst} {expression : Atom}
+      (control : source.control = .evaluate bindings (.expression [.symbol "quote", expression])) :
+      Transition program source { source with control := .returned [applySubst bindings expression] }
+  | call_enter {source : Configuration} {bindings : Subst} {head : String} {arguments : List Atom}
+      (control : source.control = .evaluate bindings (.expression (.symbol head :: arguments)))
+      (notControl : controlForm (.expression (.symbol head :: arguments)) = false)
+      (callable : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true) :
+      Transition program source
+        { source with control := .arguments bindings (.function head) arguments [] 0 }
+  | data_enter {source : Configuration} {bindings : Subst} {head : String} {arguments : List Atom}
+      (control : source.control = .evaluate bindings (.expression (.symbol head :: arguments)))
+      (notControl : controlForm (.expression (.symbol head :: arguments)) = false)
+      (notCallable : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false) :
+      Transition program source
+        { source with control := .arguments bindings .data (.symbol head :: arguments) [] 0 }
+  | expression_enter {source : Configuration} {bindings : Subst} {items : List Atom}
+      (control : source.control = .evaluate bindings (.expression items))
+      (unheaded : ∀ head arguments, items ≠ .symbol head :: arguments) :
+      Transition program source { source with control := .arguments bindings .data items [] 0 }
+  | collapse_return {source : Configuration} {answers : List Atom} {rest : List Frame}
+      (control : source.control = .returned answers) (frames : source.frames = .collect :: rest) :
+      Transition program source { source with control := .returned [.expression answers], frames := rest }
+  | sequence_return {source : Configuration} {answers collected : List Atom}
+      {pending : List Control} {rest : List Frame}
+      (control : source.control = .returned answers)
+      (frames : source.frames = .sequence pending collected :: rest) :
+      Transition program source
+        { source with control := .sequence pending (collected ++ answers), frames := rest }
+  | argument_return {source : Configuration} {answers values pending : List Atom}
+      {bindings : Subst} {target : Target} {index : Nat} {rest : List Frame}
+      (control : source.control = .returned answers)
+      (frames : source.frames = .argument bindings target pending values index :: rest) :
+      Transition program source
+        { source with control := .sequence (answers.map fun value =>
+            .arguments bindings target pending (values ++ [value]) (index + 1)) [], frames := rest }
+  | binding_return {source : Configuration} {answers : List Atom} {bindings : Subst}
+      {pattern body : Atom} {rest : List Frame}
+      (control : source.control = .returned answers)
+      (frames : source.frames = .bind bindings pattern body :: rest) :
+      Transition program source
+        { source with control := .sequence (answers.filterMap fun value =>
+            (SpaceSemantics.matchBinding bindings pattern value).map
+              fun bound => .evaluate bound body) [], frames := rest }
+  | case_return {source : Configuration} {answers : List Atom} {bindings : Subst}
+      {cases : Cases} {rest : List Frame}
+      (control : source.control = .returned answers)
+      (frames : source.frames = .select bindings cases :: rest) :
+      Transition program source
+        { source with control := .sequence (answers.filterMap fun value =>
+            (SpaceSemantics.selectCase bindings value cases).map
+              fun (bound, body) => .evaluate bound body) [], frames := rest }
+  | if_return {source : Configuration} {answers : List Atom} {bindings : Subst}
+      {yes no : Atom} {rest : List Frame}
+      (control : source.control = .returned answers)
+      (frames : source.frames = .branch bindings yes no :: rest) :
+      Transition program source
+        { source with control := .sequence (answers.map fun value =>
+            .evaluate bindings (if value == Effects.boolean true then yes else no)) [], frames := rest }
 
-/-- Executable answer policy for predicate queries:
-nonempty match bag is returned; empty match returns `fail`. -/
-def evalPredicateQuery (s : PeTTaSpace) (pat : Pattern) : Answers :=
-  let out := s.spaceMatch pat pat
-  if out.isEmpty then [.apply "fail" []] else out
+/-- The whole-program judgment for finite execution in this profile. Completed
+results retain the entire store and the ordered remaining input/output. -/
+inductive Runs (program : Program) : Configuration → Outcome → Prop where
+  | completed {source : Configuration} {answers : List Atom}
+      (control : source.control = .returned answers) (frames : source.frames = []) :
+      Runs program source (.complete source.state answers source.input source.output)
+  | fault {source : Configuration} {reason : Fault}
+      (control : source.control = .fault reason) :
+      Runs program source (.fault reason)
+  | next {source target : Configuration} {result : Outcome}
+      (transition : Transition program source target) (rest : Runs program target result) :
+      Runs program source result
 
-/-- First-class declarative semantics for predicate-control forms. -/
-inductive PredicateControlEval (s : PeTTaSpace) : Pattern → Answers → Prop where
-  | translatePredicateQuery (pred pat : Pattern)
-      (hdecode : decodePredicateQuery? pred = some pat) :
-      PredicateControlEval s (.apply "translatePredicate" [pred]) (evalPredicateQuery s pat)
-  | translatePredicateNoDecode (pred : Pattern)
-      (hdecode : decodePredicateQuery? pred = none) :
-      PredicateControlEval s (.apply "translatePredicate" [pred]) [.apply "fail" []]
-  | catchUnary (inner : Pattern) (ans : Answers)
-      (hinner : PredicateControlEval s inner ans) :
-      PredicateControlEval s (.apply "catch" [inner]) ans
-  | catchTernarySuccess (pred handler fallback : Pattern) (ans : Answers)
-      (hpred : PredicateControlEval s (.apply "translatePredicate" [pred]) ans)
-      (hgood : ans ≠ [.apply "fail" []]) :
-      PredicateControlEval s (.apply "catch" [.apply "translatePredicate" [pred], handler, fallback]) ans
-  | catchTernaryFallback (pred handler fallback : Pattern) (fb : Answers)
-      (hpredFail : PredicateControlEval s (.apply "translatePredicate" [pred]) [.apply "fail" []])
-      (hfb : PeTTaEval s fallback fb) :
-      PredicateControlEval s (.apply "catch" [.apply "translatePredicate" [pred], handler, fallback]) fb
+/-- Fuel exhaustion never becomes a derivation or a logical refusal. -/
+theorem no_exhausted_derivation (program : Program) (source unfinished : Configuration) :
+    ¬ Runs program source (.exhausted unfinished) := by
+  intro derivation
+  generalize resultEq : Outcome.exhausted unfinished = result at derivation
+  induction derivation with
+  | completed => cases resultEq
+  | fault => cases resultEq
+  | next _ _ ih => exact ih resultEq
 
-/-- `progn` is stateful and represented directly in `PeTTaCmd`. -/
-def prognStateful (s₀ s₁ s₂ : EvalState) (e₁ e₂ : Pattern) (ans₁ ans₂ : Answers) : Prop :=
-  PeTTaCmd s₀ e₁ s₁ ans₁ ∧
-  PeTTaCmd s₁ e₂ s₂ ans₂ ∧
-  PeTTaCmd s₀ (.apply "progn" [e₁, e₂]) s₂ ans₂
+/-! ## Cell support follows the derivation -/
 
-theorem evalPredicateQuery_eq_when_nonempty (s : PeTTaSpace) (pat : Pattern)
-    (hne : s.spaceMatch pat pat ≠ []) :
-    evalPredicateQuery s pat = s.spaceMatch pat pat := by
-  simp [evalPredicateQuery, hne]
+open NamedSpaces.Store
 
-theorem evalPredicateQuery_eq_fail_when_empty (s : PeTTaSpace) (pat : Pattern)
-    (hempty : s.spaceMatch pat pat = []) :
-    evalPredicateQuery s pat = [.apply "fail" []] := by
-  simp [evalPredicateQuery, hempty]
+theorem transition_finite_cells {program : SpaceSemantics.Program}
+    {source target : Configuration} (finite : FiniteCells source.state)
+    (transition : Transition program source target) : FiniteCells target.state := by
+  cases transition
+  all_goals first
+    | exact finite
+    | exact StdLib.successful_apply_finite_cells finite (by assumption)
 
-theorem translatePredicate_query_intro (s : PeTTaSpace) (pred pat : Pattern)
-    (hdecode : decodePredicateQuery? pred = some pat) :
-    PredicateControlEval s (.apply "translatePredicate" [pred]) (evalPredicateQuery s pat) := by
-  exact PredicateControlEval.translatePredicateQuery pred pat hdecode
+theorem completed_finite_cells {program : SpaceSemantics.Program}
+    {source : Configuration} {after : Effects.State}
+    {answers input output : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
+    (running : Runs program source (.complete after answers input output))
+    (finite : FiniteCells source.state) : FiniteCells after := by
+  generalize observation : Outcome.complete after answers input output = result at running
+  induction running with
+  | completed control frames =>
+      cases observation
+      exact finite
+  | fault control => cases observation
+  | next transition running ih =>
+      exact ih (transition_finite_cells finite transition) observation
 
-theorem translatePredicate_noDecode_intro (s : PeTTaSpace) (pred : Pattern)
-    (hdecode : decodePredicateQuery? pred = none) :
-    PredicateControlEval s (.apply "translatePredicate" [pred]) [.apply "fail" []] := by
-  exact PredicateControlEval.translatePredicateNoDecode pred hdecode
+theorem transition_empty_tail {program : SpaceSemantics.Program}
+    {source target : Configuration} (vacant : EmptyTail source.state [])
+    (transition : Transition program source target) : EmptyTail target.state [] := by
+  cases transition
+  all_goals first
+    | exact vacant
+    | exact StdLib.successful_apply_empty_tail vacant (by assumption)
 
-theorem catch_unary_intro (s : PeTTaSpace) (inner : Pattern) (ans : Answers)
-    (hinner : PredicateControlEval s inner ans) :
-    PredicateControlEval s (.apply "catch" [inner]) ans := by
-  exact PredicateControlEval.catchUnary inner ans hinner
+theorem completed_empty_tail {program : SpaceSemantics.Program}
+    {source : Configuration} {after : Effects.State}
+    {answers input output : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
+    (running : Runs program source (.complete after answers input output))
+    (vacant : EmptyTail source.state []) : EmptyTail after [] := by
+  generalize observation : Outcome.complete after answers input output = result at running
+  induction running with
+  | completed control frames =>
+      cases observation
+      exact vacant
+  | fault control => cases observation
+  | next transition running ih =>
+      exact ih (transition_empty_tail vacant transition) observation
 
-theorem catch_ternary_success_intro (s : PeTTaSpace)
-    (pred handler fallback : Pattern) (ans : Answers)
-    (hpred : PredicateControlEval s (.apply "translatePredicate" [pred]) ans)
-    (hgood : ans ≠ [.apply "fail" []]) :
-    PredicateControlEval s
-      (.apply "catch" [.apply "translatePredicate" [pred], handler, fallback]) ans := by
-  exact PredicateControlEval.catchTernarySuccess pred handler fallback ans hpred hgood
+/-- Every completed computation from the loaded store admits an exact finite
+store representation. The support list is evidence, not a second state type
+or an assumed empty cell table. -/
+theorem completed_from_loaded_finite_representation {program : SpaceSemantics.Program}
+    {source : Configuration} {after : Effects.State}
+    {answers input output : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
+    (initial : source.state = Effects.loaded program)
+    (running : Runs program source (.complete after answers input output)) :
+    ∃ names, reconstruct after.core [] after.spacesPrefix (after.cellRows names) = after := by
+  have finite : FiniteCells source.state := by
+    rw [initial]
+    exact Effects.loaded_finite_cells program
+  have vacant : EmptyTail source.state [] := by
+    rw [initial]
+    exact Effects.loaded_empty_tail program
+  exact finite_reconstruction_exists after [] (completed_finite_cells running finite)
+    (completed_empty_tail running vacant)
 
-theorem catch_ternary_fallback_intro (s : PeTTaSpace)
-    (pred handler fallback : Pattern) (fb : Answers)
-    (hpredFail : PredicateControlEval s (.apply "translatePredicate" [pred]) [.apply "fail" []])
-    (hfb : PeTTaEval s fallback fb) :
-    PredicateControlEval s
-      (.apply "catch" [.apply "translatePredicate" [pred], handler, fallback]) fb := by
-  exact PredicateControlEval.catchTernaryFallback pred handler fallback fb hpredFail hfb
-
-theorem translatePredicate_query_to_pettaEval_match
-    (s : PeTTaSpace) (pred pat : Pattern)
-    (hdecode : decodePredicateQuery? pred = some pat)
-    (hne : s.spaceMatch pat pat ≠ []) :
-    PredicateControlEval s (.apply "translatePredicate" [pred]) (s.spaceMatch pat pat) ∧
-    PeTTaEval s (.apply "match" [.apply "&self" [], pat, pat]) (s.spaceMatch pat pat) := by
-  refine ⟨?_, ?_⟩
-  · rw [← evalPredicateQuery_eq_when_nonempty s pat hne]
-    exact translatePredicate_query_intro s pred pat hdecode
-  · exact PeTTaEval.spaceQuery pat pat (s.spaceMatch pat pat) rfl
-
-theorem catch_fallback_to_pettaEval
-    (s : PeTTaSpace) (pred handler fallback : Pattern) (fb : Answers)
-    (hpredFail : PredicateControlEval s (.apply "translatePredicate" [pred]) [.apply "fail" []])
-    (hfb : PeTTaEval s fallback fb) :
-    PredicateControlEval s
-      (.apply "catch" [.apply "translatePredicate" [pred], handler, fallback]) fb ∧
-    PeTTaEval s fallback fb := by
-  exact ⟨catch_ternary_fallback_intro s pred handler fallback fb hpredFail hfb, hfb⟩
-
-theorem prognStateful_intro (s₀ s₁ s₂ : EvalState) (e₁ e₂ : Pattern) (ans₁ ans₂ : Answers)
-    (h₁ : PeTTaCmd s₀ e₁ s₁ ans₁)
-    (h₂ : PeTTaCmd s₁ e₂ s₂ ans₂) :
-    prognStateful s₀ s₁ s₂ e₁ e₂ ans₁ ans₂ := by
-  exact ⟨h₁, h₂, PeTTaCmd.prognCmd _ _ _ _ _ _ _ h₁ h₂⟩
-
-end PredicateControlDeclClause
-
-/-! ## Higher-Order Control Rules (`forall`/`foldall`) -/
-
-namespace HigherOrderDeclClause
-
-/-- `forall` currently compiles through the conservative catch-all path. -/
-def forallFallback (cond body : Pattern) : Prop :=
-  compileExpr (.apply "forall" [cond, body]) =
-    .reduceCall [.apply "forall" [cond, body]]
-
-/-- `foldall` currently compiles through the conservative catch-all path. -/
-def foldallFallback (cond init body : Pattern) : Prop :=
-  compileExpr (.apply "foldall" [cond, init, body]) =
-    .reduceCall [.apply "foldall" [cond, init, body]]
-
-theorem forallFallback_intro (cond body : Pattern) :
-    forallFallback cond body := by
-  simp [forallFallback, compileExpr]
-
-theorem foldallFallback_intro (cond init body : Pattern) :
-    foldallFallback cond init body := by
-  simp [foldallFallback, compileExpr]
-
-end HigherOrderDeclClause
-
-/-! ## Operator-to-Rule Index (Audit Table) -/
-
-/-- Compact index mapping core heads to declarative rule anchors in this file. -/
-def operatorRuleIndex : List (String × String) :=
-  [ ("if", "ControlDeclClause.ifTrueBranch / ifFalseBranch")
-  , ("let", "ControlDeclClause.letToChain")
-  , ("let*", "LetStarDeclClause.base / recStep")
-  , ("case", "ControlDeclClause.caseSuccessStep / caseFailureStep")
-  , ("translatePredicate", "PredicateControlDeclClause.PredicateControlEval.translatePredicateQuery")
-  , ("catch", "PredicateControlDeclClause.PredicateControlEval.catchUnary / catchTernary*")
-  , ("forall", "HigherOrderDeclClause.forallFallback")
-  , ("foldall", "HigherOrderDeclClause.foldallFallback")
-  , ("progn", "PredicateControlDeclClause.prognStateful, CoreDecl.progn")
-  , ("prog1", "CoreDecl.prog1")
-  ]
-
-theorem operatorRuleIndex_has_if :
-    ("if", "ControlDeclClause.ifTrueBranch / ifFalseBranch") ∈ operatorRuleIndex := by
-  decide
-
-theorem operatorRuleIndex_has_translatePredicate :
-    ("translatePredicate", "PredicateControlDeclClause.PredicateControlEval.translatePredicateQuery")
-      ∈ operatorRuleIndex := by
-  decide
-
-theorem operatorRuleIndex_has_letStar :
-    ("let*", "LetStarDeclClause.base / recStep") ∈ operatorRuleIndex := by
-  decide
-
-/-! ## Focused Positive / Negative Anchors -/
-
-theorem control_if_true_positive :
-    ControlDeclClause.ifTrueBranch
-      { facts := [], rules := [ifTrueRule] }
-      (.apply "then-branch" []) (.apply "else-branch" []) := by
-  exact ControlDeclClause.ifTrueBranch_intro
-    { facts := [], rules := [ifTrueRule] }
-    (.apply "then-branch" []) (.apply "else-branch" []) (by simp)
-
-theorem control_if_true_negative_empty_rules :
-    ¬ ControlDeclClause.ifTrueBranch
-      { facts := [], rules := [] }
-      (.apply "then-branch" []) (.apply "else-branch" []) := by
-  intro h
-  simpa using h.1
-
-theorem control_let_positive :
-    ControlDeclClause.letToChain
-      { facts := [], rules := [letRule] }
-      (.apply "x" []) (.apply "v" []) (.apply "body" []) := by
-  exact ControlDeclClause.letToChain_intro
-    { facts := [], rules := [letRule] }
-    (.apply "x" []) (.apply "v" []) (.apply "body" []) (by simp)
-
-theorem control_let_negative_empty_rules :
-    ¬ ControlDeclClause.letToChain
-      { facts := [], rules := [] }
-      (.apply "x" []) (.apply "v" []) (.apply "body" []) := by
-  intro h
-  simpa using h.1
-
-theorem control_case_success_positive :
-    ControlDeclClause.caseSuccessStep
-      { facts := [], rules := [] }
-      (.apply "a" []) (.fvar "x") (.apply "branch" []) [("x", .apply "a" [])] := by
-  exact ControlDeclClause.caseSuccessStep_intro
-    { facts := [], rules := [] }
-    (.apply "a" []) (.fvar "x") (.apply "branch" []) [("x", .apply "a" [])]
-    (by simp [matchPattern])
-
-theorem control_case_failure_positive :
-    ControlDeclClause.caseFailureStep
-      { facts := [], rules := [] }
-      (.apply "a" []) (.apply "b" []) (.apply "then-branch" []) (.apply "else-branch" []) := by
-  exact ControlDeclClause.caseFailureStep_intro
-    { facts := [], rules := [] }
-    (.apply "a" []) (.apply "b" []) (.apply "then-branch" []) (.apply "else-branch" [])
-    (by simp [matchPattern])
-
-theorem predicate_translatePredicate_positive :
-    PredicateControlDeclClause.PredicateControlEval
-      { facts := [.apply "p" []], rules := [] }
-      (.apply "translatePredicate" [.apply "Predicate" [.apply "p" []]])
-      [.apply "p" []] := by
-  have hdecode :
-      PredicateControlDeclClause.decodePredicateQuery?
-        (.apply "Predicate" [.apply "p" []]) = some (.apply "p" []) := by
-    simp [PredicateControlDeclClause.decodePredicateQuery?,
-          PredicateControlDeclClause.startsWithAmp]
-  have hsm :
-      ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace).spaceMatch (.apply "p" []) (.apply "p" []) =
-      [.apply "p" []] := by
-    simp [PeTTaSpace.spaceMatch, PeTTaSpace.storedAtoms,
-          PeTTaSpace.storedRuleAtoms,
-          matchPattern, matchArgs, applyBindings]
-  have hquery :
-      PredicateControlDeclClause.PredicateControlEval
-        ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace)
-        (.apply "translatePredicate" [.apply "Predicate" [.apply "p" []]])
-        (PredicateControlDeclClause.evalPredicateQuery
-          ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace) (.apply "p" [])) := by
-    exact PredicateControlDeclClause.translatePredicate_query_intro
-      ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace)
-      (.apply "Predicate" [.apply "p" []]) (.apply "p" []) hdecode
-  have heval :
-      PredicateControlDeclClause.evalPredicateQuery
-        ({ facts := [.apply "p" []], rules := [] } : PeTTaSpace) (.apply "p" []) =
-      [.apply "p" []] := by
-    simp [PredicateControlDeclClause.evalPredicateQuery, hsm]
-  simpa [heval] using hquery
-
-theorem predicate_translatePredicate_negative_not_spaceMatch :
-    compileExpr (.apply "translatePredicate" [.apply "p" []]) ≠
-      .spaceMatch (.apply "p" []) (.apply "p" []) := by
-  simp [compileExpr]
-
-theorem predicate_catch_positive :
-    PredicateControlDeclClause.PredicateControlEval
-      { facts := [], rules := [] }
-      (.apply "catch"
-        [ .apply "translatePredicate" [.apply "&unknown" []]
-        , .apply "handler" []
-        , .apply "fallback" [] ])
-      [.apply "fallback" []] := by
-  have hpredFail :
-      PredicateControlDeclClause.PredicateControlEval
-        ({ facts := [], rules := [] } : PeTTaSpace)
-        (.apply "translatePredicate" [.apply "&unknown" []])
-        [.apply "fail" []] := by
-    exact PredicateControlDeclClause.translatePredicate_noDecode_intro
-      ({ facts := [], rules := [] } : PeTTaSpace) (.apply "&unknown" [])
-      (by simp [PredicateControlDeclClause.decodePredicateQuery?,
-                PredicateControlDeclClause.startsWithAmp])
-  have hfb :
-      PeTTaEval ({ facts := [], rules := [] } : PeTTaSpace)
-        (.apply "fallback" []) [.apply "fallback" []] := by
-    exact PeTTaEval.ground "fallback"
-  exact PredicateControlDeclClause.catch_ternary_fallback_intro
-    ({ facts := [], rules := [] } : PeTTaSpace)
-    (.apply "&unknown" []) (.apply "handler" []) (.apply "fallback" [])
-    [.apply "fallback" []] hpredFail hfb
-
-theorem predicate_catch_negative_not_fail :
-    compileExpr (.apply "catch" [.apply "x" []]) ≠ .fail := by
-  simp [compileExpr]
-
-/-! ## Stateful Declarative Core (Includes `progn`) -/
-
-/-- Declarative stateful core judgment.
-
-`CoreDecl s₀ expr s₁ answers` means:
-evaluate `expr` from state `s₀` to state `s₁`, returning `answers`.
--/
-inductive CoreDecl : EvalState → Pattern → EvalState → Answers → Prop where
-  | addAtom (s : EvalState) (p : Pattern) :
-      CoreDecl s
-        (.apply "add-atom" [.apply "&self" [], p])
-        (s.addAtom p)
-        [mutationSuccess]
-  | removeAtom (s : EvalState) (p : Pattern) :
-      CoreDecl s
-        (.apply "remove-atom" [.apply "&self" [], p])
-        (s.removeAtom p)
-        [mutationSuccess]
-  | getAtoms (s : EvalState) :
-      CoreDecl s
-        (.apply "get-atoms" [.apply "&self" []])
-        s
-        s.space.storedAtoms
-  | pure (s : EvalState) (p : Pattern) (answers : Answers)
-      (h : PureDecl s.space p answers) :
-      CoreDecl s p s answers
-  | progn (s₀ s₁ s₂ : EvalState) (e₁ e₂ : Pattern) (ans₁ ans₂ : Answers)
-      (h₁ : CoreDecl s₀ e₁ s₁ ans₁)
-      (h₂ : CoreDecl s₁ e₂ s₂ ans₂) :
-      CoreDecl s₀ (.apply "progn" [e₁, e₂]) s₂ ans₂
-  | prog1 (s₀ s₁ s₂ : EvalState) (e₁ e₂ : Pattern) (ans₁ ans₂ : Answers)
-      (h₁ : CoreDecl s₀ e₁ s₁ ans₁)
-      (h₂ : CoreDecl s₁ e₂ s₂ ans₂) :
-      CoreDecl s₀ (.apply "prog1" [e₁, e₂]) s₂ ans₁
-
-theorem CoreDecl.toPeTTaCmd
-    {s₀ s₁ : EvalState} {expr : Pattern} {answers : Answers}
-    (h : CoreDecl s₀ expr s₁ answers) :
-    PeTTaCmd s₀ expr s₁ answers := by
-  cases h with
-  | addAtom _ _ =>
-      exact PeTTaCmd.addAtomCmd _ _
-  | removeAtom _ _ =>
-      exact PeTTaCmd.removeAtomCmd _ _
-  | getAtoms _ =>
-      exact PeTTaCmd.getAtomsCmd _
-  | pure _ _ _ hTwoSort =>
-      exact PeTTaCmd.pureEval _ _ _ (PureDecl.toPeTTaEval hTwoSort)
-  | progn _ _ _ _ _ _ _ h₁ h₂ =>
-      exact PeTTaCmd.prognCmd _ _ _ _ _ _ _
-        (CoreDecl.toPeTTaCmd h₁) (CoreDecl.toPeTTaCmd h₂)
-  | prog1 _ _ _ _ _ _ _ h₁ h₂ =>
-      exact PeTTaCmd.prog1Cmd _ _ _ _ _ _ _
-        (CoreDecl.toPeTTaCmd h₁) (CoreDecl.toPeTTaCmd h₂)
-
-theorem CoreDecl.ofPeTTaCmd
-    {s₀ s₁ : EvalState} {expr : Pattern} {answers : Answers}
-    (h : PeTTaCmd s₀ expr s₁ answers) :
-    CoreDecl s₀ expr s₁ answers := by
-  cases h with
-  | addAtomCmd _ _ =>
-      exact CoreDecl.addAtom _ _
-  | removeAtomCmd _ _ =>
-      exact CoreDecl.removeAtom _ _
-  | getAtomsCmd _ =>
-      exact CoreDecl.getAtoms _
-  | pureEval _ _ _ hTwoSort =>
-      exact CoreDecl.pure _ _ _ (PureDecl.ofPeTTaEval hTwoSort)
-  | prognCmd _ _ _ _ _ _ _ h₁ h₂ =>
-      exact CoreDecl.progn _ _ _ _ _ _ _
-        (CoreDecl.ofPeTTaCmd h₁) (CoreDecl.ofPeTTaCmd h₂)
-  | prog1Cmd _ _ _ _ _ _ _ h₁ h₂ =>
-      exact CoreDecl.prog1 _ _ _ _ _ _ _
-        (CoreDecl.ofPeTTaCmd h₁) (CoreDecl.ofPeTTaCmd h₂)
-
-theorem coreDecl_iff_pettaCmd
-    (s₀ s₁ : EvalState) (expr : Pattern) (answers : Answers) :
-    CoreDecl s₀ expr s₁ answers ↔ PeTTaCmd s₀ expr s₁ answers :=
-  ⟨CoreDecl.toPeTTaCmd, CoreDecl.ofPeTTaCmd⟩
-
-/-! ## Positive / Negative Shape Examples -/
-
-theorem coreDecl_positive_example_progn :
-    CoreDecl EvalState.empty
-      (.apply "progn"
-        [ .apply "add-atom" [.apply "&self" [], .apply "foo" []]
-        , .apply "get-atoms" [.apply "&self" []] ])
-      { space := { facts := [.apply "foo" []], rules := [] } }
-      [.apply "foo" []] := by
-  exact
-    CoreDecl.progn _ _ _ _ _ _ _
-      (CoreDecl.addAtom EvalState.empty (.apply "foo" []))
-      (CoreDecl.getAtoms _)
-
-theorem pureDecl_negative_example_var_not_empty
-    (s : PeTTaSpace) (x : String) :
-    ¬ PureDecl s (.fvar x) [] := by
-  intro h
-  cases h
-
-end Mettapedia.Languages.MeTTa.PeTTa
+end Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec

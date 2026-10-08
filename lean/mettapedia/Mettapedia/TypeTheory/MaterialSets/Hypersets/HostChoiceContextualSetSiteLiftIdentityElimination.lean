@@ -147,4 +147,37 @@ theorem J_beta_comparison :
   rw [← J_comparison]
   exact ContextualSmallFamilyIdentity.J_beta (upperDomain parent) motive method
 
+theorem J_comparison_substitution
+    {other : UpperSite (D := D) ⥤ Type a}
+    (change : NaturalHom other (ContextualFutureSiteLift.base P)) :
+    ContextualSmallFamilyIdentity.reindexSection
+        (ContextualSmallFamilyIdentity.identityReindex change (upperDomain parent)) motive
+        (sectionCast (motive_roundtrip parent motive)
+          (pullSection (lowerIdentityFunctor parent) (lowerMotive parent motive)
+            (ContextualSmallFamilyIdentity.J (lowerDomain parent) (lowerMotive parent motive)
+              (lowerMethod parent motive method)))) =
+      ContextualSmallFamilyIdentity.J (ContextualSmallFamilyIdentity.reindex (upperDomain parent) change)
+        (ContextualSmallFamilyIdentity.reindex motive
+          (ContextualSmallFamilyIdentity.identityReindex change (upperDomain parent)))
+        (ContextualSmallFamilyIdentity.reindexMethod change (upperDomain parent) motive method) := by
+  rw [← J_comparison]
+  exact ContextualSmallFamilyIdentity.J_substitution change (upperDomain parent) motive method
+
+theorem J_beta_comparison_substitution
+    {other : UpperSite (D := D) ⥤ Type a}
+    (change : NaturalHom other (ContextualFutureSiteLift.base P)) :
+    ContextualSmallFamilyIdentity.reindexSection
+      (ContextualSmallFamilyIdentity.diagonal (ContextualSmallFamilyIdentity.reindex (upperDomain parent) change))
+      (ContextualSmallFamilyIdentity.reindex motive
+        (ContextualSmallFamilyIdentity.identityReindex change (upperDomain parent)))
+      (ContextualSmallFamilyIdentity.reindexSection
+        (ContextualSmallFamilyIdentity.identityReindex change (upperDomain parent)) motive
+        (sectionCast (motive_roundtrip parent motive)
+          (pullSection (lowerIdentityFunctor parent) (lowerMotive parent motive)
+            (ContextualSmallFamilyIdentity.J (lowerDomain parent) (lowerMotive parent motive)
+              (lowerMethod parent motive method))))) =
+      ContextualSmallFamilyIdentity.reindexMethod change (upperDomain parent) motive method := by
+  rw [J_comparison_substitution]
+  exact ContextualSmallFamilyIdentity.J_beta _ _ _
+
 end Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftIdentityElimination

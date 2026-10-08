@@ -14,24 +14,46 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.NativeOps.NativeC
 
-/-- Submit a closed reflexivity certificate without repeating elaborator
-conversion. The expected equality itself is checked by the kernel, with
-kernel checking explicitly enabled, before the goal is discharged. -/
-elab "native_c_parser_reflexivity" : tactic => do
-  let goal ← Lean.Elab.Tactic.getMainGoal
-  let target ← Lean.instantiateMVars (← goal.getType)
-  let some (_, left, _) := target.eq? | throwError "Expected a closed equality"
-  let proof ← Lean.Meta.mkEqRefl left
+/-- Check a closed certificate before assigning it to the elaborator's goal.
+The certificate is submitted with asynchronous elaboration and skipped kernel
+checking both disabled. No logical axiom is introduced. -/
+private def dischargeClosedCertificate (goal : Lean.MVarId) (target proof : Lean.Expr) :
+    Lean.Elab.Tactic.TacticM Unit := do
   let environment ← Lean.getEnv
   if target.hasMVar || target.hasFVar || proof.hasMVar || proof.hasFVar ||
       target.hasSorry || proof.hasSorry || environment.hasUnsafe target ||
       environment.hasUnsafe proof then
-    throwError "Parser reflexivity requires a closed safe proof"
+    throwError "The certificate requires a closed safe proof"
   let checked ← Lean.withOptions
     (fun options => Lean.debug.skipKernelTC.set (Lean.Elab.async.set options false) false)
     (Lean.Meta.mkAuxLemma [] target proof (cache := false))
   goal.assign (Lean.mkConst checked)
   Lean.Elab.Tactic.replaceMainGoal []
+
+/-- Submit parser reflexivity without repeating elaborator conversion. The
+kernel checks the expected equality before the goal is discharged. -/
+elab "native_c_parser_reflexivity" : tactic => do
+  let goal ← Lean.Elab.Tactic.getMainGoal
+  let target ← Lean.instantiateMVars (← goal.getType)
+  let some (_, left, _) := target.eq? | throwError "Expected a closed equality"
+  dischargeClosedCertificate goal target (← Lean.Meta.mkEqRefl left)
+
+/-- Check the literal character-list certificate without asking elaborator
+unification to traverse the entire source stream. -/
+elab "native_c_character_reflexivity" : tactic => do
+  let goal ← Lean.Elab.Tactic.getMainGoal
+  let target ← Lean.instantiateMVars (← goal.getType)
+  let some (_, _, characters) := target.eq? | throwError "Expected a character-view equality"
+  dischargeClosedCertificate goal target (Lean.mkApp (Lean.mkConst ``String.toList_ofList) characters)
+
+/-- Expand a literal's character view without evaluating its UTF-8 decoder.
+The result is an ordinary character-list term. `String.toList_ofList`
+supplies its checked certificate; this elaborator adds no logical axiom. -/
+elab "native_c_characters% " text:term : term => do
+  let expression ← Lean.Elab.Term.elabTermEnsuringType text (Lean.mkConst ``String)
+  let some value := Lean.Meta.getStringValue? (← Lean.Meta.whnf expression) |
+    throwError "Expected a literal C text"
+  return Lean.toExpr value.toList
 
 def completeFunction? (names : TypeNames) (tokens : List Token) : Option CFunction :=
   match function? (2 * tokens.length + 4) names tokens with
@@ -117,5 +139,18 @@ theorem trailing_function_token_refused :
 theorem malformed_function_token_refused (names : TypeNames) (representation : Representation)
     (source : NativeOps.Function) : textBodyAgreement names representation ['@'] source = false := by
   rfl
+
+/-- Multibyte scalars and a final newline survive literal admission. -/
+theorem literal_character_view_preserves_unicode :
+    "λ🙂\n".toList = native_c_characters% "λ🙂\n" := by
+  native_c_character_reflexivity
+
+theorem literal_character_view_distinguishes_trailing_newline :
+    "λ🙂\n".toList ≠ "λ🙂".toList := by
+  have shorter : "λ🙂".toList = native_c_characters% "λ🙂" := String.toList_ofList
+  rw [literal_character_view_preserves_unicode, shorter]
+  intro equal
+  have lengths := congrArg List.length equal
+  cases lengths
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC

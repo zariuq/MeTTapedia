@@ -66,7 +66,7 @@ In a preorder category, this IS a categorical adjunction (Mathlib's
 
 namespace Mettapedia.OSLF.Framework.CategoryBridge
 
-open CategoryTheory
+open _root_.Mettapedia.CategoryTheory
 open Opposite
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework
@@ -344,6 +344,8 @@ For any `RewriteSystem R`, we build:
 2. A `SubobjectFibration` assigning `(R.Term s → Prop)` to each sort `s`
 -/
 
+-- Sort objects and their morphisms retain independent universe bounds.
+set_option linter.checkUnivs false in
 /-- Interface for selecting the base category used by OSLF sort fibers.
 
     This is the first concrete lift away from a hard-coded discrete base:
@@ -1039,7 +1041,7 @@ noncomputable def languageSortFiber_ofPatternPred
             φ (pathSem lang h seed) }
       map := ?_ }
   intro X Y f h hh
-  simp only [Set.mem_preimage, Set.mem_setOf_eq]
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq]
   exact hNat f.unop h hh
 
 /-- Naturality-by-construction: membership in

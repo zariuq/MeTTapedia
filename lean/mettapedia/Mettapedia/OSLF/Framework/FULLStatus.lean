@@ -1255,9 +1255,9 @@ theorem paperParityRemaining_ne_nil : paperParityRemaining ≠ [] := by
 theorem paperParityRemainingCount_eq_one : paperParityRemainingCount = 1 := by
   decide
 
-/-- The expanded strict NTT inventory retains eleven incomplete source obligations. -/
+/-- The strict NTT inventory retains three incomplete source anchors. -/
 theorem nttStrictParity_remaining :
-    Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount = 11 :=
+    Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount = 3 :=
   Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_eq
 
 /-! ## Code-Reference Anchors

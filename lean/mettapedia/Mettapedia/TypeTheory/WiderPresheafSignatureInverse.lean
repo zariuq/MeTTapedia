@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.WiderPresheafSignatureEquivalence
+import Mettapedia.TypeTheory.ContextualSmallFamilyTypeFormers
 
 /-!
 # Constructed inverse dependent signatures
@@ -61,7 +62,7 @@ theorem inverse_position_natural {first second : E} (step : first ⟶ second) (l
   have targets : (⟨second, nextShape.map step (signature.shapes first ((signature.shapes first).symm label))⟩ :
       nextShape.Elements) = ⟨second, nextShape.map step label⟩ :=
     Sigma.ext rfl (heq_of_eq (congrArg (nextShape.map step) ((signature.shapes first).apply_symm_apply label)))
-  have arrows := ContextualSmallFamilyUniverse.elementsArrow_heq sources targets
+  have arrows := ContextualSmallFamilyTypeFormers.elementArrow_heq sources targets
     (argumentMap nextShape step (signature.shapes first ((signature.shapes first).symm label)))
     (argumentMap nextShape step label) HEq.rfl
   have moved := ContextualSmallFamilyUniverse.familyMap_heq nextPosition sources targets _ _ arrows _ _ firstValue

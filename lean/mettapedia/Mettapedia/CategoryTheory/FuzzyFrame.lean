@@ -3,7 +3,7 @@ import Mathlib.Order.CompleteLattice.Basic
 import Mathlib.Order.CompleteLatticeIntervals
 import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Archimedean
+import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Mathlib.Topology.Order.Basic
 import KnuthSkilling.Literature.Residuated
 
@@ -23,10 +23,12 @@ We prove that `unitInterval := {x : ℝ | 0 ≤ x ∧ x ≤ 1}` has:
 ## Fuzzy Logic Interpretation
 
 For fuzzy logic / many-valued logic:
-- Meet (⊓): Product t-norm `a ⊓ b = a * b` (or min)
+- Meet (⊓): minimum `a ⊓ b = min a b`
 - Join (⊔): `a ⊔ b = max a b`
-- Implication (⇨): Gödel implication `a ⇨ b = if a ≤ b then 1 else b/a`
-  (or Łukasiewicz: `min(1, 1 - a + b)`)
+- Implication (⇨): Gödel implication `a ⇨ b = if a ≤ b then 1 else b`
+
+The separately defined product residuum belongs to multiplication, not to
+the lattice meet or the frame's Heyting implication.
 
 ## References
 
@@ -235,7 +237,7 @@ instance : CommMonoid 𝕀 where
 
 /-! ## Step 5: Heyting Implication
 
-We use the Gödel implication: a ⇨ b = if a ≤ b then 1 else b/a
+We use the Gödel implication: a ⇨ b = if a ≤ b then 1 else b.
 (But for product t-norm, we should use: a ⇨ b = min(1, b/a))
 -/
 

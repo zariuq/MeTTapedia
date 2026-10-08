@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Topos.PresheafPredicateTotalExponential
+import Mettapedia.GSLT.Topos.YonedaPredicateClosedComparison
 import Mathlib.CategoryTheory.Yoneda
 
 /-!
@@ -18,16 +19,16 @@ What restricts for free:
   representables is in particular a map of presheaves — which is exactly the
   setting in which that preservation holds.
 
-What does **not** restrict for free is the closed structure.  The function
-object of two representable presheaves need not itself be representable, so
-the exponential predicate constructed on the unrestricted total category has
-no reason to land in the Yoneda image.
+Closed structure does not restrict over an arbitrary base category: the
+function object of two representables need not be representable. Over a
+cartesian closed base, `YonedaClosed.exponentialIso` earns its representation
+using the actual canonical exponential comparison and the complete
+generalized-element bijection.
 
-Accordingly `yonedaExpPredicate` takes the representing isomorphism as an
-explicit argument: that isomorphism is the preservation witness, and nothing
-in this file asserts that one exists for a given pair of objects.  Where it is
-supplied, the restricted exponential predicate is obtained by reindexing along
-it, and is monotone in its target (`yonedaExpPredicate_mono_target`).
+The general `yonedaExpPredicate` accepts any supplied representing isomorphism.
+`canonicalYonedaExpPredicate` instead uses the earned canonical isomorphism
+when the base is cartesian closed. Both carry the full future-sensitive
+function predicate; neither tests only present arguments.
 
 This is the shape the source construction uses, which is why the restriction
 is recorded separately from the unrestricted structure rather than folded into
@@ -40,7 +41,7 @@ it.
 - Mac Lane–Moerdijk, "Sheaves in Geometry and Logic" (1994), Ch. I.4–I.6.
 -/
 
-open CategoryTheory MonoidalCategory CartesianMonoidalCategory
+open _root_.CategoryTheory MonoidalCategory CartesianMonoidalCategory
 
 universe u
 
@@ -109,6 +110,24 @@ theorem yonedaExpPredicate_mono_target {X Y E : C}
     exact below V member
   intro U x held
   exact step U held
+
+section CanonicalClosed
+
+variable [CartesianMonoidalCategory C] [MonoidalClosed C]
+
+/-- The actual exponential predicate on the selected base exponential,
+using the canonical representation earned from base closure. -/
+noncomputable def canonicalYonedaExpPredicate {X Y : C}
+    (φ : yonedaPredicate X) (ψ : yonedaPredicate Y) :
+    yonedaPredicate ((ihom X).obj Y) :=
+  yonedaExpPredicate (YonedaClosed.exponentialIso X Y) φ ψ
+
+theorem canonicalYonedaExpPredicate_mono_target {X Y : C}
+    (φ : yonedaPredicate X) {ψ ψ' : yonedaPredicate Y} (below : ψ ≤ ψ') :
+    canonicalYonedaExpPredicate φ ψ ≤ canonicalYonedaExpPredicate φ ψ' :=
+  yonedaExpPredicate_mono_target (YonedaClosed.exponentialIso X Y) φ below
+
+end CanonicalClosed
 end Mettapedia.GSLT.Topos
 
 #print axioms Mettapedia.GSLT.Topos.yonedaReindex_id

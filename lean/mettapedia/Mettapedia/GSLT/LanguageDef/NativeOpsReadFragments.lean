@@ -18,6 +18,140 @@ namespace Mettapedia.GSLT.LanguageDef.NativeOps
 
 open NativeIR (Atom Instruction)
 
+theorem source_reference_location_read_exact {World : Type}
+    (raw : SourceRawResult World) (out : SourceOutcome World) :
+    (∃ location, sourceReferenceLocation raw location ∧
+      sourceLocationNext location (fun address post => ∃ value,
+        sourceRead post.memory address = some value ∧ out = ⟨.ok value, post⟩) out) ↔
+      match raw.state.fault with
+      | some fault => out = ⟨.error fault, raw.state⟩
+      | none => ∃ address value, raw.value = .reference (some address) ∧
+          sourceRead raw.state.memory address = some value ∧ out = ⟨.ok value, raw.state⟩ := by
+  cases failed : raw.state.fault with
+  | some fault =>
+      constructor
+      · rintro ⟨location, located, remaining⟩
+        have same : location = ⟨.error fault, raw.state⟩ := by
+          simpa only [sourceReferenceLocation, failed] using located
+        subst location
+        exact remaining
+      · intro same
+        exact ⟨⟨.error fault, raw.state⟩, by simp [sourceReferenceLocation, failed], same⟩
+  | none =>
+      constructor
+      · rintro ⟨location, located, remaining⟩
+        obtain ⟨address, pointer, same⟩ := (show ∃ address,
+          raw.value = .reference (some address) ∧ location = ⟨.ok address, raw.state⟩ from by
+          simpa only [sourceReferenceLocation, failed] using located)
+        subst location
+        obtain ⟨value, read, same⟩ := remaining
+        exact ⟨address, value, pointer, read, same⟩
+      · rintro ⟨address, value, pointer, read, same⟩
+        exact ⟨⟨.ok address, raw.state⟩,
+          by simpa only [sourceReferenceLocation, failed] using ⟨address, pointer, rfl⟩,
+          value, read, same⟩
+
+theorem source_reference_location_read_unique {World : Type}
+    {raw : SourceRawResult World} {left right : SourceOutcome World}
+    (one : ∃ location, sourceReferenceLocation raw location ∧
+      sourceLocationNext location (fun address post => ∃ value,
+        sourceRead post.memory address = some value ∧ left = ⟨.ok value, post⟩) left)
+    (two : ∃ location, sourceReferenceLocation raw location ∧
+      sourceLocationNext location (fun address post => ∃ value,
+        sourceRead post.memory address = some value ∧ right = ⟨.ok value, post⟩) right) :
+    left = right := by
+  have first := (source_reference_location_read_exact raw left).mp one
+  have second := (source_reference_location_read_exact raw right).mp two
+  cases failed : raw.state.fault with
+  | some fault =>
+      simp only [failed] at first second
+      exact first.trans second.symm
+  | none =>
+      simp only [failed] at first second
+      obtain ⟨a, v, pointer, read, out⟩ := first
+      obtain ⟨b, w, otherPointer, otherRead, otherOut⟩ := second
+      cases Option.some.inj (SourceValue.reference.inj (pointer.symm.trans otherPointer))
+      cases Option.some.inj (read.symm.trans otherRead)
+      exact out.trans otherOut.symm
+
+theorem target_memory_temporary_helper_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {operation : NativeIR.MemoryOperation}
+    {identity : Nat} {type : NativeType} (raw : TargetRawResult World)
+    (callExact : ∀ other, TargetMemoryCall interface heap frame operation state other ↔ other = raw)
+    (unused : frame.temporaryNames.contains identity = false) (out : TargetBlockOutcome World) :
+    TargetInstructionEval interface heap calls result
+      (.helper (some (.temporary identity type)) operation) frame state out ↔
+      out = ⟨.normal, targetDeclareTemporary frame identity raw.value, raw.state⟩ := by
+  constructor
+  · intro ran
+    cases ran with
+    | helper called stored =>
+        cases (callExact _).mp called
+        cases stored with
+        | fresh _ => rfl
+        | existing notTemporary _ => exact False.elim (notTemporary identity type rfl)
+  · intro same
+    subst out
+    exact .helper ((callExact raw).mpr rfl) (.fresh unused)
+
+theorem target_raw_reference_read_exact {SourceWorld TargetWorld : Type} {interface : Interface}
+    {worldRelated : SourceWorld → TargetWorld → Prop}
+    {sourceRaw : SourceRawResult SourceWorld} {targetRaw : TargetRawResult TargetWorld}
+    {heap : TargetHeapSemantics TargetWorld} {calls : TargetCalls TargetWorld} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState TargetWorld} {operation : NativeIR.MemoryOperation}
+    {locationIdentity valueIdentity : Nat} {type : NativeType} {default : TargetValue}
+    (rawRelated : RawResultRelated worldRelated sourceRaw targetRaw)
+    (callExact : ∀ other, TargetMemoryCall interface heap frame operation state other ↔ other = targetRaw)
+    (locationUnused : frame.temporaryNames.contains locationIdentity = false)
+    (valueUnused : (targetDeclareTemporary frame locationIdentity targetRaw.value).temporaryNames.contains
+      valueIdentity = false)
+    (zero : TargetZero interface result default) (root : List Instruction) (out : TargetBlockOutcome TargetWorld) :
+    TargetRun interface heap calls result root
+      [.helper (some (.temporary locationIdentity (.ref type))) operation, .checkContext,
+        .temporary valueIdentity type (.indirectRead (.temporary locationIdentity (.ref type)))]
+      frame state out ↔
+      match sourceRaw.state.fault with
+      | some _ => out = ⟨.returned default,
+          targetDeclareTemporary frame locationIdentity targetRaw.value, targetRaw.state⟩
+      | none => ∃ address value, sourceRaw.value = .reference (some address) ∧
+          sourceRead sourceRaw.state.memory address = some value ∧
+          out = ⟨.normal,
+            targetDeclareTemporary (targetDeclareTemporary frame locationIdentity targetRaw.value)
+              valueIdentity (encodeValue value), targetRaw.state⟩ := by
+  rw [target_normal_then_exact (target_memory_temporary_helper_exact targetRaw callExact locationUnused)]
+  cases failed : sourceRaw.state.fault with
+  | some fault =>
+      exact target_returning_then_exact
+        (target_context_fault_exact _ _ (rawRelated.state.fault.trans failed) zero) root _ out
+  | none =>
+      rw [target_normal_then_exact (target_context_clear_exact _ _ (rawRelated.state.fault.trans failed))]
+      rw [target_pure_temporary_any_exact interface heap calls result root _ targetRaw.state
+        valueIdentity type (.indirectRead (.temporary locationIdentity (.ref type))) valueUnused]
+      constructor
+      · rintro ⟨value, computed, same⟩
+        cases computed with
+        | indirect pointer read =>
+            have rawPointer := target_atom_unique
+              (declared_temporary_atom interface frame targetRaw.state locationIdentity (.ref type) targetRaw.value)
+              pointer
+            have sourcePointer : sourceRaw.value = .reference (some _) :=
+              encodeValue_injective (rawRelated.value.symm.trans rawPointer)
+            rw [memory_read_correspondence sourceRaw.state.memory targetRaw.state.memory
+              rawRelated.state.memory] at read
+            obtain ⟨original, selected, encoded⟩ := Option.map_eq_some_iff.mp read
+            cases encoded
+            exact ⟨_, original, sourcePointer, selected, same⟩
+      · rintro ⟨address, value, pointer, read, same⟩
+        refine ⟨encodeValue value, TargetPureEval.indirect (address := address) ?_ ?_, same⟩
+        · have selected := declared_temporary_atom interface frame targetRaw.state locationIdentity
+            (.ref type) targetRaw.value
+          simpa only [rawRelated.value, pointer, encodeValue] using selected
+        · rw [memory_read_correspondence sourceRaw.state.memory targetRaw.state.memory
+            rawRelated.state.memory, read]
+          rfl
+
+
 theorem target_reference_call_exact {World : Type} {interface : Interface}
     {heap : TargetHeapSemantics World} {frame : TargetFrame} {state : TargetState World}
     {atom : Atom} {pointer : Option Address}
@@ -134,17 +268,9 @@ theorem target_index_helper_exact {World : Type} {interface : Interface}
       out = ⟨.normal,
         targetDeclareTemporary frame identity (targetIndexCall state length (heap.width element) offset pointer).value,
         (targetIndexCall state length (heap.width element) offset pointer).state⟩ := by
-  constructor
-  · intro ran
-    cases ran with
-    | helper called stored =>
-        cases (target_index_call_exact view position _).mp called
-        cases stored with
-        | fresh _ => rfl
-        | existing notTemporary _ => exact False.elim (notTemporary identity (.ref element) rfl)
-  · intro same
-    subst out
-    exact .helper (.index view position) (.fresh unused)
+  exact target_memory_temporary_helper_exact
+    (targetIndexCall state length (heap.width element) offset pointer)
+    (target_index_call_exact view position) unused out
 
 theorem target_index_fragment_exact {World : Type} {interface : Interface}
     {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
@@ -249,5 +375,177 @@ theorem target_length_read_exact {World : Type} {interface : Interface}
   · intro same
     subst value
     exact .length view
+
+theorem target_array_data_store_exact {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {identity : Nat} {element : NativeType}
+    {previous pointer : Option Address} {length : BitVec 64}
+    (read : TargetAtomEval interface frame state (.temporary identity (.array element))
+      (.array element previous length)) (outFrame : TargetFrame) (outState : TargetState World) :
+    TargetPlaceStore interface (.arrayData (.temporary identity (.array element)) element)
+      (.reference pointer) frame state outFrame outState ↔
+      outFrame = targetUpdateTemporary frame identity (.array element pointer length) ∧ outState = state := by
+  constructor
+  · intro stored
+    cases stored with
+    | arrayData other => cases target_atom_unique read other; exact ⟨rfl, rfl⟩
+  · rintro ⟨rfl, rfl⟩; exact .arrayData read
+
+theorem target_array_length_store_exact {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {identity : Nat} {element : NativeType}
+    {pointer : Option Address} {oldLength length : BitVec 64}
+    (read : TargetAtomEval interface frame state (.temporary identity (.array element))
+      (.array element pointer oldLength)) (outFrame : TargetFrame) (outState : TargetState World) :
+    TargetPlaceStore interface (.arrayLength (.temporary identity (.array element)))
+      (.word length) frame state outFrame outState ↔
+      outFrame = targetUpdateTemporary frame identity (.array element pointer length) ∧ outState = state := by
+  constructor
+  · intro stored
+    cases stored with
+    | arrayLength other => cases target_atom_unique read other; exact ⟨rfl, rfl⟩
+  · rintro ⟨rfl, rfl⟩; exact .arrayLength read
+
+theorem target_array_data_helper_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {operation : NativeIR.MemoryOperation}
+    {identity : Nat} {element : NativeType} {previous pointer : Option Address} {length : BitVec 64}
+    (raw : TargetRawResult World) (rawReference : raw.value = .reference pointer)
+    (callExact : ∀ other, TargetMemoryCall interface heap frame operation state other ↔ other = raw)
+    (view : TargetAtomEval interface frame raw.state (.temporary identity (.array element))
+      (.array element previous length)) (out : TargetBlockOutcome World) :
+    TargetInstructionEval interface heap calls result
+      (.helper (some (.arrayData (.temporary identity (.array element)) element)) operation) frame state out ↔
+      out = ⟨.normal, targetUpdateTemporary frame identity (.array element pointer length), raw.state⟩ := by
+  constructor
+  · intro ran
+    cases ran with
+    | helper called stored =>
+        cases (callExact _).mp called
+        rw [rawReference] at stored
+        cases stored with
+        | existing _ stored =>
+            obtain ⟨sameFrame, sameState⟩ := (target_array_data_store_exact view _ _).mp stored
+            subst_vars; rfl
+  · intro same
+    subst out
+    refine .helper ((callExact raw).mpr rfl) ?_
+    rw [rawReference]
+    exact .existing (by intro other type impossible; cases impossible) (.arrayData view)
+
+theorem target_array_length_assign_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {identity : Nat} {element : NativeType}
+    {pointer : Option Address} {oldLength length : BitVec 64} {atom : Atom}
+    (view : TargetAtomEval interface frame state (.temporary identity (.array element))
+      (.array element pointer oldLength))
+    (value : TargetAtomEval interface frame state atom (.word length)) (out : TargetBlockOutcome World) :
+    TargetInstructionEval interface heap calls result
+      (.assign (.arrayLength (.temporary identity (.array element))) atom) frame state out ↔
+      out = ⟨.normal, targetUpdateTemporary frame identity (.array element pointer length), state⟩ := by
+  constructor
+  · intro ran
+    cases ran with
+    | assign other stored =>
+        cases target_atom_unique value other
+        obtain ⟨sameFrame, sameState⟩ := (target_array_length_store_exact view _ _).mp stored
+        subst_vars; rfl
+  · intro same; subst out; exact .assign value (.arrayLength view)
+
+theorem target_slice_call_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {frame : TargetFrame} {state : TargetState World}
+    {array start count : Atom} {element : NativeType} {pointer : Option Address}
+    {length first amount : BitVec 64}
+    (arrayRead : TargetAtomEval interface frame state array (.array element pointer length))
+    (startRead : TargetAtomEval interface frame state start (.word first))
+    (countRead : TargetAtomEval interface frame state count (.word amount)) (raw : TargetRawResult World) :
+    TargetMemoryCall interface heap frame (.slice array start count element) state raw ↔
+      raw = targetSliceCall state length (heap.width element) first amount pointer := by
+  constructor
+  · intro called
+    cases called with
+    | slice otherArray otherStart otherCount =>
+        cases target_atom_unique arrayRead otherArray
+        cases target_atom_unique startRead otherStart
+        cases target_atom_unique countRead otherCount
+        rfl
+  · intro same; subst raw; exact .slice arrayRead startRead countRead
+
+theorem target_checked_array_descriptor_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {operation : NativeIR.MemoryOperation}
+    {identity : Nat} {element : NativeType} {previous pointer : Option Address} {oldLength length : BitVec 64}
+    {lengthAtom : Atom} {default : TargetValue}
+    (raw : TargetRawResult World) (rawReference : raw.value = .reference pointer)
+    (callExact : ∀ other, TargetMemoryCall interface heap frame operation state other ↔ other = raw)
+    (view : TargetAtomEval interface frame raw.state (.temporary identity (.array element))
+      (.array element previous oldLength))
+    (countRead : TargetAtomEval interface
+      (targetUpdateTemporary frame identity (.array element pointer oldLength)) raw.state
+      lengthAtom (.word length))
+    (zero : TargetZero interface result default) (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root
+      [.helper (some (.arrayData (.temporary identity (.array element)) element)) operation,
+        .checkContext, .assign (.arrayLength (.temporary identity (.array element))) lengthAtom]
+      frame state out ↔
+      out = match raw.state.fault with
+      | some _ => ⟨.returned default,
+          targetUpdateTemporary frame identity (.array element pointer oldLength), raw.state⟩
+      | none => ⟨.normal,
+          targetUpdateTemporary (targetUpdateTemporary frame identity (.array element pointer oldLength))
+            identity (.array element pointer length), raw.state⟩ := by
+  rw [target_normal_then_exact (target_array_data_helper_exact raw rawReference callExact view)]
+  cases failed : raw.state.fault with
+  | some fault =>
+      exact target_returning_then_exact
+        (target_context_fault_exact _ _ failed zero) root _ out
+  | none =>
+      rw [target_normal_then_exact (target_context_clear_exact _ _ failed)]
+      have live : frame.temporaryNames.contains identity = true := by cases view; assumption
+      have descriptor := updated_temporary_atom interface frame raw.state identity (.array element)
+        (.array element pointer oldLength) live
+      rw [target_normal_then_exact (target_array_length_assign_exact descriptor countRead)]
+      exact target_run_empty_exact root _ _ out
+
+theorem target_fresh_array_descriptor_exact {World : Type} {interface : Interface}
+    {heap : TargetHeapSemantics World} {calls : TargetCalls World} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState World} {operation : NativeIR.MemoryOperation}
+    (supply : NativeIR.Supply) (element : NativeType) {pointer : Option Address}
+    {length : BitVec 64} {lengthAtom : Atom} {default : TargetValue}
+    (raw : TargetRawResult World) (rawReference : raw.value = .reference pointer)
+    (callExact : ∀ other, TargetMemoryCall interface heap
+      (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+      operation state other ↔ other = raw)
+    (bounded : TemporaryNamesBound frame supply.next)
+    (countRead : TargetAtomEval interface frame state lengthAtom (.word length))
+    (zero : TargetZero interface result default) (root : List Instruction) (out : TargetBlockOutcome World) :
+    TargetRun interface heap calls result root
+      [.temporary (NativeIR.fresh supply).1 (.array element) (.zero (.array element)),
+        .helper (some (.arrayData (.temporary (NativeIR.fresh supply).1 (.array element)) element)) operation,
+        .checkContext, .assign (.arrayLength (.temporary (NativeIR.fresh supply).1 (.array element))) lengthAtom]
+      frame state out ↔
+      out = match raw.state.fault with
+      | some _ => ⟨.returned default,
+          targetUpdateTemporary
+            (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+            (NativeIR.fresh supply).1 (.array element pointer 0), raw.state⟩
+      | none => ⟨.normal,
+          targetUpdateTemporary
+            (targetUpdateTemporary
+              (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+              (NativeIR.fresh supply).1 (.array element pointer 0))
+            (NativeIR.fresh supply).1 (.array element pointer length), raw.state⟩ := by
+  have fresh := NativeIR.fresh_strict supply
+  rw [target_normal_then_exact (target_temporary_instruction_exact
+    (temporary_bound_fresh bounded fresh) (TargetPureEval.zero (.emptyView element)))]
+  have preserved := temporary_protection_trans
+    (declare_temporary_protects frame (.array element none 0) fresh)
+    (update_temporary_protects
+      (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+      (.array element pointer 0) fresh)
+  exact target_checked_array_descriptor_exact raw rawReference callExact
+    (declared_temporary_atom interface frame raw.state (NativeIR.fresh supply).1 (.array element)
+      (.array element none 0))
+    ((protection_atom_evaluation preserved lengthAtom
+      (target_atom_read_within bounded countRead) state raw.state _).mp countRead)
+    zero root out
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

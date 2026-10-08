@@ -320,4 +320,5 @@ abstract DocTextClaims = {
   fun Clm_00315 : Claim ;
   fun Clm_00316 : Claim ;
   fun Clm_00317 : Claim ;
+  fun Clm_00318 : Claim ;
 }

@@ -266,6 +266,14 @@ theorem readonly_postincrement_refused (catalogue : List External) (fuel : Nat)
     (operand : CExpr) : readOnlyExpression catalogue fuel (.postIncrement operand) = false := by
   cases fuel <;> rfl
 
+theorem readonly_decrement_refused (catalogue : List External) (fuel : Nat)
+    (operand : CExpr) : readOnlyExpression catalogue fuel (.unary .decrement operand) = false := by
+  cases fuel <;> rfl
+
+theorem readonly_postdecrement_refused (catalogue : List External) (fuel : Nat)
+    (operand : CExpr) : readOnlyExpression catalogue fuel (.postDecrement operand) = false := by
+  cases fuel <;> rfl
+
 theorem readonly_effect_service_refused (fuel : Nat) (declaration : External)
     (arguments : List CExpr) (effectful : declaration.effect = .effect) :
     readOnlyExpression [declaration] fuel (.call declaration.cSymbol.toList arguments) = false := by

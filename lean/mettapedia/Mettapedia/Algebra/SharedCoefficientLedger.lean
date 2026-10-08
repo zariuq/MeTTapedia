@@ -20,7 +20,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Algebra.SharedCoefficientLedger
 
-universe uId uDependency uValue uOwner
+universe uId uDependency uValue uOwner uId' uDependency' uOwner'
 
 structure Factor (Identity : Type uId) (Dependency : Type uDependency) (V : Type uValue) where
   identity : Identity
@@ -167,6 +167,131 @@ theorem merge_denotation [Monoid V] [DecidableEq Identity] [DecidableEq Dependen
   rw [((merge_accepted_iff left right merged).mp accepted).1, PrefixSplit.ordered]
   rw [denote_append, denote_append]
 
+/-! ## Renaming physical productions
+
+Fresh numeric names may differ between executions. One injective renaming must
+apply to all their ledgers; renaming each answer independently would forget
+sharing between answers. Dependencies may have a separate type. When both
+fields use one name space, the same function must rename both fields.
+-/
+
+variable {Identity' : Type uId'} {Dependency' : Type uDependency'}
+
+def Factor.rename (name : Identity → Identity') (dependency : Dependency → Dependency')
+    (factor : Factor Identity Dependency V) : Factor Identity' Dependency' V :=
+  ⟨name factor.identity, dependency factor.dependency, factor.coefficient⟩
+
+theorem Factor.rename_injective {name : Identity → Identity'}
+    {dependency : Dependency → Dependency'} (names : Function.Injective name)
+    (dependencies : Function.Injective dependency) :
+    Function.Injective (Factor.rename name dependency :
+      Factor Identity Dependency V → Factor Identity' Dependency' V) := by
+  intro first second equal
+  have identityEqual := names (congrArg Factor.identity equal)
+  have dependencyEqual := dependencies (congrArg Factor.dependency equal)
+  have coefficientEqual := congrArg Factor.coefficient equal
+  cases first
+  cases second
+  simp_all [Factor.rename]
+
+def rename (name : Identity → Identity') (dependency : Dependency → Dependency')
+    (ledger : Ledger Identity Dependency V) : Ledger Identity' Dependency' V :=
+  ledger.map (Factor.rename name dependency)
+
+theorem rename_injective {name : Identity → Identity'}
+    {dependency : Dependency → Dependency'} (names : Function.Injective name)
+    (dependencies : Function.Injective dependency) :
+    Function.Injective (rename name dependency :
+      Ledger Identity Dependency V → Ledger Identity' Dependency' V) :=
+  List.map_injective_iff.mpr (Factor.rename_injective names dependencies)
+
+theorem identities_rename (name : Identity → Identity')
+    (dependency : Dependency → Dependency') (ledger : Ledger Identity Dependency V) :
+    identities (rename name dependency ledger) = (identities ledger).map name := by
+  simp [identities, rename, Factor.rename, List.map_map, Function.comp_def]
+
+theorem valid_rename_iff {name : Identity → Identity'}
+    (names : Function.Injective name) (dependency : Dependency → Dependency')
+    (ledger : Ledger Identity Dependency V) :
+    Valid (rename name dependency ledger) ↔ Valid ledger := by
+  unfold Valid
+  rw [identities_rename]
+  exact List.nodup_map_iff names
+
+def PrefixSplit.rename (name : Identity → Identity') (dependency : Dependency → Dependency')
+    (parts : PrefixSplit Identity Dependency V) : PrefixSplit Identity' Dependency' V :=
+  ⟨SharedCoefficientLedger.rename name dependency parts.shared,
+    SharedCoefficientLedger.rename name dependency parts.leftFresh,
+    SharedCoefficientLedger.rename name dependency parts.rightFresh⟩
+
+theorem PrefixSplit.ordered_rename (name : Identity → Identity')
+    (dependency : Dependency → Dependency') (parts : PrefixSplit Identity Dependency V) :
+    (parts.rename name dependency).ordered =
+      SharedCoefficientLedger.rename name dependency parts.ordered := by
+  simp [PrefixSplit.rename, ordered, SharedCoefficientLedger.rename, List.map_append]
+
+/-- The comparison of full factors, including the dependency field, commutes
+with a shared injective renaming. In particular, the shared prefix is retained. -/
+theorem splitPrefix_rename [DecidableEq Identity] [DecidableEq Identity']
+    [DecidableEq Dependency] [DecidableEq Dependency'] [DecidableEq V]
+    {name : Identity → Identity'} {dependency : Dependency → Dependency'}
+    (names : Function.Injective name) (dependencies : Function.Injective dependency)
+    (left right : Ledger Identity Dependency V) :
+    splitPrefix (rename name dependency left) (rename name dependency right) =
+      (splitPrefix left right).rename name dependency := by
+  induction left generalizing right with
+  | nil => simp [rename, splitPrefix, PrefixSplit.rename]
+  | cons first rest ih =>
+      cases right with
+      | nil => simp [rename, splitPrefix, PrefixSplit.rename]
+      | cons second later =>
+          by_cases same : first = second
+          · subst second
+            simpa [rename, splitPrefix, PrefixSplit.rename] using
+              And.intro (congrArg PrefixSplit.shared (ih later))
+                (And.intro (congrArg PrefixSplit.leftFresh (ih later))
+                  (congrArg PrefixSplit.rightFresh (ih later)))
+          · simp [rename, splitPrefix, PrefixSplit.rename, same,
+              (Factor.rename_injective names dependencies).eq_iff]
+
+/-- Successful and refused merges both commute. A coefficient-only comparison
+would not justify this statement: it can lose a duplicated physical factor. -/
+theorem merge_rename [DecidableEq Identity] [DecidableEq Identity']
+    [DecidableEq Dependency] [DecidableEq Dependency'] [DecidableEq V]
+    {name : Identity → Identity'} {dependency : Dependency → Dependency'}
+    (names : Function.Injective name) (dependencies : Function.Injective dependency)
+    (left right : Ledger Identity Dependency V) :
+    merge? (rename name dependency left) (rename name dependency right) =
+      (merge? left right).map (rename name dependency) := by
+  simp only [merge?, splitPrefix_rename names dependencies, PrefixSplit.ordered_rename,
+    valid_rename_iff names]
+  split <;> rfl
+
+theorem append_rename [DecidableEq Identity] [DecidableEq Identity']
+    {name : Identity → Identity'} (names : Function.Injective name)
+    (dependency : Dependency → Dependency') (ledger : Ledger Identity Dependency V)
+    (factor : Factor Identity Dependency V) :
+    append? (rename name dependency ledger) (factor.rename name dependency) =
+      (append? ledger factor).map (rename name dependency) := by
+  simp only [append?, identities_rename, Factor.rename,
+    List.mem_map_of_injective names]
+  split <;> simp [rename, Factor.rename, List.map_append]
+
+/-- Renaming keeps the chronological product in an arbitrary monoid. No
+commutation of factors, cancellation or nonzero assumption is required. -/
+theorem denote_rename [Monoid V] (name : Identity → Identity')
+    (dependency : Dependency → Dependency') (ledger : Ledger Identity Dependency V) :
+    denote (rename name dependency ledger) = denote ledger := by
+  simp [denote, rename, Factor.rename, List.map_map, Function.comp_def]
+
+/-- A common name space also preserves aliases between the identity of one
+factor and the dependency of another, including factors in different answers. -/
+theorem renamed_dependency_alias_iff {Name : Type uId} {Name' : Type uId'}
+    {name : Name → Name'} (names : Function.Injective name)
+    (first second : Factor Name Name V) :
+    (first.rename name name).identity = (second.rename name name).dependency ↔
+      first.identity = second.dependency := names.eq_iff
+
 /-! ## Scoped observations of shared productions -/
 
 /-- Handling a factor retains its production and records the observation
@@ -267,6 +392,51 @@ theorem handle_supported [DecidableEq Identity] (entry : Nat) (owner : Owner)
       exact List.mem_of_mem_drop ((mem_selected entry world factor).mp present).1
   · exact supported identity claimant claimed
 
+/-! A transported world must also retain claims. Renaming only its production
+list does not establish equivalence of nested observations. -/
+
+theorem selected_transport {Owner' : Type uOwner'}
+    (name : Identity → Identity') (dependency : Dependency → Dependency')
+    (owner : Owner → Owner') (source : Scoped Identity Dependency V Owner)
+    (target : Scoped Identity' Dependency' V Owner')
+    (productions : target.productions = rename name dependency source.productions)
+    (claims : ∀ identity, target.claims (name identity) = (source.claims identity).map owner)
+    (entry : Nat) :
+    selected entry target = rename name dependency (selected entry source) := by
+  simp only [selected, productions, rename, ← List.map_drop, List.filter_map]
+  congr 1
+  apply List.filter_congr
+  intro factor _
+  simp only [Function.comp_def, Factor.rename, claims, Option.isNone_map]
+
+/-- The claim acquired by a read is independent of fresh name allocation.
+Injectivity prevents a newly claimed factor from stealing another factor's
+identity. The owner map may be arbitrary for this one-step preservation law. -/
+theorem handle_claim_transport [DecidableEq Identity] [DecidableEq Identity']
+    {Owner' : Type uOwner'} {name : Identity → Identity'}
+    (names : Function.Injective name) (dependency : Dependency → Dependency')
+    (owner : Owner → Owner') (source : Scoped Identity Dependency V Owner)
+    (target : Scoped Identity' Dependency' V Owner')
+    (productions : target.productions = rename name dependency source.productions)
+    (claims : ∀ identity, target.claims (name identity) = (source.claims identity).map owner)
+    (entry : Nat) (observer : Owner) (identity : Identity) :
+    (handle entry (owner observer) target).claims (name identity) =
+      ((handle entry observer source).claims identity).map owner := by
+  simp only [handle, selected_transport name dependency owner source target productions claims,
+    identities_rename, List.mem_map_of_injective names]
+  split <;> simp_all
+
+/-- A renamed world with the same claims presents the same coefficient to a
+readout, even when multiplication is ordered or a factor is zero. -/
+theorem selected_denotation_transport [Monoid V] {Owner' : Type uOwner'}
+    (name : Identity → Identity') (dependency : Dependency → Dependency')
+    (owner : Owner → Owner') (source : Scoped Identity Dependency V Owner)
+    (target : Scoped Identity' Dependency' V Owner')
+    (productions : target.productions = rename name dependency source.productions)
+    (claims : ∀ identity, target.claims (name identity) = (source.claims identity).map owner)
+    (entry : Nat) : denote (selected entry target) = denote (selected entry source) := by
+  rw [selected_transport name dependency owner source target productions claims, denote_rename]
+
 /-- Both worlds may know a claim, but then they must name the same observer. -/
 def compatibleAt [DecidableEq Owner] (left right : Scoped Identity Dependency V Owner)
     (identity : Identity) : Bool :=
@@ -356,6 +526,64 @@ def extendsCapture [DecidableEq Identity] [DecidableEq Dependency] [DecidableEq 
       | none => true
       | some owner => decide (world.claims factor.identity = some owner))
 
+/-- A supported claim in a captured world survives every admitted extension,
+including extensions produced by ordinary readout callbacks. -/
+theorem extendsCapture_preserves_claim [DecidableEq Identity] [DecidableEq Dependency]
+    [DecidableEq V] [DecidableEq Owner]
+    {entry world : Scoped Identity Dependency V Owner}
+    (supported : entry.Supported) (extended : extendsCapture entry world = true)
+    {identity : Identity} {owner : Owner} (claimed : entry.claims identity = some owner) :
+    world.claims identity = some owner := by
+  obtain ⟨factor, present, equal⟩ := List.mem_map.mp (supported identity owner claimed)
+  simp only [extendsCapture, Bool.and_eq_true_iff] at extended
+  have checked := extended.2
+  have allowed := List.all_eq_true.mp checked factor present
+  simpa [equal, claimed] using allowed
+
+/-- Once a snapshot has been claimed, retaining that claimed world as a
+capture prevents any of its productions from being selected again. -/
+theorem handled_snapshot_not_reselected [DecidableEq Identity] [DecidableEq Dependency]
+    [DecidableEq V] [DecidableEq Owner]
+    (entry : Nat) (owner : Owner) (before after : Scoped Identity Dependency V Owner)
+    (supported : before.Supported)
+    (extended : extendsCapture (handle entry owner before) after = true)
+    {factor : Factor Identity Dependency V} (observed : factor ∈ selected entry before)
+    (laterEntry : Nat) : factor ∉ selected laterEntry after := by
+  have claimed := extendsCapture_preserves_claim
+    (handle_supported entry owner before supported) extended
+    (selected_claimed entry owner before observed)
+  intro reselected
+  have unclaimed := ((mem_selected laterEntry after factor).mp reselected).2
+  rw [claimed] at unclaimed
+  cases unclaimed
+
+/-- Appending an unclaimed production makes precisely that new production
+available after the previous snapshot. No commutative algebra law is used. -/
+theorem selected_append_unclaimed (entry : Nat)
+    (world : Scoped Identity Dependency V Owner) (factor : Factor Identity Dependency V)
+    (within : entry ≤ world.productions.length) (unclaimed : world.claims factor.identity = none) :
+    selected entry ⟨world.productions ++ [factor], world.claims⟩ =
+      selected entry world ++ [factor] := by
+  simp only [selected, List.drop_append_of_le_length within, List.filter_append]
+  simp [unclaimed]
+
+/-- A callback's fresh unclaimed production remains visible to an enclosing
+read, while the previously handled snapshot remains unavailable. -/
+theorem selected_fresh_after_handle [DecidableEq Identity]
+    (entry : Nat) (owner : Owner) (world : Scoped Identity Dependency V Owner)
+    (factor : Factor Identity Dependency V) (within : entry ≤ world.productions.length)
+    (outside : factor.identity ∉ identities (selected entry world))
+    (unclaimed : world.claims factor.identity = none) :
+    selected entry
+        ⟨world.productions ++ [factor], (handle entry owner world).claims⟩ = [factor] := by
+  have free : (handle entry owner world).claims factor.identity = none := by
+    simp [handle, outside, unclaimed]
+  have enlarged := selected_append_unclaimed entry (handle entry owner world) factor within free
+  change selected entry
+      ⟨world.productions ++ [factor], (handle entry owner world).claims⟩ =
+    selected entry (handle entry owner world) ++ [factor] at enlarged
+  simpa only [selected_after_handle, List.nil_append] using enlarged
+
 /-- The scoped interface validates its capture before claiming the snapshot.
 Allocation failure and identity-generation authority are native obligations. -/
 def handle? [DecidableEq Identity] [DecidableEq Dependency] [DecidableEq V] [DecidableEq Owner]
@@ -379,6 +607,23 @@ theorem handle_spec [DecidableEq Identity] [DecidableEq Dependency] [DecidableEq
   · cases accepted
     exact ⟨rfl, rfl, selected_after_handle _ _ _⟩
   · cases accepted
+
+namespace Controls
+
+private def beforeCallback : Scoped Nat Nat Nat Nat :=
+  ⟨[⟨11, 3, 4⟩], fun _ => none⟩
+
+private def afterCallback : Scoped Nat Nat Nat Nat :=
+  ⟨beforeCallback.productions ++ [⟨22, 5, 6⟩], (handle 0 7 beforeCallback).claims⟩
+
+theorem callback_production_keeps_original_claim :
+    selected 0 afterCallback = [⟨22, 5, 6⟩] ∧ afterCallback.claims 11 = some 7 := by decide
+
+theorem erasing_claims_reselects_paid_snapshot :
+    selected 0 (⟨afterCallback.productions, fun _ => none⟩ : Scoped Nat Nat Nat Nat) ≠
+      [⟨22, 5, 6⟩] := by decide
+
+end Controls
 
 end Scoped
 

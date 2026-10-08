@@ -1,4 +1,5 @@
 import Mathlib.Data.List.Forall2
+import Mathlib.Data.List.Lex
 import Mathlib.Data.Fintype.Prod
 import Mettapedia.Machines.PeTTaLeafEquality
 import Mettapedia.TypeTheory.MaterialSets.Hypersets.Bisimulation
@@ -83,6 +84,16 @@ def IsBisimulation {A : Type u} {B : Type w} {Label : Type v}
 def Bisimilar {A : Type u} {B : Type w} {Label : Type v}
     (g : Graph A Label) (h : Graph B Label) (a : A) (b : B) : Prop :=
   ∃ R, IsBisimulation g h R ∧ R a b
+
+/-- Bisimilar roots expose equal labels and bisimilar children at every
+corresponding position, including repeated children and cycles. -/
+theorem Bisimilar.layer {A : Type u} {B : Type w} {Label : Type v}
+    {g : Graph A Label} {h : Graph B Label} {a : A} {b : B}
+    (related : Bisimilar g h a b) :
+    g.label a = h.label b ∧ List.Forall₂ (Bisimilar g h) (g.children a) (h.children b) := by
+  obtain ⟨relation, simulation, member⟩ := related
+  obtain ⟨labels, children⟩ := simulation member
+  exact ⟨labels, children.imp fun _ _ pair => ⟨relation, simulation, pair⟩⟩
 
 private theorem forall₂_iff_map_eq {A : Type u} {B : Type w} {C : Type v}
     (f : A → C) (g : B → C) (xs : List A) (ys : List B) :
@@ -565,5 +576,90 @@ theorem loop_ne_atom_leaf :
   simp [observe, loop, Graph.mapLabel, TermLabel.pettaClass]
 
 end PeTTaExamples
+
+namespace Lexicographic
+
+/-- A completed pair can be certified from its label and its already certified
+children. This does not permit using the pair currently being checked as its
+own completed premise. -/
+theorem completed_pair {A : Type u} {B : Type w} {Label : Type v}
+    {g : Graph A Label} {h : Graph B Label} {a : A} {b : B}
+    (labels : g.label a = h.label b)
+    (children : List.Forall₂ (Bisimilar g h) (g.children a) (h.children b)) :
+    Bisimilar g h a b := by
+  apply bisimilar_iff_observe_eq.mpr
+  intro depth
+  cases depth with
+  | zero => rfl
+  | succ depth =>
+    simp only [observe, Observation.node.injEq]
+    refine ⟨labels, ?_⟩
+    have equalities := children.imp
+      (fun _ _ related => (bisimilar_iff_observe_eq.mp related) depth)
+    simpa only [← List.forall₂_eq_eq_eq, List.forall₂_map_left_iff,
+      List.forall₂_map_right_iff] using equalities
+
+/-- A looping first child followed by a distinguishing leaf. Recording just
+the active root pair must not suppress the later distinction. -/
+def pendingPairGraph (value : Nat) : Graph Bool Nat where
+  label | false => 0 | true => value
+  children | false => [false, true] | true => []
+
+theorem pending_pair_is_not_a_certificate :
+    ¬ Bisimilar (pendingPairGraph 1) (pendingPairGraph 2) false false := by
+  intro related
+  have observed := (bisimilar_iff_observe_eq.mp related) 2
+  simp [observe, pendingPairGraph] at observed
+
+inductive CrossedNode where
+  | a | b | zero | one
+  deriving DecidableEq
+
+/-- The equations A = s(B, 0) and B = s(A, 1), as one finite ordered graph. -/
+def crossedCycles : Graph CrossedNode Nat where
+  label | .a | .b => 0 | .zero => 1 | .one => 2
+  children | .a => [.b, .zero] | .b => [.a, .one] | _ => []
+
+theorem crossed_cycles_distinct :
+    ¬ Bisimilar crossedCycles crossedCycles .a .b := by
+  intro related
+  have observed := (bisimilar_iff_observe_eq.mp related) 2
+  simp [observe, crossedCycles] at observed
+
+private theorem distinct_head_lex {α : Type u} {r : α → α → Prop}
+    {a b : α} {as bs : List α} (different : a ≠ b) :
+    List.Lex r (a :: as) (b :: bs) ↔ r a b := by
+  constructor
+  · intro ordered
+    cases ordered with
+    | rel related => exact related
+    | cons _ => exact (different rfl).elim
+  · exact List.Lex.rel
+
+/-- Even this four-node graph rules out a total asymmetric term order that
+obeys the ordinary recursive child-lexicographic equations. This is a failure
+of the requested extension, not a claim that finite graphs cannot be given
+some other, explicitly chosen order. -/
+theorem no_total_recursive_lex_order
+    (lt : CrossedNode → CrossedNode → Prop)
+    (asymmetric : ∀ left right, lt left right → ¬ lt right left)
+    (total : lt .a .b ∨ lt .b .a)
+    (forward : lt .a .b ↔
+      List.Lex lt (crossedCycles.children .a) (crossedCycles.children .b))
+    (backward : lt .b .a ↔
+      List.Lex lt (crossedCycles.children .b) (crossedCycles.children .a)) : False := by
+  have ab : lt .a .b → lt .b .a := by
+    intro ordered
+    exact (distinct_head_lex (by decide : CrossedNode.b ≠ .a)).mp
+      (forward.mp ordered)
+  have ba : lt .b .a → lt .a .b := by
+    intro ordered
+    exact (distinct_head_lex (by decide : CrossedNode.a ≠ .b)).mp
+      (backward.mp ordered)
+  rcases total with hab | hba
+  · exact asymmetric .a .b hab (ab hab)
+  · exact asymmetric .b .a hba (ba hba)
+
+end Lexicographic
 
 end Mettapedia.Machines.RationalTermGraph

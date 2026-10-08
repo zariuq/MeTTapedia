@@ -450,7 +450,7 @@ lemma measurable_rowKernel_eval_set_of_hEval_singletons_of_complete
     ∀ i : Fin k, ∀ B : Set (Fin k), MeasurableSet B →
       Measurable (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) B) := by
   intro i B hB
-  letI : (rowProcessLaw (k := k) P i).IsComplete := hComplete i
+  let : (rowProcessLaw (k := k) P i).IsComplete := hComplete i
   have hAE :
       AEMeasurable
         (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) B)
@@ -1170,7 +1170,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremInternal_proved :
     FortiniSuccessorMatrixInvarianceTheoremInternal k := by
   intro μ ⟨P, hPprob, hExt, rowKernel, hcrux⟩
   rcases hcrux with ⟨hEval, hrow_restrict_data, hPi, hstep⟩
-  letI : IsProbabilityMeasure P := hPprob
+  let : IsProbabilityMeasure P := hPprob
   have hθ := aemeasurable_rowKernelToMarkovParam_diracInit_lifted P rowKernel hEval
   have hCM := cylinderMixingIdentity_P_of_rowKernelData
       (k := k) P rowKernel ⟨hEval, hrow_restrict_data, hPi, hstep⟩
@@ -1491,11 +1491,11 @@ theorem rowProcessLaw_permInvariant_of_successorMatrixPE
       _ =
         Measure.map (Exchangeability.prefixProj (α := Fin k) n) ρ S := by
           exact congrArg (fun M => M S) hright.symm
-  haveI hρ_prob : IsProbabilityMeasure ρ := by
+  have hρ_prob : IsProbabilityMeasure ρ := by
     unfold ρ rowProcessLaw
     exact Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
-  haveI hρσ_prob : IsProbabilityMeasure (Measure.map (rowPermute (k := k) σ) ρ) := by
+  have hρσ_prob : IsProbabilityMeasure (Measure.map (rowPermute (k := k) σ) ρ) := by
     exact Measure.isProbabilityMeasure_map hmeas_rowPermute.aemeasurable
   exact
     Exchangeability.measure_eq_of_fin_marginals_eq_prob
@@ -1689,7 +1689,7 @@ theorem startRestrictedRowSuccessorPermInvariant_diagonal_of_offDiagonal
       P ({ω : ℕ → Fin k | ω 0 = a} ∩ rowSuccessorValueEvent (k := k) i (σ n) i)
         =
       P ({ω : ℕ → Fin k | ω 0 = a} ∩ rowSuccessorValueEvent (k := k) i n i) := by
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   intro i a σ n
   let s : Set (ℕ → Fin k) := {ω : ℕ → Fin k | ω 0 = a}
   let Sσ : ENNReal :=
@@ -2343,7 +2343,7 @@ theorem successorMatrixPEToBuiltRowKernelOnExtension_of_start_and_invariance
     ExistsBuiltRowKernel_of_successorMatrixPE k := by
   apply successorMatrixPEToBuiltRowKernelOnExtension_of_componentBuilders (k := k)
   · intro P hP hPE
-    letI : IsProbabilityMeasure P := hP
+    let : IsProbabilityMeasure P := hP
     exact exists_rowKernel_hEval_hPi_of_successorMatrixPE (k := k) hk P hPE
   · exact hStartFromPE
   · exact hInvFromPE
@@ -2439,7 +2439,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatr
   rcases hExtStrong with ⟨P, hP, hExt, hStrong⟩
   have hPE : SuccessorMatrixPartialExchangeable (k := k) P :=
     hPEStrong μ P hP hμ hExt hStrong
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   rcases exists_rowKernel_with_crossAnchor_of_successorMatrixPE
       (k := k) (P := P) hBuildFromPE hPE with ⟨rowKernel, hbuilt, hcross⟩
   rcases hbuilt with ⟨hEval, _, _, _⟩
@@ -2462,7 +2462,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatr
   rcases hExtStrong with ⟨P, hP, hExt, hStrong⟩
   have hPE : SuccessorMatrixPartialExchangeable (k := k) P :=
     hPEStrong μ P hP hμ hExt hStrong
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   rcases hKernelFromPE P hP hPE with ⟨rowKernel, hEval, hInv⟩
   rcases exists_markovParamLaw_of_hEval_and_rowSuccessorMatrixInvariance
       (k := k) (P := P) rowKernel hEval hInv with ⟨pi, hpi, hreprP⟩
@@ -2601,7 +2601,7 @@ theorem fortiniSuccessorMatrixInvarianceTheorem_of_recurrentLatentCoherenceBridg
     FortiniSuccessorMatrixInvarianceTheorem k := by
   intro μ hμ hrec
   rcases hBridge μ hμ hrec with ⟨P, hP, hExt, rowKernel, hbuilt⟩
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   have hcross :
       CrossAnchorProductIdentity (k := k) P rowKernel :=
     crossAnchorProductIdentity_of_builtRowKernelOnExtension
@@ -2624,7 +2624,7 @@ theorem fortiniSuccessorMatrixInvarianceTheorem_of_canonicalAssumptions
     FortiniSuccessorMatrixInvarianceTheorem k := by
   intro μ hμ hrec
   rcases hPEBridge μ hμ hrec with ⟨P, hP, hExt, hPE⟩
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   rcases exists_rowKernel_with_crossAnchor_of_successorMatrixPE
       (k := k) (P := P) hBuildFromPE hPE with ⟨rowKernel, hbuilt, hcross⟩
   rcases hbuilt with ⟨hEval, _, _, _⟩
@@ -2645,7 +2645,7 @@ theorem fortiniSuccessorMatrixInvarianceTheorem_of_canonicalAssumptions_minimal
     FortiniSuccessorMatrixInvarianceTheorem k := by
   intro μ hμ hrec
   rcases hPEBridge μ hμ hrec with ⟨P, hP, hExt, hPE⟩
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   rcases hKernelFromPE P hP hPE with ⟨rowKernel, hEval, hInv⟩
   rcases exists_markovParamLaw_of_hEval_and_rowSuccessorMatrixInvariance
       (k := k) (P := P) rowKernel hEval hInv with ⟨pi, hpi, hreprP⟩

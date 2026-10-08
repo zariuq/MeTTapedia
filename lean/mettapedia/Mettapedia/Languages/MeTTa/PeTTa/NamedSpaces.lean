@@ -1,22 +1,19 @@
-import Mettapedia.Languages.MeTTa.PeTTa.Effects
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Function.Basic
+import Mathlib.Data.List.OfFn
 
 /-!
-# Named spaces and state cells extending the PeTTa command core
+# Named spaces and state cells
 
-The existing `PeTTaSpace` remains the authority for stored atoms, matching and
-mutation. This extension adds fresh private handles and named cells, as used by
-programs that keep several independent tables. The same allocation and frame laws apply to any space and value carrier.
-The Pattern specialization retains the existing `EvalState` default space.
-
-These are executable storage operations and their frame laws. They do not yet
-establish evaluation of an arbitrary source program or physical C conformance.
+Allocation and frame laws are independent of the space and value carrier.
+The executable evaluator instantiates this store with ordered Atom rows.
+The Pattern command specialization belongs to `PatternRewrite.Commands`, which
+depends on this store; the generic storage layer does not depend on an evaluator.
 -/
 
 set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.PeTTa.NamedSpaces
-
-open Mettapedia.OSLF.MeTTaIL.Syntax
 
 inductive Handle where
   | self
@@ -171,99 +168,172 @@ theorem cell_read_other (state : Store Space Value) (name other : String) (value
     (state.putCell name value).read handle = state.read handle := by
   cases handle <;> rfl
 
+/-! ## Finitely supported cells in reachable stores -/
+
+/-- Every present state cell has a name in a finite support list. -/
+def FiniteCells (state : Store Space Value) : Prop :=
+  ∃ names : List String, ∀ name, name ∉ names → state.cells name = none
+
+theorem new_finiteCells (core empty : Space) : FiniteCells (new core empty : Store Space Value) :=
+  ⟨[], fun _ _ => rfl⟩
+
+theorem finiteCells_of_same_cells {state after : Store Space Value}
+    (finite : FiniteCells state) (same : after.cells = state.cells) : FiniteCells after := by
+  obtain ⟨names, covers⟩ := finite
+  exact ⟨names, fun name missing => by rw [same]; exact covers name missing⟩
+
+theorem write_finiteCells {state after : Store Space Value} {handle : Handle} {space : Space}
+    (finite : FiniteCells state) (written : state.write handle space = some after) :
+    FiniteCells after :=
+  finiteCells_of_same_cells finite (write_preserves_cells state handle space after written)
+
+theorem allocate_finiteCells {state : Store Space Value}
+    (finite : FiniteCells state) (empty : Space) : FiniteCells (state.allocate empty).2 :=
+  finiteCells_of_same_cells finite rfl
+
+theorem putCell_finiteCells {state : Store Space Value}
+    (finite : FiniteCells state) (name : String) (value : Value) :
+    FiniteCells (state.putCell name value) := by
+  obtain ⟨names, covers⟩ := finite
+  refine ⟨name :: names, ?_⟩
+  intro other missing
+  have absent : other ≠ name ∧ other ∉ names := by simpa using missing
+  have different : other ≠ name := absent.1
+  rw [cell_read_other state name other value different]
+  exact covers other absent.2
+
+/-- A present cell cannot be encoded with an empty support list. -/
+theorem putCell_support_not_empty (state : Store Space Value)
+    (name : String) (value : Value) :
+    ¬ (∀ other, other ∉ ([] : List String) →
+      (state.putCell name value).cells other = none) := by
+  intro covers
+  have impossible := covers name (by simp)
+  simp at impossible
+
+/-! ## Finite representation of private spaces -/
+
+/-- Ordered private spaces allocated so far, indexed by their actual handles. -/
+def spacesPrefix (state : Store Space Value) : List Space :=
+  List.ofFn (fun index : Fin state.next => state.spaces index)
+
+@[simp] theorem spacesPrefix_length (state : Store Space Value) :
+    state.spacesPrefix.length = state.next := by simp [spacesPrefix]
+
+/-- Every private read is determined by a finite prefix, even when the
+underlying function has arbitrary values outside the allocated handles. -/
+theorem read_private_from_prefix (state : Store Space Value) (index : Nat) :
+    state.read (.privateSpace index) = state.spacesPrefix[index]? := by
+  simp [read, spacesPrefix, List.getElem?_ofFn]
+
+/-- All unallocated slots contain the designated empty payload. -/
+def EmptyTail (state : Store Space Value) (empty : Space) : Prop :=
+  ∀ index, state.next ≤ index → state.spaces index = empty
+
+theorem new_emptyTail (core empty : Space) :
+    EmptyTail (new core empty : Store Space Value) empty := fun _ _ => rfl
+
+theorem write_emptyTail {state after : Store Space Value} {handle : Handle}
+    {space empty : Space} (vacant : EmptyTail state empty)
+    (written : state.write handle space = some after) : EmptyTail after empty := by
+  cases handle with
+  | self =>
+      simp only [write, Option.some.injEq] at written
+      cases written
+      exact vacant
+  | privateSpace writtenIndex =>
+      simp only [write] at written
+      split at written
+      next allocated =>
+        cases written
+        intro index outside
+        change state.next ≤ index at outside
+        have different : index ≠ writtenIndex := by omega
+        simpa only [Function.update_of_ne different] using vacant index outside
+      next => contradiction
+
+theorem allocate_emptyTail {state : Store Space Value} {empty : Space}
+    (vacant : EmptyTail state empty) : EmptyTail (state.allocate empty).2 empty := by
+  intro index outside
+  have different : index ≠ state.next := by
+    change state.next + 1 ≤ index at outside
+    omega
+  simpa only [allocate, Function.update_of_ne different] using
+    vacant index (by change state.next + 1 ≤ index at outside; omega)
+
+theorem putCell_emptyTail {state : Store Space Value} {empty : Space}
+    (vacant : EmptyTail state empty) (name : String) (value : Value) :
+    EmptyTail (state.putCell name value) empty := vacant
+
+/-- An empty tail gives exact reconstruction of the entire space function,
+not only equality of its reads. -/
+theorem spaces_eq_prefix_of_emptyTail {state : Store Space Value} {empty : Space}
+    (vacant : EmptyTail state empty) (index : Nat) :
+    state.spaces index = (state.spacesPrefix[index]?).getD empty := by
+  rw [← read_private_from_prefix]
+  by_cases allocated : index < state.next
+  · simp [read, allocated]
+  · simpa [read, allocated] using vacant index (Nat.le_of_not_gt allocated)
+
+/-- A private handle at the next allocation index cannot read a payload. -/
+theorem prefix_does_not_invent_unallocated_space (state : Store Space Value) :
+    state.spacesPrefix[state.next]? = none := by
+  rw [← read_private_from_prefix]
+  exact read_unallocated state state.next le_rfl
+
+/-- The named cell values at a supplied finite support, including absent cells. -/
+def cellRows (state : Store Space Value) (names : List String) : List (String × Option Value) :=
+  names.map (fun name => (name, state.cells name))
+
+theorem cellRows_lookup (state : Store Space Value) (names : List String) (name : String) :
+    (state.cellRows names).lookup name =
+      if name ∈ names then some (state.cells name) else none := by
+  induction names with
+  | nil => simp [cellRows]
+  | cons first rest ih =>
+      by_cases same : name = first
+      · subst first
+        simp [cellRows]
+      · have unequal : (name == first) = false := by simp [same]
+        simpa [cellRows, List.lookup_cons, unequal, same] using ih
+
+/-- A support witness gives exact reconstruction of every cell read. -/
+theorem cells_eq_rows_lookup (state : Store Space Value) (names : List String)
+    (covers : ∀ name, name ∉ names → state.cells name = none) (name : String) :
+    state.cells name = ((state.cellRows names).lookup name).join := by
+  rw [cellRows_lookup]
+  by_cases present : name ∈ names
+  · simp [present]
+  · simp [present, covers name present]
+
+/-- Reconstruct the existing store carrier from finite space and cell payloads. -/
+def reconstruct (core empty : Space) (spaces : List Space)
+    (cells : List (String × Option Value)) : Store Space Value :=
+  { core, next := spaces.length,
+    spaces := fun index => (spaces[index]?).getD empty,
+    cells := fun name => (cells.lookup name).join }
+
+/-- Exact finite reconstruction is available when the cell support is supplied
+and the unallocated space tail is empty. Neither a cell nor a private space is
+silently discarded. -/
+theorem reconstruct_exact (state : Store Space Value) (empty : Space) (names : List String)
+    (vacant : EmptyTail state empty)
+    (covers : ∀ name, name ∉ names → state.cells name = none) :
+    reconstruct state.core empty state.spacesPrefix (state.cellRows names) = state := by
+  have spaces : (fun index => (state.spacesPrefix[index]?).getD empty) = state.spaces := by
+    funext index
+    exact (spaces_eq_prefix_of_emptyTail vacant index).symm
+  have cells : (fun name => ((state.cellRows names).lookup name).join) = state.cells := by
+    funext name
+    exact (cells_eq_rows_lookup state names covers name).symm
+  simp only [reconstruct, spacesPrefix_length, spaces, cells]
+
+theorem finite_reconstruction_exists (state : Store Space Value) (empty : Space)
+    (finite : FiniteCells state) (vacant : EmptyTail state empty) :
+    ∃ names, reconstruct state.core empty state.spacesPrefix (state.cellRows names) = state := by
+  obtain ⟨names, covers⟩ := finite
+  exact ⟨names, reconstruct_exact state empty names vacant covers⟩
+
 end Store
-
-/-- The existing Pattern-space command core specializes the same store. -/
-abbrev State := Store PeTTaSpace Pattern
-
-namespace State
-
-def ofCore (core : EvalState) : State := Store.new core.space PeTTaSpace.empty
-
-def read (state : State) (handle : Handle) : Option PeTTaSpace := Store.read state handle
-
-def write (state : State) (handle : Handle) (space : PeTTaSpace) : Option State :=
-  Store.write state handle space
-
-def allocate (state : State) : Handle × State := Store.allocate state PeTTaSpace.empty
-
-def putCell (state : State) (name : String) (value : Pattern) : State :=
-  Store.putCell state name value
-
-def query (state : State) (handle : Handle) (pattern template : Pattern) :
-    Option Answers :=
-  (state.read handle).map fun space => space.spaceMatch pattern template
-
-def contents (state : State) (handle : Handle) : Option Answers :=
-  (state.read handle).map PeTTaSpace.storedAtoms
-
-def insert (state : State) (handle : Handle) (atom : Pattern) : Option State := do
-  let space ← state.read handle
-  state.write handle (space.addAtom atom)
-
-def erase (state : State) (handle : Handle) (atom : Pattern) : Option State := do
-  let space ← state.read handle
-  state.write handle (space.removeAtom atom)
-
-theorem insert_self (core : EvalState) (atom : Pattern) :
-    (ofCore core).insert .self atom = some (ofCore (core.addAtom atom)) := rfl
-
-theorem erase_self (core : EvalState) (atom : Pattern) :
-    (ofCore core).erase .self atom = some (ofCore (core.removeAtom atom)) := rfl
-
-theorem query_self (core : EvalState) (pattern template : Pattern) :
-    (ofCore core).query .self pattern template = some (core.space.spaceMatch pattern template) := rfl
-
-theorem query_exact (state : State) (handle : Handle) (pattern template : Pattern)
-    (space : PeTTaSpace) (selected : state.read handle = some space) :
-    state.query handle pattern template = some (space.spaceMatch pattern template) := by
-  simp [query, selected]
-
-theorem query_answer_sound (state : State) (handle : Handle) (pattern template : Pattern)
-    (answers : Answers) (returned : state.query handle pattern template = some answers)
-    (answer : Pattern) (member : answer ∈ answers) :
-    ∃ space, state.read handle = some space ∧
-      ∃ atom ∈ space.storedAtoms, ∃ bindings ∈ Mettapedia.OSLF.MeTTaIL.Match.matchPattern pattern atom,
-        answer = Mettapedia.OSLF.MeTTaIL.Match.applyBindings bindings template := by
-  unfold query at returned
-  cases selected : state.read handle with
-  | none => simp [selected] at returned
-  | some space =>
-    simp only [selected, Option.map_some, Option.some.injEq] at returned
-    subst answers
-    exact ⟨space, rfl, PeTTaSpace.spaceMatch_sound space pattern template answer member⟩
-
-theorem query_answer_complete (state : State) (handle : Handle) (pattern template : Pattern)
-    (space : PeTTaSpace) (selected : state.read handle = some space)
-    (atom : Pattern) (stored : atom ∈ space.storedAtoms)
-    (bindings : Mettapedia.OSLF.MeTTaIL.Match.Bindings)
-    (matched : bindings ∈ Mettapedia.OSLF.MeTTaIL.Match.matchPattern pattern atom) :
-    ∃ answers, state.query handle pattern template = some answers ∧
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings bindings template ∈ answers :=
-  ⟨space.spaceMatch pattern template, query_exact state handle pattern template space selected,
-    PeTTaSpace.spaceMatch_complete space pattern template atom bindings stored matched⟩
-
-end State
-
-/-! ## Positive and negative allocation controls -/
-
-private def initial : State := State.ofCore EvalState.empty
-private def payload : Pattern := .apply "payload" []
-
-theorem two_private_spaces_are_isolated :
-    let first := initial.allocate
-    let second := first.2.allocate
-    ∃ populated, second.2.insert first.1 payload = some populated ∧
-      populated.contents first.1 = some [payload] ∧
-      populated.contents second.1 = some [] := by
-  simp [initial, State.ofCore, EvalState.empty, State.allocate, State.insert, State.read,
-    State.write, State.contents, Store.new, Store.allocate, Store.read, Store.write,
-    PeTTaSpace.storedAtoms, PeTTaSpace.storedRuleAtoms, PeTTaSpace.addAtom, PeTTaSpace.empty]
-
-theorem unallocated_space_cannot_be_written :
-    initial.write (.privateSpace 0) PeTTaSpace.empty = none := rfl
-
-theorem changing_a_cell_does_not_add_a_fact :
-    (initial.putCell "memo" payload).contents .self = some [] := rfl
 
 end Mettapedia.Languages.MeTTa.PeTTa.NamedSpaces

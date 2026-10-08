@@ -4,6 +4,7 @@ import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Data.Matrix.Mul
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Lean.Elab.Tactic.Omega
+import Mettapedia.Algorithms.CertifiedFiniteChoice
 
 /-!
 # Finite coordinate buffers
@@ -55,6 +56,90 @@ theorem zipWith?_shape_refusal (operation : R → R → R)
       | cons other later =>
           have unequal : rest.length ≠ later.length := by simpa using different
           simp [zipWith?, ih later unequal]
+
+/-- Coordinate comparison inspects both shapes. Unequal lengths cannot be
+accepted by comparing only their common prefix. -/
+def componentwiseLe [LE R] [DecidableLE R] : List R → List R → Bool
+  | [], [] => true
+  | left :: later, right :: remaining =>
+      decide (left ≤ right) && componentwiseLe later remaining
+  | _, _ => false
+
+theorem componentwiseLe_ofFn [Preorder R] [DecidableLE R] {n : Nat}
+    (left right : Fin n → R) :
+    componentwiseLe (List.ofFn left) (List.ofFn right) = true ↔
+      ∀ index, left index ≤ right index := by
+  induction n with
+  | zero => simp [componentwiseLe]
+  | succ n ih =>
+      simp [List.ofFn_succ, componentwiseLe, ih, Fin.forall_fin_succ]
+
+theorem componentwiseLe_shape_refusal [LE R] [DecidableLE R]
+    (left right : List R) (different : left.length ≠ right.length) :
+    componentwiseLe left right = false := by
+  induction left generalizing right with
+  | nil => cases right <;> simp_all [componentwiseLe]
+  | cons head rest ih =>
+      cases right with
+      | nil => rfl
+      | cons other later =>
+          have unequal : rest.length ≠ later.length := by simpa using different
+          simp [componentwiseLe, ih later unequal]
+
+/-- Smaller coordinates are preferred. An equal vector never dominates its
+other physical occurrences. -/
+def strictlyDominates [LE R] [DecidableLE R] [DecidableEq R]
+    (left right : List R) : Bool :=
+  componentwiseLe left right && decide (left ≠ right)
+
+theorem strictlyDominates_ofFn [PartialOrder R] [DecidableLE R] [DecidableEq R]
+    {n : Nat} (left right : Fin n → R) :
+    strictlyDominates (List.ofFn left) (List.ofFn right) = true ↔
+      (∀ index, left index ≤ right index) ∧ left ≠ right := by
+  simp [strictlyDominates, componentwiseLe_ofFn, List.ofFn_inj]
+
+theorem strictlyDominates_self [LE R] [DecidableLE R] [DecidableEq R]
+    (buffer : List R) : strictlyDominates buffer buffer = false := by
+  simp [strictlyDominates]
+
+/-- The actual shaped-buffer scan implements the finite partial-order
+selection predicate. Candidate packets, rather than only their coefficients,
+are returned by the common loop. -/
+theorem mem_pareto_ofFn_iff [PartialOrder R] [DecidableLE R] [DecidableEq R]
+    {Candidate : Type*} {n : Nat} (coefficient : Candidate → Fin n → R)
+    (candidates : List Candidate) (candidate : Candidate) :
+    candidate ∈ Algorithms.CertifiedFiniteChoice.pareto
+        (fun left right => strictlyDominates
+          (List.ofFn (coefficient left)) (List.ofFn (coefficient right))) candidates ↔
+      candidate ∈ candidates ∧ ∀ other ∈ candidates,
+        ¬ ((∀ index, coefficient other index ≤ coefficient candidate index) ∧
+          coefficient other ≠ coefficient candidate) := by
+  simp [Algorithms.CertifiedFiniteChoice.mem_pareto_iff,
+    Algorithms.CertifiedFiniteChoice.Undominated, Bool.eq_false_iff,
+    strictlyDominates_ofFn]
+
+namespace ParetoControls
+
+def packetDominates (left right : Nat × List Nat) : Bool :=
+  strictlyDominates left.2 right.2
+
+theorem ties_duplicates_and_labels_survive :
+    Algorithms.CertifiedFiniteChoice.pareto packetDominates
+      [(11, [1, 4]), (12, [4, 1]), (13, [5, 5]), (14, [1, 4]), (11, [1, 4])] =
+      [(11, [1, 4]), (12, [4, 1]), (14, [1, 4]), (11, [1, 4])] := by decide
+
+theorem incomparable_vectors_survive :
+    strictlyDominates [1, 4] [4, 1] = false ∧
+      strictlyDominates [4, 1] [1, 4] = false := by decide
+
+theorem truncated_shape_is_not_dominance :
+    strictlyDominates [1] [2, 4] = false := by decide
+
+theorem empty_vectors_keep_all_occurrences :
+    Algorithms.CertifiedFiniteChoice.pareto packetDominates
+      [(11, []), (12, []), (11, [])] = [(11, []), (12, []), (11, [])] := by decide
+
+end ParetoControls
 
 /-- A finite ordered loop, independent of any matrix interpretation. -/
 def sumFrom [AddMonoid R] (read : Nat → R) (start : Nat) : Nat → R

@@ -1,5 +1,6 @@
 import Mettapedia.Languages.Prolog.Prolog
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # Bridge: PeTTa Evaluation ↔ Prolog Oracle

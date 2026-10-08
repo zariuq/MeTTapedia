@@ -18,7 +18,7 @@ time and physical resource consumption require their own valuations.
 
 set_option autoImplicit false
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 namespace Mettapedia.GSLT.IndexedOperational
 

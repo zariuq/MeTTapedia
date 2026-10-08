@@ -13,6 +13,7 @@ import Mettapedia.GSLT.LanguageDef.GroundDenseQueryCompilation
 import Mettapedia.Logic.Query.Coverage
 import Mettapedia.Logic.Query.MultisetAscription
 import Mettapedia.OSLF.Framework.ReductionViewIndexedModalities
+import Mettapedia.OSLF.Framework.GeneratedDependentNativeQualification
 import Mettapedia.TypeTheory.UniverseLevel.ZFSetInterpretation
 import Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory
 import Mettapedia.TypeTheory.CompositionalRelationLifting
@@ -818,6 +819,10 @@ import Mettapedia.GSLT.Causality.Identifiability
 import Mettapedia.GSLT.Causality.ProbabilitiesOfCausation
 import Mettapedia.GSLT.Causality.ActualCausation
 import Mettapedia.GSLT.Causality.Responsibility
+import Mettapedia.GSLT.Causality.UniqueSolution
+import Mettapedia.GSLT.Causality.AdaptiveExpressibility
+import Mettapedia.GSLT.Causality.BlameScale
+import Mettapedia.GSLT.Causality.DoCalculus.TruncatedFactorization
 import Mettapedia.Languages.MeTTa.PrimeOptions.Manifest
 import Mettapedia.GSLT.Causality.WeightedResponseTypes
 import Mettapedia.GSLT.Causality.ContextOperators
@@ -929,3 +934,36 @@ import Mettapedia.GSLT.Parsing.CanonicalMorphism
 import Mettapedia.GSLT.Parsing.CanonicalGrammarLowering
 import Mettapedia.Languages.Metamath.ExprDerive
 import Mettapedia.Languages.Metamath.Flatten
+import Mettapedia.SetTheory.CarveOuts
+import Mettapedia.SetTheory.Profiles.CommonSetProfiles
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOuts
+import Mettapedia.SetTheory.CarveOuts.Sites
+import Mettapedia.SetTheory.CarveOuts.Sites.RegionReadingFiber
+import Mettapedia.SetTheory.CarveOuts.Sites.LabelledPathSite
+import Mettapedia.SetTheory.CarveOuts.Sites.ExplicitGSets
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOutSites
+import Mettapedia.SetTheory.CarveOuts.Sheaves
+import Mettapedia.SetTheory.CarveOuts.Sheaves.CircleCovers
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOutSheaves
+import Mettapedia.SetTheory.CarveOuts.SheafPowers
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOutSheafPowers
+
+import Mettapedia.GSLT.Logic.ObservedHypersetTheory
+
+import Mettapedia.GSLT.Logic.ObservedHypersetHostProfiles
+
+import Mettapedia.SetTheory.OpenTower.InternalTower
+import Mettapedia.SetTheory.OpenTower.ExternalTower
+import Mettapedia.SetTheory.OpenTower.Hosting
+import Mettapedia.SetTheory.OpenTower.ZFCStages
+import Mettapedia.SetTheory.OpenTower.Stability
+import Mettapedia.SetTheory.OpenTower.NoIsolatedCompletion
+import Mettapedia.Languages.MeTTa.PrimeOptions.OpenTower
+import Mettapedia.SetTheory.Profiles.ProfileMaterialContracts
+import Mettapedia.SetTheory.Profiles.ProfileExecutableMaterialContracts
+import Mettapedia.SetTheory.Profiles.ProfileDefinitionHistoryContracts
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.ExecutableTheory
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.ExecutableCheckingInstance
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Examples.ExecutableWeakHeadControls
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Examples.ExecutableWrittenCheckingControls
+import Mettapedia.TypeTheory.UniverseLevel.AssignmentResolution

@@ -258,6 +258,43 @@ theorem controlled_account (system : BranchingSystem Node Answer) (depth : Nat)
         (controller.scheduler (InferenceControl.Snapshot.run system controller fuel snapshot).memory)
         roots certified _ (InferenceControl.Snapshot.sound_run system controller sound fuel)).trans ih
 
+/-- Completion exposes the independently unfolded source bag. Only the
+requested roots need finite certificates; unrelated computations can diverge. -/
+theorem completed_controller_observation (system : BranchingSystem Node Answer) (depth : Nat)
+    {Memory : Type*} (controller : InferenceControl.Controller Node Answer Memory)
+    (roots : List Node) (certified : ∀ root ∈ roots, Certified system depth root)
+    (fuel : Nat) (closed : (InferenceControl.Snapshot.run system controller fuel
+      (InferenceControl.Snapshot.initial controller roots)).search.frontier = []) :
+    eventBag (InferenceControl.Snapshot.run system controller fuel
+      (InferenceControl.Snapshot.initial controller roots)).search.events =
+      foldValues (finiteBag system depth) roots := by
+  have preserved := controlled_account system depth controller roots certified fuel
+    (InferenceControl.Snapshot.initial controller roots) (initial_sound system roots)
+  unfold account at preserved
+  rw [closed] at preserved
+  simpa [foldValues, InferenceControl.Snapshot.initial,
+    BranchingTemporal.initial, eventBag] using preserved
+
+/-- Pure completed observations agree without assuming a finite additive
+denotation at every state of an open source language. Stream prefixes and
+implementation costs are not observations of this theorem. -/
+theorem completed_controllers_agree (system : BranchingSystem Node Answer) (depth : Nat)
+    {FirstMemory SecondMemory : Type*}
+    (first : InferenceControl.Controller Node Answer FirstMemory)
+    (second : InferenceControl.Controller Node Answer SecondMemory)
+    (roots : List Node) (certified : ∀ root ∈ roots, Certified system depth root)
+    (firstFuel secondFuel : Nat)
+    (firstClosed : (InferenceControl.Snapshot.run system first firstFuel
+      (InferenceControl.Snapshot.initial first roots)).search.frontier = [])
+    (secondClosed : (InferenceControl.Snapshot.run system second secondFuel
+      (InferenceControl.Snapshot.initial second roots)).search.frontier = []) :
+    eventBag (InferenceControl.Snapshot.run system first firstFuel
+        (InferenceControl.Snapshot.initial first roots)).search.events =
+      eventBag (InferenceControl.Snapshot.run system second secondFuel
+        (InferenceControl.Snapshot.initial second roots)).search.events := by
+  rw [completed_controller_observation system depth first roots certified firstFuel firstClosed,
+    completed_controller_observation system depth second roots certified secondFuel secondClosed]
+
 /-- A demanded prefix has the same independently reconstructed occurrence
 bag plus the real retained frontier; no completed-answer cache replaces it. -/
 theorem demanded_account (system : BranchingSystem Node Answer) (depth : Nat)
@@ -281,12 +318,10 @@ theorem closed_observation (system : BranchingSystem Node Answer) (depth : Nat)
     eventBag (DemandExecution.run system controller goal fuel
       (InferenceControl.Snapshot.initial controller roots)).search.events =
       foldValues (finiteBag system depth) roots := by
-  have preserved := demanded_account system depth controller roots certified goal fuel
-    (InferenceControl.Snapshot.initial controller roots) (initial_sound system roots)
-  unfold account at preserved
-  rw [closed] at preserved
-  simpa [foldValues, InferenceControl.Snapshot.initial,
-    BranchingTemporal.initial, eventBag] using preserved
+  obtain ⟨used, _, same⟩ := DemandExecution.run_prefix system controller goal fuel
+    (InferenceControl.Snapshot.initial controller roots)
+  rw [same] at closed ⊢
+  exact completed_controller_observation system depth controller roots certified used closed
 
 theorem work_tick (system : BranchingSystem Node Answer) (depth : Nat)
     (scheduler : Scheduler Node) (roots : List Node)
@@ -361,6 +396,19 @@ theorem completes_at_work (system : BranchingSystem Node Answer) (depth : Nat)
         (sound.1 node (by change node ∈ final.search.frontier; simp [found]))
       rw [found, foldRanks, work_unfold system depth node nodeCertified] at zero
       omega
+
+/-- The independently constructed finite work allowance is sufficient both
+for closure and for the complete source observation. -/
+theorem observation_at_work (system : BranchingSystem Node Answer) (depth : Nat)
+    {Memory : Type*} (controller : InferenceControl.Controller Node Answer Memory)
+    (roots : List Node) (certified : ∀ root ∈ roots, Certified system depth root) :
+    let result := InferenceControl.Snapshot.run system controller
+      (foldRanks (finiteWork system depth) roots)
+      (InferenceControl.Snapshot.initial controller roots)
+    result.search.frontier = [] ∧ eventBag result.search.events =
+      foldValues (finiteBag system depth) roots := by
+  have closed := completes_at_work system depth controller roots certified
+  exact ⟨closed, completed_controller_observation system depth controller roots certified _ closed⟩
 
 namespace Controls
 

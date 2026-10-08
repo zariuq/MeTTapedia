@@ -1129,7 +1129,7 @@ end
 -- Proved together because callMiss needs both, and callHit needs memo soundness.
 -- Uses structural recursion on the trace (EvalTrace is Type-valued).
 mutual
-  def trace_implies_sem {rules : List EvalRule}
+  theorem trace_implies_sem {rules : List EvalRule}
       {node : EvalNode} {v : EvalValue} {m m' : MemoTable}
       (hm : MemoSoundSem rules m)
       (t : EvalTrace rules node v m m') :
@@ -1153,7 +1153,7 @@ mutual
       let hm₁ := traceList_preserves_sem hm targs
       evalSem_userCall_transport (traceList_implies_semList hm targs) (memoLookup_sound hm₁ hmemoHit)
 
-  def traceList_implies_semList {rules : List EvalRule}
+  theorem traceList_implies_semList {rules : List EvalRule}
       {nodes : List EvalNode} {vs : List EvalValue} {m m' : MemoTable}
       (hm : MemoSoundSem rules m)
       (t : EvalTraceList rules nodes vs m m') :
@@ -1163,7 +1163,7 @@ mutual
     | .cons th trest => .cons (trace_implies_sem hm th)
         (traceList_implies_semList (trace_preserves_sem hm th) trest)
 
-  def trace_preserves_sem {rules : List EvalRule}
+  theorem trace_preserves_sem {rules : List EvalRule}
       {node : EvalNode} {v : EvalValue} {m m' : MemoTable}
       (hm : MemoSoundSem rules m)
       (t : EvalTrace rules node v m m') :
@@ -1190,7 +1190,7 @@ mutual
         hm₂
     | .callHit targs _ => traceList_preserves_sem hm targs
 
-  def traceList_preserves_sem {rules : List EvalRule}
+  theorem traceList_preserves_sem {rules : List EvalRule}
       {nodes : List EvalNode} {vs : List EvalValue} {m m' : MemoTable}
       (hm : MemoSoundSem rules m)
       (t : EvalTraceList rules nodes vs m m') :

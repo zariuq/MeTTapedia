@@ -62,6 +62,40 @@ def forHeader? (fuel : Nat) (names : TypeNames) (tokens : List Token) :
       | _ => none
   | _ => none
 
+/-- A local array keeps its element declarator, authored extent (or inferred
+extent), and ordered initializers. The delimiters and remaining continuation
+are consumed exactly. This syntax does not license storage, zero filling,
+array-to-pointer conversion, or variable-length-array execution. -/
+def arrayDeclaration? (fuel : Nat) (names : TypeNames) (element : CType)
+    (name : Name) (tokens : List Token) : Option (CStatement × List Token) := do
+  let (extent, afterExtent) ← match tokens with
+    | .punctuation [']'] :: after => some (none, after)
+    | _ => do
+        let (size, afterSize) ← expression? fuel names 0 tokens
+        match afterSize with
+        | .punctuation [']'] :: after => some (some size, after)
+        | _ => none
+  match afterExtent with
+  | .punctuation ['='] :: .punctuation ['{'] :: afterOpen => do
+      let (values, afterValues) ← initializers? fuel names afterOpen
+      match afterValues with
+      | .punctuation [';'] :: after =>
+          some (.declareArray element name extent values, after)
+      | _ => none
+  | _ => none
+
+/-- The exact supported GNU prefix retains one cleanup callback. Other
+attributes, combined lists and malformed delimiters are refused rather than
+stripped. Calling and normal/unwinding lifetime laws remain separate. -/
+def cleanupPrefix? : List Token → Option (Name × List Token)
+  | .identifier annotation :: .punctuation ['('] :: .punctuation ['('] ::
+      .identifier kind :: .punctuation ['('] :: .identifier callback ::
+      .punctuation [')'] :: .punctuation [')'] :: .punctuation [')'] :: rest =>
+      if annotation = "__attribute__".toList ∧ kind = "cleanup".toList then
+        some (callback, rest)
+      else none
+  | _ => none
+
 mutual
   def block? (fuel : Nat) (names : TypeNames) (tokens : List Token) :
       Option (List CStatement × List Token) :=
@@ -131,6 +165,19 @@ mutual
           | .punctuation [';'] :: after => some (.return (some value), after)
           | _ => none
       | .identifier label :: .punctuation [':'] :: after => some (.label label, after)
+      | .identifier ['_', '_', 'a', 't', 't', 'r', 'i', 'b', 'u', 't', 'e', '_', '_'] :: _ => do
+          let (cleanup, afterPrefix) ← cleanupPrefix? tokens
+          let (type, afterType) ← cType? names afterPrefix
+          match afterType with
+          | .identifier name :: .punctuation [';'] :: after =>
+              some (.declareCleanup type name none cleanup, after)
+          | .identifier name :: .punctuation ['='] :: rest => do
+              let (value, afterValue) ← expression? fuel names 0 rest
+              match afterValue with
+              | .punctuation [';'] :: after =>
+                  some (.declareCleanup type name (some value) cleanup, after)
+              | _ => none
+          | _ => none
       | .identifier ['c', 'o', 'n', 's', 't'] :: rest => do
           let (type, afterType) ← cType? names rest
           if type.pointers != 1 then none else
@@ -142,6 +189,10 @@ mutual
               | _ => none
           | _ => none
       | _ => match cType? names tokens with
+        | some (type, .identifier name :: .punctuation [';'] :: after) =>
+            some (.declareUninitialized type name, after)
+        | some (type, .identifier name :: .punctuation ['['] :: rest) =>
+            arrayDeclaration? fuel names type name rest
         | some (type, .identifier name :: .punctuation ['='] :: rest) => do
             let (value, afterValue) ← expression? fuel names 0 rest
             match afterValue with
@@ -162,6 +213,33 @@ mutual
           let (body, after) ← statement? fuel names tokens
           some ([body], after)
 
+  /-- Selected unbraced arms must terminate explicitly. Direct declarations
+  and labels are outside this sequence fragment; a retained nested block can
+  introduce its own locals. No scope is invented for an unbraced declaration. -/
+  def caseSequence? (fuel : Nat) (names : TypeNames) (tokens : List Token) :
+      Option (List CStatement × List Token) :=
+    match fuel with
+    | 0 => none
+    | fuel + 1 => do
+        let (first, afterFirst) ← statement? fuel names tokens
+        match first with
+        | .break | .return _ => some ([first], afterFirst)
+        | .empty | .assign _ _ | .compoundAssign _ _ _ | .effect _ |
+            .branch _ _ _ | .block _ => do
+            let (rest, afterRest) ← caseSequence? fuel names afterFirst
+            some (first :: rest, afterRest)
+        | _ => none
+
+  /-- A selected switch arm retains its braced body or an explicitly terminated
+  statement sequence. Unbraced fall-through and declarations remain refused. -/
+  def caseBody? (fuel : Nat) (names : TypeNames) (tokens : List Token) :
+      Option (List CStatement × List Token) :=
+    match fuel with
+    | 0 => none
+    | fuel + 1 => block? fuel names tokens <|> caseSequence? fuel names tokens
+
+  /-- Consecutive labels retain empty bodies until the authored body begins.
+  This keeps fall-through and the body's single physical occurrence explicit. -/
   def switchCases? (fuel : Nat) (names : TypeNames) (tokens : List Token) :
       Option ((List (CExpr × List CStatement) × List CStatement) × List Token) :=
     match fuel with
@@ -170,18 +248,66 @@ mutual
       | .identifier ['c', 'a', 's', 'e'] :: rest => do
           let (value, afterValue) ← expression? fuel names 0 rest
           match afterValue with
-          | .punctuation [':'] :: afterColon => do
-              let (body, afterBody) ← block? fuel names afterColon
-              let ((others, otherwise), after) ← switchCases? fuel names afterBody
-              some (((value, body) :: others, otherwise), after)
+          | .punctuation [':'] :: afterColon =>
+              match afterColon with
+              | .identifier ['c', 'a', 's', 'e'] :: _ => do
+                  let ((others, otherwise), after) ← switchCases? fuel names afterColon
+                  match others with
+                  | _ :: _ => some (((value, []) :: others, otherwise), after)
+                  | [] => none
+              | _ => do
+                  let (body, afterBody) ← caseBody? fuel names afterColon
+                  let ((others, otherwise), after) ← switchCases? fuel names afterBody
+                  some (((value, body) :: others, otherwise), after)
           | _ => none
       | .identifier ['d', 'e', 'f', 'a', 'u', 'l', 't'] :: .punctuation [':'] :: rest => do
-          let (body, afterBody) ← block? fuel names rest
+          let (body, afterBody) ← caseBody? fuel names rest
           match afterBody with
           | .punctuation ['}'] :: after => some (([], body), after)
           | _ => none
+      | .punctuation ['}'] :: after => some (([], []), after)
       | _ => none
 end
+
+namespace ArrayDeclarationControls
+
+private def types : TypeNames := ["Atom".toList]
+
+theorem inferred_pointer_array_retains_actual_root :
+    statement? 64 types
+      [.identifier "Atom".toList, .punctuation ['*'], .identifier "roots".toList,
+       .punctuation ['['], .punctuation [']'], .punctuation ['='], .punctuation ['{'],
+       .identifier "atom".toList, .punctuation ['}'], .punctuation [';']] =
+      some (.declareArray ⟨"Atom".toList, 1⟩ "roots".toList none
+        [.identifier "atom".toList], []) := rfl
+
+theorem fixed_pointer_array_retains_extent_and_initializer_order :
+    statement? 64 types
+      [.identifier "Atom".toList, .punctuation ['*'], .identifier "roots".toList,
+       .punctuation ['['], .number ['2'], .punctuation [']'], .punctuation ['='],
+       .punctuation ['{'], .identifier "NULL".toList, .punctuation [','],
+       .identifier "atom".toList, .punctuation ['}'], .punctuation [';']] =
+      some (.declareArray ⟨"Atom".toList, 1⟩ "roots".toList (some (.decimal 2))
+        [.null, .identifier "atom".toList], []) := rfl
+
+theorem closing_bracket_is_required :
+    arrayDeclaration? 64 types ⟨"Atom".toList, 1⟩ "roots".toList
+      [.number ['1'], .punctuation ['='], .punctuation ['{'],
+       .identifier "atom".toList, .punctuation ['}'], .punctuation [';']] = none := rfl
+
+theorem empty_initializer_is_not_an_inferred_empty_array :
+    arrayDeclaration? 64 types ⟨"Atom".toList, 1⟩ "roots".toList
+      [.punctuation [']'], .punctuation ['='], .punctuation ['{'],
+       .punctuation ['}'], .punctuation [';']] = none := rfl
+
+theorem array_continuation_is_retained (rest : List Token) :
+    arrayDeclaration? 64 types ⟨"Atom".toList, 1⟩ "roots".toList
+      ([.punctuation [']'], .punctuation ['='], .punctuation ['{'],
+        .identifier "atom".toList, .punctuation ['}'], .punctuation [';']] ++ rest) =
+      some (.declareArray ⟨"Atom".toList, 1⟩ "roots".toList none
+        [.identifier "atom".toList], rest) := rfl
+
+end ArrayDeclarationControls
 
 /-- A block consumes exactly the supplied closing-delimiter continuation. -/
 theorem block_of_statements (fuel : Nat) (names : TypeNames)
@@ -508,6 +634,52 @@ theorem missing_statement_separator_refused :
 theorem repeated_default_refused : blockText? exampleTypes
     "{ switch (x) { default: { break; } default: { break; } } }".toList = none := by decide +kernel
 
+private def returningSwitchTokens : List Token :=
+  [.punctuation ['{'], .identifier "switch".toList, .punctuation ['('],
+   .identifier ['x'], .punctuation [')'], .punctuation ['{'],
+   .identifier "case".toList, .number ['1'], .punctuation [':'],
+   .identifier "case".toList, .number ['2'], .punctuation [':'],
+   .identifier "return".toList, .identifier "true".toList, .punctuation [';'],
+   .identifier "default".toList, .punctuation [':'],
+   .identifier "return".toList, .identifier "false".toList, .punctuation [';'],
+   .punctuation ['}'], .punctuation ['}']]
+
+/-- The first label falls through to the one authored returning body. -/
+theorem stacked_returning_cases_retained : blockText? exampleTypes
+    "{ switch (x) { case 1: case 2: return true; default: return false; } }".toList =
+    some [.switch (.identifier ['x'])
+      [(.decimal 1, []),
+       (.decimal 2, [.return (some (.bool true))])]
+      [.return (some (.bool false))]] := by
+  exact block_text_of_parts exampleTypes
+    "{ switch (x) { case 1: case 2: return true; default: return false; } }".toList
+    returningSwitchTokens _ (by decide +kernel) (by rfl)
+
+private def switchWithoutDefaultTokens : List Token :=
+  [.punctuation ['{'], .identifier "switch".toList, .punctuation ['('],
+   .identifier ['x'], .punctuation [')'], .punctuation ['{'],
+   .identifier "case".toList, .number ['1'], .punctuation [':'],
+   .identifier "return".toList, .identifier "true".toList, .punctuation [';'],
+   .punctuation ['}'], .punctuation ['}']]
+
+theorem switch_without_default_retained : blockText? exampleTypes
+    "{ switch (x) { case 1: return true; } }".toList =
+    some [.switch (.identifier ['x']) [(.decimal 1, [.return (some (.bool true))])] []] := by
+  exact block_text_of_parts exampleTypes
+    "{ switch (x) { case 1: return true; } }".toList
+    switchWithoutDefaultTokens _ (by decide +kernel) (by rfl)
+
+theorem dangling_switch_case_refused : blockText? exampleTypes
+    "{ switch (x) { case 1: } }".toList = none := by decide +kernel
+
+theorem unbraced_switch_fallthrough_refused : blockText? exampleTypes
+    "{ switch (x) { case 1: x = 2; case 3: return true; default: return false; } }".toList =
+    none := by decide +kernel
+
+theorem switch_default_before_another_label_refused : blockText? exampleTypes
+    "{ switch (x) { default: return false; case 1: return true; } }".toList =
+    none := by decide +kernel
+
 theorem extra_artifact_tokens_refused : unitText? exampleTypes
     "#include \"guest.h\" void f(void) { return; } wrong".toList = none := by decide +kernel
 
@@ -579,5 +751,61 @@ theorem local_pointer_const_not_pointee_const : blockText? exampleTypes
 
 theorem local_deeper_const_pointer_refused : blockText? exampleTypes
     "{ const Pair **p = &rows[i]; }".toList = none := by decide +kernel
+
+namespace CleanupDeclarationControls
+
+private def types : TypeNames := ["Guard".toList]
+
+private def exact_callback_and_initializer_retainedTokens : List Token := [.punctuation ['{'], .identifier ['_', '_', 'a', 't', 't', 'r', 'i', 'b', 'u', 't', 'e', '_', '_'], .punctuation ['('], .punctuation ['('], .identifier ['c', 'l', 'e', 'a', 'n', 'u', 'p'], .punctuation ['('], .identifier ['l', 'e', 'a', 'v', 'e'], .punctuation [')'], .punctuation [')'], .punctuation [')'], .identifier ['G', 'u', 'a', 'r', 'd'], .identifier ['g', 'u', 'a', 'r', 'd'], .punctuation ['='], .identifier ['e', 'n', 't', 'e', 'r'], .punctuation ['('], .punctuation [')'], .punctuation [';'], .punctuation ['}']]
+
+theorem exact_callback_and_initializer_retained : blockText? types
+    "{ __attribute__((cleanup(leave))) Guard guard = enter(); }".toList =
+      some [.declareCleanup ⟨"Guard".toList, 0⟩ "guard".toList
+        (some (.call "enter".toList [])) "leave".toList] := by
+  exact block_text_of_parts types "{ __attribute__((cleanup(leave))) Guard guard = enter(); }".toList
+    exact_callback_and_initializer_retainedTokens _ (by decide +kernel) (by rfl)
+
+private def uninitialized_cleanup_is_not_zeroedTokens : List Token := [.punctuation ['{'], .identifier ['_', '_', 'a', 't', 't', 'r', 'i', 'b', 'u', 't', 'e', '_', '_'], .punctuation ['('], .punctuation ['('], .identifier ['c', 'l', 'e', 'a', 'n', 'u', 'p'], .punctuation ['('], .identifier ['l', 'e', 'a', 'v', 'e'], .punctuation [')'], .punctuation [')'], .punctuation [')'], .identifier ['G', 'u', 'a', 'r', 'd'], .identifier ['g', 'u', 'a', 'r', 'd'], .punctuation [';'], .punctuation ['}']]
+
+theorem uninitialized_cleanup_is_not_zeroed : blockText? types
+    "{ __attribute__((cleanup(leave))) Guard guard; }".toList =
+      some [.declareCleanup ⟨"Guard".toList, 0⟩ "guard".toList none
+        "leave".toList] := by
+  exact block_text_of_parts types "{ __attribute__((cleanup(leave))) Guard guard; }".toList
+    uninitialized_cleanup_is_not_zeroedTokens _ (by decide +kernel) (by rfl)
+
+theorem unknown_attribute_is_not_erased : blockText? types
+    "{ __attribute__((unused)) Guard guard; }".toList = none := by decide +kernel
+
+theorem missing_cleanup_delimiter_refused : blockText? types
+    "{ __attribute__((cleanup(leave)) Guard guard; }".toList = none := by decide +kernel
+
+theorem multiple_attributes_are_not_one_cleanup : blockText? types
+    "{ __attribute__((cleanup(leave),unused)) Guard guard; }".toList = none := by decide +kernel
+
+private def unbraced_operations_keep_order_and_breakTokens : List Token := [.punctuation ['{'], .identifier ['s', 'w', 'i', 't', 'c', 'h'], .punctuation ['('], .identifier ['x'], .punctuation [')'], .punctuation ['{'], .identifier ['c', 'a', 's', 'e'], .number ['1'], .punctuation [':'], .identifier ['t', 'i', 'c', 'k'], .punctuation ['('], .punctuation [')'], .punctuation [';'], .identifier ['x'], .punctuation ['='], .number ['2'], .punctuation [';'], .identifier ['b', 'r', 'e', 'a', 'k'], .punctuation [';'], .identifier ['d', 'e', 'f', 'a', 'u', 'l', 't'], .punctuation [':'], .identifier ['r', 'e', 't', 'u', 'r', 'n'], .punctuation [';'], .punctuation ['}'], .punctuation ['}']]
+
+theorem unbraced_operations_keep_order_and_break : blockText? types
+    "{ switch (x) { case 1: tick(); x = 2; break; default: return; } }".toList =
+      some [.switch (.identifier ['x'])
+        [(.decimal 1, [.effect (.call "tick".toList []),
+          .assign (.identifier ['x']) (.decimal 2), .break])] [.return none]] := by
+  exact block_text_of_parts types "{ switch (x) { case 1: tick(); x = 2; break; default: return; } }".toList
+    unbraced_operations_keep_order_and_breakTokens _ (by decide +kernel) (by rfl)
+
+theorem declaration_needs_its_actual_block : blockText? types
+    "{ switch (x) { case 1: Guard g; break; } }".toList = none := by decide +kernel
+
+private def nested_block_is_retained_in_terminated_armTokens : List Token := [.punctuation ['{'], .identifier ['s', 'w', 'i', 't', 'c', 'h'], .punctuation ['('], .identifier ['x'], .punctuation [')'], .punctuation ['{'], .identifier ['c', 'a', 's', 'e'], .number ['1'], .punctuation [':'], .identifier ['t', 'i', 'c', 'k'], .punctuation ['('], .punctuation [')'], .punctuation [';'], .punctuation ['{'], .identifier ['G', 'u', 'a', 'r', 'd'], .identifier ['g'], .punctuation [';'], .punctuation ['}'], .identifier ['b', 'r', 'e', 'a', 'k'], .punctuation [';'], .punctuation ['}'], .punctuation ['}']]
+
+theorem nested_block_is_retained_in_terminated_arm : blockText? types
+    "{ switch (x) { case 1: tick(); { Guard g; } break; } }".toList =
+      some [.switch (.identifier ['x'])
+        [(.decimal 1, [.effect (.call "tick".toList []),
+          .block [.declareUninitialized ⟨"Guard".toList, 0⟩ ['g']], .break])] []] := by
+  exact block_text_of_parts types "{ switch (x) { case 1: tick(); { Guard g; } break; } }".toList
+    nested_block_is_retained_in_terminated_armTokens _ (by decide +kernel) (by rfl)
+
+end CleanupDeclarationControls
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC

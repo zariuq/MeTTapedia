@@ -22,6 +22,8 @@ open Mettapedia.GSLT
 
 universe uSite uEvent uRevision uMemory uCost
 
+-- Site and event carriers have independent bounds, as in a large category.
+set_option linter.checkUnivs false in
 /-- An open family of authored interaction sites over one GSLT.  Evidence is
 `Type`-valued so distinct occurrences with equal endpoints remain distinct. -/
 structure InteractionPresentation (theory : GSLT) where
@@ -74,6 +76,8 @@ theorem step (event : presentation.Enabled source) :
 
 end Enabled
 
+-- Revisions, sites and occurrence evidence need not have equal universe bounds.
+set_option linter.checkUnivs false in
 /-- A versioned catalog makes the authority against which an event was
 checked explicit.  Revisions select presentations; they are not mutable
 global state hidden behind the checker. -/

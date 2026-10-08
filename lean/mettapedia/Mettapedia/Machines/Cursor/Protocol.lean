@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.IndexedPolynomialCoalgebra
+import Mettapedia.GSLT.Logic.AbstractSeparationLogic
 import Mathlib.Tactic
 
 /-!
@@ -314,3 +315,216 @@ theorem resume_account (h : Hom source target)
 end Hom
 
 end Mettapedia.Machines.Cursor
+
+/-! The existing primitive program tree also supplies a cursor client.
+The comparison below retains stateful actions and independent charges; the
+provider's physical realization and its termination remain separate duties. -/
+
+namespace Mettapedia.Machines.Cursor.PrimitiveProgram
+
+open Mettapedia.TypeTheory
+open CategoryTheory
+open Mettapedia.TypeTheory.IndexedPolynomial
+open Mettapedia.GSLT.Logic.AbstractSeparationLogic
+
+universe u
+
+variable {Op : Type u} {Ret : Op → Type u} {Answer Fault World : Type u}
+
+/-- Faults are replies, not fabricated inhabitants of a primitive's result type. -/
+abbrev protocol (Op : Type u) (Ret : Op → Type u) (Fault : Type u) :
+    IndexedPolynomial PUnit.{u+1} (fun _ => PUnit.{u+1}) where
+  Shape _ _ := Op
+  Position operation := Except Fault (Ret operation)
+  next _ _ := PUnit.unit
+
+/-- The existing primitive tree exposes one actual layer. The concrete
+codomain keeps response-dependent children explicit through the categorical
+carrier. No alternate program syntax is introduced. -/
+def expose (control : Except Fault (Prog Op Ret Answer)) :
+    ((protocol Op Ret Fault).withHoles (fun _ _ => Except Fault Answer)).Extension
+      (fun _ _ => Except Fault (Prog Op Ret Answer)) PUnit.unit PUnit.unit :=
+  match control with
+  | .error fault => ⟨.inl (.error fault), PEmpty.elim⟩
+  | .ok (.ret answer) => ⟨.inl (.ok answer), PEmpty.elim⟩
+  | .ok (.call operation next) => ⟨.inr operation, fun reply => match reply with
+      | .error fault => .error fault
+      | .ok value => .ok (next value)⟩
+
+/-- The existing program supplies its actual dependent continuation to the
+existing indexed polynomial coalgebra. A fault is a retained terminal value. -/
+abbrev client (Op : Type u) (Ret : Op → Type u) (Answer Fault : Type u) :
+    Client (P := protocol Op Ret Fault) (Return := fun _ _ => Except Fault Answer) where
+  V _ _ := Except Fault (Prog Op Ret Answer)
+  str := fun _ _ => ↾(expose (Op := Op) (Ret := Ret) (Answer := Answer) (Fault := Fault))
+
+abbrev provider (step : World → (operation : Op) → World × Except Fault (Ret operation)) :
+    Provider (protocol Op Ret Fault) where
+  State _ _ := World
+  step world operation := let response := step world operation; ⟨response.2, response.1⟩
+
+abbrev charge (cost : World → Op → Nat)
+    (step : World → (operation : Op) → World × Except Fault (Ret operation)) :
+    Charge (provider step) := fun world operation => cost world operation
+
+/-- Read the actual existing cursor outcome, preserving final or residual
+control, fault status and the complete provider world. -/
+def readOutcome (step : World → (operation : Op) → World × Except Fault (Ret operation)) :
+    Outcome (provider step) (client Op Ret Answer Fault) PUnit.unit →
+      (Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World
+  | .paused ⟨_, control, world⟩ => (.inr control, world)
+  | .done ⟨_, answer, world⟩ => (.inl answer, world)
+
+/-- Independent direct bounded execution of the original program syntax.
+No indexed cursor operation is used to define its expected result. -/
+def direct (step : World → (operation : Op) → World × Except Fault (Ret operation))
+    (cost : World → Op → Nat) : Nat → Except Fault (Prog Op Ret Answer) → World →
+      Nat × ((Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World)
+  | 0, control, world => (0, (.inr control, world))
+  | _ + 1, .error fault, world => (0, (.inl (.error fault), world))
+  | _ + 1, .ok (.ret answer), world => (0, (.inl (.ok answer), world))
+  | fuel + 1, .ok (.call operation next), world =>
+      let response := step world operation
+      let rest := direct step cost fuel
+        (match response.2 with
+        | .error fault => .error fault
+        | .ok value => .ok (next value)) response.1
+      (cost world operation + rest.1, rest.2)
+
+/-- Both algorithms inspect the same dependent replies and preserve the full
+world and residual, including faults and cumulative charges. -/
+theorem advance_is_direct
+    (step : World → (operation : Op) → World × Except Fault (Ret operation))
+    (cost : World → Op → Nat) (fuel : Nat)
+    (control : Except Fault (Prog Op Ret Answer)) (world : World) :
+    let result := advance (provider step) (client Op Ret Answer Fault) (charge cost step)
+      fuel ⟨PUnit.unit, control, world⟩
+    (result.1, readOutcome step result.2) = direct step cost fuel control world := by
+  induction fuel generalizing control world with
+  | zero => rfl
+  | succ fuel ih =>
+      cases control with
+      | error fault => rfl
+      | ok program =>
+          cases program with
+          | ret answer => rfl
+          | call operation next =>
+              have head : (client Op Ret Answer Fault).str PUnit.unit PUnit.unit
+                  (.ok (.call operation next)) =
+                  ⟨.inr operation, fun reply => match reply with
+                    | .error fault => .error fault
+                    | .ok value => .ok (next value)⟩ := by
+                rfl
+              simp only [advance, head]
+              rcases responseLaw : step world operation with ⟨following, reply⟩
+              cases reply with
+              | error fault =>
+                  simpa only [provider, charge, protocol, withHoles, direct, responseLaw] using
+                    congrArg
+                      (fun value : Nat × ((Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World) =>
+                        (cost world operation + value.1, value.2))
+                      (ih (.error fault) following)
+              | ok value =>
+                  simpa only [provider, charge, protocol, withHoles, direct, responseLaw] using
+                    congrArg
+                      (fun value : Nat × ((Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World) =>
+                        (cost world operation + value.1, value.2))
+                      (ih (.ok (next value)) following)
+
+
+/-- Reconstruct the same existing outcome; the singleton capability index
+carries no hidden quotient. -/
+def restoreOutcome (step : World → (operation : Op) → World × Except Fault (Ret operation)) :
+    (Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World →
+      Outcome (provider step) (client Op Ret Answer Fault) PUnit.unit
+  | (.inl answer, world) => .done ⟨PUnit.unit, answer, world⟩
+  | (.inr control, world) => .paused ⟨PUnit.unit, control, world⟩
+
+@[simp] theorem restoreOutcome_readOutcome
+    (step : World → (operation : Op) → World × Except Fault (Ret operation))
+    (value : Outcome (provider step) (client Op Ret Answer Fault) PUnit.unit) :
+    restoreOutcome step (readOutcome step value) = value := by
+  cases value with
+  | paused packet => rcases packet with ⟨index, control, world⟩; cases index; rfl
+  | done result => rcases result with ⟨index, answer, world⟩; cases index; rfl
+
+@[simp] theorem readOutcome_restoreOutcome
+    (step : World → (operation : Op) → World × Except Fault (Ret operation))
+    (value : (Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World) :
+    readOutcome step (restoreOutcome step value) = value := by
+  rcases value with ⟨outcome, world⟩
+  cases outcome <;> rfl
+
+theorem readOutcome_injective
+    (step : World → (operation : Op) → World × Except Fault (Ret operation)) :
+    Function.Injective (readOutcome (Answer := Answer) step) := by
+  intro left right equal
+  have same := congrArg (restoreOutcome step) equal
+  simpa only [restoreOutcome_readOutcome] using same
+
+
+/-- The implementation obligation is local to one primitive. It specifies a
+permitted reply and successor only where the independent action is safe. -/
+def ProviderSound
+    (act : (operation : Op) → Action World (Ret operation))
+    (step : World → (operation : Op) → World × Except Fault (Ret operation)) : Prop :=
+  ∀ world operation, (act operation).Safe world →
+    ∃ value following, step world operation = (following, .ok value) ∧
+      (act operation).Step world value following
+
+/-- A successful bounded execution is a permitted execution of the original
+program. A pause retains a safe continuation; no fault is hidden as success. -/
+def SafeOutcome (act : (operation : Op) → Action World (Ret operation))
+    (program : Prog Op Ret Answer) (initial : World) :
+    (Except Fault Answer ⊕ Except Fault (Prog Op Ret Answer)) × World → Prop
+  | (.inl (.ok answer), following) => program.Runs act initial answer following
+  | (.inl (.error _), _) => False
+  | (.inr (.ok residual), following) => residual.Safe act following
+  | (.inr (.error _), _) => False
+
+/-- A local primitive realization law lifts to fault avoidance and stateful
+execution for every bounded prefix, with the original reply-dependent child. -/
+theorem direct_safe_outcome
+    (act : (operation : Op) → Action World (Ret operation))
+    (step : World → (operation : Op) → World × Except Fault (Ret operation))
+    (localLaw : ProviderSound act step) (cost : World → Op → Nat)
+    (fuel : Nat) (program : Prog Op Ret Answer) (world : World)
+    (safe : program.Safe act world) :
+    SafeOutcome act program world (direct step cost fuel (.ok program) world).2 := by
+  induction fuel generalizing program world with
+  | zero => exact safe
+  | succ fuel ih =>
+      cases program with
+      | ret answer => exact ⟨rfl, rfl⟩
+      | call operation next =>
+          obtain ⟨value, following, stepLaw, permitted⟩ := localLaw world operation safe.1
+          have kept := ih (next value) following (safe.2 value following permitted)
+          simp only [direct, stepLaw] at kept ⊢
+          rcases hrest : direct step cost fuel (.ok (next value)) following with ⟨spent, outcome, final⟩
+          rw [hrest] at kept
+          cases outcome with
+          | inl answer =>
+              cases answer with
+              | error fault => exact kept
+              | ok answer => exact ⟨value, following, permitted, kept⟩
+          | inr control =>
+              cases control with
+              | error fault => exact kept
+              | ok residual => exact kept
+
+/-- The existing cursor's concrete bounded execution satisfies the same
+independent action semantics, rather than merely agreeing on printed values. -/
+theorem advance_safe_outcome
+    (act : (operation : Op) → Action World (Ret operation))
+    (step : World → (operation : Op) → World × Except Fault (Ret operation))
+    (localLaw : ProviderSound act step) (cost : World → Op → Nat)
+    (fuel : Nat) (program : Prog Op Ret Answer) (world : World)
+    (safe : program.Safe act world) :
+    SafeOutcome act program world
+      (readOutcome step (advance (provider step) (client Op Ret Answer Fault)
+        (charge cost step) fuel ⟨PUnit.unit, .ok program, world⟩).2) := by
+  have correspondence := congrArg Prod.snd (advance_is_direct step cost fuel (.ok program) world)
+  exact Eq.mpr (congrArg (SafeOutcome act program world) correspondence)
+    (direct_safe_outcome act step localLaw cost fuel program world safe)
+
+end Mettapedia.Machines.Cursor.PrimitiveProgram

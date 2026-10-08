@@ -1,4 +1,5 @@
-import Mettapedia.GSLT.LanguageDef.NativeOpsReferenceFieldExpression
+import Mettapedia.GSLT.LanguageDef.NativeOpsReferenceFieldComposition
+import Mettapedia.GSLT.LanguageDef.NativeOpsExternal
 import Mettapedia.GSLT.LanguageDef.NativeOpsKnownSourceEvaluation
 import Mettapedia.GSLT.LanguageDef.NativeOpsSourceSwitchReturns
 
@@ -189,5 +190,337 @@ theorem missing_record_no_observable_execution {out : TargetBlockOutcome Unit} {
     ⟨rfl, rfl, rfl⟩ (fixture_states_related _ _) fixture_bounded
     fixture_scoped ran observation
   exact missing_record_source_stuck sourceOut sourceRan
+
+omit sourceHeap sourceCalls
+
+open NativeWord64 (bounded)
+
+def preparingInterface : Interface :=
+  { interface with externals := [⟨⟨"prepare-record", [], .ref (.named "R")⟩, "prepare-record", .effect, none⟩] }
+
+def preparedSourcePost (state : SourceState Nat) (payload : Option SourceValue)
+    (ready : Bool) (increment : Nat) : SourceState Nat :=
+  { state with
+      memory := sourceMemory (some address) payload,
+      releaseAvailable := ready, external := state.external + increment }
+
+def preparedTargetPost (state : TargetState Nat) (payload : Option SourceValue)
+    (ready : Bool) (increment : Nat) : TargetState Nat :=
+  { state with
+      memory := targetMemory (some address) payload,
+      releaseAvailable := ready, external := state.external + increment }
+
+inductive SourcePreparingCall : SourceCalls Nat where
+  | value (state : SourceState Nat) : SourcePreparingCall "prepare-record" [] state (.reference (some address))
+      (preparedSourcePost state (some (.word (bounded 64 21))) true 4)
+  | refusal (state : SourceState Nat) : SourcePreparingCall "prepare-record" [] state (.reference (some address))
+      (sourcePoison (preparedSourcePost state (some (.word (bounded 64 21))) true 5) .resourceFault)
+  | unavailable (state : SourceState Nat) : SourcePreparingCall "prepare-record" [] state (.reference (some address))
+      (preparedSourcePost state (some (.word (bounded 64 21))) false 6)
+  | missing (state : SourceState Nat) : SourcePreparingCall "prepare-record" [] state (.reference (some address))
+      (preparedSourcePost state none true 7)
+
+inductive TargetPreparingCall : TargetCalls Nat where
+  | value (state : TargetState Nat) : TargetPreparingCall (.external "prepare-record") [] state (.reference (some address))
+      (preparedTargetPost state (some (.word (bounded 64 21))) true 4)
+  | refusal (state : TargetState Nat) : TargetPreparingCall (.external "prepare-record") [] state (.reference (some address))
+      (targetPoison (preparedTargetPost state (some (.word (bounded 64 21))) true 5) .resourceFault)
+  | unavailable (state : TargetState Nat) : TargetPreparingCall (.external "prepare-record") [] state (.reference (some address))
+      (preparedTargetPost state (some (.word (bounded 64 21))) false 6)
+  | missing (state : TargetState Nat) : TargetPreparingCall (.external "prepare-record") [] state (.reference (some address))
+      (preparedTargetPost state none true 7)
+
+theorem prepared_post_correspondence {source : SourceState Nat} {target : TargetState Nat}
+    (states : StateRelated Eq source target) (payload : Option SourceValue) (ready : Bool) (increment : Nat) :
+    StateRelated Eq (preparedSourcePost source payload ready increment)
+      (preparedTargetPost target payload ready increment) :=
+  ⟨(fixture_states_related (some address) payload).memory, states.fault, states.allocator,
+    rfl, congrArg (fun n => n + increment) states.external, states.allocatorStats⟩
+
+theorem preparing_call_contract :
+    ExternalCorrespondence ⟨SourcePreparingCall⟩ ⟨fun name => TargetPreparingCall (.external name)⟩ Eq := by
+  constructor
+  · intro name arguments source target raw post states called
+    cases called with
+    | value => exact ⟨_, .value target, prepared_post_correspondence states _ true 4⟩
+    | refusal => exact ⟨_, .refusal target, poison_correspondence (prepared_post_correspondence states _ true 5) _⟩
+    | unavailable => exact ⟨_, .unavailable target, prepared_post_correspondence states _ false 6⟩
+    | missing => exact ⟨_, .missing target, prepared_post_correspondence states none true 7⟩
+  · intro name arguments source target raw post states called
+    generalize encoded : encodeValues arguments = targetArguments at called
+    cases called with
+    | value =>
+        have empty : arguments = [] := by
+          simpa only [decode_encode_values, decodeValues] using congrArg decodeValues encoded
+        subst arguments
+        exact ⟨_, _, .value source, rfl, prepared_post_correspondence states _ true 4⟩
+    | refusal =>
+        have empty : arguments = [] := by
+          simpa only [decode_encode_values, decodeValues] using congrArg decodeValues encoded
+        subst arguments
+        exact ⟨_, _, .refusal source, rfl, poison_correspondence (prepared_post_correspondence states _ true 5) _⟩
+    | unavailable =>
+        have empty : arguments = [] := by
+          simpa only [decode_encode_values, decodeValues] using congrArg decodeValues encoded
+        subst arguments
+        exact ⟨_, _, .unavailable source, rfl, prepared_post_correspondence states _ false 6⟩
+    | missing =>
+        have empty : arguments = [] := by
+          simpa only [decode_encode_values, decodeValues] using congrArg decodeValues encoded
+        subst arguments
+        exact ⟨_, _, .missing source, rfl, prepared_post_correspondence states none true 7⟩
+
+theorem preparing_success_tag (heap : SourceHeapSemantics Nat) (frame : SourceFrame)
+    (before post : SourceState Nat) (value : SourceValue)
+    (ran : SourceExprEval preparingInterface heap SourcePreparingCall frame (.call "prepare-record" [])
+      before ⟨.ok value, post⟩) : SourceOuterTag (.ref (.named "R")) value := by
+  obtain ⟨raw, after, called, observed⟩ := (source_nullary_call_exact "prepare-record" before _).mp ran
+  cases called <;> cases clear : before.fault <;>
+    simp only [sourceObserve, sourcePoison, preparedSourcePost, clear] at observed
+  all_goals cases observed
+  all_goals constructor
+
+theorem preparing_child_instance (sourceHeap : SourceHeapSemantics Nat) (targetHeap : TargetHeapSemantics Nat)
+    (frame : SourceFrame) (source : SourceState Nat) :
+    StatefulChildLaws Eq preparingInterface sourceHeap SourcePreparingCall targetHeap TargetPreparingCall
+      frame source .word (.word 0) (.call "prepare-record" []) := by
+  apply nullary_external_stateful_child_laws Eq preparingInterface sourceHeap SourcePreparingCall
+    targetHeap TargetPreparingCall preparing_call_contract frame source "prepare-record" (.ref (.named "R"))
+    .word (.word 0) _ _ rfl .unsignedWord
+  · simp only [inferExpr, inferExprList, lookupFunction, preparingInterface]; rfl
+  · intro impossible; cases impossible
+
+def preparedFieldExpression : Expr := .field (.call "prepare-record" []) "count"
+
+def preparedFieldOutput : NativeLowering.Expression :=
+  ⟨[.call (some (.temporary 1 (.ref (.named "R")))) (.external "prepare-record") [], .checkContext,
+    .helper none (.reference (.temporary 1 (.ref (.named "R")))), .checkContext,
+    .temporary 2 (.ref .word) (.fieldAddress (.temporary 1 (.ref (.named "R"))) "R" 1),
+    .temporary 3 .word (.indirectRead (.temporary 2 (.ref .word)))], .temporary 3 .word, ⟨3⟩⟩
+
+theorem preparing_base_type (frame : SourceFrame) :
+    inferExpr preparingInterface (sourceFrameScope frame) (.call "prepare-record" []) = some (.ref (.named "R")) := by
+  simp only [inferExpr, inferExprList, lookupFunction, preparingInterface]; rfl
+
+theorem preparing_field_actual_lowering :
+    NativeLowering.expression? preparingInterface (sourceFrameScope sourceFrame) preparedFieldExpression ⟨0⟩ =
+      some preparedFieldOutput := by
+  simp only [preparedFieldExpression, NativeLowering.expression?, NativeLowering.location?, NativeLowering.arguments?,
+    inferExpr, inferLocation, inferExprList, lookupFunction, preparingInterface]; rfl
+
+theorem preparing_field_child_instance (sourceHeap : SourceHeapSemantics Nat) (targetHeap : TargetHeapSemantics Nat)
+    (frame : SourceFrame) (source : SourceState Nat) (clear : source.fault = none) :
+    StatefulChildLaws Eq preparingInterface sourceHeap SourcePreparingCall targetHeap TargetPreparingCall
+      frame source .word (.word 0) preparedFieldExpression :=
+  stateful_reference_field_child_laws Eq preparingInterface sourceHeap SourcePreparingCall
+    targetHeap TargetPreparingCall frame source clear .word (.word 0) .unsignedWord (.call "prepare-record" []) "R" "count"
+    (preparing_base_type frame) (fun before _ => preparing_child_instance sourceHeap targetHeap frame before)
+    (preparing_success_tag sourceHeap frame)
+
+def preparingSource : SourceState Nat :=
+  ⟨sourceMemory (some address) (some (.word (bounded 64 13))), none, true, true, 0, AllocatorStats.sourceEmpty⟩
+
+def preparingTarget : TargetState Nat :=
+  ⟨targetMemory (some address) (some (.word (bounded 64 13))), none, true, true, 0, AllocatorStats.targetEmpty⟩
+
+theorem preparing_initial_related : StateRelated Eq preparingSource preparingTarget :=
+  ⟨(fixture_states_related _ _).memory, rfl, rfl, rfl, rfl, AllocatorStats.empty_related⟩
+
+theorem preparing_field_source_success (heap : SourceHeapSemantics Nat) :
+    SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame preparedFieldExpression preparingSource
+      ⟨.ok (.word (bounded 64 21)), preparedSourcePost preparingSource (some (.word (bounded 64 21))) true 4⟩ := by
+  have child : SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame (.call "prepare-record" []) preparingSource
+      ⟨.ok (.reference (some address)), preparedSourcePost preparingSource (some (.word (bounded 64 21))) true 4⟩ :=
+    (source_nullary_call_exact "prepare-record" preparingSource _).mpr ⟨_, _, .value preparingSource, rfl⟩
+  refine .strict rfl (.cons child (.nil _)) ?_
+  apply (source_reference_field_primitive_exact heap SourcePreparingCall sourceFrame (.call "prepare-record" [])
+    "R" "count" 1 (some address) (preparing_base_type sourceFrame) rfl _ _).mpr
+  exact ⟨address, .word (bounded 64 21), rfl, rfl, rfl⟩
+
+theorem preparing_field_target_success (sourceHeap : SourceHeapSemantics Nat) (targetHeap : TargetHeapSemantics Nat)
+    (root : List Instruction) :
+    ∃ out, TargetRun preparingInterface targetHeap TargetPreparingCall .word root preparedFieldOutput.code
+        targetFrame preparingTarget out ∧ out.flow = .normal ∧ out.state.external = 4 ∧
+      out.state.memory.cells 11 0 = some (.record "R" [.bool true, .word 21]) ∧
+      TargetAtomEval preparingInterface out.frame out.state preparedFieldOutput.result (.word 21) := by
+  obtain ⟨out, ran, related, _, _, _⟩ :=
+    (preparing_field_child_instance sourceHeap targetHeap sourceFrame preparingSource rfl).forward
+      root (targetFrame := targetFrame) preparing_field_actual_lowering ⟨rfl, rfl, rfl⟩ preparing_initial_related
+      (by intro identity live; cases live) (by intro identity _; rfl) (preparing_field_source_success sourceHeap)
+  rcases related with ⟨states, _, normal, value⟩
+  exact ⟨out, ran, normal, states.external.symm, states.memory.1 11 0, value⟩
+
+theorem preparing_field_actual_reflection (sourceHeap : SourceHeapSemantics Nat) (targetHeap : TargetHeapSemantics Nat)
+    (root : List Instruction) {out : TargetBlockOutcome Nat}
+    (ran : TargetRun preparingInterface targetHeap TargetPreparingCall .word root preparedFieldOutput.code
+      targetFrame preparingTarget out) :
+    ∃ sourceOut, SourceExprEval preparingInterface sourceHeap SourcePreparingCall sourceFrame
+        preparedFieldExpression preparingSource sourceOut ∧
+      CheckedExpressionRelated Eq preparingInterface (.word 0) preparedFieldOutput.result sourceOut out := by
+  obtain ⟨sourceOut, sourceRan, related, _, _, _⟩ :=
+    (preparing_field_child_instance sourceHeap targetHeap sourceFrame preparingSource rfl).backward
+      root (targetFrame := targetFrame) preparing_field_actual_lowering ⟨rfl, rfl, rfl⟩ preparing_initial_related
+      (by intro identity live; cases live) (by intro identity _; rfl) ran
+  exact ⟨sourceOut, sourceRan, related⟩
+
+theorem preparing_field_value_differs_from_old_cell :
+    targetRead preparingTarget.memory (sourceFieldAddress address 1) = some (.word 13) ∧
+      (.word 21 : TargetValue) ≠ .word 13 := by
+  refine ⟨rfl, ?_⟩
+  intro same
+  have numbers := congrArg BitVec.toNat (TargetValue.word.inj same)
+  contradiction
+
+theorem preparing_field_source_first_fault (heap : SourceHeapSemantics Nat) :
+    SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame preparedFieldExpression preparingSource
+      ⟨.error .resourceFault,
+        sourcePoison (preparedSourcePost preparingSource (some (.word (bounded 64 21))) true 5) .resourceFault⟩ := by
+  have child : SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame (.call "prepare-record" []) preparingSource
+      ⟨.error .resourceFault,
+        sourcePoison (preparedSourcePost preparingSource (some (.word (bounded 64 21))) true 5) .resourceFault⟩ :=
+    (source_nullary_call_exact "prepare-record" preparingSource _).mpr ⟨_, _, .refusal preparingSource, rfl⟩
+  exact .strictFault rfl (.consFault child)
+
+theorem preparing_field_target_first_fault (targetHeap : TargetHeapSemantics Nat) (root : List Instruction) :
+    ∃ out, TargetRun preparingInterface targetHeap TargetPreparingCall .word root preparedFieldOutput.code
+        targetFrame preparingTarget out ∧ out.flow = .returned (.word 0) ∧ out.state.fault = some .resourceFault ∧
+      out.state.external = 5 ∧ out.state.memory.cells 11 0 = some (.record "R" [.bool true, .word 21]) ∧
+      out.frame.temporaryNames.contains 2 = false ∧ out.frame.temporaryNames.contains 3 = false := by
+  let post := targetPoison (preparedTargetPost preparingTarget (some (.word (bounded 64 21))) true 5) .resourceFault
+  refine ⟨⟨.returned (.word 0), targetDeclareTemporary targetFrame 1 (.reference (some address)), post⟩,
+    ?_, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  apply TargetRun.next (TargetInstructionEval.call .nil (.refusal preparingTarget) (.fresh rfl))
+  exact .return (.contextFault rfl .unsignedWord)
+
+theorem preparing_field_source_unavailable (heap : SourceHeapSemantics Nat) :
+    SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame preparedFieldExpression preparingSource
+      ⟨.error .invalidRequest,
+        sourcePoison (preparedSourcePost preparingSource (some (.word (bounded 64 21))) false 6) .invalidRequest⟩ := by
+  have child : SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame (.call "prepare-record" []) preparingSource
+      ⟨.ok (.reference (some address)), preparedSourcePost preparingSource (some (.word (bounded 64 21))) false 6⟩ :=
+    (source_nullary_call_exact "prepare-record" preparingSource _).mpr ⟨_, _, .unavailable preparingSource, rfl⟩
+  refine .strict rfl (.cons child (.nil _)) ?_
+  apply (source_reference_field_primitive_exact heap SourcePreparingCall sourceFrame (.call "prepare-record" [])
+    "R" "count" 1 (some address) (preparing_base_type sourceFrame) rfl _ _).mpr
+  rfl
+
+theorem preparing_field_target_unavailable (sourceHeap : SourceHeapSemantics Nat) (targetHeap : TargetHeapSemantics Nat)
+    (root : List Instruction) :
+    ∃ out, TargetRun preparingInterface targetHeap TargetPreparingCall .word root preparedFieldOutput.code
+        targetFrame preparingTarget out ∧ out.flow = .returned (.word 0) ∧ out.state.fault = some .invalidRequest ∧
+      out.state.external = 6 ∧ out.state.releaseAvailable = false ∧
+      out.state.memory.cells 11 0 = some (.record "R" [.bool true, .word 21]) := by
+  obtain ⟨out, ran, related, _, _, _⟩ :=
+    (preparing_field_child_instance sourceHeap targetHeap sourceFrame preparingSource rfl).forward
+      root (targetFrame := targetFrame) preparing_field_actual_lowering ⟨rfl, rfl, rfl⟩ preparing_initial_related
+      (by intro identity live; cases live) (by intro identity _; rfl) (preparing_field_source_unavailable sourceHeap)
+  rcases related with ⟨states, _, returned⟩
+  exact ⟨out, ran, returned, states.fault, states.external.symm, states.release, states.memory.1 11 0⟩
+
+
+theorem preparing_missing_field_primitive_stuck (heap : SourceHeapSemantics Nat) (out : SourceOutcome Nat) :
+    ¬ sourcePrimitive preparingInterface heap SourcePreparingCall sourceFrame preparedFieldExpression
+      [.reference (some address)] (preparedSourcePost preparingSource none true 7) out := by
+  intro ran
+  obtain ⟨pointed, value, same, read, _⟩ :=
+    (source_reference_field_primitive_exact heap SourcePreparingCall sourceFrame (.call "prepare-record" [])
+      "R" "count" 1 (some address) (preparing_base_type sourceFrame) rfl _ out).mp ran
+  cases Option.some.inj same
+  change none = some value at read
+  cases read
+
+theorem preparing_missing_field_target_stuck (heap : TargetHeapSemantics Nat)
+    (root : List Instruction) (out : TargetBlockOutcome Nat) :
+    ¬ TargetRun preparingInterface heap TargetPreparingCall .word root
+      (NativeLowering.checkReference (.temporary 1 (.ref (.named "R"))) ++
+        [.temporary 2 (.ref .word) (.fieldAddress (.temporary 1 (.ref (.named "R"))) "R" 1),
+         .temporary 3 .word (.indirectRead (.temporary 2 (.ref .word)))])
+      (targetDeclareTemporary targetFrame 1 (.reference (some address)))
+      (preparedTargetPost preparingTarget none true 7) out := by
+  intro ran
+  let sourceHeap : SourceHeapSemantics Nat := ⟨fun _ => 1, fun _ _ _ _ => False, fun _ _ _ _ => False⟩
+  have states := prepared_post_correspondence preparing_initial_related none true 7
+  have read := declared_temporary_atom preparingInterface targetFrame
+    (preparedTargetPost preparingTarget none true 7) 1 (.ref (.named "R")) (.reference (some address))
+  obtain ⟨sourceOut, sourceRan, _, _, _, _⟩ := stateful_checked_reference_field_fragment_profile states rfl
+    sourceHeap SourcePreparingCall sourceFrame (targetDeclareTemporary targetFrame 1 (.reference (some address)))
+    (.call "prepare-record" []) (some address) "R" "count" 1 .word .word (preparing_base_type sourceFrame) rfl
+    (.temporary 1 (.ref (.named "R"))) ⟨1⟩ read
+    (declared_temporary_bound (before := 0) (after := 1) (identity := 1)
+      (by intro _ live; cases live) (Nat.zero_le _) (Nat.le_refl _) _)
+    (declared_temporaries_completeNames (by intro _ _; rfl) _ _) .unsignedWord root ran
+  exact preparing_missing_field_primitive_stuck sourceHeap sourceOut sourceRan
+
+theorem omitted_field_guards_allow_faulted_read (heap : TargetHeapSemantics Nat) (root : List Instruction) :
+    TargetRun preparingInterface heap TargetPreparingCall .word root
+      [.call (some (.temporary 1 (.ref (.named "R")))) (.external "prepare-record") [],
+       .temporary 2 (.ref .word) (.fieldAddress (.temporary 1 (.ref (.named "R"))) "R" 1),
+       .temporary 3 .word (.indirectRead (.temporary 2 (.ref .word)))] targetFrame preparingTarget
+      ⟨.normal, targetDeclareTemporary
+        (targetDeclareTemporary (targetDeclareTemporary targetFrame 1 (.reference (some address)))
+          2 (.reference (some (sourceFieldAddress address 1)))) 3 (.word 21),
+        targetPoison (preparedTargetPost preparingTarget (some (.word (bounded 64 21))) true 5) .resourceFault⟩ := by
+  apply TargetRun.next (TargetInstructionEval.call .nil (.refusal preparingTarget) (.fresh rfl))
+  apply TargetRun.next (TargetInstructionEval.temporary rfl
+    (TargetPureEval.fieldAddress
+      (declared_temporary_atom preparingInterface targetFrame _ 1 (.ref (.named "R")) (.reference (some address)))))
+  apply TargetRun.next (TargetInstructionEval.temporary rfl
+    (TargetPureEval.indirect
+      (declared_temporary_atom preparingInterface _ _ 2 (.ref .word) (.reference (some (sourceFieldAddress address 1)))) rfl))
+  exact .nil _ _ _
+
+theorem omitted_field_reference_check_reads_unavailable_record (heap : TargetHeapSemantics Nat)
+    (root : List Instruction) :
+    TargetRun preparingInterface heap TargetPreparingCall .word root
+      [.call (some (.temporary 1 (.ref (.named "R")))) (.external "prepare-record") [], .checkContext,
+       .temporary 2 (.ref .word) (.fieldAddress (.temporary 1 (.ref (.named "R"))) "R" 1),
+       .temporary 3 .word (.indirectRead (.temporary 2 (.ref .word)))] targetFrame preparingTarget
+      ⟨.normal, targetDeclareTemporary
+        (targetDeclareTemporary (targetDeclareTemporary targetFrame 1 (.reference (some address)))
+          2 (.reference (some (sourceFieldAddress address 1)))) 3 (.word 21),
+        preparedTargetPost preparingTarget (some (.word (bounded 64 21))) false 6⟩ := by
+  apply TargetRun.next (TargetInstructionEval.call .nil (.unavailable preparingTarget) (.fresh rfl))
+  apply TargetRun.next (TargetInstructionEval.contextClear rfl)
+  apply TargetRun.next (TargetInstructionEval.temporary rfl
+    (TargetPureEval.fieldAddress
+      (declared_temporary_atom preparingInterface targetFrame _ 1 (.ref (.named "R")) (.reference (some address)))))
+  apply TargetRun.next (TargetInstructionEval.temporary rfl
+    (TargetPureEval.indirect
+      (declared_temporary_atom preparingInterface _ _ 2 (.ref .word) (.reference (some (sourceFieldAddress address 1)))) rfl))
+  exact .nil _ _ _
+
+theorem field_reference_guard_omission_changes_observation :
+    (targetObserve (preparedTargetPost preparingTarget (some (.word (bounded 64 21))) false 6)
+      (.word 21)).result = .ok (.word 21) ∧
+    (sourceObserve
+      (sourcePoison (preparedSourcePost preparingSource (some (.word (bounded 64 21))) false 6) .invalidRequest)
+      (.word (bounded 64 21))).result = .error .invalidRequest := ⟨rfl, rfl⟩
+
+theorem preparing_field_type (frame : SourceFrame) :
+    inferExpr preparingInterface (sourceFrameScope frame) preparedFieldExpression = some .word := by
+  simp only [preparedFieldExpression, inferExpr, inferExprList, lookupFunction, preparingInterface]; rfl
+
+theorem preparing_field_success_tag (heap : SourceHeapSemantics Nat)
+    (before post : SourceState Nat) (value : SourceValue)
+    (ran : SourceExprEval preparingInterface heap SourcePreparingCall sourceFrame
+      preparedFieldExpression before ⟨.ok value, post⟩) : SourceOuterTag .word value := by
+  apply stateful_reference_field_source_tag (preparing_base_type sourceFrame) (index := 1) rfl
+    (preparing_success_tag heap sourceFrame) ?_ (preparing_field_type sourceFrame) ran
+  intro start middle pointed selected type typed child read
+  have sameType : type = .word := (Option.some.inj ((preparing_field_type sourceFrame).symm.trans typed)).symm
+  subst type
+  obtain ⟨raw, after, called, observed⟩ := (source_nullary_call_exact "prepare-record" start _).mp child
+  cases called <;> cases clear : start.fault <;>
+    simp only [sourceObserve, sourcePoison, preparedSourcePost, clear] at observed
+  all_goals cases observed
+  all_goals simp only [sourceReferenceCall, source_raw_finish_memory] at read
+  · change some (.word (bounded 64 21)) = some selected at read
+    cases read
+    exact .word _
+  · change some (.word (bounded 64 21)) = some selected at read
+    cases read
+    exact .word _
+  · change none = some selected at read
+    cases read
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.ReferenceFieldControls

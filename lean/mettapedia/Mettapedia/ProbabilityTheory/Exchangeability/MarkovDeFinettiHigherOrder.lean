@@ -411,7 +411,7 @@ theorem measurable_symbolSequenceOfContextTrajectory :
   · let idx : Fin m := ⟨n, h⟩
     -- 4.31: the `Measurable.comp` term is `(· ⟨n,h⟩) ∘ (· 0)`, defeq to the eta-reduced goal
     -- `fun x => x 0 ⟨n,⋯⟩`; `simp only [Function.comp_def]` bridges the two normal forms.
-    simp only [symbolSequenceOfContextTrajectory, h, idx, ↓reduceDIte]
+    simp only [symbolSequenceOfContextTrajectory, h, ↓reduceDIte]
     exact ((measurable_pi_apply (a := idx) :
       Measurable (fun ctx : Context k m => ctx idx)).comp
         (measurable_pi_apply (a := (0 : ℕ))))

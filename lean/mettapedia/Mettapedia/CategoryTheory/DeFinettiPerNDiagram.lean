@@ -25,10 +25,10 @@ noncomputable section
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open ProbabilityTheory
+open _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.ProbabilityTheory.Exchangeability
 open Mettapedia.ProbabilityTheory.HigherOrderProbability
-open CategoryTheory
+open _root_.Mettapedia.CategoryTheory
 open CategoryTheory.Limits
 
 variable {Y Ω : Type*} [MeasurableSpace Y] [MeasurableSpace Ω]

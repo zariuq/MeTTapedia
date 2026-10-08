@@ -1222,6 +1222,51 @@ theorem scheduled_predicate_uses_native_grade :
     pendingValues (predicate (.symbol "True")) = [(integer 7, 6)] := by
   decide +kernel
 
+/-- The certificate builder unfolds the actual authored predicate and nested
+grade computation. It is not a supplied global normalization assumption. -/
+theorem predicate_source_certificate :
+    Mettapedia.GSLT.Core.FiniteSearchCertificate.Certified
+      (authoredSystem (predicateProgram (.symbol "True")) predicateAnnotation naturalCoefficient)
+      64 (.inl (WorkOccurrence.root (initial (call "id" [integer 7]))), 1) := by
+  have complete : (Mettapedia.GSLT.Core.FiniteSearchCertificate.build
+      (authoredSystem (predicateProgram (.symbol "True")) predicateAnnotation naturalCoefficient)
+      64 (.inl (WorkOccurrence.root (initial (call "id" [integer 7]))), 1)).isSome = true := by
+    decide +kernel
+  unfold Mettapedia.GSLT.Core.FiniteSearchCertificate.Certified
+  cases found : Mettapedia.GSLT.Core.FiniteSearchCertificate.build
+      (authoredSystem (predicateProgram (.symbol "True")) predicateAnnotation naturalCoefficient)
+      64 (.inl (WorkOccurrence.root (initial (call "id" [integer 7]))), 1) with
+  | none => simp [found] at complete
+  | some tree => exact ⟨tree, rfl⟩
+
+/-- A shorter unfolding allowance retains an unresolved computation; it does
+not certify an empty answer bag. -/
+theorem predicate_short_certificate_refused :
+    Mettapedia.GSLT.Core.FiniteSearchCertificate.build
+      (authoredSystem (predicateProgram (.symbol "True")) predicateAnnotation naturalCoefficient)
+      16 (.inl (WorkOccurrence.root (initial (call "id" [integer 7]))), 1) = none := by
+  decide +kernel
+
+/-- Every lawful stateful controller completes this actual native source at
+the independently counted finite work allowance and emits its source bag. -/
+theorem predicate_any_controller_source_bag {Memory : Type}
+    (controller : Controller (AuthoredWork × Nat) (AuthoredResult × Nat) Memory) :
+    let system := authoredSystem (predicateProgram (.symbol "True"))
+      predicateAnnotation naturalCoefficient
+    let roots : List (AuthoredWork × Nat) :=
+      [(Sum.inl (WorkOccurrence.root (initial (call "id" [integer 7]))), 1)]
+    let fuel := Mettapedia.GSLT.Core.BranchingTemporal.foldRanks
+      (Mettapedia.GSLT.Core.FiniteSearchCertificate.finiteWork system 64) roots
+    let result := Snapshot.run system controller fuel (Snapshot.initial controller roots)
+    result.search.frontier = [] ∧
+      Mettapedia.GSLT.Core.BranchingTemporal.eventBag result.search.events =
+        Mettapedia.GSLT.Core.BranchingTemporal.foldValues
+          (Mettapedia.GSLT.Core.FiniteSearchCertificate.finiteBag system 64) roots := by
+  apply Mettapedia.GSLT.Core.FiniteSearchCertificate.observation_at_work
+  intro root member
+  obtain rfl := List.mem_singleton.mp member
+  exact predicate_source_certificate
+
 /-- A declared interpretation reads two and three as the exact confidence
 coefficients one-half and one-quarter. This is an explicit change of algebra,
 not an implicit cast of the ordinary natural-count interpretation. -/
@@ -1313,7 +1358,6 @@ theorem scheduled_shared_choices_and_duplicates :
        (call "Pair" [integer 5, integer 5], 75)] := by
   decide +kernel
 
-set_option maxRecDepth 8192 in
 /-- No runnable instruction remains, but an unknown predicate still owns its
 parked result. Scheduler exhaustion alone is not an answer-shortage proof. -/
 theorem scheduled_unknown_is_not_saturation :
@@ -1323,7 +1367,17 @@ theorem scheduled_unknown_is_not_saturation :
     predicateSavedCoefficients (predicate (.symbol "Maybe")) =
       [some (.value (integer 2))] := by
   refine ⟨?_, ?_, ?_⟩
-  · rfl
+  · have exhausted : (run (predicateProgram (.symbol "Maybe")) predicateAnnotation
+        (call "id" [integer 7]) 64).search.frontier = [] := by
+      decide +kernel
+    dsimp only [run] at exhausted
+    change (Snapshot.run (authoredSystem (predicateProgram (.symbol "Maybe"))
+      predicateAnnotation naturalCoefficient) agenda (64 + 236)
+      (Snapshot.initial agenda
+        [(.inl (WorkOccurrence.root (initial (call "id" [integer 7]))), 1)])).search.frontier = []
+    rw [Snapshot.run_add,
+      Snapshot.run_eq_self_of_frontier_nil _ _ _ exhausted]
+    exact exhausted
   · decide +kernel
   · decide +kernel
 

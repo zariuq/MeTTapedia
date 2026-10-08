@@ -1,0 +1,61 @@
+import Mettapedia.GSLT.Core.ProgrammableSpace
+import Mettapedia.GSLT.Core.ProgrammableSpaceHornBridge
+import Mettapedia.GSLT.Core.ProgrammableSpaceInference
+import Mettapedia.GSLT.Core.ProgrammableSpaceInferenceControls
+import Mettapedia.GSLT.Core.ProgrammableSpaceReachability
+import Mettapedia.GSLT.Core.ProgrammableSpaceStorage
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceInstances
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2Controls
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2Grammar
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2GrammarControls
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2Matching
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2Ownership
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2ReceiptControls
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2Resumable
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2ResumableControls
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2RowMajor
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2RowMajorControls
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2RowMajorResumable
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceMM2RowMajorWrites
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceResumableInstances
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceRewrite
+import Mettapedia.GSLT.LanguageDef.ProgrammableSpaceSyntax
+import Mettapedia.GSLT.Logic.ProgrammableSpaceAtomCoding
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidence
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceBatch
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceConsumers
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceControls
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceDependence
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceFinite
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceInference
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceMaterial
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceMaterialControls
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceOccurrenceControls
+import Mettapedia.GSLT.Logic.ProgrammableSpaceEvidenceReadings
+import Mettapedia.GSLT.Logic.ProgrammableSpaceInferenceMaterial
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMM2EvidenceHorn
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMM2EvidenceMaterial
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMM2GrammarMaterial
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMM2KeyReadings
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMM2OrderedMaterial
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMaterial
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMaterialControls
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMaterialFamilies
+import Mettapedia.GSLT.Logic.ProgrammableSpaceMaterialInstances
+import Mettapedia.GSLT.Logic.ProgrammableSpaceReadings
+
+/-!
+# Programmable spaces and material observations
+
+This entry point joins the generic execution contract, actual authored and
+MM2 source adapters, fair positive inference, exact material readouts, typed
+retained derivations and compatible dependent consumers. The concrete shared
+instance retains a paused matcher across an authored rewrite, then resumes
+and publishes through the original transaction semantics.
+
+`ProgrammableSpacesQualification` checks the complete owned-declaration and
+transitive-axiom inventory. Source-level interpretation and retained native
+fixture replay remain separate evidence. No native set foundation is selected.
+-/
+

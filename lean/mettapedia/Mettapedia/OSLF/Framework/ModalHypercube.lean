@@ -281,8 +281,9 @@ PeTTa programs produce a concrete `LanguageDef` via the artifact bridge:
   (`Mettapedia/lean/algorithms/Algorithms/MeTTa/PeTTa/Lowering.lean:79`)
 - Formal: `pettaSpaceToLangDef : PeTTaSpace → LanguageDef`
   (`Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PeTTa/LPSoundness.lean:71`)
-- Bridge: `frozenConfigToPeTTaSpace` proves behavioral identity
-  (`Mettapedia/Conformance/PeTTaArtifactBridge.lean:42`)
+- The retired artifact bridge (`_archive/petta-retirement-2026-10-05`) showed that
+  `frozenConfigToPeTTaSpace` produces the same rewrite rules; it did not prove
+  behavioral identity.
 
 **Key fact**: Both paths set `equations := []`. PeTTa LanguageDefs have
 no equational constraints, so every modality gets its full naive cube.

@@ -31,23 +31,27 @@ abbrev futureArguments (A : C ⥤ Type u) (X : C) :=
 abbrev argumentProjection (A : C ⥤ Type u) (X : C) : futureArguments A X ⥤ A.Elements :=
   Functor.Elements.precomp (Under.forget X) A
 
+private theorem section_natural (A : C ⥤ Type u) (B : A.Elements ⥤ Type u)
+    {X Y Z : C} (value : DependentSection A B X) (step : Y ⟶ Z) (route : X ⟶ Y)
+    (argument : A.obj Y) (next : A.obj Z) (same : A.map step argument = next) :
+    B.map (CategoryOfElements.homMk ⟨Y, argument⟩ ⟨Z, next⟩ step same)
+      (value.app Y route argument) = value.app Z (route ≫ step) next := by
+  subst next
+  exact value.naturality step route argument
+
 def toFutureSection (A : C ⥤ Type u) (B : A.Elements ⥤ Type u) (X : C)
     (value : DependentSection A B X) : (argumentProjection A X ⋙ B).sections where
   val receipt := value.app receipt.1.right receipt.1.hom receipt.2
   property {first second} arrow := by
-    rcases first with ⟨first, argument⟩
-    rcases second with ⟨second, next⟩
-    rcases arrow with ⟨arrow, same⟩
-    change A.map arrow.right argument = next at same
-    subst next
-    change B.map (argumentMap A arrow.right argument)
-      (value.app first.right first.hom argument) = _
-    rw [value.naturality, Under.w arrow]
+    have natural := section_natural A B value arrow.val.right first.1.hom
+      first.2 second.2 arrow.property
+    rw [Under.w arrow.val] at natural
+    exact natural
 
 def fromFutureSection (A : C ⥤ Type u) (B : A.Elements ⥤ Type u) (X : C)
     (value : (argumentProjection A X ⋙ B).sections) : DependentSection A B X where
-  app Y arrow argument := value.val ⟨Under.mk arrow, argument⟩
-  naturality {Y Z} step arrow argument :=
+  app _ arrow argument := value.val ⟨Under.mk arrow, argument⟩
+  naturality {_ _} step arrow argument :=
     value.property (CategoryOfElements.homMk
       (⟨Under.mk arrow, argument⟩ : futureArguments A X)
       ⟨Under.mk (arrow ≫ step), A.map step argument⟩

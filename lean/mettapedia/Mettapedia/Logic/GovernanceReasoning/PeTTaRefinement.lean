@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Logic.GovernanceReasoning.Core
 import Mettapedia.Logic.GovernanceReasoning.LetStarInterface
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # Governance DTS Rules: PeTTa Refinement Theorems

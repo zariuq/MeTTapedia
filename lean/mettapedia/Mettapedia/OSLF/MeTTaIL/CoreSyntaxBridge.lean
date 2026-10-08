@@ -1,6 +1,18 @@
 import MeTTailCore
 import Mettapedia.OSLF.MeTTaIL.Syntax
 
+/-!
+# Checked conversion to the Algorithms MeTTailCore syntax
+
+The two packages define distinct data types. The abbreviations below give
+short names to their respective types; they do not identify those types.
+Conversion preserves the representable flat fragment, rejects unsupported
+carriers, collection algebras, syntax operators, rule-local bindings and
+locally scoped premises, and erases authored binder display metadata.
+Full language or execution equivalence requires
+separate preservation and reflection proofs.
+-/
+
 namespace Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge
 
 abbrev CoreCollType := MeTTailCore.MeTTaIL.Syntax.CollType
@@ -71,6 +83,10 @@ def specToCoreSyntaxItem : SpecSyntaxItem → Except String CoreSyntaxItem
       throw "Cannot lower syntax metasyntax operators (*zip/*map/*opt/*sep chains) to core SyntaxItem; core only supports flat syntax items."
 
 def specToCoreGrammarRule (g : SpecGrammarRule) : Except String CoreGrammarRule := do
+  match g.algebra? with
+  | none => pure ()
+  | some _ =>
+      throw s!"Cannot lower term `{g.label}` with a collection algebra to core GrammarRule; core has no algebra declaration."
   match g.evalPolicy? with
   | none => pure ()
   | some .rewrite => pure ()
@@ -169,7 +185,17 @@ theorem specToCorePremise_rejects_local_step
         .error "Cannot lower a step premise with local binders to core Premise; the core premise has no local context." := by
   rfl
 
+/-- The flat runtime format cannot retain rule-local dependency and
+occurrence declarations. Rejection prevents a conversion from silently
+changing matching or substitution. -/
+def checkFlatBindings (role name : String) :
+    Option Mettapedia.OSLF.MeTTaIL.Syntax.RuleBindingSpec → Except String Unit
+  | none => pure ()
+  | some _ =>
+      throw s!"Cannot lower {role} `{name}` with rule-local bindings to core; core has no binding declaration."
+
 def specToCoreEquation (eqn : SpecEquation) : Except String CoreEquation := do
+  checkFlatBindings "equation" eqn.name eqn.bindings
   let premises ← eqn.premises.mapM specToCorePremise
   pure
     { name := eqn.name
@@ -179,6 +205,7 @@ def specToCoreEquation (eqn : SpecEquation) : Except String CoreEquation := do
       right := ← specToCorePattern eqn.right }
 
 def specToCoreRewriteRule (r : SpecRewriteRule) : Except String CoreRewriteRule := do
+  checkFlatBindings "rewrite" r.name r.bindings
   let premises ← r.premises.mapM specToCorePremise
   pure
     { name := r.name
@@ -198,5 +225,38 @@ def specToCoreLanguage (lang : SpecLanguageDef) : Except String CoreLanguageDef 
       terms := coreTerms
       equations := coreEquations
       rewrites := coreRewrites }
+
+/-! ## Conversion boundaries -/
+
+/-- An ordinary flat constructor is still represented exactly. -/
+theorem flat_constructor_converts :
+    specToCoreGrammarRule {
+      label := "Leaf", category := "Tree", params := [], syntaxPattern := [] } =
+      .ok { label := "Leaf", category := "Tree", params := [], syntaxPattern := [] } := by
+  rfl
+
+/-- A collection algebra must not disappear during conversion. -/
+theorem collection_algebra_rejected
+    (grammar : SpecGrammarRule)
+    (algebra : Mettapedia.OSLF.MeTTaIL.Syntax.CollectionAlgebra) :
+    specToCoreGrammarRule { grammar with algebra? := some algebra } =
+      .error s!"Cannot lower term `{grammar.label}` with a collection algebra to core GrammarRule; core has no algebra declaration." := by
+  rfl
+
+theorem equation_bindings_rejected
+    (bindings : Mettapedia.OSLF.MeTTaIL.Syntax.RuleBindingSpec) :
+    specToCoreEquation {
+      name := "scoped", typeContext := [], premises := [],
+      left := .fvar "body", right := .fvar "body", bindings := some bindings } =
+      .error "Cannot lower equation `scoped` with rule-local bindings to core; core has no binding declaration." := by
+  rfl
+
+theorem rewrite_bindings_rejected
+    (bindings : Mettapedia.OSLF.MeTTaIL.Syntax.RuleBindingSpec) :
+    specToCoreRewriteRule {
+      name := "scoped", typeContext := [], premises := [],
+      left := .fvar "body", right := .fvar "body", bindings := some bindings } =
+      .error "Cannot lower rewrite `scoped` with rule-local bindings to core; core has no binding declaration." := by
+  rfl
 
 end Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge

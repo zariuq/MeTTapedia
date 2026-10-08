@@ -58,18 +58,18 @@ def writeBindings (environment : Environment Ptr) (site : Site)
   Function.update (Function.update environment site.array (some (.identities array.slots)))
     site.counter (some (.unsigned array.count))
 
-def execute (environment : Environment Ptr) (statement : CStatement) :
-    Option (Environment Ptr) := do
-  let site ← site? statement
-  let .identities slots ← environment site.array | none
-  let .unsigned counter ← environment site.counter | none
-  let .identity value ← environment site.value | none
-  let written ← store (⟨slots, counter⟩ : Array32 (Option Ptr)) value
-  some (writeBindings environment site written)
+def execute (environment : Environment Ptr) : CStatement → Option (Environment Ptr)
+  | .empty => some environment
+  | statement => do
+      let site ← site? statement
+      let .identities slots ← environment site.array | none
+      let .unsigned counter ← environment site.counter | none
+      let .identity value ← environment site.value | none
+      let written ← store (⟨slots, counter⟩ : Array32 (Option Ptr)) value
+      some (writeBindings environment site written)
 
 def sequence (environment : Environment Ptr) : List CStatement → Option (Environment Ptr)
   | [] => some environment
-  | .empty :: rest => sequence environment rest
   | statement :: rest => (execute environment statement).bind fun updated => sequence updated rest
 
 def branch (fields : FieldReader Ptr) (environment : Environment Ptr) :
@@ -80,6 +80,7 @@ def branch (fields : FieldReader Ptr) (environment : Environment Ptr) :
       sequence environment (if selected then whenTrue else whenFalse)
   | _ => none
 
+omit [DecidableEq Ptr] in
 theorem execute_resolved_site (environment : Environment Ptr) (site : Site)
     (array : Array32 Ptr) (value : Ptr)
     (arraySeparated : site.array ≠ site.counter) (rhsSeparated : site.value ≠ site.counter)
@@ -88,15 +89,29 @@ theorem execute_resolved_site (environment : Environment Ptr) (site : Site)
     (valueRead : environment site.value = some (.identity (some value))) :
     execute environment site.statement = (store array value).map
       (fun written => writeBindings environment site (nullable written)) := by
-  rw [execute, authored_site_is_retained site arraySeparated rhsSeparated]
-  simp only [Option.bind_some, arrayRead, counterRead, valueRead]
+  change (do
+    let parsed ← site? site.statement
+    let .identities slots ← environment parsed.array | none
+    let .unsigned counter ← environment parsed.counter | none
+    let .identity value ← environment parsed.value | none
+    let written ← store (⟨slots, counter⟩ : Array32 (Option Ptr)) value
+    some (writeBindings environment parsed written)) = _
+  rw [authored_site_is_retained site arraySeparated rhsSeparated]
+  dsimp only [bind, Option.bind]
+  rw [arrayRead]
+  dsimp only [bind, Option.bind]
+  rw [counterRead]
+  dsimp only [bind, Option.bind]
+  rw [valueRead]
   change (store (nullable array) (some value)).bind _ = _
   rw [nullable_store]
   cases store array value <;> rfl
 
+omit [DecidableEq Ptr] in
 theorem sequence_single (environment : Environment Ptr) (statement : CStatement) :
     sequence environment [statement] = execute environment statement := by
-  simp [sequence]
+  change (execute environment statement).bind some = execute environment statement
+  cases execute environment statement <;> rfl
 
 theorem branch_selects_actual_continuation (fields : FieldReader Ptr)
     (environment : Environment Ptr) (condition : CExpr) (yes no : List CStatement)
@@ -104,9 +119,9 @@ theorem branch_selects_actual_continuation (fields : FieldReader Ptr)
     (read : (expression environment fields condition).bind truth? = some selected) :
     branch fields environment (.branch condition yes no) =
       sequence environment (if selected then yes else no) := by
-  unfold branch
-  have reassociate := Option.bind_assoc
-  change ((expression environment fields condition).bind truth?).bind _ = _
+  change (expression environment fields condition).bind (fun value =>
+    (truth? value).bind (fun choice => sequence environment (if choice then yes else no))) = _
+  rw [← Option.bind_assoc]
   rw [read]
   rfl
 
@@ -130,6 +145,14 @@ theorem actual_old_index_and_increment_observed :
 
 theorem omitted_continuation_does_not_invent_append :
     (sequence environment []).bind observation = some ([some 1], 1) := by decide +kernel
+
+theorem retained_empty_statement_preserves_environment :
+    execute environment .empty = some environment ∧
+      (sequence environment [.empty, site.statement]).bind observation =
+        some ([some 1, some 2], 2) := by
+  constructor
+  · rfl
+  · decide +kernel
 
 theorem extra_store_adds_extra_occurrence :
     (sequence environment [site.statement, site.statement]).bind observation =
@@ -163,6 +186,7 @@ end Controls
 #print axioms branch_selects_actual_continuation
 #print axioms Controls.actual_old_index_and_increment_observed
 #print axioms Controls.omitted_continuation_does_not_invent_append
+#print axioms Controls.retained_empty_statement_preserves_environment
 #print axioms Controls.extra_store_adds_extra_occurrence
 #print axioms Controls.selected_empty_branch_needs_no_store_room
 #print axioms Controls.missing_array_binding_has_no_execution

@@ -58,9 +58,45 @@ describe a language as a GSLT, and OSLF builds its modal/Galois type theory for 
 | `Meredith/` | 11 | the interactive/cost/bisimulation bridges and modal (`Diamond`, `RewriteModality`) layer, with ρ-calculus examples |
 | `Life/` | 2 | an assembly-theory experiment over the GSLT substrate |
 
+## GSLT-ML and language definitions
+
+GSLT-ML is Mettapedia's language for computation within GSLT fibres and explicit
+transport between them. Its `at` and `via` commands come from
+[`Core/IndexedOperational.lean`](Core/IndexedOperational.lean). Their semantics
+distinguishes forward translations, exact covered translations, theory growth,
+world revision, observer changes and physical realizations. A route earns its
+claimed guarantees through the corresponding proofs.
+
+The [`LanguageDef/GSLTIL.lean`](LanguageDef/GSLTIL.lean) family supplies the command
+intermediate representation and its authored executor. MeTTaIL is the shared
+format for declaring this command language, guest languages and their rules.
+The indexed command theory and its observation/transport contracts belong to
+this development; matching the shape of a Rust macro is a separate matter.
+
+[`LanguageDef/GSLTILFibreExecution.lean`](LanguageDef/GSLTILFibreExecution.lean)
+connects an equation-free LangDef with nonrecursive premises to actual `at`
+execution. Query qualification is derived from the existing matcher and premise
+executor. The resulting covered translation preserves source paths and reflects
+arbitrary command paths to their actual source endpoints. It does not yet cover
+recursive step premises or generated equation saturation. Relation environments
+remain explicit, so native implementations of those queries need independent
+qualification.
+
+For example, a conditional rule can return duplicate successors through the
+same command executor. Conversely, an equation can expose a redex that root
+matching misses; omitting that equation closure would invent a false normal
+form. A validated equation-free language with a recursive step premise also
+has a step that the root query misses. Both controls are kernel-checked in
+[`LanguageDef/GSLTILSemanticContracts.lean`](LanguageDef/GSLTILSemanticContracts.lean).
+These are separate obligations from structural maps between LangDefs.
+[`LanguageDef/GSLTILStructuralComparison.lean`](LanguageDef/GSLTILStructuralComparison.lean)
+proves that a declaration-preserving map between validated languages can fail
+to preserve bisimilarity when the target adds behavior. Behavioral transport
+therefore needs the coverage conditions used by the indexed operational theory.
+
 ## Relational and open-system dynamics
 
-The current GSLT-IL integration treats proof-relevant relations as the primary
+The current GSLT-ML integration treats proof-relevant relations as the primary
 transport between language-indexed state fibres. A function is obtained only
 when totality and proof-relevant endpoint determinism establish representability.
 This is developed in `Core/LooseRelationEquipment.lean` and used concretely by:

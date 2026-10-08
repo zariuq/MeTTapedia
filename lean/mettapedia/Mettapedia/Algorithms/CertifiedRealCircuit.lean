@@ -118,6 +118,52 @@ noncomputable def denote : Circuit → ℝ
   | .multiply left right => denote left * denote right
   | .log input => Real.log (input.1 : ℝ)
 
+/-- The circuit operations satisfy real-algebra laws after interpretation. -/
+theorem denote_add_associative (first second third : Circuit) :
+    denote (.add (.add first second) third) =
+      denote (.add first (.add second third)) := add_assoc _ _ _
+
+theorem denote_add_commutative (left right : Circuit) :
+    denote (.add left right) = denote (.add right left) := add_comm _ _
+
+theorem denote_add_zero (value : Circuit) :
+    denote (.add (.rational 0) value) = denote value ∧
+      denote (.add value (.rational 0)) = denote value := by
+  simp [denote]
+
+theorem denote_multiply_associative (first second third : Circuit) :
+    denote (.multiply (.multiply first second) third) =
+      denote (.multiply first (.multiply second third)) := mul_assoc _ _ _
+
+theorem denote_multiply_commutative (left right : Circuit) :
+    denote (.multiply left right) = denote (.multiply right left) := mul_comm _ _
+
+theorem denote_multiply_one (value : Circuit) :
+    denote (.multiply (.rational 1) value) = denote value ∧
+      denote (.multiply value (.rational 1)) = denote value := by
+  simp [denote]
+
+theorem denote_multiply_zero (value : Circuit) :
+    denote (.multiply (.rational 0) value) = 0 ∧
+      denote (.multiply value (.rational 0)) = 0 := by
+  simp [denote]
+
+theorem denote_multiply_distributes_left (first second third : Circuit) :
+    denote (.multiply first (.add second third)) =
+      denote (.add (.multiply first second) (.multiply first third)) := mul_add _ _ _
+
+theorem denote_multiply_distributes_right (first second third : Circuit) :
+    denote (.multiply (.add first second) third) =
+      denote (.add (.multiply first third) (.multiply second third)) := add_mul _ _ _
+
+/-- Equal real meanings do not identify different circuit codes. -/
+theorem rational_sum_code_is_distinct :
+    Circuit.add (.rational 0) (.rational 1) ≠ .rational 1 ∧
+      denote (.add (.rational 0) (.rational 1)) = denote (.rational 1) := by
+  constructor
+  · decide +kernel
+  · simp [denote]
+
 def enclose (terms : Nat) : Circuit → Interval
   | .rational value => Interval.point value
   | .add left right => Interval.add (enclose terms left) (enclose terms right)

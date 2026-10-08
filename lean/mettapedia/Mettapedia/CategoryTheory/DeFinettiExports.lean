@@ -43,7 +43,7 @@ set_option autoImplicit false
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open ProbabilityTheory
+open _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.ProbabilityTheory.HigherOrderProbability
 open scoped BigOperators ENNReal
 
@@ -997,7 +997,7 @@ theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
         (CategoryTheory.Limits.IsLimit
           ((iidSequenceKleisliConeSkeleton
             (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).toCone)) := by
-  letI : BorelSpace (FiniteMeasure LatentTheta) := inferInstance
+  let : BorelSpace (FiniteMeasure LatentTheta) := inferInstance
   exact
     deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel
       (Y := Y) (Ω := Ω) (X := X)
@@ -1106,7 +1106,7 @@ theorem deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance
         (CategoryTheory.Limits.IsLimit
           ((iidSequenceKleisliConeSkeleton
             (iidSequenceKleisliHomTheta_commutes_of_globalFinitaryInvariance hglobal)).toCone)) := by
-  letI : BorelSpace (FiniteMeasure LatentTheta) := inferInstance
+  let : BorelSpace (FiniteMeasure LatentTheta) := inferInstance
   exact
     deFinettiExport_markovCore_to_kleisliIsLimit_of_globalFinitaryInvariance_and_defaultAllSourcesKernel_of_finiteMeasureBorel
       (Y := Y) (Ω := Ω) (X := X)
@@ -1426,7 +1426,7 @@ theorem deFinettiExport_restrictedSolomonoff_totalOutput_implies_nupln_master_ch
     simpa [μ, Mettapedia.UniversalAI.SolomonoffExchangeable.RestrictedSolomonoffPrior.μ] using
       (Mettapedia.UniversalAI.SolomonoffMeasure.isProbabilityMeasure_totalOutputProgramMeasure_of_root_one
         (U := M.U) (programs := M.programs) (htot := htot) hroot)
-  letI : IsProbabilityMeasure μ := hμprob
+  let : IsProbabilityMeasure μ := hμprob
   have hNoLeak :
       Mettapedia.UniversalAI.SolomonoffMeasure.NoLeakageAtCylindersLaw (U := M.U) (programs := M.programs) μ := by
     simpa [μ] using

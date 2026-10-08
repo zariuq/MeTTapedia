@@ -3180,14 +3180,14 @@ lemma positiveWeightedTargetRootedArborescenceCount_eq_one_of_forall_nonroot_out
     (hzero : ∀ u : NonrootVertex t, outDegG (k := k) G u.1 = 0) :
     positiveWeightedTargetRootedArborescenceCount (k := k) G t = 1 := by
   classical
-  letI : IsEmpty (PositiveNonrootVertex (k := k) G t) :=
+  let : IsEmpty (PositiveNonrootVertex (k := k) G t) :=
     isEmpty_positiveNonrootVertex_of_forall_nonroot_outdeg_zero
       (k := k) G t hzero
   let p0 : PositiveTargetParentAssignment (k := k) G t := fun x => (isEmptyElim x)
   have hp0 : IsPositiveTargetRootedArborescence (k := k) G t p0 := by
     intro v
     exact (isEmptyElim v)
-  haveI :
+  have :
       Subsingleton
         {p : PositiveTargetParentAssignment (k := k) G t //
           IsPositiveTargetRootedArborescence (k := k) G t p} := by
@@ -3868,8 +3868,7 @@ lemma isPositiveTokenRootedArborescence_iff_of_nonroot_rows_eq
       IsPositiveTokenRootedArborescence (k := k) G' t
         ((positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq
           (k := k) hrow) A) := by
-  simp only [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
-    positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
+  simp only [IsPositiveTokenRootedArborescence,     positiveTokenParentAssignmentEquiv_of_nonroot_rows_eq,
     positiveOutTokEquiv_of_nonroot_rows_eq]
   exact isPositiveTargetRootedArborescence_iff_of_nonroot_rows_eq
     (k := k) hrow (positiveTokenParentTargets (k := k) G t A)
@@ -3986,10 +3985,8 @@ lemma isPositiveTokenRootedArborescence_iff_isTokenRootedArborescence_of_forall_
         ((positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos
           (k := k) G t hpos).symm A) ↔
       IsTokenRootedArborescence (k := k) G t A := by
-  simp only [IsPositiveTokenRootedArborescence, positiveTokenParentTargets,
-    IsTokenRootedArborescence, tokenParentTargets,
-    positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos,
-    Equiv.symm_apply_apply, Equiv.coe_fn_symm_mk]
+  simp only [IsPositiveTokenRootedArborescence,     IsTokenRootedArborescence,     positiveTokenParentAssignmentEquivTokenParentAssignment_of_forall_pos,
+    ]
   exact isPositiveTargetRootedArborescence_iff_isTargetRootedArborescence_of_forall_pos
     (k := k) G t hpos (tokenParentTargets (k := k) G t A)
 
@@ -5185,7 +5182,7 @@ private lemma tendsto_descFactorial_div_pow_of_ratio
         (fun n => ∏ i ∈ Finset.range r, (((u n - i : ℕ) : ℝ) / (v n : ℝ)))
         Filter.atTop
         (nhds (∏ i ∈ Finset.range r, θ)) := by
-    refine tendsto_finset_prod (s := Finset.range r) ?_
+    refine tendsto_finsetProd (s := Finset.range r) ?_
     intro i hi
     exact tendsto_nat_sub_cast_div_of_div (c := i) hdiv hv
   have htarget : (∏ i ∈ Finset.range r, θ) = θ ^ r := by
@@ -5221,7 +5218,7 @@ lemma tendsto_prefixHypergeometricFactorReal
       (nhds (prefixThetaPowerProduct (k := k) a ys Θ)) := by
   classical
   unfold prefixHypergeometricFactorReal prefixThetaPowerProduct
-  refine tendsto_finset_prod (s := Finset.univ) ?_
+  refine tendsto_finsetProd (s := Finset.univ) ?_
   intro i hi
   have hedge :
       Filter.Tendsto
@@ -5230,7 +5227,7 @@ lemma tendsto_prefixHypergeometricFactorReal
         (nhds
           (∏ j : Fin k,
             (Θ i j) ^ ((prefixWordState (k := k) a ys).counts.counts i j))) := by
-    refine tendsto_finset_prod (s := Finset.univ) ?_
+    refine tendsto_finsetProd (s := Finset.univ) ?_
     intro j hj
     let c : ℕ := (prefixWordState (k := k) a ys).counts.counts i j
     by_cases hc : c = 0
@@ -5969,7 +5966,6 @@ lemma measurable_iidProduct_of_measurable_eval
     measurable_measure_pi
       (ν := fun ω => (ν ω : Measure (Fin k)))
       (fun ω => by
-        change IsProbabilityMeasure ((ν ω : ProbabilityMeasure (Fin k)) : Measure (Fin k))
         infer_instance)
       hν_meas
   have hEq :
@@ -6092,8 +6088,8 @@ theorem rowProcessLaw_eq_bind_directingRowKernel_iidProduct
           (directingRowKernel (k := k) P i r : Measure (Fin k))) := by
   classical
   let ρ : Measure (ℕ → Fin k) := rowProcessLaw (k := k) P i
-  letI : Nonempty (Fin k) := ⟨i⟩
-  letI : IsProbabilityMeasure ρ :=
+  let : Nonempty (Fin k) := ⟨i⟩
+  let : IsProbabilityMeasure ρ :=
     Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
   let X : ℕ → (ℕ → Fin k) → Fin k := fun n r => r n
@@ -6127,7 +6123,7 @@ theorem rowProcessLaw_eq_bind_directingRowKernel_iidProduct
     fun r =>
       Exchangeability.Probability.iidProduct
         (directingRowKernel (k := k) P i r : Measure (Fin k))
-  haveI : IsProbabilityMeasure (ρ.bind κ) :=
+  have : IsProbabilityMeasure (ρ.bind κ) :=
     isProbabilityMeasure_bind (m := ρ) (f := κ) hiid_meas.aemeasurable
       (Filter.Eventually.of_forall hiid_prob)
   apply Exchangeability.measure_eq_of_fin_marginals_eq_prob (α := Fin k)
@@ -6191,8 +6187,8 @@ lemma measurable_iidProduct_directingRowKernel
         Exchangeability.Probability.iidProduct
           (directingRowKernel (k := k) P i r : Measure (Fin k))) := by
   let ρ : Measure (ℕ → Fin k) := rowProcessLaw (k := k) P i
-  letI : Nonempty (Fin k) := ⟨i⟩
-  letI : IsProbabilityMeasure ρ :=
+  let : Nonempty (Fin k) := ⟨i⟩
+  let : IsProbabilityMeasure ρ :=
     Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
   have hdir_eval_meas :
@@ -6270,8 +6266,8 @@ theorem ae_tendsto_rowProcessEmpiricalFreq_to_directingRowKernel
         (nhds (((directingRowKernel (k := k) P i r) ({j} : Set (Fin k))).toReal)) := by
   classical
   let ρ : Measure (ℕ → Fin k) := rowProcessLaw (k := k) P i
-  letI : Nonempty (Fin k) := ⟨i⟩
-  letI : IsProbabilityMeasure ρ :=
+  let : Nonempty (Fin k) := ⟨i⟩
+  let : IsProbabilityMeasure ρ :=
     Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
   let X : ℕ → (ℕ → Fin k) → Fin k := fun n r => r n
@@ -6341,7 +6337,7 @@ theorem ae_tendsto_rowProcessEmpiricalFreq_to_directingRowKernel
     have hs : ∀ n : ℕ, n ∈ s ↔ p n := by
       intro n
       simp [s, p]
-    letI : Fintype {n : ℕ // p n} := Fintype.subtype s hs
+    let : Fintype {n : ℕ // p n} := Fintype.subtype s hs
     have hcard :
         Fintype.card {n : Fin m // r n = j} = Nat.count (fun n => r n = j) m := by
       calc
@@ -6376,7 +6372,7 @@ theorem ae_tendsto_rowProcessEmpiricalFreq_to_directingRowKernel
   have hcesaro_int : ∀ m : ℕ, Integrable (cesaro m) ρ := by
     intro m
     exact
-      (integrable_finset_sum (Finset.univ : Finset (Fin m))
+      (integrable_finsetSum (Finset.univ : Finset (Fin m))
         (f := fun n r => fb (Y n r))
         (fun n _ => hfbY_int n)).const_mul _
   have hlimitMeas_cesaro :
@@ -8031,7 +8027,7 @@ lemma tendsto_prefixTokenDeletionLowerFactorReal_of_edgeGrowth
           (fun n => Finset.sum (Finset.univ : Finset (Fin k)) (fun t => |f t n - 1|))
           Filter.atTop
             (nhds (Finset.sum (Finset.univ : Finset (Fin k)) (fun _ => (0 : ℝ)))) := by
-      refine tendsto_finset_sum
+      refine tendsto_finsetSum
         (s := (Finset.univ : Finset (Fin k)))
         (f := fun t n => |f t n - 1|)
         (a := fun _ => (0 : ℝ)) ?_
@@ -8923,7 +8919,7 @@ lemma lintegral_prefixRatioApproxENN_eq_prefix
             (prefixRatioFnReal (k := k) a ys (ys.length + r)
               (Nat.le_add_right ys.length r) eN) *
           P (pathPrefixStateEvent (k := k) (ys.length + r) eN) := by
-            rw [MeasureTheory.lintegral_finset_sum]
+            rw [MeasureTheory.lintegral_finsetSum]
             · refine Finset.sum_congr rfl ?_
               intro eN heN
               rw [lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
@@ -9622,12 +9618,12 @@ theorem startRestrictedRowLaw_factorizes_directingRowKernel_of_exchangeable
       exact congrArg (c⁻¹ • ·) (hExch_ρa n' σ')
     have hContr_ρa_norm : Exchangeability.Contractable ρa_norm (fun n (r : ℕ → Fin k) => r n) :=
       Exchangeability.contractable_of_exchangeable hExch_ρa_norm (fun n => measurable_pi_apply n)
-    haveI : Nonempty (Fin k) := ⟨i⟩
+    have : Nonempty (Fin k) := ⟨i⟩
     have hX_meas : ∀ n, Measurable (fun r : ℕ → Fin k => r n) := fun n => measurable_pi_apply n
     have hprod_ρa_norm : Measure.map (fun r => fun j => r (sel j)) ρa_norm =
         ρa_norm.bind (fun r => Measure.pi (fun _ : Fin m =>
           directingMeasure (μ := ρa_norm) (fun n (r : ℕ → Fin k) => r n) hX_meas r)) := by
-      letI := hρa_norm_prob
+      let := hρa_norm_prob
       exact finite_product_formula_with_directing (X := fun n (r : ℕ → Fin k) => r n)
         hContr_ρa_norm hX_meas m sel hsel
     have hρa_norm_le : ρa_norm ≤ c⁻¹ • ρ := by
@@ -9635,7 +9631,7 @@ theorem startRestrictedRowLaw_factorizes_directingRowKernel_of_exchangeable
       simp only [ρa_norm, Measure.smul_apply, smul_eq_mul]
       exact mul_le_mul_right (hρa_le T) _
     have hc_inv_ne_top : c⁻¹ ≠ ⊤ := ENNReal.inv_ne_top.mpr hc
-    haveI hρ_prob : IsProbabilityMeasure ρ :=
+    have hρ_prob : IsProbabilityMeasure ρ :=
       Measure.isProbabilityMeasure_map
         ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
     have hdir_eq : ∀ b : Fin k,
@@ -9643,7 +9639,7 @@ theorem startRestrictedRowLaw_factorizes_directingRowKernel_of_exchangeable
           =ᵐ[ρa_norm]
         (fun r => (directingMeasure (μ := ρa_norm) (fun n (r : ℕ → Fin k) => r n) hX_meas r {b}).toReal) := by
       intro b
-      letI := hρa_norm_prob
+      let := hρa_norm_prob
       exact
         Mettapedia.ProbabilityTheory.Exchangeability.DirectingMeasureL1Transfer.directingMeasure_singleton_ae_eq_of_smul_le
           (X := fun n (r : ℕ → Fin k) => r n) hX_meas
@@ -9666,10 +9662,10 @@ theorem startRestrictedRowLaw_factorizes_directingRowKernel_of_exchangeable
         apply Measure.ext_of_singleton
         intro b
         have hrb := hr b
-        haveI : IsProbabilityMeasure
+        have : IsProbabilityMeasure
             (@directingMeasure _ _ _ ρ hρ_prob _ _ _ _ (fun n (r : ℕ → Fin k) => r n) hX_meas r) :=
           directingMeasure_isProb (fun n (r : ℕ → Fin k) => r n) hX_meas r
-        haveI : IsProbabilityMeasure
+        have : IsProbabilityMeasure
             (@directingMeasure _ _ _ ρa_norm hρa_norm_prob _ _ _ _ (fun n (r : ℕ → Fin k) => r n) hX_meas r) :=
           directingMeasure_isProb (fun n (r : ℕ → Fin k) => r n) hX_meas r
         have h1 :
@@ -9778,8 +9774,8 @@ theorem rowProcessLaw_restrictClass_factorizes_directingRowKernel_of_startRestri
   have hproj_meas : Measurable proj := by
     change Measurable (fun r : ℕ → Fin k => fun j : Fin m => r (sel j))
     exact measurable_pi_lambda _ (fun j => measurable_pi_apply (sel j))
-  haveI : Nonempty (Fin k) := ⟨i⟩
-  haveI : IsProbabilityMeasure (rowProcessLaw (k := k) P i) :=
+  have : Nonempty (Fin k) := ⟨i⟩
+  have : IsProbabilityMeasure (rowProcessLaw (k := k) P i) :=
     Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
   have hdir_eval_meas :
@@ -10621,7 +10617,7 @@ lemma forall_mem_prefixUsedTransitionSet_pos_or_exists_zero_rowKernelVisitProbRe
       ∀ p ∈ prefixUsedTransitionSet (k := k) a ys,
         0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω
   · exact Or.inl hpos
-  · push_neg at hpos
+  · push Not at hpos
     rcases hpos with ⟨p, hp, hnotpos⟩
     have hnonneg :
         0 ≤ rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω := by
@@ -13655,7 +13651,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioAp
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   intro μ hμ hExtStrong
   rcases hExtStrong with ⟨P, hP, hExt, hStrong⟩
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   rcases hLocal μ hμ P hP hExt hStrong with
     ⟨rowKernel, hEval, hstart, hPi, hlim⟩
   have hbuilt :

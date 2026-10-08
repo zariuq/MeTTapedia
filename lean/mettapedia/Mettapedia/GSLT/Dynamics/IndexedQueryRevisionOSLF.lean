@@ -17,7 +17,7 @@ into the proposition-valued step relation.
 
 namespace Mettapedia.GSLT.Dynamics.IndexedQueryRevision
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis

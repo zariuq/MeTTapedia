@@ -71,8 +71,10 @@ private def declarationOrigin (env : Environment) (name : Name) : Name :=
   | none => env.mainModule
 
 /-- Record a runtime-recursion naming pair only when the corresponding safe
-definition has the same recorded type, levels and owner. This does not verify
-the runtime implementation or prove that it realizes the mathematical body. -/
+definition or opaque body has the same recorded type, levels and owner. Lean
+may generate an opaque mathematical printer and a partial runtime helper for
+recursive `Repr` instances. The pair does not verify the runtime implementation
+or prove that it realizes the checked body. -/
 def runtimeCounterpart? (env : Environment) (name : Name) : Option Name := do
   let info ← env.checked.get.find? name
   if !info.isUnsafe && !info.isPartial then none else do
@@ -80,7 +82,7 @@ def runtimeCounterpart? (env : Environment) (name : Name) : Option Name := do
     let parentInfo ← env.checked.get.find? parent
     if parentInfo.isUnsafe || parentInfo.isPartial then none else do
       match parentInfo with
-      | .defnInfo _ =>
+      | .defnInfo _ | .opaqueInfo _ =>
           if info.type == parentInfo.type && info.levelParams == parentInfo.levelParams &&
               declarationOrigin env name == declarationOrigin env parent then some parent
           else none

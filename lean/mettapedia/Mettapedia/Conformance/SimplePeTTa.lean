@@ -4,11 +4,15 @@ import Algorithms.MeTTa.Simple.Session
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
+import Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 namespace Mettapedia.Conformance.SimplePeTTa
 
 open Algorithms.MeTTa.PeTTa
 open Algorithms.MeTTa.Simple
+open Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge
+  (specToCoreCollType specToCoreTypeExpr specToCoreTermParam)
 
 /-! ## Core/Spec translation layer -/
 
@@ -60,32 +64,16 @@ private def coreToSpecCollType : CCollType → SCollType
   | .hashBag => .hashBag
   | .hashSet => .hashSet
 
-private def specToCoreCollType : SCollType → CCollType
-  | .vec => .vec
-  | .hashBag => .hashBag
-  | .hashSet => .hashSet
-
 private def coreToSpecTypeExpr : CTypeExpr → STypeExpr
   | .base s => .base s
   | .arrow a b => .arrow (coreToSpecTypeExpr a) (coreToSpecTypeExpr b)
   | .multiBinder t => .multiBinder (coreToSpecTypeExpr t)
   | .collection ct t => .collection (coreToSpecCollType ct) (coreToSpecTypeExpr t)
 
-private def specToCoreTypeExpr : STypeExpr → CTypeExpr
-  | .base s => .base s
-  | .arrow a b => .arrow (specToCoreTypeExpr a) (specToCoreTypeExpr b)
-  | .multiBinder t => .multiBinder (specToCoreTypeExpr t)
-  | .collection ct t => .collection (specToCoreCollType ct) (specToCoreTypeExpr t)
-
 private def coreToSpecTermParam : CTermParam → STermParam
   | .simple x t => .simple x (coreToSpecTypeExpr t)
   | .abstraction x t => .abstractionNamed none x (coreToSpecTypeExpr t)
   | .multiAbstraction x t => .multiAbstractionNamed [] x (coreToSpecTypeExpr t)
-
-private def specToCoreTermParam : STermParam → CTermParam
-  | .simple x t => .simple x (specToCoreTypeExpr t)
-  | .abstractionNamed _ x t => .abstraction x (specToCoreTypeExpr t)
-  | .multiAbstractionNamed _ x t => .multiAbstraction x (specToCoreTypeExpr t)
 
 private def coreToSpecSyntaxItem : CSyntaxItem → SSyntaxItem
   | .terminal s => .terminal s
@@ -108,6 +96,14 @@ private def coreToSpecGrammarRule (g : CGrammarRule) : SGrammarRule :=
     syntaxPattern := g.syntaxPattern.map coreToSpecSyntaxItem }
 
 private def specToCoreGrammarRule (g : SGrammarRule) : Except String CGrammarRule := do
+  match g.algebra? with
+  | none => pure ()
+  | some _ =>
+      throw "Cannot lower a collection-algebra declaration to SimplePeTTa core."
+  match g.evalPolicy? with
+  | none | some .rewrite => pure ()
+  | some .fold | some .oracle =>
+      throw "Cannot lower a fold or oracle evaluation policy to SimplePeTTa core."
   let syntaxPattern ← g.syntaxPattern.mapM specToCoreSyntaxItem
   pure
     { label := g.label
@@ -172,6 +168,8 @@ private def coreToSpecEquation (eqn : CEquation) : SEquation :=
     right := coreToSpecPattern eqn.right }
 
 private def specToCoreEquation (eqn : SEquation) : Except String CEquation := do
+  Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge.checkFlatBindings
+    "equation" eqn.name eqn.bindings
   let premises ← eqn.premises.mapM specToCorePremise
   pure
     { name := eqn.name
@@ -188,6 +186,8 @@ private def coreToSpecRewriteRule (r : CRewriteRule) : SRewriteRule :=
     right := coreToSpecPattern r.right }
 
 private def specToCoreRewriteRule (r : SRewriteRule) : Except String CRewriteRule := do
+  Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge.checkFlatBindings
+    "rewrite" r.name r.bindings
   let premises ← r.premises.mapM specToCorePremise
   pure
     { name := r.name

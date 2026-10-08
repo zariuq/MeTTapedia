@@ -1,5 +1,6 @@
 import Mettapedia.Machines.ResourceOwnership
 import Mettapedia.Algebra.OccurrenceIdentity
+import Mettapedia.Machines.Cursor.TailSummary
 
 /-!
 # Publication and cancellation of owned answer cursors
@@ -1140,6 +1141,657 @@ theorem accepted_handle_without_roots_loses_payload :
     simp only [walk, absent, Option.bind_none]
 
 end Controls
+
+/-! ## Issuing, returning and requeueing authenticated occurrences -/
+
+open Mettapedia.Algebra.OccurrenceIdentity
+open Mettapedia.Machines.Cursor.TailSummary
+
+/-- Authentication charges the actual visited prefix even when no release
+occurs. Success retires exactly that physical registry row and clears only
+its issued authority; payload, provider, occurrence and parent are retained. -/
+def releaseIssued (registry : Registry Address Provider) (handle : Handle Address Provider) :
+    Option (Registry Address Provider × Handle Address Provider) × Nat :=
+  let found := lookup registry handle
+  let reply := do
+    let index ← found.1
+    let pair ← extractByLast index registry.rows
+    some ({ registry with rows := pair.2 },
+      { handle with store := 0, row.token := 0 })
+  (reply, found.2)
+
+theorem releaseIssued_account (registry : Registry Address Provider)
+    (handle : Handle Address Provider) :
+    (releaseIssued registry handle).2 = (lookup registry handle).2 := rfl
+
+theorem releaseIssued_refused (registry : Registry Address Provider)
+    (handle : Handle Address Provider) (refused : (lookup registry handle).1 = none) :
+    releaseIssued registry handle = (none, (lookup registry handle).2) := by
+  simp only [releaseIssued, refused, bind, Option.bind_none]
+
+theorem releaseIssued_selected (registry : Registry Address Provider)
+    (handle : Handle Address Provider) (index : Nat)
+    (accepted : (lookup registry handle).1 = some index) :
+    ∃ remaining,
+      releaseIssued registry handle =
+        (some ({ registry with rows := remaining },
+          { handle with store := 0, row.token := 0 }), index + 1) ∧
+      (handle.row :: remaining).Perm registry.rows := by
+  obtain ⟨atIndex, cost⟩ := lookup_selected registry handle index accepted
+  have picked := extractByLast_selected index registry.rows
+  rw [atIndex] at picked
+  obtain ⟨pair, extraction, same⟩ := Option.map_eq_some_iff.mp picked
+  have selected : pair.1 = handle.row := same
+  refine ⟨pair.2, ?_, ?_⟩
+  · simp only [releaseIssued, accepted, extraction, cost, bind, Option.bind_some]
+  · simpa only [← selected] using
+      extractByLast_permutation index registry.rows pair.1 pair.2 extraction
+
+theorem releaseIssued_keeps_other (registry : Registry Address Provider)
+    (handle survivor : Handle Address Provider)
+    (next : Registry Address Provider) (cleared : Handle Address Provider)
+    (visits : Nat)
+    (released : releaseIssued registry handle = (some (next, cleared), visits))
+    (different : survivor.row ≠ handle.row) :
+    Authenticated next survivor ↔ Authenticated registry survivor := by
+  cases found : (lookup registry handle).1 with
+  | none =>
+      have failed := releaseIssued_refused registry handle found
+      rw [failed] at released
+      cases (congrArg (fun result => result.1) released)
+  | some index =>
+      obtain ⟨remaining, exactRelease, retained⟩ := releaseIssued_selected registry handle index found
+      rw [exactRelease] at released
+      have equality := Option.some.inj (congrArg Prod.fst released)
+      have registryEqual := congrArg Prod.fst equality
+      dsimp only at registryEqual
+      have sameMembers : survivor.row ∈ remaining ↔ survivor.row ∈ registry.rows := by
+        simpa only [List.mem_cons, different, false_or] using
+          (retained.mem_iff (a := survivor.row))
+      rw [← registryEqual]
+      simp only [Authenticated, sameMembers]
+
+theorem releaseIssued_removes_unique (registry : Registry Address Provider)
+    (handle : Handle Address Provider) (next : Registry Address Provider)
+    (cleared : Handle Address Provider) (visits : Nat)
+    (released : releaseIssued registry handle = (some (next, cleared), visits))
+    (unique : registry.rows.Nodup) :
+    handle.row ∉ next.rows ∧ next.rows.Nodup ∧ next.rows.length + 1 = registry.rows.length := by
+  cases found : (lookup registry handle).1 with
+  | none =>
+      rw [releaseIssued_refused registry handle found] at released
+      cases (congrArg (fun result => result.1) released)
+  | some index =>
+      obtain ⟨remaining, exactRelease, retained⟩ := releaseIssued_selected registry handle index found
+      rw [exactRelease] at released
+      have equality := Option.some.inj (congrArg Prod.fst released)
+      have registryEqual := congrArg Prod.fst equality
+      dsimp only at registryEqual
+      rw [← registryEqual]
+      have nodup := retained.nodup_iff.mpr unique
+      obtain ⟨removed, survivors⟩ := List.nodup_cons.mp nodup
+      exact ⟨removed, survivors, retained.length_eq⟩
+
+
+
+/-- Relocation commutes with physical-row release, including its visited-prefix
+account and the complete surviving registry order. Only the issued handle is
+rekeyed; clearing its authority remains clearing, rather than a new issue. -/
+theorem releaseIssued_relocate {B : Type} [DecidableEq B]
+    (address : Address → B) (injective : Function.Injective address)
+    (registry : Registry Address Provider) (handle : Handle Address Provider)
+    (fresh : Nat) (owned : handle.store = registry.identity)
+    (sourceLive : registry.identity ≠ 0) (destinationLive : fresh ≠ 0) :
+    releaseIssued (registry.relocate fresh address) (handle.relocate fresh address) =
+      ((releaseIssued registry handle).1.map (fun pair =>
+        (pair.1.relocate fresh address, pair.2.relocate 0 address)),
+        (releaseIssued registry handle).2) := by
+  unfold releaseIssued
+  rw [lookup_relocate address injective registry handle fresh owned sourceLive destinationLive]
+  cases found : (lookup registry handle).1 with
+  | none => simp only [found, bind, Option.bind_none, Option.map_none]
+  | some index =>
+      simp only [found, Registry.relocate, bind, Option.bind_some, extractByLast_map]
+      cases extractByLast index registry.rows with
+      | none => rfl
+      | some pair => rfl
+
+
+namespace EditControls
+
+def third : Row Nat Nat := ⟨9, 43, 0, 5⟩
+def source : Registry Nat Nat := ⟨17, [Controls.first.row, Controls.second.row, third]⟩
+def afterRelease : Registry Nat Nat := ⟨17, [third, Controls.second.row]⟩
+
+theorem swapping_changes_later_lookup_cost :
+    releaseIssued source Controls.first =
+      (some (afterRelease, { Controls.first with store := 0, row.token := 0 }), 1) ∧
+      lookup source ⟨17, 6, third⟩ = (some 2, 3) ∧
+      lookup afterRelease ⟨17, 6, third⟩ = (some 0, 1) := by decide
+
+theorem refused_authentication_retains_visited_work :
+    releaseIssued source { Controls.first with row.provider := 999 } = (none, 3) ∧
+      releaseIssued source { Controls.first with store := 999 } = (none, 0) := by decide
+
+theorem release_preserves_payload_parent_and_provider :
+    (releaseIssued source Controls.first).1.map (fun pair =>
+      (pair.2.parent, pair.2.row.payload, pair.2.row.provider, pair.2.row.occurrence)) =
+        some (6, 0, 5, 7) ∧
+      (releaseIssued source { Controls.first with parent := 999 }).1.map (fun pair => pair.2.parent) =
+        some 999 := by decide
+
+end EditControls
+
+namespace TransportEditControls
+
+def moved : Registry Nat Nat := EditControls.source.relocate 70 (fun n => n + 10)
+def movedFirst : Handle Nat Nat := Controls.first.relocate 70 (fun n => n + 10)
+
+theorem release_keeps_aliases_and_scan_positions :
+    releaseIssued moved movedFirst =
+      (some (EditControls.afterRelease.relocate 70 (fun n => n + 10),
+        ({ Controls.first with store := 0, row.token := 0 }).relocate 0 (fun n => n + 10)), 1) ∧
+      lookup (EditControls.afterRelease.relocate 70 (fun n => n + 10))
+        ((⟨17, 6, EditControls.third⟩ : Handle Nat Nat).relocate 70 (fun n => n + 10)) =
+        (some 0, 1) := by decide
+
+theorem stale_handle_is_not_rekeyed_by_release :
+    releaseIssued moved Controls.first = (none, 0) := by decide
+
+end TransportEditControls
+
+
+/-- Separate issued occurrences and tokens; payloads may be shared. Positive
+identity fields are namespace authority, not a pointer-lifetime proof. -/
+def Registry.Valid (registry : Registry Address Provider) : Prop :=
+  registry.identity ≠ 0 ∧
+    (registry.rows.map Row.occurrence).Nodup ∧
+    (registry.rows.map Row.token).Nodup ∧
+    ∀ row ∈ registry.rows, row.occurrence ≠ 0 ∧ row.token ≠ 0
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem Registry.Valid.rows_unique (registry : Registry Address Provider)
+    (valid : registry.Valid) : registry.rows.Nodup :=
+  List.Nodup.of_map Row.occurrence valid.2.1
+
+theorem releaseIssued_preserves_validity (registry : Registry Address Provider)
+    (handle : Handle Address Provider) (next : Registry Address Provider)
+    (cleared : Handle Address Provider) (visits : Nat)
+    (valid : registry.Valid)
+    (released : releaseIssued registry handle = (some (next, cleared), visits)) :
+    next.Valid := by
+  cases found : (lookup registry handle).1 with
+  | none =>
+      rw [releaseIssued_refused registry handle found] at released
+      cases (congrArg (fun result => result.1) released)
+  | some index =>
+      obtain ⟨remaining, exactRelease, retained⟩ := releaseIssued_selected registry handle index found
+      rw [exactRelease] at released
+      have equality := Option.some.inj (congrArg Prod.fst released)
+      have sameRegistry := congrArg Prod.fst equality
+      dsimp only at sameRegistry
+      rw [← sameRegistry]
+      refine ⟨valid.1, ?_, ?_, ?_⟩
+      · have whole := (retained.map Row.occurrence).nodup_iff.mpr valid.2.1
+        exact (List.nodup_cons.mp whole).2
+      · have whole := (retained.map Row.token).nodup_iff.mpr valid.2.2.1
+        exact (List.nodup_cons.mp whole).2
+      · intro row present
+        apply valid.2.2.2 row
+        apply retained.mem_iff.mp
+        exact List.mem_cons_of_mem _ present
+
+theorem releaseIssued_revokes_old_and_cleared (registry : Registry Address Provider)
+    (handle : Handle Address Provider) (next : Registry Address Provider)
+    (cleared : Handle Address Provider) (visits : Nat)
+    (valid : registry.Valid)
+    (released : releaseIssued registry handle = (some (next, cleared), visits)) :
+    ¬ Authenticated next handle ∧ lookup next cleared = (none, 0) := by
+  have removed := releaseIssued_removes_unique registry handle next cleared visits released
+    (valid.rows_unique registry)
+  have noOld : ¬ Authenticated next handle := by
+    intro authorized
+    exact removed.1 authorized.2.2.2
+  refine ⟨noOld, ?_⟩
+  cases found : (lookup registry handle).1 with
+  | none =>
+      rw [releaseIssued_refused registry handle found] at released
+      cases (congrArg (fun result => result.1) released)
+  | some index =>
+      obtain ⟨remaining, exactRelease, _⟩ := releaseIssued_selected registry handle index found
+      rw [exactRelease] at released
+      have equality := Option.some.inj (congrArg Prod.fst released)
+      have sameHandle := congrArg Prod.snd equality
+      dsimp only at sameHandle
+      rw [← sameHandle]
+      simp [lookup]
+
+namespace ValidEditControls
+
+theorem registry_keys_are_independent_of_aliases :
+    EditControls.source.Valid ∧
+      EditControls.source.rows.map Row.payload = [0, 0, 0] := by unfold Registry.Valid; decide
+
+theorem duplicate_occurrence_with_different_token_is_invalid :
+    ¬ ({ EditControls.source with rows :=
+      [Controls.first.row, { Controls.first.row with token := 100 }] }).Valid := by unfold Registry.Valid; decide
+
+theorem duplicate_token_with_different_occurrence_is_invalid :
+    ¬ ({ EditControls.source with rows :=
+      [Controls.first.row, { Controls.first.row with occurrence := 100 }] }).Valid := by unfold Registry.Valid; decide
+
+end ValidEditControls
+
+
+/-- A failed complete prefix remains in the charge when a following segment
+supplies the first matching row. No membership claim is imported from a
+compiled getter. -/
+theorem scan_append_of_missing (wanted : Row Address Provider)
+    (prior following : List (Row Address Provider)) (absent : wanted ∉ prior) :
+    scan wanted (prior ++ following) =
+      ((scan wanted following).1.map (fun index => prior.length + index),
+        prior.length + (scan wanted following).2) := by
+  induction prior with
+  | nil =>
+      simp only [List.nil_append, List.length_nil, Nat.zero_add]
+      cases result : scan wanted following with
+      | mk found visits =>
+          cases found <;> rfl
+  | cons row rest ih =>
+      have different : rowMatches row wanted = false := by
+        apply Bool.eq_false_iff.mpr
+        intro same
+        exact absent (List.mem_cons.mpr (Or.inl ((rowMatches_iff row wanted).mp same).symm))
+      have tailAbsent : wanted ∉ rest := fun h => absent (List.mem_cons_of_mem row h)
+      rw [List.cons_append, scan, different]
+      simp only [Bool.false_eq_true, if_false, ih tailAbsent, List.length_cons,
+        Option.map_map, Nat.add_assoc, Nat.add_comm]
+      congr 2
+      funext index
+      simp only [Function.comp_apply]
+      omega
+
+/-- Issued-row publication after its reservation and queue-selection boundary.
+Only the token and store are new; the parent and payload/provider occurrence
+come from the selected handle. Allocation and selection costs are separate. -/
+def registerIssued (registry : Registry Address Provider)
+    (selected : Handle Address Provider) (token : Nat) :
+    Registry Address Provider × Handle Address Provider :=
+  let issued := { selected with store := registry.identity, row.token := token }
+  ({ registry with rows := registry.rows ++ [issued.row] }, issued)
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem registerIssued_authenticates (registry : Registry Address Provider)
+    (selected : Handle Address Provider) (token : Nat)
+    (live : registry.identity ≠ 0) (positive : token ≠ 0) :
+    Authenticated (registerIssued registry selected token).1
+      (registerIssued registry selected token).2 := by
+  simp [registerIssued, Authenticated, live, positive]
+
+theorem registerIssued_lookup (registry : Registry Address Provider)
+    (selected : Handle Address Provider) (token : Nat)
+    (live : registry.identity ≠ 0) (positive : token ≠ 0)
+    (freshOccurrence : selected.row.occurrence ∉ registry.rows.map Row.occurrence) :
+    lookup (registerIssued registry selected token).1
+      (registerIssued registry selected token).2 =
+      (some registry.rows.length, registry.rows.length + 1) := by
+  have absent : { selected.row with token := token } ∉ registry.rows := by
+    intro present
+    apply freshOccurrence
+    exact List.mem_map.mpr ⟨_, present, rfl⟩
+  change lookup
+    ⟨registry.identity, registry.rows ++ [{ selected.row with token := token }]⟩
+    ⟨registry.identity, selected.parent, { selected.row with token := token }⟩ = _
+  simp only [lookup, live, positive, ne_eq]
+  rw [scan_append_of_missing _ _ _ absent]
+  simp [scan, rowMatches]
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem registerIssued_preserves_validity (registry : Registry Address Provider)
+    (selected : Handle Address Provider) (token : Nat)
+    (valid : registry.Valid) (positiveOccurrence : selected.row.occurrence ≠ 0)
+    (positiveToken : token ≠ 0)
+    (freshOccurrence : selected.row.occurrence ∉ registry.rows.map Row.occurrence)
+    (freshToken : token ∉ registry.rows.map Row.token) :
+    (registerIssued registry selected token).1.Valid := by
+  refine ⟨valid.1, ?_, ?_, ?_⟩
+  · simpa only [registerIssued, List.map_append, List.map_cons, List.map_nil,
+      List.concat_eq_append] using
+      (List.Nodup.concat freshOccurrence valid.2.1)
+  · simpa only [registerIssued, List.map_append, List.map_cons, List.map_nil,
+      List.concat_eq_append] using
+      (List.Nodup.concat freshToken valid.2.2.1)
+  · intro row member
+    simp only [registerIssued, List.mem_append, List.mem_singleton] at member
+    rcases member with before | added
+    · exact valid.2.2.2 row before
+    · subst row
+      exact ⟨positiveOccurrence, positiveToken⟩
+
+namespace IssueEditControls
+
+def selected : Handle Nat Nat := ⟨0, 7, ⟨10, 0, 0, 5⟩⟩
+
+theorem last_token_is_issued_and_looked_up :
+    reserveInclusive 255 255 = (some 255, 0) ∧
+      lookup (registerIssued EditControls.source selected 255).1
+        (registerIssued EditControls.source selected 255).2 = (some 3, 4) ∧
+      (registerIssued EditControls.source selected 255).2.parent = 7 := by decide
+
+theorem equal_payloads_do_not_erase_the_new_occurrence :
+    (registerIssued EditControls.source selected 44).1.rows.map Row.payload = [0, 0, 0, 0] ∧
+      (registerIssued EditControls.source selected 44).1.rows.map Row.occurrence = [7, 8, 9, 10] :=
+    by decide
+
+end IssueEditControls
+
+/-- Logical key checks for requeue admission; addresses and provider identities
+are not occurrence keys. The charged scan stops at the first duplicate. -/
+def missingOccurrenceBits (occurrence : Nat) (queue : List (Handle Address Provider)) : List Bool :=
+  queue.map (fun handle => handle.row.occurrence != occurrence)
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem missingOccurrenceBits_complete (occurrence : Nat)
+    (queue : List (Handle Address Provider)) :
+    scanAll (missingOccurrenceBits occurrence queue) = true ↔
+      occurrence ∉ queue.map (fun handle => handle.row.occurrence) := by
+  rw [scanAll_eq_true_iff]
+  simp [missingOccurrenceBits, List.mem_map]
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem missingOccurrenceBits_full_cost (occurrence : Nat)
+    (queue : List (Handle Address Provider))
+    (fresh : occurrence ∉ queue.map (fun handle => handle.row.occurrence)) :
+    scanAllCost (missingOccurrenceBits occurrence queue) = queue.length := by
+  have all := (scanAll_eq_true_iff _).mp ((missingOccurrenceBits_complete occurrence queue).mpr fresh)
+  simpa [missingOccurrenceBits] using scanAllCost_eq_length _ all
+
+/-- The committed store edit after lookup, duplicate refusal, and successful
+buffer reservation. The complete queue is retained; returned authority is
+cleared. Allocation and layout effects precede this edit and are separate. -/
+def commitRequeue (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) : Option (Registry Address Provider × List (Handle Address Provider)) := do
+  let pair ← extractByLast index registry.rows
+  some ({ registry with rows := pair.2 },
+    queue ++ [{ handle with store := 0, row.token := 0 }])
+
+theorem commitRequeue_correspondence (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) (accepted : (lookup registry handle).1 = some index) :
+    commitRequeue registry queue handle index =
+      (releaseIssued registry handle).1.map (fun pair => (pair.1, queue ++ [pair.2])) := by
+  simp only [commitRequeue, releaseIssued, accepted, bind, Option.bind_some]
+  cases extractByLast index registry.rows with
+  | none => rfl
+  | some pair => rfl
+
+theorem commitRequeue_retains_frontier (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) (accepted : (lookup registry handle).1 = some index) :
+    ∃ remaining,
+      commitRequeue registry queue handle index =
+        some ({ registry with rows := remaining },
+          queue ++ [{ handle with store := 0, row.token := 0 }]) ∧
+      (handle.row :: remaining).Perm registry.rows ∧
+      (queue ++ [{ handle with store := 0, row.token := 0 }]).map
+        (fun item : Handle Address Provider => item.row.occurrence) =
+          queue.map (fun item : Handle Address Provider => item.row.occurrence) ++ [handle.row.occurrence] := by
+  obtain ⟨remaining, exactRelease, retained⟩ := releaseIssued_selected registry handle index accepted
+  refine ⟨remaining, ?_, retained, ?_⟩
+  · rw [commitRequeue_correspondence registry queue handle index accepted, exactRelease]
+    rfl
+  · simp
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+/-- Every previously issued row keeps its authority when a fresh row is
+appended. This does not validate the lifetime of its external owner. -/
+theorem registerIssued_keeps_other (registry : Registry Address Provider)
+    (selected survivor : Handle Address Provider) (token : Nat)
+    (authorized : Authenticated registry survivor) :
+    Authenticated (registerIssued registry selected token).1 survivor := by
+  rcases authorized with ⟨positiveStore, sameStore, positiveToken, present⟩
+  exact ⟨positiveStore, sameStore, positiveToken, List.mem_append_left _ present⟩
+
+/-- Extract the committed edit's exact release. No second lookup or issue is
+performed by the edit, so the prior scanned prefix is its only lookup charge. -/
+theorem commitRequeue_release (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) (accepted : (lookup registry handle).1 = some index)
+    (next : Registry Address Provider) (pending : List (Handle Address Provider))
+    (committed : commitRequeue registry queue handle index = some (next, pending)) :
+    releaseIssued registry handle =
+      (some (next, { handle with store := 0, row.token := 0 }), index + 1) ∧
+      pending = queue ++ [{ handle with store := 0, row.token := 0 }] := by
+  obtain ⟨remaining, edit, _⟩ := commitRequeue_retains_frontier registry queue handle index accepted
+  rw [edit] at committed
+  have equality := Option.some.inj committed
+  have sameRegistry := congrArg Prod.fst equality
+  have sameQueue := congrArg Prod.snd equality
+  dsimp only at sameRegistry sameQueue
+  constructor
+  · obtain ⟨remaining', release, _⟩ := releaseIssued_selected registry handle index accepted
+    rw [commitRequeue_correspondence registry queue handle index accepted, release] at edit
+    have equality' := Option.some.inj edit
+    have remainingSame := congrArg (fun pair => pair.1.rows) equality'
+    dsimp only at remainingSame
+    rw [release, remainingSame, sameRegistry]
+  · exact sameQueue.symm
+
+theorem commitRequeue_valid_and_revoked (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) (accepted : (lookup registry handle).1 = some index)
+    (next : Registry Address Provider) (pending : List (Handle Address Provider))
+    (valid : registry.Valid)
+    (committed : commitRequeue registry queue handle index = some (next, pending)) :
+    next.Valid ∧ ¬ Authenticated next handle := by
+  have release := (commitRequeue_release registry queue handle index accepted next pending committed).1
+  exact ⟨releaseIssued_preserves_validity registry handle next _ _ valid release,
+    (releaseIssued_revokes_old_and_cleared registry handle next _ _ valid release).1⟩
+
+/-- Conservation as a bag of production fields, including shared payloads.
+Registry slot order and authority remain separate observable components. -/
+theorem commitRequeue_keyed_values {Value : Type}
+    (reading : Nat → Address → Provider → Value)
+    (registry : Registry Address Provider) (queue : List (Handle Address Provider))
+    (handle : Handle Address Provider) (index : Nat)
+    (accepted : (lookup registry handle).1 = some index)
+    (next : Registry Address Provider) (pending : List (Handle Address Provider))
+    (committed : commitRequeue registry queue handle index = some (next, pending)) :
+    ((pending.map (fun item => reading item.row.occurrence item.row.payload item.row.provider)) ++
+      next.rows.map (fun row => reading row.occurrence row.payload row.provider)).Perm
+      ((queue.map (fun item => reading item.row.occurrence item.row.payload item.row.provider)) ++
+        registry.rows.map (fun row => reading row.occurrence row.payload row.provider)) := by
+  obtain ⟨remaining, edit, retained, _⟩ := commitRequeue_retains_frontier registry queue handle index accepted
+  rw [edit] at committed
+  have equality := Option.some.inj committed
+  have sameRegistry := congrArg Prod.fst equality
+  have sameQueue := congrArg Prod.snd equality
+  dsimp only at sameRegistry sameQueue
+  rw [← sameRegistry, ← sameQueue]
+  simpa only [List.map_append, List.map_cons, List.map_nil,
+    List.append_assoc, List.singleton_append] using
+    ((retained.map (fun row => reading row.occurrence row.payload row.provider)).append_left
+      (queue.map (fun item => reading item.row.occurrence item.row.payload item.row.provider)))
+
+namespace RequeueEditControls
+
+def queued : List (Handle Nat Nat) := [IssueEditControls.selected]
+
+theorem requeue_retains_order_payload_alias_and_parent :
+    commitRequeue EditControls.source queued Controls.first 0 =
+      some (EditControls.afterRelease,
+        [IssueEditControls.selected, { Controls.first with store := 0, row.token := 0 }]) ∧
+      (Controls.first.parent, Controls.first.row.payload) = (6, 0) := by decide
+
+theorem duplicate_occurrence_is_refused_despite_different_payload :
+    Mettapedia.Machines.Cursor.TailSummary.scanAll
+      (missingOccurrenceBits 7
+        [{ Controls.first with store := 0, row.token := 0, row.payload := 100 }]) = false ∧
+      Mettapedia.Machines.Cursor.TailSummary.scanAllCost
+        (missingOccurrenceBits 7
+          [IssueEditControls.selected,
+            { Controls.first with store := 0, row.token := 0, row.payload := 100 },
+            Controls.second]) = 2 := by decide
+
+end RequeueEditControls
+
+/-- Read-only requeue preflight: authenticate before checking queued keys.
+Its receipt contains exactly the rows visited by those two scans. Buffer
+reservation and the committed edit are different operations. -/
+def preflightRequeue (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider) : Option Nat × Nat :=
+  let found := lookup registry handle
+  match found.1 with
+  | none => (none, found.2)
+  | some index =>
+      let bits := missingOccurrenceBits handle.row.occurrence queue
+      (if scanAll bits then some index else none, found.2 + scanAllCost bits)
+
+theorem preflightRequeue_refused_authority (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (refused : (lookup registry handle).1 = none) :
+    preflightRequeue registry queue handle = (none, (lookup registry handle).2) := by
+  simp only [preflightRequeue, refused]
+
+theorem preflightRequeue_exact (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) (accepted : (lookup registry handle).1 = some index)
+    (fresh : handle.row.occurrence ∉ queue.map (fun item => item.row.occurrence)) :
+    preflightRequeue registry queue handle = (some index, index + 1 + queue.length) := by
+  have scan := (missingOccurrenceBits_complete handle.row.occurrence queue).mpr fresh
+  have cost := missingOccurrenceBits_full_cost handle.row.occurrence queue fresh
+  have visited := (lookup_selected registry handle index accepted).2
+  simp only [preflightRequeue, accepted, scan, if_true, cost, visited]
+
+theorem preflightRequeue_success_iff (registry : Registry Address Provider)
+    (queue : List (Handle Address Provider)) (handle : Handle Address Provider)
+    (index : Nat) :
+    (preflightRequeue registry queue handle).1 = some index ↔
+      (lookup registry handle).1 = some index ∧
+        handle.row.occurrence ∉ queue.map (fun item => item.row.occurrence) := by
+  unfold preflightRequeue
+  cases selected : (lookup registry handle).1 with
+  | none => simp [selected]
+  | some found =>
+      by_cases allowed : scanAll (missingOccurrenceBits handle.row.occurrence queue) = true
+      · have fresh := (missingOccurrenceBits_complete handle.row.occurrence queue).mp allowed
+        simp [selected, allowed, fresh]
+      · have duplicate : ¬ handle.row.occurrence ∉ queue.map (fun item => item.row.occurrence) := by
+          intro fresh
+          exact allowed ((missingOccurrenceBits_complete handle.row.occurrence queue).mpr fresh)
+        constructor
+        · intro impossible
+          simp [selected, allowed] at impossible
+        · rintro ⟨_, fresh⟩
+          exact (duplicate fresh).elim
+
+/-- Relocating addresses and the store authority preserves both scan phases.
+The queue's occurrence keys and their order remain the same. -/
+theorem preflightRequeue_relocate {B : Type} [DecidableEq B]
+    (address : Address → B) (injective : Function.Injective address)
+    (registry : Registry Address Provider) (queue : List (Handle Address Provider))
+    (handle : Handle Address Provider) (fresh : Nat)
+    (owned : handle.store = registry.identity)
+    (sourceLive : registry.identity ≠ 0) (destinationLive : fresh ≠ 0) :
+    preflightRequeue (registry.relocate fresh address)
+      (queue.map (Handle.relocate 0 address)) (handle.relocate fresh address) =
+        preflightRequeue registry queue handle := by
+  unfold preflightRequeue
+  rw [lookup_relocate address injective registry handle fresh owned sourceLive destinationLive]
+  have bits : missingOccurrenceBits (handle.relocate fresh address).row.occurrence
+      (queue.map (Handle.relocate 0 address)) =
+        missingOccurrenceBits handle.row.occurrence queue := by
+    simp [missingOccurrenceBits, List.map_map, Handle.relocate, Row.map]
+  simp only [bits]
+
+namespace PreflightControls
+
+theorem duplicate_refusal_retains_both_scan_prefixes :
+    preflightRequeue EditControls.source
+      [IssueEditControls.selected, Controls.first, Controls.second] Controls.first = (none, 3) ∧
+      preflightRequeue EditControls.source [Controls.first]
+        { Controls.first with store := 999 } = (none, 0) := by decide
+
+theorem shared_payload_does_not_refuse_requeue :
+    preflightRequeue EditControls.source [IssueEditControls.selected] Controls.first = (some 0, 2) :=
+    by decide
+
+end PreflightControls
+
+/-- Every retained token precedes the next token; zero is an exhausted
+frontier and cannot be used for a further issue. -/
+def Registry.TokensBefore (registry : Registry Address Provider) (next : Nat) : Prop :=
+  next = 0 ∨ ∀ row ∈ registry.rows, row.token < next
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem issued_token_is_fresh (registry : Registry Address Provider)
+    (maximum current issued after : Nat)
+    (before : registry.TokensBefore current)
+    (reserved : reserveInclusive maximum current = (some issued, after)) :
+    issued ≠ 0 ∧ issued ∉ registry.rows.map Row.token := by
+  obtain ⟨positive, _, same, _⟩ := (reserveInclusive_issued_iff _ _ _ _).mp reserved
+  have rows := before.resolve_left (by omega)
+  refine ⟨by omega, ?_⟩
+  intro present
+  obtain ⟨row, member, equality⟩ := List.mem_map.mp present
+  have below := rows row member
+  omega
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem registerIssued_preserves_token_frontier (registry : Registry Address Provider)
+    (selected : Handle Address Provider) (maximum current issued after : Nat)
+    (before : registry.TokensBefore current)
+    (reserved : reserveInclusive maximum current = (some issued, after)) :
+    (registerIssued registry selected issued).1.TokensBefore after := by
+  obtain ⟨positive, _, same, next⟩ := (reserveInclusive_issued_iff _ _ _ _).mp reserved
+  have rows := before.resolve_left (by omega)
+  by_cases final : current = maximum
+  · left
+    simpa only [final, if_true] using next
+  · right
+    intro row present
+    simp only [registerIssued, List.mem_append, List.mem_singleton] at present
+    rcases present with old | new
+    · have below := rows row old
+      simp only [final, if_false] at next
+      omega
+    · subst row
+      simp only [final, if_false] at next
+      dsimp only
+      omega
+
+omit [DecidableEq Address] [DecidableEq Provider] in
+theorem registerIssued_valid_after_reservation (registry : Registry Address Provider)
+    (selected : Handle Address Provider) (maximum current issued after : Nat)
+    (valid : registry.Valid) (before : registry.TokensBefore current)
+    (positiveOccurrence : selected.row.occurrence ≠ 0)
+    (freshOccurrence : selected.row.occurrence ∉ registry.rows.map Row.occurrence)
+    (reserved : reserveInclusive maximum current = (some issued, after)) :
+    (registerIssued registry selected issued).1.Valid ∧
+      (registerIssued registry selected issued).1.TokensBefore after := by
+  have fresh := issued_token_is_fresh registry maximum current issued after before reserved
+  exact ⟨registerIssued_preserves_validity registry selected issued valid positiveOccurrence
+      fresh.1 freshOccurrence fresh.2,
+    registerIssued_preserves_token_frontier registry selected maximum current issued after before reserved⟩
+
+namespace TokenFrontierControls
+
+theorem final_issue_keeps_namespace_valid :
+    EditControls.source.TokensBefore 255 ∧
+      (registerIssued EditControls.source IssueEditControls.selected 255).1.TokensBefore 0 ∧
+      (registerIssued EditControls.source IssueEditControls.selected 255).1.Valid := by
+  unfold Registry.TokensBefore Registry.Valid
+  decide
+
+theorem resetting_frontier_would_reissue_an_old_token :
+    reserveInclusive 255 41 = (some 41, 42) ∧
+      ¬ EditControls.source.TokensBefore 41 ∧
+      ¬ (registerIssued EditControls.source IssueEditControls.selected 41).1.Valid := by
+  unfold Registry.TokensBefore Registry.Valid
+  decide
+
+end TokenFrontierControls
 
 end IssuedReturn
 

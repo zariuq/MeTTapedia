@@ -289,12 +289,12 @@ lemma measurableSet_isNthVisitTime (i : Fin k) (n t : ℕ) :
       {ω : ℕ → Fin k | visitCountBefore (k := k) ω i t = n} := by
     have hmeas := measurable_visitCountBefore (k := k) i t
     simpa [Set.preimage] using hmeas (MeasurableSet.singleton n)
-  simpa [isNthVisitTime, Set.setOf_and] using hvisit.inter hcount
+  simpa [isNthVisitTime, Set.ofPred_and] using hvisit.inter hcount
 
 lemma measurableSet_nthVisitTimeExists (i : Fin k) (n : ℕ) :
     MeasurableSet {ω : ℕ → Fin k | nthVisitTimeExists (k := k) ω i n} := by
   unfold nthVisitTimeExists
-  simpa [Set.setOf_exists] using
+  simpa [Set.ofPred_exists] using
     (MeasurableSet.iUnion (fun t => measurableSet_isNthVisitTime (k := k) i n t))
 
 lemma visitCountBefore_eq_natCount
@@ -310,7 +310,7 @@ lemma nthVisitTimeExists_of_infinite_visits
     nthVisitTimeExists (k := k) ω i n := by
   classical
   let p : ℕ → Prop := fun t => ω t = i
-  have hinf' : (setOf p).Infinite := by
+  have hinf' : (Set.ofPred p).Infinite := by
     exact hinf
   refine ⟨Nat.nth p n, ?_⟩
   refine ⟨?_, ?_⟩
@@ -524,7 +524,7 @@ lemma measurableSet_nthVisitTime_eq_none (i : Fin k) (n : ℕ) :
         {ω : ℕ → Fin k | ¬ nthVisitTimeExists (k := k) ω i n} := by
     ext ω
     exact nthVisitTime_eq_none_iff (k := k) ω i n
-  simpa [hEq, Set.compl_setOf] using
+  simpa [hEq, Set.compl_ofPred] using
     (measurableSet_nthVisitTimeExists (k := k) i n).compl
 
 lemma measurableSet_successorAt_eq (a : Fin k) (t : ℕ) :
@@ -539,7 +539,7 @@ lemma measurableSet_rowSuccessorValueEventAtTime
     measurableSet_nthVisitTime_eq_some (k := k) i n t
   have hsucc : MeasurableSet {ω : ℕ → Fin k | successorAt (k := k) ω t = a} :=
     measurableSet_successorAt_eq (k := k) a t
-  simpa [rowSuccessorValueEventAtTime, Set.setOf_and] using hvisit.inter hsucc
+  simpa [rowSuccessorValueEventAtTime, Set.ofPred_and] using hvisit.inter hsucc
 
 lemma measurableSet_rowSuccessorAtNthVisit_eq
     (i : Fin k) (n : ℕ) (a : Fin k) :
@@ -956,7 +956,7 @@ lemma cylinder_cons_eq_start_inter_preimage_wordSuccessorTuple
           ({wordSuccessorTuple (k := k) a ys} : Set (Fin ys.length → Fin k)) := by
   ext ω
   rw [mem_cylinder_cons_iff_start_and_wordSuccessorTuple (k := k) ω a ys]
-  simp [Set.preimage, Set.mem_setOf_eq]
+  simp [Set.preimage]
 
 lemma measurableSet_rowVisitCylinderEventUpTo
     (i : Fin k) (S : Finset ℕ) (v : ℕ → Fin k) (N : ℕ) :
@@ -1488,7 +1488,7 @@ theorem rowProcessLaw_exchangeable_of_perm_invariant
           rowProcessLaw (k := k) P i) :
     Exchangeability.Exchangeable (rowProcessLaw (k := k) P i)
       (fun n (r : ℕ → Fin k) => r n) := by
-  letI : IsProbabilityMeasure (rowProcessLaw (k := k) P i) :=
+  let : IsProbabilityMeasure (rowProcessLaw (k := k) P i) :=
     Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
   have hmeas : ∀ n : ℕ, Measurable (fun r : ℕ → Fin k => r n) := by
@@ -1514,8 +1514,8 @@ theorem rowProcessLaw_conditionallyIID_of_perm_invariant
           rowProcessLaw (k := k) P i) :
     Exchangeability.ConditionallyIID (rowProcessLaw (k := k) P i)
       (fun n (r : ℕ → Fin k) => r n) := by
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
-  letI : IsProbabilityMeasure (rowProcessLaw (k := k) P i) :=
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  let : IsProbabilityMeasure (rowProcessLaw (k := k) P i) :=
     Measure.isProbabilityMeasure_map
       ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
   have hmeas : ∀ n : ℕ, Measurable (fun r : ℕ → Fin k => r n) := by
@@ -1665,7 +1665,7 @@ theorem aemeasurable_rowKernelToMarkovParam_diracInit_lifted
       (rowKernelToMarkovParam_diracInit (k := k)
         (liftedRowKernelFromRowProcess (k := k) rowKernel)) P := by
   rcases Nat.eq_zero_or_pos k with rfl | hk
-  · haveI : IsEmpty (MarkovParam 0) := by
+  · have : IsEmpty (MarkovParam 0) := by
       constructor; intro ⟨init, _⟩
       have h := init.prop.measure_univ
       rw [show (Set.univ : Set (Fin 0)) = ∅ from Set.eq_empty_of_isEmpty _] at h
@@ -2077,7 +2077,7 @@ lemma lintegral_start_cesaro_eq_const
                     ∫⁻ ω,
                       (s.indicator (fun _ => (1 : ENNReal)) ω) *
                         rowSuccessorValueIndicator i n b ω ∂P) := by
-                    refine lintegral_finset_sum' _ ?_
+                    refine lintegral_finsetSum' _ ?_
                     intro n hn
                     have hmeas_ind :
                         Measurable (s.indicator (fun _ => (1 : ENNReal))) :=
@@ -2238,7 +2238,7 @@ lemma restrict_singleton_le_restrict_class (P : Measure (ℕ → Fin k)) (a : Fi
     P.restrict {ω : ℕ → Fin k | ω 0 = a} ≤ P.restrict {ω : ℕ → Fin k | ω 0 ∈ C} := by
   have hsub : {ω : ℕ → Fin k | ω 0 = a} ⊆ {ω : ℕ → Fin k | ω 0 ∈ C} := by
     intro ω hω
-    simp only [Set.mem_setOf_eq] at hω ⊢
+    simp only [Set.mem_ofPred_eq] at hω ⊢
     rw [hω]; exact ha
   exact Measure.restrict_mono hsub le_rfl
 
@@ -2269,7 +2269,7 @@ lemma rowProcessLaw_restrictClass_eq_finsetSum
     exact hab (hω.1.1.symm.trans hω.2.1)
   have hs_union : (⋃ a : Fin k, s a) = S := by
     ext ω
-    simp only [s, S, Set.mem_iUnion, Set.mem_inter_iff, Set.mem_setOf_eq]
+    simp only [s, S, Set.mem_iUnion, Set.mem_inter_iff, Set.mem_ofPred_eq]
     constructor
     · intro hω
       exact hω.choose_spec.2

@@ -27,11 +27,11 @@ def pairSecond (first second : Graph.{u}) : Member second (pair first second) :=
   Sup.intro _ ⟨false⟩ (Equal.refl second)
 
 def pairEliminate {value first second : Graph.{u}} (proof : Member value (pair first second)) :
-    Equal value first ⊕ Equal value second :=
-  let decoded := Sup.eliminate _ proof
-  match decoded.1.down with
-  | true => .inl decoded.2
-  | false => .inr decoded.2
+    Equal value first ⊕ Equal value second := by
+  rcases Sup.eliminate _ proof with ⟨⟨choice⟩, same⟩
+  cases choice with
+  | false => exact .inr same
+  | true => exact .inl same
 
 abbrev UnionIndex (parent : Graph.{u}) : Type u :=
   Σ child : Child parent.edge parent.point,

@@ -423,7 +423,7 @@ theorem carrierTransport_forward_adjacent {N : ℕ}
   -- Visit times are strictly ordered (count monotonicity)
   have ht₀_lt_t₁ : t₀ < t₁ := by
     by_contra h
-    push_neg at h
+    push Not at h
     -- If t₁ ≤ t₀, then count(t₁) ≤ count(t₀) by monotonicity
     have hmono : visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₁ ≤
         visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₀ := by
@@ -433,7 +433,7 @@ theorem carrierTransport_forward_adjacent {N : ℕ}
     rw [h_t₀.2, h_t₁.2] at hmono; omega
   have ht₁_lt_t₂ : t₁ < t₂ := by
     by_contra h
-    push_neg at h
+    push Not at h
     have hmono : visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₂ ≤
         visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₁ := by
       apply Finset.sum_le_sum_of_subset
@@ -612,13 +612,13 @@ noncomputable def carrierSwapRaw {N : ℕ}
   have h_t₂ := extractVisitTime_spec xs i (n + 2) hexN2
   -- t₀ < t₁ < t₂ from visit count monotonicity
   have ht₀_lt_t₁ : t₀ < t₁ := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have : visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₁ ≤
         visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₀ :=
       Finset.sum_le_sum_of_subset (Finset.range_mono h)
     rw [h_t₀.2, h_t₁.2] at this; omega
   have ht₁_lt_t₂ : t₁ < t₂ := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have : visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₂ ≤
         visitCountBefore (k := k) (prefixExtend (k := k) N xs) i t₁ :=
       Finset.sum_le_sum_of_subset (Finset.range_mono h)
@@ -801,14 +801,14 @@ terms of extractVisitTime and segmentSwap so that involutivity is provable. -/
   have h1 := extractVisitTime_spec xs i (n + 1) hex1
   have h2 := extractVisitTime_spec xs i (n + 2) hex2
   have ht01 : t₀ < t₁ := by
-    by_contra hle; push_neg at hle
+    by_contra hle; push Not at hle
     have := Finset.sum_le_sum_of_subset
       (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
       (Finset.range_mono hle)
     change visitCountBefore (k := k) _ i t₁ ≤ visitCountBefore (k := k) _ i t₀ at this
     rw [h0.2, h1.2] at this; omega
   have ht12 : t₁ < t₂ := by
-    by_contra hle; push_neg at hle
+    by_contra hle; push Not at hle
     have := Finset.sum_le_sum_of_subset
       (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
       (Finset.range_mono hle)
@@ -853,12 +853,12 @@ theorem rawSwap_selfInverse {N : ℕ}
   have h_t₁ := extractVisitTime_spec xs i (n + 1) hex1
   have h_t₂ := extractVisitTime_spec xs i (n + 2) hex2
   have ht01 : t₀ < t₁ := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i t₁ ≤ visitCountBefore (k := k) _ i t₀ at this
     rw [h_t₀.2, h_t₁.2] at this; omega
   have ht12 : t₁ < t₂ := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i t₂ ≤ visitCountBefore (k := k) _ i t₁ at this
     rw [h_t₁.2, h_t₂.2] at this; omega
@@ -929,12 +929,12 @@ theorem rawSwap_fwd_mem {N : ℕ}
   have h1 := extractVisitTime_spec xs i (n + 1) hex1
   have h2 := extractVisitTime_spec xs i (n + 2) hex2
   have ht01 : extractVisitTime xs i n hex0 < extractVisitTime xs i (n + 1) hex1 := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h0.2, h1.2] at this; omega
   have ht12 : extractVisitTime xs i (n + 1) hex1 < extractVisitTime xs i (n + 2) hex2 := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h1.2, h2.2] at this; omega
@@ -973,12 +973,12 @@ theorem rawSwap_bwd_mem {N : ℕ}
   have h1 := extractVisitTime_spec ys i (n + 1) hex1
   have h2 := extractVisitTime_spec ys i (n + 2) hex2
   have ht01 : extractVisitTime ys i n hex0 < extractVisitTime ys i (n + 1) hex1 := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N ys) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h0.2, h1.2] at this; omega
   have ht12 : extractVisitTime ys i (n + 1) hex1 < extractVisitTime ys i (n + 2) hex2 := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N ys) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h1.2, h2.2] at this; omega
@@ -1021,12 +1021,12 @@ theorem rawSwap_fwd_evid {N : ℕ}
   have h1 := extractVisitTime_spec xs i (n + 1) hex1
   have h2 := extractVisitTime_spec xs i (n + 2) hex2
   have ht01 : extractVisitTime xs i n hex0 < extractVisitTime xs i (n + 1) hex1 := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h0.2, h1.2] at this; omega
   have ht12 : extractVisitTime xs i (n + 1) hex1 < extractVisitTime xs i (n + 2) hex2 := by
-    by_contra h; push_neg at h
+    by_contra h; push Not at h
     have := Finset.sum_le_sum_of_subset (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0) (Finset.range_mono h)
     change visitCountBefore (k := k) _ i _ ≤ visitCountBefore (k := k) _ i _ at this
     rw [h1.2, h2.2] at this; omega
@@ -1180,7 +1180,7 @@ theorem carrierTransportEquivGeneral {N : ℕ}
     exact ⟨carrierTransportEquivAscendingChain i b hbi n hSuff d,
            carrierTransportEquivAscendingChain_evidence i b hbi n hSuff d⟩
   · -- Case n' < n: ascending chain from n' to n, then .symm
-    push_neg at h
+    push Not at h
     obtain ⟨d, rfl⟩ : ∃ d, n = n' + d + 1 := ⟨n - n' - 1, by omega⟩
     let chain := carrierTransportEquivAscendingChain i b hbi n' hSuff (d + 1)
     refine ⟨chain.symm, fun xs => ?_⟩
@@ -1262,7 +1262,7 @@ theorem segmentSwap_multiIndex_carrier_mem {N : ℕ}
       by_cases hm_lt : m < n
       · -- m < n: visit time t < a → all positions ≤ t+1 are ≤ a → identity
         have ht_lt : t < a := by
-          by_contra hge; push_neg at hge
+          by_contra hge; push Not at hge
           have := Finset.sum_le_sum_of_subset
             (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
             (Finset.range_mono hge)
@@ -1274,8 +1274,6 @@ theorem segmentSwap_multiIndex_carrier_mem {N : ℕ}
                 segmentSwap_eq_of_le xs a L1 L2 hL1 hL2 hcN ⟨t, by omega⟩ (by simp; omega)]
             have := hm_time.1; rwa [prefixExtend_apply_le' xs (by omega)] at this
           · -- visitCountBefore: all positions < t have same trajectory value
-            change visitCountBefore (k := k)
-              (prefixExtend (k := k) N (segmentSwap xs a L1 L2 hL1 hL2 hcN)) i t = m
             rw [← hm_time.2]; simp only [visitCountBefore]
             apply Finset.sum_congr rfl
             intro s hs; simp only [Finset.mem_range] at hs
@@ -1291,7 +1289,7 @@ theorem segmentSwap_multiIndex_carrier_mem {N : ℕ}
       · -- m > n+1: visit time t ≥ a+L1+L2 → positions t, t+1 are > a+L1+L2 → identity
         have hm_ge : m ≥ n + 2 := by omega
         have ht_ge : t ≥ a + L1 + L2 := by
-          by_contra hlt; push_neg at hlt
+          by_contra hlt; push Not at hlt
           have := Finset.sum_le_sum_of_subset
             (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
             (Finset.range_mono (by omega : t ≤ a + L1 + L2))

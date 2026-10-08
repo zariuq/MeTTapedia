@@ -362,6 +362,43 @@ theorem demandRequests_le_uncached_edges (graph : Graph Label)
     ⟨demand_computed_reachable graph combine root cache node computed,
       by simp [valid.fresh node computed]⟩
 
+/-- Ordered roots share one fixed interpretation and cache. -/
+theorem sequence_demand_valid (graph : Graph Label)
+    (combine : Label → List Summary → Summary) (roots : List Nat) (cache : Cache Summary)
+    (sound : Sound graph combine cache) :
+    Valid graph combine cache (sequence roots (demand graph combine) cache)
+      (roots.map (eager graph combine)) (roots.sum + 1) := by
+  apply sequence_valid
+  · intro root member current valid
+    have one := demand_valid graph combine root current valid
+    refine { one with bounded := ?_ }
+    intro node computed
+    exact (one.bounded node computed).trans_le
+      (Nat.add_le_add_right (List.le_sum_of_mem member) 1)
+  · exact sound
+
+/-- Multiple roots pay for their output occurrences and the edges of distinct
+reachable nodes. Payload construction and memo-table cost remain separate. -/
+theorem sequenceRequests_le_reachable_edges (graph : Graph Label)
+    (combine : Label → List Summary → Summary) (roots : List Nat) (cache : Cache Summary)
+    (sound : Sound graph combine cache) :
+    sequenceRequests roots (demand graph combine) (demandRequests graph combine) cache ≤
+      roots.length + ∑ node ∈ roots.toFinset.biUnion (reachable graph),
+        (graph.children node).length := by
+  rw [sequenceRequests_eq graph _ _ _
+    (fun root _ current => demandRequests_eq graph combine root current)]
+  apply Nat.add_le_add_left
+  unfold edgeCount
+  rw [← List.sum_toFinset _ (sequence_demand_valid graph combine roots cache sound).nodup]
+  apply Finset.sum_le_sum_of_subset
+  intro node member
+  have computed : node ∈ (sequence roots (demand graph combine) cache).computed := by
+    simpa using member
+  obtain ⟨root, root_mem, current, reached⟩ :=
+    sequence_computed_source _ _ _ node computed
+  exact Finset.mem_biUnion.mpr ⟨root, by simpa using root_mem,
+    demand_computed_reachable graph combine root current node reached⟩
+
 /-- Dependency testing uses actual edges even when all caches are empty. -/
 def affected (g : Graph Label) (changed : Nat → Bool) (i : Nat) : Bool :=
   changed i || (g.children i).any fun child => affected g changed child.val

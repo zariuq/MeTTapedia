@@ -6,6 +6,7 @@ import Mettapedia.Languages.MeTTa.HE.HEPremises
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # MeTTa Runtime Specification Profile

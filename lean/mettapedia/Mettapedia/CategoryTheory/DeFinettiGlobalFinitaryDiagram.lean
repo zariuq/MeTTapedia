@@ -26,7 +26,7 @@ noncomputable section
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open CategoryTheory
+open _root_.Mettapedia.CategoryTheory
 
 variable {Ω : Type*} [MeasurableSpace Ω]
 

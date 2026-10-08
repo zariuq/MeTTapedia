@@ -4,6 +4,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.NativeGradeAttachment
 import Mettapedia.GSLT.Dynamics.ResumptionCategory
 import Mettapedia.GSLT.Causality.OccurrenceMachineHistory
 import Mettapedia.GSLT.Core.InferenceRecording
+import Mettapedia.GSLT.Core.FiniteSearchCertificate
 import Mathlib.Tactic.Convert
 
 /-!
@@ -2059,6 +2060,32 @@ def authoredSystem {V : Type} [Monoid V] (program : Program)
     (annotation : Row → Option AuthoredClause) (interpretation : Outcome → Option V) :
     BranchingSystem (AuthoredWork × V) (AuthoredResult × V) :=
   WeightedBranchingResumption.Scheduled.system (authoredSource program annotation interpretation)
+
+/-- Actual nested coefficient and predicate computations use the common finite
+source certificate. Completed controllers retain the entire result bag,
+including parked dispositions and duplicate occurrences. No termination claim
+about other programs, equality of prefixes, or equality of host costs follows. -/
+theorem authored_completed_controllers_agree {V : Type} [Monoid V]
+    (program : Program) (annotation : Row → Option AuthoredClause)
+    (interpretation : Outcome → Option V) (depth : Nat)
+    {FirstMemory SecondMemory : Type*}
+    (first : Controller (AuthoredWork × V) (AuthoredResult × V) FirstMemory)
+    (second : Controller (AuthoredWork × V) (AuthoredResult × V) SecondMemory)
+    (roots : List (AuthoredWork × V))
+    (certified : ∀ root ∈ roots, Mettapedia.GSLT.Core.FiniteSearchCertificate.Certified
+      (authoredSystem program annotation interpretation) depth root)
+    (firstFuel secondFuel : Nat)
+    (firstClosed : (Snapshot.run (authoredSystem program annotation interpretation)
+      first firstFuel (Snapshot.initial first roots)).search.frontier = [])
+    (secondClosed : (Snapshot.run (authoredSystem program annotation interpretation)
+      second secondFuel (Snapshot.initial second roots)).search.frontier = []) :
+    eventBag (Snapshot.run (authoredSystem program annotation interpretation)
+        first firstFuel (Snapshot.initial first roots)).search.events =
+      eventBag (Snapshot.run (authoredSystem program annotation interpretation)
+        second secondFuel (Snapshot.initial second roots)).search.events :=
+  Mettapedia.GSLT.Core.FiniteSearchCertificate.completed_controllers_agree
+    (authoredSystem program annotation interpretation) depth first second roots certified
+    firstFuel secondFuel firstClosed secondClosed
 
 /-- A superior multiplication supplies one sufficient stopping law for the
 actual nested coefficient/predicate machine. The source continues to retain

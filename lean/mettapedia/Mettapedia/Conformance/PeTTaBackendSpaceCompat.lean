@@ -1,9 +1,10 @@
 import Mettapedia.Languages.MeTTa.RuntimeResource
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
-import Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.DeclarativeSpec
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceEffectFragment
 import Mettapedia.OSLF.MeTTaIL.Match
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands
 
 /-!
 # PeTTa Backend-Space Compatibility

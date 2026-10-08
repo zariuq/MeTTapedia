@@ -151,11 +151,11 @@ theorem splitRules_true_derives_nothing (judgment : Bool) :
 theorem splitRules_true_noBottom : NoBottom (SplitRules true) false :=
   splitRules_true_derives_nothing false
 
-def splitSeed : Derives (UnionRules SplitRules) true :=
+theorem splitSeed : Derives (UnionRules SplitRules) true :=
   .node [] true ⟨false, SplitRules.seed⟩ (by simp)
 
 /-- The undirected union invents a cross-stage proof of bottom. -/
-def splitUnionDerivesBottom : Derives (UnionRules SplitRules) false :=
+theorem splitUnionDerivesBottom : Derives (UnionRules SplitRules) false :=
   .node [true] false ⟨true, SplitRules.close⟩ (by
     intro premise member
     have hp : premise = true := by simpa using member

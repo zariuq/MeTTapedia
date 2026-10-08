@@ -1,7 +1,9 @@
 import Mettapedia.GSLT.LanguageDef.CheckedSource
-import Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTLayers
 import Mettapedia.OSLF.Framework.RelationalAnswerTypeSynthesis
+
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
 
 /-!
 # Checked typing profiles over PeTTa's operational GSLT
@@ -36,7 +38,7 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
 open Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
 open Mettapedia.GSLT.LanguageDef.CalculusExtension
-open Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
 open Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 open Mettapedia.OSLF.Framework.RelationalAnswerTypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -148,7 +150,7 @@ theorem producesCheckedType_request_iff
     (profile : TypingProfile) (type : Pattern)
     (initial : EvalState) (request : Pattern) :
     producesCheckedType profile type (.request initial request) ↔
-      ∃ (final : EvalState) (answers : Answers),
+      ∃ (final : EvalState) (answers : RewriteResults),
         ∃ occurrence : Fin answers.length,
           CoreDecl initial request final answers ∧
             profile.covered final (answers.get occurrence) type = true ∧
@@ -164,7 +166,7 @@ becoming the semantic object. -/
 structure CheckedAnswer (profile : TypingProfile) (initial : EvalState)
     (request type : Pattern) where
   final : EvalState
-  answers : Answers
+  answers : RewriteResults
   occurrence : Fin answers.length
   evaluation : CoreDecl initial request final answers
   covered : profile.covered final (answers.get occurrence) type = true
@@ -211,7 +213,7 @@ theorem producesCheckedType_iff_exists_checkedProof
     (profile : TypingProfile) (type : Pattern)
     (initial : EvalState) (request : Pattern) :
     producesCheckedType profile type (.request initial request) ↔
-      ∃ (final : EvalState) (answers : Answers),
+      ∃ (final : EvalState) (answers : RewriteResults),
         ∃ occurrence : Fin answers.length,
           CoreDecl initial request final answers ∧
             profile.covered final (answers.get occurrence) type = true ∧
@@ -336,7 +338,7 @@ theorem v2_vNum_produces_tNum :
     producesCheckedType v2Typing tNum
       (.request EvalState.empty vNum) := by
   rw [producesCheckedType_iff_exists_checkedProof]
-  let occurrence : Fin ([vNum] : Answers).length := ⟨0, by simp⟩
+  let occurrence : Fin ([vNum] : RewriteResults).length := ⟨0, by simp⟩
   refine ⟨EvalState.empty, [vNum], occurrence, ?_, ?_, hasTypeNumProof, ?_⟩
   · simpa [vNum] using
       (CoreDecl.pure EvalState.empty vNum [vNum]

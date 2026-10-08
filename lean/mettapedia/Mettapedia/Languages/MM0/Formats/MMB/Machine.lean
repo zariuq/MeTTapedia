@@ -156,6 +156,87 @@ def popExprs (state : State) : Nat → Option (List Nat × State)
       let (earlier, state) ← state.popExprs count
       pure (earlier ++ [last], state)
 
+theorem popExpr_keeps_state (before after : State) (position : Nat)
+    (popped : before.popExpr = some (position, after)) :
+    after = { before with stack := after.stack } := by
+  cases stack : before.stack with
+  | nil => simp [popExpr, pop, stack] at popped
+  | cons first rest =>
+      cases first <;> simp_all [popExpr, pop]
+      obtain ⟨_, same⟩ := popped
+      cases same
+      rfl
+
+theorem popExprs_keeps_state (before after : State) (count : Nat) (positions : List Nat)
+    (popped : before.popExprs count = some (positions, after)) :
+    after = { before with stack := after.stack } := by
+  induction count generalizing before positions with
+  | zero =>
+      simp only [popExprs, Option.some.injEq, Prod.mk.injEq] at popped
+      obtain ⟨_, same⟩ := popped
+      cases same
+      rfl
+  | succ count ih =>
+      cases first : before.popExpr with
+      | none => simp [popExprs, first] at popped
+      | some pair =>
+          rcases pair with ⟨last, middle⟩
+          cases earlier : middle.popExprs count with
+          | none => simp [popExprs, first, earlier] at popped
+          | some pair =>
+              rcases pair with ⟨firsts, finish⟩
+              simp [popExprs, first, earlier] at popped
+              obtain ⟨_, same⟩ := popped
+              cases same
+              have one := popExpr_keeps_state before middle last first
+              have many := ih middle firsts earlier
+              rw [many, one]
+
+theorem popExprs_count (before after : State) (count : Nat) (positions : List Nat)
+    (popped : before.popExprs count = some (positions, after)) : positions.length = count := by
+  induction count generalizing before after positions with
+  | zero =>
+      simp only [popExprs, Option.some.injEq, Prod.mk.injEq] at popped
+      obtain ⟨same, _⟩ := popped
+      cases same
+      rfl
+  | succ count ih =>
+      cases first : before.popExpr with
+      | none => simp [popExprs, first] at popped
+      | some pair =>
+          rcases pair with ⟨last, middle⟩
+          cases earlier : middle.popExprs count with
+          | none => simp [popExprs, first, earlier] at popped
+          | some pair =>
+              rcases pair with ⟨firsts, finish⟩
+              simp [popExprs, first, earlier] at popped
+              obtain ⟨same, _⟩ := popped
+              cases same
+              simpa using ih middle finish firsts earlier
+
+theorem typeOf_allocated (state : State) (position : Nat) (type : ExprType)
+    (read : state.typeOf position = some type) : position < state.store.length := by
+  obtain ⟨allocation, found, _⟩ := Option.map_eq_some_iff.mp read
+  exact (List.getElem?_eq_some_iff.mp found).choose
+
+theorem typesOf_allocated (state : State) (positions : List Nat) (types : List ExprType)
+    (read : positions.mapM state.typeOf = some types) :
+    ∀ position ∈ positions, position < state.store.length := by
+  induction positions generalizing types with
+  | nil => simp
+  | cons position positions ih =>
+      cases first : state.typeOf position with
+      | none => simp [first] at read
+      | some type =>
+          cases rest : positions.mapM state.typeOf with
+          | none => simp [first, rest] at read
+          | some earlier =>
+              exact fun other member => by
+                rcases List.mem_cons.mp member with same | later
+                · subst other
+                  exact typeOf_allocated state position type first
+                · exact ih earlier rest other later
+
 end State
 
 /-! ## Dependencies of a new application -/
@@ -180,7 +261,26 @@ def appDeps (mode : Mode) (targets : List ExprType) (ret : ExprType)
           boundDeps.zipIdx.foldl (fun deps (bound, j) =>
             if j ∈ ret.deps then deps ∪ bound else deps) ∅
         else ∅
-  go targets sources []
+  if mode = .assertion then
+    sources.foldr (fun source dependencies => source.deps ∪ dependencies) ∅
+  else go targets sources []
+
+/-- In an assertion, a dependency occurs exactly when it occurs in one of the
+actual child types, including children supplied to bound-variable slots. -/
+theorem mem_appDeps_assertion (targets : List ExprType) (ret : ExprType)
+    (sources : List ExprType) (rank : Nat) :
+    rank ∈ appDeps .assertion targets ret sources ↔
+      ∃ source ∈ sources, rank ∈ source.deps := by
+  induction sources with
+  | nil => simp [appDeps]
+  | cons source sources ih =>
+      simpa [appDeps] using or_congr (Iff.refl (rank ∈ source.deps)) ih
+
+theorem child_deps_subset_assertion (targets : List ExprType) (ret : ExprType)
+    (sources : List ExprType) (source : ExprType) (member : source ∈ sources) :
+    source.deps ⊆ appDeps .assertion targets ret sources := by
+  intro rank occurs
+  exact (mem_appDeps_assertion targets ret sources rank).mpr ⟨source, member, occurs⟩
 
 /-- The disjointness checks of a theorem application: a bound argument is
 disjoint from every earlier argument; a regular argument is disjoint from each
@@ -302,6 +402,106 @@ def stepThm (tables : Tables) (state : State) (T : Nat) (save : Bool) : Option S
     pure (if save then { state with heap := state.heap ++ [.proof e] } else state)
   else none
 
+theorem stepTerm_operands (tables : Tables) (mode : Mode) (before after : State)
+    (term : Nat) (save : Bool) (entry : TermEntry)
+    (entryRead : tables.terms[term]? = some entry)
+    (executed : stepTerm tables mode before term save = some after) :
+    ∃ args types,
+      args.length = entry.args.length ∧ args.mapM before.typeOf = some types ∧
+      (types.zip entry.args).all (fun (source, target) => source.fits target) = true ∧
+      after.store = before.store ++
+        [⟨.app term args, ⟨entry.sort, false, appDeps mode entry.args entry.ret types⟩⟩] := by
+  unfold stepTerm at executed
+  change (tables.terms[term]?).bind _ = some after at executed
+  rw [entryRead, Option.bind_some] at executed
+  cases popped : before.popExprs entry.args.length with
+  | none => simp [popped] at executed
+  | some pair =>
+      rcases pair with ⟨args, state⟩
+      change (before.popExprs entry.args.length).bind _ = some after at executed
+      rw [popped, Option.bind_some] at executed
+      cases typeReads : args.mapM state.typeOf with
+      | none => simp [typeReads] at executed
+      | some types =>
+          change (args.mapM state.typeOf).bind _ = some after at executed
+          rw [typeReads, Option.bind_some] at executed
+          split at executed
+          · rename_i fits
+            have sameStore : state.store = before.store := by
+              simpa only using congrArg State.store
+                (State.popExprs_keeps_state before state entry.args.length args popped)
+            have count := State.popExprs_count before state entry.args.length args popped
+            have sameTypes : state.typeOf = before.typeOf := by
+              funext position
+              simp only [State.typeOf, sameStore]
+            have readings : args.mapM before.typeOf = some types := by
+              simpa only [sameTypes] using typeReads
+            cases save <;> simp [State.alloc, State.push] at executed
+            all_goals cases executed
+            all_goals
+              exact ⟨args, types, count, readings, fits, by simp [sameStore]⟩
+          · simp at executed
+
+theorem stepTerm_allocation (tables : Tables) (mode : Mode) (before after : State)
+    (term : Nat) (save : Bool) (entry : TermEntry)
+    (entryRead : tables.terms[term]? = some entry)
+    (executed : stepTerm tables mode before term save = some after) :
+    ∃ args type,
+      after.store = before.store ++ [⟨.app term args, type⟩] ∧
+      args.length = entry.args.length ∧
+      ∀ arg ∈ args, arg < before.store.length := by
+  obtain ⟨args, types, count, read, _, store⟩ :=
+    stepTerm_operands tables mode before after term save entry entryRead executed
+  exact ⟨args, ⟨entry.sort, false, appDeps mode entry.args entry.ret types⟩,
+    store, count, State.typesOf_allocated before args types read⟩
+
+theorem stepThm_keeps_store (tables : Tables) (before after : State) (theorem_ : Nat)
+    (save : Bool) (executed : stepThm tables before theorem_ save = some after) :
+    after.store = before.store := by
+  unfold stepThm at executed
+  change (tables.thms[theorem_]?).bind _ = some after at executed
+  cases declaration : tables.thms[theorem_]? with
+  | none => simp [declaration] at executed
+  | some entry =>
+      rw [declaration, Option.bind_some] at executed
+      change before.popExpr.bind _ = some after at executed
+      cases conclusion : before.popExpr with
+      | none => simp [conclusion] at executed
+      | some pair =>
+          rcases pair with ⟨expression, firstState⟩
+          rw [conclusion, Option.bind_some] at executed
+          change (firstState.popExprs entry.args.length).bind _ = some after at executed
+          cases arguments : firstState.popExprs entry.args.length with
+          | none => simp [arguments] at executed
+          | some pair =>
+              rcases pair with ⟨args, state⟩
+              rw [arguments, Option.bind_some] at executed
+              change (args.mapM state.typeOf).bind _ = some after at executed
+              cases typeReads : args.mapM state.typeOf with
+              | none => simp [typeReads] at executed
+              | some types =>
+                  rw [typeReads, Option.bind_some] at executed
+                  split at executed
+                  · rename_i compatible
+                    change (unifyRun state.store .apply
+                      ⟨[expression], args.map (·, false), state.stack, state.hyps⟩ entry.unify).bind _ =
+                      some after at executed
+                    cases unified : unifyRun state.store .apply
+                        ⟨[expression], args.map (·, false), state.stack, state.hyps⟩ entry.unify with
+                    | none => simp [unified] at executed
+                    | some unifier =>
+                        rw [unified, Option.bind_some] at executed
+                        have one : firstState.store = before.store := by
+                          simpa only using congrArg State.store
+                            (State.popExpr_keeps_state before firstState expression conclusion)
+                        have many : state.store = firstState.store := by
+                          simpa only using congrArg State.store
+                            (State.popExprs_keeps_state firstState state entry.args.length args arguments)
+                        cases save <;> simp at executed
+                        all_goals cases executed
+                        all_goals exact many.trans one
+                  · simp at executed
+
 def step (tables : Tables) (mode : Mode) (state : State) : ProofCmd → Option State
   | .term t => stepTerm tables mode state t false
   | .termSave t => stepTerm tables mode state t true
@@ -415,6 +615,18 @@ def loadArgs (sorts : List SortInfo) (args : List ExprType) : Option State :=
         some { state with heap := state.heap ++ [.expr e], varCount := state.varCount + 1 }
       else none) ⟨[], [], [], [], 0, 0⟩
 
+/-- Combined argument/return validation allocates a final temporary variable.
+`loadArgs` starts with empty stack and hypotheses and allocates only variable
+nodes, so no expression edge points to this cell. Its only root is the final
+heap entry. Dropping that entry makes the cell unreachable; it is removed from
+the abstract store before execution, and fresh dummy context positions start
+after the public arguments. -/
+def State.forTermProof (loaded : State) (arguments : Nat) : State :=
+  { loaded with
+    store := loaded.store.dropLast
+    heap := loaded.heap.dropLast
+    varCount := arguments }
+
 /-- Check an axiom or theorem: its proof stream leaves exactly the statement
 (an expression for an axiom, a proof for a theorem) of a provable sort, and
 the statement's unify stream matches it and the recorded hypotheses. -/
@@ -434,10 +646,12 @@ def checkAssertion (tables : Tables) (entry : ThmEntry) (proof : List ProofCmd)
       | none => false
   | none => false
 
-/-- Check a term or definition: its arguments and return type are loaded as
-binders; a definition's proof stream builds its value, whose type fits the
-return type without unaccounted dependencies, and whose unify stream matches
-it. A plain term has no proof stream. -/
+/-- Check a term or definition: its arguments and return type are validated as
+binders. The temporary return-validation allocation is discarded before proof
+execution; it is absent from the initial proof heap, and dummy context positions
+follow the public arguments. A definition's proof stream builds its value,
+whose type fits the return type without unaccounted dependencies and whose
+unify stream matches it. A plain term has no proof stream. -/
 def checkTermDecl (tables : Tables) (entry : TermEntry) (proof : List ProofCmd) : Bool :=
   match tables.sorts[entry.sort]? with
   | none => false
@@ -446,7 +660,7 @@ def checkTermDecl (tables : Tables) (entry : TermEntry) (proof : List ProofCmd) 
       match loadArgs tables.sorts (entry.args ++ [entry.ret]) with
       | none => false
       | some loaded =>
-          let state := { loaded with heap := loaded.heap.dropLast }
+          let state := loaded.forTermProof entry.args.length
           match entry.value with
           | none => proof.isEmpty
           | some value =>

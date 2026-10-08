@@ -166,16 +166,15 @@ theorem rhoTwice_labels_collide :
   refine ⟨by decide, by decide⟩
 
 /-- **So the twice-extended declaration is not label-distinct**, and the
-construction is not idempotent in the strong sense a monad would need without a
-freshness discipline. -/
+second application fails the declaration gate without a freshness discipline.
+A monad need not be idempotent; its multiplication requires a separate
+construction and proof. -/
 theorem rhoTwice_not_label_distinct :
     (rhoTwice.terms.map GrammarRule.label).eraseDups.length
       ≠ rhoTwice.terms.length := by decide
 
 /-! ## Validity -/
 
-set_option maxRecDepth 100000 in
-set_option maxHeartbeats 8000000 in
 theorem rhoOnce_terms_valid :
     ∀ term ∈ rhoOnce.terms, LanguageDef.validateTerm rhoOnce term = [] := by
   intro term member
@@ -195,8 +194,6 @@ theorem rhoOnce_terms_valid :
       LanguageDef.validateSyntaxPattern_terminalsAndBoundNonTerminals _ _ _ (by simp)⟩
     simp [TypeExpr.baseNames]
 
-set_option maxRecDepth 100000 in
-set_option maxHeartbeats 8000000 in
 theorem rhoOnce_rewrites_valid :
     ∀ rewrite ∈ rhoOnce.rewrites, LanguageDef.validateRewrite rhoOnce rewrite = [] := by
   intro rewrite member
@@ -211,8 +208,6 @@ theorem rhoOnce_rewrites_valid :
       LanguageDef.premiseFvarNames, LanguageDef.premiseForAllParams, Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames]
 
-set_option maxRecDepth 100000 in
-set_option maxHeartbeats 8000000 in
 theorem rhoOnce_equations_valid :
     ∀ equation ∈ rhoOnce.equations, LanguageDef.validateEquation rhoOnce equation = [] := by
   intro equation member
@@ -223,14 +218,12 @@ theorem rhoOnce_equations_valid :
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames, Pattern.constructorRefs,
     Pattern.constructorRefsList, Pattern.freeFvarNames]
 
-set_option maxRecDepth 100000 in
 /-- **The extension is a language definition**: extending the reflective calculus
 once passes the validation gate. -/
 theorem rhoOnce_validate_eq_nil : rhoOnce.validate = [] :=
   LanguageDef.validate_eq_nil_of_rows rhoOnce (by decide) (by decide) (by decide) (by decide)
     rhoOnce_terms_valid rhoOnce_equations_valid rhoOnce_rewrites_valid
 
-set_option maxRecDepth 100000 in
 /-- **And extending twice is rejected** by the same gate, for its duplicated
 formers. -/
 theorem rhoTwice_rejected : rhoTwice.validate ≠ [] := by

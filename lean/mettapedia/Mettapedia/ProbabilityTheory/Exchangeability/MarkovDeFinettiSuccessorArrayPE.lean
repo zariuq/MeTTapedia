@@ -1249,7 +1249,7 @@ lemma cylinder_inter_avoidBand_eq_biUnion (w : List (Fin k)) (A : Finset (Fin k)
       ⋃ f ∈ avoidTuples (k := k) A M, cylinder (k := k) (w ++ List.ofFn f) := by
   classical
   ext ω
-  simp only [Set.mem_inter_iff, Set.mem_iUnion, avoidBand, Set.mem_setOf_eq]
+  simp only [Set.mem_inter_iff, Set.mem_iUnion, avoidBand, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨hcyl, hband⟩
     refine ⟨fun j => ω (w.length + j.1), ?_, ?_⟩
@@ -1371,7 +1371,7 @@ lemma measure_cylinder_inter_avoidTail_eq_of_evidence
     intro x
     ext ω
     simp only [Set.mem_inter_iff, Set.mem_iInter, avoidTail, avoidBand,
-      Set.mem_setOf_eq]
+      Set.mem_ofPred_eq]
     constructor
     · rintro ⟨hc, ha⟩ M
       exact ⟨hc, fun t ht _ => ha t ht⟩
@@ -1544,7 +1544,7 @@ lemma jointRowSuccEvent_inter_notVisited (i : Fin k) (S : Finset ℕ)
     jointRowSuccEvent (k := k) i S v' ∩ {ω | ∀ t, ω t ≠ i} =
       {_ω : ℕ → Fin k | ∀ n ∈ S, v' n = i} ∩ {ω | ∀ t, ω t ≠ i} := by
   ext ω
-  simp only [Set.mem_inter_iff, Set.mem_setOf_eq, jointRowSuccEvent,
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, jointRowSuccEvent,
     Set.mem_iInter, rowSuccessorValueEvent]
   have hall : (∀ t, ω t ≠ i) → ∀ n, rowSuccessorAtNthVisit (k := k) i n ω = i := by
     intro hNV n
@@ -1696,7 +1696,7 @@ lemma multiJRE_inter_profileEvent_of_good (m : Fin k → ℕ) (v' : Fin k → �
         ∩ avoidTail (C \ T) 0 := by
   ext ω
   simp only [multiJRE, profileEvent, jointRowSuccEvent, rowSuccessorValueEvent,
-    avoidTail, Set.mem_inter_iff, Set.mem_iInter, Set.mem_setOf_eq]
+    avoidTail, Set.mem_inter_iff, Set.mem_iInter, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨hJ, hV, hNV⟩
     exact ⟨fun i hi => ⟨fun n hn => hJ i n hn, hV i hi⟩,
@@ -1823,7 +1823,7 @@ lemma avoidTail_zero_eq_band_inter (A : Finset (Fin k)) (N : ℕ) :
     avoidTail (k := k) A 0 =
       {ω : ℕ → Fin k | ∀ i ∈ A, ∀ t ≤ N, ω t ≠ i} ∩ avoidTail A (N + 1) := by
   ext ω
-  simp only [avoidTail, Set.mem_setOf_eq, Set.mem_inter_iff]
+  simp only [avoidTail, Set.mem_ofPred_eq, Set.mem_inter_iff]
   constructor
   · intro h
     exact ⟨fun i hi t ht hcon => h t (Nat.zero_le t) (by rw [hcon]; exact hi),
@@ -1843,7 +1843,7 @@ lemma biInter_upTo_eq_jointUpTo [DecidableEq (Fin k)] (m : Fin k → ℕ)
         (fun i => Finset.range (if i ∈ T then m i else 0)) v' N := by
   ext ω
   simp only [jointRowVisitCylinderEventUpTo, Set.mem_iInter,
-    rowVisitCylinderEventUpTo, Set.mem_setOf_eq]
+    rowVisitCylinderEventUpTo, Set.mem_ofPred_eq]
   constructor
   · intro h i n hn
     by_cases hi : i ∈ T
@@ -2441,7 +2441,7 @@ theorem successorMatrixPartialExchangeable_of_markovExchangeable_strongRecurrenc
     intro readIdx
     ext ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_iInter,
-      Set.mem_setOf_eq, funext_iff]
+      Set.mem_ofPred_eq, funext_iff]
     exact Iff.rfl
   rw [hpre (fun j => σ' (anchor j) (idx j)), hpre idx]
   have hmeasE : ∀ readIdx : Fin m' → ℕ,
@@ -2464,12 +2464,12 @@ theorem successorMatrixPE_of_markovExchangeable_strongRecurrence_holds (k : ℕ)
   intro μ P hP hμ hExt hStrRec
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · exfalso
-    haveI : IsEmpty (ℕ → Fin 0) := ⟨fun f => (f 0).elim0⟩
+    have : IsEmpty (ℕ → Fin 0) := ⟨fun f => (f 0).elim0⟩
     have h1 : P Set.univ = 1 := hP.measure_univ
     rw [Set.univ_eq_empty_iff.mpr inferInstance, measure_empty] at h1
     exact zero_ne_one h1
-  · haveI : NeZero k := NeZero.of_pos hk
-    haveI : IsProbabilityMeasure P := hP
+  · have : NeZero k := NeZero.of_pos hk
+    have : IsProbabilityMeasure P := hP
     exact successorMatrixPartialExchangeable_of_markovExchangeable_strongRecurrence
       μ hμ P hExt hStrRec
 

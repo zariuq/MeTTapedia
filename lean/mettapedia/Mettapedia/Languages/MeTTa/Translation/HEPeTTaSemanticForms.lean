@@ -19,8 +19,7 @@ PeTTa together with the translator bridge between them.
    `HEInstructionOperationalSemantics` and
    `PeTTaInstructionOperationalSemantics`
 4. **Executable layers**
-   `HEStableExecutableBoundary`, `HECertifiedTopLevelSemantics`, and
-   `PeTTaExecutableBoundaryBundle`
+   `HEStableExecutableBoundary` and `HECertifiedTopLevelSemantics`
 5. **Translator bridge**
    `HEPeTTaTranslateCore`, validated roundtrip theorems, the shared
    atomspace/import fragments, and an explicit empty state-identity boundary

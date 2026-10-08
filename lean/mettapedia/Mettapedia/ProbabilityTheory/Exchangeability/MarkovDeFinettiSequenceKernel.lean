@@ -18,7 +18,7 @@ noncomputable section
 namespace Mettapedia.ProbabilityTheory.Exchangeability
 
 open MeasureTheory
-open ProbabilityTheory
+open _root_.Mettapedia.ProbabilityTheory
 open Preorder
 open scoped NNReal ENNReal
 open MarkovDeFinettiHard

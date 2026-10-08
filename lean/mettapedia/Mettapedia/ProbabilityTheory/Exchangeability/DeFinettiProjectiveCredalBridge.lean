@@ -207,12 +207,12 @@ theorem bernoulliMixturePrefixPrevision_takePrefix_eq
   unfold bernoulliMixtureKyburgPrefixPrevision
   let μn : Measure (Fin n → Bool) :=
     ParametrizedDistribution.flatten (DeFinettiConnection.pd M n)
-  haveI : IsProbabilityMeasure μn := by
+  have : IsProbabilityMeasure μn := by
     dsimp [μn]
     infer_instance
   let μm : Measure (Fin m → Bool) :=
     ParametrizedDistribution.flatten (DeFinettiConnection.pd M m)
-  haveI : IsProbabilityMeasure μm := by
+  have : IsProbabilityMeasure μm := by
     dsimp [μm]
     infer_instance
   have hmap :
@@ -348,7 +348,7 @@ theorem externalIIDProductPrefixPrevision_precise
   let μprefix : Measure (Fin n → Bool) :=
     (Exchangeability.Probability.iidProduct ν).map
       (Exchangeability.prefixProj (α := Bool) n)
-  haveI : IsProbabilityMeasure μprefix :=
+  have : IsProbabilityMeasure μprefix :=
     Measure.isProbabilityMeasure_map
       ((Exchangeability.measurable_prefixProj (α := Bool) (n := n)).aemeasurable)
   change
@@ -467,13 +467,13 @@ theorem externalPathLawPrefixPrevision_precise
     (X : ℕ → Ω → Bool) (hX : ∀ i : ℕ, Measurable (X i)) (n : ℕ) :
     (externalPathLawPrefixPrevision μ X hX n).toLowerPrevision.isPrecise := by
   let path : Measure (ℕ → Bool) := Exchangeability.pathLaw (α := Bool) μ X
-  haveI : IsProbabilityMeasure path := by
+  have : IsProbabilityMeasure path := by
     dsimp [path, Exchangeability.pathLaw]
     exact Measure.isProbabilityMeasure_map
       ((measurable_pi_lambda _ fun i => hX i).aemeasurable)
   let μprefix : Measure (Fin n → Bool) :=
     Measure.map (Exchangeability.prefixProj (α := Bool) n) path
-  haveI : IsProbabilityMeasure μprefix :=
+  have : IsProbabilityMeasure μprefix :=
     Measure.isProbabilityMeasure_map
       ((Exchangeability.measurable_prefixProj (α := Bool) (n := n)).aemeasurable)
   change
@@ -501,13 +501,13 @@ theorem externalPathLawPrefixBoundedMeasurablePrevision_eq_prefixPrevision
       externalPathLawPrefixPrevision μ X hX n Y := by
   dsimp only
   let path : Measure (ℕ → Bool) := Exchangeability.pathLaw (α := Bool) μ X
-  haveI : IsProbabilityMeasure path := by
+  have : IsProbabilityMeasure path := by
     dsimp [path, Exchangeability.pathLaw]
     exact Measure.isProbabilityMeasure_map
       ((measurable_pi_lambda _ fun i => hX i).aemeasurable)
   let μprefix : Measure (Fin n → Bool) :=
     Measure.map (Exchangeability.prefixProj (α := Bool) n) path
-  haveI : IsProbabilityMeasure μprefix :=
+  have : IsProbabilityMeasure μprefix :=
     Measure.isProbabilityMeasure_map
       ((Exchangeability.measurable_prefixProj (α := Bool) (n := n)).aemeasurable)
   unfold externalPathLawPrefixPrevision
@@ -563,7 +563,7 @@ theorem prefixPrevision_precise
     {Ω : Type*} [MeasurableSpace Ω]
     (A : ExternalBoolProcessLaw Ω) (n : ℕ) :
     (A.prefixPrevision n).toLowerPrevision.isPrecise := by
-  haveI : IsProbabilityMeasure A.μ := A.prob
+  have : IsProbabilityMeasure A.μ := A.prob
   exact externalPathLawPrefixPrevision_precise A.μ A.X A.measurable n
 
 /-- Prefix-cylinder evaluation for the path law carried by an external Boolean
@@ -604,7 +604,7 @@ theorem pathBoundedMeasurablePrevision_prefix_eq_prefixPrevision
         (externalPathLawPrefixBoundedMeasurableGamble n Y) =
       A.prefixPrevision n Y := by
   unfold pathBoundedMeasurablePrevision prefixPrevision
-  haveI : IsProbabilityMeasure A.μ := A.prob
+  have : IsProbabilityMeasure A.μ := A.prob
   exact externalPathLawPrefixBoundedMeasurablePrevision_eq_prefixPrevision
     A.μ A.X A.measurable n Y
 
@@ -2773,7 +2773,7 @@ end DeFinettiProjectiveCredalSpecialization
 
 /-- Select the finite-prefix law at window `n` from an all-prefix family of
 Bernoulli-mixture laws. -/
-def bernoulliMixturePrefixLawAt
+theorem bernoulliMixturePrefixLawAt
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
@@ -3198,7 +3198,7 @@ theorem posteriorBernoulliMixture_mem_posteriorSet
 
 /-- Every member of the posterior singleton set has analytic Bernoulli prefix
 laws. -/
-def posteriorBernoulliMixtureSetPrefixLaw
+theorem posteriorBernoulliMixtureSetPrefixLaw
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
     ∀ P : BernoulliMixture, P ∈ posteriorBernoulliMixtureSet M k l hZ →
@@ -3250,7 +3250,7 @@ theorem posteriorBernoulliMixture_mem_posteriorFamilySet
   ⟨M, hM, rfl⟩
 
 /-- Every member of the posterior family has analytic Bernoulli prefix laws. -/
-def posteriorBernoulliMixtureFamilyPrefixLaw
+theorem posteriorBernoulliMixtureFamilyPrefixLaw
     (C : Set BernoulliMixture) (k l : ℕ)
     (hZ : ∀ M : BernoulliMixture, M ∈ C →
       M.countEvidenceMass k l ≠ 0) :
@@ -3937,11 +3937,11 @@ theorem posteriorBernoulliMixturePrefixProcess_cylinderEnvelopeWidth_eq_zero
     ((posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec).cylinderEnvelopeWidth
       n X = 0 := by
   let S := (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec
-  haveI : Fintype (S.cylinders.Local n) := by
+  have : Fintype (S.cylinders.Local n) := by
     dsimp [S, posteriorBernoulliMixturePrefixProcessLowerSpec,
       bernoulliMixturePrefixProcessLowerSpec, bernoulliMixturePrefixProcessCylinderSystem]
     infer_instance
-  haveI : Nonempty (S.cylinders.Local n) := by
+  have : Nonempty (S.cylinders.Local n) := by
     dsimp [S, posteriorBernoulliMixturePrefixProcessLowerSpec,
       bernoulliMixturePrefixProcessLowerSpec, bernoulliMixturePrefixProcessCylinderSystem]
     infer_instance
@@ -3969,11 +3969,11 @@ theorem posteriorBernoulliMixturePrefixProcess_cylinderEnvelopeWidthComplement_e
     ((posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec).cylinderEnvelopeWidthComplement
       n X = 1 := by
   let S := (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec
-  haveI : Fintype (S.cylinders.Local n) := by
+  have : Fintype (S.cylinders.Local n) := by
     dsimp [S, posteriorBernoulliMixturePrefixProcessLowerSpec,
       bernoulliMixturePrefixProcessLowerSpec, bernoulliMixturePrefixProcessCylinderSystem]
     infer_instance
-  haveI : Nonempty (S.cylinders.Local n) := by
+  have : Nonempty (S.cylinders.Local n) := by
     dsimp [S, posteriorBernoulliMixturePrefixProcessLowerSpec,
       bernoulliMixturePrefixProcessLowerSpec, bernoulliMixturePrefixProcessCylinderSystem]
     infer_instance
@@ -4476,7 +4476,7 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_exists_zeroFirstTrueEviden
     (hWitness : posteriorBernoulliMixturePrefixProcessWitness M k l hZ) :
     ∃ n : ℕ, M.countEvidenceMass (k + 1) (l + n) = 0 := by
   by_contra hNoZero
-  push_neg at hNoZero
+  push Not at hNoZero
   have hPos : ∀ n : ℕ, 0 < M.countEvidenceMass (k + 1) (l + n) := by
     intro n
     exact
@@ -6010,8 +6010,8 @@ theorem posteriorBernoulliMixture_processLaw_of_prefixCarrierWitness
     PosteriorBernoulliMixtureProcessLaw M k l hZ := by
   rcases hWitness with ⟨P, _hPcarrier, hPmarg⟩
   let carrier' : CredalPrevisionSet (ℕ → Bool) := ({P} : CredalPrevisionSet (ℕ → Bool))
-  letI : TopologicalSpace (PrecisePrevision (ℕ → Bool)) := ⊥
-  letI : DiscreteTopology (PrecisePrevision (ℕ → Bool)) :=
+  let : TopologicalSpace (PrecisePrevision (ℕ → Bool)) := ⊥
+  let : DiscreteTopology (PrecisePrevision (ℕ → Bool)) :=
     discreteTopology_bot (PrecisePrevision (ℕ → Bool))
   have hCompact : IsCompact carrier' := by
     exact isCompact_singleton
@@ -6294,13 +6294,13 @@ theorem externalPathLawPrefixPrevision_eq_bernoulliMixturePrefixPrevision_of_rep
   ext Y
   unfold externalPathLawPrefixPrevision
   let path : Measure (ℕ → Bool) := Exchangeability.pathLaw (α := Bool) μ X
-  haveI : IsProbabilityMeasure path := by
+  have : IsProbabilityMeasure path := by
     dsimp [path, Exchangeability.pathLaw]
     exact Measure.isProbabilityMeasure_map
       ((measurable_pi_lambda _ fun i => hX i).aemeasurable)
   let μprefix : Measure (Fin n → Bool) :=
     Measure.map (Exchangeability.prefixProj (α := Bool) n) path
-  haveI : IsProbabilityMeasure μprefix :=
+  have : IsProbabilityMeasure μprefix :=
     Measure.isProbabilityMeasure_map
       ((Exchangeability.measurable_prefixProj (α := Bool) (n := n)).aemeasurable)
   have hprefix :
@@ -6952,12 +6952,6 @@ theorem BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass
           (PrecisePrevision.dirac (allTruePrefix n))
           (PrecisePrevision.dirac (allFalsePrefix n))
           ht0 ht1 := by
-    change
-      bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P =
-        PrecisePrevision.mix t
-          (PrecisePrevision.dirac (allTruePrefix n))
-          (PrecisePrevision.dirac (allFalsePrefix n))
-          ht0 ht1
     rw [ProjectiveCylinderSystem.marginalPrevision_mix]
     rw [hMarginalTrue, hMarginalFalse]
   have hLocalEq :
@@ -8965,7 +8959,7 @@ theorem conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
       (M.posteriorBernoulliMixture (countTrue obs) (countFalse obs) hZ)
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
   unfold conditionedTailExternalBoolProcessLaw
-  letI : IsProbabilityMeasure
+  let : IsProbabilityMeasure
       (BernoulliMixture.conditionedOnPrefixMeasure μ X obs) :=
     BernoulliMixture.conditionedOnPrefixMeasure_isProbability M X μ hrep obs hZ
   exact
@@ -9502,8 +9496,8 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrie
       M obs hZ μ X hX hrep := by
   rcases hWitness with ⟨P, _hPcarrier, hPmarg⟩
   let carrier' : CredalPrevisionSet (ℕ → Bool) := ({P} : CredalPrevisionSet (ℕ → Bool))
-  letI : TopologicalSpace (PrecisePrevision (ℕ → Bool)) := ⊥
-  letI : DiscreteTopology (PrecisePrevision (ℕ → Bool)) :=
+  let : TopologicalSpace (PrecisePrevision (ℕ → Bool)) := ⊥
+  let : DiscreteTopology (PrecisePrevision (ℕ → Bool)) :=
     discreteTopology_bot (PrecisePrevision (ℕ → Bool))
   have hCompact : IsCompact carrier' := by
     exact isCompact_singleton

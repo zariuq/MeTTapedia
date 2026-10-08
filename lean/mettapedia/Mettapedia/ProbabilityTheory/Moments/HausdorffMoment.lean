@@ -1006,7 +1006,7 @@ private lemma tendsto_descFactorial_div_pow (r : ℕ) :
       Filter.Tendsto (fun n : ℕ =>
         ∏ i ∈ Finset.range r, ((n : ℝ) - (i : ℝ)) / (n : ℝ))
         Filter.atTop (nhds (∏ i ∈ Finset.range r, (1 : ℝ))) := by
-    refine tendsto_finset_prod (s := Finset.range r) ?_
+    refine tendsto_finsetProd (s := Finset.range r) ?_
     intro i hi
     exact tendsto_sub_div i
   have hprod' : (∏ i ∈ Finset.range r, (1 : ℝ)) = (1 : ℝ) := by
@@ -1370,7 +1370,7 @@ theorem bernsteinMoment_tendsto (m : ℕ → ℝ)
         Filter.atTop
         (nhds (∑ r ∈ Finset.range (k + 1), if r = k then m k else 0)) := by
     refine
-      tendsto_finset_sum (s := Finset.range (k + 1))
+      tendsto_finsetSum (s := Finset.range (k + 1))
         (f := fun r (n : ℕ) =>
           (Nat.stirlingSecond k r : ℝ) * ((n.descFactorial r : ℝ) / (n : ℝ) ^ k) * m r)
         (a := fun r => if r = k then m k else 0) ?_

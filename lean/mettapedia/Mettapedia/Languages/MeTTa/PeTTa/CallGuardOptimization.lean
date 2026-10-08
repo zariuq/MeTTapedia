@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.OSLFCore.Atom
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
+import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Languages.MeTTa.TypeSchemeActivation
 import Mettapedia.Machines.OrderedGuardPipeline
 import Mettapedia.Machines.RevisionedQueryFacts
@@ -59,6 +60,26 @@ theorem demand_raw (formal : Atom) :
   · simp [demand, literal]
   · simp [demand, literal]
     split <;> simp
+
+/-- The raw lane of the literal guard policy agrees with the executable
+declaration lookup. Primitive demand uses its separate StdLib table. This
+connects the raw classification, not the remaining typing/guard semantics. -/
+theorem executable_raw_argument_iff
+    (program : SpaceSemantics.Program) (head : String) (index : Nat)
+    (notPrimitive : StdLib.known head = false) :
+    Eval.argumentIsRaw program head index = true ↔
+      ∃ types formal, .expression [.symbol ":", .symbol head,
+        .expression (.symbol "->" :: types)] ∈ program.declarations ∧
+        types[index]? = some formal ∧ demand formal = .raw := by
+  rw [Eval.argumentIsRaw_iff_declaredAtom program head index notPrimitive]
+  constructor
+  · rintro ⟨types, member, literal⟩
+    exact ⟨types, .symbol "Atom", member, literal, by simp [demand]⟩
+  · rintro ⟨types, formal, member, present, raw⟩
+    have literal : formal = .symbol "Atom" := by
+      have equation := demand_raw formal
+      simpa [raw] using equation.symm
+    exact ⟨types, member, by simpa [literal] using present⟩
 
 theorem demand_sound (formal : Atom) : LiteralDemand formal (demand formal) := by
   unfold demand

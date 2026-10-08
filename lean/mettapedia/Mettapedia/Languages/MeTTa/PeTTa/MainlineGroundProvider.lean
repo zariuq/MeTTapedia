@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Parsing.HornIntegerProvider
+import Mettapedia.Languages.MeTTa.PeTTa.Eval
 
 /-!
 # Selected mainline ground-expression semantics for integer providers
@@ -32,6 +33,9 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.MainlineGroundProvider
 
 open Mettapedia.GSLT.Parsing.HornCertificate
 open Mettapedia.GSLT.Parsing.HornIntegerProvider
+
+/-! The executable connection below uses the existing Atom machine. The Horn
+carrier remains a source/certificate encoding, not a second runtime carrier. -/
 
 abbrev CallerEnv := List (String × GroundTerm)
 
@@ -504,6 +508,96 @@ theorem ground_fragment_cannot_gain_duplicate_answer (expression : GroundTerm)
   have count := evaluation.at_most_one
   simp at count
 
+/-! ## Integer-fragment agreement with the executable machine -/
+
+namespace ExecutableInteger
+
+open Mettapedia.Languages.MeTTa.PeTTa.Eval
+
+mutual
+  /-- Structural Horn encoding into the existing runtime carrier. The
+  correspondence below concerns IntegerSyntax only; this is not a text reader
+  or a Boolean/string codec for arbitrary source atoms. -/
+  def toAtom : GroundTerm → OSLFCore.Atom
+    | .integer value => .grounded (.int value)
+    | .atom name => .symbol name
+    | .app name arguments => .expression (.symbol name :: toAtoms arguments)
+
+  def toAtoms : GroundTerms → List OSLFCore.Atom
+    | .nil => []
+    | .cons first rest => toAtom first :: toAtoms rest
+end
+
+private theorem add_returns (program : SpaceSemantics.Program) (state : Effects.State)
+    (left right : OSLFCore.Atom) (first second : Int)
+    (leftRun : PureReturns program [] state left state (.grounded (.int first)))
+    (rightRun : PureReturns program [] state right state (.grounded (.int second))) :
+    PureReturns program [] state (.expression [.symbol "+", left, right]) state
+      (.grounded (.int (first + second))) := by
+  apply call_returns program [] state state "+" [left, right]
+    (.grounded (.int (first + second))) (by simp [ioHead, StdLib.known]) _ (by decide)
+  apply evaluated_argument_returns program [] state state state (.function "+")
+    left (.grounded (.int first)) (.grounded (.int (first + second))) [right] [] 0
+      (by simp [argumentIsRaw, StdLib.known, StdLib.rawArgument]) leftRun
+  apply evaluated_argument_returns program [] state state state (.function "+")
+    right (.grounded (.int second)) (.grounded (.int (first + second))) []
+      [.grounded (.int first)] 1
+      (by simp [argumentIsRaw, StdLib.known, StdLib.rawArgument]) rightRun
+  exact native_function_arguments_return program [] state state "+"
+    [.grounded (.int first), .grounded (.int second)] 2 (.grounded (.int (first + second)))
+      (by decide) (by decide) (by simp [StdLib.apply])
+
+/-- The independent integer judgment yields an actual machine path for every
+nested integer/addition expression, in any program and private store. -/
+theorem evaluation_returns (program : SpaceSemantics.Program) (state : Effects.State)
+    {expression : GroundTerm} {value : Int} (evaluation : IntegerEval expression value) :
+    PureReturns program [] state (toAtom expression) state (.grounded (.int value)) := by
+  induction evaluation with
+  | integer value => exact grounded_returns program [] state (.int value)
+  | @add left right first second _ _ leftRun rightRun =>
+      simpa only [toAtom, toAtoms] using
+        add_returns program state (toAtom left) (toAtom right) first second leftRun rightRun
+
+/-- Both directions retain the complete observation: exact singleton answer,
+unchanged store, no consumed input and no printed output. Fuel is existential
+because different nested expressions require different sufficient budgets. -/
+theorem completed_iff (program : SpaceSemantics.Program) (state after : Effects.State)
+    (expression : GroundTerm) (shape : IntegerSyntax expression)
+    (answers input output : List OSLFCore.Atom) :
+    (∃ fuel, Mettapedia.Languages.MeTTa.PeTTa.Eval.evaluate program fuel state
+      (toAtom expression) = .complete after answers input output) ↔
+      ∃ value, IntegerEval expression value ∧ after = state ∧
+        answers = [.grounded (.int value)] ∧ input = [] ∧ output = [] := by
+  constructor
+  · rintro ⟨fuel, completed⟩
+    obtain ⟨value, evaluation⟩ := shape.has_value
+    obtain ⟨enough, expected⟩ := pure_returns_has_sufficient_fuel program [] state state
+      (toAtom expression) (.grounded (.int value)) (evaluation_returns program state evaluation)
+    have observations := completed_result_unique program fuel enough
+      (start state (toAtom expression)) after state answers input output
+      [.grounded (.int value)] [] [] completed expected
+    exact ⟨value, evaluation, observations⟩
+  · rintro ⟨value, evaluation, sameState, sameAnswers, sameInput, sameOutput⟩
+    subst after answers input output
+    exact pure_returns_has_sufficient_fuel program [] state state
+      (toAtom expression) (.grounded (.int value)) (evaluation_returns program state evaluation)
+
+/-- The admitted integer grammar cannot produce a duplicate occurrence. This
+does not collapse duplicates produced by separate installed equations. -/
+theorem no_duplicate_answer (program : SpaceSemantics.Program) (state after : Effects.State)
+    (expression : GroundTerm) (shape : IntegerSyntax expression) (value : OSLFCore.Atom)
+    (input output : List OSLFCore.Atom) :
+    ¬ ∃ fuel, Mettapedia.Languages.MeTTa.PeTTa.Eval.evaluate program fuel state
+      (toAtom expression) = .complete after [value, value] input output := by
+  intro completed
+  obtain ⟨_, _, _, impossible, _, _⟩ :=
+    (completed_iff program state after expression shape [value, value] input output).mp completed
+  have := congrArg List.length impossible
+  simp at this
+
+end ExecutableInteger
+
+#print axioms ExecutableInteger.completed_iff
 #print axioms integer_refinement
 #print axioms boolean_refinement
 #print axioms source_target_answers_iff

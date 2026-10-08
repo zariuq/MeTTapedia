@@ -323,7 +323,7 @@ noncomputable def booleanBaseModel_choice : booleanBaseModel.HilbertChoice :=
 force Dedekind infinity of a distinguished base carrier. -/
 theorem booleanBaseModel_not_infinite :
     ¬ booleanBaseModel.HasDedekindInfiniteBase () := by
-  letI : Finite (booleanBaseModel.Carrier ()) := by
+  have : Finite (booleanBaseModel.Carrier ()) := by
     change Finite LiftedBool
     infer_instance
   exact booleanBaseModel.not_hasDedekindInfiniteBase_of_finite ()

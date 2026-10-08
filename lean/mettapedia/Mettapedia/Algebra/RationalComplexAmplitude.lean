@@ -107,4 +107,113 @@ theorem born_not_additive :
 theorem exact_mixed_product :
     pairMultiply (2, 3) (5, 7) = (-11, 29) := by norm_num [pairMultiply]
 
+
+/-- The norm of a finite, already aggregated readout. Labels may retain both
+answer identity and provenance; occurrences are not deduplicated. -/
+def bornTotal {Label : Type*} (entries : List (Label × Amplitude)) : ℚ :=
+  (entries.map (fun entry => born entry.2)).sum
+
+/-- Normalization is a partial observation of amplitudes. A zero total norm
+has no probability readout. Every supplied label and occurrence is retained. -/
+def normalizeBorn {Label : Type*} (entries : List (Label × Amplitude)) :
+    Option (List (Label × ℚ)) :=
+  if bornTotal entries = 0 then none
+  else some (entries.map (fun entry => (entry.1, born entry.2 / bornTotal entries)))
+
+theorem bornTotal_nonnegative {Label : Type*} (entries : List (Label × Amplitude)) :
+    0 ≤ bornTotal entries := by
+  induction entries with
+  | nil => simp [bornTotal]
+  | cons entry entries ih =>
+    simpa [bornTotal] using add_nonneg (born_nonnegative entry.2) ih
+
+theorem bornTotal_zero_iff {Label : Type*} (entries : List (Label × Amplitude)) :
+    bornTotal entries = 0 ↔ ∀ entry ∈ entries, entry.2 = 0 := by
+  induction entries with
+  | nil => simp [bornTotal]
+  | cons entry entries ih =>
+    have nonnegativeHead := born_nonnegative entry.2
+    have nonnegativeTail := bornTotal_nonnegative entries
+    have totalCons : bornTotal (entry :: entries) = born entry.2 + bornTotal entries := by
+      simp [bornTotal]
+    constructor
+    · intro zero item membership
+      rw [totalCons] at zero
+      have headZero : born entry.2 = 0 := by linarith
+      have tailZero : bornTotal entries = 0 := by linarith
+      rcases List.mem_cons.mp membership with same | later
+      · subst item
+        exact (born_zero_iff entry.2).mp headZero
+      · exact ih.mp tailZero item later
+    · intro allZero
+      have headZero := (born_zero_iff entry.2).mpr (allZero entry (by simp))
+      have tailZero := ih.mpr (fun item membership => allZero item (by simp [membership]))
+      rw [totalCons, headZero, tailZero, add_zero]
+
+theorem normalizeBorn_none_iff {Label : Type*} (entries : List (Label × Amplitude)) :
+    normalizeBorn entries = none ↔ bornTotal entries = 0 := by
+  by_cases zero : bornTotal entries = 0 <;> simp [normalizeBorn, zero]
+
+theorem normalizeBorn_eq_some_iff {Label : Type*}
+    (entries : List (Label × Amplitude)) (probabilities : List (Label × ℚ)) :
+    normalizeBorn entries = some probabilities ↔
+      bornTotal entries ≠ 0 ∧
+        probabilities = entries.map (fun entry => (entry.1, born entry.2 / bornTotal entries)) := by
+  by_cases zero : bornTotal entries = 0
+  · simp [normalizeBorn, zero]
+  · simp [normalizeBorn, zero, eq_comm]
+
+theorem normalizeBorn_preserves_labels {Label : Type*}
+    (entries : List (Label × Amplitude)) (probabilities : List (Label × ℚ))
+    (accepted : normalizeBorn entries = some probabilities) :
+    probabilities.map Prod.fst = entries.map Prod.fst := by
+  rw [(normalizeBorn_eq_some_iff entries probabilities).mp accepted |>.2]
+  simp [List.map_map]
+
+theorem normalizeBorn_preserves_occurrences {Label : Type*}
+    (entries : List (Label × Amplitude)) (probabilities : List (Label × ℚ))
+    (accepted : normalizeBorn entries = some probabilities) :
+    probabilities.length = entries.length := by
+  rw [(normalizeBorn_eq_some_iff entries probabilities).mp accepted |>.2]
+  simp
+
+theorem normalizeBorn_nonnegative {Label : Type*}
+    (entries : List (Label × Amplitude)) (probabilities : List (Label × ℚ))
+    (accepted : normalizeBorn entries = some probabilities)
+    (entry : Label × ℚ) (membership : entry ∈ probabilities) : 0 ≤ entry.2 := by
+  rw [(normalizeBorn_eq_some_iff entries probabilities).mp accepted |>.2] at membership
+  obtain ⟨source, _, rfl⟩ := List.mem_map.mp membership
+  exact div_nonneg (born_nonnegative source.2) (bornTotal_nonnegative entries)
+
+theorem normalizeBorn_sum_one {Label : Type*}
+    (entries : List (Label × Amplitude)) (probabilities : List (Label × ℚ))
+    (accepted : normalizeBorn entries = some probabilities) :
+    (probabilities.map Prod.snd).sum = 1 := by
+  have admitted := (normalizeBorn_eq_some_iff entries probabilities).mp accepted
+  rw [admitted.2]
+  simp only [List.map_map, Function.comp_def]
+  change (entries.map (fun entry => born entry.2 / bornTotal entries)).sum = 1
+  simp only [div_eq_mul_inv]
+  rw [List.sum_map_mul_right]
+  exact mul_inv_cancel₀ admitted.1
+
+/-- Two distinct evidence labels keep their own probabilities, even when their
+answer label agrees. The finite observation has total probability one. -/
+theorem normalized_provenance_control :
+    normalizeBorn [((0, 7), fromPair (3, 4)), ((0, 8), fromPair (0, 1))] =
+      some [((0, 7), (25 / 26 : ℚ)), ((0, 8), (1 / 26 : ℚ))] := by
+  norm_num [normalizeBorn, bornTotal, born, QuadraticAlgebra.norm_def, fromPair, Amplitude]
+
+/-- Equal labels do not collapse supplied occurrences during normalization. -/
+theorem normalized_duplicate_occurrences_control :
+    normalizeBorn [(0, (1 : Amplitude)), (0, 1)] =
+      some [(0, (1 / 2 : ℚ)), (0, (1 / 2 : ℚ))] := by
+  norm_num [normalizeBorn, bornTotal, born, QuadraticAlgebra.norm_def, Amplitude]
+
+/-- Interference is resolved before readout: an amplitude cancelled by its
+alternative has zero norm and cannot be normalized. -/
+theorem cancelled_readout_refused :
+    normalizeBorn [(0, (1 : Amplitude) + (-1))] = none := by
+  norm_num [normalizeBorn, bornTotal, born, QuadraticAlgebra.norm_def, Amplitude]
+
 end Mettapedia.Algebra.RationalComplexAmplitude

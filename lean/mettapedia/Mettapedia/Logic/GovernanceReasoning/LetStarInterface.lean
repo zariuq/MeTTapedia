@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
-import Mettapedia.Languages.MeTTa.PeTTa.StdLib
+import Mettapedia.Languages.MeTTa.PeTTa.MinimalInstructions
 
 /-!
 # Shared Let* Interface for MeTTa-Like Evaluators
@@ -100,7 +100,7 @@ theorem letStar_base {Eval : PeTTaSpace → Pattern → List Pattern → Prop}
     (hr : letStarBaseRule ∈ s.rules) :
     Eval s (mkLetStar [] body) [body] := by
   have hm : [("body", body)] ∈ matchPattern letStarBaseRule.left (mkLetStar [] body) := by
-    simp [letStarBaseRule, mkLetStar, matchPattern, matchArgs, matchBag, mergeBindings]
+    simp [letStarBaseRule, mkLetStar, matchPattern, matchArgs, mergeBindings]
   have h := MeTTaLike.ruleApp (Eval := Eval) hr rfl hm
   -- h : Eval s _ [applyBindings [("body", body)] letStarBaseRule.right]
   -- Need: applyBindings [("body", body)] (.fvar "body") = body
@@ -124,7 +124,7 @@ theorem letStar_unfold_1 {Eval : PeTTaSpace → Pattern → List Pattern → Pro
     Eval s (mkLetStar [(v, e)] body) [.apply "let" [v, e, mkLetStar [] body]] := by
   have hm : [("body", body), ("rest", .collection .vec [] none), ("val", e), ("var", v)] ∈
       matchPattern letStarRecRule.left (mkLetStar [(v, e)] body) := by
-    simp [letStarRecRule, mkLetStar, matchPattern, matchArgs, matchBag, mergeBindings]
+    simp [letStarRecRule, mkLetStar, matchPattern, matchArgs, mergeBindings]
   have h := MeTTaLike.ruleApp (Eval := Eval) hr rfl hm
   simp [letStarRecRule, mkLetStar, applyBindings, List.find?] at h
   exact h
@@ -139,7 +139,7 @@ theorem letStar_unfold_2 {Eval : PeTTaSpace → Pattern → List Pattern → Pro
     ("rest", .collection .vec [.apply "pair" [v₂, e₂]] none),
     ("val", e₁), ("var", v₁)] ∈
       matchPattern letStarRecRule.left (mkLetStar [(v₁, e₁), (v₂, e₂)] body) := by
-    simp [letStarRecRule, mkLetStar, matchPattern, matchArgs, matchBag, mergeBindings]
+    simp [letStarRecRule, mkLetStar, matchPattern, matchArgs, mergeBindings]
   have h := MeTTaLike.ruleApp (Eval := Eval) hr rfl hm
   simp [letStarRecRule, mkLetStar, applyBindings, List.find?] at h
   exact h
@@ -154,7 +154,7 @@ theorem letStar_unfold_3 {Eval : PeTTaSpace → Pattern → List Pattern → Pro
     ("rest", .collection .vec [.apply "pair" [v₂, e₂], .apply "pair" [v₃, e₃]] none),
     ("val", e₁), ("var", v₁)] ∈
       matchPattern letStarRecRule.left (mkLetStar [(v₁, e₁), (v₂, e₂), (v₃, e₃)] body) := by
-    simp [letStarRecRule, mkLetStar, matchPattern, matchArgs, matchBag, mergeBindings]
+    simp [letStarRecRule, mkLetStar, matchPattern, matchArgs, mergeBindings]
   have h := MeTTaLike.ruleApp (Eval := Eval) hr rfl hm
   simp [letStarRecRule, mkLetStar, applyBindings, List.find?] at h
   exact h

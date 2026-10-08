@@ -21,7 +21,7 @@ structure CType where
   deriving DecidableEq, Repr
 
 inductive UnaryOperator where
-  | not | complement | dereference | address | increment
+  | not | complement | dereference | address | increment | decrement | negate
   deriving DecidableEq, Repr
 
 inductive BinaryOperator where
@@ -44,6 +44,7 @@ inductive CExpr where
   | call (name : Name) (arguments : List CExpr)
   | unary (operator : UnaryOperator) (operand : CExpr)
   | postIncrement (operand : CExpr)
+  | postDecrement (operand : CExpr)
   | cast (type : CType) (operand : CExpr)
   | binary (operator : BinaryOperator) (left right : CExpr)
   | conditional (condition whenTrue whenFalse : CExpr)
@@ -54,7 +55,13 @@ inductive CExpr where
 inductive CStatement where
   | empty
   | declare (type : CType) (name : Name) (value : CExpr)
+  | declareUninitialized (type : CType) (name : Name)
+  /-- A supported GNU cleanup declaration retains its callback and initializer.
+  Recognition does not erase the callback or promise nonlocal unwinding. -/
+  | declareCleanup (type : CType) (name : Name) (initial : Option CExpr) (cleanup : Name)
   | declarePointeeConst (type : CType) (name : Name) (value : CExpr)
+  | declareArray (element : CType) (name : Name) (extent : Option CExpr)
+      (initializers : List CExpr)
   | assign (location value : CExpr)
   | compoundAssign (operator : BinaryOperator) (location value : CExpr)
   | effect (value : CExpr)

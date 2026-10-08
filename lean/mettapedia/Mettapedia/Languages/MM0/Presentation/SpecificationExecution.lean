@@ -41,18 +41,12 @@ private theorem permitted_computes (pending : Option (List SpecificationEntry))
 theorem step_computes (state : SpecificationAdmission.State) (declaration : ProofDeclaration) :
     Applies P H "mm0:spec-step" [encodeState state, encodeProofDeclaration declaration]
       (encodeStateResult (SpecificationAdmission.step? state declaration)) := by
-  let pending : Option (List SpecificationEntry) := if declaration.isLocal then
-      if ProofDeclaration.auxiliary declaration.admission then some state.pending else none
-    else match state.pending with
-      | [] => none
-      | expected :: remaining => if expected.checkMatch declaration.admission then some remaining else none
+  let pending := SpecificationAdmission.pending? state.pending declaration
   have same : SpecificationAdmission.step? state declaration = (do
       let remaining ← pending
       let next ← state.theory.step? declaration.admission
       pure ⟨next, remaining⟩) := by
-    cases flag : declaration.isLocal <;> cases rest : state.pending <;>
-      simp [SpecificationAdmission.step?, pending, flag, rest]
-    all_goals split <;> simp_all
+    rfl
   rw [same]
   refine specification_equation (equation := A[17]) (by decide) (by rfl) (by rfl) ?_
   refine Evaluates.call (by simp [Special])

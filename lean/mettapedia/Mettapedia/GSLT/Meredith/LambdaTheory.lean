@@ -25,10 +25,14 @@ Paper-aligned formalization of Definition 4.1 from Stay, Meredith & Wells,
 
 namespace Mettapedia.GSLT.Meredith
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT.Core
 
 /-! ## Lambda Theory (Definition 4.1) -/
+
+-- Object, hom and predicate universes are inherited independently. Their
+-- maximum in the record's sort does not identify the three parameters.
+set_option linter.checkUnivs false in
 
 /-- A lambda theory.
 

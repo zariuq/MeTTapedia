@@ -26,7 +26,7 @@ noncomputable section
 
 namespace Mettapedia.CategoryTheory
 
-open CategoryTheory
+open _root_.Mettapedia.CategoryTheory
 open MeasureTheory
 open Mettapedia.ProbabilityTheory.Exchangeability
 open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard
@@ -242,7 +242,7 @@ theorem kleisliGiryMarkovDeFinettiFactorization_of_categorical
     KleisliGiryMarkovDeFinettiFactorization k μ := by
   rcases hfac with ⟨π, hπ, hrep⟩
   refine ⟨constantMarkovKleisliMediator (k := k) π, ?_, ?_⟩
-  · letI : IsProbabilityMeasure π := hπ
+  · let : IsProbabilityMeasure π := hπ
     exact constantMarkovKleisliMediator_prob (k := k) π
   · intro xs
     simpa [markovWordWeightViaMediator, constantMarkovKleisliMediator] using hrep xs
@@ -332,7 +332,7 @@ lemma measurableSet_markovCylinder (xs : List (Fin k)) :
   unfold Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder
   refine MeasurableSet.iInter ?_
   intro i
-  simpa [Set.setOf_eq_eq_singleton] using
+  simpa [Set.ofPred_eq_eq_singleton] using
     (measurableSet_eq_fun (measurable_pi_apply i.1) measurable_const)
 
 /-- Honest Borel-side prefix-law factorization through the Borel probability
@@ -394,7 +394,7 @@ noncomputable def borelMarkovSequenceMixture
 instance borelMarkovSequenceMixture_isProbability
     (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     IsProbabilityMeasure (borelMarkovSequenceMixture (k := k) π) := by
-  letI : IsProbabilityMeasure (π : Measure (MarkovParam k)) := by infer_instance
+  let : IsProbabilityMeasure (π : Measure (MarkovParam k)) := by infer_instance
   exact MeasureTheory.isProbabilityMeasure_bind
     (hf₀ := ProbabilityTheory.Kernel.aemeasurable _)
     (hf₁ := Filter.Eventually.of_forall (fun _ => by infer_instance))
@@ -427,7 +427,7 @@ theorem borelMarkovSequenceMixture_cylinder_eq
     borelMarkovSequenceMixture (k := k) π
         (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiRecurrence.cylinder (k := k) xs) =
       borelMarkovCylinderWeightViaProbMarkov (k := k) π xs := by
-  letI : IsProbabilityMeasure (π : Measure (MarkovParam k)) := by infer_instance
+  let : IsProbabilityMeasure (π : Measure (MarkovParam k)) := by infer_instance
   rw [borelMarkovSequenceMixture, Measure.bind_apply
     (measurableSet_markovCylinder (k := k) xs)
     (ProbabilityTheory.Kernel.aemeasurable _)]

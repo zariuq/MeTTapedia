@@ -305,8 +305,8 @@ theorem provenance_no_structured_factor :
     map.app firstWorld (Distinction.HistoryContextControls.pendingEvolution grammar .done .backward)) factors
   have scripts := congrArg Distinction.HistoryContextControls.Pending.script
     (first.symm.trans ((congrArg (consumer.app firstWorld) aliases).trans second))
-  change [((.forward : Direction), Event.evolve Node.done)] =
-    [((.backward : Direction), Event.evolve Node.done)] at scripts
+  change [((.forward : Direction), Mettapedia.Cybernetics.DistinctionCalculus.History.Event.evolve Node.done)] =
+    [((.backward : Direction), Mettapedia.Cybernetics.DistinctionCalculus.History.Event.evolve Node.done)] at scripts
   cases scripts
 
 /-- This is an authored, nonidentity substitution in the same parameter
@@ -375,6 +375,81 @@ theorem actual_native_full_future_product_empty :
   rintro ⟨function⟩
   exact actual_full_future_product_empty
     ⟨ContextualSmallFamilyNativeAdjunction.nativeSmallEquiv actualMemberFamily actualSelectedBody oldParameter function⟩
+
+
+noncomputable abbrev actualParameters := HostChoiceContextualObservedHypersetTypes.parameters
+  (coalgebra (exact grammar)) exactAtoms (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding)
+
+noncomputable abbrev actualSingletonBody := HostChoiceContextualObservedHypersetTypes.singletonBody
+  (coalgebra (exact grammar)) exactAtoms (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding)
+
+noncomputable abbrev actualSingletonMap := HostChoiceContextualObservedHypersetTypes.singletonOfSelected
+  (coalgebra (exact grammar)) exactAtoms (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding)
+
+noncomputable def singletonChild (point : actualMemberFamily.Elements) : actualSingletonBody.obj point :=
+  (HostChoiceContextualHypersetFamilyClosure.bodyDecoder actualParent actualSingletonMap point).symm
+    ⟨(HostChoiceContextualObservedHypersetTypes.actualMembers (coalgebra (exact grammar)) exactAtoms
+      (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding) point.1 point.2).val,
+      (member_singleton _ _ _).mpr rfl⟩
+
+theorem singletonChild_value (point : actualMemberFamily.Elements) :
+    (HostChoiceContextualHypersetFamilyClosure.bodyDecoder actualParent actualSingletonMap point (singletonChild point)).val =
+      (HostChoiceContextualObservedHypersetTypes.actualMembers (coalgebra (exact grammar)) exactAtoms
+        (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding) point.1 point.2).val :=
+  congrArg Subtype.val ((HostChoiceContextualHypersetFamilyClosure.bodyDecoder actualParent actualSingletonMap point).apply_symm_apply _)
+
+theorem singletonChild_natural {first second : actualMemberFamily.Elements} (step : first ⟶ second) :
+    actualSingletonBody.map step (singletonChild first) = singletonChild second := by
+  apply (HostChoiceContextualHypersetFamilyClosure.bodyDecoder actualParent actualSingletonMap second).injective
+  apply Subtype.ext
+  exact (HostChoiceContextualHypersetFamilyClosure.bodyDecoder_value_natural actualParent actualSingletonMap step
+      (singletonChild first)).symm.trans
+    ((congrArg (sets.map step.1.1) (singletonChild_value first)).trans
+      ((HostChoiceContextualObservedHypersetTypes.actualMembers_restriction (coalgebra (exact grammar)) exactAtoms
+        (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding) step.1 first.2).trans
+          ((congrArg (fun code => (HostChoiceContextualObservedHypersetTypes.actualMembers (coalgebra (exact grammar)) exactAtoms
+            (worldCoding grammar) (arrowCoding nodeCoding listing) (atomCoding integerCoding) second.1 code).val) step.2).trans
+              (singletonChild_value second).symm)))
+
+def unitParameters : actualParameters.Elements ⥤ Type where
+  obj _ := PUnit.{1}
+  map _ := TypeCat.ofHom id
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+noncomputable def singletonOperation : NatTrans
+    (ContextualSmallFamilyTypeFormers.overArguments actualMemberFamily unitParameters) actualSingletonBody where
+  app point := TypeCat.ofHom fun _ => singletonChild point
+  naturality _ _ step := by
+    apply ConcreteCategory.hom_ext
+    intro _
+    exact (singletonChild_natural step).symm
+
+noncomputable def singletonFunction (point : actualParameters.Elements) :
+    ContextualSmallFamilyTypeFormers.ProductAt actualMemberFamily actualSingletonBody point :=
+  (ContextualSmallFamilyTypeFormers.piCurry actualMemberFamily actualSingletonBody singletonOperation).app point PUnit.unit
+
+theorem singletonFunction_beta (point : actualParameters.Elements) (argument : actualMemberFamily.obj point) :
+    ContextualSmallFamilyTypeFormers.evaluateValue actualMemberFamily actualSingletonBody point
+      (singletonFunction point) argument = singletonChild ⟨point, argument⟩ :=
+  HostChoiceContextualObservedHypersetTypes.smallLambda_beta (P := actualParameters) (consumer := unitParameters)
+    actualMemberFamily actualSingletonBody singletonOperation point PUnit.unit argument
+
+theorem actual_material_function_beta :
+    (HostChoiceContextualHypersetFamilyClosure.bodyDecoder actualParent actualSingletonMap ⟨newParameter, resultCode⟩
+      (ContextualSmallFamilyTypeFormers.evaluateValue actualMemberFamily actualSingletonBody newParameter
+        (singletonFunction newParameter) resultCode)).val =
+      (setReadout (coalgebra (exact grammar))).app (next oldWorld) finishedTask := by
+  rw [singletonFunction_beta]
+  exact (singletonChild_value _).trans resultCode_value
+
+theorem actual_full_future_function_exists :
+    Nonempty ((ContextualSmallFamilyTypeFormers.pi actualMemberFamily actualSingletonBody).obj oldParameter) :=
+  ⟨singletonFunction oldParameter⟩
+
+theorem actual_member_sum_inhabited :
+    Nonempty ((ContextualSmallFamilyTypeFormers.sigma actualMemberFamily actualSingletonBody).obj newParameter) :=
+  ⟨⟨resultCode, singletonChild _⟩⟩
 
 section NonidentityContext
 

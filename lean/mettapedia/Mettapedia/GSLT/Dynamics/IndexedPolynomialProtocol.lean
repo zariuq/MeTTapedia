@@ -46,6 +46,9 @@ open Mettapedia.TypeTheory.IndexedPolynomial
 
 universe uState uShape uResponse uResult uValue
 
+-- Commands and responses retain independent universe bounds, even though
+-- the polynomial carrier itself combines those bounds in a maximum.
+set_option linter.checkUnivs false in
 /-- An indexed polynomial whose indices are protocol states. -/
 abbrev ProtocolPolynomial (State : Type uState) :=
   IndexedPolynomial.{0, uState, uShape, uResponse} Unit (fun _ => State)

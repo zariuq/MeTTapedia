@@ -20,7 +20,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.CertificateGSLT.ProofRelevanceCanary
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.Ultrainfinite

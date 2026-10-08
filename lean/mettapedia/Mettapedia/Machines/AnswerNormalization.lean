@@ -287,6 +287,18 @@ theorem run_preserves_cache (view : ViewGraph vocabulary)
     DemandSummary.Extends cache (view.run roots cache).cache :=
   (view.run_valid roots bound within cache sound).preserves
 
+/-- Normalization requests are bounded by the retained observation graph,
+including duplicate child slots and requested root occurrences. Opening list
+spines and retaining opaque payload graphs are separately charged operations. -/
+theorem run_requests_le_reachable_edges (view : ViewGraph vocabulary)
+    (roots : List Nat) (cache : DemandSummary.Cache Tm)
+    (sound : DemandSummary.Sound view.graph algebra cache) :
+    DemandSummary.sequenceRequests roots (DemandSummary.demand view.graph algebra)
+        (DemandSummary.demandRequests view.graph algebra) cache ≤
+      roots.length + ∑ node ∈ roots.toFinset.biUnion (DemandSummary.reachable view.graph),
+        (view.graph.children node).length :=
+  DemandSummary.sequenceRequests_le_reachable_edges view.graph algebra roots cache sound
+
 end ViewGraph
 
 namespace Examples

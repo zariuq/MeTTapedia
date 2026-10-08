@@ -147,3 +147,99 @@ theorem changed_payload_is_observable :
       (Run.mk 1 2 "first").expand := by decide
 
 end Mettapedia.Algebra.RunLengthEvents
+
+
+namespace Mettapedia.Algebra.RunLengthEvents
+
+universe u v
+variable {Payload : Type u} {NextPayload : Type v}
+
+/-- Encode an ordered suffix beside an already retained retained. Compression
+changes representation only where the ordinary append permits it. -/
+def encodeInto [DecidableEq Payload] (maximum : Nat) :
+    List (Event Payload) → List (Run Payload) → List (Run Payload)
+  | [], retained => retained
+  | event :: rest, retained => encodeInto maximum rest (appendEvent maximum retained event)
+
+theorem expand_encodeInto [DecidableEq Payload] (maximum : Nat)
+    (events : List (Event Payload)) (retained : List (Run Payload)) :
+    expand (encodeInto maximum events retained) = expand retained ++ events := by
+  induction events generalizing retained with
+  | nil => simp [encodeInto]
+  | cons event rest ih =>
+      rw [encodeInto, ih, expand_appendEvent]
+      simp only [List.append_assoc, List.singleton_append]
+
+/-- Re-encode actual events rather than renaming the start of an interval. -/
+def encode [DecidableEq Payload] (maximum : Nat) (events : List (Event Payload)) :
+    List (Run Payload) := encodeInto maximum events []
+
+theorem expand_encode [DecidableEq Payload] (maximum : Nat)
+    (events : List (Event Payload)) : expand (encode maximum events) = events := by
+  simpa only [encode, expand, List.flatMap_nil, List.nil_append] using
+    expand_encodeInto maximum events []
+
+def mapEvent (identity : Nat → Nat) (payload : Payload → NextPayload)
+    (event : Event Payload) : Event NextPayload := (identity event.1, payload event.2)
+
+theorem mapEvent_injective (identity : Nat → Nat) (payload : Payload → NextPayload)
+    (identities : Function.Injective identity) (payloads : Function.Injective payload) :
+    Function.Injective (mapEvent identity payload) := by
+  intro first second same
+  exact Prod.ext (identities (congrArg Prod.fst same)) (payloads (congrArg Prod.snd same))
+
+/-- The bound controls repetition representation. An arbitrary identity map
+may split a consecutive interval, so whole-run equality is not promised. -/
+def transport [DecidableEq NextPayload] (maximum : Nat)
+    (identity : Nat → Nat) (payload : Payload → NextPayload)
+    (runs : List (Run Payload)) : List (Run NextPayload) :=
+  encode maximum ((expand runs).map (mapEvent identity payload))
+
+theorem expand_transport [DecidableEq NextPayload] (maximum : Nat)
+    (identity : Nat → Nat) (payload : Payload → NextPayload)
+    (runs : List (Run Payload)) :
+    expand (transport maximum identity payload runs) =
+      (expand runs).map (mapEvent identity payload) :=
+  expand_encode maximum _
+
+theorem transport_append_event [DecidableEq Payload] [DecidableEq NextPayload]
+    (sourceMaximum destinationMaximum : Nat) (identity : Nat → Nat)
+    (payload : Payload → NextPayload) (runs : List (Run Payload)) (event : Event Payload) :
+    expand (transport destinationMaximum identity payload
+      (appendEvent sourceMaximum runs event)) =
+      expand (transport destinationMaximum identity payload runs) ++
+        [mapEvent identity payload event] := by
+  rw [expand_transport, expand_appendEvent, List.map_append,
+    List.map_singleton, expand_transport]
+
+theorem transport_reflects_chronology [DecidableEq NextPayload]
+    (maximum : Nat) (identity : Nat → Nat) (payload : Payload → NextPayload)
+    (identities : Function.Injective identity) (payloads : Function.Injective payload)
+    (first second : List (Run Payload)) :
+    expand (transport maximum identity payload first) =
+      expand (transport maximum identity payload second) ↔ expand first = expand second := by
+  rw [expand_transport, expand_transport]
+  exact (List.map_injective_iff.mpr
+    (mapEvent_injective identity payload identities payloads)).eq_iff
+
+namespace TransportControls
+
+def source : List (Run String) := [⟨1, 2, "same"⟩]
+def spacing : Nat → Nat := fun identity => 10 * identity
+
+theorem nonconsecutive_map_retains_both_events :
+    expand (transport 255 spacing id source) = [(10, "same"), (20, "same")] ∧
+      (transport 255 spacing id source).length = 2 := by decide +kernel
+
+theorem renaming_only_interval_start_is_wrong :
+    expand [Run.mk (spacing 1) 2 "same"] = [(10, "same"), (11, "same")] ∧
+      expand [Run.mk (spacing 1) 2 "same"] ≠
+        expand (transport 255 spacing id source) := by decide +kernel
+
+theorem merged_identities_lose_authentication :
+    expand (transport 255 (fun _ => 7) id [Run.mk 1 1 "same"]) =
+      expand (transport 255 (fun _ => 7) id [Run.mk 2 1 "same"]) ∧
+      expand [Run.mk 1 1 "same"] ≠ expand [Run.mk 2 1 "same"] := by decide +kernel
+
+end TransportControls
+end Mettapedia.Algebra.RunLengthEvents

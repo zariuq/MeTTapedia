@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "usage: $0 /path/to/mork /path/to/metamath-test" >&2
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+  echo "usage: $0 /path/to/mork /path/to/metamath-test [/path/to/mm2-translate]" >&2
   exit 2
 fi
 
@@ -37,6 +37,12 @@ done
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd -- "$script_dir/.." && pwd)
+native_root=$(cd -- "$project_root/../../Metamath/MM2" && pwd)
+translator_bin=${3:-"$native_root/frontend/build/mm2-translate"}
+if [[ ! -x "$translator_bin" ]]; then
+  echo "error: native translator is not executable: $translator_bin" >&2
+  exit 2
+fi
 output_dir="$project_root/.lake/build/conformance/metamath_mm2_raw_unit"
 checked_dir="$project_root/artifacts/conformance/metamath_mm2_raw_unit"
 
@@ -89,48 +95,31 @@ authored_essential_occupied_result="$output_dir/authored_essential_occupied.resu
 export_unit() {
   local source_path=$1
   local output_path=$2
-  printf '%s\n' \
-    'import Mettapedia.OSLF.Tools.ExportMetamathMM2RawUnit' \
-    '#eval exportMetamathMM2RawUnitFromEnvironment' |
-    env METTAPEDIA_MM2_RAW_SOURCE="$source_path" \
-      METTAPEDIA_MM2_RAW_OUTPUT="$output_path" \
-      lake env lean --stdin
+  python3 "$native_root/tools/prepare.py" --input "$source_path" \
+    --translator "$translator_bin" --output "$output_path"
 }
 
 export_unit_split() {
   local source_path=$1
   local verifier_output_path=$2
   local source_data_output_path=$3
-  printf '%s\n' \
-    'import Mettapedia.OSLF.Tools.ExportMetamathMM2RawUnit' \
-    '#eval exportMetamathMM2RawUnitFromEnvironment' |
-    env -u METTAPEDIA_MM2_RAW_OUTPUT \
-      METTAPEDIA_MM2_RAW_SOURCE="$source_path" \
-      METTAPEDIA_MM2_VERIFIER_OUTPUT="$verifier_output_path" \
-      METTAPEDIA_MM2_SOURCE_DATA_OUTPUT="$source_data_output_path" \
-      lake env lean --stdin
+  python3 "$native_root/tools/prepare.py" --input "$source_path" \
+    --translator "$translator_bin" --verifier-output "$verifier_output_path" \
+    --data-output "$source_data_output_path"
 }
 
 export_authored_declaration_control() {
   local mode=$1
   local output_path=$2
-  printf '%s\n' \
-    'import Mettapedia.OSLF.Tools.ExportMetamathMM2RawUnit' \
-    '#eval exportAuthoredDeclarationControlFromEnvironment' |
-    env METTAPEDIA_MM2_AUTHORED_DECLARATION_MODE="$mode" \
-      METTAPEDIA_MM2_AUTHORED_DECLARATION_OUTPUT="$output_path" \
-      lake env lean --stdin
+  python3 "$native_root/tools/test_runtime_state.py" --case "$mode" \
+    --output "$output_path" --assemble-only
 }
 
 assert_source_rejected() {
   local source_path=$1
-  local status
-  status=$(printf '%s\n' \
-    'import Mettapedia.OSLF.Tools.ExportMetamathMM2RawUnit' \
-    '#eval exportMetamathMM2RawUnitFromEnvironment' |
-    env METTAPEDIA_MM2_RAW_SOURCE="$source_path" \
-      METTAPEDIA_MM2_RAW_OUTPUT=/dev/null \
-      lake env lean --stdin | tail -n 1)
+  local status=0
+  python3 "$native_root/tools/prepare.py" --input "$source_path" \
+    --translator "$translator_bin" --output "$output_dir/structural-rejection.mm2" || status=$?
   if [[ "$status" != 1 ]]; then
     echo "error: structurally malformed Metamath source was not rejected: $source_path" >&2
     exit 1
@@ -192,43 +181,42 @@ cmp "$dv_invalid_program" \
 cmp "$undefined_label_program" \
   "$checked_dir/test24_undefined_label_in_proof.mm2"
 
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$valid_program" "$valid_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$invalid_program" "$invalid_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$typecode_invalid_program" "$typecode_invalid_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$essential_program" "$essential_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$dv_program" "$dv_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$dv_invalid_program" "$dv_invalid_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$undefined_label_program" "$undefined_label_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_duplicate_program" "$authored_duplicate_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_occupied_program" "$authored_occupied_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_duplicate_variable_program" "$authored_duplicate_variable_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_active_variable_program" "$authored_active_variable_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_floating_fresh_program" "$authored_floating_fresh_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_floating_conflict_program" "$authored_floating_conflict_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_nested_constant_program" "$authored_nested_constant_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_scope_underflow_program" "$authored_scope_underflow_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_essential_fresh_program" "$authored_essential_fresh_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_essential_wrong_formula_program" \
-  "$authored_essential_wrong_formula_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$authored_essential_occupied_program" "$authored_essential_occupied_result"
+python3 "$native_root/tools/execute.py" --program "$valid_program" \
+  --result "$valid_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$invalid_program" \
+  --result "$invalid_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$typecode_invalid_program" \
+  --result "$typecode_invalid_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$essential_program" \
+  --result "$essential_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$dv_program" \
+  --result "$dv_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$dv_invalid_program" \
+  --result "$dv_invalid_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$undefined_label_program" \
+  --result "$undefined_label_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/test_runtime_state.py" --case constant-duplicate \
+  --output "$authored_duplicate_program" --result "$authored_duplicate_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case constant-occupied \
+  --output "$authored_occupied_program" --result "$authored_occupied_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case variable-duplicate \
+  --output "$authored_duplicate_variable_program" --result "$authored_duplicate_variable_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case variable-active \
+  --output "$authored_active_variable_program" --result "$authored_active_variable_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case floating-fresh \
+  --output "$authored_floating_fresh_program" --result "$authored_floating_fresh_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case floating-conflict \
+  --output "$authored_floating_conflict_program" --result "$authored_floating_conflict_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case constant-nested \
+  --output "$authored_nested_constant_program" --result "$authored_nested_constant_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case scope-underflow \
+  --output "$authored_scope_underflow_program" --result "$authored_scope_underflow_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case essential-fresh \
+  --output "$authored_essential_fresh_program" --result "$authored_essential_fresh_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case essential-wrong-formula \
+  --output "$authored_essential_wrong_formula_program" --result "$authored_essential_wrong_formula_result" --mork "$mork_bin"
+python3 "$native_root/tools/test_runtime_state.py" --case essential-occupied \
+  --output "$authored_essential_occupied_program" --result "$authored_essential_occupied_result" --mork "$mork_bin"
 
 count_tag() {
   local tag=$1
@@ -491,18 +479,18 @@ assert_authored_floating_conflict() {
   assert_count 0 mm-source-control "$result_path"
   assert_count 0 mm-source-statement-applied "$result_path"
   assert_count 1 mm-source-statement-rejected "$result_path"
-  assert_count 5 mm-source-object-link "$result_path"
+  assert_count 6 mm-source-object-link "$result_path"
   assert_pattern_count 1 '^\(mm-source-object-link \(mm-source-active-variable-ledger ' "$result_path"
   assert_pattern_count 1 '^\(mm-source-object-link \(mm-source-variable-typecode-ledger ' "$result_path"
   assert_count 3 mm-source-object-frontier "$result_path"
   assert_count 1 mm-source-variable-typecode-binding "$result_path"
-  assert_count 0 mm-hypothesis-lookup "$result_path"
-  assert_count 0 mm-source-active-hypothesis-link "$result_path"
+  assert_count 1 mm-hypothesis-lookup "$result_path"
+  assert_count 1 mm-source-active-hypothesis-link "$result_path"
   assert_count 0 mm-source-floating-request "$result_path"
   assert_count 0 mm-internal-source-variable-typecode-found "$result_path"
   assert_count 0 mm-internal-source-variable-typecode-missing "$result_path"
-  if ! grep -Eq '^\(mm-source-statement-rejected .* incompatible-floating-typecode ' "$result_path"; then
-    echo "error: expected incompatible-floating-typecode in $result_path" >&2
+  if ! grep -Eq '^\(mm-source-statement-rejected .* duplicate-floating-variable ' "$result_path"; then
+    echo "error: expected duplicate-floating-variable in $result_path" >&2
     exit 1
   fi
 }

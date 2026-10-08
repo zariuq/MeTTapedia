@@ -16,7 +16,7 @@ set_option autoImplicit false
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open ProbabilityTheory
+open _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.ProbabilityTheory.Exchangeability
 open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 open Mettapedia.ProbabilityTheory.HigherOrderProbability

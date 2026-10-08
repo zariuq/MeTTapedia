@@ -1,5 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Match
-import Mettapedia.Languages.MeTTa.PeTTa.Answers
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Answers
+
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
 
 /-!
 # Body-closure fusion: executing an equation body under its environment
@@ -22,7 +24,7 @@ the substituted copy is never semantically required.
 
 * Bodies are the project's own `Pattern`, and substitution is the project's own
   `applyBindings`; neither is re-invented here.
-* Answers are `List Pattern` (the existing `Answers`), so the observation is an
+* RewriteResults are `List Pattern` (the existing `RewriteResults`), so the observation is an
   ordered bag: a proof up to set equality would not say what the runtime needs.
 * Argument answers combine through `orderedProduct`, an ordered cartesian
   product that preserves both order and duplicate occurrences.
@@ -63,7 +65,6 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.BodyClosureFusion
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.Languages.MeTTa.PeTTa (Answers)
 
 /-! ## The compiled plan
 
@@ -116,14 +117,14 @@ compares only *where substitution happens*. -/
 /-- Ordered cartesian product of per-argument answer lists.  Order and
 duplicate occurrences are both preserved, so this is a bag combinator, not a
 set one. -/
-def orderedProduct : List Answers → List (List Pattern)
+def orderedProduct : List RewriteResults → List (List Pattern)
   | [] => [[]]
   | a :: rest => a.flatMap fun v => (orderedProduct rest).map fun vs => v :: vs
 
 /-- Evaluate a body that has **already** been substituted — the direct route,
 which requires the materialised copy. -/
-def evalEager (call : String → List Pattern → Answers) (heads : List String) :
-    Pattern → Answers
+def evalEager (call : String → List Pattern → RewriteResults) (heads : List String) :
+    Pattern → RewriteResults
   | .apply c args =>
     if c ∈ heads then (orderedProduct (args.map (evalEager call heads))).flatMap (call c)
     else (orderedProduct (args.map (evalEager call heads))).map (Pattern.apply c)
@@ -131,8 +132,8 @@ def evalEager (call : String → List Pattern → Answers) (heads : List String)
 
 /-- Evaluate a body **under** its environment, reading bindings only at the
 leaves it reaches.  No substituted copy of any interior node is ever built. -/
-def evalUnder (call : String → List Pattern → Answers) (heads : List String)
-    (env : Bindings) : Pattern → Answers
+def evalUnder (call : String → List Pattern → RewriteResults) (heads : List String)
+    (env : Bindings) : Pattern → RewriteResults
   | .apply c args =>
     if c ∈ heads then
       (orderedProduct (args.map (evalUnder call heads env))).flatMap (call c)
@@ -148,7 +149,7 @@ answers in identical order with identical multiplicity.
 
 The substituted copy is therefore never semantically required: the only place
 the environment must be consulted is a leaf actually reached. -/
-theorem evalUnder_eq_evalEager (call : String → List Pattern → Answers)
+theorem evalUnder_eq_evalEager (call : String → List Pattern → RewriteResults)
     (heads : List String) (env : Bindings) (t : Pattern) :
     evalUnder call heads env t = evalEager call heads (applyBindings env t) := by
   induction t using Pattern.inductionOn with
@@ -171,7 +172,7 @@ theorem evalUnder_eq_evalEager (call : String → List Pattern → Answers)
 /-- The engineering consequence, stated directly: for every body, environment,
 and call interpretation, the answers obtained without materialising the
 substituted body are the answers obtained with it. -/
-theorem substituted_copy_unnecessary (call : String → List Pattern → Answers)
+theorem substituted_copy_unnecessary (call : String → List Pattern → RewriteResults)
     (heads : List String) (env : Bindings) :
     ∀ t : Pattern, evalEager call heads (applyBindings env t) = evalUnder call heads env t :=
   fun t => (evalUnder_eq_evalEager call heads env t).symm
@@ -184,8 +185,8 @@ classification carries semantic weight and is not merely a hint. -/
 
 /-- The same evaluator with the call branch suppressed: every expression is
 treated as inert data. -/
-def evalUnderNoCalls (call : String → List Pattern → Answers) (heads : List String)
-    (env : Bindings) : Pattern → Answers
+def evalUnderNoCalls (call : String → List Pattern → RewriteResults) (heads : List String)
+    (env : Bindings) : Pattern → RewriteResults
   | .apply c args =>
     (orderedProduct (args.map (evalUnderNoCalls call heads env))).map (Pattern.apply c)
   | t => evalEager call heads (applyBindings env t)
@@ -195,7 +196,7 @@ treating the call as inert data returns the unevaluated expression instead, so
 the two observations differ.  A plan that mis-labels a call therefore changes
 the answer bag. -/
 theorem misclassified_call_loses_answer :
-    ∃ (call : String → List Pattern → Answers) (heads : List String) (env : Bindings)
+    ∃ (call : String → List Pattern → RewriteResults) (heads : List String) (env : Bindings)
       (t : Pattern),
       evalUnderNoCalls call heads env t ≠ evalUnder call heads env t := by
   refine ⟨fun _ _ => [Pattern.fvar "done"], ["f"], [], Pattern.apply "f" [], ?_⟩
@@ -293,7 +294,7 @@ theorem applyBindings_congr_on_consulted (env env' : Bindings) :
 /-- **Environment lifetime.**  Two environments agreeing on every name the body
 consults give identical answers, so a binding for any other name need not be
 retained. -/
-theorem evalUnder_congr_on_consulted (call : String → List Pattern → Answers)
+theorem evalUnder_congr_on_consulted (call : String → List Pattern → RewriteResults)
     (heads : List String) (env env' : Bindings) (t : Pattern)
     (hagree : ∀ x ∈ consultedNames t,
       env.find? (·.1 == x) = env'.find? (·.1 == x)) :

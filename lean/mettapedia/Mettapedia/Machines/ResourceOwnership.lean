@@ -1271,6 +1271,182 @@ theorem release_transferred_source (roots : Roots Owner Address) (source destina
     simp only [retag, owned original present, if_true, Finset.mem_singleton]
     exact different
 
+/-! ## In-flight borrows with other owners still present -/
+
+/-- A distinct temporary owner protects the source's roots even when the
+source is retired during the call. Other owners need not belong to the source. -/
+theorem rootAddresses_release_after_fork (roots : Roots Owner Address)
+    (source borrower : Owner) (different : borrower ≠ source) :
+    rootAddresses (release (fork roots source borrower) source) = rootAddresses roots := by
+  ext address
+  constructor
+  · intro present
+    obtain ⟨pair, retained, same⟩ := Finset.mem_image.mp present
+    have inFork := (mem_release (fork roots source borrower) source pair).mp retained
+    have presentFork : address ∈ rootAddresses (fork roots source borrower) :=
+      Finset.mem_image.mpr ⟨pair, inFork.1, same⟩
+    simpa only [rootAddresses_fork] using presentFork
+  · intro present
+    obtain ⟨pair, original, same⟩ := Finset.mem_image.mp present
+    by_cases fromSource : pair.1 = source
+    · refine Finset.mem_image.mpr ⟨retag source borrower pair, ?_, same⟩
+      apply (mem_release (fork roots source borrower) source _).mpr
+      refine ⟨Finset.mem_union_right roots (Finset.mem_image.mpr ⟨pair, original, rfl⟩), ?_⟩
+      simpa only [retag, fromSource, if_true] using different
+    · exact Finset.mem_image.mpr ⟨pair,
+        (mem_release (fork roots source borrower) source pair).mpr
+          ⟨Finset.mem_union_left _ original, fromSource⟩, same⟩
+
+/-- Releasing a fresh temporary owner restores precisely the pre-call owners.
+Freshness prevents accidentally dropping an older reader with the same label. -/
+theorem release_fresh_fork (roots : Roots Owner Address) (source borrower : Owner)
+    (fresh : ∀ pair ∈ roots, pair.1 ≠ borrower) :
+    release (fork roots source borrower) borrower = roots := by
+  ext pair
+  constructor
+  · intro retained
+    obtain ⟨present, notBorrower⟩ :=
+      (mem_release (fork roots source borrower) borrower pair).mp retained
+    rcases Finset.mem_union.mp present with original | transferred
+    · exact original
+    · obtain ⟨original, member, same⟩ := Finset.mem_image.mp transferred
+      by_cases fromSource : original.1 = source
+      · have borrowerOwner : pair.1 = borrower := by
+          rw [← same]
+          simp only [retag, fromSource, if_true]
+        exact False.elim (notBorrower borrowerOwner)
+      · have originalIsPair : original = pair := by
+          simpa only [retag, fromSource, if_false] using same
+        exact originalIsPair ▸ member
+  · intro original
+    exact (mem_release (fork roots source borrower) borrower pair).mpr
+      ⟨Finset.mem_union_left _ original, fresh pair original⟩
+
+omit [DecidableEq Address] in
+theorem release_comm (roots : Roots Owner Address) (first second : Owner) :
+    release (release roots first) second = release (release roots second) first := by
+  ext pair
+  simp only [mem_release, and_left_comm, and_comm]
+
+/-- A call ending after source retirement removes only its own temporary roots.
+Unrelated readers survive, and the source's roots are not resurrected. -/
+theorem release_borrow_after_source (roots : Roots Owner Address)
+    (source borrower : Owner) (fresh : ∀ pair ∈ roots, pair.1 ≠ borrower) :
+    release (release (fork roots source borrower) source) borrower = release roots source := by
+  rw [release_comm, release_fresh_fork roots source borrower fresh]
+
+/-- The temporary root preserves successful and failed path observations,
+including identity-bearing cells, across source retirement and collection. -/
+theorem walk_collect_borrow (heap : Heap Address Value) (roots : Roots Owner Address)
+    (source borrower : Owner) (different : borrower ≠ source) {address : Address}
+    (live : Live heap roots address) (path : List Address) :
+    walk (collect heap (release (fork roots source borrower) source)) address path =
+      walk heap address path := by
+  apply walk_collect
+  exact (live_congr_rootAddresses heap _ roots
+    (rootAddresses_release_after_fork roots source borrower different) address).mpr live
+
+/-- Returning preserves the ordered observation list, without identifying
+equal occurrences merely because they read the same shared resource. -/
+theorem observations_collect_borrow (heap : Heap Address Value)
+    (roots : Roots Owner Address) (source borrower : Owner) (different : borrower ≠ source)
+    (paths : List (Address × List Address)) (live : ∀ path ∈ paths, Live heap roots path.1) :
+    RequestBorrow.observe (collect heap (release (fork roots source borrower) source)) paths =
+      RequestBorrow.observe heap paths := by
+  unfold RequestBorrow.observe
+  apply List.map_congr_left
+  intro path member
+  exact walk_collect_borrow heap roots source borrower different (live path member) path.2
+
+/-- A borrower reusing the retiring source's owner label provides no protection. -/
+theorem same_owner_borrow_loses_root (heap : Heap Address Value) (owner : Owner)
+    (address : Address) :
+    (collect heap (release (fork {(owner, address)} owner owner) owner)).lookup address =
+      none := by
+  have gone : release (fork {(owner, address)} owner owner) owner = ∅ := by
+    ext pair
+    simp [release, cancel, fork, transfer, retag]
+    intro same
+    exact congrArg Prod.fst same
+  rw [gone]
+  exact lookup_collect_of_not_live heap ∅ (not_live_empty heap address)
+
+namespace PinnedReset
+
+/-- Pin the current generation for a reader, then detach it from its store.
+The new store generation has its own roots; this function describes only the
+retired generation whose last reader will release it. -/
+def roots (old : Roots Owner Address) (store reader : Owner) : Roots Owner Address :=
+  release (fork old store reader) store
+
+/-- Detachment leaves the reader's full transitive graph reachable. -/
+theorem live_after_detach (heap : Heap Address Value) (old : Roots Owner Address)
+    (store reader : Owner) (different : reader ≠ store)
+    (owned : ∀ pair ∈ old, pair.1 = store) {address : Address}
+    (live : Live heap old address) : Live heap (roots old store reader) address := by
+  apply live_mono heap (show transfer old store reader ⊆ roots old store reader from ?_)
+    ((live_transfer_iff heap old store reader address).mpr live)
+  intro pair present
+  apply (mem_release (fork old store reader) store pair).mpr
+  refine ⟨Finset.mem_union_right old present, ?_⟩
+  obtain ⟨original, member, rfl⟩ := Finset.mem_image.mp present
+  simp only [retag, owned original member, if_true]
+  exact different
+
+/-- Ordered repeated path observations survive logical reset and collection.
+This includes failed paths and resource addresses, not just payload equality. -/
+theorem observations_after_detach (heap : Heap Address Value) (old : Roots Owner Address)
+    (store reader : Owner) (different : reader ≠ store)
+    (owned : ∀ pair ∈ old, pair.1 = store) (paths : List (Address × List Address))
+    (live : ∀ path ∈ paths, Live heap old path.1) :
+    RequestBorrow.observe (collect heap (roots old store reader)) paths =
+      RequestBorrow.observe heap paths := by
+  unfold RequestBorrow.observe
+  apply List.map_congr_left
+  intro path member
+  exact walk_collect heap _ (live_after_detach heap old store reader different owned
+    (live path member)) path.2
+
+/-- Cancelling the last pinned reader removes every retired-generation root.
+Storage cannot be retained merely because the store handle still exists. -/
+theorem last_reader_releases (old : Roots Owner Address) (store reader : Owner)
+    (owned : ∀ pair ∈ old, pair.1 = store) :
+    release (roots old store reader) reader = ∅ := by
+  apply Finset.eq_empty_iff_forall_notMem.mpr
+  intro pair member
+  obtain ⟨retained, notReader⟩ := (mem_release (roots old store reader) reader pair).mp member
+  obtain ⟨present, notStore⟩ := (mem_release (fork old store reader) store pair).mp retained
+  rcases Finset.mem_union.mp present with original | transferred
+  · exact notStore (owned pair original)
+  · obtain ⟨original, originalMember, rfl⟩ := Finset.mem_image.mp transferred
+    simp only [retag, owned original originalMember, if_true] at notReader
+    exact notReader rfl
+
+/-- Actual cell reclamation follows the last-reader operation, including cells
+reachable only through cycles in the retired generation. -/
+theorem last_reader_reclaims (heap : Heap Address Value) (old : Roots Owner Address)
+    (store reader : Owner) (owned : ∀ pair ∈ old, pair.1 = store) (address : Address) :
+    (collect heap (release (roots old store reader) reader)).lookup address = none := by
+  rw [last_reader_releases old store reader owned]
+  exact lookup_collect_of_not_live heap ∅ (not_live_empty heap address)
+
+/-- A pinned old heap can stay readable while the same view is refused by the
+new live generation. Retention does not renew an observation's authority. -/
+theorem reset_separates_lifetime_from_currency
+    (region : RequestBorrow.Region Owner Address Value) (replacement : Heap Address Value)
+    (old : Roots Owner Address) (reader : Owner)
+    (different : reader ≠ region.stamp.identity)
+    (owned : ∀ pair ∈ old, pair.1 = region.stamp.identity)
+    (view : RequestBorrow.View Owner Address) (issued : view.stamp = region.stamp)
+    (live : ∀ path ∈ view.paths, Live region.heap old path.1) :
+    RequestBorrow.observe (collect region.heap (roots old region.stamp.identity reader))
+        view.paths = RequestBorrow.observe region.heap view.paths ∧
+      RequestBorrow.read (RequestBorrow.reset region replacement) view = none :=
+  ⟨observations_after_detach region.heap old region.stamp.identity reader different owned
+      view.paths live, RequestBorrow.read_reset_rejected region replacement view issued⟩
+
+end PinnedReset
+
 section RelocationLifecycle
 
 universe uDestinationValue
@@ -1568,6 +1744,33 @@ def cyclicHeap : Heap (Fin 3) Nat where
   closed _ _ _ b _ := Finset.mem_univ b
 
 def siblingRoots : Roots Nat (Fin 3) := {(0, 0), (1, 2)}
+
+/-- Two equal requested paths remain two observations after detachment. -/
+theorem pinned_reset_keeps_cyclic_observations :
+    RequestBorrow.observe (collect cyclicHeap
+      (PinnedReset.roots ({(0, 0)} : Roots Nat (Fin 3)) 0 7))
+      [(0, [1, 2]), (0, [1, 2])] =
+    RequestBorrow.observe cyclicHeap [(0, [1, 2]), (0, [1, 2])] := by
+  apply PinnedReset.observations_after_detach cyclicHeap _ 0 7 (by decide)
+  · intro pair member
+    simpa only [Finset.mem_singleton] using congrArg Prod.fst
+      (Finset.mem_singleton.mp member)
+  · intro path member
+    have root : path.1 = 0 := by
+      simp only [List.mem_cons, List.not_mem_nil, or_false, or_self] at member
+      exact congrArg Prod.fst member
+    rw [root]
+    exact live_of_root cyclicHeap ({(0, 0)} : Roots Nat (Fin 3))
+      (owner := 0) (a := 0) (by simp) (Finset.mem_univ 0)
+
+/-- Omitting the reader root makes the detached storage disappear. A surviving
+space handle alone cannot keep this old observation valid. -/
+theorem reset_without_pin_loses_cell :
+    (collect cyclicHeap (release ({(0, 0)} : Roots Nat (Fin 3)) 0)).lookup 0 ≠
+      cyclicHeap.lookup 0 := by
+  have empty : release ({(0, 0)} : Roots Nat (Fin 3)) 0 = ∅ := by decide
+  rw [empty, lookup_collect_of_not_live cyclicHeap ∅ (not_live_empty cyclicHeap 0)]
+  simp [cyclicHeap]
 
 /-- Cycles terminate in the existing finite closure algorithm; shared
 descendants count once in the complete census. -/

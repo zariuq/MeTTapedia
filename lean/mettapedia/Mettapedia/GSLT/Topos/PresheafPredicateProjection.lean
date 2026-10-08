@@ -19,7 +19,7 @@ classifying category for the complete native type theory.
 
 namespace Mettapedia.GSLT.Topos
 
-open CategoryTheory CategoryTheory.Functor Opposite
+open _root_.CategoryTheory _root_.CategoryTheory.Functor Opposite
 
 universe u
 

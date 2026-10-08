@@ -35,8 +35,7 @@ through *computable dyadic-rational approximations from below* rather than direc
 | Area | Where | What it formalizes |
 |------|-------|--------------------|
 | Hutter computability | `HutterComputability*.lean`, `CantorSpace.lean` | Hutter (2005), Ch. 2, Def. 2.12 — (lower-/finitely-/estimable-) computability of real-valued semimeasures, via dyadic approximation; closure properties; ℚ and `ℝ≥0∞` variants |
-| Oracle Turing machines | `OracleTM*.lean` | Turing machines with an oracle (real / refined variants) — relative computability |
-| Probabilistic Turing machines | `ProbabilisticTM*.lean` | randomized computation |
+| Codes on a random tape | `BoundedTapeRuns.lean`, `ProbabilisticTM*.lean`, `ProbabilisticPrefix*.lean` | runs bounded by a budget and a tape prefix: output events, their stages with exact rational probabilities converging from below, and the prefix law under which a tape gives one output; `*Boundary.lean` holds the cases where the naive statements fail |
 | Kolmogorov complexity | `KolmogorovComplexity/` | plain complexity `C(x)` with a universal machine (Basic); prefix-free complexity `Kpf` + Kraft inequality `∑ 2^{-Kpf(x)} ≤ 1` (Prefix, PrefixComplexity); **noncomputability** of `C` (Uncomputability, Hutter Thm 2.13) |
 | Arithmetical hierarchy | `ArithmeticalHierarchy/` | the Σ/Π levels of definability/decidability |
 | P vs NP machinery | `PNP/` | a large obstruction-theoretic research lane — see below |
@@ -73,8 +72,10 @@ No `axiom` declarations appear in the source — a source-level grep, *not* a pe
 
 - **`sorry`-free:** the Hutter-computability core, Kolmogorov-complexity lane
   (including the noncomputability theorem), and the entire `PNP/` lane.
-- **Open `sorry`s** (3 work-in-progress files; see the footer below):
-  `OracleTM.lean`, `ProbabilisticTM.lean`, and `ArithmeticalHierarchy/Level3.lean`.
+- The packed-prefix experiments have checked cumulative finite-count approximations.
+  Their unrestricted raw diagonal is refuted, and the refined same-budget prefix
+  condition permits only divergence. This does not qualify a sequential PTM model
+  or full reflective-oracle existence.
 
 **Trusted base.** The one numeric side-goal in `PNP/LocalityObstruction.lean`
 (`20^4 < 2^20`, line 59) is discharged by kernel-checked `decide` — there is no
@@ -101,7 +102,4 @@ rg -n --glob '*.lean' 'native_decide' .
 - Robert I. Soare, [*Turing Computability: Theory and Applications*](https://link.springer.com/book/10.1007/978-3-642-31933-4) (Springer, 2016) — relative computability, oracles, and the arithmetical hierarchy.
 
 ---
-*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 92 .lean files, 3 with sorries.*
-- `ArithmeticalHierarchy/Level3.lean` — 4 sorries
-- `OracleTM.lean` — 1 sorry
-- `ProbabilisticTM.lean` — 2 sorries
+*Proof-hole status checked 2026-10-02: no Lean file has an admitted proof.*

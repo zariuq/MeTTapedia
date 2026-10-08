@@ -1,4 +1,5 @@
 import Mettapedia.TypeTheory.DependentProductRestriction
+import Mettapedia.TypeTheory.DependentProductRestrictionCoverage
 import Mettapedia.TypeTheory.CategoryIndexedFamilyGeneralPi
 import Mathlib.CategoryTheory.Adjunction.Unique
 
@@ -21,7 +22,7 @@ open Mettapedia.GSLT.Topos.ConstructivePresheaf.Dependent
 open Mettapedia.TypeTheory.CategoryIndexedFamilyGeneralPi
 
 universe u
-variable {C : Type u} [Category.{u} C]
+variable {C D E : Type u} [Category.{u} C] [Category.{u} D] [Category.{u} E]
 
 def sectionProduct (A : C ⥤ Type u) : (A.Elements ⥤ Type u) ⥤ (C ⥤ Type u) where
   obj B := dependentFunctions A B
@@ -88,5 +89,61 @@ noncomputable def nativeRestriction {D : Type u} [Category.{u} D]
   Functor.whiskerLeft F ((nativeIso A).hom.app B) ≫
     DependentProductRestriction.comparison F A B ≫
       (nativeIso (F ⋙ A)).inv.app _
+
+set_option backward.isDefEq.respectTransparency false in
+theorem nativeRestriction_section (F : C ⥤ D) (A : D ⥤ Type u)
+    (B : A.Elements ⥤ Type u) :
+    nativeRestriction F A B ≫ (nativeIso (F ⋙ A)).hom.app _ =
+      Functor.whiskerLeft F ((nativeIso A).hom.app B) ≫
+        DependentProductRestriction.comparison F A B := by
+  simp only [nativeRestriction, Category.assoc, Iso.inv_hom_id_app]
+  apply NatTrans.ext
+  funext X
+  apply ConcreteCategory.hom_ext
+  intro value
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+theorem nativeRestriction_id_section (A : C ⥤ Type u) (B : A.Elements ⥤ Type u) :
+    nativeRestriction (𝟭 C) A B ≫ (nativeIso (𝟭 C ⋙ A)).hom.app _ =
+      Functor.whiskerLeft (𝟭 C) ((nativeIso A).hom.app B) := by
+  rw [nativeRestriction_section, DependentProductRestriction.comparison_id]
+  apply NatTrans.ext
+  funext X
+  apply ConcreteCategory.hom_ext
+  intro value
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Composition agrees through the evaluation-preserving presentation of
+the chosen product, including its canonical coherence isomorphisms. -/
+theorem nativeRestriction_comp_section (F : C ⥤ D) (G : D ⥤ E)
+    (A : E ⥤ Type u) (B : A.Elements ⥤ Type u) :
+    Functor.whiskerLeft F (nativeRestriction G A B) ≫
+        nativeRestriction F (G ⋙ A) (DependentProductRestriction.restrictedFamily G A B) ≫
+          (nativeIso (F ⋙ G ⋙ A)).hom.app _ =
+      Functor.whiskerLeft (F ⋙ G) ((nativeIso A).hom.app B) ≫
+        DependentProductRestriction.comparison (F ⋙ G) A B := by
+  rw [nativeRestriction_section]
+  apply NatTrans.ext
+  funext X
+  simp [nativeRestriction, DependentProductRestriction.comparison_comp, Category.assoc]
+
+/-- Future-argument initiality makes the canonical native comparison an
+isomorphism; no representative of a future argument is selected. -/
+noncomputable def nativeRestrictionIso (F : C ⥤ D) (A : D ⥤ Type u)
+    (B : A.Elements ⥤ Type u)
+    [∀ X, (DependentProductRestrictionCoverage.futureLift F A X).Initial] :
+    F ⋙ generalPiFamily (context := Cat.of D) A B ≅
+      generalPiFamily (context := Cat.of C) (F ⋙ A)
+        (DependentProductRestriction.restrictedFamily F A B) :=
+  Functor.isoWhiskerLeft F ((nativeIso A).app B) ≪≫
+    DependentProductRestrictionCoverage.comparisonIso F A B ≪≫
+      ((nativeIso (F ⋙ A)).app _).symm
+
+theorem nativeRestrictionIso_hom (F : C ⥤ D) (A : D ⥤ Type u)
+    (B : A.Elements ⥤ Type u)
+    [∀ X, (DependentProductRestrictionCoverage.futureLift F A X).Initial] :
+    (nativeRestrictionIso F A B).hom = nativeRestriction F A B := rfl
 
 end Mettapedia.TypeTheory.DependentProductNativeComparison

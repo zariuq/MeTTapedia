@@ -617,7 +617,7 @@ theorem StructuralRulesCompile.length_eq
 /-- Transport a source-row bound to the compiled row at the same raw
 position.  Keeping the raw position definitionally unchanged prevents a
 proof of list-length equality from becoming part of occurrence identity. -/
-def StructuralRulesCompile.targetValid
+theorem StructuralRulesCompile.targetValid
     {literalScalars? : String → Option (List Nat)} {startSort : String}
     {rules : List CompiledRule}
     {productions : List CompiledStructuralProduction}
@@ -630,7 +630,7 @@ def StructuralRulesCompile.targetValid
 
 /-- Transport a compiled-row bound back to the source row at the same raw
 position. -/
-def StructuralRulesCompile.sourceValid
+theorem StructuralRulesCompile.sourceValid
     {literalScalars? : String → Option (List Nat)} {startSort : String}
     {rules : List CompiledRule}
     {productions : List CompiledStructuralProduction}
@@ -754,7 +754,7 @@ def StructuralRulesCompile.occurrenceEquiv
 
 /-- The structural component of exact plan agreement supplies pointwise,
 position-preserving compiler evidence. -/
-def ParserPackPlanAgreement.structuralCompilation
+theorem ParserPackPlanAgreement.structuralCompilation
     {literalScalars? : String → Option (List Nat)}
     {profile : ParserProfileLayer} {rules : List CompiledRule}
     {plan : CompiledParserPackPlan}
@@ -2044,8 +2044,7 @@ theorem reflectSourcePlanDerivation_preserve
   | lexical position valid resultSortExact ruleLabelExact matched =>
       cases resultSortExact
       cases ruleLabelExact
-      simp only [preserveSourcePlanDerivation,
-        reflectSourcePlanDerivation]
+      simp only [preserveSourcePlanDerivation]
       erw [reflectSourcePlanDerivation]
       apply congrArg
       apply classCSTRecognition_unique
@@ -2087,7 +2086,7 @@ theorem reflectSourcePlanDerivation_preserve
 mutual
   /-- Preservation after reflection recovers every target derivation,
   including its selected physical production occurrence. -/
-  def preserveSourcePlanDerivation_reflect
+  theorem preserveSourcePlanDerivation_reflect
       {literalScalars? : String → Option (List Nat)}
       {profile : ParserProfileLayer} {rules : List CompiledRule}
       {plan : CompiledParserPackPlan} {input : List Nat}
@@ -2143,7 +2142,7 @@ mutual
 
   /-- The item-vector translation is likewise inverse on every target proof
   object. -/
-  def preserveSourcePlanItems_reflect
+  theorem preserveSourcePlanItems_reflect
       {literalScalars? : String → Option (List Nat)}
       {profile : ParserProfileLayer} {rules : List CompiledRule}
       {plan : CompiledParserPackPlan} {input : List Nat}
@@ -2410,7 +2409,7 @@ private def recursiveStartPlan : CompiledParserPackPlan :=
   (compileParserPackPlan? recursiveStartScalars recursiveStartProfile
     recursiveStartRules).get (by decide)
 
-private def recursiveStartAgreement :
+private theorem recursiveStartAgreement :
     ParserPackPlanAgreement recursiveStartScalars recursiveStartProfile
       recursiveStartRules recursiveStartPlan :=
   .of_compilation (by rfl)

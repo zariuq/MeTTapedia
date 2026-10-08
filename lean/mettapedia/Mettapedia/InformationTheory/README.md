@@ -13,8 +13,8 @@ H(p) = -Σ pᵢ log pᵢ
 
 the average "surprise" of a distribution `p`: it is largest when `p` is uniform
 (maximal uncertainty) and zero when `p` is a point mass (no uncertainty at all).
-From entropy you build **Kullback–Leibler divergence** `KL(p ‖ q)` — how many extra
-bits you waste by coding for `q` when the truth is `p` — and **mutual information**,
+From entropy you build **Kullback–Leibler divergence** `KL(p ‖ q)` — extra
+description length when coding for `q` while the truth is `p` — and **mutual information**,
 the entropy shared between two variables. This directory formalizes these finite
 discrete measures and the bridges to Mathlib's measure-theoretic versions.
 
@@ -26,16 +26,18 @@ normalization, and some continuity — then those properties *force* the functio
 be Shannon entropy (up to a constant). Three classical axiom systems do this, and
 this directory proves they all pin down the same function:
 
-- **Faddeev (1956)** — the *minimal* system: only 4 axioms (binary continuity,
+- **Faddeev (1956)** — four clauses (binary continuity,
   symmetry, recursivity, normalization). It *derives* full continuity,
   monotonicity, maximality, and expansibility.
-- **Shannon (1948)** — the original 5-axiom system (relabeling, full continuity,
-  monotonicity on uniforms, grouping, normalization).
-- **Shannon–Khinchin (1957)** — 5 axioms that *assume* full continuity, maximality,
-  and expansibility (exactly what Faddeev proves).
+- **Shannon (1948)** — four structural clauses (relabeling, full continuity,
+  monotonicity on uniforms and grouping). Normalization is separate, so its
+  uniqueness theorem is up to a constant scale.
+- **Shannon–Khinchin (1957)** — five named clauses, plus explicit relabeling,
+  that *assume* full continuity, maximality and expansibility.
 
-The payoff is that all three are equivalent, so "entropy" is not an arbitrary
-choice but a forced one.
+Within these hypotheses the entropy formula is forced. Presentation counts
+alone do not prove axiom independence or absolute minimality. Natural-log entropy
+is measured in nats; dividing by `log 2` gives the normalized entropy in bits.
 
 ## Components
 
@@ -52,59 +54,47 @@ choice but a forced one.
 
 | File | Contents |
 |------|----------|
-| `Shannon1948.lean` | Shannon's original 5-axiom `ShannonEntropy` structure; proof that `Σ negMulLog(pᵢ)` satisfies it |
-| `ShannonKhinchin.lean` | the Shannon–Khinchin 5-axiom system (`ShannonKhinchinEntropy`); entropy satisfies it; full ⇒ binary continuity |
-| `Faddeev.lean` | Faddeev's minimal 4-axiom system (`FaddeevEntropy`); the uniqueness route `F(n) = log₂(n)` and derived monotonicity (**has the one open `sorry`**, see below) |
-| `Equivalence.lean` | glue theorems: `faddeev_iff_shannonKhinchin` (the two systems characterize the same function) |
-| `Interface.lean` | unified view of all three axiomatizations + the `ProbVec ≃ ProbDist` bridge; the explicit minimality statements |
+| `Shannon1948.lean` | four-clause `Shannon1948Entropy`, its concrete model and uniqueness up to scale; normalization is separate |
+| `ShannonKhinchin.lean` | five named clauses plus relabeling (`ShannonKhinchinEntropy`); entropy satisfies them; full ⇒ binary continuity |
+| `Faddeev.lean` | four-clause `FaddeevEntropy`; axiom-preserving adapter to the canonical coefficient proof; `F(n) = log₂(n)` and full entropy uniqueness |
+| `Equivalence.lean` | entropy-preserving bridges between Faddeev and Shannon–Khinchin; a separate inhabitedness corollary |
+| `Interface.lean` | derived axiom transfers, presentation-count comparisons and the `ProbVec ≃ ProbDist` bridge |
 | `Properties.lean` | fundamental facts: `H ≥ 0`, `H ≤ log n` (uniform-maximal), `H = 0 ⇔` point mass, continuity, permutation invariance |
 | `MeasureTheoreticBridge.lean` | embeds finite distributions into Mathlib `Measure (Fin n)` over counting measure; connects to `klDiv` |
 | `Main.lean` | reviewer-friendly shipping entry point for the entropy axiomatizations |
 
-## Formalization status
+## Proof qualification
 
-No source-level `axiom` declarations appear in this directory — a source grep, *not*
-a per-theorem `#print axioms` audit (a theorem can still inherit a Mathlib axiom
-transitively). Proof state:
+Faddeev's prime-coefficient equality is transported from the canonical standalone
+`InformationTheory.ShannonEntropy.Faddeev` module. The
+`FaddeevEntropy.toStandalone` adapter preserves the entropy function and all four
+axioms; no full-continuity, monotonicity or nonnegativity assumption is added.
 
-- **`sorry`-free:** everything except the one gap below — `Basic`, `EntropyKL`,
-  `MutualInformation`, `BinomialEntropy`, `Main`, and within `ShannonEntropy/` the
-  `Shannon1948`, `ShannonKhinchin`, `Properties`, `Equivalence`, `Interface`,
-  `MeasureTheoreticBridge`, and `Main` files.
-- **One open `sorry`** (in `ShannonEntropy/Faddeev.lean`, see footer): the lemma
-  `faddeev_c_prime_all_equal` — Faddeev's Lemma 9, asserting that the per-prime
-  constants `c_p := F(p)/log(p)` are all equal (`c_p = c_q` for all primes `p, q`).
-  This is the keystone of the Faddeev uniqueness route: once it holds, `F(n) =
-  log₂(n)` follows (`faddeev_F_eq_log2`), and from there the derived monotonicity,
-  full continuity, and maximality. The surrounding development (the structure, the
-  λ → 0 increment machinery in the lemmas leading up to it, and the downstream
-  consequences) is in place; only this combinatorial identity is unproved, and a
-  forensic non-building proof attempt is retained in a comment block beneath it.
+The resulting chain proves the uniform formula, uniqueness on all finite
+probability vectors, full continuity, maximality and expansibility. The
+Shannon–Khinchin bridges preserve the entropy function; their inhabitedness
+corollary is separate from these function-preservation theorems.
 
-**Trusted base.** There is no `native_decide` anywhere in this directory, so nothing
-here compile-evaluates in place of kernel checking; the trusted base is Lean's
-kernel plus whatever Mathlib axioms the imported lemmas carry.
+A repeatable qualification check audits transitive axioms of all kernel
+declarations in the finite entropy-characterization modules, including the
+canonical proof. Only `propext`, `Classical.choice` and `Quot.sound` are allowed.
+It includes fair-coin normalization, exclusion of zero ternary-uniform entropy,
+and a negative control checking that `sorryAx` is rejected.
 
-Reproduce from this directory — the `sorry`/`admit` regex is a *raw* scan that can
-also match prose in comments/strings, so the per-file count in the footer below is
-the authoritative comment-stripped figure:
+Run from the Lean project root:
 
 ```bash
-# sorry/admit occurrences (raw — also matches comment/string mentions):
-rg -n --glob '*.lean' '\b(sorry|admit)\b' .
-# axiom declarations (prints nothing):
-rg -n --glob '*.lean' '^\s*(@\[[^]]*\]\s*)*axiom\s' .
-# native_decide occurrences (prints nothing):
-rg -n --glob '*.lean' 'native_decide' .
+lake build Mettapedia.InformationTheory.ShannonEntropy.Main
+lake env lean scripts/check_faddeev_axioms.lean
 ```
+
+This audit qualifies the named entropy chain, not the whole Mettapedia library.
+The adapter's types and transport lemmas also ensure that incompatible changes
+to the canonical axioms or coefficient definitions are caught at compilation.
 
 ## References
 
-- Claude E. Shannon, [*A Mathematical Theory of Communication*](https://onlinelibrary.wiley.com/doi/abs/10.1002/j.1538-7305.1948.tb01338.x), Bell System Technical Journal 27 (1948), 379–423 and 623–656 ([archive scan](https://ia803209.us.archive.org/27/items/bstj27-3-379/bstj27-3-379_text.pdf)) — the origin of entropy and the original 5-axiom characterization (`Shannon1948.lean`).
-- D. K. Faddeev, "On the concept of entropy of a finite probabilistic scheme" (Russian), Uspekhi Mat. Nauk 11 (1956), no. 1(67), 227–231 — the minimal 4-axiom system (`Faddeev.lean`); see this [English translation](https://arrowtheory.com/pub/notes/025-faddeev-entropy.html) and the discussion in John Baez's [*Entropy as a functor*](https://ncatlab.org/johnbaez/show/Entropy+as+a+functor).
+- Claude E. Shannon, [*A Mathematical Theory of Communication*](https://onlinelibrary.wiley.com/doi/abs/10.1002/j.1538-7305.1948.tb01338.x), Bell System Technical Journal 27 (1948), 379–423 and 623–656 ([archive scan](https://ia803209.us.archive.org/27/items/bstj27-3-379/bstj27-3-379_text.pdf)) — the origin of entropy (`Shannon1948.lean`).
+- D. K. Faddeev, "On the concept of entropy of a finite probabilistic scheme" (Russian), Uspekhi Mat. Nauk 11 (1956), no. 1(67), 227–231 — the binary-continuity characterization (`Faddeev.lean`); see this [English translation](https://arrowtheory.com/pub/notes/025-faddeev-entropy.html) and the discussion in John Baez's [*Entropy as a functor*](https://ncatlab.org/johnbaez/show/Entropy+as+a+functor).
 - A. Ya. Khinchin, [*Mathematical Foundations of Information Theory*](https://archive.org/details/mathematicalfoun0000khin) (Dover, 1957) — the Shannon–Khinchin axioms (`ShannonKhinchin.lean`).
 - Tom Leinster, [*An Operadic Introduction to Entropy*](https://golem.ph.utexas.edu/category/2011/05/an_operadic_introduction_to_en.html) (The n-Category Café, 2011) — cited in `Faddeev.lean` for the operadic/uniqueness viewpoint.
-
----
-*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 13 .lean files, 1 with sorries.*
-- `ShannonEntropy/Faddeev.lean` — 1 sorry

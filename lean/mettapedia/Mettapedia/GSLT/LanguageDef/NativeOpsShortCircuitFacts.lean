@@ -222,19 +222,6 @@ theorem short_circuit_lowering_bounds {interface : Interface} {scope : Scope} {e
 theorem target_empty_frame_scoped (storage : Nat) : TemporariesScoped (targetEmptyFrame storage) :=
   fun _ _ => rfl
 
-theorem target_update_temporary_scoped {frame : TargetFrame} (hscope : TemporariesScoped frame)
-    {identity : Nat} (live : frame.temporaryNames.contains identity = true) (value : TargetValue) :
-    TemporariesScoped (targetUpdateTemporary frame identity value) := by
-  intro candidate absent
-  change frame.temporaryNames.contains candidate = false at absent
-  have different : candidate ≠ identity := by
-    intro same
-    subst candidate
-    rw [live] at absent
-    cases absent
-  simp only [targetUpdateTemporary, different, if_false]
-  exact hscope candidate absent
-
 theorem target_declare_local_scoped {World : Type} {frame : TargetFrame}
     (hscope : TemporariesScoped frame) (state : TargetState World)
     (name : String) (type : NativeType) (value : TargetValue) :

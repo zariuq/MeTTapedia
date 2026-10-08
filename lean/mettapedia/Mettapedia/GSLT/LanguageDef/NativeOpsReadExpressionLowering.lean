@@ -6,9 +6,13 @@ import Mettapedia.GSLT.LanguageDef.NativeOpsShortCircuitCorrespondence
 
 The constructor laws compose real source evaluations with actual emitted
 target runs. Guarded and short-circuit child laws have concrete factories;
-they preserve complete read-only states or their first-fault poison. Loaded
-contents are reflected through the memory relation before any scalar typing
-claim is made. Undefined storage is not promoted to a default result.
+they retain either read-only states or complete effectful post-states. A shared
+ordered-argument composition supplies stateful load, descriptor-length and
+array-index and three-operand slice clients. Shared raw reference and array
+descriptor comparisons retain stored helper returns and the exact context
+post-state before checks, reads and length writes. Loaded contents are reflected
+through the memory relation before any scalar typing claim is made. Undefined
+storage is not promoted to a default result.
 -/
 
 set_option autoImplicit false
@@ -602,5 +606,747 @@ theorem guarded_load_reflection {SourceWorld TargetWorld : Type}
   load_child_reflection (guarded_short_circuit_child_laws worldRelated interface sourceHeap sourceCalls
     targetHeap targetCalls sourceFrame source clear tagged result zero guarded)
     clear zero root compiled frames states bounded hscope ran observation
+
+theorem stateful_length_primitive_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (array : Expr) (element : NativeType)
+    (tagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame array before ⟨.ok value, post⟩ →
+      SourceOuterTag (.array element) value)
+    (child : NativeLowering.Expression) :
+    StatefulPrimitiveLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.length array) [array]
+      ⟨child.code, [child.result], child.supply⟩
+      (NativeLowering.pureTemporary child.supply .word (.length child.result)) := by
+  have next := NativeIR.fresh_strict child.supply
+  refine ⟨⟨next.le, Nat.le_refl _⟩, ?_, ?_⟩
+  · intro root values middle argsRan clear frame target _ states bounded hscope reads sourceOut primitiveRan
+    obtain ⟨value, same, read⟩ := target_one_encoded_argument reads
+    subst values
+    have childRan := (source_single_argument_success_exact array source middle value).mp argsRan
+    cases tagged source middle value childRan with
+    | array element pointer length =>
+        change sourceOut = ⟨.ok (.word length), middle⟩ at primitiveRan
+        subst sourceOut
+        have ran : TargetRun interface targetHeap targetCalls result root
+            (NativeLowering.pureTemporary child.supply .word (.length child.result)).code frame target
+            ⟨.normal, targetDeclareTemporary frame (NativeIR.fresh child.supply).1
+              (.word (NativeWord64.encode length)), target⟩ :=
+          (target_run_temporary_exact (temporary_bound_fresh bounded next)
+            (TargetPureEval.length read) root _).mpr rfl
+        obtain ⟨protection, finalBounded, finalScoped⟩ := declared_temporary_frame_profile
+          bounded hscope next (Nat.le_refl _) (.word (NativeWord64.encode length))
+        exact ⟨_, ran, ⟨states, clear, rfl, declared_temporary_atom interface frame target
+          (NativeIR.fresh child.supply).1 .word (.word (NativeWord64.encode length))⟩,
+          protection, finalBounded, finalScoped⟩
+  · intro root values middle argsRan clear frame target _ states bounded hscope reads out ran
+    obtain ⟨value, same, read⟩ := target_one_encoded_argument reads
+    subst values
+    have childRan := (source_single_argument_success_exact array source middle value).mp argsRan
+    cases tagged source middle value childRan with
+    | array element pointer length =>
+        have same := (target_run_temporary_exact (heap := targetHeap) (calls := targetCalls)
+          (result := result) (type := NativeType.word) (temporary_bound_fresh bounded next)
+          (TargetPureEval.length read) root out).mp ran
+        subst out
+        obtain ⟨protection, finalBounded, finalScoped⟩ := declared_temporary_frame_profile
+          bounded hscope next (Nat.le_refl _) (.word (NativeWord64.encode length))
+        exact ⟨⟨.ok (.word length), middle⟩, rfl,
+          ⟨states, clear, rfl, declared_temporary_atom interface frame target
+            (NativeIR.fresh child.supply).1 .word (.word (NativeWord64.encode length))⟩,
+          protection, finalBounded, finalScoped⟩
+
+theorem stateful_length_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) (array : Expr)
+    (children : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default array)
+    (tagged : ∀ before post value element,
+      inferExpr interface (sourceFrameScope sourceFrame) array = some (.array element) →
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame array before ⟨.ok value, post⟩ →
+      SourceOuterTag (.array element) value) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.length array) := by
+  apply stateful_strict_child_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+    sourceFrame source clear result default (.length array) [array] rfl
+    (fun child member before ready => by cases List.mem_singleton.mp member; exact children before ready)
+  intro supply output compiled
+  obtain ⟨type, child, typing, childCompiled, same⟩ := read_length_lowering_exact compiled
+  obtain ⟨typeSame, element, arrayTyping⟩ := read_length_inferred typing
+  subst type
+  exact ⟨⟨child.code, [child.result], child.supply⟩,
+    NativeLowering.pureTemporary child.supply .word (.length child.result),
+    arguments_lowering_single interface (sourceFrameScope sourceFrame) array childCompiled,
+    same, stateful_length_primitive_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default array element (fun before post value ran => tagged before post value element arrayTyping ran) child⟩
+
+
+
+theorem source_load_primitive_unique {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {reference : Expr} {pointer : Option Address} {state : SourceState World}
+    {first second : SourceOutcome World}
+    (left : sourcePrimitive interface heap calls frame (.load reference) [.reference pointer] state first)
+    (right : sourcePrimitive interface heap calls frame (.load reference) [.reference pointer] state second) :
+    first = second := by
+  have leftExact := (source_load_primitive_exact interface heap calls frame reference pointer state first).mp left
+  have rightExact := (source_load_primitive_exact interface heap calls frame reference pointer state second).mp right
+  cases failed : (sourceReferenceCall state pointer).state.fault with
+  | some fault =>
+      simp only [failed] at leftExact rightExact
+      exact leftExact.trans rightExact.symm
+  | none =>
+      simp only [failed] at leftExact rightExact
+      obtain ⟨leftAddress, leftValue, leftPointer, leftRead, leftOut⟩ := leftExact
+      obtain ⟨rightAddress, rightValue, rightPointer, rightRead, rightOut⟩ := rightExact
+      cases Option.some.inj (leftPointer.symm.trans rightPointer)
+      cases Option.some.inj (leftRead.symm.trans rightRead)
+      exact leftOut.trans rightOut.symm
+
+theorem stateful_checked_load_fragment_profile {SourceWorld TargetWorld : Type} {interface : Interface}
+    {worldRelated : SourceWorld → TargetWorld → Prop}
+    {source : SourceState SourceWorld} {target : TargetState TargetWorld}
+    (states : StateRelated worldRelated source target)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (frame : TargetFrame) (reference : Expr) (pointer : Option Address)
+    (atom : NativeIR.Atom) (supply : NativeIR.Supply) (type result : NativeType) {default : TargetValue}
+    (read : TargetAtomEval interface frame target atom (.reference pointer))
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (zero : TargetZero interface result default) (root : List Instruction)
+    {out : TargetBlockOutcome TargetWorld}
+    (ran : TargetRun interface targetHeap targetCalls result root
+      (NativeLowering.checkReference atom ++
+        (NativeLowering.pureTemporary supply type (.indirectRead atom)).code) frame target out) :
+    ∃ sourceOut,
+      sourcePrimitive interface sourceHeap sourceCalls sourceFrame (.load reference)
+        [.reference pointer] source sourceOut ∧
+      CheckedExpressionRelated worldRelated interface default
+        (NativeLowering.pureTemporary supply type (.indirectRead atom)).result sourceOut out ∧
+      TemporaryProtection supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame (NativeIR.fresh supply).2.next ∧ TemporariesScoped out.frame := by
+  have rawRelated := reference_call_correspondence states pointer
+  have next := NativeIR.fresh_strict supply
+  have unused := temporary_bound_fresh bounded next
+  cases failed : (sourceReferenceCall source pointer).state.fault with
+  | some fault =>
+      have targetFailed := rawRelated.state.fault.trans failed
+      cases (target_reference_fault_then_exact read targetFailed zero root _ out).mp ran
+      refine ⟨⟨.error fault, (sourceReferenceCall source pointer).state⟩, ?_,
+        ⟨rawRelated.state, failed, rfl⟩, temporary_protection_refl _ _,
+        temporary_names_bound_weaken next.le bounded, hscope⟩
+      apply (source_load_primitive_exact interface sourceHeap sourceCalls sourceFrame reference pointer source _).mpr
+      simp only [failed]
+  | none =>
+      obtain ⟨address, pointed⟩ := source_reference_clear_nonnull source pointer failed
+      subst pointer
+      have targetClear := rawRelated.state.fault.trans failed
+      have afterRead := target_atom_state_irrelevant read (targetReferenceCall target (some address)).state
+      have tail := (target_reference_clear_then_exact read targetClear root _ out).mp ran
+      obtain ⟨value, loaded, exactTarget⟩ :=
+        (target_indirect_temporary_exact rawRelated.state frame atom address (NativeIR.fresh supply).1
+          type afterRead unused root out).mp tail
+      subst out
+      obtain ⟨protection, finalBounded, finalScoped⟩ := declared_temporary_frame_profile
+        bounded hscope next (Nat.le_refl _) (encodeValue value)
+      refine ⟨⟨.ok value, (sourceReferenceCall source (some address)).state⟩, ?_,
+        ⟨rawRelated.state, failed, rfl,
+          declared_temporary_atom interface frame _ (NativeIR.fresh supply).1 type (encodeValue value)⟩,
+        protection, finalBounded, finalScoped⟩
+      apply (source_load_primitive_exact interface sourceHeap sourceCalls sourceFrame reference (some address) source _).mpr
+      simpa only [failed] using ⟨address, value, rfl, loaded, rfl⟩
+
+theorem stateful_load_primitive_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (zero : TargetZero interface result default)
+    (reference : Expr) (type : NativeType)
+    (tagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame reference before ⟨.ok value, post⟩ →
+      SourceOuterTag (.ref type) value)
+    (child : NativeLowering.Expression) :
+    StatefulPrimitiveLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.load reference) [reference]
+      ⟨child.code, [child.result], child.supply⟩
+      (NativeLowering.prependCode (NativeLowering.checkReference child.result)
+        (NativeLowering.pureTemporary child.supply type (.indirectRead child.result))) := by
+  have next := NativeIR.fresh_strict child.supply
+  refine ⟨⟨next.le, Nat.le_refl _⟩, ?_, ?_⟩
+  · intro root values middle argsRan _ frame target _ states bounded hscope reads sourceOut primitiveRan
+    obtain ⟨value, same, read⟩ := target_one_encoded_argument reads
+    subst values
+    have childRan := (source_single_argument_success_exact reference source middle value).mp argsRan
+    cases tagged source middle value childRan with
+    | reference element pointer =>
+        obtain ⟨out, _, targetRan, _, _⟩ := checked_load_primitive_preservation states
+          sourceHeap sourceCalls targetHeap targetCalls sourceFrame frame reference pointer child.result
+          (NativeIR.fresh child.supply).1 type result read (temporary_bound_fresh bounded next) zero root primitiveRan
+        obtain ⟨reflected, reflectedRan, checked, protection, finalBounded, finalScoped⟩ :=
+          stateful_checked_load_fragment_profile states sourceHeap sourceCalls targetHeap targetCalls
+            sourceFrame frame reference pointer child.result child.supply type result read bounded hscope zero root targetRan
+        cases source_load_primitive_unique primitiveRan reflectedRan
+        exact ⟨out, targetRan, checked, protection, finalBounded, finalScoped⟩
+  · intro root values middle argsRan _ frame target _ states bounded hscope reads out ran
+    obtain ⟨value, same, read⟩ := target_one_encoded_argument reads
+    subst values
+    have childRan := (source_single_argument_success_exact reference source middle value).mp argsRan
+    cases tagged source middle value childRan with
+    | reference element pointer =>
+        exact stateful_checked_load_fragment_profile states sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame frame reference pointer child.result child.supply type result read bounded hscope zero root ran
+
+theorem stateful_load_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) (zero : TargetZero interface result default)
+    (reference : Expr)
+    (children : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default reference)
+    (tagged : ∀ before post value type,
+      inferExpr interface (sourceFrameScope sourceFrame) reference = some (.ref type) →
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame reference before ⟨.ok value, post⟩ →
+      SourceOuterTag (.ref type) value) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.load reference) := by
+  apply stateful_strict_child_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+    sourceFrame source clear result default (.load reference) [reference] rfl
+    (fun child member before ready => by cases List.mem_singleton.mp member; exact children before ready)
+  intro supply output compiled
+  obtain ⟨type, child, typing, childCompiled, same⟩ := read_load_combined_lowering_exact compiled
+  refine ⟨⟨child.code, [child.result], child.supply⟩,
+    NativeLowering.prependCode (NativeLowering.checkReference child.result)
+      (NativeLowering.pureTemporary child.supply type (.indirectRead child.result)),
+    arguments_lowering_single interface (sourceFrameScope sourceFrame) reference childCompiled,
+    ?_, stateful_load_primitive_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default zero reference type
+      (fun before post value ran => tagged before post value type (read_load_inferred typing) ran) child⟩
+  simpa only [NativeLowering.prependCode, List.append_assoc] using same
+
+theorem stateful_checked_raw_reference_read_profile {SourceWorld TargetWorld : Type}
+    {interface : Interface} {worldRelated : SourceWorld → TargetWorld → Prop}
+    {sourceRaw : SourceRawResult SourceWorld} {targetRaw : TargetRawResult TargetWorld}
+    {heap : TargetHeapSemantics TargetWorld} {calls : TargetCalls TargetWorld} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState TargetWorld} {operation : NativeIR.MemoryOperation}
+    (rawRelated : RawResultRelated worldRelated sourceRaw targetRaw)
+    (callExact : ∀ other, TargetMemoryCall interface heap frame operation state other ↔ other = targetRaw)
+    (supply : NativeIR.Supply) (type : NativeType) {default : TargetValue}
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (zero : TargetZero interface result default) (root : List Instruction)
+    {out : TargetBlockOutcome TargetWorld}
+    (ran : TargetRun interface heap calls result root
+      [.helper (some (.temporary (NativeIR.fresh supply).1 (.ref type))) operation, .checkContext,
+        .temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type
+          (.indirectRead (.temporary (NativeIR.fresh supply).1 (.ref type)))] frame state out) :
+    ∃ sourceOut,
+      (∃ location, sourceReferenceLocation sourceRaw location ∧
+        sourceLocationNext location (fun address post => ∃ value,
+          sourceRead post.memory address = some value ∧ sourceOut = ⟨.ok value, post⟩) sourceOut) ∧
+      CheckedExpressionRelated worldRelated interface default
+        (.temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type) sourceOut out ∧
+      TemporaryProtection supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame (NativeIR.fresh (NativeIR.fresh supply).2).2.next ∧
+      TemporariesScoped out.frame := by
+  have firstFresh := NativeIR.fresh_strict supply
+  have secondFresh := NativeIR.fresh_strict (NativeIR.fresh supply).2
+  obtain ⟨firstProtected, firstBounded, firstScoped⟩ := declared_temporary_frame_profile
+    bounded hscope firstFresh (Nat.le_refl _) targetRaw.value
+  have exactRun := (target_raw_reference_read_exact rawRelated callExact
+    (temporary_bound_fresh bounded firstFresh) (temporary_bound_fresh firstBounded secondFresh)
+    zero root out).mp ran
+  cases failed : sourceRaw.state.fault with
+  | some fault =>
+      simp only [failed] at exactRun
+      subst out
+      refine ⟨⟨.error fault, sourceRaw.state⟩,
+        (source_reference_location_read_exact sourceRaw _).mpr ?_,
+        ⟨rawRelated.state, failed, rfl⟩, firstProtected,
+        temporary_names_bound_weaken secondFresh.le firstBounded, firstScoped⟩
+      simp only [failed]
+  | none =>
+      simp only [failed] at exactRun
+      obtain ⟨address, value, pointer, read, same⟩ := exactRun
+      subst out
+      obtain ⟨secondProtected, finalBounded, finalScoped⟩ := declared_temporary_frame_profile
+        firstBounded firstScoped secondFresh (Nat.le_refl _) (encodeValue value)
+      refine ⟨⟨.ok value, sourceRaw.state⟩,
+        (source_reference_location_read_exact sourceRaw _).mpr ?_,
+        ⟨rawRelated.state, failed, rfl, declared_temporary_atom interface _ _ _ type (encodeValue value)⟩,
+        temporary_protection_trans firstProtected
+          (temporary_protection_weaken firstFresh.le secondProtected), finalBounded, finalScoped⟩
+      simpa only [failed] using ⟨address, value, pointer, read, rfl⟩
+
+theorem stateful_checked_raw_reference_read_preservation {SourceWorld TargetWorld : Type}
+    {interface : Interface} {worldRelated : SourceWorld → TargetWorld → Prop}
+    {sourceRaw : SourceRawResult SourceWorld} {targetRaw : TargetRawResult TargetWorld}
+    {heap : TargetHeapSemantics TargetWorld} {calls : TargetCalls TargetWorld} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState TargetWorld} {operation : NativeIR.MemoryOperation}
+    (rawRelated : RawResultRelated worldRelated sourceRaw targetRaw)
+    (callExact : ∀ other, TargetMemoryCall interface heap frame operation state other ↔ other = targetRaw)
+    (supply : NativeIR.Supply) (type : NativeType) {default : TargetValue}
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (zero : TargetZero interface result default) (root : List Instruction)
+    {sourceOut : SourceOutcome SourceWorld}
+    (read : ∃ location, sourceReferenceLocation sourceRaw location ∧
+      sourceLocationNext location (fun address post => ∃ value,
+        sourceRead post.memory address = some value ∧ sourceOut = ⟨.ok value, post⟩) sourceOut) :
+    ∃ out,
+      TargetRun interface heap calls result root
+        [.helper (some (.temporary (NativeIR.fresh supply).1 (.ref type))) operation, .checkContext,
+          .temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type
+            (.indirectRead (.temporary (NativeIR.fresh supply).1 (.ref type)))] frame state out ∧
+      CheckedExpressionRelated worldRelated interface default
+        (.temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type) sourceOut out ∧
+      TemporaryProtection supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame (NativeIR.fresh (NativeIR.fresh supply).2).2.next ∧
+      TemporariesScoped out.frame := by
+  have firstFresh := NativeIR.fresh_strict supply
+  have secondFresh := NativeIR.fresh_strict (NativeIR.fresh supply).2
+  have firstBounded := declared_temporary_bound bounded firstFresh.le (Nat.le_refl _) targetRaw.value
+  have exactRead := (source_reference_location_read_exact sourceRaw sourceOut).mp read
+  have existsRun : ∃ out, TargetRun interface heap calls result root
+      [.helper (some (.temporary (NativeIR.fresh supply).1 (.ref type))) operation, .checkContext,
+        .temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type
+          (.indirectRead (.temporary (NativeIR.fresh supply).1 (.ref type)))] frame state out := by
+    cases failed : sourceRaw.state.fault with
+    | some fault =>
+        refine ⟨⟨.returned default, targetDeclareTemporary frame (NativeIR.fresh supply).1 targetRaw.value,
+          targetRaw.state⟩, (target_raw_reference_read_exact rawRelated callExact
+          (temporary_bound_fresh bounded firstFresh) (temporary_bound_fresh firstBounded secondFresh)
+          zero root _).mpr ?_⟩
+        simp only [failed]
+    | none =>
+        simp only [failed] at exactRead
+        obtain ⟨address, value, pointer, selected, _⟩ := exactRead
+        refine ⟨⟨.normal, targetDeclareTemporary
+            (targetDeclareTemporary frame (NativeIR.fresh supply).1 targetRaw.value)
+            (NativeIR.fresh (NativeIR.fresh supply).2).1 (encodeValue value), targetRaw.state⟩,
+          (target_raw_reference_read_exact rawRelated callExact
+            (temporary_bound_fresh bounded firstFresh) (temporary_bound_fresh firstBounded secondFresh)
+            zero root _).mpr ?_⟩
+        simpa only [failed] using ⟨address, value, pointer, selected, rfl⟩
+  obtain ⟨out, ran⟩ := existsRun
+  obtain ⟨reflected, reflectedRead, checked, protection, finalBounded, finalScoped⟩ :=
+    stateful_checked_raw_reference_read_profile rawRelated callExact supply type bounded hscope zero root ran
+  cases source_reference_location_read_unique read reflectedRead
+  exact ⟨out, ran, checked, protection, finalBounded, finalScoped⟩
+
+theorem source_index_primitive_exact {World : Type} (interface : Interface)
+    (heap : SourceHeapSemantics World) (calls : SourceCalls World) (frame : SourceFrame)
+    (array index : Expr) (element : NativeType) (pointer : Option Address)
+    (length offset : NativeWord64.Word) (state : SourceState World) (out : SourceOutcome World) :
+    sourcePrimitive interface heap calls frame (.index array index)
+      [.array element pointer length, .word offset] state out ↔
+      match (sourceIndexCall state length (heap.width element) offset pointer).state.fault with
+      | some fault => out = ⟨.error fault, (sourceIndexCall state length (heap.width element) offset pointer).state⟩
+      | none => ∃ address value,
+          (sourceIndexCall state length (heap.width element) offset pointer).value = .reference (some address) ∧
+          sourceRead (sourceIndexCall state length (heap.width element) offset pointer).state.memory address = some value ∧
+          out = ⟨.ok value, (sourceIndexCall state length (heap.width element) offset pointer).state⟩ :=
+  source_reference_location_read_exact _ _
+
+theorem source_index_primitive_unique {World : Type} {interface : Interface}
+    {heap : SourceHeapSemantics World} {calls : SourceCalls World} {frame : SourceFrame}
+    {array index : Expr} {element : NativeType} {pointer : Option Address}
+    {length offset : NativeWord64.Word} {state : SourceState World} {left right : SourceOutcome World}
+    (one : sourcePrimitive interface heap calls frame (.index array index)
+      [.array element pointer length, .word offset] state left)
+    (two : sourcePrimitive interface heap calls frame (.index array index)
+      [.array element pointer length, .word offset] state right) : left = right :=
+  source_reference_location_read_unique one two
+
+theorem stateful_index_primitive_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (zero : TargetZero interface result default)
+    (array index : Expr) (type : NativeType)
+    (width : targetHeap.width type = NativeWord64.encode (sourceHeap.width type))
+    (arrayTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame array before ⟨.ok value, post⟩ →
+      SourceOuterTag (.array type) value)
+    (indexTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame index before ⟨.ok value, post⟩ →
+      SourceOuterTag .word value)
+    (first second : NativeLowering.Expression) :
+    StatefulPrimitiveLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.index array index) [array, index]
+      ⟨first.code ++ second.code, [first.result, second.result], second.supply⟩
+      ⟨[.helper (some (.temporary (NativeIR.fresh second.supply).1 (.ref type)))
+          (.index first.result second.result type), .checkContext] ++
+          (NativeLowering.pureTemporary (NativeIR.fresh second.supply).2 type
+            (.indirectRead (.temporary (NativeIR.fresh second.supply).1 (.ref type)))).code,
+        (NativeLowering.pureTemporary (NativeIR.fresh second.supply).2 type
+            (.indirectRead (.temporary (NativeIR.fresh second.supply).1 (.ref type)))).result,
+        (NativeIR.fresh (NativeIR.fresh second.supply).2).2⟩ := by
+  have firstFresh := NativeIR.fresh_strict second.supply
+  have secondFresh := NativeIR.fresh_strict (NativeIR.fresh second.supply).2
+  refine ⟨⟨firstFresh.le.trans secondFresh.le, Nat.le_refl _⟩, ?_, ?_⟩
+  · intro root values middle argsRan _ frame target _ states bounded hscope reads sourceOut primitiveRan
+    obtain ⟨arrayValue, indexValue, same, arrayRead, indexRead⟩ := target_two_encoded_arguments reads
+    subst values
+    obtain ⟨between, firstRan, tailRan⟩ := (source_arguments_cons_success_exact array [index]
+      source middle arrayValue [indexValue]).mp argsRan
+    have secondRan := (source_single_argument_success_exact index between middle indexValue).mp tailRan
+    cases arrayTagged source between arrayValue firstRan with
+    | array element pointer length =>
+      cases indexTagged between middle indexValue secondRan with
+      | word offset =>
+        have rawRelated := index_call_correspondence states length (sourceHeap.width type) offset pointer
+        have callExact := target_index_call_exact (heap := targetHeap) arrayRead indexRead
+        simp only [width] at callExact
+        exact stateful_checked_raw_reference_read_preservation rawRelated callExact second.supply type
+          bounded hscope zero root primitiveRan
+  · intro root values middle argsRan _ frame target _ states bounded hscope reads out ran
+    obtain ⟨arrayValue, indexValue, same, arrayRead, indexRead⟩ := target_two_encoded_arguments reads
+    subst values
+    obtain ⟨between, firstRan, tailRan⟩ := (source_arguments_cons_success_exact array [index]
+      source middle arrayValue [indexValue]).mp argsRan
+    have secondRan := (source_single_argument_success_exact index between middle indexValue).mp tailRan
+    cases arrayTagged source between arrayValue firstRan with
+    | array element pointer length =>
+      cases indexTagged between middle indexValue secondRan with
+      | word offset =>
+        have rawRelated := index_call_correspondence states length (sourceHeap.width type) offset pointer
+        have callExact := target_index_call_exact (heap := targetHeap) arrayRead indexRead
+        simp only [width] at callExact
+        exact stateful_checked_raw_reference_read_profile rawRelated callExact second.supply type
+          bounded hscope zero root ran
+
+theorem stateful_index_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) (zero : TargetZero interface result default)
+    (array index : Expr)
+    (arrayChildren : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default array)
+    (indexChildren : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default index)
+    (width : ∀ type, inferExpr interface (sourceFrameScope sourceFrame) array = some (.array type) →
+      targetHeap.width type = NativeWord64.encode (sourceHeap.width type))
+    (arrayTagged : ∀ before post value type,
+      inferExpr interface (sourceFrameScope sourceFrame) array = some (.array type) →
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame array before ⟨.ok value, post⟩ →
+      SourceOuterTag (.array type) value)
+    (indexTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame index before ⟨.ok value, post⟩ →
+      SourceOuterTag .word value) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.index array index) := by
+  apply stateful_strict_child_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+    sourceFrame source clear result default (.index array index) [array, index] rfl
+    (fun child member before ready => by
+      rcases List.mem_cons.mp member with equal | tail
+      · subst child; exact arrayChildren before ready
+      · cases List.mem_singleton.mp tail; exact indexChildren before ready)
+  intro supply output compiled
+  obtain ⟨type, first, second, typing, firstCompiled, secondCompiled, same⟩ :=
+    read_index_combined_lowering_exact compiled
+  obtain ⟨arrayTyped, _⟩ := read_index_inferred typing
+  refine ⟨⟨first.code ++ second.code, [first.result, second.result], second.supply⟩,
+    _, arguments_lowering_pair interface (sourceFrameScope sourceFrame) array index firstCompiled secondCompiled,
+    same, stateful_index_primitive_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default zero array index type (width type arrayTyped)
+      (fun before post value ran => arrayTagged before post value type arrayTyped ran) indexTagged first second⟩
+
+
+theorem stateful_checked_array_descriptor_profile {SourceWorld TargetWorld : Type}
+    {interface : Interface} {worldRelated : SourceWorld → TargetWorld → Prop}
+    {sourceRaw : SourceRawResult SourceWorld} {targetRaw : TargetRawResult TargetWorld}
+    {heap : TargetHeapSemantics TargetWorld} {calls : TargetCalls TargetWorld} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState TargetWorld} {operation : NativeIR.MemoryOperation}
+    (rawRelated : RawResultRelated worldRelated sourceRaw targetRaw)
+    (pointer : Option Address) (sourceReference : sourceRaw.value = .reference pointer)
+    (supply : NativeIR.Supply) (element : NativeType) (length : NativeWord64.Word)
+    (lengthAtom : Atom) {default : TargetValue}
+    (callExact : ∀ other, TargetMemoryCall interface heap
+      (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+      operation state other ↔ other = targetRaw)
+    (countRead : TargetAtomEval interface frame state lengthAtom (.word (NativeWord64.encode length)))
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (zero : TargetZero interface result default) (root : List Instruction)
+    {out : TargetBlockOutcome TargetWorld}
+    (ran : TargetRun interface heap calls result root
+      [.temporary (NativeIR.fresh supply).1 (.array element) (.zero (.array element)),
+        .helper (some (.arrayData (.temporary (NativeIR.fresh supply).1 (.array element)) element)) operation,
+        .checkContext, .assign (.arrayLength (.temporary (NativeIR.fresh supply).1 (.array element))) lengthAtom]
+      frame state out) :
+    CheckedExpressionRelated worldRelated interface default
+      (.temporary (NativeIR.fresh supply).1 (.array element))
+      (sourceObserve sourceRaw.state (.array element pointer length)) out ∧
+      TemporaryProtection supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame (NativeIR.fresh supply).2.next ∧ TemporariesScoped out.frame := by
+  have fresh := NativeIR.fresh_strict supply
+  have rawReference : targetRaw.value = .reference pointer := by
+    simpa only [sourceReference, encodeValue] using rawRelated.value
+  have exactRun := (target_fresh_array_descriptor_exact supply element targetRaw rawReference
+    callExact bounded countRead zero root out).mp ran
+  obtain ⟨initialProtected, initialBounded, initialScoped⟩ := declared_temporary_frame_profile
+    bounded hscope fresh (Nat.le_refl _) (.array element none 0)
+  have live : (targetDeclareTemporary frame (NativeIR.fresh supply).1
+      (.array element none 0)).temporaryNames.contains (NativeIR.fresh supply).1 = true := by
+    change ((NativeIR.fresh supply).1 :: frame.temporaryNames).contains (NativeIR.fresh supply).1 = true
+    exact List.contains_iff_mem.mpr (List.mem_cons_self ..)
+  obtain ⟨dataProtected, dataBounded, dataScoped⟩ := updated_temporary_frame_profile
+    initialBounded initialScoped live fresh (.array element pointer 0)
+  cases failed : sourceRaw.state.fault with
+  | some fault =>
+      rw [rawRelated.state.fault.trans failed] at exactRun
+      subst out
+      refine ⟨?_, temporary_protection_trans initialProtected dataProtected, dataBounded, dataScoped⟩
+      change CheckedResultRelated worldRelated default
+        (sourceObserve sourceRaw.state (.array element pointer length)).result
+        (sourceObserve sourceRaw.state (.array element pointer length)).state _ _
+      rw [sourceObserve, failed]
+      exact ⟨rawRelated.state, failed, rfl⟩
+  | none =>
+      rw [rawRelated.state.fault.trans failed] at exactRun
+      subst out
+      obtain ⟨lengthProtected, lengthBounded, lengthScoped⟩ := updated_temporary_frame_profile
+        dataBounded dataScoped live fresh (.array element pointer (NativeWord64.encode length))
+      refine ⟨?_, temporary_protection_trans initialProtected
+        (temporary_protection_trans dataProtected lengthProtected), lengthBounded, lengthScoped⟩
+      have answer := updated_temporary_atom interface
+        (targetUpdateTemporary
+          (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+          (NativeIR.fresh supply).1 (.array element pointer 0)) targetRaw.state
+        (NativeIR.fresh supply).1 (.array element)
+        (.array element pointer (NativeWord64.encode length)) live
+      have related : CheckedResultRelated worldRelated default
+          (.ok (.array element pointer length)) sourceRaw.state
+          ⟨.normal, targetUpdateTemporary
+            (targetUpdateTemporary
+              (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+              (NativeIR.fresh supply).1 (.array element pointer 0))
+            (NativeIR.fresh supply).1 (.array element pointer (NativeWord64.encode length)), targetRaw.state⟩
+          (fun value after post => TargetAtomEval interface after post
+            (.temporary (NativeIR.fresh supply).1 (.array element)) (encodeValue value)) :=
+        ⟨rawRelated.state, failed, rfl, answer⟩
+      change CheckedResultRelated worldRelated default
+        (sourceObserve sourceRaw.state (.array element pointer length)).result
+        (sourceObserve sourceRaw.state (.array element pointer length)).state _ _
+      rw [sourceObserve, failed]
+      exact related
+
+theorem source_slice_primitive_exact {World : Type} (interface : Interface)
+    (heap : SourceHeapSemantics World) (calls : SourceCalls World) (frame : SourceFrame)
+    (array start count : Expr) (element : NativeType) (pointer resultPointer : Option Address)
+    (length first amount : NativeWord64.Word) (state : SourceState World)
+    (reference : (sourceSliceCall state length (heap.width element) first amount pointer).value =
+      .reference resultPointer) (out : SourceOutcome World) :
+    sourcePrimitive interface heap calls frame (.slice array start count)
+      [.array element pointer length, .word first, .word amount] state out ↔
+      out = sourceObserve (sourceSliceCall state length (heap.width element) first amount pointer).state
+        (.array element resultPointer amount) := by
+  simp only [sourcePrimitive]
+  cases failed : (sourceSliceCall state length (heap.width element) first amount pointer).state.fault with
+  | some fault => simp only [sourceObserve, failed]
+  | none =>
+      simp only [sourceObserve, failed]
+      constructor
+      · rintro ⟨other, otherReference, same⟩
+        cases SourceValue.reference.inj (reference.symm.trans otherReference)
+        exact same
+      · intro same; exact ⟨resultPointer, reference, same⟩
+
+theorem stateful_checked_array_descriptor_preservation {SourceWorld TargetWorld : Type}
+    {interface : Interface} {worldRelated : SourceWorld → TargetWorld → Prop}
+    {sourceRaw : SourceRawResult SourceWorld} {targetRaw : TargetRawResult TargetWorld}
+    {heap : TargetHeapSemantics TargetWorld} {calls : TargetCalls TargetWorld} {result : NativeType}
+    {frame : TargetFrame} {state : TargetState TargetWorld} {operation : NativeIR.MemoryOperation}
+    (rawRelated : RawResultRelated worldRelated sourceRaw targetRaw)
+    (pointer : Option Address) (sourceReference : sourceRaw.value = .reference pointer)
+    (supply : NativeIR.Supply) (element : NativeType) (length : NativeWord64.Word)
+    (lengthAtom : Atom) {default : TargetValue}
+    (callExact : ∀ other, TargetMemoryCall interface heap
+      (targetDeclareTemporary frame (NativeIR.fresh supply).1 (.array element none 0))
+      operation state other ↔ other = targetRaw)
+    (countRead : TargetAtomEval interface frame state lengthAtom (.word (NativeWord64.encode length)))
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (zero : TargetZero interface result default) (root : List Instruction) :
+    ∃ out,
+      TargetRun interface heap calls result root
+        [.temporary (NativeIR.fresh supply).1 (.array element) (.zero (.array element)),
+          .helper (some (.arrayData (.temporary (NativeIR.fresh supply).1 (.array element)) element)) operation,
+          .checkContext, .assign (.arrayLength (.temporary (NativeIR.fresh supply).1 (.array element))) lengthAtom]
+        frame state out ∧
+      CheckedExpressionRelated worldRelated interface default
+        (.temporary (NativeIR.fresh supply).1 (.array element))
+        (sourceObserve sourceRaw.state (.array element pointer length)) out ∧
+      TemporaryProtection supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame (NativeIR.fresh supply).2.next ∧ TemporariesScoped out.frame := by
+  have rawReference : targetRaw.value = .reference pointer := by
+    simpa only [sourceReference, encodeValue] using rawRelated.value
+  have exactRun := target_fresh_array_descriptor_exact (calls := calls) supply element targetRaw rawReference
+    callExact bounded countRead zero root
+  have existsRun : ∃ out,
+      TargetRun interface heap calls result root
+        [.temporary (NativeIR.fresh supply).1 (.array element) (.zero (.array element)),
+          .helper (some (.arrayData (.temporary (NativeIR.fresh supply).1 (.array element)) element)) operation,
+          .checkContext, .assign (.arrayLength (.temporary (NativeIR.fresh supply).1 (.array element))) lengthAtom]
+        frame state out := by
+    cases failed : targetRaw.state.fault with
+    | some fault => exact ⟨_, (exactRun _).mpr rfl⟩
+    | none => exact ⟨_, (exactRun _).mpr rfl⟩
+  obtain ⟨out, ran⟩ := existsRun
+  exact ⟨out, ran, stateful_checked_array_descriptor_profile rawRelated pointer sourceReference
+    supply element length lengthAtom callExact countRead bounded hscope zero root ran⟩
+
+theorem stateful_slice_primitive_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (zero : TargetZero interface result default)
+    (array start count : Expr) (type : NativeType)
+    (width : targetHeap.width type = NativeWord64.encode (sourceHeap.width type))
+    (arrayTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame array before ⟨.ok value, post⟩ →
+      SourceOuterTag (.array type) value)
+    (startTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame start before ⟨.ok value, post⟩ →
+      SourceOuterTag .word value)
+    (countTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame count before ⟨.ok value, post⟩ →
+      SourceOuterTag .word value)
+    (first second third : NativeLowering.Expression) :
+    StatefulPrimitiveLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.slice array start count) [array, start, count]
+      ⟨first.code ++ second.code ++ third.code, [first.result, second.result, third.result], third.supply⟩
+      ⟨[.temporary (NativeIR.fresh third.supply).1 (.array type) (.zero (.array type)),
+          .helper (some (.arrayData (.temporary (NativeIR.fresh third.supply).1 (.array type)) type))
+            (.slice first.result second.result third.result type),
+          .checkContext, .assign (.arrayLength (.temporary (NativeIR.fresh third.supply).1 (.array type))) third.result],
+        .temporary (NativeIR.fresh third.supply).1 (.array type), (NativeIR.fresh third.supply).2⟩ := by
+  have fresh := NativeIR.fresh_strict third.supply
+  refine ⟨⟨fresh.le, Nat.le_refl _⟩, ?_, ?_⟩
+  · intro root values middle argsRan _ frame target _ states bounded hscope reads sourceOut primitiveRan
+    obtain ⟨arrayValue, startValue, countValue, same, arrayRead, startRead, countRead⟩ := target_three_encoded_arguments reads
+    subst values
+    obtain ⟨afterArray, firstRan, tailRan⟩ := (source_arguments_cons_success_exact array [start, count]
+      source middle arrayValue [startValue, countValue]).mp argsRan
+    obtain ⟨afterStart, secondRan, tailRan⟩ := (source_arguments_cons_success_exact start [count]
+      afterArray middle startValue [countValue]).mp tailRan
+    have thirdRan := (source_single_argument_success_exact count afterStart middle countValue).mp tailRan
+    cases arrayTagged source afterArray arrayValue firstRan with
+    | array element pointer length =>
+      cases startTagged afterArray afterStart startValue secondRan with
+      | word offset =>
+        cases countTagged afterStart middle countValue thirdRan with
+        | word amount =>
+          have rawRelated := slice_call_correspondence states length (sourceHeap.width type) offset amount pointer
+          have savedOperands := declare_temporary_protects frame (.array type none 0) fresh
+          have newArrayRead := (protection_atom_evaluation savedOperands first.result
+            (target_atom_read_within bounded arrayRead) target target _).mp arrayRead
+          have newStartRead := (protection_atom_evaluation savedOperands second.result
+            (target_atom_read_within bounded startRead) target target _).mp startRead
+          have newCountRead := (protection_atom_evaluation savedOperands third.result
+            (target_atom_read_within bounded countRead) target target _).mp countRead
+          have callExact := target_slice_call_exact (heap := targetHeap) newArrayRead newStartRead newCountRead
+          simp only [width] at callExact
+          obtain ⟨resultPointer, reference⟩ := source_slice_call_reference middle length (sourceHeap.width type) offset amount pointer
+          cases (source_slice_primitive_exact interface sourceHeap sourceCalls sourceFrame array start count
+            type pointer resultPointer length offset amount middle reference sourceOut).mp primitiveRan
+          exact stateful_checked_array_descriptor_preservation rawRelated resultPointer reference
+            third.supply type amount third.result callExact countRead bounded hscope zero root
+  · intro root values middle argsRan _ frame target _ states bounded hscope reads out ran
+    obtain ⟨arrayValue, startValue, countValue, same, arrayRead, startRead, countRead⟩ := target_three_encoded_arguments reads
+    subst values
+    obtain ⟨afterArray, firstRan, tailRan⟩ := (source_arguments_cons_success_exact array [start, count]
+      source middle arrayValue [startValue, countValue]).mp argsRan
+    obtain ⟨afterStart, secondRan, tailRan⟩ := (source_arguments_cons_success_exact start [count]
+      afterArray middle startValue [countValue]).mp tailRan
+    have thirdRan := (source_single_argument_success_exact count afterStart middle countValue).mp tailRan
+    cases arrayTagged source afterArray arrayValue firstRan with
+    | array element pointer length =>
+      cases startTagged afterArray afterStart startValue secondRan with
+      | word offset =>
+        cases countTagged afterStart middle countValue thirdRan with
+        | word amount =>
+          have rawRelated := slice_call_correspondence states length (sourceHeap.width type) offset amount pointer
+          have savedOperands := declare_temporary_protects frame (.array type none 0) fresh
+          have newArrayRead := (protection_atom_evaluation savedOperands first.result
+            (target_atom_read_within bounded arrayRead) target target _).mp arrayRead
+          have newStartRead := (protection_atom_evaluation savedOperands second.result
+            (target_atom_read_within bounded startRead) target target _).mp startRead
+          have newCountRead := (protection_atom_evaluation savedOperands third.result
+            (target_atom_read_within bounded countRead) target target _).mp countRead
+          have callExact := target_slice_call_exact (heap := targetHeap) newArrayRead newStartRead newCountRead
+          simp only [width] at callExact
+          obtain ⟨resultPointer, reference⟩ := source_slice_call_reference middle length (sourceHeap.width type) offset amount pointer
+          refine ⟨sourceObserve
+            (sourceSliceCall middle length (sourceHeap.width type) offset amount pointer).state
+            (.array type resultPointer amount), ?_, ?_⟩
+          · exact (source_slice_primitive_exact interface sourceHeap sourceCalls sourceFrame array start count
+              type pointer resultPointer length offset amount middle reference _).mpr rfl
+          · exact stateful_checked_array_descriptor_profile rawRelated resultPointer reference
+              third.supply type amount third.result callExact countRead bounded hscope zero root ran
+
+theorem stateful_slice_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) (zero : TargetZero interface result default)
+    (array start count : Expr)
+    (arrayChildren : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default array)
+    (startChildren : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default start)
+    (countChildren : ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default count)
+    (width : ∀ type, inferExpr interface (sourceFrameScope sourceFrame) array = some (.array type) →
+      targetHeap.width type = NativeWord64.encode (sourceHeap.width type))
+    (arrayTagged : ∀ before post value type,
+      inferExpr interface (sourceFrameScope sourceFrame) array = some (.array type) →
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame array before ⟨.ok value, post⟩ →
+      SourceOuterTag (.array type) value)
+    (startTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame start before ⟨.ok value, post⟩ →
+      SourceOuterTag .word value)
+    (countTagged : ∀ before post value,
+      SourceExprEval interface sourceHeap sourceCalls sourceFrame count before ⟨.ok value, post⟩ →
+      SourceOuterTag .word value) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default (.slice array start count) := by
+  apply stateful_strict_child_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+    sourceFrame source clear result default (.slice array start count) [array, start, count] rfl
+    (fun child member before ready => by
+      rcases List.mem_cons.mp member with equal | tail
+      · subst child; exact arrayChildren before ready
+      · rcases List.mem_cons.mp tail with equal | tail
+        · subst child; exact startChildren before ready
+        · cases List.mem_singleton.mp tail; exact countChildren before ready)
+  intro supply output compiled
+  obtain ⟨type, first, second, third, typing, firstCompiled, secondCompiled, thirdCompiled, same⟩ :=
+    read_slice_combined_lowering_exact compiled
+  obtain ⟨arrayTyped, _, _⟩ := read_slice_inferred typing
+  refine ⟨⟨first.code ++ second.code ++ third.code, [first.result, second.result, third.result], third.supply⟩,
+    _, arguments_lowering_triple interface (sourceFrameScope sourceFrame) array start count
+      firstCompiled secondCompiled thirdCompiled,
+    ?_, stateful_slice_primitive_laws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default zero array start count type (width type arrayTyped)
+      (fun before post value ran => arrayTagged before post value type arrayTyped ran)
+      startTagged countTagged first second third⟩
+  simpa only [NativeLowering.pureTemporary, List.cons_append, List.nil_append] using same
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

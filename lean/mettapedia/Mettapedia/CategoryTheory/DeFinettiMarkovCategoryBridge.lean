@@ -15,7 +15,7 @@ set_option autoImplicit false
 namespace Mettapedia.CategoryTheory
 
 open MeasureTheory
-open ProbabilityTheory
+open _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.ProbabilityTheory
 
 variable {Y Ω : Type*} [MeasurableSpace Y] [MeasurableSpace Ω]

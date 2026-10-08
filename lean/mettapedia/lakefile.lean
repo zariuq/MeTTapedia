@@ -64,14 +64,113 @@ lean_lib PrimeMotivationQuotation where
 lean_lib MetamathProofRegression where
   roots := #[`Mettapedia.Languages.Metamath.MM2AssembledNormalExecution]
 
-input_dir mm0MeTTaServiceSources where
-  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0"
+-- Each quotation depends on its own retained source files. Editing an
+-- unquoted frontend module does not invalidate the kernel quotation.
+input_file mm0MeTTaDataSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/data.metta"
   text := true
-  filter := .extension "metta"
+
+input_file mm0MeTTaKernelSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/kernel.generated.metta"
+  text := true
+
+input_file mm0MeTTaServiceSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/service.metta"
+  text := true
+
+input_file mm0MeTTaStreamSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/stream.metta"
+  text := true
+
+input_file mm0MeTTaTextualSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/textual.metta"
+  text := true
+
+input_file mm0MeTTaMMUSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/mmu.metta"
+  text := true
+
+input_file mm0MeTTaMMBSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/lib/mm0/mmb.metta"
+  text := true
 
 lean_lib MM0MeTTaQuotation where
   roots := #[`Mettapedia.Languages.MM0.MeTTa.Program]
-  needs := #[`@/mm0MeTTaServiceSources]
+  needs := #[`@/mm0MeTTaDataSource, `@/mm0MeTTaKernelSource,
+    `@/mm0MeTTaServiceSource, `@/mm0MeTTaStreamSource]
+
+lean_lib MM0TextualQuotation where
+  roots := #[`Mettapedia.Languages.MM0.MeTTa.Formats.Textual.TextualExecution]
+  needs := #[`@/mm0MeTTaTextualSource]
+
+lean_lib MM0MMUQuotation where
+  roots := #[`Mettapedia.Languages.MM0.MeTTa.Formats.MMU.MMUResolution]
+  needs := #[`@/mm0MeTTaMMUSource]
+
+-- The authored frontend quotation owns these exact inputs. Its proof
+-- importers inherit changes through the ordinary module graph.
+input_file mm0AuthoredGroundSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/experiments/gslt2parse_foundation/presentations/shared/ground_relations_v1.metta"
+  text := true
+
+input_file mm0AuthoredPeTTaGroundSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/experiments/gslt2parse_foundation/presentations/shared/cetta_petta_ground_relations_v1.metta"
+  text := true
+
+input_file mm0AuthoredFoldSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/source_fold_v1.metta"
+  text := true
+
+input_file mm0AuthoredSortSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/sort_environment_v1.metta"
+  text := true
+
+input_file mm0AuthoredTermSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/term_environment_v1.metta"
+  text := true
+
+input_file mm0AuthoredLexerSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/secondary_lexer_v1.metta"
+  text := true
+
+input_file mm0AuthoredNotationSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/notation_environment_v1.metta"
+  text := true
+
+input_file mm0AuthoredPrattSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/common/dynamic_pratt_v1.metta"
+  text := true
+
+input_file mm0AuthoredMathSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/math_parser_v1.metta"
+  text := true
+
+input_file mm0AuthoredExpressionSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/expression_environment_v1.metta"
+  text := true
+
+input_file mm0AuthoredAssertionSource where
+  path := "../../../hyperon/cetta-mm0-metta-20261004/langdef/mm0/assertion_environment_v1.metta"
+  text := true
+
+lean_lib MM0TextualAuthoredQuotation where
+  roots := #[`Mettapedia.Languages.MM0.MeTTa.Formats.Textual.TextualAuthoredSource]
+  needs := #[
+    `@/mm0AuthoredGroundSource,
+    `@/mm0AuthoredPeTTaGroundSource,
+    `@/mm0AuthoredFoldSource,
+    `@/mm0AuthoredSortSource,
+    `@/mm0AuthoredTermSource,
+    `@/mm0AuthoredLexerSource,
+    `@/mm0AuthoredNotationSource,
+    `@/mm0AuthoredPrattSource,
+    `@/mm0AuthoredMathSource,
+    `@/mm0AuthoredExpressionSource,
+    `@/mm0AuthoredAssertionSource]
+
+lean_lib MM0MMBQuotation where
+  roots := #[`Mettapedia.Languages.MM0.MeTTa.Formats.MMB.MMBExecution]
+  needs := #[`@/mm0MeTTaMMBSource]
 
 lean_exe mettapedia where root := `Main
 
@@ -84,5 +183,5 @@ lean_exe checkRFC8259NativeForestExact where
 lean_exe sumoNativeSourceCheck where
   root := `Mettapedia.Languages.SUMO.Native.SourceElaborationCheck
 
-lean_exe pettaSourceRun where
-  root := `Mettapedia.Languages.MeTTa.PeTTa.SourceMain
+lean_exe pettaRun where
+  root := `Mettapedia.Languages.MeTTa.PeTTa.Main

@@ -794,18 +794,6 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.zam_substitution_reduction_fusion
 #check @Mettapedia.OSLF.PathMap.Trie.ZamContracts.trieZipperSpace
 
--- PeTTa OSLF instance (PeTTa → OSLF → mettail-rust pipeline)
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaOSLF
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaGalois
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaDiamond_spec
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaBox_spec
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaOSLF_lp_sound
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaRenderRust
-#check @Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance.pettaWriteRust
--- PeTTa GSLT fiber
-#check @Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex.pettaIdMorphism
-#check @Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex.pettaForwardFiber
-#check @Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex.pettaForwardFiber_oslf
 
 -- LP Kernel (unified semantic core; Datalog retired to _archive/Datalog/)
 -- LP-M1: Core syntax (generalizes Datalog with function symbols)

@@ -97,6 +97,64 @@ theorem histories_comp {first middle last : ProofRelevantGSLT.{u}}
   · intro a b event
     rfl
 
+/-- Forget occurrences after a forward interpretation while preserving the
+mapped endpoints. Semantic steps require only proposition-valued elimination
+of their evidence witnesses; no representative event is selected for use by a
+consumer. -/
+def erasedGenerators {source target : ProofRelevantGSLT.{u}}
+    (f : ForwardEvidenceMap source target) :
+    ExtensionalState source.theory ⥤q ExtensionalState target.theory where
+  obj state := ⟨f.mapTerm state.term⟩
+  map event := ⟨by
+    obtain ⟨evidence⟩ := source.steps.witness event.down
+    exact target.steps.erase (f.mapEvidence evidence)⟩
+
+/-- Extend the same endpoint interpretation through the existing free path
+category. This forgets event identity, not endpoints or the ordered step path. -/
+def erasedHistories {source target : ProofRelevantGSLT.{u}}
+    (f : ForwardEvidenceMap source target) :
+    Paths (ExtensionalState source.theory) ⥤ Paths (ExtensionalState target.theory) :=
+  Paths.lift (f.erasedGenerators ⋙q Paths.of (ExtensionalState target.theory))
+
+/-- Mapping a history and then erasing its events agrees with first erasing
+and then mapping its endpoint steps. The equation holds on complete paths,
+including empty paths and repeated equal-endpoint occurrences. -/
+theorem histories_erasure {source target : ProofRelevantGSLT.{u}}
+    (f : ForwardEvidenceMap source target) :
+    f.histories ⋙ eraseHistory target = eraseHistory source ⋙ f.erasedHistories := by
+  refine Paths.ext_functor (F := f.histories ⋙ eraseHistory target)
+    (G := eraseHistory source ⋙ f.erasedHistories) rfl ?_
+  intro before after event
+  rfl
+
+/-- Identity interpretation does not change the erased endpoint path. -/
+theorem erasedHistories_id (system : ProofRelevantGSLT.{u}) :
+    (ForwardEvidenceMap.id system).erasedHistories =
+      𝟭 (Paths (ExtensionalState system.theory)) := by
+  symm
+  apply Paths.lift_unique
+  fapply Prefunctor.ext
+  · intro state
+    rfl
+  · intro before after event
+    rfl
+
+/-- Endpoint erasure also respects composition of forward interpretations.
+This law asserts neither event recovery nor target-event coverage. -/
+theorem erasedHistories_comp {first middle last : ProofRelevantGSLT.{u}}
+    (earlier : ForwardEvidenceMap first middle)
+    (later : ForwardEvidenceMap middle last) :
+    (earlier.comp later).erasedHistories =
+      earlier.erasedHistories ⋙ later.erasedHistories := by
+  symm
+  apply Paths.lift_unique
+  fapply Prefunctor.ext
+  · intro state
+    rfl
+  · intro before after event
+    rfl
+
+
 end ForwardEvidenceMap
 
 /-! A lowering can implement one occurrence by several target events. A

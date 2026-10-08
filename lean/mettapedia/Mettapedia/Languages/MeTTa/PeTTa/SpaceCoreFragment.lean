@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaILBridge
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # PeTTa Space Core Fragment

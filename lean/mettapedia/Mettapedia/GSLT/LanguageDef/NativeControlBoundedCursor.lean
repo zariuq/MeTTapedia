@@ -36,7 +36,7 @@ open Mettapedia.Machines.Cursor
 open HostCalls (Pull)
 open NativeControlCursor (protocol)
 open NativeControlEffectCursor (provider)
-open CategoryTheory
+open _root_.CategoryTheory
 
 variable {HState World Answer : Type}
 

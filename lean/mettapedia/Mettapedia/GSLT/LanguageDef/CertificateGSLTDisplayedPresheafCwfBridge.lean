@@ -15,7 +15,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.TypeTheory.DisplayedPresheafCwf
 open Mettapedia.TypeTheory.DisplayedPresheafComprehension

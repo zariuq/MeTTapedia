@@ -30,6 +30,11 @@ services, each a measured loop or a measured recursion:
   value at an item is computed from the values at its dependencies. The
   certificate makes every item accessible (`Acyclic.accCode`).
 
+The bounded `OccurrenceGraph` service is specified by the same independent
+dependency-fold judgment. It retains its ordered DFS cursor, memo and
+analysis expense across resumptions, and proves soundness of successful
+bound readouts. Native memory and source-coverage adapters are separate.
+
 Each loop also runs through the accessibility route (`affectedAcc`,
 `scheduleAcc`, `Acyclic.recAcc`), and the two versions agree for every inert
 recursor.
@@ -917,5 +922,539 @@ theorem unfoldingWork_eq (A : c.Acyclic) (localWork : α → Nat)
     (by rw [if_pos admitted])
 
 end Catalogue
+
+/-! ## Bounded traversal of physical occurrence rows
+
+The traversal stores a completed child's value once, while adding that value
+for every distinct referring row. Its independent specification is the
+catalogue's existing `FoldDerivation`, not the traversal's own cache.
+Source coverage, terminal inertness, and the lifetime of a native graph are
+separate adapter obligations. -/
+
+namespace OccurrenceGraph
+
+structure Row where
+  physical : Nat
+  successor : Option Nat
+  deriving DecidableEq, Repr
+
+structure Graph where
+  nodes : List (List Row)
+  deriving DecidableEq, Repr
+
+def Graph.rows (graph : Graph) (node : Nat) : List Row :=
+  (graph.nodes[node]?).getD []
+
+def Graph.catalogue (graph : Graph) : Catalogue Nat where
+  items := List.range graph.nodes.length
+  deps node := (graph.rows node).filterMap Row.successor
+
+def Graph.combine (graph : Graph) (node : Nat) (children : List Nat) : Nat :=
+  (graph.rows node).length + children.sum
+
+abbrev Graph.Derived (graph : Graph) : Nat → Nat → Prop :=
+  graph.catalogue.FoldDerivation graph.combine
+
+inductive RowValue (graph : Graph) : Row → Nat → Prop where
+  | terminal (physical : Nat) : RowValue graph ⟨physical, none⟩ 1
+  | linked (physical child value : Nat) (derived : graph.Derived child value) :
+      RowValue graph ⟨physical, some child⟩ (1 + value)
+
+/-- Ordered row contributions yield ordered child derivations. Terminal rows
+still contribute one, and repeated references are not deduplicated. -/
+theorem rows_derive (graph : Graph) {rows : List Row} {values : List Nat}
+    (derived : List.Forall₂ (RowValue graph) rows values) :
+    ∃ children,
+      List.Forall₂ graph.Derived (rows.filterMap Row.successor) children ∧
+        values.sum = rows.length + children.sum := by
+  induction derived with
+  | nil => exact ⟨[], .nil, rfl⟩
+  | @cons row value rows values rowDerived remaining ih =>
+    obtain ⟨children, childDerived, total⟩ := ih
+    cases rowDerived with
+    | terminal physical =>
+      refine ⟨children, ?_, ?_⟩
+      · simpa only [List.filterMap_cons, Row.successor] using childDerived
+      · simp only [List.sum_cons, List.length_cons]
+        omega
+    | linked physical child value derived =>
+      refine ⟨value :: children, ?_, ?_⟩
+      · simpa only [List.filterMap_cons, Row.successor] using
+          List.Forall₂.cons derived childDerived
+      · simp only [List.sum_cons, List.length_cons]
+        omega
+
+structure Frame where
+  node : Nat
+  row : Nat := 0
+  total : Nat := 0
+  deriving DecidableEq, Repr
+
+inductive Color where
+  | fresh | active | done
+  deriving DecidableEq, Repr
+
+inductive Status where
+  | pending | bound | cycle | invalid | overflow
+  deriving DecidableEq, Repr
+
+structure State where
+  root : Nat
+  capacity : Nat
+  stack : List Frame
+  colors : Nat → Color
+  memo : Nat → Nat
+  ticks : Nat := 0
+  indexVisits : Nat := 0
+  status : Status := .pending
+
+def init (graph : Graph) (root : Nat) : Option State :=
+  if root < graph.nodes.length then
+    some {
+      root := root
+      capacity := graph.nodes.length
+      stack := [⟨root, 0, 0⟩]
+      colors := Function.update (fun _ => .fresh) root .active
+      memo := fun _ => 0 }
+  else none
+
+def fail (state : State) (status : Status) : State :=
+  { state with status }
+
+def finish (state : State) (frame : Frame) (rest : List Frame) : State :=
+  { state with
+    stack := rest
+    colors := Function.update state.colors frame.node .done
+    memo := Function.update state.memo frame.node frame.total
+    status := if rest.isEmpty then .bound else .pending }
+
+def push (state : State) (child : Nat) : State :=
+  { state with
+    stack := ⟨child, 0, 0⟩ :: state.stack
+    colors := Function.update state.colors child .active }
+
+def advance (state : State) (frame : Frame) (rest : List Frame)
+    (contribution : Nat) : State :=
+  { state with
+    stack := { frame with row := frame.row + 1, total := frame.total + contribution } :: rest }
+
+def addRow (maximum : Nat) (state : State) (frame : Frame) (rest : List Frame)
+    (contribution : Nat) : State :=
+  if maximum < frame.total + contribution then fail state .overflow
+  else advance state frame rest contribution
+
+/-- The scalar control order of the native graph service. Array access and
+counter charging have their own memory and account interpretations. -/
+def step (graph : Graph) (maximum : Nat) (state : State) : State :=
+  if state.status ≠ .pending then state
+  else if state.capacity ≠ graph.nodes.length ∨ state.stack = [] ∨ state.ticks = maximum then
+    fail state .invalid
+  else
+    let paid := { state with ticks := state.ticks + 1 }
+    match state.stack with
+    | [] => fail paid .invalid
+    | frame :: rest =>
+      let rows := graph.rows frame.node
+      if frame.row = rows.length then finish paid frame rest
+      else match rows[frame.row]? with
+      | none => fail paid .invalid
+      | some row =>
+        if row.physical = 0 ∨ (row.successor.any fun child => graph.nodes.length ≤ child) then
+          fail paid .invalid
+        else
+          let previous := rows.take frame.row
+          match previous.findIdx? (fun earlier => earlier.physical == row.physical) with
+          | some index => fail { paid with indexVisits := paid.indexVisits + index + 1 } .invalid
+          | none =>
+            let scanned := { paid with indexVisits := paid.indexVisits + frame.row }
+            match row.successor with
+            | none => addRow maximum scanned frame rest 1
+            | some child =>
+              match state.colors child with
+              | .active => fail scanned .cycle
+              | .fresh =>
+                if state.stack.length = state.capacity then fail scanned .invalid
+                else push scanned child
+              | .done =>
+                if state.memo child = maximum then fail scanned .overflow
+                else addRow maximum scanned frame rest (1 + state.memo child)
+
+/-- A bounded call retains the full DFS stack, memo and accounting cursor. -/
+def run (graph : Graph) (maximum : Nat) : Nat → State → State
+  | 0, state => state
+  | fuel + 1, state => run graph maximum fuel (step graph maximum state)
+
+def bound? (state : State) : Option Nat :=
+  if state.status = .bound then some (state.memo state.root) else none
+
+def Rooted (root : Nat) : List Frame → Prop
+  | [] => True
+  | [frame] => frame.node = root
+  | _ :: second :: rest => Rooted root (second :: rest)
+
+def Graph.FrameDerived (graph : Graph) (maximum : Nat) (frame : Frame) : Prop :=
+  frame.node < graph.nodes.length ∧ frame.row ≤ (graph.rows frame.node).length ∧
+    frame.total ≤ maximum ∧
+      ∃ values, List.Forall₂ (RowValue graph) ((graph.rows frame.node).take frame.row) values ∧
+        frame.total = values.sum
+
+structure Valid (graph : Graph) (maximum : Nat) (state : State) : Prop where
+  frames : ∀ frame ∈ state.stack, graph.FrameDerived maximum frame
+  ticksWithin : state.ticks ≤ maximum
+  cached : ∀ node, state.colors node = .done →
+    graph.Derived node (state.memo node) ∧ state.memo node ≤ maximum
+  rooted : Rooted state.root state.stack
+  completed : state.status = .bound → state.colors state.root = .done
+
+theorem frame_zero (graph : Graph) (maximum node : Nat)
+    (admitted : node < graph.nodes.length) :
+    graph.FrameDerived maximum ⟨node, 0, 0⟩ := by
+  exact ⟨admitted, Nat.zero_le _, Nat.zero_le _, [], by simp, rfl⟩
+
+theorem frame_complete (graph : Graph) (maximum : Nat) (frame : Frame)
+    (valid : graph.FrameDerived maximum frame)
+    (finished : frame.row = (graph.rows frame.node).length) :
+    graph.Derived frame.node frame.total := by
+  obtain ⟨admitted, _, _, values, rows, total⟩ := valid
+  rw [finished, List.take_length] at rows
+  obtain ⟨children, derived, sum⟩ := rows_derive graph rows
+  rw [total, sum]
+  exact Catalogue.FoldDerivation.node (by simpa [Graph.catalogue] using admitted) derived
+
+theorem frame_advance (graph : Graph) (maximum : Nat) (frame : Frame)
+    (valid : graph.FrameDerived maximum frame)
+    (available : frame.row < (graph.rows frame.node).length) (contribution : Nat)
+    (derived : RowValue graph (graph.rows frame.node)[frame.row] contribution)
+    (within : frame.total + contribution ≤ maximum) :
+    graph.FrameDerived maximum
+      { frame with row := frame.row + 1, total := frame.total + contribution } := by
+  obtain ⟨admitted, _, _, values, rows, total⟩ := valid
+  change frame.node < graph.nodes.length ∧ frame.row + 1 ≤ (graph.rows frame.node).length ∧
+    frame.total + contribution ≤ maximum ∧ _
+  refine ⟨admitted, by omega, within, values ++ [contribution], ?_, ?_⟩
+  · rw [List.take_succ_eq_append_getElem available]
+    exact List.rel_append rows (.cons derived .nil)
+  · simp only [List.sum_append, List.sum_singleton, total]
+
+theorem run_add (graph : Graph) (maximum first second : Nat) (state : State) :
+    run graph maximum (first + second) state =
+      run graph maximum second (run graph maximum first state) := by
+  induction first generalizing state with
+  | zero => simp only [Nat.zero_add, run]
+  | succ first ih => simpa only [Nat.succ_add, run] using ih (step graph maximum state)
+
+theorem Valid.withCounters {graph : Graph} {maximum : Nat} {state : State}
+    (valid : Valid graph maximum state) (ticks visits : Nat) (within : ticks ≤ maximum) :
+    Valid graph maximum { state with ticks := ticks, indexVisits := visits } :=
+  ⟨valid.frames, within, valid.cached, valid.rooted, valid.completed⟩
+
+theorem Valid.fail {graph : Graph} {maximum : Nat} {state : State}
+    (valid : Valid graph maximum state) (status : Status) (notBound : status ≠ .bound) :
+    Valid graph maximum (OccurrenceGraph.fail state status) := by
+  refine ⟨valid.frames, valid.ticksWithin, valid.cached, valid.rooted, ?_⟩
+  intro completed
+  exact False.elim (notBound completed)
+
+theorem Rooted.tail (root : Nat) (frame : Frame) (rest : List Frame)
+    (rooted : Rooted root (frame :: rest)) : Rooted root rest := by
+  cases rest with
+  | nil => trivial
+  | cons second rest => exact rooted
+
+theorem init_valid (graph : Graph) (maximum root : Nat) (state : State)
+    (issued : init graph root = some state) : Valid graph maximum state := by
+  unfold init at issued
+  split at issued
+  · rename_i admitted
+    cases issued
+    refine ⟨?_, Nat.zero_le _, ?_, rfl, ?_⟩
+    · intro frame member
+      have equal : frame = ⟨root, 0, 0⟩ := List.mem_singleton.1 member
+      subst frame
+      exact frame_zero graph maximum root admitted
+    · intro node done
+      simp only [Function.update_apply] at done
+      split at done <;> contradiction
+    · intro completed
+      cases completed
+  · contradiction
+
+theorem Valid.finish {graph : Graph} {maximum : Nat} {state : State}
+    (valid : Valid graph maximum state) (frame : Frame) (rest : List Frame)
+    (stack : state.stack = frame :: rest)
+    (finished : frame.row = (graph.rows frame.node).length) :
+    Valid graph maximum (OccurrenceGraph.finish state frame rest) := by
+  have frameValid := valid.frames frame (by simp [stack])
+  refine ⟨?_, valid.ticksWithin, ?_, ?_, ?_⟩
+  · intro other member
+    exact valid.frames other (by simp only [stack, List.mem_cons]; exact Or.inr member)
+  · intro node done
+    by_cases equal : node = frame.node
+    · subst node
+      simpa only [OccurrenceGraph.finish, Function.update_self] using
+        And.intro (frame_complete graph maximum frame frameValid finished) frameValid.2.2.1
+    · have previous : state.colors node = .done := by
+        simpa only [OccurrenceGraph.finish, Function.update_of_ne equal] using done
+      simpa only [OccurrenceGraph.finish, Function.update_of_ne equal] using valid.cached node previous
+  · exact Rooted.tail state.root frame rest (by simpa only [stack] using valid.rooted)
+  · intro completed
+    cases rest with
+    | nil =>
+      have root : frame.node = state.root := by
+        simpa only [stack, Rooted] using valid.rooted
+      simp only [OccurrenceGraph.finish, ← root, Function.update_self]
+    | cons second rest => simp [OccurrenceGraph.finish] at completed
+
+theorem Valid.push {graph : Graph} {maximum : Nat} {state : State}
+    (valid : Valid graph maximum state) (child : Nat)
+    (admitted : child < graph.nodes.length) (nonempty : state.stack ≠ [])
+    (pending : state.status = .pending) : Valid graph maximum (OccurrenceGraph.push state child) := by
+  refine ⟨?_, valid.ticksWithin, ?_, ?_, ?_⟩
+  · intro frame member
+    rcases List.mem_cons.1 member with equal | member
+    · subst frame
+      exact frame_zero graph maximum child admitted
+    · exact valid.frames frame member
+  · intro node done
+    by_cases equal : node = child
+    · subst node
+      simp [OccurrenceGraph.push] at done
+    · have previous : state.colors node = .done := by
+        simpa only [OccurrenceGraph.push, Function.update_of_ne equal] using done
+      exact valid.cached node previous
+  · cases stack : state.stack with
+    | nil => exact False.elim (nonempty stack)
+    | cons frame rest => simpa only [OccurrenceGraph.push, stack, Rooted] using valid.rooted
+  · intro completed
+    simp [OccurrenceGraph.push, pending] at completed
+
+theorem Valid.advance {graph : Graph} {maximum : Nat} {state : State}
+    (valid : Valid graph maximum state) (frame : Frame) (rest : List Frame)
+    (stack : state.stack = frame :: rest)
+    (available : frame.row < (graph.rows frame.node).length) (contribution : Nat)
+    (derived : RowValue graph (graph.rows frame.node)[frame.row] contribution)
+    (within : frame.total + contribution ≤ maximum) :
+    Valid graph maximum (OccurrenceGraph.advance state frame rest contribution) := by
+  refine ⟨?_, valid.ticksWithin, valid.cached, ?_, valid.completed⟩
+  · intro other member
+    rcases List.mem_cons.1 member with equal | member
+    · subst other
+      exact frame_advance graph maximum frame (valid.frames frame (by simp [stack]))
+        available contribution derived within
+    · exact valid.frames other (by simp only [stack, List.mem_cons]; exact Or.inr member)
+  · cases rest with
+    | nil => simpa only [OccurrenceGraph.advance, stack, Rooted] using valid.rooted
+    | cons second rest => simpa only [OccurrenceGraph.advance, stack, Rooted] using valid.rooted
+
+theorem Valid.addRow {graph : Graph} {maximum : Nat} {state : State}
+    (valid : Valid graph maximum state) (frame : Frame) (rest : List Frame)
+    (stack : state.stack = frame :: rest)
+    (available : frame.row < (graph.rows frame.node).length) (contribution : Nat)
+    (derived : RowValue graph (graph.rows frame.node)[frame.row] contribution) :
+    Valid graph maximum (OccurrenceGraph.addRow maximum state frame rest contribution) := by
+  unfold OccurrenceGraph.addRow
+  split
+  · exact valid.fail .overflow (by decide)
+  · rename_i within
+    exact valid.advance frame rest stack available contribution derived (by omega)
+
+theorem addRow_guard_eq (maximum total contribution : Nat) (within : total ≤ maximum) :
+    (maximum < total + contribution) ↔ (maximum - total < contribution) := by omega
+
+theorem RowValue.of_terminal (graph : Graph) (row : Row)
+    (terminal : row.successor = none) : RowValue graph row 1 := by
+  cases row with
+  | mk physical successor =>
+    change successor = none at terminal
+    subst successor
+    exact RowValue.terminal physical
+
+theorem RowValue.of_linked (graph : Graph) (row : Row) (child value : Nat)
+    (linked : row.successor = some child) (derived : graph.Derived child value) :
+    RowValue graph row (1 + value) := by
+  cases row with
+  | mk physical successor =>
+    change successor = some child at linked
+    subst successor
+    exact RowValue.linked physical child value derived
+
+/-- Every scalar traversal transition preserves independently justified
+completed entries and the full ordered prefix of every unfinished frame. -/
+theorem step_valid (graph : Graph) (maximum : Nat) (state : State)
+    (valid : Valid graph maximum state) : Valid graph maximum (step graph maximum state) := by
+  unfold step
+  split
+  · exact valid
+  · rename_i isPending
+    have pending : state.status = .pending := by
+      by_cases equal : state.status = .pending
+      · exact equal
+      · exact False.elim (isPending equal)
+    split
+    · exact valid.fail .invalid (by decide)
+    · rename_i admitted
+      have beforeLimit : state.ticks ≠ maximum := fun equal =>
+        admitted (Or.inr (Or.inr equal))
+      let paid : State := { state with ticks := state.ticks + 1 }
+      have paidValid : Valid graph maximum paid :=
+        valid.withCounters (state.ticks + 1) state.indexVisits (by
+          have := valid.ticksWithin
+          omega)
+      cases stack : state.stack with
+      | nil =>
+        simp only
+        simpa only [paid, stack] using paidValid.fail .invalid (by decide)
+      | cons frame rest =>
+        simp only
+        split
+        · rename_i finished
+          exact paidValid.finish frame rest stack finished
+        · cases found : (graph.rows frame.node)[frame.row]? with
+          | none =>
+            simp only
+            simpa only [paid, stack] using paidValid.fail .invalid (by decide)
+          | some row =>
+            simp only
+            obtain ⟨available, rowEqual⟩ := List.getElem?_eq_some_iff.1 found
+            split
+            · simpa only [paid, stack] using paidValid.fail .invalid (by decide)
+            · rename_i rowValid
+              cases visited : ((graph.rows frame.node).take frame.row).findIdx?
+                  (fun earlier => earlier.physical == row.physical) with
+              | some index =>
+                simp only
+                simpa only [paid, stack] using
+                  (paidValid.withCounters paid.ticks (paid.indexVisits + index + 1)
+                    paidValid.ticksWithin).fail .invalid (by decide)
+              | none =>
+                simp only
+                let scanned : State := { paid with indexVisits := paid.indexVisits + frame.row }
+                have scannedValid : Valid graph maximum scanned :=
+                  paidValid.withCounters paid.ticks (paid.indexVisits + frame.row)
+                    paidValid.ticksWithin
+                cases successor : row.successor with
+                | none =>
+                  simp only
+                  have derived : RowValue graph (graph.rows frame.node)[frame.row] 1 := by
+                    rw [rowEqual]
+                    exact RowValue.of_terminal graph row successor
+                  simpa only [scanned, paid, stack] using
+                    scannedValid.addRow frame rest stack available 1 derived
+                | some child =>
+                  simp only
+                  have childAdmitted : child < graph.nodes.length := by
+                    have excluded : ¬graph.nodes.length ≤ child := by
+                      intro outside
+                      apply rowValid
+                      exact Or.inr (by simp [successor, outside])
+                    omega
+                  cases color : state.colors child with
+                  | active =>
+                    simp only
+                    simpa only [scanned, paid, stack] using scannedValid.fail .cycle (by decide)
+                  | fresh =>
+                    simp only
+                    split
+                    · simpa only [scanned, paid, stack] using scannedValid.fail .invalid (by decide)
+                    · simpa only [scanned, paid, stack] using
+                        scannedValid.push child childAdmitted (by simp [scanned, paid, stack]) pending
+                  | done =>
+                    simp only
+                    split
+                    · simpa only [scanned, paid, stack] using scannedValid.fail .overflow (by decide)
+                    · have derived : RowValue graph (graph.rows frame.node)[frame.row]
+                          (1 + state.memo child) := by
+                        rw [rowEqual]
+                        exact RowValue.of_linked graph row child (state.memo child) successor
+                          (valid.cached child color).1
+                      simpa only [scanned, paid, stack] using
+                        scannedValid.addRow frame rest stack available (1 + state.memo child) derived
+
+theorem run_valid (graph : Graph) (maximum fuel : Nat) (state : State)
+    (valid : Valid graph maximum state) :
+    Valid graph maximum (run graph maximum fuel state) := by
+  induction fuel generalizing state with
+  | zero => exact valid
+  | succ fuel ih => exact ih (step graph maximum state) (step_valid graph maximum state valid)
+
+/-- A reported bound has a derivation independent of the DFS memo, including
+every listed dependency occurrence, and fits the selected scalar range. -/
+theorem bound_derived (graph : Graph) (maximum : Nat) (state : State) (value : Nat)
+    (valid : Valid graph maximum state) (reported : bound? state = some value) :
+    graph.Derived state.root value ∧ value ≤ maximum := by
+  unfold bound? at reported
+  split at reported
+  · rename_i completed
+    cases reported
+    exact valid.cached state.root (valid.completed completed)
+  · contradiction
+
+theorem bound_unfoldingWork (graph : Graph) (maximum : Nat) (state : State) (value : Nat)
+    (acyclic : graph.catalogue.Acyclic) (valid : Valid graph maximum state)
+    (reported : bound? state = some value) :
+    value = graph.catalogue.unfoldingWork acyclic (fun node => (graph.rows node).length)
+      state.root ∧ value ≤ maximum := by
+  obtain ⟨derived, within⟩ := bound_derived graph maximum state value valid reported
+  exact ⟨Catalogue.FoldDerivation.value_eq_depFold graph.catalogue acyclic graph.combine
+    state.root value derived, within⟩
+
+theorem step_root (graph : Graph) (maximum : Nat) (memory : State) :
+    (step graph maximum memory).root = memory.root := by
+  unfold step
+  split
+  · rfl
+  · split
+    · rfl
+    · dsimp only
+      cases stack : memory.stack with
+      | nil => rfl
+      | cons frame rest =>
+        simp only
+        split
+        · rfl
+        · cases found : (graph.rows frame.node)[frame.row]? with
+          | none => rfl
+          | some row =>
+            simp only
+            split
+            · rfl
+            · cases visited : ((graph.rows frame.node).take frame.row).findIdx?
+                  (fun earlier => earlier.physical == row.physical) with
+              | some index => rfl
+              | none =>
+                simp only
+                cases successor : row.successor with
+                | none => simp only; unfold addRow; split <;> rfl
+                | some child =>
+                  simp only
+                  cases color : memory.colors child with
+                  | active => rfl
+                  | fresh => simp only; split <;> rfl
+                  | done =>
+                    simp only
+                    split
+                    · rfl
+                    · unfold addRow; split <;> rfl
+theorem run_root (graph : Graph) (maximum fuel : Nat) (state : State) :
+    (run graph maximum fuel state).root = state.root := by
+  induction fuel generalizing state with
+  | zero => rfl
+  | succ fuel ih => rw [run, ih, step_root]
+
+theorem initialized_run_bound (graph : Graph) (maximum root fuel : Nat) (state : State)
+    (issued : init graph root = some state) (value : Nat) (acyclic : graph.catalogue.Acyclic)
+    (reported : bound? (run graph maximum fuel state) = some value) :
+    value = graph.catalogue.unfoldingWork acyclic (fun node => (graph.rows node).length)
+      root ∧ value ≤ maximum := by
+  have rooted : state.root = root := by
+    unfold init at issued
+    split at issued
+    · cases issued; rfl
+    · contradiction
+  have result := bound_unfoldingWork graph maximum (run graph maximum fuel state) value
+    acyclic (run_valid graph maximum fuel state (init_valid graph maximum root state issued)) reported
+  simpa only [run_root, rooted] using result
+
+end OccurrenceGraph
 
 end Mettapedia.Algorithms.WellFoundedServices

@@ -22,7 +22,7 @@ import Algorithms.MeTTa.Simple.Backend.OptimizedEval
 import Algorithms.MeTTa.Simple.Backend.OptimizedRefinement
 
 /-! DEPRECATED (2026-03-22): 80 partial defs make this unverifiable.
-Replaced by Algorithms.MeTTa.Eval/ (fuel-indexed, 0 partial def, 0 sorry).
+Superseded by the PeTTa machine in Mettapedia.Languages.MeTTa.PeTTa.Eval.
 Preserved for reference and as a test oracle. Not built by default. -/
 
 namespace Algorithms.MeTTa.Simple

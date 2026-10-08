@@ -29,7 +29,7 @@ may realize this structure, but they are not its definition.
 
 namespace Mettapedia.GSLT.LanguageDef.NIKAdmissionDoctrineCrown
 
-open CategoryTheory
+open _root_.CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.LooseRelationEquipment
@@ -314,7 +314,7 @@ def admitted : IndexedObservedAdmittedAt dependencies false
     observedProofObject observedProofObject where
   refinement := keepObserved
 
-def active : admitted.Active false :=
+theorem active : admitted.Active false :=
   admitted.activate (dependencies.sameDependencies_refl false)
 
 theorem active_retains_execution_witness :

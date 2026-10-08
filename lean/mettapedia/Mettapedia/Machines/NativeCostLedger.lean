@@ -5,6 +5,7 @@ import Mettapedia.Algebra.OccurrenceIdentity
 import Mettapedia.Machines.VariableInventory
 import Mettapedia.GSLT.Dynamics.IndexedEventValuation
 import Mettapedia.GSLT.Core.NonFactorization
+import Mettapedia.GSLT.Core.InferenceRecording
 import Mathlib.Data.BitVec
 
 /-!
@@ -200,6 +201,23 @@ theorem scopeTargets_mem (scopes : List (Option Nat)) (location : Nat) :
 theorem scopeTargets_unique (scopes : List (Option Nat)) : (scopeTargets scopes).Nodup :=
   VariableInventory.firstOccurrences_keys_nodup _ _
 
+/-- The runtime-style scan compares every frame with the full preceding
+prefix, including disabled observations and discarded duplicate frames.
+Null destinations perform no append. This is a finite chain observation;
+the validity and lifetime of physical linked frames are separate premises. -/
+def prefixScopeTargets (scopes : List (Option Nat)) : List Nat :=
+  (VariableInventory.presentEntries
+    (VariableInventory.firstByPrefix [] (scopes.map fun location => (location, ())))).map Prod.fst
+
+/-- The full-prefix scan and the independent live-key inventory select
+exactly the same ordered destinations, including repeated null frames. -/
+theorem prefixScopeTargets_correspondence (scopes : List (Option Nat)) :
+    prefixScopeTargets scopes = scopeTargets scopes := by
+  rw [prefixScopeTargets, VariableInventory.firstByPrefix_correspondence,
+    VariableInventory.presentEntries_firstOccurrences]
+  simp [scopeTargets, VariableInventory.presentEntries,
+    List.filterMap_map, List.map_filterMap]
+
 /-- Deliver one physical event to an ordered list of ledger locations.
 Each update is the ordinary run-length append, with its whole prior history.
 The list is not assumed unique by the construction. -/
@@ -210,6 +228,19 @@ def deliver (maximum : Nat) (event : Event) :
       (fun candidate => if candidate = location then
         RunLengthEvents.appendEvent maximum (store candidate) event else store candidate)
 
+theorem deliver_eq_updateKeys (maximum : Nat) (event : Event) (locations : List Nat)
+    (store : Nat → Ledger) :
+    deliver maximum event locations store =
+      VariableInventory.updateKeys (fun _ ledger => RunLengthEvents.appendEvent maximum ledger event)
+        locations store := by
+  induction locations generalizing store with
+  | nil => rfl
+  | cons location rest ih =>
+      rw [deliver, VariableInventory.updateKeys, ih]
+      congr 1
+      funext candidate
+      by_cases same : candidate = location <;> simp [same]
+
 /-- Unique destinations append exactly once to each containing ledger and
 leave every other ledger intact. This is a whole-history statement. -/
 theorem deliver_unique_at (maximum : Nat) (event : Event) (locations : List Nat)
@@ -217,16 +248,8 @@ theorem deliver_unique_at (maximum : Nat) (event : Event) (locations : List Nat)
     deliver maximum event locations store location =
       if location ∈ locations then RunLengthEvents.appendEvent maximum (store location) event
       else store location := by
-  induction locations generalizing store with
-  | nil => simp [deliver]
-  | cons first rest ih =>
-    obtain ⟨fresh, tailUnique⟩ := List.nodup_cons.mp unique
-    simp only [deliver]
-    rw [ih _ tailUnique]
-    by_cases same : location = first
-    · subst first
-      simp [fresh]
-    · simp only [same, if_false, List.mem_cons, false_or]
+  rw [deliver_eq_updateKeys]
+  exact VariableInventory.updateKeys_unique_at _ _ _ unique location
 
 /-- An observed operation is propagated once to each distinct containing
 observation. Re-entering a ledger does not create another physical event. -/
@@ -704,6 +727,7 @@ structure Charge (width : Nat) where
   kind : Kind
   units : BitVec width
   retained : Bool
+  deriving DecidableEq
 
 def Charge.event {width : Nat} (charge : Charge width) : Event :=
   (charge.identity,
@@ -1117,6 +1141,1147 @@ theorem incomplete_read_control :
     let read := inspect 255 state 2 7 12 true
     read.1.work = 9 ∧ read.1.traceIncomplete = true ∧ read.1.retainedEvents = [] ∧
       read.2.work.toNat = 10 ∧ read.2.traceIncomplete = true ∧ completeHistory read.2 = none := by
+  decide
+
+/-- Deliver to the supplied locations in their actual order. Each local
+append receives its own retention decision and whole inherited state.
+This construction does not impose uniqueness on the location list. -/
+def deliver {width : Nat} (maximum : Nat) (charges : Nat → Charge width)
+    (locations : List Nat) (store : Nat → State width) : Nat → State width :=
+  VariableInventory.updateKeys (fun location state => append maximum state (charges location))
+    locations store
+
+/-- Retention is a per-destination service. It changes no physical event
+field: identity, origin, occurrence, operation and units remain shared. -/
+def localCharge {width : Nat} (charge : Charge width) (retained : Nat → Bool)
+    (location : Nat) : Charge width := { charge with retained := retained location }
+
+theorem localCharge_event {width : Nat} (charge : Charge width) (retained : Nat → Bool)
+    (location : Nat) : (localCharge charge retained location).event = charge.event := rfl
+
+/-- A finite active scope chain delivers one common physical event once
+to each containing ledger, using that ledger's retention service. Live
+locations, rather than exhausted origin identifiers, determine aliases. -/
+def chargeScopes {width : Nat} (maximum : Nat) (scopes : List (Option Nat))
+    (charge : Charge width) (retained : Nat → Bool) (store : Nat → State width) :
+    Nat → State width :=
+  deliver maximum (localCharge charge retained) (scopeTargets scopes) store
+
+/-- Whole-state correspondence: unique destinations are charged once,
+and all counters, flags and histories of absent destinations are retained. -/
+theorem chargeScopes_at {width : Nat} (maximum : Nat) (scopes : List (Option Nat))
+    (charge : Charge width) (retained : Nat → Bool) (store : Nat → State width)
+    (location : Nat) :
+    chargeScopes maximum scopes charge retained store location =
+      if some location ∈ scopes then
+        append maximum (store location) (localCharge charge retained location)
+      else store location := by
+  rw [chargeScopes, deliver,
+    VariableInventory.updateKeys_unique_at _ _ _ (scopeTargets_unique scopes)]
+  simp only [scopeTargets_mem]
+
+/-- The independent full-prefix algorithm has the same entire resulting
+store. This does not establish physical pointer validity or scope lifetime. -/
+theorem chargeScopes_prefix_correspondence {width : Nat} (maximum : Nat)
+    (scopes : List (Option Nat)) (charge : Charge width) (retained : Nat → Bool)
+    (store : Nat → State width) :
+    deliver maximum (localCharge charge retained) (prefixScopeTargets scopes) store =
+      chargeScopes maximum scopes charge retained store := by
+  rw [prefixScopeTargets_correspondence]
+  rfl
+
+theorem chargeScopes_disabled {width : Nat} (maximum : Nat) (charge : Charge width)
+    (retained : Nat → Bool) (store : Nat → State width) :
+    chargeScopes maximum [] charge retained store = store := rfl
+
+/-- Saturation is local to each observer's inherited work counter. A
+storage failure changes receipt availability, not the operation's cost. -/
+theorem chargeScopes_work {width : Nat} (maximum : Nat) (scopes : List (Option Nat))
+    (charge : Charge width) (retained : Nat → Bool) (store : Nat → State width)
+    (location : Nat) :
+    (chargeScopes maximum scopes charge retained store location).work.toNat =
+      boundedTotal (2 ^ width - 1)
+        ((store location).work.toNat + if some location ∈ scopes then charge.units.toNat else 0) := by
+  rw [chargeScopes_at]
+  by_cases present : some location ∈ scopes
+  · simpa only [if_pos present, localCharge] using
+      append_work maximum (store location) (localCharge charge retained location)
+  · simp only [if_neg present, Nat.add_zero]
+    exact (Nat.min_eq_right (word_fits (store location).work)).symm
+
+theorem chargeScopes_count {width : Nat} (maximum : Nat) (scopes : List (Option Nat))
+    (charge : Charge width) (retained : Nat → Bool) (store : Nat → State width)
+    (location : Nat) (kind : Kind) :
+    ((chargeScopes maximum scopes charge retained store location).counts kind).toNat =
+      boundedTotal (2 ^ width - 1) (((store location).counts kind).toNat +
+        if some location ∈ scopes ∧ kind = charge.kind then charge.units.toNat else 0) := by
+  rw [chargeScopes_at]
+  by_cases present : some location ∈ scopes
+  · rw [if_pos present]
+    have counted := append_count maximum (store location) (localCharge charge retained location) kind
+    by_cases same : kind = charge.kind
+    · rw [if_pos ⟨present, same⟩]
+      rw [if_pos (show kind = (localCharge charge retained location).kind from same)] at counted
+      exact counted
+    · rw [if_neg (fun both => same both.2)]
+      rw [if_neg (show kind ≠ (localCharge charge retained location).kind from same)] at counted
+      exact counted
+  · simp only [present, false_and, if_false, Nat.add_zero]
+    exact (Nat.min_eq_right (word_fits ((store location).counts kind))).symm
+
+/-- A complete destination receives the same new event as every other
+complete destination, with its own preceding chronological prefix. -/
+theorem chargeScopes_history_of_complete {width : Nat} (maximum : Nat)
+    (scopes : List (Option Nat)) (charge : Charge width) (retained : Nat → Bool)
+    (store : Nat → State width) (location : Nat) (present : some location ∈ scopes)
+    (complete : (chargeScopes maximum scopes charge retained store location).traceIncomplete = false) :
+    RunLengthEvents.expand (chargeScopes maximum scopes charge retained store location).history =
+      RunLengthEvents.expand (store location).history ++ events [charge] := by
+  rw [chargeScopes_at, if_pos present] at complete ⊢
+  rw [append_history_of_complete _ _ _ complete]
+  have same : events [localCharge charge retained location] = events [charge] := by
+    simp only [events, List.filterMap_cons, List.filterMap_nil, localCharge, Charge.event]
+  rw [same]
+
+/-- Incompleteness persists per destination, without contaminating another
+containing ledger or stopping this ledger's numerical charging. -/
+theorem chargeScopes_incomplete {width : Nat} (maximum : Nat) (scopes : List (Option Nat))
+    (charge : Charge width) (retained : Nat → Bool) (store : Nat → State width)
+    (location : Nat) (incomplete : (store location).traceIncomplete = true) :
+    (chargeScopes maximum scopes charge retained store location).traceIncomplete = true ∧
+      (chargeScopes maximum scopes charge retained store location).history = (store location).history := by
+  rw [chargeScopes_at]
+  split
+  · exact ⟨append_incomplete _ _ _ incomplete, append_incomplete_history _ _ _ incomplete⟩
+  · exact ⟨incomplete, rfl⟩
+
+/-- Each chronological command captures its own scope chain and
+per-destination retention decisions. The residual is the remaining command
+list together with the whole store, including sticky flags and history. -/
+structure ScopedCharge (width : Nat) where
+  scopes : List (Option Nat)
+  charge : Charge width
+  retained : Nat → Bool
+
+/-- A finite readout keeps the complete scope chain and each active physical
+destination's retention decision. Decisions at absent locations are not part
+of this operation. This readout is data, not authority to issue a charge. -/
+structure ScopedChargeReceipt (width : Nat) where
+  scopes : List (Option Nat)
+  charge : Charge width
+  retention : List (Nat × Bool)
+  deriving DecidableEq
+
+def ScopedCharge.receipt {width : Nat} (command : ScopedCharge width) :
+    ScopedChargeReceipt width :=
+  ⟨command.scopes, command.charge,
+    (scopeTargets command.scopes).map (fun location => (location, command.retained location))⟩
+
+/-- Equality of these finite readouts identifies the retention service at
+every destination actually used by the operation, without comparing an
+infinite function or identifying distinct physical ledger locations. -/
+theorem receipt_retention_eq {width : Nat} (first second : ScopedCharge width)
+    (same : first.receipt = second.receipt) (location : Nat)
+    (present : some location ∈ first.scopes) :
+    first.retained location = second.retained location := by
+  have scopes := congrArg ScopedChargeReceipt.scopes same
+  have retention := congrArg ScopedChargeReceipt.retention same
+  have entry : (location, first.retained location) ∈ first.receipt.retention :=
+    List.mem_map.mpr ⟨location, (scopeTargets_mem first.scopes location).mpr present, rfl⟩
+  rw [retention] at entry
+  obtain ⟨other, _, equal⟩ := List.mem_map.mp entry
+  have index : other = location := congrArg Prod.fst equal
+  subst other
+  exact (congrArg Prod.snd equal).symm
+
+/-- A compared command preserves the entire functional store: counters,
+sticky flags, chronological history, and all untouched locations. -/
+theorem chargeScopes_receipt_eq {width : Nat} (maximum : Nat)
+    (first second : ScopedCharge width) (same : first.receipt = second.receipt)
+    (store : Nat → State width) :
+    chargeScopes maximum first.scopes first.charge first.retained store =
+      chargeScopes maximum second.scopes second.charge second.retained store := by
+  have scopes := congrArg ScopedChargeReceipt.scopes same
+  have charge := congrArg ScopedChargeReceipt.charge same
+  funext location
+  rw [chargeScopes_at, chargeScopes_at]
+  change first.scopes = second.scopes at scopes
+  change first.charge = second.charge at charge
+  rw [← scopes]
+  by_cases present : some location ∈ first.scopes
+  · simp only [present, if_true]
+    rw [charge]
+    have retained := receipt_retention_eq first second same location present
+    simp only [localCharge, retained]
+  · simp only [present, if_false]
+
+def runScopes {width : Nat} (maximum : Nat) :
+    List (ScopedCharge width) → (Nat → State width) → Nat → State width
+  | [], store => store
+  | command :: rest, store =>
+      runScopes maximum rest
+        (chargeScopes maximum command.scopes command.charge command.retained store)
+
+/-- Stopping and resuming with the whole inherited store preserves every
+coordinate, not only work or the expanded complete portion of a receipt. -/
+theorem runScopes_append {width : Nat} (maximum : Nat)
+    (first second : List (ScopedCharge width)) (store : Nat → State width) :
+    runScopes maximum (first ++ second) store =
+      runScopes maximum second (runScopes maximum first store) := by
+  induction first generalizing store with
+  | nil => rfl
+  | cons command rest ih => exact ih _
+
+/-- Phase boundaries do not reset any destination state. The independent
+flat command interpreter agrees with consuming each ordered phase in turn. -/
+theorem runScopes_flatten {width : Nat} (maximum : Nat)
+    (phases : List (List (ScopedCharge width))) (store : Nat → State width) :
+    runScopes maximum phases.flatten store =
+      phases.foldl (fun current commands => runScopes maximum commands current) store := by
+  induction phases generalizing store with
+  | nil => rfl
+  | cons phase rest ih =>
+      simp only [List.flatten_cons, runScopes_append, List.foldl_cons]
+      exact ih _
+
+/-- Scoped accounting is an instance of the existing controller observer.
+Each selected occurrence supplies its independently specified chronological
+commands, including their captured destinations and retention decisions.
+No command is inferred from the number of selections or emitted answers. -/
+def scopedController {Node Answer Memory : Type*} {width : Nat} (maximum : Nat)
+    (base : Mettapedia.GSLT.Core.InferenceControl.Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (store : Nat → State width) :
+    Mettapedia.GSLT.Core.InferenceControl.Controller Node Answer (Memory × (Nat → State width)) :=
+  base.observing commands store
+    (fun current phase => runScopes maximum phase current)
+
+/-- Cost-blind erasure retains the whole controller run and complete
+frontier. A client reading these costs has a stronger observation contract. -/
+theorem scopedController_erasure {Node Answer Memory : Type*} {width : Nat}
+    (maximum : Nat) (system : Mettapedia.GSLT.Core.BranchingTemporal.BranchingSystem Node Answer)
+    (base : Mettapedia.GSLT.Core.InferenceControl.Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (fuel : Nat)
+    (snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      Node Answer (Memory × (Nat → State width))) :
+    (Mettapedia.GSLT.Core.InferenceControl.Snapshot.run system
+      (scopedController maximum base commands initialStore) fuel snapshot).mapMemory Prod.fst =
+      Mettapedia.GSLT.Core.InferenceControl.Snapshot.run system base fuel
+        (snapshot.mapMemory Prod.fst) :=
+  Mettapedia.GSLT.Core.InferenceControl.Snapshot.observing_run_erasure
+    system base commands initialStore (fun current phase => runScopes maximum phase current)
+    fuel snapshot
+
+/-- The observer's whole poststore is the independent scoped-command run
+over the unobserved controller stream. Existing incompleteness, overflow,
+history and untouched locations survive this equality. -/
+theorem scopedController_account {Node Answer Memory : Type*} {width : Nat}
+    (maximum : Nat) (system : Mettapedia.GSLT.Core.BranchingTemporal.BranchingSystem Node Answer)
+    (base : Mettapedia.GSLT.Core.InferenceControl.Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (fuel : Nat)
+    (snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      Node Answer (Memory × (Nat → State width))) :
+    (Mettapedia.GSLT.Core.InferenceControl.Snapshot.run system
+      (scopedController maximum base commands initialStore) fuel snapshot).memory.2 =
+      runScopes maximum
+        (Mettapedia.GSLT.Core.InferenceControl.Recording.stream system base commands fuel
+          (snapshot.mapMemory Prod.fst)).flatten snapshot.memory.2 := by
+  rw [runScopes_flatten]
+  exact Mettapedia.GSLT.Core.InferenceControl.Recording.observer_run
+    system base commands initialStore (fun current phase => runScopes maximum phase current)
+    fuel snapshot
+
+/-- The independently specified single-ledger run is the projection of a
+scoped execution. Multiplicity of frames does not multiply commands. -/
+theorem runScopes_at {width : Nat} (maximum : Nat) (commands : List (ScopedCharge width))
+    (store : Nat → State width) (location : Nat) :
+    runScopes maximum commands store location =
+      run maximum (commands.filterMap fun command =>
+        if some location ∈ command.scopes then
+          some (localCharge command.charge command.retained location) else none) (store location) := by
+  induction commands generalizing store with
+  | nil => rfl
+  | cons command rest ih =>
+      rw [runScopes, ih, chargeScopes_at]
+      by_cases present : some location ∈ command.scopes <;>
+        simp only [List.filterMap_cons, present, if_true, if_false, run]
+
+/-- Comparing the ordered finite receipts preserves the whole resumed
+account. Dropping, duplicating or reordering a command is not licensed by
+equality of final numerical totals or authored answers. -/
+theorem runScopes_receipt_eq {width : Nat} (maximum : Nat)
+    (first second : List (ScopedCharge width))
+    (same : first.map ScopedCharge.receipt = second.map ScopedCharge.receipt)
+    (store : Nat → State width) :
+    runScopes maximum first store = runScopes maximum second store := by
+  induction first generalizing second store with
+  | nil =>
+      cases second with
+      | nil => rfl
+      | cons head rest => cases same
+  | cons head rest ih =>
+      cases second with
+      | nil => cases same
+      | cons other remaining =>
+          obtain ⟨headSame, tailSame⟩ := List.cons.inj same
+          rw [runScopes, runScopes, chargeScopes_receipt_eq maximum head other headSame]
+          exact ih remaining tailSame _
+
+/-- Projection to a live destination agrees with the independent local
+ledger interpreter. Duplicate containing frames do not multiply a charge. -/
+theorem scopedController_at {Node Answer Memory : Type*} {width : Nat}
+    (maximum : Nat) (system : Mettapedia.GSLT.Core.BranchingTemporal.BranchingSystem Node Answer)
+    (base : Mettapedia.GSLT.Core.InferenceControl.Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (fuel : Nat)
+    (snapshot : Mettapedia.GSLT.Core.InferenceControl.Snapshot
+      Node Answer (Memory × (Nat → State width))) (location : Nat) :
+    (Mettapedia.GSLT.Core.InferenceControl.Snapshot.run system
+      (scopedController maximum base commands initialStore) fuel snapshot).memory.2 location =
+      run maximum
+        ((Mettapedia.GSLT.Core.InferenceControl.Recording.stream system base commands fuel
+          (snapshot.mapMemory Prod.fst)).flatten.filterMap fun command =>
+            if some location ∈ command.scopes then
+              some (localCharge command.charge command.retained location) else none)
+        (snapshot.memory.2 location) := by
+  rw [scopedController_account, runScopes_at]
+
+section ControllerObservation
+
+open Mettapedia.GSLT.Core.BranchingTemporal (BranchingSystem)
+open Mettapedia.GSLT.Core.InferenceControl (Controller Snapshot)
+open Mettapedia.GSLT.Core.InferenceControl.Recording (Prefix)
+
+variable {Node Answer Memory Event : Type*} {width : Nat}
+
+/-- Local transport of the original continuation and each complete phase
+preserves every finite cost-bearing checkpoint. Physical charge identities,
+scope destinations and retention inputs are compared before accounting. -/
+theorem scopedController_transport {NextNode NextMemory : Type*}
+    (maximum : Nat) (mapping : Node → NextNode) (transfer : Memory → NextMemory)
+    (source : BranchingSystem Node Answer) (target : BranchingSystem NextNode Answer)
+    (first : Controller Node Answer Memory) (second : Controller NextNode Answer NextMemory)
+    (sourceCommands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (targetCommands : NextMemory → NextNode → Option Answer → List NextNode → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (emits : ∀ node, source.emit node = target.emit (mapping node))
+    (successors : ∀ node,
+      (source.successors node).map mapping = target.successors (mapping node))
+    (reorders : ∀ memory nodes,
+      ((first.scheduler memory).reorder nodes).map mapping =
+        (second.scheduler (transfer memory)).reorder (nodes.map mapping))
+    (integrates : ∀ memory pending generated,
+      ((first.scheduler memory).integrate pending generated).map mapping =
+        (second.scheduler (transfer memory)).integrate
+          (pending.map mapping) (generated.map mapping))
+    (advances : ∀ memory node emission generated,
+      transfer (first.advance memory node emission generated) =
+        second.advance (transfer memory) (mapping node) emission (generated.map mapping))
+    (commands : ∀ memory node emission generated,
+      sourceCommands memory node emission generated =
+        targetCommands (transfer memory) (mapping node) emission (generated.map mapping))
+    (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × (Nat → State width))) :
+    (Snapshot.run source (scopedController maximum first sourceCommands initialStore)
+      fuel snapshot).mapState mapping (fun memory => (transfer memory.1, memory.2)) =
+      Snapshot.run target (scopedController maximum second targetCommands initialStore) fuel
+        (snapshot.mapState mapping (fun memory => (transfer memory.1, memory.2))) :=
+  Snapshot.observing_run_transport mapping transfer id id source target first second
+    sourceCommands targetCommands initialStore initialStore
+    (fun current phase => runScopes maximum phase current)
+    (fun current phase => runScopes maximum phase current)
+    emits successors reorders integrates advances commands (fun _ _ => rfl) fuel snapshot
+
+/-- Recording and scoped accounting share the original scheduler and may
+exchange nesting order when both observations read only its continuation.
+Both accumulated states and the entire search are retained by the swap.
+Recorder-dependent expense is not an independent observation of this kind. -/
+theorem recorded_scopedController_commute (maximum : Nat)
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (record : Memory → Node → Option Answer → List Node → Event)
+    (capacity : Option Nat) (fuel : Nat)
+    (snapshot : Snapshot Node Answer
+      ((Memory × (Nat → State width)) × Option (Prefix Event))) :
+    (Snapshot.run system
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+        (scopedController maximum base commands initialStore)
+        (fun memory => record memory.1) capacity) fuel snapshot).mapMemory
+          (fun memory => ((memory.1.1, memory.2), memory.1.2)) =
+      Snapshot.run system
+        (scopedController maximum
+          (Mettapedia.GSLT.Core.InferenceControl.Recording.controller base record capacity)
+          (fun memory => commands memory.1) initialStore) fuel
+        (snapshot.mapMemory (fun memory => ((memory.1.1, memory.2), memory.1.2))) := by
+  simpa only [scopedController, Mettapedia.GSLT.Core.InferenceControl.Recording.controller] using
+    Snapshot.independent_observers_run system base commands record initialStore
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.initial capacity)
+      (fun current phase => runScopes maximum phase current)
+      (fun current event => Mettapedia.GSLT.Core.InferenceControl.Recording.accept current
+        (fun _ => event)) fuel snapshot
+
+/-- Adding the bounded record preserves the whole scoped poststore. The
+reference remains the independent unrecorded controller's command stream,
+not a command list reconstructed from retained graph nodes. -/
+theorem recorded_scopedController_account (maximum : Nat)
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (record : Memory → Node → Option Answer → List Node → Event)
+    (capacity : Option Nat) (fuel : Nat)
+    (snapshot : Snapshot Node Answer
+      ((Memory × (Nat → State width)) × Option (Prefix Event))) :
+    (Snapshot.run system
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+        (scopedController maximum base commands initialStore)
+        (fun memory => record memory.1) capacity) fuel snapshot).memory.1.2 =
+      runScopes maximum
+        (Mettapedia.GSLT.Core.InferenceControl.Recording.stream system base commands fuel
+          (snapshot.mapMemory (fun memory => memory.1.1))).flatten snapshot.memory.1.2 := by
+  have erased := congrArg (fun result => result.memory.2)
+    (Mettapedia.GSLT.Core.InferenceControl.Recording.run_erasure system
+      (scopedController maximum base commands initialStore)
+      (fun memory => record memory.1) capacity fuel snapshot)
+  exact erased.trans (scopedController_account maximum system base commands initialStore fuel
+    (snapshot.mapMemory Prod.fst))
+
+/-- Scoped accounting does not change a record whose payload reads only
+the original continuation. Existing capacity and omissions survive; the
+accounting and recorder observations do not need identical payload types. -/
+theorem recorded_scopedController_record (maximum : Nat)
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (record : Memory → Node → Option Answer → List Node → Event)
+    (capacity : Option Nat) (fuel : Nat)
+    (snapshot : Snapshot Node Answer
+      ((Memory × (Nat → State width)) × Option (Prefix Event))) :
+    (Snapshot.run system
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+        (scopedController maximum base commands initialStore)
+        (fun memory => record memory.1) capacity) fuel snapshot).memory.2 =
+      Mettapedia.GSLT.Core.InferenceControl.Recording.append snapshot.memory.2
+        (Mettapedia.GSLT.Core.InferenceControl.Recording.stream system base record fuel
+          (snapshot.mapMemory (fun memory => memory.1.1))) := by
+  rw [Mettapedia.GSLT.Core.InferenceControl.Recording.run_record]
+  unfold scopedController
+  rw [Mettapedia.GSLT.Core.InferenceControl.Recording.observing_stream_erasure]
+  rfl
+
+/-- Pure replay of a complete capture returns the whole cost-bearing
+controller checkpoint, not merely the selected answers. The same initial
+checkpoint, command service and controller are explicit parameters; this
+does not authorize replay of an external effect or a different initial meter. -/
+theorem scopedController_recorded_replay [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (capacity fuel : Nat)
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width)))
+    (fits : (Mettapedia.GSLT.Core.InferenceControl.Recording.stream system
+      (scopedController maximum base commands initialStore)
+      Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.observe fuel snapshot).length ≤ capacity) :
+    ((Snapshot.run system
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+        (scopedController maximum base commands initialStore)
+        Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.observe (some capacity)) fuel
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.start snapshot (some capacity))).memory.2).bind
+        (fun record => Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.readout system
+          (scopedController maximum base commands initialStore) record snapshot) =
+      some (.ok (Snapshot.run system
+        (scopedController maximum base commands initialStore) fuel snapshot)) :=
+  Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.recorded_replay
+    system (scopedController maximum base commands initialStore) capacity fuel snapshot fits
+
+end ControllerObservation
+
+/-! ## Checked primitive phases over the existing replay protocol
+
+The captured expansion and the required primitive phase are checked
+independently. The command service is fixed by the supplied source/profile
+contract; interpreting a supplied command list alone cannot authenticate it.
+The adapter calls the existing replay transition and does not define another
+evaluator. It grants no authority to repeat an external effect.
+-/
+
+namespace PhaseReplay
+
+open Mettapedia.GSLT.Core.BranchingTemporal (BranchingSystem)
+open Mettapedia.GSLT.Core.InferenceControl
+open Mettapedia.GSLT.Core.InferenceControl.Recording (Prefix stream next)
+
+variable {Node Answer Memory : Type*} {width : Nat}
+
+structure Frame (Node Answer : Type*) (width : Nat) where
+  capture : Preparation.Capture Node Answer
+  charges : List (ScopedChargeReceipt width)
+  deriving DecidableEq
+
+def observe
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (memory : Memory × (Nat → State width)) (node : Node)
+    (emission : Option Answer) (generated : List Node) : Frame Node Answer width :=
+  ⟨⟨node, emission, generated⟩,
+    (commands memory.1 node emission generated).map ScopedCharge.receipt⟩
+
+/-- Refusal changes no checkpoint. A structurally acceptable capture still
+needs its full primitive phase, including administrative operations and
+per-destination storage decisions, before this adapter accepts it. -/
+def step? [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width)))
+    (frame : Frame Node Answer width) :
+    Option (Snapshot Node Answer (Memory × (Nat → State width))) :=
+  match Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step? system
+      (scopedController maximum base commands initialStore) snapshot frame.capture with
+  | none => none
+  | some result =>
+      if frame.charges = (commands snapshot.memory.1 frame.capture.input
+          frame.capture.emission frame.capture.generated).map ScopedCharge.receipt then
+        some result else none
+
+theorem step?_core [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (snapshot result : Snapshot Node Answer (Memory × (Nat → State width)))
+    (frame : Frame Node Answer width)
+    (accepted : step? maximum system base commands initialStore snapshot frame = some result) :
+    Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step? system
+      (scopedController maximum base commands initialStore) snapshot frame.capture = some result := by
+  unfold step? at accepted
+  cases checked : Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step? system
+      (scopedController maximum base commands initialStore) snapshot frame.capture with
+  | none => simp [checked] at accepted
+  | some after =>
+      simp only [checked] at accepted
+      split at accepted
+      · exact accepted
+      · cases accepted
+
+theorem step?_sound [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (snapshot result : Snapshot Node Answer (Memory × (Nat → State width)))
+    (frame : Frame Node Answer width)
+    (accepted : step? maximum system base commands initialStore snapshot frame = some result) :
+    result = Snapshot.tick system (scopedController maximum base commands initialStore) snapshot := by
+  exact Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step?_sound
+    system (scopedController maximum base commands initialStore) snapshot result frame.capture
+    (step?_core maximum system base commands initialStore snapshot result frame accepted)
+
+theorem step?_phase [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (snapshot result : Snapshot Node Answer (Memory × (Nat → State width)))
+    (frame : Frame Node Answer width)
+    (accepted : step? maximum system base commands initialStore snapshot frame = some result) :
+    frame.charges = (commands snapshot.memory.1 frame.capture.input
+      frame.capture.emission frame.capture.generated).map ScopedCharge.receipt := by
+  unfold step? at accepted
+  cases checked : Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step? system
+      (scopedController maximum base commands initialStore) snapshot frame.capture with
+  | none => simp [checked] at accepted
+  | some after =>
+      simp only [checked] at accepted
+      split at accepted
+      · assumption
+      · cases accepted
+
+/-- Validation consumes the existing replay steps. A mismatched frame
+retains the entire current checkpoint and all its unconsumed metadata. -/
+def run [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) :
+    List (Frame Node Answer width) → Snapshot Node Answer (Memory × (Nat → State width)) →
+      Except (Snapshot Node Answer (Memory × (Nat → State width)) × List (Frame Node Answer width))
+        (Snapshot Node Answer (Memory × (Nat → State width)))
+  | [], snapshot => .ok snapshot
+  | frame :: rest, snapshot =>
+      match step? maximum system base commands initialStore snapshot frame with
+      | none => .error (snapshot, frame :: rest)
+      | some after => run maximum system base commands initialStore rest after
+
+theorem run_append [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (first second : List (Frame Node Answer width))
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width))) :
+    run maximum system base commands initialStore (first ++ second) snapshot =
+      match run maximum system base commands initialStore first snapshot with
+      | .ok cut => run maximum system base commands initialStore second cut
+      | .error (cut, pending) => .error (cut, pending ++ second) := by
+  induction first generalizing snapshot with
+  | nil => rfl
+  | cons frame rest ih =>
+      simp only [List.cons_append, run]
+      cases step? maximum system base commands initialStore snapshot frame with
+      | none => rfl
+      | some after => exact ih after
+
+/-- Erasing the additional phase metadata yields the existing core replay
+over the same complete checkpoint. No replacement scheduler is involved. -/
+theorem run_core [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (frames : List (Frame Node Answer width))
+    (snapshot result : Snapshot Node Answer (Memory × (Nat → State width)))
+    (accepted : run maximum system base commands initialStore frames snapshot = .ok result) :
+    Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.run system
+      (scopedController maximum base commands initialStore) (frames.map Frame.capture) snapshot = .ok result := by
+  induction frames generalizing snapshot with
+  | nil =>
+      cases (Except.ok.inj accepted)
+      rfl
+  | cons frame rest ih =>
+      simp only [run] at accepted
+      cases checked : step? maximum system base commands initialStore snapshot frame with
+      | none => simp [checked] at accepted
+      | some after =>
+          rw [List.map_cons, Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.run,
+            step?_core maximum system base commands initialStore snapshot after frame checked]
+          exact ih after (by simpa only [checked] using accepted)
+
+/-- Every accepted phase returns the independently defined cost-bearing
+controller run, including its complete search, continuation and meter store. -/
+theorem run_sound [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (frames : List (Frame Node Answer width))
+    (snapshot result : Snapshot Node Answer (Memory × (Nat → State width)))
+    (accepted : run maximum system base commands initialStore frames snapshot = .ok result) :
+    result = Snapshot.run system (scopedController maximum base commands initialStore)
+      frames.length snapshot := by
+  simpa only [List.length_map] using
+    Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.run_sound system
+      (scopedController maximum base commands initialStore) (frames.map Frame.capture) snapshot result
+      (run_core maximum system base commands initialStore frames snapshot result accepted)
+
+theorem run_refused [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (frames pending : List (Frame Node Answer width))
+    (snapshot cut : Snapshot Node Answer (Memory × (Nat → State width)))
+    (refused : run maximum system base commands initialStore frames snapshot = .error (cut, pending)) :
+    ∃ acceptedFrames frame rest,
+      frames = acceptedFrames ++ frame :: rest ∧ pending = frame :: rest ∧
+      cut = Snapshot.run system (scopedController maximum base commands initialStore)
+        acceptedFrames.length snapshot ∧
+      step? maximum system base commands initialStore cut frame = none := by
+  induction frames generalizing snapshot with
+  | nil => cases refused
+  | cons frame rest ih =>
+      simp only [run] at refused
+      cases checked : step? maximum system base commands initialStore snapshot frame with
+      | none =>
+          simp only [checked] at refused
+          cases Except.error.inj refused
+          exact ⟨[], frame, rest, rfl, rfl, rfl, checked⟩
+      | some after =>
+          obtain ⟨acceptedFrames, rejected, remaining, partition, pendingEq, state, invalid⟩ :=
+            ih after (by simpa only [checked] using refused)
+          refine ⟨frame :: acceptedFrames, rejected, remaining, by simp [partition], pendingEq, ?_, invalid⟩
+          rw [step?_sound maximum system base commands initialStore snapshot after frame checked] at state
+          have splitRun := Snapshot.run_add system (scopedController maximum base commands initialStore)
+            1 acceptedFrames.length snapshot
+          simpa only [List.length_cons, Nat.add_comm 1, Snapshot.run] using state.trans splitRun.symm
+
+theorem run_next [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width)
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width))) :
+    run maximum system base commands initialStore
+      (next system (scopedController maximum base commands initialStore) (observe commands) snapshot).toList
+      snapshot = .ok (Snapshot.tick system (scopedController maximum base commands initialStore) snapshot) := by
+  cases order : ((scopedController maximum base commands initialStore).scheduler snapshot.memory).reorder
+      snapshot.search.frontier with
+  | nil =>
+      simp [next, order, run, Snapshot.tick, Mettapedia.GSLT.Core.BranchingTemporal.tick]
+  | cons node pending =>
+      simp only [next, List.head?_cons, Option.map_some, Option.toList_some, run,
+        step?, Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step?, order,
+        observe, Preparation.capture, ↓reduceIte]
+      simp only [Snapshot.tick, Mettapedia.GSLT.Core.BranchingTemporal.tick, order]
+      cases system.emit node <;> rfl
+
+theorem run_stream [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (fuel : Nat)
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width))) :
+    run maximum system base commands initialStore
+      (stream system (scopedController maximum base commands initialStore) (observe commands) fuel snapshot)
+      snapshot = .ok (Snapshot.run system (scopedController maximum base commands initialStore) fuel snapshot) := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel ih =>
+      rw [stream, run_append, ih]
+      exact run_next maximum system base commands initialStore _
+
+def readout [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (record : Prefix (Frame Node Answer width))
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width))) :=
+  record.complete?.map (fun frames => run maximum system base commands initialStore frames snapshot)
+
+theorem readout_truncated [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (record : Prefix (Frame Node Answer width))
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width)))
+    (omitted : record.omitted ≠ 0) :
+    readout maximum system base commands initialStore record snapshot = none := by
+  simp [readout, Prefix.complete?, omitted]
+
+/-- A complete bounded recording validates its primitive phases and
+reconstructs the actual whole controlled run at the held starting boundary. -/
+theorem recorded_replay [DecidableEq Node] [DecidableEq Answer]
+    (maximum : Nat) (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (commands : Memory → Node → Option Answer → List Node → List (ScopedCharge width))
+    (initialStore : Nat → State width) (capacity fuel : Nat)
+    (snapshot : Snapshot Node Answer (Memory × (Nat → State width)))
+    (fits : (stream system (scopedController maximum base commands initialStore)
+      (observe commands) fuel snapshot).length ≤ capacity) :
+    ((Snapshot.run system
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+        (scopedController maximum base commands initialStore) (observe commands) (some capacity)) fuel
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.start snapshot (some capacity))).memory.2).bind
+        (fun record => readout maximum system base commands initialStore record snapshot) =
+      some (.ok (Snapshot.run system (scopedController maximum base commands initialStore) fuel snapshot)) := by
+  have complete := (Mettapedia.GSLT.Core.InferenceControl.Recording.complete_record_iff system
+    (scopedController maximum base commands initialStore) (observe commands) capacity fuel snapshot).mpr fits
+  cases retained : (Snapshot.run system
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+        (scopedController maximum base commands initialStore) (observe commands) (some capacity)) fuel
+      (Mettapedia.GSLT.Core.InferenceControl.Recording.start snapshot (some capacity))).memory.2 with
+  | none => simp [retained] at complete
+  | some record =>
+      simp only [retained, Option.bind_some] at complete ⊢
+      simp [readout, complete, run_stream]
+
+end PhaseReplay
+
+namespace ControllerControls
+
+open Mettapedia.GSLT.Core.BranchingTemporal
+open Mettapedia.GSLT.Core.InferenceControl (Controller Snapshot)
+
+private def source : BranchingSystem Nat Nat where
+  emit _ := some 7
+  successors _ := []
+
+private def base : Controller Nat Nat Nat where
+  initialMemory := 0
+  scheduler _ := Scheduler.breadthFirst
+  advance memory _ _ _ := memory + 1
+
+/-- This service transcript has one restore and one coordinator operation
+per selected leaf, followed by its accepted publication. The coordinator
+has occurrence zero; this does not identify it with the selected leaf. -/
+private def commands (memory node : Nat) (_ : Option Nat) (_ : List Nat) :
+    List (ScopedCharge 8) :=
+  [⟨[some 4, none, some 4, some 9], ⟨3 * memory + 1, 12, node, .restore, 1, true⟩,
+      fun location => decide (location ≠ 9)⟩,
+   ⟨[some 4, none, some 4, some 9], ⟨3 * memory + 2, 12, 0, .quantum, 1, true⟩,
+      fun location => decide (location ≠ 9)⟩,
+   ⟨[some 4, none, some 4, some 9], ⟨3 * memory + 3, 12, node, .publish, 1, true⟩,
+      fun location => decide (location ≠ 9)⟩]
+
+private def controller :=
+  Mettapedia.GSLT.Core.InferenceControl.Recording.controller
+    (scopedController 255 base commands (fun _ => initial 8))
+    (fun memory node _ _ => (memory.1, node)) (some 1)
+
+private def start := Snapshot.initial controller [5, 8]
+
+/-- One prefix retains the remaining leaf, source controller memory,
+bounded recording and both numerical destinations. Losing event storage at
+one destination does not stop that destination's accounting. -/
+theorem prefix_retains_complete_state :
+    let cut := Snapshot.run source controller 1 start
+    cut.search.events = [⟨5, 7⟩] ∧ cut.search.frontier = [8] ∧ cut.memory.1.1 = 1 ∧
+      (cut.memory.1.2 4).work.toNat = 3 ∧ (cut.memory.1.2 9).work.toNat = 3 ∧
+      (cut.memory.1.2 9).traceIncomplete = true ∧ (cut.memory.1.2 9).history = [] ∧
+      cut.memory.2 = some ⟨[(0, 5)], 0, 0⟩ := by
+  decide
+
+/-- The resumed prefix retains both equal-value emissions, six distinct
+physical charges and the full recorder's omission. Duplicate containing
+scopes do not multiply those charges, and unrelated destinations stay zero. -/
+theorem resumed_record_and_accounts :
+    let after := Snapshot.run source controller 1 (Snapshot.run source controller 1 start)
+    after.search.events = [⟨5, 7⟩, ⟨8, 7⟩] ∧ after.search.frontier = [] ∧
+      after.memory.1.1 = 2 ∧ (after.memory.1.2 4).work.toNat = 6 ∧
+      (after.memory.1.2 9).work.toNat = 6 ∧ (after.memory.1.2 5).work.toNat = 0 ∧
+      after.memory.2 = some ⟨[(0, 5)], 0, 1⟩ ∧
+      RunLengthEvents.expand (after.memory.1.2 4).history =
+        [(1, ⟨12, 5, .restore, 1⟩), (2, ⟨12, 0, .quantum, 1⟩),
+         (3, ⟨12, 5, .publish, 1⟩), (4, ⟨12, 8, .restore, 1⟩),
+         (5, ⟨12, 0, .quantum, 1⟩), (6, ⟨12, 8, .publish, 1⟩)] := by
+  decide
+
+/-- Equality is of the whole functional store and checkpoint, including
+the incomplete destination and remaining recorder state. -/
+theorem split_preserves_whole_store :
+    Snapshot.run source controller 2 start =
+      Snapshot.run source controller 1 (Snapshot.run source controller 1 start) :=
+  Snapshot.run_add source controller 1 1 start
+
+/-- Resetting only the cost store on resumption preserves the two answers
+but reports three operations instead of six. Answer agreement cannot
+establish account preservation. -/
+theorem resetting_store_loses_charges :
+    let cut := Snapshot.run source controller 1 start
+    let reset := { cut with memory := ((cut.memory.1.1, fun _ => initial 8), cut.memory.2) }
+    let good := Snapshot.run source controller 1 cut
+    let bad := Snapshot.run source controller 1 reset
+    good.search.events = bad.search.events ∧ (good.memory.1.2 4).work.toNat = 6 ∧
+      (bad.memory.1.2 4).work.toNat = 3 := by
+  decide
+
+/-- Replenishing only recorder capacity also preserves the answers and
+numerical account. It nevertheless invents a complete retained history at
+the captured start where the original bounded observer has an omission. -/
+theorem replenishing_record_hides_omission :
+    let cut := Snapshot.run source controller 1 start
+    let reset := { cut with memory :=
+      (cut.memory.1, Mettapedia.GSLT.Core.InferenceControl.Recording.initial (some 1)) }
+    let good := Snapshot.run source controller 1 cut
+    let bad := Snapshot.run source controller 1 reset
+    good.search.events = bad.search.events ∧
+      (good.memory.1.2 4).work = (bad.memory.1.2 4).work ∧
+      good.memory.2 = some ⟨[(0, 5)], 0, 1⟩ ∧ bad.memory.2 = some ⟨[(1, 8)], 0, 0⟩ := by
+  decide
+
+/-- Removing coordinator charges keeps the authored answers and all
+selected-leaf restores/publications. It changes the declared metric, even
+though those administrative operations have no selected-leaf occurrence. -/
+theorem omitting_administrative_quantum_changes_account :
+    let incomplete := scopedController 255 base
+      (fun memory node answer generated =>
+        (commands memory node answer generated).filter (fun command => command.charge.kind != .quantum))
+      (fun _ => initial 8)
+    let missing := Snapshot.run source incomplete 2 (Snapshot.initial incomplete [5, 8])
+    let complete := Snapshot.run source controller 2 start
+    complete.search.events = missing.search.events ∧
+      (complete.memory.1.2 4).work.toNat = 6 ∧ (missing.memory.2 4).work.toNat = 4 := by
+  decide
+
+/-- A selected-input transcript does not authenticate its starting account.
+Replaying at another captured meter returns the same two answers with ten
+additional prior operations. The full starting checkpoint must be retained. -/
+theorem different_starting_account_changes_replay :
+    let plain := scopedController 255 base commands (fun _ => initial 8)
+    let beginning := Snapshot.initial plain [5, 8]
+    let frames := Mettapedia.GSLT.Core.InferenceControl.Recording.stream source plain
+      Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.observe 2 beginning
+    let other := { beginning with memory :=
+      (beginning.memory.1, fun location => if location = 4 then
+        append 255 (initial 8) ⟨90, 12, 0, .matchNode, 10, true⟩ else beginning.memory.2 location) }
+    match Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.run source plain frames other with
+    | .error _ => False
+    | .ok replayed => replayed.search.events = [⟨5, 7⟩, ⟨8, 7⟩] ∧
+        (replayed.memory.2 4).work.toNat = 16 ∧
+        ((Snapshot.run source plain 2 beginning).memory.2 4).work.toNat = 6 := by
+  dsimp [Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.run,
+    Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step?,
+    Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.observe,
+    Mettapedia.GSLT.Core.InferenceControl.Recording.stream,
+    Mettapedia.GSLT.Core.InferenceControl.Recording.next,
+    Mettapedia.GSLT.Core.InferenceControl.Preparation.capture,
+    Snapshot.initial, Snapshot.tick, Snapshot.run,
+    Mettapedia.GSLT.Core.BranchingTemporal.initial,
+    Mettapedia.GSLT.Core.BranchingTemporal.tick,
+    scopedController, Controller.observing, source, base, Scheduler.breadthFirst]
+  decide
+
+end ControllerControls
+
+namespace PhaseReplayControls
+
+open Mettapedia.GSLT.Core.InferenceControl (Snapshot)
+
+private def control := scopedController 255 ControllerControls.base ControllerControls.commands
+  (fun _ => initial 8)
+
+private def start := Snapshot.initial control [5, 8]
+
+private def first : PhaseReplay.Frame Nat Nat 8 :=
+  PhaseReplay.observe ControllerControls.commands (0, fun _ => initial 8) 5 (some 7) []
+
+private def second : PhaseReplay.Frame Nat Nat 8 :=
+  PhaseReplay.observe ControllerControls.commands (1, fun _ => initial 8) 8 (some 7) []
+
+private def omitted (frame : PhaseReplay.Frame Nat Nat 8) :=
+  { frame with charges := frame.charges.filter (fun command => command.charge.kind != Kind.quantum) }
+
+/-- Two equal answers remain separate occurrences. A refused destination
+still counts all six operations and keeps its incomplete history. -/
+theorem complete_phases_retain_occurrences_and_accounts :
+    match PhaseReplay.run 255 ControllerControls.source ControllerControls.base
+      ControllerControls.commands (fun _ => initial 8) [first, second] start with
+    | .error _ => False
+    | .ok after => after.search.events = [⟨5, 7⟩, ⟨8, 7⟩] ∧ after.search.frontier = [] ∧
+        after.memory.1 = 2 ∧ (after.memory.2 4).work.toNat = 6 ∧
+        (after.memory.2 9).work.toNat = 6 ∧ (after.memory.2 9).traceIncomplete = true ∧
+        (RunLengthEvents.expand (after.memory.2 4).history).map Prod.fst = [1, 2, 3, 4, 5, 6] := by
+  dsimp [PhaseReplay.run, PhaseReplay.step?, first, second, start, control,
+    PhaseReplay.observe, Mettapedia.GSLT.Core.InferenceControl.Recording.Replay.step?,
+    Mettapedia.GSLT.Core.InferenceControl.Preparation.capture,
+    Snapshot.initial, Snapshot.tick, Mettapedia.GSLT.Core.BranchingTemporal.initial,
+    Mettapedia.GSLT.Core.BranchingTemporal.tick, scopedController,
+    Mettapedia.GSLT.Core.InferenceControl.Controller.observing,
+    ControllerControls.source, ControllerControls.base,
+    Mettapedia.GSLT.Core.BranchingTemporal.Scheduler.breadthFirst]
+  decide
+
+/-- The capture still names the authorized emission. Omitting an
+administrative operation nevertheless prevents account authentication. -/
+theorem omitted_quantum_refused :
+    (omitted first).capture = first.capture ∧
+      PhaseReplay.step? 255 ControllerControls.source ControllerControls.base
+        ControllerControls.commands (fun _ => initial 8) start (omitted first) = none := by
+  exact ⟨rfl, rfl⟩
+
+theorem duplicated_charge_refused :
+    PhaseReplay.step? 255 ControllerControls.source ControllerControls.base
+      ControllerControls.commands (fun _ => initial 8) start
+        { first with charges := first.charges ++ first.charges.take 1 } = none := by
+  rfl
+
+/-- Reordering retains the numerical work sum, but changes the named
+chronological phase. A sum is insufficient replay evidence. -/
+theorem reordered_same_sum_refused :
+    (runScopes 255 (ControllerControls.commands 0 5 (some 7) []).reverse
+      (fun _ => initial 8) 4).work.toNat = 3 ∧
+      (runScopes 255 (ControllerControls.commands 0 5 (some 7) [])
+        (fun _ => initial 8) 4).work.toNat = 3 ∧
+      PhaseReplay.step? 255 ControllerControls.source ControllerControls.base
+        ControllerControls.commands (fun _ => initial 8) start
+          { first with charges := first.charges.reverse } = none := by
+  exact ⟨by decide, by decide, rfl⟩
+
+theorem changed_retention_refused :
+    PhaseReplay.step? 255 ControllerControls.source ControllerControls.base
+      ControllerControls.commands (fun _ => initial 8) start
+        { first with charges := first.charges.map fun command =>
+          { command with retention := command.retention.map fun entry =>
+            if entry.1 = 9 then (9, true) else entry } } = none := by
+  rfl
+
+/-- Equal-looking ledger identities cannot replace a physical containing
+location. Full scope chains are part of the checked phase. -/
+theorem changed_destination_refused :
+    PhaseReplay.step? 255 ControllerControls.source ControllerControls.base
+      ControllerControls.commands (fun _ => initial 8) start
+        { first with charges := first.charges.map fun command =>
+          { command with scopes := [some 4, none, some 5, some 9] } } = none := by
+  rfl
+
+/-- The accepted prefix's entire meter and continuation survive the denied
+second phase. The same rejected payload remains available for correction. -/
+theorem refusal_retains_paid_prefix :
+    PhaseReplay.run 255 ControllerControls.source ControllerControls.base
+      ControllerControls.commands (fun _ => initial 8) [first, omitted second] start =
+      .error (Snapshot.tick ControllerControls.source control start, [omitted second]) := by
+  rfl
+
+theorem bounded_recording_does_not_invent_complete_replay :
+    PhaseReplay.readout 255 ControllerControls.source ControllerControls.base
+      ControllerControls.commands (fun _ => initial 8)
+      ((Mettapedia.GSLT.Core.InferenceControl.Recording.Prefix.initial 1).append [first, second])
+      start = none := by
+  rfl
+
+end PhaseReplayControls
+
+/-- A read captures the preceding observation before its temporary scope
+is entered. Re-entering the same location in an outer frame does not charge
+the read twice; a null read has a zero preceding observation and origin. -/
+def inspectScopes (maximum : Nat) (store : Nat → State 64) (location : Option Nat)
+    (outer : List (Option Nat)) (identity origin occurrence : Nat) (retained : Nat → Bool) :
+    Observation × (Nat → State 64) :=
+  let before := observe (location.map store |>.getD (initial 64 true))
+  let charge := readCharge identity (if location.isSome then origin else 0) occurrence true
+  (before, chargeScopes maximum (location :: outer) charge retained store)
+
+theorem inspectScopes_preceding (maximum : Nat) (store : Nat → State 64) (location : Option Nat)
+    (outer : List (Option Nat)) (identity origin occurrence : Nat) (retained : Nat → Bool) :
+    (inspectScopes maximum store location outer identity origin occurrence retained).1 =
+      observe (location.map store |>.getD (initial 64 true)) := rfl
+
+/-- A live read agrees with the existing single-ledger inspection, while
+the other containing scopes still receive the same physical read event. -/
+theorem inspectScopes_at_read_location (maximum : Nat) (store : Nat → State 64) (location : Nat)
+    (outer : List (Option Nat)) (identity origin occurrence : Nat) (retained : Nat → Bool) :
+    ((inspectScopes maximum store (some location) outer identity origin occurrence retained).1,
+      (inspectScopes maximum store (some location) outer identity origin occurrence retained).2 location) =
+      inspect maximum (store location) identity origin occurrence (retained location) := by
+  simp only [inspectScopes, Option.map_some, Option.getD_some, inspect]
+  rw [chargeScopes_at, if_pos (List.mem_cons_self)]
+  rfl
+
+/-- The prefix scan's location equality, not an origin-identity equality,
+preserves distinct views even when the origin allocator is exhausted. -/
+theorem scoped_origin_exhaustion_control :
+    let charge : Charge 8 := ⟨8, 0, 30, .heapLookup, 1, true⟩
+    let store : Nat → State 8 := fun _ => initial 8
+    let after := chargeScopes 255 [some 4, none, some 9, some 4] charge (fun _ => true) store
+    (after 4).work.toNat = 1 ∧ (after 9).work.toNat = 1 ∧ (after 5).work.toNat = 0 ∧
+      RunLengthEvents.expand (after 4).history = [charge.event] ∧
+      RunLengthEvents.expand (after 9).history = [charge.event] := by
+  decide
+
+/-- One destination's failed storage leaves another destination complete;
+both numerical counters still count the physical operation. -/
+theorem scoped_retention_control :
+    let charge : Charge 8 := ⟨8, 12, 30, .heapLookup, 1, true⟩
+    let store : Nat → State 8 := fun _ => initial 8
+    let after := chargeScopes 255 [some 4, some 9, some 4] charge (fun loc => decide (loc ≠ 4)) store
+    (after 4).work.toNat = 1 ∧ (after 9).work.toNat = 1 ∧
+      (after 4).traceIncomplete = true ∧ (after 4).history = [] ∧
+      (after 9).traceIncomplete = false ∧ RunLengthEvents.expand (after 9).history = [charge.event] := by
+  decide
+
+/-- A duplicate-scope mutant double-charges a physical event. The actual
+scope delivery preserves one charge without equating the duplicate frames. -/
+theorem scoped_duplicate_delivery_control :
+    let charge : Charge 8 := ⟨8, 12, 30, .heapLookup, 1, true⟩
+    let store : Nat → State 8 := fun _ => initial 8
+    (deliver 255 (fun _ => charge) [4, 4] store 4).work.toNat = 2 ∧
+      (chargeScopes 255 [some 4, some 4] charge (fun _ => true) store 4).work.toNat = 1 := by
+  decide
+
+/-- Reading before charging cannot be replaced by a post-charge read.
+Outer aliases receive the same read once and no unrelated ledger changes. -/
+theorem scoped_read_order_control :
+    let store : Nat → State 64 := fun _ => initial 64
+    let read := inspectScopes 255 store (some 4) [some 9, none, some 4] 8 12 30 (fun _ => true)
+    read.1.work = 0 ∧ (observe (read.2 4)).work = 1 ∧
+      (read.2 9).work.toNat = 1 ∧ (read.2 5).work.toNat = 0 ∧
+      read.1 ≠ observe (read.2 4) := by
+  refine ⟨by decide, by decide, by decide, by decide, ?_⟩
+  intro equal
+  have wrong := congrArg Observation.work equal
+  change (0 : Nat) = 1 at wrong
+  exact Nat.zero_ne_one wrong
+
+/-- A captured accounting context. The scope list is inner-to-outer and
+contains live locations with each frame's occurrence. Origin identifiers
+and destination locations remain distinct namespaces. Retention decisions
+are supplied by the storage service for this operation. -/
+structure ScopeState (width : Nat) where
+  scopes : List (Option Nat × Nat)
+  origins : Nat → Nat
+  nextIdentity : Nat
+  store : Nat → State width
+  retained : Nat → Bool
+
+/-- Construct the shared payload from the innermost frame. A null inner
+ledger contributes origin zero even when outer live ledgers receive work. -/
+def scopeCharge {width : Nat} (state : ScopeState width) (kind : Kind)
+    (units : BitVec width) (identity : Nat) : Charge width :=
+  let inner := state.scopes.headD (none, 0)
+  ⟨identity, inner.1.map state.origins |>.getD 0, inner.2, kind, units, true⟩
+
+/-- Observe a valid operation after its identity reservation linearizes.
+Disabled observation and zero work reserve no identity. Refusal returns zero
+but still charges active views and makes their missing history explicit.
+Weak-CAS completion and physical scope/allocator realization are separate
+from this captured-context execution. -/
+def observeScopes {width : Nat} (runMaximum identityMaximum : Nat)
+    (state : ScopeState width) (kind : Kind) (units : BitVec width) : Nat × ScopeState width :=
+  if state.scopes = [] ∨ units = 0 then (0, state) else
+    let reserved := OccurrenceIdentity.reserve identityMaximum state.nextIdentity
+    let identity := reserved.1.getD 0
+    let charge := scopeCharge state kind units identity
+    (identity, { state with
+      nextIdentity := reserved.2
+      store := chargeScopes runMaximum (state.scopes.map Prod.fst) charge state.retained state.store })
+
+theorem observeScopes_disabled {width : Nat} (runMaximum identityMaximum : Nat)
+    (state : ScopeState width) (kind : Kind) (units : BitVec width) (disabled : state.scopes = []) :
+    observeScopes runMaximum identityMaximum state kind units = (0, state) := by
+  simp only [observeScopes, disabled, true_or, if_true]
+
+theorem observeScopes_zero {width : Nat} (runMaximum identityMaximum : Nat)
+    (state : ScopeState width) (kind : Kind) :
+    observeScopes runMaximum identityMaximum state kind 0 = (0, state) := by
+  simp only [observeScopes, or_true, if_true]
+
+/-- The per-view numerical law is independent of successful issuance or
+retention. The reserved identifier is not used as a destination key. -/
+theorem observeScopes_work {width : Nat} (runMaximum identityMaximum : Nat)
+    (state : ScopeState width) (kind : Kind) (units : BitVec width)
+    (active : state.scopes ≠ []) (nonzero : units ≠ 0) (location : Nat) :
+    ((observeScopes runMaximum identityMaximum state kind units).2.store location).work.toNat =
+      boundedTotal (2 ^ width - 1) ((state.store location).work.toNat +
+        if some location ∈ state.scopes.map Prod.fst then units.toNat else 0) := by
+  simp only [observeScopes, active, nonzero, false_or, if_false]
+  exact chargeScopes_work runMaximum _ _ _ _ location
+
+/-- An issued identifier is positive, below the namespace sentinel and
+advances its retained counter once. This follows from the independent
+reservation algorithm, not an assumed freshness tag on the event. -/
+theorem observeScopes_issued {width : Nat} (runMaximum identityMaximum : Nat)
+    (state : ScopeState width) (kind : Kind) (units : BitVec width)
+    (active : state.scopes ≠ []) (nonzero : units ≠ 0)
+    (available : 0 < state.nextIdentity ∧ state.nextIdentity < identityMaximum) :
+    (observeScopes runMaximum identityMaximum state kind units).1 = state.nextIdentity ∧
+      (observeScopes runMaximum identityMaximum state kind units).2.nextIdentity =
+        state.nextIdentity + 1 ∧
+      0 < (observeScopes runMaximum identityMaximum state kind units).1 ∧
+      (observeScopes runMaximum identityMaximum state kind units).1 < identityMaximum := by
+  have reserved := (OccurrenceIdentity.reserve_issued_iff identityMaximum
+    state.nextIdentity state.nextIdentity (state.nextIdentity + 1)).mpr
+      ⟨available.1, available.2, rfl, rfl⟩
+  simp only [observeScopes, active, nonzero, false_or, if_false, reserved, Option.getD_some]
+  exact ⟨trivial, trivial, available.1, available.2⟩
+
+/-- Missing event identity does not silently make an observed operation
+free. No destination retains an event with the refusal sentinel as a name. -/
+theorem scoped_identity_refusal_control :
+    let state : ScopeState 8 := ⟨[(some 4, 30), (some 9, 31)], fun _ => 12,
+      7, fun _ => initial 8, fun _ => true⟩
+    let result := observeScopes 255 7 state .heapLookup 1
+    result.1 = 0 ∧ result.2.nextIdentity = 7 ∧
+      (result.2.store 4).work.toNat = 1 ∧ (result.2.store 9).work.toNat = 1 ∧
+      (result.2.store 4).traceIncomplete = true ∧ (result.2.store 4).history = [] ∧
+      (result.2.store 9).traceIncomplete = true ∧ (result.2.store 9).history = [] := by
+  decide
+
+/-- The innermost frame supplies occurrence and origin, rather than the
+first non-null destination. Both outer views retain the same event. -/
+theorem scoped_null_inner_control :
+    let state : ScopeState 8 := ⟨[(none, 30), (some 4, 31), (some 9, 32), (some 4, 33)],
+      fun _ => 12, 8, fun _ => initial 8, fun _ => true⟩
+    let result := observeScopes 255 255 state .heapLookup 1
+    result.1 = 8 ∧ result.2.nextIdentity = 9 ∧
+      RunLengthEvents.expand (result.2.store 4).history = [(8, ⟨0, 30, .heapLookup, 1⟩)] ∧
+      RunLengthEvents.expand (result.2.store 9).history = [(8, ⟨0, 30, .heapLookup, 1⟩)] := by
   decide
 
 /-- Import the numerical coordinates of a child whose chronological receipt
@@ -1853,3 +3018,431 @@ theorem repeated_read_retains_charge :
       (snapshot (inspect 255 (inspect 255 [sharedRun] 2 8 14).2 3 8 14).2).2 = 3 := by decide
 
 end Mettapedia.Machines.NativeCostLedger
+
+
+namespace Mettapedia.Machines.NativeCostLedger
+
+namespace IdentityTransport
+
+/-- Event issuance, origin and occurrence are separate identity namespaces.
+Destination addresses use a separate scoped-store relation. -/
+structure Maps where
+  event : Nat → Nat
+  origin : Nat → Nat
+  occurrence : Nat → Nat
+
+def payload (mapping : Maps) (value : Payload) : Payload :=
+  ⟨mapping.origin value.origin, mapping.occurrence value.occurrence, value.kind, value.units⟩
+
+def event (mapping : Maps) (value : Event) : Event :=
+  Mettapedia.Algebra.RunLengthEvents.mapEvent mapping.event (payload mapping) value
+
+theorem event_grade (mapping : Maps) (value : Event) :
+    eventGrade (event mapping value) = eventGrade value := rfl
+
+theorem totals_preserved (mapping : Maps) (values : List Event) :
+    totals (values.map (event mapping)) = totals values := by
+  induction values with
+  | nil => rfl
+  | cons value rest ih =>
+      simp only [totals, List.map_cons, List.sum_cons, event_grade] at ih ⊢
+      exact congrArg (eventGrade value + ·) ih
+
+theorem event_injective (mapping : Maps)
+    (events : Function.Injective mapping.event) (origins : Function.Injective mapping.origin)
+    (occurrences : Function.Injective mapping.occurrence) : Function.Injective (event mapping) := by
+  apply Mettapedia.Algebra.RunLengthEvents.mapEvent_injective _ _ events
+  intro first second same
+  have originSame := origins (congrArg Payload.origin same)
+  have occurrenceSame := occurrences (congrArg Payload.occurrence same)
+  have kindSame := congrArg Payload.kind same
+  have unitsSame := congrArg Payload.units same
+  cases first
+  cases second
+  cases originSame
+  cases occurrenceSame
+  cases kindSame
+  cases unitsSame
+  rfl
+
+/-- Zero remains a refused reservation, rather than becoming fresh evidence. -/
+theorem event_zero_iff (mapping : Maps) (events : Function.Injective mapping.event)
+    (zero : mapping.event 0 = 0) (identity : Nat) :
+    mapping.event identity = 0 ↔ identity = 0 := by
+  constructor
+  · intro missing
+    exact events (missing.trans zero.symm)
+  · rintro rfl
+    exact zero
+
+def charge {width : Nat} (mapping : Maps) (value : Recording.Charge width) :
+    Recording.Charge width :=
+  { value with identity := mapping.event value.identity
+               origin := mapping.origin value.origin
+               occurrence := mapping.occurrence value.occurrence }
+
+theorem charge_event {width : Nat} (mapping : Maps) (value : Recording.Charge width) :
+    (charge mapping value).event = event mapping value.event := rfl
+
+/-- The complete numerical observation and retained chronology agree.
+Compressed row shape and its storage expense have their own observer. -/
+structure Related {width : Nat} (mapping : Maps)
+    (source target : Recording.State width) : Prop where
+  counts : target.counts = source.counts
+  work : target.work = source.work
+  span : target.span = source.span
+  parallel : target.parallel = source.parallel
+  overflow : target.overflow = source.overflow
+  incomplete : target.traceIncomplete = source.traceIncomplete
+  chronology : Mettapedia.Algebra.RunLengthEvents.expand target.history =
+    (Mettapedia.Algebra.RunLengthEvents.expand source.history).map (event mapping)
+
+/-- The actual bounded account appends commute with identity transport,
+including saturation, ignored zero work and incomplete receipt retention.
+This does not establish a native identity allocator or storage provider. -/
+theorem append_related {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (zero : mapping.event 0 = 0)
+    (sourceMaximum targetMaximum : Nat) (source target : Recording.State width)
+    (value : Recording.Charge width) (related : Related mapping source target) :
+    Related mapping (Recording.append sourceMaximum source value)
+      (Recording.append targetMaximum target (charge mapping value)) := by
+  have zeroIdentity : decide ((charge mapping value).identity = 0) =
+      decide (value.identity = 0) := by
+    change decide (mapping.event value.identity = 0) = decide (value.identity = 0)
+    apply Bool.eq_iff_iff.mpr
+    simp only [decide_eq_true_eq]
+    exact event_zero_iff mapping events zero value.identity
+  have sameMissing :
+      (target.traceIncomplete || decide ((charge mapping value).identity = 0) ||
+        !(charge mapping value).retained) =
+      (source.traceIncomplete || decide (value.identity = 0) || !value.retained) := by
+    rw [related.incomplete, zeroIdentity]
+    rfl
+  have sameUnits : (charge mapping value).units = value.units := rfl
+  by_cases ignored : value.units = 0
+  · simpa only [Recording.append, charge, ignored, if_true] using related
+  · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · simp only [Recording.append, charge, if_neg ignored, related.counts, related.overflow]
+    · simp only [Recording.append, charge, if_neg ignored, related.counts,
+        related.work, related.overflow]
+    · simp only [Recording.append, charge, if_neg ignored, related.counts,
+        related.work, related.span, related.overflow]
+    · simp only [Recording.append, charge, if_neg ignored, related.parallel]
+    · simp only [Recording.append, charge, if_neg ignored, related.counts,
+        related.work, related.span, related.overflow]
+    · simp only [Recording.append, sameUnits, if_neg ignored, sameMissing]
+    · cases missing : (source.traceIncomplete || decide (value.identity = 0) || !value.retained) with
+      | true =>
+          simpa only [Recording.append, sameUnits, if_neg ignored,
+            sameMissing, missing, if_true] using related.chronology
+      | false =>
+          simp only [Recording.append, sameUnits, if_neg ignored,
+            sameMissing, missing, Bool.false_eq_true, if_false]
+          rw [Mettapedia.Algebra.RunLengthEvents.expand_appendEvent,
+            Mettapedia.Algebra.RunLengthEvents.expand_appendEvent, List.map_append,
+            List.map_singleton, related.chronology, charge_event]
+
+theorem run_related {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (zero : mapping.event 0 = 0)
+    (sourceMaximum targetMaximum : Nat) (values : List (Recording.Charge width))
+    (source target : Recording.State width) (related : Related mapping source target) :
+    Related mapping (Recording.run sourceMaximum values source)
+      (Recording.run targetMaximum (values.map (charge mapping)) target) := by
+  induction values generalizing source target with
+  | nil => exact related
+  | cons value rest ih =>
+      exact ih _ _ (append_related mapping events zero sourceMaximum targetMaximum
+        source target value related)
+
+/-- Moving ledger locations preserves null destinations and every deliberate
+alias. Distinct live locations stay distinct under an injective location map. -/
+theorem scoped_membership (locations : Nat → Nat)
+    (faithful : Function.Injective locations) (scopes : List (Option Nat)) (location : Nat) :
+    some (locations location) ∈ scopes.map (Option.map locations) ↔ some location ∈ scopes := by
+  rw [List.mem_map]
+  constructor
+  · rintro ⟨candidate, present, same⟩
+    cases candidate with
+    | none => cases same
+    | some other =>
+        simp only [Option.map_some, Option.some.injEq] at same
+        have equal := faithful same
+        simpa only [equal] using present
+  · intro present
+    exact ⟨some location, present, rfl⟩
+
+/-- A bounded comparison needs retention agreement only at destinations
+this operation actually reaches. Other source/target service values are inert. -/
+theorem chargeScopes_active_related {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (zero : mapping.event 0 = 0)
+    (locations : Nat → Nat) (faithful : Function.Injective locations)
+    (sourceMaximum targetMaximum : Nat) (scopes : List (Option Nat))
+    (value : Recording.Charge width) (sourceRetained targetRetained : Nat → Bool)
+    (retention : ∀ location, some location ∈ scopes →
+      targetRetained (locations location) = sourceRetained location)
+    (source target : Nat → Recording.State width)
+    (related : ∀ location, Related mapping (source location) (target (locations location)))
+    (location : Nat) :
+    Related mapping
+      (Recording.chargeScopes sourceMaximum scopes value sourceRetained source location)
+      (Recording.chargeScopes targetMaximum (scopes.map (Option.map locations))
+        (charge mapping value) targetRetained target (locations location)) := by
+  simp only [Recording.chargeScopes_at,
+    scoped_membership locations faithful scopes location]
+  by_cases present : some location ∈ scopes
+  · simp only [if_pos present]
+    have sameCharge :
+        Recording.localCharge (charge mapping value) targetRetained (locations location) =
+          charge mapping (Recording.localCharge value sourceRetained location) := by
+      simp only [Recording.localCharge, charge, retention location present]
+    rw [sameCharge]
+    exact append_related mapping events zero sourceMaximum targetMaximum
+      (source location) (target (locations location))
+      (Recording.localCharge value sourceRetained location) (related location)
+  · simp only [if_neg present]
+    exact related location
+
+/-- The actual scope dispatcher commutes with transport of each complete
+containing account. Duplicate frames still deliver once to an aliased ledger;
+per-destination retention is compared at the mapped location. -/
+theorem chargeScopes_related {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (zero : mapping.event 0 = 0)
+    (locations : Nat → Nat) (faithful : Function.Injective locations)
+    (sourceMaximum targetMaximum : Nat) (scopes : List (Option Nat))
+    (value : Recording.Charge width) (sourceRetained targetRetained : Nat → Bool)
+    (retention : ∀ location, targetRetained (locations location) = sourceRetained location)
+    (source target : Nat → Recording.State width)
+    (related : ∀ location, Related mapping (source location) (target (locations location)))
+    (location : Nat) :
+    Related mapping
+      (Recording.chargeScopes sourceMaximum scopes value sourceRetained source location)
+      (Recording.chargeScopes targetMaximum (scopes.map (Option.map locations))
+        (charge mapping value) targetRetained target (locations location)) := by
+  exact chargeScopes_active_related mapping events zero locations faithful
+    sourceMaximum targetMaximum scopes value sourceRetained targetRetained
+    (fun location _ => retention location) source target related location
+
+namespace Controls
+
+def separated : Maps := ⟨fun identity => 10 * identity,
+  fun origin => origin + 100, fun occurrence => occurrence + 200⟩
+
+def operation : Recording.Charge 8 := ⟨2, 12, 30, .heapLookup, 3, true⟩
+
+/-- The same physical payload reaches two independent containing accounts,
+while a repeated scope at one location remains one delivery. -/
+theorem mapped_scopes_keep_aliases_and_independent_destinations :
+    let source := Recording.chargeScopes 255 [some 4, none, some 9, some 4]
+      operation (fun _ => true) (fun _ => Recording.initial 8)
+    let target := Recording.chargeScopes 7 [some 40, none, some 90, some 40]
+      (charge separated operation) (fun _ => true) (fun _ => Recording.initial 8)
+    (source 4).work = (target 40).work ∧ (source 4).work.toNat = 3 ∧
+      (source 9).work = (target 90).work ∧ (target 90).work.toNat = 3 ∧
+      (target 50).work.toNat = 0 ∧
+      Mettapedia.Algebra.RunLengthEvents.expand (target 40).history =
+        (Mettapedia.Algebra.RunLengthEvents.expand (source 4).history).map (event separated) := by
+  decide +kernel
+
+/-- Merging two distinct locations invents an alias, so one destination
+cannot represent both independent initial accounts. -/
+theorem collapsed_locations_lose_accounts :
+    let initial : Nat → Recording.State 8 := fun location =>
+      { Recording.initial 8 with work := if location = 4 then 2 else 7 }
+    (initial 4).work ≠ (initial 9).work ∧
+      ¬ ∃ destination : Recording.State 8,
+        Related separated (initial 4) destination ∧ Related separated (initial 9) destination := by
+  refine ⟨by decide, ?_⟩
+  rintro ⟨destination, first, second⟩
+  have incompatible := first.work.symm.trans second.work
+  exact (by decide : (2 : BitVec 8) ≠ 7) incompatible
+
+/-- Refused identity reservation still pays the operation and permanently
+marks the history incomplete; transporting zero may not repair it. -/
+theorem zero_identity_refusal_remains_paid_and_incomplete :
+    let refused : Recording.Charge 8 := { operation with identity := 0 }
+    let target := Recording.append 255 (Recording.initial 8) (charge separated refused)
+    target.work.toNat = 3 ∧ target.traceIncomplete = true ∧ target.history = [] := by
+  decide +kernel
+
+/-- A zero-unit operation ignores even identity and retention refusal.
+The initial paid prefix and flags remain unchanged. -/
+theorem zero_units_do_not_change_retained_account :
+    let ignored : Recording.Charge 8 := { operation with identity := 0, units := 0, retained := false }
+    let before : Recording.State 8 := { Recording.initial 8 with work := 7, span := 7 }
+    Recording.append 255 before (charge separated ignored) = before := by
+  rfl
+
+end Controls
+
+end IdentityTransport
+end Mettapedia.Machines.NativeCostLedger
+
+
+namespace Mettapedia.Machines.NativeCostLedger.IdentityTransport
+
+/-- An injective location map preserves the original inner-to-outer order
+of first live destinations; it may not merge distinct ledger identities. -/
+theorem scopeTargets_map (locations : Nat → Nat) (faithful : Function.Injective locations)
+    (scopes : List (Option Nat)) :
+    scopeTargets (scopes.map (Option.map locations)) = (scopeTargets scopes).map locations := by
+  have live : (scopes.map (Option.map locations)).filterMap id =
+      (scopes.filterMap id).map locations := by
+    induction scopes with
+    | nil => rfl
+    | cons value rest ih =>
+        cases value with
+        | none =>
+            simpa only [List.map_cons, List.filterMap_cons, Option.map_none, id_eq] using ih
+        | some value =>
+            simpa only [List.map_cons, List.filterMap_cons, Option.map_some, id_eq] using
+              congrArg (List.cons (locations value)) ih
+  have inventory := VariableInventory.firstOccurrences_map locations id faithful []
+    ((scopes.filterMap id).map fun location => (location, ()))
+  simpa only [scopeTargets, live, List.map_nil, List.map_map, Function.comp_def] using
+    congrArg (List.map Prod.fst) inventory
+
+theorem charge_injective {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (origins : Function.Injective mapping.origin)
+    (occurrences : Function.Injective mapping.occurrence) : Function.Injective (charge (width := width) mapping) := by
+  intro first second same
+  have identitySame := events (congrArg Recording.Charge.identity same)
+  have originSame := origins (congrArg Recording.Charge.origin same)
+  have occurrenceSame := occurrences (congrArg Recording.Charge.occurrence same)
+  have kindSame := congrArg Recording.Charge.kind same
+  have unitsSame := congrArg Recording.Charge.units same
+  have retainedSame := congrArg Recording.Charge.retained same
+  cases first
+  cases second
+  cases identitySame
+  cases originSame
+  cases occurrenceSame
+  cases kindSame
+  cases unitsSame
+  cases retainedSame
+  rfl
+
+/-- This finite receipt map retains the full scope chain and each active
+retention decision. Operation kinds and units keep their source meaning. -/
+def mapReceipt {width : Nat} (mapping : Maps) (locations : Nat → Nat)
+    (receipt : Recording.ScopedChargeReceipt width) : Recording.ScopedChargeReceipt width :=
+  ⟨receipt.scopes.map (Option.map locations), charge mapping receipt.charge,
+    receipt.retention.map (Mettapedia.Algebra.RunLengthEvents.mapEvent locations id)⟩
+
+theorem mapReceipt_injective {width : Nat} (mapping : Maps) (locations : Nat → Nat)
+    (events : Function.Injective mapping.event) (origins : Function.Injective mapping.origin)
+    (occurrences : Function.Injective mapping.occurrence) (faithful : Function.Injective locations) :
+    Function.Injective (mapReceipt (width := width) mapping locations) := by
+  have options : Function.Injective (Option.map locations) := by
+    intro first second same
+    cases first with
+    | none =>
+        cases second with
+        | none => rfl
+        | some value => cases same
+    | some value =>
+        cases second with
+        | none => cases same
+        | some other =>
+            exact congrArg some (faithful (Option.some.inj same))
+  have scopeLists := List.map_injective_iff.mpr options
+  have destinationLists := List.map_injective_iff.mpr
+    (Mettapedia.Algebra.RunLengthEvents.mapEvent_injective locations id faithful
+      (Function.injective_id (α := Bool)))
+  intro first second same
+  have scopesSame := scopeLists (congrArg Recording.ScopedChargeReceipt.scopes same)
+  have chargeSame := charge_injective mapping events origins occurrences
+    (congrArg Recording.ScopedChargeReceipt.charge same)
+  have retentionSame := destinationLists (congrArg Recording.ScopedChargeReceipt.retention same)
+  cases first
+  cases second
+  cases scopesSame
+  cases chargeSame
+  cases retentionSame
+  rfl
+
+/-- Receipt comparison supplies the retention fact at each active mapped
+destination. No equality of an unobserved infinite service is assumed. -/
+theorem mapped_receipt_retention {width : Nat} (mapping : Maps) (locations : Nat → Nat)
+    (first second : Recording.ScopedCharge width)
+    (same : second.receipt = mapReceipt mapping locations first.receipt)
+    (location : Nat) (present : some location ∈ first.scopes) :
+    second.retained (locations location) = first.retained location := by
+  have retention := congrArg Recording.ScopedChargeReceipt.retention same
+  have entry : (locations location, first.retained location) ∈
+      (mapReceipt mapping locations first.receipt).retention :=
+    List.mem_map.mpr ⟨(location, first.retained location),
+      List.mem_map.mpr ⟨location, (scopeTargets_mem first.scopes location).mpr present, rfl⟩, rfl⟩
+  rw [← retention] at entry
+  obtain ⟨other, _, sameEntry⟩ := List.mem_map.mp entry
+  have locationSame : other = locations location := congrArg Prod.fst sameEntry
+  subst other
+  exact congrArg Prod.snd sameEntry
+
+/-- Checked finite receipt transport instantiates the actual account step.
+The native issuance/owner/service correspondence remains an extra obligation. -/
+theorem chargeScopes_receipt_related {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (zero : mapping.event 0 = 0)
+    (locations : Nat → Nat) (faithful : Function.Injective locations)
+    (sourceMaximum targetMaximum : Nat) (first second : Recording.ScopedCharge width)
+    (same : second.receipt = mapReceipt mapping locations first.receipt)
+    (source target : Nat → Recording.State width)
+    (related : ∀ location, Related mapping (source location) (target (locations location)))
+    (location : Nat) :
+    Related mapping
+      (Recording.chargeScopes sourceMaximum first.scopes first.charge first.retained source location)
+      (Recording.chargeScopes targetMaximum second.scopes second.charge second.retained
+        target (locations location)) := by
+  have scopes := congrArg Recording.ScopedChargeReceipt.scopes same
+  have charges := congrArg Recording.ScopedChargeReceipt.charge same
+  change second.scopes = first.scopes.map (Option.map locations) at scopes
+  change second.charge = charge mapping first.charge at charges
+  rw [scopes, charges]
+  exact chargeScopes_active_related mapping events zero locations faithful
+    sourceMaximum targetMaximum first.scopes first.charge first.retained second.retained
+    (mapped_receipt_retention mapping locations first second same)
+    source target related location
+
+/-- A matched ordered sequence of finite receipts transports the whole
+containing-account population through every phase and every resumption cut. -/
+theorem runScopes_receipts_related {width : Nat} (mapping : Maps)
+    (events : Function.Injective mapping.event) (zero : mapping.event 0 = 0)
+    (locations : Nat → Nat) (faithful : Function.Injective locations)
+    (sourceMaximum targetMaximum : Nat)
+    (first second : List (Recording.ScopedCharge width))
+    (receipts : List.Forall₂
+      (fun source target => target.receipt = mapReceipt mapping locations source.receipt)
+      first second)
+    (source target : Nat → Recording.State width)
+    (related : ∀ location, Related mapping (source location) (target (locations location))) :
+    ∀ location, Related mapping (Recording.runScopes sourceMaximum first source location)
+      (Recording.runScopes targetMaximum second target (locations location)) := by
+  induction receipts generalizing source target with
+  | nil => exact related
+  | @cons first second restFirst restSecond same remaining ih =>
+      exact ih _ _ (chargeScopes_receipt_related mapping events zero locations faithful
+        sourceMaximum targetMaximum first second same source target related)
+
+namespace ReceiptControls
+
+def original : Recording.ScopedChargeReceipt 8 :=
+  ⟨[some 4, none, some 9, some 4], Controls.operation, [(4, true), (9, false)]⟩
+
+theorem explicit_map_retains_alias_word_and_every_retention :
+    mapReceipt Controls.separated (fun location => 10 * location) original =
+      ⟨[some 40, none, some 90, some 40], charge Controls.separated Controls.operation,
+        [(40, true), (90, false)]⟩ := by decide +kernel
+
+theorem omitted_retention_is_not_a_matching_receipt :
+    mapReceipt Controls.separated (fun location => 10 * location) original ≠
+      ⟨[some 40, none, some 90, some 40], charge Controls.separated Controls.operation,
+        [(40, true)]⟩ := by decide +kernel
+
+theorem phase_role_cannot_be_renamed :
+    (charge Controls.separated { Controls.operation with kind := .restore }).kind = .restore ∧
+      (charge Controls.separated { Controls.operation with kind := .restore }).kind ≠ .publish := by
+  decide +kernel
+
+end ReceiptControls
+end Mettapedia.Machines.NativeCostLedger.IdentityTransport
+
+

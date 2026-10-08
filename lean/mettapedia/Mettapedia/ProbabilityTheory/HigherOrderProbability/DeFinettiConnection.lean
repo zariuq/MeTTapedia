@@ -8,7 +8,7 @@ import Mathlib.MeasureTheory.Measure.GiryMonad
 import Mathlib.MeasureTheory.Measure.Restrict
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Algebra.Order.GroupWithZero.Unbundled.Basic
+import Mathlib.Algebra.Order.GroupWithZero.Basic
 import Mathlib.Data.Fin.Tuple.Basic
 
 /-!
@@ -30,9 +30,9 @@ noncomputable section
 
 namespace Mettapedia.ProbabilityTheory.HigherOrderProbability
 
-open scoped BigOperators ENNReal ProbabilityTheory
+open scoped BigOperators ENNReal _root_.Mettapedia.ProbabilityTheory
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 
 namespace DeFinettiConnection
@@ -57,7 +57,7 @@ def mixingMeasureTheta (M : BernoulliMixture) : Measure Theta :=
 instance mixingMeasureTheta_isProbability (M : BernoulliMixture) :
     IsProbabilityMeasure (mixingMeasureTheta M) := by
   classical
-  haveI : IsProbabilityMeasure M.mixingMeasure := M.isProbability
+  have : IsProbabilityMeasure M.mixingMeasure := M.isProbability
   -- Evaluate on `univ` by rewriting `comap` along the subtype coercion.
   have hIcc :
       mixingMeasureTheta M Set.univ = M.mixingMeasure (Set.Icc (0 : ℝ) 1) := by
@@ -110,14 +110,14 @@ theorem mixingMeasure_eq_of_mixingMeasureTheta_eq
         M1.mixingMeasure (t ∩ Set.Icc (0 : ℝ) 1) +
           M1.mixingMeasure (t \ Set.Icc (0 : ℝ) 1) =
         M1.mixingMeasure t :=
-      measure_inter_add_diff t measurableSet_Icc
+      measure_inter_add_sdiff t measurableSet_Icc
     simpa [hμ1_diff0] using hsplit.symm
   have hμ2_inter : M2.mixingMeasure t = M2.mixingMeasure (t ∩ Set.Icc (0 : ℝ) 1) := by
     have hsplit :
         M2.mixingMeasure (t ∩ Set.Icc (0 : ℝ) 1) +
           M2.mixingMeasure (t \ Set.Icc (0 : ℝ) 1) =
         M2.mixingMeasure t :=
-      measure_inter_add_diff t measurableSet_Icc
+      measure_inter_add_sdiff t measurableSet_Icc
     simpa [hμ2_diff0] using hsplit.symm
   have hμ1_comap :
       M1.mixingMeasure (t ∩ Set.Icc (0 : ℝ) 1) =
@@ -562,7 +562,7 @@ theorem flatten_apply_singleton (M : BernoulliMixture) (n : ℕ) (xs : Fin n →
       Integrable (fun t : ℝ => bernoulliProductPMF t xs)
         (M.mixingMeasure.restrict (Set.Icc (0 : ℝ) 1)) := by
     -- On a finite measure, a measurable function bounded by a constant is integrable.
-    haveI : IsProbabilityMeasure M.mixingMeasure := M.isProbability
+    have : IsProbabilityMeasure M.mixingMeasure := M.isProbability
     have hs_finite : M.mixingMeasure (Set.Icc (0 : ℝ) 1) ≠ ∞ := by
       have hle : M.mixingMeasure (Set.Icc (0 : ℝ) 1) ≤ M.mixingMeasure Set.univ :=
         measure_mono (Set.subset_univ _)
@@ -668,7 +668,7 @@ theorem bernoulliMixture_prob_total
   classical
   let ν : Measure (Fin n → Bool) := ParametrizedDistribution.flatten (pd M n)
   have hνuniv : ν Set.univ = 1 := by
-    haveI : IsProbabilityMeasure ν := by
+    have : IsProbabilityMeasure ν := by
       dsimp [ν]
       infer_instance
     simp

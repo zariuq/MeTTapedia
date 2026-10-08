@@ -190,9 +190,42 @@ def piSections : (dependentFunctions shape position).sections ≃ (dependentFunc
     funext point
     exact forward_inverse signature (term.val point)
 
+def sigmaValue (point : E) (term : Σ label : shape.obj point, position.obj ⟨point, label⟩) :
+    Σ label : nextShape.obj point, nextPosition.obj ⟨point, label⟩ :=
+  ⟨signature.shapes point term.1, signature.positions point term.1 term.2⟩
+
+def inverseSigmaValue (point : E)
+    (term : Σ label : nextShape.obj point, nextPosition.obj ⟨point, label⟩) :
+    Σ label : shape.obj point, position.obj ⟨point, label⟩ :=
+  ⟨(signature.shapes point).symm term.1, (positionsAtNew signature point term.1).symm term.2⟩
+
+theorem sigmaValue_injective (point : E) : Function.Injective (sigmaValue signature point) := by
+  rintro ⟨first, left⟩ ⟨second, right⟩ same
+  have labels := (signature.shapes point).injective (congrArg Sigma.fst same)
+  cases labels
+  have values : signature.positions point first left = signature.positions point first right :=
+    eq_of_heq (Sigma.mk.inj same).2
+  exact congrArg (Sigma.mk first) ((signature.positions point first).injective values)
+
+theorem sigmaValue_inverse (point : E)
+    (term : Σ label : nextShape.obj point, nextPosition.obj ⟨point, label⟩) :
+    sigmaValue signature point (inverseSigmaValue signature point term) = term := by
+  refine Sigma.ext ((signature.shapes point).apply_symm_apply term.1) ?_
+  exact (positionsAtNew_heq signature point term.1
+    ((positionsAtNew signature point term.1).symm term.2)).symm.trans
+    (heq_of_eq ((positionsAtNew signature point term.1).apply_symm_apply term.2))
+
+theorem inverse_sigmaValue (point : E)
+    (term : Σ label : shape.obj point, position.obj ⟨point, label⟩) :
+    inverseSigmaValue signature point (sigmaValue signature point term) = term :=
+  sigmaValue_injective signature point (sigmaValue_inverse signature point (sigmaValue signature point term))
+
 def sigmaEquiv (point : E) : (Σ label : shape.obj point, position.obj ⟨point, label⟩) ≃
-    (Σ label : nextShape.obj point, nextPosition.obj ⟨point, label⟩) :=
-  Equiv.sigmaCongr (signature.shapes point) (signature.positions point)
+    (Σ label : nextShape.obj point, nextPosition.obj ⟨point, label⟩) where
+  toFun := sigmaValue signature point
+  invFun := inverseSigmaValue signature point
+  left_inv := inverse_sigmaValue signature point
+  right_inv := sigmaValue_inverse signature point
 
 private theorem sigmaMap_heq {A : E ⥤ Type w} (B : A.Elements ⥤ Type z)
     {first second other : A.Elements} (same : second = other)

@@ -1,5 +1,14 @@
 import Mettapedia.GSLT.Distinction.OptionGraph
 import Mettapedia.Languages.MeTTa.PrimeOptions.ContextChoices
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOuts
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOutSites
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOutSheaves
+import Mettapedia.Languages.MeTTa.PrimeOptions.CarveOutSheafPowers
+import Mettapedia.Languages.MeTTa.PrimeOptions.ReplayPins
+import Mettapedia.Languages.MeTTa.PrimeOptions.WeightAlgebras
+import Mettapedia.Languages.MeTTa.PrimeOptions.OpenTower
+import Mettapedia.Languages.MeTTa.PrimeOptions.ReviewDigest
+import Mettapedia.Languages.MeTTa.PrimeOptions.FrontierMap
 
 /-!
 # The options explored for HO MeTTa Prime, as an option graph
@@ -24,7 +33,10 @@ those ruled out, in the shape of `GSLT.Distinction.OptionGraph`:
 * the equivalence the set face sees of an observed contextual execution, with
   exact kernel, readout and quotient theorems;
 * the eight choice points of the context operators, placed from their records
-  (`PrimeOptions.ContextChoices`).
+  (`PrimeOptions.ContextChoices`);
+* the carve-outs of the Heyting-valued top and of the hyperset top, the comparison of
+  Megalodon's checked graph decorations with Lean's hypersets, and the two presentations
+  called HOTG (`PrimeOptions.CarveOuts`).
 
 Declarations are cited by name. `PrimeOptions.Manifest` checks every cited
 declaration against the kernel; the generator of the published graph checks
@@ -37,10 +49,6 @@ namespace Mettapedia.Languages.MeTTa.PrimeOptions
 
 open Lean (Name)
 open Mettapedia.GSLT.Distinction.OptionGraph
-
-/-- Theorem evidence citing declarations with no further requirement. -/
-def cites (names : List Name) : Evidence :=
-  .«theorem» (names.map fun name => { declaration := name })
 
 /-! ## Documents -/
 
@@ -220,15 +228,20 @@ def setProfileNodes : List Node := [
 
 def antiFoundationNodes : List Node := [
   { id := "foundation", question := "anti-foundation", title := "Foundation"
-    summary := "Only well-founded pictures denote sets; membership induction holds." },
+    summary := "Only well-founded pictures denote sets; membership induction holds."
+    denotation := some `Mettapedia.SetTheory.AntiFoundation.denoteFoundation },
   { id := "afa", question := "anti-foundation", title := "Aczel's anti-foundation axiom"
-    summary := "Every picture denotes a set, and bisimilar pictures denote the same set." },
+    summary := "Every picture denotes a set, and bisimilar pictures denote the same set."
+    denotation := some `Mettapedia.SetTheory.AntiFoundation.denoteAFA, membership := some `Mettapedia.SetTheory.AntiFoundation.aMem },
   { id := "safa", question := "anti-foundation", title := "Scott's anti-foundation axiom"
-    summary := "Pictures with isomorphic unfoldings denote the same set." },
+    summary := "Pictures with isomorphic unfoldings denote the same set."
+    denotation := some `Mettapedia.SetTheory.AntiFoundation.denoteSAFA, membership := some `Mettapedia.SetTheory.AntiFoundation.sMem },
   { id := "fafa", question := "anti-foundation", title := "Finsler's anti-foundation axiom"
-    summary := "Pictures with isomorphic pointed downsets denote the same set." },
+    summary := "Pictures with isomorphic pointed downsets denote the same set."
+    denotation := some `Mettapedia.SetTheory.AntiFoundation.denoteFAFA, membership := some `Mettapedia.SetTheory.AntiFoundation.fMem },
   { id := "bafa", question := "anti-foundation", title := "Boffa's anti-foundation axiom"
-    summary := "Every weakly extensional picture is exact; there are many Quine atoms." }
+    summary := "Every weakly extensional picture is exact; there are many Quine atoms."
+    denotation := some `Mettapedia.SetTheory.AntiFoundation.denoteBAFA, membership := some `Mettapedia.SetTheory.AntiFoundation.bMem }
 ]
 
 def demandNodes : List Node := [
@@ -399,7 +412,7 @@ def designNodes : List Node := [
 
 def arrows : List Arrow := [
   { id := "hotg-well-founded-part"
-    source := "megalodon-hotg", target := "hyperset-family", kind := .embedding
+    source := "megalodon-hotg", target := "hyperset-family", kind := .equivalence
     grades := [.preserved]
     summary := "Well-founded sets are the well-founded part of the hyperset carrier: that part \
       of HSet is equivalent to ZFSet with membership preserved and reflected, and membership \
@@ -408,68 +421,155 @@ def arrows : List Arrow := [
       `Mettapedia.TypeTheory.MaterialSets.Hypersets.HSet.wellFoundedPartEquivZFSet,
       `Mettapedia.SetTheory.Profiles.wellFoundedPart_mem_iff_zfSet,
       `Mettapedia.SetTheory.Profiles.wellFoundedPart_memInduction,
-      `Mettapedia.SetTheory.Profiles.zfSet_memInduction]] },
-  { id := "bafa-view-fafa", source := "bafa", target := "fafa", kind := .view
+      `Mettapedia.SetTheory.Profiles.zfSet_memInduction]]
+    contract := {
+      entries := [
+        .keeps (.formulas .atomic)
+          [`Mettapedia.TypeTheory.MaterialSets.Hypersets.HSet.wellFoundedPartEquivZFSet_mem_iff,
+           `Mettapedia.SetTheory.Profiles.wellFoundedPart_mem_iff_zfSet]
+          "membership of the well-founded hypersets against ZFSet",
+        .unknownAt (.formulas .bounded),
+        .unknownAt (.commitment .choice),
+        .unknownAt (.commitment .universes)] } },
+  { id := "bafa-view-fafa", source := "bafa", target := "fafa", kind := .observationalQuotient
     grades := [.factors, .lossy]
     summary := "Finsler's value of a picture is a function of Boffa's; two loops, and the two \
       ends of a two-cycle, are one Finsler atom and two Boffa pictures."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.factors_bafa_fafa,
       `Mettapedia.SetTheory.AntiFoundation.fiber_fafa_bafa,
-      `Mettapedia.SetTheory.AntiFoundation.fiber_fafa_bafa_cycle]] },
-  { id := "fafa-view-safa", source := "fafa", target := "safa", kind := .view
+      `Mettapedia.SetTheory.AntiFoundation.fiber_fafa_bafa_cycle]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.SetTheory.AntiFoundation.not_factors_fafa_bafa]
+          "on the finite menu of pictures"] } },
+  { id := "fafa-view-safa", source := "fafa", target := "safa", kind := .observationalQuotient
     grades := [.factors, .lossy]
     summary := "Scott's value is a function of Finsler's; the Finsler nodes n1 and n2 are one \
       set for Scott."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.factors_fafa_safa,
-      `Mettapedia.SetTheory.AntiFoundation.fiber_safa_fafa]] },
-  { id := "safa-view-afa", source := "safa", target := "afa", kind := .view
+      `Mettapedia.SetTheory.AntiFoundation.fiber_safa_fafa]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.SetTheory.AntiFoundation.not_factors_safa_fafa]
+          "on the finite menu of pictures"] } },
+  { id := "safa-view-afa", source := "safa", target := "afa", kind := .observationalQuotient
     grades := [.factors, .lossy]
     summary := "Aczel's value is a function of Scott's; the Scott nodes are one set for Aczel."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.factors_safa_afa,
-      `Mettapedia.SetTheory.AntiFoundation.fiber_afa_safa]] },
-  { id := "afa-view-foundation", source := "afa", target := "foundation", kind := .view
+      `Mettapedia.SetTheory.AntiFoundation.fiber_afa_safa]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.SetTheory.AntiFoundation.not_factors_afa_safa]
+          "on the finite menu of pictures"] } },
+  { id := "afa-view-foundation", source := "afa", target := "foundation", kind := .observationalQuotient
     grades := [.factors, .lossy]
     summary := "Foundation's value is a function of Aczel's; the nest and the loop are one \
       refusal for Foundation and two sets for Aczel."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.factors_afa_found,
-      `Mettapedia.SetTheory.AntiFoundation.fiber_found_afa]] },
-  { id := "afa-into-safa", source := "afa", target := "safa", kind := .embedding
+      `Mettapedia.SetTheory.AntiFoundation.fiber_found_afa]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.SetTheory.AntiFoundation.not_factors_found_afa]
+          "on the finite menu of pictures"] } },
+  { id := "safa-restricts-to-afa", source := "safa", target := "afa", kind := .restriction
+    map := some `Mettapedia.SetTheory.AntiFoundation.afaToSafa
     grades := [.preserved]
-    summary := "Aczel's sets of the menu embed in Scott's, membership preserved and reflected."
+    summary := "Restricted to the image of Aczel's sets, Scott's carrier on the menu is Aczel's: membership preserved and reflected, injectively."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.afaToSafa_mem,
-      `Mettapedia.SetTheory.AntiFoundation.afaToSafa_inj]] },
-  { id := "safa-into-fafa", source := "safa", target := "fafa", kind := .embedding
+      `Mettapedia.SetTheory.AntiFoundation.afaToSafa_inj]]
+    contract := {
+      entries := [
+        .keeps (.formulas .atomic)
+          [`Mettapedia.SetTheory.AntiFoundation.afaToSafa_mem,
+           `Mettapedia.SetTheory.AntiFoundation.afaToSafa_inj]
+          "membership of the menu's sets, injectively"] } },
+  { id := "fafa-restricts-to-safa", source := "fafa", target := "safa", kind := .restriction
+    map := some `Mettapedia.SetTheory.AntiFoundation.safaToFafa
     grades := [.preserved]
-    summary := "Scott's sets of the menu embed in Finsler's, membership preserved and reflected."
+    summary := "Restricted to the image of Scott's sets, Finsler's carrier on the menu is Scott's: membership preserved and reflected, injectively."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.safaToFafa_mem,
-      `Mettapedia.SetTheory.AntiFoundation.safaToFafa_inj]] },
-  { id := "fafa-into-bafa", source := "fafa", target := "bafa", kind := .embedding
+      `Mettapedia.SetTheory.AntiFoundation.safaToFafa_inj]]
+    contract := {
+      entries := [
+        .keeps (.formulas .atomic)
+          [`Mettapedia.SetTheory.AntiFoundation.safaToFafa_mem,
+           `Mettapedia.SetTheory.AntiFoundation.safaToFafa_inj]
+          "membership of the menu's sets, injectively"] } },
+  { id := "bafa-restricts-to-fafa", source := "bafa", target := "fafa", kind := .restriction
+    map := some `Mettapedia.SetTheory.AntiFoundation.fafaToBafa
     grades := [.preserved]
-    summary := "Finsler's sets of the menu embed in Boffa's, membership preserved and reflected."
+    summary := "Restricted to the image of Finsler's sets, Boffa's carrier on the menu is Finsler's: membership preserved and reflected, injectively."
     evidence := [cites [`Mettapedia.SetTheory.AntiFoundation.fafaToBafa_mem,
-      `Mettapedia.SetTheory.AntiFoundation.fafaToBafa_inj]] },
-  { id := "eager-in-lazy", source := "eager", target := "lazy", kind := .route
+      `Mettapedia.SetTheory.AntiFoundation.fafaToBafa_inj]]
+    contract := {
+      entries := [
+        .keeps (.formulas .atomic)
+          [`Mettapedia.SetTheory.AntiFoundation.fafaToBafa_mem,
+           `Mettapedia.SetTheory.AntiFoundation.fafaToBafa_inj]
+          "membership of the menu's sets, injectively"] } },
+  { id := "eager-in-lazy", source := "eager", target := "lazy", kind := .interpretation
     grades := [.exact]
     summary := "Force the discarded argument: outcomes, faults and draws are kept, for every \
       weighting of the readings."
-    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]] },
-  { id := "lazy-in-eager", source := "lazy", target := "eager", kind := .route
+    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "all five readings, for every weighting",
+        .keeps (.evidence .cost)
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "draws"] } },
+  { id := "lazy-in-eager", source := "lazy", target := "eager", kind := .interpretation
     grades := [.exact]
     summary := "Drop the discarded argument: distortion zero for every weighting."
-    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]] },
-  { id := "resample-in-lazy", source := "resample", target := "lazy", kind := .route
+    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "all five readings, for every weighting",
+        .keeps (.evidence .cost)
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "draws"] } },
+  { id := "resample-in-lazy", source := "resample", target := "lazy", kind := .interpretation
     grades := [.exact]
     summary := "Draw twice: distortion zero for every weighting."
-    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]] },
-  { id := "lazy-in-resample", source := "lazy", target := "resample", kind := .route
+    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "all five readings, for every weighting",
+        .keeps (.evidence .cost)
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "draws"] } },
+  { id := "lazy-in-resample", source := "lazy", target := "resample", kind := .interpretation
     grades := [.exact]
     summary := "Draw once and share: distortion zero for every weighting."
-    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]] },
-  { id := "eager-through-lazy-to-resample", source := "eager", target := "resample", kind := .route
+    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "all five readings, for every weighting",
+        .keeps (.evidence .cost)
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.exact_translations]
+          "draws"] } },
+  { id := "eager-through-lazy-to-resample", source := "eager", target := "resample", kind := .interpretation
     grades := [.exact]
     summary := "The composite of two exact routes is exact, by graded functoriality."
-    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.eager_through_lazy_to_resample]] },
-  { id := "eager-as-lazy-default", source := "eager", target := "lazy", kind := .route
+    evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.eager_through_lazy_to_resample]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.eager_through_lazy_to_resample]
+          "all five readings, for every weighting"] } },
+  { id := "eager-as-lazy-default", source := "eager", target := "lazy", kind := .unclassified
     grades := [.defect "w(bag) + w(count) + w(draws), attained when some computation has other \
       than one answer; w(draws) alone when every computation has exactly one answer"]
     summary := "The same program under the other strategy, on computations that answer and do \
@@ -477,50 +577,76 @@ def arrows : List Arrow := [
       and faults does not."
     evidence := [cites [`Mettapedia.GSLT.Distinction.DemandStrategies.eager_lazy_defect,
       `Mettapedia.GSLT.Distinction.DemandStrategies.deterministic_eager_lazy,
-      `Mettapedia.GSLT.Distinction.DemandStrategies.weights_control]] },
+      `Mettapedia.GSLT.Distinction.DemandStrategies.weights_control]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.discard_witness]
+          "bags, counts and draws of a discarded computation with other than one answer",
+        .loses (.evidence .cost)
+          [`Mettapedia.GSLT.Distinction.DemandStrategies.deterministic_eager_lazy]
+          "draws, even with one answer"] } },
   { id := "counterfactual-refines-intervention", source := "counterfactual",
-    target := "intervention", kind := .refinement
+    target := "intervention", kind := .observationalQuotient
     grades := [.ordered]
     summary := "Agreement at the counterfactual rung implies agreement at the interventional \
       rung; the interventional distance is at most the counterfactual one."
     evidence := [cites [`Mettapedia.GSLT.Causality.Hierarchy.agree_of_le,
       `Mettapedia.GSLT.Causality.Hierarchy.agree_intervention_of_counterfactual,
-      `Mettapedia.GSLT.Causality.Hierarchy.interventional_le_counterfactual]] },
+      `Mettapedia.GSLT.Causality.Hierarchy.interventional_le_counterfactual]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.GSLT.Causality.Hierarchy.ResponseTypes.ladder_strict]
+          "the mixed and the fixed populations"] } },
   { id := "intervention-refines-association", source := "intervention",
-    target := "association", kind := .refinement
+    target := "association", kind := .observationalQuotient
     grades := [.ordered]
     summary := "Agreement at the interventional rung implies agreement at the associational \
       rung; the passive distance is at most the interventional one."
     evidence := [cites [`Mettapedia.GSLT.Causality.Hierarchy.agree_of_le,
       `Mettapedia.GSLT.Causality.Hierarchy.agree_association_of_intervention,
-      `Mettapedia.GSLT.Causality.Hierarchy.passiveDistance_le_interventional]] },
+      `Mettapedia.GSLT.Causality.Hierarchy.passiveDistance_le_interventional]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.GSLT.Causality.Hierarchy.ResponseTypes.ladder_strict]
+          "a population treatment would help and an inert one"] } },
   { id := "r2-in-r1", source := "r2-leibniz", target := "r1-rule", kind := .interpretation
     grades := [.ungraded]
     summary := "R2's axiom same-ext, with same unfolded, is the statement identical, which R1 \
       proves from extensionality."
     evidence := [.fixture "prime" "profiles/megalodon_hotg/scoped/equality_routes"
-      ["[(r1 identical (assumes (extensionality)) (proof 37) (term 602))]"]] },
+      ["[(r1 identical (assumes (extensionality)) (proof 37) (term 602))]"]]
+    contract := { entries := [.unknownAt .laws "shown by a fixture, not by a theorem"] } },
   { id := "r3-in-r1", source := "r3-carrier-laws", target := "r1-rule", kind := .interpretation
     grades := [.ungraded]
     summary := "R3's two laws at set are eq-refl and subst, which R1 proves; subst assumes \
       nothing beyond the rule."
     evidence := [.fixture "prime" "profiles/megalodon_hotg/scoped/equality_routes"
-      ["[eq-refl]", "[(r1 subst (assumes ()) (proof 14) (term 179))]"]] },
+      ["[eq-refl]", "[(r1 subst (assumes ()) (proof 14) (term 179))]"]]
+    contract := { entries := [.unknownAt .laws "shown by a fixture, not by a theorem"] } },
   { id := "public-in-region", source := "public-observers", target := "region-observers",
-    kind := .inclusion, grades := [.ungraded]
+    kind := .unclassified, grades := [.ungraded]
     summary := "A receiver on a public result channel is bounded by a region that excludes \
       the compiler's private names."
     evidence := [.argument "spine-module" "The observers are public result-channel receivers"
       "The spine's observers are public result-channel receivers; quoted implementation \
-      structure and arbitrary target contexts are additional observations."] },
+      structure and arbitrary target contexts are additional observations."]
+    contract := { entries := [.unknownAt .distinctions] } },
   { id := "observed-in-value", source := "observed-bisimilarity", target := "material-value",
-    kind := .view, grades := [.exactKernel .kernel]
+    kind := .observationalQuotient, grades := [.exactKernel .kernel]
     summary := "Two states have the same material value exactly when they are observed \
       bisimilar, and a formula holds of a state exactly when it holds of its value."
     evidence := [cites [`Mettapedia.GSLT.ContextualObservedCoalgebra.value_eq_iff,
-      `Mettapedia.GSLT.ContextualObservedCoalgebra.material_formula_iff]] },
+      `Mettapedia.GSLT.ContextualObservedCoalgebra.material_formula_iff]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.ContextualObservedCoalgebra.value_eq_iff]
+          "exactly observed bisimilarity"] } },
   { id := "observed-in-quotient", source := "observed-bisimilarity",
-    target := "observed-quotient", kind := .view,
+    target := "observed-quotient", kind := .observationalQuotient,
     grades := [.exactKernel .kernel, .exactKernel .quotient, .exactKernel .readout]
     summary := "The projection onto the quotient is onto, identifies exactly the observed \
       bisimilar states, and keeps the material value; on the quotient observed bisimilarity is \
@@ -529,9 +655,15 @@ def arrows : List Arrow := [
       `Mettapedia.GSLT.ContextualObservedCoalgebraQuotient.projection_cover,
       `Mettapedia.GSLT.ContextualObservedCoalgebraQuotient.observed_bisimilar_iff_eq,
       `Mettapedia.GSLT.ContextualObservedCoalgebraQuotient.quotientValue_injective,
-      `Mettapedia.GSLT.ContextualObservedCoalgebraQuotient.value_square]] },
+      `Mettapedia.GSLT.ContextualObservedCoalgebraQuotient.value_square]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.ContextualObservedCoalgebraQuotient.projection_eq_iff]
+          "exactly observed bisimilarity",
+        .unknownAt (.evidence .occurrences)] } },
   { id := "observed-in-members", source := "observed-bisimilarity",
-    target := "material-members", kind := .view,
+    target := "material-members", kind := .observationalQuotient,
     grades := [.exactKernel .kernel, .exactKernel .quotient, .exactKernel .readout]
     summary := "The member and class observations are onto and identify exactly the observed \
       bisimilar states; the class value is injective and equals the material value along the \
@@ -542,19 +674,33 @@ def arrows : List Arrow := [
       `Mettapedia.GSLT.ContextualObservedMaterialFamily.classObservedBisimilar_iff_eq,
       `Mettapedia.GSLT.ContextualObservedMaterialFamily.classValue_injective,
       `Mettapedia.GSLT.ContextualObservedMaterialFamily.classValue_square,
-      `Mettapedia.GSLT.ContextualObservedMaterialFamily.observation_value]] },
+      `Mettapedia.GSLT.ContextualObservedMaterialFamily.observation_value]]
+    contract := {
+      entries := [
+        .keeps .distinctions
+          [`Mettapedia.GSLT.ContextualObservedMaterialFamily.observation_eq_iff]
+          "exactly observed bisimilarity",
+        .unknownAt (.evidence .occurrences)] } },
   { id := "observed-refines-present", source := "observed-bisimilarity",
-    target := "present-readings-bisimilarity", kind := .refinement, grades := [.ungraded]
+    target := "present-readings-bisimilarity", kind := .observationalQuotient, grades := [.ungraded]
     summary := "Observed bisimilar states are ordinarily bisimilar and agree on every declared \
       atom."
     evidence := [cites [`Mettapedia.GSLT.ContextualObservedCoalgebra.observed_bisimilar_forgets_atoms,
-      `Mettapedia.GSLT.ContextualObservedCoalgebra.observed_bisimilar_atoms]] },
+      `Mettapedia.GSLT.ContextualObservedCoalgebra.observed_bisimilar_atoms]]
+    contract := {
+      entries := [
+        .loses .distinctions
+          [`Mettapedia.GSLT.ContextualObservedCoalgebraControls.Late.ordinary_bisimilar,
+           `Mettapedia.GSLT.ContextualObservedCoalgebraControls.Late.same_present_atoms,
+           `Mettapedia.GSLT.ContextualObservedCoalgebraControls.Late.complete_observed_values_differ]
+          "a reading after context transport"] } },
   { id := "region-in-reflective", source := "region-observers", target := "reflective-observers",
-    kind := .inclusion, grades := [.ungraded]
+    kind := .unclassified, grades := [.ungraded]
     summary := "A region-bounded context is a ρ context."
     evidence := [.argument "spine-module" "Quoted implementation"
       "Quoted implementation structure and arbitrary target contexts are observations beyond \
-      the public ones."] }
+      the public ones."]
+    contract := { entries := [.unknownAt .distinctions] } }
 ]
 
 /-! ## Observers -/
@@ -941,16 +1087,32 @@ def observedReadoutWitnesses : List Witness := [
 
 /-- The options explored for Prime, with their arrows, observers and witnesses. -/
 def primeOptions : Graph where
-  documents := documents ++ [ContextChoices.report]
-  questions := questions ++ ContextChoices.questions
+  documents := documents ++ [ContextChoices.report] ++ CarveOuts.documents ++
+    [CarveOutSites.report, CarveOutSheaves.report, CarveOutSheafPowers.report,
+      CarveOutSheafPowers.finalCoalgebraPaper, WeightAlgebras.report, WeightAlgebras.descriptorLibrary,
+      OpenTower.report]
+  questions := questions ++ ContextChoices.questions ++ CarveOuts.questions ++
+    CarveOutSites.questions ++ CarveOutSheaves.questions ++ CarveOutSheafPowers.questions ++
+    [WeightAlgebras.question] ++ OpenTower.questions ++ ReviewDigest.questions
   nodes := setProfileNodes ++ antiFoundationNodes ++ demandNodes ++ demandScopeNodes ++
     causalNodes ++ equalityRouteNodes ++ lambdaRhoNodes ++ observedReadoutNodes ++ designNodes ++
-    ContextChoices.nodes
-  arrows := arrows ++ ContextChoices.arrows
-  observers := observers ++ ContextChoices.observers
+    ContextChoices.nodes ++ CarveOuts.allNodes ++ CarveOutSites.nodes ++ CarveOutSheaves.nodes ++
+    CarveOutSheafPowers.nodes ++ WeightAlgebras.nodes ++ OpenTower.nodes ++ ReviewDigest.nodes
+  arrows := arrows ++ ContextChoices.arrows ++ CarveOuts.arrows ++ CarveOutSites.arrows ++
+    CarveOutSheaves.arrows ++ CarveOutSheafPowers.arrows ++ WeightAlgebras.arrows ++
+    OpenTower.arrows ++ ReviewDigest.arrows
+  observers := observers ++ ContextChoices.observers ++ CarveOuts.observers ++
+    CarveOutSites.observers ++ CarveOutSheaves.observers ++ CarveOutSheafPowers.observers ++
+    WeightAlgebras.observers ++ OpenTower.observers ++ ReviewDigest.observers
   witnesses := setProfileWitnesses ++ antiFoundationWitnesses ++ demandWitnesses ++
     causalWitnesses ++ equalityRouteWitnesses ++ lambdaRhoWitnesses ++ observedReadoutWitnesses ++
-    designWitnesses ++ ContextChoices.witnesses
+    designWitnesses ++ ContextChoices.witnesses ++ CarveOuts.witnesses ++ CarveOutSites.witnesses ++
+    CarveOutSheaves.witnesses ++ CarveOutSheafPowers.witnesses ++ WeightAlgebras.witnesses ++
+    WeightAlgebras.surveyWitnesses ++ WeightAlgebras.targetWitnesses ++
+    OpenTower.witnesses ++ ReviewDigest.witnesses
+  obligations := CarveOutSheafPowers.obligations
+  fixturePins := ReplayPins.fixturePins
+  frontierTargets := FrontierMap.targets
 
 theorem primeOptions_wellFormed : primeOptions.wellFormed = true := by
   decide +kernel
@@ -970,6 +1132,109 @@ theorem logical_profile_admissible : primeOptions.defaultsAdmissible ["hol"] = t
 refused. -/
 theorem hotg_profile_refused_as_default :
     primeOptions.defaultsAdmissible ["megalodon-hotg"] = false := by
+  decide +kernel
+
+/-! ## Kinds and contracts -/
+
+/-- **Contracts.** Every entry that says an arrow preserves something, or does not,
+cites declarations; every entry marked unknown cites none. -/
+theorem primeOptions_contractsCited : primeOptions.contractsCited = true := by
+  decide +kernel
+
+/-- **Observational quotients.** None claims to preserve first-order formulas without a
+cited theorem. -/
+theorem primeOptions_quotientsHonest : primeOptions.quotientsHonest = true := by
+  decide +kernel
+
+/-- No preservation claim is contradicted by a counterexample recorded for the same
+passage. -/
+theorem primeOptions_contractsConsistent : primeOptions.contractsConsistent = true := by
+  decide +kernel
+
+/-- Every arrow claiming to forget a distinction names a counterexample in its contract. -/
+theorem primeOptions_lossyCounterexampled : primeOptions.lossyCounterexampled = true := by
+  decide +kernel
+
+/-- **Negative control.** A record claiming that the two-valued reading at a point
+preserves bounded formulas. It cites the transfer theorem for positive bounded
+formulas, which proves less than the claim. -/
+def pointReadingClaim : Arrow where
+  id := "points-preserve-bounded"
+  source := "double-negation-part"
+  target := "two-valued-points"
+  kind := .observationalQuotient
+  grades := [.factors]
+  summary := "Claimed: a point's two-valued reading preserves every bounded formula."
+  evidence := [cites [``Mettapedia.SetTheory.CarveOuts.HeytingValued.Point.holds_eval_iff_of_positive]]
+  contract := { entries := [
+    .keeps (.formulas .bounded)
+      [``Mettapedia.SetTheory.CarveOuts.HeytingValued.Point.holds_eval_iff_of_positive]] }
+
+/-- The graph with the bad record added. -/
+def withPointReadingClaim : Graph :=
+  { primeOptions with arrows := primeOptions.arrows ++ [pointReadingClaim] }
+
+/-- The bad record is refused: the free point's bounded-universal gap, recorded on the
+same passage, contradicts it. -/
+theorem pointReadingClaim_refused :
+    withPointReadingClaim.contractConflicts =
+      [("points-preserve-bounded", .formulas .bounded,
+        [``Mettapedia.SetTheory.CarveOuts.HeytingValued.free_point_ball_gap])] := by
+  decide +kernel
+
+theorem pointReadingClaim_inconsistent : withPointReadingClaim.contractsConsistent = false := by
+  decide +kernel
+
+/-! ## Named hypotheses and refutations -/
+
+/-! ## Replay pins -/
+
+/-- Every fixture the registry cites has a replay pin. -/
+theorem primeOptions_fixturesPinned : primeOptions.fixturesPinned = true := by
+  decide +kernel
+
+/-- **Negative control.** A witness citing a fixture that has no replay pin. -/
+def withUnpinnedFixture : Graph :=
+  { primeOptions with
+    witnesses := primeOptions.witnesses.map fun witness =>
+      if witness.id == "equal-supports" then
+        { witness with
+          rightVerdict := { witness.rightVerdict with
+            evidence := witness.rightVerdict.evidence ++
+              [.fixture "c-draft" "tests/prime/causal/unpinned_control.metta" []] } }
+      else witness }
+
+/-- The unpinned fixture is refused. -/
+theorem unpinnedFixture_refused : withUnpinnedFixture.fixturesPinned = false := by
+  decide +kernel
+
+/-- Proved obligations cite declarations, and open ones cite none. -/
+theorem primeOptions_obligationsCited : primeOptions.obligationsCited = true := by
+  decide +kernel
+
+/-- No option is conditional on a hypothesis the registry records as refuted. -/
+theorem primeOptions_hypothesesUnrefuted : primeOptions.hypothesesUnrefuted = true := by
+  decide +kernel
+
+/-- **Negative control.** The small-map option as first recorded: conditional on (R) for
+`Type`-valued sheaves on Cantor space, with the ledger that assumes it. -/
+def withTypeRepresentabilityAssumed : Graph :=
+  { primeOptions with
+    nodes := primeOptions.nodes.map fun node =>
+      if node.id == "cantor-sheaf-small-maps" then
+        { node with
+          ledger := some CarveOutSheaves.conditionalCoalgebraLedger
+          hypotheses := node.hypotheses ++
+            [{ name := ``CarveOutSheaves.CantorTypeRepresentability
+               conditions := "the basic small-map axioms" }] }
+      else node }
+
+/-- The record is refused: the registry records the hypothesis as refuted, by the theorem that
+every map is small on these sheaves and no small map is universal. -/
+theorem typeRepresentabilityAssumed_refused :
+    withTypeRepresentabilityAssumed.refutedHypotheses =
+      [("cantor-sheaf-small-maps", ``CarveOutSheaves.CantorTypeRepresentability,
+        [``Mettapedia.SetTheory.CarveOuts.Sheaves.cantor_sheaf_not_representable])] := by
   decide +kernel
 
 end Mettapedia.Languages.MeTTa.PrimeOptions

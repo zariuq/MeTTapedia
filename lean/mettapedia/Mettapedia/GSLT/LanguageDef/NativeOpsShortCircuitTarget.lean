@@ -197,13 +197,6 @@ theorem target_short_circuit_copy_exact {World : Type} {interface : Interface}
         (targetDeclareTemporary frame identity (.bool value)) state out :=
   target_normal_then_exact (target_temporary_instruction_exact unused (.copy read)) root rest out
 
-theorem updated_temporary_atom {World : Type} (interface : Interface) (frame : TargetFrame)
-    (state : TargetState World) (identity : Nat) (type : NativeType) (value : TargetValue)
-    (live : frame.temporaryNames.contains identity = true) :
-    TargetAtomEval interface (targetUpdateTemporary frame identity value) state
-      (.temporary identity type) value :=
-  .temporary (by simp only [targetUpdateTemporary, if_true]) live
-
 theorem close_updated_temporary_read {World : Type} (interface : Interface)
     (marker current : TargetFrame) (state : TargetState World)
     (identity : Nat) (type : NativeType) (value : TargetValue)

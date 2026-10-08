@@ -324,8 +324,8 @@ theorem cylinderMixingIdentity_of_directingRowKernel_of_markovExchangeable_stron
           (rowProcessLaw (k := k) P i) := by
     intro i b
     let ρ : Measure (ℕ → Fin k) := rowProcessLaw (k := k) P i
-    letI : Nonempty (Fin k) := ⟨i⟩
-    letI : IsProbabilityMeasure ρ :=
+    let : Nonempty (Fin k) := ⟨i⟩
+    let : IsProbabilityMeasure ρ :=
       Measure.isProbabilityMeasure_map
         ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
     have hmeas :
@@ -348,8 +348,8 @@ theorem cylinderMixingIdentity_of_directingRowKernel_of_markovExchangeable_stron
           (rowProcessLaw (k := k) P i) := by
     intro i
     let ρ : Measure (ℕ → Fin k) := rowProcessLaw (k := k) P i
-    letI : Nonempty (Fin k) := ⟨i⟩
-    letI : IsProbabilityMeasure ρ :=
+    let : Nonempty (Fin k) := ⟨i⟩
+    let : IsProbabilityMeasure ρ :=
       Measure.isProbabilityMeasure_map
         ((measurable_rowSuccessorVisitProcess (k := k) i).aemeasurable)
     have hdir_eval_meas :

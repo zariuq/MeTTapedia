@@ -90,6 +90,47 @@ structure StatefulChildLaws {SourceWorld TargetWorld : Type}
       TemporaryProtection supply.next targetFrame out.frame ∧
       TemporaryNamesBound out.frame output.supply.next ∧ TemporariesScoped out.frame
 
+/-- A primitive suffix consumes the actual successful argument post-state.
+The prefix witness supplies any required value-shape evidence; a declaration
+alone supplies no such evidence. -/
+structure StatefulPrimitiveLaws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (origin : SourceState SourceWorld)
+    (result : NativeType) (default : TargetValue) (expression : Expr)
+    (arguments : List Expr) (argumentOutput : NativeLowering.Arguments)
+    (suffix : NativeLowering.Expression) : Prop where
+  bounds : argumentOutput.supply.next ≤ suffix.supply.next ∧ atomWithin suffix.supply.next suffix.result
+  forward : ∀ (root : List Instruction) {values : List SourceValue} {middle : SourceState SourceWorld},
+    SourceArgumentsEval interface sourceHeap sourceCalls sourceFrame arguments origin ⟨.ok values, middle⟩ →
+    middle.fault = none →
+    ∀ {frame : TargetFrame} {target : TargetState TargetWorld},
+    FrameRelated sourceFrame frame → StateRelated worldRelated middle target →
+    TemporaryNamesBound frame argumentOutput.supply.next → TemporariesScoped frame →
+    TargetAtomsEval interface frame target argumentOutput.results (encodeValues values) →
+    ∀ {sourceOut : SourceOutcome SourceWorld},
+    sourcePrimitive interface sourceHeap sourceCalls sourceFrame expression values middle sourceOut →
+    ∃ out,
+      TargetRun interface targetHeap targetCalls result root suffix.code frame target out ∧
+      CheckedExpressionRelated worldRelated interface default suffix.result sourceOut out ∧
+      TemporaryProtection argumentOutput.supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame suffix.supply.next ∧ TemporariesScoped out.frame
+  backward : ∀ (root : List Instruction) {values : List SourceValue} {middle : SourceState SourceWorld},
+    SourceArgumentsEval interface sourceHeap sourceCalls sourceFrame arguments origin ⟨.ok values, middle⟩ →
+    middle.fault = none →
+    ∀ {frame : TargetFrame} {target : TargetState TargetWorld},
+    FrameRelated sourceFrame frame → StateRelated worldRelated middle target →
+    TemporaryNamesBound frame argumentOutput.supply.next → TemporariesScoped frame →
+    TargetAtomsEval interface frame target argumentOutput.results (encodeValues values) →
+    ∀ {out : TargetBlockOutcome TargetWorld},
+    TargetRun interface targetHeap targetCalls result root suffix.code frame target out →
+    ∃ sourceOut,
+      sourcePrimitive interface sourceHeap sourceCalls sourceFrame expression values middle sourceOut ∧
+      CheckedExpressionRelated worldRelated interface default suffix.result sourceOut out ∧
+      TemporaryProtection argumentOutput.supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame suffix.supply.next ∧ TemporariesScoped out.frame
+
 theorem checked_result_normal {SourceWorld TargetWorld Value : Type}
     {worldRelated : SourceWorld → TargetWorld → Prop} {default : TargetValue}
     {answer : Except Fault Value} {sourcePost : SourceState SourceWorld}

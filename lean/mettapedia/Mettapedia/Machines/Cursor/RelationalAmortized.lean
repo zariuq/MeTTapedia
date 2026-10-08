@@ -530,4 +530,205 @@ theorem early_return_pays_conversion :
 
 end RelationalAmortizedControls
 
+variable (C : Client (P := P) (Return := Return)) (rel : StateRel source target)
+
+/-- Exact accounting is a two-sided case of the existing potential account.
+The zero potential does not set either implementation's operation costs to zero. -/
+theorem ChargeRelated.amortized_zero (leftCost : Charge source) (rightCost : Charge target)
+    (localCharge : ChargeRelated rel leftCost rightCost) :
+    RelationalAmortized rel leftCost rightCost (fun _ => 0) := by
+  intro base index left right related request
+  simpa only [Nat.add_zero] using Nat.le_of_eq (localCharge left right related request)
+
+/-- The existing two potential bounds give exact charges for arbitrary
+bounded adaptive clients, without introducing another recursive executor. -/
+theorem advance_charge_related (localLaw : Bisimulation rel)
+    (leftCost : Charge source) (rightCost : Charge target)
+    (localCharge : ChargeRelated rel leftCost rightCost)
+    (budget : Nat) {base : Base} {left : Packet source C base} {right : Packet target C base}
+    (related : PacketRel C rel left right) :
+    (advance source C leftCost budget left).1 =
+      (advance target C rightCost budget right).1 := by
+  apply Nat.le_antisymm
+  · have bound := advance_relational_amortized C rel localLaw leftCost rightCost
+      (fun _ => 0) (ChargeRelated.amortized_zero rel leftCost rightCost localCharge) budget related
+    simpa only [outcomePotential_const, Nat.add_zero] using bound
+  · have bound := advance_relational_amortized C (fun right left => rel left right)
+      (Bisimulation.symm rel localLaw) rightCost leftCost (fun _ => 0)
+      (ChargeRelated.amortized_zero (fun right left => rel left right) rightCost leftCost
+        (ChargeRelated.symm rel leftCost rightCost localCharge))
+      budget (PacketRel.symm C rel related)
+    simpa only [outcomePotential_const, Nat.add_zero] using bound
+
+/-- The comparison keeps completion, residual control, full related worlds
+and the metric together. It is derived from local laws, not run equality. -/
+theorem advance_account_related (localLaw : Bisimulation rel)
+    (leftCost : Charge source) (rightCost : Charge target)
+    (localCharge : ChargeRelated rel leftCost rightCost)
+    (budget : Nat) {base : Base} {left : Packet source C base} {right : Packet target C base}
+    (related : PacketRel C rel left right) :
+    AccountRel C rel (advance source C leftCost budget left)
+      (advance target C rightCost budget right) :=
+  ⟨advance_charge_related C rel localLaw leftCost rightCost localCharge budget related,
+    advance_related C rel localLaw leftCost rightCost budget related⟩
+
+/-- Resuming an existing account uses the existing amortized resume theorem
+in both directions. Its paid prefix is retained; finished accounts are inert. -/
+theorem resume_account_related (localLaw : Bisimulation rel)
+    (leftCost : Charge source) (rightCost : Charge target)
+    (localCharge : ChargeRelated rel leftCost rightCost)
+    (budget : Nat) {base : Base}
+    {left : Nat × Outcome source C base} {right : Nat × Outcome target C base}
+    (related : AccountRel C rel left right) :
+    AccountRel C rel (resume source C leftCost budget left)
+      (resume target C rightCost budget right) := by
+  have forward := resume_relational_resource_contract C rel localLaw leftCost rightCost
+    (fun _ => 0) (ChargeRelated.amortized_zero rel leftCost rightCost localCharge)
+    budget 0 left right related.2 (by
+      simpa only [outcomePotential_const, Nat.add_zero] using Nat.le_of_eq related.1)
+  have backward := resume_relational_resource_contract C (fun right left => rel left right)
+    (Bisimulation.symm rel localLaw) rightCost leftCost (fun _ => 0)
+    (ChargeRelated.amortized_zero (fun right left => rel left right) rightCost leftCost
+      (ChargeRelated.symm rel leftCost rightCost localCharge))
+    budget 0 right left (OutcomeRel.symm C rel related.2) (by
+      simpa only [outcomePotential_const, Nat.add_zero] using Nat.le_of_eq related.1.symm)
+  refine ⟨Nat.le_antisymm ?_ ?_, forward.1⟩
+  · simpa only [outcomePotential_const, Nat.add_zero] using forward.2
+  · simpa only [outcomePotential_const, Nat.add_zero] using backward.2
+
+
+
 end Mettapedia.Machines.Cursor
+
+namespace Mettapedia.Machines.Cursor.PrimitiveProgram.Controls
+
+/-- The alternative representation retains the complete history and a
+representation-local counter. Counter equality is not part of this meter. -/
+private structure AdministrativeWorld where
+  history : List Bool
+  localCounter : Nat
+
+private def administrativeTransition (world : AdministrativeWorld) :
+    (op : Operation) → AdministrativeWorld × Except Unit (response op)
+  | .record bit =>
+      ({ history := world.history ++ [bit], localCounter := world.localCounter + 11 }, .ok ())
+  | .refuse =>
+      ({ history := world.history ++ [false], localCounter := world.localCounter + 13 }, .error ())
+
+private def administrativeExpense (world : AdministrativeWorld) (op : Operation) : Nat :=
+  expense world.history op
+
+private def historyRelation : StateRel (provider administrativeTransition) (provider transition) :=
+  fun physical logical => physical.history = logical
+
+/-- Distinct retained representations discharge the local semantic law
+through their actual transitions, including a fault's performed history. -/
+theorem administrative_transition_keeps_history : Bisimulation historyRelation := by
+  intro base index physical logical related operation
+  change physical.history = logical at related
+  cases operation with
+  | record bit =>
+      refine ⟨.ok (),
+        { history := physical.history ++ [bit], localCounter := physical.localCounter + 11 },
+        logical ++ [bit], rfl, rfl, ?_⟩
+      exact congrArg (fun history => history ++ [bit]) related
+  | refuse =>
+      refine ⟨.error (),
+        { history := physical.history ++ [false], localCounter := physical.localCounter + 13 },
+        logical ++ [false], rfl, rfl, ?_⟩
+      exact congrArg (fun history => history ++ [false]) related
+
+/-- The independently chosen operation-count metric is positive on every
+primitive. This law makes no claim about instructions or elapsed time. -/
+theorem administrative_metric_is_calibrated :
+    ChargeRelated historyRelation (charge administrativeExpense administrativeTransition)
+      (charge expense transition) := by
+  intro base index physical logical _ operation
+  cases operation <;> rfl
+
+/-- A source cut and its retained history relate to the semantic cut, with
+the already paid account retained. The local administrative counter may differ. -/
+theorem administrative_cut_keeps_the_whole_account :
+    AccountRel (client Operation response Nat Unit) historyRelation
+      (advance (provider administrativeTransition) (client Operation response Nat Unit)
+        (charge administrativeExpense administrativeTransition) 1 (base := PUnit.unit)
+        ⟨PUnit.unit, .ok twoRecords, { history := [], localCounter := 19 }⟩)
+      (advance (provider transition) (client Operation response Nat Unit)
+        (charge expense transition) 1 (base := PUnit.unit)
+        ⟨PUnit.unit, .ok twoRecords, []⟩) :=
+  advance_account_related (client Operation response Nat Unit) historyRelation
+    administrative_transition_keeps_history
+    (charge administrativeExpense administrativeTransition) (charge expense transition)
+    administrative_metric_is_calibrated 1 (PacketRel.same (C := client Operation response Nat Unit) (rel := historyRelation)
+      (base := PUnit.unit) (index := PUnit.unit) (Except.ok twoRecords) rfl)
+
+/-- A later quantum uses both existing accounts and does not replay the
+history already recorded by the first quantum. -/
+theorem administrative_resume_keeps_the_whole_account :
+    AccountRel (client Operation response Nat Unit) historyRelation
+      (resume (provider administrativeTransition) (client Operation response Nat Unit)
+        (charge administrativeExpense administrativeTransition) 2 (base := PUnit.unit)
+        (advance (provider administrativeTransition) (client Operation response Nat Unit)
+          (charge administrativeExpense administrativeTransition) 1 (base := PUnit.unit)
+          ⟨PUnit.unit, .ok twoRecords, { history := [], localCounter := 19 }⟩))
+      (resume (provider transition) (client Operation response Nat Unit)
+        (charge expense transition) 2 (base := PUnit.unit)
+        (advance (provider transition) (client Operation response Nat Unit)
+          (charge expense transition) 1 (base := PUnit.unit)
+          ⟨PUnit.unit, .ok twoRecords, []⟩)) :=
+  resume_account_related (client Operation response Nat Unit) historyRelation
+    administrative_transition_keeps_history
+    (charge administrativeExpense administrativeTransition) (charge expense transition)
+    administrative_metric_is_calibrated 2 administrative_cut_keeps_the_whole_account
+
+private def undercharge (_ : List Bool) : Operation → Nat
+  | .record _ => 1
+  | .refuse => 3
+
+/-- Semantic transition agreement alone does not establish meter agreement. -/
+theorem same_steps_do_not_justify_an_undercharge :
+    ¬ ChargeRelated historyRelation (charge administrativeExpense administrativeTransition)
+      (charge undercharge transition) := by
+  intro calibrated
+  have impossible := calibrated (base := PUnit.unit) (index := PUnit.unit)
+    { history := [], localCounter := 19 } [] rfl (.record true)
+  change 2 = 1 at impossible
+  cases impossible
+
+/-- The undercharged client still returns the same value and complete world;
+the difference is genuinely in the paid account, not in its printed answer. -/
+theorem undercharge_keeps_the_same_outcome :
+    (advance (provider transition) (client Operation response Nat Unit)
+      (charge undercharge transition) 3 (base := PUnit.unit)
+      ⟨PUnit.unit, .ok twoRecords, []⟩).2 =
+    (advance (provider transition) (client Operation response Nat Unit)
+      (charge expense transition) 3 (base := PUnit.unit)
+      ⟨PUnit.unit, .ok twoRecords, []⟩).2 := rfl
+
+theorem undercharge_changes_the_paid_account :
+    (advance (provider transition) (client Operation response Nat Unit)
+      (charge undercharge transition) 3 (base := PUnit.unit)
+      ⟨PUnit.unit, .ok twoRecords, []⟩).1 ≠
+    (advance (provider transition) (client Operation response Nat Unit)
+      (charge expense transition) 3 (base := PUnit.unit)
+      ⟨PUnit.unit, .ok twoRecords, []⟩).1 := by
+  decide
+
+/-- Omitting a history update breaks the comparison even though the earlier
+plain-answer control shows that successful printed answers can still agree. -/
+theorem missing_history_breaks_the_relational_transition :
+    ¬ Bisimulation (source := provider transition) (target := provider omitRecords)
+      (fun recorded omitted => recorded = omitted) := by
+  intro compared
+  obtain ⟨reply, recorded, omitted, leftStep, rightStep, related⟩ :=
+    compared (base := PUnit.unit) (index := PUnit.unit) [] [] rfl (.record true)
+  have recordedHistory := congrArg (fun result => result.2) leftStep
+  have omittedHistory := congrArg (fun result => result.2) rightStep
+  change [true] = recorded at recordedHistory
+  change [] = omitted at omittedHistory
+  change recorded = omitted at related
+  rw [← recordedHistory, ← omittedHistory] at related
+  cases related
+
+end Mettapedia.Machines.Cursor.PrimitiveProgram.Controls
+

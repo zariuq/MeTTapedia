@@ -1,6 +1,8 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
 
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
+
 /-!
 # Type-Gated PeTTa Evaluation
 
@@ -98,7 +100,7 @@ theorem typeCheckPasses_cons_iff (s : PeTTaSpace) (c : String) (a : Pattern)
     some arrow type in the atomspace.
 
     This formalizes the MeTTa spec's type-checking layer over the pure LP core. -/
-inductive TypedPeTTaEval (s : PeTTaSpace) : Pattern → Answers → Prop where
+inductive TypedPeTTaEval (s : PeTTaSpace) : Pattern → RewriteResults → Prop where
 
   /-- Free variable evaluates to itself. -/
   | var (x : String) :
@@ -130,7 +132,7 @@ inductive TypedPeTTaEval (s : PeTTaSpace) : Pattern → Answers → Prop where
       TypedPeTTaEval s (.apply c args) [q]
 
   /-- Space query (`match &self pat tmpl`). -/
-  | spaceQuery (pat tmpl : Pattern) (results : Answers)
+  | spaceQuery (pat tmpl : Pattern) (results : RewriteResults)
       (hres : results = s.spaceMatch pat tmpl) :
       TypedPeTTaEval s (.apply "match" [.apply "&self" [], pat, tmpl]) results
 
@@ -139,7 +141,7 @@ inductive TypedPeTTaEval (s : PeTTaSpace) : Pattern → Answers → Prop where
       TypedPeTTaEval s (.apply "superpose" [.collection .vec alts none]) alts
 
   /-- Collapse: collect all answers. -/
-  | collapse (p : Pattern) (answers : Answers)
+  | collapse (p : Pattern) (answers : RewriteResults)
       (h : TypedPeTTaEval s p answers) :
       TypedPeTTaEval s (.apply "collapse" [p]) [.collection .vec answers none]
 
@@ -150,7 +152,7 @@ inductive TypedPeTTaEval (s : PeTTaSpace) : Pattern → Answers → Prop where
     The type pre-check is an extra *guard* — it never blocks a computation that
     `PeTTaEval` would also perform; it only rules out derivations where the function
     has no arrow type.  Erasing the type hypothesis gives a valid `PeTTaEval` proof. -/
-theorem typedEval_sound {s : PeTTaSpace} {p : Pattern} {answers : Answers}
+theorem typedEval_sound {s : PeTTaSpace} {p : Pattern} {answers : RewriteResults}
     (h : TypedPeTTaEval s p answers) :
     PeTTaEval s p answers := by
   induction h with

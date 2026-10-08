@@ -291,6 +291,31 @@ def parseSupportedTemplate : Atom → Option Template
       pure (mkTemplate (← parseSupportedSinkList sinks))
   | _ => none
 
+/-- Explicit add sinks for an ordinary comma-output template. Only the output
+container is elaborated: atoms inside each output retain their syntax. -/
+def explicitAddOutput (outputs : List Atom) : Atom :=
+  .expression (.symbol "O" :: outputs.map fun body =>
+    .expression [.symbol "+", body])
+
+theorem parseSupportedSinkList_explicitAdd (outputs : List Atom) :
+    parseSupportedSinkList (outputs.map fun body =>
+      .expression [.symbol "+", body]) = some (outputs.map Sink.add) := by
+  induction outputs with
+  | nil => rfl
+  | cons body rest ih =>
+      simp only [List.map_cons, parseSupportedSinkList, parseSupportedSink, ih]
+      rfl
+
+/-- The two concrete output presentations decode to the same sink actions.
+This is a parsing statement, not equivalence under syntax-sensitive reads of
+the surrounding selected directive. -/
+theorem parseSupportedTemplate_explicitAdd (outputs : List Atom) :
+    parseSupportedTemplate (explicitAddOutput outputs) =
+      parseSupportedTemplate (.expression (.symbol "," :: outputs)) := by
+  simp only [explicitAddOutput, parseSupportedTemplate,
+    parseSupportedSinkList_explicitAdd]
+  rfl
+
 /-- Decode a raw scheduler shell only when all of its input and output
 vocabulary has semantics in the current Lean model. -/
 def decodeSupportedSourceExec (raw : RawExecFact) : Option SourceExecFact := do

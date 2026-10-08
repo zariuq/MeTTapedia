@@ -2,6 +2,7 @@ import Mettapedia.TypeTheory.BindingDispatch
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.EffectfulLet
 import Mettapedia.GSLT.LanguageDef.SequentialBindingDiscipline
 import Mettapedia.Languages.MeTTa.PeTTa.ValueOccurrences
+import Mettapedia.Languages.MeTTa.PeTTa.Eval
 
 /-!
 # Binding, invocation and value occurrences
@@ -21,7 +22,44 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.BindingForms
 open Mettapedia.TypeTheory.BindingDispatch
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.MeTTa.SubstitutionAlgebra (Subst subst)
+
+/-- A fresh binder captures a previously computed value without evaluating
+its syntax again. This connects the value-inertness contract to an actual
+execution path, including values whose expression head names a function. -/
+theorem captured_value_binding_returns (program : SpaceSemantics.Program)
+    (state : Effects.State) (stored captured : String) (value : Atom)
+    (fresh : captured ≠ stored) :
+    Eval.PureReturns program [(stored, value)] state
+      (.expression [.symbol "let", .var captured, .var stored, .var captured])
+      state value := by
+  apply Eval.let_returns program [(stored, value)]
+    [(captured, value), (stored, value)] state state state
+      (.var captured) (.var stored) (.var captured) value value
+  · simpa [Mettapedia.Languages.ProcessCalculi.MORK.applySubst,
+      Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup] using
+      Eval.variable_returns program [(stored, value)] state stored
+  · simp [SpaceSemantics.matchValue,
+      Mettapedia.Languages.ProcessCalculi.MORK.matchAtom,
+      Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup, Ne.symm fresh]
+  · simpa [Mettapedia.Languages.ProcessCalculi.MORK.applySubst,
+      Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup] using
+      Eval.variable_returns program [(captured, value), (stored, value)] state captured
 open ValueOccurrences
+
+/-- Quoted patterns keep literal constructor structure while capturing the
+same completed value and using the existing relational binding rule. -/
+theorem quoted_pattern_binding_returns (program : SpaceSemantics.Program)
+    (bindings bound : Mettapedia.Languages.ProcessCalculi.MORK.Subst)
+    (before middle after : Effects.State) (pattern expression body value answer : Atom)
+    (computed : Eval.PureReturns program bindings before expression middle value)
+    (matched : Mettapedia.Languages.ProcessCalculi.MORK.matchAtom bindings pattern value = some bound)
+    (returned : Eval.PureReturns program bound middle body after answer) :
+    Eval.PureReturns program bindings before
+      (.expression [.symbol "let", .expression [.symbol "quote", pattern], expression, body])
+      after answer := by
+  exact Eval.let_returns program bindings bound before middle after
+    (.expression [.symbol "quote", pattern]) expression body value answer
+    computed (by simpa using matched) returned
 
 /-- A selected answer is matched once; each resulting environment executes
 the authored body with its variables denoting values. -/

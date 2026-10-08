@@ -83,6 +83,33 @@ def execute {State : Type*}
   | .await token :: rest, state, effects =>
       ⟨.suspended token ⟨rest, answer⟩, state, effects⟩
 
+/-- A committed prefix of effect instructions precedes the retained suffix.
+The interpreter does not copy those instructions into the continuation. -/
+theorem execute_effect_prefix {State : Type*}
+    (call : Event Var Val Attr → State → Bool × State)
+    (answer : Answer) (committed : List Effect)
+    (suffix : List (Instruction Var Val Attr Effect Fault Token))
+    (state : State) (effects : List Effect) :
+    execute call answer (committed.map Instruction.effect ++ suffix) state effects =
+      execute call answer suffix state (effects ++ committed) := by
+  induction committed generalizing effects with
+  | nil => simp
+  | cons event rest ih =>
+      simpa [execute, List.append_assoc] using ih (effects ++ [event])
+
+/-- Suspension retains the exact suffix and the already published effect log,
+even when the prefix contains repeated equal effect occurrences. -/
+theorem await_after_effect_prefix {State : Type*}
+    (call : Event Var Val Attr → State → Bool × State)
+    (answer : Answer) (committed : List Effect) (token : Token)
+    (suffix : List (Instruction Var Val Attr Effect Fault Token))
+    (state : State) (effects : List Effect) :
+    execute call answer (committed.map Instruction.effect ++ .await token :: suffix)
+        state effects =
+      ⟨.suspended token ⟨suffix, answer⟩, state, effects ++ committed⟩ := by
+  rw [execute_effect_prefix]
+  rfl
+
 variable [DecidableEq Var] [DecidableEq Val] [Fintype Var] [Fintype Val]
 
 /-- The relation comes from the independently specified constraint runners;
@@ -190,6 +217,26 @@ def resume [DecidableEq Token] {State : Type*}
               ⟨query.base, query.alternatives, none,
                 some (later, suffix, result.store), result.effects⟩)
       else (.unexpectedResume, query)
+
+omit [DecidableEq Var] [DecidableEq Val] [Fintype Var] [Fintype Val] in
+/-- A pause after arbitrary committed effects, followed by a matching resume,
+has exactly the reply and retained query of the uninterrupted program with the
+pause removed. The suffix may itself reject, raise, answer or suspend again. -/
+theorem resume_after_effect_prefix [DecidableEq Token] {State : Type*}
+    (call : Event Var Val Attr → State → Bool × State)
+    (answer : Answer) (committed : List Effect) (token : Token)
+    (suffix : List (Instruction Var Val Attr Effect Fault Token))
+    (state : State) (effects : List Effect) :
+    resume call token
+        (next call (start state
+          [⟨committed.map Instruction.effect ++ .await token :: suffix, answer⟩]
+          effects)).2 =
+      next call (start state
+        [⟨committed.map Instruction.effect ++ suffix, answer⟩] effects) := by
+  simp only [next, start, search, await_after_effect_prefix]
+  simp only [resume, ↓reduceIte]
+  rw [execute_effect_prefix]
+  cases (execute call answer suffix state (effects ++ committed)).signal <;> rfl
 
 /-- Discarding/cancelling a query restores its solver checkpoint and releases
 all alternative and suspended continuations. Persistent effects survive. -/

@@ -29,28 +29,72 @@ them.
   is kernel-checked when both verdicts rest on theorems
   (`Witness.kernelChecked`).
 
-Evidence (`Evidence`) has four kinds. A theorem cites declarations of the
+Evidence (`Evidence`) has five kinds. A theorem cites declarations of the
 checked environment, with the binders its statement must or must not take and
 whether host choice must be absent. A fixture names a test of the C draft and
 lines of its expected output. An argument names a document, a heading in it and
 the claim made there. A decision records a date, a quotation, and the document
-that records it. Only theorems are checked by the kernel; the other kinds are
-recorded as what they are.
+that records it. An external check records a run of another proof checker on a
+pinned file and preamble, with the theorems cited. Only theorems are checked by
+this kernel; the other kinds are recorded as what they are, and an external
+check is never counted as a kernel-checked verdict.
 
 **Two checks.** Every option standing rejected, or rejected as a default,
 carries a witness (`Graph.rejectedWitnessed_iff`), and no profile named as a
 default is an option ruled out (`Graph.defaultsAdmissible_iff`).
 
-**Exact kernels.** An exact kernel, readout or quotient grade
+**Kinds and contracts.** Every arrow has a kind (`ArrowKind`: restriction,
+observational quotient, booleanization, interpretation, equivalence, or
+unclassified) and a preservation contract (`Contract`): which formula classes,
+dependent operations, evidence and commitments it preserves, each citing a theorem;
+which it does not, each citing a counterexample; which are unknown; and the named
+hypotheses it is conditional on. `Graph.contractsCited_iff` and
+`Graph.quotientsHonest_iff` state the checks, `Graph.contractConflicts` finds a
+claim contradicted by a recorded counterexample, and `Graph.lossyCounterexampled_iff`
+says that an arrow claiming to forget a distinction names a counterexample.
+
+**Upgrades.** When a theorem replaces an argument or a fixture behind a verdict, the
+replaced evidence stays on the verdict as history (`Verdict.superseded`); it is not
+evidence. A ledger a correction replaced stays on its option (`Node.supersededLedgers`).
+
+**Named hypotheses and refutations.** An option may be conditional on named hypotheses
+(`NamedHypothesis`) and may record hypotheses as refuted (`Refutation`).
+`Graph.hypothesesUnrefuted_iff` says that no option is conditional on a hypothesis the
+registry records as refuted.
+
+**Replay pins.** A fixture's evidence was replayed at the source hashes its pin records
+(`FixturePin`), and an external checker's at the hashes of its file, preamble and binary
+(`ExternalCheck`). `Graph.fixturesPinned_iff` says that every cited fixture has a pin; the
+generator recomputes the hashes and marks an item stale when one has moved.
+
+**Instances.** An option may carry its denotation, its membership relation and its readings
+by aspect, and an arrow the function realizing it. From these the manifest generates the
+proposition a contract entry claims at the actual endpoints, for the arrow kinds whose
+contracts have a uniform shape, and checks the cited theorem against it by elaboration.
+
+**The frontier map.** Every pair of options left on the frontier has a target
+(`FrontierTarget`): the one theorem or fixture that would separate or identify them, with the
+verdicts it expects, the module it would live in, and ratings of confidence and value.
+`Graph.frontierMapped` says that the map covers the frontier exactly, so closing a pair retires
+its target.
+
+**Obligations.** A result of the literature that options feed has obligations
+(`Obligation`): each says which results it feeds, its status (proved, refuted, open), the
+declaration stating it when there is one, and what proves or refutes it.
+`Graph.obligationsCited_iff` says that proved and refuted obligations cite declarations and
+open ones cite none.
+
+**Exact kernels.** An exact kernel, readout, quotient or extension grade
 (`GradeClaim.exactKernel`) is neither `exact` (distortion zero) nor the weaker
 `preserved`: the readout's equality is exactly the behavioural equivalence, the
-readout is carried over with equality, or the quotient identifies nothing further.
-Options joined by exact kernel or quotient arrows make exactly the same
-identifications (`Graph.identified`, `Graph.equivalences`).
+readout is carried over with equality, the quotient identifies nothing further, or
+the two options define the same thing. Options joined by exact kernel, quotient or
+extension arrows make exactly the same identifications (`Graph.identified`,
+`Graph.equivalences`).
 
-**Five qualifications** (`Qualification`) are kept apart for every claim: host
-dependencies, declared laws, observer restrictions, theorem evidence and fixture
-evidence.
+**Six qualifications** (`Qualification`) are kept apart for every claim: host
+dependencies, declared laws, observer restrictions, theorem evidence, fixture
+evidence, and evidence from an external checker.
 
 **The frontier** (`Graph.frontier`) lists the pairs of options of one question
 that no witness separates and no exact kernel identifies. Separation spreads along coarsening arrows (views
@@ -88,12 +132,14 @@ open Lean (Name)
 
 /-! ## Evidence -/
 
-/-- The four kinds of evidence. Only a theorem is checked by the kernel. -/
+/-- The kinds of evidence. Only a theorem is checked by this kernel; an external
+checker's run is recorded as what it is. -/
 inductive EvidenceKind where
   | «theorem»
   | fixture
   | argument
   | decision
+  | external
   deriving DecidableEq, Repr
 
 def EvidenceKind.label : EvidenceKind → String
@@ -101,6 +147,42 @@ def EvidenceKind.label : EvidenceKind → String
   | .fixture => "fixture"
   | .argument => "argument"
   | .decision => "decision"
+  | .external => "external checker"
+
+/-- A run of an external proof checker: the checker, the directory of its tree the
+command runs in, the command, the checked file and its SHA-256, the preamble the
+file is checked against and its SHA-256, the theorems of the file cited, and
+declarations of the preamble cited. -/
+structure ExternalCheck where
+  checker : String
+  directory : String
+  command : String
+  file : String
+  fileSha256 : String
+  preamble : String
+  preambleSha256 : String
+  theorems : List String
+  preambleDeclarations : List String := []
+  /-- The checker's binary, by path in its tree, and the SHA-256 it was run at. -/
+  binary : String := ""
+  binarySha256 : String := ""
+  deriving Repr
+
+/-- A file of a replayed evidence item, by path, and the SHA-256 it was replayed at. -/
+structure PinnedFile where
+  path : String
+  sha256 : String
+  deriving Repr
+
+/-- The source hashes at which a fixture was last replayed: its test and its expected output, and
+for a fixture checked by a gate script that script, by path relative to the root of the source
+tree its suite names. The suite names the tree; where the tree lives is the generator's
+business. -/
+structure FixturePin where
+  suite : String
+  test : String
+  files : List PinnedFile
+  deriving Repr
 
 /-- A declaration cited as kernel-checked evidence. `binds` are binder names
 its statement must take, `avoids` are binder names it must not take, and
@@ -123,6 +205,8 @@ inductive Evidence where
   | argument (document anchor claim : String)
   /-- A decision: its date, its words, and the document (by key) recording them. -/
   | decision (date quotation recordedIn : String)
+  /-- A run of an external proof checker. It is never kernel-checked evidence here. -/
+  | external (check : ExternalCheck)
   deriving Repr
 
 def Evidence.kind : Evidence → EvidenceKind
@@ -130,6 +214,7 @@ def Evidence.kind : Evidence → EvidenceKind
   | .fixture .. => .fixture
   | .argument .. => .argument
   | .decision .. => .decision
+  | .external _ => .external
 
 /-- The documents an evidence item names. -/
 def Evidence.documents : Evidence → List String
@@ -141,6 +226,10 @@ def Evidence.documents : Evidence → List String
 def Evidence.declarations : Evidence → List Name
   | .«theorem» citations => citations.map (·.declaration)
   | _ => []
+
+/-- Theorem evidence citing declarations with no further requirement. -/
+def cites (names : List Name) : Evidence :=
+  .«theorem» (names.map fun name => { declaration := name })
 
 /-- A document that arguments and decisions refer to. -/
 structure Document where
@@ -200,6 +289,110 @@ structure Question where
   facts : List Evidence := []
   deriving Repr
 
+/-- Classes of formulas. -/
+inductive FormulaClass where
+  | atomic
+  /-- Bounded formulas built from atomic ones with conjunction, disjunction and
+  bounded existentials. -/
+  | boundedPositive
+  | bounded
+  | firstOrder
+  | higherOrder
+  deriving DecidableEq, Repr
+
+def FormulaClass.label : FormulaClass → String
+  | .atomic => "atomic formulas"
+  | .boundedPositive => "positive bounded formulas"
+  | .bounded => "bounded formulas"
+  | .firstOrder => "first-order formulas"
+  | .higherOrder => "higher-order formulas"
+
+/-- Dependent operations. -/
+inductive DependentOperation where
+  | sigma
+  | pi
+  | identity
+  | wType
+  | substitution
+  deriving DecidableEq, Repr
+
+def DependentOperation.label : DependentOperation → String
+  | .sigma => "Σ"
+  | .pi => "Π"
+  | .identity => "Id/J"
+  | .wType => "W"
+  | .substitution => "substitution"
+
+/-- What a piece of evidence carries beyond its conclusion. -/
+inductive EvidenceAspect where
+  | witnesses
+  | occurrences
+  | provenance
+  | cost
+  deriving DecidableEq, Repr
+
+def EvidenceAspect.label : EvidenceAspect → String
+  | .witnesses => "witnesses"
+  | .occurrences => "occurrences"
+  | .provenance => "provenance"
+  | .cost => "cost"
+
+/-- Set-theoretic commitments beyond logic. -/
+inductive Commitment where
+  | choice
+  | collection
+  | universes
+  deriving DecidableEq, Repr
+
+def Commitment.label : Commitment → String
+  | .choice => "choice"
+  | .collection => "Collection"
+  | .universes => "universes"
+
+/-- What a contract entry is about. -/
+inductive Aspect where
+  | formulas (formulaClass : FormulaClass)
+  | operation (operation : DependentOperation)
+  | evidence (aspect : EvidenceAspect)
+  | commitment (commitment : Commitment)
+  /-- The logical operations on truth values: meets, joins and the top. -/
+  | connectives
+  /-- The laws of the source theory hold in the target. -/
+  | laws
+  /-- The distinctions the source makes. -/
+  | distinctions
+  /-- The verdicts stated for the cases the arrow is about. -/
+  | verdicts
+  deriving DecidableEq, Repr
+
+def Aspect.label : Aspect → String
+  | .formulas kind => kind.label
+  | .operation dependent => dependent.label
+  | .evidence carried => carried.label
+  | .commitment made => made.label
+  | .connectives => "connectives"
+  | .laws => "laws of the source"
+  | .distinctions => "distinctions"
+  | .verdicts => "verdicts"
+
+/-- A named hypothesis some facts of an option are conditional on: the proposition,
+the facts it conditions, and the declarations that prove it, if any. A declaration
+that proves it is checked to conclude in it. -/
+structure NamedHypothesis where
+  name : Name
+  conditions : String := ""
+  provedBy : List Name := []
+  deriving Repr
+
+/-- A hypothesis recorded as refuted: a declaration stating the proposition, the scope of
+the refutation, and the theorems refuting it. A refuting theorem is checked to conclude in
+the negation of the proposition. -/
+structure Refutation where
+  hypothesis : Name
+  scope : String := ""
+  refutedBy : List Name
+  deriving Repr
+
 /-- An option. `cProfile` is the name of the C draft's profile realizing it, and
 `theory` a closed theory of the theory graph presenting it. No standing means
 undecided. -/
@@ -213,6 +406,19 @@ structure Node where
   ledger : Option LedgerRef := none
   theory : Option Name := none
   facts : List Evidence := []
+  /-- The option's denotation on the cases its question compares: a function whose value is
+  what the option makes of a case. -/
+  denotation : Option Name := none
+  /-- The option's membership relation, when it is a carrier of sets. -/
+  membership : Option Name := none
+  /-- Readings of the option by aspect: the function whose value an aspect is about. -/
+  readings : List (Aspect × Name) := []
+  /-- Named hypotheses some of the facts are conditional on. -/
+  hypotheses : List NamedHypothesis := []
+  /-- Hypotheses recorded as refuted for this option. -/
+  refuted : List Refutation := []
+  /-- Ledgers a correction replaced, kept as history. They are not evidence. -/
+  supersededLedgers : List LedgerRef := []
   deriving Repr
 
 /-- An option ruled out, as a whole or as a default. -/
@@ -221,38 +427,100 @@ def Node.ruledOut (node : Node) : Bool :=
 
 /-! ## Arrows -/
 
+/-- What an arrow is. The kind is separate from the grades the arrow claims and from
+its preservation contract. -/
 inductive ArrowKind where
-  /-- The source read inside the target. -/
+  /-- The target is a sub-carrier or bubble of the source, with membership (or the
+  relevant structure) restricted; for example the well-founded part. -/
+  | restriction
+  /-- The target is a reading of the source: its identifications include the
+  source's; read with `Factors` and the exact kernel grades. -/
+  | observationalQuotient
+  /-- The target is the double-negation (regular) part of the source's truth values. -/
+  | booleanization
+  /-- The source is modelled in the target, possibly under named hypotheses. -/
   | interpretation
-  /-- A relation between observed carriers. -/
-  | route
-  /-- The target's denotation is a function of the source's. -/
-  | view
-  /-- A map of carriers preserving and reflecting membership, injective. -/
-  | embedding
-  /-- Agreement at the source implies agreement at the target. -/
-  | refinement
-  /-- Every observer of the source is one of the target. -/
-  | inclusion
-  /-- An arrow of the theory graph. -/
-  | comorphism
+  /-- Source and target correspond both ways on what the contract states. -/
+  | equivalence
+  /-- Not yet classified. -/
+  | unclassified
   deriving DecidableEq, Repr
 
 def ArrowKind.label : ArrowKind → String
+  | .restriction => "restriction"
+  | .observationalQuotient => "observational quotient"
+  | .booleanization => "booleanization"
   | .interpretation => "interpretation"
-  | .route => "route"
-  | .view => "view"
-  | .embedding => "embedding"
-  | .refinement => "refinement"
-  | .inclusion => "inclusion"
-  | .comorphism => "comorphism"
+  | .equivalence => "equivalence"
+  | .unclassified => "unclassified"
 
-/-- The target identifies whatever the source identifies. -/
+def ArrowKind.all : List ArrowKind :=
+  [.restriction, .observationalQuotient, .booleanization, .interpretation, .equivalence,
+    .unclassified]
+
+/-- Kinds whose target identifies whatever the source identifies. -/
 def ArrowKind.coarsens : ArrowKind → Bool
-  | .view | .refinement => true
+  | .observationalQuotient | .booleanization => true
   | _ => false
 
-/-- The three forms of an exact kernel claim. -/
+/-! ## Preservation contracts -/
+
+inductive ContractStatus where
+  | preserved
+  | notPreserved
+  | unknown
+  deriving DecidableEq, Repr
+
+def ContractStatus.label : ContractStatus → String
+  | .preserved => "preserves"
+  | .notPreserved => "does not preserve"
+  | .unknown => "unknown"
+
+/-- One entry of a contract. A preserved entry cites the theorem that proves it; an
+entry not preserved cites a counterexample; an unknown entry cites nothing. -/
+structure ContractEntry where
+  aspect : Aspect
+  status : ContractStatus
+  citations : List Name := []
+  /-- The scope of the entry, when it is narrower than the aspect. -/
+  scope : String := ""
+  deriving Repr
+
+/-- A preserved entry with the theorems proving it. -/
+def ContractEntry.keeps (aspect : Aspect) (citations : List Name) (scope : String := "") :
+    ContractEntry :=
+  { aspect, status := .preserved, citations, scope }
+
+/-- An entry not preserved, with the counterexamples. -/
+def ContractEntry.loses (aspect : Aspect) (citations : List Name) (scope : String := "") :
+    ContractEntry :=
+  { aspect, status := .notPreserved, citations, scope }
+
+/-- An entry whose status is not known. -/
+def ContractEntry.unknownAt (aspect : Aspect) (scope : String := "") : ContractEntry :=
+  { aspect, status := .unknown, scope }
+
+/-- What an arrow preserves and what it does not, and the named hypotheses it is
+conditional on. -/
+structure Contract where
+  entries : List ContractEntry := []
+  hypotheses : List Name := []
+  deriving Repr
+
+/-- Every claim cites: a preserved or refuted entry cites a declaration, an unknown
+entry cites none. -/
+def ContractEntry.wellCited (entry : ContractEntry) : Bool :=
+  match entry.status with
+  | .unknown => entry.citations.isEmpty
+  | _ => !entry.citations.isEmpty
+
+def Contract.wellCited (contract : Contract) : Bool :=
+  contract.entries.all (·.wellCited)
+
+def Contract.claims (contract : Contract) (status : ContractStatus) (aspect : Aspect) : Bool :=
+  contract.entries.any fun entry => entry.status == status && entry.aspect == aspect
+
+/-- The four forms of an exact kernel claim. -/
 inductive ExactForm where
   /-- Equality of the readout is exactly the behavioural equivalence. -/
   | kernel
@@ -260,12 +528,16 @@ inductive ExactForm where
   | readout
   /-- The quotient by the behavioural equivalence makes no further identification. -/
   | quotient
+  /-- The two options define the same thing: the same property, the same values, a bijection,
+  or a unique isomorphism respecting the structure. -/
+  | extension
   deriving DecidableEq, Repr
 
 def ExactForm.label : ExactForm → String
   | .kernel => "exact kernel"
   | .readout => "exact readout"
   | .quotient => "exact quotient"
+  | .extension => "same extension"
 
 /-- The statement shape an exact form requires of one of the cited declarations,
 in words. -/
@@ -273,6 +545,8 @@ def ExactForm.shape : ExactForm → String
   | .kernel => "an equivalence one side of which is an equality of readouts"
   | .readout => "an equality of readouts"
   | .quotient => "injectivity of the quotient's readout, or an equivalence with equality"
+  | .extension => "an equivalence, an equality, a bijection, or a unique isomorphism between \
+      what the two options define"
 
 /-- What an arrow preserves. -/
 inductive GradeClaim where
@@ -289,11 +563,12 @@ inductive GradeClaim where
   | preserved
   /-- The target's distance never exceeds the source's. -/
   | ordered
-  /-- An exact kernel, readout or quotient theorem. It is not `exact`, which is
+  /-- An exact kernel, readout, quotient or extension theorem. It is not `exact`, which is
   distortion zero for observers given as tolerances, and it is stronger than
   `preserved`: the behavioural equivalence is exactly the kernel of the readout,
-  the readout is carried over with equality, or the quotient identifies nothing
-  further. `ExactForm.shape` states what a cited statement must conclude. -/
+  the readout is carried over with equality, the quotient identifies nothing
+  further, or the two options define the same thing. `ExactForm.shape` states what a
+  cited statement must conclude. -/
   | exactKernel (form : ExactForm)
   /-- No grade is claimed. -/
   | ungraded
@@ -314,10 +589,10 @@ def GradeClaim.exactForm? : GradeClaim → Option ExactForm
   | .exactKernel form => some form
   | _ => none
 
-/-- An exact kernel or quotient claim: the two options identify exactly the same
-pairs. -/
+/-- An exact kernel, quotient or extension claim: the two options identify exactly the
+same pairs, or define the same thing. -/
 def GradeClaim.identifiesExactly : GradeClaim → Bool
-  | .exactKernel .kernel | .exactKernel .quotient => true
+  | .exactKernel .kernel | .exactKernel .quotient | .exactKernel .extension => true
   | _ => false
 
 /-- Declarations one of which a cited statement must mention for the claim to be
@@ -338,9 +613,22 @@ structure Arrow where
   grades : List GradeClaim
   summary : String
   evidence : List Evidence
+  contract : Contract := {}
+  /-- The function realizing the arrow, when it has one: for a restriction, the embedding of
+  the target's carrier into the source's. -/
+  map : Option Name := none
   deriving Repr
 
-/-- An arrow whose grades include an exact kernel or quotient claim. -/
+/-- The declarations an arrow's contract cites, hypotheses included. -/
+def Arrow.contractDeclarations (arrow : Arrow) : List Name :=
+  arrow.contract.entries.flatMap (·.citations) ++ arrow.contract.hypotheses
+
+/-- The arrow's target identifies whatever its source identifies: its kind says so,
+or it claims a factorization. -/
+def Arrow.coarsens (arrow : Arrow) : Bool :=
+  arrow.kind.coarsens || arrow.grades.any fun claim => claim matches .factors
+
+/-- An arrow whose grades include an exact kernel, quotient or extension claim. -/
 def Arrow.identifiesExactly (arrow : Arrow) : Bool :=
   arrow.grades.any (·.identifiesExactly)
 
@@ -363,6 +651,8 @@ inductive Qualification where
   | theoremEvidence
   /-- Evidence from a test of the C draft. -/
   | fixtureEvidence
+  /-- Evidence from a run of another proof checker, never counted as kernel-checked. -/
+  | externalEvidence
   deriving DecidableEq, Repr
 
 def Qualification.label : Qualification → String
@@ -371,9 +661,11 @@ def Qualification.label : Qualification → String
   | .observerRestriction => "observer restriction"
   | .theoremEvidence => "theorem evidence"
   | .fixtureEvidence => "fixture evidence"
+  | .externalEvidence => "external checker evidence"
 
 def Qualification.all : List Qualification :=
-  [.hostDependency, .declaredLaw, .observerRestriction, .theoremEvidence, .fixtureEvidence]
+  [.hostDependency, .declaredLaw, .observerRestriction, .theoremEvidence, .fixtureEvidence,
+    .externalEvidence]
 
 /-! ## Observers and witnesses -/
 
@@ -391,6 +683,8 @@ structure Observer where
 structure Verdict where
   reading : String
   evidence : List Evidence
+  /-- Evidence an upgrade replaced, kept as history. It is not evidence for the verdict. -/
+  superseded : List Evidence := []
   deriving Repr
 
 /-- Two options of one question, an observer, the concrete case and the verdict
@@ -422,7 +716,79 @@ def Witness.involves (witness : Witness) (id : String) : Bool :=
 def Witness.evidence (witness : Witness) : List Evidence :=
   witness.leftVerdict.evidence ++ witness.rightVerdict.evidence
 
+/-- The evidence the witness's verdicts keep as history. -/
+def Witness.superseded (witness : Witness) : List Evidence :=
+  witness.leftVerdict.superseded ++ witness.rightVerdict.superseded
+
 /-! ## The graph -/
+
+/-- The status of an obligation. -/
+inductive ObligationStatus where
+  | proved
+  | refuted
+  | «open»
+  deriving DecidableEq, Repr
+
+def ObligationStatus.label : ObligationStatus → String
+  | .proved => "proved"
+  | .refuted => "refuted"
+  | .«open» => "open"
+
+/-- An obligation that a result of the literature needs: the results it feeds, the document
+they are in, the declaration stating it when it is stated, its status, and the declarations
+that prove or refute it. A proving declaration is checked to conclude in the statement, a
+refuting one in its negation. -/
+structure Obligation where
+  id : String
+  title : String
+  /-- The results it feeds, such as "Theorem 3.7". -/
+  feeds : List String
+  /-- The document the results are in, by key. -/
+  source : String
+  status : ObligationStatus
+  statement : Option Name := none
+  evidence : List Name := []
+  hypotheses : List NamedHypothesis := []
+  note : String := ""
+  deriving Repr
+
+/-- A proved or refuted obligation cites declarations; an open one cites none. -/
+def Obligation.cited (obligation : Obligation) : Bool :=
+  match obligation.status with
+  | .«open» => obligation.evidence.isEmpty
+  | _ => !obligation.evidence.isEmpty
+
+/-- What a frontier target would do to its pair: separate the two options, or identify them. -/
+inductive TargetOutcome where
+  | separation
+  | identification
+  deriving DecidableEq, Repr
+
+def TargetOutcome.label : TargetOutcome → String
+  | .separation => "separation"
+  | .identification => "identification"
+
+/-- The one theorem or fixture that would close a pair of options left on the frontier: its
+statement, the verdict expected of each option, the module it would most naturally live in, how
+confident one is that it is provable with the current infrastructure, and how much closing the
+pair is worth, both in percent. -/
+structure FrontierTarget where
+  first : String
+  second : String
+  outcome : TargetOutcome := .separation
+  kind : EvidenceKind := .«theorem»
+  statement : String
+  firstVerdict : String
+  secondVerdict : String
+  module : String
+  confidence : Nat
+  value : Nat
+  deriving Repr
+
+/-- The target is about the pair of these two options, in either order. -/
+def FrontierTarget.joins (target : FrontierTarget) (first second : String) : Bool :=
+  (target.first == first && target.second == second) ||
+    (target.first == second && target.second == first)
 
 structure Graph where
   documents : List Document
@@ -431,6 +797,13 @@ structure Graph where
   arrows : List Arrow
   observers : List Observer
   witnesses : List Witness
+  /-- Obligations of constructions in the literature that options feed. -/
+  obligations : List Obligation := []
+  /-- The source hashes at which each cited fixture was last replayed. -/
+  fixturePins : List FixturePin := []
+  /-- For each pair of options left on the frontier, the one theorem or fixture that would
+  close it. -/
+  frontierTargets : List FrontierTarget := []
   deriving Repr
 
 namespace Graph
@@ -452,9 +825,14 @@ def evidence : List Evidence :=
     graph.nodes.flatMap (fun node => node.facts ++ node.standings.flatMap (·.evidence)) ++
     graph.arrows.flatMap (·.evidence) ++ graph.witnesses.flatMap (·.evidence)
 
-/-- Every declaration cited by the graph, with repetitions. -/
+/-- Every declaration cited by the graph, with repetitions, contracts included. -/
 def declarations : List Name :=
-  graph.evidence.flatMap (·.declarations)
+  graph.evidence.flatMap (·.declarations) ++ graph.arrows.flatMap (·.contractDeclarations) ++
+    graph.nodes.flatMap (fun node => node.hypotheses.flatMap (fun hypothesis =>
+      hypothesis.name :: hypothesis.provedBy) ++
+      node.refuted.flatMap fun refutation => refutation.hypothesis :: refutation.refutedBy) ++
+    graph.obligations.flatMap fun obligation => obligation.statement.toList ++ obligation.evidence ++
+      obligation.hypotheses.flatMap fun hypothesis => hypothesis.name :: hypothesis.provedBy
 
 /-- Identifiers are unique; arrows and witnesses join options that exist, a
 witness joins two options of one question through a known observer, every
@@ -478,7 +856,10 @@ def wellFormed : Bool :=
         match graph.observer? witness.observer with
         | some observer => witness.evidence.any (·.kind == observer.kind)
         | none => false) &&
-    (graph.evidence.flatMap (·.documents)).all fun key => graph.documents.any (·.key == key)
+    (graph.evidence.flatMap (·.documents) ++
+        graph.witnesses.flatMap (fun witness => witness.superseded.flatMap (·.documents)) ++
+        graph.obligations.map (·.source)).all
+      fun key => graph.documents.any (·.key == key)
 
 /-! ### The two checks -/
 
@@ -524,6 +905,185 @@ theorem defaultsAdmissible_iff (defaults : List String) :
     · exact Or.inr (holds profile member node nodeMember realizes)
     · exact Or.inl (by simpa using realizes)
 
+/-! ### Contracts -/
+
+/-- Every arrow's contract cites what it claims. -/
+def contractsCited : Bool :=
+  graph.arrows.all (·.contract.wellCited)
+
+theorem contractsCited_iff :
+    graph.contractsCited = true ↔ ∀ arrow ∈ graph.arrows, arrow.contract.wellCited = true := by
+  simp [contractsCited, List.all_eq_true]
+
+/-- No observational quotient claims to preserve every first-order formula without a
+cited theorem. -/
+def quotientsHonest : Bool :=
+  graph.arrows.all fun arrow =>
+    arrow.kind != .observationalQuotient ||
+      arrow.contract.entries.all fun entry =>
+        !(entry.aspect == .formulas .firstOrder && entry.status == .preserved &&
+          entry.citations.isEmpty)
+
+theorem quotientsHonest_iff :
+    graph.quotientsHonest = true ↔
+      ∀ arrow ∈ graph.arrows, arrow.kind = .observationalQuotient →
+        ∀ entry ∈ arrow.contract.entries,
+          entry.aspect = .formulas .firstOrder → entry.status = .preserved →
+            entry.citations ≠ [] := by
+  simp only [quotientsHonest, List.all_eq_true, Bool.or_eq_true, bne_iff_ne, ne_eq,
+    Bool.not_eq_true', Bool.and_eq_false_iff, beq_eq_false_iff_ne, List.isEmpty_eq_false_iff]
+  constructor
+  · intro holds arrow member kind entry entryMember aspect status
+    rcases holds arrow member with notQuotient | entries
+    · exact absurd kind notQuotient
+    · rcases entries entry entryMember with (different | different) | cited
+      · exact absurd aspect different
+      · exact absurd status different
+      · exact cited
+  · intro holds arrow member
+    by_cases kind : arrow.kind = .observationalQuotient
+    · refine Or.inr fun entry entryMember => ?_
+      by_cases aspect : entry.aspect = .formulas .firstOrder
+      · by_cases status : entry.status = .preserved
+        · exact Or.inr (holds arrow member kind entry entryMember aspect status)
+        · exact Or.inl (Or.inr status)
+      · exact Or.inl (Or.inl aspect)
+    · exact Or.inl kind
+
+/-- Claims that contradict a recorded counterexample: an arrow claims to preserve an
+aspect that an arrow of the same kind between the same options records as not
+preserved. Each conflict
+names the claiming arrow, the aspect, and the counterexamples. -/
+def contractConflicts : List (String × Aspect × List Name) :=
+  graph.arrows.flatMap fun arrow =>
+    (arrow.contract.entries.filter (·.status == .preserved)).flatMap fun entry =>
+      (graph.arrows.filter fun other =>
+          other.source == arrow.source && other.target == arrow.target &&
+            other.kind == arrow.kind).flatMap fun other =>
+        (other.contract.entries.filter fun refuted =>
+            refuted.status == .notPreserved && refuted.aspect == entry.aspect).map fun refuted =>
+          (arrow.id, entry.aspect, refuted.citations)
+
+def contractsConsistent : Bool :=
+  graph.contractConflicts.isEmpty
+
+/-- Every hypothesis the registry records as refuted. -/
+def refutations : List Refutation :=
+  graph.nodes.flatMap (·.refuted)
+
+/-- Named hypotheses of options that the registry also records as refuted: the option, the
+hypothesis, and the theorems refuting it. -/
+def refutedHypotheses : List (String × Name × List Name) :=
+  graph.nodes.flatMap fun node => node.hypotheses.flatMap fun hypothesis =>
+    (graph.refutations.filter (·.hypothesis == hypothesis.name)).map fun refutation =>
+      (node.id, hypothesis.name, refutation.refutedBy)
+
+/-- The fixtures the graph cites as evidence, by suite and test. -/
+def fixtureKeys : List (String × String) :=
+  graph.evidence.filterMap fun
+    | .fixture suite test _ => some (suite, test)
+    | _ => none
+
+/-- Every cited fixture has a replay pin. -/
+def fixturesPinned : Bool :=
+  graph.fixtureKeys.all fun (suite, test) =>
+    graph.fixturePins.any fun pin => pin.suite == suite && pin.test == test
+
+theorem fixturesPinned_iff :
+    graph.fixturesPinned = true ↔
+      ∀ key ∈ graph.fixtureKeys, ∃ pin ∈ graph.fixturePins, pin.suite = key.1 ∧ pin.test = key.2 := by
+  unfold fixturesPinned
+  rw [List.all_eq_true]
+  refine forall_congr' fun key => forall_congr' fun _ => ?_
+  rw [List.any_eq_true]
+  refine exists_congr fun pin => and_congr_right fun _ => ?_
+  rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]
+
+/-- Every proved or refuted obligation cites declarations, and no open one does. -/
+def obligationsCited : Bool :=
+  graph.obligations.all (·.cited)
+
+theorem obligationsCited_iff :
+    graph.obligationsCited = true ↔ ∀ obligation ∈ graph.obligations, obligation.cited = true :=
+  List.all_eq_true
+
+/-- No option is conditional on a hypothesis the registry records as refuted. -/
+def hypothesesUnrefuted : Bool :=
+  graph.refutedHypotheses.isEmpty
+
+omit graph in
+/-- A filter is empty when the predicate fails everywhere; proved here without the host's
+choice, which the library lemma uses. -/
+theorem filter_eq_nil_iff_forall {α : Type _} (p : α → Bool) :
+    ∀ l : List α, l.filter p = [] ↔ ∀ a ∈ l, p a = false
+  | [] => ⟨fun _ _ member => (nomatch member), fun _ => rfl⟩
+  | a :: rest => by
+    rw [List.filter_cons]
+    cases h : p a with
+    | false =>
+      rw [if_neg (by decide : ¬ (false = true)), filter_eq_nil_iff_forall p rest]
+      constructor
+      · intro holds b member
+        cases member with
+        | head => exact h
+        | tail _ member => exact holds b member
+      · intro holds b member
+        exact holds b (List.Mem.tail a member)
+    | true =>
+      rw [if_pos rfl]
+      constructor
+      · intro cons
+        exact nomatch cons
+      · intro holds
+        have := holds a (List.Mem.head rest)
+        rw [h] at this
+        exact nomatch this
+
+theorem hypothesesUnrefuted_iff :
+    graph.hypothesesUnrefuted = true ↔
+      ∀ node ∈ graph.nodes, ∀ hypothesis ∈ node.hypotheses,
+        ∀ refutation ∈ graph.refutations, refutation.hypothesis ≠ hypothesis.name := by
+  unfold hypothesesUnrefuted refutedHypotheses
+  rw [List.isEmpty_iff, List.flatMap_eq_nil_iff]
+  refine forall_congr' fun node => forall_congr' fun _ => ?_
+  rw [List.flatMap_eq_nil_iff]
+  refine forall_congr' fun hypothesis => forall_congr' fun _ => ?_
+  rw [List.map_eq_nil_iff, filter_eq_nil_iff_forall]
+  refine forall_congr' fun refutation => forall_congr' fun _ => ?_
+  constructor
+  · intro different same
+    rw [same, beq_self_eq_true] at different
+    exact nomatch different
+  · intro different
+    cases equal : (refutation.hypothesis == hypothesis.name)
+    · rfl
+    · exact absurd (beq_iff_eq.mp equal) different
+
+/-- Every arrow that claims to forget a distinction says, in its contract, what it does
+not preserve, with a counterexample. -/
+def lossyCounterexampled : Bool :=
+  graph.arrows.all fun arrow =>
+    !(arrow.grades.any fun claim => claim matches .lossy) ||
+      arrow.contract.entries.any (·.status == .notPreserved)
+
+theorem lossyCounterexampled_iff :
+    graph.lossyCounterexampled = true ↔
+      ∀ arrow ∈ graph.arrows, (arrow.grades.any fun claim => claim matches .lossy) = true →
+        ∃ entry ∈ arrow.contract.entries, entry.status = .notPreserved := by
+  unfold lossyCounterexampled
+  rw [List.all_eq_true]
+  refine forall_congr' fun arrow => forall_congr' fun _ => ?_
+  rw [Bool.or_eq_true, Bool.not_eq_true', List.any_eq_true]
+  simp only [beq_iff_eq]
+  constructor
+  · rintro (notLossy | entries) lossy
+    · exact absurd (lossy.symm.trans notLossy) (by decide)
+    · exact entries
+  · intro holds
+    cases lossy : (arrow.grades.any fun claim => claim matches .lossy)
+    · exact Or.inl rfl
+    · exact Or.inr (holds lossy)
+
 /-! ### The frontier -/
 
 /-- The options a coarsening arrow leaves an option for, transitively, by at most
@@ -531,13 +1091,13 @@ as many steps as there are arrows. -/
 def coarser (id : String) : List String :=
   let step (current : List String) : List String :=
     current ++ (graph.arrows.filter fun arrow =>
-      (arrow.kind.coarsens || arrow.identifiesExactly) && current.contains arrow.source).map
+      (arrow.coarsens || arrow.identifiesExactly) && current.contains arrow.source).map
         (·.target) ++
       (graph.arrows.filter fun arrow =>
         arrow.identifiesExactly && current.contains arrow.target).map (·.source)
   (Nat.iterate step graph.arrows.length [id]).eraseDups
 
-/-- The options joined to an option by exact kernel or quotient arrows, in either
+/-- The options joined to an option by exact kernel, quotient or extension arrows, in either
 direction, transitively: they identify exactly the same pairs. -/
 def exactlyIdentified (id : String) : List String :=
   let step (current : List String) : List String :=
@@ -572,7 +1132,7 @@ def pairs {α : Type} : List α → List (α × α)
   | head :: tail => tail.map (head, ·) ++ pairs tail
 
 /-- Pairs of options of one question that no witness separates and no exact
-kernel identifies. -/
+kernel, quotient or extension identifies. -/
 def frontier : List (String × String) :=
   graph.questions.flatMap fun question =>
     ((pairs (graph.nodes.filter (·.question == question.id))).filter fun (first, second) =>
@@ -585,6 +1145,23 @@ def equivalences : List (String × String) :=
   graph.questions.flatMap fun question =>
     ((pairs (graph.nodes.filter (·.question == question.id))).filter fun (first, second) =>
       graph.identified first.id second.id).map fun (first, second) => (first.id, second.id)
+
+/-- Frontier pairs that no target addresses. -/
+def unmappedFrontier (pairs : List (String × String) := graph.frontier) :
+    List (String × String) :=
+  pairs.filter fun (first, second) => !graph.frontierTargets.any (·.joins first second)
+
+/-- Targets whose pair is no longer on the frontier: closed, or never there. -/
+def staleTargets (pairs : List (String × String) := graph.frontier) : List FrontierTarget :=
+  graph.frontierTargets.filter fun target =>
+    !pairs.any fun (first, second) => target.joins first second
+
+/-- Every frontier pair has a target, every target names a frontier pair, and the ratings are
+percentages. The frontier is computed once. -/
+def frontierMapped : Bool :=
+  let pairs := graph.frontier
+  (graph.unmappedFrontier pairs).isEmpty && (graph.staleTargets pairs).isEmpty &&
+    graph.frontierTargets.all fun target => target.confidence ≤ 100 && target.value ≤ 100
 
 theorem not_separated_of_mem_frontier {first second : String}
     (member : (first, second) ∈ graph.frontier) :

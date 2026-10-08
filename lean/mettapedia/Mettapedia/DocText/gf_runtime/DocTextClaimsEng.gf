@@ -11,11 +11,11 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00006 = {s = "Ad hoc proofs don't ground the interface"} ;
     Clm_00007 = {s = "All SUMO files are clean with zero sorries"} ;
     Clm_00008 = {s = "Appraisal-decision commutativity is proven when the quantale is commutative"} ;
-    Clm_00009 = {s = "Axioms are 0"} ;
+    Clm_00009 = {s = "Project-declared axioms are 0; headline theorems use Lean's standard axioms"} ;
     Clm_00010 = {s = "Beck-Chevalley is substitution and quantification compatibility on pullback squares"} ;
     Clm_00011 = {s = "Blanchette et al. 2016 is a core reference"} ;
     Clm_00012 = {s = "Bridges is five files of cross-architecture comparison and limits"} ;
-    Clm_00013 = {s = "Build status is 129 jobs with 0 errors"} ;
+    Clm_00013 = {s = "Build status is successful on the pinned toolchain"} ;
     Clm_00014 = {s = "Chainy baseline solves 278 of 800 validation problems at top-256 with E 5s"} ;
     Clm_00015 = {s = "ChangeOfBase is pullback and quantifier images with adjunctions exists_f left f* left forall_f"} ;
     Clm_00016 = {s = "Chapter 11 quantifier regression includes `check_ch11_quantifiers.sh` and `check_ch11_fuzzy_syllogism.sh`"} ;
@@ -44,7 +44,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00039 = {s = "E prover is `eprover-standard/PROVER/eprover`"} ;
     Clm_00040 = {s = "Every theorem is proven"} ;
     Clm_00041 = {s = "FOET KIF is 12 applied fixes across syntax, argument swaps, and typing"} ;
-    Clm_00042 = {s = "Formal theorems cover `checkBytes` on expanded `ByteArray` input"} ;
+    Clm_00042 = {s = "Formal theorems cover both the pure `checkBytes` lane and the include-aware `check` implementation"} ;
     Clm_00043 = {s = "Functional languages are typically encoded by term-reduction rules"} ;
     Clm_00044 = {s = "GF formalizes a Lean 4 GF RGL subset with 170 abstract signatures, two concrete grammars, and a verified semantic bridge"} ;
     Clm_00045 = {s = "GF/README.md contains the full architecture and file map"} ;
@@ -145,9 +145,9 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00140 = {s = "Reflexive-transitive closure is formalized as an inductive Star relation"} ;
     Clm_00141 = {s = "Relation typing is three issues found and one fixed"} ;
     Clm_00142 = {s = "RelationEnv is optional unless relationQuery premises are used"} ;
-    Clm_00143 = {s = "Reviewers read the theorem statements in `Metamath/ParserEquivalence.lean`"} ;
+    Clm_00143 = {s = "Reviewers read the theorem statements in `Metamath/SourceCompleteness.lean` and `Metamath/ParserEquivalence.lean`"} ;
     Clm_00144 = {s = "Reviewers run `lake build` and the full test suite"} ;
-    Clm_00145 = {s = "Reviewers trace `parser_toDatabase_wellFormed_strong -> parser_operational_iff_semantic -> operational_iff_semantic`"} ;
+    Clm_00145 = {s = "Reviewers trace `parser_toDatabase_wellFormed_strong -> parser_frameDerivable_to_operational -> frameDerivable_to_proofValid`"} ;
     Clm_00146 = {s = "Roundtrip regression shows zero failures across 36 corpus entries"} ;
     Clm_00147 = {s = "Sorries are 0"} ;
     Clm_00148 = {s = "Strand one is lambda theory and native type theory across seven files"} ;
@@ -198,7 +198,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00193 = {s = "The current boundary isn't full premise-rich MeTTaFull ingestion"} ;
     Clm_00194 = {s = "The current log is 20 repair decisions with 19 automatable"} ;
     Clm_00195 = {s = "The default check is lake build over the full project"} ;
-    Clm_00196 = {s = "The default test suite is 151 of 151"} ;
+    Clm_00196 = {s = "The default `zar` specification suite is 187 of 187"} ;
     Clm_00197 = {s = "The dependency flow is the following architecture diagram"} ;
     Clm_00198 = {s = "The dependency graph section is available with bridge and submodule highlights"} ;
     Clm_00199 = {s = "The development includes a formal contract"} ;
@@ -252,11 +252,11 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00247 = {s = "The semantic bridge is GF -> Pattern -> Store -> QFormula -> Evidence -> NTT"} ;
     Clm_00248 = {s = "The semantic bridge targets OSLF evidence semantics"} ;
     Clm_00249 = {s = "The semantics decision tree is `Mettapedia/PLN/Comparisons/SemanticsDecisionTree.lean`"} ;
-    Clm_00250 = {s = "The small-only test suite is 141 of 141"} ;
+    Clm_00250 = {s = "The fail-closed reference differential is an attempt of all 187 registered databases, with process failures separate from verdicts"} ;
     Clm_00251 = {s = "The spec-facing MeTTa slice uses `Mettapedia/OSLF/MeTTaCore/FullLanguageDef.lean`"} ;
     Clm_00252 = {s = "The structure map lists core module paths and theorem hosts"} ;
-    Clm_00253 = {s = "The toolchain pins Batteries v4.27.0-rc1"} ;
-    Clm_00254 = {s = "The toolchain pins Lean 4.27.0"} ;
+    Clm_00253 = {s = "The toolchain pins Batteries commit `4488d40`"} ;
+    Clm_00254 = {s = "The toolchain pins Lean 4.33.1"} ;
     Clm_00255 = {s = "The toolchain uses Lean 4.27.0 (see lean-toolchain)"} ;
     Clm_00256 = {s = "The toolchain uses Mathlib v4.27.0 (see lakefile.toml)"} ;
     Clm_00257 = {s = "The unification thesis states PLN evidence unifies quantale, Heyting, and Bayesian views"} ;
@@ -295,7 +295,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00290 = {s = "`langGaloisUsing` proves the adjunction"} ;
     Clm_00291 = {s = "`langOSLF` packages the derived type system"} ;
     Clm_00292 = {s = "`langRewriteSystemUsing` gets the step relation"} ;
-    Clm_00293 = {s = "`parser_operational_iff_semantic` composes the full bridge from `checkBytes` success"} ;
+    Clm_00293 = {s = "`proofChecker_normal_iff_frameDerivable_in_parsedDB` composes the full bridge from `checkBytes` success"} ;
     Clm_00294 = {s = "checkLang proves that contraryAttribute Pleasure Pain is ill-typed"} ;
     Clm_00295 = {s = "completions_card is |completions(v)| = 2^(countUnknown v)"} ;
     Clm_00296 = {s = "completions_mean_weight is average Hamming weight = (pos + unknown/2) / n"} ;
@@ -320,4 +320,5 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00315 = {s = "the proof completeness varies by the subproject"} ;
     Clm_00316 = {s = "the structure presents the high-level Mettapedia directory layout"} ;
     Clm_00317 = {s = "toEvidence_strength is Evidence.strength = expected fraction of 1s"} ;
+    Clm_00318 = {s = "`METAMATH_TEST` is a checkout of https://github.com/zariuq/metamath-test, branch `unit-tests`"} ;
 }

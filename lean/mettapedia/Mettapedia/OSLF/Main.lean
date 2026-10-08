@@ -598,6 +598,16 @@ import Mettapedia.GSLT.Examples.ScopedLamCongFreeModel
 import Mettapedia.OSLF.MeTTaIL.OraclePremiseTransport
 import Mettapedia.GSLT.Examples.ScopedLamCongOracleTransport
 import Mettapedia.GSLT.Examples.OrderedPremiseOracleTransport
+import Mettapedia.GSLT.Topos.PresheafPredicateHigherOrderControls
+import Mettapedia.TypeTheory.PresheafCodomainFoundationControls
+import Mettapedia.TypeTheory.PresheafEventSubstitution
+import Mettapedia.OSLF.Syntax.DeterministicGSOSEdgeControls
+import Mettapedia.OSLF.Syntax.DeterministicGSOSImageFiniteBoundary
+import Mettapedia.OSLF.Syntax.DeterministicGSOSPresentationControls
+import Mettapedia.OSLF.Syntax.BehavioralCorrespondence
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ReductionObservationBoundary
+import Mettapedia.OSLF.Framework.FindingMindScopeClassification
+import Mettapedia.OSLF.Framework.FindingMindGeneratedRhoCertificates
 -- SpecIndex.lean imports Main (not vice versa) — no cycle
 
 /-!
@@ -639,7 +649,7 @@ OSLF/
 │   └── MatchSpec.lean       -- Relational matching spec (proven ↔ executable)
 ├── Languages/ProcessCalculi/RhoCalculus/
 │   ├── Types.lean           -- Namespaces, codespaces, bisimulation
-│   ├── Reduction.lean       -- COMM/DROP/PAR, modal operators, Galois connection
+│   ├── Reduction.lean       -- COMM with structural and parallel closure; raw modalities
 │   ├── Soundness.lean       -- Substitutability, progress, type preservation
 │   ├── StructuralCongruence.lean
 │   ├── CommRule.lean

@@ -85,12 +85,15 @@ lean/mettapedia/data/
 !lean/mettapedia/scripts/
 lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/generate_self_interp_checkpoints.lean
+!lean/mettapedia/scripts/generate_vibe_itp_rule_shapes.py
 !lean/mettapedia/scripts/check_prime_spec_boundary.py
 !lean/mettapedia/scripts/check_two_sort_boundaries.py
+!lean/mettapedia/scripts/check_faddeev_axioms.lean
 !lean/mettapedia/scripts/prime_study_status.lean
 !lean/mettapedia/scripts/prime_joint_experiments.lean
 !lean/mettapedia/scripts/oeis_program_discovery_fixture.py
 !lean/mettapedia/scripts/test_oeis_program_discovery_fixture.py
+!lean/mettapedia/scripts/test_lake_build_scoping.py
 !lean/mettapedia/scripts/test_metamath_mm2_raw_unit.sh
 !lean/mettapedia/scripts/test_metamath_mm2_compressed_unit.sh
 !lean/mettapedia/scripts/test_metamath_mm2_heap_walkers.sh

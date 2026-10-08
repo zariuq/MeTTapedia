@@ -1,5 +1,6 @@
-import Mettapedia.Languages.MeTTa.PeTTa.Effects
-import Mettapedia.Languages.MeTTa.OSLFCore.Atom
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands
+
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
 
 /-!
 # MeTTa Type System (Minimal Fragment)
@@ -48,16 +49,6 @@ namespace Mettapedia.Languages.MeTTa.PeTTa
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-
-/-- Literal `Atom` domains retain the supplied syntax. The declaration is
-inspected before any binding, so a formal variable is not a raw domain. -/
-@[simp] def formalArgumentIsRaw (formal : OSLFCore.Atom) : Bool :=
-  formal == .symbol "Atom"
-
-/-- A missing domain cannot request raw syntax. -/
-@[simp] theorem optional_formalArgumentIsRaw (formal : Option OSLFCore.Atom) :
-    formal.any formalArgumentIsRaw = (formal == some (.symbol "Atom")) := by
-  cases formal <;> simp
 
 /-! ## Special Type Atoms -/
 
@@ -270,7 +261,7 @@ variable to the single answer `[x]`, so every answer it produces carries the
 variable's type. -/
 theorem typePreserved_var (s : PeTTaSpace) (x : String) (t : Pattern)
     (ht : MeTTaType s (.fvar x) t) :
-    ∀ q ∈ ([Pattern.fvar x] : Answers), MeTTaType s q t := by
+    ∀ q ∈ ([Pattern.fvar x] : RewriteResults), MeTTaType s q t := by
   intro q hq
   rcases List.mem_singleton.mp hq with rfl
   exact ht
@@ -279,7 +270,7 @@ theorem typePreserved_var (s : PeTTaSpace) (x : String) (t : Pattern)
 nullary application to the single answer `[c]`. -/
 theorem typePreserved_ground (s : PeTTaSpace) (c : String) (t : Pattern)
     (ht : MeTTaType s (.apply c []) t) :
-    ∀ q ∈ ([Pattern.apply c []] : Answers), MeTTaType s q t := by
+    ∀ q ∈ ([Pattern.apply c []] : RewriteResults), MeTTaType s q t := by
   intro q hq
   rcases List.mem_singleton.mp hq with rfl
   exact ht

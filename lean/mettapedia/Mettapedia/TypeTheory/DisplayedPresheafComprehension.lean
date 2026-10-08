@@ -114,6 +114,17 @@ private theorem map_apply_heq_of_base_arrow
   cases same
   rfl
 
+/-- Mapping a dependent pair along an element arrow gives that arrow's
+actual endpoint and transported evidence. -/
+theorem totalMap_of_base_arrow {source target : base.Elements}
+    (arrow : source ⟶ target) (evidence : family.obj source) :
+    totalMap family arrow.val ⟨source.2, evidence⟩ =
+      ⟨target.2, family.map arrow evidence⟩ := by
+  apply Sigma.ext arrow.property
+  exact map_apply_heq_of_base_arrow family
+    (congrArg (fun value => (⟨target.1, value⟩ : base.Elements)) arrow.property)
+    (CategoryOfElements.homMk _ _ arrow.val rfl) arrow (heq_of_eq rfl) evidence
+
 theorem totalMap_id (context : Contextᵒᵖ) (receipt : TotalAt family context) :
     totalMap family (𝟙 context) receipt = receipt := by
   rcases receipt with ⟨value, evidence⟩

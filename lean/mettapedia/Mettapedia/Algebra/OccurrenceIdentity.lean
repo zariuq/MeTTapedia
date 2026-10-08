@@ -664,6 +664,235 @@ theorem copied_carriers_can_split_a_shared_production :
 end FirstSeenControls
 
 
+/-! ## Removing physical slots and reserving inclusive namespaces -/
+variable {α β : Type*}
+
+/-- Removing a selected physical slot moves the last slot into its place.
+The recursive presentation retains every earlier slot in its original order. -/
+def extractByLast : Nat → List α → Option (α × List α)
+  | _, [] => none
+  | 0, first :: rest =>
+      some (first, match rest.getLast? with
+        | none => []
+        | some last => last :: rest.dropLast)
+  | index + 1, first :: rest =>
+      (extractByLast index rest).map (fun pair => (pair.1, first :: pair.2))
+
+/-- Independent indexed write followed by shortening the live array. -/
+def extractByLastIndexed (index : Nat) (rows : List α) : Option (α × List α) := do
+  let selected ← rows[index]?
+  let last ← rows.getLast?
+  some (selected, (rows.set index last).dropLast)
+
+theorem extractByLast_correspondence (index : Nat) (rows : List α) :
+    extractByLast index rows = extractByLastIndexed index rows := by
+  induction rows generalizing index with
+  | nil => simp [extractByLast, extractByLastIndexed]
+  | cons first rest ih =>
+      cases index with
+      | zero =>
+          cases rest with
+          | nil => rfl
+          | cons second tail =>
+              cases last : (second :: tail).getLast? with
+              | none => simp only [List.getLast?_eq_none_iff] at last; cases last
+              | some final =>
+                  simp only [extractByLast, last, extractByLastIndexed,
+                    List.getElem?_cons_zero, List.getLast?_cons_cons,
+                    List.set_cons_zero, List.dropLast_cons_cons, bind, Option.bind_some]
+      | succ index =>
+          cases rest with
+          | nil => simp [extractByLast, extractByLastIndexed, bind]
+          | cons second tail =>
+              simp only [extractByLast, ih, extractByLastIndexed,
+                List.getElem?_cons_succ, List.getLast?_cons_cons]
+              cases selected : (second :: tail)[index]? with
+              | none => simp only [bind, Option.bind_none, Option.map_none]
+              | some value =>
+                  cases last : (second :: tail).getLast? with
+                  | none => simp only [List.getLast?_eq_none_iff] at last; cases last
+                  | some final =>
+                      have nonempty : ((second :: tail).set index final) ≠ [] := by simp
+                      simp only [bind, Option.bind_some, Option.map_some,
+                        List.set_cons_succ, List.dropLast_cons_of_ne_nil nonempty]
+
+theorem extractByLast_selected (index : Nat) (rows : List α) :
+    (extractByLast index rows).map Prod.fst = rows[index]? := by
+  induction rows generalizing index with
+  | nil => simp [extractByLast]
+  | cons first rest ih =>
+      cases index with
+      | zero => simp [extractByLast]
+      | succ index =>
+          simp only [extractByLast, Option.map_map, List.getElem?_cons_succ]
+          exact ih index
+
+theorem extractByLast_permutation (index : Nat) (rows : List α)
+    (selected : α) (remaining : List α)
+    (taken : extractByLast index rows = some (selected, remaining)) :
+    (selected :: remaining).Perm rows := by
+  induction rows generalizing index selected remaining with
+  | nil => simp [extractByLast] at taken
+  | cons first rest ih =>
+      cases index with
+      | zero =>
+          cases last : rest.getLast? with
+          | none =>
+              have empty := List.getLast?_eq_none_iff.mp last
+              subst rest
+              simp only [extractByLast, List.getLast?_nil, Option.some.injEq,
+                Prod.mk.injEq] at taken
+              rcases taken with ⟨rfl, rfl⟩
+              exact List.Perm.refl _
+          | some final =>
+              simp only [extractByLast, last, Option.some.injEq, Prod.mk.injEq] at taken
+              rcases taken with ⟨rfl, rfl⟩
+              have split := List.dropLast_append_getLast? final last
+              have moved : (final :: rest.dropLast).Perm rest := by
+                simpa only [List.singleton_append, split] using
+                  (List.perm_append_comm (l₁ := [final]) (l₂ := rest.dropLast))
+              exact moved.cons first
+      | succ index =>
+          simp only [extractByLast] at taken
+          obtain ⟨pair, extracted, equal⟩ := Option.map_eq_some_iff.mp taken
+          rcases pair with ⟨found, tail⟩
+          simp only [Prod.mk.injEq] at equal
+          rcases equal with ⟨rfl, rfl⟩
+          exact (List.Perm.swap _ _ _).trans ((ih index found tail extracted).cons first)
+
+theorem extractByLast_length (index : Nat) (rows : List α)
+    (selected : α) (remaining : List α)
+    (taken : extractByLast index rows = some (selected, remaining)) :
+    remaining.length + 1 = rows.length := by
+  have length := (extractByLast_permutation index rows selected remaining taken).length_eq
+  simpa only [List.length_cons] using length
+
+theorem extractByLast_keeps_other [DecidableEq α]
+    (index : Nat) (rows : List α) (selected other : α) (remaining : List α)
+    (taken : extractByLast index rows = some (selected, remaining))
+    (different : other ≠ selected) : other ∈ remaining ↔ other ∈ rows := by
+  have same : other ∈ (selected :: remaining) ↔ other ∈ rows :=
+    (extractByLast_permutation index rows selected remaining taken).mem_iff
+  simpa only [List.mem_cons, different, false_or] using same
+
+theorem extractByLast_removes_unique [DecidableEq α]
+    (index : Nat) (rows : List α) (selected : α) (remaining : List α)
+    (taken : extractByLast index rows = some (selected, remaining))
+    (unique : rows.Nodup) : selected ∉ remaining ∧ remaining.Nodup := by
+  have transferred := (extractByLast_permutation index rows selected remaining taken).nodup_iff.mpr unique
+  exact List.nodup_cons.mp transferred
+
+theorem extractByLast_map (map : α → β) (index : Nat) (rows : List α) :
+    extractByLast index (rows.map map) =
+      (extractByLast index rows).map (fun pair => (map pair.1, pair.2.map map)) := by
+  induction rows generalizing index with
+  | nil => simp [extractByLast]
+  | cons first rest ih =>
+      cases index with
+      | zero =>
+          simp only [List.map_cons, extractByLast, List.getLast?_map]
+          cases rest.getLast? <;> simp [List.map_dropLast]
+      | succ index =>
+          simp only [List.map_cons, extractByLast, ih, Option.map_map]
+          rfl
+
+/-- This namespace uses every positive machine word, including the largest.
+Issuing that final identity exhausts the frontier to zero; it never restarts. -/
+def reserveInclusive (maximum current : Nat) : Option Nat × Nat :=
+  if current = 0 ∨ maximum < current then (none, current)
+  else (some current, if current = maximum then 0 else current + 1)
+
+theorem reserveInclusive_issued_iff (maximum current issued after : Nat) :
+    reserveInclusive maximum current = (some issued, after) ↔
+      0 < current ∧ current ≤ maximum ∧ issued = current ∧
+        after = (if current = maximum then 0 else current + 1) := by
+  by_cases invalid : current = 0 ∨ maximum < current
+  · constructor
+    · intro granted
+      have impossible : (none : Option Nat) = some issued := by
+        simpa only [reserveInclusive, if_pos invalid] using congrArg Prod.fst granted
+      cases impossible
+    · rintro ⟨positive, below, _, _⟩
+      exfalso
+      rcases invalid with zero | exhausted <;> omega
+  · have positive : 0 < current := by omega
+    have below : current ≤ maximum := by omega
+    simp only [reserveInclusive, if_neg invalid, Prod.mk.injEq, Option.some.injEq]
+    constructor
+    · rintro ⟨same, advanced⟩
+      exact ⟨positive, below, same.symm, advanced.symm⟩
+    · rintro ⟨_, _, same, advanced⟩
+      exact ⟨same.symm, advanced.symm⟩
+
+theorem reserveInclusive_exhausted (maximum : Nat) :
+    reserveInclusive maximum 0 = (none, 0) := by simp [reserveInclusive]
+
+def reserveInclusiveWord {width : Nat} (current : BitVec width) : BitVec width × BitVec width :=
+  if current = 0 then (0, current)
+  else (current, if current = BitVec.allOnes width then 0 else current + 1)
+
+theorem reserveInclusiveWord_correspondence {width : Nat} (current : BitVec width) :
+    let result := reserveInclusiveWord current
+    (if result.1 = 0 then none else some result.1.toNat, result.2.toNat) =
+      reserveInclusive (2 ^ width - 1) current.toNat := by
+  have fits : current.toNat ≤ 2 ^ width - 1 := by
+    have bounded := current.isLt
+    omega
+  have zero : current = 0 ↔ current.toNat = 0 := by
+    rw [← BitVec.toNat_inj]
+    rfl
+  have last : current = BitVec.allOnes width ↔ current.toNat = 2 ^ width - 1 := by
+    rw [← BitVec.toNat_inj, BitVec.toNat_allOnes]
+  by_cases empty : current = 0
+  · have mathematical : current.toNat = 0 ∨ 2 ^ width - 1 < current.toNat := Or.inl (zero.mp empty)
+    simp only [reserveInclusiveWord, if_pos empty, reserveInclusive, if_pos mathematical]
+    rfl
+  · have mathematical : ¬(current.toNat = 0 ∨ 2 ^ width - 1 < current.toNat) := by
+      rintro (none | outside)
+      · exact empty (zero.mpr none)
+      · omega
+    simp only [reserveInclusiveWord, if_neg empty, reserveInclusive, if_neg mathematical]
+    by_cases final : current = BitVec.allOnes width
+    · simp only [if_pos final, if_pos (last.mp final)]
+      have zeroWord : (0 : BitVec width).toNat = 0 := by
+        change (0#width).toNat = 0
+        rw [BitVec.toNat_ofNat, Nat.zero_mod]
+      exact congrArg (fun number : Nat => (some current.toNat, number)) zeroWord
+    · have notFinal := (not_congr last).mp final
+      have positiveWidth : 1 < 2 ^ width := by
+        have nonzero : current.toNat ≠ 0 := fun h => empty (zero.mpr h)
+        omega
+      have oneNat : (1 : BitVec width).toNat = 1 := by
+        change (1#width).toNat = 1
+        rw [BitVec.toNat_ofNat]
+        exact Nat.mod_eq_of_lt positiveWidth
+      have nextFits : current.toNat + (1 : BitVec width).toNat < 2 ^ width := by
+        rw [oneNat]
+        omega
+      simp only [if_neg final, if_neg notFinal]
+      rw [BitVec.toNat_add_of_lt nextFits, oneNat]
+
+namespace Controls
+
+theorem last_identity_is_usable_once :
+    reserveInclusive 15 15 = (some 15, 0) ∧ reserveInclusive 15 0 = (none, 0) ∧
+      reserve 15 15 = (none, 15) := by decide
+
+theorem inclusive_word_never_restarts_after_final_issue :
+    reserveInclusiveWord (15 : BitVec 4) = (15, 0) ∧
+      reserveInclusiveWord (0 : BitVec 4) = (0, 0) ∧
+      reserveInclusiveWord (14 : BitVec 4) = (14, 15) := by decide
+
+theorem swapped_deletion_changes_order :
+    extractByLast 1 [10, 20, 30, 40] = some (20, [10, 40, 30]) ∧
+      extractByLast 1 [10, 20, 30, 40] ≠ some (20, [10, 30, 40]) := by decide
+
+theorem equal_payload_occurrences_survive :
+    extractByLast 1 [(1, 7), (2, 7), (3, 7)] = some ((2, 7), [(1, 7), (3, 7)]) ∧
+      extractByLast 3 [(1, 7), (2, 7), (3, 7)] = none := by decide
+
+end Controls
+
 end OccurrenceIdentity
 
 end Mettapedia.Algebra

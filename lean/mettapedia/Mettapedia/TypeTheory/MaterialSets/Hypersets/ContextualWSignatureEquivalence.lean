@@ -85,4 +85,65 @@ theorem inverse_forward_raw {point : D} (tree : RawTree shape position point) :
     exact RawTree.children_eq label children rfl _ _
       ((double_inverse_position signature label arrow branch).trans (cast_heq _ _).symm)
 
+theorem forward_inverse_position {first second : D} (label : nextShape.obj first) (step : first ⟶ second)
+    (branch : Position nextShape nextPosition label step) :
+    HEq (ContextualWSignature.forwardPosition signature ((signature.shapes first).symm label) step
+      (ContextualWSignature.forwardPosition (inverseSignature signature) label step branch)) branch := by
+  obtain ⟨original, rfl⟩ := (signature.shapes first).surjective label
+  let oldBranch := (ContextualWSignature.forwardPosition signature original step).symm branch
+  have restored := inverse_forward_position signature original step oldBranch
+  have actualBack : HEq
+      (ContextualWSignature.forwardPosition (inverseSignature signature) (signature.shapes first original) step branch)
+      oldBranch := by
+    exact (heq_of_eq (congrArg
+      (ContextualWSignature.forwardPosition (inverseSignature signature) (signature.shapes first original) step)
+      ((ContextualWSignature.forwardPosition signature original step).apply_symm_apply branch))).symm.trans restored
+  exact (ContextualWSignature.forwardPosition_labels_heq signature
+    ((signature.shapes first).symm_apply_apply original) step _ oldBranch actualBack).trans
+      (heq_of_eq ((ContextualWSignature.forwardPosition signature original step).apply_symm_apply branch))
+
+theorem double_inverse_position_right {first second : D} (label : nextShape.obj first) (step : first ⟶ second)
+    (branch : Position nextShape nextPosition (signature.shapes first ((signature.shapes first).symm label)) step) :
+    HEq ((ContextualWSignature.forwardPosition (inverseSignature signature) label step).symm
+      ((ContextualWSignature.forwardPosition signature ((signature.shapes first).symm label) step).symm branch))
+      branch := by
+  let original := (ContextualWSignature.forwardPosition (inverseSignature signature) label step).symm
+    ((ContextualWSignature.forwardPosition signature ((signature.shapes first).symm label) step).symm branch)
+  have restored : ContextualWSignature.forwardPosition signature ((signature.shapes first).symm label) step
+      (ContextualWSignature.forwardPosition (inverseSignature signature) label step original) = branch := by
+    rw [show ContextualWSignature.forwardPosition (inverseSignature signature) label step original =
+      (ContextualWSignature.forwardPosition signature ((signature.shapes first).symm label) step).symm branch from
+        (ContextualWSignature.forwardPosition (inverseSignature signature) label step).apply_symm_apply _]
+    exact (ContextualWSignature.forwardPosition signature ((signature.shapes first).symm label) step).apply_symm_apply branch
+  exact ((heq_of_eq restored).symm.trans (forward_inverse_position signature label step original)).symm
+
+theorem forward_inverse_raw {point : D} (tree : RawTree nextShape nextPosition point) :
+    ContextualWSignature.mapRaw signature (ContextualWSignature.mapRaw (inverseSignature signature) tree) = tree := by
+  induction tree with
+  | @sup point label children earlier =>
+    apply RawTree.sup_eq_of_cast ((signature.shapes point).apply_symm_apply label)
+    intro next arrow branch
+    refine (earlier next arrow _).trans ?_
+    exact RawTree.children_eq label children rfl _ _
+      ((double_inverse_position_right signature label arrow branch).trans (cast_heq _ _).symm)
+
+noncomputable def naturalEquiv (point : D) :
+    NaturalTree shape position point ≃ NaturalTree nextShape nextPosition point where
+  toFun := ContextualWSignature.mapNatural signature
+  invFun := ContextualWSignature.mapNatural (inverseSignature signature)
+  left_inv tree := Subtype.ext (inverse_forward_raw signature tree.val)
+  right_inv tree := Subtype.ext (forward_inverse_raw signature tree.val)
+
+theorem natural_forward_restrict {first second : D} (step : first ⟶ second)
+    (tree : NaturalTree shape position first) :
+    naturalEquiv signature second ((ContextualWTypes.family shape position).map step tree) =
+      (ContextualWTypes.family nextShape nextPosition).map step (naturalEquiv signature first tree) :=
+  ContextualWSignature.mapNatural_restrict signature step tree
+
+theorem natural_inverse_restrict {first second : D} (step : first ⟶ second)
+    (tree : NaturalTree nextShape nextPosition first) :
+    (naturalEquiv signature second).symm ((ContextualWTypes.family nextShape nextPosition).map step tree) =
+      (ContextualWTypes.family shape position).map step ((naturalEquiv signature first).symm tree) :=
+  ContextualWSignature.mapNatural_restrict (inverseSignature signature) step tree
+
 end Mettapedia.TypeTheory.MaterialSets.Hypersets.ContextualWSignatureEquivalence

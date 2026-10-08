@@ -16,7 +16,7 @@ that an unfunded wrapper simulates a base rewrite, or give the authored language
 transformer a monad structure.
 -/
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.Algebra
 open Mettapedia.Effects
 open Mettapedia.CategoryTheory.WriterActionAdjunction

@@ -60,6 +60,9 @@ def map (function : ∀ kind, First kind → Second kind) :
 
 end FamilyList
 
+-- The four universes remain independent in the field projections. The
+-- universe linter sees only their maximum in the structure's result sort.
+set_option linter.checkUnivs false in
 /-- A many-sorted algebra of language-construction operations.  Operation
 values may carry revisions, policies, gluing witnesses, target definitions,
 or other typed parameters. -/

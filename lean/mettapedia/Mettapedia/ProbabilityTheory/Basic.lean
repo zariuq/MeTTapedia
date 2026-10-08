@@ -98,7 +98,7 @@ theorem total_probability_binary {A B : Set Ω}
     (hBpos : μ B ≠ 0) (hBcomplPos : μ Bᶜ ≠ 0) :
     μ.real A = condProb μ A B * μ.real B + condProb μ A Bᶜ * μ.real Bᶜ := by
   have hdecomp :=
-    measureReal_inter_add_diff₀ (μ := μ) (s := A) (t := B) hB.nullMeasurableSet
+    measureReal_inter_add_sdiff₀ (μ := μ) (s := A) (t := B) hB.nullMeasurableSet
       (h := by finiteness)
   have hcompl : A \ B = A ∩ Bᶜ := by
     ext x; constructor <;> intro hx <;> exact ⟨hx.1, hx.2⟩

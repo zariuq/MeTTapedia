@@ -89,7 +89,7 @@ instance : T2Space (MarkovParam k) :=
 
 /-- The Borel σ-algebra on MarkovParam k (from the compact product topology).
 This is FINER than the wordProb-generated σ-algebra from HardBase. -/
-def borelMS : MeasurableSpace (MarkovParam k) := borel (MarkovParam k)
+@[reducible] def borelMS : MeasurableSpace (MarkovParam k) := borel (MarkovParam k)
 
 end MarkovParam
 
@@ -191,22 +191,22 @@ theorem continuous_wordProb :
 /-- wordProb is measurable w.r.t. the Borel σ-algebra (from continuity). -/
 theorem measurable_wordProb_borel (xs : List (Fin k)) :
     @Measurable _ _ MarkovParam.borelMS _ (fun θ : MarkovParam k => wordProb (k := k) θ xs) := by
-  letI : MeasurableSpace (MarkovParam k) := MarkovParam.borelMS
-  haveI : BorelSpace (MarkovParam k) := ⟨rfl⟩
+  let : MeasurableSpace (MarkovParam k) := MarkovParam.borelMS
+  have : BorelSpace (MarkovParam k) := ⟨rfl⟩
   exact (continuous_wordProb (k := k) xs).measurable
 
 /-- The initial-state mass of a `MarkovParam` is Borel measurable. -/
 theorem measurable_initProb_borel (a : Fin k) :
     @Measurable _ _ MarkovParam.borelMS _ (fun θ : MarkovParam k => initProb (k := k) θ a) := by
-  letI : MeasurableSpace (MarkovParam k) := MarkovParam.borelMS
-  haveI : BorelSpace (MarkovParam k) := ⟨rfl⟩
+  let : MeasurableSpace (MarkovParam k) := MarkovParam.borelMS
+  have : BorelSpace (MarkovParam k) := ⟨rfl⟩
   exact (continuous_initProb_borel (k := k) a).measurable
 
 /-- The one-step transition mass of a `MarkovParam` is Borel measurable. -/
 theorem measurable_stepProb_borel (a b : Fin k) :
     @Measurable _ _ MarkovParam.borelMS _ (fun θ : MarkovParam k => stepProb (k := k) θ a b) := by
-  letI : MeasurableSpace (MarkovParam k) := MarkovParam.borelMS
-  haveI : BorelSpace (MarkovParam k) := ⟨rfl⟩
+  let : MeasurableSpace (MarkovParam k) := MarkovParam.borelMS
+  have : BorelSpace (MarkovParam k) := ⟨rfl⟩
   exact (continuous_stepProb_borel (k := k) a b).measurable
 
 /-! ## σ-algebra compatibility

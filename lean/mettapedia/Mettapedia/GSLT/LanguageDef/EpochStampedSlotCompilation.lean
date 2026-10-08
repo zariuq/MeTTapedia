@@ -141,6 +141,146 @@ def epochStampedSlotRealization [DecidableEq (Fin width)] :
     intro _ source
     exact snapshotStamped_run_eq_fresh source
 
+/-! ## Current-epoch checkpoint transport -/
+
+section CurrentEpochCopy
+
+universe uCopyTarget
+variable {width : Nat} {Value : Type uValue} {Target : Type uCopyTarget}
+
+/-- Retain every stamp, transport current payloads, and omit stale payloads.
+This logical copy does not inspect payloads outside the captured epoch. Native
+allocation, ownership, query-state decoding and cost observations require their
+own correspondence. -/
+def copyCurrent (epoch : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) : StampedBuffer width Target :=
+  fun slot => ((buffer slot).1,
+    if (buffer slot).1 = epoch then (buffer slot).2.map mapping else none)
+
+theorem copyCurrent_stamp (epoch : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) (slot : Fin width) :
+    (copyCurrent epoch mapping buffer slot).1 = (buffer slot).1 := rfl
+
+/-- All live coordinates, including absent current values, are preserved. -/
+theorem read_copyCurrent (epoch : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) :
+    read epoch (copyCurrent epoch mapping buffer) = mapValues mapping (read epoch buffer) := by
+  funext slot
+  by_cases current : (buffer slot).1 = epoch <;> simp [read, copyCurrent, mapValues, current]
+
+theorem copyCurrent_writeEntry (epoch : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) (entry : Fin width × Value) :
+    copyCurrent epoch mapping (writeEntry epoch buffer entry) =
+      writeEntry epoch (copyCurrent epoch mapping buffer) (entry.1, mapping entry.2) := by
+  funext slot
+  by_cases same : slot = entry.1 <;> simp [copyCurrent, writeEntry, same]
+
+/-- Subsequent writes in the captured transaction commute with copying. -/
+theorem copyCurrent_runStamped (epoch : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) (transaction : Transaction width Value) :
+    copyCurrent epoch mapping (runStamped epoch buffer transaction) =
+      runStamped epoch (copyCurrent epoch mapping buffer) (mapEntries mapping transaction) := by
+  induction transaction generalizing buffer with
+  | nil => rfl
+  | cons entry entries ih =>
+      simp only [runStamped, mapEntries, List.map_cons]
+      rw [ih, copyCurrent_writeEntry]
+      rfl
+
+theorem snapshotStamped_copyCurrent (epoch : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) :
+    snapshotStamped epoch (copyCurrent epoch mapping buffer) =
+      (snapshotStamped epoch buffer).map (Option.map mapping) := by
+  simp only [snapshotStamped]
+  rw [read_copyCurrent, snapshot_mapValues]
+
+/-- Preserving stamps also preserves admission of the next fresh epoch. -/
+theorem copyCurrent_unused (epoch next : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) (unused : ∀ slot, (buffer slot).1 ≠ next) :
+    ∀ slot, (copyCurrent epoch mapping buffer slot).1 ≠ next := unused
+
+/-- Current logical equality is reflected when payload identities remain
+injective. No reflection of arbitrary raw physical-byte observations is claimed. -/
+theorem read_copyCurrent_reflects (epoch : Nat) (mapping : Value → Target)
+    (faithful : Function.Injective mapping) (first second : StampedBuffer width Value)
+    (same : read epoch (copyCurrent epoch mapping first) =
+      read epoch (copyCurrent epoch mapping second)) :
+    read epoch first = read epoch second := by
+  rw [read_copyCurrent, read_copyCurrent] at same
+  exact mapValues_injective mapping faithful same
+
+/-- Stale erasure remains exact for future transactions at an admitted fresh
+epoch. Reusing a colliding epoch is excluded rather than silently resetting it. -/
+theorem snapshotStamped_copyCurrent_future (epoch next : Nat) (mapping : Value → Target)
+    (buffer : StampedBuffer width Value) (transaction : Transaction width Value)
+    (unused : ∀ slot, (buffer slot).1 ≠ next) :
+    snapshotStamped next
+      (runStamped next (copyCurrent epoch mapping buffer) (mapEntries mapping transaction)) =
+      (snapshot (runFresh transaction)).map (Option.map mapping) := by
+  let copied : AdmittedEpochTransaction width Target :=
+    ⟨copyCurrent epoch mapping buffer, next, mapEntries mapping transaction,
+      copyCurrent_unused epoch next mapping buffer unused⟩
+  have exactSnapshot := snapshotStamped_run_eq_fresh copied
+  change snapshotStamped next
+    (runStamped next (copyCurrent epoch mapping buffer) (mapEntries mapping transaction)) =
+      snapshot (runFresh (mapEntries mapping transaction)) at exactSnapshot
+  rw [exactSnapshot, runFresh_mapEntries, snapshot_mapValues]
+
+namespace CopyControls
+
+def mixed : StampedBuffer 3 Nat
+  | ⟨0, _⟩ => (4, some 11)
+  | ⟨1, _⟩ => (3, some 99)
+  | ⟨2, _⟩ => (4, some 11)
+
+def mapping (value : Nat) : Nat := 10 + value
+
+theorem current_and_equal_values_preserve_positions :
+    snapshotStamped 4 (copyCurrent 4 mapping mixed) = [some 21, none, some 21] := by
+  decide
+
+theorem stale_payload_is_not_copied :
+    (copyCurrent 4 mapping mixed ⟨1, by omega⟩).1 = 3 ∧
+      (copyCurrent 4 mapping mixed ⟨1, by omega⟩).2 = none := by
+  decide
+
+theorem admitted_future_transaction :
+    snapshotStamped 5
+      (runStamped 5 (copyCurrent 4 mapping mixed)
+        [(⟨1, by omega⟩, 18), (⟨0, by omega⟩, 12)]) =
+      [some 12, some 18, none] := by
+  decide
+
+theorem dropping_current_values_changes_observation :
+    snapshotStamped 4 (copyCurrent 4 mapping mixed) ≠
+      snapshotStamped 4 (fun slot => ((mixed slot).1, none)) := by
+  decide
+
+theorem colliding_epoch_is_refused :
+    (admit? (copyCurrent 4 mapping mixed) 3 ([] : Transaction 3 Nat)).isSome = false := by
+  decide
+
+theorem colliding_epoch_can_reveal_omitted_payload :
+    snapshotStamped 3 (copyCurrent 4 mapping mixed) ≠
+      (snapshotStamped 3 mixed).map (Option.map mapping) := by
+  decide
+
+theorem noninjective_transport_loses_value_identity :
+    let first : StampedBuffer 1 Nat := fun _ => (4, some 1)
+    let second : StampedBuffer 1 Nat := fun _ => (4, some 2)
+    read 4 first ≠ read 4 second ∧
+      read 4 (copyCurrent 4 (fun _ => 0) first) =
+        read 4 (copyCurrent 4 (fun _ => 0) second) := by
+  constructor
+  · intro same
+    have slot := congrFun same ⟨0, by omega⟩
+    simp [read] at slot
+  · rfl
+
+end CopyControls
+
+end CurrentEpochCopy
+
 /-! ## Clearing-cost certificate -/
 
 /-- Explicit clearing touches the complete finite slot inventory. -/

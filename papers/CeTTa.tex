@@ -2354,6 +2354,121 @@ larger memory footprints.  Those are honest remaining control/allocation
 targets; the table is not evidence that every \PeTTa{} program should be
 optimized through the Prime machine or through \PathMap{}.
 
+%% ────────────────────────────────────────────────────────────────────
+\subsection{September 29: \PeTTa{} Dialect Against SWI-\PeTTa{}}
+\label{sec:petta-swi-september}
+
+This benchmark compares \CeTTa{}'s \PeTTa{} dialect (\code{-{}-lang petta})
+with SWI-\PeTTa{} on the reference's whole example corpus and on scaling
+kernels, variable-transport walks, the pattern miner, a constraint ladder and
+\code{static-import!}, after the September conformance work (delayed goals,
+rational terms, one numeric equality policy, uncaught errors,
+\code{static-import!} through SWI's own consult).  The reference is \PeTTa{} at
+upstream \code{main} with pull requests \#219 and \#225--\#227 (revision
+\code{9b016a3}) under SWI-Prolog 10.1.9; the candidate is \CeTTa{} source tree
+\code{1f3d58b9}.  A program is timed only after a per-query correctness gate:
+each query's answers are compared between the engines as multisets,
+normalized for variable spelling alone, together with effects, assertions,
+exit status and standard error, with no stored reference output reused.
+Qualified programs then run unframed, five times per engine, serially and
+interleaved, pinned to one CPU of a Ryzen~7 9800X3D; peak memory and
+user-mode instructions are recorded, and every input, executable and linked
+library was hashed before and after.  A companion report gives every row.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+lane & cases & exact & bag & agree-failing & unframed alike & once & other & fail \\
+\midrule
+\PeTTa{} examples & 167 & 161 & 0 & 1 & 1 & 0 & 0 & 4 \\
+79-row panel & 79 & 79 & 0 & 0 & 0 & 0 & 0 & 0 \\
+large scaling rungs & 15 & 15 & 0 & 0 & 0 & 0 & 0 & 0 \\
+pattern-miner modes & 10 & 10 & 0 & 0 & 0 & 0 & 0 & 0 \\
+constraint-chain ladder & 5 & 5 & 0 & 0 & 0 & 0 & 0 & 0 \\
+regression programs & 7 & 6 & 0 & 0 & 0 & 0 & 0 & 1 \\
+conformance fixtures & 20 & 9 & 0 & 0 & 9 & 0 & 0 & 2 \\
+registered-name probes & 344 & 332 & 0 & 0 & 8 & 0 & 0 & 4 \\
+PeTTaChainer tests & 21 & 2 & 0 & 10 & 0 & 0 & 0 & 9 \\
+\bottomrule
+\end{tabular}}
+\caption{Correctness verdicts per lane (\emph{unframed alike}: both engines
+stop the program alike; \emph{agree-failing}: the same assertions fail in
+both).}
+\label{tab:petta-swi-correctness-sep}
+\end{table}
+
+161 of the reference's 167 examples agree exactly; the other six depend on the
+outside world (the clock, a network build, a hosted model, console input,
+PyTorch).  Every kernel, walk, miner and ladder program agrees.  The open
+application gap is PeTTaChainer: 9 of its 21 test files diverge.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+family & rows & median & geomean & range & below 1$\times$ & startup-dom. \\
+\midrule
+examples & 160 & 11.0$\times$ & 9.04$\times$ & 0.04$\times$--19.7$\times$ & 3 & 142 \\
+panel applications & 32 & 11.2$\times$ & 7.69$\times$ & 0.04$\times$--20.3$\times$ & 2 & 24 \\
+scaling batteries & 41 & 4.53$\times$ & 3.50$\times$ & 0.07$\times$--9.34$\times$ & 2 & 9 \\
+variable-transport walks & 20 & 8.65$\times$ & 8.35$\times$ & 1.29$\times$--53.3$\times$ & 0 & 10 \\
+pattern miner & 10 & 1.29$\times$ & 1.34$\times$ & 1.01$\times$--1.68$\times$ & 0 & 1 \\
+constraint-chain ladder & 5 & 0.05$\times$ & 0.05$\times$ & 0.004$\times$--0.67$\times$ & 5 & 0 \\
+\midrule
+\multicolumn{3}{@{}l}{family-balanced geometric mean} & 1.76$\times$ & \multicolumn{3}{l}{} \\
+\bottomrule
+\end{tabular}
+\caption{Complete-process wall-time ratios (reference over \CeTTa{}) by
+family.  Startup-dominated rows are those where more than half the time gap
+is the gap between the process floors (38\,ms and 3\,ms).}
+\label{tab:petta-swi-families-sep}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+kernel & size & SWI-\PeTTa{} & \CeTTa{} & ratio & RSS SWI & RSS \CeTTa{} \\
+& & & & & MB & MB \\
+\midrule
+Ackermann & $A(3,11)$ & 18.26\,s & 4.03\,s & 4.53$\times$ & 28 & 35 \\
+Takeuchi & $(30,20,10)$ & 8.01\,s & 1.82\,s & 4.39$\times$ & 20 & 29 \\
+tail loop & $10^8$ & 11.53\,s & 2.39\,s & 4.83$\times$ & 20 & 30 \\
+map/map/fold & $10^6$ & 1.39\,s & 237\,ms & 5.87$\times$ & 789 & 471 \\
+Peano Ackermann & $(2, 3000)$ & 2.37\,s & 293\,ms & 8.08$\times$ & 2{,}745 & 64 \\
+$n$-queens & $n=12$ & 8.57\,s & 3.11\,s & 2.76$\times$ & 251 & 43 \\
+differentiation & 13 steps & 1.38\,s & 658\,ms & 2.09$\times$ & 1{,}170 & 776 \\
+naive reverse & 30{,}000 & 16.37\,s & 8.26\,s & 1.98$\times$ & 47 & 81 \\
+binary trees & depth 24 & 8.33\,s & 4.92\,s & 1.69$\times$ & 2{,}450 & 3{,}760 \\
+state cell & $10^6$ & 221\,ms & 3.28\,s & 0.07$\times$ & 20 & 142 \\
+\bottomrule
+\end{tabular}
+\caption{The largest size of each scaling kernel: median of five runs.}
+\label{tab:petta-swi-rungs-sep}
+\end{table}
+
+Programs that do real work are faster on \CeTTa{} in every family but one:
+2.9$\times$ on the substantive examples and on the scaling kernels, 12$\times$
+on the walks, 1.4$\times$ on the miner (geometric means); at their largest
+sizes all kernels but the state cell run 1.7$\times$ (binary trees) to
+8.1$\times$ (Peano Ackermann) faster.  Ten programs are slower, and their causes are measured.  A
+chain of CLP(FD) constraints built one call at a time is flat on the reference
+(41--48\,ms) and quadratic on \CeTTa{} (0.06 to 11.2\,s for 100 to 1{,}100
+links): each call carries the whole network across the Prolog boundary and
+reads it back (90\% of the instructions).  A 28-leg conjunction runs at
+0.04$\times$ because \CeTTa{} recomputes every remaining leg's candidates
+before choosing the next (79\% of its instructions on a smaller instance).  A
+state cell updated in a loop runs at 0.07$\times$ because the named-state
+operations take general dispatch on every step.  A Metamath backward chainer
+and a minimal-MeTTa interpreter run at about 0.7$\times$ with equal instruction
+counts but fewer instructions per cycle.
+\code{static-import!} of a million rows loads warm at 0.16$\times$: \CeTTa{}
+mirrors each fact into its native space.  These costs mark the next work on
+the shared machine: keeping a constraint network where it lives, maintaining
+leg selectivity incrementally, and giving named state the compiled path.
+
 \section{Performance Analysis}
 
 \subsection{Asymptotic properties}

@@ -1,17 +1,22 @@
 import MeTTailCore
 import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge
 
 /-!
-# PeTTa Core/Spec Profile Bridge
+# PeTTa Pattern profile conversion
 
-Bridge the runtime-side `MeTTailCore` MeTTaIL syntax used by lowering and the
-spec-side `Mettapedia.OSLF` MeTTaIL syntax used by the formal PeTTa semantics.
+Convert between the runtime-side `MeTTailCore` Pattern syntax and the
+`Mettapedia.OSLF` Pattern syntax used by the selected-rewrite view. This
+is a syntax conversion for that profile; PeTTa's whole-program semantics
+uses `OSLFCore.Atom` in the core modules.
 
-This file exists so program-level artifact export can be derived from the
-formal PeTTa side without guessing about the runtime lowering format.
+The round-trip theorems below cover the runtime format. Rule-local bindings
+and premises that the runtime format cannot retain are rejected.
 -/
 
 namespace Mettapedia.Languages.MeTTa.PeTTa.ProfileBridge
+
+open Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge (specToCoreCollType specToCoreTypeExpr)
 
 abbrev CCollType := MeTTailCore.MeTTaIL.Syntax.CollType
 abbrev SCollType := Mettapedia.OSLF.MeTTaIL.Syntax.CollType
@@ -36,22 +41,11 @@ def coreToSpecCollType : CCollType → SCollType
   | .hashBag => .hashBag
   | .hashSet => .hashSet
 
-def specToCoreCollType : SCollType → CCollType
-  | .vec => .vec
-  | .hashBag => .hashBag
-  | .hashSet => .hashSet
-
 def coreToSpecTypeExpr : CTypeExpr → STypeExpr
   | .base s => .base s
   | .arrow a b => .arrow (coreToSpecTypeExpr a) (coreToSpecTypeExpr b)
   | .multiBinder t => .multiBinder (coreToSpecTypeExpr t)
   | .collection ct t => .collection (coreToSpecCollType ct) (coreToSpecTypeExpr t)
-
-def specToCoreTypeExpr : STypeExpr → CTypeExpr
-  | .base s => .base s
-  | .arrow a b => .arrow (specToCoreTypeExpr a) (specToCoreTypeExpr b)
-  | .multiBinder t => .multiBinder (specToCoreTypeExpr t)
-  | .collection ct t => .collection (specToCoreCollType ct) (specToCoreTypeExpr t)
 
 def coreToSpecPattern : CPattern → SPattern
   | .bvar n => .bvar n
@@ -103,6 +97,8 @@ def coreToSpecRewriteRule (r : CRewriteRule) : SRewriteRule :=
     right := coreToSpecPattern r.right }
 
 def specToCoreRewriteRule (r : SRewriteRule) : Except String CRewriteRule := do
+  Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge.checkFlatBindings
+    "rewrite" r.name r.bindings
   let premises ← r.premises.mapM specToCorePremise
   pure
     { name := r.name
@@ -197,7 +193,9 @@ theorem rewriteRule_roundTrip (r : CRewriteRule) :
       have hPremises' :
           premises.mapM (specToCorePremise ∘ coreToSpecPremise) = .ok premises := by
         simpa [Function.comp_def] using hPremises
-      simp [coreToSpecRewriteRule, specToCoreRewriteRule, hTypes, pattern_roundTrip]
+      simp [coreToSpecRewriteRule, specToCoreRewriteRule,
+        Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge.checkFlatBindings,
+        hTypes, pattern_roundTrip]
       rw [hPremises']
       rfl
 

@@ -44,6 +44,16 @@ def targetRawFinish {World : Type} (state : TargetState World) (default : Target
   | .error fault => ⟨default, targetPoison state fault⟩
   | .ok value => ⟨value, state⟩
 
+theorem source_raw_finish_memory {World : Type} (state : SourceState World) (default : SourceValue)
+    (operation : Except NativeWord64.Fault SourceValue) :
+    (sourceRawFinish state default operation).state.memory = state.memory := by
+  cases operation <;> cases prior : state.fault <;> simp [sourceRawFinish, sourcePoison, prior]
+
+theorem target_raw_finish_memory {World : Type} (state : TargetState World) (default : TargetValue)
+    (operation : Except NativeWord64.Fault TargetValue) :
+    (targetRawFinish state default operation).state.memory = state.memory := by
+  cases operation <;> cases prior : state.fault <;> simp [targetRawFinish, targetPoison, prior]
+
 theorem raw_finish_correspondence {SourceWorld TargetWorld : Type}
     {worldRelated : SourceWorld → TargetWorld → Prop}
     {source : SourceState SourceWorld} {target : TargetState TargetWorld}
@@ -208,5 +218,17 @@ theorem empty_index_refuses_bounds_before_null_guard :
 
 theorem reference_null_refuses :
     sourceReference false = .error .nullReference := rfl
+
+theorem source_slice_call_reference {World : Type} (state : SourceState World)
+    (length width start count : NativeWord64.Word) (address : Option Address) :
+    ∃ pointer, (sourceSliceCall state length width start count address).value = .reference pointer := by
+  unfold sourceSliceCall sourceCheckedValue NativeOpsMemoryGuards.sourceChecked
+  cases ready : NativeOpsMemoryGuards.sourceReady state.fault state.allocatorAvailable state.releaseAvailable with
+  | error fault => exact ⟨none, rfl⟩
+  | ok _ =>
+      unfold sourceSliceValue
+      cases sliced : NativeOpsMemoryGuards.sourceSlice length width start count address.isSome with
+      | error fault => exact ⟨none, rfl⟩
+      | ok offset => exact ⟨_, rfl⟩
 
 end Mettapedia.GSLT.LanguageDef.NativeOps

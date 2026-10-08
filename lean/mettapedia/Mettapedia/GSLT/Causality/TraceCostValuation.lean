@@ -48,7 +48,7 @@ The bag of sites is an account of traces for every independence of events
 
 set_option autoImplicit false
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 namespace Mettapedia.GSLT.Causality.TraceCostValuation
 

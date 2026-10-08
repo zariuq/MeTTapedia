@@ -340,14 +340,20 @@ theorem append_append (record : Option (Prefix Event)) (first second : List Even
   | none => rfl
   | some record => simp [append, Prefix.append_append]
 
+/-- Existing prefix append is the stateful observer's chronological consume
+fold, including disabled recording and omission-only updates. -/
+theorem append_foldl (record : Option (Prefix Event)) (events : List Event) :
+    append record events =
+      events.foldl (fun current event => accept current (fun _ => event)) record := by
+  induction events generalizing record with
+  | nil => exact append_nil _
+  | cons event rest ih => rw [append_cons, List.foldl_cons, ih]
+
 def controller (base : Controller Node Answer Memory)
     (observe : Memory → Node → Option Answer → List Node → Event)
-    (capacity : Option Nat) : Controller Node Answer (Memory × Option (Prefix Event)) where
-  initialMemory := (base.initialMemory, initial capacity)
-  scheduler memory := base.scheduler memory.1
-  advance memory node answer generated :=
-    (base.advance memory.1 node answer generated,
-      accept memory.2 (fun _ => observe memory.1 node answer generated))
+    (capacity : Option Nat) : Controller Node Answer (Memory × Option (Prefix Event)) :=
+  base.observing observe (initial capacity)
+    (fun record event => accept record (fun _ => event))
 
 abbrev erase (snapshot : Snapshot Node Answer (Memory × Option (Prefix Event))) :
     Snapshot Node Answer Memory := snapshot.mapMemory Prod.fst
@@ -420,7 +426,7 @@ theorem controller_advance_transfer (capacity : Option Nat)
       (controller second observeTarget capacity).advance
         (transferMemory transfer payloadMap memory) (mapping node) emission
           (generated.map mapping) := by
-  simp only [controller, transferMemory, accept_map, advances, observations]
+  simp only [controller, Controller.observing, transferMemory, accept_map, advances, observations]
 
 include emits successors reorders integrates advances observations in
 /-- The actual recording controllers commute with state transport. These
@@ -451,15 +457,14 @@ theorem run_transport (capacity : Option Nat) (fuel : Nat)
         mapping (transferMemory transfer payloadMap) =
       Snapshot.run target (controller second observeTarget capacity) fuel
         (snapshot.mapState mapping (transferMemory transfer payloadMap)) := by
-  apply Snapshot.run_mapState mapping (transferMemory transfer payloadMap) source target
-    (controller first observeSource capacity) (controller second observeTarget capacity)
-    emits successors
-  · intro memory nodes
-    exact reorders memory.1 nodes
-  · intro memory pending generated
-    exact integrates memory.1 pending generated
-  · exact controller_advance_transfer mapping transfer payloadMap first second
-      observeSource observeTarget advances observations capacity
+  simpa only [controller, transferMemory, Snapshot.mapState, Snapshot.mapMemory] using
+    Snapshot.observing_run_transport mapping transfer payloadMap
+      (Option.map (Prefix.map payloadMap)) source target first second
+      observeSource observeTarget (initial capacity) (initial capacity)
+      (fun record event => accept record (fun _ => event))
+      (fun record event => accept record (fun _ => event))
+      emits successors reorders integrates advances observations
+      (fun record event => accept_map payloadMap record (fun _ => event)) fuel snapshot
 
 end Transport
 
@@ -470,22 +475,18 @@ theorem tick_erasure (system : BranchingSystem Node Answer)
     (observe : Memory → Node → Option Answer → List Node → Event) (capacity : Option Nat)
     (snapshot : Snapshot Node Answer (Memory × Option (Prefix Event))) :
     erase (Snapshot.tick system (controller base observe capacity) snapshot) =
-      Snapshot.tick system base (erase snapshot) := by
-  cases snapshot with
-  | mk search memory =>
-      rcases memory with ⟨memory, record⟩
-      simp only [Snapshot.tick, controller, erase, Snapshot.mapMemory]
-      cases (base.scheduler memory).reorder search.frontier <;> rfl
+      Snapshot.tick system base (erase snapshot) :=
+  Snapshot.observing_tick_erasure system base observe (initial capacity)
+    (fun record event => accept record (fun _ => event)) snapshot
 
 theorem run_erasure (system : BranchingSystem Node Answer)
     (base : Controller Node Answer Memory)
     (observe : Memory → Node → Option Answer → List Node → Event) (capacity : Option Nat)
     (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × Option (Prefix Event))) :
     erase (Snapshot.run system (controller base observe capacity) fuel snapshot) =
-      Snapshot.run system base fuel (erase snapshot) := by
-  induction fuel with
-  | zero => rfl
-  | succ fuel ih => rw [Snapshot.run, tick_erasure, ih]; rfl
+      Snapshot.run system base fuel (erase snapshot) :=
+  Snapshot.observing_run_erasure system base observe (initial capacity)
+    (fun record event => accept record (fun _ => event)) fuel snapshot
 
 /-- Independent reference observation of the original controller's next
 selection. An exhausted frontier emits no recording request. -/
@@ -505,6 +506,82 @@ def stream (system : BranchingSystem Node Answer) (base : Controller Node Answer
       stream system base observe fuel snapshot ++
         (next system base observe (Snapshot.run system base fuel snapshot)).toList
 
+/-- The independently specified observation stream composes at the actual
+resumed controller snapshot, retaining its scheduling memory and frontier. -/
+theorem stream_add (system : BranchingSystem Node Answer)
+    (base : Controller Node Answer Memory)
+    (observe : Memory → Node → Option Answer → List Node → Event)
+    (first second : Nat) (snapshot : Snapshot Node Answer Memory) :
+    stream system base observe (first + second) snapshot =
+      stream system base observe first snapshot ++
+        stream system base observe second (Snapshot.run system base first snapshot) := by
+  induction second with
+  | zero => simp only [Nat.add_zero, stream, List.append_nil]
+  | succ second ih =>
+      change stream system base observe (first + second) snapshot ++
+          (next system base observe (Snapshot.run system base (first + second) snapshot)).toList =
+        stream system base observe first snapshot ++
+          (stream system base observe second (Snapshot.run system base first snapshot) ++
+            (next system base observe
+              (Snapshot.run system base second (Snapshot.run system base first snapshot))).toList)
+      rw [ih, Snapshot.run_add, List.append_assoc]
+
+/-- A second observation that reads only the original continuation sees
+the same chronological stream whether the first observer is attached or
+erased. Neither observer may use the other's private accumulated state. -/
+theorem observing_stream_erasure {FirstEvent Observer : Type*}
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (first : Memory → Node → Option Answer → List Node → FirstEvent)
+    (initial : Observer) (consume : Observer → FirstEvent → Observer)
+    (second : Memory → Node → Option Answer → List Node → Event)
+    (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × Observer)) :
+    stream system (base.observing first initial consume) (fun memory => second memory.1)
+        fuel snapshot =
+      stream system base second fuel (snapshot.mapMemory Prod.fst) := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel ih =>
+      rw [stream, ih]
+      change stream system base second fuel (snapshot.mapMemory Prod.fst) ++
+          (next system base second
+            ((Snapshot.run system (base.observing first initial consume) fuel snapshot).mapMemory
+              Prod.fst)).toList = _
+      rw [Snapshot.observing_run_erasure]
+      rfl
+
+/-- A stateful observer consumes the next original-controller observation.
+An exhausted frontier performs no observer update. -/
+theorem observer_tick {Observer : Type*}
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (observe : Memory → Node → Option Answer → List Node → Event)
+    (initial : Observer) (consume : Observer → Event → Observer)
+    (snapshot : Snapshot Node Answer (Memory × Observer)) :
+    (Snapshot.tick system (base.observing observe initial consume) snapshot).memory.2 =
+      ((next system base observe (snapshot.mapMemory Prod.fst)).toList).foldl
+        consume snapshot.memory.2 := by
+  cases snapshot with
+  | mk search memory =>
+      rcases memory with ⟨memory, observer⟩
+      simp only [Snapshot.tick, Controller.observing, Snapshot.mapMemory, next]
+      cases (base.scheduler memory).reorder search.frontier <;> rfl
+
+/-- Operational observer accumulation is the fold of an independently
+specified unobserved stream. Bounded recording and scoped cost delivery use
+this same construction with different state and consume operations. -/
+theorem observer_run {Observer : Type*}
+    (system : BranchingSystem Node Answer) (base : Controller Node Answer Memory)
+    (observe : Memory → Node → Option Answer → List Node → Event)
+    (initial : Observer) (consume : Observer → Event → Observer)
+    (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × Observer)) :
+    (Snapshot.run system (base.observing observe initial consume) fuel snapshot).memory.2 =
+      (stream system base observe fuel (snapshot.mapMemory Prod.fst)).foldl
+        consume snapshot.memory.2 := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel ih =>
+      rw [Snapshot.run, observer_tick, ih, Snapshot.observing_run_erasure,
+        stream, List.foldl_append]
+
 theorem tick_record (system : BranchingSystem Node Answer)
     (base : Controller Node Answer Memory)
     (observe : Memory → Node → Option Answer → List Node → Event) (capacity : Option Nat)
@@ -514,7 +591,7 @@ theorem tick_record (system : BranchingSystem Node Answer)
   cases snapshot with
   | mk search memory =>
       rcases memory with ⟨memory, record⟩
-      simp only [Snapshot.tick, controller, erase, Snapshot.mapMemory, next]
+      simp only [Snapshot.tick, controller, Controller.observing, erase, Snapshot.mapMemory, next]
       cases (base.scheduler memory).reorder search.frontier with
       | nil => exact (append_nil record).symm
       | cons node rest =>
@@ -529,10 +606,9 @@ theorem run_record (system : BranchingSystem Node Answer)
     (fuel : Nat) (snapshot : Snapshot Node Answer (Memory × Option (Prefix Event))) :
     (Snapshot.run system (controller base observe capacity) fuel snapshot).memory.2 =
       append snapshot.memory.2 (stream system base observe fuel (erase snapshot)) := by
-  induction fuel with
-  | zero => exact (append_nil snapshot.memory.2).symm
-  | succ fuel ih =>
-      rw [Snapshot.run, tick_record, ih, run_erasure, stream, append_append]
+  rw [append_foldl]
+  exact observer_run system base observe (initial capacity)
+    (fun record event => accept record (fun _ => event)) fuel snapshot
 
 theorem disabled_record (system : BranchingSystem Node Answer)
     (base : Controller Node Answer Memory)

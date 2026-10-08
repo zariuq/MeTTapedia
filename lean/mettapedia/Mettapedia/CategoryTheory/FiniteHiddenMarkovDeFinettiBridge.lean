@@ -363,7 +363,7 @@ noncomputable def observedCylinderPrefixMeasure
     observedSequenceMeasure (latent := latent) (obs := obs) ⟨θ, emission⟩
       (MarkovDeFinettiRecurrence.cylinder (k := obs) ys)
   root_eq_one' := by
-    haveI :
+    have :
         IsProbabilityMeasure
           (observedSequenceMeasure (latent := latent) (obs := obs) ⟨θ, emission⟩) :=
       observedSequenceMeasure_isProbability (latent := latent) (obs := obs) ⟨θ, emission⟩

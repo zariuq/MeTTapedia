@@ -138,6 +138,95 @@ theorem all_mismatch_does_not_activate (matcher : Matcher Element Local)
     all_mismatch_answers matcher subjects seed mismatch]
   rfl
 
+/-- A candidate filter may exclude only rows whose local matcher produces no
+refinement. The equality preserves the ordered occurrence list, not its set. -/
+theorem candidate_answers (matcher : Matcher Element Local)
+    (rows : List Element) (candidate : Element → Bool) (seed : Local)
+    (excluded : ∀ row ∈ rows, candidate row = false → matcher row seed = []) :
+    memberAnswers matcher (rows.filter candidate) seed =
+      memberAnswers matcher rows seed := by
+  induction rows with
+  | nil => rfl
+  | cons row rows ih =>
+      have rest := ih (fun item inside =>
+        excluded item (List.mem_cons_of_mem row inside))
+      cases selected : candidate row with
+      | false =>
+          have empty := excluded row List.mem_cons_self selected
+          simpa [memberAnswers, selected, empty] using rest
+      | true =>
+          simpa [memberAnswers, selected] using
+            congrArg (fun tail => matcher row seed ++ tail) rest
+
+/-- Independently obtained literal-hit coordinates are mapped to their local
+refinements. Equal rows at different coordinates remain separate occurrences. -/
+def exactAnswers (literal : Element → Bool) (refine : Element → Local → Local)
+    (rows : List Element) (seed : Local) : List Local :=
+  (rows.filter literal).map (fun row => refine row seed)
+
+/-- Checking the complete candidate frontier licences literal lookup only
+when each candidate has the local exact-match contract. -/
+theorem exact_frontier_answers (matcher : Matcher Element Local)
+    (rows : List Element) (exact literal : Element → Bool)
+    (refine : Element → Local → Local) (seed : Local)
+    (certified : rows.all exact = true)
+    (rowContract : ∀ row ∈ rows, exact row = true →
+      matcher row seed = if literal row then [refine row seed] else []) :
+    memberAnswers matcher rows seed = exactAnswers literal refine rows seed := by
+  induction rows with
+  | nil => rfl
+  | cons row rows ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at certified
+      have head := rowContract row List.mem_cons_self certified.1
+      have rest := ih certified.2 (fun item inside =>
+        rowContract item (List.mem_cons_of_mem row inside))
+      cases hit : literal row <;>
+        simp_all [memberAnswers, exactAnswers]
+
+/-- The candidate completeness check and the per-row exactness check compose.
+No conclusion is drawn merely from finding one or more positive literal hits. -/
+theorem candidate_exact_answers (matcher : Matcher Element Local)
+    (rows : List Element) (candidate exact literal : Element → Bool)
+    (refine : Element → Local → Local) (seed : Local)
+    (excluded : ∀ row ∈ rows, candidate row = false → matcher row seed = [])
+    (certified : (rows.filter candidate).all exact = true)
+    (rowContract : ∀ row ∈ rows.filter candidate, exact row = true →
+      matcher row seed = if literal row then [refine row seed] else []) :
+    memberAnswers matcher rows seed =
+      exactAnswers literal refine (rows.filter candidate) seed := by
+  rw [← candidate_answers matcher rows candidate seed excluded]
+  exact exact_frontier_answers matcher (rows.filter candidate) exact literal
+    refine seed certified rowContract
+
+/-- A qualified literal lookup preserves effectful consumers and delimited
+commit/failure continuations through the shared ordered guard executor. -/
+theorem source_exact_frontier (matcher : Matcher Element Local)
+    (rows : List Element) (exact literal : Element → Bool)
+    (refine : Element → Local → Local) (heldResult : Body Local World)
+    (seed : Local) (success : Success Local World Result)
+    (failure saved : Failure World Result) (world : World)
+    (certified : rows.all exact = true)
+    (rowContract : ∀ row ∈ rows, exact row = true →
+      matcher row seed = if literal row then [refine row seed] else []) :
+    eval (sourceBody matcher rows heldResult) seed success failure saved world =
+      eval (guard (exactAnswers literal refine rows) heldResult)
+        seed success failure saved world := by
+  rw [source_compiled]
+  simp only [compiledBody, OrderedGuardPipeline.guard, eval]
+  rw [exact_frontier_answers matcher rows exact literal refine seed certified rowContract]
+
+/-- A variable row followed by two literal hits still produces three matches.
+Replacing that frontier with its positive literal hits loses an occurrence. -/
+theorem positive_hits_do_not_certify_frontier :
+    memberAnswers (fun (_ : Nat) (seed : Nat) => [seed]) [0, 1, 1] 7 ≠
+      exactAnswers (fun row : Nat => row == 1) (fun _ seed : Nat => seed)
+        [0, 1, 1] 7 := by
+  decide
+
+theorem open_candidate_refuses_exactness :
+    ([0, 1, 1] : List Nat).all (fun row => row != 0) = false := by
+  decide
+
 /-- A single subject acquisition may perform effects and refine the caller's
 bindings. This interface returns one list, not a nondeterministic query stream. -/
 abbrev Acquisition (Element Local World : Type) :=

@@ -91,7 +91,7 @@ noncomputable def T_P_LP {σ : LPSignature} (kb : KnowledgeBase σ) (I : Interpr
 theorem T_P_LP_mono {σ : LPSignature} (kb : KnowledgeBase σ) :
     Monotone (T_P_LP kb) := by
   intro I J hIJ a ha
-  simp only [T_P_LP, Set.mem_union, Set.mem_setOf_eq] at ha ⊢
+  simp only [T_P_LP, Set.mem_union, Set.mem_ofPred_eq] at ha ⊢
   rcases ha with ha | ⟨c, g, hc, hhead, hbody⟩
   · exact Or.inl ha
   · exact Or.inr ⟨c, g, hc, hhead, fun b hb => hIJ (hbody b hb)⟩
@@ -167,7 +167,7 @@ theorem T_P_LP_le_iff {σ : LPSignature} (kb : KnowledgeBase σ) (I : Interpreta
     · intro c g hc hbody
       exact h (Set.mem_union_right _ ⟨c, g, hc, rfl, hbody⟩)
   · intro ⟨hdb, hclauses⟩ a ha
-    simp only [T_P_LP, Set.mem_union, Set.mem_setOf_eq] at ha
+    simp only [T_P_LP, Set.mem_union, Set.mem_ofPred_eq] at ha
     rcases ha with ha | ⟨c, g, hc, hhead, hbody⟩
     · exact hdb ha
     · exact hhead ▸ hclauses c g hc hbody

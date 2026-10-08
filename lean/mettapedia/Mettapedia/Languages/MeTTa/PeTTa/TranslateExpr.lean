@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.PrologBridge
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 
 /-!
 # Translate-Expr: MeTTa → Prolog Goal Compilation

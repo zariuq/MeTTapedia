@@ -28,13 +28,13 @@ In a fibration over a category C:
 
 namespace Mettapedia.GSLT.Core
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 /-! ## Change-of-Base Functors
 
-These functors are the key to making the subobject fibration work.
-For now, we axiomatize the structure; concrete implementations would
-depend on the specific category and fibration.
+This interface bundles supplied operations and their adjunctions on the
+predicate fibres. Concrete categorical substitution, including its identity
+and composition laws, is constructed by the predicate-doctrine interfaces.
 -/
 
 /-- Change-of-base structure for a subobject fibration.
@@ -115,6 +115,15 @@ theorem pullback_inf_le {X Y : C} (f : X ⟶ Y) (φ ψ : F.Sub Y) :
   · exact cob.pullback_mono f inf_le_left
   · exact cob.pullback_mono f inf_le_right
 
+/-- The right adjoint preserves the complete binary meet. -/
+theorem pullback_inf {X Y : C} (f : X ⟶ Y) (φ ψ : F.Sub Y) :
+    cob.pullback f (φ ⊓ ψ) = cob.pullback f φ ⊓ cob.pullback f ψ := by
+  apply le_antisymm (pullback_inf_le cob f φ ψ)
+  apply (cob.direct_pullback_adj f _ _).mp
+  apply le_inf
+  · exact (cob.direct_pullback_adj f _ _).mpr inf_le_left
+  · exact (cob.direct_pullback_adj f _ _).mpr inf_le_right
+
 /-- Direct image distributes over join -/
 theorem directImage_sup {X Y : C} (f : X ⟶ Y) (φ ψ : F.Sub X) :
     cob.directImage f (φ ⊔ ψ) = cob.directImage f φ ⊔ cob.directImage f ψ := by
@@ -174,7 +183,7 @@ This is the key compatibility condition for quantification and substitution.
 def BeckChevalley {C : Type*} [Category C] (F : SubobjectFibration C)
     (cob : ChangeOfBase F) : Prop :=
   ∀ {P A B C' : C} (π₁ : P ⟶ A) (π₂ : P ⟶ B) (f : A ⟶ C') (g : B ⟶ C'),
-    π₁ ≫ f = π₂ ≫ g →  -- commuting square
+    _root_.CategoryTheory.IsPullback π₂ π₁ g f →
     ∀ (φ : F.Sub B), cob.pullback f (cob.directImage g φ) =
                      cob.directImage π₁ (cob.pullback π₂ φ)
 

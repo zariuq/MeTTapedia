@@ -26,6 +26,20 @@ import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteL
 import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetTriangle
 import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetTypes
 import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetContinuations
+import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetSpans
+import Mettapedia.OSLF.Bridges.TypeTheory.HostChoiceObservedHypersetNativePredicates
+import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetReceipts
+import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetHistory
+import Mettapedia.GSLT.Logic.HostChoiceContextualObservedHypersetSpanControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftFamilies
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftProducts
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftIdentity
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftIdentityElimination
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftW
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftWAlgebra
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftAbstraction
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftFamilyControls
+import Mettapedia.TypeTheory.MaterialSets.Hypersets.HostChoiceContextualSetSiteLiftReindexing
 /-!
 # Optional host interpretations of observed hyperset theory
 
@@ -41,7 +55,10 @@ changing carrier. Actual member decoders
 join the set model to dependent sums, full-future products and identity
 elimination. Arbitrary argument-dependent member bodies have literal
 full-future decoders; generated full-family recipes provide actual Π, Σ,
-Id and W closure over wider parameters. Native over-category adjoints
+Id and W closure over wider parameters. Independently constructed upper
+material-member operations compare complete products, abstraction/application,
+sum adjunctions, arbitrary-motive dependent J and natural W initiality/folds
+with the actual lower operations, including their substitution laws. Native over-category adjoints
 have explicit comparison isomorphisms and original-bound fibre decoders.
 The generated successor preserves lower recipes through an injective
 cumulative embedding, with full decoder and fresh type-former comparisons.
@@ -56,6 +73,13 @@ actual observer-factorization and presentation-identity comparisons retain
 occurrences only for compatible consumers. Persistent well-foundedness
 quantifies over all future contexts. Host assumptions, universe shifts and
 exact proof dependencies remain explicit and separate from a native foundation choice.
+
+The retained reduction span keeps authored events and both endpoints. Its
+outgoing lifting law follows from the observed kernel; predecessor-modal
+descent has the separate exact incoming-matching criterion. Native sieve
+classifiers descend exactly for invariant predicates. Actual receipt families,
+whole sections, comprehension, products and sums retain their declared
+occurrences through contextual and parameter comparisons.
 
 The actual structured observed readout retains its observed class alongside
 the final set value. Its exact kernel preserves all declared atoms; the

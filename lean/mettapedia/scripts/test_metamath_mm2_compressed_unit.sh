@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "usage: $0 /path/to/mork /path/to/metamath-test" >&2
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+  echo "usage: $0 /path/to/mork /path/to/metamath-test [/path/to/mm2-translate]" >&2
   exit 2
 fi
 
@@ -38,6 +38,12 @@ done
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd -- "$script_dir/.." && pwd)
+native_root=$(cd -- "$project_root/../../Metamath/MM2" && pwd)
+translator_bin=${3:-"$native_root/frontend/build/mm2-translate"}
+if [[ ! -x "$translator_bin" ]]; then
+  echo "error: native translator is not executable: $translator_bin" >&2
+  exit 2
+fi
 output_dir="$project_root/.lake/build/conformance/metamath_mm2_compressed_unit"
 mkdir -p "$output_dir"
 cd "$project_root"
@@ -45,12 +51,8 @@ cd "$project_root"
 export_unit() {
   local source_path=$1
   local output_path=$2
-  printf '%s\n' \
-    'import Mettapedia.OSLF.Tools.ExportMetamathMM2RawUnit' \
-    '#eval exportMetamathMM2RawUnitFromEnvironment' |
-    env METTAPEDIA_MM2_RAW_SOURCE="$source_path" \
-      METTAPEDIA_MM2_RAW_OUTPUT="$output_path" \
-      lake env lean --stdin
+  python3 "$native_root/tools/prepare.py" --input "$source_path" \
+    --translator "$translator_bin" --output "$output_path"
 }
 
 count_root() {
@@ -123,32 +125,32 @@ export_unit "$incomplete_index_source" "$incomplete_index_program"
 export_unit "$out_of_range_index_source" "$out_of_range_index_program"
 export_unit "$nested_prefix_fault_source" "$nested_prefix_fault_program"
 
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$valid_program" "$valid_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$saved_heap_program" "$saved_heap_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$save_interrupt_program" "$save_interrupt_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$repeated_save_program" "$repeated_save_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$underflow_program" "$underflow_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$duplicate_header_program" "$duplicate_header_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$assertion_fhyp_program" "$assertion_fhyp_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$mandatory_order_program" "$mandatory_order_result"
-"$mork_bin" run --steps 20000 --instrumentation 0 \
-  "$mixed_ehyp_z_program" "$mixed_ehyp_z_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$multibyte_index_program" "$multibyte_index_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$incomplete_index_program" "$incomplete_index_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$out_of_range_index_program" "$out_of_range_index_result"
-"$mork_bin" run --steps 10000 --instrumentation 0 \
-  "$nested_prefix_fault_program" "$nested_prefix_fault_result"
+python3 "$native_root/tools/execute.py" --program "$valid_program" \
+  --result "$valid_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$saved_heap_program" \
+  --result "$saved_heap_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$save_interrupt_program" \
+  --result "$save_interrupt_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$repeated_save_program" \
+  --result "$repeated_save_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$underflow_program" \
+  --result "$underflow_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$duplicate_header_program" \
+  --result "$duplicate_header_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$assertion_fhyp_program" \
+  --result "$assertion_fhyp_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$mandatory_order_program" \
+  --result "$mandatory_order_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$mixed_ehyp_z_program" \
+  --result "$mixed_ehyp_z_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$multibyte_index_program" \
+  --result "$multibyte_index_result" --mork "$mork_bin" --expect accepted
+python3 "$native_root/tools/execute.py" --program "$incomplete_index_program" \
+  --result "$incomplete_index_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$out_of_range_index_program" \
+  --result "$out_of_range_index_result" --mork "$mork_bin" --expect rejected
+python3 "$native_root/tools/execute.py" --program "$nested_prefix_fault_program" \
+  --result "$nested_prefix_fault_result" --mork "$mork_bin" --expect rejected
 
 # Completed compact proof: the raw MM2 observation is consumed by the
 # owner-bound continuation and leaves only the authoritative source outcome.

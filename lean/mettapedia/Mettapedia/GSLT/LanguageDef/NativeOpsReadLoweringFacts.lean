@@ -309,4 +309,94 @@ theorem target_atom_state_irrelevant {World : Type} {interface : Interface} {fra
   | zero initialized => exact .zero initialized
   | unit => exact .unit
 
+theorem read_index_inferred {interface : Interface} {scope : Scope}
+    {array index : Expr} {type : NativeType}
+    (inferred : inferExpr interface scope (.index array index) = some type) :
+    inferExpr interface scope array = some (.array type) ∧
+      inferExpr interface scope index = some .word := by
+  rw [inferExpr] at inferred
+  obtain ⟨arrayType, arrayTyped, inferred⟩ := Option.bind_eq_some_iff.mp inferred
+  obtain ⟨indexType, indexTyped, inferred⟩ := Option.bind_eq_some_iff.mp inferred
+  cases arrayType <;> simp only [reduceCtorEq] at inferred
+  case array element =>
+    split at inferred
+    · rename_i same
+      subst indexType
+      cases inferred
+      exact ⟨arrayTyped, indexTyped⟩
+    · cases inferred
+
+theorem read_index_combined_lowering_exact {interface : Interface} {scope : Scope}
+    {array index : Expr} {supply : NativeIR.Supply} {output : NativeLowering.Expression}
+    (compiled : NativeLowering.expression? interface scope (.index array index) supply = some output) :
+    ∃ type first second, inferExpr interface scope (.index array index) = some type ∧
+      NativeLowering.expression? interface scope array supply = some first ∧
+      NativeLowering.expression? interface scope index first.supply = some second ∧
+      output = NativeLowering.prependCode (first.code ++ second.code)
+        ⟨[.helper (some (.temporary (NativeIR.fresh second.supply).1 (.ref type)))
+            (.index first.result second.result type), .checkContext] ++
+            (NativeLowering.pureTemporary (NativeIR.fresh second.supply).2 type
+              (.indirectRead (.temporary (NativeIR.fresh second.supply).1 (.ref type)))).code,
+          (NativeLowering.pureTemporary (NativeIR.fresh second.supply).2 type
+              (.indirectRead (.temporary (NativeIR.fresh second.supply).1 (.ref type)))).result,
+          (NativeIR.fresh (NativeIR.fresh second.supply).2).2⟩ := by
+  obtain ⟨type, location, typing, located, same⟩ := read_index_lowering_exact compiled
+  obtain ⟨locationType, first, second, locationTyping, firstCompiled, secondCompiled, exactLocation⟩ :=
+    read_index_location_lowering_exact located
+  simp only [inferLocation] at locationTyping
+  cases Option.some.inj (typing.symm.trans locationTyping)
+  subst location
+  exact ⟨type, first, second, typing, firstCompiled, secondCompiled,
+    by simpa only [NativeLowering.prependCode, NativeLowering.pureTemporary, List.append_assoc] using same⟩
+
+
+theorem read_slice_inferred {interface : Interface} {scope : Scope}
+    {array start count : Expr} {element : NativeType}
+    (inferred : inferExpr interface scope (.slice array start count) = some (.array element)) :
+    inferExpr interface scope array = some (.array element) ∧
+      inferExpr interface scope start = some .word ∧ inferExpr interface scope count = some .word := by
+  rw [inferExpr] at inferred
+  obtain ⟨arrayType, arrayTyped, inferred⟩ := Option.bind_eq_some_iff.mp inferred
+  obtain ⟨startType, startTyped, inferred⟩ := Option.bind_eq_some_iff.mp inferred
+  obtain ⟨countType, countTyped, inferred⟩ := Option.bind_eq_some_iff.mp inferred
+  cases arrayType <;> simp only [reduceCtorEq] at inferred
+  case array actualElement =>
+    split at inferred
+    · rename_i same
+      obtain ⟨rfl, rfl⟩ := same
+      cases inferred
+      exact ⟨arrayTyped, startTyped, countTyped⟩
+    · cases inferred
+
+theorem read_slice_combined_lowering_exact {interface : Interface} {scope : Scope}
+    {array start count : Expr} {supply : NativeIR.Supply} {output : NativeLowering.Expression}
+    (compiled : NativeLowering.expression? interface scope (.slice array start count) supply = some output) :
+    ∃ element first second third,
+      inferExpr interface scope (.slice array start count) = some (.array element) ∧
+      NativeLowering.expression? interface scope array supply = some first ∧
+      NativeLowering.expression? interface scope start first.supply = some second ∧
+      NativeLowering.expression? interface scope count second.supply = some third ∧
+      output = NativeLowering.prependCode (first.code ++ second.code ++ third.code)
+        ⟨(NativeLowering.pureTemporary third.supply (.array element) (.zero (.array element))).code ++
+          [.helper (some (.arrayData
+              (NativeLowering.pureTemporary third.supply (.array element) (.zero (.array element))).result element))
+              (.slice first.result second.result third.result element),
+            .checkContext, .assign (.arrayLength
+              (NativeLowering.pureTemporary third.supply (.array element) (.zero (.array element))).result) third.result],
+          (NativeLowering.pureTemporary third.supply (.array element) (.zero (.array element))).result,
+          (NativeLowering.pureTemporary third.supply (.array element) (.zero (.array element))).supply⟩ := by
+  rw [NativeLowering.expression?] at compiled
+  obtain ⟨type, typing, afterTyping⟩ := Option.bind_eq_some_iff.mp compiled
+  clear compiled
+  obtain ⟨first, firstCompiled, afterFirst⟩ := Option.bind_eq_some_iff.mp afterTyping
+  clear afterTyping
+  obtain ⟨second, secondCompiled, afterSecond⟩ := Option.bind_eq_some_iff.mp afterFirst
+  clear afterFirst
+  obtain ⟨third, thirdCompiled, compiled⟩ := Option.bind_eq_some_iff.mp afterSecond
+  clear afterSecond
+  cases type <;> simp only [reduceCtorEq] at compiled
+  case array element =>
+    exact ⟨element, first, second, third, typing, firstCompiled, secondCompiled, thirdCompiled,
+      by simpa only [NativeLowering.prependCode, List.append_assoc] using (Option.some.inj compiled).symm⟩
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

@@ -103,7 +103,7 @@ noncomputable def observedSequenceMeasure (θ : FiniteHMMParam latent obs) :
 instance observedSequenceMeasure_isProbability (θ : FiniteHMMParam latent obs) :
     IsProbabilityMeasure (observedSequenceMeasure (latent := latent) (obs := obs) θ) := by
   unfold observedSequenceMeasure
-  haveI :
+  have :
       IsProbabilityMeasure (pairedSequenceMeasure (latent := latent) (obs := obs) θ) :=
     Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKernel.markovSequenceMeasure_isProbability
       (k := Fintype.card (PairState latent obs))
@@ -499,7 +499,7 @@ theorem pairedWordProbAux_eq
       rw [hpair, hxs, hys]
       simp [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProbAux, observationWeight_cons,
         pairedWordProbAux_eq (θ := θ) n x₀ y₀ xsTail ysTail,
-        x₀, y₀, xsTail, ysTail, mul_assoc, mul_left_comm, mul_comm]
+        x₀, y₀, xsTail, ysTail, mul_assoc, mul_left_comm]
 
 theorem pairedWordProb_eq
     (θ : FiniteHMMParam latent obs) :
@@ -572,7 +572,7 @@ theorem pairedWordProb_eq
       simp [Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProb,
         Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.wordProbNN,
         observationWeight_cons, pairedWordProbAux_eq (θ := θ) n x₀ y₀ xsTail ysTail,
-        x₀, y₀, xsTail, ysTail, mul_assoc, mul_left_comm, mul_comm]
+        x₀, y₀, xsTail, ysTail, mul_assoc, mul_left_comm]
 
 theorem observedSequenceMeasure_cylinder_eq_observedWordProb
     (θ : FiniteHMMParam latent obs) :

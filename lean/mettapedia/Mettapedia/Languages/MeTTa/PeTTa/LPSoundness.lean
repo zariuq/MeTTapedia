@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
 import Mettapedia.OSLF.MeTTaIL.LPBridge
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands
 
 /-!
 # PeTTa ↔ LP Soundness Bridge
@@ -188,7 +189,7 @@ theorem petta_safe_space_ruleApp_lp_sound (s : PeTTaSpace) (hs : isLPSafe s)
 private theorem T_P_LP_subset_addRule (s : PeTTaSpace) (r : RewriteRule) (I : Set (GroundAtom mettailLPSig)) :
     T_P_LP (pettaSpaceToLPKB s) I ⊆ T_P_LP (pettaSpaceToLPKB (s.addRule r)) I := by
   intro a ha
-  simp only [T_P_LP, Set.mem_union, Set.mem_setOf_eq] at ha ⊢
+  simp only [T_P_LP, Set.mem_union, Set.mem_ofPred_eq] at ha ⊢
   rcases ha with hdb | ⟨c, g, hc, hhead, hbody⟩
   · exact Or.inl hdb
   · refine Or.inr ⟨c, g, ?_, hhead, hbody⟩

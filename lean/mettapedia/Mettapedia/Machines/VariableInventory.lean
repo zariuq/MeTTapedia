@@ -178,6 +178,146 @@ def firstOccurrences (seen : List Key) : List (Entry Key Payload) → List (Entr
       if entry.1 ∈ seen then firstOccurrences seen rest
       else entry :: firstOccurrences (seen ++ [entry.1]) rest
 
+/-- Testing a previously traversed prefix retains the actual duplicate
+flag. Prefix entries are not assumed unique and their payloads are not
+identified when their keys agree. -/
+def prefixDuplicate (traversed : List (Entry Key Payload)) (key : Key) : Bool :=
+  traversed.foldl (fun found entry => found || decide (entry.1 = key)) false
+
+theorem prefixDuplicate_accumulator (traversed : List (Entry Key Payload))
+    (key : Key) (found : Bool) :
+    traversed.foldl (fun duplicate entry => duplicate || decide (entry.1 = key)) found =
+      (found || decide (key ∈ traversed.map Prod.fst)) := by
+  induction traversed generalizing found with
+  | nil => simp
+  | cons entry rest ih =>
+      simp only [List.foldl_cons, ih, List.map_cons, List.mem_cons]
+      simp only [eq_comm, Bool.or_assoc]
+      by_cases same : key = entry.1 <;>
+        by_cases seen : key ∈ rest.map Prod.fst <;> simp [same, seen]
+
+theorem prefixDuplicate_eq (traversed : List (Entry Key Payload)) (key : Key) :
+    prefixDuplicate traversed key = decide (key ∈ traversed.map Prod.fst) := by
+  simpa only [prefixDuplicate, Bool.false_or] using
+    prefixDuplicate_accumulator traversed key false
+
+/-- A full-traversed scan advances over every input entry, including rejected
+duplicates. It retains each key's first whole payload in source order. This
+is distinct from extending an inventory only when a new key is accepted. -/
+def firstByPrefix (traversed : List (Entry Key Payload)) :
+    List (Entry Key Payload) → List (Entry Key Payload)
+  | [] => []
+  | entry :: rest =>
+      if prefixDuplicate traversed entry.1 then firstByPrefix (traversed ++ [entry]) rest
+      else entry :: firstByPrefix (traversed ++ [entry]) rest
+
+theorem firstOccurrences_seen_ext (input : List (Entry Key Payload))
+    (first second : List Key) (same : ∀ key, key ∈ first ↔ key ∈ second) :
+    firstOccurrences first input = firstOccurrences second input := by
+  induction input generalizing first second with
+  | nil => rfl
+  | cons entry rest ih =>
+      by_cases old : entry.1 ∈ first
+      · rw [firstOccurrences, if_pos old, firstOccurrences, if_pos ((same _).mp old)]
+        exact ih _ _ same
+      · rw [firstOccurrences, if_neg old, firstOccurrences,
+          if_neg (fun present => old ((same _).mpr present))]
+        congr 1
+        apply ih
+        intro key
+        simp only [List.mem_append, List.mem_singleton]
+        exact or_congr (same key) Iff.rfl
+
+/-- The independently executed traversed scan agrees as an ordered list with
+the first-occurrence inventory. A duplicate stays in the traversed traversed,
+but adding its key again cannot change any later inventory decision. -/
+theorem firstByPrefix_correspondence (input traversed : List (Entry Key Payload)) :
+    firstByPrefix traversed input = firstOccurrences (traversed.map Prod.fst) input := by
+  induction input generalizing traversed with
+  | nil => rfl
+  | cons entry rest ih =>
+      by_cases old : entry.1 ∈ traversed.map Prod.fst
+      · simp only [firstByPrefix, prefixDuplicate_eq, old, decide_true, if_true,
+          firstOccurrences]
+        rw [ih]
+        apply firstOccurrences_seen_ext
+        intro key
+        simp only [List.map_append, List.map_singleton, List.mem_append, List.mem_singleton]
+        constructor
+        · intro present
+          rcases present with previous | equal
+          · exact previous
+          · exact equal.symm ▸ old
+        · exact Or.inl
+      · simp only [firstByPrefix, prefixDuplicate_eq, old, decide_false, Bool.false_eq_true,
+          if_false, firstOccurrences]
+        rw [ih, List.map_append, List.map_singleton]
+
+/-- Removing disabled keys retains the whole payload of each live entry.
+The key map is injective on its live part, so deletion cannot identify two
+distinct live keys or substitute a later payload for a first occurrence. -/
+def presentEntries (input : List (Entry (Option Key) Payload)) : List (Entry Key Payload) :=
+  input.filterMap fun entry => entry.1.map fun key => (key, entry.2)
+
+theorem presentEntries_firstOccurrences (input : List (Entry (Option Key) Payload))
+    (seen : List (Option Key)) :
+    presentEntries (firstOccurrences seen input) =
+      firstOccurrences (seen.filterMap id) (presentEntries input) := by
+  induction input generalizing seen with
+  | nil => rfl
+  | cons entry rest ih =>
+      rcases entry with ⟨disabledOrKey, payload⟩
+      cases disabledOrKey with
+      | none =>
+          by_cases old : none ∈ seen
+          · simpa [firstOccurrences, old, presentEntries] using ih seen
+          · have tail := ih (seen ++ [none])
+            have erased : (seen ++ [none]).filterMap id = seen.filterMap id := by
+              rw [List.filterMap_append]
+              exact List.append_nil _
+            rw [erased] at tail
+            simpa [firstOccurrences, old, presentEntries] using tail
+      | some key =>
+          by_cases old : some key ∈ seen
+          · simpa [firstOccurrences, old, presentEntries] using ih seen
+          · simpa [firstOccurrences, old, presentEntries, List.filterMap_append] using
+              congrArg (List.cons (key, payload)) (ih (seen ++ [some key]))
+
+/-- Apply local updates in the supplied key order. This does not deduplicate
+the key list: repeated keys really perform repeated updates. The update may
+depend on the key and the key's entire inherited state. -/
+def updateKeys {Value : Type*} (update : Key → Value → Value) :
+    List Key → (Key → Value) → Key → Value
+  | [], store => store
+  | key :: rest, store =>
+      updateKeys update rest (Function.update store key (update key (store key)))
+
+theorem updateKeys_append {Value : Type*} (update : Key → Value → Value)
+    (first second : List Key) (store : Key → Value) :
+    updateKeys update (first ++ second) store =
+      updateKeys update second (updateKeys update first store) := by
+  induction first generalizing store with
+  | nil => rfl
+  | cons key rest ih => exact ih _
+
+/-- Unique locations receive exactly one update and all other locations
+remain unchanged. Only local state is modified; no claim about concurrent
+physical writes or side effects shared by different locations follows. -/
+theorem updateKeys_unique_at {Value : Type*} (update : Key → Value → Value)
+    (keys : List Key) (store : Key → Value) (unique : keys.Nodup) (key : Key) :
+    updateKeys update keys store key =
+      if key ∈ keys then update key (store key) else store key := by
+  induction keys generalizing store with
+  | nil => simp [updateKeys]
+  | cons first rest ih =>
+      obtain ⟨fresh, tailUnique⟩ := List.nodup_cons.mp unique
+      simp only [updateKeys]
+      rw [ih _ tailUnique]
+      by_cases same : key = first
+      · subst first
+        simp [fresh]
+      · simp [same]
+
 theorem referenceBuild_eq_firstOccurrences (input : List (Entry Key Payload))
     (entries : List (Entry Key Payload)) :
     referenceBuild input entries = entries ++ firstOccurrences (entries.map Prod.fst) input := by
@@ -393,5 +533,55 @@ theorem checked_mapping_rejects_pointer_conflict :
   decide
 
 end Controls
+
+end Mettapedia.Machines.VariableInventory
+
+
+namespace Mettapedia.Machines.VariableInventory
+
+/-- First occurrence is an identity-sensitive operation. Injective key
+transport retains order and the first whole payload at each live key. -/
+theorem firstOccurrences_map {Key NextKey Payload NextPayload : Type*}
+    [DecidableEq Key] [DecidableEq NextKey] (keys : Key → NextKey)
+    (payloads : Payload → NextPayload) (faithful : Function.Injective keys)
+    (seen : List Key) (input : List (Entry Key Payload)) :
+    firstOccurrences (seen.map keys) (input.map fun entry => (keys entry.1, payloads entry.2)) =
+      (firstOccurrences seen input).map fun entry => (keys entry.1, payloads entry.2) := by
+  induction input generalizing seen with
+  | nil => rfl
+  | cons entry rest ih =>
+      have mapped : keys entry.1 ∈ seen.map keys ↔ entry.1 ∈ seen := by
+        constructor
+        · rintro present
+          obtain ⟨other, member, same⟩ := List.mem_map.mp present
+          exact faithful same ▸ member
+        · intro present
+          exact List.mem_map.mpr ⟨entry.1, present, rfl⟩
+      by_cases old : entry.1 ∈ seen
+      · simp only [List.map_cons, firstOccurrences, mapped, old, if_true]
+        exact ih seen
+      · simp only [List.map_cons, firstOccurrences, mapped, old, if_false]
+        simpa only [List.map_append, List.map_singleton] using
+          congrArg (List.cons (keys entry.1, payloads entry.2)) (ih (seen ++ [entry.1]))
+
+end Mettapedia.Machines.VariableInventory
+
+namespace Mettapedia.Machines.VariableInventory
+
+/-- An injective key change transports the selected whole entry, including
+its payload. A spelling-only or many-to-one change has no such licence. -/
+theorem scan_transport {Key Payload NextKey NextPayload : Type*}
+    [DecidableEq Key] [DecidableEq NextKey]
+    (mapping : Key → NextKey) (faithful : Function.Injective mapping)
+    (payload : Payload → NextPayload) (entries : List (Key × Payload)) (key : Key) :
+    scan (entries.map (fun entry => (mapping entry.1, payload entry.2))) (mapping key) =
+      (scan entries key).map (fun entry => (mapping entry.1, payload entry.2)) := by
+  induction entries with
+  | nil => rfl
+  | cons entry rest ih =>
+      by_cases same : entry.1 = key
+      · simp [scan_cons, same]
+      · have different : mapping entry.1 ≠ mapping key := fun equal => same (faithful equal)
+        simp [scan_cons, same, different, ih]
 
 end Mettapedia.Machines.VariableInventory

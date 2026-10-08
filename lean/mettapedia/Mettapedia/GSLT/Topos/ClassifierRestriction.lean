@@ -14,7 +14,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.Topos.ClassifierRestriction
 
-open CategoryTheory Opposite
+open _root_.CategoryTheory Opposite
 open LogicalTransport
 
 universe u

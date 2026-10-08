@@ -249,7 +249,7 @@ theorem jointRowSuccEvent_eq_iUnion_upTo
       ⋃ N : ℕ, rowVisitCylinderEventUpTo (k := k) i S v N := by
   ext ω
   simp only [jointRowSuccEvent, Set.mem_iInter, Set.mem_iUnion,
-    rowVisitCylinderEventUpTo, rowSuccessorValueEvent, Set.mem_setOf_eq]
+    rowVisitCylinderEventUpTo, rowSuccessorValueEvent, Set.mem_ofPred_eq]
   constructor
   · -- (→) ω satisfies all constraints → find uniform horizon N
     intro hω
@@ -380,7 +380,7 @@ This avoids the different-S carrier equiv problem that blocked sorry D.
 
 On V (visits i) ∩ AVE (all visits exist a.e.): JRE = ⋃upTo.
 On NV (never visits i): rsp defaults to i, both sides agree.
-Key Mathlib lemma: `measure_eq_measure_of_null_diff`. -/
+Key Mathlib lemma: `measure_eq_measure_of_null_sdiff`. -/
 
 /-- Row-specific recurrence suffices to lift `⋃upTo` equality to the full JRE ∩ V
 piece. This is the exact recurrence input used downstream for a fixed row `i`. -/
@@ -395,13 +395,13 @@ theorem measure_JRE_inter_V_eq_upTo_of_rowRecurrence
     P (S0 ∩ jointRowSuccEvent (k := k) i S v ∩ {ω | ∃ t, ω t = i}) =
     P (S0 ∩ ⋃ N, rowVisitCylinderEventUpTo (k := k) i S v N) := by
   apply Eq.symm
-  apply measure_eq_measure_of_null_diff
+  apply measure_eq_measure_of_null_sdiff
   · -- ⋃upTo ⊆ JRE ∩ V
     intro ω ⟨hS0, hupTo⟩
     rcases Set.mem_iUnion.mp hupTo with ⟨N, hN⟩
     refine ⟨⟨hS0, Set.mem_iInter₂.mpr fun m hm => ?_⟩, ?_⟩
     · -- ω ∈ JRE at index m
-      simp only [rowSuccessorValueEvent, Set.mem_setOf_eq]
+      simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq]
       rcases (hN : ∀ n ∈ S, ∃ t < N, nthVisitTime (k := k) ω i n = some t ∧
         successorAt (k := k) ω t = v n) m hm with ⟨t, _, ht_time, ht_succ⟩
       simp only [rowSuccessorAtNthVisit, ht_time]; exact ht_succ
@@ -415,9 +415,9 @@ theorem measure_JRE_inter_V_eq_upTo_of_rowRecurrence
       ae_iff.mp hRowRec
     apply measure_mono_null _ hSR
     intro ω ⟨⟨⟨hS0, hJRE⟩, hV⟩, hNotUpTo⟩
-    simp only [Set.mem_setOf_eq, Classical.not_imp, not_forall]
+    simp only [Set.mem_ofPred_eq, Classical.not_imp, not_forall]
     exact ⟨hV, by
-      by_contra hAll; push_neg at hAll
+      by_contra hAll; push Not at hAll
       have hNotU : ω ∉ ⋃ N, rowVisitCylinderEventUpTo (k := k) i S v N :=
         fun h => hNotUpTo ⟨hS0, h⟩
       apply hNotU
@@ -429,12 +429,12 @@ theorem measure_JRE_inter_V_eq_upTo_of_rowRecurrence
       refine ⟨S.sup tFn + 1, fun m hm => ⟨tFn m, ?_, htFn m hm, ?_⟩⟩
       · exact Nat.lt_succ_of_le (Finset.le_sup (f := tFn) hm)
       · have hJm := Set.mem_iInter₂.mp hJRE m hm
-        simp only [rowSuccessorValueEvent, Set.mem_setOf_eq,
+        simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq,
           rowSuccessorAtNthVisit, htFn m hm] at hJm
         exact hJm⟩
 
 /-- Under StrongRecurrence, `P(S0 ∩ JRE ∩ V) = P(S0 ∩ ⋃upTo)` where `V = {ω visits i}`.
-Uses `measure_eq_measure_of_null_diff`: ⋃upTo ⊆ JRE ∩ V, and (JRE ∩ V) \ ⋃upTo is null. -/
+Uses `measure_eq_measure_of_null_sdiff`: ⋃upTo ⊆ JRE ∩ V, and (JRE ∩ V) \ ⋃upTo is null. -/
 theorem measure_JRE_inter_V_eq_upTo_of_strongRecurrence
     (P : Measure (ℕ → Fin k)) [IsProbabilityMeasure P]
     (hStrRec : MarkovDeFinettiHard.StrongRecurrence (k := k) P)
@@ -525,7 +525,7 @@ private lemma extractVisitTime_lt_succ {N : ℕ}
   have hN := extractVisitTime_spec xs i n hexN
   have hN1 := extractVisitTime_spec xs i (n + 1) hexN1
   by_contra h
-  push_neg at h
+  push Not at h
   have hmono := Finset.sum_le_sum_of_subset
     (f := fun s => if (prefixExtend (k := k) N xs) s = i then 1 else 0)
     (Finset.range_mono h)
@@ -801,7 +801,7 @@ theorem carrier_equiv_of_value_perm {N : ℕ}
     intro σ hfix x hx; by_contra h
     exact h (show σ x ∈ S by rwa [show σ x = x from σ.injective (hfix _ h)])
   -- Restrict π to the finite subtype
-  haveI : Finite ↥(↑S : Set ℕ) := S.finite_toSet.to_subtype
+  have : Finite ↥(↑S : Set ℕ) := S.finite_toSet.to_subtype
   have hπ_iff : ∀ x, (π x ∈ (↑S : Set ℕ)) ↔ (x ∈ (↑S : Set ℕ)) := by
     intro x; constructor
     · intro h; by_contra hx
@@ -1040,7 +1040,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
         ω ∈ Vᶜ → ω ∈ jointRowSuccEvent (k := k) i S v → ∀ m' ∈ S, v m' = i := by
       intro v hNV hJRE m' hm'
       have hmem := Set.mem_iInter₂.mp hJRE m' hm'
-      simp only [rowSuccessorValueEvent, Set.mem_setOf_eq] at hmem
+      simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq] at hmem
       rw [hall_i hNV m'] at hmem; exact hmem.symm
     -- Helper: if all c values are i, then both ext₁ and ext₂ are i on S
     have hc_all_i_imp : (∀ q : Fin n', c q = i) → ∀ (a' b' : Fin k),
@@ -1058,7 +1058,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
     · -- mp: ext₁ membership → ext₂ membership
       intro ⟨⟨hS0, hJRE⟩, hNV⟩
       refine ⟨⟨hS0, Set.mem_iInter₂.mpr fun m hm => ?_⟩, hNV⟩
-      simp only [rowSuccessorValueEvent, Set.mem_setOf_eq]
+      simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq]
       rw [hall_i hNV m]
       -- ext₁ forced to i on S; derive c is constant i; then ext₂ is i
       have hf1 := hJRE_forces (ext₁ a b) hNV hJRE
@@ -1077,7 +1077,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
     · -- mpr: ext₂ membership → ext₁ membership
       intro ⟨⟨hS0, hJRE⟩, hNV⟩
       refine ⟨⟨hS0, Set.mem_iInter₂.mpr fun m hm => ?_⟩, hNV⟩
-      simp only [rowSuccessorValueEvent, Set.mem_setOf_eq]
+      simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq]
       rw [hall_i hNV m]
       have hf2 := hJRE_forces (ext₂ a b) hNV hJRE
       have hc_i : ∀ q : Fin n', c q = i := by
@@ -1114,7 +1114,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
   have hE₁_guard : E₁ = ⋃ a : Fin k, ⋃ b : Fin k, jointRowSuccEvent (k := k) i S (ext₁ a b) := by
     ext ω
     simp only [E₁, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_iUnion,
-      jointRowSuccEvent, Set.mem_iInter, rowSuccessorValueEvent, Set.mem_setOf_eq,
+      jointRowSuccEvent, Set.mem_iInter, rowSuccessorValueEvent, Set.mem_ofPred_eq,
       rowSuccessorVisitProcess]
     constructor
     · intro hE
@@ -1142,7 +1142,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
   have hE₂_guard : E₂ = ⋃ a : Fin k, ⋃ b : Fin k, jointRowSuccEvent (k := k) i S (ext₂ a b) := by
     ext ω
     simp only [E₂, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_iUnion,
-      jointRowSuccEvent, Set.mem_iInter, rowSuccessorValueEvent, Set.mem_setOf_eq,
+      jointRowSuccEvent, Set.mem_iInter, rowSuccessorValueEvent, Set.mem_ofPred_eq,
       rowSuccessorVisitProcess]
     constructor
     · intro hE
@@ -1172,9 +1172,9 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
       P (S0 ∩ jointRowSuccEvent (k := k) i S (ext₁ a b)) =
       P (S0 ∩ jointRowSuccEvent (k := k) i S (ext₂ a b)) := by
     intro a b
-    have h1 := @measure_inter_add_diff _ _ P V (S0 ∩ jointRowSuccEvent (k := k) i S (ext₁ a b)) hV_meas
-    have h2 := @measure_inter_add_diff _ _ P V (S0 ∩ jointRowSuccEvent (k := k) i S (ext₂ a b)) hV_meas
-    rw [Set.diff_eq] at h1 h2
+    have h1 := @measure_inter_add_sdiff _ _ P V (S0 ∩ jointRowSuccEvent (k := k) i S (ext₁ a b)) hV_meas
+    have h2 := @measure_inter_add_sdiff _ _ P V (S0 ∩ jointRowSuccEvent (k := k) i S (ext₂ a b)) hV_meas
+    rw [Set.sdiff_eq] at h1 h2
     rw [← h1, ← h2, hV_eq a b, hNV_eq a b]
   -- Guard marginalization: the JRE(S, ext a b) for different a are disjoint
   have hJRE_disj : ∀ (ext : Fin k → Fin k → ℕ → Fin k),
@@ -1188,7 +1188,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
     rcases h1 with ⟨b₁, hb₁⟩; rcases h2 with ⟨b₂, hb₂⟩
     have hmem₁ := Set.mem_iInter₂.mp hb₁ n' (Finset.mem_range.mpr (by omega))
     have hmem₂ := Set.mem_iInter₂.mp hb₂ n' (Finset.mem_range.mpr (by omega))
-    simp only [rowSuccessorValueEvent, Set.mem_setOf_eq] at hmem₁ hmem₂
+    simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq] at hmem₁ hmem₂
     rw [hext a₁ b₁] at hmem₁; rw [hext a₂ b₂] at hmem₂
     exact ha₁₂ (hmem₁ ▸ hmem₂)
   have hext₁_n' : ∀ a b : Fin k, ext₁ a b n' = a := by
@@ -1220,7 +1220,7 @@ theorem measure_start_inter_rsp_preimage_eq_of_rowRecurrence
     intro ω ⟨_, hb₁⟩ ⟨_, hb₂⟩
     have hmem₁ := Set.mem_iInter₂.mp hb₁ (n' + 1) (Finset.mem_range.mpr (by omega))
     have hmem₂ := Set.mem_iInter₂.mp hb₂ (n' + 1) (Finset.mem_range.mpr (by omega))
-    simp only [rowSuccessorValueEvent, Set.mem_setOf_eq] at hmem₁ hmem₂
+    simp only [rowSuccessorValueEvent, Set.mem_ofPred_eq] at hmem₁ hmem₂
     rw [hext b₁] at hmem₁; rw [hext b₂] at hmem₂
     exact hb₁₂ (hmem₁ ▸ hmem₂)
   have hext₁_n1 : ∀ a b : Fin k, ext₁ a b (n' + 1) = b := by
@@ -1622,7 +1622,7 @@ lemma wordTupleFixedComplementSet_wordAnchorFiberTarget_eq_singleton
         (wordAnchorFiberTarget (k := k) a ys i) =
       {wordSuccessorTuple (k := k) a ys} := by
   ext u
-  simp only [Set.mem_singleton_iff, wordTupleFixedComplementSet, Set.mem_setOf_eq]
+  simp only [Set.mem_singleton_iff, wordTupleFixedComplementSet, Set.mem_ofPred_eq]
   constructor
   · intro ⟨hfiber, hcomp⟩
     funext j
@@ -2473,7 +2473,7 @@ theorem rowProcessLaw_restrict_permInvariant
     have hQa_prob : Qa Set.univ = 1 := by
       rw [hQa_def, Measure.smul_apply, smul_eq_mul,
           ENNReal.inv_mul_cancel hw_pos.ne' hw_ne_top]
-    haveI : IsProbabilityMeasure Qa := ⟨hQa_prob⟩
+    have : IsProbabilityMeasure Qa := ⟨hQa_prob⟩
     -- Exchangeable Pa X implies Exchangeable Qa X (scaling preserves measure equality)
     have hExch_Qa : Exchangeability.Exchangeable Qa
         (fun n (ω : ℕ → Fin k) =>
@@ -2513,7 +2513,7 @@ theorem conditionallyIID_rowProcessLaw_restrict
   by_cases hPa_zero : Pa = 0
   · -- Pa = 0: row process law is zero, ConditionallyIID holds vacuously
     simp only [hPa_zero, MarkovDeFinettiHard.rowProcessLaw, Measure.map_zero]
-    haveI : Inhabited (Fin k) := ⟨⟨0, hk⟩⟩
+    have : Inhabited (Fin k) := ⟨⟨0, hk⟩⟩
     refine ⟨fun _ => Measure.dirac default, fun _ => inferInstance,
       fun B _hB => measurable_const, fun m sel _hsel => ?_⟩
     simp [Measure.map_zero, Measure.bind]
@@ -2525,7 +2525,7 @@ theorem conditionallyIID_rowProcessLaw_restrict
       ne_top_of_le_ne_top (by simp)
         (Measure.restrict_apply_univ _ ▸ measure_mono (Set.subset_univ _))
     set Qa := w⁻¹ • Pa with hQa_def
-    haveI : IsProbabilityMeasure Qa := ⟨by
+    have : IsProbabilityMeasure Qa := ⟨by
       rw [hQa_def, Measure.smul_apply, smul_eq_mul,
           ENNReal.inv_mul_cancel hw_pos.ne' hw_ne_top]⟩
     -- Perm invariance for Qa's row process law

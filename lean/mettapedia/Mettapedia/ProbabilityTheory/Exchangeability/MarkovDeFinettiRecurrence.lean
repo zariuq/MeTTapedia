@@ -34,7 +34,7 @@ lemma mem_recurrentEvent_iff_infinite_returns_to_start (ω : ℕ → Fin k) :
     rw [Set.infinite_iff_exists_gt]
     intro a
     have hrec' : ∀ N : ℕ, ∃ n : ℕ, N ≤ n ∧ ω n = ω 0 := by
-      simpa [recurrentEvent, returnEvent, Set.mem_setOf_eq] using hrec
+      simpa [recurrentEvent, returnEvent, Set.mem_ofPred_eq] using hrec
     rcases hrec' (a + 1) with ⟨n, hnge, hne⟩
     refine ⟨n, hne, ?_⟩
     exact lt_of_lt_of_le (Nat.lt_succ_self a) hnge
@@ -45,11 +45,11 @@ lemma mem_recurrentEvent_iff_infinite_returns_to_start (ω : ℕ → Fin k) :
       intro N
       rcases hgt N with ⟨n, hmem, hlt⟩
       exact ⟨n, Nat.le_of_lt hlt, hmem⟩
-    simpa [recurrentEvent, returnEvent, Set.mem_setOf_eq] using hrec'
+    simpa [recurrentEvent, returnEvent, Set.mem_ofPred_eq] using hrec'
 
 lemma measurableSet_returnEvent (n : ℕ) :
     MeasurableSet (returnEvent (k := k) n) := by
-  simpa [returnEvent, Set.preimage, Set.setOf_eq_eq_singleton] using
+  simpa [returnEvent, Set.preimage, Set.ofPred_eq_eq_singleton] using
     (measurableSet_eq_fun (measurable_pi_apply n) (measurable_pi_apply 0))
 
 lemma measurableSet_recurrentEvent :
@@ -81,7 +81,7 @@ theorem ae_infinite_returns_to_start_of_recurrentEvent
     (P : Measure (ℕ → Fin k)) (hP : IsProbabilityMeasure P)
     (hrec : P (recurrentEvent (k := k)) = 1) :
     ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0} := by
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   have haeRec : ∀ᵐ ω ∂P, ω ∈ recurrentEvent (k := k) := by
     exact (mem_ae_iff_prob_eq_one (μ := P) (measurableSet_recurrentEvent (k := k))).2 hrec
   exact haeRec.mono (fun ω hω =>
@@ -110,7 +110,7 @@ theorem MarkovRowRecurrentPrefixMeasure.to_MarkovRecurrentPrefixMeasure
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     MarkovRecurrentPrefixMeasure (k := k) μ := by
   rcases hrow with ⟨P, hP, hrep, hrows⟩
-  letI : IsProbabilityMeasure P := hP
+  let : IsProbabilityMeasure P := hP
   have hallRows : ∀ᵐ ω ∂P, ∀ i : Fin k, Set.Infinite {t : ℕ | ω t = i} :=
     ae_all_iff.2 hrows
   have hstartInf : ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0} := by
@@ -150,7 +150,7 @@ lemma mem_recurrentClassEvent_iff_infinite_visits_to_class (ω : ℕ → Fin k) 
     rw [Set.infinite_iff_exists_gt]
     intro a
     have hrec' : ∀ N : ℕ, ∃ n : ℕ, N ≤ n ∧ ω n ∈ C := by
-      simpa [recurrentClassEvent, returnToClassEvent, Set.mem_setOf_eq] using hrec
+      simpa [recurrentClassEvent, returnToClassEvent, Set.mem_ofPred_eq] using hrec
     rcases hrec' (a + 1) with ⟨n, hnge, hne⟩
     refine ⟨n, hne, ?_⟩
     exact lt_of_lt_of_le (Nat.lt_succ_self a) hnge
@@ -161,7 +161,7 @@ lemma mem_recurrentClassEvent_iff_infinite_visits_to_class (ω : ℕ → Fin k) 
       intro N
       rcases hgt N with ⟨n, hmem, hlt⟩
       exact ⟨n, Nat.le_of_lt hlt, hmem⟩
-    simpa [recurrentClassEvent, returnToClassEvent, Set.mem_setOf_eq] using hrec'
+    simpa [recurrentClassEvent, returnToClassEvent, Set.mem_ofPred_eq] using hrec'
 
 lemma measurableSet_returnToClassEvent (n : ℕ) (hC : MeasurableSet C) :
     MeasurableSet (returnToClassEvent (k := k) C n) := by
@@ -203,7 +203,7 @@ def MarkovRecurrentClassPrefixMeasure
 theorem recurrentClassEvent_singleton_of_start (a : Fin k) (ω : ℕ → Fin k) (ha : ω 0 = a) :
     ω ∈ recurrentClassEvent (k := k) {a} ↔ ω ∈ recurrentEvent (k := k) := by
   simp only [recurrentClassEvent, returnToClassEvent, Set.mem_singleton_iff,
-             recurrentEvent, returnEvent, Set.mem_setOf_eq, Set.mem_iInter, Set.mem_iUnion]
+             recurrentEvent, returnEvent, Set.mem_ofPred_eq, Set.mem_iInter, Set.mem_iUnion]
   constructor
   · intro hrec N
     rcases hrec N with ⟨n, hn, heq⟩
@@ -220,9 +220,9 @@ theorem recurrentClassEvent_singleton_of_start (a : Fin k) (ω : ℕ → Fin k) 
 theorem recurrentEvent_eq_recurrentClassEvent_univ :
     recurrentEvent (k := k) ⊆ recurrentClassEvent (k := k) Set.univ := by
   intro ω hrec
-  simp only [recurrentClassEvent, returnToClassEvent, Set.mem_univ, Set.mem_setOf_eq,
+  simp only [recurrentClassEvent, returnToClassEvent, Set.mem_univ, Set.mem_ofPred_eq,
              Set.mem_iInter, Set.mem_iUnion, exists_prop]
-  simp only [recurrentEvent, returnEvent, Set.mem_setOf_eq,
+  simp only [recurrentEvent, returnEvent, Set.mem_ofPred_eq,
              Set.mem_iInter, Set.mem_iUnion, exists_prop] at hrec
   intro N
   rcases hrec N with ⟨n, hn, _⟩

@@ -44,7 +44,7 @@ noncomputable section
 
 namespace Mettapedia.CategoryTheory
 
-open CategoryTheory
+open _root_.Mettapedia.CategoryTheory
 open MeasureTheory
 open Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti
 open Mettapedia.ProbabilityTheory.HigherOrderProbability.ProbabilityMeasureBorelBridge
@@ -558,7 +558,7 @@ private theorem snocTailEvent_eq_singleton (n : ℕ) (b : Bool) :
     rw [hy'']; rfl
   · intro hy
     rcases Set.mem_singleton_iff.1 hy with rfl
-    simp only [snocTailEvent, Set.mem_preimage, Set.mem_singleton_iff, MeasurableEquiv.piSingleton]
+    simp only [snocTailEvent, MeasurableEquiv.piSingleton]
     rfl
 
 private theorem measurableSet_snocTailEvent (n : ℕ) (b : Bool) :
@@ -570,7 +570,7 @@ private theorem measurableSet_snocTailEvent (n : ℕ) (b : Bool) :
     ext y
     rfl
   rw [hpre]
-  haveI : MeasurableSingletonClass (ThetaBoolTimeline (n + 1)) :=
+  have : MeasurableSingletonClass (ThetaBoolTimeline (n + 1)) :=
     (inferInstance : MeasurableSingletonClass Bool)
   exact (MeasurableEquiv.piSingleton n).symm.measurable (MeasurableSet.singleton b')
 
@@ -816,7 +816,7 @@ theorem iidSequenceKernelTheta_eq_iidProduct_of_prefix_pi_marginals
   have hμprob : ∀ i : ℕ, IsProbabilityMeasure (μ i) := by
     intro i
     simpa [μ] using (inferInstance : IsProbabilityMeasure (thetaBernoulliKernel θ))
-  letI : ∀ i : ℕ, IsProbabilityMeasure (μ i) := hμprob
+  let : ∀ i : ℕ, IsProbabilityMeasure (μ i) := hμprob
   change iidSequenceKernelTheta θ = Measure.infinitePi μ
   refine Measure.eq_infinitePi (μ := μ) ?_
   intro s t ht
@@ -1000,7 +1000,7 @@ lemma partialTraj_thetaIidStep_map_thetaFromPrefix_eq_dirac
             simp [hmap0]
     _ = Measure.dirac (thetaFromPrefix (thetaToPrefix0 θ)) := by
           simp [ProbabilityTheory.Kernel.partialTraj_self, ProbabilityTheory.Kernel.id_apply,
-            Measure.map_dirac, Mettapedia.CategoryTheory.measurable_thetaFromPrefix]
+            Mettapedia.CategoryTheory.measurable_thetaFromPrefix]
     _ = Measure.dirac θ := by
           simp [thetaFromPrefix_thetaToPrefix0]
 
@@ -1770,7 +1770,7 @@ theorem kernelPrefixCone_coord_imp_kernelGlobalFinitarySeqConeCommutes
     (hprefix : KernelPrefixCone (X := (fun i ω => ω i)) κ) :
     KernelGlobalFinitarySeqConeCommutes (Y := Y) κ := by
   intro y
-  haveI : IsProbabilityMeasure (κ y) := by infer_instance
+  have : IsProbabilityMeasure (κ y) := by infer_instance
   have hpre :
       IsPrefixLawCone (Ω := GlobalBinarySeq) (fun i ω => ω i) (κ y) :=
     (isPrefixLawCone_iff_exchangeablePrefixCone
@@ -2145,11 +2145,11 @@ theorem kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_prefixLaw_and_r
         (kernelToKleisliHom (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliLatentThetaObj) L)
         iidSequenceKleisliHomTheta =
       kernelToKleisliHom (A := (CategoryTheory.Kleisli.mk MeasCat.Giry (MeasCat.of Y) : KleisliGiry)) (B := KleisliBinarySeqObj) κ := by
-  haveI : ProbabilityTheory.IsMarkovKernel L :=
+  have : ProbabilityTheory.IsMarkovKernel L :=
     isMarkovKernel_of_kernelRepresentsLatentTheta (κ := κ) (L := L) hL
   let κmix : ProbabilityTheory.Kernel Y GlobalBinarySeq :=
     ProbabilityTheory.Kernel.comp iidSequenceKernelTheta L
-  haveI : ProbabilityTheory.IsMarkovKernel κmix := by
+  have : ProbabilityTheory.IsMarkovKernel κmix := by
     dsimp [κmix]
     infer_instance
   have hμeq : ∀ y : Y, κmix y = κ y := by
@@ -2643,7 +2643,7 @@ theorem not_isMarkovKernel_zeroKernel_punit :
   intro hmk
   have hzero : κ0 PUnit.unit Set.univ = 0 := by simp [κ0]
   have hone : κ0 PUnit.unit Set.univ = 1 := by
-    letI : ProbabilityTheory.IsMarkovKernel κ0 := by simpa [κ0] using hmk
+    let : ProbabilityTheory.IsMarkovKernel κ0 := by simpa [κ0] using hmk
     simpa [κ0] using (measure_univ : κ0 PUnit.unit Set.univ = 1)
   have hone' : (0 : ENNReal) = 1 := by
     rw [← hzero]
@@ -2857,19 +2857,19 @@ the Lévy-Prokhorov metrization machinery. -/
 private theorem polishSpace_probabilityMeasureLatentTheta :
     PolishSpace (ProbabilityMeasure LatentTheta) := by
   -- Use the Lévy–Prokhorov metrization on a compact latent space.
-  haveI : TopologicalSpace.PseudoMetrizableSpace LatentTheta := inferInstance
-  haveI : TopologicalSpace.SeparableSpace LatentTheta := inferInstance
-  haveI : BorelSpace LatentTheta := inferInstance
-  haveI : OpensMeasurableSpace LatentTheta := inferInstance
-  haveI : TopologicalSpace.MetrizableSpace (ProbabilityMeasure LatentTheta) := inferInstance
-  letI : MetricSpace (ProbabilityMeasure LatentTheta) :=
+  have : TopologicalSpace.PseudoMetrizableSpace LatentTheta := inferInstance
+  have : TopologicalSpace.SeparableSpace LatentTheta := inferInstance
+  have : BorelSpace LatentTheta := inferInstance
+  have : OpensMeasurableSpace LatentTheta := inferInstance
+  have : TopologicalSpace.MetrizableSpace (ProbabilityMeasure LatentTheta) := inferInstance
+  let : MetricSpace (ProbabilityMeasure LatentTheta) :=
     TopologicalSpace.metrizableSpaceMetric (ProbabilityMeasure LatentTheta)
   -- Compactness gives properness and hence second-countability and completeness.
-  haveI : CompactSpace (ProbabilityMeasure LatentTheta) := inferInstance
-  haveI : ProperSpace (ProbabilityMeasure LatentTheta) := inferInstance
-  haveI : SecondCountableTopology (ProbabilityMeasure LatentTheta) := inferInstance
-  haveI : CompleteSpace (ProbabilityMeasure LatentTheta) := inferInstance
-  haveI : TopologicalSpace.IsCompletelyMetrizableSpace (ProbabilityMeasure LatentTheta) := inferInstance
+  have : CompactSpace (ProbabilityMeasure LatentTheta) := inferInstance
+  have : ProperSpace (ProbabilityMeasure LatentTheta) := inferInstance
+  have : SecondCountableTopology (ProbabilityMeasure LatentTheta) := inferInstance
+  have : CompleteSpace (ProbabilityMeasure LatentTheta) := inferInstance
+  have : TopologicalSpace.IsCompletelyMetrizableSpace (ProbabilityMeasure LatentTheta) := inferInstance
   infer_instance
 
 /-- If the measurable structure on `ProbabilityMeasure LatentTheta` is Borel for the
@@ -2877,7 +2877,7 @@ convergence-in-distribution topology, then it is standard Borel. -/
 private theorem standardBorelSpace_probabilityMeasureLatentTheta_of_borel
     [BorelSpace (ProbabilityMeasure LatentTheta)] :
     StandardBorelSpace (ProbabilityMeasure LatentTheta) := by
-  letI : PolishSpace (ProbabilityMeasure LatentTheta) :=
+  let : PolishSpace (ProbabilityMeasure LatentTheta) :=
     polishSpace_probabilityMeasureLatentTheta
   infer_instance
 
@@ -2885,7 +2885,7 @@ private theorem standardBorelSpace_probabilityMeasureLatentTheta_of_borel
 discharged via the local moment-induced Borel instance. -/
 private theorem standardBorelSpace_probabilityMeasureLatentTheta_fromMoments :
     StandardBorelSpace (ProbabilityMeasure LatentTheta) := by
-  letI : BorelSpace (ProbabilityMeasure LatentTheta) :=
+  let : BorelSpace (ProbabilityMeasure LatentTheta) :=
     latentTheta_borelSpace_probabilityMeasure_fromMoments
   exact standardBorelSpace_probabilityMeasureLatentTheta_of_borel
 
@@ -2893,7 +2893,7 @@ private theorem standardBorelSpace_probabilityMeasureLatentTheta_fromMoments :
 assumption at call sites). -/
 theorem measurableEmbedding_latentThetaMomentSeq :
     MeasurableEmbedding latentThetaMomentSeq := by
-  letI : StandardBorelSpace (ProbabilityMeasure LatentTheta) :=
+  let : StandardBorelSpace (ProbabilityMeasure LatentTheta) :=
     standardBorelSpace_probabilityMeasureLatentTheta_fromMoments
   simpa [latentThetaMomentSeq] using measurableEmbedding_thetaMomentSeq_of_standardBorel
 
@@ -3001,9 +3001,9 @@ theorem kernelLatentThetaMediatorMeasurabilityUpgrade_of_thetaMomentEmbedding
     KernelLatentThetaMediatorMeasurabilityUpgrade := by
   intro Y _ κ _ Lfun hL
   let θ0 : LatentTheta := ⟨0, by constructor <;> simp⟩
-  haveI : Nonempty (ProbabilityMeasure LatentTheta) :=
+  have : Nonempty (ProbabilityMeasure LatentTheta) :=
     ⟨⟨Measure.dirac θ0, inferInstance⟩⟩
-  letI : ∀ y : Y, IsProbabilityMeasure (Lfun y) :=
+  let : ∀ y : Y, IsProbabilityMeasure (Lfun y) :=
     isProbabilityMeasure_latent_of_kernelRepresents (κ := κ) (Lfun := Lfun) hL
   let Lprob : Y → ProbabilityMeasure LatentTheta := fun y => ⟨Lfun y, inferInstance⟩
   let mκ : Y → ℕ → ENNReal := kernelAllTrueMomentSeq κ
@@ -3278,7 +3278,7 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     exact (Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)).symm.trans
       (this.symm.trans ha)
   -- ===== Normalized morphism =====
-  haveI hdec_c : DecidablePred (fun a : A.of.carrier => c a = 0) := fun a => Classical.dec _
+  have hdec_c : DecidablePred (fun a : A.of.carrier => c a = 0) := fun a => Classical.dec _
   let κ_norm_fn : A.of.carrier → Measure GlobalBinarySeq :=
     fun a => if c a = 0 then iidSequenceKernelTheta θ₀ else (c a)⁻¹ • κ a
   have hκ_norm_meas : Measurable κ_norm_fn :=
@@ -3607,7 +3607,7 @@ theorem allSourcesKernelFactorization_unrestricted_of_allSourcesKernel_and_prefi
     (hmarkov_of_commutes : CommutesToMarkovBridge) :
     KernelLatentThetaUniversalMediator_allSourcesKernelFactorization_unrestricted := by
   intro Y _ κ hcomm
-  letI : ProbabilityTheory.IsMarkovKernel κ := hmarkov_of_commutes Y κ hcomm
+  let : ProbabilityTheory.IsMarkovKernel κ := hmarkov_of_commutes Y κ hcomm
   have hκapi : KernelCommutationAPI (Y := Y) κ :=
     kernelCommutationAPI_of_commutes_and_isMarkov (Y := Y) κ hcomm
   have hcomm' :
@@ -3627,7 +3627,7 @@ theorem allSourcesKernelFactorization_unrestricted_of_allSourcesKernel_and_prefi
       kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_prefixLaw_and_represents
         (hprefix := hprefix) (κ := κ) (L := L) hLrep
   · intro L' hL'fac
-    haveI : ProbabilityTheory.IsMarkovKernel L' :=
+    have : ProbabilityTheory.IsMarkovKernel L' :=
       isMarkovKernel_of_kleisliFactorization_targetMarkov
         (κ := κ) (L := L') hL'fac
     have hL'prefix :
@@ -3916,7 +3916,7 @@ This packages the preferred theorem-level route:
 theorem standardBorelSpace_probabilityMeasureLatentTheta_of_finiteMeasure
     [BorelSpace (FiniteMeasure LatentTheta)] :
     StandardBorelSpace (ProbabilityMeasure LatentTheta) := by
-  letI : PolishSpace (ProbabilityMeasure LatentTheta) :=
+  let : PolishSpace (ProbabilityMeasure LatentTheta) :=
     polishSpace_probabilityMeasureLatentTheta
   exact standardBorelSpace_probabilityMeasure_of_finiteMeasure (Ω := LatentTheta)
 
@@ -3993,7 +3993,7 @@ theorem allSourcesKleisli_markovOnly_of_allSourcesKernelFactorization
   intro A κhom hmarkov hcomm
   let κ : ProbabilityTheory.Kernel A.of.carrier GlobalBinarySeq :=
     kleisliHomToKernel κhom
-  haveI : ProbabilityTheory.IsMarkovKernel κ := by
+  have : ProbabilityTheory.IsMarkovKernel κ := by
     refine ⟨?_⟩
     intro y
     exact hmarkov y
@@ -4041,7 +4041,7 @@ theorem allSourcesKleisli_markovOnly_of_allSourcesKernel_and_prefixLaw
         kernelToKleisliHom_comp_iidSequenceKleisliHomTheta_eq_of_prefixLaw_and_represents
           (hprefix := hprefix) (κ := κ) (L := L) hLrep
     · intro L' hL'fac
-      haveI : ProbabilityTheory.IsMarkovKernel L' :=
+      have : ProbabilityTheory.IsMarkovKernel L' :=
         isMarkovKernel_of_kleisliFactorization_targetMarkov
           (κ := κ) (L := L') hL'fac
       have hL'prefix :

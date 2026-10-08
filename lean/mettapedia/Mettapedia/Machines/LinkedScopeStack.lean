@@ -78,6 +78,32 @@ theorem leave_enter_represents [DecidableEq Identity]
   have pushed := enter_represents represented fresh
   exact ⟨represented.top, represented.distinct, pushed.links.2⟩
 
+/-- A scope may leave its stack untouched. The independent list presentation
+records an actual entry only when an object was selected. -/
+def enterOptional [DecidableEq Identity] (stack : LinkedScopeStack Identity)
+    (object : Option Identity) : LinkedScopeStack Identity :=
+  match object with
+  | none => stack
+  | some identity => stack.enter identity
+
+theorem enterOptional_represents [DecidableEq Identity]
+    {stack : LinkedScopeStack Identity} {active : List Identity} (object : Option Identity)
+    (represented : stack.Represents active)
+    (fresh : ∀ identity, object = some identity → identity ∉ active) :
+    (stack.enterOptional object).Represents (object.toList ++ active) := by
+  cases object with
+  | none => exact represented
+  | some identity => exact enter_represents represented (fresh identity rfl)
+
+/-- After a balanced body, restoring a saved top recovers the caller's active
+chain. The body's inactive link writes remain in the implementation table. -/
+theorem leave_after_body_represents [DecidableEq Identity]
+    {caller after : LinkedScopeStack Identity} {active : List Identity} (object : Identity)
+    (original : caller.Represents active)
+    (balanced : after.Represents (object :: active)) :
+    (after.leave caller.top).Represents active := by
+  exact ⟨original.top, original.distinct, balanced.links.2⟩
+
 /-- A bounded observation follows the links directly and retains the first
 unvisited object. This is independent of the list specification. -/
 def follow (parent : Identity → Option Identity) :
@@ -173,5 +199,231 @@ theorem repeated_entry_never_completes (fuel : Nat) :
   self_link_retains_cursor ((empty.enter 1).enter 1).parent 1 (by simp [enter]) fuel
 
 end Controls
+
+namespace Activation
+
+universe v w x
+
+variable {Channel : Type u} {Identity : Channel → Type v}
+variable {Context : Type w} {Store : Type x}
+
+/-- Saved dynamic fields and persistent service state are separate. Each
+channel has its own intrusive scope chain. The external depth is a collection
+barrier; neither the depth nor the saved context is a storage lease. -/
+structure State (Channel : Type u) (Identity : Channel → Type v)
+    (Context : Type w) (Store : Type x) where
+  context : Context
+  scopes : (channel : Channel) → LinkedScopeStack (Identity channel)
+  externalDepth : Nat
+  store : Store
+
+structure Guard (Channel : Type u) (Identity : Channel → Type v) (Context : Type w) where
+  context : Context
+  tops : (channel : Channel) → Option (Identity channel)
+  selected : Channel → Bool
+
+/-- The reference uses active lists, independently of physical predecessor
+links. Its service state is the complete supplied store, not a cost erasure. -/
+structure Reference (Channel : Type u) (Identity : Channel → Type v)
+    (Context : Type w) (Store : Type x) where
+  context : Context
+  active : (channel : Channel) → List (Identity channel)
+  externalDepth : Nat
+  store : Store
+
+structure Related (state : State Channel Identity Context Store)
+    (reference : Reference Channel Identity Context Store) : Prop where
+  context : state.context = reference.context
+  scopes : ∀ channel, (state.scopes channel).Represents (reference.active channel)
+  externalDepth : state.externalDepth = reference.externalDepth
+  store : state.store = reference.store
+
+def save (selected : (channel : Channel) → Option (Identity channel))
+    (caller : State Channel Identity Context Store) : Guard Channel Identity Context where
+  context := caller.context
+  tops := fun channel => (caller.scopes channel).top
+  selected := fun channel => (selected channel).isSome
+
+def enter [∀ channel, DecidableEq (Identity channel)]
+    (selected : (channel : Channel) → Option (Identity channel)) (context : Context)
+    (caller : State Channel Identity Context Store) : State Channel Identity Context Store where
+  context := context
+  scopes := fun channel => (caller.scopes channel).enterOptional (selected channel)
+  externalDepth := caller.externalDepth + 1
+  store := caller.store
+
+/-- Only entered channels restore a saved top. Persistent service state and
+all predecessor tables come from the body poststate. -/
+def leave (guard : Guard Channel Identity Context)
+    (after : State Channel Identity Context Store) : State Channel Identity Context Store where
+  context := guard.context
+  scopes := fun channel => if guard.selected channel then
+    (after.scopes channel).leave (guard.tops channel) else after.scopes channel
+  externalDepth := after.externalDepth - 1
+  store := after.store
+
+def enterReference (selected : (channel : Channel) → Option (Identity channel))
+    (context : Context) (caller : Reference Channel Identity Context Store) :
+    Reference Channel Identity Context Store where
+  context := context
+  active := fun channel => (selected channel).toList ++ caller.active channel
+  externalDepth := caller.externalDepth + 1
+  store := caller.store
+
+def leaveReference (selected : (channel : Channel) → Option (Identity channel))
+    (caller after : Reference Channel Identity Context Store) :
+    Reference Channel Identity Context Store where
+  context := caller.context
+  active := fun channel => if (selected channel).isSome then
+    caller.active channel else after.active channel
+  externalDepth := after.externalDepth - 1
+  store := after.store
+
+theorem enter_related [∀ channel, DecidableEq (Identity channel)]
+    (selected : (channel : Channel) → Option (Identity channel)) (context : Context)
+    {caller : State Channel Identity Context Store}
+    {reference : Reference Channel Identity Context Store} (related : Related caller reference)
+    (fresh : ∀ channel identity,
+      selected channel = some identity → identity ∉ reference.active channel) :
+    Related (enter selected context caller) (enterReference selected context reference) := by
+  refine ⟨rfl, ?_, congrArg (· + 1) related.externalDepth, related.store⟩
+  intro channel
+  exact enterOptional_represents _ (related.scopes channel) (fresh channel)
+
+/-- A body comparison supplies its own poststate. For an entered channel,
+balanced scope nesting is required to recover the caller chain; no inactive
+link equality or service-state rollback is assumed. -/
+theorem leave_related [∀ channel, DecidableEq (Identity channel)]
+    (selected : (channel : Channel) → Option (Identity channel))
+    {caller after : State Channel Identity Context Store}
+    {reference post : Reference Channel Identity Context Store}
+    (original : Related caller reference) (body : Related after post)
+    (balanced : ∀ channel identity, selected channel = some identity →
+      post.active channel = identity :: reference.active channel) :
+    Related (leave (save selected caller) after) (leaveReference selected reference post) := by
+  refine ⟨original.context, ?_, congrArg (· - 1) body.externalDepth, body.store⟩
+  intro channel
+  cases choice : selected channel with
+  | none => simpa [leave, save, leaveReference, choice] using body.scopes channel
+  | some identity =>
+      have inside : (after.scopes channel).Represents
+          (identity :: reference.active channel) := by
+        rw [← balanced channel identity choice]
+        exact body.scopes channel
+      simpa [leave, save, leaveReference, choice] using
+        leave_after_body_represents identity (original.scopes channel) inside
+
+theorem leave_keeps_poststore (guard : Guard Channel Identity Context)
+    (after : State Channel Identity Context Store) : (leave guard after).store = after.store := rfl
+
+/-- Depth restoration needs balanced body barriers. Merely entering a guard
+does not license dropping a body-created barrier or acquiring storage. -/
+theorem leave_balanced_depth (selected : (channel : Channel) → Option (Identity channel))
+    (caller after : State Channel Identity Context Store)
+    (balanced : after.externalDepth = caller.externalDepth + 1) :
+    (leave (save selected caller) after).externalDepth = caller.externalDepth := by
+  simp [leave, balanced]
+
+def run [∀ channel, DecidableEq (Identity channel)] {Answer : Type*}
+    (selected : (channel : Channel) → Option (Identity channel)) (context : Context)
+    (body : State Channel Identity Context Store → Answer × State Channel Identity Context Store)
+    (caller : State Channel Identity Context Store) : Answer × State Channel Identity Context Store :=
+  let after := body (enter selected context caller)
+  (after.1, leave (save selected caller) after.2)
+
+def runReference {Answer : Type*}
+    (selected : (channel : Channel) → Option (Identity channel)) (context : Context)
+    (body : Reference Channel Identity Context Store →
+      Answer × Reference Channel Identity Context Store)
+    (caller : Reference Channel Identity Context Store) :
+    Answer × Reference Channel Identity Context Store :=
+  let after := body (enterReference selected context caller)
+  (after.1, leaveReference selected caller after.2)
+
+/-- This is a composition rule for separately compared bodies. Answers and
+the complete poststore are retained. The entry comparison follows links;
+the independent reference prepends lists. -/
+theorem run_correspondence [∀ channel, DecidableEq (Identity channel)] {Answer : Type*}
+    (selected : (channel : Channel) → Option (Identity channel)) (context : Context)
+    (body : State Channel Identity Context Store → Answer × State Channel Identity Context Store)
+    (referenceBody : Reference Channel Identity Context Store →
+      Answer × Reference Channel Identity Context Store)
+    {caller : State Channel Identity Context Store}
+    {reference : Reference Channel Identity Context Store} (related : Related caller reference)
+    (fresh : ∀ channel identity,
+      selected channel = some identity → identity ∉ reference.active channel)
+    (bodyComparison : ∀ state reference, Related state reference →
+      (body state).1 = (referenceBody reference).1 ∧
+        Related (body state).2 (referenceBody reference).2)
+    (balanced : ∀ channel identity, selected channel = some identity →
+      (referenceBody (enterReference selected context reference)).2.active channel =
+        identity :: reference.active channel) :
+    (run selected context body caller).1 = (runReference selected context referenceBody reference).1 ∧
+      Related (run selected context body caller).2
+        (runReference selected context referenceBody reference).2 := by
+  have compared := bodyComparison _ _ (enter_related selected context related fresh)
+  exact ⟨compared.1, leave_related selected related compared.2 balanced⟩
+
+/-- A bounded post-return traversal sees the caller's active list, despite
+retained writes to inactive objects. -/
+theorem leave_follow [∀ channel, DecidableEq (Identity channel)]
+    (selected : (channel : Channel) → Option (Identity channel))
+    {caller after : State Channel Identity Context Store}
+    {reference post : Reference Channel Identity Context Store}
+    (original : Related caller reference) (body : Related after post)
+    (balanced : ∀ channel identity, selected channel = some identity →
+      post.active channel = identity :: reference.active channel)
+    (channel : Channel) (extra : Nat) :
+    let result := leave (save selected caller) after
+    let expected := leaveReference selected reference post
+    follow (result.scopes channel).parent ((expected.active channel).length + extra)
+      (result.scopes channel).top = (expected.active channel, none) := by
+  exact follow_complete ((leave_related selected original body balanced).scopes channel) extra
+
+namespace Controls
+
+abbrev TestState := State Bool (fun _ => Nat) (Option Nat) (List Nat)
+
+def caller : TestState := ⟨some 7, fun _ => LinkedScopeStack.Controls.empty, 4, []⟩
+def outer : Bool → Option Nat := fun channel => if channel then none else some 1
+def inner : Bool → Option Nat := fun channel => if channel then some 3 else some 2
+def recordContext (state : TestState) : Option Nat × TestState :=
+  (state.context, { state with store := state.store ++ state.context.toList })
+
+theorem nested_retains_effects_and_caller :
+    let result := run outer (some 1)
+      (fun active =>
+        let first := recordContext active
+        let middle := run inner (some 2) recordContext first.2
+        recordContext middle.2) caller
+    result.1 = some 1 ∧ result.2.context = caller.context ∧
+      result.2.store = [1, 2, 1] ∧ result.2.externalDepth = 4 ∧
+      (result.2.scopes false).top = none ∧ (result.2.scopes true).top = none := by
+  decide
+
+/-- Capturing an empty context replaces the ambient value. Interpreting empty
+as an overlay would expose the caller instead. -/
+theorem empty_capture_is_not_overlay :
+    (run outer none recordContext caller).1 = none ∧
+      (run outer (none.or caller.context) recordContext caller).1 = some 7 := by
+  decide
+
+theorem returned_links_are_not_rolled_back :
+    let result := run outer (some 1)
+      (fun active => run inner (some 2) recordContext active) caller
+    (result.2.scopes false).parent 2 = some 1 ∧
+      (caller.scopes false).parent 2 = none ∧ result.2.store = [2] := by
+  decide
+
+theorem rolling_back_store_loses_work :
+    (run outer (some 1) recordContext caller).2.store ≠ caller.store := by decide
+
+theorem unbalanced_barrier_is_visible :
+    let result := run outer (some 1)
+      (fun active => ((), { active with externalDepth := active.externalDepth + 1 })) caller
+    result.2.externalDepth = 5 ∧ result.2.externalDepth ≠ caller.externalDepth := by decide
+
+end Controls
+end Activation
 end LinkedScopeStack
 end Mettapedia.Machines

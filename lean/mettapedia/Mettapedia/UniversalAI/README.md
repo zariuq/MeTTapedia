@@ -25,7 +25,7 @@ attributed extensions; they are not presented as chapters of Hutter's book.
 | Chapter | Topic | Coverage | Lines | Sorries |
 |---------|-------|----------|-------|---------|
 | Ch 4 — Agents & environments | Action/observation/reward, value functions, AIXI agent | ~95% | ~5,800 | 0 |
-| Ch 5 — Optimality of AIXI | Intelligence measure (Legg-Hutter Υ), grain-of-truth, asymptotic optimality | ~85% | ~12,500 | 0 |
+| Ch 5 — Optimality of AIXI | Intelligence measure (Legg-Hutter Υ); Bayesian learning over a countable class (posterior consistency; see the grain-of-truth section for what is and is not proved) | partial | ~12,200 | 0 |
 | Ch 6 — Problem classes | SP, SG, FM, EX reductions to AIXI | ~95% | ~2,000 | 0 |
 | Ch 7 — Computation & AIXItl | Levin search, time-bounded AIXI, ε-optimality | ~90% | ~11,900 | 0 |
 | Extensions | Multi-agent, self-modification | WIP | ~4,300 | 0 |
@@ -49,15 +49,46 @@ See **Formalization status** below for the sorry/axiom/trusted-base summary.
 |------|-------|----------|
 | `Intelligence/Basic.lean` | 365 | Legg-Hutter intelligence measure Υ(π); proves AIXI maximizes intelligence |
 
-### Grain of Truth (`GrainOfTruth/`, 18 files, ~11,900 lines)
+### Bayesian learning with a grain of truth (`GrainOfTruth/`, 22 files, ~11,800 lines)
 
-Asymptotic optimality: Thompson sampling convergence to Nash equilibrium
-in reflective environments. Includes measure-theoretic infrastructure:
+A prior has a grain of truth when it gives the true environment positive weight.
+The directory develops Bayesian learning over a countable class of environments
+under that assumption, following Leike's thesis (Chapters 5 and 7).
 
-- `GrainOfTruth/Main.lean` — Main theorem (Leike 2016)
-- `GrainOfTruth/FixedPoint.lean` — Fixed-point convergence
-- `GrainOfTruth/MeasureTheory/HistoryFiltration.lean` (3,047 lines) — History filtrations
-- `GrainOfTruth/MeasureTheory/ExpectedTotalVariation.lean` (2,090 lines) — Total variation bounds
+Proved:
+
+- `GrainOfTruth/MeasureTheory/HistoryFiltration.lean` (3,059 lines) — trajectory measures of an environment and a policy, and the filtration of histories
+- `GrainOfTruth/MeasureTheory/LikelihoodRatio.lean` (2,083 lines) — the log-likelihood ratio of a wrong environment is a supermartingale under the true one
+- `GrainOfTruth/MeasureTheory/PosteriorMartingale.lean`, `PosteriorConcentration.lean` — the posterior is a martingale under the mixture; it concentrates on the true environment when every other environment is told apart from it
+- `GrainOfTruth/MeasureTheory/ExpectedTotalVariation.lean` (2,092 lines) — the posterior-expected total-variation distance to the mixture vanishes in mean, for every finite lookahead
+- `GrainOfTruth/Setup.lean` — the single-agent environment each agent of a multi-agent environment faces; asymptotic optimality in mean there gives ε-best responses with probability tending to one (the last step of Theorem 7.30 of the thesis)
+
+Not proved: that Thompson sampling is asymptotically optimal in mean (Theorem
+5.25), and the class of environments computable with a reflective oracle with
+its two theorems (Proposition 7.18, Theorem 7.19). The solution to the grain of
+truth problem of Leike, Taylor and Fallenstein is therefore not formalized.
+`GrainOfTruth/Main.lean` lists both sides.
+
+### Reflective oracles (`ReflectiveOracles/`, 4 files, ~1,250 lines)
+
+An oracle that answers "does this machine output 1 with probability above p?",
+also about machines that consult the oracle (Fallenstein, Taylor & Christiano
+2015; Leike, Taylor & Fallenstein 2016, Definition 2). Stated for an arbitrary
+family of queries, each with its two output probabilities as functions of the
+oracle.
+
+- `ReflectiveOracles/Basic.lean` — the definition; forced and free answers; systems without self-reference; reduction to finitely many queries
+- `ReflectiveOracles/FixedPoints.lean` — **a reflective oracle exists** (`exists_reflective`), from Brouwer's fixed-point theorem for cubes (`Mettapedia/Topology/BrouwerCube.lean`)
+- `ReflectiveOracles/Controls.lean` — the liar (one half, uniquely), matching pennies, coordination (three oracles), a machine without output, a chain without self-reference
+- `ReflectiveOracles/Machines.lean` — probabilistic machines that call an oracle, given by one step (halt, move, coin, ask); output probabilities by first-step analysis; **every such family of machines has a reflective oracle** (`Machines.exists_reflective`: Theorem 7.5 of Leike's thesis); the liar machine
+- `MultiAgent/TwoActionGames.lean` — reflective oracles of the best-response queries are the Nash equilibria; every game with two actions per player has one (`exists_isNash`)
+- `Mettapedia/PLN/Bridges/UniversalAI/ReflectiveOracleTruth.lean` — the output of a queried machine as a PLN indefinite truth value
+
+The machines are given abstractly, by their states and one step, so every
+machine model that runs one step at a time is an instance. A concrete model
+(for instance Turing machines with an oracle tape, or a language definition of
+the GSLT theory) and the class of environments it computes are not yet
+defined.
 
 ## Chapter 6: Problem Classes
 
@@ -120,9 +151,7 @@ from the current Gödel-machine model. Omega is not identified with OmegaClaw.
 Proof status is module-specific. The newly added `WeaknessPrior`,
 `ZetaProgramPrior`, `Omega`, and `ProofBackedImprovement` tranche has no proof
 holes. The older `UniversalHyperprior/` development still contains real
-`sorry` terms and must not be described as proved or complete.
-`GrainOfTruth/ROADMAP.lean` is prose containing illustrative code blocks; its
-textual `sorry` occurrences are not Lean declarations. Therefore a raw textual
+`sorry` terms and must not be described as proved or complete. A raw textual
 count is useful for discovery but must be inspected before interpretation.
 
 No source-level `axiom` declaration should be introduced. Per-theorem
@@ -141,4 +170,6 @@ rg -n --glob '*.lean' 'native_decide' .
 
 - Marcus Hutter, [*Universal Artificial Intelligence: Sequential Decisions Based on Algorithmic Probability*](https://www.hutter1.net/ai/uaibook.htm) (Springer, 2005) — the source text; this directory formalizes Chapters 4–7.
 - Shane Legg & Marcus Hutter, [*Universal Intelligence: A Definition of Machine Intelligence*](https://doi.org/10.1007/s11023-007-9079-x), *Minds and Machines* 17 (2007), 391–444 ([arXiv:0712.3329](https://arxiv.org/abs/0712.3329)) — the intelligence measure Υ formalized in `Intelligence/Basic.lean`.
-- Jan Leike, [*Nonparametric General Reinforcement Learning*](https://arxiv.org/abs/1611.08944) (PhD thesis, 2016) — the Thompson-sampling / grain-of-truth asymptotic-optimality results targeted by `GrainOfTruth/`.
+- Jan Leike, [*Nonparametric General Reinforcement Learning*](https://arxiv.org/abs/1611.08944) (PhD thesis, 2016) — the source of `GrainOfTruth/`; its Thompson-sampling and reflective-oracle theorems are the targets not yet reached.
+- Jan Leike, Jessica Taylor & Benya Fallenstein, [*A Formal Solution to the Grain of Truth Problem*](https://arxiv.org/abs/1609.05058) (UAI 2016).
+- Benja Fallenstein, Jessica Taylor & Paul Christiano, [*Reflective Oracles: A Foundation for Classical Game Theory*](https://arxiv.org/abs/1508.04145) (2015).

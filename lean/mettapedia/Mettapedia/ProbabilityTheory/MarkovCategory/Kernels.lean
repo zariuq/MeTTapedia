@@ -15,7 +15,7 @@ noncomputable section
 namespace Mettapedia.ProbabilityTheory
 
 open MeasureTheory
-open ProbabilityTheory
+open _root_.Mettapedia.ProbabilityTheory
 
 /-- Object type for the kernel Markov-category core: measurable spaces
 packaged as `MeasCat` objects. -/

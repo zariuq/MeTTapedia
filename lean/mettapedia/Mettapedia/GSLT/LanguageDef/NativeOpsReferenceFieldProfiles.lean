@@ -192,4 +192,43 @@ theorem target_reference_field_guarded {SourceWorld TargetWorld : Type} {interfa
         index (some address) baseType position source _).mpr
       simpa only [failed] using ⟨address, value, rfl, loaded, rfl⟩
 
+theorem stateful_checked_reference_field_fragment_profile {SourceWorld TargetWorld : Type}
+    {interface : Interface} {worldRelated : SourceWorld → TargetWorld → Prop}
+    {source : SourceState SourceWorld} {target : TargetState TargetWorld}
+    (states : StateRelated worldRelated source target) (clear : source.fault = none)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    {targetHeap : TargetHeapSemantics TargetWorld} {targetCalls : TargetCalls TargetWorld}
+    (sourceFrame : SourceFrame) (frame : TargetFrame) (reference : Expr) (pointer : Option Address)
+    (record member : String) (index : Nat) (type result : NativeType) {default : TargetValue}
+    (baseType : inferExpr interface (sourceFrameScope sourceFrame) reference = some (.ref (.named record)))
+    (position : NativeLowering.fieldLayout? interface record member = some index)
+    (atom : Atom) (supply : NativeIR.Supply)
+    (read : TargetAtomEval interface frame target atom (.reference pointer))
+    (bounded : TemporaryNamesBound frame supply.next) (hscope : TemporariesScoped frame)
+    (zero : TargetZero interface result default) (root : List Instruction)
+    {out : TargetBlockOutcome TargetWorld}
+    (ran : TargetRun interface targetHeap targetCalls result root
+      (NativeLowering.checkReference atom ++
+        [.temporary (NativeIR.fresh supply).1 (.ref type) (.fieldAddress atom record index),
+         .temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type
+           (.indirectRead (.temporary (NativeIR.fresh supply).1 (.ref type)))]) frame target out) :
+    ∃ sourceOut,
+      sourcePrimitive interface sourceHeap sourceCalls sourceFrame (.field reference member)
+        [.reference pointer] source sourceOut ∧
+      CheckedExpressionRelated worldRelated interface default
+        (.temporary (NativeIR.fresh (NativeIR.fresh supply).2).1 type) sourceOut out ∧
+      TemporaryProtection supply.next frame out.frame ∧
+      TemporaryNamesBound out.frame (NativeIR.fresh (NativeIR.fresh supply).2).2.next ∧
+      TemporariesScoped out.frame := by
+  have next := NativeIR.fresh_strict supply
+  have nextValue := NativeIR.fresh_strict (NativeIR.fresh supply).2
+  obtain ⟨sourceOut, primitive, agreement⟩ := target_reference_field_guarded states clear
+    sourceHeap sourceCalls sourceFrame frame reference pointer record member index _ _ type result
+    baseType position atom read (temporary_bound_fresh bounded next)
+    (temporary_bound_fresh bounded (next.trans nextValue)) (Nat.ne_of_gt nextValue) zero root ran
+  obtain ⟨protection, finalBounded, finalScoped⟩ :=
+    target_reference_field_frame states zero read record index type supply bounded hscope root ran
+  exact ⟨sourceOut, primitive, guarded_related_checked states clear agreement,
+    protection, finalBounded, finalScoped⟩
+
 end Mettapedia.GSLT.LanguageDef.NativeOps

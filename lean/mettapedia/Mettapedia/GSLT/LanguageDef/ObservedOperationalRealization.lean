@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy
-import Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
 import Mettapedia.OSLF.Framework.DerivedTyping
 
 /-!
@@ -197,14 +197,14 @@ end MeTTaZero
 
 section PeTTa
 open Mettapedia.Languages.MeTTa.PeTTa
-open Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
+open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.OperationalGSLT
 
 /-- The PeTTa core fragment: surface inputs are (state, request) pairs, the
 surface relation is the declarative `PeTTaCmd`, the machine is the generated
 operational theory.  `Supported` is deliberately `True` only for the core
 fragment the theory covers; library and profile features of the running
 dialect are outside it. -/
-def pettaCore : Relational (EvalState × Pattern) CoreOperationalTerm (EvalState × Answers) where
+def pettaCore : Relational (EvalState × Pattern) CoreOperationalTerm (EvalState × PatternRewrite.RewriteResults) where
   Supported := fun _ => True
   SurfaceEval := fun x a => PeTTaCmd x.1 x.2 a.1 a.2
   encode := fun x => .request x.1 x.2

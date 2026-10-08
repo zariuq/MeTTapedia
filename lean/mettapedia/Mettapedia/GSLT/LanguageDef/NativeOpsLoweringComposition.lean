@@ -524,5 +524,152 @@ theorem target_two_encoded_arguments {World : Type} {interface : Interface} {fra
                   cases remaining with
                   | cons _ impossible => cases impossible
 
+/-- The actual recursive argument emitter and a checked primitive suffix
+compose in both directions. Effects remain ordered, earlier private values
+remain protected, and the first argument fault skips the primitive. -/
+theorem stateful_strict_child_laws {SourceWorld TargetWorld : Type}
+    (worldRelated : SourceWorld → TargetWorld → Prop) (interface : Interface)
+    (sourceHeap : SourceHeapSemantics SourceWorld) (sourceCalls : SourceCalls SourceWorld)
+    (targetHeap : TargetHeapSemantics TargetWorld) (targetCalls : TargetCalls TargetWorld)
+    (sourceFrame : SourceFrame) (source : SourceState SourceWorld) (clear : source.fault = none)
+    (result : NativeType) (default : TargetValue) (expression : Expr) (arguments : List Expr)
+    (operands : sourceStrictOperands? expression = some arguments)
+    (children : ∀ child ∈ arguments, ∀ before, before.fault = none →
+      StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+        sourceFrame before result default child)
+    (emitted : ∀ {supply : NativeIR.Supply} {output : NativeLowering.Expression},
+      NativeLowering.expression? interface (sourceFrameScope sourceFrame) expression supply = some output →
+      ∃ argumentOutput suffix,
+        NativeLowering.arguments? interface (sourceFrameScope sourceFrame) arguments supply = some argumentOutput ∧
+        output = NativeLowering.prependCode argumentOutput.code suffix ∧
+        StatefulPrimitiveLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame source result default expression arguments argumentOutput suffix) :
+    StatefulChildLaws worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+      sourceFrame source result default expression := by
+  have argumentBounds (supply : NativeIR.Supply) (argumentOutput : NativeLowering.Arguments)
+      (compiled : NativeLowering.arguments? interface (sourceFrameScope sourceFrame)
+        arguments supply = some argumentOutput) : supply.next ≤ argumentOutput.supply.next :=
+    (stateful_arguments_bounds interface (sourceFrameScope sourceFrame) arguments
+      (fun child member _ _ compiled => (children child member source clear).bounds compiled)
+      supply argumentOutput compiled).1
+  refine ⟨?_, ?_, ?_⟩
+  · intro supply output compiled
+    obtain ⟨argumentOutput, suffix, argsCompiled, same, primitive⟩ := emitted compiled
+    subst output
+    exact ⟨(argumentBounds supply argumentOutput argsCompiled).trans primitive.bounds.1, primitive.bounds.2⟩
+  · intro root supply output frame target compiled frames states bounded hscope sourceOut ran
+    obtain ⟨argumentOutput, suffix, argsCompiled, same, primitive⟩ := emitted compiled
+    subst output
+    have grew := argumentBounds supply argumentOutput argsCompiled
+    have jumpFree := arguments_lowering_jump_free interface (sourceFrameScope sourceFrame)
+      arguments supply argumentOutput argsCompiled
+    rcases (source_strict_expression_exact expression arguments operands source sourceOut).mp ran with
+      ⟨values, middle, argsRan, primitiveRan⟩ | ⟨fault, post, argsRan, same⟩
+    · obtain ⟨⟨flow, middleFrame, middleState⟩, targetArgs, related, protection, middleBounded, middleScoped⟩ :=
+        stateful_arguments_forward worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default arguments children root clear argsCompiled frames states bounded hscope argsRan
+      rcases related with ⟨postRelated, middleClear, normal, reads⟩
+      change flow = .normal at normal
+      subst flow
+      obtain ⟨out, targetPrimitive, checked, tailProtection, finalBounded, finalScoped⟩ :=
+        primitive.forward root argsRan middleClear
+          (temporary_protection_preserves_source_frame frames protection) postRelated
+          middleBounded middleScoped reads primitiveRan
+      exact ⟨out, target_append_normal root argumentOutput.code suffix.code jumpFree targetArgs targetPrimitive,
+        checked, temporary_protection_trans protection (temporary_protection_weaken grew tailProtection),
+        finalBounded, finalScoped⟩
+    · subst sourceOut
+      obtain ⟨⟨flow, postFrame, postState⟩, targetArgs, related, protection, postBounded, postScoped⟩ :=
+        stateful_arguments_forward worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default arguments children root clear argsCompiled frames states bounded hscope argsRan
+      rcases related with ⟨postRelated, failed, returned⟩
+      change flow = .returned default at returned
+      subst flow
+      exact ⟨⟨.returned default, postFrame, postState⟩,
+        target_append_returned root argumentOutput.code suffix.code jumpFree targetArgs,
+        ⟨postRelated, failed, rfl⟩, protection,
+        temporary_names_bound_weaken primitive.bounds.1 postBounded, postScoped⟩
+  · intro root supply output frame target compiled frames states bounded hscope out ran
+    obtain ⟨argumentOutput, suffix, argsCompiled, same, primitive⟩ := emitted compiled
+    subst output
+    have grew := argumentBounds supply argumentOutput argsCompiled
+    have jumpFree := arguments_lowering_jump_free interface (sourceFrameScope sourceFrame)
+      arguments supply argumentOutput argsCompiled
+    rcases (target_run_append_exact interface targetHeap targetCalls result root argumentOutput.code suffix.code
+      jumpFree frame target out).mp ran with
+      ⟨middleFrame, middleState, targetArgs, targetPrimitive⟩ |
+      ⟨returnedValue, postFrame, postState, targetArgs, same⟩
+    · obtain ⟨sourceArgs, argsRan, related, protection, middleBounded, middleScoped⟩ :=
+        stateful_arguments_reflection worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default arguments children root clear argsCompiled frames states bounded hscope targetArgs
+      obtain ⟨values, success, middleClear, postRelated, reads⟩ := checked_result_normal related rfl
+      rcases sourceArgs with ⟨answer, middle⟩
+      cases success
+      obtain ⟨sourceOut, primitiveRan, checked, tailProtection, finalBounded, finalScoped⟩ :=
+        primitive.backward root argsRan middleClear
+          (temporary_protection_preserves_source_frame frames protection) postRelated
+          middleBounded middleScoped reads targetPrimitive
+      exact ⟨sourceOut, .strict operands argsRan primitiveRan, checked,
+        temporary_protection_trans protection (temporary_protection_weaken grew tailProtection),
+        finalBounded, finalScoped⟩
+    · subst out
+      obtain ⟨sourceArgs, argsRan, related, protection, postBounded, postScoped⟩ :=
+        stateful_arguments_reflection worldRelated interface sourceHeap sourceCalls targetHeap targetCalls
+          sourceFrame result default arguments children root clear argsCompiled frames states bounded hscope targetArgs
+      obtain ⟨fault, failed, faulted, postRelated, returned⟩ := checked_result_returned related rfl
+      rcases sourceArgs with ⟨answer, post⟩
+      cases failed
+      cases returned
+      exact ⟨⟨.error fault, post⟩, .strictFault operands argsRan,
+        ⟨postRelated, faulted, rfl⟩, protection,
+        temporary_names_bound_weaken primitive.bounds.1 postBounded, postScoped⟩
+
+theorem arguments_lowering_single (interface : Interface) (scope : Scope) (argument : Expr)
+    {supply : NativeIR.Supply} {child : NativeLowering.Expression}
+    (compiled : NativeLowering.expression? interface scope argument supply = some child) :
+    NativeLowering.arguments? interface scope [argument] supply =
+      some ⟨child.code, [child.result], child.supply⟩ := by
+  apply (arguments_lowering_cons_exact interface scope argument [] supply _).mpr
+  exact ⟨child, ⟨[], [], child.supply⟩, compiled, (by rw [NativeLowering.arguments?]),
+    by simp only [List.append_nil]⟩
+
+theorem target_one_encoded_argument {World : Type} {interface : Interface} {frame : TargetFrame}
+    {state : TargetState World} {atom : NativeIR.Atom} {values : List SourceValue}
+    (read : TargetAtomsEval interface frame state [atom] (encodeValues values)) :
+    ∃ value, values = [value] ∧ TargetAtomEval interface frame state atom (encodeValue value) := by
+  cases values with
+  | nil => cases read
+  | cons first rest =>
+      cases rest with
+      | nil => cases read with | cons firstRead _ => exact ⟨first, rfl, firstRead⟩
+      | cons second rest => cases read with | cons _ impossible => cases impossible
+
+theorem arguments_lowering_triple (interface : Interface) (scope : Scope) (a b c : Expr)
+    {supply : NativeIR.Supply} {first second third : NativeLowering.Expression}
+    (firstCompiled : NativeLowering.expression? interface scope a supply = some first)
+    (secondCompiled : NativeLowering.expression? interface scope b first.supply = some second)
+    (thirdCompiled : NativeLowering.expression? interface scope c second.supply = some third) :
+    NativeLowering.arguments? interface scope [a, b, c] supply =
+      some ⟨first.code ++ second.code ++ third.code, [first.result, second.result, third.result], third.supply⟩ := by
+  apply (arguments_lowering_cons_exact interface scope a [b, c] supply _).mpr
+  exact ⟨first, ⟨second.code ++ third.code, [second.result, third.result], third.supply⟩,
+    firstCompiled, arguments_lowering_pair interface scope b c secondCompiled thirdCompiled,
+    by simp only [List.append_assoc]⟩
+
+theorem target_three_encoded_arguments {World : Type} {interface : Interface}
+    {frame : TargetFrame} {state : TargetState World} {a b c : NativeIR.Atom} {values : List SourceValue}
+    (read : TargetAtomsEval interface frame state [a, b, c] (encodeValues values)) :
+    ∃ first second third, values = [first, second, third] ∧
+      TargetAtomEval interface frame state a (encodeValue first) ∧
+      TargetAtomEval interface frame state b (encodeValue second) ∧
+      TargetAtomEval interface frame state c (encodeValue third) := by
+  cases values with
+  | nil => cases read
+  | cons first rest =>
+      cases read with
+      | cons head tail =>
+          obtain ⟨second, third, same, readSecond, readThird⟩ := target_two_encoded_arguments tail
+          subst rest
+          exact ⟨first, second, third, rfl, head, readSecond, readThird⟩
 
 end Mettapedia.GSLT.LanguageDef.NativeOps
