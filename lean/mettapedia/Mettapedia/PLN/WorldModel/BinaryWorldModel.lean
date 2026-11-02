@@ -160,9 +160,9 @@ namespace WMJudgment
 
 variable {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
 
-/-- Context-free WM derivability is intentionally permissive: every posterior
-state is available as an axiom. Nontrivial source control enters in `WMJudgmentCtx`
-and `WMJudgmentMulti`. -/
+/-- Context-free WM derivability is intentionally permissive: every state is
+available as an axiom. Context judgments restrict available states;
+`LinearJudgment` additionally enforces exact occurrence consumption. -/
 theorem trivial (W : State) : ⊢wm W :=
   WMJudgment.axiom W
 
@@ -198,8 +198,9 @@ end WMJudgment
 /-- Context-indexed WM judgment: a posterior state is derivable from a set of axiom states.
 
 Unlike `WMJudgment` (where any state is derivable via `axiom`), `WMJudgmentCtx Γ W`
-asserts that `W` is built only from states in `Γ` (via revision). This tightens the
-trust boundary: only evidence from approved sources contributes to conclusions.
+asserts that `W` is built only from states in `Γ` (via revision). These permissions
+may be reused: this judgment does not certify distinct observations or additive
+independence. `LinearJudgment` tracks exact occurrences.
 
 Use cases:
 - **Provenance**: track which data sources contributed to a posterior
@@ -280,20 +281,15 @@ theorem query_deterministic {Γ : Set State} {W : State} {q : Query}
 
 end WMJudgmentCtx
 
-/-! ## Multiset-indexed WM judgments (provenance-multiplicity-aware)
+/-! ## Reusable multiset contexts
 
-`WMJudgmentMulti` parallels `WMJudgmentCtx` but uses `Multiset State` instead of
-`Set State`. This preserves provenance multiplicity: if the same CPT observation
-is used twice (independently), the multiset `{|cpt, cpt|}` records both uses,
-whereas `Set` would collapse to `{cpt}`.
-
-Key design choices:
-- `base` checks `W ∈ Γ` where `∈` is multiset membership
-- `≤` (submultiset) replaces `⊆` for monotonicity
-- `+` (multiset sum) replaces `∪` for composition
+`WMJudgmentMulti` records a multiset of available states, not a resource ledger.
+Its membership rule permits contraction: one available state may be used twice.
+Use `LinearJudgment` for exact occurrence consumption and identified observation
+ledgers when distinctness of actual observations must also be checked.
 -/
 
-/-- Multiset-indexed WM judgment: tracks provenance with multiplicity. -/
+/-- Derivability from reusable permissions; multiplicities do not bound use. -/
 inductive WMJudgmentMulti {State : Type*} [EvidenceType State]
     (Γ : Multiset State) : State → Prop
   | base (W : State) (hW : W ∈ Γ) : WMJudgmentMulti Γ W
@@ -350,7 +346,79 @@ theorem sum_derivable (Γ : Multiset State) (hne : Γ ≠ 0) :
     · exact .revise (.base a (Multiset.mem_cons_self a s))
         (mono (Multiset.le_cons_self s a) (ih hs))
 
+/-- Set support already determines this reusable judgment. -/
+theorem ofCtx {Γ : Multiset State} {W : State}
+    (h : WMJudgmentCtx {x | x ∈ Γ} W) : WMJudgmentMulti Γ W := by
+  induction h with
+  | base W hW => exact .base W hW
+  | revise _ _ ih₁ ih₂ => exact .revise ih₁ ih₂
+
+theorem iff_ctx {Γ : Multiset State} {W : State} :
+    WMJudgmentMulti Γ W ↔ WMJudgmentCtx {x | x ∈ Γ} W := ⟨toCtx, ofCtx⟩
+
 end WMJudgmentMulti
+
+/-! ## Exact occurrence consumption -/
+
+section Linear
+
+variable {State : Type*} [EvidenceType State]
+
+/-- **The linear world-model judgment**: each listed state is used exactly once. -/
+inductive LinearJudgment : Multiset State → State → Prop
+  | base (W : State) : LinearJudgment {W} W
+  | revise {Γ₁ Γ₂ : Multiset State} {W₁ W₂ : State} :
+      LinearJudgment Γ₁ W₁ → LinearJudgment Γ₂ W₂ → LinearJudgment (Γ₁ + Γ₂) (W₁ + W₂)
+
+namespace LinearJudgment
+
+/-- **A linear derivation is the sum of its context, and the context is not empty.** -/
+theorem eq_sum {Γ : Multiset State} {W : State} (derivation : LinearJudgment Γ W) :
+    W = Γ.sum ∧ Γ ≠ 0 := by
+  induction derivation with
+  | base W => exact ⟨by simp, by simp⟩
+  | revise _ _ ih₁ ih₂ =>
+      refine ⟨by rw [Multiset.sum_add, ← ih₁.1, ← ih₂.1], ?_⟩
+      intro zero
+      exact ih₁.2 (add_eq_zero.mp zero).1
+
+/-- Every nonempty context derives its sum. -/
+theorem of_sum {Γ : Multiset State} (nonempty : Γ ≠ 0) : LinearJudgment Γ Γ.sum := by
+  induction Γ using Multiset.induction_on with
+  | empty => exact absurd rfl nonempty
+  | cons a s ih =>
+      by_cases hs : s = 0
+      · subst hs
+        simpa using LinearJudgment.base a
+      · rw [Multiset.sum_cons, ← Multiset.singleton_add]
+        exact .revise (.base a) (ih hs)
+
+/-- **From one state, only that state.** -/
+theorem singleton {W X : State} (derivation : LinearJudgment {W} X) : X = W := by
+  simpa using derivation.eq_sum.1
+
+/-- The linear judgment refines the multiset judgment. -/
+theorem toMulti {Γ : Multiset State} {W : State} (derivation : LinearJudgment Γ W) :
+    WMJudgmentMulti Γ W := by
+  induction derivation with
+  | base W => exact .base W (Multiset.mem_singleton_self W)
+  | revise _ _ ih₁ ih₂ => exact WMJudgmentMulti.add_revise ih₁ ih₂
+
+/-- Exact consumption is characterized by the sum of a nonempty source bag. -/
+theorem iff_eq_sum {Γ : Multiset State} {W : State} :
+    LinearJudgment Γ W ↔ W = Γ.sum ∧ Γ ≠ 0 := by
+  constructor
+  · exact eq_sum
+  · rintro ⟨rfl, nonempty⟩
+    exact of_sum nonempty
+
+/-- Erase consumption accounting into the context-free calculus. -/
+theorem toWMJudgment {Γ : Multiset State} {W : State}
+    (h : LinearJudgment Γ W) : WMJudgment W := h.toMulti.toWMJudgment
+
+end LinearJudgment
+
+end Linear
 
 /-! ## Standard prop/link wrappers (when `Query = AtomQuery Atom`) -/
 

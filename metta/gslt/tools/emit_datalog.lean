@@ -1,4 +1,9 @@
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogFrontend
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogFrontendSource
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogPrinterAdmissionCheck
+import Mettapedia.Languages.Datalog.FactInputCorrespondence
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.ClassSearch
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteEmission
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIRClosureWire
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.SnapshotClosureExecution
 
@@ -22,18 +27,9 @@ def inputs (program : Program) (directory : System.FilePath) : IO (List GroundFa
     if let .input name := statement then
       let some types := ProgramStatic.signature program name | throw (IO.userError "undeclared input")
       let text ← IO.FS.readFile (directory / (String.intercalate "." name ++ ".facts"))
-      for line in text.splitOn "\n" do
-        if !line.isEmpty then
-          let fields := line.splitOn "\t"
-          unless fields.length == types.length do throw (IO.userError "input field count mismatch")
-          let values ← (fields.zip types).mapM fun (field,kind) => match kind with
-            | .symbol => pure (.symbol field)
-            | .number => match field.toInt? with
-              | some value => pure (.number value) | none => throw (IO.userError "invalid signed input")
-            | .unsigned => match field.toNat? with
-              | some value => pure (.unsigned value) | none => throw (IO.userError "invalid unsigned input")
-            | .floating => throw (IO.userError "floating inputs require a declared floating profile")
-          facts := facts ++ [⟨name,values⟩]
+      let some decoded := FactInput.read? name types text
+        | throw (IO.userError s!"invalid input record or scalar for {String.intercalate "." name}")
+      facts := facts ++ decoded
   pure facts
 
 def main (arguments : List String) : IO Unit := do
@@ -49,6 +45,11 @@ def main (arguments : List String) : IO Unit := do
   let prepared ← match Executable.prepare program seeds with
     | .ok prepared => pure prepared
     | .error reason => throw (IO.userError reason)
+  unless SouffleDatalog.SourcePrinter.checkProgram program do
+    throw (IO.userError "program is outside the declared source-printing profile")
+  let canonical ← match SouffleDatalog.SourcePrinter.print? program with
+    | .ok text => pure text
+    | .error reason => throw (IO.userError s!"source printing refused: {reason}")
   let spec := ClosureMachine.spec prepared prepared.seedFacts
   let .ok _ := CompleteEmission.emitText? spec entry .classes
     | throw (IO.userError s!"GSLT execution admission refused: {reprStr spec.plan.obligations}")
@@ -73,4 +74,7 @@ def main (arguments : List String) : IO Unit := do
   let decoded := CettaWire.encodeList (fun (name,value) => Term.application "Binding"
     [.string name,InferenceCettaWire.encodePattern value]) dictionary
   IO.FS.writeFile (outputPath ++ ".dictionary.metta") decoded.render
+  IO.FS.writeFile (outputPath ++ ".source.dl") canonical
+  IO.FS.writeFile (outputPath ++ ".program.metta")
+    (CettaWire.Term.render (InferenceCettaWire.encodePattern (IRCodec.program program)))
   IO.println s!"compiled ordinary Datalog: {program.statements.length} statements, {prepared.compiled.rewrites.length} rules, {seeds.length} input facts"

@@ -24,19 +24,20 @@ namespace Mettapedia.PLN.Evidence
 
 /-- Epistemic classification of an evidence item.
 
-    Determines how much weight an assessment layer should give it and whether
-    it can be mixed with other kinds without explicit acknowledgment.
+    An origin label for an assessment layer, not a proof certificate or an
+    independence license. A checked derivation and observations of a checker run
+    have different meanings: only the latter are empirical performance data.
 
     Consumers may use this to:
     - assign different effective sample sizes by default
     - flag when a conclusion rests entirely on elicited evidence
     - separate calibrated from uncalibrated inputs in aggregation -/
 inductive EvidenceKind where
-  | empirical          -- actual counts from data, tests, or proven witnesses
+  | empirical          -- identified observations or recorded test outcomes; excludes proof multiplicity
   | expertElicited     -- structured expert judgment (SHELF/Cooke protocol)
   | modelDerived       -- output of a computational model (LLM, classifier, ATP)
   | textInterpreted    -- human/LLM interpretation of natural-language source
-  | logicalDerivation  -- formal entailment from other evidence items
+  | logicalDerivation  -- logical-inference origin; proof authority requires a separate checked witness
   deriving Repr, BEq, DecidableEq
 
 end Mettapedia.PLN.Evidence

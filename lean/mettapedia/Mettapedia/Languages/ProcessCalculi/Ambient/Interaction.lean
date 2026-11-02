@@ -142,7 +142,7 @@ def dissolutionCut : InteractionCutPresentation ambientIGSLT where
   sourceShape :=
     { core := openRule.left
       coreShape :=
-        (CutSourceShape.collection [] (some "rest") rfl :
+        (CutSourceShape.collection [] (some "rest") .itself .itself rfl :
           CutSourceShape ambientCoreContact capabilityOperand.schemaTerm
             boundaryOperand.schemaTerm
             (.collection .hashBag

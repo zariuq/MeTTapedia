@@ -16,7 +16,7 @@ Canonical packaged bridges that expose:
 
 namespace Mettapedia.OSLF.Framework.ToposTOGLBridge
 
-open CategoryTheory
+open Mettapedia.CategoryTheory
 open Opposite
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine

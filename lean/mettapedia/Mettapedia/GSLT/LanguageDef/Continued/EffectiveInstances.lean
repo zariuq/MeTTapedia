@@ -4,6 +4,9 @@ import Mettapedia.GSLT.LanguageDef.Continued.InstanceTable
 import Mettapedia.Languages.Calculator.EffectiveSection
 import Mettapedia.Languages.PartrecMachine.HistoryContinued
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSectionEffective
+import Mettapedia.GSLT.LanguageDef.RestrictionBlocks.SectionEffective
+import Mettapedia.GSLT.LanguageDef.RestrictionBlocks.ReplicationSectionEffective
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousSection
 
 /-!
 # Effective sections of the listed continued instances
@@ -11,16 +14,23 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSectionEffective
 A continued theory is effectively continued when the section of one of its
 continued presentations is tracked by a computable function on term codes.
 
-* CCS, the asynchronous and the synchronous pi calculus, and mobile ambients
-  have the bag normal form as section, and the bag normal form is primitive
-  recursive on codes.
+* Mobile ambients have the bag normal form as section, and the bag normal
+  form is primitive recursive on codes.
+* CCS authors restriction laws beyond its bag, so the bag normal form is no
+  section of it; its section is the canonical form of its restriction blocks,
+  computable on codes for every calculus with restriction. Its second section,
+  the outermost bag listed in the opposite order, is effective too, so the two
+  continued presentations of CCS are both effective: being continued is added
+  structure also when the section is required to be computable.
+* Synchronous pi authors the laws of restriction and replication; its section is
+  the canonical form with replication, computable on codes for every calculus
+  with replication. Asynchronous pi has no interaction cut: its output carries
+  no continuation of the process sort (`InstanceTable.pi_row`).
 * Silent composition in an interaction category and the contact theory author
   no static equation, and their section is the identity.  The lambda calculus
   is the same case.
-* CCS has a second section, the normal form with its outermost bag listed in
-  the opposite order.  It is effective too, so the two continued
-  presentations of CCS are both effective: being continued is added structure
-  also when the section is required to be computable.
+* A bag theory has a second section, the normal form with its outermost bag
+  listed in the opposite order, and it is effective too.
 * The calculator has no interaction and is not continued; its normal form,
   evaluation to a numeral, is effective as a section on closed expressions.
 * The rho calculus is continued through its reflective presentation, and its
@@ -101,6 +111,14 @@ theorem reversedBagSection_effective (theory : IGSLT) {bag : GrammarRule}
     (reverseTopClosed_equivalent theory laws) reverseTopCode_primrec.to_comp
     fun term => (reverseTopCode_patternCode term.1).symm
 
+/-- **The second section of a calculus with restriction is effective.** -/
+theorem reversedBlockSection_effective (theory : IGSLT) (block : RestrictionBlocks.Block)
+    [laws : RestrictionBlocks.BlockLanguage theory.presentation.presentation.language block] :
+    (reversedBlockSection theory block).Effective :=
+  (blockCanonicalSection_effective theory block).rerepresent
+    (reverseTopBlockClosed_equivalent theory block) reverseTopCode_primrec.to_comp
+    fun term => (reverseTopCode_patternCode term.1).symm
+
 end BagNormalForm
 
 open BagNormalForm
@@ -116,24 +134,9 @@ open Mettapedia.Languages.ProcessCalculi.Ambient.Mobile
 open InstanceTable
 
 /-- **CCS is effectively continued**: the section of its continued
-presentation is the bag normal form. -/
+presentation is the canonical form of its restriction blocks. -/
 theorem ccs_isEffectivelyContinued : IsEffectivelyContinued ccsIGSLT :=
-  ⟨ccsContinuedPresentation, bagCanonicalSection_effective ccsIGSLT (ccs_bagTheory.asBare rfl)⟩
-
-/-- **The asynchronous pi calculus is effectively continued**, by the bag
-normal form without a unit. -/
-theorem pi_isEffectivelyContinued : IsEffectivelyContinued piIGSLT :=
-  ⟨piContinuedPresentation, bagCanonicalSection_effective piIGSLT (pi_bagTheory.asBare rfl)⟩
-
-/-- **The synchronous pi calculus is effectively continued**, by the bag
-normal form without a unit. -/
-theorem piSync_isEffectivelyContinued : IsEffectivelyContinued piSyncIGSLT :=
-  ⟨piSyncContinuedPresentation, bagCanonicalSection_effective piSyncIGSLT (piSync_bagTheory.asBare rfl)⟩
-
-/-- **Mobile ambients are effectively continued**, by the bag normal form
-with inaction as unit. -/
-theorem ambient_isEffectivelyContinued : IsEffectivelyContinued ambientIGSLT :=
-  ⟨ambientContinuedPresentation, bagCanonicalSection_effective ambientIGSLT (ambient_bagTheory.asBare rfl)⟩
+  ⟨ccsContinuedPresentation, blockCanonicalSection_effective (laws := Blocks.ccsBlockLanguage) ccsIGSLT Blocks.ccsBlock⟩
 
 /-- **Both sections of CCS are effective**, and the two continued
 presentations they give over the one iGSLT are different. -/
@@ -141,24 +144,35 @@ theorem ccs_two_effective_presentations :
     ccsContinuedPresentation.canonical.Effective ∧
       ccsReversedContinuedPresentation.canonical.Effective ∧
         ccsContinuedPresentation ≠ ccsReversedContinuedPresentation :=
-  ⟨bagCanonicalSection_effective ccsIGSLT (ccs_bagTheory.asBare rfl),
-    reversedBagSection_effective ccsIGSLT (ccs_bagTheory.asBare rfl), ccs_two_continuedPresentations⟩
+  ⟨blockCanonicalSection_effective (laws := Blocks.ccsBlockLanguage) ccsIGSLT Blocks.ccsBlock,
+    reversedBlockSection_effective (laws := Blocks.ccsBlockLanguage) ccsIGSLT Blocks.ccsBlock,
+    ccs_two_continuedPresentations⟩
 
-/-- The tracking function at work on CCS.  Both listings of the handshake
-have the code of the action-first handshake as tracked code, and the two
-components of the handshake, which are not equivalent, have different tracked
-codes. -/
-theorem ccs_tracked_codes :
-    normalFormCode (some "CNil") (patternCode handshakeSwapped) = patternCode handshake ∧
-      normalFormCode (some "CNil") (patternCode handshake) = patternCode handshake ∧
-      normalFormCode (some "CNil") (patternCode actionTerm.1) ≠
-        normalFormCode (some "CNil") (patternCode coActionTerm.1) := by
-  refine ⟨?_, ?_, ?_⟩
-  · rw [normalFormCode_patternCode, handshakeSwapped_normalForm]
-  · rw [normalFormCode_patternCode, handshake_normalForm]
-  · rw [normalFormCode_patternCode, normalFormCode_patternCode]
-    intro same
-    exact components_normalize_apart (Subtype.ext (patternCode_injective same))
+/-- The tracking function at work on CCS. Both orders of the private
+handshake have the code of the action-first handshake as tracked code, and
+`τ.0` and `τ.τ.0`, which are not equivalent, have different tracked codes. -/
+theorem ccs_tracked_codes : ∃ track : ℕ → ℕ, Computable track ∧
+    track (patternCode handshakeTerm.1) = patternCode privateHandshake ∧
+    track (patternCode handshakeSwappedTerm.1) = patternCode privateHandshake ∧
+    track (patternCode silentOnceTerm.1) ≠ track (patternCode silentTwiceTerm.1) := by
+  obtain ⟨track, computable, tracks⟩ := blockCanonicalSection_effective (laws := Blocks.ccsBlockLanguage)
+    ccsIGSLT Blocks.ccsBlock
+  refine ⟨track, computable, (tracks handshakeTerm).symm.trans (congrArg patternCode handshake_representative.1),
+    (tracks handshakeSwappedTerm).symm.trans (congrArg patternCode handshake_representative.2), fun same => ?_⟩
+  have equal := ((tracks silentOnceTerm).trans same).trans (tracks silentTwiceTerm).symm
+  exact components_normalize_apart (Subtype.ext (patternCode_injective equal))
+
+/-- **Synchronous pi is effectively continued**: the section of its continued
+presentation is the canonical form with replication. -/
+theorem piSync_isEffectivelyContinued : IsEffectivelyContinued piSyncIGSLT :=
+  ⟨piSyncContinuedPresentation, replicationCanonicalSection_effective
+    (laws := Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousSteps.piSyncReplicationLanguage) piSyncIGSLT
+    Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks.piRepBlock⟩
+
+/-- **Mobile ambients are effectively continued**, by the bag normal form
+with inaction as unit. -/
+theorem ambient_isEffectivelyContinued : IsEffectivelyContinued ambientIGSLT :=
+  ⟨ambientContinuedPresentation, bagCanonicalSection_effective ambientIGSLT (ambient_bagTheory.asBare rfl)⟩
 
 end Bags
 
@@ -185,22 +199,21 @@ and the history theory is continued without being so. The statement
 assembles their row theorems and juxtaposes them with the control. -/
 theorem effectivelyContinued_rows :
     IsEffectivelyContinued Mettapedia.Languages.ProcessCalculi.CCS.ccsIGSLT ∧
+      IsEffectivelyContinued Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous.piSyncIGSLT ∧
       IsEffectivelyContinued (Mettapedia.Languages.InteractionCategory.theory .silent) ∧
-      IsEffectivelyContinued Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction.piIGSLT ∧
-      IsEffectivelyContinued
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous.piSyncIGSLT ∧
       IsEffectivelyContinued LambdaContinuedInteraction.lambdaIGSLT ∧
       IsEffectivelyContinued Mettapedia.Languages.ProcessCalculi.Ambient.Mobile.ambientIGSLT ∧
       (IsContinued Mettapedia.Languages.PartrecMachine.historyTheory ∧
         ¬ IsEffectivelyContinued Mettapedia.Languages.PartrecMachine.historyTheory) :=
-  ⟨ccs_isEffectivelyContinued, silent_isEffectivelyContinued, pi_isEffectivelyContinued,
-    piSync_isEffectivelyContinued, lambda_isEffectivelyContinued,
+  ⟨ccs_isEffectivelyContinued, piSync_isEffectivelyContinued, silent_isEffectivelyContinued,
+    lambda_isEffectivelyContinued,
     ambient_isEffectivelyContinued,
     Mettapedia.Languages.PartrecMachine.history_not_effectivelyContinued⟩
 
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefCanonicalSection in
 /-- The following sections are effective: evaluation in the calculator,
-the bag normal form of CCS, of both pi calculi and of mobile ambients, the
+the canonical form of the restriction blocks of CCS, the canonical form with
+replication of synchronous pi, the bag normal form of mobile ambients, the
 reflective canonical form of the asynchronous rho calculus, and the identity
 of silent composition and of the lambda calculus. No section of the history
 theory is effective. The synchronous rho section selected by choice on its
@@ -208,20 +221,20 @@ ordinary quotient is outside this statement. -/
 theorem table_sections_effective :
     Mettapedia.Languages.Calculator.calculatorSection.Effective ∧
       Mettapedia.Languages.ProcessCalculi.CCS.ccsCanonicalSection.Effective ∧
+      Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous.piSyncCanonicalSection.Effective ∧
       (Mettapedia.Languages.InteractionCategory.canonicalSection .silent).Effective ∧
       rhoCanonicalSection.Effective ∧
-      InstanceTable.piCanonicalSection.Effective ∧
-      InstanceTable.piSyncCanonicalSection.Effective ∧
       LambdaContinuedInteraction.lambdaCanonicalSection.Effective ∧
       Mettapedia.Languages.ProcessCalculi.Ambient.Mobile.ambientCanonicalSection.Effective ∧
       ∀ canonical :
           ComputableCanonicalSection Mettapedia.Languages.PartrecMachine.historyTheory,
         ¬ canonical.Effective :=
   ⟨Mettapedia.Languages.Calculator.calculatorSection_effective,
-    bagCanonicalSection_effective _ _,
+    blockCanonicalSection_effective (laws := Mettapedia.Languages.ProcessCalculi.CCS.Blocks.ccsBlockLanguage) _ _,
+    replicationCanonicalSection_effective
+      (laws := Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousSteps.piSyncReplicationLanguage) _ _,
     ComputableCanonicalSection.effective_of_normalize_eq _ fun _ => rfl,
     rhoCanonicalSection_effective,
-    bagCanonicalSection_effective _ _, bagCanonicalSection_effective _ _,
     lambdaCanonicalSection_effective, bagCanonicalSection_effective _ _,
     Mettapedia.Languages.PartrecMachine.historyTheory_no_effective_section⟩
 

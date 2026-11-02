@@ -12,7 +12,10 @@ authority without claiming completeness for every PLN inference rule.
 An `OccurrenceRevision` records a binary revision tree whose leaf multiset is
 exactly the selected evidence-source multiset.  Equal source payloads retain
 multiplicity.  A certificate is a concrete `RevisionTree`; replay checks its
-leaf multiset, resulting state, and the claimed binary evidence.
+leaf multiset, resulting state, and the claimed binary evidence. The resulting
+linear judgment consumes each supplied occurrence exactly once. Distinctness of
+actual observations is a separate input contract; `LedgerQueryClaim` uses an
+identified registry to enforce it rather than inferring it from equal payloads.
 
 The checker is exact for the independently defined `QueryMeaning`.  It also
 projects to the existing multiset-indexed and set-indexed WM judgments, and
@@ -59,15 +62,27 @@ namespace OccurrenceRevision
 
 variable {State : Type uState} [EvidenceType State]
 
-/-- Forget exact occurrence consumption into the existing multiplicity-aware
-WM judgment. -/
+/-- Exact revision refines the canonical resource-consuming WM judgment. -/
+theorem toLinearJudgment {sources : Multiset State} {world : State}
+    (derivation : OccurrenceRevision sources world) :
+    LinearJudgment sources world := by
+  induction derivation with
+  | source state => exact .base state
+  | revise _ _ leftIH rightIH => exact .revise leftIH rightIH
+
+/-- The canonical linear judgment also supplies an occurrence-exact revision. -/
+theorem ofLinearJudgment {sources : Multiset State} {world : State}
+    (derivation : LinearJudgment sources world) :
+    OccurrenceRevision sources world := by
+  induction derivation with
+  | base state => exact .source state
+  | revise _ _ leftIH rightIH => exact .revise leftIH rightIH
+
+/-- This erasure forgets exact consumption into reusable source permissions;
+it is a consequence of acceptance, never the checker's acceptance criterion. -/
 theorem toWMJudgmentMulti {sources : Multiset State} {world : State}
     (derivation : OccurrenceRevision sources world) :
-    WMJudgmentMulti sources world := by
-  induction derivation with
-  | source state => exact WMJudgmentMulti.singleton_derivable state
-  | revise left right leftIH rightIH =>
-      exact WMJudgmentMulti.add_revise leftIH rightIH
+    WMJudgmentMulti sources world := derivation.toLinearJudgment.toMulti
 
 /-- Further erasure forgets multiplicity but retains the approved source set. -/
 theorem toWMJudgmentCtx {sources : Multiset State} {world : State}
@@ -99,8 +114,32 @@ def result : RevisionTree State → State
   | .source state => state
   | .revise left right => left.result + right.result
 
+/-- Interpret leaf identities without changing the authored revision tree. -/
+def map {Other : Type*} (resolve : State → Other) : RevisionTree State → RevisionTree Other
+  | .source state => .source (resolve state)
+  | .revise left right => .revise (left.map resolve) (right.map resolve)
+
+omit [EvidenceType State] in
+@[simp] theorem sources_map {Other : Type*} (resolve : State → Other) (tree : RevisionTree State) :
+    (tree.map resolve).sources = tree.sources.map resolve := by
+  induction tree <;> simp_all [map, sources, Multiset.map_add]
+
+omit [EvidenceType State] in
+/-- Every nonempty finite source bag has a revision-tree presentation. -/
+theorem exists_sources {sources : Multiset State} (nonempty : sources ≠ 0) :
+    ∃ tree : RevisionTree State, tree.sources = sources := by
+  classical
+  induction sources using Multiset.induction_on with
+  | empty => exact (nonempty rfl).elim
+  | cons state rest ih =>
+      by_cases h : rest = 0
+      · subst rest
+        exact ⟨.source state, by simp [sources]⟩
+      · obtain ⟨tree, ht⟩ := ih h
+        exact ⟨.revise (.source state) tree, by simp [sources, ht, Multiset.singleton_add]⟩
+
 /-- Every tree denotes an occurrence-exact WM revision. -/
-def denotes : (tree : RevisionTree State) →
+theorem denotes : (tree : RevisionTree State) →
     OccurrenceRevision tree.sources tree.result
   | .source state => .source state
   | .revise left right => .revise left.denotes right.denotes
@@ -276,6 +315,35 @@ theorem replayChecker_complete
     (replayChecker observationChecker).CertificateComplete (QueryMeaning observe) :=
   (replayChecker_authority observe observationChecker observationAuthority).complete
 
+/-- Accepted certificates consume exactly their claimed source occurrences. -/
+theorem accepted_implies_LinearJudgment
+    {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
+    [EvidenceType State] [DecidableEq State]
+    (observe : State → Query → Observation)
+    (observationChecker : Checker (QueryClaim State Query Observation) ObservationCertificate)
+    (observationAuthority : observationChecker.Authority (ObservationMeaning observe))
+    {claim : QueryClaim State Query Observation}
+    {certificate : RevisionTree State × ObservationCertificate}
+    (accepted : (replayChecker observationChecker).check claim certificate = true) :
+    LinearJudgment claim.sources claim.world :=
+  ((replayChecker_sound observe observationChecker observationAuthority)
+    claim certificate accepted).1.toLinearJudgment
+
+/-- Accepted state is the sum of exactly its source bag, which is nonempty. -/
+theorem accepted_world_eq_sum
+    {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
+    [EvidenceType State] [DecidableEq State]
+    (observe : State → Query → Observation)
+    (observationChecker : Checker (QueryClaim State Query Observation) ObservationCertificate)
+    (observationAuthority : observationChecker.Authority (ObservationMeaning observe))
+    {claim : QueryClaim State Query Observation}
+    {certificate : RevisionTree State × ObservationCertificate}
+    (accepted : (replayChecker observationChecker).check claim certificate = true) :
+    claim.world = claim.sources.sum ∧ claim.sources ≠ 0 :=
+  (accepted_implies_LinearJudgment observe observationChecker observationAuthority accepted).eq_sum
+
 /-- Accepted evidence projects to the existing multiset-indexed WM calculus. -/
 theorem accepted_implies_WMJudgmentMulti
     {State : Type uState} {Query : Type uQuery}
@@ -291,8 +359,8 @@ theorem accepted_implies_WMJudgmentMulti
     (accepted :
       (replayChecker observationChecker).check claim certificate = true) :
     WMJudgmentMulti claim.sources claim.world :=
-  ((replayChecker_sound BinaryWorldModel.evidence observationChecker
-    observationAuthority) claim certificate accepted).1.toWMJudgmentMulti
+  (accepted_implies_LinearJudgment BinaryWorldModel.evidence observationChecker
+    observationAuthority accepted).toMulti
 
 /-- Accepted evidence also gives the ordinary WM query judgment after erasing
 source occurrence information. -/
@@ -313,7 +381,117 @@ theorem accepted_implies_WMQueryJudgment
   have meaning :=
     (replayChecker_sound BinaryWorldModel.evidence observationChecker
       observationAuthority) claim certificate accepted
-  exact ⟨meaning.1.toWMJudgmentMulti.toWMJudgment, meaning.2⟩
+  exact ⟨meaning.1.toLinearJudgment.toWMJudgment, meaning.2⟩
+
+/-! ## Identified observation ledgers
+
+The registry is supplied explicitly. A finite set prevents reusing one identity;
+different identities may have equal payloads. This certifies consumption relative
+to that registry, not authenticity of arbitrary identifiers or probabilistic
+independence. As with the raw revision calculus, the empty ledger has no derivation.
+-/
+
+/-- A query whose source occurrences come from distinct registered identities. -/
+structure LedgerQueryClaim (Id : Type*) (State : Type uState) (Query : Type uQuery)
+    (Observation : Type uObservation) where
+  ledger : Finset Id
+  world : State
+  query : Query
+  observation : Observation
+
+/-- Resolve identities through the supplied registry, retaining equal payloads
+as separate occurrences when they belong to different identities. -/
+def LedgerQueryClaim.toQueryClaim
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} (registry : Id → State)
+    (claim : LedgerQueryClaim Id State Query Observation) : QueryClaim State Query Observation :=
+  ⟨claim.ledger.val.map registry, claim.world, claim.query, claim.observation⟩
+
+/-- The independently stated ledger semantics: use every registered observation
+once, sum its state payload, then apply the supplied observation semantics. -/
+def LedgerQueryMeaning
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} [EvidenceType State]
+    (registry : Id → State) (observe : State → Query → Observation)
+    (claim : LedgerQueryClaim Id State Query Observation) : Prop :=
+  claim.ledger.Nonempty ∧ claim.world = ∑ i ∈ claim.ledger, registry i ∧
+    claim.observation = observe claim.world claim.query
+
+theorem ledgerQueryMeaning_iff
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} [EvidenceType State]
+    (registry : Id → State) (observe : State → Query → Observation)
+    (claim : LedgerQueryClaim Id State Query Observation) :
+    QueryMeaning observe (claim.toQueryClaim registry) ↔ LedgerQueryMeaning registry observe claim := by
+  have nonempty : claim.ledger.val.map registry ≠ 0 ↔ claim.ledger.Nonempty := by
+    simp [Finset.nonempty_iff_ne_empty]
+  constructor
+  · rintro ⟨revision, observation⟩
+    have sums := revision.toLinearJudgment.eq_sum
+    exact ⟨nonempty.mp sums.2, sums.1, observation⟩
+  · rintro ⟨inhabited, total, observation⟩
+    have linear := LinearJudgment.of_sum (nonempty.mpr inhabited)
+    change LinearJudgment (claim.ledger.val.map registry)
+      (∑ i ∈ claim.ledger, registry i) at linear
+    rw [← total] at linear
+    exact ⟨OccurrenceRevision.ofLinearJudgment linear, observation⟩
+
+/-- Replay a revision tree against identities resolved through a fixed registry. -/
+def ledgerReplayChecker
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
+    [DecidableEq Id] [EvidenceType State] [DecidableEq State]
+    (registry : Id → State)
+    (observationChecker : Checker (QueryClaim State Query Observation) ObservationCertificate) :
+    Checker (LedgerQueryClaim Id State Query Observation)
+      (RevisionTree Id × ObservationCertificate) where
+  check claim certificate :=
+    decide (certificate.1.sources = claim.ledger.val) &&
+      (replayChecker observationChecker).check (claim.toQueryClaim registry)
+        (certificate.1.map registry, certificate.2)
+
+/-- Accepted ledger certificates retain exactly the declared observation IDs. -/
+theorem accepted_implies_ledger_sources
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
+    [DecidableEq Id] [EvidenceType State] [DecidableEq State]
+    (registry : Id → State)
+    (observationChecker : Checker (QueryClaim State Query Observation) ObservationCertificate)
+    {claim : LedgerQueryClaim Id State Query Observation}
+    {certificate : RevisionTree Id × ObservationCertificate}
+    (accepted : (ledgerReplayChecker registry observationChecker).check claim certificate = true) :
+    certificate.1.sources = claim.ledger.val := by
+  exact (Bool.and_eq_true_iff.mp accepted).1 |> of_decide_eq_true
+
+theorem ledgerReplayChecker_authority
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
+    [DecidableEq Id] [EvidenceType State] [DecidableEq State]
+    (registry : Id → State) (observe : State → Query → Observation)
+    (observationChecker : Checker (QueryClaim State Query Observation) ObservationCertificate)
+    (observationAuthority : observationChecker.Authority (ObservationMeaning observe)) :
+    (ledgerReplayChecker registry observationChecker).Authority
+      (LedgerQueryMeaning registry observe) := by
+  constructor
+  · intro claim certificate accepted
+    exact (ledgerQueryMeaning_iff registry observe claim).mp
+      ((replayChecker_sound observe observationChecker observationAuthority)
+        (claim.toQueryClaim registry) (certificate.1.map registry, certificate.2)
+        (Bool.and_eq_true_iff.mp accepted).2)
+  · intro claim meaningful
+    have nonempty : claim.ledger.val ≠ 0 := by
+      simpa using meaningful.1.ne_empty
+    obtain ⟨tree, sourceIds⟩ := RevisionTree.exists_sources nonempty
+    have total : (tree.map registry).result = claim.world := by
+      rw [(tree.map registry).denotes.toLinearJudgment.eq_sum.1,
+        RevisionTree.sources_map, sourceIds]
+      exact meaningful.2.1.symm
+    obtain ⟨observationCertificate, observed⟩ :=
+      observationAuthority.complete (claim.toQueryClaim registry) meaningful.2.2
+    refine ⟨(tree, observationCertificate), ?_⟩
+    simp [ledgerReplayChecker, replayChecker, Checker.conjunction, revisionChecker,
+      RevisionTree.sources_map, sourceIds, total, LedgerQueryClaim.toQueryClaim] at observed ⊢
+    exact observed
 
 /-! ## SemanticService and CertificateGSLT authorities for the same judgment -/
 
@@ -336,6 +514,24 @@ def family
   projection := fun _ =>
     (replayChecker_authority observe observationChecker
       observationAuthority).toProjection
+
+/-- The identity-checked ledger interface as a SemanticService authority.
+The source registry and observation checker are fixed by the authority owner. -/
+def ledgerFamily
+    {Id : Type*} {State : Type uState} {Query : Type uQuery}
+    {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
+    [DecidableEq Id] [EvidenceType State] [DecidableEq State]
+    (registry : Id → State) (observe : State → Query → Observation)
+    (observationChecker : Checker (QueryClaim State Query Observation) ObservationCertificate)
+    (observationAuthority : observationChecker.Authority (ObservationMeaning observe)) :
+    AuthorityFamily Unit where
+  Claim := fun _ => LedgerQueryClaim Id State Query Observation
+  Certificate := fun _ => RevisionTree Id × ObservationCertificate
+  checker := fun _ => ledgerReplayChecker registry observationChecker
+  Certified := fun _ => LedgerQueryMeaning registry observe
+  Meaning := fun _ => LedgerQueryMeaning registry observe
+  projection := fun _ =>
+    (ledgerReplayChecker_authority registry observe observationChecker observationAuthority).toProjection
 
 /-- Any exact CertificateGSLT definition for occurrence-exact WM query meaning. -/
 def semanticCertificateGSLT
@@ -483,6 +679,48 @@ theorem dropped_duplicate_rejected :
       duplicateClaim (.source 2, ()) = false := by
   simp [replayChecker, Checker.conjunction, revisionChecker, duplicateClaim,
     RevisionTree.sources, RevisionTree.result]
+
+/-- Isolate contraction: the doubled result and observation are correct, but
+one supplied occurrence cannot authorize two leaves. -/
+theorem reused_single_source_rejected :
+    (replayChecker natObservationChecker).check
+      (⟨{2}, 4, true, 4⟩ : QueryClaim Nat Bool Nat) (duplicateTree, ()) = false := by decide
+
+/-- Two distinct registered observations happen to have the same value. -/
+def equalPayloadRegistry (_ : Nat) : Nat := 2
+
+/-- Equal payloads at different identities are legitimate distinct occurrences. -/
+theorem distinct_ids_equal_payloads_accepted :
+    (ledgerReplayChecker equalPayloadRegistry natObservationChecker).check
+      (⟨{0, 1}, 4, false, 8⟩ : LedgerQueryClaim Nat Nat Bool Nat)
+      (.revise (.source 0) (.source 1), ()) = true := by
+  decide
+
+/-- Repeating an identity does not enlarge its finite observation ledger. -/
+theorem repeated_id_rejected :
+    (ledgerReplayChecker equalPayloadRegistry natObservationChecker).check
+      (⟨{0, 0}, 4, false, 8⟩ : LedgerQueryClaim Nat Nat Bool Nat)
+      (.revise (.source 0) (.source 0), ()) = false := by
+  decide
+
+/-- A forged result is rejected even when the registered identities are distinct. -/
+theorem incorrect_ledger_total_rejected :
+    (ledgerReplayChecker equalPayloadRegistry natObservationChecker).check
+      (⟨{0, 1}, 5, true, 5⟩ : LedgerQueryClaim Nat Nat Bool Nat)
+      (.revise (.source 0) (.source 1), ()) = false := by
+  decide
+
+/-- Swapping an identity is rejected even when its payload and all counts agree. -/
+theorem equal_payload_wrong_id_rejected :
+    (ledgerReplayChecker equalPayloadRegistry natObservationChecker).check
+      (⟨{0, 1}, 4, false, 8⟩ : LedgerQueryClaim Nat Nat Bool Nat)
+      (.revise (.source 0) (.source 2), ()) = false := by decide
+
+/-- Correct identities and total do not excuse an incorrect query readout. -/
+theorem incorrect_ledger_observation_rejected :
+    (ledgerReplayChecker equalPayloadRegistry natObservationChecker).check
+      (⟨{0, 1}, 4, true, 5⟩ : LedgerQueryClaim Nat Nat Bool Nat)
+      (.revise (.source 0) (.source 1), ()) = false := by decide
 
 end Canary
 

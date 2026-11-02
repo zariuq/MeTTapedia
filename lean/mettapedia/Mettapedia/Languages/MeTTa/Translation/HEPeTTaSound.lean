@@ -1477,7 +1477,7 @@ open PeTTa.SpaceSemantics (Equation Program)
 /-- Head admission is a language-level pure-fragment policy. -/
 def OrdinaryHead (head : String) : Prop :=
   PeTTa.Eval.ioHead head = false ∧ PeTTa.StdLib.known head = false ∧
-    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","eval",
+    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","match","eval",
       "evalc","chain","unify","function","return","cons-atom","decons-atom",
       "collapse-bind","superpose-bind","metta","context-space","call-native",
       "switch-minimal","Error","Empty","NotReducible"]
@@ -1983,9 +1983,18 @@ theorem ClauseScan.petta_exact {head : String} {values : List Atom} {position : 
     {equations : List Equation} {selected : List ClauseWork}
     (source : ClauseScan head values position equations selected) :
     equations.filterMap (fun equation => if equation.head = head then
-      (PeTTa.SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values)).map
+      (PeTTa.SpaceSemantics.matchValue.matchValues [] equation.arguments values).map
         (fun bindings => PeTTa.Eval.Control.evaluate bindings equation.body) else none) =
       selected.map (fun work => PeTTa.Eval.Control.evaluate work.2.1 work.2.2) := by
+  have flat (arguments : List Atom)
+      (ordinary : "cons" ∉ PeTTa.SpaceSemantics.patternHeads (.expression arguments)) :
+      PeTTa.SpaceSemantics.matchValue.matchValues [] arguments values =
+        PeTTa.SpaceSemantics.matchValue [] (.expression arguments) (.expression values) := by
+    rw [PeTTa.SpaceSemantics.matchValue_expression_of_not_cons]
+    intro first rest same
+    apply ordinary
+    subst same
+    simp [PeTTa.SpaceSemantics.patternHeads]
   induction source with
   | nil => rfl
   | other different _rest ih => simp [different,ih]
@@ -1994,12 +2003,21 @@ theorem ClauseScan.petta_exact {head : String} {values : List Atom} {position : 
         cases found : MORK.matchAtom [] (.expression equation.arguments) (.expression values) with
         | none => rfl
         | some bindings => exact (absent bindings (MORK.matchAtom_sound found)).elim
-      simp [same,ConstructorMatch.matchValue_eq_structural _ ordinary,refused,ih]
+      simp [same,flat _ ordinary,ConstructorMatch.matchValue_eq_structural _ ordinary,refused,ih]
   | hit same ordinary matched _rest ih =>
-      simp [same,ConstructorMatch.matchValue_eq_structural _ ordinary,MORK.matchAtom_complete matched,ih]
+      simp [same,flat _ ordinary,ConstructorMatch.matchValue_eq_structural _ ordinary,
+        MORK.matchAtom_complete matched,ih]
 
 private theorem OrdinaryHead.control_free {head : String} (ordinary : OrdinaryHead head) :
     head ∉ ["let","let*","case","if","collapse","superpose","empty","quote"] := by
+  intro member
+  exact ordinary.2.2 (by
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at member ⊢
+    tauto)
+
+/-- An ordinary head is not `match`, which is a primitive name. -/
+private theorem OrdinaryHead.call_free {head : String} (ordinary : OrdinaryHead head) :
+    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","match"] := by
   intro member
   exact ordinary.2.2 (by
     simp only [List.mem_cons,List.not_mem_nil,or_false] at member ⊢
@@ -2065,7 +2083,7 @@ theorem Evaluation.petta_path {program : Program} {bindings : MORK.Subst}
         (arguments.petta_path plain state) passive.1.control_free
   | .call defined arguments =>
       exact PeTTa.Eval.call_answers _ _ _ _ _ _ _ defined.callable
-        (arguments.petta_path plain state) defined.1.control_free
+        (arguments.petta_path plain state) defined.1.call_free
 termination_by structural source
 
 theorem Arguments.petta_path {program : Program} {bindings : MORK.Subst} {target : Target}
@@ -2111,11 +2129,16 @@ theorem Invocation.petta_path {program : Program} {bindings : MORK.Subst} {targe
       (finished state answers [] []) := by
   match source with
   | .constructor _value => exact PeTTa.Eval.data_arguments_values_return _ _ _ _ _
-  | .equations ordinary scan _covered bodies =>
+  | @Invocation.equations _ bindings head values selected answers ordinary scan covered bodies =>
       refine .step (.equations rfl ordinary.1 ordinary.2.1) ?_
+      have clausesEq : PeTTa.Eval.clauses program head values = _ := scan.petta_exact
+      have nonempty : PeTTa.Eval.clauses program head values ≠ [] := by
+        rw [clausesEq]
+        simpa using covered
+      obtain ⟨first, rest, listed⟩ := List.exists_cons_of_ne_nil nonempty
       change (theory program).MultiStep
-        {state,control := .sequence (PeTTa.Eval.clauses program _ values) []} _
-      rw [show PeTTa.Eval.clauses program _ values = _ from scan.petta_exact]
+        {state,control := PeTTa.Eval.application program head values} _
+      rw [PeTTa.Eval.application_of_selected listed, ← listed, clausesEq]
       exact bodies.petta_path plain state []
 termination_by structural source
 

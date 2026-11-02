@@ -57,11 +57,11 @@ theorem he_atom_preserves_nested_binding_and_quotation :
 theorem he_atom_preserves_error_data :
     ({dialect := .he} : Policy).raw errorData Atom.atomType errorData = true := rfl
 
-theorem prime_top_atom_demands_evaluation :
-    ({dialect := .prime} : Policy).raw pick Atom.atomType pick = false := rfl
+theorem prime_atom_preserves_syntax :
+    ({dialect := .prime} : Policy).raw nested Atom.atomType nested = true := rfl
 
-theorem prime_authored_he_atom_preserves_syntax :
-    ({dialect := .prime, heldAtom := true} : Policy).raw nested Atom.atomType nested = true := rfl
+theorem prime_proc_demands_evaluation :
+    ({dialect := .prime} : Policy).raw pick procType pick = false := rfl
 
 theorem petta_eager_atom_demands_evaluation :
     ({dialect := .petta, eagerCallable := true} : Policy).raw pick Atom.atomType pick = false := rfl
@@ -69,8 +69,8 @@ theorem petta_eager_atom_demands_evaluation :
 theorem data_domain_holds_unrecognized_syntax :
     ({dialect := .prime, dataDomain := true} : Policy).raw nested (.symbol "Data") nested = true := rfl
 
-theorem normalization_overrides_data_and_held_atom :
-    ({dialect := .prime, normalize := true, dataDomain := true, heldAtom := true} : Policy).raw
+theorem normalization_overrides_data_and_atom :
+    ({dialect := .prime, normalize := true, dataDomain := true} : Policy).raw
       nested Atom.atomType nested = false := rfl
 
 theorem control_continuation_prevents_need_reification :
@@ -83,8 +83,8 @@ theorem data_reference_requests_reification :
 theorem ordinary_he_mode_retains_environment :
     ({dialect := .he} : Policy).mode choice = .heTypedInEnvironment := rfl
 
-theorem prime_top_atom_uses_untyped_service :
-    ({dialect := .prime} : Policy).mode Atom.atomType = .untyped := rfl
+theorem prime_proc_uses_untyped_service :
+    ({dialect := .prime} : Policy).mode procType = .untyped := rfl
 
 theorem normalization_requests_normal_form_service :
     ({dialect := .prime, normalize := true} : Policy).mode choice = .normalForm := rfl

@@ -99,6 +99,11 @@ A4 & Absence retains its full completeness footprint & \name{Sources.Query.Contr
 A4 & Bag agreement does not validate ordered reads & \name{Sources.Query.Controls.bag_agreement_does_not_validate_reordering} & PCQ & proved\\
 A4 & Resumption observes an unread arrival & \name{Sources.Query.Controls.resume_sees_unread_arrival} & PCQ & proved\\
 A4 & Changed performed reads retain a refused packet & \name{Sources.Query.Controls.changed_prefix_retains_refused_packet} & PCQ & proved\\
+A4 & A validated cached prefix agrees with independent sequential interpretation & \name{ReadOnlyQuery.extend_eq_run_bind_of_valid} & PQ & proved\\
+A4 & Extending an observation retains both read certificates & \name{ReadOnlyQuery.checkReads_extend} & P & proved\\
+A4 & A changed cached read refuses the combined observation & \name{ReadOnlyQuery.changed_cached_read_refuses_extend} & P & proved\\
+A4 & A fresh read cannot rebase the stale cached value & \name{ReadOnlyQuery.Controls.newer_read_does_not_rebase_cached} & none & proved\\
+A4 & A cached prefix and a suffix retain their separate reads & \name{ReadOnlyQuery.Controls.cached_then_query_retains_both} & none & proved\\
 A4 & Checked publication preserves evidence validity & \name{ProgrammableJudgmentTransforms.step_preserves_validity} & PCQ & proved\\
 A4 & Stored evidence reconstructs a source derivation & \name{ProgrammableJudgmentTransforms.stored_evidence_derivation} & PCQ & proved\\
 A4 & Retained old authority still enables old work & \name{ProgrammableJudgmentTransforms.retaining_source_keeps_old_request_enabled} & PQ & proved\\

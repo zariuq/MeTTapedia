@@ -146,7 +146,7 @@ variable (relEnv : RelationEnv) (language : LanguageDef)
 /-- **A disciplined equation instance**: an authored instance whose bindings the discipline admits. -/
 inductive DisciplinedEquation (discipline : EquationDiscipline) : Pattern → Pattern → Prop
   | forward {equation : Equation} {source : Pattern} {initial final : Bindings} {witnesses : List Witness} :
-      equation ∈ language.equations →
+      equation ∈ language.equations → readsRaw equation = true →
       initial ∈ matchPattern equation.left source →
       PremisesValid relEnv language (captureSitesOf equation.left equation.premises) initial equation.premises
         witnesses final →
@@ -155,7 +155,7 @@ inductive DisciplinedEquation (discipline : EquationDiscipline) : Pattern → Pa
       DisciplinedEquation discipline source
         (applyBindingsScoped (captureSitesOf equation.left equation.premises) final 0 equation.right)
   | reverse {equation : Equation} {source : Pattern} {initial final : Bindings} {witnesses : List Witness} :
-      equation ∈ language.equations →
+      equation ∈ language.equations → readsRaw equation = true →
       initial ∈ matchPattern equation.right source →
       PremisesValid relEnv language (captureSitesOf equation.right equation.premises) initial equation.premises
         witnesses final →
@@ -163,6 +163,20 @@ inductive DisciplinedEquation (discipline : EquationDiscipline) : Pattern → Pa
       discipline.ScopeAdmitted (captureSitesOf equation.right equation.premises) equation.left final →
       DisciplinedEquation discipline source
         (applyBindingsScoped (captureSitesOf equation.right equation.premises) final 0 equation.left)
+  /-- An equation with binders declaring its binding dependencies, read through the declaration. The scoped route checks scope
+  but infers no sorts, so only the raw discipline admits it. -/
+  | declared {equation : Equation} {orientation : ScopedEquationExecution.Orientation} {ambient : ℕ}
+      {source target : Pattern} :
+      discipline = .raw → equation ∈ language.equations → readsRaw equation = false →
+      target ∈ ScopedEquationExecution.applyEquationAt language ambient equation orientation source →
+      DisciplinedEquation discipline source target
+  /-- A declared equation with premises, its premises witnessed over the closed captures; again only the raw
+  discipline admits it. -/
+  | premised {equation : Equation} {orientation : ScopedEquationExecution.Orientation} {ambient : ℕ}
+      {witnesses : List Witness} {source target : Pattern} :
+      discipline = .raw → equation ∈ language.equations → readsRaw equation = false → equation.premises ≠ [] →
+      DeclaredPremised relEnv language equation orientation ambient witnesses source target →
+      DisciplinedEquation discipline source target
 
 /-- One generator under a discipline: a disciplined authored instance, or a derived collection law. -/
 def DisciplinedGenerator (discipline : EquationDiscipline) (source target : Pattern) : Prop :=
@@ -191,12 +205,20 @@ theorem DisciplinedEquation.mono {strict loose : EquationDiscipline} (order : st
     {source target : Pattern} (instance_ : DisciplinedEquation relEnv language strict source target) :
     DisciplinedEquation relEnv language loose source target := by
   cases instance_ with
-  | forward member matched valid admitted scope =>
-    exact .forward member matched valid (BindingsAdmitted.mono order admitted)
+  | forward member undeclared matched valid admitted scope =>
+    exact .forward member undeclared matched valid (BindingsAdmitted.mono order admitted)
       (EquationDiscipline.ScopeAdmitted.mono order scope)
-  | reverse member matched valid admitted scope =>
-    exact .reverse member matched valid (BindingsAdmitted.mono order admitted)
+  | reverse member undeclared matched valid admitted scope =>
+    exact .reverse member undeclared matched valid (BindingsAdmitted.mono order admitted)
       (EquationDiscipline.ScopeAdmitted.mono order scope)
+  | declared raw member notRaw produced =>
+    subst raw
+    cases loose <;> first | exact .declared rfl member notRaw produced | exact absurd order (by decide)
+  | premised raw member notRaw premised declaredPremised =>
+    subst raw
+    cases loose <;> first
+      | exact .premised rfl member notRaw premised declaredPremised
+      | exact absurd order (by decide)
 
 theorem DisciplinedStep.mono {strict loose : EquationDiscipline} (order : strict.rank ≤ loose.rank)
     {source target : Pattern} (step : DisciplinedStep relEnv language strict source target) :
@@ -217,12 +239,16 @@ theorem disciplinedEquation_raw_iff {source target : Pattern} :
   constructor
   · intro instance_
     cases instance_ with
-    | forward member matched valid _ _ => exact .forward member matched valid
-    | reverse member matched valid _ _ => exact .reverse member matched valid
+    | forward member undeclared matched valid _ _ => exact .forward member undeclared matched valid
+    | reverse member undeclared matched valid _ _ => exact .reverse member undeclared matched valid
+    | declared _ member notRaw produced => exact .declared member notRaw produced
+    | premised _ member notRaw premised declaredPremised => exact .premised member notRaw premised declaredPremised
   · intro authored
     cases authored with
-    | forward member matched valid => exact .forward member matched valid trivial trivial
-    | reverse member matched valid => exact .reverse member matched valid trivial trivial
+    | forward member undeclared matched valid => exact .forward member undeclared matched valid trivial trivial
+    | reverse member undeclared matched valid => exact .reverse member undeclared matched valid trivial trivial
+    | declared member notRaw produced => exact .declared rfl member notRaw produced
+    | premised member notRaw premised declaredPremised => exact .premised rfl member notRaw premised declaredPremised
 
 theorem disciplinedStep_raw_iff {source target : Pattern} :
     DisciplinedStep relEnv language .raw source target ↔ EquationStep relEnv language source target := by
@@ -272,6 +298,8 @@ theorem disciplinedStep_iff_of_equations_nil (none_ : language.equations = []) {
     cases instance_ with
     | forward member => rw [none_] at member; cases member
     | reverse member => rw [none_] at member; cases member
+    | declared _ member _ => rw [none_] at member; cases member
+    | premised _ member _ _ _ => rw [none_] at member; cases member
   constructor
   · rintro ⟨context, generator⟩
     exact .inContext context (derived.mpr (derived.mp generator))

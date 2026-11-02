@@ -66,7 +66,7 @@ private def fresh (next : Nat) : SourceSignature.Term × Nat :=
 private def properListAux : Nat -> SourceSignature.Term ->
     Option (List SourceSignature.Term)
   | 0, _ => none
-  | _ + 1, .const (.atom "[]") => some []
+  | _ + 1, .const .nil => some []
   | fuel + 1, term => do
       let (name, arguments) <- application? term
       let [head, tail] := arguments | none
@@ -113,7 +113,7 @@ private def bodyAux : Nat -> SourceSignature.Term -> SourceSignature.Term ->
           term := SourceSignature.compound "phrase" [body, input, output]
           nextFresh
         }
-      | .const (.atom "[]") => .ok {
+      | .const .nil => .ok {
           term := unification input output
           nextFresh
         }

@@ -153,13 +153,11 @@ class HasLocalMarkovProperty {V : Type*} [Fintype V]
   /-- The local Markov condition holds for each node. -/
   markov_condition : ∀ v : V, LocalMarkovCondition bn μ v
 
-/-! ### Factorization (still WIP)
+/-! ### Finite discrete factorization
 
-To connect the DAG structure to an explicit joint measure `μ`, we will eventually:
-- add a CPT layer (Markov kernels per node, indexed by parent configurations), and
-- build / characterize the induced joint measure.
-
-This is where “Bayesian networks meet Beta-Bernoulli / BinaryEvidence” lives.
+`DiscreteSemantics` supplies parent-indexed PMF CPTs, their normalized joint
+measure and the induced factor graph. `DiscreteLocalMarkov` and
+`DSeparationSoundness` connect that construction to conditional independence.
 -/
 
 end ProbabilisticInterfaces

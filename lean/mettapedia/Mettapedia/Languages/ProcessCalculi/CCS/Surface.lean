@@ -1,14 +1,16 @@
 import Mettapedia.Languages.ProcessCalculi.CCS.Cut
+import Mettapedia.Languages.ProcessCalculi.CCS.StaticTheory
 import Mettapedia.GSLT.LanguageDef.Interaction.Freeness
-import Mettapedia.GSLT.LanguageDef.EquationInvariant
 
 /-!
 # CCS carries its surface by name
 
-Parallel composition in CCS is a bag.  Its own laws exchange the components
-of a composition, so two unequal processes stand in either order and position
-at the contact is not data.  What must match for a synchronisation is said
-explicitly instead: the name carried by the two prefixes.
+Parallel composition in CCS is a bag. Its own laws exchange the components of a composition, so two unequal processes
+stand in either order and position at the contact is not data. What must match for a reaction is said explicitly
+instead: the name carried by the two prefixes.
+
+Inequivalence is decided by canonical forms (`StaticTheory.static_iff_canon_eq`): `τ.0` and `τ.τ.0` are not related by
+the laws of CCS.
 -/
 
 set_option autoImplicit false
@@ -21,59 +23,55 @@ open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
-/-- The weight that counts co-action prefixes. -/
-def countCoActions (label : String) : Nat := if label = "CCoAct" then 1 else 0
+/-- `τ.0`. -/
+def silentOnce : Pattern := sum [tau nil]
 
-/-- The static equivalence of CCS preserves the number of co-action prefixes
-in a term. -/
-theorem ccs_preserves_coActions {left right : Pattern}
-    (equivalent : EquationEquiv defaultBasePremises ccsCalc left right) :
-    left.weigh countCoActions = right.weigh countCoActions := by
-  apply equationEquiv_weigh countCoActions _ (by decide) _ _ equivalent
-  · intro equation membership
-    cases membership
-  · intro rule membership algebra declared unit declaredUnit
-    simp only [ccsCalc, List.mem_cons, List.not_mem_nil, or_false] at membership
-    rcases membership with rfl | rfl | rfl | rfl | rfl | rfl <;> cases declared
-    cases declaredUnit
-    decide
-  · intro equation membership
-    cases membership
+/-- `τ.τ.0`. -/
+def silentTwice : Pattern := sum [tau (sum [tau nil])]
 
-/-- The handshake with its two components exchanged. -/
-def handshakeSwapped : Pattern :=
-  .collection .hashBag [
-    .apply "CCoAct" [nameA, .apply "CAct" [nameA, nil]],
-    .apply "CAct" [nameA, nil]] none
+/-- `τ.0 | τ.τ.0` as a closed process. -/
+def silentPairTerm : ccsInteractivePresentation.Term :=
+  ClosedTerm.ofCheck (par [silentOnce, silentTwice]) (by decide +kernel)
+
+/-- `τ.τ.0 | τ.0` as a closed process. -/
+def silentPairSwappedTerm : ccsInteractivePresentation.Term :=
+  ClosedTerm.ofCheck (par [silentTwice, silentOnce]) (by decide +kernel)
+
+/-- The bag law exchanges the two components. -/
+theorem silentPair_swaps :
+    (presentedEquationSetoid defaultBasePremises ccsInteractivePresentation).r
+      silentPairTerm silentPairSwappedTerm := by
+  apply Relation.EqvGen.rel
+  refine EquationContextStep.inContext .hole (Or.inr ?_)
+  exact DerivedInstance.bagPerm_of_sorted (category := ccsParallelConstructor.1.category)
+    ⟨FreeTypeContext.empty, [], silentPairTerm.2.1⟩ (List.Perm.swap _ _ _)
+
+/-- **The two components are not equivalent**, by their canonical forms. -/
+theorem silent_components_differ : ¬ EquationEquiv defaultBasePremises ccsCalc silentOnce silentTwice :=
+  fun equivalent => absurd
+    ((StaticTheory.static_iff_canon_eq (by decide +kernel) (by decide +kernel) (by decide +kernel)).mp equivalent)
+    (by decide +kernel)
+
+/-- `(νx)(~x.0 | x.0)`: the private handshake with its components exchanged. -/
+def handshakeSwapped : Pattern := nu (par [sum [coact (.bvar 0) nil], sum [act (.bvar 0) nil]])
 
 /-- The exchanged handshake as a closed process. -/
 def handshakeSwappedTerm : ccsInteractivePresentation.Term :=
   ClosedTerm.ofCheck handshakeSwapped (by decide +kernel)
 
-/-- The bag law exchanges the two components of the handshake. -/
+/-- **The bag law exchanges the components of the handshake**, under its restriction. -/
 theorem handshake_swaps :
     (presentedEquationSetoid defaultBasePremises ccsInteractivePresentation).r
       handshakeTerm handshakeSwappedTerm := by
   apply Relation.EqvGen.rel
-  refine EquationContextStep.inContext .hole (Or.inr ?_)
+  refine EquationContextStep.inContext (.apply "CNu" [] (.lambda none .hole) []) (Or.inr ?_)
   exact DerivedInstance.bagPerm_of_sorted (category := ccsParallelConstructor.1.category)
-    ⟨FreeTypeContext.empty, [], handshakeTerm.2.1⟩
-    (List.Perm.swap _ _ _)
+    ⟨FreeTypeContext.empty, [.base "Name"], checkHasType_sound (by decide +kernel)⟩ (List.Perm.swap _ _ _)
 
-/-- The two components are not equal: one carries a co-action and the other
-does not. -/
-theorem handshake_components_differ :
-    ¬ EquationEquiv defaultBasePremises ccsCalc
-      (.apply "CAct" [nameA, nil])
-      (.apply "CCoAct" [nameA, .apply "CAct" [nameA, nil]]) := by
-  intro equivalent
-  have counts := ccs_preserves_coActions equivalent
-  revert counts
-  decide
-
-/-- **CCS carries its surface by name.**  Both sides of the cut name the same
-subject, and position at the contact is not data. -/
+/-- **CCS carries its surface by name.** Both sides of the cut name the same subject, and position at the contact is
+not data. -/
 theorem ccs_surface_nominal :
     ccsInteractionCut.program.subject.pattern = some (.fvar "a") ∧
       ccsInteractionCut.environment.subject.pattern = some (.fvar "a") ∧
@@ -84,14 +82,7 @@ theorem ccs_surface_nominal :
                 (presentedEquationSetoid defaultBasePremises ccsInteractivePresentation).r
                   ordered swapped ∧
                   ¬ EquationEquiv defaultBasePremises ccsCalc first second :=
-  ⟨rfl, rfl, _, _, handshakeTerm, handshakeSwappedTerm, rfl, rfl, handshake_swaps,
-    handshake_components_differ⟩
-
-/-- CCS authors no equation, so its contact is free of authored equations in
-the sense of `ContactEquationFree`; the laws that exchange its components are
-the bag's own. -/
-theorem ccs_contactEquationFree : ContactEquationFree ccsInteractivePresentation := by
-  intro equation membership
-  cases membership
+  ⟨rfl, rfl, _, _, silentPairTerm, silentPairSwappedTerm, rfl, rfl, silentPair_swaps,
+    silent_components_differ⟩
 
 end Mettapedia.Languages.ProcessCalculi.CCS

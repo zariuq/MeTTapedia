@@ -56,8 +56,9 @@ def allOwners (p : Protocol) (owned : List String) : List Request :=
   p.resources.map fun r => ⟨.own, r.id, owned.contains r.id⟩
 
 def declaredFacts (p : Protocol) : List String :=
-  let values := p.hooks.flatMap (fun h => h.requires ++ h.proves) ++
-    p.resources.flatMap (fun r => r.acquireRequires ++ r.transferRequires) ++ p.entryFacts
+  let values := p.hooks.flatMap (fun h => h.requires ++ h.proves ++ h.invalidates) ++
+    p.resources.flatMap (fun r => r.acquireRequires ++ r.transferRequires) ++ p.entryFacts ++
+    p.exitFacts.flatMap Prod.snd
   values.foldl (fun seen name => if seen.contains name then seen else seen ++ [name]) []
 
 def continuationRequests (p : Protocol) (entry : Context) : List Request :=
@@ -66,7 +67,7 @@ def continuationRequests (p : Protocol) (entry : Context) : List Request :=
 def instrumentBody (p : Protocol) (checks : List Validator) :
     Option Context → Context → DeclineKey → Body → Option IStmt
   | _, _, key, .ret outcome =>
-      wrap checks (allOwners p [])
+      wrap checks (factRequests (exitRequires (metadata p) outcome) ++ allOwners p [])
         (if outcome = .declined then .tick key (.ret outcome) else .ret outcome)
   | none, _, _, .cont => none
   | some entry, _, _, .cont => wrap checks (continuationRequests p entry) .cont
@@ -111,7 +112,8 @@ theorem instrumentBody_erase (p : Protocol) (checks : List Validator)
   induction body generalizing loop c key result with
   | ret outcome =>
       simp only [instrumentBody] at built
-      have erased := wrap_erase checks (allOwners p []) _ result built
+      have erased := wrap_erase checks
+        (factRequests (exitRequires (metadata p) outcome) ++ allOwners p []) _ result built
       split at erased <;> simpa [IStmt.erase, lower] using congrArg some erased.symm
   | cont =>
       cases loop with
@@ -316,6 +318,12 @@ theorem checkCheckedPlan_iff (plan : CheckedPlan) :
   simp only [checkCheckedPlan, Bool.and_eq_true, checkPlan_iff,
     ExecutableProtocol.Instrumentation.checkChecks_iff, decide_eq_true_eq]
   exact ⟨fun h => ⟨h.1.1,h.1.2,h.2⟩, fun h => ⟨⟨h.ordinary,h.validators⟩,h.instrumentation⟩⟩
+
+theorem changed_instrumentation_refused {plan : CheckedPlan} (valid : CheckedPlanValid plan)
+    (target : Option IStmt) (different : target ≠ plan.instrumented) :
+    checkCheckedPlan { plan with instrumented := target } = false := by
+  have unequal : plan.instrumented ≠ target := Ne.symm different
+  simp [checkCheckedPlan, valid.instrumentation, unequal]
 
 theorem CheckedPlanValid.success_exact {World : Type} {plan : CheckedPlan}
     (valid : CheckedPlanValid plan) (host : Host World) (verify : Check → World → Bool)

@@ -60,6 +60,11 @@ private theorem reaches_of_iteration {S : Type} (step : S → Option S) :
           simp only [Option.bind_some, next] at ran
           exact Relation.ReflTransGen.head next (ih middle finish ran)
 
+/-- Expose the path carried by a counted original execution. -/
+theorem execution_reaches {S : Type} {step : S → Option S} {before after : S}
+    (execution : EvalsTo step before (some after)) : Reaches step before after :=
+  reaches_of_iteration step execution.steps before after execution.evals_in_steps
+
 /-- Two halting executions of one deterministic finite stack machine return
 the same physical output word. -/
 theorem outputs_unique {machine : FinTM2} {input : List (machine.Γ machine.k₀)}
@@ -547,6 +552,16 @@ def oneStep {Config : Type} {step : Config → Option Config} {before after : Co
   steps := 1
   evals_in_steps := by simpa [flip, Option.bind] using executed
   steps_le_m := le_rfl
+
+omit first second [Fintype (first.Γ first.k₁)] [Inhabited (first.Γ first.k₁)] in
+/-- A finite original path has a counted execution witness. -/
+theorem reaches_has_execution {Config : Type} {step : Config → Option Config} {before after : Config}
+    (path : Reaches step before after) : Nonempty (EvalsTo step before (some after)) := by
+  induction path with
+  | refl => exact ⟨EvalsTo.refl step before⟩
+  | @tail middle final previous advanced ih =>
+      obtain ⟨run⟩ := ih
+      exact ⟨EvalsTo.trans step _ _ _ run (oneStep (Option.mem_def.mp advanced)).toEvalsTo⟩
 
 /-- The first pass consumes the entire first output and reverses it temporarily. -/
 def scan_run (bridge : first.Γ first.k₁ ≃ second.Γ second.k₀)

@@ -63,14 +63,25 @@ theorem not_equationInstance_of_headed_source
     ¬ EquationInstance base language (.apply label arguments) target := by
   rintro ⟨fuel, authored⟩
   cases authored with
-  | forward membership matched _ _ =>
+  | forward membership _ matched _ _ =>
       obtain ⟨⟨head, schema, left, different⟩, -⟩ := avoid _ membership
       rw [left] at matched
       exact matchPattern_apply_eq_nil_of_ne different _ matched
-  | reverse membership matched _ _ =>
+  | reverse membership _ matched _ _ =>
       obtain ⟨-, head, schema, right, different⟩ := avoid _ membership
       rw [right] at matched
       exact matchPattern_apply_eq_nil_of_ne different _ matched
+  | @declared equation orientation _ _ _ membership _ produced =>
+      obtain ⟨⟨leftHead, leftSchema, left, leftDifferent⟩,
+        rightHead, rightSchema, right, rightDifferent⟩ := avoid _ membership
+      obtain ⟨_, _, _, -, -, -, matched, -⟩ := produced
+      cases orientation with
+      | forward =>
+          obtain ⟨_, headed⟩ := Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.matchRuleAt_headed matched left
+          exact leftDifferent (Pattern.apply.inj headed).1.symm
+      | reverse =>
+          obtain ⟨_, headed⟩ := Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.matchRuleAt_headed matched right
+          exact rightDifferent (Pattern.apply.inj headed).1.symm
 
 /-- No authored equation produces a term headed by `label`. -/
 theorem not_equationInstance_of_headed_target
@@ -79,16 +90,27 @@ theorem not_equationInstance_of_headed_target
     ¬ EquationInstance base language source (.apply label arguments) := by
   rintro ⟨fuel, authored⟩
   cases authored with
-  | forward membership _ _ applied =>
+  | forward membership _ _ _ applied =>
       obtain ⟨-, head, schema, right, different⟩ := avoid _ membership
       rw [right] at applied
       simp only [applyBindings, Pattern.apply.injEq] at applied
       exact different applied.1
-  | reverse membership _ _ applied =>
+  | reverse membership _ _ _ applied =>
       obtain ⟨⟨head, schema, left, different⟩, -⟩ := avoid _ membership
       rw [left] at applied
       simp only [applyBindings, Pattern.apply.injEq] at applied
       exact different applied.1
+  | @declared equation orientation _ _ _ membership _ produced =>
+      obtain ⟨⟨leftHead, leftSchema, left, leftDifferent⟩,
+        rightHead, rightSchema, right, rightDifferent⟩ := avoid _ membership
+      obtain ⟨_, _, _, -, -, -, -, -, applied, -⟩ := produced
+      cases orientation with
+      | forward =>
+          obtain ⟨_, headed⟩ := Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.reduct?_headed applied right
+          exact rightDifferent (Pattern.apply.inj headed).1.symm
+      | reverse =>
+          obtain ⟨_, headed⟩ := Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.reduct?_headed applied left
+          exact leftDifferent (Pattern.apply.inj headed).1.symm
 
 /-- Without a declared collection algebra, a presentation-derived law relates
 collections to collections: it neither consumes nor produces a constructor

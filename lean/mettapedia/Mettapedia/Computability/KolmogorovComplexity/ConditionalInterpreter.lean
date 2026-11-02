@@ -1,4 +1,5 @@
 import Mettapedia.Computability.KolmogorovComplexity.Conditional
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalProgramModel
 
 /-!
 # A computable universal interpreter with auxiliary input
@@ -19,17 +20,6 @@ silently being advertised as prefix-free.
 namespace KolmogorovComplexity
 
 open scoped Classical
-
-/-- A partial algorithm with a program and an auxiliary condition. -/
-abbrev ConditionalAlgorithm := BinString → BinString →. BinString
-
-/-- Uniform universality for conditional partial-recursive algorithms.  The
-compiler prefix may depend on the simulated algorithm, but not on the payload
-program, condition, or output. -/
-def IsUniversalConditional (U : ConditionalAlgorithm) : Prop :=
-  ∀ V : ConditionalAlgorithm, Partrec₂ V →
-    ∃ compilerPrefix : BinString, ∀ p condition x,
-      x ∈ V p condition → x ∈ U (compilerPrefix ++ p) condition
 
 /-- Read the unary machine index at the front of a program.  Malformed inputs
 containing no delimiter are assigned the length of the complete input; this

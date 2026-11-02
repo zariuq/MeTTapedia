@@ -12,10 +12,11 @@ algorithm, and states what a matcher must do.
 
 A **term layer** (`TermLayer`) has values `T` (the labels of occurrences), patterns `P` with their
 variables `vars`, instantiation `inst` of a pattern under a partial substitution, and a declared
-equational theory `E`, an equivalence on values. Two laws tie them together: a pattern
-instantiates exactly when its variables are bound (`inst_isSome`), and instantiation depends only
-on the pattern's variables, up to `E` (`inst_local`, `inst_congr`). The second law is where `E`
-is a congruence.
+equational theory `E`, an equivalence on values. Successful instantiation requires all pattern
+variables to be bound (`inst_bound`). Instantiation may also check contextual scope. The stronger
+property that every fully bound pattern instantiates is recorded separately as `TermLayer.Total`.
+Instantiation depends only on the pattern's variables, up to `E` (`inst_local`, `inst_congr`).
+The latter law is where `E` is a congruence.
 
 Metavariables range over values modulo `E`: a pattern `p` **solves** a value `t` under `σ` when
 `pσ =_E t` (`Solves`). A **step** of `p` against `t` from `σ` binds exactly the variables of `p`
@@ -135,10 +136,10 @@ structure TermLayer (V : Type uV) (T : Type uT) (P : Type uP) where
   equivalence : Equivalence E
   /-- The variables of a pattern. -/
   vars : P → Finset V
-  /-- Instantiate a pattern; `none` when one of its variables is unbound. -/
+  /-- Instantiate a pattern, checking bindings and any contextual constraints. -/
   inst : Subst V T → P → Option T
-  /-- A pattern instantiates exactly when its variables are bound. -/
-  inst_isSome : ∀ σ p, (inst σ p).isSome ↔ ∀ v ∈ vars p, (σ v).isSome
+  /-- Successful instantiation requires every pattern variable to be bound. -/
+  inst_bound : ∀ σ p, (inst σ p).isSome → ∀ v ∈ vars p, (σ v).isSome
   /-- Instantiation depends only on the pattern's variables. -/
   inst_local : ∀ σ τ p, (∀ v ∈ vars p, σ v = τ v) → inst σ p = inst τ p
   /-- `E` is a congruence for instantiation. -/
@@ -148,6 +149,15 @@ structure TermLayer (V : Type uV) (T : Type uT) (P : Type uP) where
 namespace TermLayer
 
 variable (L : TermLayer V T P)
+
+/-- A total layer has no additional refusal after all its variables are bound. -/
+def Total : Prop :=
+  ∀ σ p, (∀ v ∈ L.vars p, (σ v).isSome) → (L.inst σ p).isSome
+
+/-- Exact definedness is an additional property, not a restriction on scoped layers. -/
+theorem Total.inst_isSome (total : L.Total) (σ : Subst V T) (p : P) :
+    (L.inst σ p).isSome ↔ ∀ v ∈ L.vars p, (σ v).isSome :=
+  ⟨L.inst_bound σ p, total σ p⟩
 
 /-- `pσ =_E t`. -/
 def Solves (σ : Subst V T) (p : P) (t : T) : Prop := ∃ u, L.inst σ p = some u ∧ L.E u t
@@ -194,7 +204,7 @@ theorem Step.isSome_iff {σ τ : Subst V T} {p : P} {t : T} (step : L.Step σ p 
       rfl
     · obtain ⟨u, inst, -⟩ := step.solves
       have defined : (L.inst τ p).isSome := by rw [inst]; rfl
-      exact (L.inst_isSome τ p).mp defined v inVars
+      exact L.inst_bound τ p defined v inVars
 
 section Decidable
 

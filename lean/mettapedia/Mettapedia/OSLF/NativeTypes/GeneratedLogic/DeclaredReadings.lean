@@ -1,5 +1,8 @@
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.SetReadings
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Search
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.SetDriver
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.RelationFreeReadings
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.LanguageEquality
 
 /-!
 # Set readings declared with a language
@@ -15,12 +18,20 @@ reading holds at every boundary inside a step, through the reference relation's 
   with one canonical form, `SetReadings.lawsReading`): a premise steps any presentation of its child, and matches its
   target and a relation's answers at any presentations of their values.
 
-- **The structure a declaration fixes** (`nativeStructure`).
-- **The front door of a declared language** (`askDeclared`): consume and keep are decided by closed regions of their
-  readings at the canonical form, listed by the fuel or, where derivations nest without bound, by a table of the
-  region tabulated within the fuel (`decidePresented`); either is asked at the front door, with canonical forms for
-  the reading modulo the set laws (`CanonicalCaptureModulo.moduloForms` and `tabledFormsAt` for hereditary set
-  languages), or without them when the rules have no premises. Every answer is exact in the declared structure
+A language also declares where its native types range (`DeclaredStates`): over all its terms, or over the hereditary
+terms of a sort with what they reach (`NativeStructure.GeneratedBy`), so that past modalities, counting of
+predecessors and quantifiers over a type look only at those.
+
+- **The structure a declaration fixes** (`nativeStructure`), and **what a verdict says** (`Holds`): the native type at
+  the term's point in that structure, or, over the hereditary terms, at the term in the substructure they generate.
+- **The front door of a declared language** (`askDeclared`). Over all terms (`askTerms`), consume and keep are decided
+  by closed regions of their readings at the canonical form, listed by the fuel or, where derivations nest without
+  bound, by a table of the region tabulated within the fuel (`decidePresented`); either is asked at the front door,
+  with canonical forms for the reading modulo the set laws (`CanonicalCaptureModulo.moduloForms` and `tabledFormsAt`
+  for hereditary set languages), or without them when the rules have no premises. Over the hereditary terms, the set
+  driver (`SetReadings.askHereditary`) answers the membership language read as its own semantics, for formulas
+  without relations (`setDriverAdmits`): the language has no premises, so its structure is the same in every relation
+  environment but for its relations (`hereditary_membership_iff`). Every answer is exact in the declared structure
   (`askDeclared_sound`).
 - **Either is consume over all presentations**: consume fires the rules at the canonical presentation and reads each
   internal boundary at the canonical presentation (`consume_step_iff`); either fires them at any presentation and reads
@@ -36,7 +47,8 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
 open Mettapedia.OSLF.MeTTaIL.ReferenceStep
 open SetReadings (consumeStructure keepStructure eitherStructure lawsReading saturate setWidth
-  eitherStructure_of_premises_nil)
+  eitherStructure_of_premises_nil Hereditary IsHF HFNative membership hfRule hereditary_generated askHereditary
+  askHereditary_sound)
 open Mettapedia.GSLT.LanguageDef.WellSorted (isObjectPattern)
 
 /-- **How a language reads its sets.** -/
@@ -49,10 +61,19 @@ inductive SetReading where
   | either
   deriving DecidableEq, Repr
 
-/-- **A language with the set reading it declares.** -/
+/-- **Where a language's native types range.** -/
+inductive DeclaredStates where
+  /-- Over all its terms. -/
+  | terms
+  /-- Over the hereditary terms of the sort, with what they reach. -/
+  | hereditary (sort : String)
+  deriving DecidableEq, Repr
+
+/-- **A language with the set reading it declares**, and where its native types range. -/
 structure DeclaredLanguage where
   language : LanguageDef
   sets : SetReading := .either
+  states : DeclaredStates := .terms
 
 variable (relEnv : RelationEnv) (declared : DeclaredLanguage)
 
@@ -77,6 +98,16 @@ theorem premises_nil_of_premiseFree {language : LanguageDef} (free : premiseFree
     ∀ rule ∈ language.rewrites, rule.premises = [] := fun rule member => by
   simpa using List.all_eq_true.mp free rule member
 
+/-- **What a verdict of a declared language says**: over all terms, the native type at the term's point in the declared
+structure; over the hereditary terms of a sort, the native type at the term in the substructure they generate. -/
+def Holds (formula : Formula 0) (term : Pattern) : Prop :=
+  match declared.states with
+  | .terms => (nativeStructure relEnv declared).sat Env.closed formula (pointOf declared term)
+  | .hereditary sort =>
+    ∃ holds : (nativeStructure relEnv declared).GeneratedBy (Hereditary declared.language sort) term,
+      (NativeStructure.restrict ((nativeStructure relEnv declared).generatedBy_generated
+        (Hereditary declared.language sort))).sat Env.closed formula ⟨term, holds⟩
+
 /-- **Canonical forms suit a declared language** when the structure they read is the declared one. -/
 def FormsSuit {fuel : ℕ} (forms : Option (CanonicalForms relEnv declared.language fuel)) : Prop :=
   ∀ found, forms = some found → referenceStructure relEnv declared.language found.reading = nativeStructure relEnv declared
@@ -96,9 +127,9 @@ def decidePresented (present : Pattern → Pattern) (fuel rounds : ℕ) (formula
   (decideReading relEnv declared.language fuel present BagForms.sortBags formula term rounds).orElse fun _ =>
     decideTabled relEnv declared.language fuel present BagForms.sortBags formula term rounds
 
-/-- **The front door of a declared language**: consume and keep by closed regions of their readings; either by the front
-door, with canonical forms for the reading modulo the set laws, or without them when the rules have no premises. -/
-def askDeclared (fuel rounds : ℕ) (formula : Formula 0) (term : Pattern)
+/-- **The front door over all terms**: consume and keep by closed regions of their readings; either by the front door,
+with canonical forms for the reading modulo the set laws, or without them when the rules have no premises. -/
+def askTerms (fuel rounds : ℕ) (formula : Formula 0) (term : Pattern)
     (forms : Option (CanonicalForms relEnv declared.language fuel) := none) : Option Bool :=
   match declared.sets with
   | .consume => decidePresented relEnv declared id fuel rounds formula term
@@ -109,6 +140,20 @@ def askDeclared (fuel rounds : ℕ) (formula : Formula 0) (term : Pattern)
     | none =>
       if premiseFree declared.language then verdictOf (ask relEnv [] declared.language fuel formula term none rounds none)
       else none
+
+/-- **The set driver serves a declaration** over the hereditary terms of a sort: the membership language at its sort,
+read as its own semantics, and a formula without relations. -/
+def setDriverAdmits (sort : String) (formula : Formula 0) : Bool :=
+  decide (declared.language = membership) && decide (sort = hfRule.category) && decide (declared.sets = .either) &&
+    formula.relationFree
+
+/-- **The front door of a declared language**: over all terms by the readings' front doors; over the hereditary terms
+by the set driver, where it serves. -/
+def askDeclared (fuel rounds : ℕ) (formula : Formula 0) (term : Pattern)
+    (forms : Option (CanonicalForms relEnv declared.language fuel) := none) : Option Bool :=
+  match declared.states with
+  | .terms => askTerms relEnv declared fuel rounds formula term forms
+  | .hereditary sort => if setDriverAdmits declared sort formula then askHereditary formula term else none
 
 variable {relEnv declared}
 
@@ -143,13 +188,13 @@ theorem verdict_sound {fuel rounds : ℕ} {formula : Formula 0} {term : Pattern}
     exact iff_of_false (fun same => Bool.false_ne_true same) (ask_refuted answered)
   · cases decided
 
-/-- **Every answer of a declared language's front door is exact** in the declared structure. -/
-theorem askDeclared_sound {fuel rounds : ℕ} {formula : Formula 0} (behavioural : formula.behaviouralForward = true)
+/-- **Every answer of the front door over all terms is exact** in the declared structure. -/
+theorem askTerms_sound {fuel rounds : ℕ} {formula : Formula 0} (behavioural : formula.behaviouralForward = true)
     {term : Pattern} {verdict : Bool} {forms : Option (CanonicalForms relEnv declared.language fuel)}
     (suit : FormsSuit relEnv declared forms)
-    (decided : askDeclared relEnv declared fuel rounds formula term forms = some verdict) :
+    (decided : askTerms relEnv declared fuel rounds formula term forms = some verdict) :
     (verdict = true ↔ (nativeStructure relEnv declared).sat Env.closed formula (pointOf declared term)) := by
-  unfold askDeclared at decided
+  unfold askTerms at decided
   unfold pointOf
   split at decided
   · rename_i reading
@@ -175,6 +220,59 @@ theorem askDeclared_sound {fuel rounds : ℕ} {formula : Formula 0} (behavioural
         rw [same]
         exact verdict_sound decided
       · cases decided
+
+/-- **The membership language has no premises.** -/
+theorem membership_premiseFree : PremiseFree membership where
+  rules rule member := by
+    rw [show membership.rewrites = [SetReadings.memberRule] from rfl, List.mem_singleton] at member
+    subst member
+    rfl
+  equations equation member := by
+    rw [show membership.equations = [] from rfl] at member
+    exact absurd member List.not_mem_nil
+
+variable (relEnv) in
+/-- **The hereditary terms of the membership language, in any relation environment**: a formula without relations
+holds at a term among what the hereditary terms generate exactly where it holds among the hereditary terms with no
+relations. -/
+theorem hereditary_membership_iff {formula : Formula 0} (free : formula.relationFree = true) {term : Pattern} :
+    (∃ holds : (eitherStructure relEnv membership).GeneratedBy (Hereditary membership hfRule.category) term,
+        (NativeStructure.restrict ((eitherStructure relEnv membership).generatedBy_generated
+          (Hereditary membership hfRule.category))).sat Env.closed formula ⟨term, holds⟩) ↔
+      ∃ holds : IsHF term, HFNative.sat Env.closed formula ⟨term, holds⟩ := by
+  obtain ⟨relations, same⟩ := referenceStructure_withRelations (reading := .syntax) relEnv RelationEnv.empty
+    membership_premiseFree rfl
+  rw [eitherStructure_of_premises_nil relEnv membership membership_premiseFree.rules, same,
+    NativeStructure.sat_generatedBy_iff (hereditary_generated.withRelations relations)]
+  refine exists_congr fun holds => ?_
+  rw [NativeStructure.restrict_withRelations]
+  exact NativeStructure.sat_withRelations _ _ formula free _ _
+
+/-- **Every answer of a declared language's front door is exact** in the declared structure. -/
+theorem askDeclared_sound {fuel rounds : ℕ} {formula : Formula 0}
+    (behavioural : declared.states = .terms → formula.behaviouralForward = true)
+    {term : Pattern} {verdict : Bool} {forms : Option (CanonicalForms relEnv declared.language fuel)}
+    (suit : FormsSuit relEnv declared forms)
+    (decided : askDeclared relEnv declared fuel rounds formula term forms = some verdict) :
+    (verdict = true ↔ Holds relEnv declared formula term) := by
+  unfold askDeclared at decided
+  unfold Holds
+  split at decided
+  · rename_i states
+    exact askTerms_sound (behavioural states) suit decided
+  · rename_i sort states
+    split at decided
+    · rename_i admitted
+      simp only [setDriverAdmits, Bool.and_eq_true, decide_eq_true_eq] at admitted
+      obtain ⟨⟨⟨language, rfl⟩, sets⟩, free⟩ := admitted
+      have structureEq : nativeStructure relEnv declared = eitherStructure relEnv membership := by
+        unfold nativeStructure
+        simp only [sets, language]
+      rw [NativeStructure.sat_generatedBy_congr structureEq (congrArg (Hereditary · hfRule.category) language) formula
+        term _ ((eitherStructure relEnv membership).generatedBy_generated _), hereditary_membership_iff relEnv free]
+      obtain ⟨holds, answer⟩ := askHereditary_sound decided
+      exact answer.trans ⟨fun satisfied => ⟨holds, satisfied⟩, fun ⟨_, satisfied⟩ => satisfied⟩
+    · cases decided
 
 /-! ## Either is consume over all presentations -/
 

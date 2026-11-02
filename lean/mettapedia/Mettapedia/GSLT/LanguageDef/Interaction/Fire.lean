@@ -100,6 +100,147 @@ theorem fill_injective : ∀ context : OneHoleContext, Function.Injective contex
       simp only [OneHoleContext.fill, Pattern.collection.injEq, true_and, and_true] at same
       exact fill_injective inner (List.cons.inj (List.append_cancel_left same)).1
 
+/-! ## The subterms of a term -/
+
+mutual
+  /-- The subterms of a pattern, itself first. -/
+  def subtermsOf : Pattern → List Pattern
+    | .bvar index => [.bvar index]
+    | .fvar name => [.fvar name]
+    | .apply label arguments => .apply label arguments :: subtermsOfList arguments
+    | .lambda binder body => .lambda binder body :: subtermsOf body
+    | .multiLambda arity binders body => .multiLambda arity binders body :: subtermsOf body
+    | .subst body replacement => .subst body replacement :: (subtermsOf body ++ subtermsOf replacement)
+    | .collection kind elements rest => .collection kind elements rest :: subtermsOfList elements
+
+  /-- The subterms of the members of a list. -/
+  def subtermsOfList : List Pattern → List Pattern
+    | [] => []
+    | pattern :: patterns => subtermsOf pattern ++ subtermsOfList patterns
+end
+
+theorem self_mem_subtermsOf (pattern : Pattern) : pattern ∈ subtermsOf pattern := by
+  cases pattern <;> simp [subtermsOf]
+
+theorem subtermsOf_subset_list {pattern : Pattern} {patterns : List Pattern} (member : pattern ∈ patterns) :
+    ∀ sub ∈ subtermsOf pattern, sub ∈ subtermsOfList patterns := by
+  induction patterns with
+  | nil => cases member
+  | cons head tail recurse =>
+      intro sub inSub
+      simp only [subtermsOfList, List.mem_append]
+      rcases List.mem_cons.mp member with rfl | inTail
+      · exact .inl inSub
+      · exact .inr (recurse inTail sub inSub)
+
+/-- **The subterm of a plugged context is among the subterms of the result.** -/
+theorem mem_subtermsOf_fill : ∀ (context : OneHoleContext) (subterm : Pattern),
+    subterm ∈ subtermsOf (context.fill subterm)
+  | .hole, subterm => self_mem_subtermsOf subterm
+  | .apply label before inner after, subterm => by
+      simp only [OneHoleContext.fill, subtermsOf, List.mem_cons]
+      exact .inr (subtermsOf_subset_list (by simp) _ (mem_subtermsOf_fill inner subterm))
+  | .lambda binder inner, subterm => by
+      simp only [OneHoleContext.fill, subtermsOf, List.mem_cons]
+      exact .inr (mem_subtermsOf_fill inner subterm)
+  | .multiLambda arity binders inner, subterm => by
+      simp only [OneHoleContext.fill, subtermsOf, List.mem_cons]
+      exact .inr (mem_subtermsOf_fill inner subterm)
+  | .substBody inner replacement, subterm => by
+      simp only [OneHoleContext.fill, subtermsOf, List.mem_cons, List.mem_append]
+      exact .inr (.inl (mem_subtermsOf_fill inner subterm))
+  | .substReplacement body inner, subterm => by
+      simp only [OneHoleContext.fill, subtermsOf, List.mem_cons, List.mem_append]
+      exact .inr (.inr (mem_subtermsOf_fill inner subterm))
+  | .collection kind before inner after rest, subterm => by
+      simp only [OneHoleContext.fill, subtermsOf, List.mem_cons]
+      exact .inr (subtermsOf_subset_list (by simp) _ (mem_subtermsOf_fill inner subterm))
+
+/-- **Plugging never shrinks a term.** -/
+theorem sizeOf_le_fill : ∀ (context : OneHoleContext) (subterm : Pattern),
+    sizeOf subterm ≤ sizeOf (context.fill subterm)
+  | .hole, _ => le_refl _
+  | .apply label before inner after, subterm => by
+      have deeper := sizeOf_le_fill inner subterm
+      have member : sizeOf (inner.fill subterm) < sizeOf (before ++ inner.fill subterm :: after) :=
+        List.sizeOf_lt_of_mem (by simp)
+      simp only [OneHoleContext.fill, Pattern.apply.sizeOf_spec]
+      omega
+  | .lambda binder inner, subterm => by
+      have deeper := sizeOf_le_fill inner subterm
+      simp only [OneHoleContext.fill, Pattern.lambda.sizeOf_spec]
+      omega
+  | .multiLambda arity binders inner, subterm => by
+      have deeper := sizeOf_le_fill inner subterm
+      simp only [OneHoleContext.fill, Pattern.multiLambda.sizeOf_spec]
+      omega
+  | .substBody inner replacement, subterm => by
+      have deeper := sizeOf_le_fill inner subterm
+      simp only [OneHoleContext.fill, Pattern.subst.sizeOf_spec]
+      omega
+  | .substReplacement body inner, subterm => by
+      have deeper := sizeOf_le_fill inner subterm
+      simp only [OneHoleContext.fill, Pattern.subst.sizeOf_spec]
+      omega
+  | .collection kind before inner after rest, subterm => by
+      have deeper := sizeOf_le_fill inner subterm
+      have member : sizeOf (inner.fill subterm) < sizeOf (before ++ inner.fill subterm :: after) :=
+        List.sizeOf_lt_of_mem (by simp)
+      simp only [OneHoleContext.fill, Pattern.collection.sizeOf_spec]
+      omega
+
+/-- **Only the empty context plugs a term into itself.** -/
+theorem eq_hole_of_fill_self {context : OneHoleContext} {subterm : Pattern}
+    (same : context.fill subterm = subterm) : context = .hole := by
+  cases context with
+  | hole => rfl
+  | apply label before inner after =>
+      exfalso
+      have deeper := sizeOf_le_fill inner subterm
+      have member : sizeOf (inner.fill subterm) < sizeOf (before ++ inner.fill subterm :: after) :=
+        List.sizeOf_lt_of_mem (by simp)
+      have sizes := congrArg sizeOf same
+      simp only [OneHoleContext.fill, Pattern.apply.sizeOf_spec] at sizes
+      omega
+  | lambda binder inner =>
+      exfalso
+      have deeper := sizeOf_le_fill inner subterm
+      have sizes := congrArg sizeOf same
+      simp only [OneHoleContext.fill, Pattern.lambda.sizeOf_spec] at sizes
+      omega
+  | multiLambda arity binders inner =>
+      exfalso
+      have deeper := sizeOf_le_fill inner subterm
+      have sizes := congrArg sizeOf same
+      simp only [OneHoleContext.fill, Pattern.multiLambda.sizeOf_spec] at sizes
+      omega
+  | substBody inner replacement =>
+      exfalso
+      have deeper := sizeOf_le_fill inner subterm
+      have sizes := congrArg sizeOf same
+      simp only [OneHoleContext.fill, Pattern.subst.sizeOf_spec] at sizes
+      omega
+  | substReplacement body inner =>
+      exfalso
+      have deeper := sizeOf_le_fill inner subterm
+      have sizes := congrArg sizeOf same
+      simp only [OneHoleContext.fill, Pattern.subst.sizeOf_spec] at sizes
+      omega
+  | collection kind before inner after rest =>
+      exfalso
+      have deeper := sizeOf_le_fill inner subterm
+      have member : sizeOf (inner.fill subterm) < sizeOf (before ++ inner.fill subterm :: after) :=
+        List.sizeOf_lt_of_mem (by simp)
+      have sizes := congrArg sizeOf same
+      simp only [OneHoleContext.fill, Pattern.collection.sizeOf_spec] at sizes
+      omega
+
+/-- The subterm of a splitting is a subterm of the term, in the finite list of them. -/
+theorem Splitting.subterm_mem {term : Pattern} (splitting : Splitting term) :
+    splitting.subterm ∈ subtermsOf term := by
+  have member := mem_subtermsOf_fill splitting.context splitting.subterm
+  rwa [splitting.plugs] at member
+
 /-! ## Exposed redexes and available events -/
 
 /-- The subterm side exposes a redex: it matches the left side of a base
@@ -108,6 +249,13 @@ def Splitting.ExposesRedex (language : LanguageDef) {term : Pattern}
     (splitting : Splitting term) : Prop :=
   ∃ rule ∈ language.rewrites, IsBaseRewrite rule ∧
     ∃ bindings, bindings ∈ matchPatternForRule language rule splitting.subterm
+
+/-- A splitting whose subterm is the whole term is the splitting at the root. -/
+theorem Splitting.context_eq_hole_of_whole {term : Pattern} (splitting : Splitting term)
+    (whole : splitting.subterm = term) : splitting.context = .hole := by
+  have plugs := splitting.plugs
+  rw [whole] at plugs
+  exact eq_hole_of_fill_self plugs
 
 /-- **An available event.**  The subterm is contracted by a base rewrite
 whose side conditions hold, and the context is one in which rewrites fire. -/
@@ -217,6 +365,10 @@ theorem Reactive.eq_hole_of_base {language : LanguageDef}
         (not_isBaseRewrite_of_congruence
           (congruence.premises ▸ List.mem_singleton.mpr rfl))
   | element _ _ _ listed congruence =>
+      exact absurd (base _ listed)
+        (not_isBaseRewrite_of_congruence
+          (congruence.premises ▸ List.mem_singleton.mpr rfl))
+  | binder _ listed congruence =>
       exact absurd (base _ listed)
         (not_isBaseRewrite_of_congruence
           (congruence.premises ▸ List.mem_singleton.mpr rfl))

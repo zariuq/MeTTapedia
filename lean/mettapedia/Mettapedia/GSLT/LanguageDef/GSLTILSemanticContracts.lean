@@ -311,8 +311,9 @@ private theorem alias_equivalent :
     EquationEquiv (engineBasePremises premises) equationalGuest (atom "Alias") ready := by
   apply equationInstance_equivalent
   refine ⟨0, .forward (equation := stateAlias) (initialBindings := [])
-    (finalBindings := []) ?_ ?_ (.nil []) ?_⟩
+    (finalBindings := []) ?_ ?_ ?_ (.nil []) ?_⟩
   · exact List.Mem.head _
+  · decide
   · decide +kernel
   · simp [Mettapedia.OSLF.MeTTaIL.Match.applyBindings, stateAlias, ready, atom]
 

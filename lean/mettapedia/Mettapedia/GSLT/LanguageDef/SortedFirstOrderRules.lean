@@ -39,6 +39,25 @@ mutual
         Schemas names (pattern :: patterns)
 end
 
+/- Ordinary first-order schemas contain no binding constructors. -/
+mutual
+  theorem Schema.binderFree {names : List String} {pattern : Pattern}
+      (schema : Schema names pattern) : binderFree pattern = true := by
+    cases schema with
+    | metavariable => rfl
+    | constructor arguments => exact Schemas.binderFree arguments
+  termination_by sizeOf pattern
+  decreasing_by all_goals sizeOf_pattern_dec
+
+  theorem Schemas.binderFree {names : List String} {patterns : List Pattern}
+      (schemas : Schemas names patterns) : binderFreeList patterns = true := by
+    cases schemas with
+    | nil => rfl
+    | cons first rest => simp only [binderFreeList, Schema.binderFree first, Schemas.binderFree rest, Bool.and_self]
+  termination_by sizeOf patterns
+  decreasing_by all_goals sizeOf_pattern_dec
+end
+
 /-- Every premise retains its schema admission, including repeated occurrences. -/
 theorem Schemas.member {names : List String} {patterns : List Pattern}
     (schemas : Schemas names patterns) {pattern : Pattern} (member : pattern ∈ patterns) :

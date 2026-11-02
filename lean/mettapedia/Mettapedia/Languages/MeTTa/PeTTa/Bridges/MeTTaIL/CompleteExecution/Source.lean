@@ -29,7 +29,7 @@ def descentSource : ProgramQuotation.QuotedProgram :=
 def completeSource : ProgramQuotation.QuotedProgram :=
   petta_source_file%
     "../../../../../../../../../metta/gslt/lib/gslt_complete.metta"
-    sha256 "cb2a0d48692a75fc555f4a2276b99bda8b60e98782742a370f59589311ac3ed0"
+    sha256 "86918154a2bd3259288bbe0e7bfc8c1881ec6ccaa0359904c045b87d5ea394a9"
 
 /-- The common runtime is selected from the checked shared source. The view
 names keep the machine operations on that same runtime. -/

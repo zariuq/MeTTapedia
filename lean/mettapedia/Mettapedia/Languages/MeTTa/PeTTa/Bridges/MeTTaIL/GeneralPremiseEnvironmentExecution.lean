@@ -134,7 +134,7 @@ set_option maxHeartbeats 4000000 in
 theorem helper_clause (program : Program) (agreement : ProgramAgreementOn ownedHeads runtime program)
     (helper : Helper) (values : List Atom) (length : values.length = helper.names.length) :
     clauses program helper.head values = [.evaluate (callee helper values) (equation helper).body] := by
-  rw [← agreement.bodies helper.head values (helper_supported helper)]
+  apply PureData.selected_clause_agreement agreement (helper_supported helper)
   apply PureData.named_equation_clause runtime helper.head (equation helper) helper.names values
   · cases helper <;> rfl
   · cases helper <;> decide +kernel
@@ -190,7 +190,7 @@ theorem data_template (program : Program) (agreement : ProgramAgreementOn ownedH
     rw [← agreement.dispatch head supported]
     have checked : dataHeads.all (fun name => decide
         ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
-          name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])) = true := by
+          name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
       rfl
     have row := List.all_eq_true.mp checked head member
     rw [decide_eq_true_eq] at row

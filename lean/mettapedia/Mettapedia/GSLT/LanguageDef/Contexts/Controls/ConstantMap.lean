@@ -118,31 +118,27 @@ def parallelOfHoles {source : ValidatedLanguageDef} {holes : arity → Interface
 
 /-! ## Inactive processes side by side are inactive -/
 
-theorem bagContents_inactive (indices : List arity) :
-    bagContents "CNil" (indices.map fun _ => nil) = [] := by
+open Mettapedia.GSLT.LanguageDef.RestrictionBlocks (decompose decomposeList canon canonWith)
+open Mettapedia.Languages.ProcessCalculi.CCS.Blocks (ccsBlock)
+
+/-- Inactive processes side by side are one block of no restriction and no component. -/
+theorem decomposeList_inactive (indices : List arity) :
+    decomposeList ccsBlock (indices.map fun _ => nil) = RestrictionBlocks.Prenex.nil := by
   induction indices with
   | nil => rfl
   | cons index indices recurse =>
-      rw [List.map_cons, bagContents_cons, recurse]
+      rw [List.map_cons, RestrictionBlocks.decomposeList, recurse]
       rfl
 
-/-- The normal form of a bag of inactive processes is the inactive
-process. -/
-theorem normalForm_inactive_bag (indices : List arity) :
-    normalForm (some "CNil") (.collection .hashBag (indices.map fun _ => nil) none) = nil := by
-  have fixed : (indices.map fun _ => nil).map (normalForm (some "CNil")) =
-      indices.map fun _ => nil := by
-    rw [List.map_map]
-    apply List.map_congr_left
-    intro index _
-    simp [Function.comp, nil, normalForm]
-  rw [normalForm_bag, fixed]
-  change collapse "CNil" (sortPatterns (bagContents "CNil" (indices.map fun _ => nil))) = nil
-  rw [bagContents_inactive]
-  simp [sortPatterns, collapse, nil]
+/-- **The canonical form of a bag of inactive processes is the inactive process.** -/
+theorem canon_inactive_bag (indices : List arity) :
+    canon ccsBlock (.collection .hashBag (indices.map fun _ => nil) none) = nil := by
+  unfold canon
+  rw [show ∀ size : Nat, 2 * size + 2 = (2 * size + 1) + 1 from fun _ => rfl]
+  simp only [canonWith, RestrictionBlocks.decompose_bag, decomposeList_inactive]
+  rfl
 
-/-- **A parallel composition of inactive processes is the inactive process**,
-up to the static equivalence of CCS. -/
+/-- **A parallel composition of inactive processes is the inactive process**, up to the static equivalence of CCS. -/
 theorem parallelOfHoles_absorbs {source : ValidatedLanguageDef} {holes : arity → Interface}
     {result : Interface} (context : Context source holes result) :
     (termSetoid defaultBasePremises ccsValidatedLanguageDef.language ccsProc).r
@@ -152,13 +148,12 @@ theorem parallelOfHoles_absorbs {source : ValidatedLanguageDef} {holes : arity �
     (toClosed inactive)).mpr
   apply (ccsCanonicalSection.equivalent_iff_normalize_eq _ _).mpr
   apply Subtype.ext
-  change normalForm (some "CNil") ((parallelOfHoles context).fill fun _ => inactive).1 =
-    normalForm (some "CNil") nil
+  change canon ccsBlock ((parallelOfHoles context).fill fun _ => inactive).1 = canon ccsBlock nil
   have shape : ((parallelOfHoles context).fill fun _ => inactive).1 =
       .collection .hashBag (context.shape.holes.map fun _ => nil) none :=
     fill_holesBag _ context.shape.holes
-  rw [shape, normalForm_inactive_bag]
-  simp [nil, normalForm]
+  rw [shape, canon_inactive_bag]
+  decide +kernel
 
 /-- The constant static map to the inactive process,
 from every presented theory to CCS. -/

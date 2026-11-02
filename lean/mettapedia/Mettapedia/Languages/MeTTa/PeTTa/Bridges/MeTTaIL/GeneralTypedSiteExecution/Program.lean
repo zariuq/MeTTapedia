@@ -194,7 +194,7 @@ theorem data_template (head : String) (arguments : List Atom) (member : head ∈
       decide +kernel
     exact of_decide_eq_true (List.all_eq_true.mp checked head member)
   · have checked : dataHeads.all (fun name => decide
-        (name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])) = true := by decide
+        (name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by decide
     exact of_decide_eq_true (List.all_eq_true.mp checked head member)
 
 

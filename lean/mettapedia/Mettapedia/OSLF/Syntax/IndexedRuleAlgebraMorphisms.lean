@@ -41,21 +41,6 @@ def Hom.comp {A : Algebra polynomial source}
     cases layer
     rfl
 
-/-- A morphism of rule algebras is determined by its action on evidence. -/
-@[ext] theorem Hom.ext {A : Algebra polynomial source}
-    {B : Algebra polynomial target} (f g : Hom A B)
-    (h : ∀ base index value, f.toFun base index value =
-      g.toFun base index value) : f = g := by
-  cases f with
-  | mk f hf =>
-      cases g with
-      | mk g hg =>
-          have equal : f = g := by
-            funext base index value
-            exact h base index value
-          subst g
-          rfl
-
 theorem Hom.comp_id {A : Algebra polynomial source}
     {B : Algebra polynomial target} (f : Hom A B) :
     Hom.comp f (Hom.id B) = f := by

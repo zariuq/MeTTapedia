@@ -2,10 +2,14 @@ import Mettapedia.Languages.MeTTa.OSLFCore.State
 import Mettapedia.Languages.MeTTa.OSLFCore.MinimalOps
 
 /-!
-# MeTTaCore Rewrite Rules
+# Older four-register workspace evaluator prototype
 
-The core rewrite rules from the Meta-MeTTa paper. These rules define how
-the interpreter state transitions during evaluation.
+These executable rules are a workspace evaluator prototype, not a literal
+formalization of the Meta-MeTTa paper. In particular, `ruleQuery` branches
+into separate successor states and `ruleTransform` aliases it. The paper's
+Transform instead consumes an explicit input request and uses its template.
+`MetaMeTTa.lean` states the independent finite extensional register profile;
+`MetaMeTTaControls.lean` proves a separating output-reachability example.
 
 ## Main Definitions
 
@@ -34,7 +38,7 @@ abbrev StateTransitions := Multiset MeTTaState
 /-- Query rule: For each term in workspace, try to match against equations in knowledge.
     If a match is found, replace the term with the RHS of the equation (with bindings applied).
 
-    From Meta-MeTTa: This is the fundamental evaluation mechanism. -/
+    This is the prototype's branching interpretation of equation lookup. -/
 def ruleQuery (state : MeTTaState) : StateTransitions :=
   -- For each term in workspace
   state.workspace.bind fun t =>
@@ -49,17 +53,16 @@ def ruleQuery (state : MeTTaState) : StateTransitions :=
         { state with
           workspace := (state.workspace.erase t) + {bindings.apply rhs} }
 
-/-- Transform rule: Apply a single equation transformation to a workspace term.
-    Similar to Query but more explicit about the transformation step.
-
-    This is essentially the same as ruleQuery but conceptually distinct in Meta-MeTTa. -/
+/-- Alias for this prototype's workspace equation rewriting. It does not
+implement the paper's explicit template-bearing Transform rule. -/
 def ruleTransform (state : MeTTaState) : StateTransitions :=
   ruleQuery state  -- Implementation is identical
 
 /-- AddAtom rule: Handle `(add-atom space atom)` expressions in workspace.
     Adds the atom to the knowledge base.
 
-    From Meta-MeTTa: This modifies the knowledge component of state. -/
+    This prototype uses a different request spelling and return behavior
+    from the paper's AddAtom1 register rule. -/
 def ruleAddAtom (state : MeTTaState) : StateTransitions :=
   -- Look for (add-atom ...) expressions in workspace
   state.workspace.filterMap fun t =>
@@ -73,7 +76,8 @@ def ruleAddAtom (state : MeTTaState) : StateTransitions :=
 /-- RemAtom rule: Handle `(remove-atom space atom)` expressions in workspace.
     Removes the atom from the knowledge base.
 
-    From Meta-MeTTa: This modifies the knowledge component of state. -/
+    This prototype uses a different request spelling and return behavior
+    from the paper's RemAtom1 register rule. -/
 def ruleRemAtom (state : MeTTaState) : StateTransitions :=
   -- Look for (remove-atom ...) expressions in workspace
   state.workspace.filterMap fun t =>
@@ -87,7 +91,7 @@ def ruleRemAtom (state : MeTTaState) : StateTransitions :=
 /-- Output rule: Move insensitive terms from workspace to output.
     A term is insensitive if no equation in knowledge can match it.
 
-    From Meta-MeTTa: Insensitive terms are "fully reduced" and go to output. -/
+    Insensitivity here is decided by the prototype's equation matcher. -/
 def ruleOutput (state : MeTTaState) : StateTransitions :=
   -- Find insensitive terms in workspace
   let insensitiveTerms := state.workspace.filter fun t =>
@@ -104,7 +108,8 @@ def ruleOutput (state : MeTTaState) : StateTransitions :=
 /-- Input rule: Move terms from input to workspace for processing.
     This is how new terms enter the evaluation pipeline.
 
-    From Meta-MeTTa: The input register feeds the workspace. -/
+    This administrative transfer belongs to the prototype; it is not one of
+    the paper's displayed register rules. -/
 def ruleInput (state : MeTTaState) : StateTransitions :=
   -- Move each input term to workspace
   state.input.map fun t =>
@@ -121,7 +126,8 @@ def applyRewriteRules (state : MeTTaState) : StateTransitions :=
   ruleRemAtom state + ruleOutput state
 
 /-- Apply a single step of rewrite rules, preferring certain rules.
-    Priority: Input > Query > AddAtom/RemAtom > Output
+    Priority: Input > Query > Output. This function does not invoke the
+    separate knowledge-modification rules.
 
     This is a deterministic version for simpler reasoning. -/
 noncomputable def stepOnce (state : MeTTaState) : Option MeTTaState :=
@@ -164,7 +170,8 @@ def evalWithFuel (fuel : Nat) (state : MeTTaState) : StateTransitions :=
       else
         nextStates.bind fun s => evalWithFuel n s
 
-/-- Evaluate a term to completion (with fuel bound). -/
+/-- Collect outputs from fuel-bounded prototype runs. This does not certify
+that a search completed or that omitted answers are absent. -/
 def evaluate (fuel : Nat) (knowledge : Atomspace) (term : Atom) : Multiset Atom :=
   let initial := MeTTaState.initial term knowledge
   let finals := evalWithFuel fuel initial
@@ -183,12 +190,7 @@ theorem initial_has_workspace (a : Atom) :
 theorem initial_not_done_example :
     (MeTTaState.initial (.symbol "x")).isDone = false := by decide
 
-/-- Output rule doesn't add to workspace.
-
- Design rationale insights:
-    - Mario Carneiro: Use Multiset.mem_map to decompose membership
-    - Terrence Tao: The key is Multiset.card_erase_le
-    - Kevin Buzzard: Handle the if-then-else by case splitting -/
+/-- The prototype output rule does not add to its workspace. -/
 theorem output_workspace_card (state : MeTTaState) :
     ∀ s' ∈ ruleOutput state, s'.workspace.card ≤ state.workspace.card := by
   intro s' h

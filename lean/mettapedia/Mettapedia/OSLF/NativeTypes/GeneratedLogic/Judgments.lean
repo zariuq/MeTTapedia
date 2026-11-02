@@ -188,6 +188,8 @@ inductive JudgmentEvidence where
   | instances (count : ℕ)
   /-- An instance, and the front door's evidence there. -/
   | atInstance (instantiated : Pattern) (evidence : Evidence)
+  /-- A predicate, given by the values it holds of, and the front door's evidence at the instance there. -/
+  | atPredicate (members : List Pattern) (evidence : Evidence)
   /-- A finite-model certificate. -/
   | certificate (candidate : CertificateCandidate)
   /-- A formula compiled over a complete fibre, and the front door's evidence for it. -/

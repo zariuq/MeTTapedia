@@ -23,6 +23,7 @@ import Mettapedia.GSLT.Coordination.OwnerFailoverLiveness
 import Mettapedia.GSLT.Coordination.Sagas
 import Mettapedia.GSLT.Coordination.Liveness.EscrowProgress
 import Mettapedia.GSLT.Coordination.Liveness.FairLeaseService
+import Mettapedia.GSLT.Coordination.ConsensusNumbers
 
 /-!
 # Coordination across locations

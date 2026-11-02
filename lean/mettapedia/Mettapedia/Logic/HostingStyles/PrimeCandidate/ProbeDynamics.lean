@@ -416,7 +416,8 @@ theorem quoteDrop_contextStep (base : BasePremiseEvaluator) {lang : LanguageDef}
     (name : Pattern) :
     EquationContextStep base lang (context.fill (quoted (dropped name))) (context.fill name) := by
   refine .inContext context (.inl ⟨0, .forward (equation := quoteDropEquation)
-    (initialBindings := [("name", name)]) authored ?_ (.nil _) ?_⟩)
+    (initialBindings := [("name", name)]) authored
+    (Mettapedia.GSLT.LanguageDef.EquationSemantics.readsRaw_of_none rfl) ?_ (.nil _) ?_⟩)
   · simp [quoteDropEquation, quoted, dropped, matchPattern, matchArgs, mergeBindings]
   · simp [quoteDropEquation, applyBindings]
 

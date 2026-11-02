@@ -24,6 +24,12 @@ especially:
 
 - `COMM`: `for(t <- x)P | for(u <- x)Q → P·σ | Q·σ`
 - `REFL`: `x?P → for((P') <- x)0` when `P → P'`
+
+The executable profile bounds unification and contextual traversal and
+restricts the REFL premise to COMM-only stepping. `ReflectionClosure.lean`
+records the recursive four-rule closure and a separating nested-reflection
+case. Consequently this executor is not an unrestricted implementation of
+all displayed manuscript rules.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus

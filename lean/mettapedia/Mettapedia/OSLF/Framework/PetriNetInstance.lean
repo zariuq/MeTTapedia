@@ -360,7 +360,7 @@ theorem petriNet_BA_not_rawStep_DC :
       (marking [tokB, tokA])
   simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, rewriteAt, petriNet, transitionT1, transitionT2, marking,
     tokA, tokB, tokC, tokD, applyRuleUsing, matchPatternForRule,
-    matchPattern, matchBag, mergeBindings, premisesUsing,
+    premisesUsing,
     applyBindingsForRule, applyBindings]
 
 /-- Native type generated from the Petri GSLT for the equation class of the

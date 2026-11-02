@@ -347,6 +347,106 @@ theorem pollObliged_exact (apply : E → Ctx → Ctx)
 
 end Repair
 
+/-! ## A paid prefix and a context-indexed continuation
+
+Counting a refusal is enough only while the retained task itself is the whole
+unpaid computation. A source may already have emitted a visible effect and
+then reach its first context-dependent read. Re-running the source in another
+context duplicates that paid prefix. The transferable object at this boundary
+is therefore the continuation after the prefix, indexed by the requesting
+context.
+
+`PaidPrefixContinuation` is the small observation needed here: it does not
+model an evaluator or claim a C refinement. It separates resuming the retained
+continuation from restarting the source, and supplies positive and negative
+controls for the implementation boundary.
+-/
+
+section PaidPrefix
+
+variable {Effect : Type u}
+
+/-- A task continuation retained after an already-paid visible prefix. -/
+structure PaidPrefixContinuation (Ctx : Type u) (Task : Type v)
+    (Effect : Type w) (Value : Type x) where
+  paid : List Effect
+  task : Task
+  resumeValue : Ctx → Task → Value
+
+/-- Resume the retained suffix in a requesting context. The paid trace is
+observed once. -/
+def PaidPrefixContinuation.resume
+    (continuation : PaidPrefixContinuation Ctx Task Effect Value) (ctx : Ctx) :
+    List Effect × Value :=
+  (continuation.paid, continuation.resumeValue ctx continuation.task)
+
+/-- Restarting the source after the same visible prefix has already happened
+duplicates that prefix before reaching the same suffix. -/
+def PaidPrefixContinuation.restart
+    (continuation : PaidPrefixContinuation Ctx Task Effect Value) (ctx : Ctx) :
+    List Effect × Value :=
+  (continuation.paid ++ continuation.paid,
+    continuation.resumeValue ctx continuation.task)
+
+@[simp] theorem PaidPrefixContinuation.resume_effects
+    (continuation : PaidPrefixContinuation Ctx Task Effect Value) (ctx : Ctx) :
+    (continuation.resume ctx).1 = continuation.paid := rfl
+
+@[simp] theorem PaidPrefixContinuation.restart_effects
+    (continuation : PaidPrefixContinuation Ctx Task Effect Value) (ctx : Ctx) :
+    (continuation.restart ctx).1 = continuation.paid ++ continuation.paid := rfl
+
+/-- A nonempty paid prefix makes source restart observably different from
+continuation resumption, independently of the returned value. -/
+theorem PaidPrefixContinuation.restart_ne_resume_of_paid
+    (continuation : PaidPrefixContinuation Ctx Task Effect Value)
+    (paid : continuation.paid ≠ []) (ctx : Ctx) :
+    continuation.restart ctx ≠ continuation.resume ctx := by
+  intro same
+  have lengths := congrArg (fun result => result.1.length) same
+  cases kept : continuation.paid with
+  | nil => exact (paid kept).elim
+  | cons effect rest =>
+      simp [PaidPrefixContinuation.restart, PaidPrefixContinuation.resume, kept] at lengths
+
+/-- Two requesting contexts select their own suffix values while sharing the
+same single paid prefix. -/
+theorem PaidPrefixContinuation.resumes_share_paid
+    (continuation : PaidPrefixContinuation Ctx Task Effect Value)
+    (left right : Ctx) :
+    (continuation.resume left).1 = (continuation.resume right).1 := rfl
+
+namespace PaidPrefixControls
+
+inductive PrefixEffect
+  | tick
+  deriving DecidableEq
+
+/-- One visible effect, followed by a context-dependent answer. -/
+def contextContinuation :
+    PaidPrefixContinuation Bool Unit PrefixEffect ℕ where
+  paid := [.tick]
+  task := ()
+  resumeValue := fun right _ => if right then 2 else 1
+
+/-- Positive: the two contexts retain one shared effect and produce distinct
+answers. -/
+theorem context_fork_preserves_paid_prefix :
+    contextContinuation.resume false = ([.tick], 1) ∧
+      contextContinuation.resume true = ([.tick], 2) := by
+  simp [contextContinuation, PaidPrefixContinuation.resume]
+
+/-- Negative: restarting for the second context repeats the visible effect. -/
+theorem context_restart_duplicates_paid_prefix :
+    contextContinuation.restart true = ([.tick, .tick], 2) ∧
+      contextContinuation.restart true ≠ contextContinuation.resume true := by
+  simp [contextContinuation, PaidPrefixContinuation.restart,
+    PaidPrefixContinuation.resume]
+
+end PaidPrefixControls
+
+end PaidPrefix
+
 /-! ## Controls
 
 A receiving context is a Boolean: whether the receiver holds the grant the call needs. Two
@@ -437,5 +537,9 @@ theorem obliged_reports_an_unjustified_refusal :
   rfl
 
 end Controls
+
+#print axioms PaidPrefixContinuation.restart_ne_resume_of_paid
+#print axioms PaidPrefixControls.context_fork_preserves_paid_prefix
+#print axioms PaidPrefixControls.context_restart_duplicates_paid_prefix
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.RefusalRetention

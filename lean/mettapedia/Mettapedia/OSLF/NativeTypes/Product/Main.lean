@@ -1,4 +1,6 @@
 import Lean
+import Mettapedia.OSLF.NativeTypes.Product.Query
+import Mettapedia.GSLT.LanguageDef.ModuleSource.Loader
 
 /-!
 # `oslf`: the command-line front door
@@ -12,47 +14,49 @@ certificate over carriers of up to `N + 1` values, one by default; none at zero)
 `lake exe oslf --matrix ROWS` checks a matrix file, each row `file | formula | term | budget | expected [| settings]`,
 the expected answer a status or an answer in brief (`P certificate`, `R closed`, `open`, …).
 
+CCS with recursion is asked in the environment of its definitions: the setting `definitions=FILE` names a definitions
+file (`Product.readDefinitions`), relative to the working directory for one question and to the matrix file for a
+matrix.
+
 The executable runs Lean's frontend on a short source that reads the module files with the format's reader and
 evaluates the front door (`Mettapedia.OSLF.NativeTypes.Product.report`), so the language is elaborated exactly as the
-library elaborates it.
+library elaborates it, under the names the module writes (`ModuleSource.elaborateAuthored`), and read as
+`Product.readingOf` reads it: as written when it is a language with certified forms, through its core otherwise. The
+library is linked into the executable, and the frontend prefers its compiled code (`nativeOptions`), so the front door
+runs compiled, not interpreted.
 -/
 
 open Lean
 
 namespace Mettapedia.OSLF.NativeTypes.Product.Main
 
+/-- The frontend's options: evaluate with the compiled code linked into this executable. -/
+def nativeOptions : Options := ({} : Options).setBool `interpreter.prefer_native true
+
 def usage : String :=
-  "usage: oslf LANGUAGE.module[#Theory] FORMULA TERM [BUDGET ...] [fuel=N] [hints=N]\n" ++
+  "usage: oslf LANGUAGE.module[#Theory] FORMULA TERM [BUDGET ...] [fuel=N] [hints=N] [definitions=FILE]\n" ++
   "       oslf --matrix ROWS   (each row: file | formula | term | budget | expected [| settings])\n" ++
   "  FORMULA and TERM are S-expressions, for example\n" ++
   "    oslf Counters.module '(reach (Halted))' '(Counter (Succ Zero))' 2 4 8"
 
-/-- The name a `.module` text declares after `Module`. -/
-def moduleName (text : String) : Option String :=
-  let words := text.splitOn "\n" |>.flatMap fun line =>
-    (line.splitOn " ").filter (· ≠ "") |>.map (·.trimAscii.toString)
-  match words.dropWhile (· ≠ "Module") with
-  | _ :: name :: _ => some ((name.splitOn "{").head!)
+/-- A setting `definitions=FILE`: the definitions file a language is asked beside. -/
+def definitionsFile (word : String) : Option String :=
+  match word.splitOn "=" with
+  | ["definitions", file] => some file
   | _ => none
 
-/-- The files a `.module` text imports. -/
-def importedFiles (text : String) : List String :=
-  (text.splitOn "\n").filterMap fun line =>
-    let trimmed := line.trimAscii.toString
-    if trimmed.startsWith "import \"" then
-      match ((trimmed.drop 8).toString).splitOn "\"" with
-      | file :: _ => some file
-      | [] => none
-    else none
+/-- The settings other than the definitions file, and the definitions text, read from the file, if one is given. -/
+def splitDefinitions (directory : System.FilePath) (words : List String) : IO (List String × Option String) := do
+  if (words.filterMap definitionsFile).length > 1 then
+    throw (IO.userError "oslf: definitions may be supplied only once")
+  match words.findSome? definitionsFile with
+  | some file => return (words.filter (definitionsFile · |>.isNone), some (← IO.FS.readFile (directory / file)))
+  | none => return (words, none)
 
-/-- The module files in dependency order, imports first. -/
-partial def loadOrder (directory : System.FilePath) (file : String) (seen : List String) : IO (List String) := do
-  if seen.contains file then return seen
-  let text ← IO.FS.readFile (directory / file)
-  let mut order := seen
-  for imported in importedFiles text do
-    order ← loadOrder directory imported order
-  return order ++ [file]
+/-- An optional definitions text as a Lean term. -/
+def definitionsTerm : Option String → String
+  | none => "none"
+  | some text => s!"(some {text.quote})"
 
 /-- A file argument `FILE.module` or `FILE.module#Theory`: the file, and the theory it names, if any. A module that
 declares theories and no entry, as CeTTa's core modules do, is read through a named theory. -/
@@ -61,21 +65,27 @@ def splitTheory (argument : String) : String × Option String :=
   | [file, theory] => (file, some theory)
   | _ => (argument, none)
 
-/-- The language a module denotes: its entry, or the named theory applied to no arguments. -/
+/-- The language a module denotes, under the names it is written with: its entry, or the named theory applied to no
+arguments. -/
 def languageTerm (base : String) : Option String → String
-  | none => s!"{base}.language"
+  | none => s!"(Mettapedia.GSLT.LanguageDef.ModuleSource.elaborateAuthored {base}.library {base}.module)"
   | some theory =>
-    s!"(Mettapedia.GSLT.LanguageDef.ModuleSource.elaborateTheory {base}.library {base}.module " ++
+    s!"(Mettapedia.GSLT.LanguageDef.ModuleSource.elaborateTheoryAuthored {base}.library {base}.module " ++
       s!"{(theory.splitOn ".").map String.quote})"
 
+/-- Load each root with the existing parser and recursive import loader, in its own namespace. -/
+def moduleSources (files : List String) : String :=
+  "import Mettapedia.GSLT.LanguageDef.ModuleSource.Loader\n" ++
+  String.join (files.zipIdx.map fun (file, index) =>
+    s!"namespace OslfInput{index}.Source\n#module_tree {file.quote} as _root_.OslfInput{index}.Input\nend OslfInput{index}.Source\n")
+
 /-- The source the frontend runs. -/
-def source (files : List String) (language formula term : String) (budgets : List Nat) (settings : List String) :
-    String :=
+def source (file language formula term : String) (budgets : List Nat) (settings : List String)
+    (definitions : Option String := none) : String :=
   "import Mettapedia.OSLF.NativeTypes.Product.Query\n" ++
-  "open Mettapedia.GSLT.LanguageDef.ModuleSource.Commands\n" ++
-  String.join (files.map fun file => s!"#module_file {file.quote}\n") ++
+  moduleSources [file] ++
   s!"#eval Mettapedia.OSLF.NativeTypes.Product.report {language} {formula.quote} {term.quote} {budgets} " ++
-    s!"{settings.map String.quote}\n"
+    s!"{settings.map String.quote} {definitionsTerm definitions}\n"
 
 /-- A row of a matrix file: `file | formula | term | budget | expected [| settings]`. -/
 structure Row where
@@ -103,15 +113,14 @@ def readRows (text : String) : Except String (List Row) :=
       | _ => .error s!"a row needs five fields: {line}"
 
 /-- The source that checks a matrix. -/
-def matrixSource (files : List String) (rows : List (Row × String)) : String :=
+def matrixSource (files : List String) (rows : List (Row × String × List String × Option String)) : String :=
   "import Mettapedia.OSLF.NativeTypes.Product.Query\n" ++
-  "open Mettapedia.GSLT.LanguageDef.ModuleSource.Commands\n" ++
-  String.join (files.map fun file => s!"#module_file {file.quote}\n") ++
+  moduleSources files ++
   "#eval Mettapedia.OSLF.NativeTypes.Product.checkRows [" ++
-  ", ".intercalate (rows.map fun (row, base) =>
+  ", ".intercalate (rows.map fun (row, base, settings, definitions) =>
     s!"({row.file.quote}, {languageTerm base (splitTheory row.file).2}, {row.formula.quote}, {row.term.quote}, " ++
       s!"{row.budget}, " ++
-      s!"{row.expected.quote}, {row.settings.map String.quote})") ++
+      s!"{row.expected.quote}, {settings.map String.quote}, {definitionsTerm definitions})") ++
   "]\n"
 
 end Mettapedia.OSLF.NativeTypes.Product.Main
@@ -127,41 +136,36 @@ def main (arguments : List String) : IO UInt32 := do
       IO.eprintln s!"oslf: {problem}"
       return 2
     | .ok rows =>
-      let mut order : List String := []
-      let mut named : List (Row × String) := []
+      let mut files : List String := []
+      let mut named : List (Row × String × List String × Option String) := []
       for row in rows do
-        let file := (splitTheory row.file).1
-        order ← loadOrder directory file order
-        match moduleName (← IO.FS.readFile (directory / file)) with
-        | some base => named := named ++ [(row, base)]
-        | none =>
-          IO.eprintln s!"oslf: {row.file} declares no Module"
-          return 2
+        let file := (← IO.FS.realPath (directory / (splitTheory row.file).1)).toString
+        let index := files.idxOf file
+        if index == files.length then files := files ++ [file]
+        let (settings, definitions) ← splitDefinitions directory row.settings
+        named := named ++ [(row, s!"OslfInput{index}.Input", settings, definitions)]
       initSearchPath (← findSysroot)
       unsafe Lean.enableInitializersExecution
-      let result ← Lean.Elab.runFrontend (matrixSource order named) {}
+      let result ← Lean.Elab.runFrontend (matrixSource files named) nativeOptions
         (directory / "OslfMatrix.lean").toString `OslfMatrix
       return if result.isSome then 0 else 1
   | argument :: formula :: term :: words =>
     let (file, theory) := splitTheory argument
+    for word in words do
+      unless word.toNat?.isSome || word.contains '=' do
+        IO.eprintln s!"oslf: unexpected argument {word}"
+        return 2
     let budgets := words.filterMap String.toNat?
-    let settings := words.filter (·.contains '=')
     let budgets := if budgets.isEmpty then [4] else budgets
-    let path : System.FilePath := file
+    let path ← IO.FS.realPath file
     let directory := path.parent.getD "."
-    let name := path.fileName.getD file
-    let order ← loadOrder directory name []
-    let text ← IO.FS.readFile path
-    match moduleName text with
-    | none =>
-      IO.eprintln s!"oslf: {file} declares no Module"
-      return 2
-    | some base =>
-      initSearchPath (← findSysroot)
-      unsafe Lean.enableInitializersExecution
-      let result ← Lean.Elab.runFrontend (source order (languageTerm base theory) formula term budgets settings) {}
-        (directory / "OslfQuery.lean").toString `OslfQuery
-      return if result.isSome then 0 else 1
+    let (settings, definitions) ← splitDefinitions "." (words.filter (·.contains '='))
+    initSearchPath (← findSysroot)
+    unsafe Lean.enableInitializersExecution
+    let result ← Lean.Elab.runFrontend
+      (source path.toString (languageTerm "OslfInput0.Input" theory) formula term budgets settings definitions) nativeOptions
+      (directory / "OslfQuery.lean").toString `OslfQuery
+    return if result.isSome then 0 else 1
   | _ =>
     IO.eprintln usage
     return 2

@@ -1,6 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIRExecutable
-import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.ClassSearch
-import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteEmission
+import Mettapedia.OSLF.MeTTaIL.Complete.Normalized
 
 /-! The executable closure machine drains one immutable snapshot search before
 publishing a round. Its retained native receipts supply finite logical keys.
@@ -14,7 +13,6 @@ namespace Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIR.ClosureMachine
 
 open Mettapedia.Languages.Datalog
 open Mettapedia.OSLF.MeTTaIL Syntax
-open Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL
 open Executable
 
 structure Key where

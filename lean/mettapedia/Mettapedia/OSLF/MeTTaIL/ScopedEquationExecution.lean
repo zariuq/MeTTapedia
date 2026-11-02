@@ -21,7 +21,7 @@ reversibility or completeness claim is made for those substitutions.
 
 The results enumerate instances of `LanguageDef.equations`, retaining equation,
 orientation and match occurrences. They are not directed language rewrites.
-The existing generated equation relation does not yet consume this interpreter.
+The generated equation relations read declared equations through this interpreter.
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution
@@ -219,5 +219,62 @@ theorem equationResultsAt_scoped {language : LanguageDef} {ambient : Nat}
     (mem_equationResultsAt_iff language ambient source target).mp firing
   · exact applyEquationAt_scoped forward
   · exact applyEquationAt_scoped reverse
+
+/-- **A declared equation's instances do not depend on the language's rules**: the scoped route runs equations
+without premises, so the premise machine never consults the language. -/
+theorem applyEquationAt_language (first second : LanguageDef) (ambient : Nat) (equation : Equation)
+    (orientation : Orientation) (source : Pattern) :
+    applyEquationAt first ambient equation orientation source =
+      applyEquationAt second ambient equation orientation source := by
+  by_cases empty : equation.premises.isEmpty = true
+  · have nil : equation.premises = [] := List.isEmpty_iff.mp empty
+    cases orientation <;>
+      simp [applyEquationAt, applyRuleAt, applyRuleWithAt, applyRuleComparedWithAt,
+        completeAssignments, orientedRule, nil]
+  · simp [applyEquationAt, empty]
+
+/-- The scoped matcher captures only a term headed by its pattern's constructor. -/
+theorem matchRuleAt_headed {rule : RewriteRule} {spec : RuleBindingSpec} {ambient : Nat}
+    {source : Pattern} {captured : Assignment} (matched : captured ∈ matchRuleAt rule spec ambient source)
+    {head : String} {schema : List Pattern} (side : rule.left = .apply head schema) :
+    ∃ arguments, source = .apply head arguments := by
+  simp only [matchRuleAt, matchRuleWithAt, side] at matched
+  cases source with
+  | apply actual arguments =>
+      by_cases same : head = actual
+      · exact ⟨arguments, by rw [same]⟩
+      · simp [matchAtWith, same] at matched
+  | _ => simp [matchAtWith] at matched
+
+/-- The scoped instantiator emits a term headed by its pattern's constructor. -/
+theorem reduct?_headed {rule : RewriteRule} {spec : RuleBindingSpec} {ambient : Nat}
+    {assignment : Assignment} {target : Pattern} (applied : reduct? rule spec ambient assignment = some target)
+    {head : String} {schema : List Pattern} (side : rule.right = .apply head schema) :
+    ∃ arguments, target = .apply head arguments := by
+  simp only [reduct?, instantiateAt?, side, instantiateWith?] at applied
+  obtain ⟨results, -, emitted⟩ := Option.bind_eq_some_iff.mp applied
+  exact ⟨results, (Option.some.inj emitted).symm⟩
+
+/-- A declared instance consumes a term headed by its matched side's constructor. -/
+theorem applyEquationAt_source_headed {language : LanguageDef} {ambient : Nat}
+    {equation : Equation} {orientation : Orientation} {source target : Pattern}
+    (firing : target ∈ applyEquationAt language ambient equation orientation source)
+    {head : String} {schema : List Pattern}
+    (side : (orientedRule equation orientation).left = .apply head schema) :
+    ∃ arguments, source = .apply head arguments := by
+  obtain ⟨-, -, -, _, _, -, -, matched, -⟩ :=
+    (mem_applyEquationAt_iff language ambient equation orientation source target).mp firing
+  exact matchRuleAt_headed matched side
+
+/-- A declared instance produces a term headed by its emitted side's constructor. -/
+theorem applyEquationAt_target_headed {language : LanguageDef} {ambient : Nat}
+    {equation : Equation} {orientation : Orientation} {source target : Pattern}
+    (firing : target ∈ applyEquationAt language ambient equation orientation source)
+    {head : String} {schema : List Pattern}
+    (side : (orientedRule equation orientation).right = .apply head schema) :
+    ∃ arguments, target = .apply head arguments := by
+  obtain ⟨-, -, -, _, _, -, -, -, applied⟩ :=
+    (mem_applyEquationAt_iff language ambient equation orientation source target).mp firing
+  exact reduct?_headed applied side
 
 end Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution

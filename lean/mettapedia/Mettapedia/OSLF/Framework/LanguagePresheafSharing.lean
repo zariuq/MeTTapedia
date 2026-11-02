@@ -24,7 +24,7 @@ source and target.
 
 namespace Mettapedia.OSLF.Framework.LanguagePresheafSharing
 
-open CategoryTheory
+open Mettapedia.CategoryTheory
 open Opposite
 open Mettapedia.GSLT.Meredith
 open Mettapedia.OSLF.MeTTaIL.Syntax

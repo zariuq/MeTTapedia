@@ -1,4 +1,5 @@
 import Mettapedia.Languages.VibeITP.Spec.ProtocolV2Controls
+import Mettapedia.Languages.VibeITP.Native.ProtocolV2LogicalControls
 import Lean.Data.Json
 
 /-! Export the reference protocol's unchanged test bytes for an external oracle.
@@ -29,12 +30,17 @@ private def diagnostic : Verdict → Option String
   | .rejected _ _ .challengeMismatch => some "Given theorem doesn't match the challenge"
   | _ => none
 
+private def challenges : Verdict → Json
+  | .proofs setup proof remaining => Json.mkObj [
+      ("setup", toJson setup), ("proof", toJson proof), ("remaining", toJson remaining)]
+  | _ => .null
+
 def main (arguments : List String) : IO UInt32 := do
   let [directory] := arguments | throw (IO.userError "expected output directory")
   let root : System.FilePath := directory
   IO.FS.createDirAll root
   let mut manifest : Array Json := #[]
-  for entry in caseTable do
+  for entry in caseTable ++ Mettapedia.Languages.VibeITP.Native.ProtocolV2LogicalControls.completionCases do
     let mut setupNames : Array Json := #[]
     let mut proofNames : Array Json := #[]
     for (bytes, index) in entry.setupFiles.zipIdx do
@@ -51,6 +57,7 @@ def main (arguments : List String) : IO UInt32 := do
     manifest := manifest.push (Json.mkObj [
       ("name", toJson entry.name), ("setup", .arr setupNames), ("proofs", .arr proofNames),
       ("expected", toJson (resultClass entry.expected)), ("diagnostic", toJson (diagnostic entry.expected)),
+      ("challenges", challenges entry.expected),
       ("leanVerdict", toJson (reprStr actual))])
   IO.FS.writeFile (root / "manifest.json") (Json.arr manifest |>.pretty)
   return 0

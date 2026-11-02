@@ -151,3 +151,6 @@ import Mettapedia.Computability.StackMachineMicroSpace
 import Mettapedia.Computability.StackMachineCompositionSpace
 import Mettapedia.Computability.StackMachineCompositionSpaceControls
 import Mettapedia.Computability.StackMachineDispatchProgram
+import Mettapedia.Computability.FuelRecursion
+import Mettapedia.Computability.ComputableLists
+import Mettapedia.Computability.Coded

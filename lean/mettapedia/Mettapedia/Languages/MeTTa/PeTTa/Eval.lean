@@ -77,7 +77,7 @@ def step (program : Program) (configuration : Configuration) : Option Configurat
             match StdLib.apply state head values with
             | .ok (after, answers) => some { configuration with state := after, control := .returned answers }
             | .error fault => advance (.fault fault)
-          else advance (.sequence (clauses program head values) [])
+          else advance (application program head values)
   | .arguments bindings target (first :: rest) values index =>
       let frame := Frame.argument bindings target rest values index
       let raw := match target with
@@ -108,6 +108,8 @@ def step (program : Program) (configuration : Configuration) : Option Configurat
       | .expression [.symbol "empty"] => advance (.returned [])
       | .expression [.symbol "quote", expression] =>
           advance (.returned [applySubst bindings expression])
+      | .expression [.symbol "match", space, pattern, body] =>
+          push (.query bindings pattern body) bindings space
       | .expression (.symbol head :: arguments) =>
           if ioHead head || StdLib.known head || program.equations.any (·.head == head) then
             advance (.arguments bindings (.function head) arguments [] 0)
@@ -135,6 +137,9 @@ def step (program : Program) (configuration : Configuration) : Option Configurat
           | .branch bindings yes no =>
               resume (.sequence (answers.map fun value =>
                 .evaluate bindings (if value == Effects.boolean true then yes else no)) [])
+          | .query bindings pattern body =>
+              resume (.sequence (answers.flatMap fun space =>
+                queryAlternatives state bindings space pattern body) [])
 
 def run (program : Program) : Nat → Configuration → Outcome
   | fuel, configuration =>
@@ -305,6 +310,8 @@ theorem step_transition {program : Program} {source target : Configuration}
         exact .empty_enter rfl
       · cases computed
         exact .quote_enter rfl
+      · cases computed
+        exact .query_enter rfl
       · split at computed
         · cases computed
           apply Transition.call_enter rfl _ (by assumption)
@@ -347,6 +354,10 @@ theorem step_transition {program : Program} {source target : Configuration}
           simp only [step, Option.some.injEq] at computed
           subst target
           exact .if_return rfl rfl
+        | query bindings pattern body =>
+          simp only [step, Option.some.injEq] at computed
+          subst target
+          exact .query_return rfl rfl
 
 
 theorem step_iff_transition (program : Program) (source target : Configuration) :
@@ -387,7 +398,7 @@ structure ProgramAgreementAt (first second : Program) (source : Configuration) :
       argumentIsRaw first head index = argumentIsRaw second head index
   bodies : ∀ bindings head values index,
     source.control = .arguments bindings (.function head) [] values index →
-      clauses first head values = clauses second head values
+      application first head values = application second head values
 
 theorem step_eq_of_program_agreement {first second : Program} {source : Configuration}
     (agreement : ProgramAgreementAt first second source) :
@@ -420,7 +431,7 @@ theorem step_eq_of_program_agreement {first second : Program} {source : Configur
           | expression items =>
               simp only [step]
               split <;> try rfl
-              rename_i _ head arguments _ _ _ _ _ _ _ _ shape
+              rename_i _ head arguments _ _ _ _ _ _ _ _ _ shape
               rw [dispatch bindings head arguments (congrArg (Control.evaluate bindings) shape)]
 
 /-- Transport a finite path after checking the program observations along it.
@@ -495,6 +506,7 @@ def frameWithin (allowed : String → Bool) : Frame → Bool
   | .bind _ _ body => codeWithin allowed body
   | .select _ cases => cases.all (fun row => codeWithin allowed row.2)
   | .branch _ yes no => codeWithin allowed yes && codeWithin allowed no
+  | .query _ _ body => codeWithin allowed body
 
 /-- Only pending code and continuation bodies constrain execution. Stores,
 answers and captured environments remain ordinary data of the same machine. -/
@@ -598,13 +610,40 @@ theorem clauses_within (allowed : String → Bool) {program : Program} {head : S
   obtain ⟨equation, equationMember, selected⟩ := List.mem_filterMap.mp member
   by_cases same : equation.head = head
   · simp only [same, if_true] at selected
-    cases matched : SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values) with
+    cases matched : SpaceSemantics.matchValue.matchValues [] equation.arguments values with
     | none => simp [matched] at selected
     | some bindings =>
         simp only [matched, Option.map_some, Option.some.injEq] at selected
         subst control
         exact closed.bodies equation equationMember (same ▸ supported)
   · simp [same] at selected
+
+/-- A partial application and an over-application fault run no code; a call
+runs only the selected bodies. -/
+theorem application_within (allowed : String → Bool) {program : Program} {head : String}
+    (closed : ProgramClosed allowed program) (supported : allowed head = true) (values : List Atom) :
+    controlWithin allowed (application program head values) = true := by
+  rw [application_classified]
+  split
+  · simpa [controlWithin] using clauses_within allowed closed supported values
+  · split <;> simp [controlWithin]
+
+/-- Every query alternative runs the held body or faults. -/
+theorem queryAlternatives_within (allowed : String → Bool) (state : State) (bindings : Subst)
+    (space pattern body : Atom) (code : codeWithin allowed body = true) :
+    (queryAlternatives state bindings space pattern body).all (controlWithin allowed) = true := by
+  unfold queryAlternatives
+  split
+  · rw [List.all_eq_true]
+    intro control member
+    obtain ⟨row, _, mapped⟩ := List.mem_filterMap.mp member
+    cases matched : SpaceSemantics.matchValue bindings pattern row with
+    | none => simp [matched] at mapped
+    | some bound =>
+        simp only [matched, Option.map_some, Option.some.injEq] at mapped
+        subst control
+        exact code
+  · simp [controlWithin]
 
 theorem transition_within {allowed : String → Bool} {program : Program}
     {source target : Configuration} (closed : ProgramClosed allowed program)
@@ -620,7 +659,16 @@ theorem transition_within {allowed : String → Bool} {program : Program}
     rw [control] at controlCode
     simp only [controlWithin, targetWithin, atomsWithin, Bool.and_true,
       Bool.and_eq_true] at controlCode
-    exact ⟨clauses_within allowed closed controlCode.1 values, frameCodes⟩
+    exact ⟨application_within allowed closed controlCode.1 values, frameCodes⟩
+  case query_return answers bindings pattern body rest _ frames =>
+    rw [frames] at frameCodes
+    simp only [List.all_cons, frameWithin, Bool.and_eq_true] at frameCodes
+    refine ⟨?_, frameCodes.2⟩
+    rw [controlWithin, controlsWithin_eq_all, List.all_eq_true]
+    intro control member
+    obtain ⟨space, _, alternative⟩ := List.mem_flatMap.mp member
+    exact List.all_eq_true.mp
+      (queryAlternatives_within allowed _ bindings space pattern body frameCodes.1) control alternative
   case let_star bindings pairs body nested control expanded =>
     refine ⟨nestedLets_within allowed closed.binding expanded ?_ ?_, frameCodes⟩
     all_goals
@@ -686,7 +734,7 @@ structure ProgramAgreementOn (allowed : String → Bool) (first second : Program
   demand : ∀ head index, allowed head = true →
     argumentIsRaw first head index = argumentIsRaw second head index
   bodies : ∀ head values, allowed head = true →
-    clauses first head values = clauses second head values
+    application first head values = application second head values
 
 theorem configuration_agreement_on {allowed : String → Bool} {first second : Program}
     {source : Configuration} (agreement : ProgramAgreementOn allowed first second)
@@ -770,9 +818,20 @@ theorem appended_program_agreement (allowed : String → Bool) (first extension 
       rw [List.filterMap_eq_nil_iff]
       intro equation member
       simp [unequal head supported equation member]
-    simp only [clauses, SpaceSemantics.Program.append, List.filterMap_append]
-    change clauses first head values = clauses first head values ++ clauses extension head values
-    rw [absent, List.append_nil]
+    have sameClauses : clauses (first.append extension) head values = clauses first head values := by
+      simp only [clauses, SpaceSemantics.Program.append, List.filterMap_append]
+      change clauses first head values ++ clauses extension head values = clauses first head values
+      rw [absent, List.append_nil]
+    have noArities : extension.equations.filter (·.head == head) = [] := by
+      rw [List.filter_eq_nil_iff]
+      intro equation member
+      simp [unequal head supported equation member]
+    have sameArities : arities (first.append extension) head = arities first head := by
+      simp only [arities, SpaceSemantics.Program.append, List.filter_append, noArities,
+        List.append_nil]
+    have sameKnown : knownArities (first.append extension) head = knownArities first head := by
+      simp only [knownArities, sameArities]
+    simp only [application, sameClauses, sameArities, sameKnown]
 
 theorem captured_values_need_no_code_support (allowed : String → Bool) (bindings : Subst)
     (state : State) (name : String) :
@@ -1391,7 +1450,7 @@ theorem clauses_use_only_the_named_equations (program : Program) (head : String)
     clauses program head values =
       (program.equations.filter (fun equation => equation.head == head)).filterMap
         (fun equation =>
-          (SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values)).map
+          (SpaceSemantics.matchValue.matchValues [] equation.arguments values).map
             fun bindings => .evaluate bindings equation.body) := by
   cases program with
   | mk equations declarations initializers =>
@@ -1622,6 +1681,39 @@ theorem variable_arguments_return (program : Program) (bindings : MORK.Subst)
       (finished after [answer] [] []) :=
   variable_arguments_answers program bindings before after target names values index [answer] computed
 
+/-- An application is control syntax only at a control head's own shape;
+`match` is a query only with three arguments (P-APP-2). -/
+theorem controlForm_application {head : String} {arguments : List Atom}
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (notQuery : head ≠ "match" ∨ arguments.length ≠ 3) :
+    controlForm (.expression (.symbol head :: arguments)) = false := by
+  unfold controlForm
+  split <;> simp_all
+
+theorem controlForm_of_ordinary {head : String} {arguments : List Atom}
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+    controlForm (.expression (.symbol head :: arguments)) = false :=
+  controlForm_application (by simp_all) (.inl (by intro same; simp_all))
+
+/-- `match` is a primitive name, so no authored function or data head is it. -/
+theorem ne_match_of_not_known {head : String} (authored : StdLib.known head = false) :
+    head ≠ "match" := by
+  rintro rfl
+  simp [StdLib.known] at authored
+
+/-- An application that is not control syntax enters the call of its head. -/
+theorem application_answers (program : Program) (bindings : MORK.Subst)
+    (before after : State) (head : String) (arguments : List Atom) (answer : List Atom)
+    (dispatch : (ioHead head || StdLib.known head ||
+      program.equations.any (·.head == head)) = true)
+    (computed : (theory program).MultiStep
+      { state := before, control := .arguments bindings (.function head) arguments [] 0 }
+      (finished after answer [] []))
+    (notControl : controlForm (.expression (.symbol head :: arguments)) = false) :
+    Returns program bindings before (.expression (.symbol head :: arguments)) after answer :=
+  .step (.call_enter rfl notControl dispatch) computed
+
 theorem call_answers (program : Program) (bindings : MORK.Subst)
     (before after : State) (head : String) (arguments : List Atom) (answer : List Atom)
     (dispatch : (ioHead head || StdLib.known head ||
@@ -1629,16 +1721,11 @@ theorem call_answers (program : Program) (bindings : MORK.Subst)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings (.function head) arguments [] 0 }
       (finished after answer [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
-    Returns program bindings before (.expression (.symbol head :: arguments)) after answer := by
-  refine .step ?_ computed
-  apply step_transition
-
-  simp at ordinary
-  rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-  simp only [step]
-  split <;> simp_all <;> grind
-
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+    Returns program bindings before (.expression (.symbol head :: arguments)) after answer :=
+  application_answers program bindings before after head arguments answer dispatch computed
+    (controlForm_of_ordinary ordinary)
 
 theorem call_returns (program : Program) (bindings : MORK.Subst)
     (before after : State) (head : String) (arguments : List Atom) (answer : Atom)
@@ -1647,7 +1734,8 @@ theorem call_returns (program : Program) (bindings : MORK.Subst)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings (.function head) arguments [] 0 }
       (finished after [answer] [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
   call_answers program bindings before after head arguments [answer] dispatch computed ordinary
 
@@ -1660,7 +1748,8 @@ theorem raw_call_returns (program : Program) (bindings : MORK.Subst)
       { state := before, control := .arguments bindings (.function head) []
           (arguments.map (MORK.applySubst bindings)) arguments.length }
       (finished after [answer] [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
   call_returns program bindings before after head arguments answer dispatch
     (raw_arguments_return program bindings before after head arguments [] 0 answer
@@ -1672,7 +1761,8 @@ theorem native_variable_call_answers (program : Program) (bindings : MORK.Subst)
     (native : StdLib.known head = true)
     (computed : StdLib.apply before head
       (names.map (fun name => MORK.applySubst bindings (.var name))) = .ok (after, answers))
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     Returns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answers := by
   apply call_answers program bindings before after head (names.map Atom.var) answers
@@ -1688,7 +1778,8 @@ theorem native_variable_call_returns (program : Program) (bindings : MORK.Subst)
     (native : StdLib.known head = true)
     (computed : StdLib.apply before head
       (names.map (fun name => MORK.applySubst bindings (.var name))) = .ok (after, [answer]))
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer :=
   native_variable_call_answers program bindings before after head names [answer] ordinary native computed notControl
@@ -1704,8 +1795,8 @@ theorem native_binary_call_returns (program : Program) (bindings : MORK.Subst)
     (computed : StdLib.apply secondState head [leftValue, rightValue] = .ok (after, [answer]))
     (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after answer := by
-  apply call_returns program bindings before after head [left, right] answer
-    (by simp [native]) _ notControl
+  apply application_answers program bindings before after head [left, right] [answer]
+    (by simp [native]) _ (controlForm_application notControl (.inr (by simp)))
   have last := native_function_arguments_return program bindings secondState after head
     [leftValue, rightValue] 2 answer ordinary native computed
   have rest := evaluated_argument_returns program bindings firstState secondState after (.function head)
@@ -1721,8 +1812,8 @@ theorem native_unary_call_returns (program : Program) (bindings : MORK.Subst)
     (computed : StdLib.apply middle head [value] = .ok (after, [answer]))
     (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
     PureReturns program bindings before (.expression [.symbol head, argument]) after answer := by
-  apply call_returns program bindings before after head [argument] answer
-    (by simp [native]) _ notControl
+  apply application_answers program bindings before after head [argument] [answer]
+    (by simp [native]) _ (controlForm_application notControl (.inr (by simp)))
   exact evaluated_argument_returns program bindings before middle after (.function head) argument value answer
     [] [] 0 demanded argumentReturns
     (native_function_arguments_return program bindings middle after head [value] 1 answer ordinary native computed)
@@ -1738,8 +1829,9 @@ theorem authored_variable_call_returns (program : Program) (bindings callee : MO
     (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer := by
-  apply call_returns program bindings before after head (names.map Atom.var) answer
-    (by simp [dispatch]) _ notControl
+  apply application_answers program bindings before after head (names.map Atom.var) [answer]
+    (by simp [dispatch]) _
+    (controlForm_application notControl (.inl (ne_match_of_not_known authored)))
   exact variable_arguments_return program bindings before after (.function head) names [] 0 answer
     (by simpa using (authored_function_arguments_return program bindings callee before after head
       (names.map (fun name => MORK.applySubst bindings (.var name))) names.length body answer
@@ -1758,7 +1850,9 @@ theorem authored_binary_call_returns (program : Program) (bindings callee : MORK
     (computed : PureReturns program callee secondState body after answer)
     (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after answer := by
-  apply call_returns program bindings before after head [left, right] answer (by simp [dispatch]) _ notControl
+  apply application_answers program bindings before after head [left, right] [answer]
+    (by simp [dispatch]) _
+    (controlForm_application notControl (.inl (ne_match_of_not_known authored)))
   apply evaluated_argument_returns program bindings before firstState after (.function head)
     left leftValue answer [right] [] 0 leftDemanded leftReturns
   apply evaluated_argument_returns program bindings firstState secondState after (.function head)
@@ -1782,13 +1876,11 @@ theorem data_call_answers (program : Program) (bindings : MORK.Subst)
       (finished after answers [] []))
     (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
     Returns program bindings before (.expression (.symbol head :: arguments)) after answers := by
-  refine .step ?_ computed
-  apply step_transition
-
-  simp at ordinary
-  rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-  simp only [step]
-  split <;> simp_all
+  have notKnown : StdLib.known head = false := by
+    simp only [Bool.or_eq_false_iff] at inert
+    exact inert.1.2
+  exact .step (.data_enter rfl
+    (controlForm_application ordinary (.inl (ne_match_of_not_known notKnown))) inert) computed
 
 
 theorem data_call_returns (program : Program) (bindings : MORK.Subst)
@@ -1891,32 +1983,69 @@ theorem binary_constructor_returns (program : Program) (bindings : MORK.Subst)
     right rightValue _ [] [.symbol head, leftValue] 2 rfl rightReturns
   exact data_arguments_values_return program bindings after _ 3
 
-/-- A native space query followed by `collapse` retains its ordered answers,
-including empty queries and duplicate occurrences. -/
+/-- Alternatives that each answer one value and leave the store unchanged
+answer those values, in order, after the answers already collected. -/
+theorem pure_sequence_answers (program : Program) (state : State) :
+    (controls : List Control) → (values collected : List Atom) →
+    List.Forall₂ (fun control value => (theory program).MultiStep { state, control }
+      (finished state [value] [] [])) controls values →
+    (theory program).MultiStep { state, control := .sequence controls collected }
+      (finished state (collected ++ values) [] [])
+  | [], [], collected, .nil => by
+      simpa using (.step (step_transition rfl) (.refl _) :
+        (theory program).MultiStep { state, control := .sequence [] collected }
+          (finished state collected [] []))
+  | control :: controls, value :: values, collected, .cons first rest => by
+      have tail := pure_sequence_answers program state controls values (collected ++ [value]) rest
+      simpa using sequence_cons_answers program state state state control controls collected [value]
+        (collected ++ [value] ++ values) first tail
+
+/-- The bodies of one query, each answering one value without changing the
+store, answer those values in row order, repeats kept. -/
+theorem queryBodies_answers (program : Program) (state : State) (bindings : MORK.Subst)
+    (pattern body : Atom) (value : MORK.Subst → Atom)
+    (pure : ∀ row bound, SpaceSemantics.matchValue bindings pattern row = some bound →
+      PureReturns program bound state body state (value bound)) :
+    (rows : List Atom) →
+    List.Forall₂ (fun control value => (theory program).MultiStep { state, control }
+      (finished state [value] [] [])) (queryBodies bindings rows pattern body)
+      (rows.filterMap fun row => (SpaceSemantics.matchValue bindings pattern row).map value)
+  | [] => .nil
+  | row :: rows => by
+      have rest := queryBodies_answers program state bindings pattern body value pure rows
+      cases matched : SpaceSemantics.matchValue bindings pattern row with
+      | none => simpa [queryBodies, matched] using rest
+      | some bound =>
+          simp only [queryBodies, List.filterMap_cons, matched, Option.map_some] at rest ⊢
+          exact .cons (pure row bound matched) rest
+
+/-- `(collapse (match S pattern body))` runs the body once per stored row the
+pattern matches, under the caller's bindings extended by the row's, and
+collects the answers in row order, repeats and empty queries included. Here
+the body answers one value per row without effects; a body that is the
+pattern's variable or a constant does (`variable_returns`, `symbol_returns`).
+The body is code: a body with effects or several answers is not covered by
+this instance. -/
 theorem match_collapse_returns (program : Program) (bindings : MORK.Subst)
-    (before after : State) (spaceName : String) (pattern template : Atom) (answers : List Atom)
-    (queried : StdLib.apply before "match"
-      [MORK.applySubst bindings (.var spaceName), MORK.applySubst bindings pattern,
-        MORK.applySubst bindings template] = .ok (after, answers)) :
-    PureReturns program bindings before (.expression [.symbol "collapse",
-      .expression [.symbol "match", .var spaceName, pattern, template]]) after (.expression answers) := by
-  apply collapse_returns program bindings before after _ answers
-  apply call_answers program bindings before after "match" [.var spaceName, pattern, template]
-    answers (by simp [StdLib.known]) _ (by decide)
-  have queriedPath := native_function_arguments_answers program bindings before after "match"
-    [MORK.applySubst bindings (.var spaceName), MORK.applySubst bindings pattern,
-      MORK.applySubst bindings template] 3 answers (by decide) (by decide) queried
-  have tailPath := raw_arguments_answers program bindings before after "match" [pattern, template]
-    [MORK.applySubst bindings (.var spaceName)] 1 answers
-    (by intro offset bounded; have : offset < 2 := bounded
-        have positions : offset = 0 ∨ offset = 1 := by omega
-        rcases positions with rfl | rfl <;>
-          simp [argumentIsRaw, StdLib.known, StdLib.rawArgument])
-    (by simpa using queriedPath)
-  exact evaluated_argument_answers program bindings before before after (.function "match")
-    (.var spaceName) (MORK.applySubst bindings (.var spaceName)) answers [pattern, template] [] 0
-    (by simp [argumentIsRaw, StdLib.known, StdLib.rawArgument])
-    (variable_returns program bindings before spaceName) tailPath
+    (state : State) (spaceName : String) (pattern body : Atom) (rows : List Atom)
+    (space : (Effects.readHandle (MORK.applySubst bindings (.var spaceName)) >>= state.read) =
+      some rows)
+    (value : MORK.Subst → Atom)
+    (pure : ∀ row bound, SpaceSemantics.matchValue bindings pattern row = some bound →
+      PureReturns program bound state body state (value bound)) :
+    PureReturns program bindings state (.expression [.symbol "collapse",
+      .expression [.symbol "match", .var spaceName, pattern, body]]) state
+      (.expression (rows.filterMap fun row =>
+        (SpaceSemantics.matchValue bindings pattern row).map value)) := by
+  apply collapse_returns program bindings state state _ _
+  refine .step (step_transition rfl) (path_trans
+    (path_with_caller_frames program [.query bindings pattern body]
+      (variable_returns program bindings state spaceName)) ?_)
+  refine .step (step_transition rfl) ?_
+  simp only [withFrames, finished, List.nil_append, List.flatMap_cons, List.flatMap_nil,
+    List.append_nil, queryAlternatives, space]
+  simpa [finished] using pure_sequence_answers program state _ _ []
+    (queryBodies_answers program state bindings pattern body value pure rows)
 
 open Mettapedia.Languages.ProcessCalculi.MORK (Subst applySubst)
 
@@ -1933,11 +2062,8 @@ private theorem raw_unary_stage (program : Program) (bindings : Subst)
         frames := [.sequence [] []] } := by
   have first : step program
       { state, control := .evaluate bindings (.expression [.symbol head, argument]) } =
-      some { state, control := .arguments bindings (.function head) [argument] [] 0 } := by
-    simp at ordinary
-    rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-    simp only [step]
-    split <;> simp_all <;> grind
+      some { state, control := .arguments bindings (.function head) [argument] [] 0 } :=
+    transition_step (.call_enter rfl (controlForm_application ordinary (.inr (by simp))) dispatch)
   rw [show fuel + 4 = (fuel + 3) + 1 by omega, run_succ_of_step program _ _ _ first]
   rw [show fuel + 3 = (fuel + 2) + 1 by omega]
   rw [run_succ_of_step program _ _ _ (show step program
@@ -2040,6 +2166,7 @@ def frameSafe (excluded : List String) : Frame → Bool
   | .branch _ yes no => codeSafe excluded yes && codeSafe excluded no
   | .argument _ target pending _ _ => targetSafe excluded target && pending.all (codeSafe excluded)
   | .sequence pending _ => controlSafe.controlsSafe excluded pending
+  | .query _ _ body => codeSafe excluded body
 
 def configurationSafe (excluded : List String) (configuration : Configuration) : Prop :=
   controlSafe excluded configuration.control = true ∧
@@ -2110,13 +2237,37 @@ private theorem clauses_safe (program : Program) (excluded : List String) (head 
   obtain ⟨equation, eqMember, produced⟩ := List.mem_filterMap.mp (show control ∈ _ by simpa only [clauses] using member)
   split at produced
   · rename_i same
-    cases matched : SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values) with
+    cases matched : SpaceSemantics.matchValue.matchValues [] equation.arguments values with
     | none => simp [matched] at produced
     | some bindings =>
         simp only [matched, Option.map_some, Option.some.injEq] at produced
         subst control
         simpa only [controlSafe] using closed equation eqMember (same ▸ allowed)
   · cases produced
+
+private theorem application_safe (program : Program) (excluded : List String) (head : String)
+    (values : List Atom) (closed : Closed program excluded) (allowed : blocked excluded head = false) :
+    controlSafe excluded (application program head values) = true := by
+  rw [application_classified]
+  split
+  · simpa only [controlSafe] using clauses_safe program excluded head values closed allowed
+  · split <;> simp [controlSafe]
+
+private theorem queryAlternatives_safe (excluded : List String) (state : Effects.State)
+    (bindings : MORK.Subst) (space pattern body : Atom) (code : codeSafe excluded body = true) :
+    (queryAlternatives state bindings space pattern body).all (controlSafe excluded) = true := by
+  unfold queryAlternatives
+  split
+  · rw [List.all_eq_true]
+    intro control member
+    obtain ⟨row, _, mapped⟩ := List.mem_filterMap.mp member
+    cases matched : SpaceSemantics.matchValue bindings pattern row with
+    | none => simp [matched] at mapped
+    | some bound =>
+        simp only [matched, Option.map_some, Option.some.injEq] at mapped
+        subst control
+        simpa only [controlSafe] using code
+  · simp [controlSafe]
 
 private theorem nested_lets_safe (excluded : List String) (pairs : List Atom) (body nested : Atom)
     (pairsSafe : pairs.all (codeSafe excluded) = true) (bodySafe : codeSafe excluded body = true)
@@ -2203,8 +2354,16 @@ theorem transition_safe (program : Program) (excluded : List String)
     Bool.and_true, Bool.true_and, Bool.and_eq_true, and_true, true_and]
   all_goals try solve | simp_all [blocked, ioHead]
   case equations =>
-    apply clauses_safe program excluded _ _ closed
+    apply application_safe program excluded _ _ closed
     simpa using safe.1
+  case query_return =>
+    rename_i answers bindings pattern body rest control frames
+    apply (controls_safe_iff _ _).mpr
+    intro control member
+    obtain ⟨space, _, alternative⟩ := List.mem_flatMap.mp member
+    exact List.all_eq_true.mp
+      (queryAlternatives_safe excluded source.state bindings space pattern body (by tauto))
+      control alternative
   case let_star =>
     rename_i bindings pairs body nested control expanded
     exact nested_lets_safe excluded pairs body nested (by tauto) (by tauto) expanded letSafe
@@ -2348,20 +2507,29 @@ theorem symbol_io_returns (program : Program) (bindings : Subst) (state : State)
     PureReturnsIO program bindings state (.symbol name) state (.symbol name) input output input output :=
   .step (step_transition rfl) (.refl _)
 
-theorem call_io_returns (program : Program) (bindings : Subst) (before after : State)
+theorem application_io_returns (program : Program) (bindings : Subst) (before after : State)
     (head : String) (arguments : List Atom) (answer : Atom) (input output remaining printed : List Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (notControl : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings (.function head) arguments [] 0, input, output }
       (finished after [answer] remaining printed)) :
     PureReturnsIO program bindings before (.expression (.symbol head :: arguments)) after answer
-      input output remaining printed := by
-  refine .step (step_transition ?_) computed
-  simp at ordinary
-  rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-  simp only [step]
-  split <;> simp_all <;> grind
+      input output remaining printed :=
+  .step (.call_enter rfl notControl dispatch) computed
+
+theorem call_io_returns (program : Program) (bindings : Subst) (before after : State)
+    (head : String) (arguments : List Atom) (answer : Atom) (input output remaining printed : List Atom)
+    (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+    (computed : (theory program).MultiStep
+      { state := before, control := .arguments bindings (.function head) arguments [] 0, input, output }
+      (finished after [answer] remaining printed)) :
+    PureReturnsIO program bindings before (.expression (.symbol head :: arguments)) after answer
+      input output remaining printed :=
+  application_io_returns program bindings before after head arguments answer input output
+    remaining printed dispatch (controlForm_of_ordinary ordinary) computed
 
 theorem variable_argument_io_returns (program : Program) (bindings : Subst) (before after : State)
     (head name : String) (value answer : Atom) (input output remaining printed : List Atom)
@@ -2373,7 +2541,8 @@ theorem variable_argument_io_returns (program : Program) (bindings : Subst) (bef
       (finished after [answer] remaining printed)) :
     PureReturnsIO program bindings before (.expression [.symbol head, .var name]) after answer
       input output remaining printed := by
-  apply call_io_returns program bindings before after head [.var name] answer input output remaining printed dispatch ordinary
+  apply application_io_returns program bindings before after head [.var name] answer input output
+    remaining printed dispatch (controlForm_application (arguments := [.var name]) ordinary (.inr (by simp)))
   have enter : step program
       { state := before, control := .arguments bindings (.function head) [.var name] [] 0, input, output } =
       some { state := before, control := .evaluate bindings (.var name), frames := [.argument bindings (.function head) [] [] 0], input, output } := by simp [step, demanded]
@@ -2434,11 +2603,8 @@ theorem nullary_capture_run_eq (program : SpaceSemantics.Program) (first second 
       { state, control := .evaluate second (.expression [.symbol head]), input, output } := by
   have enter (bindings : Subst) : step program
       { state, control := .evaluate bindings (.expression [.symbol head]), input, output } =
-      some { state, control := .arguments bindings (.function head) [] [] 0, input, output } := by
-    simp at ordinary
-    rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-    simp only [step]
-    split <;> simp_all <;> grind
+      some { state, control := .arguments bindings (.function head) [] [] 0, input, output } :=
+    transition_step (.call_enter rfl (controlForm_application ordinary (.inr (by simp))) dispatch)
   rw [show fuel + 2 = (fuel + 1) + 1 by omega,
     run_succ_of_step program _ _ _ (enter first),
     run_succ_of_step program _ _ _ (enter second)]
@@ -2558,7 +2724,8 @@ private theorem captured_call_stage (program : Program) (caller : Subst)
     (state : State) (head : String) (arguments : List Atom) (fuel : Nat)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true) :
     run program (fuel + argumentCaptureCost program head 0 arguments.length + 1)
@@ -2567,11 +2734,8 @@ private theorem captured_call_stage (program : Program) (caller : Subst)
       {state, control := .arguments caller (.function head) [] (arguments.map (applySubst caller)) arguments.length, frames := List.replicate arguments.length (.sequence [] [])} := by
   have entered : step program
       {state, control := .evaluate caller (.expression (.symbol head :: arguments))} =
-      some {state, control := .arguments caller (.function head) arguments [] 0} := by
-    simp at ordinary
-    rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-    simp only [step]
-    split <;> simp_all <;> grind
+      some {state, control := .arguments caller (.function head) arguments [] 0} :=
+    transition_step (.call_enter rfl (controlForm_of_ordinary ordinary) dispatch)
   rw [run_succ_of_step program _ _ _ entered]
   simpa using captured_arguments_stage program caller state head arguments [] 0 fuel []
     (by simpa using admitted)
@@ -2580,7 +2744,8 @@ theorem captured_call_run_eq (program : Program) (first second : Subst)
     (state : State) (head : String) (one two : List Atom) (fuel : Nat)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (firstAdmitted : ∀ offset argument, one[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (secondAdmitted : ∀ offset argument, two[offset]? = some argument →
@@ -2613,7 +2778,8 @@ theorem captured_call_returns (program : Program) (first second : Subst)
     (before after : State) (head : String) (one two : List Atom) (answer : Atom)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (firstAdmitted : ∀ offset argument, one[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (secondAdmitted : ∀ offset argument, two[offset]? = some argument →
@@ -2651,7 +2817,8 @@ theorem captured_call_in_extension {allowed : String → Bool} {first second : P
     (supported : allowed head = true) (notEval : head ≠ "eval")
     (dispatch : (ioHead head || StdLib.known head ||
       first.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw first head offset = true ∨ passiveArgument argument = true)
     (captured : arguments.map (applySubst caller) = (names.map Atom.var).map (applySubst capturedCaller))
@@ -2775,8 +2942,12 @@ theorem programAgreementOn_of_retained_rows (allowed : String → Bool) (first s
       simp only [raw_declarations_after_retention allowed head supported index] at inspected
       convert inspected using 1 <;> congr 1
   · intro head values supported
-    rw [clauses_use_only_the_named_equations first head values,
-      clauses_use_only_the_named_equations second head values, named head supported]
+    have sameClauses : clauses first head values = clauses second head values := by
+      rw [clauses_use_only_the_named_equations first head values,
+        clauses_use_only_the_named_equations second head values, named head supported]
+    have sameArities : arities first head = arities second head := by
+      simp only [arities, named head supported]
+    simp only [application, knownArities, sameClauses, sameArities]
 
 #print axioms programAgreementOn_of_retained_rows
 
@@ -2804,7 +2975,7 @@ theorem relocation_preserves_owned_calls : ProgramAgreementOn owner first reloca
 theorem reversing_owned_occurrences_changes_clauses :
     clauses first "owned" [] ≠
       clauses { first with equations := [row "owned" 2, row "owned" 1] } "owned" [] := by
-  simp [clauses, first, row, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues]
+  simp [clauses, first, row, SpaceSemantics.matchValue.matchValues]
 
 /-- Equation preservation does not excuse a changed raw-argument declaration. -/
 theorem replacing_raw_domain_changes_demand :

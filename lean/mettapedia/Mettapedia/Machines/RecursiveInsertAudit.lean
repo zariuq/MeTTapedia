@@ -1,0 +1,24 @@
+import Mettapedia.Machines.RecursiveInsertRegion
+import Mettapedia.Machines.RecursiveInsertIncremental
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Module-owned audit of recursive insertion, delta closure and qualified
+observations. Runtime counterparts are inventoried separately from proofs. -/
+
+#print axioms Mettapedia.Machines.RecursiveInsert.handle_potential_lt
+#print axioms Mettapedia.Machines.RecursiveInsert.run_add
+#print axioms Mettapedia.Machines.RecursiveInsert.completed_eq_reference
+#print axioms Mettapedia.Machines.RecursiveInsert.finite_saturation
+#print axioms Mettapedia.Machines.RecursiveInsert.SemiNaive.rounds_eq_iterate
+#print axioms Mettapedia.Machines.RecursiveInsert.completed_answer_count
+#print axioms Mettapedia.Machines.RecursiveInsert.Region.choose_refines
+#print axioms Mettapedia.Machines.RecursiveInsert.Region.choose_minimal
+#print axioms Mettapedia.Machines.RecursiveInsert.Incremental.completedOver_eq_delta
+#print axioms Mettapedia.Machines.RecursiveInsert.Incremental.completedOver_freshMass
+
+#foundation_manifest_module Mettapedia.Machines.RecursiveInsertAgenda
+#foundation_manifest_module Mettapedia.Machines.RecursiveInsertSaturation
+#foundation_manifest_module Mettapedia.Machines.SemiNaiveInsertSaturation
+#foundation_manifest_module Mettapedia.Machines.RecursiveInsertObservations
+#foundation_manifest_module Mettapedia.Machines.RecursiveInsertRegion
+#foundation_manifest_module Mettapedia.Machines.RecursiveInsertIncremental

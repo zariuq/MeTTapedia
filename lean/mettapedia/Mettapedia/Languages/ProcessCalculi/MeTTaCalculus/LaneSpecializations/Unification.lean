@@ -204,7 +204,7 @@ def numLayer : TermLayer ℕ ℕ Pat where
   inst := fun σ p => match p with
     | .var k => σ k
     | .lit n => some n
-  inst_isSome := by
+  inst_bound := by
     intro σ p
     cases p <;> simp
   inst_local := by

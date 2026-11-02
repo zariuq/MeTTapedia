@@ -102,14 +102,14 @@ private theorem nullary_matches (label : String) :
 theorem a_equiv_b : ir.semantics.Equiv a b := by
   apply equationInstance_equivalent
   refine ⟨0, EquationInstanceAt.forward (equation := equationAB)
-    (initialBindings := []) (finalBindings := []) equationAB_mem
+    (initialBindings := []) (finalBindings := []) equationAB_mem (by decide)
     (nullary_matches _) (PremisesAt.nil _) ?_⟩
   simp [equationAB, b, applyBindings]
 
 theorem c_equiv_d : ir.semantics.Equiv c d := by
   apply equationInstance_equivalent
   refine ⟨0, EquationInstanceAt.forward (equation := equationCD)
-    (initialBindings := []) (finalBindings := []) equationCD_mem
+    (initialBindings := []) (finalBindings := []) equationCD_mem (by decide)
     (nullary_matches _) (PremisesAt.nil _) ?_⟩
   simp [equationCD, d, applyBindings]
 

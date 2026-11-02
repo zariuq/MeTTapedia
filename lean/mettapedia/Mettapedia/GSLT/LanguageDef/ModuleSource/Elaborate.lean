@@ -108,6 +108,8 @@ structure Value where
   presented by a collection constructor. Variadic declarations do not acquire
   this authority merely by satisfying their binary associativity instance. -/
   binaryCollections : List Origin := []
+  /-- The constructors declared bare (`![bare]`). -/
+  declaredBare : List String := []
 
 /-- Why a module does not elaborate. -/
 inductive Error where
@@ -177,7 +179,8 @@ def joinValues (left right : Value) : Except Error Value := do
   let entries ← joinEntries left.entries right.entries
   pure { entries, exports := (left.exports ++ right.exports).eraseDups,
          instanceOf := (left.instanceOf ++ right.instanceOf).eraseDups,
-         binaryCollections := (left.binaryCollections ++ right.binaryCollections).eraseDups }
+         binaryCollections := (left.binaryCollections ++ right.binaryCollections).eraseDups,
+         declaredBare := (left.declaredBare ++ right.declaredBare).eraseDups }
 
 theorem joinEntries_isSome_iff (first second : List Item) :
     (∃ joined, joinEntries first second = .ok joined) ↔
@@ -578,7 +581,9 @@ def nullaries (value : Value) : List String :=
 def applyBlock (inst : Nat) (value : Value) : Block → Except Error Value
   | .types declarations =>
     add (declarations.map fun declaration => newItem inst .sort declaration.name (.sort declaration))
-  | .terms rules => add (rules.map fun rule => newItem inst .term rule.label (.term rule))
+  | .terms rules bare => do
+      let value ← add (rules.map fun rule => newItem inst .term rule.label (.term rule))
+      pure { value with declaredBare := value.declaredBare ++ bare }
   | .equations rows => add (rows.map fun row =>
       let label := s!"{row.name}@{inst}"
       ⟨⟨inst, row.name⟩, (.equation, label), .equation (Equation.resolveNullary (nullaries value) { row with name := label })⟩)
@@ -890,12 +895,21 @@ def implicitSorts (language : LanguageDef) : List TypeDecl :=
   (used.eraseDups.filter fun sort => !language.types.any (·.name == sort)).map fun sort =>
     ⟨sort, if tokenCategories.contains sort then .tokenRaw else .ast⟩
 
+/-- **Declared representations are kept**: a constructor declared bare (`![bare]`) keeps its bare collections, where
+the shared-carrier protection would keep its label. The protection is for constructors whose representation a module
+does not state. -/
+def keepDeclaredBare (declared : List String) (language : LanguageDef) : LanguageDef :=
+  { language with terms := language.terms.map fun rule =>
+      if declared.contains rule.label then { rule with collectionRepresentation := .bare } else rule }
+
 /-- A value as a `LanguageDef`, its declarations in order, with collection
 algebras declared only after carrier representations have been protected, and the sorts its constructors use and
 nothing declares declared after the declared ones. -/
 def flatten (name : String) (value : Value) : LanguageDef :=
   let binaryLabels := binaryCollectionLabels value
-  let language := declareAlgebras (retainSharedCollectionLabels (flattenRaw name value) binaryLabels) binaryLabels
+  let language := declareAlgebras
+    (keepDeclaredBare value.declaredBare (retainSharedCollectionLabels (flattenRaw name value) binaryLabels))
+    binaryLabels
   { language with «types» := language.types ++ implicitSorts language }
 
 /-- The value of applying a theory to arguments, within a module. -/
@@ -917,5 +931,33 @@ entry is read, as CeTTa's core modules are. -/
 def elaborateTheory (library : List (String × Module)) (module : Module) (path : Path) : Except Error LanguageDef := do
   let (name, value) ← applyTheory library module path []
   pure (flatten name value)
+
+/-! ## Authored names
+
+An elaborated language names itself by its theory's canonical name, `Module.Theory`, and each equation by its label,
+which carries the instance that introduced it (`Assoc@2`): a join of two instances of one theory keeps their
+equations apart by it. A module that writes one language reads back under the names it was written with: the entry's
+name as the module writes it, and each equation under its own name. -/
+
+/-- A value with each equation under the name it was written with. -/
+def authoredNames (value : Value) : Value :=
+  { value with entries := value.entries.map fun item =>
+      match item.body with
+      | .equation row => { item with body := .equation { row with name := item.origin.name } }
+      | _ => item }
+
+/-- **A module's `LanguageDef` under its authored names**: `elaborate`, named as the module writes it. -/
+def elaborateAuthored (library : List (String × Module)) (module : Module) : Except Error LanguageDef := do
+  let some (path, args) := module.entry | throw .noEntry
+  let (_, value) ← applyTheory library module path args
+  pure (flatten (path.foldl (fun name part => if name.isEmpty then part else name ++ "." ++ part) "")
+    (authoredNames value))
+
+/-- **The language of one theory of a module under its authored names**: `elaborateTheory`, named as written. -/
+def elaborateTheoryAuthored (library : List (String × Module)) (module : Module) (path : Path) :
+    Except Error LanguageDef := do
+  let (_, value) ← applyTheory library module path []
+  pure (flatten (path.foldl (fun name part => if name.isEmpty then part else name ++ "." ++ part) "")
+    (authoredNames value))
 
 end Mettapedia.GSLT.LanguageDef.ModuleSource

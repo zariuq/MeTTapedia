@@ -3,11 +3,14 @@ import Mettapedia.Languages.MeTTa.OSLFCore.Atomspace
 /-!
 # MeTTaCore Interpreter State
 
-The 4-register state model from the Meta-MeTTa paper:
+The finite four-register carrier corresponding to Section 3.3 of Meta-MeTTa:
 - **i** (input): Terms to be evaluated
 - **k** (knowledge): Atomspace with equations and type annotations
 - **w** (workspace): Intermediate computation results
 - **o** (output): Final results
+
+Sharing this carrier does not identify the older `RewriteRules` prototype
+with the independent register rules in `MetaMeTTa`.
 
 ## Main Definitions
 
@@ -18,7 +21,7 @@ The 4-register state model from the Meta-MeTTa paper:
 ## References
 
 * Meta-MeTTa paper (Meredith, Goertzel, Warrell, Vandervorst)
-* Section 2: "State structure is a 4-tuple ⟨i, k, w, o⟩"
+* Section 3.3: the input, knowledge, workspace and output registers
 -/
 
 namespace Mettapedia.Languages.MeTTa.OSLFCore

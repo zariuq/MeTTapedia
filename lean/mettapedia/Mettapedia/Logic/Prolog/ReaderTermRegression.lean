@@ -8,6 +8,7 @@ open ReaderOperator ReaderTerm SourceSignature
 reader regressions. The parser itself has no intermediate syntax tree. -/
 inductive Shape where
   | variable (spelling : String) (occurrence : Nat)
+  | nil
   | atom (name : String)
   | integer (value : Int)
   | floatBits (bits : UInt64)
@@ -18,6 +19,7 @@ deriving BEq, Repr
 
 def shape : SourceSignature.Term -> Shape
   | .var identity => .variable identity.spelling identity.occurrence
+  | .const .nil => .nil
   | .const (.atom name) => .atom name
   | .const (.integer value) => .integer value
   | .const (.floatBits bits) => .floatBits bits
@@ -83,7 +85,7 @@ def readShape (source : String) : Option Shape :=
 
 #guard readShape "\"ab\"." == some (.string "ab")
 #guard readShape "`ab`." == some (.compound "[|]" [
-  .integer 97, .compound "[|]" [.integer 98, .atom "[]"]
+  .integer 97, .compound "[|]" [.integer 98, .nil]
 ])
 
 #guard readShape "p(X,X,_,_)." == some (.compound "p" [

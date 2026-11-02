@@ -45,6 +45,19 @@ theorem symbol_returns (fragment : Fragment) (program : Program) (bindings : Sub
     PureReturns fragment program bindings state (.symbol name) state (.symbol name) :=
   from_certificate fragment (BoundCalls.CorePath.symbol_returns program bindings state name)
 
+/-- A data head is not a primitive, so it is not `match` either: it avoids every
+special form. -/
+private theorem data_head_not_form {program : Program} {head : String}
+    (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have notMatch : head ≠ "match" := Eval.ne_match_of_not_known (by
+    simp only [Bool.or_eq_false_iff] at inert
+    exact inert.1.2)
+  intro member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member ordinary
+  tauto
+
 theorem unary_constructor_of_returns (fragment : Fragment) (program : Program) (bindings : Subst)
     (before after : State) (head : String) (expression value : Atom)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
@@ -54,7 +67,9 @@ theorem unary_constructor_of_returns (fragment : Fragment) (program : Program) (
       (.expression [.symbol head, value]) := by
   cases fragment with
   | original => exact Eval.unary_constructor_of_returns program bindings before after head expression value inert ordinary computed
-  | conservative => exact BoundCalls.CorePath.unary_constructor_of_returns program bindings before after head expression value inert ordinary computed
+  | conservative =>
+      exact BoundCalls.CorePath.unary_constructor_of_returns program bindings before after head expression value
+        inert (data_head_not_form inert ordinary) computed
 
 theorem constructor_return (fragment : Fragment) (program : Program) (bindings : Subst)
     (state : State) (head : String) (expressions values : List Atom)
@@ -64,9 +79,10 @@ theorem constructor_return (fragment : Fragment) (program : Program) (bindings :
       PureReturns fragment program bindings state expression state value) expressions values) :
     PureReturns fragment program bindings state (.expression (.symbol head :: expressions)) state
       (.expression (.symbol head :: values)) := by
+  have notForm := data_head_not_form inert ordinary
   cases fragment with
-  | original => exact PureData.constructor_return program bindings state head expressions values inert ordinary computed
-  | conservative => exact BoundCalls.CorePath.constructor_return program bindings state head expressions values inert ordinary computed
+  | original => exact PureData.constructor_return program bindings state head expressions values inert notForm computed
+  | conservative => exact BoundCalls.CorePath.constructor_return program bindings state head expressions values inert notForm computed
 
 theorem case_returns (fragment : Fragment) (program : Program) (bindings bound : Subst)
     (before middle after : State) (expression value body answer : Atom)

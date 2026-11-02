@@ -47,9 +47,16 @@ structure Transfer where
   kind : TransferKind
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
+structure FieldResult where
+  key : Nat
+  region : Option Region
+  writing : Bool
+  deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
+
 inductive Argument where
   | value
   | loan (id : Nat)
+  | maybe (id : Nat)
   | owned (holder : Nat)
   | released (holder : Nat)
   | null
@@ -64,6 +71,7 @@ structure State where
   nullResult : Bool := false
   resultWriting : Bool := false
   transfers : List Transfer := []
+  fieldResults : List FieldResult := []
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
 def Compatible (a b : Loan) : Prop :=
@@ -165,6 +173,8 @@ inductive Action where
   | handoff (holder family : Nat)
   | result (id : Nat) (region : Region) (writing : Bool)
   | nullResult
+  | fieldResult (key id : Nat) (region : Region) (writing : Bool)
+  | nullFieldResult (key : Nat)
   | invoke (name : String) (arguments : List Argument)
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
@@ -249,12 +259,20 @@ def transition (s : State) : Action → Option State
   | .nullResult => do
       require (s.result.isNone && s.ownedResult.isNone && !s.nullResult)
       pure { s with nullResult := true }
+  | .fieldResult key id region writing => do
+      require (!(s.fieldResults.any fun r => r.key == key))
+      require (decide (Access s.loans id region writing))
+      require (s.allocations.any fun a => a.root == region.root && (a.origin == .input || a.origin == .static))
+      pure { s with fieldResults := s.fieldResults ++ [⟨key, some region, writing⟩] }
+  | .nullFieldResult key => do
+      require (!(s.fieldResults.any fun r => r.key == key))
+      pure { s with fieldResults := s.fieldResults ++ [⟨key, none, false⟩] }
   | .invoke name _ => do
       require (!name.isEmpty)
       pure s
 
 def requiresValidation : Action → Bool
-  | .access .. | .view .. | .result .. | .nullResult | .invoke .. => false
+  | .access .. | .view .. | .result .. | .nullResult | .fieldResult .. | .nullFieldResult .. | .invoke .. => false
   | _ => true
 
 def apply (s : State) (action : Action) : Option State :=
@@ -307,6 +325,16 @@ theorem metadata_preserves_valid {s after : State} {a : Action}
     obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp h
     have equal := Option.some.inj same
     subst after
+    exact valid
+  case fieldResult key id region writing =>
+    obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+    obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp rest
+    cases Option.some.inj same
+    exact valid
+  case nullFieldResult key =>
+    obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp h
+    cases Option.some.inj same
     exact valid
   case invoke name arguments =>
     obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp h

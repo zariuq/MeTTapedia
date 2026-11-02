@@ -887,28 +887,46 @@ theorem RootedFamilyDecodingInputs.represents
 
 /-! ## Finite exhaustive-witness candidate generation -/
 
-/-- A simple well-founded physical profile: every present prefix points to a
-strictly earlier node occurrence.  This is stronger than mere graph
-acyclicity, but it is executable and makes the initial completeness proof use
-the public array order as its decreasing measure. -/
-def prefixIndexDecreases (choice : Choice) : Bool :=
+/-- Recursive intermediate prefixes decrease in physical index. Symbol nodes
+can acquire later alternatives, so their first prefix only needs to be a
+valid array index; they are not recursive prefix witnesses. -/
+def prefixIndexDecreases (view : ForestView) (choice : Choice) : Bool :=
   match choice.prefixNode with
   | none => true
-  | some prefixIndex => decide (prefixIndex < choice.parent)
+  | some prefixIndex => decide (prefixIndex < view.nodes.length) &&
+      match view.nodes[choice.parent]? with
+      | some node => match node.kind with
+        | .intermediate _ _ => decide (prefixIndex < choice.parent)
+        | _ => true
+      | none => false
 
 def validatePrefixIndexOrder (view : ForestView) : Bool :=
-  view.choices.all prefixIndexDecreases
+  view.choices.all (prefixIndexDecreases view)
 
 theorem validatePrefixIndexOrder_sound
     {view : ForestView}
     (accepted : validatePrefixIndexOrder view = true) :
     ∀ choice, choice ∈ view.choices →
       ∀ prefixIndex, choice.prefixNode = some prefixIndex →
-        prefixIndex < choice.parent := by
+        prefixIndex < view.nodes.length := by
   intro choice choiceMember prefixIndex prefixExact
   have decreases := (List.all_eq_true.mp accepted) choice choiceMember
-  simp [prefixIndexDecreases, prefixExact] at decreases
-  exact decreases
+  simp only [prefixIndexDecreases, prefixExact, Bool.and_eq_true, decide_eq_true_eq] at decreases
+  exact decreases.1
+
+theorem validatePrefixIndexOrder_intermediate
+    {view : ForestView}
+    (accepted : validatePrefixIndexOrder view = true) :
+    ∀ choice, choice ∈ view.choices →
+      ∀ node, view.nodes[choice.parent]? = some node →
+      ∀ production dot, node.kind = .intermediate production dot →
+      ∀ prefixIndex, choice.prefixNode = some prefixIndex →
+        prefixIndex < choice.parent := by
+  intro choice choiceMember node nodeAt production dot kind prefixIndex prefixExact
+  have decreases := (List.all_eq_true.mp accepted) choice choiceMember
+  simp only [prefixIndexDecreases, prefixExact, nodeAt, kind,
+    Bool.and_eq_true, decide_eq_true_eq] at decreases
+  exact decreases.2
 
 /-- Enumerate every finite prefix witness allowed by the physical choice
 table up to `fuel`.  The semantic decoder remains authoritative: malformed
@@ -987,6 +1005,23 @@ flattened forest under the decreasing-index profile. -/
 theorem cyclic_prefix_order_rejected :
     validatePrefixIndexOrder cyclicPrefixCanary = false := by
   decide
+
+/-- A symbol can acquire a later prefix when a new alternative completes.
+Only intermediate-prefix recursion needs decreasing physical indices. -/
+theorem later_symbol_prefix_allowed :
+    validatePrefixIndexOrder {
+      cyclicPrefixCanary with
+      nodes := [{cyclicPrefixCanary.nodes[0] with kind := .symbol 0},
+                cyclicPrefixCanary.nodes[0]]
+      choices := [{cyclicPrefixCanary.choices[0] with prefixNode := some 1}]
+    } = true := by decide
+
+theorem absent_symbol_prefix_rejected :
+    validatePrefixIndexOrder {
+      cyclicPrefixCanary with
+      nodes := [{cyclicPrefixCanary.nodes[0] with kind := .symbol 0}]
+      choices := [{cyclicPrefixCanary.choices[0] with prefixNode := some 1}]
+    } = false := by decide
 
 /-! ## Positive and negative controls -/
 

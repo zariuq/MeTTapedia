@@ -114,7 +114,7 @@ theorem helper_supported (helper : Helper) : ownedHeads helper.head = true := by
 theorem helper_clause (runtime : Program) (agreement : ProgramAgreementOn ownedHeads sourceProgram runtime)
     (helper : Helper) (values : List Atom) (length : values.length = helper.names.length) :
     clauses runtime helper.head values = [.evaluate (callEnvironment helper values) (equation helper).body] := by
-  rw [← agreement.bodies helper.head values (helper_supported helper)]
+  apply PureData.selected_clause_agreement agreement (helper_supported helper)
   exact PureData.named_equation_clause sourceProgram helper.head (equation helper) helper.names values
     (by cases helper <;> rfl) (by cases helper <;> decide +kernel) (by cases helper <;> decide) length
 

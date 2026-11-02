@@ -7,15 +7,19 @@ import Mettapedia.Languages.C11.IntegerProfiles
 N1570 6.3.1.8 extends the integer common type of `UsualIntegerConversions`:
 when either operand has floating type, the common real type is the floating
 type of greater rank, and a complex operand makes the common type complex
-with that real type. ISO/IEC TS 18661-3 adds interchange types (`_Float32`,
-`_Float64`, `_Float128`) and extended types (`_Float32x`, `_Float64x`).
-Floating ranks follow the value sets, which a profile names by significand
-precision; at an equal value set an interchange type ranks above the
-standard type, which ranks above an extended type, and among standard types
-`float` < `double` < `long double` even when formats coincide (6.3.1.8).
+with that real type. ISO/IEC TS 18661-3 adds interchange types (`_Float16`,
+`_Float32`, `_Float64`, `_Float128`) and extended types (`_Float32x`,
+`_Float64x`); GCC and Clang add `__bf16`, the bfloat16 format, as an
+extended type. Floating ranks follow significand precision; at an equal
+precision an interchange type ranks above the standard type, which ranks
+above an extended type, and among standard types `float` < `double` <
+`long double` even when formats coincide (6.3.1.8). Precision orders the
+value sets of every pair except `_Float16` and `__bf16`, whose value sets
+are incomparable (bfloat16 has `float`'s exponent range); both compilers
+convert that pair to `_Float16`, which the precision order also gives.
 
-`sysvFloating` holds the i386 and x86-64 System V formats: IEEE binary32 and
-binary64, the x87 64-bit-significand extended format for `long double` and
+`sysvFloating` holds the i386 and x86-64 System V formats: IEEE binary16,
+bfloat16, IEEE binary32 and binary64, the x87 64-bit-significand extended format for `long double` and
 `_Float64x`, and IEEE binary128. `windowsFloating` gives `long double` the
 format of `double`. With the ILP32, LP64 and LLP64 integer profiles they are
 the targets of Cesta's elaborated arithmetic, whose tables are kernel-checked
@@ -40,13 +44,15 @@ inductive RealFloatingType where
   | float128
   | float32x
   | float64x
+  | float16
+  | bfloat16
   deriving DecidableEq, Repr
 
 /-- TS 18661-3 tiers at an equal value set: interchange, standard, extended. -/
 def RealFloatingType.tier : RealFloatingType → Nat
-  | .float32 | .float64 | .float128 => 2
+  | .float16 | .float32 | .float64 | .float128 => 2
   | .float | .double | .longDouble => 1
-  | .float32x | .float64x => 0
+  | .float32x | .float64x | .bfloat16 => 0
 
 /-- 6.3.1.8: the standard order, which decides between standard types that
     share a format. -/
@@ -72,6 +78,8 @@ def FloatingProfile.rank (profile : FloatingProfile) (type : RealFloatingType) :
   type.rankKey profile.precision
 
 def sysvFloatingPrecision : RealFloatingType → Nat
+  | .bfloat16 => 8
+  | .float16 => 11
   | .float | .float32 => 24
   | .double | .float64 | .float32x => 53
   | .longDouble | .float64x => 64
@@ -86,6 +94,8 @@ def sysvFloating : FloatingProfile where
     cases first <;> cases second <;> decide
 
 def windowsFloatingPrecision : RealFloatingType → Nat
+  | .bfloat16 => 8
+  | .float16 => 11
   | .float | .float32 => 24
   | .double | .longDouble | .float64 | .float32x => 53
   | .float64x => 64
@@ -198,10 +208,12 @@ def allIntegerTypes : List (IntegerType IntegerExtension) :=
       .extended .int128].flatMap fun family => [.signed family, .unsigned family])
 
 def allRealFloatingTypes : List RealFloatingType :=
-  [.float, .double, .longDouble, .float32, .float64, .float128, .float32x, .float64x]
+  [.float, .double, .longDouble, .float32, .float64, .float128, .float32x, .float64x, .float16, .bfloat16]
 
+/-- The arithmetic types of C on this profile; GCC and Clang have no complex `__bf16`. -/
 def allLP64Arithmetic : List LP64Arithmetic :=
-  allIntegerTypes.map .integer ++ allRealFloatingTypes.map .real ++ allRealFloatingTypes.map .complex
+  allIntegerTypes.map .integer ++ allRealFloatingTypes.map .real ++
+    (allRealFloatingTypes.filter (· != .bfloat16)).map .complex
 
 /-- The integer common type is already promoted, in every pair of this profile. -/
 theorem lp64_usual_integer_promoted :
@@ -244,6 +256,17 @@ example : lp64UsualArithmetic (.real .longDouble) (.real .float64x) = .real .lon
 
 /-- A larger value set wins regardless of tier. -/
 example : lp64UsualArithmetic (.real .longDouble) (.real .float128) = .real .float128 := by decide
+
+/-- `_Float16` takes `float`'s rank only from `float`'s larger precision... -/
+example : lp64UsualArithmetic (.real .float16) (.real .float) = .real .float := by decide
+
+/-- ...and an integer operand converts to `_Float16` rather than widening it. -/
+example : lp64UsualArithmetic (.integer .int) (.real .float16) = .real .float16 := by decide
+
+/-- `_Float16` and `__bf16` have incomparable value sets; the common type is `_Float16`,
+    not `__bf16`, as GCC and Clang convert. -/
+example : lp64UsualArithmetic (.real .bfloat16) (.real .float16) = .real .float16 := by decide
+example : lp64UsualArithmetic (.real .bfloat16) (.real .float16) ≠ .real .bfloat16 := by decide
 
 /-- A complex operand keeps the result complex with the common real type. -/
 example : lp64UsualArithmetic (.complex .float) (.real .double) = .complex .double := by decide

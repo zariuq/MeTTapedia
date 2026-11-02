@@ -1,4 +1,5 @@
 import Mettapedia.Computability.KolmogorovComplexity.CompressiveFeature
+import Mettapedia.Computability.KolmogorovComplexity.FeaturePredicates
 
 /-!
 # Feature minima over the common conditional-machine foundation
@@ -26,21 +27,6 @@ from a practical learner's decreasing encoded cost.
 namespace KolmogorovComplexity.FeatureTheory
 
 open scoped Classical
-
-def DescriptiveMap (U : ConditionalAlgorithm) (feature descriptive source : BinString) : Prop :=
-  ∃ residual, residual ∈ U descriptive source ∧ source ∈ U feature residual ∧
-    feature.length + residual.length < source.length
-
-def Feature (U : ConditionalAlgorithm) (feature source : BinString) : Prop :=
-  ∃ descriptive, DescriptiveMap U feature descriptive source
-
-def ShortestFeature (U : ConditionalAlgorithm) (feature source : BinString) : Prop :=
-  Feature U feature source ∧ ∀ other, Feature U other source → feature.length ≤ other.length
-
-def ShortestDescriptiveMap (U : ConditionalAlgorithm)
-    (feature descriptive source : BinString) : Prop :=
-  DescriptiveMap U feature descriptive source ∧
-    ∀ other, DescriptiveMap U feature other source → descriptive.length ≤ other.length
 
 theorem step_feature {U : ConditionalAlgorithm} {source : BinString}
     (step : CompressionStep U source) : Feature U step.featureProgram source :=

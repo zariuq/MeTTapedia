@@ -471,7 +471,7 @@ theorem equationInstance_preservesClaim {base : BasePremiseEvaluator}
     PreservesClaim redex contractum := by
   obtain ⟨fuel, located⟩ := authored
   cases located with
-  | @forward equation _ _ initial final membership matched premises applied =>
+  | @forward equation _ _ initial final membership _ matched premises applied =>
       rcases mem_historyEquations membership with rfl | ⟨rule, inRules, rfl⟩ |
         ⟨rule, inRules, rfl⟩
       · cases premises
@@ -480,7 +480,7 @@ theorem equationInstance_preservesClaim {base : BasePremiseEvaluator}
         exact nowLaw_forward inRules matched applied
       · cases premises
         exact flagLaw_forward matched applied
-  | @reverse equation _ _ initial final membership matched premises applied =>
+  | @reverse equation _ _ initial final membership _ matched premises applied =>
       rcases mem_historyEquations membership with rfl | ⟨rule, inRules, rfl⟩ |
         ⟨rule, inRules, rfl⟩
       · cases premises
@@ -489,6 +489,9 @@ theorem equationInstance_preservesClaim {base : BasePremiseEvaluator}
         exact nowLaw_reverse inRules matched applied
       · cases premises
         exact flagLaw_reverse matched applied
+  | declared membership notRaw _ =>
+      rcases mem_historyEquations membership with rfl | ⟨rule, inRules, rfl⟩ | ⟨rule, inRules, rfl⟩ <;>
+        rw [readsRaw_of_none rfl] at notRaw <;> cases notRaw
 
 /-! ## Equation steps in context preserve the claim -/
 
@@ -632,7 +635,7 @@ theorem historyStep_now (base : BasePremiseEvaluator) {configuration next : Patt
   refine EquationContextStep.inContext .hole (Or.inl ⟨0, ?_⟩)
   exact EquationInstanceAt.forward (equation := nowLaw rule) (initialBindings := bindings)
     (finalBindings := bindings)
-    (List.Mem.tail _ (List.mem_append_left _ (List.mem_map_of_mem inRules)))
+    (List.Mem.tail _ (List.mem_append_left _ (List.mem_map_of_mem inRules))) (readsRaw_of_none rfl)
     (mem_matchPattern_apply_one.mpr ⟨configuration, rfl, matched⟩)
     (PremisesAt.nil bindings)
     (by
@@ -652,7 +655,7 @@ theorem historyStep_flag (base : BasePremiseEvaluator) {configuration next : Pat
   refine EquationContextStep.inContext .hole (Or.inl ⟨0, ?_⟩)
   exact EquationInstanceAt.reverse (equation := flagLaw rule) (initialBindings := bindings)
     (finalBindings := bindings)
-    (List.Mem.tail _ (List.mem_append_right _ (List.mem_map_of_mem inRules)))
+    (List.Mem.tail _ (List.mem_append_right _ (List.mem_map_of_mem inRules))) (readsRaw_of_none rfl)
     (mem_matchPattern_apply_one.mpr ⟨configuration, rfl, matched⟩)
     (PremisesAt.nil bindings)
     (by
@@ -667,7 +670,7 @@ theorem historyStep_halted (base : BasePremiseEvaluator) (output : List ℕ) :
   refine EquationContextStep.inContext .hole (Or.inl ⟨0, ?_⟩)
   exact EquationInstanceAt.forward (equation := haltLaw)
     (initialBindings := [("w", encNats output)]) (finalBindings := [("w", encNats output)])
-    (List.Mem.head _)
+    (List.Mem.head _) (readsRaw_of_none rfl)
     (mem_matchPattern_apply_one.mpr ⟨_, rfl,
       mem_matchPattern_apply_one.mpr ⟨_, rfl, matchRel_complete MatchRel.fvar⟩⟩)
     (PremisesAt.nil _)

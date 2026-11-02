@@ -8,6 +8,8 @@ import Mettapedia.GSLT.LanguageDef.ModuleSource.AlgebraExtractionControls
 import Mettapedia.GSLT.LanguageDef.ModuleSource.Printer
 import Mettapedia.GSLT.LanguageDef.ModuleSource.Commands
 import Mettapedia.GSLT.LanguageDef.ModuleSource.Controls
+import Mettapedia.GSLT.LanguageDef.ModuleSource.FaithfulSpellingControls
+import Mettapedia.GSLT.LanguageDef.ModuleSource.QuotedVariableControls
 import Mettapedia.GSLT.LanguageDef.ModuleSource.LbnfDecode
 import Mettapedia.GSLT.LanguageDef.ModuleSource.IndexedNatVecSource
 import Mettapedia.GSLT.LanguageDef.ModuleSource.IndexedNatVecSourceControls

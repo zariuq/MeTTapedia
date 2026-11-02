@@ -1162,6 +1162,24 @@ theorem applyBindings_mapCostStatic (source : CIGSLT)
       | some restName =>
           simp [schemaInstantiationStable, schemaHasNoCollectionRest] at stable
 
+/-- Every generated Cost equation declares no binder dependency, so the
+ordinary matcher reads it. -/
+theorem costWholeLanguage_readsRaw (source : WrappableIGSLT) :
+    ∀ equation ∈ source.costWholeLanguage.equations,
+      EquationSemantics.readsRaw equation = true := by
+  intro generated membership
+  rw [WrappableIGSLT.costWholeLanguage_equations, WrappableIGSLT.costStaticEquations_def,
+    List.mem_append] at membership
+  rcases membership with base | wrapped
+  · obtain ⟨equation, sourceMembership, rfl⟩ := List.mem_map.mp base
+    exact EquationSemantics.readsRaw_of_none (by
+      simp [costBaseEquationDecl, mapEquationSchemaNames, costBaseEquation, mapEquation,
+        (source.equationsRetypable equation sourceMembership).undeclared])
+  · obtain ⟨equation, sourceMembership, rfl⟩ := List.mem_map.mp wrapped
+    exact EquationSemantics.readsRaw_of_none (by
+      simp [costWrappedEquationDecl, mapEquationSchemaNames, costWrappedEquation, mapEquation,
+        (source.equationsRetypable equation sourceMembership).undeclared])
+
 /-- One premise-free source equation instance transports to either generated
 static Cost fiber.  Matching, repeated-variable equality, schema coverage,
 and binder-eliminating substitution are all transported by the preceding
@@ -1175,7 +1193,7 @@ theorem equationInstanceAt_mapCostStatic (source : CIGSLT)
       (mapPattern (color.symbols source) input)
       (mapPattern (color.symbols source) output) := by
   cases derivation with
-  | @forward equation _ _ initialBindings finalBindings equationMembership
+  | @forward equation _ _ initialBindings finalBindings equationMembership _
       matchMembership premises application =>
       have retypable :=
         source.equationsRetypable equation equationMembership
@@ -1210,6 +1228,11 @@ theorem equationInstanceAt_mapCostStatic (source : CIGSLT)
               source.costStaticEquations
             exact costStaticEquationDecl_mem source color equation
               equationMembership
+          · exact EquationSemantics.readsRaw_of_none (by
+              cases color <;>
+                simp [costStaticEquationDecl, costBaseEquationDecl, costWrappedEquationDecl,
+                  mapEquationSchemaNames, costBaseEquation, costWrappedEquation, mapEquation,
+                  retypable.undeclared])
           · simpa only [costStaticEquationDecl_left] using
               mappedMatchMembership
           · rw [costStaticEquationDecl_premises _ _ _
@@ -1228,7 +1251,7 @@ theorem equationInstanceAt_mapCostStatic (source : CIGSLT)
               _ = mapPattern (color.symbols source) output :=
                 congrArg (mapPattern (color.symbols source)) application
 
-  | @reverse equation _ _ initialBindings finalBindings equationMembership
+  | @reverse equation _ _ initialBindings finalBindings equationMembership _
       matchMembership premises application =>
       have retypable :=
         source.equationsRetypable equation equationMembership
@@ -1261,6 +1284,11 @@ theorem equationInstanceAt_mapCostStatic (source : CIGSLT)
               source.costStaticEquations
             exact costStaticEquationDecl_mem source color equation
               equationMembership
+          · exact EquationSemantics.readsRaw_of_none (by
+              cases color <;>
+                simp [costStaticEquationDecl, costBaseEquationDecl, costWrappedEquationDecl,
+                  mapEquationSchemaNames, costBaseEquation, costWrappedEquation, mapEquation,
+                  retypable.undeclared])
           · simpa only [costStaticEquationDecl_right] using
               mappedMatchMembership
           · rw [costStaticEquationDecl_premises _ _ _
@@ -1277,6 +1305,10 @@ theorem equationInstanceAt_mapCostStatic (source : CIGSLT)
                   equation.left retypable.leftInstantiationStable leftCovered
               _ = mapPattern (color.symbols source) output :=
                 congrArg (mapPattern (color.symbols source)) application
+  | @declared equation _ _ _ _ equationMembership notRaw _ =>
+      rw [EquationSemantics.readsRaw_of_none
+        (source.equationsRetypable equation equationMembership).undeclared] at notRaw
+      cases notRaw
 
 /-- Existential premise depth is preserved by either generated static
 embedding. -/

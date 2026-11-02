@@ -30,9 +30,16 @@ def cell : String := "mm0-inference-cache"
 def row (terms context expression value : Atom) : Atom :=
   .expression [terms, context, expression, value]
 
+/-- The cached answers for a key: the value of every stored row whose first three
+fields are the key, in row order. This is what the pinned `match` on
+`($terms $ctx $expression $value)` answers with the three key variables bound: a
+bound variable tests its field for equality (`cache_rows_query`). -/
 def query (entries : List Atom) (terms context expression : Atom) : List Atom :=
-  SpaceSemantics.query entries
-    (.expression [terms, context, expression, .var "value"]) (.var "value")
+  entries.filterMap fun stored =>
+    match stored with
+    | .expression [t, c, e, value] =>
+        if t = terms ∧ c = context ∧ e = expression then some value else none
+    | _ => none
 
 /-! ## The concrete representation of a coherent cache -/
 
@@ -59,21 +66,19 @@ structure Valid (signature : Kernel.TermSignature) (terms : Atom) (entries : Lis
   coherent : Mettapedia.GSLT.Dynamics.MemoizationObserver.Coherent id
     (observation signature) (table entries terms)
 
-theorem key_query_one_row (terms : Atom) (literal : SpaceSemantics.Literal terms)
+theorem key_query_one_row (terms : Atom) (_literal : SpaceSemantics.Literal terms)
     (wanted recorded : Key) (value : Atom) :
     keyQuery [row terms (Data.context recorded.1) (Data.preterm recorded.2) value] terms wanted =
       if wanted = recorded then [value] else [] := by
-  simp only [keyQuery, query, row, SpaceSemantics.query, List.filterMap_cons, List.filterMap_nil]
-  rw [SpaceSemantics.matchValue_expression_of_not_cons [] _ _ (by intro first rest; simp)]
-  simp only [SpaceSemantics.matchValue.matchValues,
-    SpaceSemantics.matchValue_literal literal,
-    SpaceSemantics.matchValue_literal (Data.context_literal wanted.1),
-    SpaceSemantics.matchValue_literal (Data.preterm_literal wanted.2), ↓reduceIte]
-  by_cases sameContext : wanted.1 = recorded.1 <;>
-    by_cases sameExpression : wanted.2 = recorded.2 <;>
-    simp [sameContext, sameExpression, Data.context_injective.eq_iff,
-      Data.preterm_injective.eq_iff, Prod.ext_iff,
-      SpaceSemantics.matchValue, matchAtom, applySubst, Subst.lookup]
+  by_cases same : wanted = recorded
+  · subst wanted
+    simp [keyQuery, query, row]
+  · have different : ¬ (Data.context recorded.1 = Data.context wanted.1 ∧
+        Data.preterm recorded.2 = Data.preterm wanted.2) := by
+      rintro ⟨contexts, preterms⟩
+      exact same (Prod.ext (Data.context_injective contexts).symm
+        (Data.preterm_injective preterms).symm)
+    simp [keyQuery, query, row, same, different]
 
 theorem key_query_append (entries : List Atom) (terms : Atom)
     (literal : SpaceSemantics.Literal terms) (wanted recorded : Key) (value : Atom) :
@@ -81,15 +86,16 @@ theorem key_query_append (entries : List Atom) (terms : Atom)
         terms wanted =
       keyQuery entries terms wanted ++ (if wanted = recorded then [value] else []) := by
   change query (entries ++ _) terms _ _ = _
-  rw [query, SpaceSemantics.query_append]
+  unfold query
+  rw [List.filterMap_append]
   exact congrArg (keyQuery entries terms wanted ++ ·) (key_query_one_row terms literal wanted recorded value)
 
 theorem empty_valid (signature : Kernel.TermSignature) (terms : Atom) : Valid signature terms [] := by
   constructor
   · exact Effects.rowsHaveArity_nil 4
-  · intro key; simp [keyQuery, query, SpaceSemantics.query]
+  · intro key; simp [keyQuery, query]
   · intro key value stored point same
-    simp [table, keyQuery, query, SpaceSemantics.query] at stored
+    simp [table, keyQuery, query] at stored
 
 theorem Valid.query_cases {signature : Kernel.TermSignature} {terms : Atom} {entries : List Atom}
     (valid : Valid signature terms entries) (key : Key) :
@@ -327,16 +333,74 @@ private theorem cache_cell_returns (state : State) (handle : Handle)
     (show StdLib.apply state "get-state" [.symbol cell] =
       .ok (state, [handleValue handle]) by simp [current])
 
+/-- The pinned query, read row by row, is the cache lookup `query`. -/
+private theorem cache_rows_query (handle : Handle) (terms context expression : Atom)
+    (entries : List Atom) :
+    (entries.filterMap fun stored =>
+      (SpaceSemantics.matchValue (cacheEnvironment handle terms context expression)
+        (.expression [.var "terms", .var "ctx", .var "expression", .var "value"]) stored).map
+        fun bound => applySubst bound (.var "value")) = query entries terms context expression := by
+  unfold query
+  apply List.filterMap_congr
+  intro stored _
+  let env := cacheEnvironment handle terms context expression
+  have test (name : String) (expected field : Atom)
+      (bound : Subst.lookup env name = some expected) :
+      SpaceSemantics.matchValue env (.var name) field =
+        if field = expected then some env else none := by
+    simp [SpaceSemantics.matchValue, matchAtom, bound]
+  have termsBound : Subst.lookup env "terms" = some terms := by
+    simp [env, cacheEnvironment, environment, Subst.lookup]
+  have contextBound : Subst.lookup env "ctx" = some context := by
+    simp [env, cacheEnvironment, environment, Subst.lookup]
+  have expressionBound : Subst.lookup env "expression" = some expression := by
+    simp [env, cacheEnvironment, environment, Subst.lookup]
+  have valueFree : Subst.lookup env "value" = none := by
+    simp [env, cacheEnvironment, environment, Subst.lookup]
+  cases stored with
+  | var name => simp [SpaceSemantics.matchValue]
+  | symbol name => simp [SpaceSemantics.matchValue]
+  | grounded value => simp [SpaceSemantics.matchValue]
+  | expression items =>
+      rw [SpaceSemantics.matchValue_expression_of_not_cons _ _ _
+        (by intro first rest same; simp at same)]
+      rcases items with _ | ⟨t, _ | ⟨c, _ | ⟨e, _ | ⟨value, _ | ⟨extra, rest⟩⟩⟩⟩⟩
+      · simp [SpaceSemantics.matchValue.matchValues]
+      · simp [SpaceSemantics.matchValue.matchValues]
+      · simp [SpaceSemantics.matchValue.matchValues]
+      · simp [SpaceSemantics.matchValue.matchValues]
+      · change ((SpaceSemantics.matchValue.matchValues env
+            [.var "terms", .var "ctx", .var "expression", .var "value"] [t, c, e, value]).map
+            fun bound => applySubst bound (.var "value")) = _
+        simp only [SpaceSemantics.matchValue.matchValues, test "terms" terms t termsBound]
+        by_cases one : t = terms
+        · simp only [one, if_true, Option.bind_eq_bind, Option.bind_some,
+            test "ctx" context c contextBound]
+          by_cases two : c = context
+          · simp only [two, if_true, Option.bind_some, test "expression" expression e expressionBound]
+            by_cases three : e = expression
+            · have valueBind : SpaceSemantics.matchValue env (.var "value") value =
+                  some (("value", value) :: env) := by
+                simp [SpaceSemantics.matchValue, matchAtom, valueFree]
+              simp [three, valueBind, applySubst, Subst.lookup]
+            · simp [three]
+          · simp [two]
+        · simp [one]
+      · simp [SpaceSemantics.matchValue.matchValues]
+
 private theorem found_returns (state : State) (handle : Handle) (entries : List Atom)
     (terms context expression : Atom) (allocated : state.read handle = some entries) :
     PureReturns program (cacheEnvironment handle terms context expression) state
       (.expression [.symbol "collapse", .expression [.symbol "match", .var "cache",
         .expression [.var "terms", .var "ctx", .var "expression", .var "value"],
         .var "value"]]) state (.expression (query entries terms context expression)) := by
-  apply match_collapse_returns program (cacheEnvironment handle terms context expression)
-    state state "cache" _ _ (query entries terms context expression)
-  simp [cacheEnvironment, environment, applySubst, applySubst.applySubstList,
-    Subst.lookup, allocated, query]
+  have collected := match_collapse_returns program (cacheEnvironment handle terms context expression)
+    state "cache" (.expression [.var "terms", .var "ctx", .var "expression", .var "value"])
+    (.var "value") entries
+    (by simp [cacheEnvironment, environment, applySubst, Subst.lookup, allocated])
+    (fun bound => applySubst bound (.var "value"))
+    (fun _ bound _ => variable_returns program bound state "value")
+  rwa [cache_rows_query handle terms context expression entries] at collected
 
 private theorem body_returns_from_query (before after : State) (handle : Handle)
     (entries : List Atom) (terms context expression answer : Atom)

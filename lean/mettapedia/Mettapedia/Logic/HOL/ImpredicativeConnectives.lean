@@ -1,4 +1,5 @@
 import Mettapedia.Logic.HOL.Soundness
+import Mettapedia.Logic.HOL.Syntax.TypeSubstitution
 
 /-!
 # Impredicative elimination of derived HOL connectives
@@ -67,6 +68,19 @@ def expand : {Γ : Ctx Base} → {τ : Ty Base} → Term Const Γ τ → Term Co
   | _, _, .eq p q => .eq (expand p) (expand q)
   | _, _, .all b => .all (expand b)
   | _, _, @Term.ex _ _ σ _ b => .app (existential σ) (.lam (expand b))
+
+theorem mapConst_expand {Symbols : Ty Base → Type w}
+    (constants : ∀ {type}, Const type → Symbols type) (term : Term Const Γ τ) :
+    HOL.mapConst constants (expand term) = expand (HOL.mapConst constants term) := by
+  induction term <;>
+    simp_all [expand, HOL.mapConst, truth, falsity, conjunction, disjunction, existential]
+
+theorem mapTypes_expand {Target : Type*} {Symbols : Ty Target → Type w}
+    (types : Base → Ty Target) (constants : ∀ {type}, Const type → Symbols (Ty.substitute types type))
+    (term : Term Const Γ τ) :
+    HOL.mapTypes types constants (expand term) = expand (HOL.mapTypes types constants term) := by
+  induction term <;>
+    simp_all [expand, HOL.mapTypes, truth, falsity, conjunction, disjunction, existential, Var.mapTypes] <;> rfl
 
 /-- The expansion introduces logical operators but no new signature symbols. -/
 theorem noConstOccurrence_expand {σ : Ty Base} {constant : Const σ}

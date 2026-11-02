@@ -1,4 +1,6 @@
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.ComputedNormalForm
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks
+import Mettapedia.GSLT.LanguageDef.RestrictionBlocks.Typed
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Certificates
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredStepReflection
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredSemantics
@@ -9,11 +11,13 @@ import Mettapedia.OSLF.MeTTaIL.GeneralPremiseCanonicalProjection
 # Canonical forms for the π-calculus
 
 The π-calculus of the tree (`piCalc`) composes processes in parallel in a bag that declares the flattening
-algebra with inaction as its unit, and it has one sort. Its canonical forms are the bag normal form on closed
-processes (`AlgebraForms.canonical`).
+algebra with inaction as its unit, and it has one sort. Its parallel fragment (`piParallelFragment`: the same
+rules, without the restriction laws) has as canonical forms the bag normal form on closed processes
+(`AlgebraForms.canonical`). `piCalc`'s restriction laws identify more processes, so these are not its canonical
+forms.
 
 **A step from any process is matched by a step from its normal form**, to a result with the same normal form
-(`simulation`). The steps are read through the occurrence specification of the four rules (`PiRawStep`):
+(`simulation`). The steps are read through the occurrence specification of the three rules (`PiRawStep`):
 - a communication finds its input and its output among the components of the normal form, with normalized
   parts, and the normal form commutes with substitution (`AlgebraForms.normalForm_instantiateBVar`);
 - a step inside a component whose normal form is a bag becomes a step of the flattened bag, with the other
@@ -34,7 +38,12 @@ open Mettapedia.OSLF.MeTTaIL.PatternCode (sortPatterns)
 open Mettapedia.GSLT.LanguageDef.BagNormalForm
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.MeTTaIL.GeneralPremise (instantiateBVarAt_objects instantiateBVarAt_canonical)
-open Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance (PiRawStep piCalc piBagTheory)
+open Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance
+  (PiRawStep piCalc piBagPresentation piParallelFragment piParallelBagTheory params_of_label category_of_member
+    restriction_typed)
+open Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks (piBlock)
+open Mettapedia.OSLF.MeTTaIL.ContextualStep (BasePremiseEvaluator)
+open Mettapedia.GSLT.LanguageDef (defaultBasePremises)
 open Mettapedia.OSLF.NativeTypes.GeneratedLogic.AlgebraForms (Structural normalForm_instantiateBVar
   normalForm_idempotent contents_normalizeBag normalizeBag_single contents_map_structural)
 
@@ -129,7 +138,6 @@ theorem unit_stuck {target : Pattern} : ¬ PiRawStep (.apply "PiNil" []) target 
   generalize sourceIs : Pattern.apply "PiNil" [] = source at step
   cases step with
   | comm => cases sourceIs
-  | repComm => cases sourceIs
   | par => cases sourceIs
   | res => simp at sourceIs
 
@@ -150,19 +158,6 @@ theorem frame {elements : List Pattern} {tail : Option String} {target : Pattern
     have eraseSecond : ((elements ++ others).eraseIdx i).eraseIdx j = (elements.eraseIdx i).eraseIdx j ++ others := by
       rw [eraseFirst, List.eraseIdx_append_of_lt_length hj others]
     have fired := PiRawStep.comm (elements := elements ++ others) (tail := none) i hi' j hj' channel binder body
-      datum ((List.getElem_append_left hi).trans input)
-      (((List.getElem_of_eq eraseFirst hj').trans (List.getElem_append_left hj)).trans output)
-    rw [eraseSecond] at fired
-    simpa using fired
-  | repComm i hi j hj channel binder body datum input output =>
-    refine ⟨_, rfl, fun others => ?_⟩
-    have hi' : i < (elements ++ others).length := by simp; omega
-    have eraseFirst : (elements ++ others).eraseIdx i = elements.eraseIdx i ++ others :=
-      List.eraseIdx_append_of_lt_length hi others
-    have hj' : j < ((elements ++ others).eraseIdx i).length := by rw [eraseFirst]; simp; omega
-    have eraseSecond : ((elements ++ others).eraseIdx i).eraseIdx j = (elements.eraseIdx i).eraseIdx j ++ others := by
-      rw [eraseFirst, List.eraseIdx_append_of_lt_length hj others]
-    have fired := PiRawStep.repComm (elements := elements ++ others) (tail := none) i hi' j hj' channel binder body
       datum ((List.getElem_append_left hi).trans input)
       (((List.getElem_of_eq eraseFirst hj').trans (List.getElem_append_left hj)).trans output)
     rw [eraseSecond] at fired
@@ -188,12 +183,6 @@ theorem reorder {elements other components : List Pattern} {tail : Option String
     obtain ⟨i', hi', j', hj', atInput, atOutput, restPerm⟩ := exists_two_indices_of_perm (selected.symm.trans perm).symm
     exact ⟨_, PiRawStep.comm (tail := none) i' hi' j' hj' channel binder body datum atInput atOutput,
       restPerm.cons _⟩
-  | repComm i hi j hj channel binder body datum input output =>
-    have selected := perm_two_selected elements i hi j hj
-    rw [input, output] at selected
-    obtain ⟨i', hi', j', hj', atInput, atOutput, restPerm⟩ := exists_two_indices_of_perm (selected.symm.trans perm).symm
-    exact ⟨_, PiRawStep.repComm (tail := none) i' hi' j' hj' channel binder body datum atInput atOutput,
-      (restPerm.append_left _)⟩
   | par i hi inner =>
     obtain ⟨i', hi', atSelected, restPerm⟩ :=
       exists_index_of_perm ((perm_getElem_eraseIdx elements i hi).symm.trans perm).symm
@@ -215,15 +204,17 @@ theorem element_object {kind : CollType} {elements : List Pattern} {tail : Optio
 /-- The components of a bag in which a communication fires: its two partners, normalized, and the contents of
 the rest. -/
 theorem contents_of_selected {elements rest : List Pattern} {first second : Pattern}
-    (perm : elements.Perm (first :: second :: rest)) (firstLabel : ∃ arguments, nf first = .apply "PiInp" arguments ∨
-      nf first = .apply "PiRep" arguments) (secondLabel : ∃ arguments, nf second = .apply "PiOut" arguments) :
+    (perm : elements.Perm (first :: second :: rest)) (firstLabel : ∃ arguments, nf first = .apply "PiInp" arguments)
+    (secondLabel : ∃ arguments, nf second = .apply "PiOut" arguments) :
     (bagContents "PiNil" (elements.map nf)).Perm (nf first :: nf second :: bagContents "PiNil" (rest.map nf)) := by
   have mapped := bagContents_perm (perm.map nf)
   simp only [List.map_cons] at mapped
   refine mapped.trans ?_
   rw [bagContents_cons, bagContents_cons "PiNil" (nf second)]
-  obtain ⟨firstArguments, firstIs | firstIs⟩ := firstLabel <;> obtain ⟨secondArguments, secondIs⟩ := secondLabel <;>
-    rw [firstIs, secondIs, contents_apply (by decide), contents_apply (by decide)] <;> rfl
+  obtain ⟨firstArguments, firstIs⟩ := firstLabel
+  obtain ⟨secondArguments, secondIs⟩ := secondLabel
+  rw [firstIs, secondIs, contents_apply (by decide), contents_apply (by decide)]
+  rfl
 
 /-- **A step from any object process is matched by a step from its normal form**, to a result with the same
 normal form. -/
@@ -235,7 +226,7 @@ theorem simulation {source target : Pattern} (step : PiRawStep source target) :
     obtain rfl := tail_none object
     have selected := perm_two_selected elements i hi j hj
     rw [input, output] at selected
-    have contents := contents_of_selected selected ⟨_, Or.inl rfl⟩ ⟨_, rfl⟩
+    have contents := contents_of_selected selected ⟨_, rfl⟩ ⟨_, rfl⟩
     simp only [List.map_cons, List.map_nil, normalForm, normalFormList_eq_map] at contents
     have long : 2 ≤ (bagContents "PiNil" (elements.map nf)).length := by
       rw [contents.length_eq]; simp
@@ -247,26 +238,6 @@ theorem simulation {source target : Pattern} (step : PiRawStep source target) :
     simp only [List.map_cons]
     exact contents_cons_congr (normalForm_instantiateBVar "PiNil" datum body).symm
       ((bagContents_perm (restPerm.map nf)).trans (contents_renormal _))
-  | @repComm elements tail i hi j hj channel binder body datum input output =>
-    intro object
-    obtain rfl := tail_none object
-    have selected := perm_two_selected elements i hi j hj
-    rw [input, output] at selected
-    have contents := contents_of_selected selected ⟨_, Or.inr rfl⟩ ⟨_, rfl⟩
-    simp only [List.map_cons, List.map_nil, normalForm, normalFormList_eq_map] at contents
-    have long : 2 ≤ (bagContents "PiNil" (elements.map nf)).length := by
-      rw [contents.length_eq]; simp
-    rw [normalForm_bag_of_long long]
-    obtain ⟨i', hi', j', hj', atInput, atOutput, restPerm⟩ :=
-      exists_two_indices_of_perm ((sortPatterns_perm _).trans contents)
-    refine ⟨_, PiRawStep.repComm (tail := none) i' hi' j' hj' _ binder _ _ atInput atOutput, ?_⟩
-    apply normalForm_bag_congr
-    simp only [List.map_cons, List.cons_append, List.nil_append]
-    have server : nf (.apply "PiRep" [nf channel, .lambda none (nf body)]) =
-        nf (.apply "PiRep" [channel, .lambda none body]) := by
-      simp only [List.map_cons, List.map_nil, normalForm, normalFormList_eq_map, normalForm_idempotent]
-    exact contents_cons_congr (normalForm_instantiateBVar "PiNil" datum body).symm
-      (contents_cons_congr server ((bagContents_perm (restPerm.map nf)).trans (contents_renormal _)))
   | @par elements tail i hi target inner recurse =>
     intro object
     obtain rfl := tail_none object
@@ -348,22 +319,8 @@ theorem simulation {source target : Pattern} (step : PiRawStep source target) :
 
 /-! ## Steps keep processes sorted -/
 
-theorem bareBagTheory : BareBagTheory piCalc piCalc.terms[1] (some "PiNil") := piBagTheory.asBare rfl
-
-/-- The parameters of the π-calculus's constructors, by label. -/
-theorem params_of_label {rule : GrammarRule} (member : rule ∈ piCalc.terms) :
-    (rule.label = "PiInp" →
-      rule.params = [.simple "x" (.base "Proc"), .abstraction "body" (.arrow (.base "Proc") (.base "Proc"))]) ∧
-    (rule.label = "PiRep" →
-      rule.params = [.simple "x" (.base "Proc"), .abstraction "body" (.arrow (.base "Proc") (.base "Proc"))]) ∧
-    (rule.label = "PiOut" → rule.params = [.simple "x" (.base "Proc"), .simple "z" (.base "Proc")]) ∧
-    (rule.label = "PiNu" → rule.params = [.abstraction "body" (.arrow (.base "Proc") (.base "Proc"))]) := by
-  simp only [piCalc, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl | rfl | rfl <;> simp
-
-theorem category_of_member {rule : GrammarRule} (member : rule ∈ piCalc.terms) : rule.category = "Proc" := by
-  simp only [piCalc, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+/-- The parallel constructor is a bare bag of `piCalc`. -/
+theorem piBare : BareBagPresentation piCalc piCalc.terms[1] (some "PiNil") := piBagPresentation.asBare rfl
 
 /-- The typing of a constructor application, rebuilt with arguments typed at the same parameters. -/
 theorem rebuild_apply {free : FreeTypeContext} {bound : List TypeExpr} {label : String}
@@ -379,16 +336,15 @@ theorem rebuild_apply {free : FreeTypeContext} {bound : List TypeExpr} {label : 
 /-- A channel and a binder: the channel has the sort, and the body has it under one more bound variable of
 the sort. -/
 theorem listener_typed {free : FreeTypeContext} {bound : List TypeExpr} {label : String}
-    (listener : label = "PiInp" ∨ label = "PiRep") {channel body : Pattern} {binder : Option String}
+    (listener : label = "PiInp") {channel body : Pattern} {binder : Option String}
     {type : TypeExpr} (typed : HasType piCalc free bound (.apply label [channel, .lambda binder body]) type) :
-    HasType piCalc free bound channel (.base "Proc") ∧
-      HasType piCalc free (.base "Proc" :: bound) body (.base "Proc") := by
+    HasType piCalc free bound channel (.base "Name") ∧
+      HasType piCalc free (.base "Name" :: bound) body (.base "Proc") := by
   obtain ⟨rule, member, labelIs, -, -, arguments⟩ := hasType_apply_inversion typed
   have params : rule.params =
-      [.simple "x" (.base "Proc"), .abstraction "body" (.arrow (.base "Proc") (.base "Proc"))] := by
-    rcases listener with rfl | rfl
-    · exact (params_of_label member).1 labelIs.symm
-    · exact (params_of_label member).2.1 labelIs.symm
+      [.simple "x" (.base "Name"), .abstraction "body" (.arrow (.base "Name") (.base "Proc"))] := by
+    subst listener
+    exact (params_of_label member).1 labelIs.symm
   rw [params] at arguments
   cases arguments with
   | cons _ channelType channelTyped rest =>
@@ -401,7 +357,7 @@ theorem listener_typed {free : FreeTypeContext} {bound : List TypeExpr} {label :
 
 theorem output_typed {free : FreeTypeContext} {bound : List TypeExpr} {channel datum : Pattern} {type : TypeExpr}
     (typed : HasType piCalc free bound (.apply "PiOut" [channel, datum]) type) :
-    HasType piCalc free bound channel (.base "Proc") ∧ HasType piCalc free bound datum (.base "Proc") := by
+    HasType piCalc free bound channel (.base "Name") ∧ HasType piCalc free bound datum (.base "Name") := by
   obtain ⟨rule, member, labelIs, -, -, arguments⟩ := hasType_apply_inversion typed
   rw [(params_of_label member).2.2.1 labelIs.symm] at arguments
   cases arguments with
@@ -412,26 +368,13 @@ theorem output_typed {free : FreeTypeContext} {bound : List TypeExpr} {channel d
       subst channelType datumType
       exact ⟨channelTyped, datumTyped⟩
 
-theorem restriction_typed {free : FreeTypeContext} {bound : List TypeExpr} {body : Pattern}
-    {binder : Option String} {type : TypeExpr}
-    (typed : HasType piCalc free bound (.apply "PiNu" [.lambda binder body]) type) :
-    HasType piCalc free (.base "Proc" :: bound) body (.base "Proc") := by
-  obtain ⟨rule, member, labelIs, -, -, arguments⟩ := hasType_apply_inversion typed
-  rw [(params_of_label member).2.2.2 labelIs.symm] at arguments
-  cases arguments with
-  | cons _ bodyType bodyTyped _ =>
-    simp only [parameterType?, Option.some.injEq] at bodyType
-    subst bodyType
-    cases bodyTyped with
-    | lambda inner => exact inner
-
 /-- An admissible bag: no tail, and admissible elements. -/
 theorem bag_elements {free : FreeTypeContext} {bound : List TypeExpr} {elements : List Pattern}
     {tail : Option String}
     (admissible : Admissible piCalc free bound (.base "Proc") (.collection .hashBag elements tail)) :
     tail = none ∧ ∀ element ∈ elements, Admissible piCalc free bound (.base "Proc") element := by
   refine ⟨tail_none admissible.object, fun element member => ⟨?_, ?_, element_object admissible.object member⟩⟩
-  · obtain ⟨-, -, typed⟩ := bag_typing bareBagTheory admissible.typed rfl
+  · obtain ⟨-, -, typed⟩ := bag_typing piBare admissible.typed rfl
     exact elementsHaveType_iff.mp typed element member
   · have canonical := admissible.canonical
     simp only [Pattern.hasCanonicalBinderMetadata, hasCanonicalBinderMetadataList_iff] at canonical
@@ -441,7 +384,7 @@ theorem bag_elements {free : FreeTypeContext} {bound : List TypeExpr} {elements 
 theorem bag_admissible {free : FreeTypeContext} {bound : List TypeExpr} {elements : List Pattern}
     (each : ∀ element ∈ elements, Admissible piCalc free bound (.base "Proc") element) :
     Admissible piCalc free bound (.base "Proc") (.collection .hashBag elements none) where
-  typed := bag_hasType bareBagTheory (elementsHaveType_iff.mpr fun element member => (each element member).typed)
+  typed := bag_hasType piBare (elementsHaveType_iff.mpr fun element member => (each element member).typed)
   canonical := by
     simp only [Pattern.hasCanonicalBinderMetadata, hasCanonicalBinderMetadataList_iff]
     exact fun element member => (each element member).canonical
@@ -463,7 +406,7 @@ theorem binder_parts {free : FreeTypeContext} {bound : List TypeExpr} {label : S
 
 theorem output_parts {free : FreeTypeContext} {bound : List TypeExpr} {channel datum : Pattern}
     (admissible : Admissible piCalc free bound (.base "Proc") (.apply "PiOut" [channel, datum])) :
-    Admissible piCalc free bound (.base "Proc") datum := by
+    Admissible piCalc free bound (.base "Name") datum := by
   have canonical := admissible.canonical
   have object := admissible.object
   simp only [Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList, Bool.and_eq_true] at canonical
@@ -471,8 +414,8 @@ theorem output_parts {free : FreeTypeContext} {bound : List TypeExpr} {channel d
   exact ⟨(output_typed admissible.typed).2, canonical.2.1, object.2.1⟩
 
 theorem instantiate_admissible {free : FreeTypeContext} {bound : List TypeExpr} {body replacement : Pattern}
-    (bodyAdmissible : Admissible piCalc free (.base "Proc" :: bound) (.base "Proc") body)
-    (replacementAdmissible : Admissible piCalc free bound (.base "Proc") replacement) :
+    (bodyAdmissible : Admissible piCalc free (.base "Name" :: bound) (.base "Proc") body)
+    (replacementAdmissible : Admissible piCalc free bound (.base "Name") replacement) :
     Admissible piCalc free bound (.base "Proc") (instantiateBVar replacement body) :=
   ⟨HasType.instantiateBVar bodyAdmissible.typed replacementAdmissible.typed,
     instantiateBVarAt_canonical 0 bodyAdmissible.canonical replacementAdmissible.canonical,
@@ -489,31 +432,12 @@ theorem admissible_of_raw {source target : Pattern} (step : PiRawStep source tar
     have inputAdmissible := input ▸ each _ (List.getElem_mem hi)
     have outputAdmissible := output ▸ each _ (List.mem_of_mem_eraseIdx (List.getElem_mem hj))
     obtain ⟨-, -, bodyCanonical, -, bodyObject⟩ := binder_parts inputAdmissible
-    have body' : Admissible piCalc free (.base "Proc" :: bound) (.base "Proc") body :=
-      ⟨(listener_typed (Or.inl rfl) inputAdmissible.typed).2, bodyCanonical, bodyObject⟩
+    have body' : Admissible piCalc free (.base "Name" :: bound) (.base "Proc") body :=
+      ⟨(listener_typed rfl inputAdmissible.typed).2, bodyCanonical, bodyObject⟩
     apply bag_admissible
     intro element member
     rcases List.mem_cons.mp member with rfl | inRest
     · exact instantiate_admissible body' (output_parts outputAdmissible)
-    · exact each element (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx inRest))
-  | @repComm elements tail i hi j hj channel binder body datum input output =>
-    intro free bound admissible
-    obtain ⟨-, each⟩ := bag_elements admissible
-    have inputAdmissible := input ▸ each _ (List.getElem_mem hi)
-    have outputAdmissible := output ▸ each _ (List.mem_of_mem_eraseIdx (List.getElem_mem hj))
-    obtain ⟨binderNone, channelCanonical, bodyCanonical, channelObject, bodyObject⟩ := binder_parts inputAdmissible
-    obtain ⟨channelTyped, bodyTyped⟩ := listener_typed (Or.inr rfl) inputAdmissible.typed
-    have body' : Admissible piCalc free (.base "Proc" :: bound) (.base "Proc") body :=
-      ⟨bodyTyped, bodyCanonical, bodyObject⟩
-    have server : Admissible piCalc free bound (.base "Proc") (.apply "PiRep" [channel, .lambda none body]) := by
-      subst binderNone
-      exact inputAdmissible
-    apply bag_admissible
-    intro element member
-    simp only [List.cons_append, List.nil_append, List.mem_cons] at member
-    rcases member with rfl | rfl | inRest
-    · exact instantiate_admissible body' (output_parts outputAdmissible)
-    · exact server
     · exact each element (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx inRest))
   | @par elements tail i hi target inner recurse =>
     intro free bound admissible
@@ -544,46 +468,181 @@ open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
 open Mettapedia.OSLF.MeTTaIL.ReferenceStep (StepValid ReferenceProfile contextualStep_iff_step)
 open Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance (pi_step_iff_raw)
 
-theorem singleSorted : AlgebraForms.singleSorted piCalc piCalc.terms[1] = true := by decide +kernel
+/-- The parallel fragment's static theory is its bag alone. -/
+theorem bareBagTheory : BareBagTheory piParallelFragment piCalc.terms[1] (some "PiNil") :=
+  piParallelBagTheory.asBare rfl
 
-theorem profile : ReferenceProfile piCalc := profile_of_aligned (by decide)
+theorem profile : ReferenceProfile piParallelFragment := profile_of_aligned (by decide)
 
-/-- The canonical form of a process: its normal form when it is closed and sorted. -/
-abbrev canon : Pattern → Pattern := AlgebraForms.canon piCalc piCalc.terms[1] (some "PiNil")
+/-- **π's reading**: the typed reading, each law between two object terms of one sort whose free variables are names
+of the name sort. -/
+def reading : LanguageReading := { equations := .typed .raw .empty .sorts (some "Name") }
 
-/-- Closed sorted processes. -/
-abbrev domain : Pattern → Bool := AlgebraForms.domain piCalc piCalc.terms[1]
+/-- The context of π's free names. -/
+abbrev names : FreeTypeContext := EquationReading.nameContext (some "Name")
 
-theorem canonical (relEnv : RelationEnv) : Canonical relEnv piCalc canon domain :=
-  AlgebraForms.canonical bareBagTheory singleSorted
+/-- Object processes with no free bound variable, their free variables names. -/
+def domain (term : Pattern) : Bool :=
+  checkOpenPatternWellSorted piParallelFragment names [] (.base "Proc") term
 
-/-- The reference steps of the π-calculus are the steps of its occurrence specification. -/
+/-- The canonical form of a process of the fragment: its bag normal form, on the domain. -/
+def canon (term : Pattern) : Pattern := if domain term then normalForm (some "PiNil") term else term
+
+theorem domain_iff {term : Pattern} :
+    domain term = true ↔ Admissible piParallelFragment names [] (.base "Proc") term := by
+  unfold domain
+  rw [checkOpenPatternWellSorted_eq_true_iff]
+  constructor
+  · rintro ⟨typed, canonical, object, -⟩
+    exact ⟨typed, canonical, object⟩
+  · intro admissible
+    exact ⟨admissible.typed, admissible.canonical, admissible.object,
+      by simpa [ScopeSafeAt] using admissible.typed.isWellScopedAt⟩
+
+/-- **A typed object of the fragment has one sort**: a free name has the name sort, and every constructor makes a
+process. -/
+theorem sort_unique {term : Pattern} {first second : String}
+    (firstTyped : HasType piParallelFragment names [] term (.base first))
+    (secondTyped : HasType piParallelFragment names [] term (.base second)) (object : isObjectPattern term = true) :
+    first = second := by
+  cases firstTyped with
+  | bvar lookup => simp at lookup
+  | fvar lookup =>
+      cases secondTyped with
+      | fvar lookup' =>
+          simp only [names, EquationReading.nameContext, Option.some.injEq, TypeExpr.base.injEq] at lookup lookup'
+          exact lookup.symm.trans lookup'
+  | constructor member =>
+      obtain ⟨rule', member', labelIs, -, typeIs, -⟩ := hasType_apply_inversion secondTyped
+      simp only [TypeExpr.base.injEq] at typeIs
+      rw [category_of_member member, typeIs, category_of_member member']
+  | subst => simp [isObjectPattern] at object
+  | collectionConstructor member =>
+      rw [category_of_member member]
+      have sortIs := (bag_typing bareBagTheory.toBareBagPresentation secondTyped rfl).2.1
+      simp only [TypeExpr.base.injEq] at sortIs
+      rw [sortIs]
+      rfl
+
+/-- A typed object of the fragment carries no binder names, so it is in the domain. -/
+theorem domain_of_typed {term : Pattern} (typed : HasType piParallelFragment names [] term (.base "Proc"))
+    (object : isObjectPattern term = true) : domain term = true :=
+  domain_iff.mpr ⟨typed, (Mettapedia.GSLT.LanguageDef.RestrictionBlocks.metadata_of_typed (block := piBlock) _
+    (HasType.of_terms_subset (source := piParallelFragment) (target := piCalc) (fun _ member => member) typed)
+    object).1 ⟨_, rfl⟩, object⟩
+
+/-- **A step of π's reading relates the domain only to the domain**, both ways. -/
+theorem domain_iff_of_step {relEnv : RelationEnv} {first second : Pattern}
+    (step : ObjectStep relEnv piParallelFragment reading first second) :
+    domain first = true ↔ domain second = true := by
+  obtain ⟨-, -, type, ⟨sort, rfl⟩, firstFormed, secondFormed, -⟩ := step
+  constructor
+  · intro admitted
+    obtain rfl := sort_unique firstFormed.typed (domain_iff.mp admitted).typed firstFormed.object
+    exact domain_of_typed secondFormed.typed secondFormed.object
+  · intro admitted
+    obtain rfl := sort_unique secondFormed.typed (domain_iff.mp admitted).typed secondFormed.object
+    exact domain_of_typed firstFormed.typed firstFormed.object
+
+theorem domain_iff_of_equivalent {relEnv : RelationEnv} {first second : Pattern}
+    (equivalent : ObjectEquivalent relEnv piParallelFragment reading first second) :
+    domain first = true ↔ domain second = true := by
+  induction equivalent with
+  | rel _ _ step => exact domain_iff_of_step step
+  | refl => exact Iff.rfl
+  | symm _ _ _ same => exact same.symm
+  | trans _ _ _ _ _ first second => exact first.trans second
+
+/-- **A chain of the bag's laws from a typed object is an equivalence of π's reading.** -/
+theorem objectEquivalent_of_path {relEnv : RelationEnv} {base : BasePremiseEvaluator} {source target : Pattern}
+    (path : Path base piParallelFragment source target)
+    (admissible : Admissible piParallelFragment names [] (.base "Proc") source) :
+    ObjectEquivalent relEnv piParallelFragment reading source target := by
+  induction path with
+  | refl => exact Relation.EqvGen.refl _
+  | tail before step previous =>
+    have middle := path_admissible bareBagTheory before admissible rfl
+    have last := step_admissible bareBagTheory step middle rfl
+    exact Relation.EqvGen.trans _ _ _ previous (Relation.EqvGen.rel _ _ ⟨middle.object, last.object, .base "Proc",
+      ⟨"Proc", rfl⟩, ⟨middle.object, middle.typed, by simp⟩, ⟨last.object, last.typed, by simp⟩,
+      Mettapedia.OSLF.MeTTaIL.ReferenceStep.disciplinedStep_raw_iff.mpr
+        (AlgebraForms.step_of_equationContextStep bareBagTheory.equationsEmpty step)⟩)
+
+theorem normal_admissible {term : Pattern} (admissible : Admissible piParallelFragment names [] (.base "Proc") term) :
+    Admissible piParallelFragment names [] (.base "Proc") (normalForm (some "PiNil") term) :=
+  path_admissible bareBagTheory (path_normalForm bareBagTheory defaultBasePremises term admissible rfl) admissible rfl
+
+/-- The fragment and `piCalc` type the same processes. -/
+theorem admissible_iff {free : FreeTypeContext} {bound : List TypeExpr} {type : TypeExpr} {term : Pattern} :
+    Admissible piParallelFragment free bound type term ↔ Admissible piCalc free bound type term :=
+  ⟨fun admitted => ⟨HasType.of_terms_subset (source := piParallelFragment) (target := piCalc)
+      (fun _ member => member) admitted.typed, admitted.canonical, admitted.object⟩,
+    fun admitted => ⟨HasType.of_terms_subset (source := piCalc) (target := piParallelFragment)
+      (fun _ member => member) admitted.typed, admitted.canonical, admitted.object⟩⟩
+
+/-- The reference steps of the fragment are the steps of π's occurrence specification. -/
 theorem step_iff_raw {source target : Pattern} :
-    (∃ witness, StepValid RelationEnv.empty piCalc source witness target) ↔ PiRawStep source target :=
-  (contextualStep_iff_step RelationEnv.empty piCalc profile).symm.trans (pi_step_iff_raw source target)
+    (∃ witness, StepValid RelationEnv.empty piParallelFragment source witness target) ↔ PiRawStep source target :=
+  (contextualStep_iff_step RelationEnv.empty piParallelFragment profile).symm.trans
+    ⟨fun step => (pi_step_iff_raw source target).mp
+        (Mettapedia.OSLF.MeTTaIL.ContextualStep.Step.mono_rules (lang₁ := piParallelFragment) (lang₂ := piCalc)
+          (fun _ member => member) step),
+      fun raw => Mettapedia.OSLF.MeTTaIL.ContextualStep.Step.mono_rules (lang₁ := piCalc)
+        (lang₂ := piParallelFragment) (fun _ member => member) ((pi_step_iff_raw source target).mpr raw)⟩
+
+/-- **The bag normal form gives canonical forms** on object processes, in π's typed reading, whose domain is read
+off them. -/
+theorem canonicalDetermined (relEnv : RelationEnv) :
+    CanonicalDetermined relEnv piParallelFragment canon domain reading where
+  object admitted := (domain_iff.mp admitted).object
+  determined term := by
+    unfold canon
+    by_cases admitted : domain term = true
+    · rw [if_pos admitted, admitted]
+      exact domain_iff.mpr (normal_admissible (domain_iff.mp admitted))
+    · rw [if_neg admitted]
+  equivalent {term} admitted := by
+    unfold canon
+    rw [if_pos admitted]
+    exact objectEquivalent_of_path (path_normalForm bareBagTheory defaultBasePremises term (domain_iff.mp admitted) rfl)
+      (domain_iff.mp admitted)
+  same {first second} admitted equivalent := by
+    have secondAdmitted := (domain_iff_of_equivalent equivalent).mp admitted
+    unfold canon
+    rw [if_pos admitted, if_pos secondAdmitted]
+    exact normalForm_eq_of_equationEquiv bareBagTheory.toBagTheory (Relation.EqvGen.mono
+      (fun _ _ step => AlgebraForms.equationContextStep_of_step bareBagTheory.equationsEmpty defaultBasePremises step)
+      _ _ equivalent.equivalent)
+  closed {term} admitted := by
+    unfold canon
+    rw [if_pos admitted]
+    have before := (domain_iff.mp admitted).typed.isWellScopedAt
+    have after := (normal_admissible (domain_iff.mp admitted)).typed.isWellScopedAt
+    simp only [List.length_nil] at before after
+    rw [before, after]
+
+theorem canonical (relEnv : RelationEnv) : Canonical relEnv piParallelFragment canon domain reading :=
+  (canonicalDetermined relEnv).canonical
 
 /-- **Coherence for plain steps**: a step from any process equivalent to a canonical one is matched, up to
 canonical form, by a step listed at it, wherever the fuel lists its steps. -/
-theorem coherentPlain (fuel : ℕ) : CoherentPlain RelationEnv.empty piCalc fuel canon domain List.singleton :=
+theorem coherentPlain (fuel : ℕ) :
+    CoherentPlain RelationEnv.empty piParallelFragment fuel canon domain List.singleton reading :=
   coherentPlain_of_simulation (canonical RelationEnv.empty) fun {redex witness contractum} _ admitted valid => by
-    have redexAdmissible := AlgebraForms.domain_iff.mp admitted
+    have redexAdmissible := domain_iff.mp admitted
     have raw := step_iff_raw.mp ⟨witness, valid⟩
     obtain ⟨contractum', raw', same⟩ := simulation raw redexAdmissible.object
-    have normalAdmissible := AlgebraForms.normalForm_admissible bareBagTheory redexAdmissible
+    have normalAdmissible := normal_admissible redexAdmissible
     obtain ⟨witness', valid'⟩ := step_iff_raw.mpr raw'
     have contractumAdmitted : domain contractum = true :=
-      AlgebraForms.domain_iff.mpr (admissible_of_raw raw redexAdmissible)
+      domain_iff.mpr (admissible_iff.mpr (admissible_of_raw raw (admissible_iff.mp redexAdmissible)))
     have contractum'Admitted : domain contractum' = true :=
-      AlgebraForms.domain_iff.mpr (admissible_of_raw raw' normalAdmissible)
+      domain_iff.mpr (admissible_iff.mpr (admissible_of_raw raw' (admissible_iff.mp normalAdmissible)))
     refine ⟨witness', contractum', ?_, ?_⟩
-    · show StepValid RelationEnv.empty piCalc (AlgebraForms.canon piCalc piCalc.terms[1] (some "PiNil") redex)
-        witness' contractum'
-      unfold AlgebraForms.canon
+    · unfold canon
       rw [if_pos admitted]
       exact valid'
-    · show AlgebraForms.canon piCalc piCalc.terms[1] (some "PiNil") contractum' =
-        AlgebraForms.canon piCalc piCalc.terms[1] (some "PiNil") contractum
-      unfold AlgebraForms.canon
+    · unfold canon
       rw [if_pos contractumAdmitted, if_pos contractum'Admitted]
       exact same
 
@@ -596,11 +655,12 @@ def fastCanon (term : Pattern) : Pattern := if domain term then fastNormalForm "
 
 theorem fastCanon_eq : fastCanon = canon := by
   funext term
-  unfold fastCanon canon AlgebraForms.canon
+  unfold fastCanon canon
   rw [fastNormalForm_eq]
 
-/-- **The π-calculus's canonical forms, as the front door takes them**: coherent for plain steps. -/
-def forms (fuel : ℕ) : CanonicalForms RelationEnv.empty piCalc fuel where
+/-- **The parallel fragment's canonical forms, as the front door takes them**: coherent for plain steps. -/
+def forms (fuel : ℕ) : CanonicalForms RelationEnv.empty piParallelFragment fuel where
+  reading := reading
   canon := fastCanon
   domain := domain
   canonical := by rw [fastCanon_eq]; exact canonical RelationEnv.empty

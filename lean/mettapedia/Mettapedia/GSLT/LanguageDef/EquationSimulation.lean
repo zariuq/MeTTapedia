@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.SymbolMapSimulation
 import Mettapedia.GSLT.LanguageDef.EquationSemantics
 import Mettapedia.GSLT.LanguageDef.CollectionAlgebraTransport
+import Mettapedia.GSLT.LanguageDef.ScopedMatchingMaps
 
 /-!
 # The static equivalence along a structural presentation morphism
@@ -45,6 +46,92 @@ open Mettapedia.GSLT.LanguageDef.StructuralMorphism
 
 /-! ## Instances of authored equations -/
 
+
+mutual
+theorem binderFree_mapPattern (symbols : LanguageDefSymbolMap) : ∀ pattern : Pattern,
+    binderFree (mapPattern symbols pattern) = binderFree pattern
+  | .bvar _ => by simp [mapPattern, binderFree]
+  | .fvar _ => by simp [mapPattern, binderFree]
+  | .apply _ arguments => by
+    simp only [mapPattern, binderFree]
+    exact binderFreeList_mapPatternList symbols arguments
+  | .lambda _ _ => by simp [mapPattern, binderFree]
+  | .multiLambda _ _ _ => by simp [mapPattern, binderFree]
+  | .subst _ _ => by simp [mapPattern, binderFree]
+  | .collection _ elements _ => by
+    simp only [mapPattern, binderFree]
+    exact binderFreeList_mapPatternList symbols elements
+
+theorem binderFreeList_mapPatternList (symbols : LanguageDefSymbolMap) : ∀ patterns : List Pattern,
+    binderFreeList (mapPatternList symbols patterns) = binderFreeList patterns
+  | [] => by simp [mapPatternList, binderFreeList]
+  | pattern :: patterns => by
+    simp only [mapPatternList, binderFreeList, binderFree_mapPattern symbols pattern,
+      binderFreeList_mapPatternList symbols patterns]
+end
+
+/-- **Mapping symbols keeps whether the ordinary matcher reads an equation.** -/
+theorem readsRaw_mapEquation (symbols : LanguageDefSymbolMap) (equation : Equation) :
+    readsRaw (mapEquation symbols equation) = readsRaw equation := by
+  cases bindings : equation.bindings <;>
+    simp [readsRaw, mapEquation, bindings, binderFree_mapPattern]
+
+section Declared
+
+open Mettapedia.OSLF.MeTTaIL.ScopedRuleMatching (Assignment matchRuleAt matchRuleWithAt reduct? instantiateAt?)
+open Mettapedia.GSLT.LanguageDef.ScopedMatchingMaps (mapAssignment mapValue)
+
+/-- The closed captures read through the map are the closed captures of the mapped assignment. -/
+theorem closedRoot_map (symbols : LanguageDefSymbolMap) (captured : Assignment) :
+    closedRoot (mapAssignment symbols captured) = mapBindings symbols (closedRoot captured) := by
+  simp only [closedRoot, mapAssignment, mapBindings, List.filterMap_map, List.map_filterMap]
+  congr 1
+  funext entry
+  by_cases closed : entry.2.dependencies = [] <;> simp [closed, mapValue]
+
+/-- Closing premise outputs commutes with the map. -/
+theorem mapAssignment_extendClosed (symbols : LanguageDefSymbolMap) (ambient : Nat) (captured : Assignment)
+    (final : Bindings) :
+    mapAssignment symbols (extendClosed ambient captured final) =
+      extendClosed ambient (mapAssignment symbols captured) (mapBindings symbols final) := by
+  have kept : (fun entry : String × Pattern =>
+      (Mettapedia.OSLF.MeTTaIL.ScopedRuleMatching.lookup (mapAssignment symbols captured) entry.1).isNone) =
+      fun entry => (Mettapedia.OSLF.MeTTaIL.ScopedRuleMatching.lookup captured entry.1).isNone := by
+    funext entry
+    rw [ScopedMatchingMaps.lookup_map, Option.isNone_map]
+  unfold extendClosed
+  rw [kept]
+  simp [mapAssignment, mapBindings, List.filter_map, Function.comp_def, mapValue]
+
+/-- **A declared instance maps to a declared instance of the image equation**, with its premises transported like
+the premises of a rewrite. -/
+theorem declaredInstanceAt_map_of_rewrites
+    {symbols : LanguageDefSymbolMap} {base base' : BasePremiseEvaluator} {source target : LanguageDef}
+    (mapsRules : ∀ rule, List.Mem rule source.rewrites → List.Mem (mapRewriteRule symbols rule) target.rewrites)
+    (mapsBaseResults : MapsBasePremiseResultsAt symbols base base' source target)
+    {fuel ambient : Nat} {equation : Equation}
+    {orientation : Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.Orientation} {left right : Pattern}
+    (declared : DeclaredInstanceAt base source fuel ambient equation orientation left right) :
+    DeclaredInstanceAt base' target fuel ambient (mapEquation symbols equation) orientation
+      (mapPattern symbols left) (mapPattern symbols right) := by
+  obtain ⟨spec, captured, final, bound, admitted, sourceScoped, matched, premises, applied, targetScoped⟩ :=
+    declared
+  have maps := ScopedMatchingMaps.orientedRule_maps symbols equation orientation
+  refine ⟨mapRuleBindingSpec symbols spec, mapAssignment symbols captured, mapBindings symbols final,
+    by rw [ScopedMatchingMaps.orientedRule_bindings_map, bound]; rfl,
+    ScopedMatchingMaps.admittedFor_map symbols maps spec admitted,
+    by rw [isWellScopedAt_mapPattern]; exact sourceScoped, ?_, ?_, ?_,
+    by rw [isWellScopedAt_mapPattern]; exact targetScoped⟩
+  · simp only [matchRuleAt, matchRuleWithAt, maps.left] at matched ⊢
+    exact ScopedMatchingMaps.matchAt_map symbols maps spec ambient .left _ [] 0 [] left captured matched
+  · rw [closedRoot_map]
+    exact premisesAt_map_of_rewrites mapsRules mapsBaseResults premises
+  · simp only [reduct?, instantiateAt?, maps.right] at applied ⊢
+    rw [← mapAssignment_extendClosed]
+    exact ScopedMatchingMaps.instantiate_map symbols maps spec ambient .right _ [] 0 _ right applied
+
+end Declared
+
 /-- A bounded instance of an authored equation maps to a bounded instance of
 the image equation, in the same orientation and at the same depth. -/
 theorem equationInstanceAt_map_of_rewrites
@@ -60,30 +147,34 @@ theorem equationInstanceAt_map_of_rewrites
     EquationInstanceAt base' target fuel
       (mapPattern symbols left) (mapPattern symbols right) := by
   cases evidence with
-  | forward member matched premises built =>
+  | forward member raw matched premises built =>
       rename_i equation initial final
       refine EquationInstanceAt.forward
         (equation := mapEquation symbols equation)
         (initialBindings := mapBindings symbols initial)
         (finalBindings := mapBindings symbols final)
-        (mapsEquations equation member) ?_ ?_ ?_
+        (mapsEquations equation member) (by rw [readsRaw_mapEquation]; exact raw) ?_ ?_ ?_
       · exact mem_matchPattern_mapPattern symbols matched
       · exact premisesAt_map_of_rewrites mapsRules mapsBaseResults premises
       · show applyBindings (mapBindings symbols final)
           (mapPattern symbols equation.right) = _
         rw [applyBindings_mapPattern, built]
-  | reverse member matched premises built =>
+  | reverse member raw matched premises built =>
       rename_i equation initial final
       refine EquationInstanceAt.reverse
         (equation := mapEquation symbols equation)
         (initialBindings := mapBindings symbols initial)
         (finalBindings := mapBindings symbols final)
-        (mapsEquations equation member) ?_ ?_ ?_
+        (mapsEquations equation member) (by rw [readsRaw_mapEquation]; exact raw) ?_ ?_ ?_
       · exact mem_matchPattern_mapPattern symbols matched
       · exact premisesAt_map_of_rewrites mapsRules mapsBaseResults premises
       · show applyBindings (mapBindings symbols final)
           (mapPattern symbols equation.left) = _
         rw [applyBindings_mapPattern, built]
+  | declared member notRaw produced =>
+      exact EquationInstanceAt.declared (mapsEquations _ member)
+        (by rw [readsRaw_mapEquation]; exact notRaw)
+        (declaredInstanceAt_map_of_rewrites mapsRules mapsBaseResults produced)
 
 /-- Bounded authored equation instances map along a structural morphism.
 The premises use the same direct transport as rewrite premises. -/

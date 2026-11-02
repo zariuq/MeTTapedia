@@ -27,6 +27,19 @@ inductive Tree (program : Program) : Atom → Prop where
       (children : ∀ argument ∈ arguments, Tree program argument) :
       Tree program (.expression (.symbol head :: arguments))
 
+/-- A data head is not a primitive, so it is not `match` either: it avoids every
+special form. -/
+private theorem data_head_not_form {program : Program} {head : String}
+    (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have notMatch : head ≠ "match" := Eval.ne_match_of_not_known (by
+    simp only [Bool.or_eq_false_iff] at inert
+    exact inert.1.2)
+  intro member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member ordinary
+  tauto
+
 private theorem mapped_arguments (program : Program) (bindings : Subst) (state : State)
     (arguments : List Atom)
     (computed : ∀ argument ∈ arguments, BoundCalls.CorePath.PureReturns program bindings state
@@ -55,7 +68,8 @@ theorem returns (program : Program) (bindings : Subst) (state : State) (expressi
         | cons argument rest ih => simp only [applySubst.applySubstList, List.map_cons, ih]
       simp only [applySubst, applySubst.applySubstList, list_substitution arguments]
       exact BoundCalls.CorePath.constructor_return program bindings state head arguments
-        (arguments.map (applySubst bindings)) inert ordinary (mapped_arguments program bindings state arguments ih)
+        (arguments.map (applySubst bindings)) inert (data_head_not_form inert ordinary)
+        (mapped_arguments program bindings state arguments ih)
 
 /-- Interpreted control cannot be admitted as an inert constructor. -/
 theorem interpreted_head_refused (program : Program) (head : String) (arguments : List Atom)

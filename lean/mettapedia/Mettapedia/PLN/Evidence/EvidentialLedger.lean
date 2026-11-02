@@ -56,8 +56,10 @@ structure SourceItem (Source Candidate : Type*) where
 /-! ## 2. Aggregation: fold support vectors by candidate -/
 
 /-- Aggregate evidence from a ledger for a given candidate.
-    This is the hplus aggregation: sources with disjoint observations contribute additively.
-    The fold is the explicit, auditable aggregation policy. -/
+    This is an arithmetic fold, including declared pseudo-count assessments.
+    It checks neither observation overlap nor evidence kind. Empirical addition
+    requires an identified, disjoint observation ledger; this function alone
+    grants no statistical independence or logical proof authority. -/
 def aggregate [BEq Candidate] (items : List (SourceItem Source Candidate))
     (c : Candidate) : BinEvNat :=
   (items.map (fun item => item.support c)).foldl (· + ·) 0

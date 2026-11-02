@@ -233,47 +233,7 @@ variable {State : Type u} [EvidenceType State]
 theorem multi_reuses_base (W : State) : WMJudgmentMulti {W} (W + W) :=
   .revise (.base W (Multiset.mem_singleton_self W)) (.base W (Multiset.mem_singleton_self W))
 
-/-- **The linear world-model judgment**: each listed state is used exactly once. -/
-inductive LinearJudgment : Multiset State → State → Prop
-  | base (W : State) : LinearJudgment {W} W
-  | revise {Γ₁ Γ₂ : Multiset State} {W₁ W₂ : State} :
-      LinearJudgment Γ₁ W₁ → LinearJudgment Γ₂ W₂ → LinearJudgment (Γ₁ + Γ₂) (W₁ + W₂)
 
-namespace LinearJudgment
-
-/-- **A linear derivation is the sum of its context, and the context is not empty.** -/
-theorem eq_sum {Γ : Multiset State} {W : State} (derivation : LinearJudgment Γ W) :
-    W = Γ.sum ∧ Γ ≠ 0 := by
-  induction derivation with
-  | base W => exact ⟨by simp, by simp⟩
-  | revise _ _ ih₁ ih₂ =>
-      refine ⟨by rw [Multiset.sum_add, ← ih₁.1, ← ih₂.1], ?_⟩
-      intro zero
-      exact ih₁.2 (add_eq_zero.mp zero).1
-
-/-- Every nonempty context derives its sum. -/
-theorem of_sum {Γ : Multiset State} (nonempty : Γ ≠ 0) : LinearJudgment Γ Γ.sum := by
-  induction Γ using Multiset.induction_on with
-  | empty => exact absurd rfl nonempty
-  | cons a s ih =>
-      by_cases hs : s = 0
-      · subst hs
-        simpa using LinearJudgment.base a
-      · rw [Multiset.sum_cons, ← Multiset.singleton_add]
-        exact .revise (.base a) (ih hs)
-
-/-- **From one state, only that state.** -/
-theorem singleton {W X : State} (derivation : LinearJudgment {W} X) : X = W := by
-  simpa using derivation.eq_sum.1
-
-/-- The linear judgment refines the multiset judgment. -/
-theorem toMulti {Γ : Multiset State} {W : State} (derivation : LinearJudgment Γ W) :
-    WMJudgmentMulti Γ W := by
-  induction derivation with
-  | base W => exact .base W (Multiset.mem_singleton_self W)
-  | revise _ _ ih₁ ih₂ => exact WMJudgmentMulti.add_revise ih₁ ih₂
-
-end LinearJudgment
 
 end Judgments
 

@@ -70,9 +70,10 @@ private theorem raw_equationStep_static :
   refine ⟨0, EquationSemantics.EquationInstanceAt.forward
     (equation := erasingEquation)
     (initialBindings := principalBindings)
-    (finalBindings := principalBindings) ?_ erasingSchema_matches_raw
+    (finalBindings := principalBindings) ?_ ?_ erasingSchema_matches_raw
       (.nil principalBindings) ?_⟩
   · exact .head _
+  · decide
   · simp [erasingEquation, erasingSchema, principalBindings,
       staticConstructor, interactionPrincipal, applyBindings,
       Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVar,
@@ -86,9 +87,10 @@ private theorem raw_equationStep_principal :
   refine ⟨0, EquationSemantics.EquationInstanceAt.forward
     (equation := revealingEquation)
     (initialBindings := principalBindings)
-    (finalBindings := principalBindings) ?_ erasingSchema_matches_raw
+    (finalBindings := principalBindings) ?_ ?_ erasingSchema_matches_raw
       (.nil principalBindings) ?_⟩
   · exact .tail _ (.head _)
+  · decide
   · simp [revealingEquation, principalBindings, interactionPrincipal,
       applyBindings]
 

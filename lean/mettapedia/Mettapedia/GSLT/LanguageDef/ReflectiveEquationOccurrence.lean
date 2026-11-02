@@ -69,10 +69,12 @@ theorem erase {profile : ReflectionProfile} {base : BasePremiseEvaluator}
       .reflectiveInContext context declaration.2 representatives
 
 /-- Every proposition-valued reflective generator has a proof-relevant
-occurrence above it. -/
+occurrence above it, when the ordinary matcher reads every authored
+equation. -/
 theorem exists_erasing_to {profile : ReflectionProfile}
     {base : BasePremiseEvaluator} {language : LanguageDef}
     {left right : Pattern}
+    (raw : ∀ equation ∈ language.equations, EquationSemantics.readsRaw equation = true)
     (step : ReflectiveEquationContextStep profile base language left right) :
     ∃ occurrence : ReflectiveAuthoredGeneratorWitness
         profile base language left right,
@@ -80,7 +82,7 @@ theorem exists_erasing_to {profile : ReflectionProfile}
   cases step with
   | core step =>
       obtain ⟨occurrence, erases⟩ :=
-        AuthoredGeneratorWitness.exists_erasing_to step
+        AuthoredGeneratorWitness.exists_erasing_to raw step
       refine ⟨.core occurrence, ?_⟩
       exact Subsingleton.elim _ _
   | @reflectiveInContext context declaration redex contractum membership

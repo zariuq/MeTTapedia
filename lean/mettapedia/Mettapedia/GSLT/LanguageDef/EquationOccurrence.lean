@@ -73,6 +73,7 @@ inductive DeclaredEquationInstanceWitness
   | forward {sourcePattern targetPattern : Pattern}
       (fuel : Nat)
       (equation : { equation : Equation // equation ∈ language.equations })
+      (raw : readsRaw equation.1 = true)
       (initialBindings finalBindings : Bindings)
       (matched : initialBindings ∈ matchPattern equation.1.left sourcePattern)
       (premises : PremisesAt base language fuel initialBindings
@@ -82,6 +83,7 @@ inductive DeclaredEquationInstanceWitness
   | reverse {sourcePattern targetPattern : Pattern}
       (fuel : Nat)
       (equation : { equation : Equation // equation ∈ language.equations })
+      (raw : readsRaw equation.1 = true)
       (initialBindings finalBindings : Bindings)
       (matched : initialBindings ∈ matchPattern equation.1.right sourcePattern)
       (premises : PremisesAt base language fuel initialBindings
@@ -97,18 +99,20 @@ theorem erase {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
     DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       EquationInstance base language sourcePattern targetPattern
-  | .forward fuel equation _initialBindings _finalBindings matched premises
+  | .forward fuel equation raw _initialBindings _finalBindings matched premises
       target_eq =>
-        ⟨fuel, .forward equation.2 matched premises target_eq⟩
-  | .reverse fuel equation _initialBindings _finalBindings matched premises
+        ⟨fuel, .forward equation.2 raw matched premises target_eq⟩
+  | .reverse fuel equation raw _initialBindings _finalBindings matched premises
       target_eq =>
-        ⟨fuel, .reverse equation.2 matched premises target_eq⟩
+        ⟨fuel, .reverse equation.2 raw matched premises target_eq⟩
 
 /-- Every ordinary equation instance is supported by at least one
-proof-relevant authored occurrence. The result proves support completeness
-without choosing an occurrence from an erased proof. -/
+proof-relevant authored occurrence, when the ordinary matcher reads every
+authored equation. The result proves support completeness without choosing
+an occurrence from an erased proof. -/
 theorem exists_erasing_to {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern}
+    (raw : ∀ equation ∈ language.equations, readsRaw equation = true)
     (instanceWitness : EquationInstance base language
       sourcePattern targetPattern) :
     ∃ occurrence : DeclaredEquationInstanceWitness base language sourcePattern
@@ -117,15 +121,18 @@ theorem exists_erasing_to {base : BasePremiseEvaluator} {language : LanguageDef}
   rcases instanceWitness with ⟨fuel, instanceAt⟩
   cases instanceAt with
   | @forward equation sourcePattern targetPattern initialBindings finalBindings
-      membership matched premises target_eq =>
-      refine ⟨.forward fuel ⟨equation, membership⟩ initialBindings finalBindings
+      membership raw matched premises target_eq =>
+      refine ⟨.forward fuel ⟨equation, membership⟩ raw initialBindings finalBindings
         matched premises target_eq, ?_⟩
       exact Subsingleton.elim _ _
   | @reverse equation sourcePattern targetPattern initialBindings finalBindings
-      membership matched premises target_eq =>
-      refine ⟨.reverse fuel ⟨equation, membership⟩ initialBindings finalBindings
+      membership raw matched premises target_eq =>
+      refine ⟨.reverse fuel ⟨equation, membership⟩ raw initialBindings finalBindings
         matched premises target_eq, ?_⟩
       exact Subsingleton.elim _ _
+  | declared membership notRaw _ =>
+      rw [raw _ membership] at notRaw
+      cases notRaw
 
 /-- Selected orientation, retained independently of proposition-valued
 equation semantics. -/
@@ -141,16 +148,16 @@ def finalBindings {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
     DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       Bindings
-  | .forward _ _ _ finalBindings _ _ _ => finalBindings
-  | .reverse _ _ _ finalBindings _ _ _ => finalBindings
+  | .forward _ _ _ _ finalBindings _ _ _ => finalBindings
+  | .reverse _ _ _ _ finalBindings _ _ _ => finalBindings
 
 /-- The authored schema instantiated to produce the target endpoint. -/
 def targetSchema {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
     DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       Pattern
-  | .forward _ equation _ _ _ _ _ => equation.1.right
-  | .reverse _ equation _ _ _ _ _ => equation.1.left
+  | .forward _ equation _ _ _ _ _ _ => equation.1.right
+  | .reverse _ equation _ _ _ _ _ _ => equation.1.left
 
 /-- The retained target schema and final bindings reconstruct the exact target
 endpoint. -/
@@ -434,11 +441,13 @@ theorem erase {base : BasePremiseEvaluator} {language : LanguageDef}
   | .derived context lawWitness =>
       .inContext context (Or.inr lawWitness.erase)
 
-/-- Support erasure is complete: every proposition-valued generator, authored
-or derived, has a proof-relevant occurrence above it.  This does not choose
-an occurrence from an erased proof. -/
+/-- Support erasure is complete: when the ordinary matcher reads every
+authored equation, every proposition-valued generator, authored or derived,
+has a proof-relevant occurrence above it.  This does not choose an
+occurrence from an erased proof. -/
 theorem exists_erasing_to {base : BasePremiseEvaluator}
     {language : LanguageDef} {left right : Pattern}
+    (raw : ∀ equation ∈ language.equations, readsRaw equation = true)
     (step : EquationContextStep base language left right) :
     ∃ occurrence : AuthoredGeneratorWitness base language left right,
       occurrence.erase = step := by
@@ -446,7 +455,7 @@ theorem exists_erasing_to {base : BasePremiseEvaluator}
   | inContext context generator =>
       rcases generator with instanceWitness | lawWitness
       · obtain ⟨instanceOccurrence, _⟩ :=
-          DeclaredEquationInstanceWitness.exists_erasing_to instanceWitness
+          DeclaredEquationInstanceWitness.exists_erasing_to raw instanceWitness
         refine ⟨.equation context instanceOccurrence, ?_⟩
         exact Subsingleton.elim _ _
       · obtain ⟨lawOccurrence, _⟩ := DerivedGeneratorWitness.exists_erasing_to lawWitness

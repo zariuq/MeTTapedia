@@ -251,14 +251,22 @@ theorem authored_alias (laws : AliasLaws language) {source target : Pattern}
     (authored : AuthoredEquation relEnv language source target) :
     (source = constant "A" ∧ target = constant "B") ∨ (source = constant "B" ∧ target = constant "A") := by
   cases authored with
-  | forward member matched _ =>
+  | forward member _ matched _ =>
     rw [laws.equations, List.mem_singleton] at member
     subst member
     exact Or.inl ⟨matchRel_constant (matchPattern_sound matched), rfl⟩
-  | reverse member matched _ =>
+  | reverse member _ matched _ =>
     rw [laws.equations, List.mem_singleton] at member
     subst member
     exact Or.inr ⟨matchRel_constant (matchPattern_sound matched), rfl⟩
+  | declared member notRaw _ =>
+    rw [laws.equations, List.mem_singleton] at member
+    subst member
+    exact absurd notRaw (by decide)
+  | premised member notRaw _ _ =>
+    rw [laws.equations, List.mem_singleton] at member
+    subst member
+    exact absurd notRaw (by decide)
 
 theorem rename_generator (laws : AliasLaws language) {source target : Pattern}
     (generator : Generator relEnv language source target) : rename source = rename target := by
@@ -289,7 +297,7 @@ theorem alias_same (laws : AliasLaws language) {first second : Pattern}
 theorem alias_step (laws : AliasLaws language) : ObjectStep relEnv language .syntax (constant "A") (constant "B") := by
   refine ⟨rfl, rfl, ?_⟩
   exact EquationStep.inContext .hole (Or.inl (AuthoredEquation.forward (equation := aliasEquation) (initial := [])
-    (by rw [laws.equations]; exact List.mem_singleton_self _) (matchRel_complete (.apply .nil rfl))
+    (by rw [laws.equations]; exact List.mem_singleton_self _) rfl (matchRel_complete (.apply .nil rfl))
     (PremisesValid.nil _)))
 
 mutual

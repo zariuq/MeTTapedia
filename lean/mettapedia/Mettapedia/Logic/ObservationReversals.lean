@@ -1,0 +1,19 @@
+import Mettapedia.Logic.WitnessObservations
+import Mettapedia.Logic.ConstructiveObservationReversals
+import Mettapedia.Logic.JoinedWitnessCoverage
+import Mettapedia.Logic.ProjectedObservations
+import Mettapedia.Logic.FiniteHornClosureCharacterization
+import Mettapedia.Logic.FiniteImplicationPresentation
+import Mettapedia.Logic.DirectedSupportCharacterization
+import Mettapedia.Logic.ClosureBoundaryControls
+import Mettapedia.Logic.ObservationReversalBoundaryControls
+import Mettapedia.Logic.FiniteObservationFactorization
+import Mettapedia.Logic.RandomClosure.PresentationCharacterization
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ObservationCoverageReversals
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ObservationCoverageReversalControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualObservationReversals
+
+/-! Qualification entry point for exact observation, coverage, permission,
+finite-rule and factorization characterizations, with separating controls.
+These are semantic equivalences inside Lean, not an axiomatic-strength
+classification over a subsystem of second-order arithmetic. -/

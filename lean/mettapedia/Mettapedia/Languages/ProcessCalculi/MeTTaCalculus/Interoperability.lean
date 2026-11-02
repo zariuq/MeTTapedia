@@ -47,7 +47,6 @@ mutual
   termination_by p => sizeOf p
   decreasing_by
     all_goals simp_wf
-    all_goals omega
 
   /-- Translate shared-fragment MeTTa names into ρ names (`MQuote`). -/
   def toRhoSharedName? : Name → Option Pattern
@@ -58,7 +57,6 @@ mutual
   termination_by n => sizeOf n
   decreasing_by
     all_goals simp_wf
-    all_goals omega
 
   /-- Translate a list of shared-fragment MeTTa processes into ρ process syntax. -/
   def toRhoSharedProcs? : List Proc → Option (List Pattern)
@@ -76,13 +74,13 @@ end
 def InSharedFragment (p : Proc) : Prop := (toRhoSharedProc? p).isSome
 
 example : toRhoSharedProc? pZero = some (.apply "PZero" []) := by
-  native_decide
+  decide +kernel
 
 example : toRhoSharedName? (nQuote pZero) = some (.apply "NQuote" [.apply "PZero" []]) := by
-  native_decide
+  decide +kernel
 
 example : toRhoSharedProc? (pReflect demoChan demoCommSource) = none := by
-  native_decide
+  decide +kernel
 
 /-! ## Shared-core simulation layer -/
 

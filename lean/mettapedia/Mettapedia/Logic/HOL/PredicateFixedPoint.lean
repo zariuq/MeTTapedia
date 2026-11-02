@@ -1,4 +1,5 @@
 import Mettapedia.Logic.HOL.ProofSyntaxStructural
+import Mettapedia.Logic.HOL.TermInterpretationLaws
 
 /-!
 # Least predicate fixed points with retained HOL proofs
@@ -35,6 +36,30 @@ def leastBody (operator : Term Const Γ (Operator α))
 
 def least (operator : Term Const Γ (Operator α)) : Term Const Γ (Predicate α) :=
   .lam (leastBody (weaken operator) (.var .vz))
+
+section Reading
+universe u' v'
+variable {Target : Type u'} {Symbols : Ty Target → Type v'}
+  (reading : TermInterpretation Base Const Target Symbols)
+
+@[simp] theorem read_included (left right : Term Const Γ (Predicate α)) :
+    reading.term (included left right) = included (reading.term left) (reading.term right) := by
+  simp [included, Var.mapTypes]
+
+@[simp] theorem read_prefixed (operator : Term Const Γ (Operator α)) (property : Term Const Γ (Predicate α)) :
+    reading.term (prefixed operator property) = prefixed (reading.term operator) (reading.term property) := by
+  simp [prefixed]
+
+@[simp] theorem read_leastBody (operator : Term Const Γ (Operator α)) (point : Term Const Γ α) :
+    reading.term (leastBody operator point) = leastBody (reading.term operator) (reading.term point) := by
+  simp [leastBody, Var.mapTypes]
+  rfl
+
+@[simp] theorem read_least (operator : Term Const Γ (Operator α)) :
+    reading.term (least operator) = least (reading.term operator) := by
+  simp [least, Var.mapTypes]
+
+end Reading
 
 @[simp] theorem rename_included {Γ' : Ctx Base} (ρ : Rename Base Γ Γ')
     (left right : Term Const Γ (Predicate α)) :

@@ -49,7 +49,7 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts (OneHoleContext)
 /-- **ρ's reading**: its equations as the typed judgment between closed terms of an element type (a sort, or the type
 of a constructor's parameter) that keep its scope policy; its rules through its reflection profile. -/
 def reading : LanguageReading where
-  equations := .typed .raw rhoReflectionProfile .elements
+  equations := .typed .raw rhoReflectionProfile .elements none
   rules := .interpreted rhoRuleInterpretation rhoBasePremises
 
 /-! ## ρ's elements -/

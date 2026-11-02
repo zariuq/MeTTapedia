@@ -110,9 +110,9 @@ def CostEquationInstanceOrigin (source : CIGSLT)
     (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises source.costWholeLanguage redex contractum) : Type :=
   match witness with
-  | .forward _ equation _ _ _ _ _ =>
+  | .forward _ equation _ _ _ _ _ _ =>
       CostEquationDeclarationOrigin source equation.1
-  | .reverse _ equation _ _ _ _ _ =>
+  | .reverse _ equation _ _ _ _ _ _ =>
       CostEquationDeclarationOrigin source equation.1
 
 /-- Every proof-relevant generated Cost equation instance retains an authored
@@ -123,10 +123,10 @@ theorem nonempty_costEquationInstanceOrigin
       defaultBasePremises source.costWholeLanguage redex contractum) :
     Nonempty (CostEquationInstanceOrigin source witness) := by
   cases witness with
-  | forward fuel equation initialBindings finalBindings matched premises
+  | forward fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       exact nonempty_costEquationDeclarationOrigin_of_mem source equation.2
-  | reverse fuel equation initialBindings finalBindings matched premises
+  | reverse fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       exact nonempty_costEquationDeclarationOrigin_of_mem source equation.2
 
@@ -178,9 +178,9 @@ def CostAuthoredGeneratorOrigin.color
   match witness with
   | .core (.equation _ instanceWitness) =>
       match instanceWitness with
-      | .forward _ _ _ _ _ _ _ => fun origin =>
+      | .forward _ _ _ _ _ _ _ _ => fun origin =>
           some (CostEquationDeclarationOrigin.color origin)
-      | .reverse _ _ _ _ _ _ _ => fun origin =>
+      | .reverse _ _ _ _ _ _ _ _ => fun origin =>
           some (CostEquationDeclarationOrigin.color origin)
   | .core (.derived _ _) => fun _ => none
   | .reflective _ _ _ => fun origin =>
@@ -228,7 +228,7 @@ theorem nonempty_costTypedGeneratorOccurrence
     Nonempty (CostTypedGeneratorOccurrence source generator) := by
   obtain ⟨witness, erasesTo⟩ :=
     ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.exists_erasing_to
-      generator
+      (costWholeLanguage_readsRaw source.toWrappableIGSLT) generator
   obtain ⟨origin⟩ := nonempty_costAuthoredGeneratorOrigin source witness
   exact ⟨⟨witness, erasesTo, origin⟩⟩
 

@@ -99,14 +99,22 @@ theorem matchPattern_atom {label : String} {source : Pattern} {bindings : Bindin
 theorem authored_cases {first second : Pattern} (instance' : AuthoredEquation providerEnv language first second) :
     (first = one ∧ second = two) ∨ (first = two ∧ second = one) := by
   cases instance' with
-  | forward member matched _ =>
+  | forward member _ matched _ =>
     simp only [language, List.mem_singleton] at member
     subst member
     exact .inl ⟨matchPattern_atom matched, rfl⟩
-  | reverse member matched _ =>
+  | reverse member _ matched _ =>
     simp only [language, List.mem_singleton] at member
     subst member
     exact .inr ⟨matchPattern_atom matched, rfl⟩
+  | declared member notRaw _ =>
+    simp only [language, List.mem_singleton] at member
+    subst member
+    exact absurd notRaw (by decide)
+  | premised member notRaw _ _ =>
+    simp only [language, List.mem_singleton] at member
+    subst member
+    exact absurd notRaw (by decide)
 
 /-- **An equation step relates `One` and `Two`, or two compound terms.** -/
 theorem equationStep_cases {first second : Pattern} (step : EquationStep providerEnv language first second) :
@@ -154,7 +162,7 @@ theorem one_equivalent_two : ObjectEquivalent providerEnv language .syntax one t
   show EquationStep providerEnv language one two
   have instance' : AuthoredEquation providerEnv language one two := by
     have step := AuthoredEquation.forward (relEnv := providerEnv) (language := language) (equation := equation)
-      (source := one) (initial := []) (final := []) (witnesses := [.base []]) (by simp [language])
+      (source := one) (initial := []) (final := []) (witnesses := [.base []]) (by simp [language]) rfl
       (by decide +kernel)
       (.cons (.base rfl (by decide +kernel)) (.nil []))
     have instantiated : applyBindingsScoped (captureSitesOf equation.left equation.premises) [] 0 equation.right = two := by
@@ -275,7 +283,6 @@ theorem admitted_of_source {source : Pattern} (typed : Instances.Normalized.Sour
 
 /-- **The agreement**: on admitted atoms, steps and identification agree. -/
 theorem agreement : Agreement profile providerEnv language .syntax (Instances.Normalized.Source generated [] term) where
-  admitted _ typed := typed
   object _ typed := (LocalReading.isState_of_typed typed).2
   steps source typed target := by
     rw [reference_step_iff (admitted_of_source typed), driver_step_iff]

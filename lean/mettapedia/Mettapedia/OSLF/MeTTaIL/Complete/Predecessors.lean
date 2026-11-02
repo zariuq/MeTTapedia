@@ -263,6 +263,10 @@ def predecessors (plan : Plan) (bound : List TypeExpr) (target : Pattern) : List
           | some rebuilt => (variants equation.rule.left rebuilt).map fun source =>
               (context.fill source).eraseBinderMetadata
 
+theorem predecessors_eq_nil_of_no_equations (plan : Plan) (bound : List TypeExpr) (target : Pattern)
+    (empty : plan.equations = []) : predecessors plan bound target = [] := by
+  simp [predecessors, empty]
+
 /-- Every equation of the plan passes the balance admission. -/
 def equationsChecked (plan : Plan) : Bool :=
   plan.equations.all fun equation => GeneralEquationAdmission.checkRule equation.rule equation.binding.spec

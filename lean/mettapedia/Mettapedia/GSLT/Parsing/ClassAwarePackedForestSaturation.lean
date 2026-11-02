@@ -11,8 +11,8 @@ global rule-saturation premise suffices for ParserPack root completeness.
 The criterion requires every lexical match and every locally enabled
 structural family, including families irrelevant to the requested root.  It
 therefore does not characterize the live GLL/GLR forest and must not be used
-as its completeness gate.  The root-relative completeness construction is
-still absent.
+as its completeness gate. `ClassAwareGroundedChart` provides root-relative
+reference coverage; this module supplies the global closure criterion.
 -/
 
 set_option autoImplicit false

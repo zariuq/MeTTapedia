@@ -27,6 +27,7 @@ open Effects (State)
 open Eval
 open BridgeKit WireKit
 open RuleInstantiationExecution.GeneralExecution (matcherRequestTerm matcherStateTerm matcherAnswerTerm)
+open Mettapedia.Languages.ProcessCalculi.MORK (Subst applySubst)
 
 abbrev requestValue (request : GeneralScopedMatchMachine.Request) : Atom := encoded (matcherRequestTerm request)
 abbrev matcherValue (machine : GeneralScopedMatchMachine.State) : Atom := encoded (matcherStateTerm machine)
@@ -245,6 +246,17 @@ theorem predecessors_from_returns (state : State) (plan : GeneralExecutionAdmiss
       unfolding [planValue, CompletePlanWire.planTerm, decompositionsValue, decompositionTerm, contextValue,
         patternValue]
 
+private theorem equation_list_empty_returns {α : Type} (caller : Subst) (state : State)
+    (encode : α → CettaWire.Term) (values : List α)
+    (read : applySubst caller (.var "equations") = encoded (CettaWire.encodeList encode values)) :
+    PureReturns runtime caller state (apply "==" [.var "equations", .symbol "LNil"]) state
+      (Effects.boolean values.isEmpty) := by
+  have left := variable_returns runtime caller state "equations"
+  rw [read] at left
+  have compared := term_equal_returns runtime caller state (.var "equations") (.symbol "LNil")
+    (CettaWire.encodeList encode values) (.symbol "LNil") left (Eval.symbol_returns runtime caller state "LNil")
+  cases values <;> simpa [CettaWire.encodeList] using compared
+
 /-- **`gslt:complete:predecessors` is `Predecessors.predecessors`.** -/
 @[metta_head "gslt:complete:predecessors"]
 theorem predecessors_returns (state : State) (plan : GeneralExecutionAdmission.Plan)
@@ -252,14 +264,31 @@ theorem predecessors_returns (state : State) (plan : GeneralExecutionAdmission.P
     PureReturns runtime [] state
       (apply "gslt:complete:predecessors" [planValue plan table bound expected, patternValue target])
       state (patternsValue (Complete.Predecessors.predecessors plan bound target)) := by
-  have positions := decompositions_returns state target
-  have candidates := predecessors_from_returns state plan table bound expected bound
-    (Complete.Predecessors.decompositions target)
-  rw [show Complete.Predecessors.predecessors plan bound target =
-      positionCandidates plan bound (Complete.Predecessors.decompositions target) from rfl]
-  metta_call_in completeProof_checked using completeProof_agreement
-  metta_eval [positions, candidates] with completeProof_checked in completeProof_agreement
-    unfolding [planValue, CompletePlanWire.planTerm, Decomposes]
+  cases equations : plan.equations with
+  | nil =>
+      rw [Complete.Predecessors.predecessors_eq_nil_of_no_equations plan bound target equations]
+      metta_call_in completeProof_checked using completeProof_agreement
+      metta_eval with completeProof_checked in completeProof_agreement
+        unfolding [planValue, CompletePlanWire.planTerm, patternsValue, encodePatterns, equations]
+      apply pure_if_returns (value := true)
+      · simpa only [List.isEmpty_nil] using
+          equation_list_empty_returns _ state (CompletePlanWire.equationDeclarationTerm plan) [] rfl
+      · metta_eval with completeProof_checked in completeProof_agreement unfolding [patternsValue, encodePatterns]
+  | cons equation rest =>
+      have positions := decompositions_returns state target
+      have candidates := predecessors_from_returns state plan table bound expected bound
+        (Complete.Predecessors.decompositions target)
+      rw [show Complete.Predecessors.predecessors plan bound target =
+          positionCandidates plan bound (Complete.Predecessors.decompositions target) from rfl]
+      metta_call_in completeProof_checked using completeProof_agreement
+      metta_eval [positions, candidates] with completeProof_checked in completeProof_agreement
+        unfolding [planValue, CompletePlanWire.planTerm, Decomposes, equations]
+      apply pure_if_returns (value := false)
+      · simpa only [List.isEmpty_cons] using
+          equation_list_empty_returns _ state (CompletePlanWire.equationDeclarationTerm plan)
+            ((equation, 0) :: rest.zipIdx 1) rfl
+      · metta_eval [positions, candidates] with completeProof_checked in completeProof_agreement
+          unfolding [planValue, CompletePlanWire.planTerm, Decomposes, equations]
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution
 

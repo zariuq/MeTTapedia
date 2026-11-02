@@ -1513,6 +1513,24 @@ theorem runs (f : A → B) (program : Prog (Request Entry size) Reply A)
   · rintro ⟨value, execution, equal⟩
     exact ⟨value, after, execution, equal, rfl⟩
 
+/-- A mapped return completed from an actual retained producer cut has an
+independently interpreted producer origin. This applies equally to closed
+functions and to records carrying a recipe with its continuation. -/
+theorem producer_source (f : A → B)
+    (producer : Prog (Request Entry size) Reply A) (initial after : State authority Entry size)
+    (first later paid : Nat) (mapped : B)
+    (finished : Cursor.resume (provider authority required) (client _) (fun _ _ => 1) later
+      (saved authority required f (advance authority required first producer initial)) =
+        (paid, .done ⟨PUnit.unit, .ok mapped, after⟩)) :
+    ∃ value, producer.Runs (action authority required) initial value after ∧ f value = mapped := by
+  unfold advance at finished
+  rw [← advance_map authority required f first (.ok producer) initial,
+    ← Cursor.advance_add] at finished
+  have reflection := slice_ok_runs authority required (first + later) 0 paid
+    (producer.bind (fun value => .ret (f value))) initial after mapped
+    (by simpa only [Cursor.resume, Nat.zero_add, control, Prod.eta] using finished)
+  exact (runs authority required f producer initial after mapped).mp reflection
+
 end ReturnMap
 
 namespace CapturedClosure
@@ -1532,14 +1550,8 @@ theorem producer_source (body : Environment → Argument → Prog (Request Entry
     (finished : Cursor.resume (provider authority required) (client _) (fun _ _ => 1) later
       (close authority required body (advance authority required first producer initial)) =
         (paid, .done ⟨PUnit.unit, .ok closed, after⟩)) :
-    ∃ environment, producer.Runs (action authority required) initial environment after ∧ body environment = closed := by
-  unfold close advance at finished
-  rw [← ReturnMap.advance_map authority required body first (.ok producer) initial,
-    ← Cursor.advance_add] at finished
-  have reflection := slice_ok_runs authority required (first + later) 0 paid
-    (producer.bind (fun environment => .ret (body environment))) initial after closed
-    (by simpa only [Cursor.resume, Nat.zero_add, ReturnMap.control, Prod.eta] using finished)
-  exact (ReturnMap.runs authority required body producer initial after closed).mp reflection
+    ∃ environment, producer.Runs (action authority required) initial environment after ∧ body environment = closed :=
+  ReturnMap.producer_source authority required body producer initial after first later paid closed finished
 
 variable (needed : (world : World) → authority.Fibre world)
   [admission : ∀ point : IndexedAuthority.Point authority,
@@ -2227,6 +2239,7 @@ end ServiceControls
 #print axioms ReturnMap.schedule_map
 #print axioms ReturnMap.invocation_map
 #print axioms ReturnMap.runs
+#print axioms ReturnMap.producer_source
 #print axioms CapturedClosure.producer_source
 #print axioms CapturedClosure.nonfresh_completed_source
 #print axioms NonfreshControls.late_closing_keeps_the_paid_effect_and_actual_suffix

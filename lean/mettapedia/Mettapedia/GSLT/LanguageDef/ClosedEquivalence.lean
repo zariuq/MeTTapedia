@@ -100,7 +100,7 @@ theorem closedEquationSetoid_fill {source target : LangSort language}
 /-- A matched instance of a premise-free authored equation, read from left to
 right at the root, is one equation step. -/
 theorem equationContextStep_of_forward {equation : Equation}
-    (membership : List.Mem equation language.equations)
+    (membership : List.Mem equation language.equations) (raw : readsRaw equation = true)
     (premiseFree : equation.premises = [])
     {source target : Pattern} {bindings : Bindings}
     (matched : bindings ∈ matchPattern equation.left source)
@@ -110,11 +110,11 @@ theorem equationContextStep_of_forward {equation : Equation}
     rw [premiseFree]
     exact PremisesAt.nil bindings
   exact EquationContextStep.inContext .hole
-    (Or.inl ⟨0, EquationInstanceAt.forward membership matched premises applied⟩)
+    (Or.inl ⟨0, EquationInstanceAt.forward membership raw matched premises applied⟩)
 
 /-- The same instance read from right to left. -/
 theorem equationContextStep_of_reverse {equation : Equation}
-    (membership : List.Mem equation language.equations)
+    (membership : List.Mem equation language.equations) (raw : readsRaw equation = true)
     (premiseFree : equation.premises = [])
     {source target : Pattern} {bindings : Bindings}
     (matched : bindings ∈ matchPattern equation.right source)
@@ -124,7 +124,7 @@ theorem equationContextStep_of_reverse {equation : Equation}
     rw [premiseFree]
     exact PremisesAt.nil bindings
   exact EquationContextStep.inContext .hole
-    (Or.inl ⟨0, EquationInstanceAt.reverse membership matched premises applied⟩)
+    (Or.inl ⟨0, EquationInstanceAt.reverse membership raw matched premises applied⟩)
 
 end Tools
 

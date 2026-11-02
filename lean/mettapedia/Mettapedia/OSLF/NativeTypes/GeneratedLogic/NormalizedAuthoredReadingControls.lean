@@ -49,7 +49,7 @@ theorem covered : ∀ name leaf, installed.native.lookup name = some leaf → re
   intro name leaf _
   have only : leaf = ⟨0, by decide⟩ := Fin.ext (by have := leaf.2; simp [profile] at this; omega)
   subst only
-  exact ⟨done, rfl, done_tests⟩
+  exact ⟨done, rfl, done_tests, done_tests.admitted⟩
 
 /-- **The runtime agrees with the generated front door** about an admitted atom. -/
 theorem agrees {query : Query} (raw : Pattern) (admitted : Admitted raw) {rounds : ℕ} {answer : Bool}

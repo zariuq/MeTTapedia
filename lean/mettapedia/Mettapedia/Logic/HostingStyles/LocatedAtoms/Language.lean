@@ -366,8 +366,8 @@ theorem located_generator {source target : Pattern}
   · exact (no_derivedInstance_of_no_derived_laws (language := located) (by decide) (by decide)
       (by decide) _ _ derived).elim
   cases authored with
-  | forward member matched premises applied =>
-      rename_i equation initial final
+  | forward member _ matched premises applied =>
+      rename_i equation initial final _
       have listed : equation ∈
           [quoteDropEquation, runApplicationEquation, runAbstractionEquation, runProductEquation,
             runRunEquation] := member
@@ -434,8 +434,8 @@ theorem located_generator {source target : Pattern}
           simp [runRunEquation, runPattern, applyBindings]
         subst result
         exact .inl (.inner _ _ _)
-  | reverse member matched premises applied =>
-      rename_i equation initial final
+  | reverse member _ matched premises applied =>
+      rename_i equation initial final _
       have listed : equation ∈
           [quoteDropEquation, runApplicationEquation, runAbstractionEquation, runProductEquation,
             runRunEquation] := member
@@ -522,6 +522,12 @@ theorem located_generator {source target : Pattern}
           simp [runRunEquation, runPattern, applyBindings]
         subst result
         exact .inr (.inner _ _ _)
+  | @declared equation _ _ _ _ member notRaw _ =>
+      have listed : equation ∈
+          [quoteDropEquation, runApplicationEquation, runAbstractionEquation, runProductEquation,
+            runRunEquation] := member
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
+      rcases listed with rfl | rfl | rfl | rfl | rfl <;> (rw [readsRaw_of_none rfl] at notRaw; cases notRaw)
 
 /-! ## Each law is an equality of the static equivalence -/
 
@@ -530,7 +536,7 @@ equation of quotation and dropping. -/
 theorem quotedDropped_instance (name : Pattern) :
     EquationInstance base located (quoted (dropped name)) name :=
   ⟨0, .forward (equation := quoteDropEquation) (initialBindings := [("name", name)]) (.head _)
-    (by simp [quoteDropEquation, quoted, dropped, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [quoteDropEquation, quoted, dropped, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [quoteDropEquation, applyBindings])⟩
 
 /-- **The run of an application and the application of the runs**: one
@@ -541,7 +547,7 @@ theorem runApplication_instance (space function argument : Pattern) :
   ⟨0, .forward (equation := runApplicationEquation)
     (initialBindings := [("F", function), ("X", argument), ("space", space)])
     (.tail _ (.head _))
-    (by simp [runApplicationEquation, runPattern, appLeft, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [runApplicationEquation, runPattern, appLeft, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [runApplicationEquation, runPattern, applyBindings])⟩
 
 /-- **The run of an abstraction and the abstraction of the runs**, the binder
@@ -552,7 +558,7 @@ theorem runAbstraction_instance (space domain body : Pattern) (binder : Option S
   ⟨0, .forward (equation := runAbstractionEquation)
     (initialBindings := [("A", domain), ("B", body), ("space", space)])
     (.tail _ (.tail _ (.head _)))
-    (by simp [runAbstractionEquation, runPattern, lamLeft, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [runAbstractionEquation, runPattern, lamLeft, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [runAbstractionEquation, runPattern, applyBindings])⟩
 
 /-- The abstraction of two runs in one space and the run of the abstraction,
@@ -565,7 +571,7 @@ theorem runAbstraction_reverse (space domain body : Pattern) (binder : Option St
   ⟨0, .reverse (equation := runAbstractionEquation)
     (initialBindings := [("B", body), ("A", domain), ("space", space)])
     (.tail _ (.tail _ (.head _)))
-    (by simp [runAbstractionEquation, runPattern, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [runAbstractionEquation, runPattern, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [runAbstractionEquation, runPattern, lamLeft, applyBindings])⟩
 
 /-- **The run of a product and the product of the runs**, the binder of the
@@ -576,7 +582,7 @@ theorem runProduct_instance (space domain body : Pattern) (binder : Option Strin
   ⟨0, .forward (equation := runProductEquation)
     (initialBindings := [("A", domain), ("B", body), ("space", space)])
     (.tail _ (.tail _ (.tail _ (.head _))))
-    (by simp [runProductEquation, runPattern, piLeft, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [runProductEquation, runPattern, piLeft, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [runProductEquation, runPattern, applyBindings])⟩
 
 /-- The product of two runs in one space and the run of the product: one
@@ -588,7 +594,7 @@ theorem runProduct_reverse (space domain body : Pattern) (binder : Option String
   ⟨0, .reverse (equation := runProductEquation)
     (initialBindings := [("B", body), ("A", domain), ("space", space)])
     (.tail _ (.tail _ (.tail _ (.head _))))
-    (by simp [runProductEquation, runPattern, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [runProductEquation, runPattern, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [runProductEquation, runPattern, piLeft, applyBindings])⟩
 
 /-- **A run of a run and the inner run**: one instance of the equation. -/
@@ -598,7 +604,7 @@ theorem runRun_instance (outer space subject : Pattern) :
   ⟨0, .forward (equation := runRunEquation)
     (initialBindings := [("space", space), ("X", subject), ("outer", outer)])
     (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
-    (by simp [runRunEquation, runPattern, matchPattern, matchArgs, mergeBindings])
+    (readsRaw_of_none rfl) (by simp [runRunEquation, runPattern, matchPattern, matchArgs, mergeBindings])
     (.nil _) (by simp [runRunEquation, runPattern, applyBindings])⟩
 
 /-- **Each law is an equality of the static equivalence.** -/

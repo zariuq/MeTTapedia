@@ -547,7 +547,7 @@ private theorem mnode_template (head children : Atom) (headTemplate : PureData.T
 
 private theorem unary_template (head name : String)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureData.Template program (a head [v name]) := by
   apply PureData.Template.constructor head _ inert ordinary
   intro argument member

@@ -698,8 +698,9 @@
 (= (gslt:complete:predecessors $plan $target)
    (case $plan
      (((CompletePlan $environment $permissions $bound $expected $rules $equations $admitted)
-       (let $decompositions (gslt:complete:decompositions $target)
-         (gslt:complete:predecessors-from $plan $bound $decompositions))))))
+       (if (== $equations LNil) LNil
+         (let $decompositions (gslt:complete:decompositions $target)
+           (gslt:complete:predecessors-from $plan $bound $decompositions)))))))
 
 ; ---------------------------------------------------------------------------
 ; Steps modulo equations (Complete.Classes).

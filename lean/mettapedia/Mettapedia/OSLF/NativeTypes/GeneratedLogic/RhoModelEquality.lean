@@ -394,23 +394,33 @@ theorem quoteDrop_reverse {source : Pattern} {initial : Bindings}
   simp only [applyBindingsScoped_apply, List.map_cons, List.map_nil, scoped_fvar _ (find_single _ _)]
   exact .symm _ _ (quoteDrop_equiv (collapse _))
 
+/-- The ordinary matcher reads the model's equations. -/
+theorem undeclared : ∀ equation ∈ language.equations, readsRaw equation = true := by
+  intro equation member
+  simp only [equations_eq, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl | rfl <;> rfl
+
 theorem authored_move {source target : Pattern} (object : isObjectPattern source = true)
     (instance_ : AuthoredEquation relEnv language source target) : Relation.EqvGen Move source target := by
   cases instance_ with
-  | forward member matched valid =>
+  | forward member _ matched valid =>
     simp only [equations_eq, List.mem_cons, List.not_mem_nil, or_false] at member
     rcases member with rfl | rfl | rfl | rfl <;> cases valid
     · exact quoteDrop_forward matched _
     · exact flattenHead_forward object matched _
     · exact flattenEmpty_forward object matched _
     · exact unit_forward object matched _
-  | reverse member matched valid =>
+  | reverse member _ matched valid =>
     simp only [equations_eq, List.mem_cons, List.not_mem_nil, or_false] at member
     rcases member with rfl | rfl | rfl | rfl <;> cases valid
     · exact quoteDrop_reverse matched _
     · exact flattenHead_reverse object matched _
     · exact flattenEmpty_reverse object matched _
     · exact unit_reverse object matched _
+  | declared member notRaw _ =>
+    exact absurd (undeclared _ member) (by simp [notRaw])
+  | premised member notRaw _ _ =>
+    exact absurd (undeclared _ member) (by simp [notRaw])
 
 /-- The model's constructors declare no set. -/
 theorem no_sets : ∀ rule ∈ language.terms, ∀ parameter ∈ rule.params,
@@ -528,7 +538,7 @@ theorem authored_same {equation : Equation} (member : equation ∈ language.equa
     Same relEnv source target := by
   have valid : PremisesValid relEnv language (captureSitesOf equation.left equation.premises) initial equation.premises []
       initial := by rw [noPremises]; exact .nil _
-  have authored := AuthoredEquation.forward member (matchPattern_iff_matchRel.mpr matched) valid
+  have authored := AuthoredEquation.forward member (undeclared equation member) (matchPattern_iff_matchRel.mpr matched) valid
   rw [instantiated] at authored
   exact .rel _ _ ⟨sourceObject, targetObject, EquationStep.inContext .hole (.inl authored)⟩
 
@@ -540,7 +550,7 @@ theorem authored_same_reverse {equation : Equation} (member : equation ∈ langu
     Same relEnv source target := by
   have valid : PremisesValid relEnv language (captureSitesOf equation.right equation.premises) initial equation.premises []
       initial := by rw [noPremises]; exact .nil _
-  have authored := AuthoredEquation.reverse member (matchPattern_iff_matchRel.mpr matched) valid
+  have authored := AuthoredEquation.reverse member (undeclared equation member) (matchPattern_iff_matchRel.mpr matched) valid
   rw [instantiated] at authored
   exact .rel _ _ ⟨sourceObject, targetObject, EquationStep.inContext .hole (.inl authored)⟩
 

@@ -104,7 +104,7 @@ calls do not overwrite it. -/
 def instrumentBody (p : Protocol) (checks : List Validator) :
     DeclineKey → Body → Option IStmt
   | last, .ret outcome =>
-      wrap checks (allOwnerRequests p [])
+      wrap checks (factRequests (exitRequires p outcome) ++ allOwnerRequests p [])
         (if outcome = .declined then .tick last (.ret outcome) else .ret outcome)
   | _, .call id yes no => do
       let hook ← findHook p id
@@ -137,8 +137,9 @@ def instrument (p : Protocol) (checks : List Validator) : Option IStmt := do
   wrap checks (factRequests p.entryFacts ++ allOwnerRequests p p.entryOwned) body
 
 def declaredFacts (p : Protocol) : List String :=
-  p.entryFacts ++ p.hooks.flatMap (fun h => h.requires ++ h.proves) ++
-    p.resources.flatMap (fun r => r.acquireRequires ++ r.transferRequires)
+  p.entryFacts ++ p.hooks.flatMap (fun h => h.requires ++ h.proves ++ h.invalidates) ++
+    p.resources.flatMap (fun r => r.acquireRequires ++ r.transferRequires) ++
+    p.exitFacts.flatMap Prod.snd
 
 def validatorDeclared (p : Protocol) (v : Validator) : Prop :=
   match v.kind with

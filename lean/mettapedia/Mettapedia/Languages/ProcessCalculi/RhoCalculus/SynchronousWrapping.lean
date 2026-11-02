@@ -139,7 +139,7 @@ theorem rhoSync_cut_introductions (cut : InteractionCutPresentation rhoSyncIGSLT
         [.apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
           .apply "POutputK" [.fvar "n", .fvar "q", .fvar "k"]] (some "rest") := rfl
   obtain ⟨program, environment⟩ := cut.operands_of_collection_left
-    (rhoSync_core_not_binary cut.coreContact) left (by decide) (by decide)
+    (rhoSync_core_not_binary cut.coreContact) left (by decide) (by decide) rfl rfl
   exact ⟨(cut.program.of_apply program).1, (cut.environment.of_apply environment).1⟩
 
 /-! ## No cut is wrappable -/

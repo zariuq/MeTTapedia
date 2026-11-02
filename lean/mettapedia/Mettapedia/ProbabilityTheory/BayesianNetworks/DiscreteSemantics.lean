@@ -7,19 +7,16 @@ import Mettapedia.ProbabilityTheory.BayesianNetworks.EventSets
 import Mettapedia.ProbabilityTheory.BayesianNetworks.FactorGraph
 
 /-!
-# Discrete Semantics for Bayesian Networks (WIP)
+# Finite Discrete Semantics for Bayesian Networks
 
-This file starts the "Bayesian networks meet PLN" bridge in the **finite/discrete** setting.
-
-What we provide here (no probabilistic heavy-lifting yet):
+This file constructs the probabilistic semantics of finite discrete Bayesian networks:
 
 * A discrete CPT interface: each node has a `PMF` conditional on its parents.
-* The induced factor graph (one factor per node) whose unnormalized joint is the BN product form.
+* The induced factor graph, with one factor per node and the same supplied CPT product.
+* Normalization of that product from acyclicity, and its joint PMF and measure.
 
-What is intentionally left for later (may require real work / sorries):
-
-* Proving the BN product form is normalized (`partitionFunction = 1`) from acyclicity.
-* Proving Markov / d-separation soundness using Mathlib's conditional independence API.
+The conditional-independence results are developed in `DiscreteLocalMarkov`
+and `DSeparationSoundness`.
 -/
 
 namespace Mettapedia.ProbabilityTheory.BayesianNetworks

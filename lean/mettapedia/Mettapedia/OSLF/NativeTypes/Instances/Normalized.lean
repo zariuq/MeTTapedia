@@ -15,11 +15,11 @@ exercise admission, preserved receipt packets and interrupted evaluation.
 The rho COMM instance includes the quote-drop model equation. Its family
 controls distinguish that name equation from an authored process-Drop event.
 
-TODO (integration with the front door): this driver has no front-door reading yet. Its operational relation is the
-generated plan's primitive receipts (`GeneralOccurrenceSemantics`), not the reference relation the front door reads
-(`OSLF/MeTTaIL/ReferenceStep*`). A `DriverBridge.Faithful` reading needs the two to agree on the driver's admitted
-terms, which is the occurrence-semantics lane's work; with that agreement this driver reads at the front door as the
-local, λ, Partrec and ρ drivers do. The same agreement reads its dynamic relations, which the front door answers through
-the services' relation environment (`GeneratedLogic/ServedRelations`): the plan resolves a dynamic request with its
-output schemas uninstantiated, the reference relation instantiates what is bound.
+Front-door readings. The generic reading (`GeneratedLogic.NormalizedDriverReading`) reads a profile at the front
+door from an agreement on a region: its steps are the reference structure's, it does not leave the region, and its
+equality is the reference structure's identification. The authored profile agrees on its admitted terms
+(`GeneratedLogic.NormalizedAuthoredReading`). The rho profile agrees with the reference structure of a language
+authoring its model, on the class of rho's carrier (`GeneratedLogic.RhoModelReading`); its equality keeps the
+wrappers `{P}` and `{}` apart, which rho's declared algebra identifies. A profile's receipts are valid with the empty
+dynamic provider (`GeneralOccurrenceSemantics.Primitive`), so no profile resolves a dynamic request.
 -/

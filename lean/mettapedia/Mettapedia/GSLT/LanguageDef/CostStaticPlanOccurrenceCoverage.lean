@@ -51,9 +51,9 @@ def CostAuthoredGeneratorOrigin.sourceDeclaration
   match witness with
   | .core (.equation _ instanceWitness) =>
       match instanceWitness with
-      | .forward _ _ _ _ _ _ _ => fun origin =>
+      | .forward _ _ _ _ _ _ _ _ => fun origin =>
           .equation (CostEquationDeclarationOrigin.sourceEquation origin)
-      | .reverse _ _ _ _ _ _ _ => fun origin =>
+      | .reverse _ _ _ _ _ _ _ _ => fun origin =>
           .equation (CostEquationDeclarationOrigin.sourceEquation origin)
   | .core (.derived _ lawWitness) => fun _ => .derived lawWitness.rule
   | .reflective _ _ _ => fun origin =>

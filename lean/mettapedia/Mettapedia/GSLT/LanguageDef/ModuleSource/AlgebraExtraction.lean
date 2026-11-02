@@ -1074,8 +1074,29 @@ theorem retained_labels_unique (language : LanguageDef) (binaryLabels : List Str
       (sameLabel.trans (keepLabel originalSecond)))
   exact congrArg retain originals
 
-/-- The authoring pipeline's shared-constructor protection precedes algebra
-extraction. Successful entry checking and entry/body label coherence provide
+/-- Keeping declared-bare constructors bare changes no label. -/
+theorem kept_labels_unique (declared : List String) (language : LanguageDef)
+    (labels : ∀ first ∈ language.terms, ∀ second ∈ language.terms,
+      first.label = second.label → first = second) :
+    ∀ first ∈ (keepDeclaredBare declared language).terms,
+      ∀ second ∈ (keepDeclaredBare declared language).terms,
+        first.label = second.label → first = second := by
+  let keep := fun rule : GrammarRule =>
+    if declared.contains rule.label then { rule with collectionRepresentation := .bare } else rule
+  have keepLabel : ∀ rule, (keep rule).label = rule.label := by
+    intro rule
+    dsimp only [keep]
+    split <;> rfl
+  intro first firstMember second secondMember sameLabel
+  obtain ⟨originalFirst, firstSelected, rfl⟩ := List.mem_map.mp firstMember
+  obtain ⟨originalSecond, secondSelected, rfl⟩ := List.mem_map.mp secondMember
+  have originals : originalFirst = originalSecond := labels originalFirst firstSelected
+    originalSecond secondSelected ((keepLabel originalFirst).symm.trans
+      (sameLabel.trans (keepLabel originalSecond)))
+  exact congrArg keep originals
+
+/-- The authoring pipeline's shared-constructor protection, with declared-bare constructors kept bare, precedes
+algebra extraction. Successful entry checking and entry/body label coherence provide
 the finite signature condition for that exact pipeline. -/
 theorem flatten_deleted_instances (sourceName : String) (value : Value)
     (checked : List Item) (row : Equation) (bindings : Bindings)
@@ -1085,14 +1106,18 @@ theorem flatten_deleted_instances (sourceName : String) (value : Value)
     (member : row ∈ (flattenRaw sourceName value).equations)
     (deleted : row ∉ (flatten sourceName value).equations) :
     Relation.EqvGen (LawStep (CollectionLaws.declared (flatten sourceName value)))
-      (unwrap (bareLabels (retainSharedCollectionLabels (flattenRaw sourceName value) (binaryCollectionLabels value)))
+      (unwrap (bareLabels (keepDeclaredBare value.declaredBare
+          (retainSharedCollectionLabels (flattenRaw sourceName value) (binaryCollectionLabels value))))
         (applyBindings bindings row.left))
-      (unwrap (bareLabels (retainSharedCollectionLabels (flattenRaw sourceName value) (binaryCollectionLabels value)))
+      (unwrap (bareLabels (keepDeclaredBare value.declaredBare
+          (retainSharedCollectionLabels (flattenRaw sourceName value) (binaryCollectionLabels value))))
         (applyBindings bindings row.right)) := by
-  have labels := retained_labels_unique (flattenRaw sourceName value) (binaryCollectionLabels value)
-    (flattenRaw_labels_unique sourceName value coherent (recheck_input_valid accepted))
+  have labels := kept_labels_unique value.declaredBare _
+    (retained_labels_unique (flattenRaw sourceName value) (binaryCollectionLabels value)
+      (flattenRaw_labels_unique sourceName value coherent (recheck_input_valid accepted)))
   exact declareAlgebras_deleted_instances
-    (retainSharedCollectionLabels (flattenRaw sourceName value) (binaryCollectionLabels value))
+    (keepDeclaredBare value.declaredBare
+      (retainSharedCollectionLabels (flattenRaw sourceName value) (binaryCollectionLabels value)))
     _ row bindings labels member deleted
 
 theorem recheck_refuses_label_collision (first second : Item)
@@ -1120,6 +1145,7 @@ theorem recheck_refuses_label_collision (first second : Item)
 #print axioms recheck_input_valid
 #print axioms flattenRaw_labels_unique
 #print axioms retained_labels_unique
+#print axioms kept_labels_unique
 #print axioms flatten_deleted_instances
 #print axioms recheck_refuses_label_collision
 

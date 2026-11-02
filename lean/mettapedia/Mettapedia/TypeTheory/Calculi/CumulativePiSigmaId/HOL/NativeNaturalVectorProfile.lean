@@ -70,6 +70,9 @@ theorem vector_lexical : AnnotatedPredicateReading.LexicalMap (NativeVectorCompu
       cases found
     simpa only [lexical, if_neg distinct] using found
 
+  · intro operator result code found
+    cases found
+
 theorem natural_lexical : AnnotatedPredicateReading.LexicalMap (NativeNaturalPredicateReading.lexicalReading (natural raw vectorInterface naturalSelection))
     (lexical raw vectorInterface naturalSelection) (fun head => head) := by
   constructor
@@ -96,6 +99,9 @@ theorem natural_lexical : AnnotatedPredicateReading.LexicalMap (NativeNaturalPre
       simpa [NativeNaturalPredicateReading.lexicalReading, lexical, natural] using found
     simp [NativeNaturalPredicateReading.lexicalReading, same] at found
 
+  · intro operator result code found
+    cases found
+
 theorem guarded_natural_lexical : AnnotatedPredicateReading.LexicalMap (NativeNaturalPredicateReading.GuardedContexts.lexical (natural raw vectorInterface naturalSelection))
     (lexical raw vectorInterface naturalSelection) (fun head => head) := by
   constructor
@@ -111,6 +117,9 @@ theorem guarded_natural_lexical : AnnotatedPredicateReading.LexicalMap (NativeNa
         vector, NativeVectorComputationRows.EncodedConstructor.operations] using found
     have different : head ≠ NativeNaturalPredicateReading.GuardedContexts.levelMap (.sort motiveLevel) := same
     simp [NativeNaturalPredicateReading.GuardedContexts.lexical, different] at found
+
+  · intro operator result code found
+    cases found
 
 def closedAssumptions : List (HOL.ClosedFormula Const) :=
   NativeNaturalPredicateReading.AnnotatedConversion.closedAssumptions (natural raw vectorInterface naturalSelection) ++
@@ -132,6 +141,8 @@ def vectorExtension : AnnotatedPredicateReading.ReadingExtension (vector raw vec
       exact (vector_lexical raw vectorInterface naturalSelection).constants _ _ _
         ((NativeVectorComputationRows.GuardedFamily.extends_computation (vector raw vectorInterface)).constants _ _ _ found)
     · intro head type code found
+      cases found
+    · intro operator result code found
       cases found
   hypotheses := HOL.ProofSyntax.OccurrenceMap.appendLeft _ _
 

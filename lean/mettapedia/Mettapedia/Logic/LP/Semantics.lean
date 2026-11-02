@@ -14,7 +14,7 @@ These definitions work for **full first-order logic programming** with function 
 constraint appears only in specialized modules (`FunctionFreeEvaluation.lean`,
 `BDD/Compilation.lean`) where finite Herbrand bases are needed.
 
-See `LP/PrologInstance.lean` for a concrete example with function symbols (successor
+See `LP/HornClauseExamples.lean` for a concrete example with function symbols (successor
 arithmetic: `nat(s(s(0)))` proved in the least Herbrand model).
 
 ## Design

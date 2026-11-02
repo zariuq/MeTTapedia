@@ -396,22 +396,43 @@ theorem premisesValid_flattenScoped_iff {sites : Pattern} {initial final : Bindi
       PremisesValid relEnv language sites initial premises witnesses final :=
   ⟨premisesValid_unflatten relEnv language witnesses, premisesValid_flatten relEnv language witnesses⟩
 
+theorem declaredPremised_flattenScoped_iff {equation : Equation}
+    {orientation : Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.Orientation} {ambient : Nat}
+    {witnesses : List Witness} {source target : Pattern} :
+    DeclaredPremised relEnv (flattenScoped language) equation orientation ambient witnesses source target ↔
+      DeclaredPremised relEnv language equation orientation ambient witnesses source target := by
+  constructor
+  · rintro ⟨spec, captured, final, specified, admitted, sourceScoped, matched, valid, reduced, targetScoped⟩
+    exact ⟨spec, captured, final, specified, admitted, sourceScoped, matched,
+      (premisesValid_flattenScoped_iff relEnv language).mp valid, reduced, targetScoped⟩
+  · rintro ⟨spec, captured, final, specified, admitted, sourceScoped, matched, valid, reduced, targetScoped⟩
+    exact ⟨spec, captured, final, specified, admitted, sourceScoped, matched,
+      (premisesValid_flattenScoped_iff relEnv language).mpr valid, reduced, targetScoped⟩
+
 /-- **An authored equation instance is one in the flattened language**: its premises hold alike. -/
 theorem authoredEquation_flattenScoped_iff {source target : Pattern} :
     AuthoredEquation relEnv (flattenScoped language) source target ↔ AuthoredEquation relEnv language source target := by
   constructor
   · intro instance_
     cases instance_ with
-    | forward member matched premises =>
-      exact .forward member matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
-    | reverse member matched premises =>
-      exact .reverse member matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
+    | forward member undeclared matched premises =>
+      exact .forward member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
+    | reverse member undeclared matched premises =>
+      exact .reverse member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
+    | declared member notRaw produced =>
+      exact .declared member notRaw (Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.applyEquationAt_language _ language _ _ _ _ ▸ produced)
+    | premised member notRaw premised declaredPremised =>
+      exact .premised member notRaw premised ((declaredPremised_flattenScoped_iff relEnv language).mp declaredPremised)
   · intro instance_
     cases instance_ with
-    | forward member matched premises =>
-      exact .forward member matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
-    | reverse member matched premises =>
-      exact .reverse member matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
+    | forward member undeclared matched premises =>
+      exact .forward member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
+    | reverse member undeclared matched premises =>
+      exact .reverse member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
+    | declared member notRaw produced =>
+      exact .declared member notRaw (Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.applyEquationAt_language language _ _ _ _ _ ▸ produced)
+    | premised member notRaw premised declaredPremised =>
+      exact .premised member notRaw premised ((declaredPremised_flattenScoped_iff relEnv language).mpr declaredPremised)
 
 theorem equationStep_flattenScoped_iff {source target : Pattern} :
     EquationStep relEnv (flattenScoped language) source target ↔ EquationStep relEnv language source target := by
@@ -433,20 +454,28 @@ theorem disciplinedEquation_flattenScoped_iff {discipline : EquationDiscipline} 
   constructor
   · intro instance_
     cases instance_ with
-    | forward member matched premises admitted scope =>
-      exact .forward member matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
+    | forward member undeclared matched premises admitted scope =>
+      exact .forward member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
         ((bindingsAdmitted_flattenScoped_iff language).mp admitted) scope
-    | reverse member matched premises admitted scope =>
-      exact .reverse member matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
+    | reverse member undeclared matched premises admitted scope =>
+      exact .reverse member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mp premises)
         ((bindingsAdmitted_flattenScoped_iff language).mp admitted) scope
+    | declared raw member notRaw produced =>
+      exact .declared raw member notRaw (Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.applyEquationAt_language _ language _ _ _ _ ▸ produced)
+    | premised raw member notRaw premised declaredPremised =>
+      exact .premised raw member notRaw premised ((declaredPremised_flattenScoped_iff relEnv language).mp declaredPremised)
   · intro instance_
     cases instance_ with
-    | forward member matched premises admitted scope =>
-      exact .forward member matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
+    | forward member undeclared matched premises admitted scope =>
+      exact .forward member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
         ((bindingsAdmitted_flattenScoped_iff language).mpr admitted) scope
-    | reverse member matched premises admitted scope =>
-      exact .reverse member matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
+    | reverse member undeclared matched premises admitted scope =>
+      exact .reverse member undeclared matched ((premisesValid_flattenScoped_iff relEnv language).mpr premises)
         ((bindingsAdmitted_flattenScoped_iff language).mpr admitted) scope
+    | declared raw member notRaw produced =>
+      exact .declared raw member notRaw (Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution.applyEquationAt_language language _ _ _ _ _ ▸ produced)
+    | premised raw member notRaw premised declaredPremised =>
+      exact .premised raw member notRaw premised ((declaredPremised_flattenScoped_iff relEnv language).mpr declaredPremised)
 
 theorem disciplinedStep_flattenScoped_iff {discipline : EquationDiscipline} {source target : Pattern} :
     DisciplinedStep relEnv (flattenScoped language) discipline source target ↔
@@ -472,7 +501,7 @@ theorem readingStep_flattenScoped_iff (equations : EquationReading) {source targ
   | .instances .sorted => exact disciplinedStep_flattenScoped_iff relEnv language
   | .instances .fresh => exact disciplinedStep_flattenScoped_iff relEnv language
   | .instances .closed => exact disciplinedStep_flattenScoped_iff relEnv language
-  | .typed discipline profile types =>
+  | .typed discipline profile types names =>
     simp only [readingStep, TypedStep, formed_flattenScoped_iff, disciplinedStep_flattenScoped_iff]
     rfl
 

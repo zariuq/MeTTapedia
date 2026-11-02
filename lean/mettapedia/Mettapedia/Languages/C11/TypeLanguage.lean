@@ -59,7 +59,8 @@ end
 deriving instance DecidableEq for CType, CParameters, CTypeList
 
 /-- 6.5.2.2p6: a parameter type that the default argument promotions leave
-    unchanged (LP64 integers; `float` becomes `double`). -/
+    unchanged (LP64 integers; `float` becomes `double`, while `_Float16` and
+    `__bf16` keep their types, as GCC and Clang pass them). -/
 def CType.promotionStable : CType → Bool
   | .arithmetic (.integer type) => lp64Promote type == type
   | .arithmetic (.real .float) => false
@@ -277,6 +278,11 @@ private def long : CType := .arithmetic (.integer (.signed (.standard .long)))
 private def char : CType := .arithmetic (.integer (.signed (.standard .char)))
 private def unqualified : TypeQualifiers := {}
 private def constant : TypeQualifiers := { const := true }
+
+/-- The default argument promotions change `float`, but leave `_Float16` and `__bf16`. -/
+example : (CType.arithmetic (.real .float)).promotionStable = false := by decide
+example : (CType.arithmetic (.real .float16)).promotionStable = true ∧
+    (CType.arithmetic (.real .bfloat16)).promotionStable = true := by decide
 
 /-- Plain `char` is a type of its own, even where it is signed (6.2.5p15). -/
 example : CType.character.compatible char = false := by decide

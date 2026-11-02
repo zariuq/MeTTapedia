@@ -35,6 +35,15 @@ theorem functionExtensionalityFree_substConst {Target : Ty Base → Type v'}
   all_goals try rw [functionExtensionalityFree_castIndices]
   all_goals simp_all only [functionExtensionalityFree_castIndices, FunctionExtensionalityFree]
 
+theorem functionExtensionalityFree_mapConst {Symbols : Ty Base → Type v'}
+    (constants : ∀ {type}, Const type → Symbols type)
+    {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {formula : Formula Const Γ}
+    (proof : ProofSyntax Const Δ formula) :
+    (ProofSyntax.mapConst constants proof).FunctionExtensionalityFree ↔ proof.FunctionExtensionalityFree := by
+  dsimp only [ProofSyntax.mapConst]
+  rw [functionExtensionalityFree_castIndices]
+  exact functionExtensionalityFree_substConst _ proof
+
 end ProofSyntax
 
 structure TermInterpretation (Base : Type u) (Const : Ty Base → Type v)

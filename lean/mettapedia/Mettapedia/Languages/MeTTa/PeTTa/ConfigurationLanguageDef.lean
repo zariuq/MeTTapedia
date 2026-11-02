@@ -27,6 +27,9 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open ConfigurationEncoding
 
+-- The rules read the classified call as one value; unfolding it is never needed here.
+attribute [-simp] Eval.application
+
 private def v (name : String) : Pattern := .fvar name
 
 /-- Ordered expression fields in the shared Atom codec. -/
@@ -186,9 +189,9 @@ def primitiveFault : RewriteRule :=
 
 def equations : RewriteRule :=
   rule "equations" (sameFields finishedArguments)
-    (sameFields (sequencePattern (v "successors") (expressionPattern [])))
+    (sameFields (v "code"))
     [query "petta-equation-head" [v "head"],
-      query "petta-clauses" [v "head", v "values", v "successors"]]
+      query "petta-application" [v "head", v "values", v "code"]]
 
 private def pendingArguments : Pattern :=
   argumentsPattern (v "bindings") (v "target")
@@ -312,6 +315,14 @@ def quoteEnter : RewriteRule :=
     (sameFields (returnedPattern (expressionPattern [v "substituted"])))
     [query "petta-substitute" [v "bindings", v "expression", v "substituted"]]
 
+def queryEnter : RewriteRule :=
+  rule "query-enter"
+    (sameFields (evaluatePattern (v "bindings")
+      (controlExpression "match" [v "value", v "pattern", v "body"])))
+    (pushFrame (evaluatePattern (v "bindings") (v "value"))
+      (framePattern "petta-frame-query-v1" [v "bindings", v "pattern", v "body"]))
+    [query "petta-list-vector" [v "frames", v "framesTail"]]
+
 private def symbolHead : Pattern := .apply "ground-atom-symbol-v1" [v "spelling"]
 
 private def headedExpression : Pattern :=
@@ -386,18 +397,25 @@ def ifReturn : RewriteRule :=
     [query "petta-branch-alternatives"
       [v "bindings", v "yes", v "no", v "answers", v "successors"]]
 
+def queryReturn : RewriteRule :=
+  rule "query-return"
+    (returnedSource (framePattern "petta-frame-query-v1" [v "bindings", v "pattern", v "body"]))
+    (returnedTarget (sequencePattern (v "successors") (expressionPattern [])))
+    [query "petta-query-alternatives"
+      [v "state", v "bindings", v "pattern", v "body", v "answers", v "successors"]]
+
 def rules : List RewriteRule :=
   [sequenceDone, sequenceEnter, construct, readEnd, readLine, printValue, evaluateCode,
     readBad, printBad, evalBad, primitive, primitiveFault, equations, rawArgument,
     evaluatedArgument, valueVariable, symbol, grounded, letEnter, letStar, letStarBad,
     caseEnter, caseBad, ifEnter, collapseEnter, superposeEnter, emptyEnter, quoteEnter,
     callEnter, dataEnter, expressionEnter, collapseReturn, sequenceReturn,
-    argumentReturn, bindingReturn, caseReturn, ifReturn]
+    argumentReturn, bindingReturn, caseReturn, ifReturn, queryEnter, queryReturn]
 
 def language : LanguageDef :=
   { OSLFCore.Bridge.GroundData.dataLanguage with name := "PeTTaConfigurations", rewrites := rules }
 
-theorem rule_count : rules.length = 37 := rfl
+theorem rule_count : rules.length = 39 := rfl
 
 theorem no_authored_equations : language.equations = [] := rfl
 
@@ -410,7 +428,7 @@ theorem nonrecursive_rules : ∀ rewrite ∈ language.rewrites,
   rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl
+    rfl | rfl | rfl | rfl | rfl
   all_goals repeat' constructor
 
 private def atom? (pattern : Pattern) : Option Atom := OSLFCore.Bridge.GroundData.decode pattern
@@ -460,6 +478,20 @@ private def store? (pattern : Pattern) : Option (Effects.State × List String) :
       return (state, (← readCells cells).map Prod.fst)
   | _ => none
 
+/-- The query relation: the alternatives of a `match` on each space value,
+read from the decoded store. Kept apart from the main catalog. -/
+def queryRelationRows (name : String) (arguments : List Pattern) : List (List Pattern) :=
+  match name, arguments with
+  | "petta-query-alternatives", [store, bindings, pattern, body, answers, _] => results do
+      let (state, _) ← store? store
+      let captured ← bindings? bindings
+      let matchPattern ← atom? pattern
+      let expression ← atom? body
+      let spaces ← list? answers
+      return [store, bindings, pattern, body, answers, encodedControls (spaces.flatMap fun space =>
+        Eval.queryAlternatives state captured space matchPattern expression)]
+  | _, _ => []
+
 /-- A finite catalog of the data operations used in the authored rules.
 No branch calls `Eval.step`, a fuelled runner, `Transition` or `Runs`. -/
 def relationRows (program : SpaceSemantics.Program) (name : String)
@@ -498,9 +530,9 @@ def relationRows (program : SpaceSemantics.Program) (name : String)
       match StdLib.apply state head values with
       | .ok _ => none
       | .error reason => return [store, function, inputs, encoded (faultData reason)]
-  | "petta-clauses", [function, inputs, _] => results do
-      return [function, inputs, encodedControls (Eval.clauses program
-        (← text? function) (← list? inputs))]
+  | "petta-application", [function, inputs, _] => results do
+      return [function, inputs, encoded (controlData (Eval.application program
+        (← text? function) (← list? inputs)))]
   | "petta-raw-demand", [target, position] => results do
       let destination ← target? target
       let index ← index? position
@@ -579,7 +611,7 @@ def relationRows (program : SpaceSemantics.Program) (name : String)
       let alternatives ← list? answers
       return [bindings, yes, no, answers, encodedControls (alternatives.map fun value =>
         .evaluate captured (if value == Effects.boolean true then ifTrue else ifFalse))]
-  | _, _ => []
+  | name, arguments => queryRelationRows name arguments
 
 def relationEnv (program : SpaceSemantics.Program) : RelationEnv :=
   { tuples := relationRows program }
@@ -857,22 +889,48 @@ private theorem primitive_fault_rows_explicit (program : SpaceSemantics.Program)
   simpa only [encoded, stringPattern_explicit, encodedList, OSLFCore.Bridge.GroundData.encode]
     using primitive_fault_rows program state head values reason names vacant covers failed output
 
-private theorem clauses_rows_explicit (program : SpaceSemantics.Program)
+/-- The encoded control of an authored call, kept folded for the frontier proofs. -/
+private def encodedApplication (program : SpaceSemantics.Program) (head : String)
+    (values : List Atom) : Pattern :=
+  encoded (controlData (Eval.application program head values))
+
+private theorem application_rows_explicit (program : SpaceSemantics.Program)
     (head : String) (values : List Atom) (output : Pattern) :
-    relationRows program "petta-clauses"
+    relationRows program "petta-application"
       [.apply "ground-atom-string-v1" [.apply "source-sexpr-atom-v1" [.apply head []]],
         .apply "ground-atom-expression-v1"
           [.collection .vec (OSLFCore.Bridge.GroundData.encodeList values) none], output] =
       [[.apply "ground-atom-string-v1" [.apply "source-sexpr-atom-v1" [.apply head []]],
         .apply "ground-atom-expression-v1"
           [.collection .vec (OSLFCore.Bridge.GroundData.encodeList values) none],
-        encodedControls (Eval.clauses program head values)]] := by
-  have computed : relationRows program "petta-clauses"
+        encodedApplication program head values]] := by
+  have computed : relationRows program "petta-application"
       [stringPattern head, encodedList values, output] =
-      [[stringPattern head, encodedList values, encodedControls (Eval.clauses program head values)]] := by
-    simp [relationRows, results]
+      [[stringPattern head, encodedList values, encodedApplication program head values]] := by
+    simp only [relationRows, results, text?_stringPattern, list?_encodedList, encodedApplication]
+    rfl
   simpa only [stringPattern_explicit, encodedList, encoded, OSLFCore.Bridge.GroundData.encode]
     using computed
+
+theorem query_rows (program : SpaceSemantics.Program) (state : Effects.State)
+    (names : List String) (vacant : NamedSpaces.Store.EmptyTail state [])
+    (covers : ∀ name, name ∉ names → state.cells name = none)
+    (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst)
+    (pattern body : Atom) (answers : List Atom) (output : Pattern) :
+    relationRows program "petta-query-alternatives"
+      [encoded (stateData state names), encoded (bindingsData bindings), encoded pattern,
+        encoded body, encodedList answers, output] =
+      [[encoded (stateData state names), encoded (bindingsData bindings), encoded pattern,
+        encoded body, encodedList answers, encodedControls (answers.flatMap fun space =>
+          Eval.queryAlternatives state bindings space pattern body)]] := by
+  have catalog : relationRows program "petta-query-alternatives"
+      [encoded (stateData state names), encoded (bindingsData bindings), encoded pattern,
+        encoded body, encodedList answers, output] =
+      queryRelationRows "petta-query-alternatives"
+      [encoded (stateData state names), encoded (bindingsData bindings), encoded pattern,
+        encoded body, encodedList answers, output] := rfl
+  rw [catalog]
+  simp [queryRelationRows, results, store?_encoded state names vacant covers]
 
 theorem native_head_rows (program : SpaceSemantics.Program) (head : String) :
     relationRows program "petta-native-head" [stringPattern head] =
@@ -989,6 +1047,23 @@ private theorem branch_rows_explicit (program : SpaceSemantics.Program)
         encodedControls (answers.map fun value => .evaluate bindings
           (if value == Effects.boolean true then yes else no))]] := by
   simpa only [encodedList_fields, expressionPattern] using branch_rows program bindings yes no answers output
+
+private theorem query_rows_explicit (program : SpaceSemantics.Program) (state : Effects.State)
+    (names : List String) (vacant : NamedSpaces.Store.EmptyTail state [])
+    (covers : ∀ name, name ∉ names → state.cells name = none)
+    (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst)
+    (pattern body : Atom) (answers : List Atom) (output : Pattern) :
+    relationRows program "petta-query-alternatives"
+      [encoded (stateData state names), encoded (bindingsData bindings), encoded pattern,
+        encoded body, .apply "ground-atom-expression-v1"
+          [.collection .vec (OSLFCore.Bridge.GroundData.encodeList answers) none], output] =
+      [[encoded (stateData state names), encoded (bindingsData bindings), encoded pattern,
+        encoded body, .apply "ground-atom-expression-v1"
+          [.collection .vec (OSLFCore.Bridge.GroundData.encodeList answers) none],
+        encodedControls (answers.flatMap fun space =>
+          Eval.queryAlternatives state bindings space pattern body)]] := by
+  simpa only [encodedList_fields, expressionPattern] using
+    query_rows program state names vacant covers bindings pattern body answers output
 
 private theorem binding_rows_explicit (program : SpaceSemantics.Program)
     (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst)
@@ -1235,6 +1310,26 @@ private theorem let_unheaded_rows_explicit (program : SpaceSemantics.Program)
 private theorem let_not_control_rows_explicit (program : SpaceSemantics.Program)
     (pattern value body : Atom) : relationRows program "petta-not-control" [.apply "ground-atom-expression-v1" [.collection .vec [.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply "let" []]], OSLFCore.Bridge.GroundData.encode pattern, OSLFCore.Bridge.GroundData.encode value, OSLFCore.Bridge.GroundData.encode body] none]] = [] := by
   rw [← let_expression_encoded pattern value body]
+  simp [relationRows, results, DeclarativeSpec.controlForm]
+
+private theorem match_expression_encoded (space pattern body : Atom) : encoded (.expression [.symbol "match", space, pattern, body]) =
+    .apply "ground-atom-expression-v1" [.collection .vec [.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply "match" []]], OSLFCore.Bridge.GroundData.encode space, OSLFCore.Bridge.GroundData.encode pattern, OSLFCore.Bridge.GroundData.encode body] none] := by
+  simp only [encoded, OSLFCore.Bridge.GroundData.encode, OSLFCore.Bridge.GroundData.encodeList]
+  rfl
+
+private theorem match_grounded_rows_explicit (program : SpaceSemantics.Program)
+    (space pattern body : Atom) : relationRows program "petta-grounded" [.apply "ground-atom-expression-v1" [.collection .vec [.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply "match" []]], OSLFCore.Bridge.GroundData.encode space, OSLFCore.Bridge.GroundData.encode pattern, OSLFCore.Bridge.GroundData.encode body] none]] = [] := by
+  rw [← match_expression_encoded space pattern body]
+  simp [relationRows, results]
+
+private theorem match_unheaded_rows_explicit (program : SpaceSemantics.Program)
+    (space pattern body : Atom) : relationRows program "petta-unheaded-expression" [.apply "ground-atom-expression-v1" [.collection .vec [.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply "match" []]], OSLFCore.Bridge.GroundData.encode space, OSLFCore.Bridge.GroundData.encode pattern, OSLFCore.Bridge.GroundData.encode body] none]] = [] := by
+  rw [← match_expression_encoded space pattern body]
+  simp [relationRows, results]
+
+private theorem match_not_control_rows_explicit (program : SpaceSemantics.Program)
+    (space pattern body : Atom) : relationRows program "petta-not-control" [.apply "ground-atom-expression-v1" [.collection .vec [.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply "match" []]], OSLFCore.Bridge.GroundData.encode space, OSLFCore.Bridge.GroundData.encode pattern, OSLFCore.Bridge.GroundData.encode body] none]] = [] := by
+  rw [← match_expression_encoded space pattern body]
   simp [relationRows, results, DeclarativeSpec.controlForm]
 
 private theorem if_expression_encoded (condition yes no : Atom) : encoded (.expression [.symbol "if", condition, yes, no]) =
@@ -1604,7 +1699,9 @@ private theorem frame_encoded (frame : Eval.Frame) :
           [encoded (bindingsData bindings), encoded (targetData target), encodedList pending,
             encodedList values, encoded (index position)]
       | .sequence pending collected => framePattern "petta-frame-sequence-v1"
-          [encodedControls pending, encodedList collected] := by
+          [encodedControls pending, encodedList collected]
+      | .query bindings pattern body => framePattern "petta-frame-query-v1"
+          [encoded (bindingsData bindings), encoded pattern, encoded body] := by
   cases frame <;>
     simp only [frameData, encoded, encodedList, encodedControls, framePattern,
       taggedPattern, expressionPattern, symbolPattern, OSLFCore.Bridge.GroundData.encode,
@@ -1659,7 +1756,7 @@ attribute [local simp] language rules sequenceDone sequenceEnter construct readE
   rawArgument evaluatedArgument valueVariable symbol grounded letEnter letStar letStarBad
   caseEnter caseBad ifEnter collapseEnter superposeEnter emptyEnter quoteEnter callEnter
   dataEnter expressionEnter collapseReturn sequenceReturn argumentReturn bindingReturn
-  caseReturn ifReturn rule sameFields ioArguments ioFault finishedArguments pendingArguments
+  caseReturn ifReturn queryEnter queryReturn rule sameFields ioArguments ioFault finishedArguments pendingArguments
   argumentTarget argumentFrame letStarSource caseSource controlExpression pushFrame
   symbolHead headedExpression headedSource returnedSource returnedTarget configurationPattern
   taggedPattern expressionPattern evaluatePattern argumentsPattern sequencePattern returnedPattern
@@ -1743,6 +1840,23 @@ theorem let_frontier (program : SpaceSemantics.Program)
       (configurationPattern state (evaluatePattern (bindings) (encoded (.expression [.symbol "let", pattern, value, body])))
         (encodedList frames) input output) =
       [configurationPattern state (evaluatePattern bindings (encoded value)) (expressionPattern (framePattern "petta-frame-bind-v1" [bindings, encoded pattern, encoded body] :: OSLFCore.Bridge.GroundData.encodeList frames)) input output] := by
+  simp +decide (config := {maxSteps := 300000}) [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+    applyRuleBindings, applyBindings, matchPattern, matchArgs, mergeBindings,
+    applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
+    relationEnv, vector_rows_explicit, encodedList_fields, matchRelationArgs]
+  simp [encoded]
+
+attribute [local simp] match_expression_encoded match_grounded_rows_explicit match_unheaded_rows_explicit match_not_control_rows_explicit
+
+set_option maxHeartbeats 1000000 in
+theorem query_frontier (program : SpaceSemantics.Program)
+    (state input output : Pattern) (bindings : Pattern) (frames : List Atom) (space pattern body : Atom) :
+    rewriteStepWithPremisesUsing (relationEnv program) language
+      (configurationPattern state (evaluatePattern (bindings) (encoded (.expression [.symbol "match", space, pattern, body])))
+        (encodedList frames) input output) =
+      [configurationPattern state (evaluatePattern bindings (encoded space)) (expressionPattern (framePattern "petta-frame-query-v1" [bindings, encoded pattern, encoded body] :: OSLFCore.Bridge.GroundData.encodeList frames)) input output] := by
   simp +decide (config := {maxSteps := 300000}) [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
@@ -2006,9 +2120,7 @@ theorem equations_frontier (program : SpaceSemantics.Program)
         (argumentsPattern bindings (functionPattern (stringPattern head))
           (expressionPattern []) (encodedList values) position)
         frames input output) =
-      [configurationPattern state
-        (sequencePattern (encodedControls (Eval.clauses program head values))
-          (expressionPattern [])) frames input output] := by
+      [configurationPattern state (encodedApplication program head values) frames input output] := by
   have notRead : head ≠ "readln!" := by
     intro same
     subst head
@@ -2027,7 +2139,7 @@ theorem equations_frontier (program : SpaceSemantics.Program)
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
     applyRuleBindings, applyBindings, matchPattern, matchArgs, mergeBindings,
     applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    relationEnv, native_head_rows_explicit, equation_head_rows_explicit, clauses_rows_explicit,
+    relationEnv, native_head_rows_explicit, equation_head_rows_explicit, application_rows_explicit,
     encodedList, encoded, OSLFCore.Bridge.GroundData.encode,
     notNative, notRead, notPrint, notEval, matchRelationArgs]
   split_ifs <;> simp_all
@@ -2170,6 +2282,28 @@ theorem binding_return_frontier (program : SpaceSemantics.Program)
     builtinRelationTuples, relationEnv, binding_rows_explicit, encodedList_fields,
     matchRelationArgs]
 
+theorem query_return_frontier (program : SpaceSemantics.Program)
+    (state : Effects.State) (names : List String)
+    (vacant : NamedSpaces.Store.EmptyTail state [])
+    (covers : ∀ name, name ∉ names → state.cells name = none)
+    (input output : Pattern) (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst)
+    (pattern body : Atom) (answers : List Atom) (frames : List Pattern) :
+    rewriteStepWithPremisesUsing (relationEnv program) language
+      (configurationPattern (encoded (stateData state names)) (returnedPattern (encodedList answers))
+        (expressionPattern (framePattern "petta-frame-query-v1"
+          [encoded (bindingsData bindings), encoded pattern, encoded body] :: frames)) input output) =
+      [configurationPattern (encoded (stateData state names))
+        (sequencePattern (encodedControls (answers.flatMap fun space =>
+          Eval.queryAlternatives state bindings space pattern body)) (expressionPattern []))
+        (expressionPattern frames) input output] := by
+  simp +decide (config := {maxSteps := 300000}) [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+    applyRuleBindings, applyBindings, matchPattern, matchArgs, mergeBindings,
+    applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
+    builtinRelationTuples, relationEnv, query_rows_explicit program state names vacant covers,
+    encodedList_fields, matchRelationArgs]
+
 theorem case_return_frontier (program : SpaceSemantics.Program)
     (state input output : Pattern) (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst)
     (cases : SpaceSemantics.Cases) (answers : List Atom) (frames : List Pattern) :
@@ -2292,6 +2426,7 @@ theorem print_frontier (program : SpaceSemantics.Program)
     encodedList_fields, OSLFCore.Bridge.GroundData.encodeList,
     Effects.boolean, encoded, OSLFCore.Bridge.GroundData.encode, matchRelationArgs]
 
+set_option maxHeartbeats 400000 in
 theorem read_bad_cons_frontier (program : SpaceSemantics.Program)
     (state bindings position frames input output : Pattern) (first : Atom) (rest : List Atom) :
     rewriteStepWithPremisesUsing (relationEnv program) language
@@ -2310,6 +2445,7 @@ theorem read_bad_cons_frontier (program : SpaceSemantics.Program)
     equation_head_rows_explicit, nonempty_rows_cons, encodedList_fields,
     OSLFCore.Bridge.GroundData.encodeList, matchRelationArgs]
 
+set_option maxHeartbeats 400000 in
 theorem print_bad_nil_frontier (program : SpaceSemantics.Program)
     (state bindings position frames input output : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv program) language
@@ -2328,6 +2464,7 @@ theorem print_bad_nil_frontier (program : SpaceSemantics.Program)
     equation_head_rows_explicit, not_singleton_rows_nil, encodedList_fields,
     OSLFCore.Bridge.GroundData.encodeList, matchRelationArgs]
 
+set_option maxHeartbeats 400000 in
 theorem print_bad_many_frontier (program : SpaceSemantics.Program)
     (state bindings position frames input output : Pattern) (first second : Atom) (rest : List Atom) :
     rewriteStepWithPremisesUsing (relationEnv program) language
@@ -2346,6 +2483,7 @@ theorem print_bad_many_frontier (program : SpaceSemantics.Program)
     equation_head_rows_explicit, not_singleton_rows_many, encodedList_fields,
     OSLFCore.Bridge.GroundData.encodeList, matchRelationArgs]
 
+set_option maxHeartbeats 400000 in
 theorem eval_bad_nil_frontier (program : SpaceSemantics.Program)
     (state bindings position frames input output : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv program) language
@@ -2364,6 +2502,7 @@ theorem eval_bad_nil_frontier (program : SpaceSemantics.Program)
     equation_head_rows_explicit, not_singleton_rows_nil, encodedList_fields,
     OSLFCore.Bridge.GroundData.encodeList, matchRelationArgs]
 
+set_option maxHeartbeats 400000 in
 theorem eval_bad_many_frontier (program : SpaceSemantics.Program)
     (state bindings position frames input output : Pattern) (first second : Atom) (rest : List Atom) :
     rewriteStepWithPremisesUsing (relationEnv program) language
@@ -2547,6 +2686,19 @@ theorem ordinary_case_pattern_refused (head : String) (arguments : List Atom)
   · exact headed_pattern_refused_of_name "case" head [.fvar "value", expressionPattern [] (some "rowsTail")] arguments (Ne.symm named)
 
 set_option maxHeartbeats 1000000 in
+theorem ordinary_match_pattern_refused (head : String) (arguments : List Atom)
+    (ordinary : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false) :
+    matchPattern (expressionPattern [symbolPattern "match", .fvar "value", .fvar "pattern", .fvar "body"])
+      (OSLFCore.Bridge.GroundData.encode (.expression (.symbol head :: arguments))) = [] := by
+  by_cases named : head = "match"
+  · subst head
+    by_cases arity : arguments.length = 3
+    · obtain ⟨first, second, third, rfl⟩ := List.length_eq_three.mp arity
+      simp [DeclarativeSpec.controlForm] at ordinary
+    · exact headed_pattern_refused_of_length "match" "match" [.fvar "value", .fvar "pattern", .fvar "body"] arguments (by simpa using Ne.symm arity)
+  · exact headed_pattern_refused_of_name "match" head [.fvar "value", .fvar "pattern", .fvar "body"] arguments (Ne.symm named)
+
+set_option maxHeartbeats 1000000 in
 theorem ordinary_superpose_pattern_refused (head : String) (arguments : List Atom)
     (ordinary : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false) :
     matchPattern (expressionPattern [symbolPattern "superpose", expressionPattern [] (some "alternativesTail")])
@@ -2652,6 +2804,15 @@ theorem ordinary_superpose_pattern_refused (head : String) (arguments : List Ato
           OSLFCore.Bridge.GroundData.encodeList arguments) none]) = [] := by
   simpa only [expressionPattern, symbol_pattern_explicit, headed_expression_explicit] using
     ordinary_superpose_pattern_refused head arguments ordinary
+
+@[local simp] private theorem ordinary_match_raw_refused (head : String) (arguments : List Atom)
+    (ordinary : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false) :
+    matchPattern (.apply "ground-atom-expression-v1" [.collection .vec [.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply "match" []]], .fvar "value", .fvar "pattern", .fvar "body"] none])
+      (.apply "ground-atom-expression-v1" [.collection .vec
+        (.apply "ground-atom-symbol-v1" [.apply "source-sexpr-atom-v1" [.apply head []]] ::
+          OSLFCore.Bridge.GroundData.encodeList arguments) none]) = [] := by
+  simpa only [expressionPattern, symbol_pattern_explicit, headed_expression_explicit] using
+    ordinary_match_pattern_refused head arguments ordinary
 
 private theorem headed_not_control_rows (program : SpaceSemantics.Program)
     (head : String) (arguments : List Atom)
@@ -3265,9 +3426,8 @@ theorem equations_frontier_eq_step (program : SpaceSemantics.Program)
     (encodedList source.output) head values notIO notNative]
   simp only [Eval.step, control, notIO, notNative, Bool.false_eq_true,
     ↓reduceIte, Option.toList_some, List.map_cons, List.map_nil, configuration_fields,
-    sequence_encoded, cellSupportAfter,
+    cellSupportAfter, encodedApplication,
     primitiveCellSupport_of_not_writer head values names notWriter]
-  simp only [encodedList_fields, OSLFCore.Bridge.GroundData.encodeList]
 
 /-- All completed function calls have their exact machine frontier, including
 I/O, primitive failure and ordered equation dispatch. Cell names are updated
@@ -3310,6 +3470,8 @@ theorem finished_function_frontier_eq_step (program : SpaceSemantics.Program)
 the empty continuation has none. This covers all existing frame constructors. -/
 theorem returned_frontier_eq_step (program : SpaceSemantics.Program)
     (source : Eval.Configuration) (names : List String) (answers : List Atom)
+    (vacant : NamedSpaces.Store.EmptyTail source.state [])
+    (covers : ∀ name, name ∉ names → source.state.cells name = none)
     (control : source.control = .returned answers) :
     rewriteStepWithPremisesUsing (relationEnv program) language (encode source names) =
       (Eval.step program source).toList.map (fun target => encode target names) := by
@@ -3353,15 +3515,23 @@ theorem returned_frontier_eq_step (program : SpaceSemantics.Program)
           simp only [Eval.step, control, frames, Option.toList_some, List.map_cons, List.map_nil,
             configuration_fields, sequence_encoded, encodedList_fields,
             OSLFCore.Bridge.GroundData.encodeList]
+      | query bindings pattern body =>
+          rw [query_return_frontier program source.state names vacant covers]
+          simp only [Eval.step, control, frames, Option.toList_some, List.map_cons, List.map_nil,
+            configuration_fields, sequence_encoded, encodedList_fields,
+            OSLFCore.Bridge.GroundData.encodeList]
 
 /-- Preservation and no invention for all returned-answer continuations in the
 actual generated GSLT, through the existing operational judgment. -/
 theorem returned_generated_step_iff (program : SpaceSemantics.Program)
     (source : Eval.Configuration) (names : List String) (answers : List Atom)
+    (vacant : NamedSpaces.Store.EmptyTail source.state [])
+    (covers : ∀ name, name ∉ names → source.state.cells name = none)
     (control : source.control = .returned answers) (target : Pattern) :
     (langGSLTUsing (relationEnv program) language).Step (encode source names) target ↔
       ∃ after, DeclarativeSpec.Transition program source after ∧ target = encode after names := by
-  rw [← frontier_iff_generated_step, returned_frontier_eq_step program source names answers control]
+  rw [← frontier_iff_generated_step,
+    returned_frontier_eq_step program source names answers vacant covers control]
   simp only [List.mem_map, Option.mem_toList, Eval.step_iff_transition]
   constructor
   · rintro ⟨after, transition, rfl⟩
@@ -3402,6 +3572,17 @@ theorem let_frontier_eq_step (program : SpaceSemantics.Program)
     rewriteStepWithPremisesUsing (relationEnv program) language (encode source names) =
       (Eval.step program source).toList.map (fun target => encode target names) := by
   rw [configuration_fields, control, evaluate_encoded, let_frontier]
+  simp only [Eval.step, control, Option.toList_some, List.map_cons, List.map_nil,
+    configuration_fields, evaluate_encoded]
+  rw [atom_list_encoded_cons, frame_encoded]
+
+theorem query_frontier_eq_step (program : SpaceSemantics.Program)
+    (source : Eval.Configuration) (names : List String)
+    (bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst) (space pattern body : Atom)
+    (control : source.control = .evaluate bindings (.expression [.symbol "match", space, pattern, body])) :
+    rewriteStepWithPremisesUsing (relationEnv program) language (encode source names) =
+      (Eval.step program source).toList.map (fun target => encode target names) := by
+  rw [configuration_fields, control, evaluate_encoded, query_frontier]
   simp only [Eval.step, control, Option.toList_some, List.map_cons, List.map_nil,
     configuration_fields, evaluate_encoded]
   rw [atom_list_encoded_cons, frame_encoded]
@@ -3569,7 +3750,7 @@ theorem some_frontier_eq_step (program : SpaceSemantics.Program)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
         pending_argument_frontier_eq_step program source names _ _ _ _ _ _ (by assumption)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
-        returned_frontier_eq_step program source names _ (by assumption)
+        returned_frontier_eq_step program source names _ vacant covers (by assumption)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
         variable_frontier_eq_step program source names _ _ (by assumption)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
@@ -3578,6 +3759,8 @@ theorem some_frontier_eq_step (program : SpaceSemantics.Program)
         grounded_frontier_eq_step program source names _ _ (by assumption)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
         let_frontier_eq_step program source names _ _ _ _ (by assumption)
+    | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
+        query_frontier_eq_step program source names _ _ _ _ (by assumption)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
         let_star_frontier_eq_step program source names _ _ _ (by assumption)
     | simpa only [cellSupportAfter, (by assumption : source.control = _)] using
@@ -3624,11 +3807,12 @@ theorem none_frontier_eq_step (program : SpaceSemantics.Program)
     (source : Eval.Configuration) (names : List String)
     (computed : Eval.step program source = none) :
     rewriteStepWithPremisesUsing (relationEnv program) language (encode source names) = [] := by
-  rcases no_step_terminal program source computed with ⟨reason, control⟩ | ⟨answers, control, _⟩
+  rcases no_step_terminal program source computed with ⟨reason, control⟩ | ⟨answers, control, frames⟩
   · rw [fault_frontier_eq_step program source names reason control, computed]
     rfl
-  · rw [returned_frontier_eq_step program source names answers control, computed]
-    rfl
+  · rw [configuration_fields, control, returned_encoded, frames]
+    simp only [List.map_nil, encodedList_fields, OSLFCore.Bridge.GroundData.encodeList]
+    exact terminal_inert program _ _ _ _
 
 /-- All and only the actual successor configurations occur in the authored frontier. -/
 theorem frontier_eq_step (program : SpaceSemantics.Program)

@@ -95,6 +95,48 @@ theorem reach_of_youngReach {edge : Edges N} {old : N → Prop} {a b : N}
   | refl a => exact Reach.refl a
   | step hab _ _ ih => exact Reach.step hab ih
 
+/-- With no old objects, a young-only traversal is a full traversal. -/
+theorem youngReach_empty_old_iff {edge : Edges N} {a b : N} :
+    YoungReach edge (fun _ => False) a b ↔ Reach edge a b := by
+  constructor
+  · exact reach_of_youngReach
+  · intro h
+    induction h with
+    | refl a => exact YoungReach.refl a
+    | step hab _ ih => exact YoungReach.step hab (by trivial) ih
+
+/-- A minor collection keeps the old generation and the young objects its
+root/remembered traversal finds. -/
+def minorSurvivor (edge : Edges N) (old remembered roots : N → Prop) (n : N) : Prop :=
+  old n ∨ ∃ s, ((roots s ∧ ¬ old s) ∨ remembered s) ∧ YoungReach edge old s n
+
+def fullSurvivor (edge : Edges N) (roots : N → Prop) (n : N) : Prop :=
+  ∃ r, roots r ∧ Reach edge r n
+
+/-- An empty older generation makes a minor collection complete over the
+managed heap. Its retained size can therefore establish the next major
+collection's live-data baseline without immediately copying it again. -/
+theorem minor_empty_old_eq_full (edge : Edges N) (roots : N → Prop) (n : N) :
+    minorSurvivor edge (fun _ => False) (fun _ => False) roots n ↔
+      fullSurvivor edge roots n := by
+  simp only [minorSurvivor, fullSurvivor, false_or, not_false_eq_true,
+    and_true, or_false, youngReach_empty_old_iff]
+
+/-- A nonempty older generation may contain garbage that a minor collection
+keeps. The empty-generation condition cannot be dropped. -/
+example :
+    minorSurvivor (fun _ _ : Bool => False) (fun n => n = false)
+      (fun _ => False) (fun n => n = true) false ∧
+    ¬ fullSurvivor (fun _ _ : Bool => False) (fun n => n = true) false := by
+  constructor
+  · exact Or.inl rfl
+  · intro h
+    obtain ⟨r, hr, path⟩ := h
+    cases r with
+    | false => cases hr
+    | true => cases path with
+      | step edge _ => cases edge
+
 /-- Right after a collection nothing is young, and the barrier holds with no
 object remembered. -/
 theorem barrier_all_old (edge : Edges N) (old : N → Prop)

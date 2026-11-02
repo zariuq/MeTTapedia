@@ -1,4 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIRClosureMachine
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.ClassSearch
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteEmission
 
 /-! Native closure frames retain the same compiled plan, contextual binding
 readouts and raw class receipts used by the common execution machinery. -/

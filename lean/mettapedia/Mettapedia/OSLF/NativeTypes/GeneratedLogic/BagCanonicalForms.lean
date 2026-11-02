@@ -344,8 +344,10 @@ theorem generator_bagStep (noEquations : language.equations = []) (noAlgebra : l
     {source target : Pattern} (generator : Generator relEnv language source target) : BagStep source target := by
   rcases generator with authored | derived
   · cases authored with
-    | forward member _ _ => rw [noEquations] at member; cases member
-    | reverse member _ _ => rw [noEquations] at member; cases member
+    | forward member _ _ _ => rw [noEquations] at member; cases member
+    | reverse member _ _ _ => rw [noEquations] at member; cases member
+    | declared member _ _ => rw [noEquations] at member; cases member
+    | premised member _ _ _ => rw [noEquations] at member; cases member
   · cases derived with
     | bagPerm _ _ permutation => exact .permute rfl permutation
     | setPerm _ _ permutation => exact .permute rfl permutation

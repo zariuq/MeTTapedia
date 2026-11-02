@@ -246,11 +246,16 @@ theorem erase_literal_reads_back {state after : State} {handle : Handle}
     exact eq_comm
   simpa only [predicates] using result
 
+/-- A raised error. `overApplication head arities count` is PeTTa's
+`domain_error(function_input_arities(head, arities), count)`: a function was
+given more arguments than any of its equations takes; `arities` lists the
+input arities its equations record, ascending and without repeats. -/
 inductive Fault where
   | invalidSpace
   | missingCell (name : String)
   | invalidArguments (head : String)
   | zeroDivisor
+  | overApplication (head : String) (arities : List Nat) (count : Nat)
   deriving DecidableEq, Repr
 
 abbrev Result := Except Fault (State × Answers)
@@ -304,6 +309,9 @@ inductive Frame where
   | argument (bindings : Subst) (target : Target)
       (remaining values : List Atom) (index : Nat)
   | sequence (remaining : List Control) (answers : Answers)
+  /-- A `match` waiting for its space value; its pattern and body are held as
+  written, under the caller's bindings. -/
+  | query (bindings : Subst) (pattern body : Atom)
   deriving Repr
 
 structure Configuration where

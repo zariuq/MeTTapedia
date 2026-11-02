@@ -1,17 +1,18 @@
 import Mettapedia.Languages.MeTTa.OSLFCore.Bindings
 
 /-!
-# MeTTaCore Pattern Matching
+# Executable two-way unification prototype
 
-Bidirectional unification algorithm for the MeTTa interpreter.
-Unlike simple pattern matching (one-directional), full unification allows
-variables on both sides of the match.
+This prototype allows variables on both sides of a match. Its runtime examples
+are not proofs of the finite-tree unifier contract, and this module supplies
+no general soundness, symmetry or completeness theorem. Independent source
+judgments must not use these examples as such evidence.
 
 ## Main Definitions
 
 * `UnifyResult` - Result of unification: success with bindings or failure
 * `unify` - Bidirectional unification algorithm
-* Proofs of key properties: symmetry, validity
+* Runtime examples and the statement of the substitution-equality condition
 
 ## References
 
@@ -56,14 +57,13 @@ end UnifyResult
 
 /-! ## Bidirectional Unification -/
 
-/-- Bidirectional unification: match two atoms, allowing variables on both sides.
+/-- Prototype unification allowing variables on both sides.
 
     Key differences from simple pattern matching:
     1. Both atoms can contain variables
     2. Variables on either side can be bound
-    3. Result is symmetric
-
-    Returns success with bindings if atoms can be unified, failure otherwise. -/
+    This implementation has no occurs check. Success is therefore not itself
+    a certified finite-tree unifier. -/
 partial def unify (a1 a2 : Atom) (b : Bindings) : UnifyResult :=
   match a1, a2 with
   -- Both are the same variable
@@ -141,10 +141,9 @@ def unifiesTo (a1 a2 : Atom) (b : Bindings) : Prop :=
 
 /-! ## Tests
 
-`unify` is a `partial def`, so its equation lemma `unify.eq_def` is not available
-for kernel-checked proofs within the same file. We use `#guard` for runtime
-verification. (The `eq_def` lemma IS available in downstream files that import
-this module — see `FullLanguageTests.lean` for kernel-checked versions.) -/
+`unify` is a `partial def`; importing this module does not expose a
+`unify.eq_def` theorem for kernel reduction. These `#guard` commands execute
+examples. They do not certify the independent unifier contract. -/
 
 section Tests
 

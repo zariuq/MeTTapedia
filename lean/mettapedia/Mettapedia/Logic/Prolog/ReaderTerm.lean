@@ -1,12 +1,11 @@
-import Mettapedia.Logic.Prolog.ReaderOperator
+import Mettapedia.Logic.Prolog.ReaderProfile
 
 /-!
 # Operator-aware Prolog term reader
 
 This module parses located lexer tokens directly into the canonical
 `Logic.LP.Term` instantiated by `SourceSignature`. Operator priority and
-associativity are read from an explicit `ReaderOperator.Table`; quoted atoms
-remain data and therefore never acquire operator meaning.
+associativity are read from an explicit `ReaderOperator.Table`; quoted-operator behavior and text interpretation are explicit source-profile choices.
 
 The implementation follows the precedence discipline of SWI-Prolog V10.1.9
 `src/pl-read.c`. Function application requires lexical adjacency, arguments
@@ -73,8 +72,9 @@ private def tokenStartsTerm : ReaderLexer.Kind -> Bool
 private def adjacent (first second : ReaderLexer.Token) : Bool :=
   first.span.stop.offset = second.span.start.offset
 
-private def operatorName? : ReaderLexer.Kind -> Option String
+private def operatorName? (profile : ReaderProfile.Profile) : ReaderLexer.Kind -> Option String
   | .atom name => some name
+  | .quotedAtom name => if profile.quotedOperator name then some name else none
   | .punctuation .comma => some ","
   | .punctuation .bar => some "|"
   | _ => none
@@ -110,7 +110,7 @@ private def consumePunctuation (punctuation : ReaderLexer.Punctuation)
       else failAt state (.expectedPunctuation punctuation)
   | _ => failAt state (.expectedPunctuation punctuation)
 
-private def internVariable (spelling : String) (state : State) :
+def internVariable (spelling : String) (state : State) :
     SourceSignature.Variable × State :=
   if spelling = "_" then
     let identity := { spelling, occurrence := state.nextOccurrence }
@@ -136,21 +136,17 @@ private def negateConstant : SourceSignature.Constant ->
   | .floatBits bits => some (.floatBits (bits ^^^ 0x8000000000000000))
   | _ => none
 
-private def codes (value : String) : SourceSignature.Term :=
-  SourceSignature.list <|
-    value.toList.map (fun character =>
-      SourceSignature.integer (Int.ofNat character.toNat))
 
 mutual
 
-  private def parseExpressionAux : Nat -> Table -> Nat -> State ->
+  private def parseExpressionAux (profile : ReaderProfile.Profile) : Nat -> Table -> Nat -> State ->
       Except Error Parsed
     | 0, _, _, state => failAt state .exhaustedInputMeasure
     | fuel + 1, table, maximum, state => do
-        let left <- parsePrefixOrPrimaryAux fuel table maximum state
-        parseTailAux fuel table maximum left
+        let left <- parsePrefixOrPrimaryAux profile fuel table maximum state
+        parseTailAux profile fuel table maximum left
 
-  private def parsePrefixOrPrimaryAux : Nat -> Table -> Nat -> State ->
+  private def parsePrefixOrPrimaryAux (profile : ReaderProfile.Profile) : Nat -> Table -> Nat -> State ->
       Except Error Parsed
     | 0, _, _, state => failAt state .exhaustedInputMeasure
     | fuel + 1, table, maximum, state =>
@@ -159,7 +155,8 @@ mutual
         | operator@{ kind := .atom "-", .. } ::
             number@{ kind := .number lexeme, .. } :: rest =>
             if adjacent operator number then
-              match ReaderNumber.parse lexeme with
+              match (if profile.numericAllowed lexeme then ReaderNumber.parse lexeme
+                    else .error (.invalidInteger lexeme)) with
               | .error error => failAt state (.number error)
               | .ok constant =>
                   match negateConstant constant with
@@ -168,27 +165,33 @@ mutual
                       precedence := 0
                       state := { state with remaining := rest }
                     }
-                  | none => parsePrimaryAux fuel table state
+                  | none => parsePrimaryAux profile fuel table state
             else
-              parsePrefixAux fuel table maximum state "-"
+              parsePrefixAux profile fuel table maximum state "-"
         | operator@{ kind := .atom name, .. } :: next :: _ =>
             if (match next.kind with
                 | .punctuation .leftParen => adjacent operator next
                 | _ => false) then
-              parsePrimaryAux fuel table state
+              parsePrimaryAux profile fuel table state
             else if tokenStartsTerm next.kind &&
                 (firstEligiblePrefix table name maximum).isSome then
-              parsePrefixAux fuel table maximum state name
+              parsePrefixAux profile fuel table maximum state name
             else
-              parsePrimaryAux fuel table state
+              parsePrimaryAux profile fuel table state
+        | operator@{ kind := .quotedAtom name, .. } :: next :: _ =>
+            if profile.quotedOperator name && tokenStartsTerm next.kind &&
+                (firstEligiblePrefix table name maximum).isSome &&
+                !(next.kind == .punctuation .leftParen && adjacent operator next) then
+              parsePrefixAux profile fuel table maximum state name
+            else parsePrimaryAux profile fuel table state
         | { kind := .atom name, .. } :: [] =>
             if (firstEligiblePrefix table name maximum).isSome then
-              parsePrimaryAux fuel table state
+              parsePrimaryAux profile fuel table state
             else
-              parsePrimaryAux fuel table state
-        | _ => parsePrimaryAux fuel table state
+              parsePrimaryAux profile fuel table state
+        | _ => parsePrimaryAux profile fuel table state
 
-  private def parsePrefixAux (fuel : Nat) (table : Table) (maximum : Nat)
+  private def parsePrefixAux (profile : ReaderProfile.Profile) (fuel : Nat) (table : Table) (maximum : Nat)
       (state : State) (name : String) : Except Error Parsed := do
     let declaration <- match firstEligiblePrefix table name maximum with
       | some declaration => pure declaration
@@ -198,14 +201,14 @@ mutual
         declaration.specifier.rightMaximum declaration.priority.value with
       | some rightMaximum => pure rightMaximum
       | none => failAt state (.operatorClash name)
-    let right <- parseExpressionAux fuel table rightMaximum afterOperator
+    let right <- parseExpressionAux profile fuel table rightMaximum afterOperator
     pure {
       term := SourceSignature.compound name [right.term]
       precedence := declaration.priority.value
       state := right.state
     }
 
-  private def parsePrimaryAux : Nat -> Table -> State -> Except Error Parsed
+  private def parsePrimaryAux (profile : ReaderProfile.Profile) : Nat -> Table -> State -> Except Error Parsed
     | 0, _, state => failAt state .exhaustedInputMeasure
     | fuel + 1, table, state =>
         match state.remaining with
@@ -217,7 +220,8 @@ mutual
                   { state with remaining := rest }
                 .ok { term := .var identity, precedence := 0, state := next }
             | .number lexeme =>
-                match ReaderNumber.parse lexeme with
+                match (if profile.numericAllowed lexeme then ReaderNumber.parse lexeme
+                    else .error (.invalidInteger lexeme)) with
                 | .error error => failAt state (.number error)
                 | .ok constant => .ok {
                     term := .const constant
@@ -225,20 +229,23 @@ mutual
                     state := { state with remaining := rest }
                   }
             | .string value => .ok {
-                term := SourceSignature.string value
+                term := profile.textTerm profile.doubleQuotes value
                 precedence := 0
                 state := { state with remaining := rest }
               }
-            | .backQuoted value => .ok {
-                term := codes value
-                precedence := 0
-                state := { state with remaining := rest }
-              }
+            | .backQuoted value =>
+                match profile.backQuotes with
+                | none => failAt state (.unexpectedToken (.backQuoted value))
+                | some mode => .ok {
+                    term := profile.textTerm mode value
+                    precedence := 0
+                    state := { state with remaining := rest }
+                  }
             | .atom name | .quotedAtom name =>
                 match rest with
                 | left@{ kind := .punctuation .leftParen, .. } :: tail =>
                     if adjacent token left then
-                      parseApplicationAux fuel table name
+                      parseApplicationAux profile fuel table name
                         { state with remaining := tail }
                     else
                       .ok {
@@ -252,12 +259,12 @@ mutual
                     state := { state with remaining := rest }
                   }
             | .punctuation .leftParen => do
-                let nested <- parseExpressionAux fuel table 1200
+                let nested <- parseExpressionAux profile fuel table 1200
                   { state with remaining := rest }
                 let after <- consumePunctuation .rightParen nested.state
                 pure { term := nested.term, precedence := 0, state := after }
             | .punctuation .leftBracket =>
-                parseListAux fuel table { state with remaining := rest }
+                parseListAux profile fuel table { state with remaining := rest }
             | .punctuation .leftBrace =>
                 match rest with
                 | { kind := .punctuation .rightBrace, .. } :: tail => .ok {
@@ -266,7 +273,7 @@ mutual
                     state := { state with remaining := tail }
                   }
                 | _ => do
-                    let nested <- parseExpressionAux fuel table 1200
+                    let nested <- parseExpressionAux profile fuel table 1200
                       { state with remaining := rest }
                     let after <- consumePunctuation .rightBrace nested.state
                     pure {
@@ -276,16 +283,17 @@ mutual
                     }
             | other => failAt state (.unexpectedToken other)
 
-  private def parseApplicationAux (fuel : Nat) (table : Table)
+  private def parseApplicationAux (profile : ReaderProfile.Profile) (fuel : Nat) (table : Table)
       (name : String) (state : State) : Except Error Parsed :=
     match state.remaining with
-    | { kind := .punctuation .rightParen, .. } :: rest => .ok {
+    | { kind := .punctuation .rightParen, .. } :: rest =>
+      if !profile.zeroArityCompounds then failAt state (.unexpectedToken (.punctuation .rightParen)) else .ok {
         term := SourceSignature.compound name []
         precedence := 0
         state := { state with remaining := rest }
       }
     | _ => do
-        let (arguments, afterArguments) <- parseArgumentsAux fuel table state
+        let (arguments, afterArguments) <- parseArgumentsAux profile fuel table state
         let after <- consumePunctuation .rightParen afterArguments
         pure {
           term := SourceSignature.compound name arguments
@@ -293,32 +301,32 @@ mutual
           state := after
         }
 
-  private def parseArgumentsAux : Nat -> Table -> State ->
+  private def parseArgumentsAux (profile : ReaderProfile.Profile) : Nat -> Table -> State ->
       Except Error (List SourceSignature.Term × State)
     | 0, _, state => failAt state .exhaustedInputMeasure
     | fuel + 1, table, state => do
-        let argument <- parseExpressionAux fuel table 999 state
+        let argument <- parseExpressionAux profile fuel table 999 state
         match argument.state.remaining with
         | { kind := .punctuation .comma, .. } :: rest => do
-            let (arguments, after) <- parseArgumentsAux fuel table
+            let (arguments, after) <- parseArgumentsAux profile fuel table
               { argument.state with remaining := rest }
             pure (argument.term :: arguments, after)
         | _ => pure ([argument.term], argument.state)
 
-  private def parseListAux : Nat -> Table -> State -> Except Error Parsed
+  private def parseListAux (profile : ReaderProfile.Profile) : Nat -> Table -> State -> Except Error Parsed
     | 0, _, state => failAt state .exhaustedInputMeasure
     | fuel + 1, table, state =>
         match state.remaining with
         | { kind := .punctuation .rightBracket, .. } :: rest => .ok {
-            term := SourceSignature.nil
+            term := profile.nil
             precedence := 0
             state := { state with remaining := rest }
           }
         | _ => do
-            let head <- parseExpressionAux fuel table 999 state
-            parseListTailAux fuel table [head.term] head.state
+            let head <- parseExpressionAux profile fuel table 999 state
+            parseListTailAux profile fuel table [head.term] head.state
 
-  private def parseListTailAux (fuel : Nat) (table : Table)
+  private def parseListTailAux (profile : ReaderProfile.Profile) (fuel : Nat) (table : Table)
       (reversed : List SourceSignature.Term) (state : State) :
       Except Error Parsed :=
     match fuel with
@@ -326,33 +334,33 @@ mutual
     | fuel + 1 =>
         match state.remaining with
         | { kind := .punctuation .comma, .. } :: rest => do
-            let next <- parseExpressionAux fuel table 999
+            let next <- parseExpressionAux profile fuel table 999
               { state with remaining := rest }
-            parseListTailAux fuel table (next.term :: reversed) next.state
+            parseListTailAux profile fuel table (next.term :: reversed) next.state
         | { kind := .punctuation .bar, .. } :: rest => do
-            let tail <- parseExpressionAux fuel table 999
+            let tail <- parseExpressionAux profile fuel table 999
               { state with remaining := rest }
             let after <- consumePunctuation .rightBracket tail.state
             pure {
-              term := SourceSignature.list reversed.reverse tail.term
+              term := profile.list reversed.reverse tail.term
               precedence := 0
               state := after
             }
         | { kind := .punctuation .rightBracket, .. } :: rest => .ok {
-            term := SourceSignature.list reversed.reverse
+            term := profile.list reversed.reverse
             precedence := 0
             state := { state with remaining := rest }
           }
         | _ => failAt state (.expectedPunctuation .rightBracket)
 
-  private def parseTailAux : Nat -> Table -> Nat -> Parsed ->
+  private def parseTailAux (profile : ReaderProfile.Profile) : Nat -> Table -> Nat -> Parsed ->
       Except Error Parsed
     | 0, _, _, parsed => failAt parsed.state .exhaustedInputMeasure
     | fuel + 1, table, maximum, left =>
         match left.state.remaining with
         | [] => .ok left
         | operator :: rest =>
-            match operatorName? operator.kind with
+            match operatorName? profile operator.kind with
             | none => .ok left
             | some name =>
                 let postfixCandidate := firstEligiblePostfix table name maximum
@@ -370,9 +378,9 @@ mutual
                           declaration.priority.value with
                       | none => failAt left.state (.operatorClash name)
                       | some rightMaximum => do
-                          let right <- parseExpressionAux fuel table rightMaximum
+                          let right <- parseExpressionAux profile fuel table rightMaximum
                             { left.state with remaining := rest }
-                          parseTailAux fuel table maximum {
+                          parseTailAux profile fuel table maximum {
                             term := SourceSignature.compound name
                               [left.term, right.term]
                             precedence := declaration.priority.value
@@ -381,7 +389,7 @@ mutual
                 else
                   match postfixCandidate with
                   | some declaration =>
-                      parseTailAux fuel table maximum {
+                      parseTailAux profile fuel table maximum {
                         term := SourceSignature.compound name [left.term]
                         precedence := declaration.priority.value
                         state := { left.state with remaining := rest }
@@ -392,10 +400,10 @@ end
 
 /-- Parse one term from an existing token stream and consume its terminating
 full stop. Tokens after the term remain available to the file loader. -/
-def parseOne (table : Table) (tokens : List ReaderLexer.Token) :
+def parseOneWith (profile : ReaderProfile.Profile) (table : Table) (tokens : List ReaderLexer.Token) :
     Except Error Result := do
   let state : State := { remaining := tokens }
-  let parsed <- parseExpressionAux (tokens.length * 4 + 8) table 1200 state
+  let parsed <- parseExpressionAux profile (tokens.length * 4 + 8) table 1200 state
   let after <- consumePunctuation .fullStop parsed.state
   pure {
     term := parsed.term
@@ -404,19 +412,26 @@ def parseOne (table : Table) (tokens : List ReaderLexer.Token) :
   }
 
 /-- Lex and read exactly one terminated Prolog term. -/
-def readOne (table : Table) (source : String) : Except Error Result :=
+def readOneWith (profile : ReaderProfile.Profile) (table : Table) (source : String) : Except Error Result :=
   match ReaderLexer.scan source with
   | .error error => .error {
       position := error.position
       kind := .lexer error.kind
     }
   | .ok tokens => do
-      let result <- parseOne table tokens
+      let result <- parseOneWith profile table tokens
       match result.remaining with
       | [] => pure result
       | token :: _ => .error {
           position := token.span.start
           kind := .unexpectedToken token.kind
         }
+
+/-- Existing callers retain the pinned SWI reading choices. -/
+def parseOne (table : Table) (tokens : List ReaderLexer.Token) : Except Error Result :=
+  parseOneWith ReaderProfile.swi table tokens
+
+def readOne (table : Table) (source : String) : Except Error Result :=
+  readOneWith ReaderProfile.swi table source
 
 end Mettapedia.Logic.Prolog.ReaderTerm

@@ -24,9 +24,35 @@ open Presentation TypedEquality.Annotated
 universe u v
 variable {Head : Type} {Base : Type u} {Const : HOL.Ty Base → Type v}
 
+/-- Structural operation keys retain every carrier determined by the input
+syntax. Projection keys retain only the pair carrier: a profile with several
+layouts on that carrier must select one explicitly or leave the entry absent.
+Source typing and semantic laws for the selected operations are separate. -/
+inductive StructuralOperator (Base : Type u) where
+  | sigma (domain codomain : HOL.Ty Base)
+  | identity (endpoint : HOL.Ty Base)
+  | pair (first second : HOL.Ty Base)
+  | first (pair : HOL.Ty Base)
+  | second (pair : HOL.Ty Base)
+  | reflexivity (endpoint : HOL.Ty Base)
+
+def StructuralOperator.codeType : StructuralOperator Base → HOL.Ty Base → HOL.Ty Base
+  | .sigma domain codomain, result =>
+      .arr (.arr domain .prop) (.arr (.arr domain (.arr codomain .prop)) (.arr result .prop))
+  | .identity endpoint, result =>
+      .arr (.arr endpoint .prop) (.arr endpoint (.arr endpoint (.arr result .prop)))
+  | .pair firstType secondType, result => .arr firstType (.arr secondType result)
+  | .first pairType, result | .second pairType, result => .arr pairType result
+  | .reflexivity endpoint, result => .arr endpoint result
+
 structure LexicalReading (Head : Type) (Base : Type u) (Const : HOL.Ty Base → Type v) where
   constCode? : DeclName → Option (Σ type : HOL.Ty Base, HOL.ClosedTerm Const type)
   headCode? : Head → Option (Σ type : HOL.Ty Base, HOL.ClosedTerm Const type)
+  /-- Closed codes make structural interpretation natural in the surrounding
+  context. The default preserves the original six-form fragment. Identity
+  codes receive the domain guard as well as both endpoints. -/
+  structuralCode? : (operator : StructuralOperator Base) →
+    Option (Σ result : HOL.Ty Base, HOL.ClosedTerm Const (operator.codeType result)) := fun _ => none
 
 inductive Reads (lex : LexicalReading Head Base Const) :
     {Γ : HOL.Ctx Base} → {type : HOL.Ty Base} →
@@ -57,6 +83,46 @@ inductive Reads (lex : LexicalReading Head Base Const) :
       {familyCode : HOL.Term Const (domain :: Γ) (.arr codomain .prop)} :
       Reads lex sourceDomain domainCode → Reads lex sourceFamily familyCode →
       Reads lex (.pi sourceDomain sourceFamily) (HOL.PredicateProducts.pi domainCode familyCode)
+  | dependentSum {Γ : HOL.Ctx Base} {domain codomain result : HOL.Ty Base}
+      {sourceDomain : CTm Head Γ.length} {sourceFamily : CTm Head (domain :: Γ).length}
+      {domainCode : HOL.Term Const Γ (.arr domain .prop)}
+      {familyCode : HOL.Term Const (domain :: Γ) (.arr codomain .prop)}
+      {closed : HOL.ClosedTerm Const ((StructuralOperator.sigma domain codomain).codeType result)}
+      (lookup : lex.structuralCode? (.sigma domain codomain) = some ⟨result, closed⟩) :
+      Reads lex sourceDomain domainCode → Reads lex sourceFamily familyCode →
+      Reads lex (.sigma sourceDomain sourceFamily)
+        (.app (.app (HOL.weakenCtx Γ closed) domainCode) (.lam familyCode))
+  | identity {Γ : HOL.Ctx Base} {endpoint result : HOL.Ty Base}
+      {sourceDomain left right : CTm Head Γ.length}
+      {domainCode : HOL.Term Const Γ (.arr endpoint .prop)}
+      {leftCode rightCode : HOL.Term Const Γ endpoint}
+      {closed : HOL.ClosedTerm Const ((StructuralOperator.identity endpoint).codeType result)}
+      (lookup : lex.structuralCode? (.identity endpoint) = some ⟨result, closed⟩) :
+      Reads lex sourceDomain domainCode → Reads lex left leftCode → Reads lex right rightCode →
+      Reads lex (.id sourceDomain left right)
+        (.app (.app (.app (HOL.weakenCtx Γ closed) domainCode) leftCode) rightCode)
+  | pair {Γ : HOL.Ctx Base} {first second result : HOL.Ty Base}
+      {left right : CTm Head Γ.length} {leftCode : HOL.Term Const Γ first}
+      {rightCode : HOL.Term Const Γ second}
+      {closed : HOL.ClosedTerm Const ((StructuralOperator.pair first second).codeType result)}
+      (lookup : lex.structuralCode? (.pair first second) = some ⟨result, closed⟩) :
+      Reads lex left leftCode → Reads lex right rightCode →
+      Reads lex (.pair left right) (.app (.app (HOL.weakenCtx Γ closed) leftCode) rightCode)
+  | first {Γ : HOL.Ctx Base} {pair result : HOL.Ty Base}
+      {source : CTm Head Γ.length} {code : HOL.Term Const Γ pair}
+      {closed : HOL.ClosedTerm Const ((StructuralOperator.first pair).codeType result)}
+      (lookup : lex.structuralCode? (.first pair) = some ⟨result, closed⟩) :
+      Reads lex source code → Reads lex (.fst source) (.app (HOL.weakenCtx Γ closed) code)
+  | second {Γ : HOL.Ctx Base} {pair result : HOL.Ty Base}
+      {source : CTm Head Γ.length} {code : HOL.Term Const Γ pair}
+      {closed : HOL.ClosedTerm Const ((StructuralOperator.second pair).codeType result)}
+      (lookup : lex.structuralCode? (.second pair) = some ⟨result, closed⟩) :
+      Reads lex source code → Reads lex (.snd source) (.app (HOL.weakenCtx Γ closed) code)
+  | reflexivity {Γ : HOL.Ctx Base} {endpoint result : HOL.Ty Base}
+      {source : CTm Head Γ.length} {code : HOL.Term Const Γ endpoint}
+      {closed : HOL.ClosedTerm Const ((StructuralOperator.reflexivity endpoint).codeType result)}
+      (lookup : lex.structuralCode? (.reflexivity endpoint) = some ⟨result, closed⟩) :
+      Reads lex source code → Reads lex (.refl source) (.app (HOL.weakenCtx Γ closed) code)
 
 namespace Reads
 
@@ -88,6 +154,26 @@ theorem rename {lex : LexicalReading Head Base Const}
       cases index with
       | vz => rfl
       | vs prior => exact congrArg Fin.succ (compatible prior)
+  | dependentSum lookup _ _ domain family =>
+      simp only [HOL.rename, HOL.rename_weakenCtx]
+      apply Reads.dependentSum lookup (domain ρ raw compatible)
+      apply family (HOL.Rename.lift ρ) (liftRen raw)
+      intro type index
+      cases index with
+      | vz => rfl
+      | vs prior => exact congrArg Fin.succ (compatible prior)
+  | identity lookup _ _ _ domain left right =>
+      simpa only [CTm.rename, HOL.rename, HOL.rename_weakenCtx] using
+        Reads.identity lookup (domain ρ raw compatible) (left ρ raw compatible) (right ρ raw compatible)
+  | pair lookup _ _ left right =>
+      simpa only [CTm.rename, HOL.rename, HOL.rename_weakenCtx] using
+        Reads.pair lookup (left ρ raw compatible) (right ρ raw compatible)
+  | first lookup _ argument =>
+      simpa only [CTm.rename, HOL.rename, HOL.rename_weakenCtx] using Reads.first lookup (argument ρ raw compatible)
+  | second lookup _ argument =>
+      simpa only [CTm.rename, HOL.rename, HOL.rename_weakenCtx] using Reads.second lookup (argument ρ raw compatible)
+  | reflexivity lookup _ argument =>
+      simpa only [CTm.rename, HOL.rename, HOL.rename_weakenCtx] using Reads.reflexivity lookup (argument ρ raw compatible)
 
 theorem substitute {lex : LexicalReading Head Base Const}
     {Γ Ξ : HOL.Ctx Base} {type : HOL.Ty Base}
@@ -117,6 +203,26 @@ theorem substitute {lex : LexicalReading Head Base Const}
       cases index with
       | vz => exact .var .vz
       | vs prior => exact (components prior).rename HOL.Rename.weaken wk (fun _ => rfl)
+  | dependentSum lookup _ _ domain family =>
+      simp only [HOL.subst, HOL.subst_weakenCtx]
+      apply Reads.dependentSum lookup (domain θ raw components)
+      apply family (HOL.Subst.lift θ) (CTm.liftSub raw)
+      intro type index
+      cases index with
+      | vz => exact .var .vz
+      | vs prior => exact (components prior).rename HOL.Rename.weaken wk (fun _ => rfl)
+  | identity lookup _ _ _ domain left right =>
+      simpa only [CTm.subst, HOL.subst, HOL.subst_weakenCtx] using
+        Reads.identity lookup (domain θ raw components) (left θ raw components) (right θ raw components)
+  | pair lookup _ _ left right =>
+      simpa only [CTm.subst, HOL.subst, HOL.subst_weakenCtx] using
+        Reads.pair lookup (left θ raw components) (right θ raw components)
+  | first lookup _ argument =>
+      simpa only [CTm.subst, HOL.subst, HOL.subst_weakenCtx] using Reads.first lookup (argument θ raw components)
+  | second lookup _ argument =>
+      simpa only [CTm.subst, HOL.subst, HOL.subst_weakenCtx] using Reads.second lookup (argument θ raw components)
+  | reflexivity lookup _ argument =>
+      simpa only [CTm.subst, HOL.subst, HOL.subst_weakenCtx] using Reads.reflexivity lookup (argument θ raw components)
 
 /-- A change of source heads with exact lexical-code agreement. This does not
 supply a morphism of source typing rules or a change of HOL carriers. -/
@@ -124,6 +230,7 @@ structure HeadChange {Head' : Type} (source : LexicalReading Head Base Const)
     (target : LexicalReading Head' Base Const) (map : Head → Head') : Prop where
   constants : ∀ name, target.constCode? name = source.constCode? name
   heads : ∀ head, target.headCode? (map head) = source.headCode? head
+  structural : ∀ operator, target.structuralCode? operator = source.structuralCode? operator := by intros; rfl
 
 theorem changeHeads {Head' : Type} {sourceLex : LexicalReading Head Base Const}
     {targetLex : LexicalReading Head' Base Const} {map : Head → Head'}
@@ -137,6 +244,14 @@ theorem changeHeads {Head' : Type} {sourceLex : LexicalReading Head Base Const}
   | application _ _ function argument => exact .application function argument
   | abstraction _ _ domain body => exact .abstraction domain body
   | product _ _ domain family => exact .product domain family
+  | dependentSum lookup _ _ domain family =>
+      exact .dependentSum ((compatible.structural _).trans lookup) domain family
+  | identity lookup _ _ _ domain left right =>
+      exact .identity ((compatible.structural _).trans lookup) domain left right
+  | pair lookup _ _ left right => exact .pair ((compatible.structural _).trans lookup) left right
+  | first lookup _ argument => exact .first ((compatible.structural _).trans lookup) argument
+  | second lookup _ argument => exact .second ((compatible.structural _).trans lookup) argument
+  | reflexivity lookup _ argument => exact .reflexivity ((compatible.structural _).trans lookup) argument
 
 /-- Exact lookup agreement also reflects readings of mapped source terms. -/
 theorem ofChangeHeads {Head' : Type} {sourceLex : LexicalReading Head Base Const}
@@ -171,12 +286,40 @@ theorem ofChangeHeads {Head' : Type} {sourceLex : LexicalReading Head Base Const
       cases reading with
       | product first second =>
           exact .product (ofChangeHeads compatible domain first) (ofChangeHeads compatible (Γ := _ :: Γ) family second)
-  | _, _, .sigma _ _, _, reading => by cases reading
-  | _, _, .id _ _ _, _, reading => by cases reading
-  | _, _, .pair _ _, _, reading => by cases reading
-  | _, _, .fst _, _, reading => by cases reading
-  | _, _, .snd _, _, reading => by cases reading
-  | _, _, .refl _, _, reading => by cases reading
+  | Γ, _, .sigma domain family, _, reading => by
+      change Reads targetLex (.sigma (domain.mapHead map) (family.mapHead map)) _ at reading
+      cases reading with
+      | dependentSum lookup first second =>
+          exact .dependentSum ((compatible.structural _).symm.trans lookup)
+            (ofChangeHeads compatible domain first) (ofChangeHeads compatible (Γ := _ :: Γ) family second)
+  | _, _, .id domain left right, _, reading => by
+      change Reads targetLex (.id (domain.mapHead map) (left.mapHead map) (right.mapHead map)) _ at reading
+      cases reading with
+      | identity lookup domainRead leftRead rightRead =>
+          exact .identity ((compatible.structural _).symm.trans lookup)
+            (ofChangeHeads compatible domain domainRead) (ofChangeHeads compatible left leftRead)
+            (ofChangeHeads compatible right rightRead)
+  | _, _, .pair left right, _, reading => by
+      change Reads targetLex (.pair (left.mapHead map) (right.mapHead map)) _ at reading
+      cases reading with
+      | pair lookup first second =>
+          exact .pair ((compatible.structural _).symm.trans lookup)
+            (ofChangeHeads compatible left first) (ofChangeHeads compatible right second)
+  | _, _, .fst source, _, reading => by
+      change Reads targetLex (.fst (source.mapHead map)) _ at reading
+      cases reading with
+      | first lookup argument =>
+          exact .first ((compatible.structural _).symm.trans lookup) (ofChangeHeads compatible source argument)
+  | _, _, .snd source, _, reading => by
+      change Reads targetLex (.snd (source.mapHead map)) _ at reading
+      cases reading with
+      | second lookup argument =>
+          exact .second ((compatible.structural _).symm.trans lookup) (ofChangeHeads compatible source argument)
+  | _, _, .refl source, _, reading => by
+      change Reads targetLex (.refl (source.mapHead map)) _ at reading
+      cases reading with
+      | reflexivity lookup argument =>
+          exact .reflexivity ((compatible.structural _).symm.trans lookup) (ofChangeHeads compatible source argument)
 
 theorem HeadChange.carrier_eq_of_collision {Head' : Type}
     {source : LexicalReading Head Base Const} {target : LexicalReading Head' Base Const} {map : Head → Head'}
@@ -245,7 +388,69 @@ def read? (lex : LexicalReading Head Base Const) : (Γ : HOL.Ctx Base) →
                 .product domainRead familyRead⟩
           | _ => none
       | _ => none
-  | _, .sigma _ _ | _, .id _ _ _ | _, .pair _ _ | _, .fst _ | _, .snd _ | _, .refl _ => none
+  | Γ, .sigma domain family =>
+      match read? lex Γ domain with
+      | some ⟨⟨.arr carrier .prop, domainCode⟩, domainRead⟩ =>
+          match read? lex (carrier :: Γ) family with
+          | some ⟨⟨.arr codomain .prop, familyCode⟩, familyRead⟩ =>
+              match lookup : lex.structuralCode? (.sigma carrier codomain) with
+              | some ⟨result, closed⟩ =>
+                  some ⟨⟨.arr result .prop, .app (.app (HOL.weakenCtx Γ closed) domainCode) (.lam familyCode)⟩,
+                    .dependentSum lookup domainRead familyRead⟩
+              | none => none
+          | _ => none
+      | _ => none
+  | Γ, .id domain left right =>
+      match read? lex Γ domain with
+      | some ⟨⟨.arr endpoint .prop, domainCode⟩, domainRead⟩ =>
+          match read? lex Γ left, read? lex Γ right with
+          | some ⟨⟨leftType, leftCode⟩, leftRead⟩, some ⟨⟨rightType, rightCode⟩, rightRead⟩ =>
+              if first : leftType = endpoint then
+                if second : rightType = endpoint then
+                  match lookup : lex.structuralCode? (.identity endpoint) with
+                  | some ⟨result, closed⟩ =>
+                      some ⟨⟨.arr result .prop, .app (.app (.app (HOL.weakenCtx Γ closed)
+                        domainCode) (first ▸ leftCode)) (second ▸ rightCode)⟩,
+                        .identity lookup domainRead (by cases first; exact leftRead)
+                          (by cases second; exact rightRead)⟩
+                  | none => none
+                else none
+              else none
+          | _, _ => none
+      | _ => none
+  | Γ, .pair left right =>
+      match read? lex Γ left, read? lex Γ right with
+      | some ⟨⟨first, leftCode⟩, leftRead⟩, some ⟨⟨second, rightCode⟩, rightRead⟩ =>
+          match lookup : lex.structuralCode? (.pair first second) with
+          | some ⟨result, closed⟩ =>
+              some ⟨⟨result, .app (.app (HOL.weakenCtx Γ closed) leftCode) rightCode⟩,
+                .pair lookup leftRead rightRead⟩
+          | none => none
+      | _, _ => none
+  | Γ, .fst source =>
+      match read? lex Γ source with
+      | some ⟨⟨pair, code⟩, reading⟩ =>
+          match lookup : lex.structuralCode? (.first pair) with
+          | some ⟨result, closed⟩ =>
+              some ⟨⟨result, .app (HOL.weakenCtx Γ closed) code⟩, .first lookup reading⟩
+          | none => none
+      | none => none
+  | Γ, .snd source =>
+      match read? lex Γ source with
+      | some ⟨⟨pair, code⟩, reading⟩ =>
+          match lookup : lex.structuralCode? (.second pair) with
+          | some ⟨result, closed⟩ =>
+              some ⟨⟨result, .app (HOL.weakenCtx Γ closed) code⟩, .second lookup reading⟩
+          | none => none
+      | none => none
+  | Γ, .refl source =>
+      match read? lex Γ source with
+      | some ⟨⟨endpoint, code⟩, reading⟩ =>
+          match lookup : lex.structuralCode? (.reflexivity endpoint) with
+          | some ⟨result, closed⟩ =>
+              some ⟨⟨result, .app (HOL.weakenCtx Γ closed) code⟩, .reflexivity lookup reading⟩
+          | none => none
+      | none => none
 
 /-- Every derivation in the independently defined fragment is recovered,
 including its exact carrier and term. Proof irrelevance only identifies the
@@ -282,6 +487,54 @@ theorem read?_complete {lex : LexicalReading Head Base Const} {Γ : HOL.Ctx Base
   | application first second ihFirst ihSecond => simp [read?, ihFirst, ihSecond]
   | abstraction domain body ihDomain ihBody => simp [read?, ihDomain, ihBody]
   | product domain family ihDomain ihFamily => simp [read?, ihDomain, ihFamily]
+  | dependentSum lookup domain family ihDomain ihFamily =>
+      simp only [read?, ihDomain, ihFamily]
+      split
+      · rename_i result closed found
+        cases Option.some.inj (found.symm.trans lookup)
+        rfl
+      · rename_i found
+        cases found.symm.trans lookup
+  | identity lookup domain left right ihDomain ihLeft ihRight =>
+      simp only [read?, ihDomain, ihLeft, ihRight, ↓reduceDIte]
+      split
+      · rename_i result closed found
+        cases Option.some.inj (found.symm.trans lookup)
+        rfl
+      · rename_i found
+        cases found.symm.trans lookup
+  | pair lookup left right ihLeft ihRight =>
+      simp only [read?, ihLeft, ihRight]
+      split
+      · rename_i result closed found
+        cases Option.some.inj (found.symm.trans lookup)
+        rfl
+      · rename_i found
+        cases found.symm.trans lookup
+  | first lookup argument ih =>
+      simp only [read?, ih]
+      split
+      · rename_i result closed found
+        cases Option.some.inj (found.symm.trans lookup)
+        rfl
+      · rename_i found
+        cases found.symm.trans lookup
+  | second lookup argument ih =>
+      simp only [read?, ih]
+      split
+      · rename_i result closed found
+        cases Option.some.inj (found.symm.trans lookup)
+        rfl
+      · rename_i found
+        cases found.symm.trans lookup
+  | reflexivity lookup argument ih =>
+      simp only [read?, ih]
+      split
+      · rename_i result closed found
+        cases Option.some.inj (found.symm.trans lookup)
+        rfl
+      · rename_i found
+        cases found.symm.trans lookup
 
 /-- The executable result omits the proof field, retaining its inferred
 carrier and exact HOL term. -/

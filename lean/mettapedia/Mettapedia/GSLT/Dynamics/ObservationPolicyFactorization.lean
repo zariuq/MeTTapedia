@@ -48,24 +48,8 @@ theorem supportsPolicy_iff_constantOnReadoutFibers
     (discipline : ObservationDiscipline.{uEvent, uContainer, uValue} Event)
     (policy : discipline.collection.Container -> Decision) :
     discipline.SupportsPolicy policy ↔
-      discipline.PolicyConstantOnReadoutFibers policy := by
-  constructor
-  · exact Mettapedia.GSLT.Core.NonFactorization.Factors.constantOnFibers
-  · intro constant
-    classical
-    let fallback : Decision := Classical.choice inferInstance
-    let recover : discipline.Value -> Decision := fun value =>
-      if h : ∃ container, discipline.readout container = value then
-        policy (Classical.choose h)
-      else
-        fallback
-    refine ⟨recover, fun container => ?_⟩
-    simp only [recover]
-    split
-    · rename_i reachable
-      exact constant _ _ (Classical.choose_spec reachable)
-    · rename_i unreachable
-      exact False.elim (unreachable ⟨container, rfl⟩)
+      discipline.PolicyConstantOnReadoutFibers policy :=
+  Mettapedia.GSLT.Core.NonFactorization.factors_iff_constantOnFibers_of_nonempty _ _
 
 /-- Any policy explicitly computed from the readout is supported. -/
 theorem supportsPolicy_of_readoutPolicy {Event : Type uEvent}
@@ -95,10 +79,7 @@ theorem supportsPolicy_postcompose {Event : Type uEvent}
     (policy : discipline.collection.Container -> Decision)
     (supported : discipline.SupportsPolicy policy)
     (translate : Decision -> OtherDecision) :
-    discipline.SupportsPolicy (translate ∘ policy) := by
-  obtain ⟨observedPolicy, recovers⟩ := supported
-  refine ⟨translate ∘ observedPolicy, fun container => ?_⟩
-  simp only [Function.comp_apply, recovers]
+    discipline.SupportsPolicy (translate ∘ policy) := supported.trans ⟨translate, fun _ => rfl⟩
 
 /-- Two independently supported policies on one retained container pair into
 one supported product decision without merging their result algebras. -/
@@ -224,8 +205,7 @@ theorem full_supports_every_policy (policy : WorkSpan -> Decision) :
 /-- Work-only observation supports a work-threshold policy. -/
 theorem workOnly_supports_workAtLeastTwo :
     workOnly.SupportsPolicy workAtLeastTwo := by
-  refine ⟨fun work : Nat => decide (2 ≤ work), fun _ => ?_⟩
-  rfl
+  exact ⟨fun work : Nat => decide (2 ≤ work), fun _ => rfl⟩
 
 /-- The same work-only observation cannot support a span-threshold policy. -/
 theorem workOnly_not_supports_spanAtLeastTwo :
@@ -241,9 +221,7 @@ theorem workOnly_lossy_but_supports_workAtLeastTwo :
   ⟨by
       apply ObservationDiscipline.lossy_of_collision workOnly
           (first := (⟨2, 1⟩ : WorkSpan)) (second := ⟨2, 2⟩)
-      · intro same
-        have sameSpan := congrArg WorkSpan.span same
-        norm_num at sameSpan
+      · exact fun same => by simpa using congrArg WorkSpan.span same
       · rfl,
     workOnly_supports_workAtLeastTwo⟩
 

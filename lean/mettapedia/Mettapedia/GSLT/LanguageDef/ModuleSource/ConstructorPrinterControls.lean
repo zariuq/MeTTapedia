@@ -38,7 +38,7 @@ theorem nonidentifier_application_text :
 
 theorem escaped_constructor_text :
     Printer.pattern [] (.apply "quotes \"and\" \\ slash\nλ😀" [.fvar "x"]) =
-      "\"quotes \\\"and\\\" \\\\ slash\\nλ😀\"(x)" := by
+      "\"quotes \\\"and\\\" \\\\ slash\\nλ😀\"(? \"x\")" := by
   rw [Printer.pattern_apply_one _ _ _ (by decide +kernel), Printer.pattern_free]
   decide +kernel
 

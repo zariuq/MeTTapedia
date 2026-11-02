@@ -1840,6 +1840,9 @@ theorem costEquationsRetypable (source : WrappableIGSLT) :
       source.equationsRetypable equation sourceMembership
     refine
       { premiseFree := ?_
+        undeclared := by
+          simp [costBaseEquationDecl, mapEquationSchemaNames, costBaseEquation, mapEquation,
+            sourceRetypable.undeclared]
         leftInstantiationStable := ?_
         rightInstantiationStable := ?_
         leftMatchCorrect := ?_
@@ -1867,6 +1870,9 @@ theorem costEquationsRetypable (source : WrappableIGSLT) :
       source.equationsRetypable equation sourceMembership
     refine
       { premiseFree := ?_
+        undeclared := by
+          simp [costWrappedEquationDecl, mapEquationSchemaNames, costWrappedEquation, mapEquation,
+            sourceRetypable.undeclared]
         leftInstantiationStable := ?_
         rightInstantiationStable := ?_
         leftMatchCorrect := ?_

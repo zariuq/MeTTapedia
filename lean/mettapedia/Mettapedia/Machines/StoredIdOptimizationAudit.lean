@@ -1,0 +1,21 @@
+import Mettapedia.Machines.StoredIdFrameConditions
+import Mettapedia.Machines.StoredIdAlignment
+import Mettapedia.Machines.ShapeObserverPrograms
+import Mettapedia.Machines.CapturedRowReaders
+import Mettapedia.Machines.PureGuardNormalForms
+import Mettapedia.Machines.PairedArrayAdmission
+import Mettapedia.Machines.ContextualAlphaNumbering
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Exact module-owned audit, including private helpers. Compiler-only
+counterparts are inventoried separately from checked mathematical bodies. -/
+
+#foundation_manifest_module Mettapedia.Machines.StoredIdViews
+#foundation_manifest_module Mettapedia.Machines.StoredIdUnification
+#foundation_manifest_module Mettapedia.Machines.StoredIdFrameConditions
+#foundation_manifest_module Mettapedia.Machines.StoredIdAlignment
+#foundation_manifest_module Mettapedia.Machines.ShapeObserverPrograms
+#foundation_manifest_module Mettapedia.Machines.CapturedRowReaders
+#foundation_manifest_module Mettapedia.Machines.PureGuardNormalForms
+#foundation_manifest_module Mettapedia.Machines.PairedArrayAdmission
+#foundation_manifest_module Mettapedia.Machines.ContextualAlphaNumbering

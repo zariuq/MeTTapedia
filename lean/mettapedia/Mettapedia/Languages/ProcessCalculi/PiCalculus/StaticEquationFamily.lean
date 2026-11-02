@@ -96,7 +96,7 @@ theorem generated_instance
     Related family (bind ordinary generator.declaration.left)
       (bind ordinary generator.declaration.right) := by
   let body : ContextualAssignment signature metavariables Γ :=
-    assignment nilTerm nilTerm nilTerm nilTerm
+    assignment nilTerm nilTerm nilTerm
   have proof := admitted_instance (collectionAxiom generator) (generated_admitted generator)
     body (fun _ position => .var position) ordinary
   obtain ⟨left, right⟩ := generated_interpretation generator body
@@ -108,18 +108,18 @@ theorem generated_law (generator : CollectionEquationGenerators.Generator piCalc
   simpa only [bind_id] using generated_instance generator (fun _ position => .var position)
 
 theorem restrict_inaction (Γ : Ctx signature) :
-    Related family (restrictionTerm (nilTerm (Γ := processSort :: Γ)))
+    Related family (restrictionTerm (nilTerm (Γ := nameSort :: Γ)))
       (nilTerm (Γ := Γ)) :=
   of_static (StaticEquations.restrict_inaction Γ)
 
 theorem exchange_scopes {Γ : Ctx signature}
-    (body : Term signature (processSort :: processSort :: Γ) processSort) :
+    (body : Term signature (nameSort :: nameSort :: Γ) processSort) :
     Related family (restrictionTerm (restrictionTerm body))
       (restrictionTerm (restrictionTerm (rename exchangeRestrictions body))) :=
   of_static (StaticEquations.exchange_scopes body)
 
 theorem extrude_scope {Γ : Ctx signature}
-    (inside : Term signature (processSort :: Γ) processSort)
+    (inside : Term signature (nameSort :: Γ) processSort)
     (outside : Term signature Γ processSort) :
     Related family
       (restrictionTerm (parallelTerm inside (weaken outside)))
@@ -127,10 +127,10 @@ theorem extrude_scope {Γ : Ctx signature}
   of_static (StaticEquations.extrude_scope inside outside)
 
 theorem unfold_guarded {Γ : Ctx signature}
-    (channel : Term signature Γ processSort)
-    (body : Term signature (processSort :: Γ) processSort) :
-    Related family (replicationTerm channel body)
-      (parallelTerm (inputTerm channel body) (replicationTerm channel body)) :=
+    (channel : Term signature Γ nameSort)
+    (body : Term signature (nameSort :: Γ) processSort) :
+    Related family (replicationTerm (inputTerm channel body))
+      (parallelTerm (inputTerm channel body) (replicationTerm (inputTerm channel body))) :=
   of_static (StaticEquations.unfold_guarded channel body)
 
 /-- Both parts of the combined family use the existing binder-preserving
@@ -158,7 +158,7 @@ collection kind in the authored pi signature. -/
 theorem collection_row_exact {kind : CollType}
     (row : CollectionEquationGenerators.Row piCalc kind) :
     row.rule = piCalc.terms[1] ∧ kind = .hashBag :=
-  piBagTheory.carrier ⟨row.member, ⟨row.parameter, _, ((GrammarRule.bareParams_cons_iff _ _ _).mp row.shape).2⟩⟩
+  piBagPresentation.carrier ⟨row.member, ⟨row.parameter, _, ((GrammarRule.bareParams_cons_iff _ _ _).mp row.shape).2⟩⟩
 
 theorem no_set_row : ¬ Nonempty (CollectionEquationGenerators.Row piCalc .hashSet) := by
   rintro ⟨row⟩
@@ -189,7 +189,7 @@ theorem parallel_flatten {Γ : Ctx signature}
     Related family (parallelBag (pre ++ parallelBag inner :: post))
       (parallelBag (pre ++ inner ++ post)) :=
   generated_law (.flattening parallelRow { flatten := true, unit := some "PiNil" }
-    piBagTheory.bagAlgebraRule rfl pre inner post)
+    piBagPresentation.bagAlgebraRule rfl pre inner post)
 
 theorem parallel_assoc {Γ : Ctx signature}
     (first second third : Term signature Γ processSort) :
@@ -202,7 +202,7 @@ theorem parallel_assoc {Γ : Ctx signature}
 /-- Permute inside a restriction using the actual bag generator, then apply
 the freshness-enforcing static extrusion schema in the same congruence. -/
 theorem extrude_after_permutation {Γ : Ctx signature}
-    (inside : Term signature (processSort :: Γ) processSort)
+    (inside : Term signature (nameSort :: Γ) processSort)
     (outside : Term signature Γ processSort) :
     Related family (restrictionTerm (parallelTerm (weaken outside) inside))
       (parallelTerm (restrictionTerm inside) outside) := by
@@ -225,7 +225,7 @@ theorem project_eq_of_related {Γ : Ctx signature} {sort : TypeExpr}
 /-- The quotient identifies a term using both the generated parallel law and
 the binder-aware scope law, rather than interpreting each in a separate model. -/
 theorem extruded_permutation_projects_equal {Γ : Ctx signature}
-    (inside : Term signature (processSort :: Γ) processSort)
+    (inside : Term signature (nameSort :: Γ) processSort)
     (outside : Term signature Γ processSort) :
     BindingEquationFamilyModel.project family
         (restrictionTerm (parallelTerm (weaken outside) inside)) =

@@ -89,8 +89,8 @@ theorem QuoteDropOnly.generator {lang : LanguageDef} (only : QuoteDropOnly lang)
     source = quoted (dropped target) ∨ target = quoted (dropped source) := by
   rcases generator with ⟨fuel, authored⟩ | derived
   · cases authored with
-    | forward member matched premises applied =>
-        rename_i equation initial final
+    | forward member _ matched premises applied =>
+        rename_i equation initial final _
         rw [only.equations] at member
         obtain rfl : equation = quoteDropEquation := List.mem_singleton.mp member
         have same : final = initial := by
@@ -102,8 +102,8 @@ theorem QuoteDropOnly.generator {lang : LanguageDef} (only : QuoteDropOnly lang)
         refine .inl ?_
         rw [← rebuilt, ← applied]
         simp [quoteDropEquation, applyBindings, quoted, dropped]
-    | reverse member matched premises applied =>
-        rename_i equation initial final
+    | reverse member _ matched premises applied =>
+        rename_i equation initial final _
         rw [only.equations] at member
         obtain rfl : equation = quoteDropEquation := List.mem_singleton.mp member
         have same : final = initial := by
@@ -117,6 +117,11 @@ theorem QuoteDropOnly.generator {lang : LanguageDef} (only : QuoteDropOnly lang)
         refine .inr ?_
         rw [← applied]
         simp [quoteDropEquation, applyBindings, quoted, dropped]
+    | @declared equation _ _ _ _ member notRaw _ =>
+        rw [only.equations] at member
+        obtain rfl : equation = quoteDropEquation := List.mem_singleton.mp member
+        rw [readsRaw_of_none rfl] at notRaw
+        cases notRaw
   · exact (no_derivedInstance_of_no_derived_laws only.noBags only.noSets only.noAlgebra _ _
       derived).elim
 

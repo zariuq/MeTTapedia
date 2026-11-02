@@ -48,21 +48,21 @@ scope; reaching its end falls through to the next arm. Missing or incompatible
 reads do not select the default. Only unsigned selector values are admitted. -/
 def switchBody? (fields : FieldReader Ptr) (environment : Environment Ptr)
     (selector : Value Ptr) (cases : List (CExpr × List CStatement))
-    (otherwise : List CStatement) : Option (List CStatement) :=
+    (otherwise : List CStatement) (calls : CallReader Ptr := noCalls) : Option (List CStatement) :=
   match cases with
   | [] => some [.block otherwise]
   | (key, body) :: rest => do
-      let value ← expression environment fields key
+      let value ← expression environment fields key calls
       let selected ← equal? selector value
       if selected then some (.block body :: rest.map (fun arm => .block arm.2) ++ [.block otherwise])
-      else switchBody? fields environment selector rest otherwise
+      else switchBody? fields environment selector rest otherwise calls
 
 def selectedSwitch? (fields : FieldReader Ptr) (environment : Environment Ptr)
     (selector : CExpr) (cases : List (CExpr × List CStatement))
-    (otherwise : List CStatement) : Option (List CStatement) := do
-  let value ← expression environment fields selector
+    (otherwise : List CStatement) (calls : CallReader Ptr := noCalls) : Option (List CStatement) := do
+  let value ← expression environment fields selector calls
   match value with
-  | .unsigned _ | .unsigned64 _ => switchBody? fields environment value cases otherwise
+  | .unsigned _ | .unsigned64 _ => switchBody? fields environment value cases otherwise calls
   | _ => none
 
 def restore (name : Name) (previous : Option (Value Ptr)) : Result Ptr → Result Ptr
@@ -95,61 +95,63 @@ theorem declared_signed_retains_actual_value (value : Int32) :
     declaredValue? (Ptr := Ptr) ⟨"int".toList, 0⟩ (.signed value) =
       some (.signed value) := rfl
 
-def readLoopFuel (fields : FieldReader Ptr) (environment : Environment Ptr) : CStatement → Nat
+def readLoopFuel (fields : FieldReader Ptr) (environment : Environment Ptr)
+    (statement : CStatement) (calls : CallReader Ptr := noCalls) : Nat :=
+  match statement with
   | .forLoop _ _ _ (.binary .and (.binary .lt _ bound) _) _ _ =>
-      match expression environment fields bound with
+      match expression environment fields bound calls with
       | some (.unsigned count) => count.toNat
       | _ => 0
   | _ => 0
 
 def assign (fields : FieldReader Ptr) (environment : Environment Ptr)
-    (statement : CStatement) : Option (Environment Ptr) :=
+    (statement : CStatement) (calls : CallReader Ptr := noCalls) : Option (Environment Ptr) :=
   match statement with
-  | .assign (.identifier name) value => assignment environment fields (.identifier name) value
-  | .compoundAssign .bitOr location value => booleanOrAssignment environment fields location value
+  | .assign (.identifier name) value => assignment environment fields (.identifier name) value calls
+  | .compoundAssign .bitOr location value => booleanOrAssignment environment fields location value calls
   | .compoundAssign .mul location value =>
-      unsignedCompoundAssignment environment fields .mul location value
+      unsignedCompoundAssignment environment fields .mul location value calls
   | _ => LocalStore.execute environment statement
 
 def execute (fields : FieldReader Ptr) (fuel : Nat) (environment : Environment Ptr)
-    (body : List CStatement) : Result Ptr :=
+    (body : List CStatement) (calls : CallReader Ptr := noCalls) : Result Ptr :=
   match body with
   | [] => .finished (some (.next environment))
   | statement :: rest => match fuel with
     | 0 => .exhausted
     | fuel + 1 => match statement with
-      | .empty => execute fields fuel environment rest
+      | .empty => execute fields fuel environment rest calls
       | .declare type name value =>
-          match (expression environment fields value).bind (declaredValue? type) with
+          match (expression environment fields value calls).bind (declaredValue? type) with
           | none => .finished none
           | some initial => restore name (environment name)
-              (execute fields fuel (Function.update environment name (some initial)) rest)
-      | .assign _ _ => match assign fields environment statement with
+              (execute fields fuel (Function.update environment name (some initial)) rest calls)
+      | .assign _ _ => match assign fields environment statement calls with
           | none => .finished none
-          | some updated => execute fields fuel updated rest
-      | .compoundAssign _ _ _ => match assign fields environment statement with
+          | some updated => execute fields fuel updated rest calls
+      | .compoundAssign _ _ _ => match assign fields environment statement calls with
           | none => .finished none
-          | some updated => execute fields fuel updated rest
+          | some updated => execute fields fuel updated rest calls
       | .branch condition yes no =>
-          match (expression environment fields condition).bind truth? with
+          match (expression environment fields condition calls).bind truth? with
           | none => .finished none
-          | some selected => resume (fun updated => execute fields fuel updated rest)
-              (execute fields fuel environment (if selected then yes else no))
-      | .block selected => resume (fun updated => execute fields fuel updated rest)
-          (execute fields fuel environment selected)
+          | some selected => resume (fun updated => execute fields fuel updated rest calls)
+              (execute fields fuel environment (if selected then yes else no) calls)
+      | .block selected => resume (fun updated => execute fields fuel updated rest calls)
+          (execute fields fuel environment selected calls)
       | .switch selector cases otherwise =>
-          match selectedSwitch? fields environment selector cases otherwise with
+          match selectedSwitch? fields environment selector cases otherwise calls with
           | none => .finished none
-          | some selected => switchResume (fun updated => execute fields fuel updated rest)
-              (execute fields fuel environment selected)
+          | some selected => switchResume (fun updated => execute fields fuel updated rest calls)
+              (execute fields fuel environment selected calls)
       | .forLoop _ _ _ _ _ _ =>
-          match countedLoop fields (readLoopFuel fields environment statement) environment statement with
+          match countedLoop fields (readLoopFuel fields environment statement calls) environment statement calls with
           | none | some (.finished none) => .finished none
-          | some (.finished (some updated)) => execute fields fuel updated rest
+          | some (.finished (some updated)) => execute fields fuel updated rest calls
           | some .exhausted => .exhausted
       | .break => .finished (some (.broken environment))
       | .return none => .finished (some (.returned environment none))
-      | .return (some value) => match expression environment fields value with
+      | .return (some value) => match expression environment fields value calls with
           | none => .finished none
           | some returned => .finished (some (.returned environment (some returned)))
       | _ => .finished none
@@ -204,6 +206,17 @@ theorem scope_restoration_keeps_other_assignment (environment : Environment Ptr)
   rw [Function.update_comm different, Function.update_idem,
     Function.update_comm different.symm, Function.update_eq_self]
 
+theorem branch_executes_retained_continuation_with_calls (fields : FieldReader Ptr) (fuel : Nat) {calls : CallReader Ptr}
+    (environment : Environment Ptr) (condition : CExpr) (yes no rest : List CStatement)
+    (selected : Bool)
+    (read : (expression environment fields condition calls).bind truth? = some selected) :
+    execute fields (fuel + 1) environment (.branch condition yes no :: rest) calls =
+      resume (fun updated => execute fields fuel updated rest calls)
+        (execute fields fuel environment (if selected then yes else no) calls) := by
+  rw [execute.eq_def]
+  dsimp only
+  rw [read]
+
 theorem branch_executes_retained_continuation (fields : FieldReader Ptr) (fuel : Nat)
     (environment : Environment Ptr) (condition : CExpr) (yes no rest : List CStatement)
     (selected : Bool)
@@ -214,6 +227,7 @@ theorem branch_executes_retained_continuation (fields : FieldReader Ptr) (fuel :
   rw [execute.eq_def]
   dsimp only
   rw [read]
+
 
 theorem counted_loop_executes_actual_result (fields : FieldReader Ptr) (fuel : Nat)
     (environment updated : Environment Ptr) (type : CType) (counter : Name)
@@ -228,6 +242,17 @@ theorem counted_loop_executes_actual_result (fields : FieldReader Ptr) (fuel : N
   dsimp only
   rw [completed]
 
+theorem switch_executes_selected_body_with_calls (fields : FieldReader Ptr) (fuel : Nat) {calls : CallReader Ptr}
+    (environment : Environment Ptr) (selector : CExpr)
+    (cases : List (CExpr × List CStatement)) (otherwise selected rest : List CStatement)
+    (read : selectedSwitch? fields environment selector cases otherwise calls = some selected) :
+    execute fields (fuel + 1) environment (.switch selector cases otherwise :: rest) calls =
+      switchResume (fun updated => execute fields fuel updated rest calls)
+        (execute fields fuel environment selected calls) := by
+  rw [execute.eq_def]
+  dsimp only
+  rw [read]
+
 theorem switch_executes_selected_body (fields : FieldReader Ptr) (fuel : Nat)
     (environment : Environment Ptr) (selector : CExpr)
     (cases : List (CExpr × List CStatement)) (otherwise selected rest : List CStatement)
@@ -235,6 +260,17 @@ theorem switch_executes_selected_body (fields : FieldReader Ptr) (fuel : Nat)
     execute fields (fuel + 1) environment (.switch selector cases otherwise :: rest) =
       switchResume (fun updated => execute fields fuel updated rest)
         (execute fields fuel environment selected) := by
+  rw [execute.eq_def]
+  dsimp only
+  rw [read]
+
+
+theorem undefined_switch_has_no_completed_flow_with_calls (fields : FieldReader Ptr) (fuel : Nat) {calls : CallReader Ptr}
+    (environment : Environment Ptr) (selector : CExpr)
+    (cases : List (CExpr × List CStatement)) (otherwise rest : List CStatement)
+    (read : selectedSwitch? fields environment selector cases otherwise calls = none) :
+    execute fields (fuel + 1) environment (.switch selector cases otherwise :: rest) calls =
+      .finished none := by
   rw [execute.eq_def]
   dsimp only
   rw [read]
@@ -249,6 +285,14 @@ theorem undefined_switch_has_no_completed_flow (fields : FieldReader Ptr) (fuel 
   dsimp only
   rw [read]
 
+
+theorem empty_body_completes_with_calls (fields : FieldReader Ptr) (fuel : Nat) {calls : CallReader Ptr}
+    (environment : Environment Ptr) :
+    execute fields fuel environment [] calls = .finished (some (.next environment)) := by
+  rw [execute.eq_def]
+
+/-- Empty fall-through labels reach the one retained return body. Neither
+later arms nor the outer continuation execute after that return. -/
 theorem empty_body_completes (fields : FieldReader Ptr) (fuel : Nat)
     (environment : Environment Ptr) :
     execute fields fuel environment [] = .finished (some (.next environment)) := by
@@ -256,6 +300,30 @@ theorem empty_body_completes (fields : FieldReader Ptr) (fuel : Nat)
 
 /-- Empty fall-through labels reach the one retained return body. Neither
 later arms nor the outer continuation execute after that return. -/
+
+theorem empty_blocks_then_return_with_calls (reader : FieldReader Ptr) {calls : CallReader Ptr}
+    (locals : Environment Ptr) (fuel count : Nat) (value : CExpr)
+    (answer : Value Ptr) (rest : List CStatement)
+    (read : expression locals reader value calls = some answer) :
+    execute reader (fuel + count + 2) locals
+      (List.replicate count (.block []) ++ .block [.return (some value)] :: rest) calls =
+      .finished (some (.returned locals (some answer))) := by
+  induction count with
+  | zero =>
+      simp only [List.replicate_zero, List.nil_append, Nat.add_zero]
+      rw [execute.eq_def]
+      dsimp only
+      rw [execute.eq_def]
+      dsimp only
+      rw [read]
+      rfl
+  | succ count ih =>
+      simp only [List.replicate_succ, List.cons_append]
+      rw [execute.eq_def]
+      dsimp only
+      rw [empty_body_completes_with_calls]
+      exact ih
+
 theorem empty_blocks_then_return (reader : FieldReader Ptr)
     (locals : Environment Ptr) (fuel count : Nat) (value : CExpr)
     (answer : Value Ptr) (rest : List CStatement)
@@ -279,6 +347,28 @@ theorem empty_blocks_then_return (reader : FieldReader Ptr)
       rw [empty_body_completes]
       exact ih
 
+
+theorem branch_returns_expression_with_calls (reader : FieldReader Ptr) {calls : CallReader Ptr}
+    (locals : Environment Ptr) (fuel : Nat) (condition value : CExpr)
+    (selected : Bool) (answer : Value Ptr) (rest : List CStatement)
+    (readCondition : (expression locals reader condition calls).bind truth? = some selected)
+    (readAnswer : expression locals reader value calls = some answer) :
+    execute reader (fuel + 2) locals
+      (.branch condition [.return (some value)] [] :: rest) calls =
+      if selected then .finished (some (.returned locals (some answer)))
+      else execute reader (fuel + 1) locals rest calls := by
+  rw [branch_executes_retained_continuation_with_calls reader (fuel + 1)
+    locals condition [.return (some value)] [] rest selected readCondition]
+  cases selected with
+  | false => rfl
+  | true =>
+      change resume _
+        (execute reader (fuel + 1) locals [.return (some value)] calls) = _
+      rw [execute.eq_def]
+      dsimp only
+      rw [readAnswer]
+      rfl
+
 theorem branch_returns_expression (reader : FieldReader Ptr)
     (locals : Environment Ptr) (fuel : Nat) (condition value : CExpr)
     (selected : Bool) (answer : Value Ptr) (rest : List CStatement)
@@ -299,6 +389,7 @@ theorem branch_returns_expression (reader : FieldReader Ptr)
       dsimp only
       rw [readAnswer]
       rfl
+
 
 theorem local_store_executes_actual_result (fields : FieldReader Ptr) (fuel : Nat)
     (environment : Environment Ptr) (site : LocalStore.Site) :

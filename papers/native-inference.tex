@@ -1056,6 +1056,16 @@ retains its declared completeness regions, which can be stronger than the
 adaptive observations needed merely to establish an empty join.
 \lean{Sources.Query.validated_source_rows, Sources.Query.Controls.adaptive_dependency_is_bound, Sources.Query.Controls.absence_row_retains_full_footprint, Sources.Query.Controls.bag_agreement_does_not_validate_reordering, Sources.Query.Controls.resume_sees_unread_arrival}
 
+A cached prefix keeps the observations it originally made. Extending it runs
+only the answer-selected suffix and concatenates the two read certificates.
+If the old certificate is valid in the new store, the resulting observation
+equals an independent interpretation of the sequential query there. A changed
+old read refuses the combined observation even when the suffix has just read
+the replacement value. Thus a fresh read cannot rebase stale evidence. These
+laws concern pure queries; they do not license recomputation of observable
+effects hidden behind a cached result.
+\lean{ReadOnlyQuery.extend_eq_run_bind_of_valid, ReadOnlyQuery.checkReads_extend, ReadOnlyQuery.changed_cached_read_refuses_extend, ReadOnlyQuery.Controls.newer_read_does_not_rebase_cached, ReadOnlyQuery.Controls.cached_then_query_retains_both}
+
 Checked publication reads the selected source, consumes pending work and
 produces evidence only after the existing open-rule checker succeeds.
 Its validity theorem governs those steps from a valid initial store;
@@ -1099,9 +1109,10 @@ request. The native generation check follows this contract; its memory and
 seal implementation retain their qualification obligations.
 \lean{Kernel.CorrelatedReplies.consumed_reply_stays_refused, Kernel.CorrelatedReplies.cancelled_reply_stays_refused, Kernel.CorrelatedReplies.Controls.stale_request_cannot_answer_next, Kernel.CorrelatedReplies.Controls.replacing_supplied_identity_accepts_wrong_reply}
 
-The selected native checkpoint passes 317 continuation and failure controls,
+The selected native checkpoint passes 404 continuation and failure controls,
 including incomplete matching and refused waiter registration. Twenty
-mathematics programmes and twelve space-interaction fixtures agree across the
+mathematics programmes, thirteen space-interaction fixtures and twenty cached-
+read assertions agree across the
 current-source build, generated Cesta project and plain-C export. The three
 executables are byte-identical under the unchanged Cesta pin. This comparison
 supplies the interpreted library tree explicitly; the C export does not yet
@@ -1109,6 +1120,17 @@ package those resources. Sanitizer qualification also identifies its SWI
 provider: a reviewed corrected build passes, while the installed provider
 retains a reproducible cleanup leak. Neither build agreement nor these finite
 executions constitute a whole-runtime refinement theorem.
+
+Computed premises preserve each dialect's value boundary. In Prime, ordinary
+binding lets structural checkers inspect held source records without exposing
+their carriers or executing embedded code. In PeTTa, a complete cached table
+can be borrowed through a paused synchronous caller's lease under matching
+source and host semantics; no active generator is shared by that admission.
+Qualified controls retain the original Space reads and run cached effects
+once. A separate negative lookup of a never-materialized logical location
+still lacks a registry dependency and can publish a stale cached answer.
+That witness remains open, alongside State and foreign-read integration;
+Space certificates alone do not establish complete dependency tracking.
 
 \subsection{An exact reason to require dependency}
 
@@ -3133,6 +3155,470 @@ index for the same data tuple: the context remains part of the validity
 contract. This semantic equivalence concerns host equality in the declaration
 description; it supplies no erasure theorem for object proof syntax.
 \lean{IndexedPolynomial.Description.constructorDataEquiv, IndexedPolynomial.Description.recursive_index_from_data, IndexedPolynomial.Description.DataRepresentation.encode_constructor, IndexedInductive.ConstructorDataControls.wrong_parameter_index_refused}
+
+\paragraph{Complete indexed constructor inventories.}
+An ordered list \(C\) of indexed registered codes determines one polynomial:
+\[
+ \mathcal P_C.\mathsf{Shape}(\rho,i)
+   =\sum_{j:\operatorname{Fin}|C|}
+       \mathsf{Shape}(C_j,\rho,i).
+\]
+Its positions and child indices come from that same selected code. The
+constructor ordinal remains part of the shape, including duplicate codes.
+Natural-slot coding retains the selected container order. In particular,
+a Vector shape may be a singleton while its recursive positions are
+\(\operatorname{Fin} n\), with \(n\) read from the original scoped output
+expression. Simply forgetting the container's output index would discard
+this dependence.
+
+The generated HOL shape, activity, edge and root programs now use this
+complete indexed inventory. Under the explicit primitive image and injection
+laws, arithmetic, ordered-position and full-domain contracts, injective index
+encoding and encoded-constructor separation,
+their least predicate and root-index refinement recognize exactly the
+generated family of \(\mathcal P_C\). This constructs an equivalence with the
+guarded target subtype; its inverse is semantic and noncomputable.
+The existing unindexed-block construction has proved literal polynomial and
+presentation equalities with its inventory instance. Changing signatures
+preserves generation under the transported algebra, at the same value and
+index.
+\lean{IndexedPositiveContainer.Inventory.polynomial, IndexedPositiveContainer.Inventory.blockPolynomial_eq, IndexedPositiveContainer.Inventory.blockPresentation_eq, IndexedPolynomial.SignatureEquiv.generated_pull_iff, HOL.IndexedContainerInventory.operator_iff, HOL.IndexedContainerInventory.memberProgram_denote, HOL.IndexedContainerInventory.nativeFamilyEquivalence}
+
+The textual VectorTree control uses its actual ordered solved/branch list,
+Boolean answers, naturals and recursive trees. It retains both constructor
+and answer distinctions, branch lengths and child order. Slot two is absent
+at length two and present at length three; a foreign target index is refused.
+These are semantic HOL interpretation controls, not a completed source-context
+installation, native byte-checker refinement or executable representation
+adapter.
+\lean{IndexedVectorTreeInventoryControls.codes_source, IndexedVectorTreeInventoryControls.program_exact, IndexedVectorTreeInventoryControls.source_roundtrip, IndexedVectorTreeInventoryControls.target_roundtrip, IndexedVectorTreeInventoryControls.changed_length_distinct, IndexedVectorTreeInventoryControls.exchanged_children_distinct, IndexedVectorTreeInventoryControls.two_refuses_two, IndexedVectorTreeInventoryControls.three_accepts_two}
+
+\paragraph{Retained changes of payload representation.}
+The HOL payload programs admit a separate, occurrence-preserving representation
+map. Each target field is an actual curried program receiving the complete
+source row, so field order, field types and arity may change while earlier
+lengths and indices remain available. Constructor count and ordinal order are
+preserved; this is not an arbitrary permutation of constructors. Handler
+precomposition constructs the payload program, and retained beta proofs show
+that it commutes with encoding. Typed substitution preserves the construction.
+
+Let $F$ and $G$ be the resulting forward and return payload programs and let
+$D$ be the original constructor-data guard. Recovery of every original field
+under its actual row condition constructs
+\[
+ D(p)\;\Longrightarrow\;G(F(p))=p,
+ \qquad
+ D(p)\land D(q)\land F(p)=F(q)\;\Longrightarrow\;p=q.
+\]
+These are retained HOL derivations, with the original hypothesis occurrences
+transported into each existential field context. A whole-payload inverse is
+not among their inputs, and no inverse on arbitrary ambient payload functions
+is asserted. The produced syntax avoids function-extensionality rules when
+the primitive recovery and admission proofs do. Native replay of a selected
+instance remains a separate qualification.
+\lean{HOL.FiniteConstructorEncoding.InventoryMaps.mapPayload_subst, HOL.FiniteConstructorEncoding.InventoryMaps.mapPayload_encode, HOL.FiniteConstructorEncoding.InventoryMaps.encodedRoundtrip, HOL.FiniteConstructorEncoding.InventoryMaps.guardedRoundtrip, HOL.FiniteConstructorEncoding.InventoryMaps.guardedInjective, HOL.FiniteConstructorEncoding.InventoryMaps.guardedInjective_free}
+
+A selected raw field can also supply its own embedding into the recursive
+carrier. Typed insertion receives explicit terms for the other fields;
+the selected field needs no default. Both encoder and decoder use the same
+complete signature, with recovery derived from the raw constructor-field law
+and the actual payload and field selection principles. The VectorTree
+instance uses \(\langle[A],[N,N]\rangle\), selecting its unary answer row.
+Its source adapter obtains constructor, bottom and payload selection from one
+admitted instance at that signature, retaining the checked number-type
+equality, the original source predicate and all three provider premises.
+Conditional certificate acceptance and exact sequent correspondence do not
+establish an external native replay.
+\lean{HOL.FiniteConstructorFieldEmbedding.insertedField, HOL.FiniteConstructorFieldEmbedding.roundtripLaw, HOL.VectorTreeFieldEmbedding.Inputs.predicateRecovery, HOLLight.SourceFiniteConstructorFieldEmbeddingCompilation.fromAdmitted_premises, HOLLight.SourceFiniteConstructorFieldEmbeddingCompilation.compileRepresentedRetraction_hypotheses, HOLLight.SourceFiniteConstructorFieldEmbeddingCompilation.compileRepresentedRetraction_conclusion}
+
+A typed closed-term interpretation now acts on every positive predicate code,
+including its quantified children, and commutes with the fixed-point operator
+and least-predicate term. The constructor compiler therefore specializes one
+checked schema through eight explicit operation and argument parameters.
+Source carriers may coincide or become compound target types; simultaneous
+replacement retains binding and does not recursively replace its own images.
+The computed source sequent retains both the constructor-shape and complete
+child-condition premises. Specialization alone requires no injectivity or
+inhabitance assumption and establishes no semantic reflection theorem.
+\lean{HOL.PositivePredicate.Code.interpret_read, HOL.PredicateFixedPoint.read_least, HOL.RecursiveSpacePredicate.Contextual.read_least, HOLLight.RecursiveConstructorCompilation.Parameters.compileForSignature}
+
+For the selected admitted-membership interface, parent-shape and parent-root
+certificates discharge their exact premises and the membership join retains
+the full child condition. The resulting factory is total over its supplied
+typed operations. Conditional constructor introduction still does not supply
+induction from source methods, generated elimination, iota equations,
+no-confusion or executable representation adequacy for every datatype.
+\lean{HOLLight.AdmittedMembershipSchemas.compileTotal, HOLLight.AdmittedMembershipSchemas.Result.source_hypotheses, HOLLight.AdmittedMembershipSchemas.Result.source_conclusion}
+
+Constructor methods now generate the closure premise used by guarded induction.
+Each retained method has the actual constructor-shape and complete
+child-condition hypotheses, with recursive children satisfying the intersection
+of least membership and the proposed property. The construction eliminates the
+three existential constructor witnesses, retains the original context, and
+transports the method result along the equation identifying the requested
+point. Renaming and hypothesis extension preserve the construction, and no
+function-extensionality rule is introduced. A recursive-tree interpretation
+validates the resulting bottom-exclusion proof under constructor separation;
+a deliberately collapsed interpretation refutes its premise-free version.
+This is algebra-method induction for the guarded carrier. Indexed source
+induction must additionally retain the original root indices and constructor
+cases; carrier closure alone does not establish datatype adequacy.
+\lean{HOL.RecursiveSpacePredicate.Contextual.layer_elim, HOL.RecursiveSpacePredicate.Contextual.constructor_closure, HOL.RecursiveSpacePredicate.Contextual.induction_from_method, HOL.RecursiveSpacePredicate.Controls.MethodInduction.bottom_excluded_valid, HOL.RecursiveSpacePredicate.Controls.MethodInduction.separation_cannot_be_dropped}
+
+The root-index inversion program now consumes the actual generated root guard.
+It eliminates its finite constructor alternatives and original field
+telescopes, specializes the explicit primitive constructor-injectivity proof,
+and reads equal payloads through the retained field-program equations. The
+result identifies the requested index with the original constructor's computed
+result index and transports an indexed property to that requested index.
+The field-case builder retains typed substitution and binder scope throughout.
+A recursive-tree interpretation validates the primitive premise. A collapsed
+constructor interpretation admits the wrong root index and rules out a
+premise-free proof of its exclusion. This supplies the retained inversion
+step. Concrete admitted-source applications and every-profile primitive
+discharges remain separate obligations.
+\lean{HOL.FiniteConstructorEncoding.FieldCase.introduce, HOL.IndexedConstructorGuards.ConstructorPrograms.rootIndex_result, HOL.IndexedConstructorGuards.ConstructorPrograms.rootIndex_motive, HOL.IndexedConstructorRootInversionControls.injectivity_valid, HOL.IndexedConstructorRootInversionControls.injectivity_cannot_be_dropped}
+
+The admitted-source adapter now connects original constructor cases to indexed
+induction. It transports the actual field guards and computed source indices
+through typed parameter substitution. Constructor values remain unchanged;
+only the guard and result formulas require transport. The retained assembler
+constructs layer closure and applies induction for the original admitted
+member program, preserving active-child edges, induction hypotheses and
+inactive padding. Original cases and the representation's explicit
+constructor-injectivity proof remain inputs. Every construction preserves
+\code{FunctionExtensionalityFree}. A nonnullary field-dependent control uses
+its payload-reading condition; a real recursive-tree model and separating
+missing-condition and collapsed-constructor models test its premises.
+Native profile discharges and proof export remain distinct qualification
+obligations.
+\lean{GSLT.LanguageDef.AdmittedContainerHOL.compileScopedSourceCases, GSLT.LanguageDef.AdmittedContainerHOL.memberInductionFromSourceCases, GSLT.LanguageDef.AdmittedContainerHOL.memberInductionFromSourceCases_free, HOL.IndexedConstructorInductionControls.child_condition_cannot_be_dropped}
+
+The actual admitted Bool Vector now supplies a source consumer at arbitrary
+open inputs. Its retained universal induction proof establishes that members
+differ from bottom, and its interpretation connects to the existing member
+program; Nil and Cons supply non-vacuity witnesses. The explicit injectivity
+and separation premises are validated in the existing recursive-tree model.
+A counterinterpretation preserves separation but maps every constructor to
+one fixed non-bottom leaf. Both original root indices then hold at the same
+value, while injectivity fails. Thus constructor separation does not supply
+the index recognition required of a faithful representation. This control
+uses the semantic admitted-block description; it does not establish a new
+native export or a computable representation adapter.
+\lean{GSLT.LanguageDef.AdmittedContainerInductionControls.allProof, GSLT.LanguageDef.AdmittedContainerInductionControls.vector_nonbottom, GSLT.LanguageDef.AdmittedContainerInductionControls.wrongRoot_refused, GSLT.LanguageDef.AdmittedContainerInductionControls.collapsed_separation_valid, GSLT.LanguageDef.AdmittedContainerInductionControls.collapsed_injectivity_invalid}
+
+\paragraph{Compositional compilation of admitted induction.}
+A first-order constructor-program table retains each ordered field telescope,
+its guard, computed result index and child-position graph. Reconstruction
+recovers the constructor and position interfaces; tabulation of those
+reconstructed interfaces recovers the original table. The admitted Vector
+declaration supplies its actual two rows through this interface. An explicit
+typed interpretation allows the source base types and constants to differ
+from the native signature.
+\lean{HOL.IndexedConstructorGuards.ProgramRows.constructors_ofPrograms, HOL.IndexedConstructorGuards.ProgramRows.positions_ofPrograms, HOL.IndexedConstructorGuards.ProgramRows.ofPrograms_constructed, HOLLight.AdmittedNonbottomCompilation.rows_source, HOLLight.AdmittedNonbottomCompilation.statement_source}
+
+The shared induction certificate is compiled with schematic operations and
+one closed constructor-method premise. A separate finite-row construction
+proves the admitted method with an abstract child condition, preserving the
+original fields and result indices. Specializing that condition to the
+actual recursive-child predicate gives the required method. Two checked
+premise discharges join the method, this bridge and the induction schema;
+the exact hypothesis set retains the original representation laws. A
+hypothesis-free beta conversion and two fresh universal introductions then
+produce the original closed source statement. Conclusion and hypothesis
+reindexing retain the executable certificate itself.
+\lean{HOL.RecursiveSpacePredicate.Contextual.parametricToClosed, HOL.RecursiveSpacePredicate.Contextual.indexedFromClosedMethod, HOLLight.IndexedInductionSchemas.Bindings.compile, HOLLight.AdmittedConstructorMethodCompilation.closedConclusion_source, HOLLight.AdmittedInductionComposition.dischargePremise, HOLLight.AdmittedInductionComposition.compileClosed}
+
+This separates generic fixed-point reasoning from datatype-specific method
+production. The concrete method remains a constructed proof, and its
+representation premises require independent discharge. Complete dependent
+elimination for every admitted signature, executable representation
+comparisons and source/native implementation refinement remain separate
+obligations. The method quantified over an arbitrary child condition is a
+strong sufficient contract for the non-bottom application. General motives
+must retain the actual relation between that condition and the child
+induction hypotheses; no converse to this sufficient-method bridge is
+claimed.
+
+The selected admitted Boolean Vector instance is independently qualified.
+Its conditional closed-source proof has 170,739 primitive receipts; the
+retained-library consumer adds four more to discharge the actual constructor
+laws. The complete native artifact contains 196,712 new receipts in
+3,332,947 bytes, with no remaining hypotheses, no new axiom command and all
+three original source commitments retained. Four positive certificate
+workloads and eighteen variants give fifty-one native outcomes, including
+individual missing-law refusals and sealed refusal of the axiom-bearing
+source context. The mathematical cohort has thirteen strict and normal
+owners with 452 safe declarations and only standard Lean axioms.
+
+An additional certified append constructs the complete receiving cache from
+the conclusions of an already checked block. A general replay theorem and
+exact external-premise selection prove equality with the original append,
+including every receipt and root address. Focused controls retain repeated
+parents and prior cache entries and reject wrong premises, future addresses
+and forged conclusions. The qualification above uses the original replaying
+producer; the new append has no credited runtime speedup.
+\lean{Logic.DerivationGraph.replayFrom_eq_materialize, HOLLight.CertifiedBlockAppend.matches_replay, HOLLight.CertifiedBlockAppend.preserves, HOLLight.CertifiedBlockAppend.Controls.duplicate_parents, HOLLight.CertifiedBlockAppend.Controls.wrong_premise_refused, HOLLight.CertifiedBlockAppend.Controls.forged_conclusion_refused}
+
+The general-motive route now compiles a datatype spine with open motive and
+child-condition parameters. Each row is universally bound over its original
+fields and keeps its guard, encoded-payload condition and computed result
+index. These explicit clauses and the scoped indexed-case interface
+constructively derive each other; the correspondence preserves absence of
+function extensionality and asserts no identity of proof trees.
+\lean{HOL.FiniteConstructorEncoding.forallArguments_subst, HOL.FiniteConstructorEncoding.forallArguments_elim_free, HOL.IndexedConstructorGuards.ConstructorPrograms.rowClauses_iff_cases, HOL.IndexedConstructorGuards.ConstructorPrograms.spineProof_free, HOLLight.ConstructorSpineCompilation.compile}
+
+Retained readback at a known encoded payload recovers that occurrence's
+original predicate. Instantiating the predicate with a child-position row
+recovers both its field guard and its declared index relation, without a
+functionality assumption. Specialization of the actual strengthened child
+condition preserves inactive padding and derives membership and the motive
+at an index only with its supplied root proof. The retained witness and
+guarded-method joins are developed below.
+\lean{HOL.ConstructorDataPredicates.readOnEncoded_free, HOL.IndexedConstructorGuards.PositionPrograms.childGuard_iff_original, HOL.RecursiveSpacePredicate.Contextual.childConditions_at_free, HOL.RecursiveSpacePredicate.Contextual.indexedChildHypothesis_free}
+
+The actual Vector spine has five premises, 144,785 primitive receipts and an
+835,455-byte native stream. Two arbitrary-predicate nil/cons readback roots
+use the actual admitted field sorts and certified append: 19,832 receipts
+and 104,252 bytes. Two producer programs, three positive roots and fifteen
+variants give forty-five native outcomes. Missing individual premises,
+changed motives, fields, rows and roots, and malformed streams are refused.
+Six strict/normal owners contain 116 safe declarations with only standard
+axioms. Native specialization availability and construction of arbitrary
+source-method clauses remain open. Known encoded-payload readback does not
+interpret an arbitrary neutral container variable.
+
+The generated edge query now has retained computation to its original
+guarded existential, with typed-substitution coherence. At a known encoded
+payload, readback preserves an existential index together with the original
+field guard, declared row relation and child's root-index evidence. Both
+guard-level and executable-query proofs preserve absence of function
+extensionality. No functionality assumption or selected index is introduced.
+Two strict/normal mathematical owners, 25 safe declarations and 62 matching
+package identities qualify this source connection; no new native outcome is
+claimed by that two-owner component. The next component consumes the witness
+and closes the guarded method, keeping source clauses explicit.
+\lean{HOL.IndexedConstructorGuards.PositionPrograms.childGuard_subst, HOL.IndexedConstructorGuards.PositionPrograms.edgeGuard_subst, HOL.IndexedConstructorGuards.PositionPrograms.edgeProgram_beta_free, HOL.IndexedConstructorGuards.PositionPrograms.edgeGuardReadback_free, HOL.IndexedConstructorGuards.PositionPrograms.edgeProgramReadback_free}
+
+The strengthened child condition now supplies the edge, least membership and
+lifted motive for an active child. Original field guards and row relations
+establish activity. Consuming the edge witness preserves its existential
+index while adding indexed membership and motive evidence. A row result can
+use that evidence in the witness scope without choosing an index or assuming
+functionality. Original-field clauses for the actual guarded child predicate
+then produce the exact closed method consumed by indexed induction. The
+construction reuses the existing child predicate and case-closing proofs and
+preserves absence of function extensionality.
+\lean{HOL.IndexedConstructorGuards.PositionPrograms.originalChildWitness_free, HOL.IndexedConstructorGuards.PositionPrograms.useIndexedEdgeWitness_free, HOL.RecursiveSpacePredicate.Contextual.childPredicate_subst, HOL.IndexedConstructorGuards.PositionPrograms.methodFromRows_free, HOL.IndexedConstructorGuards.PositionPrograms.inductionFromRows_free}
+
+A proposition-indexed method supplies a concrete control; dropping its field
+guard is refuted. Separate controls refute arbitrary index selection and
+retain a relation with two distinct indices. The joined ten-owner cohort has
+119 safe declarations, 46 axiom-free declarations and 222 matching package
+identities. A parametric native witness-consumption schema and a closed
+Boolean application contain 13,769 primitive receipts in 76,578 bytes, with
+three and zero hypotheses respectively and no axiom dependencies. Nine
+variants across three policies give 27 native outcomes, including individual
+premise, changed-motive, selected-index, wrong-root and malformed refusals.
+This generic native panel does not yet specialize the full concrete
+least-predicate child method. Every-signature source-clause generation,
+general position-sensitive comparisons, native schema availability/reuse and
+the broader acceptance remain obligations.
+\lean{HOL.IndexedWitnessControls.wrong_index_not_derivable, HOL.IndexedWitnessControls.relation_has_two_distinct_indices, HOL.GuardedConstructorMethodControls.method_free, HOL.GuardedConstructorMethodControls.false_field_guard_cannot_be_dropped, HOLLight.IndexedWitnessCompilation.compile}
+
+Retained computation now connects both the ordered position graph and its
+complete original-field query to the authored relation. Field substitution
+preserves the generated program. Occurrence-indexed segment equations imply
+the returned index, retaining repeated segments and residual-slot binders.
+Alignment may use the original field guard. This produces a guarded universal
+comparison without asserting activity. A separate witness and the actual
+child conditions permit equality transport of both membership and motive to
+the requested index; absence of function extensionality is preserved.
+\lean{HOL.OrderedPositionPrograms.fieldGraph_beta_free, HOL.OrderedPositionPrograms.fieldGraph_substitute, HOL.OrderedPositionPrograms.fieldGraph_result_free, HOL.IndexedConstructorGuards.PositionPrograms.guardedUniformIndexComparison_free, HOL.IndexedConstructorGuards.PositionPrograms.requestedChildHypothesis_free}
+
+The admitted Vector cons plan is extracted from its original declaration and
+matches the retained source graph table. Its comparison reads the original
+open length field. The empty nil comparison is vacuous, while a separate
+retained proof refutes its child relation. Five strict/normal owners contain
+170 safe declarations, 69 axiom-free declarations and 301 matching package
+identities. Mathematical controls cover repeated and zero-count segments,
+guard-relative alignment, heterogeneous active indices and an unaligned dead
+segment. Two source-related native roots contain 3,923 primitive receipts in
+29,309 bytes with no hypotheses or axiom dependencies. Seven variants across
+three policies give 21 outcomes, including changed length/head, forged nil,
+wrong-root and malformed refusals. The target operations remain parametric.
+\lean{HOL.OrderedPositionProofControls.guardedFalseComparison_free, HOL.OrderedPositionProofControls.alignment_cannot_be_dropped, HOL.OrderedPositionProofControls.unaligned_dead_segment_is_outside_uniform_contract, HOLLight.AdmittedPositionIndexCompilation.plan_source, HOLLight.AdmittedPositionIndexCompilation.positions_source, HOLLight.AdmittedPositionIndexCompilation.proof_free, HOLLight.AdmittedPositionIndexCompilation.nilRefutation_free}
+
+Uniform alignment is sufficient, not complete. A semantically dead segment
+whose index does not align still requires arithmetic dead-branch exclusion;
+heterogeneous plans require position-sensitive comparisons. Full concrete
+least-method specialization and every-signature source-method generation
+remain open, together with the previously stated qualification boundaries.
+
+Typed specialization was already total. The new cache route installs a
+closed schema certificate once and constructs each later instance from its
+selected physical root using the existing \textsc{Inst-Type}/\textsc{Inst}
+block. It preserves every earlier cache entry and the exact receipt prefix,
+adding two receipts per client. Hypothesis and conclusion images reuse the
+typed parameter correspondence, and axiom dependencies are unchanged.
+Expected-source comparison includes the sequent and axiom provenance.
+Missing roots, changed hypotheses and changed dependencies are refused.
+\lean{HOLLight.CachedSubstitution.applyExpected_checked, HOLLight.CachedParameterCompilation.install_checked, HOLLight.CachedParameterCompilation.specializeExpanded_checked, HOLLight.CachedParameterCompilation.expandedResult_hypotheses, HOLLight.CachedParameterCompilation.expandedResult_conclusion}
+
+The selected derivation remains distinguished by parent addresses even when
+theorem values coincide. Finite-set hypotheses retain their existing
+observation contract; order and multiplicity are not reflected.
+Four strict/normal owners contain 50 safe declarations with standard Lean
+axioms and 283 matching package identities. The full indexed-induction
+schema is installed once: 68,269 receipts plus two for each of two distinct
+clients, totaling 68,273 receipts in 406,020 bytes. All four source carriers
+coalesce to Boolean carriers while parameter keys remain distinct. Each
+client retains its explicit closed-method premise. Seven variants across
+three policies give 21 native outcomes with no new axioms or axiom
+dependencies.
+\lean{HOLLight.CachedParameterCompilationControls.two_clients_available, HOLLight.CachedParameterCompilationControls.guard_remains, HOLLight.CachedSubstitutionControls.distinct_roots_remain_distinct, HOLLight.CachedSubstitutionControls.changed_axiom_dependencies_refused}
+
+This is reuse within the supplied checked cache and policy. It does not
+establish cross-theory/revision authorization, persistent service ownership,
+constant substitution time, bounded term size or retained-memory improvement.
+Preparation and export costs remain separate. The method premise still
+requires source proof production and discharge; broader acceptance is
+unchanged.
+
+\paragraph{Expansion from checked source-cache equations.}
+The retained constant-expansion program preserves absence of eta and function
+extensionality when its individual defining proofs have that property,
+including under lambda, universal and existential binders. Exact source-cache
+comparison connects the readable source fragment to the compiler's canonical
+conclusions. The ordinary compiler and cached-premise discharge then produce
+the expanded theorem with its exact axiom dependencies, preserved old cache
+and explicit receipt count. Publication requires removal of every hypothesis.
+The original conjunction definition still contains the named truth constant;
+the already-inlined equation is not accepted as that source cache entry.
+Two actual admitted definition commands supply the conjunction and truth
+equations. Their checked expansion produces a closed, axiom-free result with
+465 new primitive receipts: 461 for construction and four for discharging the
+two cached premises. The 8,771-byte stream passes independent native checking
+under the open, standard and sealed policies. Conditional-proof publication
+without guard discharge, a forged conclusion and malformed truncation are
+refused, giving twelve outcomes across those policies. Complete primitive
+profiles, every-signature datatype production, codec adequacy and native
+implementation refinement remain separate obligations.
+\lean{HOL.ConstantExpansionProofs.expand_free, HOLLight.CachedSourceExpansion.Task.compileAndClose_checked, HOLLight.CachedSourceExpansionControls.closed_result, HOLLight.CachedSourceExpansionControls.premature_inlining_refused}
+
+An ordered typed table now supplies the individual defining proofs from their
+authored hypothesis positions. Its keys retain source role, declaration
+provenance and type annotation. Unmatched symbols remain literal. Renaming
+commutes with its term action; substitution also transforms the environment's
+entries. Each row has an explicit type-instance operation, without assuming
+that lookup commutes with a noninjective type map. The original recorded
+prefix validates all seven Boolean rows, four registered universal-quantifier
+parameter instances and four wrong-type refusals. These parameter slices do
+not qualify the later natural/recursive-space constructor profile. The table
+producer computes the same four native artifacts byte for byte, so their
+existing twelve native outcomes are reused. Finite contextual beta executions
+also elaborate without eta or function extensionality, under arbitrary typed
+contexts and assumptions. A variable cannot execute forward to its eta
+expansion; no global normalization or general beta-convertibility conclusion
+is drawn.
+\lean{HOLLight.CachedSourceDefinitionTable.reverseSymbol_injective, HOLLight.CachedSourceDefinitionTable.equations_free, HOLLight.CachedSourceDefinitionTable.applyTerm_subst, HOLLight.CachedSourceDefinitionTable.Binding.typeInstance_equation, HOL.ContextualTrinity.Execution.proof_free, HOL.ContextualTrinity.variable_eta_not_executed}
+
+Finite table unfolding now connects the actual constructor-separation source
+theorem to its primitive native profile. The recorded 71,827-event prefix and
+four registered universal-quantifier type instances supply nine checked
+definition rows. Agreement in the exact readable fragment earns typed term
+equality by translation uniqueness; it is not inferred from a serialization
+comparison outside that fragment. One retained beta contraction under three
+binders completes the conversion. The installation theorem accounts for the
+compiled receipts, discharges every cached hypothesis and preserves the
+precise inherited axiom dependencies. The selected run adds 7,656 receipts,
+removes ten temporary hypotheses and retains the original three axiom
+dependencies without adding an axiom command. Its 2,205,459-byte stream passes
+independent checking under open and standard policies. Missing-hypothesis,
+forged-conclusion and malformed-truncation controls pass under both policies;
+sealed policy rejects the axiom-bearing source prefix. These are eight
+artifact outcomes and one policy-boundary refusal, not nine programs.
+Both normal targets and their focused audit pass. Regeneration from the
+normal objects produces all four native artifacts byte for byte, so the nine
+native outcomes are reused without additional executions. Joined integration,
+the other constructor profiles, every-signature production, source-codec
+adequacy and native implementation refinement remain separate obligations.
+\lean{HOLLight.CachedSourceDefinitionClosure.task, HOLLight.CachedSourceProfileTransport.readable_equal, HOLLight.CachedSourceProfileTransport.Profile.compile_conclusion, HOLLight.CachedSourceProfileTransport.Profile.install_checked, HOLLight.ConstructorSeparationProfile.profile}
+
+Source profiles now share that publication implementation. A profile supplies
+its source and intermediate formulas, a retained conversion proof and the
+exact native image. Checked hypothesis substitution composes the unfolding
+proof with that conversion; profiles also compose by supplying one retained
+proof to another. The constructor client retains its three-binder conversion
+while the common implementation owns matching, compilation and publication.
+The original natural-number successor-separation and successor-injectivity
+statements provide two further applications, with two actual quantifier type
+instances and seven checked definition rows. Their 4,648 and 2,947 new
+receipts respectively discharge eight temporary hypotheses and retain the
+three original axiom dependencies without introducing an axiom command.
+Independent native checks cover both admitting policies, malformed or forged
+artifacts and the sealed-policy boundary. Two actual-definition equation
+controls additionally exercise retained symmetry and composition under all
+three policies. Normal regeneration preserves their artifact bytes. These
+applications qualify the shared transport, rather than completing all native
+datatype profiles or the remaining encoding and implementation refinements.
+\lean{HOLLight.CachedSourceProfileTransport.supply_free, HOLLight.CachedSourceProfileTransport.Profile.post, HOLLight.CachedSourceProfileTransportControls.checked_composition, HOLLight.NaturalPrimitiveProfiles.separation, HOLLight.NaturalPrimitiveProfiles.injectivity}
+
+The remaining three recorded primitive laws now use that same transport.
+The existing source-conjunction beta builder is proved free of eta and
+function-extensionality rules through its elaborated cast; retained selector
+proofs then connect the source conjunction with logical conjunction.
+Constructor injectivity preserves all six binders and the three field
+equalities, with a proved agreement to the existing native statement.
+Natural induction likewise agrees with the native induction principle.
+Recursive-space induction retains the predicate, constructor-field and
+child-slot scopes. One recorded 73,842-event prefix supplies these three
+profiles. Their 18,313, 11,649 and 18,216 new receipts discharge six, six and
+nine temporary hypotheses, respectively, without an axiom command. Their
+explicit theorem-axiom dependency counts are three, zero and one; the imported
+source context still carries its three commitments. A zero theorem count
+does not establish an axiom-free source foundation. Twenty-seven independent
+native outcomes cover the admitting policies, missing-hypothesis and forged
+claims, malformed truncation and sealed-prefix refusal. All twelve artifacts
+regenerated from normal objects are byte-identical. These results connect all
+six recorded Peano/recursive-space laws to native logical profiles; admitted
+payload instances, uniform datatype proof production and executable
+representation comparisons remain further obligations.
+\lean{HOL.HOLLightBooleanConversions.sourceConjunctionBeta_free, HOL.HOLLightBooleanConversions.conjunctionMap_free, HOLLight.ConstructorInjectivityProfile.native_is_statement, HOLLight.NaturalPrimitiveProfiles.induction_is_principle, HOLLight.RecursiveSpaceInductionProfile.profile}
+
+The admitted inventory now determines the ordered source payload type, with
+a proof that translation recovers the existing predicate-handler encoding.
+Six registered source-law instances are checked at the actual admitted Bool
+Vector payload. A wrong parameter and uninstantiated constructor roots are
+refused. The common certified installer retains the computed graph, exact
+conclusion, dependency union, receipt count and checked certificate, and has
+an availability theorem. The payload-type equality transports constructor
+injectivity into arbitrary open contexts at the general admitted consumer's
+premise type. These transports preserve function-extensionality freedom.
+A generic finite-numeral proof builder additionally consumes the native
+separation and injectivity profiles. Their actual checked roots discharge
+both premises of the proof that numeral two differs from numeral five,
+adding 1,050 primitive receipts after the profiles. A constant-successor beta
+proof supplies a counterexample to deriving distinctness from closure alone.
+The seven-workload cohort has 69 native outcomes over 31 artifacts; the
+certified normal producer reproduces all 27 prior profile artifacts exactly.
+No axiom command is added, and the source context retains its three
+commitments. This qualifies the selected admitted payload and composed
+source-law consumer; general admitted induction/elimination assembly,
+every-signature datatype production and executable representation comparisons
+remain required.
+\lean{HOLLight.AdmittedSourcePayloads.admittedPayload_toHOL, HOLLight.AdmittedPrimitiveProfiles.install?_available, HOLLight.AdmittedPrimitiveProfiles.Installation.certificate_checked, HOLLight.AdmittedPrimitiveProfiles.injectivityAt_free, HOL.NaturalNumeralProofs.unequal_free, HOL.NaturalNumeralProofs.collapsedNumerals, HOLLight.NaturalNumeralProfiles.compile_conclusion}
+
+The selected four-root proof export includes the constructor-method induction
+example under its one constructor-separation premise. It produces 174,141
+primitive receipts in 6,429,745 bytes without an axiom command. Acceptance,
+removed-premise refusal, forged-conclusion refusal and malformed truncation
+pass under each of the open, standard and sealed policies. The single-run
+producer invocation takes 719.30 seconds; valid native checking takes
+0.421--0.468 seconds per policy. These measurements concern proof construction
+and checking, not vector execution or a general complexity claim. The native
+run does not yet export the new root-index inversion proof or qualify the
+complete source-reader, codec or native implementation refinement.
 
 Separately, the actual HOL Light recursive-space certificates replay on the
 selected native checker: 78,963 retained theorem outputs pass exact conclusion

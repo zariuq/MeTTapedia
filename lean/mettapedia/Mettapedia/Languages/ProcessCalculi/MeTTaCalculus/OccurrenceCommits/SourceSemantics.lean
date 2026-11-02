@@ -882,11 +882,12 @@ def parity : TermLayer Unit ℕ (Option ℕ) where
   inst σ p := match p with
     | none => σ ()
     | some n => some n
-  inst_isSome σ p := by
+  inst_bound σ p := by
     cases p with
     | none =>
-        show (σ ()).isSome = true ↔ ∀ v ∈ ({()} : Finset Unit), (σ v).isSome = true
-        exact ⟨fun h v _ => by cases v; exact h, fun h => h () (Finset.mem_singleton_self _)⟩
+        intro bound v _
+        cases v
+        exact bound
     | some n => simp
   inst_local σ τ p h := by
     cases p with

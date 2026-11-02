@@ -19,6 +19,31 @@ open Mettapedia.Languages.ProcessCalculi.MORK (Subst applySubst matchAtom)
 open _root_.Mettapedia.Languages.MeTTa.PeTTa.Effects (State)
 open Eval
 
+/-- A nonempty application sequence exposes exactly the selected source
+clauses. Empty selection, partial application and over-application cannot
+manufacture an evaluated body. -/
+theorem clauses_of_singleton_application {program : SpaceSemantics.Program} {head : String}
+    {values : List Atom} {body : Control}
+    (selected : application program head values = .sequence [body] []) :
+    clauses program head values = [body] := by
+  cases found : clauses program head values with
+  | nil =>
+      simp only [application, found] at selected
+      split_ifs at selected; cases selected
+  | cons first rest =>
+      have same : Control.sequence (first :: rest) [] = .sequence [body] [] := by
+        simpa only [application, found] using selected
+      exact (Control.sequence.inj same).1
+
+theorem selected_clause_agreement {allowed : String → Bool} {first second : SpaceSemantics.Program}
+    (agreement : ProgramAgreementOn allowed first second) {head : String} {values : List Atom}
+    (supported : allowed head = true) {body : Control}
+    (selected : clauses first head values = [body]) :
+    clauses second head values = [body] := by
+  apply clauses_of_singleton_application
+  rw [← agreement.bodies head values supported]
+  simp [application, selected]
+
 /-- Fresh, distinct formal variables capture the supplied values in the
 canonical matcher's retained binding order. -/
 theorem match_variable_values (names : List String) (values : List Atom) (caller : Subst)
@@ -60,9 +85,6 @@ theorem named_equation_clause (program : SpaceSemantics.Program) (head : String)
       [.evaluate ((names.zip values).reverse) equation.body] := by
   rw [clauses_use_only_the_named_equations, rows]
   simp only [List.filterMap_cons, List.filterMap_nil, arguments]
-  rw [SpaceSemantics.matchValue_expression_of_not_cons [] (names.map Atom.var) values (by
-    intro first rest
-    cases names <;> simp)]
   rw [match_variable_values names values [] distinct length (by intro name member; rfl)]
   simp
 
@@ -107,12 +129,12 @@ Neither argument multiplicity nor order is quotiented away. -/
 theorem constructor_return (program : SpaceSemantics.Program) (bindings : Subst)
     (state : State) (head : String) (expressions values : List Atom)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (computed : List.Forall₂ (fun expression value =>
       PureReturns program bindings state expression state value) expressions values) :
     PureReturns program bindings state (.expression (.symbol head :: expressions)) state
       (.expression (.symbol head :: values)) := by
-  apply data_call_returns program bindings state state head expressions _ inert _ ordinary
+  apply data_call_returns program bindings state state head expressions _ inert _ (by simp_all)
   simpa using arguments_return program bindings state (.symbol head :: expressions) (.symbol head :: values)
     (.cons (symbol_returns program bindings state head) computed) [] 0
 
@@ -169,7 +191,7 @@ inductive Literal (program : SpaceSemantics.Program) : Atom → Prop
   | symbol (name) : Literal program (.symbol name)
   | constructor (head : String) (arguments : List Atom)
       (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-      (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+      (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
       (children : ∀ argument ∈ arguments, Literal program argument) :
       Literal program (.expression (.symbol head :: arguments))
 
@@ -197,7 +219,7 @@ and argument demand are obligations about the actual loaded program. -/
 theorem raw_authored_call_return (program : SpaceSemantics.Program)
     (bindings callee : Subst) (before after : State) (head : String)
     (arguments : List Atom) (body answer : Atom)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (notIO : ioHead head = false) (notNative : StdLib.known head = false)
     (registered : program.equations.any (·.head == head) = true)
     (raw : ∀ index < arguments.length, argumentIsRaw program head index = true)
@@ -241,7 +263,7 @@ theorem raw_prefix_authored_call_return (program : SpaceSemantics.Program)
     (arguments values : List Atom) (last value body answer : Atom)
     (notIO : ioHead head = false) (notNative : StdLib.known head = false)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (raw : ∀ index < arguments.length, argumentIsRaw program head index = true)
     (demanded : argumentIsRaw program head arguments.length = false)
     (captured : arguments.map (applySubst bindings) = values)
@@ -305,7 +327,7 @@ theorem raw_capture_run_eq (program : SpaceSemantics.Program) (first second : Su
     (state : State) (head : String) (one two : List Atom) (fuel : Nat)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
     (raw : ∀ index < one.length, argumentIsRaw program head index = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (captured : one.map (applySubst first) = two.map (applySubst second)) :
     run program (fuel + (3 * one.length + 2))
       { state, control := .evaluate first (.expression (.symbol head :: one)) } =
@@ -340,7 +362,7 @@ theorem raw_capture_returns (program : SpaceSemantics.Program) (first second : S
     (before after : State) (head : String) (one two : List Atom) (answer : Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
     (raw : ∀ index < one.length, argumentIsRaw program head index = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (captured : one.map (applySubst first) = two.map (applySubst second))
     (returned : PureReturns program first before (.expression (.symbol head :: one)) after answer) :
     PureReturns program second before (.expression (.symbol head :: two)) after answer := by
@@ -358,7 +380,7 @@ inductive Template (program : SpaceSemantics.Program) : Atom → Prop where
   | symbol (name : String) : Template program (.symbol name)
   | constructor (head : String) (arguments : List Atom)
       (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-      (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+      (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
       (children : ∀ argument ∈ arguments, Template program argument) :
       Template program (.expression (.symbol head :: arguments))
 

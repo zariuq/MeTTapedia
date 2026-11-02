@@ -3321,6 +3321,580 @@ memory/commitment correspondence remain further joins. A model-level
 on the actual compiled service. These constructions support compositional
 contract instances; they do not establish a minimal final architecture.
 
+\subsection{Occurrence geometry and proof-relevant inference execution}
+\label{sec:occurrence-proof-execution}
+
+The candidate constraint multiset rewriting system separates physical
+occurrences from their labels and from the common substitution interpreting
+those labels.  A selected rule use has ordered take, read and production
+ports.  Take ports are distinct and disjoint from the read image; read ports
+may name the same physical occurrence.  Newly produced identities are fresh.
+For an enabled selection in a finite physical state $G$, put
+\[
+ D=G\setminus\operatorname{taken},\qquad
+ H=D\cup\operatorname{made}.
+\]
+Let $K$ be the read positions, $L$ the disjoint sum of take and read
+positions, and $R$ the disjoint sum of production and read positions.
+The maps in the following diagram use these actual selected positions:
+\begin{center}
+\begin{tikzpicture}[>=Stealth]
+  \node (L) at (0,1.2) {$L$};
+  \node (K) at (2,1.2) {$K$};
+  \node (R) at (4,1.2) {$R$};
+  \node (G) at (0,0) {$G$};
+  \node (D) at (2,0) {$D$};
+  \node (H) at (4,0) {$H$};
+  \draw[->] (K) -- (L); \draw[->] (K) -- (R);
+  \draw[->] (L) -- (G); \draw[->] (K) -- (D); \draw[->] (R) -- (H);
+  \draw[->] (D) -- (G); \draw[->] (D) -- (H);
+\end{tikzpicture}
+\end{center}
+Both squares satisfy the actual pushout universal property in the category
+of types and functions.  In \leanname{ReadPortPushouts}, the checked
+endpoints are \leanname{left_pushout} and \leanname{right_pushout}.
+The read-identification quotient is itself a pushout, and the theorem
+\leanname{leftMatch_factors} factors the physical match as
+that quotient followed by an injective support inclusion.  Repeated read
+positions remain distinct in the rule interface even when their physical
+images coincide.  Collapsing two exclusive ports fails the universal
+property.  These are occurrence-geometry results; matching equations,
+guards and interpretation of term equality remain separate obligations.
+They do not establish a whole-calculus labeled-DPO equivalence.
+
+The reverse comparison with resource planning needs more than a multiset
+inequality.  An arbitrary empty read footprint can satisfy that inequality
+even when the source rule requires a read from an empty world.  The
+\leanname{ReadCompatibleResourcePlanning} refinement instead records the
+ordered read prototypes and their matching under the same substitution
+$\theta$.  Its finite prototype support records exactly the read-alias
+classes.  The lifting construction embeds those classes injectively into
+the occupied world, allocates exclusive takes from the remaining rows, and
+allocates outputs fresh from the whole world.  It constructs actual
+selections and finite executions with the complete residual bag preserved.
+The comparison assumes structural term equality and no guards; it does not
+identify physical prototypes across firings or erase contextual per-use
+schema views.
+
+\paragraph{A protected logical projection.}
+The installed inference-request instance consumes request data, reads
+protected premise occurrences and publishes an activated source conclusion.
+An ordered board
+$\Gamma=[(o_1,J_1),\ldots,(o_n,J_n)]$ retains the physical premise positions.
+If a selected firing activates an admitted source application
+$\rho:(J_{i_1},\ldots,J_{i_k})\Rightarrow C$, its protected projection is
+\[
+ \Pi(e)=\langle\operatorname{id}_\Gamma,\rho\circ\pi_m\rangle
+     :\Gamma\longrightarrow\Gamma\mathbin{+\!+}[C],
+ \qquad m(j)=i_j.
+\]
+The actual read identities determine $m$.  Two reads of one occurrence
+select the same position; two equal judgments at distinct occurrences
+remain different assumptions.  The full physical step is not read-only:
+only its protected-judgment projection preserves the old board.  Public
+request posts project to identity.  Successful source activation supplies
+the rule node, rather than a trusted derivability callback.
+
+The retained \leanname{InferenceTraceClassifying.SelectedRun} contains the
+source ID, activation inputs and physical selection of each existing step.
+Its \leanname{project_append} theorem proves
+\[
+ \Pi(t;u)=\Pi(u)\circ\Pi(t)
+\]
+with the exact terminal board retained.  Composition is substitution of
+open derivations.  A final protected observation consequently has an open
+derivation over the initial board; an empty initial board closes that
+derivation.  This is a proof-relevant projection, not an equivalence of raw
+run categories.  Administrative requests, unused outputs, sharing and
+schedule observations can distinguish runs with the same projected arrow.
+Changing the initial board enumeration has a separate checked coherence
+law.  The initial and terminal physical reindexings $U_{\mathrm{in}}$ and
+$U_{\mathrm{out}}$ are actual inverse context maps; the terminal map is
+constructed from the resulting physical boards, rather than postulated.
+The theorem \leanname{trace_conjugacy} in
+\leanname{InferenceTraceNaturality} proves
+\[
+ U_{\mathrm{in}};\Pi_2(t)=\Pi_1(t);U_{\mathrm{out}}.
+\]
+Even swapping equal-valued premise occurrences can give a nonidentity proof
+arrow.  This coherence does not erase their identities.  No derivation
+monad or linear/non-linear adjunction is inferred from the projection alone.
+
+There is now an actual categorical presentation for this selected inference
+profile.  Vertices pair physical configurations with complete boards; edges
+retain actors and existing selected firings.  The source category is
+Mathlib's free path category on that graph.
+\leanname{InferencePathFunctor.projection} lifts the original edge
+projection followed by the actual target-board reordering into a
+\leanname{Functor}.  Its value on every path agrees with the recovered
+original selected trace and that terminal reordering.  Conversely, the
+canonical embedding of a selected trace recovers its entire bundled actor
+list and source trace exactly.  Reboarding gives an actual source functor,
+and the physical reordering isomorphisms assemble into a natural
+isomorphism.  This construction fixes the installed calculus definition;
+it neither quotients event order nor makes the logical projection faithful.
+
+The scoped adapter uses the actual contextual worklist result, rather than
+assuming that every request has a solution.  Its structural embedding of
+common abstract binding trees into the intrinsic binding signature has an
+exact readback and preserves binder depths.  A solved worklist with no
+remaining equations supplies the ordinary selected inference firing while
+retaining its source, inputs, helper scopes and caller-frame update.
+The positive control solves a nonidentity caller binding and retains that
+binding in both the continuation and captured stored template.  The
+logical projection deliberately forgets the external runtime frame; this
+is not an equivalence of whole configurations.
+
+\paragraph{Protected context and source installation.}
+The HOL adapter also constructs context-changing publication in the same
+ordinary constraint-rewriting semantics.  A finite private snapshot holds
+the original declaration tables, canonical metadata and actual source
+catalog.  One selected interaction consumes that snapshot and its request,
+reads the protected premise occurrences, and produces the computed
+successor snapshot, fresh metadata and every exact source theorem output.
+The original local admission supplies the output and its source routing;
+prepared data alone supplies no proof authority.  The theorem
+\leanname{activation_exact_original} identifies later lookup-driven
+activation with the existing original command interface.  The theorem
+\leanname{coupled_publication_preserves_source_authority} derives the new
+rooted context licenses and independent source judgments from the actual
+physical firing.  It also retains all old immutable context lookups.
+A concrete type declaration publishes both source theorems together with
+its snapshot and metadata; an incomplete output selection is refused.
+The adapter enforces receive, peek, observe and send formation separately.
+Native realization still owes the complete commit product, including
+failure and ownership behavior.  An answer stream that publishes rows
+individually does not establish that atomicity.
+The existing native interaction protocol serializes a compound observation
+under its shared transition guard.  Its private five-output experiment also
+exposes the failure boundary: a backend admission failure can follow real
+takes and earlier makes.  Such a result retains its exact partial state and
+explicit fault; it is not an unchanged refusal or a rollback theorem.
+Preparation, observer participation and safe privileged continuation each
+remain separate realization obligations.
+
+\paragraph{Independent linear resource proofs.}
+For the already-instantiated, no-read/no-check fragment, the independent
+\leanname{LinearHorn.Derivation} has identity, declared-rule use, tensor and
+cut.  Contexts are multisets; there is no weakening or contraction of
+resources.  The theorem \leanname{pure_schedule_iff_horn_proof} in
+\leanname{LinearHornAdequacy} relates those proofs to actual schedules under one common model of all
+port equations and tells.  Every used rule belongs to the declared program,
+and the complete residual resource bag is retained.  The activated
+comparison additionally records each installed source schema and its
+successful activation inputs, even when different origins compute equal
+raw rules.
+
+Static physical connection certificates require unique producers and
+consumers, fresh production identities, suppliers for every take, and a
+joint model of the selected equations.  The unordered presentation uses
+event occurrence indices as vertices and physical producer-to-consumer
+connections as edges.  Independent absence of nonempty graph cycles makes
+the existing checked Kahn service compute an enumeration; it is not an
+assumed execution order.  Under the static port conditions, acyclicity is
+equivalent to existence of an actual execution of all indexed occurrences.
+Every topological enumeration executes and has physical residual
+$(G\cup\operatorname{made})\setminus\operatorname{taken}$, with equivalent
+final equation models.  Equal raw rules remain distinct event occurrences.
+Linearity and matched labels alone are insufficient: a cycle of two
+mutually supplying rules cannot start from an empty state.  This unordered
+comparison is still the no-read/no-check fragment; the shared-read process
+comparison below has its own ordering obligations.
+
+The independent conventional tensor-sequent presentation has formulas
+$A::=a\mid1\mid A\otimes A$, tensor and unit rules, exchange, cut, and
+transition declarations.  \leanname{TensorHornEquivalence} proves both
+translations between its arbitrary proofs and Horn diagrams, retaining the
+transition-use list even for arbitrary tensor/unit cut formulas.  The
+partial-goal comparison quantifies a residual tensor: reaching a goal
+contained in the final bag does not mean deriving that exact bag after
+discarding the remaining resources.
+
+There is also a forward translation into actual proofs of the existing
+\leanname{PropositionalMLL.Derives} calculus.  Each source transition use
+supplies one explicit linear implication hypothesis, with its polarity
+retained.  Reusing a declaration is distinct from contracting a data
+resource.  Formula-code injectivity is proved when the atom code is
+injective; a colliding-code control refutes unconditional reflection.
+An independently proved signed atom-weight invariant holds for every proof
+of the existing MLL calculus, including arbitrary cuts.  It rejects
+discarding the leftover quarters in the change/lemonade example for every
+finite list of transition copies.  These are proof translations and
+invariants, not native serialization or complexity bounds.  This fragment
+is not yet an equivalence with general linear matings or arbitrary full
+MLL proofs; a syntactic exponential interface and its reflection obligations
+also remain separate.
+
+For check-free schedules with fresh identities and unique makers,
+\leanname{GuardFreeProcessOrders.runs_are_exactly_linearizations} also
+requires read-before-consume ordering, beside producer-before-use ordering.
+Its endpoint comparison preserves the physical rows and the models of the
+equation store, not literal equation-list order.  Absence guards and
+alternative causes for an entailed ask do not fit a single fixed partial
+order.  The qualified \leanname{GuardCutFamilies} construction retains a
+chosen predecessor set $B(g)$ for each guarded event $g$.  In addition to
+the resource dependencies, its graph places every member of $B(g)$ before
+$g$ and every other event after $g$.  The independently computed guard
+world and equation problem are
+\[
+ W(B)=(G\cup\operatorname{made}(B))\setminus\operatorname{taken}(B),
+ \qquad
+ P_g=E_0+\operatorname{added}(B(g))+\operatorname{added}(g),
+\]
+where $+$ concatenates equation stores.  The guard observes the world
+before the current event consumes or produces anything, but its problem
+includes that event's port equations and tells.  It must hold in every
+model of $P_g$; a single final assignment is used separately for consistency.
+Under the finite occurrence-net freshness and port conditions, an actual
+exhaustive execution exists exactly when some cut choice has an acyclic
+combined graph and these original universal asks hold.  The existing Kahn
+service then computes an executing order, with the complete physical
+residual preserved.  This result permits an arbitrary declared term
+equality; it does not decide arbitrary asks or enumerate admissible cuts.
+The three-event insertion/removal/absence control has valid orders before
+insertion and after removal, but none between them, and proves that no
+single binary dependency relation describes exactly those orders.  Different
+cuts can still describe the same observation; no minimality or trace-count
+claim follows from the exact family characterization.
+
+Contextual schema reads require a further comparison.  One physical schema
+row can supply two independently fresh ground instances, whereas one fixed
+ordinary row label cannot equal both distinct values under the same
+assignment.  The checked contextual prefix constructions instead preserve
+the per-port views.  They reflect original all-future models, matching and
+asks across names-only declaration growth, with explicit common-extension
+and inverse port maps.  This requires neither a total old-frame retraction
+nor closed terms at every old sort.  Later equations remain outside an
+earlier ask's prefix.  These local reflection laws do not yet supply the
+complete finite family-changing contextual cut presentation.
+
+The contextual entry judgment now uses an explicit dependent separation
+of formation, resources and information. Intrinsically scoped terms retain
+their sorts and parameter contexts. Port formation aligns input lengths
+and produced labels; situated formation additionally covers the finite root
+inventory, authored locations and receive, peek, send and observe rights.
+Declared observation regions retain their authority obligation even when
+empty. Resource admission executes the independent occupation operator
+on physical identities and retains the source freshness condition. The
+information component requires a consistent joint equation problem and all
+original guard asks. An equivalence with the earlier fieldwise validity
+judgment connects this entry point to the existing contextual transition.
+The operator computes that transition's actual physical successor. Worked
+controls separate malformed ports, duplicate consumption and an unresolved
+guard in a consistent store; they establish local separations, not arbitrary
+independence of signatures, scopes, resources and authority.
+
+Information is broader than conversion. Declared term equality supplies
+the meaning of equations; adding an equation restricts solutions, while a
+representation change preserves them. The contextual information laws
+quantify over assignments into every later declaration family. They prove
+the compatibility of store equivalence, conjunction, repeated tells and
+guard admission. Joined absence remains an explicit information obligation
+with its shared query interface: only the existing executable refuter, never
+fuel exhaustion, supplies its certificate. Capture instantiation transports
+the original prepared views and every retained check. A reusable structural
+interface can fire at an instance exactly when that instance's information
+obligations hold. Neither this law nor check-free lifting constructs an
+anti-unifier or authorizes an arbitrary new logical rule.
+
+The resource representation is a partial operator on finite occurrence
+worlds. For the actual check-free schedule semantics, its characterization
+requires the original port shapes, freshness, defined resource-word action
+and consistency of the final joint equation store. Pointwise occupation
+words recover the established process-order constraints; a shared-read
+swap is derived through operator commutation and equation-store equivalence.
+Physical selection counts retain aliased reads. These bit operators are
+not here identified with a general Weyl or Fock representation, and equality
+of their final-state operators does not imply equality of execution histories.
+
+For a supplied heterogeneous contextual schedule, prepared event data retain
+formation, resource evidence, the computed solver return and the complete
+target inventory. They contain no source admission, firing or path. The
+compiled question list retains each guard's own equation prefix, per-use
+views and occurrence world. Checking that list constructs an actual path;
+recovery gives the converse at the entire original typed endpoint, including
+retained roots, templates and scope information. Composition retains question,
+selection and fuel lists. Guard deletion and a later tell used to justify an
+earlier question are rejected by the controls. This is conditional certification
+of supplied schedules. Uniform generalization across changed helper families,
+unordered contextual cuts and installation authority require their own laws.
+
+Persistent inference now has a converse realization as well. Every ordered
+source derivation vector over a supported theorem board is realized by actual
+selected client/server firings, and its exact proof vector is recovered.
+Protected theorem occurrences persist, while requests can be consumed.
+Canonical supported contexts seed distinct physical occurrences even for
+equal judgments. Quotienting actual executions by their ordered proof
+observation gives a category equivalent to the well-scoped full subcategory
+of \leanname{CertificateGSLT.ClassifyingContext}. Composition retains the
+first physical trace and realizes the second proof observation at its actual
+endpoint; its observation is source substitution/cut. This quotient forgets
+request traffic, allocation identity, unused work and cost. It is neither an
+equivalence of raw executions nor an extracted executable compiler, and does
+not assert correspondence for arbitrary linear or quantitative proof profiles.
+
+The persistent inference resource adapter uses the same occupation
+factorization on actual selected firings. It proves that protected theorem
+occurrences are never consumed, although a server consumes its request.
+The persistent category has explicit terminal and binary-product structure.
+Its weakening, projections and diagonal are represented by actual zero-step
+executions with structural output selections; equal judgments at different
+positions remain distinct, while a diagonal can select one occurrence twice.
+
+The compositional source tests now expose three exact execution profiles.
+The independent call-time-choice semantics compiles to the shared-return
+machine with preservation, no invention, ordered effects and bounded
+administrative progress. Independently defined source and target contexts
+commute with compilation at the hole's computed variable map, including
+quotation, case binders and earlier argument bindings. Active contexts
+preserve its complete branch-store
+observation. Replacement underneath quotation requires more: two currently
+equivalent computations can store distinguishable code. Named lexical
+scope and explicit crossings have a separate execution-preserving
+translation, while finite effectful source selection agrees with the actual
+retained cursor, including the intermediate world and continuation.
+The twelve operational clauses are mapped to these owners, but no theorem
+yet combines the profiles into a complete Prime frontend.
+
+An additional recorded-execution comparison retains each completed
+scoped-Need branch's exact outcome and world. Every completed answer in
+a finite shared-continuation prefix has an independent natural derivation.
+The converse for a complete ordered frontier explicitly requires completion
+of the reference frontier: a depth-first scheduler can retain a later
+terminating alternative forever behind an earlier divergent one. The
+closest existing first-class source grammar is polarized Need, with
+computation lambdas and captured thunks. This is distinct from the smaller
+scoped computation profile. A ground binding store cannot represent the
+whole family of future assignments satisfying an unresolved equality
+$X=Y$; the next source join therefore needs an actual open equation store,
+not a differently named ground matcher.
+
+The existing polarized machine now also admits an exact logical-tell
+interpretation. Its chronological equation effects form a persistent store;
+an actual successor is scheduled only if that store is consistent. Every
+later solution solves every earlier prefix, so the completed ordered answer
+list is exactly the original list filtered by final consistency, retaining
+duplicates. Independent polarized natural evaluation plus one joint final
+solution is equivalent to a finite accepted execution with the identical
+outcome and world. A total first-order unifier supplies a concrete exact
+checker. Captured-thunk and shared-cache controls retain an unresolved alias
+across later compatible refinements and reject their contradictory
+combination. The present effect labels carry explicit logical identities:
+automatic logical-scope allocation, source-bound equation expressions, prefix-sensitive
+asks and irreversible external effects remain additional constructions.
+
+Explicit per-use instantiation now acts through the real source body,
+captured lexical values, closures, Need origins, heaps, cached outcomes and
+receipts. It preserves binder indices, cell identities and complete ordered
+successor lists. Both raw and consistency-checked replay have preservation
+and no invention from the mapped image. Scoped first-order store
+instantiation preserves and reflects consistency. Actual histories from
+separate activations glue precisely when their per-use solutions agree on
+intentional captures, under distinct supplied scopes. Two sequential
+shared-producer calls admit incompatible private assignments at distinct
+scopes, reject accidental scope reuse, and reject conflicting shared
+captures. This is explicit instantiation before execution, not automatic
+fresh-scope allocation or surface crossing elaboration.
+
+The scoped rho adapter has both directions between the original declared
+source events and selected occurrence firings, including parallel and
+capture-avoiding substitution contexts. Name quote/drop equations remain
+distinct from operational process drop. An ordered mailbox adapter computes
+the existing first-match selection through an independently implemented
+saved-prefix scan. One owned queue occurrence contains the ordered list;
+its firing consumes that occurrence and publishes the exact residual and
+answer. Skipped messages and duplicate positions survive. The bag-only
+impossibility result therefore requires order information, not an additional
+mailbox primitive for this explicit representation.
+
+Common-frame process certificates compute guard questions from their
+original cuts and event deltas. Their checking enumeration may change
+without changing those cuts; this does not reverse the physical execution.
+Uniform guarded expansions retain primitive prerequisites and located
+permissions. A typed registry binds an installed name to its actual body,
+with fresh insertion and send authority. Execution provenance alone cannot
+authorize installation. Reordered heterogeneous activations and inferred
+anti-unification remain separate obligations.
+
+There is now an actual local execution diamond for two independent
+producers, beyond permutation of certificate inspection. Both orders are
+constructed from the original firing relation. An explicit nonidentity
+exchange of their fresh-name blocks fixes original captures, preserves
+physical rows, equations, templates and retained-root multiplicities, and
+preserves and reflects every term's scope-coverage test. This result assumes
+empty incoming equations and no take, read, tell or guard ports. It does not
+establish the corresponding diamond for arbitrary solver returns.
+
+The next selected-input diamond admits actual takes and repeated shared
+reads, including rigid stored schemas. Both original firing paths use the
+actual one-fuel normalization return, with unequal port counts and two
+explicit scope maps. Their entire accumulated equation lists agree by
+permutation, hence have the same models in every future declaration family;
+no equation multiplicity is discarded. The initial equations are restricted
+to rigid reflexive equations and selected views contain no contextual holes.
+A read followed by consumption of its row executes, whereas the reversed
+read has no original firing. Symmetric physical independence permits the
+swap; an equation-only count-guard counterexample prevents extending this
+criterion to unrestricted tells or guarded interactions.
+
+Explicit binding grants also admit a contextual joint-observation law.
+Close the protected observation support transitively under old equation
+dependencies. If added equations mention only granted names separated from
+that component, a consistent update preserves the whole vector's possible
+observations, with one model witnessing all coordinates simultaneously.
+This applies in every future declaration family. The actual firing adapter
+derives consistency from its completed solver and identifies its exact
+incoming-plus-added equation store. Input-guard reflection includes open
+names in inspected rows and schema captures. These are sufficient permission
+criteria; they neither characterize every conservative update nor require
+literal equality of private solver representations.
+
+The resource-publication comparison prepares complete physical-region
+replacements with the occupation operator. Full publication computes the
+actual selected successor; failure reports exactly the transferred prefix.
+A partial state can equal neither the original nor the complete result.
+The native experimental reference prepares plain data bags and owned HOL
+checkpoints before publication. An ordinary Prime service receives a proof
+request, invokes the actual native HOL checker under its immutable history,
+then publishes checked evidence and a reply through the same interaction
+commit. Reading checked evidence verifies its authentic theorem under both
+the recorded and current declaration histories; a stored tag or printed
+sequent supplies no authority. Its storage exchange retains existing
+universe registrations and prepares pinned readers before the first
+transfer. Append-only destinations reserve their output holds and possible
+array growth before publication, retaining the old physical prefix. A
+reserved layout is checked separately from the logical token because
+mark compaction need not change logical contents. Private storage images
+copy no judgment-authority sidecar. Counted-release retirement capacity is
+reserved per touched universe with collection inhibited through cleanup.
+Consumptive replacements and later query-index rebuilds can still cost the
+whole touched bag. Current source evidence
+and exclusive access remain obligations throughout publication. The full
+frontend-to-native contextual correspondence, general lifecycle progress
+and locality bounds are not implied by these component comparisons.
+
+The native head selector now catches up only the appended suffix of an
+index whose universe identity, storage epoch and prefix epoch still agree.
+Marked storage and outstanding pinned readers retain the existing rebuild
+or detached-view paths. Keyed, open-head and whole-row-variable postings
+remain complete candidates, preserving duplicate physical positions for
+the canonical matcher. Posting keys use authored arity, including the
+declared treatment of hidden ownership metadata. The unregistered-head
+case visits its open posting once. Initial index construction and first
+membership synchronization remain visible costs; arbitrary query shapes
+and guarded resumed workflows require their own locality comparison.
+
+A separate observer-preservation construction restricts a world to a
+declared footprint $F$: $\pi_F(W)=W\cap F$. For every finite resource program
+$p$ whose tests and writes lie in $F$,
+\[
+ \operatorname{Option.map}(\pi_F)(\operatorname{run}(p,W))
+   =\operatorname{run}(p,\pi_F(W)).
+\]
+This preserves refusal and every supported prefix, not merely the final
+successful world. Equality of all such future observations is exactly
+equality of retained worlds. A discarded identity tested by an unrestricted
+future program gives a separating control. The theorem concerns the
+declared resource observation; it supplies neither a native pointer-lifetime
+proof nor a claim that collection implements unrestricted state minimization.
+
+There is also a solved-question reflection law. If $\theta$ is principal
+for the same prefix problem $Q$, then transporting $Q$, its rows and its
+check together through $\theta$ preserves the original all-future ask in
+both directions. Every old model factors through $\theta$; the residual
+assignment models the transported problem. This covers equality, absence,
+counts and joined absence. A completed contextual solver update supplies
+the required principal answer. The checked alias example retains its exact
+live-row count, while the negative control shows why an answer principal
+only for a later alias equation cannot discharge the earlier empty-prefix
+question. Principality for that earlier question is not available there.
+
+The incremental variant needs principality only for a solved prefix $P$.
+For any additional current equations $E$, every model of $P+E$ factors
+through the principal answer of $P$. Transporting $P+E$, its rows and its
+check together therefore reflects the current ask, even when that answer
+does not itself solve $E$. The extra equations remain in the residual
+problem. A three-variable control first aliases two variables and then
+constrains the independent third one: the prefix does not entail that new
+equality, the larger consistent problem does, and the completed prefix
+driver preserves every ask of the larger problem. This permits prefix
+solver reuse while retaining current conditions; it does not justify
+checking an earlier guard under later equations.
+
+The finite common-event construction now allocates scopes to the dependent
+sum of all event ports.  Its computed allocation is globally injective above
+the complete incoming ledger.  For each event a genuine permutation aligns
+the original local allocation with this common allocation, transporting the
+entire original equation problem and reflecting its all-future asks.  Under
+the actual solver's structural-pattern hypothesis, a common model supplies
+an original completed worklist return.  Composing these returns across
+evolving prefix inventories remains a separate obligation.
+
+Binding authority is independent of this freshness construction.  For
+first-order substitutions $\sigma,\mu$ and an observation $t$,
+\[
+ (\mu\circ\sigma)(t)=\sigma(t)
+ \quad\Longleftrightarrow\quad
+ \forall x\in\operatorname{fv}(\sigma(t)),\ \mu(x)=x.
+\]
+The resolved-support condition composes when each subsequent extension is
+checked against the preceding interpretation.  Contextual support fixation
+also suffices, but preservation of one specialized higher-order observation
+does not imply fixation of its metavariables.  A raw triangular binding
+table is not automatically a resolved interpretation: an idempotence or
+full-dereferencing boundary is required.  The checked inference adapter
+compares the actual returned assignment with pure capture inclusion on the
+caller's protected observations.  An actual successful inference can fail
+this additional authorization; native enforcement is not inferred from its
+proof receipt.  If the incoming equations already pin a caller variable,
+refusing preservation of its raw identity does not by itself demonstrate
+a new change to that variable's previously resolved value.
+
+For first-order logical information there is a separate relative
+conservativity criterion.  If $E'$ refines $E$, preservation of the caller's
+protected component $C$ requires
+\[
+ \forall\sigma\in\operatorname{Sol}(E),\quad
+ \exists\tau\in\operatorname{Sol}(E'),\quad
+ \left.\tau\right|_C=\left.\sigma\right|_C.
+\]
+The checked \leanname{FirstOrderConservativeExtension} construction composes
+these extension witnesses.  It preserves possible joint assignments,
+supported term values, entailment and refutation.  Already implied tells
+preserve this information even when a solver normalizes the displayed
+generator.  Consistent additions outside a closed equation component give
+another constructive sufficient condition.  Preserving individual
+marginals is weaker: adding $X=Y$ preserves each variable's possible values
+separately but removes the joint possibility $X=a,Y=b$ when $a\ne b$.
+These are logical possibility laws, not probability, multiplicity, order or
+cost preservation.  Native lexical scope and explicit sharing require
+their own equation-support refinement to inherit the criterion.
+
+Ask locality also includes the live rows inspected by an absence or count
+query.  In the first-order profile, a consistent tell outside a closed
+equation component preserves every ask depending only on that component.
+A ground query can nevertheless change verdict when a variable in one of
+its live rows is bound.  The actual equation-only wakeup control changes no
+physical occurrence and writes no physical region.  Along the existing
+append-only step relation, a fixed selection becoming ready therefore
+requires a changed physical world or a changed equation-list length.
+This coarse trigger is not a global branch identity and does not establish
+a native registration or no-lost-wakeup invariant.
+
+The current event's own tells also matter.  Asking under the incoming and
+selected-port equations implies asking under the complete joint problem.
+The two requirements agree when those equations already entail the event's
+tells.  Otherwise the checked tell/absence example is valid jointly while
+its pre-tell ask is unresolved.  This separates two possible event
+contracts without allowing future events to justify an earlier ask or
+changing the existing transition relation.
+
+Finally, \leanname{ProjectedAnswerSets} counts distinct visible
+images.  Such cardinality is neither bag occurrence multiplicity nor a
+scheduler probability.  Native lowering, authority, memory ownership and
+observation-preserving execution require their own refinement and
+qualification.
+
 \subsection{An open-ended PQI-inspired indexed decomposition}
 
 Chalmers's scrutability programme distinguishes physical, qualitative, and

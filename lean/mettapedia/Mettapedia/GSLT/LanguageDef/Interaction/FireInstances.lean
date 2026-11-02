@@ -4,13 +4,16 @@ import Mettapedia.GSLT.LanguageDef.Interaction.StrengthInstances
 /-!
 # Available events in CCS and in the ambient calculus
 
-CCS has one rule and it is a base rule, so rewrites fire only at the root of
-a parallel composition.  The handshake has one live cut; the cut at either
-prefix is inert; and a handshake guarded by a prefix exposes a redex that is
-not an available event, because the prefix is not a context in which
-rewrites fire.  A parallel composition carried by a bag is a single cut at
-which several events may be available: the bundle of events is not a
-sub-bundle of the splittings.
+CCS has two base rules, the reaction headed by parallel composition and the
+silent step headed by the sum, and two rules that say where rewrites fire:
+inside a parallel composition and under a restriction. Its reductions are
+exactly its base rewrites beneath parallel compositions and restrictions. The
+handshake has one live cut; a handshake guarded by a prefix exposes a redex
+that is not an available event, because a prefix is not a context in which
+rewrites fire; under a restriction the same reaction is available. A parallel
+composition carried by a bag is a single cut at which several events may be
+available, and with sums the events at one cut may resolve a choice in
+different ways.
 
 The ambient calculus has two congruence rules, one for the content of an
 ambient and one for a component of a parallel composition.  Its reductions
@@ -32,53 +35,85 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 section CCS
 
 open Mettapedia.Languages.ProcessCalculi.CCS
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical (matchPatternForRule_eq_syntactic)
 
-/-- The one rule of CCS is a base rewrite. -/
-theorem ccs_rules_base : ∀ rule ∈ ccsCalc.rewrites, IsBaseRewrite rule := by
+/-- The rule for a component of a parallel composition. -/
+theorem ccsParCong_elementCongruence : ElementCongruence ccsParCongRewrite .hashBag "S" "T" "rest" where
+  premises := rfl
+  left := rfl
+  right := rfl
+  unordered := by decide
+  distinct := by decide
+
+/-- The rule for the body of a restriction. -/
+theorem ccsResCong_binderCongruence : BinderCongruence ccsResCongRewrite "CNu" "S" "T" where
+  premises := rfl
+  left := rfl
+  right := rfl
+  distinct := by decide
+  aligned := by decide +kernel
+
+/-- **Every rule of CCS is a base rewrite or says where rewrites fire**: the reaction and the silent step are base
+rewrites, and reduction happens inside a parallel composition and under a restriction. -/
+theorem ccs_firesInContexts : FiresInContexts ccsCalc := by
   intro rule membership
-  obtain rfl := List.mem_singleton.mp membership
-  exact isBaseRewrite_of_premises_eq_nil rfl
+  rw [ccsCalc_rewrites] at membership
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
+  rcases membership with rfl | rfl | rfl | rfl
+  · exact .inl (isBaseRewrite_of_premises_eq_nil rfl)
+  · exact .inl (isBaseRewrite_of_premises_eq_nil rfl)
+  · exact .inr (.inr (.inl ⟨_, _, _, _, ccsParCong_elementCongruence⟩))
+  · exact .inr (.inr (.inr ⟨_, _, _, ccsResCong_binderCongruence⟩))
 
-/-- Every rule of CCS is a base rewrite or a congruence. -/
-theorem ccs_firesInContexts : FiresInContexts ccsCalc :=
-  fun rule membership => .inl (ccs_rules_base rule membership)
+/-- **The reductions of CCS are its reactions and silent steps beneath parallel compositions and restrictions.** -/
+theorem ccs_step_iff_exists_firesTo {state next : Pattern} :
+    Step base ccsCalc state next ↔
+      ∃ splitting : Splitting state, splitting.FiresTo RelationEnv.empty ccsCalc next :=
+  step_iff_exists_firesTo ccs_firesInContexts
 
-/-- The base rewrites of CCS are headed by parallel composition. -/
+/-- The base rewrites of CCS are headed by parallel composition or by the sum. -/
 theorem ccs_baseRewritesHeaded :
-    BaseRewritesHeadedBy ccsCalc [ccsInteractivePresentation.contactHead] :=
-  ccsInteractivePresentation.baseRewritesHeadedBy_of_everyRuleIsCut ccs_everyRuleIsCut
+    BaseRewritesHeadedBy ccsCalc [.collection .hashBag, .constructor "CSum"] :=
+  ccs_baseRewritesHeaded_family
+
+/-- A base contraction of CCS is a reaction or a silent step. -/
+theorem ccs_base_rule {rule : RewriteRule} (listed : rule ∈ ccsCalc.rewrites) (base : IsBaseRewrite rule) :
+    rule = ccsReactRewrite ∨ rule = ccsTauRewrite := by
+  rw [ccsCalc_rewrites] at listed
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
+  rcases listed with rfl | rfl | rfl | rfl
+  · exact .inl rfl
+  · exact .inr rfl
+  · exact absurd base (not_isBaseRewrite_of_congruence (List.Mem.head _))
+  · exact absurd base (not_isBaseRewrite_of_congruence (List.Mem.head _))
 
 /-- The handshake contracts at its root. -/
 theorem handshake_baseStep : BaseStep RelationEnv.empty ccsCalc handshake handshakeDone :=
-  BaseStep.of_match (rule := ccsSyncRewrite) (List.Mem.head _) rfl (by decide +kernel)
+  BaseStep.of_match (rule := ccsReactRewrite) (List.Mem.head _) rfl (by decide +kernel)
     (by decide +kernel)
-
-/-- The cut of the handshake at its first prefix. -/
-def handshakeFirst : Splitting handshake where
-  context := .collection .hashBag [] .hole
-    [.apply "CCoAct" [nameA, .apply "CAct" [nameA, nil]]] none
-  subterm := .apply "CAct" [nameA, nil]
-  plugs := rfl
 
 /-- The root cut is an available event. -/
 theorem handshakeRoot_fires : (Splitting.root handshake).Fires RelationEnv.empty ccsCalc :=
   ⟨⟨.hole, .hole⟩, handshakeDone, handshake_baseStep⟩
 
-/-- The cut at the first prefix is inert: a prefix alone is not headed by
-parallel composition. -/
-theorem handshakeFirst_inert : ¬ handshakeFirst.Fires RelationEnv.empty ccsCalc :=
-  handshakeFirst.not_fires_of_head ccs_baseRewritesHeaded (by
-    intro head membership
-    obtain rfl := List.mem_singleton.mp membership
-    decide)
+/-- No proper subterm of the handshake is matched by a base rule. -/
+theorem handshake_proper_unmatched : ∀ sub ∈ subtermsOf handshake, sub ≠ handshake →
+    ∀ rule ∈ [ccsReactRewrite, ccsTauRewrite], matchPattern rule.left sub = [] := by
+  decide +kernel
 
-/-- **One live cut.**  Of all the ways of cutting the handshake in two,
-exactly the cut at the root is an available event. -/
+/-- **One live cut.** Of all the ways of cutting the handshake in two, exactly the cut at the root is an available
+event. -/
 theorem handshake_fires_iff (splitting : Splitting handshake) :
     splitting.Fires RelationEnv.empty ccsCalc ↔ splitting.context = .hole := by
   constructor
-  · rintro ⟨⟨residual, reactive⟩, -⟩
-    exact (reactive.eq_hole_of_base ccs_rules_base).1
+  · rintro ⟨-, reduct, rule, listed, base, initial, matched, -⟩
+    apply splitting.context_eq_hole_of_whole
+    by_contra proper
+    rw [matchPatternForRule_eq_syntactic] at matched
+    have unmatched := handshake_proper_unmatched splitting.subterm splitting.subterm_mem proper rule (by
+      rcases ccs_base_rule listed base with rfl | rfl <;> simp)
+    rw [unmatched] at matched
+    cases matched
   · intro atRoot
     obtain ⟨context, subterm, plugs⟩ := splitting
     obtain rfl : context = .hole := atRoot
@@ -86,11 +121,11 @@ theorem handshake_fires_iff (splitting : Splitting handshake) :
     exact handshakeRoot_fires
 
 /-- `a.(a.0 | ~a.(a.0))`: the handshake guarded by a prefix. -/
-def guarded : Pattern := .apply "CAct" [nameA, handshake]
+def guarded : Pattern := sum [act nameA handshake]
 
 /-- The cut of the guarded handshake beneath its prefix. -/
 def guardedInner : Splitting guarded where
-  context := .apply "CAct" [nameA] .hole []
+  context := .apply "CSum" [] (.collection .hashBag [] (.apply "CAct" [nameA] .hole []) [] none) []
   subterm := handshake
   plugs := rfl
 
@@ -98,48 +133,70 @@ def guardedInner : Splitting guarded where
 theorem guardedInner_exposesRedex : guardedInner.ExposesRedex ccsCalc :=
   Splitting.exposesRedex_of_fires (splitting := Splitting.root handshake) handshakeRoot_fires
 
-/-- **A redex is not yet an event.**  The cut beneath the prefix exposes a
-redex, is not an available event, and the guarded handshake cannot move. -/
+/-- **A redex is not yet an event.** The cut beneath the prefix exposes a redex, is not an available event, and the
+guarded handshake cannot move: neither a sum nor a prefix is a context in which rewrites fire. -/
 theorem guarded_exposed_not_available :
     guardedInner.ExposesRedex ccsCalc ∧ ¬ guardedInner.Fires RelationEnv.empty ccsCalc ∧
       ∀ next, ¬ Step base ccsCalc guarded next := by
   refine ⟨guardedInner_exposesRedex, ?_, ?_⟩
   · rintro ⟨⟨residual, reactive⟩, -⟩
-    have atRoot := (reactive.eq_hole_of_base ccs_rules_base).1
-    cases atRoot
+    cases reactive with
+    | argument _ _ listed congruence =>
+        rw [ccsCalc_rewrites] at listed
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
+        rcases listed with rfl | rfl | rfl | rfl
+        · exact absurd congruence.left (by simp [ccsReactRewrite])
+        · have shape := congruence.left
+          simp only [ccsTauRewrite, Pattern.apply.injEq, true_and] at shape
+          have member := shape ▸
+            List.mem_singleton_self (Pattern.collection .hashBag [.apply "CTau" [.fvar "p"]] (some "m"))
+          simp at member
+        · exact absurd congruence.left (by simp [ccsParCongRewrite])
+        · exact absurd congruence.left (by simp [ccsResCongRewrite])
   · intro next
     apply not_step_of_matchPatternForRule_eq_nil
     intro rule membership
-    obtain rfl := List.mem_singleton.mp membership
-    decide +kernel
+    rw [ccsCalc_rewrites] at membership
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
+    rcases membership with rfl | rfl | rfl | rfl <;> decide +kernel
 
-/-- `a.0 | ~a.0 | ~a.(a.0)`: one action and two complementary ones. -/
-def contended : Pattern :=
-  .collection .hashBag [
-    .apply "CAct" [nameA, nil],
-    .apply "CCoAct" [nameA, nil],
-    .apply "CCoAct" [nameA, .apply "CAct" [nameA, nil]]] none
+/-- The cut of the private handshake beneath its restriction. -/
+def privateInner : Splitting privateHandshake where
+  context := .apply "CNu" [] (.lambda none .hole) []
+  subterm := par [sum [act (.bvar 0) nil], sum [coact (.bvar 0) nil]]
+  plugs := rfl
 
-/-- The action synchronised with the first co-action. -/
-def contendedFirst : Pattern :=
-  .collection .hashBag [nil, nil, .apply "CCoAct" [nameA, .apply "CAct" [nameA, nil]]] none
+/-- **Under a restriction the reaction is an available event**: the body of a restriction is a context in which
+rewrites fire. -/
+theorem privateInner_firesTo :
+    privateInner.FiresTo RelationEnv.empty ccsCalc (nu (par [nil, nil])) :=
+  ⟨.apply "CNu" [] (.lambda none .hole) [], par [nil, nil],
+    .binder none (List.Mem.tail _ (List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _))))
+      ccsResCong_binderCongruence .hole,
+    BaseStep.of_match (rule := ccsReactRewrite) (List.Mem.head _) rfl (by decide +kernel)
+      (by decide +kernel),
+    rfl⟩
 
-/-- The action synchronised with the second co-action. -/
-def contendedSecond : Pattern :=
-  .collection .hashBag [nil, .apply "CAct" [nameA, nil], .apply "CCoAct" [nameA, nil]] none
+/-- `(a.0 + b.0) | ~a.0 | ~b.0`: a choice, and a partner for each summand. -/
+def contended : Pattern := par [sum [act nameA nil, act nameB nil], sum [coact nameA nil], sum [coact nameB nil]]
 
-/-- **One cut, two events.**  The root cut of the contended composition has
-two base contractions with different results.  With a contact carried by a
-bag, the events available at a state are not determined by its cuts. -/
+/-- The choice resolved on `a`. -/
+def contendedFirst : Pattern := par [nil, nil, sum [coact nameB nil]]
+
+/-- The choice resolved on `b`. -/
+def contendedSecond : Pattern := par [nil, nil, sum [coact nameA nil]]
+
+/-- **One cut, two events, and a choice resolved two ways.** The root cut of the contended composition has two base
+contractions with different results; each discards the summand the other takes. -/
 theorem contended_one_cut_two_events :
     (Splitting.root contended).FiresTo RelationEnv.empty ccsCalc contendedFirst ∧
       (Splitting.root contended).FiresTo RelationEnv.empty ccsCalc contendedSecond ∧
         contendedFirst ≠ contendedSecond := by
   refine ⟨⟨.hole, contendedFirst, .hole, ?_, rfl⟩, ⟨.hole, contendedSecond, .hole, ?_, rfl⟩,
     by decide⟩
-  · exact BaseStep.of_match (rule := ccsSyncRewrite) (List.Mem.head _) rfl (by decide +kernel)
+  · exact BaseStep.of_match (rule := ccsReactRewrite) (List.Mem.head _) rfl (by decide +kernel)
       (by decide +kernel)
-  · exact BaseStep.of_match (rule := ccsSyncRewrite) (List.Mem.head _) rfl (by decide +kernel)
+  · exact BaseStep.of_match (rule := ccsReactRewrite) (List.Mem.head _) rfl (by decide +kernel)
       (by decide +kernel)
 
 end CCS
@@ -176,7 +233,7 @@ theorem ambient_firesInContexts : FiresInContexts ambientCalc := by
   · exact .inl (isBaseRewrite_of_premises_eq_nil rfl)
   · exact .inl (isBaseRewrite_of_premises_eq_nil rfl)
   · exact .inl (isBaseRewrite_of_premises_eq_nil rfl)
-  · exact .inr (.inr ⟨_, _, _, _, parCongRule_elementCongruence⟩)
+  · exact .inr (.inr (.inl ⟨_, _, _, _, parCongRule_elementCongruence⟩))
   · exact .inr (.inl ⟨_, _, _, _, _, ambCongRule_argumentCongruence⟩)
 
 /-- The content of an ambient is running: for every name, a reduction of the

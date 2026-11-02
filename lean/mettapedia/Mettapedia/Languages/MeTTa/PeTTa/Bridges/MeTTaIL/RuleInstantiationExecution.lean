@@ -2387,8 +2387,6 @@ private theorem helper_clause (helper : Helper) (values : List Atom)
   have arguments : (equation helper).arguments = helper.names.map v := by
     cases helper <;> decide +kernel
   simp only [List.filterMap_cons, List.filterMap_nil, arguments]
-  rw [SpaceSemantics.matchValue_expression_of_not_cons [] (helper.names.map v) values (by
-    intro first rest; cases helper <;> simp [Helper.names])]
   rw [PureData.match_variable_values helper.names values []
     (by cases helper <;> decide) length (by intro name member; rfl)]
   simp [environment]

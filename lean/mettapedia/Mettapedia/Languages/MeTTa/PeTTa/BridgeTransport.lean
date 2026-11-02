@@ -147,7 +147,7 @@ theorem Library.lift_call {L : Library} (checked : L.check = true) {head : Strin
     {state : Effects.State} {answer : Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (fact : PureReturns L.base [] state (.expression (.symbol head :: values)) state answer) :
     PureReturns L.runtime [] state (.expression (.symbol head :: values)) state answer := by
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
     simpa [specialForms] using ordinary
   have unchanged : values.map (applySubst []) = values := by
     have identity : applySubst [] = id := by
@@ -189,7 +189,7 @@ theorem transport_call {allowed : String → Bool} {first second : Program}
     {state : Effects.State} {answer : Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (fact : PureReturns first [] state (.expression (.symbol head :: values)) state answer) :
     PureReturns second [] state (.expression (.symbol head :: values)) state answer := by
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
     simpa [specialForms] using ordinary
   have unchanged : values.map (applySubst []) = values := by
     have identity : applySubst [] = id := by
@@ -229,7 +229,7 @@ theorem call_of_bound {program : Program} {head : String}
     (bound : PureReturns program (names.zip values) state
       (.expression (.symbol head :: names.map Mettapedia.Languages.MeTTa.OSLFCore.Atom.var)) state answer) :
     PureReturns program [] state (.expression (.symbol head :: values)) state answer := by
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
     simpa [specialForms] using ordinary
   have unchanged : values.map (applySubst []) = values := by
     have identity : applySubst [] = id := by

@@ -9,7 +9,10 @@ answers that upstream SWI-PeTTa gives for the same program and request
 order, conditionals and case selection over several answers, destructuring
 `let*`, a `let` whose second binding conflicts with the first, `collapse`, and
 an effect evaluated once for each alternative of a sibling argument. They also
-cover literal `superpose`, `empty` and quotation, including inert quoted code.
+cover literal `superpose`, `empty` and quotation, including inert quoted code;
+argument lists matched element by element; calls with too few arguments, which
+answer the partial application, and with too many, which fault; and `match`
+bodies, which run once per matching row and do not run a matched value again.
 
 They are checked by kernel evaluation of the machine itself. They are
 controls, not a proof that the machine agrees with upstream on other
@@ -205,6 +208,174 @@ theorem quoted_symbol_is_not_nullary_expression :
       some [sym "Bare"] ∧
     answersOf (evaluate program 16 Effects.empty (call "quote" [call "Bare" []])) =
       some [call "Bare" []] ∧ sym "Bare" ≠ call "Bare" [] := by
+  decide +kernel
+
+/-! ## Argument lists, arity and `match` bodies
+
+The answers below are the same on SWI-PeTTa `e1db30d` (the corrected-stable
+reference), `b74af1b` and upstream main `fea8317`, and on CeTTa's PeTTa lane.
+-/
+
+/-- The fault a run ended with, if it ended with one. -/
+def faultOf : Outcome → Option Effects.Fault
+  | .fault reason _ => some reason
+  | _ => none
+
+/-- Two requests run in order from `state`, the second in the state the first leaves. -/
+def answersOfTwoFrom (program : Program) (fuel : Nat) (state : Effects.State)
+    (first second : Atom) : Option (List Atom × List Atom) :=
+  match evaluate program fuel state first with
+  | .complete after answers [] [] =>
+      (answersOf (evaluate program fuel after second)).map fun later => (answers, later)
+  | _ => none
+
+/-- The answers and the printed lines of a completed run that consumed no input. -/
+def answersAndOutput : Outcome → Option (List Atom × List Atom)
+  | .complete _ answers [] output => some (answers, output)
+  | _ => none
+
+/-- `(= (h cons $a $b) $b)` `(= (h3 $a $b $c) ($a $b $c))` `(= (f1 $x) (a $x))`
+`(= (g $x) one)` `(= (g $x $y) two)` -/
+def arityProgram : Program where
+  equations :=
+    [⟨"h", [sym "cons", .var "a", .var "b"], .var "b"⟩,
+     ⟨"h3", [.var "a", .var "b", .var "c"], .expression [.var "a", .var "b", .var "c"]⟩,
+     ⟨"f1", [.var "x"], call "a" [.var "x"]⟩,
+     ⟨"g", [.var "x"], sym "one"⟩, ⟨"g", [.var "x", .var "y"], sym "two"⟩]
+  declarations := []
+
+/-- An equation's arguments are matched one by one, never through the `cons`
+list view: `(h cons 1 2)` gives `2`, and `(h 7 8 9)` gives no answer. -/
+theorem argument_list_is_not_a_cons_pattern :
+    answersOf (evaluate arityProgram 64 Effects.empty (call "h" [sym "cons", int 1, int 2])) =
+      some [int 2] ∧
+    answersOf (evaluate arityProgram 64 Effects.empty (call "h" [int 7, int 8, int 9])) =
+      some [] := by
+  decide +kernel
+
+/-- Fewer arguments than an equation takes give the partial application, with
+the argument values held: `(h 1 2)` gives `(partial h (1 2))`, `(h3 (+ 1 1))`
+gives `(partial h3 (2))`, and `(g)` gives `(partial g ())`. -/
+theorem short_call_is_partial :
+    answersOf (evaluate arityProgram 64 Effects.empty (call "h" [int 1, int 2])) =
+      some [partialValue "h" [int 1, int 2]] ∧
+    answersOf (evaluate arityProgram 64 Effects.empty (call "h3" [int 1, int 2])) =
+      some [partialValue "h3" [int 1, int 2]] ∧
+    answersOf (evaluate arityProgram 64 Effects.empty (call "h3" [call "+" [int 1, int 1]])) =
+      some [partialValue "h3" [int 2]] ∧
+    answersOf (evaluate arityProgram 64 Effects.empty (call "g" [])) =
+      some [partialValue "g" []] := by
+  decide +kernel
+
+/-- The partial application is not the authored data `(partial h (1 2))`. -/
+theorem partial_is_not_authored_data :
+    partialValue "h" [int 1, int 2] ≠ call "partial" [sym "h", .expression [int 1, int 2]] := by
+  decide
+
+/-- Each arity of an overloaded function selects its own equations:
+`(g 5)` gives `one` and `(g 5 6)` gives `two`. -/
+theorem arity_selects_equations :
+    answersOf (evaluate arityProgram 64 Effects.empty (call "g" [int 5])) = some [sym "one"] ∧
+    answersOf (evaluate arityProgram 64 Effects.empty (call "g" [int 5, int 6])) =
+      some [sym "two"] := by
+  decide +kernel
+
+/-- More arguments than every equation takes raise PeTTa's
+`domain_error(function_input_arities(f, A), n)`: `(f1 1 2)` with `A = [1]`,
+`(g 1 2 3)` with `A = [1, 2]`. -/
+theorem long_call_faults :
+    faultOf (evaluate arityProgram 64 Effects.empty (call "f1" [int 1, int 2])) =
+      some (.overApplication "f1" [1] 2) ∧
+    faultOf (evaluate arityProgram 64 Effects.empty (call "g" [int 1, int 2, int 3])) =
+      some (.overApplication "g" [1, 2] 3) := by
+  decide +kernel
+
+/-- `(row 1) (row 2) (row 3) (rule (+ 1 2))`, loaded from source. -/
+def rowsProgram : Program where
+  equations := []
+  declarations := []
+  facts := [call "row" [int 1], call "row" [int 2], call "row" [int 3],
+    call "rule" [call "+" [int 1, int 2]]]
+  layout := [.fact, .fact, .fact, .fact]
+
+/-- A `match` body is code that runs once per matching row:
+`(match &self (row $x) (println! (seen $x)))` prints `(seen 1)`, `(seen 2)`,
+`(seen 3)` once each and gives `true` three times. -/
+theorem match_body_runs_once_per_row :
+    answersAndOutput (evaluate rowsProgram 128 (Effects.loaded rowsProgram)
+      (call "match" [sym "&self", call "row" [.var "x"],
+        call "println!" [call "seen" [.var "x"]]])) =
+      some ([Effects.boolean true, Effects.boolean true, Effects.boolean true],
+        [call "seen" [int 1], call "seen" [int 2], call "seen" [int 3]]) := by
+  decide +kernel
+
+/-- `(collapse (match &self (row $x) (+ $x 10)))` gives `(11 12 13)`. -/
+theorem match_body_computes :
+    answersOf (evaluate rowsProgram 128 (Effects.loaded rowsProgram)
+      (call "collapse" [call "match" [sym "&self", call "row" [.var "x"],
+        call "+" [.var "x", int 10]]])) =
+      some [.expression [int 11, int 12, int 13]] := by
+  decide +kernel
+
+/-- `(match &self (row $x) (add-atom &self (copy $x)))` adds one row per match,
+so `(collapse (match &self (copy $y) $y))` then gives `(1 2 3)`. -/
+theorem match_body_effect_once_per_row :
+    answersOfTwoFrom rowsProgram 256 (Effects.loaded rowsProgram)
+      (call "match" [sym "&self", call "row" [.var "x"],
+        call "add-atom" [sym "&self", call "copy" [.var "x"]]])
+      (call "collapse" [call "match" [sym "&self", call "copy" [.var "y"], .var "y"]]) =
+      some ([Effects.boolean true, Effects.boolean true, Effects.boolean true],
+        [.expression [int 1, int 2, int 3]]) := by
+  decide +kernel
+
+/-- A matched value is not evaluated again: the inner body `$t` of
+`(match &self (rule $t) (match &self (rule $u) $t))` gives `(+ 1 2)`, not `3`. -/
+theorem matched_value_is_not_run_again :
+    answersOf (evaluate rowsProgram 128 (Effects.loaded rowsProgram)
+      (call "match" [sym "&self", call "rule" [.var "t"],
+        call "match" [sym "&self", call "rule" [.var "u"], .var "t"]])) =
+      some [call "+" [int 1, int 2]] := by
+  decide +kernel
+
+/-! ## Recorded differences
+
+Upstream gives other answers for the programs below. The machine's answers are
+pinned here so that a change to either is visible.
+-/
+
+/-- `(= (f $x) (a $x))` `(= (g $x) (let $x 5 $x))` `(= (z 0) yes)` -/
+def differenceProgram : Program where
+  equations :=
+    [⟨"f", [.var "x"], call "a" [.var "x"]⟩,
+     ⟨"g", [.var "x"], call "let" [.var "x", int 5, .var "x"]⟩,
+     ⟨"z", [int 0], sym "yes"⟩]
+  declarations := []
+
+/-- An equation added at run time. After `(add-atom &self (= (f $x) (b $x)))`,
+upstream's `(f 1)` gives `(a 1) (b 1)`. The machine's equations are fixed when the
+program loads, so it still gives `(a 1)`. -/
+theorem added_equation_not_dispatched :
+    answersOfTwo differenceProgram 64
+      (call "add-atom" [sym "&self", call "=" [call "f" [.var "x"], call "b" [.var "x"]]])
+      (call "f" [int 1]) =
+      some ([Effects.boolean true], [call "a" [int 1]]) := by
+  decide +kernel
+
+/-- An unbound argument. Upstream's `(g $u)` unifies `$u` with the parameter, and the
+body's `let` binds both to `5`: it gives `5`. The machine matches the head, so the
+parameter holds the unbound `$u`, the `let` tests it against `5`, and there is no
+answer. -/
+theorem open_argument_not_bound :
+    answersOf (evaluate differenceProgram 64 Effects.empty (call "g" [.var "u"])) = some [] := by
+  decide +kernel
+
+/-- A constructor head on an unbound argument. Upstream's
+`(let $r (z $u) ($r $u))` unifies `$u` with `0` and gives `(yes 0)`. The machine
+matches the head `0` against the unbound `$u`, which fails: there is no answer. -/
+theorem constructor_head_open_argument :
+    answersOf (evaluate differenceProgram 64 Effects.empty
+      (call "let" [.var "r", call "z" [.var "u"], .expression [.var "r", .var "u"]])) =
+      some [] := by
   decide +kernel
 
 end Mettapedia.Languages.MeTTa.PeTTa.UpstreamAgreement

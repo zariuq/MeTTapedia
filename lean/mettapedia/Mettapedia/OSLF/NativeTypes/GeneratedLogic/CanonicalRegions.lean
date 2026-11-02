@@ -1045,6 +1045,26 @@ theorem coherentPlain_of_simulation (canonical : Canonical relEnv language canon
   exact ⟨(witness', contractum'), by rw [listedAt_singleton]; exact mem_stepsAt_of_enough complete simulated,
     sameCanon⟩
 
+/-- **Coherence for plain steps when presentations of canonical forms simulate steps**: a step from an admitted
+state is matched, up to canonical form, by a step from some presentation of its canonical form. A state equivalent to
+an admitted canonical one has that one as its canonical form, so the matching step is listed at it. -/
+theorem coherentPlain_of_presented_simulation (canonical : Canonical relEnv language canon domain reading)
+    (simulates : ∀ {redex witness contractum}, IsState redex → domain redex = true →
+      StepValid relEnv language redex witness contractum →
+      ∃ shown ∈ presentations (canon redex), ∃ witness' contractum',
+        StepValid relEnv language shown witness' contractum' ∧ canon contractum' = canon contractum)
+    (reference : reading.rules = .reference := by rfl) :
+    CoherentPlain relEnv language fuel canon domain presentations reading := by
+  intro state redex witness contractum _ stateAdmitted canonState complete before redexState valid
+  rw [reference] at complete valid ⊢
+  obtain ⟨shown, presented, witness', contractum', simulated, sameCanon⟩ :=
+    simulates redexState (canonical.invariant stateAdmitted before) valid
+  have same : canon redex = state := ((canonical.same stateAdmitted before).symm).trans canonState
+  rw [same] at presented
+  have enoughShown := (enoughAt_iff.mp complete) shown presented
+  exact ⟨(witness', contractum'), mem_listedAt.mpr ⟨shown, presented, mem_stepsAt_of_enough enoughShown simulated⟩,
+    sameCanon⟩
+
 /-- **Coherence when rules fire only on canonical terms**: a step from an equivalent of a canonical state is
 then a step from the state itself. -/
 theorem coherent_of_canonical_redexes (canonical : Canonical relEnv language canon domain reading)

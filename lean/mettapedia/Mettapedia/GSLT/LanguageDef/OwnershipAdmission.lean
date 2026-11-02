@@ -76,35 +76,65 @@ def Module.callables (m : Module) : List Callable :=
   m.foreign.map (fun f => ⟨f.name, f.signature⟩) ++
     m.functions.map (fun f => ⟨f.name, f.signature⟩)
 
-def signatureValid (signature : Signature) : Bool :=
-  signature.parameters.all (fun p => match p with
-    | .value | .released _ | .viewed _ => true
-    | .borrowed count _ => count != 0
-    | .owned _ family => family != 0) &&
-  match signature.result with
+def shapeValid (parameters : List Parameter) (shape : ReturnShape) : Bool :=
+  match shape with
   | .value | .static _ => true
   | .owned family _ => family != 0
   | .borrowed index offset count writing _ | .viewed index offset count writing =>
-      match signature.parameters[index]? with
-      | some (.borrowed extent canWrite) => offset + count ≤ extent && (!writing || canWrite)
+      match parameters[index]? with
+      | some (.borrowed extent canWrite) | some (.optionalBorrowed extent canWrite) => offset + count ≤ extent && (!writing || canWrite)
       | _ => false
 
-def expectedResult (f : Function) : Option ResultSpec :=
-  match f.signature.result with
+def signatureValid (signature : Signature) : Bool :=
+  signature.parameters.all (fun p => match p with
+    | .value | .released _ | .viewed _ | .static _ => true
+    | .borrowed count _ | .optionalBorrowed count _ => count != 0
+    | .owned _ family | .optionalOwned _ family => family != 0) &&
+  shapeValid signature.parameters signature.result &&
+  uniqueIds (signature.fields.map Prod.fst) &&
+  signature.fields.all (fun (key, shape) => key < signature.parameters.length &&
+    shapeValid signature.parameters shape)
+
+def instantiateResult (inputs : List Nat) (shape : ReturnShape) : Option ResultSpec :=
+  match shape with
   | .value => some .value
   | .static nullable => some (.static nullable)
   | .owned family nullable => some (.owned family nullable)
   | .borrowed index offset count writing nullable => do
-      let root ← f.inputs[index]?
+      let root ← inputs[index]?
       pure (.borrowed ⟨root, offset, count⟩ writing nullable)
   | .viewed index offset count writing => do
-      let root ← f.inputs[index]?
+      let root ← inputs[index]?
       pure (.viewed ⟨root, offset, count⟩ writing)
+
+def expectedResult (f : Function) : Option ResultSpec := instantiateResult f.inputs f.signature.result
+
+def fieldAllowed (spec : ResultSpec) (result : FieldResult) : Bool :=
+  match spec with
+  | .static nullable => match result.region with
+    | none => nullable
+    | some r => r.root == 0 && !result.writing
+  | .borrowed allowed writing nullable => match result.region with
+    | none => nullable
+    | some r => decide (allowed.Contains r) && result.writing == writing
+  | .viewed allowed writing => result.region == some allowed && result.writing == writing
+  | _ => false
+
+def fieldsAllowed (f : Function) (s : State) : Bool :=
+  s.fieldResults.length == f.signature.fields.length &&
+  uniqueIds (s.fieldResults.map FieldResult.key) &&
+  f.signature.fields.all (fun (key, shape) =>
+    match instantiateResult f.inputs shape, s.fieldResults.find? (fun r => r.key == key) with
+    | some spec, some result => fieldAllowed spec result
+    | _, _ => false)
+
+def functionReturnAllowed (f : Function) (s : State) : Bool :=
+  returnAllowed f.result s && fieldsAllowed f s
 
 def inputsValid (f : Function) : Bool :=
   f.inputs.length == f.signature.parameters.length &&
   (f.signature.parameters.zip f.inputs).all (fun (p, id) => match p with
-    | .value => id == 0
+    | .value | .static _ => id == 0
     | .released _ | .viewed _ => false
     | _ => id != 0) && uniqueIds (f.inputs.filter (· != 0)) &&
   uniqueIds (f.inputs.filter (· != 0) ++ f.ambient.map Prod.fst)
@@ -112,9 +142,9 @@ def inputsValid (f : Function) : Bool :=
 def inputRoot (f : Function) (id count : Nat) (mode : Mode) (origin : Origin) (family : Nat) : Bool :=
   (f.signature.parameters.zip f.inputs).any (fun (p, root) =>
     root == id && match p with
-    | .borrowed extent writing => count == extent && mode == (if writing then .exclusive else .shared) &&
+    | .borrowed extent writing | .optionalBorrowed extent writing => count == extent && mode == (if writing then .exclusive else .shared) &&
         origin == .input && family == 0
-    | .owned extent brand => count == extent && mode == .exclusive && origin == .heap && family == brand
+    | .owned extent brand | .optionalOwned extent brand => count == extent && mode == .exclusive && origin == .heap && family == brand
     | _ => false) ||
   f.ambient.any (fun (root, extent) => root == id && count == extent && mode == .exclusive &&
     origin == .input && family == 0)
@@ -144,13 +174,13 @@ theorem enabled_valid {callables : List Callable} {f : Function} {s after : Stat
     exact invoke_preserves_valid rest valid
 
 def admitFunction (callables : List Callable) (f : Function) : Bool :=
-  !f.name.isEmpty && signatureValid f.signature && inputsValid f &&
+  f.ambient.isEmpty && !f.name.isEmpty && signatureValid f.signature && inputsValid f &&
   decide (expectedResult f = some f.result) &&
   callables.any (fun c => c.name == f.name && decide (c.signature = f.signature)) &&
-  match PermissionFlow.check (enabled callables f) (returnAllowed f.result) f.body initial with
+  match PermissionFlow.check (enabled callables f) (functionReturnAllowed f) f.body initial with
   | none => false
   | some outputs => outputs.all fun exit =>
-      (exit.kind == .normal || exit.kind == .returned) && returnAllowed f.result exit.state
+      (exit.kind == .normal || exit.kind == .returned) && functionReturnAllowed f exit.state
 
 def admit (m : Module) : Bool :=
   !m.functions.isEmpty && m.names.Nodup &&
@@ -165,13 +195,19 @@ theorem admit_of_checks {m : Module} (nonempty : m.functions ≠ []) (unique : m
 
 theorem admitted_function_checked {callables : List Callable} {f : Function}
     (h : admitFunction callables f = true) :
-    ∃ outputs, PermissionFlow.check (enabled callables f) (returnAllowed f.result) f.body initial = some outputs := by
+    ∃ outputs, PermissionFlow.check (enabled callables f) (functionReturnAllowed f) f.body initial = some outputs := by
   unfold admitFunction at h
   obtain ⟨_, h⟩ := Bool.and_eq_true_iff.mp h
   split at h
   · contradiction
   · rename_i outputs checked
     exact ⟨outputs, checked⟩
+
+theorem admitted_has_no_ambient_authority {callables : List Callable} {f : Function}
+    (admitted : admitFunction callables f = true) : f.ambient = [] := by
+  cases stored : f.ambient with
+  | nil => rfl
+  | cons first rest => simp [admitFunction, stored] at admitted
 
 theorem admitted_execution_safe {callables : List Callable} {f : Function}
     (admitted : admitFunction callables f = true) {outcome : Exit State}
@@ -186,8 +222,18 @@ theorem admitted_return_contract {callables : List Callable} {f : Function}
     (execution : Execution (enabled callables f) f.body initial outcome)
     (returned : outcome.kind = .returned) : returnAllowed f.result outcome.state = true := by
   obtain ⟨outputs, checked⟩ := admitted_function_checked admitted
-  exact PermissionFlow.checked_returns checked outcome
+  have h := PermissionFlow.checked_returns checked outcome
     (PermissionFlow.covers_execution execution checked) returned
+  exact (Bool.and_eq_true_iff.mp h).1
+
+theorem admitted_field_postconditions {callables : List Callable} {f : Function}
+    (admitted : admitFunction callables f = true) {outcome : Exit State}
+    (execution : Execution (enabled callables f) f.body initial outcome)
+    (returned : outcome.kind = .returned) : fieldsAllowed f outcome.state = true := by
+  obtain ⟨outputs, checked⟩ := admitted_function_checked admitted
+  have h := PermissionFlow.checked_returns checked outcome
+    (PermissionFlow.covers_execution execution checked) returned
+  exact (Bool.and_eq_true_iff.mp h).2
 
 /-- A checked callee's non-null returned view can be substituted into the
 caller without widening the loan or forgetting the caller's other aliases.
@@ -238,10 +284,24 @@ theorem admitted_view_return_exact {callables : List Callable} {f : Function}
 
 namespace Controls
 
-def scalarSignature : Signature := ⟨[], false, .value⟩
+def scalarSignature : Signature := ⟨[], false, .value, []⟩
 def scalar (name : String) (body : Plan Action) : Function :=
   ⟨name, scalarSignature, [], [], .value, body⟩
 def scalarCallables (name : String) : List Callable := [⟨name, scalarSignature⟩]
+
+def globalWriteBody : Plan Action :=
+  .step (.root 1 4 .exclusive .input 0)
+    (.step (.access 1 ⟨1, 0, 4⟩ true) (.step (.endLoan 1) .ret))
+
+theorem ambient_global_write_refused :
+    admitFunction (scalarCallables "ambient")
+      { scalar "ambient" globalWriteBody with ambient := [(1, 4)] } = false := by decide
+
+def globalSignature : Signature := ⟨[.borrowed 4 true], false, .value, []⟩
+
+theorem explicit_global_write_admitted :
+    admitFunction [⟨"explicit", globalSignature⟩]
+      ⟨"explicit", globalSignature, [1], [], .value, globalWriteBody⟩ = true := by decide
 
 def loopBody : Plan Action :=
   .step (.root 1 8 .exclusive .local 0)

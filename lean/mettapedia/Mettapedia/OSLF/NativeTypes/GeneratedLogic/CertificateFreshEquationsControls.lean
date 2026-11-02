@@ -115,7 +115,7 @@ theorem eta_instance : ObjectStep RelationEnv.empty etaCalc freshReading (lam (a
   show DisciplinedStep RelationEnv.empty etaCalc .fresh _ _
   have step := DisciplinedStep.inContext (relEnv := RelationEnv.empty) (language := etaCalc) (discipline := .fresh)
     .hole (Or.inl (DisciplinedEquation.forward (equation := eta) (source := lam (app konst (.bvar 0)))
-      (initial := [("F", konst)]) (List.mem_singleton_self _) (eta_matched konst) (PremisesValid.nil _)
+      (initial := [("F", konst)]) (List.mem_singleton_self _) rfl (eta_matched konst) (PremisesValid.nil _)
       (fun name type member => by
         simp only [eta, List.mem_singleton, Prod.mk.injEq] at member
         obtain ⟨rfl, rfl⟩ := member
@@ -156,7 +156,7 @@ theorem syntax_relates : ObjectStep RelationEnv.empty etaCalc .syntax selfApplie
   have step := EquationStep.inContext (relEnv := RelationEnv.empty) (language := etaCalc)
     (.apply "Lam" [] (.lambda none .hole) [])
     (Or.inl (AuthoredEquation.forward (equation := eta) (source := lam (app (.bvar 0) (.bvar 0)))
-      (initial := [("F", .bvar 0)]) (List.mem_singleton_self _) (eta_matched (.bvar 0)) (PremisesValid.nil _)))
+      (initial := [("F", .bvar 0)]) (List.mem_singleton_self _) rfl (eta_matched (.bvar 0)) (PremisesValid.nil _)))
   simpa [OneHoleContext.fill, applyBindingsScoped, eta, captureSitesOf, captureDepth, captureDepthList,
     Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars, selfApplier, identityLam, lam, app, applyBindings_single]
     using step

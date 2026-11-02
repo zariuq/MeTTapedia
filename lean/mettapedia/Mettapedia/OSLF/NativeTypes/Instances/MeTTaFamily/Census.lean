@@ -154,6 +154,12 @@ instance (language : LanguageDef) (rule : String) (position : List Nat) (interfa
     Decidable (HasSite language rule position interface) := by
   unfold HasSite; infer_instance
 
+theorem HasSite.interface_mem {language : LanguageDef} {rule : String} {position : List Nat}
+    {interface : Interface} (located : HasSite language rule position interface) :
+    interface ∈ interfaces language := by
+  obtain ⟨site, member, _, _, read⟩ := located
+  exact List.mem_dedup.mpr (List.mem_filterMap.mpr ⟨site, member, read⟩)
+
 /-- A located site's slot counts follow from its interface: the paper's count,
 and the count of `Slots.modalFamily`, which omits the index slots. -/
 theorem HasSite.slotCounts {language : LanguageDef} {rule : String} {position : List Nat}
@@ -306,11 +312,46 @@ theorem program_head_site :
 abbrev pettaMachine : LanguageDef :=
   Mettapedia.Languages.MeTTa.PeTTa.ConfigurationLanguageDef.language
 
+private def pettaWitness (sort : String) : Interface :=
+  ⟨[], List.replicate (if sort = "GroundList" then 4 else 5) (.base "GroundAtom"),
+    .base sort, .base "GroundAtom"⟩
+
+private def pettaWitnessPosition : String → List Nat
+  | "GroundAtom" => [0, 0]
+  | "GroundLiteral" => [0, 0, 0]
+  | "GroundList" => [0, 2, 0]
+  | _ => [0, 0, 0, 0]
+
+set_option maxRecDepth 100000 in
+private theorem pettaWitness_located :
+    ∀ sort ∈ names pettaMachine,
+      HasSite pettaMachine "sequence-done" (pettaWitnessPosition sort) (pettaWitness sort) := by
+  decide +kernel
+
+private theorem pettaWitness_mem {sort : String} (declared : sort ∈ names pettaMachine) :
+    pettaWitness sort ∈ interfaces pettaMachine := (pettaWitness_located sort declared).interface_mem
+
+private def pettaWitnessClauses : List (Clause Level) :=
+  (names pettaMachine).map (fun sort => modalClause (pettaWitness sort) (originProfile (pettaWitness sort))) ++
+    pettaMachine.terms.map constructorClause
+
+private theorem pettaWitnessClauses_subset :
+    pettaWitnessClauses ⊆ seeded pettaMachine (paperOrigin pettaMachine) := by
+  intro clause member
+  rcases List.mem_append.mp member with fromSite | fromConstructor
+  · obtain ⟨sort, declared, rfl⟩ := List.mem_map.mp fromSite
+    exact List.mem_append_left _ (List.mem_append_right _
+      (List.mem_map.mpr ⟨pettaWitness sort, pettaWitness_mem declared, rfl⟩))
+  · exact List.mem_append_right _ fromConstructor
+
 set_option maxRecDepth 100000 in
 theorem pettaMachine_seededOrigin :
     ∀ sort ∈ names pettaMachine,
       Derives (seeded pettaMachine (paperOrigin pettaMachine)) ∅ (.base sort, .star) := by
-  decide +kernel
+  have witnessed : ∀ sort ∈ names pettaMachine,
+      Derives pettaWitnessClauses ∅ (.base sort, .star) := by decide +kernel
+  intro sort declared
+  exact Derives.mono_clauses pettaWitnessClauses_subset (witnessed sort declared)
 
 set_option maxRecDepth 100000 in
 /-- Every carrier is the hole of a site with a rely slot over its target: the
@@ -318,7 +359,10 @@ machine state is an atom, and atoms are rely slots. -/
 theorem pettaMachine_bound_holes :
     ∀ sort ∈ names pettaMachine, ∃ interface ∈ interfaces pettaMachine,
       interface.hole = .base sort ∧ interface.target ∈ interface.index ++ interface.rely := by
-  decide +kernel
+  intro sort declared
+  refine ⟨pettaWitness sort, pettaWitness_mem declared, rfl, ?_⟩
+  change TypeExpr.base "GroundAtom" ∈ [] ++ List.replicate (if sort = "GroundList" then 4 else 5) (TypeExpr.base "GroundAtom")
+  split_ifs <;> simp
 
 /-- Polymorphism types every carrier of the PeTTa machine at the top. -/
 theorem pettaMachine_top :

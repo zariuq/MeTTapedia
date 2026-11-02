@@ -123,7 +123,7 @@ theorem rhoCostEquationInstanceOrigin_representatives
           rhoReflectivePresentation.toReflectivePresentationDecl)
         contractum := by
   cases witness with
-  | forward fuel equation initialBindings finalBindings matched premises
+  | forward fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       rcases origin with ⟨color, equation_eq⟩
       change Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -176,7 +176,7 @@ theorem rhoCostEquationInstanceOrigin_representatives
           Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
           Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
           Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
-  | reverse fuel equation initialBindings finalBindings matched premises
+  | reverse fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       rcases origin with ⟨color, equation_eq⟩
       change Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize

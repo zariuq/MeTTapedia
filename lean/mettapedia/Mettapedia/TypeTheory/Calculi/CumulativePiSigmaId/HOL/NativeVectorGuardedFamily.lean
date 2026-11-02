@@ -175,6 +175,8 @@ theorem extends_computation : AnnotatedPredicateReading.LexicalMap operations.le
     simpa only [lexical, if_neg distinct] using found
   · intro head type code found
     cases found
+  · intro operator result code found
+    cases found
 
 theorem family_reads : AnnotatedPredicateReading.Reads (lexical operations) (Γ := Γ) (.const vecName)
     (familyCode operations) := by

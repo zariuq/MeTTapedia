@@ -2,6 +2,7 @@ import Mettapedia.OSLF.MeTTaIL.CanonicalTyping
 import Mathlib.Data.List.Sublists
 import Mettapedia.OSLF.MeTTaIL.ReferenceStepAgreement
 import Mettapedia.GSLT.LanguageDef.EquationSemantics
+import Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution
 
 /-!
 # The reference relation modulo equations
@@ -9,7 +10,11 @@ import Mettapedia.GSLT.LanguageDef.EquationSemantics
 A language's equations hold in every context and in both directions. The generators are:
 - authored equation instances, scope-correct: an equation matches one side, its premises have
   witnesses, and the other side is instantiated with every value shifted from its capture depth
-  (`AuthoredEquation`);
+  (`AuthoredEquation`). An equation that declares the bound names its metavariables may use, and the
+  arguments at each occurrence, is instantiated through that declaration instead: in any ambient
+  scope the source is well scoped in, by the scoped matcher and instantiator
+  (`ScopedEquationExecution.applyEquationAt`). So exchanging two binders swaps the body's arguments,
+  and a component moved out of a binder may not use the bound name;
 - the laws the presentation derives for its declared collections, exactly the canonical ones
   (`EquationSemantics.DerivedInstance`).
 
@@ -34,23 +39,66 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts (OneHoleContext)
 
 variable (relEnv : RelationEnv) (language : LanguageDef)
 
+/-- **An equation the ordinary matcher reads**: one declaring no binding dependencies, or one whose sides hold no
+binder, where a declaration says nothing the matcher does not. -/
+abbrev readsRaw (equation : Equation) : Bool := Mettapedia.GSLT.LanguageDef.EquationSemantics.readsRaw equation
+
+theorem readsRaw_of_none {equation : Equation} (undeclared : equation.bindings = none) : readsRaw equation = true :=
+  Mettapedia.GSLT.LanguageDef.EquationSemantics.readsRaw_of_none undeclared
+
+open Mettapedia.OSLF.MeTTaIL.RuleBinding (admittedFor)
+open Mettapedia.OSLF.MeTTaIL.ScopedRuleMatching (Assignment matchRuleAt reduct?)
+open Mettapedia.OSLF.MeTTaIL.ScopedEquationExecution (Orientation orientedRule)
+open Mettapedia.GSLT.LanguageDef.EquationSemantics (closedRoot extendClosed)
+
+/-- Where the premises of a declared equation bind: its captures are closed, so only the premises' own outputs. -/
+def closedSites (premises : List Premise) : Pattern := captureSitesOf (.apply "" []) premises
+
+/-- **A declared instance with premises**: the scoped matcher captures the source in the ambient scope, the premises
+have witnesses over the closed captures, and the scoped instantiator emits the target. -/
+def DeclaredPremised (equation : Equation) (orientation : Orientation) (ambient : ℕ) (witnesses : List Witness)
+    (source target : Pattern) : Prop :=
+  ∃ (spec : RuleBindingSpec) (captured : Assignment) (final : Bindings),
+    (orientedRule equation orientation).bindings = some spec ∧
+    admittedFor (orientedRule equation orientation) spec = true ∧
+    source.isWellScopedAt ambient = true ∧
+    captured ∈ matchRuleAt (orientedRule equation orientation) spec ambient source ∧
+    PremisesValid relEnv language (closedSites equation.premises) (closedRoot captured) equation.premises witnesses
+      final ∧
+    reduct? (orientedRule equation orientation) spec ambient (extendClosed ambient captured final) = some target ∧
+    target.isWellScopedAt ambient = true
+
 /-- **An authored equation instance**: the equation matches the source by one side, its premises have
 witnesses, and the target is the other side, instantiated scope-correctly. -/
 inductive AuthoredEquation : Pattern → Pattern → Prop
   | forward {equation : Equation} {source : Pattern} {initial final : Bindings} {witnesses : List Witness} :
-      equation ∈ language.equations →
+      equation ∈ language.equations → readsRaw equation = true →
       initial ∈ matchPattern equation.left source →
       PremisesValid relEnv language (captureSitesOf equation.left equation.premises) initial equation.premises
         witnesses final →
       AuthoredEquation source (applyBindingsScoped (captureSitesOf equation.left equation.premises) final 0
         equation.right)
   | reverse {equation : Equation} {source : Pattern} {initial final : Bindings} {witnesses : List Witness} :
-      equation ∈ language.equations →
+      equation ∈ language.equations → readsRaw equation = true →
       initial ∈ matchPattern equation.right source →
       PremisesValid relEnv language (captureSitesOf equation.right equation.premises) initial equation.premises
         witnesses final →
       AuthoredEquation source (applyBindingsScoped (captureSitesOf equation.right equation.premises) final 0
         equation.left)
+  /-- An equation with binders that declares its binding dependencies, in either orientation, at an ambient
+  scope. -/
+  | declared {equation : Equation} {orientation : ScopedEquationExecution.Orientation} {ambient : ℕ}
+      {source target : Pattern} :
+      equation ∈ language.equations → readsRaw equation = false →
+      target ∈ ScopedEquationExecution.applyEquationAt language ambient equation orientation source →
+      AuthoredEquation source target
+  /-- A declared equation with premises, in either orientation, at an ambient scope: its premises have witnesses over
+  the closed captures. -/
+  | premised {equation : Equation} {orientation : Orientation} {ambient : ℕ} {witnesses : List Witness}
+      {source target : Pattern} :
+      equation ∈ language.equations → readsRaw equation = false → equation.premises ≠ [] →
+      DeclaredPremised relEnv language equation orientation ambient witnesses source target →
+      AuthoredEquation source target
 
 /-- One generator of the equations: an authored instance or a derived collection law. -/
 def Generator (source target : Pattern) : Prop :=
@@ -107,9 +155,11 @@ theorem stepModuloWith_equational_of_presentation (theory : Setoid Pattern) {sou
 
 /-! ## Aligned equations -/
 
-/-- **An equation both relations interpret alike**: its premises are aligned from either side, and
-neither side holds a metavariable deeper than where the other side captured it. -/
+/-- **An equation both relations interpret alike**: the ordinary matcher reads it, its premises are aligned from
+either side, and neither side holds a metavariable deeper than where the other side captured
+it. -/
 def equationAligned (equation : Equation) : Bool :=
+  readsRaw equation &&
   equation.premises.all (premiseAligned (captureSitesOf equation.left equation.premises)) &&
     equation.premises.all (premiseAligned (captureSitesOf equation.right equation.premises)) &&
     notDeeper (captureSitesOf equation.left equation.premises) 0 equation.right &&
@@ -123,12 +173,13 @@ def EquationsAligned : Prop := ∀ equation ∈ language.equations, equationAlig
 variable {relEnv language}
 
 theorem equationAligned_parts {equation : Equation} (aligned : equationAligned equation = true) :
+    readsRaw equation = true ∧
     (∀ premise ∈ equation.premises, premiseAligned (captureSitesOf equation.left equation.premises) premise = true) ∧
       (∀ premise ∈ equation.premises, premiseAligned (captureSitesOf equation.right equation.premises) premise = true) ∧
       notDeeper (captureSitesOf equation.left equation.premises) 0 equation.right = true ∧
       notDeeper (captureSitesOf equation.right equation.premises) 0 equation.left = true := by
   simp only [equationAligned, Bool.and_eq_true, List.all_eq_true] at aligned
-  exact ⟨aligned.1.1.1, aligned.1.1.2, aligned.1.2, aligned.2⟩
+  exact ⟨aligned.1.1.1.1, aligned.1.1.1.2, aligned.1.1.2, aligned.1.2, aligned.2⟩
 
 /-- **On aligned equations, the authored instances are the canonical ones.** -/
 theorem authoredEquation_iff (profile : ReferenceProfile language) (equations : EquationsAligned language)
@@ -138,32 +189,37 @@ theorem authoredEquation_iff (profile : ReferenceProfile language) (equations : 
   constructor
   · rintro ⟨fuel, instanceEvidence⟩
     cases instanceEvidence with
-    | @forward equation _ _ initial final member matched premises targetEq =>
-      obtain ⟨forwardPremises, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
+    | @forward equation _ _ initial final member _ matched premises targetEq =>
+      obtain ⟨undeclared, forwardPremises, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
       obtain ⟨witnesses, valid⟩ := premisesValid_of_premisesAt relEnv language profile forwardPremises premises
       have instantiated := applyBindingsScoped_eq_applyBindings_of_notDeeper
         (captureSitesOf equation.left equation.premises) final 0 equation.right forwardRight
       rw [← targetEq, ← instantiated]
-      exact .forward member matched valid
-    | @reverse equation _ _ initial final member matched premises targetEq =>
-      obtain ⟨-, reversePremises, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
+      exact .forward member undeclared matched valid
+    | @reverse equation _ _ initial final member _ matched premises targetEq =>
+      obtain ⟨undeclared, -, reversePremises, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
       obtain ⟨witnesses, valid⟩ := premisesValid_of_premisesAt relEnv language profile reversePremises premises
       have instantiated := applyBindingsScoped_eq_applyBindings_of_notDeeper
         (captureSitesOf equation.right equation.premises) final 0 equation.left reverseLeft
       rw [← targetEq, ← instantiated]
-      exact .reverse member matched valid
+      exact .reverse member undeclared matched valid
+    | declared member notRaw _ => exact absurd (equationAligned_parts (equations _ member)).1 (by simp [notRaw])
   · intro authored
     cases authored with
-    | @forward equation _ initial final witnesses member matched valid =>
-      obtain ⟨forwardPremises, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
+    | @forward equation _ initial final witnesses member raw matched valid =>
+      obtain ⟨-, forwardPremises, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
       obtain ⟨fuel, premises⟩ := premisesAt_of_premisesValid relEnv language profile witnesses forwardPremises valid
       rw [applyBindingsScoped_eq_applyBindings_of_notDeeper _ final 0 equation.right forwardRight]
-      exact ⟨fuel, .forward member matched premises rfl⟩
-    | @reverse equation _ initial final witnesses member matched valid =>
-      obtain ⟨-, reversePremises, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
+      exact ⟨fuel, .forward member raw matched premises rfl⟩
+    | @reverse equation _ initial final witnesses member raw matched valid =>
+      obtain ⟨-, -, reversePremises, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
       obtain ⟨fuel, premises⟩ := premisesAt_of_premisesValid relEnv language profile witnesses reversePremises valid
       rw [applyBindingsScoped_eq_applyBindings_of_notDeeper _ final 0 equation.left reverseLeft]
-      exact ⟨fuel, .reverse member matched premises rfl⟩
+      exact ⟨fuel, .reverse member raw matched premises rfl⟩
+    | @declared equation _ _ _ _ member notRaw _ =>
+      exact absurd (equationAligned_parts (equations equation member)).1 (by simp [notRaw])
+    | @premised equation _ _ _ _ _ member notRaw _ _ =>
+      exact absurd (equationAligned_parts (equations equation member)).1 (by simp [notRaw])
 
 theorem generator_iff (profile : ReferenceProfile language) (equations : EquationsAligned language)
     {source target : Pattern} :
@@ -312,8 +368,10 @@ theorem generator_bagStep (noEquations : language.equations = [])
     (generator : Generator relEnv language source target) : CanonicalBags.BagStep source target := by
   rcases generator with authored | derived
   · cases authored with
-    | forward member _ _ => rw [noEquations] at member; cases member
-    | reverse member _ _ => rw [noEquations] at member; cases member
+    | forward member _ _ _ => rw [noEquations] at member; cases member
+    | reverse member _ _ _ => rw [noEquations] at member; cases member
+    | declared member _ _ => rw [noEquations] at member; cases member
+    | premised member _ _ _ => rw [noEquations] at member; cases member
   · cases derived with
     | bagPerm _ _ permutation => exact .permute rfl permutation
     | setPerm _ _ permutation => exact .permute rfl permutation
@@ -699,8 +757,8 @@ theorem authoredEquation_iff_unconditional (unconditional : UnconditionalEquatio
   constructor
   · rintro ⟨fuel,instanceEvidence⟩
     cases instanceEvidence with
-    | @forward equation _ _ initial final member matched premises targetEq =>
-        obtain ⟨-, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
+    | @forward equation _ _ initial final member _ matched premises targetEq =>
+        obtain ⟨undeclared, -, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
         obtain ⟨witnesses,valid⟩ : ∃ witnesses,PremisesValid relEnv language
             (captureSitesOf equation.left equation.premises) initial equation.premises witnesses final := by
           rw [unconditional equation member] at premises ⊢
@@ -709,9 +767,9 @@ theorem authoredEquation_iff_unconditional (unconditional : UnconditionalEquatio
         have instantiated := applyBindingsScoped_eq_applyBindings_of_notDeeper
           (captureSitesOf equation.left equation.premises) final 0 equation.right forwardRight
         rw [← targetEq,← instantiated]
-        exact .forward member matched valid
-    | @reverse equation _ _ initial final member matched premises targetEq =>
-        obtain ⟨-, -, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
+        exact .forward member undeclared matched valid
+    | @reverse equation _ _ initial final member _ matched premises targetEq =>
+        obtain ⟨undeclared, -, -, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
         obtain ⟨witnesses,valid⟩ : ∃ witnesses,PremisesValid relEnv language
             (captureSitesOf equation.right equation.premises) initial equation.premises witnesses final := by
           rw [unconditional equation member] at premises ⊢
@@ -720,25 +778,30 @@ theorem authoredEquation_iff_unconditional (unconditional : UnconditionalEquatio
         have instantiated := applyBindingsScoped_eq_applyBindings_of_notDeeper
           (captureSitesOf equation.right equation.premises) final 0 equation.left reverseLeft
         rw [← targetEq,← instantiated]
-        exact .reverse member matched valid
+        exact .reverse member undeclared matched valid
+    | declared member notRaw _ => exact absurd (equationAligned_parts (equations _ member)).1 (by simp [notRaw])
   · intro authored
     cases authored with
-    | @forward equation _ initial final witnesses member matched valid =>
-        obtain ⟨-, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
+    | @forward equation _ initial final witnesses member raw matched valid =>
+        obtain ⟨-, -, -, forwardRight, -⟩ := equationAligned_parts (equations equation member)
         have premises : PremisesAt (engineBasePremises relEnv) language 0 initial equation.premises final := by
           rw [unconditional equation member] at valid ⊢
           cases valid
           exact .nil _
         rw [applyBindingsScoped_eq_applyBindings_of_notDeeper _ final 0 equation.right forwardRight]
-        exact ⟨0,.forward member matched premises rfl⟩
-    | @reverse equation _ initial final witnesses member matched valid =>
-        obtain ⟨-, -, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
+        exact ⟨0,.forward member raw matched premises rfl⟩
+    | @reverse equation _ initial final witnesses member raw matched valid =>
+        obtain ⟨-, -, -, -, reverseLeft⟩ := equationAligned_parts (equations equation member)
         have premises : PremisesAt (engineBasePremises relEnv) language 0 initial equation.premises final := by
           rw [unconditional equation member] at valid ⊢
           cases valid
           exact .nil _
         rw [applyBindingsScoped_eq_applyBindings_of_notDeeper _ final 0 equation.left reverseLeft]
-        exact ⟨0,.reverse member matched premises rfl⟩
+        exact ⟨0,.reverse member raw matched premises rfl⟩
+    | @declared equation _ _ _ _ member notRaw _ =>
+        exact absurd (equationAligned_parts (equations equation member)).1 (by simp [notRaw])
+    | @premised equation _ _ _ _ _ member notRaw _ _ =>
+      exact absurd (equationAligned_parts (equations equation member)).1 (by simp [notRaw])
 
 theorem generator_iff_unconditional (unconditional : UnconditionalEquations language)
     (equations : EquationsAligned language) {source target : Pattern} :

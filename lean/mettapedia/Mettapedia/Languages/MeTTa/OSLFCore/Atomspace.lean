@@ -172,9 +172,9 @@ def queryEquations (s : Atomspace) (pattern : Atom) : Multiset (Atom × Bindings
 
 /-! ### Insensitivity Predicate (Meta-MeTTa) -/
 
-/-- A term is "insensitive" if no equation in knowledge matches it.
-
-    From Meta-MeTTa paper: insensitive terms are fully reduced. -/
+/-- The prototype's one-way equation matcher finds no result. This Boolean
+test is distinct from the unifiability-based source predicate in
+`MetaMeTTa.Insensitive`; no equivalence is asserted here. -/
 def insensitive (s : Atomspace) (t : Atom) : Bool :=
   (s.queryEquations t).card == 0
 

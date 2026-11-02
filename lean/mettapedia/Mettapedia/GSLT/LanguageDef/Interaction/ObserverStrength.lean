@@ -57,16 +57,16 @@ namespace InteractivePresentation
 
 /-- The same sort, contact and rule, selected in the observer extension. -/
 def observed (presentation : InteractivePresentation) (cut : CollType)
-    (opened : List String)
-    (valid : (observerExtension presentation.presentation.language cut opened).validate = []) :
+    (opened : List String) (choice : Option GrammarRule)
+    (valid : (observerExtension presentation.presentation.language cut opened choice).validate = []) :
     InteractivePresentation where
-  presentation := ⟨observerExtension presentation.presentation.language cut opened, valid⟩
+  presentation := ⟨observerExtension presentation.presentation.language cut opened choice, valid⟩
   interactingSort := ⟨presentation.interactingSort.1,
     List.mem_append_left _ presentation.interactingSort.2⟩
   contactConstructor := ⟨presentation.contactConstructor.1,
-    mem_terms_of_mem _ cut opened presentation.contactConstructor.2⟩
+    mem_terms_of_mem _ cut opened presentation.contactConstructor.2 choice⟩
   interactionRewrite := ⟨presentation.interactionRewrite.1,
-    mem_rewrites_of_mem _ cut opened presentation.interactionRewrite.2⟩
+    mem_rewrites_of_mem _ cut opened presentation.interactionRewrite.2 choice⟩
   contactRepresentation := presentation.contactRepresentation
   representsContact := presentation.representsContact
   interactionHeaded := presentation.interactionHeaded
@@ -75,14 +75,14 @@ def observed (presentation : InteractivePresentation) (cut : CollType)
 of the theory is a base rule, the extension is interactive, with that rule
 and that contact. -/
 theorem observed_isInteractive (presentation : InteractivePresentation) (cut : CollType)
-    (opened : List String)
-    (valid : (observerExtension presentation.presentation.language cut opened).validate = [])
+    (opened : List String) (choice : Option GrammarRule)
+    (valid : (observerExtension presentation.presentation.language cut opened choice).validate = [])
     (base : presentation.BaseInteraction) :
-    IsInteractive (observerExtension presentation.presentation.language cut opened) ∧
-      (presentation.observed cut opened valid).contactHead = presentation.contactHead ∧
-      (presentation.observed cut opened valid).interactionRewrite.1 =
+    IsInteractive (observerExtension presentation.presentation.language cut opened choice) ∧
+      (presentation.observed cut opened choice valid).contactHead = presentation.contactHead ∧
+      (presentation.observed cut opened choice valid).interactionRewrite.1 =
         presentation.interactionRewrite.1 :=
-  ⟨(presentation.observed cut opened valid).isInteractive base, rfl, rfl⟩
+  ⟨(presentation.observed cut opened choice valid).isInteractive base, rfl, rfl⟩
 
 end InteractivePresentation
 
@@ -96,8 +96,9 @@ def observerHeads (lang : LanguageDef) (cut : CollType) (opened : List String) :
 /-- **The base rules of the extension are headed by the theory's family, the
 cut, or an adjoined former.** -/
 theorem observerExtension_baseRewritesHeaded {lang : LanguageDef} {family : List PatternHead}
-    (headed : BaseRewritesHeadedBy lang family) (cut : CollType) (opened : List String) :
-    BaseRewritesHeadedBy (observerExtension lang cut opened)
+    (headed : BaseRewritesHeadedBy lang family) (cut : CollType) (opened : List String)
+    (choice : Option GrammarRule := none) :
+    BaseRewritesHeadedBy (observerExtension lang cut opened choice)
       (family ++ observerHeads lang cut opened) := by
   intro rewrite membership base
   simp only [observerExtension, List.mem_append, List.mem_flatMap] at membership
@@ -109,7 +110,25 @@ theorem observerExtension_baseRewritesHeaded {lang : LanguageDef} {family : List
       intro label labelMember
       exact List.mem_cons_of_mem _ (List.mem_map.mpr
         ⟨label, List.mem_flatMap.mpr ⟨declaration, declarationMember, labelMember⟩, rfl⟩)
-    rcases instrumentRules_cases cut ruleMember with rfl | rfl | ⟨position, positionMember, rfl⟩
+    have shapes : rewrite = openingRule cut declaration.label declaration.params.length ∨
+        (∃ sum : GrammarRule, rewrite =
+          summandOpeningRule cut sum.label declaration.label declaration.params.length) ∨
+        rewrite = buildRule declaration.label declaration.params.length ∨
+        ∃ position ∈ projectablePositions declaration,
+          rewrite = projectionRule declaration.label declaration.params.length position.1 := by
+      cases choice with
+      | none =>
+          rcases instrumentRules_cases cut ruleMember with same | same | same
+          · exact .inl same
+          · exact .inr (.inr (.inl same))
+          · exact .inr (.inr (.inr same))
+      | some sum =>
+          rcases summandRules_cases cut ruleMember with same | same | same
+          · exact .inr (.inl ⟨sum, same⟩)
+          · exact .inr (.inr (.inl same))
+          · exact .inr (.inr (.inr same))
+    rcases shapes with rfl | ⟨sum, rfl⟩ | rfl | ⟨position, positionMember, rfl⟩
+    · exact ⟨.collection cut, List.mem_append_right _ (List.mem_cons_self ..), rfl⟩
     · exact ⟨.collection cut, List.mem_append_right _ (List.mem_cons_self ..), rfl⟩
     · exact ⟨_, List.mem_append_right _ (labels _ (by simp [instrumentLabels])), rfl⟩
     · refine ⟨_, List.mem_append_right _ (labels _ ?_), rfl⟩
@@ -123,14 +142,14 @@ of the extension is chosen, the build rule of an opened constructor has a
 left side that is a former applied to one argument. This assertion does not
 quantify over equation-equivalent representatives of that left side. -/
 theorem observerExtension_not_everyRuleIsCut (presentation : InteractivePresentation)
-    {lang : LanguageDef} {cut : CollType} {opened : List String}
-    (extension : presentation.presentation.language = observerExtension lang cut opened)
+    {lang : LanguageDef} {cut : CollType} {opened : List String} {choice : Option GrammarRule}
+    (extension : presentation.presentation.language = observerExtension lang cut opened choice)
     {declaration : GrammarRule} (isOpened : declaration ∈ openedRules lang opened) :
     ¬ presentation.EveryRuleIsCut := by
   apply presentation.not_everyRuleIsCut_of_rule
     (rewrite := buildRule declaration.label declaration.params.length)
   · rw [extension]
-    exact buildRule_mem lang cut opened isOpened
+    exact buildRule_mem lang cut opened isOpened choice
   · intro isCut
     exact isCut
 

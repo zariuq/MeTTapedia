@@ -152,7 +152,7 @@ def cut (reading : Reading) : InteractionCutPresentation (theory reading) where
   sourceShape :=
     { core := (composeRule reading).left
       coreShape :=
-        (CutSourceShape.binary rfl :
+        (CutSourceShape.binary .itself .itself rfl :
           CutSourceShape (coreContact reading) (firstOperand reading).schemaTerm
             (secondOperand reading).schemaTerm
             (.apply (coreContact reading).constructor.1.label

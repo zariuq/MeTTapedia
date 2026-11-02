@@ -5,10 +5,12 @@ import Mettapedia.GSLT.LanguageDef.ClosedTermChecker
 /-!
 # CCS as an interactive GSLT
 
-The interacting sort is the sort of processes, the contact constructor is
-parallel composition, and the interaction rule is synchronisation.  The
-contact is carried by a bag, so position within a parallel composition is not
-data: the surfaces that must match are the names the two prefixes carry.
+The interacting sort is the sort of processes, the contact constructor is parallel composition, and the interaction
+rule is the reaction: two sums meet in a parallel composition, one offering an action and the other the co-action on
+the same name. The contact is carried by a bag, so position within a parallel composition is not data: the surfaces
+that must match are the names the two prefixes carry.
+
+The closed controls react on a private name, so that the processes they mention have no free name.
 -/
 
 set_option autoImplicit false
@@ -34,23 +36,26 @@ def ccsProcessSort : DeclaredSort ccsValidatedLanguageDef :=
 def ccsParallelConstructor : DeclaredConstructor ccsValidatedLanguageDef :=
   ⟨ccsCalc.terms[1], List.getElem_mem (by simp [ccsCalc])⟩
 
-/-- Synchronisation. -/
-def ccsSyncDeclaration : DeclaredRewrite ccsValidatedLanguageDef :=
+/-- The sum of guards. -/
+def ccsSumConstructor : DeclaredConstructor ccsValidatedLanguageDef :=
+  ⟨ccsCalc.terms[2], List.getElem_mem (by simp [ccsCalc])⟩
+
+/-- The reaction. -/
+def ccsReactDeclaration : DeclaredRewrite ccsValidatedLanguageDef :=
   ⟨ccsCalc.rewrites[0], List.getElem_mem (by simp [ccsCalc])⟩
 
-/-- CCS is interactive: processes meet in parallel composition, and
-synchronisation is headed by it. -/
+/-- CCS is interactive: processes meet in parallel composition, and the reaction is headed by it. -/
 def ccsInteractivePresentation : InteractivePresentation where
   presentation := ccsValidatedLanguageDef
   interactingSort := ccsProcessSort
   contactConstructor := ccsParallelConstructor
-  interactionRewrite := ccsSyncDeclaration
+  interactionRewrite := ccsReactDeclaration
   contactRepresentation := .collection .hashBag
   representsContact := by rfl
   interactionHeaded := by
-    simp [InteractionHeaded, ccsSyncDeclaration, ccsCalc, ccsSyncRewrite]
+    simp [InteractionHeaded, ccsReactDeclaration, ccsCalc, ccsReactRewrite]
 
-/-- The execution profile of the premise-free definition. -/
+/-- The execution profile of the definition. -/
 def ccsExecutionProfile : ExecutionProfile ccsValidatedLanguageDef where
   relationModes := []
   admitted :=
@@ -67,23 +72,22 @@ def ccsIGSLT : IGSLT :=
 theorem ccs_baseInteraction : ccsInteractivePresentation.BaseInteraction :=
   isBaseRewrite_of_premises_eq_nil rfl
 
-/-- CCS is interactive: parallel composition is a same-sort contact and
-synchronisation is a base rule headed by it. -/
+/-- CCS is interactive: parallel composition is a same-sort contact and the reaction is a base rule headed by it. -/
 theorem ccsCalc_isInteractive : IsInteractive ccsCalc :=
   ccsInteractivePresentation.isInteractive ccs_baseInteraction
 
-/-- `a.0 | ~a.(a.0)` as a closed process. -/
+/-- `(νx)(x.0 | ~x.0)` as a closed process. -/
 def handshakeTerm : ccsInteractivePresentation.Term :=
-  ClosedTerm.ofCheck handshake (by decide +kernel)
+  ClosedTerm.ofCheck privateHandshake (by decide +kernel)
 
-/-- `0 | a.0` as a closed process. -/
+/-- `(νx)(0 | 0)` as a closed process. -/
 def handshakeDoneTerm : ccsInteractivePresentation.Term :=
-  ClosedTerm.ofCheck handshakeDone (by decide +kernel)
+  ClosedTerm.ofCheck (nu (par [nil, nil])) (by decide +kernel)
 
-/-- The synchronisation is a step of the iGSLT. -/
+/-- The reaction on the private name is a step of the iGSLT. -/
 theorem handshake_semantic_step :
     ccsIGSLT.toGSLT.Step handshakeTerm handshakeDoneTerm :=
   primitiveStep_to_presentedStep (base := defaultBasePremises)
-    (presentation := ccsInteractivePresentation) handshake_steps
+    (presentation := ccsInteractivePresentation) private_steps
 
 end Mettapedia.Languages.ProcessCalculi.CCS

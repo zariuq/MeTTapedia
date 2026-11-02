@@ -228,6 +228,21 @@ structure Hom (sourceAlgebra : Algebra polynomial source)
       targetAlgebra.act base index
         (Extension.map polynomial toFun layer)
 
+/-- A homomorphism is determined by its action on each carrier fibre. -/
+@[ext] theorem Hom.ext {A : Algebra polynomial source}
+    {B : Algebra polynomial target} (f g : Hom A B)
+    (same : ∀ base index value, f.toFun base index value =
+      g.toFun base index value) : f = g := by
+  cases f with
+  | mk f hf =>
+      cases g with
+      | mk g hg =>
+          have equal : f = g := by
+            funext base index value
+            exact same base index value
+          subst g
+          rfl
+
 /-- The fixed family carries the constructor algebra. -/
 def initial (polynomial : IndexedPolynomial Base Index) :
     Algebra polynomial (Fix polynomial) where

@@ -305,6 +305,8 @@ private theorem prefixIntermediateEnumerated
     {view : ForestView} {inventory : Inventory}
     {profile : ParserProfileLayer} {production : Nat}
     (order : ∀ choice, choice ∈ view.choices →
+      ∀ node, view.nodes[choice.parent]? = some node →
+      ∀ production dot, node.kind = .intermediate production dot →
       ∀ prefixIndex, choice.prefixNode = some prefixIndex →
         prefixIndex < choice.parent)
     {nodeIndex dot start stop byteStart byteStop choiceBegin choiceCount : Nat}
@@ -340,8 +342,9 @@ private theorem prefixIntermediateEnumerated
           choice.prefixNode = some prefixIndex →
             prefixIndex < remainingFuel := by
         intro prefixIndex prefixExact
-        have prefixLtParent := order choice choiceMember
-          prefixIndex prefixExact
+        have parentAt := nodeAt.1
+        rw [← parentExact] at parentAt
+        have prefixLtParent := order choice choiceMember _ parentAt _ _ rfl prefixIndex prefixExact
         rw [parentExact] at prefixLtParent
         omega
       rcases bodyComplete remainingFuel bodyBound with
@@ -365,6 +368,8 @@ theorem enumeratePrefixWitnesses_complete
     {view : ForestView} {inventory : Inventory}
     {profile : ParserProfileLayer} {production : Nat}
     (order : ∀ choice, choice ∈ view.choices →
+      ∀ node, view.nodes[choice.parent]? = some node →
+      ∀ production dot, node.kind = .intermediate production dot →
       ∀ prefixIndex, choice.prefixNode = some prefixIndex →
         prefixIndex < choice.parent)
     {prefixNode : Option Nat} {children : List ChildRef}
@@ -432,7 +437,8 @@ theorem enumerateFamilyWitnesses_complete
     ∃ witness, witness ∈ enumerateFamilyWitnesses view ∧
       decodeFamilyData? view inventory profile witness =
         some (choice, family) := by
-  have order := validatePrefixIndexOrder_sound prefixOrder
+  have order := validatePrefixIndexOrder_intermediate prefixOrder
+  have bounds := validatePrefixIndexOrder_sound prefixOrder
   cases derivation with
   | symbol parentAt owned sortAt productionAt body =>
       rcases owned with
@@ -440,16 +446,11 @@ theorem enumerateFamilyWitnesses_complete
           choiceLookup, parentExact⟩
       have choiceMember : choice ∈ view.choices :=
         list_member_of_getElem?_eq_some choiceLookup
-      have parentIndexEvidence := parentAt.1
-      rw [List.getElem?_eq_some_iff] at parentIndexEvidence
       have prefixBound : ∀ prefixIndex,
           choice.prefixNode = some prefixIndex →
             prefixIndex < view.nodes.length := by
         intro prefixIndex prefixExact
-        have prefixLtParent := order choice choiceMember
-          prefixIndex prefixExact
-        rw [parentExact] at prefixLtParent
-        exact Nat.lt_trans prefixLtParent parentIndexEvidence.1
+        exact bounds choice choiceMember prefixIndex prefixExact
       cases body with
       | binary productionExact pivot factorization prefixResult childResult =>
           rename_i prefixChildren childChildren
@@ -507,10 +508,11 @@ inductive ChoiceCoverageData where
 /-- Canonical finite candidates for one choice.  The parent node class selects
 the only witness form that can inhabit `ChoiceCovered`. -/
 def enumerateChoiceCoverageWitnesses
-    (view : ForestView) (choice : Choice) : List ChoiceCoverageWitness :=
+    (view : ForestView) (choiceIndex : Nat) (choice : Choice) : List ChoiceCoverageWitness :=
   match view.nodes[choice.parent]? with
   | some { kind := .symbol _, .. } =>
-      (enumerateFamilyWitnesses view).map .symbol
+      (enumeratePrefixWitnesses view view.nodes.length choice.prefixNode).map fun witness =>
+        .symbol ⟨choice.parent, choiceIndex, .binary witness⟩
   | some { kind := .intermediate _ _, .. } =>
       (enumeratePrefixWitnesses view view.nodes.length choice.prefixNode).map
         .intermediate
@@ -548,7 +550,7 @@ def choiceOccurrenceCovered
     (view : ForestView) (inventory : Inventory)
     (profile : ParserProfileLayer) (choiceIndex : Nat)
     (choice : Choice) : Bool :=
-  (enumerateChoiceCoverageWitnesses view choice).any fun witness =>
+  (enumerateChoiceCoverageWitnesses view choiceIndex choice).any fun witness =>
     (decodeChoiceCoverageData? view inventory profile choiceIndex choice
       witness).isSome
 
@@ -665,17 +667,15 @@ theorem choiceOccurrenceCovered_complete
     (covered : ChoiceCovered view inventory.toTable profile view.codepoints
       choice.parent parent choice) :
     choiceOccurrenceCovered view inventory profile choiceIndex choice = true := by
-  have order := validatePrefixIndexOrder_sound prefixOrder
+  have order := validatePrefixIndexOrder_intermediate prefixOrder
+  have bounds := validatePrefixIndexOrder_sound prefixOrder
   have choiceMember : choice ∈ view.choices :=
     list_member_of_getElem?_eq_some choiceLookup
-  have parentIndexEvidence := parentLookup
-  rw [List.getElem?_eq_some_iff] at parentIndexEvidence
   have prefixBound : ∀ prefixIndex,
       choice.prefixNode = some prefixIndex →
         prefixIndex < view.nodes.length := by
     intro prefixIndex prefixExact
-    exact Nat.lt_trans (order choice choiceMember prefixIndex prefixExact)
-      parentIndexEvidence.1
+    exact bounds choice choiceMember prefixIndex prefixExact
   rcases parent with
     ⟨kind, scalarStart, scalarStop, byteStart, byteStop,
       choiceBegin, choiceCount⟩
@@ -741,21 +741,10 @@ theorem choiceOccurrenceCovered_complete
                   choiceLookup, sortLookup, productionLookup, bodyDecoded]
               rcases familyDecodedExists with
                 ⟨decodedFamily, familyDecoded⟩
-              have familyWitnessMember :
-                  familyWitness ∈ enumerateFamilyWitnesses view := by
-                unfold enumerateFamilyWitnesses
-                unfold enumerateFamilyWitnessesWithFuel
-                apply List.mem_flatMap.mpr
-                refine ⟨(_, choice.parent),
-                  zipIdx_member_of_getElem? parentLookup, ?_⟩
-                apply List.mem_flatMap.mpr
-                refine ⟨(choice, choiceIndex),
-                  zipIdx_member_of_getElem? choiceLookup, ?_⟩
-                simp [prefixMember, familyWitness]
               apply List.any_eq_true.mpr
               refine ⟨.symbol familyWitness, ?_, ?_⟩
-              · simp [enumerateChoiceCoverageWitnesses, parentLookup,
-                  familyWitnessMember]
+              · simp only [enumerateChoiceCoverageWitnesses, parentLookup]
+                exact List.mem_map.mpr ⟨prefixWitness, prefixMember, rfl⟩
               · simp [decodeChoiceCoverageData?, parentLookup,
                   familyWitness, familyDecoded]
 

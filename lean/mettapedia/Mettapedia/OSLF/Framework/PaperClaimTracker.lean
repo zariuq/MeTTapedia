@@ -68,7 +68,7 @@ def paperClaimList : List PaperClaim :=
   , ⟨"oslf.pdf", "§12.3", "Secrecy worked example",
     "secrecy_worked_example", .proven⟩
   , ⟨"oslf.pdf", "§13.1", "Dependent/parametric type extension",
-    "dependent_parametric_generated_type_system_extension", .proven⟩
+    "DepHolds / depHolds_subst / depPi_intro / depPi_elim / depSigma_intro / depSigma_elim / SortParamHolds / sortParamHolds_instantiate / askDep_proved / askDep_refuted / askSortParam_proved / askSortParam_refuted", .proven⟩
   -- Native Type Theory paper (Native_Type_Theory.pdf), OSLF-facing subset
   , ⟨"NTT.pdf", "§3", "Native type = (sort, predicate) pair",
     "NativeTypeOf / NativeType / NativeTypeFiber", .proven⟩
@@ -83,9 +83,9 @@ def paperClaimList : List PaperClaim :=
   , ⟨"NTT.pdf", "§4 (endpoint subset)", "Representable Π/Σ transport package; closure/fixpoint wrappers require their own strength and transport hypotheses, not general evidence-to-strength",
     "topos_representable_patternPred_piSigma_transport_pack_via_rulePack / topos_representable_patternPred_piSigma_transport_via_rulePack / topos_representable_patternPred_piSigma_transport_pack_via_prop12 / topos_representable_patternPred_piSigma_transport_via_prop12_pack / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal", .proven⟩
   , ⟨"NTT.pdf", "§5", "Theory translation by presheaf precomposition; Π/Ω preservation needs additional hypotheses",
-    "TheoryMorphism.piSigmaOmegaProp_translation_endpoint assumes stronger fiber-algebra laws and has no source base-functor/precomposition/substitution action", .partiallyFormalized⟩
+    "LogicalTransport.restrictPresheaves / restrictPredicate / restrictPredicate_preimage / restrictPredicate_image / restrict_implication_le / restrict_forall_le / LiftsRestrictions; ClassifierRestriction.comparison / characteristic / comparisonIso; PresheafTheoryActionControls.Reversal.implication_not_preserved", .proven⟩
   , ⟨"NTT.pdf", "§5", "Colax Π/Σ/Prop rules for the source theory-translation action",
-    "TheoryMorphism.piSigmaProp_colax_rules derives rules from exact fiber-operation preservation; source precomposition/substitution compatibility remains unproved", .partiallyFormalized⟩
+    "LogicalTransport.restrict_implication_le / restrict_forall_le / restrict_implication_eq / restrict_forall_eq; PresheafNativeLogicalAction.sum_family_composition / product_family_composition / truthDisplay / characteristic_contextual_square; NTTClaimTracker Sec 5", .proven⟩
   -- TOGL paper (togl.pdf)
   , ⟨"togl.pdf", "§2", "Graph reduction structure",
     "reductionGraphObjUsing", .proven⟩
@@ -103,17 +103,17 @@ def paperClaimList : List PaperClaim :=
 def claimCountByStatus (s : ClaimStatus) : Nat :=
   (paperClaimList.filter (fun c => c.status == s)).length
 
-/-- The unresolved source actions in this endpoint-subset inventory. -/
+/-- No source action of this endpoint-subset inventory remains unresolved. -/
 theorem paperClaimList_remaining_locations :
     (paperClaimList.filter (fun c => c.status == .partiallyFormalized)).map
-      (fun c => (c.paper, c.loc)) = [("NTT.pdf", "§5"), ("NTT.pdf", "§5")] := by
+      (fun c => (c.paper, c.loc)) = [] := by
   decide
 
 /-- Count of fully proven claims. -/
-theorem provenCount_eq : claimCountByStatus .proven = 24 := by decide
+theorem provenCount_eq : claimCountByStatus .proven = 26 := by decide
 
 /-- Count of endpoint rows whose full source action remains unproved. -/
-theorem partialCount_eq : claimCountByStatus .partiallyFormalized = 2 := by decide
+theorem partialCount_eq : claimCountByStatus .partiallyFormalized = 0 := by decide
 
 /-- Count of assumption-scoped claims. -/
 theorem assumptionScopedCount_eq : claimCountByStatus .assumptionScoped = 1 := by decide
@@ -124,6 +124,14 @@ theorem strictNTTParity_open :
   Mettapedia.OSLF.Framework.NTTClaimTracker.fullNTTParity_open
 
 /-! ## Code-Reference Anchors -/
+
+-- Theory translation by precomposition
+#check @Mettapedia.GSLT.Topos.LogicalTransport.restrictPredicate
+#check @Mettapedia.GSLT.Topos.LogicalTransport.restrict_implication_le
+#check @Mettapedia.GSLT.Topos.LogicalTransport.restrict_forall_le
+#check @Mettapedia.GSLT.Topos.ClassifierRestriction.characteristic
+#check @Mettapedia.GSLT.Topos.PresheafTheoryActionControls.Reversal.implication_not_preserved
+#check @Mettapedia.TypeTheory.PresheafNativeLogicalAction.characteristic_contextual_square
 
 -- OSLF core
 #check @RewriteSystem

@@ -283,7 +283,7 @@ theorem commuted_equivalent :
   have authored : AuthoredEquation RelationEnv.empty tinyComm (par nilTerm (out nilTerm))
       (Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped (captureSitesOf parComm.left parComm.premises)
         [("q", out nilTerm), ("p", nilTerm)] 0 parComm.right) :=
-    .forward (equation := parComm) (by simp [tinyComm]) (by decide +kernel) (.nil _)
+    .forward (equation := parComm) (by simp [tinyComm]) rfl (by decide +kernel) (.nil _)
   have instantiated : Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped
       (captureSitesOf parComm.left parComm.premises) [("q", out nilTerm), ("p", nilTerm)] 0 parComm.right =
         par (out nilTerm) nilTerm := by decide +kernel
@@ -568,8 +568,10 @@ theorem countA_equivalent {first second : Pattern}
       refine countA_fill context ?_
       rcases generator with authored | derived
       · cases authored with
-        | forward member _ _ => simp [soupLanguage] at member
-        | reverse member _ _ => simp [soupLanguage] at member
+        | forward member _ _ _ => simp [soupLanguage] at member
+        | reverse member _ _ _ => simp [soupLanguage] at member
+        | declared member _ _ => simp [soupLanguage] at member
+        | premised member _ _ _ => simp [soupLanguage] at member
       · cases derived with
         | bagPerm _ _ perm => exact countAList_perm perm
         | setPerm declaration kindTyped _ =>

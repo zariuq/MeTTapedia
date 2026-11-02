@@ -322,6 +322,7 @@ theorem dk_not_equationContextStep {left right : Pattern} :
   · cases generated with
     | forward member _ _ _ => rw [dkLanguage_equations] at member; cases member
     | reverse member _ _ _ => rw [dkLanguage_equations] at member; cases member
+    | declared member _ _ => rw [dkLanguage_equations] at member; cases member
   · cases derived with
     | bagPerm authored typed _ => exact dk_not_collectionTypedAt authored typed
     | setPerm authored typed _ => exact dk_not_collectionTypedAt authored typed

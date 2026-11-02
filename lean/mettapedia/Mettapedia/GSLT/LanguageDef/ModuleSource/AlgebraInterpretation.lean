@@ -416,6 +416,21 @@ theorem read_classOf (base : BasePremiseEvaluator) (language : LanguageDef)
     read_instance base language (fun identifier => classOf base language (.fvar identifier)) [] shape
       (by intro identifier _; simp only [applyBindings, List.find?_nil])
 
+theorem binderFreeList_of_forall : ∀ (patterns : List Pattern), (∀ pattern ∈ patterns, binderFree pattern = true) →
+    binderFreeList patterns = true
+  | [], _ => rfl
+  | pattern :: patterns, all => by
+    simp only [binderFreeList, all pattern List.mem_cons_self,
+      binderFreeList_of_forall patterns (fun other member => all other (List.mem_cons_of_mem _ member)), Bool.and_self]
+
+/-- **A first-order pattern holds no binder.** -/
+theorem binderFree_of_firstOrder {pattern : Pattern} (shape : FirstOrder pattern) : binderFree pattern = true := by
+  induction shape with
+  | metavariable => rfl
+  | constructor label arguments children holds =>
+    simp only [binderFree]
+    exact binderFreeList_of_forall arguments holds
+
 /-- An actual premise-free first-order equation holds in its own quotient.
 The right-side variable condition is essential for ordinary matching to
 read the same finite substitution on both sides. -/
@@ -435,7 +450,9 @@ theorem equation_holds (base : BasePremiseEvaluator) {language : LanguageDef} {r
     (fun identifier occurs => (names identifier).mpr (closed identifier occurs))
   have step : EquationInstance base language
       (applyBindings environment row.left) (applyBindings environment row.right) := by
-    refine ⟨0, .forward member (matchRel_complete matched) ?_ rightRead⟩
+    have raw : readsRaw row = true := by
+      simp [readsRaw, binderFree_of_firstOrder leftShape, binderFree_of_firstOrder rightShape]
+    refine ⟨0, .forward member raw (matchRel_complete matched) ?_ rightRead⟩
     simpa only [unconditional] using (PremisesAt.nil bindings : PremisesAt base language 0 bindings [] bindings)
   have equivalent : EquationEquiv base language
       (applyBindings environment row.left) (applyBindings environment row.right) :=

@@ -131,7 +131,7 @@ def lambdaInteractionCut : InteractionCutPresentation lambdaIGSLT where
         change CutSourceShape lambdaCoreContact
           lambdaProgramOperand.schemaTerm lambdaEnvironmentOperand.schemaTerm
           lambdaCalc.rewrites[0].left
-        exact CutSourceShape.binary rfl
+        exact CutSourceShape.binary .itself .itself rfl
       envelope := .hole
       fillsSource := rfl }
   sourceEnvelopeInSignature := .hole "Term"

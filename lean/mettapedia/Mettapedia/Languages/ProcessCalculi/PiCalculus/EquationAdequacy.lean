@@ -4,13 +4,13 @@ import Mettapedia.GSLT.LanguageDef.BagEquationDecision
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.StructuralCongruence
 
 /-!
-# Exact scope of the authored pi static theory
+# π's parallel fragment, and the restriction laws beyond it
 
-The declared parallel monoid has a complete normal-form comparison on named
-processes. Textbook restriction laws and guarded replication unfolding are
-strictly additional equations: the controls below give structurally congruent
-named processes with distinct declared normal forms. A canonical section for
-the monoid therefore cannot be reused as a section for those larger quotients.
+The parallel monoid alone (`piParallelFragment`, the presentation without its authored equations) has a complete
+normal-form comparison on named processes. `piCalc` authors the restriction laws on top of it: ν of inaction,
+exchange of restrictions and scope extrusion. Each control below gives named processes that are structurally
+congruent, that `piCalc` identifies, and that the fragment's normal form separates. Replication unfolding is not an
+authored law: guarded replication keeps its server when it communicates.
 -/
 
 set_option autoImplicit false
@@ -27,43 +27,84 @@ theorem piToPattern_admissible (process : Process) :
   ⟨piToPattern_hasType process, (piToPattern_atomic process).canonical,
     (piToPattern_atomic process).object⟩
 
-/-- All and only the actual authored equations are decided by this normal form. -/
-theorem pi_equations_iff_normal_form (left right : Process) :
-    EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+theorem piToPattern_parallel_admissible (process : Process) :
+    Admissible piParallelFragment piNameContext [] (.base "Proc") (piToPattern process) :=
+  ⟨HasType.of_terms_subset (source := piCalc) (target := piParallelFragment) (fun _ member => member)
+      (piToPattern_admissible process).typed,
+    (piToPattern_admissible process).canonical, (piToPattern_admissible process).object⟩
+
+/-- **The fragment's static theory is decided by the bag normal form.** -/
+theorem piParallel_equations_iff_normal_form (left right : Process) :
+    EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
       (piToPattern left) (piToPattern right) ↔
     normalForm (some "PiNil") (piToPattern left) =
       normalForm (some "PiNil") (piToPattern right) :=
-  equationEquiv_iff_normalForm_eq (piBagTheory.asBare rfl) _
-    (piToPattern_admissible left) (piToPattern_admissible right) rfl
+  equationEquiv_iff_normalForm_eq (piParallelBagTheory.asBare rfl) _
+    (piToPattern_parallel_admissible left) (piToPattern_parallel_admissible right) rfl
 
-def decideNamedEquation (left right : Process) :
-    Decidable (EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+def decideParallelEquation (left right : Process) :
+    Decidable (EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
       (piToPattern left) (piToPattern right)) :=
-  decideEquationEquiv (piBagTheory.asBare rfl) _ (piToPattern_admissible left) (piToPattern_admissible right) rfl
+  decideEquationEquiv (piParallelBagTheory.asBare rfl) _ (piToPattern_parallel_admissible left)
+    (piToPattern_parallel_admissible right) rfl
 
-/-- Vacuous restriction is a named structural law absent from the monoid quotient. -/
+/-! ## The restriction laws are laws of `piCalc` -/
+
+theorem restrictionNil_member : restrictionNil ∈ piCalc.equations := List.Mem.head _
+
+theorem restrictionExchange_member : restrictionExchange ∈ piCalc.equations :=
+  List.Mem.tail _ (List.Mem.head _)
+
+theorem scopeExtrusion_member : scopeExtrusion ∈ piCalc.equations :=
+  List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _))
+
+/-- **`(νa) 0 = 0` in `piCalc`.** -/
+theorem restriction_unit_equivalent :
+    EquationEquiv (engineBasePremises RelationEnv.empty) piCalc (piToPattern (.nu "a" .nil)) (piToPattern .nil) :=
+  equationInstance_equivalent ⟨0, .forward (initialBindings := []) (finalBindings := []) restrictionNil_member
+    (readsRaw_of_none rfl) (by decide +kernel) (.nil _) (by simp [restrictionNil, Mettapedia.OSLF.MeTTaIL.Match.applyBindings, piToPattern])⟩
+
+/-- **Scope extrusion in `piCalc`**: `(νx)(x⟨w⟩ | a⟨b⟩) = (νx) x⟨w⟩ | a⟨b⟩`. -/
+theorem scope_extrusion_equivalent :
+    EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      (piToPattern (.nu "x" (.par (.output "x" "w") (.output "a" "b"))))
+      (piToPattern (.par (.nu "x" (.output "x" "w")) (.output "a" "b"))) :=
+  equationInstance_equivalent ⟨0, .declared (orientation := .reverse) (ambient := 0) scopeExtrusion_member
+    (by decide +kernel) (declaredInstanceAt_of_applyEquationAt (by decide +kernel))⟩
+
+/-- **Exchange of restrictions in `piCalc`**: `(νx)(νy) x⟨y⟩ = (νy)(νx) x⟨y⟩`. -/
+theorem restriction_exchange_equivalent :
+    EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      (piToPattern (.nu "x" (.nu "y" (.output "x" "y"))))
+      (piToPattern (.nu "y" (.nu "x" (.output "x" "y")))) :=
+  equationInstance_equivalent ⟨0, .declared (orientation := .forward) (ambient := 0) restrictionExchange_member
+    (by decide +kernel) (declaredInstanceAt_of_applyEquationAt (by decide +kernel))⟩
+
+/-! ## The fragment separates them -/
+
+/-- Vacuous restriction is a structural law absent from the parallel fragment. -/
 theorem restriction_unit_equation_boundary :
     Nonempty (StructuralCongruence (.nu "a" .nil) .nil) ∧
-      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
         (piToPattern (.nu "a" .nil)) (piToPattern .nil) := by
   refine ⟨⟨.nu_nil "a"⟩, ?_⟩
   intro equal
-  have normalized := (pi_equations_iff_normal_form _ _).mp equal
+  have normalized := (piParallel_equations_iff_normal_form _ _).mp equal
   have distinct : normalForm (some "PiNil") (piToPattern (.nu "a" .nil)) ≠
       normalForm (some "PiNil") (piToPattern .nil) := by decide +kernel
   exact distinct normalized
 
-/-- Extrusion preserves the freshness side condition but changes the monoid normal form. -/
+/-- Extrusion preserves the freshness side condition but changes the fragment's normal form. -/
 theorem scope_extrusion_equation_boundary :
     Nonempty (StructuralCongruence
       (.nu "x" (.par (.output "x" "w") (.output "a" "b")))
       (.par (.nu "x" (.output "x" "w")) (.output "a" "b"))) ∧
-      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
         (piToPattern (.nu "x" (.par (.output "x" "w") (.output "a" "b"))))
         (piToPattern (.par (.nu "x" (.output "x" "w")) (.output "a" "b"))) := by
   refine ⟨⟨.nu_par "x" _ _ (by decide +kernel)⟩, ?_⟩
   intro equal
-  have normalized := (pi_equations_iff_normal_form _ _).mp equal
+  have normalized := (piParallel_equations_iff_normal_form _ _).mp equal
   have distinct : normalForm (some "PiNil")
       (piToPattern (.nu "x" (.par (.output "x" "w") (.output "a" "b")))) ≠
       normalForm (some "PiNil")
@@ -81,12 +122,12 @@ theorem scope_extrusion_equation_boundary :
 theorem restriction_exchange_equation_boundary :
     Nonempty (StructuralCongruence (.nu "x" (.nu "y" (.output "x" "y")))
       (.nu "y" (.nu "x" (.output "x" "y")))) ∧
-      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
         (piToPattern (.nu "x" (.nu "y" (.output "x" "y"))))
         (piToPattern (.nu "y" (.nu "x" (.output "x" "y")))) := by
   refine ⟨⟨.nu_swap "x" "y" _⟩, ?_⟩
   intro equal
-  have normalized := (pi_equations_iff_normal_form _ _).mp equal
+  have normalized := (piParallel_equations_iff_normal_form _ _).mp equal
   have distinct : normalForm (some "PiNil")
       (piToPattern (.nu "x" (.nu "y" (.output "x" "y")))) ≠
       normalForm (some "PiNil")
@@ -96,12 +137,12 @@ theorem restriction_exchange_equation_boundary :
 theorem replication_unfold_equation_boundary :
     Nonempty (StructuralCongruence (.replicate "a" "x" .nil)
       (.par (.input "a" "x" .nil) (.replicate "a" "x" .nil))) ∧
-      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      ¬ EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
         (piToPattern (.replicate "a" "x" .nil))
         (piToPattern (.par (.input "a" "x" .nil) (.replicate "a" "x" .nil))) := by
   refine ⟨⟨.replicate_unfold "a" "x" .nil⟩, ?_⟩
   intro equal
-  have normalized := (pi_equations_iff_normal_form _ _).mp equal
+  have normalized := (piParallel_equations_iff_normal_form _ _).mp equal
   have distinct : normalForm (some "PiNil") (piToPattern (.replicate "a" "x" .nil)) ≠
       normalForm (some "PiNil")
         (piToPattern (.par (.input "a" "x" .nil) (.replicate "a" "x" .nil))) := by
@@ -115,10 +156,10 @@ theorem replication_unfold_equation_boundary :
     cases impossible
   exact distinct normalized
 
-/-- A full structural-congruence comparison cannot use this monoid section. -/
+/-- The parallel fragment does not capture structural congruence. -/
 theorem no_full_structural_equation_comparison :
     ¬ ∀ (left right : Process), Nonempty (StructuralCongruence left right) →
-      EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
         (piToPattern left) (piToPattern right) := by
   intro comparison
   exact restriction_unit_equation_boundary.2

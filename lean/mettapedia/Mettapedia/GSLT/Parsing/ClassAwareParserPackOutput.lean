@@ -24,47 +24,40 @@ mutual
       {first second : CST}
       (left : Replays profile plan input certificate sort start stop first)
       (right : Replays profile plan input certificate sort start stop second) : first = second := by
-    cases left with
-    | lexical _ _ _ _ leftLabel leftMatched =>
-      cases right with
-      | lexical _ _ _ _ rightLabel rightMatched =>
-        have labels := leftLabel.symm.trans rightLabel
-        have children := terminal_output leftMatched rightMatched
-        cases labels
-        cases children
-        rfl
-    | structural _ _ _ leftLabel leftBody =>
-      cases right with
-      | structural _ _ _ rightLabel rightBody =>
-        have labels := leftLabel.symm.trans rightLabel
-        have children := items_output_unique leftBody rightBody
-        cases labels
-        cases children
-        rfl
+    cases left <;> cases right
+    · exact congrArg₂ (CST.node · _ _ ·) (by simp_all only) (terminal_output ‹_› ‹_›)
+    · exact congrArg₂ (CST.node · _ _ ·) (by simp_all only) (items_output_unique ‹_› ‹_›)
+
 
   theorem items_output_unique {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
       {input : List Nat} {certificate : ItemsCertificate} {items : List PackItem}
       {start stop : Nat} {first second : List CST}
       (left : ItemsReplays profile plan input certificate items start stop first)
       (right : ItemsReplays profile plan input certificate items start stop second) : first = second := by
-    cases left with
-    | nil => cases right; rfl
-    | terminal _ leftRest =>
-      cases right with
-      | terminal _ rightRest => exact items_output_unique leftRest rightRest
-    | nonterminal leftHead leftRest =>
-      cases right with
-      | nonterminal rightHead rightRest =>
-        rw [output_unique leftHead rightHead, items_output_unique leftRest rightRest]
+    cases left <;> cases right
+    · rfl
+    · exact items_output_unique ‹_› ‹_›
+    · exact congrArg₂ List.cons (output_unique ‹_› ‹_›) (items_output_unique ‹_› ‹_›)
+
 end
+
+/-- A valid certificate replays to its exact tree and evidence, including
+physical production identity. Typed readers may enrich this single result. -/
+theorem replay_exact {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
+    {input : List Nat} {certificate : Certificate} {sort : String} {start stop : Nat} {tree : CST}
+    (source : Replays profile plan input certificate sort start stop tree) :
+    ClassAwareParserPackReplay.replay profile plan input sort start stop certificate = some ⟨tree, source⟩ := by
+  obtain ⟨result, found⟩ := Option.isSome_iff_exists.mp (ClassAwareParserPackReplay.replay_complete source)
+  obtain ⟨actual, replayed⟩ := result
+  cases output_unique replayed source
+  simpa only [Replays.unique replayed source] using found
 
 theorem replay_output {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
     {input : List Nat} {certificate : Certificate} {sort : String} {start stop : Nat} {tree : CST}
     (source : Replays profile plan input certificate sort start stop tree) :
     (ClassAwareParserPackReplay.replay profile plan input sort start stop certificate).map Sigma.fst = some tree := by
-  obtain ⟨result, found⟩ := Option.isSome_iff_exists.mp (ClassAwareParserPackReplay.replay_complete source)
-  rw [found]
-  exact congrArg some (output_unique result.2 source)
+  rw [replay_exact source]
+  rfl
 
 #print axioms output_unique
 #print axioms items_output_unique

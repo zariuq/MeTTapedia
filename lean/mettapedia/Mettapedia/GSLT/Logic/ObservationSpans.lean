@@ -95,13 +95,10 @@ theorem diamond_pullback (map : SpanMap A B) (lifts : map.SourceLifts)
   constructor
   · rintro ⟨event, endpointEq, holds⟩
     obtain ⟨lift, source, target⟩ := lifts state event endpointEq
-    refine ⟨lift, source, ?_⟩
-    change predicate (map.states (A.target lift))
-    exact target ▸ holds
+    exact ⟨lift, source, Eq.mpr (congrArg predicate target) holds⟩
   · rintro ⟨event, source, holds⟩
-    refine ⟨map.events event, (map.source_comm event).trans (congrArg map.states source), ?_⟩
-    change predicate (B.target (map.events event))
-    exact (map.target_comm event).symm ▸ holds
+    exact ⟨map.events event, (map.source_comm event).trans (congrArg map.states source),
+      Eq.mpr (congrArg predicate (map.target_comm event)) holds⟩
 
 theorem sourceLifts_iff_diamond (map : SpanMap A B) :
     map.SourceLifts ↔ ∀ (predicate : Y → Prop) (state : X),
@@ -110,9 +107,7 @@ theorem sourceLifts_iff_diamond (map : SpanMap A B) :
   constructor
   · exact map.diamond_pullback
   · intro natural state event endpointEq
-    have witness : derivedDiamond B (fun target => target = B.target event) (map.states state) :=
-      ⟨event, endpointEq, rfl⟩
-    exact (natural _ state).mp witness
+    exact (natural (· = B.target event) state).mp ⟨event, endpointEq, rfl⟩
 
 theorem box_pullback (map : SpanMap A B) (lifts : map.TargetLifts)
     (predicate : Y → Prop) (state : X) :
@@ -120,14 +115,11 @@ theorem box_pullback (map : SpanMap A B) (lifts : map.TargetLifts)
       derivedBox A (predicate ∘ map.states) state := by
   constructor
   · intro holds event target
-    have observed := holds (map.events event)
-      ((map.target_comm event).trans (congrArg map.states target))
-    change predicate (map.states (A.source event))
-    exact map.source_comm event ▸ observed
+    exact Eq.mp (congrArg predicate (map.source_comm event)) (holds (map.events event)
+      ((map.target_comm event).trans (congrArg map.states target)))
   · intro holds event endpointEq
     obtain ⟨lift, target, source⟩ := lifts state event endpointEq
-    change predicate (B.source event)
-    exact source ▸ holds lift target
+    exact Eq.mp (congrArg predicate source) (holds lift target)
 
 /-- Necessity is constructive: test with the predicate consisting of the
 observed sources of actual incoming events. No excluded middle is used. -/
@@ -181,28 +173,6 @@ given predicate. This asks no witness-selection operation on state fibres. -/
 def PredicateDescends (observe : X → Y) (predicate : X → Prop) : Prop :=
   ∃ observed : Y → Prop, ∀ state, observed (observe state) ↔ predicate state
 
-theorem predicateDescends_iff (observe : X → Y) (predicate : X → Prop) :
-    PredicateDescends observe predicate ↔ ConstantOnFibers observe predicate := by
-  constructor
-  · rintro ⟨observed, reflects⟩ left right same
-    apply propext
-    exact (reflects left).symm.trans (same ▸ reflects right)
-  · intro constant
-    refine ⟨di observe predicate, ?_⟩
-    intro state
-    constructor
-    · rintro ⟨witness, same, holds⟩
-      exact (Mettapedia.GSLT.Scope.ConstantOnFibers.iff constant same).mp holds
-    · intro holds
-      exact ⟨state, rfl, holds⟩
-
-theorem predicateDescends_iff_image_subset_universal (observe : X → Y)
-    (predicate : X → Prop) :
-    PredicateDescends observe predicate ↔
-      observe '' {state | predicate state} ⊆ Set.kernImage observe {state | predicate state} :=
-  (predicateDescends_iff observe predicate).trans
-    (Mettapedia.GSLT.Scope.constantOnFibers_iff_image_subset_kernImage observe predicate)
-
 theorem descended_pullback (observe : X → Y) (predicate : X → Prop)
     (constant : ConstantOnFibers observe predicate) (state : X) :
     di observe predicate (observe state) ↔ predicate state := by
@@ -212,12 +182,25 @@ theorem descended_pullback (observe : X → Y) (predicate : X → Prop)
   · intro holds
     exact ⟨state, rfl, holds⟩
 
+theorem predicateDescends_iff (observe : X → Y) (predicate : X → Prop) :
+    PredicateDescends observe predicate ↔ ConstantOnFibers observe predicate := by
+  constructor
+  · rintro ⟨observed, reflects⟩ left right same
+    apply propext
+    exact (reflects left).symm.trans (same ▸ reflects right)
+  · exact fun constant => ⟨di observe predicate, descended_pullback observe predicate constant⟩
+
+theorem predicateDescends_iff_image_subset_universal (observe : X → Y)
+    (predicate : X → Prop) :
+    PredicateDescends observe predicate ↔
+      observe '' {state | predicate state} ⊆ Set.kernImage observe {state | predicate state} :=
+  (predicateDescends_iff observe predicate).trans
+    (Mettapedia.GSLT.Scope.constantOnFibers_iff_image_subset_kernImage observe predicate)
+
 theorem descended_unique (observe : X → Y) (onto : Function.Surjective observe)
     {first second : Y → Prop}
     (same : ∀ state, first (observe state) ↔ second (observe state)) : first = second := by
-  funext observed
-  obtain ⟨state, rfl⟩ := onto observed
-  exact propext (same state)
+  exact onto.injective_comp_right (funext fun state => propext (same state))
 
 namespace SpanMap
 
@@ -228,20 +211,16 @@ theorem diamond_descends (map : SpanMap A B) (lifts : map.SourceLifts)
     PredicateDescends map.states (derivedDiamond A predicate) := by
   obtain ⟨observed, reflects⟩ := descends
   have same : observed ∘ map.states = predicate := funext (fun state => propext (reflects state))
-  refine ⟨derivedDiamond B observed, ?_⟩
-  intro state
-  rw [← same]
-  exact map.diamond_pullback lifts observed state
+  cases same
+  exact ⟨derivedDiamond B observed, map.diamond_pullback lifts observed⟩
 
 theorem box_descends (map : SpanMap A B) (lifts : map.TargetLifts)
     (predicate : X → Prop) (descends : PredicateDescends map.states predicate) :
     PredicateDescends map.states (derivedBox A predicate) := by
   obtain ⟨observed, reflects⟩ := descends
   have same : observed ∘ map.states = predicate := funext (fun state => propext (reflects state))
-  refine ⟨derivedBox B observed, ?_⟩
-  intro state
-  rw [← same]
-  exact map.box_pullback lifts observed state
+  cases same
+  exact ⟨derivedBox B observed, map.box_pullback lifts observed⟩
 
 end SpanMap
 
@@ -302,11 +281,7 @@ theorem quotient_predicateDescends_iff (equations : Setoid X) (predicate : X →
     PredicateDescends (Quotient.mk equations) predicate ↔
       ∀ ⦃left right⦄, equations.r left right → (predicate left ↔ predicate right) := by
   rw [predicateDescends_iff]
-  constructor
-  · intro constant left right related
-    exact Mettapedia.GSLT.Scope.ConstantOnFibers.iff constant (Quotient.sound related)
-  · intro invariant left right same
-    exact propext (invariant (Quotient.exact same))
+  simp only [ConstantOnFibers, Quotient.eq, eq_iff_iff]
 
 /-! ## The actual saturated relative quotient and its contexts -/
 
@@ -361,11 +336,7 @@ theorem relative_transition_iff (source target : S.Term) :
         (relativeObserve A observations source) ↔
       ∃ target', S.Step source target' ∧ A.RelEquiv observations target' target := by
   rw [relative_diamond, gsltDiamond_spec]
-  constructor
-  · rintro ⟨target', reduction, same⟩
-    exact ⟨target', reduction, Quotient.exact same⟩
-  · rintro ⟨target', reduction, related⟩
-    exact ⟨target', reduction, Quotient.sound related⟩
+  exact exists_congr fun _ => and_congr_right fun _ => Quotient.eq
 
 theorem relative_box (past : PastMatching (gsltSpan S) (relativeSetoid A observations))
     (predicate : RelativeState A observations → Prop) (state : S.Term) :
@@ -386,9 +357,8 @@ def contextAction (context : rules.Context) (admissible : A.Admissible context) 
 
 theorem contextAction_identity (state : RelativeState A observations) :
     contextAction A observations rules.identity A.identity_mem state = state := by
-  induction state using Quotient.inductionOn with
-  | _ term =>
-    exact Quotient.sound (A.relEquiv_of_equiv observations (rules.plug_identity term))
+  exact Quotient.inductionOn state fun term =>
+    Quotient.sound (A.relEquiv_of_equiv observations (rules.plug_identity term))
 
 theorem contextAction_compose (outer inner : rules.Context)
     (outerAdmissible : A.Admissible outer) (innerAdmissible : A.Admissible inner)
@@ -397,9 +367,8 @@ theorem contextAction_compose (outer inner : rules.Context)
         (A.compose_mem outerAdmissible innerAdmissible) state =
       contextAction A observations outer outerAdmissible
         (contextAction A observations inner innerAdmissible state) := by
-  induction state using Quotient.inductionOn with
-  | _ term =>
-    exact Quotient.sound (A.relEquiv_of_equiv observations (rules.plug_compose outer inner term))
+  refine Quotient.inductionOn state fun term => ?_
+  exact Quotient.sound (A.relEquiv_of_equiv observations (rules.plug_compose outer inner term))
 
 /-- Descend an actual substitution only when it respects the selected
 equivalence. Substitutions that reveal a forgotten observation are excluded. -/
@@ -417,8 +386,7 @@ def quotientSubstitution (substitution : S.Term → S.Term)
 
 theorem quotientSubstitution_identity (state : RelativeState A observations) :
     quotientSubstitution A observations id (by intro _ _ related; exact related) state = state := by
-  induction state using Quotient.inductionOn with
-  | _ term => rfl
+  exact Quotient.inductionOn state fun _ => rfl
 
 theorem quotientSubstitution_comp (first second : S.Term → S.Term)
     (firstRespects : ∀ ⦃left right⦄, A.RelEquiv observations left right →
@@ -429,8 +397,7 @@ theorem quotientSubstitution_comp (first second : S.Term → S.Term)
         (by intro _ _ related; exact secondRespects (firstRespects related)) state =
       quotientSubstitution A observations second secondRespects
         (quotientSubstitution A observations first firstRespects state) := by
-  induction state using Quotient.inductionOn with
-  | _ term => rfl
+  exact Quotient.inductionOn state fun _ => rfl
 
 theorem contextAction_substitution (context : rules.Context) (admissible : A.Admissible context)
     (substitution : S.Term → S.Term)
@@ -442,9 +409,8 @@ theorem contextAction_substitution (context : rules.Context) (admissible : A.Adm
         (contextAction A observations context admissible state) =
       contextAction A observations context admissible
         (quotientSubstitution A observations substitution respects state) := by
-  induction state using Quotient.inductionOn with
-  | _ term =>
-    exact Quotient.sound (A.relEquiv_of_equiv observations (commutes term))
+  refine Quotient.inductionOn state fun term => ?_
+  exact Quotient.sound (A.relEquiv_of_equiv observations (commutes term))
 
 end Relative
 
@@ -463,6 +429,14 @@ open Mettapedia.GSLT.Topos.PresheafEventModalities
 
 variable {C : Type u} [Category.{v} C]
 
+/-- The actual events and endpoints at one context. Restriction laws remain
+part of the presheaf and are not erased by this component view. -/
+def componentSpan (graph : EventGraph.{u, v, w} C) (X : C) :
+    ReductionSpan (graph.vertex.obj X) where
+  Edge := graph.edge.obj X
+  source := graph.source.app X
+  target := graph.target.app X
+
 structure EventObservation (A B : EventGraph.{u, v, w} C) where
   states : NatTrans A.vertex B.vertex
   events : NatTrans A.edge B.edge
@@ -474,6 +448,14 @@ structure EventObservation (A B : EventGraph.{u, v, w} C) where
 namespace EventObservation
 
 variable {A B D : EventGraph.{u, v, w} C}
+
+/-- Endpoint naturality supplies the ordinary span map at each context. -/
+def component (observation : EventObservation A B) (X : C) :
+    SpanMap (componentSpan A X) (componentSpan B X) where
+  states := observation.states.app X
+  events := observation.events.app X
+  source_comm := observation.source_comm X
+  target_comm := observation.target_comm X
 
 theorem states_restrict (observation : EventObservation A B) {X Y : C}
     (restriction : X ⟶ Y) (state : A.vertex.obj X) :
@@ -495,24 +477,17 @@ def identity (A : EventGraph.{u, v, w} C) : EventObservation A A where
   source_comm _ _ := rfl
   target_comm _ _ := rfl
 
+/-- Vertical composition with an explicit constructive naturality proof. -/
+private def composeMaps {P Q R : C ⥤ Type w} (first : NatTrans P Q) (second : NatTrans Q R) :
+    NatTrans P R where
+  app X := first.app X ≫ second.app X
+  naturality _ _ restriction := by
+    rw [← Category.assoc, first.naturality, Category.assoc, second.naturality, ← Category.assoc]
+
 def comp (second : EventObservation B D) (first : EventObservation A B) :
     EventObservation A D where
-  states :=
-    { app := fun X => TypeCat.ofHom (second.states.app X ∘ first.states.app X)
-      naturality := by
-        intro X Y restriction
-        ext state
-        change second.states.app Y (first.states.app Y (A.vertex.map restriction state)) =
-          D.vertex.map restriction (second.states.app X (first.states.app X state))
-        rw [first.states_restrict restriction, second.states_restrict restriction] }
-  events :=
-    { app := fun X => TypeCat.ofHom (second.events.app X ∘ first.events.app X)
-      naturality := by
-        intro X Y restriction
-        ext event
-        change second.events.app Y (first.events.app Y (A.edge.map restriction event)) =
-          D.edge.map restriction (second.events.app X (first.events.app X event))
-        rw [first.events_restrict restriction, second.events_restrict restriction] }
+  states := composeMaps first.states second.states
+  events := composeMaps first.events second.events
   source_comm X event :=
     (second.source_comm X _).trans (congrArg (second.states.app X) (first.source_comm X event))
   target_comm X event :=
@@ -532,75 +507,46 @@ def TargetLifts (observation : EventObservation A B) : Prop :=
 
 theorem comp_sourceLifts (second : EventObservation B D) (first : EventObservation A B)
     (secondLifts : second.SourceLifts) (firstLifts : first.SourceLifts) :
-    (second.comp first).SourceLifts := by
-  intro X state event endpointEq
-  obtain ⟨middle, source, target⟩ := secondLifts X (first.states.app X state) event endpointEq
-  obtain ⟨lift, source', target'⟩ := firstLifts X state middle source
-  exact ⟨lift, source', (congrArg (second.states.app X) target').trans target⟩
+    (second.comp first).SourceLifts :=
+  fun X => SpanMap.comp_sourceLifts (second.component X) (first.component X)
+    (secondLifts X) (firstLifts X)
 
 theorem comp_targetLifts (second : EventObservation B D) (first : EventObservation A B)
     (secondLifts : second.TargetLifts) (firstLifts : first.TargetLifts) :
-    (second.comp first).TargetLifts := by
-  intro X state event endpointEq
-  obtain ⟨middle, target, source⟩ := secondLifts X (first.states.app X state) event endpointEq
-  obtain ⟨lift, target', source'⟩ := firstLifts X state middle target
-  exact ⟨lift, target', (congrArg (second.states.app X) source').trans source⟩
+    (second.comp first).TargetLifts :=
+  fun X => SpanMap.comp_targetLifts (second.component X) (first.component X)
+    (secondLifts X) (firstLifts X)
 
 theorem diamond_pullback (observation : EventObservation A B) (lifts : observation.SourceLifts)
     (predicate : Subfunctor B.vertex) (X : C) (state : A.vertex.obj X) :
     observation.states.app X state ∈ (diamond B predicate).obj X ↔
       state ∈ (diamond A (preimage observation.states predicate)).obj X := by
-  constructor
-  · rintro ⟨event, holds, endpointEq⟩
-    obtain ⟨lift, source, target⟩ := lifts X state event endpointEq
-    refine ⟨lift, ?_, source⟩
-    change observation.states.app X (A.target.app X lift) ∈ predicate.obj X
-    exact target ▸ holds
-  · rintro ⟨event, holds, source⟩
-    refine ⟨observation.events.app X event, ?_,
-      (observation.source_comm X event).trans (congrArg (observation.states.app X) source)⟩
-    change B.target.app X (observation.events.app X event) ∈ predicate.obj X
-    exact (observation.target_comm X event).symm ▸ holds
+  exact (exists_congr fun _ => and_comm).trans
+    (((observation.component X).diamond_pullback (lifts X) (predicate.obj X) state).trans
+      (exists_congr fun _ => and_comm))
 
 theorem box_pullback (observation : EventObservation A B) (lifts : observation.TargetLifts)
     (predicate : Subfunctor B.vertex) (X : C) (state : A.vertex.obj X) :
     observation.states.app X state ∈ (box B predicate).obj X ↔
       state ∈ (box A (preimage observation.states predicate)).obj X := by
-  constructor
-  · intro holds Y restriction event endpointEq
-    have observedTarget : B.target.app Y (observation.events.app Y event) =
-        B.vertex.map restriction (observation.states.app X state) :=
-      ((observation.target_comm Y event).trans
-        (congrArg (observation.states.app Y) endpointEq)).trans
-          (observation.states_restrict restriction state)
-    have observedSource := holds Y restriction (observation.events.app Y event) observedTarget
-    change observation.states.app Y (A.source.app Y event) ∈ predicate.obj Y
-    exact observation.source_comm Y event ▸ observedSource
-  · intro holds Y restriction event endpointEq
-    have observedTarget : B.target.app Y event =
-        observation.states.app Y (A.vertex.map restriction state) :=
-      endpointEq.trans (observation.states_restrict restriction state).symm
-    obtain ⟨lift, target, source⟩ := lifts Y (A.vertex.map restriction state) event observedTarget
-    change B.source.app Y event ∈ predicate.obj Y
-    exact source ▸ holds Y restriction lift target
+  rw [box_spec, box_spec]
+  refine forall_congr' fun Y => forall_congr' fun restriction => ?_
+  rw [← observation.states_restrict restriction]
+  exact (observation.component Y).box_pullback (lifts Y) (predicate.obj Y) _
 
 theorem diamond_preimage (observation : EventObservation A B) (lifts : observation.SourceLifts)
     (predicate : Subfunctor B.vertex) :
     preimage observation.states (diamond B predicate) =
       diamond A (preimage observation.states predicate) := by
   apply Subfunctor.ext
-  funext X
-  funext state
-  exact propext (observation.diamond_pullback lifts predicate X state)
+  exact funext fun X => funext fun state => propext (observation.diamond_pullback lifts predicate X state)
 
 theorem box_preimage (observation : EventObservation A B) (lifts : observation.TargetLifts)
     (predicate : Subfunctor B.vertex) :
     preimage observation.states (box B predicate) =
       box A (preimage observation.states predicate) := by
   apply Subfunctor.ext
-  funext X
-  funext state
-  exact propext (observation.box_pullback lifts predicate X state)
+  exact funext fun X => funext fun state => propext (observation.box_pullback lifts predicate X state)
 
 end EventObservation
 
@@ -609,6 +555,18 @@ def PredicateDescends {A B : EventGraph.{u, v, w} C} (observation : EventObserva
     (predicate : Subfunctor A.vertex) : Prop :=
   ∃ observed : Subfunctor B.vertex, ∀ (X : C) (state : A.vertex.obj X),
     observation.states.app X state ∈ observed.obj X ↔ state ∈ predicate.obj X
+
+/-- Descent is an inverse-image equation of subfunctors, including their
+restriction laws. Modal naturality can therefore transport it directly. -/
+theorem predicateDescends_iff_preimage {A B : EventGraph.{u, v, w} C}
+    (observation : EventObservation A B) (predicate : Subfunctor A.vertex) :
+    PredicateDescends observation predicate ↔
+      ∃ observed, preimage observation.states observed = predicate := by
+  constructor
+  · rintro ⟨observed, reflects⟩
+    exact ⟨observed, Subfunctor.ext (funext fun X => funext fun state => propext (reflects X state))⟩
+  · rintro ⟨observed, rfl⟩
+    exact ⟨observed, fun _ _ => Iff.rfl⟩
 
 /-- The canonical existential image is already restriction-natural. Thus
 pointwise fibre constancy is an exact criterion even for genuine subfunctors. -/
@@ -622,41 +580,24 @@ theorem predicateDescends_iff {A B : EventGraph.{u, v, w} C}
   · intro constant
     refine ⟨image observation.states predicate, ?_⟩
     intro X state
-    constructor
-    · rintro ⟨witness, holds, same⟩
-      exact (Mettapedia.GSLT.Scope.ConstantOnFibers.iff (constant X) same).mp holds
-    · intro holds
-      exact ⟨state, holds, rfl⟩
+    exact (exists_congr fun _ => and_comm).trans
+      (descended_pullback (observation.states.app X) (predicate.obj X) (constant X) state)
 
 theorem diamond_descends {A B : EventGraph.{u, v, w} C}
     (observation : EventObservation A B) (lifts : observation.SourceLifts)
     (predicate : Subfunctor A.vertex) (descends : PredicateDescends observation predicate) :
     PredicateDescends observation (diamond A predicate) := by
-  obtain ⟨observed, reflects⟩ := descends
-  have same : preimage observation.states observed = predicate := by
-    apply Subfunctor.ext
-    funext X
-    funext state
-    exact propext (reflects X state)
-  refine ⟨diamond B observed, ?_⟩
-  intro X state
-  rw [← same]
-  exact observation.diamond_pullback lifts observed X state
+  obtain ⟨observed, rfl⟩ := (predicateDescends_iff_preimage observation predicate).mp descends
+  exact (predicateDescends_iff_preimage observation _).mpr
+    ⟨diamond B observed, observation.diamond_preimage lifts observed⟩
 
 theorem box_descends {A B : EventGraph.{u, v, w} C}
     (observation : EventObservation A B) (lifts : observation.TargetLifts)
     (predicate : Subfunctor A.vertex) (descends : PredicateDescends observation predicate) :
     PredicateDescends observation (box A predicate) := by
-  obtain ⟨observed, reflects⟩ := descends
-  have same : preimage observation.states observed = predicate := by
-    apply Subfunctor.ext
-    funext X
-    funext state
-    exact propext (reflects X state)
-  refine ⟨box B observed, ?_⟩
-  intro X state
-  rw [← same]
-  exact observation.box_pullback lifts observed X state
+  obtain ⟨observed, rfl⟩ := (predicateDescends_iff_preimage observation predicate).mp descends
+  exact (predicateDescends_iff_preimage observation _).mpr
+    ⟨box B observed, observation.box_preimage lifts observed⟩
 
 end Presheaf
 

@@ -112,6 +112,21 @@ inductive Movement where
   | answer (value : Atom)
   deriving Repr
 
+/-- The control syntax of this profile. It treats `match` as a primitive call whose
+template is returned as data, as `StdLib.apply` does; the list-valued machine of
+`Eval` runs a three-argument `match` body once per row (`DeclarativeSpec.controlForm`).
+Bringing this profile's `match` in line with that is open. -/
+def eagerControlForm : Atom → Bool
+  | .expression [.symbol "let", _, _, _]
+  | .expression [.symbol "let*", .expression _, _]
+  | .expression [.symbol "case", _, .expression _]
+  | .expression [.symbol "if", _, _, _]
+  | .expression [.symbol "collapse", _]
+  | .expression [.symbol "superpose", .expression _]
+  | .expression [.symbol "empty"]
+  | .expression [.symbol "quote", _] => true
+  | _ => false
+
 /-- Existing equation selection can only return evaluation controls. This
 adapter retains the selected bindings, body and the new scalar continuation. -/
 def clauseBranch (frames : List Frame) : Eval.Control → Option Branch
@@ -392,12 +407,12 @@ inductive LocalTransition (program : Program) : World → Branch → World → M
       LocalTransition program world ⟨.evaluate bindings (.expression [.symbol "quote", expression]), frames⟩
         world (.next ⟨.returned (applySubst bindings expression), frames⟩)
   | call_enter {world bindings head arguments frames}
-      (notControl : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false)
+      (notControl : eagerControlForm (.expression (.symbol head :: arguments)) = false)
       (callable : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true) :
       LocalTransition program world ⟨.evaluate bindings (.expression (.symbol head :: arguments)), frames⟩
         world (.next ⟨.arguments bindings (.function head) arguments [] 0, frames⟩)
   | data_enter {world bindings head arguments frames}
-      (notControl : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false)
+      (notControl : eagerControlForm (.expression (.symbol head :: arguments)) = false)
       (uncallable : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false) :
       LocalTransition program world ⟨.evaluate bindings (.expression (.symbol head :: arguments)), frames⟩
         world (.next ⟨.arguments bindings .data (.symbol head :: arguments) [] 0, frames⟩)
@@ -450,10 +465,10 @@ theorem local_transition_step {program : Program} {world after : World}
     simp only [localStep, matched]
   case call_enter =>
     simp only [localStep]
-    split <;> simp_all [DeclarativeSpec.controlForm] <;> aesop
+    split <;> simp_all [eagerControlForm] <;> aesop
   case data_enter =>
     simp only [localStep]
-    split <;> simp_all [DeclarativeSpec.controlForm]
+    split <;> simp_all [eagerControlForm]
 
 theorem transition_step {program : Program} {source target : Configuration}
     (transition : Transition program source target) : step program source = some target := by
@@ -593,12 +608,12 @@ theorem local_step_transition {program : Program} {world after : World}
           · split at computed
             · rcases Option.some.inj computed with ⟨rfl, rfl⟩
               apply LocalTransition.call_enter _ (by assumption)
-              simp only [DeclarativeSpec.controlForm]
+              simp only [eagerControlForm]
               split <;> simp_all
             · rename_i uncallable
               rcases Option.some.inj computed with ⟨rfl, rfl⟩
               apply LocalTransition.data_enter _ (Bool.eq_false_iff.mpr uncallable)
-              simp only [DeclarativeSpec.controlForm]
+              simp only [eagerControlForm]
               split <;> simp_all
           · rcases Option.some.inj computed with ⟨rfl, rfl⟩
             apply LocalTransition.expression_enter
@@ -974,7 +989,7 @@ theorem selected_clause_shape (program : Program) (head : String) (values : List
   unfold Eval.clauses at member
   obtain ⟨equation, _, selected⟩ := List.mem_filterMap.mp member
   split at selected
-  · cases matched : SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values) with
+  · cases matched : SpaceSemantics.matchValue.matchValues [] equation.arguments values with
     | none => simp [matched] at selected
     | some bindings =>
         simp only [matched, Option.map_some, Option.some.injEq] at selected

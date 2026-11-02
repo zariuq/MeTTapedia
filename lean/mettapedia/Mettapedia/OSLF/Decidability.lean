@@ -212,7 +212,7 @@ theorem check_sat_iff_semFuel
           Pattern.collection kind rightParts none), ?_, ?_⟩
         · refine List.mem_map.mpr ⟨leftParts.length, ?_, ?_⟩
           · simp
-          · simp [cutSplits]
+          · simp
         · show (match check step I_check n (Pattern.collection kind leftParts none) φ₁,
                   check step I_check n (Pattern.collection kind rightParts none) φ₂ with
                 | CheckResult.sat, CheckResult.sat => CheckResult.sat
@@ -278,7 +278,7 @@ theorem check_sat_iff_semFuel
           (OSLFFormula.closedAt 1 φ' && OSLFFormula.positiveIn 0 φ') = true
       · simp only [check, semFuel, guard, if_true]
         exact ih
-      · simp only [check, semFuel, guard, if_false]
+      · simp only [check, semFuel, guard]
         simp
 
 /-! ## Sound Lift: semFuel → sem

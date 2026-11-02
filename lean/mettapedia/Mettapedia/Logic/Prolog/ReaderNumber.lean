@@ -57,27 +57,12 @@ private def parseNatBase (base : Nat) (characters : List Char) :
           | none => .error (.invalidDigit character base)
   exact loop characters 0 false false
 
-private def characterEscape? : Char -> Option Char
-  | 'a' => some '\u0007'
-  | 'b' => some '\u0008'
-  | 'e' => some '\u001b'
-  | 'f' => some '\u000c'
-  | 'n' => some '\n'
-  | 'r' => some '\r'
-  | 't' => some '\t'
-  | 'v' => some '\u000b'
-  | '\\' => some '\\'
-  | '\'' => some '\''
-  | '"' => some '"'
-  | '`' => some '`'
-  | _ => none
-
 private def parseCharacterCode (lexeme : String) : Except Error Constant :=
   match lexeme.toList with
   | ['0', '\'', character] =>
       .ok (.integer (Int.ofNat character.toNat))
   | ['0', '\'', '\\', escaped] =>
-      match characterEscape? escaped with
+      match ReaderLexer.simpleEscape escaped with
       | some character => .ok (.integer (Int.ofNat character.toNat))
       | none => .error (.invalidCharacterCode lexeme)
   | _ => .error (.invalidCharacterCode lexeme)

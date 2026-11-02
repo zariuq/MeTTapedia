@@ -4,12 +4,14 @@ import Mettapedia.GSLT.LanguageDef.Interaction.Migration
 /-!
 # The interaction cut of CCS, and what it moves
 
-Synchronisation is an interaction cut in the plainest form.  The program is a
-process prefixed by an action, the environment a process prefixed by the
-complementary action, and the two prefixes carry the name that must match.
-The contraction sets both continuations free in the parallel composition
-where the prefixes stood.  Nothing is substituted, nothing is relocated and
-nothing is guarded again: the migration mode is none.
+The reaction of CCS is an interaction cut whose operands meet the contact as summands. The program is a process
+prefixed by an action, the environment a process prefixed by the complementary action, and the two prefixes carry the
+name that must match. Each prefix is one summand of a sum standing in the parallel composition; the cut selects it and
+discards the other summands of its sum (`ccs_discards_others`). This is the additive cut: a choice is resolved by the
+interaction itself.
+
+The contraction sets both continuations free in the parallel composition where the sums stood. Nothing is substituted,
+nothing is relocated and nothing is guarded again: the migration mode is none.
 -/
 
 set_option autoImplicit false
@@ -25,14 +27,17 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 /-- Prefixing by an action. -/
 def ccsActionConstructor : DeclaredConstructor ccsValidatedLanguageDef :=
-  ⟨ccsCalc.terms[2], List.getElem_mem (by simp [ccsCalc])⟩
+  ⟨ccsCalc.terms[4], List.getElem_mem (by simp [ccsCalc])⟩
 
 /-- Prefixing by a co-action. -/
 def ccsCoActionConstructor : DeclaredConstructor ccsValidatedLanguageDef :=
-  ⟨ccsCalc.terms[3], List.getElem_mem (by simp [ccsCalc])⟩
+  ⟨ccsCalc.terms[5], List.getElem_mem (by simp [ccsCalc])⟩
 
-/-- The program side: an action prefix, its name the subject and the prefixed
-process the continuation. -/
+/-- The sum is a declared choice: a wrapped multiset of guards. -/
+theorem ccsSum_isChoice : IsChoice ccsSumConstructor.1 :=
+  ⟨rfl, "gs", .base "Guard", rfl⟩
+
+/-- The program side: an action prefix, its name the subject and the prefixed process the continuation. -/
 def ccsProgramIntroduction : InteractionOperandProfile ccsInteractivePresentation where
   constructor := ccsActionConstructor
   schemaTerm := .apply "CAct" [.fvar "a", .fvar "p"]
@@ -73,7 +78,7 @@ def ccsCoreContact : CoreContactPresentation ccsValidatedLanguageDef where
   representation := ccsInteractivePresentation.contactRepresentation
   representsCore := by rfl
 
-/-- Synchronisation as an interaction cut. -/
+/-- **The reaction as an interaction cut**, each prefix a summand of a sum. -/
 def ccsInteractionCut : InteractionCutPresentation ccsIGSLT where
   program := ccsProgramIntroduction
   environment := ccsEnvironmentIntroduction
@@ -89,51 +94,56 @@ def ccsInteractionCut : InteractionCutPresentation ccsIGSLT where
       change "CCoAct" = "CPar" at labels
       exact (by decide : ("CCoAct" : String) ≠ "CPar") labels)
   sourceShape :=
-    { core := ccsSyncRewrite.left
+    { core := ccsReactRewrite.left
       coreShape :=
-        (CutSourceShape.collection [] (some "rest") rfl :
+        (CutSourceShape.collection [] (some "rest") (.summand ccsSumConstructor "m" ccsSum_isChoice)
+            (.summand ccsSumConstructor "n" ccsSum_isChoice) rfl :
           CutSourceShape ccsCoreContact
             ccsProgramIntroduction.schemaTerm
             ccsEnvironmentIntroduction.schemaTerm
             (.collection .hashBag
-              (ccsProgramIntroduction.schemaTerm ::
-                ccsEnvironmentIntroduction.schemaTerm :: [])
+              (.apply "CSum" [.collection .hashBag [ccsProgramIntroduction.schemaTerm] (some "m")] ::
+                .apply "CSum" [.collection .hashBag [ccsEnvironmentIntroduction.schemaTerm] (some "n")] :: [])
               (some "rest")))
       envelope := .hole
       fillsSource := rfl }
   sourceEnvelopeInSignature := .hole "Proc"
   interactionPremisesEmpty := rfl
   residual := .constructor ccsParallelConstructor (by
-    change RepresentedBy ccsParallelConstructor.1 ccsSyncRewrite.right
+    change RepresentedBy ccsParallelConstructor.1 ccsReactRewrite.right
     exact ⟨"ps", .base "Proc", rfl⟩)
   subjectsAgree := .nominal (.fvar "a") rfl rfl
 
-/-- The two surfaces are one name, matched explicitly: the subject is carried
-nominally. -/
+/-- The two surfaces are one name, matched explicitly: the subject is carried nominally. -/
 theorem ccs_subject_nominal :
     ccsInteractionCut.program.subject.pattern = some (.fvar "a") ∧
       ccsInteractionCut.environment.subject.pattern = some (.fvar "a") :=
   ⟨rfl, rfl⟩
 
-/-- No constructor position of CCS is a reduction position: a prefix guards
-its continuation. -/
-theorem ccs_reductionPositions : reductionPositions ccsCalc = [] := by
+/-- **The cut resolves both choices**: the other summands of the two sums occur in its source and not in its
+contractum. -/
+theorem ccs_discards_others :
+    "m" ∈ ccsReactRewrite.left.freeFvarNames ∧ "n" ∈ ccsReactRewrite.left.freeFvarNames ∧
+      "m" ∉ ccsReactRewrite.right.freeFvarNames ∧ "n" ∉ ccsReactRewrite.right.freeFvarNames := by
+  simp [ccsReactRewrite, Pattern.freeFvarNames]
+
+/-- **The one reduction position of CCS is the body of a restriction.** No position of a prefix is one: a prefix
+guards its continuation. -/
+theorem ccs_reductionPositions : reductionPositions ccsCalc = [("CNu", 0)] := by
   decide +kernel
 
-/-- **CCS moves nothing.**  The contraction is pure release. -/
+/-- **CCS moves nothing.** The contraction is pure release. -/
 theorem ccs_migrationMode : ccsInteractionCut.migrationMode = .none := by
   decide +kernel
 
-/-- The environment brings exactly its continuation, and it is not bound into
-the program's. -/
+/-- The environment brings exactly its continuation, and it is not bound into the program's. -/
 theorem ccs_not_bindsFromEnvironment : ¬ ccsInteractionCut.BindsFromEnvironment := by
   decide +kernel
 
-/-- Each continuation appears in every instance of the contractum as it was
-matched: the reduct is the parallel composition of the two continuations and
-the rest. -/
+/-- Each continuation appears in every instance of the contractum as it was matched: the reduct is the parallel
+composition of the two continuations and the rest. -/
 theorem ccs_releases (bindings : Bindings) :
-    applyBindings bindings ccsSyncRewrite.right =
+    applyBindings bindings ccsReactRewrite.right =
       .collection .hashBag
         ([applyBindings bindings (.fvar "p"), applyBindings bindings (.fvar "q")] ++
           (restResolution bindings .hashBag (some "rest")).1)

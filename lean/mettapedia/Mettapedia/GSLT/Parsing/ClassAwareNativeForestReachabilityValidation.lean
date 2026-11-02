@@ -111,10 +111,42 @@ theorem reachableWithin_sound
           inductionHypothesis candidateMember)
         (by simpa [reachableWithin] using member)
 
-/-- Every physical node occurrence appears in the finite root closure. -/
+/-- Cache the first stable closure instead of expanding it for the remaining
+rounds. The second component certifies stability operationally. -/
+def reachableCached (view : ForestView) : Nat → List Nat × Bool
+  | 0 => (view.roots.eraseDups, false)
+  | rounds + 1 =>
+      let previous := reachableCached view rounds
+      if previous.2 then previous
+      else
+        let next := expand view previous.1
+        (next, next == previous.1)
+
+theorem reachableCached_exact (view : ForestView) (rounds : Nat) :
+    (reachableCached view rounds).1 = reachableWithin view rounds ∧
+    ((reachableCached view rounds).2 = true →
+      expand view (reachableCached view rounds).1 = (reachableCached view rounds).1) := by
+  induction rounds with
+  | zero => simp [reachableCached, reachableWithin]
+  | succ rounds ih =>
+    by_cases stable : (reachableCached view rounds).2 = true
+    · simp only [reachableCached, stable, ↓reduceIte, reachableWithin]
+      exact ⟨by rw [← ih.1, ih.2 stable], fun _ => ih.2 stable⟩
+    · simp only [reachableCached, stable, Bool.false_eq_true, ↓reduceIte, reachableWithin]
+      constructor
+      · rw [ih.1]
+      · intro same
+        have eq : expand view (reachableCached view rounds).1 = (reachableCached view rounds).1 :=
+          by simpa only [beq_iff_eq] using same
+        rw [eq]
+        exact eq
+
+/-- Every physical node occurrence appears in the finite root closure. The
+closure is computed once and shared by all membership checks. -/
 def validateReachable (view : ForestView) : Bool :=
+  let reached := (reachableCached view view.nodes.length).1
   (List.range view.nodes.length).all fun index =>
-    decide (index ∈ reachableWithin view view.nodes.length)
+    decide (index ∈ reached)
 
 /-- The executable closure check proves exactly the reachability premise of
 `Represents`. -/
@@ -122,6 +154,7 @@ theorem validateReachable_sound
     {view : ForestView} (arrays : ForestArraysCoherent view)
     (accepted : validateReachable view = true) :
     ∀ index node, view.nodes[index]? = some node → Reachable view index := by
+  simp only [validateReachable, (reachableCached_exact view view.nodes.length).1] at accepted
   intro index node nodeAt
   rw [List.getElem?_eq_some_iff] at nodeAt
   have indexMember : index ∈ List.range view.nodes.length := by

@@ -166,6 +166,13 @@ theorem binaryBits_length (n : Nat) :
 def e1encode (x : BinString) : BinString :=
   List.replicate x.length true ++ [false] ++ x
 
+theorem e1encode_primrec : Primrec e1encode := by
+  have markers : Primrec fun input : BinString => input.map fun _ => true :=
+    Primrec.list_map Primrec.id (Primrec.const true).to₂
+  exact (Primrec.list_append.comp
+    (Primrec.list_append.comp markers (Primrec.const [false])) Primrec.id).of_eq
+      (fun input => by simp [e1encode])
+
 /-- Count the leading `true` bits; return the count and the remainder. -/
 def countLeadingTrues : BinString → Nat × BinString
   | [] => (0, [])
@@ -416,6 +423,10 @@ theorem e1encode_length (x : BinString) :
 /-- Second self-delimiting code: `e1encode (binaryBits |x|) ++ x`. -/
 def e2encode (x : BinString) : BinString :=
   e1encode (binaryBits x.length) ++ x
+
+theorem e2encode_primrec : Primrec e2encode :=
+  Primrec.list_append.comp
+    (e1encode_primrec.comp (binaryBits_primrec.comp Primrec.list_length)) Primrec.id
 
 /-- Decode a leading binary-header payload. -/
 def e2decode (w : BinString) : Option (BinString × BinString) :=
@@ -674,6 +685,8 @@ theorem unary_overhead_exceeds_e2 (k : Nat) :
 #print axioms ofBinaryBits_binaryBits
 #print axioms e1_prefixFree
 #print axioms e2decode_primrec
+#print axioms e1encode_primrec
+#print axioms e2encode_primrec
 #print axioms e2decode_append_of_success
 #print axioms e2decode_head_length_le
 #print axioms e2_prefixFree

@@ -118,7 +118,7 @@ def historyCut : InteractionCutPresentation historyTheory where
       coreShape := by
         change CutSourceShape historyCoreContact historyProgramOperand.schemaTerm
           historyEnvironmentOperand.schemaTerm meetRule.left
-        exact CutSourceShape.binary rfl
+        exact CutSourceShape.binary .itself .itself rfl
       envelope := .hole
       fillsSource := rfl }
   sourceEnvelopeInSignature := .hole "Hist"
@@ -197,7 +197,8 @@ def equationRetypableCheck (equation : Equation) : Bool :=
       (costWrappedEquation historyTheory equation).left (.base costWrappedSortName) &&
     checkHasType historyRetyping.generatedLanguage
       (FreeTypeContext.ofList (costWrappedEquation historyTheory equation).typeContext) []
-      (costWrappedEquation historyTheory equation).right (.base costWrappedSortName)
+      (costWrappedEquation historyTheory equation).right (.base costWrappedSortName) &&
+    equation.bindings.isNone
 
 /-- Every authored equation passes the test. -/
 theorem historyEquations_retypableCheck :
@@ -210,10 +211,11 @@ theorem historyRetyping_equationsRetypable : EquationsRetypable historyRetyping 
   intro equation membership
   have checked := List.all_eq_true.mp historyEquations_retypableCheck equation membership
   simp only [equationRetypableCheck, Bool.and_eq_true, List.isEmpty_iff] at checked
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨premiseFree, leftStable⟩, rightStable⟩, leftCorrect⟩, rightCorrect⟩,
-    baseLeft⟩, baseRight⟩, wrappedLeft⟩, wrappedRight⟩ := checked
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨premiseFree, leftStable⟩, rightStable⟩, leftCorrect⟩, rightCorrect⟩,
+    baseLeft⟩, baseRight⟩, wrappedLeft⟩, wrappedRight⟩, undeclared⟩ := checked
   exact
     { premiseFree := premiseFree
+      undeclared := Option.isNone_iff_eq_none.mp undeclared
       leftInstantiationStable := leftStable
       rightInstantiationStable := rightStable
       leftMatchCorrect := leftCorrect

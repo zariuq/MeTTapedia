@@ -70,11 +70,12 @@ inductive Trace (p : Protocol) : Context → List Event → Context → Prop whe
       (enabled : Enabled p first event middle) (after : Trace p middle rest last) :
       Trace p first (event :: rest) last
 
-inductive SafeStop (c : Context) : Status → Prop where
+inductive SafeStop (p : Protocol) (c : Context) : Status → Prop where
   | returned (outcome : Outcome) (empty : c.owned = [])
-      (decline : outcome = .declined → c.irreversible = false) :
-      SafeStop c (.returned outcome)
-  | noReply (name : String) : SafeStop c (.noReply name)
+      (decline : outcome = .declined → c.irreversible = false)
+      (facts : ∀ fact ∈ exitRequires p outcome, fact ∈ c.facts) :
+      SafeStop p c (.returned outcome)
+  | noReply (name : String) : SafeStop p c (.noReply name)
 
 theorem Enabled.owned_nodup {p : Protocol} {first last : Context} {event : Event}
     (enabled : Enabled p first event last) (unique : first.owned.Nodup) :
@@ -88,16 +89,35 @@ theorem Enabled.owned_nodup {p : Protocol} {first last : Context} {event : Event
   | release id resource => exact unique.erase id
   | transfer id resource => exact unique.erase id
 
+/-- A certificate may be kept across every hook only if none invalidates it. -/
+def StableFact (p : Protocol) (fact : String) : Prop :=
+  ∀ hook ∈ p.hooks, fact ∉ hook.invalidates
+
+theorem callContext_mem (c : Context) (hook : Hook) (reply : Bool) (fact : String) :
+    fact ∈ (callContext c hook reply).facts ↔
+      (reply = true ∧ fact ∈ hook.proves) ∨
+      (fact ∈ c.facts ∧ fact ∉ hook.invalidates) := by
+  cases reply <;> simp [callContext]
+
+theorem callContext_invalidated (c : Context) (hook : Hook) (reply : Bool) (fact : String)
+    (invalidated : fact ∈ hook.invalidates)
+    (notReproved : reply = true → fact ∉ hook.proves) :
+    fact ∉ (callContext c hook reply).facts := by
+  rw [callContext_mem]
+  rintro (⟨yes, proved⟩ | ⟨_, survived⟩)
+  · exact notReproved yes proved
+  · exact survived invalidated
+
 theorem Enabled.facts_preserved {p : Protocol} {first last : Context} {event : Event}
-    (enabled : Enabled p first event last) : ∀ fact ∈ first.facts, fact ∈ last.facts := by
+    (enabled : Enabled p first event last) {fact : String} (stable : StableFact p fact)
+    (known : fact ∈ first.facts) : fact ∈ last.facts := by
   cases enabled with
-  | call id hook reply =>
-      cases reply with
-      | false => exact fun _ h => h
-      | true => exact fun _ h => List.mem_append_right _ h
-  | acquire id resource reply => cases reply <;> exact fun _ h => h
-  | release => exact fun _ h => h
-  | transfer => exact fun _ h => h
+  | call id hook reply declared =>
+      exact (callContext_mem _ _ _ _).mpr
+        (Or.inr ⟨known, stable hook (findHook_spec declared).1⟩)
+  | acquire id resource reply => cases reply <;> exact known
+  | release => exact known
+  | transfer => exact known
 
 theorem Enabled.irreversible_mono {p : Protocol} {first last : Context} {event : Event}
     (enabled : Enabled p first event last) (effect : first.irreversible = true) :
@@ -115,11 +135,12 @@ theorem Trace.owned_nodup {p : Protocol} {first last : Context} {calls : List Ev
   | cons enabled after ih => exact ih (enabled.owned_nodup unique)
 
 theorem Trace.facts_preserved {p : Protocol} {first last : Context} {calls : List Event}
-    (trace : Trace p first calls last) : ∀ fact ∈ first.facts, fact ∈ last.facts := by
+    (trace : Trace p first calls last) {fact : String} (stable : StableFact p fact)
+    (known : fact ∈ first.facts) : fact ∈ last.facts := by
   induction trace with
-  | nil => exact fun _ h => h
+  | nil => exact known
   | cons enabled after ih =>
-      exact fun fact h => ih fact (enabled.facts_preserved fact h)
+      exact ih (enabled.facts_preserved stable known)
 
 theorem Trace.irreversible_mono {p : Protocol} {first last : Context} {calls : List Event}
     (trace : Trace p first calls last) (effect : first.irreversible = true) :
@@ -242,11 +263,11 @@ theorem WellFormed.source_safe {World : Type} {p : Protocol} {c : Context}
     {body : Body} (wf : WellFormed p c body) (host : Host World)
     (world : World) (replies : List Bool) :
     ∃ last, Trace p c (evalSource p host body world replies).calls last ∧
-      SafeStop last (evalSource p host body world replies).status := by
+      SafeStop p last (evalSource p host body world replies).status := by
   induction wf generalizing world replies with
-  | ret c outcome empty decline =>
+  | ret c outcome empty decline facts =>
       exact ⟨c, by simp [evalSource, stop, Trace.nil], by
-        simpa [evalSource, stop] using SafeStop.returned outcome empty decline⟩
+        simpa [evalSource, stop] using SafeStop.returned outcome empty decline facts⟩
   | call c id hook yes no declared facts owners yesWF noWF ihYes ihNo =>
       cases replies with
       | nil =>
@@ -305,9 +326,23 @@ theorem lower_target_safe {World : Type} {p : Protocol} {c : Context} {body : Bo
     (wf : WellFormed p c body) (target : CStmt) (compiled : lower p body = some target)
     (host : Host World) (world : World) (replies : List Bool) :
     ∃ last, Trace p c (evalC host target world replies).calls last ∧
-      SafeStop last (evalC host target world replies).status := by
+      SafeStop p last (evalC host target world replies).status := by
   rw [lower_eval_exact p host body target compiled]
   exact wf.source_safe host world replies
+
+/-- Every admitted return carries its declared exit certificates, including
+the wake registration required by a suspension contract. -/
+theorem lower_return_requires_facts {World : Type} {p : Protocol} {c : Context}
+    {body : Body} (wf : WellFormed p c body) (target : CStmt)
+    (compiled : lower p body = some target) (host : Host World)
+    (world : World) (replies : List Bool) (outcome : Outcome)
+    (returned : (evalC host target world replies).status = .returned outcome) :
+    ∃ last, Trace p c (evalC host target world replies).calls last ∧
+      ∀ fact ∈ exitRequires p outcome, fact ∈ last.facts := by
+  obtain ⟨last, trace, safe⟩ := lower_target_safe wf target compiled host world replies
+  rw [returned] at safe
+  cases safe with
+  | returned _ _ _ facts => exact ⟨last, trace, facts⟩
 
 theorem lower_return_discharges_owners {World : Type} {p : Protocol} {c : Context}
     {body : Body} (wf : WellFormed p c body) (target : CStmt)
@@ -329,7 +364,7 @@ theorem lower_decline_has_no_effect {World : Type} {p : Protocol}
   obtain ⟨last, trace, safe⟩ := lower_target_safe wf target compiled host world replies
   rw [declined] at safe
   cases safe with
-  | returned _ _ clean => exact trace.no_effect_of_false metadata (clean rfl)
+  | returned _ _ clean _ => exact trace.no_effect_of_false metadata (clean rfl)
 
 theorem lower_decline_has_no_publication {World : Type} {p : Protocol}
     (metadata : MetadataValid p) {c : Context} {body : Body} (wf : WellFormed p c body)
@@ -340,7 +375,7 @@ theorem lower_decline_has_no_publication {World : Type} {p : Protocol}
   obtain ⟨last, trace, safe⟩ := lower_target_safe wf target compiled host world replies
   rw [declined] at safe
   cases safe with
-  | returned _ _ clean => exact trace.no_irreversible_of_false metadata (clean rfl)
+  | returned _ _ clean _ => exact trace.no_irreversible_of_false metadata (clean rfl)
 
 theorem lower_decline_has_no_transfer {World : Type} {p : Protocol}
     (metadata : MetadataValid p) {c : Context} {body : Body} (wf : WellFormed p c body)
@@ -363,7 +398,7 @@ theorem lower_no_decline_after_effect {World : Type} {p : Protocol} {c : Context
   obtain ⟨last, trace, safe⟩ := lower_target_safe wf target compiled host world replies
   rw [declined] at safe
   cases safe with
-  | returned _ _ clean =>
+  | returned _ _ clean _ =>
       have marked := trace.irreversible_mono effect
       have unmarked := clean rfl
       simp_all

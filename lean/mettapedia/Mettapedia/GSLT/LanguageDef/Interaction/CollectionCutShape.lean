@@ -107,7 +107,8 @@ theorem operands_of_collection_left (cut : InteractionCutPresentation theory)
     (left : theory.presentation.interactionRewrite.1.left =
       .collection collectionType [first, second] rest)
     (firstPlain : containsWideCollection first = false)
-    (secondPlain : containsWideCollection second = false) :
+    (secondPlain : containsWideCollection second = false)
+    (firstDirect : choiceForm first = false) (secondDirect : choiceForm second = false) :
     cut.program.schemaTerm = first ∧ cut.environment.schemaTerm = second := by
   have fills : cut.sourceShape.envelope.fill cut.sourceShape.core =
       .collection collectionType [first, second] rest :=
@@ -119,20 +120,21 @@ theorem operands_of_collection_left (cut : InteractionCutPresentation theory)
   generalize cut.program.schemaTerm = program at shape
   generalize cut.environment.schemaTerm = environment at shape
   cases shape with
-  | binary binaryContact => exact absurd binaryContact collectionCore
-  | @collection coreType context coreRest _ =>
+  | binary _ _ binaryContact => exact absurd binaryContact collectionCore
+  | @collection coreType programTerm environmentTerm context coreRest programOccurs environmentOccurs _ =>
       have coreShaped : containsWideCollection
-          (.collection coreType (program :: environment :: context) coreRest) = true := by
+          (.collection coreType (programTerm :: environmentTerm :: context) coreRest) = true := by
         simp [containsWideCollection]
       cases envelope with
       | hole =>
           simp only [OneHoleContext.fill, Pattern.collection.injEq, List.cons.injEq] at fills
-          exact ⟨fills.2.1.1, fills.2.1.2.1⟩
+          obtain ⟨-, ⟨rfl, rfl, -⟩, -⟩ := fills
+          exact ⟨programOccurs.eq_of_choiceForm firstDirect, environmentOccurs.eq_of_choiceForm secondDirect⟩
       | collection frameType before inner after frameRest =>
           simp only [OneHoleContext.fill, Pattern.collection.injEq] at fills
           have innerShaped := containsWideCollection_fill inner coreShaped
           have member : inner.fill
-              (.collection coreType (program :: environment :: context) coreRest) ∈
+              (.collection coreType (programTerm :: environmentTerm :: context) coreRest) ∈
                 [first, second] := by
             rw [← fills.2.1]
             simp

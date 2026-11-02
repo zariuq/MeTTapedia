@@ -63,21 +63,6 @@ theorem PiRawStep.bounded {source target : Pattern} (firing : PiRawStep source t
       · exact .nil _
       · exact piComm_apply_exact channel body datum _
     exact root.mono_fuel (by change 1 ≤ piContextDepthList elements + 1; omega)
-  | @repComm elements tail i hi j hj channel binder body datum input output =>
-    have root : StepAt (engineBasePremises RelationEnv.empty) piCalc 1
-        (.collection .hashBag elements tail)
-        (.collection .hashBag
-          ([instantiateBVar datum body, .apply "PiRep" [channel, .lambda none body]] ++
-            (elements.eraseIdx i).eraseIdx j) none) := by
-      apply StepAt.rule (rule := piRepCommRewrite)
-        (initialBindings := piCommMatchedBindings channel body datum ((elements.eraseIdx i).eraseIdx j))
-        (finalBindings := piCommMatchedBindings channel body datum ((elements.eraseIdx i).eraseIdx j))
-      · rw [piCalc_rewrites]; simp
-      · rw [matchPatternForRule_eq_syntactic]
-        exact piExchange_selected_match "PiRep" i hi j hj channel binder body datum input output
-      · exact .nil _
-      · exact piRepComm_apply_exact channel body datum _
-    exact root.mono_fuel (by change 1 ≤ piContextDepthList elements + 1; omega)
   | @par elements tail i hi target _ ih =>
     have inner := ih.mono_fuel (piContextDepthList_member (List.getElem_mem hi))
     change StepAt _ _ (piContextDepthList elements + 1) _ _

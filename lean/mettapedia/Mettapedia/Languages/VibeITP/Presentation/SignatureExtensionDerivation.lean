@@ -113,8 +113,8 @@ theorem derives_theory_extension {source target : Theory} {allocated : Nat}
 
 /-- A compatible proof calculus whose derivations survive admitted theory
 growth. This law is proved separately for each concrete calculus. -/
-class HostedCalculus (D : Theory → List ExecutionObservation → Term → Prop)
-    extends ExecutionCalculus D : Prop where
+class HostedCalculus (D : Theory → List ExecutionObservation → Term → Prop) : Prop
+    extends ExecutionCalculus D where
   theory_extension {source target : Theory} {allocated : Nat}
       {before after : List ExecutionObservation} {statement : Term} :
     Hosted source allocated → TheoryExt source target →

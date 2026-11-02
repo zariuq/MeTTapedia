@@ -2,13 +2,15 @@ import Mettapedia.OSLF.MeTTaIL.EquationFrontierBinderProfileExecution
 import Mettapedia.OSLF.MeTTaIL.EquationFrontierBinderProfileCoverage
 import Mettapedia.GSLT.LanguageDef.EquationSemantics
 import Mettapedia.OSLF.MeTTaIL.ContextualBindingExtension
+import Mettapedia.OSLF.MeTTaIL.ScopedMatchingInversion
 
 /-!
 # Generated presentation and alpha admission for the finite binder profile
 
-The raw matcher ignores source binder display names. Consequently the raw
-equation class contains noncanonical named presentations even when its source
-is canonical. The admitted semantic carrier uses the existing alpha quotient;
+The guarded extrusion declares its binding dependencies, so its instances are
+read through the scoped matcher, which ignores source binder display names.
+Consequently the equation class contains noncanonical named presentations even
+when its source is canonical. The admitted semantic carrier uses the existing alpha quotient;
 erasure retains all binding indices, keys, constructor shapes and observations.
 The comparison below is with the authored equation and operational relations,
 not a definition of those relations from the finite executor.
@@ -23,6 +25,7 @@ open Syntax Engine Match ContextualStep DerivedContexts
 open ReflectiveCanonical ReflectiveSubstitution
 open Mettapedia.OSLF.MeTTaIL.EquationFrontierBinderProfile
 open Mettapedia.GSLT.LanguageDef.EquationSemantics
+open RuleBinding (ContextualValue instantiateValue? recoverValue?)
 
 def base (allowed : List Token) : BasePremiseEvaluator :=
   engineBasePremises (provider allowed)
@@ -58,13 +61,7 @@ theorem displayed_alpha_iff {ambient : Nat} (leftBinder rightBinder : Option Str
   rw [Pattern.AlphaEquiv, displayed_erasure, displayed_erasure]
   exact state_pattern_injective.eq_iff
 
-theorem raw_match_displayed_forward {ambient : Nat} (binder : Option String)
-    (name : Fin (ambient + 1)) (key : Token) :
-    matchPattern extrusionEquation.left (displayedPattern binder ⟨.tucked, name, key⟩) =
-      [rawCaptured name.val key] := by
-  simp [displayedPattern, extrusionEquation, ScopedEquationControls.extrusionEquation,
-    pair, matchPattern, matchArgs, mergeBindings, rawCaptured]
-
+/-- The rules' guard premise, read by the ordinary matcher. -/
 theorem raw_premises_spec (allowed : List Token) (index : Nat) (key : Token)
     (fuel : Nat) (result : Bindings) :
     PremisesAt (base allowed) language fuel (rawCaptured index key)
@@ -78,22 +75,303 @@ theorem raw_premises_spec (allowed : List Token) (index : Nat) (key : Token)
   simp [extrusionEquation, applyPremisesWithEnv, premiseStepWithEnv,
     relation_query_results, and_comm]
 
-/-- The original raw schema already produces canonical targets from named
-sources; no additional alpha equation has been assumed. -/
-theorem raw_named_forward {ambient : Nat} (allowed : List Token) (binder : Option String)
+section Declared
+
+open RuleBinding ScopedRuleMatching
+open ScopedEquationExecution (Orientation orientedRule)
+
+theorem extrusion_not_raw : readsRaw extrusionEquation = false := by decide +kernel
+
+private theorem builtin_allow (arguments : List Pattern) :
+    builtinRelationTuples language "allow" arguments = [] := by
+  cases arguments with
+  | nil => rfl
+  | cons _ rest => cases rest <;> rfl
+
+private theorem query_row (value : Pattern) (key : Token) :
+    matchRelationArgs [("Q", value)] [.fvar "Q"] [guard key] =
+      if guard key = value then [[]] else [] := by
+  by_cases equal : guard key = value
+  · subst value
+    simp [matchRelationArgs, matchRelationArgument, Match.mergeBindings, Bindings.lookup]
+  · have other : value ≠ guard key := fun same => equal same.symm
+    simp [matchRelationArgs, matchRelationArgument, Match.mergeBindings, Bindings.lookup, equal, other]
+
+/-- The guard relation answers one row per allowed key whose guard is the component. -/
+private theorem allow_results (allowed : List Token) (value : Pattern) :
+    relationQueryStep (provider allowed) language [("Q", value)] "allow" [.fvar "Q"] =
+      (allowed.filter (fun key => guard key == value)).map (fun _ => [("Q", value)]) := by
+  simp only [relationQueryStep, provider, if_true, builtin_allow, List.nil_append, List.flatMap_map, query_row]
+  induction allowed with
+  | nil => rfl
+  | cons key rest inductionHypothesis =>
+    by_cases equal : guard key = value
+    · simpa [equal, Match.mergeBindings] using congrArg (List.cons [("Q", value)]) inductionHypothesis
+    · simpa [equal] using inductionHypothesis
+
+/-- **The guard premise** admits a component exactly when it is the guard of an allowed key, and binds nothing. -/
+theorem declared_premises_spec (allowed : List Token) (fuel : Nat) (value : Pattern) (result : Bindings) :
+    PremisesAt (base allowed) language fuel [("Q", value)] extrusionEquation.premises result ↔
+      result = [("Q", value)] ∧ ∃ key ∈ allowed, guard key = value := by
+  change PremisesAt (engineBasePremises (provider allowed)) language fuel [("Q", value)]
+    extrusionEquation.premises result ↔ _
+  rw [premisesAt_engineBase_iff_mem_applyPremisesWithEnv
+    (show NoncontextualPremises extrusionEquation.premises from by exact .relationQuery .nil)]
+  simp only [extrusionEquation, applyPremisesWithEnv, premiseStepWithEnv, List.foldl_cons, List.foldl_nil,
+    List.flatMap_cons, List.flatMap_nil, List.append_nil, allow_results, List.mem_map, List.mem_filter, beq_iff_eq]
+  constructor
+  · rintro ⟨key, ⟨member, sameGuard⟩, rfl⟩
+    exact ⟨rfl, key, member, sameGuard⟩
+  · rintro ⟨rfl, key, member, sameGuard⟩
+    exact ⟨key, ⟨member, sameGuard⟩, rfl⟩
+
+private theorem recovery_zero (ambient : Nat) : recoveryAssignment 0 0 ambient [] = Pattern.bvar := by
+  funext index
+  simp [recoveryAssignment]
+
+private theorem occurrence_zero : occurrenceAssignment 0 0 [] = Pattern.bvar := by
+  funext index
+  simp [occurrenceAssignment]
+
+/-- At the root, recovery reads a component as it is. -/
+theorem recoverValue?_root {ambient : Nat} {term : Pattern} {value : ContextualValue}
+    (recovered : recoverValue? [] ambient 0 [] term = some value) : value = ⟨[], ambient, term⟩ := by
+  unfold recoverValue? at recovered
+  split at recovered
+  · cases recovered
+  simp only [variableSpine?, List.mapM_nil, List.nodup_nil, if_true, Option.bind_eq_bind, Option.pure_def,
+    Option.bind_some, List.length_nil, bne_self_eq_false, Bool.false_eq_true, if_false, recovery_zero,
+    ContextSubstitution.substitute_id] at recovered
+  split at recovered
+  · cases recovered
+    rfl
+  · cases recovered
+
+/-- A closed component read at the root is its body. -/
+theorem instantiateValue?_root {ambient : Nat} {body inner : Pattern}
+    (shifted : instantiateValue? ⟨[], ambient, body⟩ ambient 1 [] = some inner) :
+    instantiateValue? ⟨[], ambient, body⟩ ambient 0 [] = some body := by
+  have wellScoped : body.isWellScopedAt (0 + ambient) = true := by
+    unfold instantiateValue? at shifted
+    simp only [List.length_nil, Nat.zero_add] at shifted ⊢
+    split at shifted
+    · cases shifted
+    split at shifted
+    · cases shifted
+    split at shifted
+    · cases shifted
+    · rename_i good
+      simpa using good
+  unfold instantiateValue?
+  simp only [List.length_nil, bne_self_eq_false, Bool.false_eq_true, if_false, List.all_nil, Bool.not_true,
+    occurrence_zero, ContextSubstitution.substitute_id]
+  have atAmbient : body.isWellScopedAt ambient = true := by simpa using wellScoped
+  simp [atAmbient]
+
+/-- Shifting context variables leaves a guard as it is, and only a guard shifts to a guard. -/
+theorem shift_eq_guard {body : Pattern} {key : Token} {offset : Nat}
+    (shifted : ContextSubstitution.substitute (fun index => .bvar (offset + index)) body = guard key) :
+    body = guard key := by
+  cases body with
+  | apply constructor arguments =>
+      simp only [ContextSubstitution.substitute, ContextSubstitution.substituteList_eq_map,
+        EquationFrontierBinderProfile.guard, Pattern.apply.injEq, List.map_eq_cons_iff,
+        List.map_eq_nil_iff] at shifted
+      obtain ⟨rfl, argument, rest, rfl, argumentShifted, rfl⟩ := shifted
+      cases argument with
+      | apply label inner =>
+          simp only [ContextSubstitution.substitute, ContextSubstitution.substituteList_eq_map,
+            Token.pattern, Pattern.apply.injEq, List.map_eq_nil_iff] at argumentShifted
+          obtain ⟨rfl, rfl⟩ := argumentShifted
+          rfl
+      | _ => simp [ContextSubstitution.substitute, Token.pattern] at argumentShifted
+  | _ => simp [ContextSubstitution.substitute, EquationFrontierBinderProfile.guard] at shifted
+
+/-- A closed component that reads as a guard under one binder is that guard. -/
+theorem instantiateValue?_guard {scope : Nat} {body : Pattern} {key : Token}
+    (shifted : instantiateValue? ⟨[], scope, body⟩ scope 1 [] = some (guard key)) : body = guard key := by
+  have occurrence : occurrenceAssignment 0 1 [] = fun index => Pattern.bvar (1 + index) := by
+    funext index
+    simp [occurrenceAssignment]
+  unfold instantiateValue? at shifted
+  simp only [List.length_nil, bne_self_eq_false, Bool.false_eq_true, if_false, List.all_nil, Bool.not_true,
+    occurrence] at shifted
+  split at shifted
+  · cases shifted
+  split at shifted
+  · exact shift_eq_guard (Option.some.inj shifted)
+  · cases shifted
+
+/-- **Every declared instance of the guarded extrusion**: a restriction over a pair moves out over a component that
+uses no bound name, or back in; the component is read in both scopes and its guard is admitted. -/
+theorem declared_instance_shape (allowed : List Token) {fuel ambient : Nat} {orientation : Orientation}
+    {source target : Pattern}
+    (declared : DeclaredInstanceAt (base allowed) language fuel ambient extrusionEquation orientation source
+      target) :
+    ∃ (binder : Option String) (left inner outer : Pattern) (result : Bindings),
+      instantiateValue? ⟨[], ambient, outer⟩ ambient 1 [] = some inner ∧
+      PremisesAt (base allowed) language fuel [("Q", outer)] extrusionEquation.premises result ∧
+      ((source = .apply "Nu" [.lambda binder (pair left inner)] ∧ target = pair (nu left) outer ∧
+          recoverValue? [] ambient 1 [] inner = some ⟨[], ambient, outer⟩) ∨
+        (source = pair (.apply "Nu" [.lambda binder left]) outer ∧ target = nu (pair left inner) ∧
+          recoverValue? [] ambient 0 [] outer = some ⟨[], ambient, outer⟩)) := by
+  obtain ⟨spec, captured, final, bound, -, -, matched, premises, applied, -⟩ := declared
+  cases orientation with
+  | forward =>
+      obtain rfl : spec = (orientedRule extrusionEquation .forward).bindings.getD { dependencies := [] } := by
+        rw [bound]; rfl
+      simp only [matchRuleAt, matchRuleWithAt] at matched
+      rw [show (orientedRule extrusionEquation .forward).left =
+          .apply "Nu" [.lambda none (.apply "Pair" [.fvar "P", .fvar "Q"])] from rfl,
+        mem_matchAtWith_apply] at matched
+      obtain ⟨arguments, rfl, matched⟩ := matched
+      rw [mem_matchArgsAtWith_cons] at matched
+      obtain ⟨argument, rest, middle, rfl, first, matched⟩ := matched
+      rw [mem_matchArgsAtWith_nil] at matched
+      obtain ⟨rfl, rfl⟩ := matched
+      rw [mem_matchAtWith_lambda] at first
+      obtain ⟨binder, body, rfl, first⟩ := first
+      rw [mem_matchAtWith_apply] at first
+      obtain ⟨components, rfl, first⟩ := first
+      rw [mem_matchArgsAtWith_cons] at first
+      obtain ⟨left, rest, afterLeft, rfl, capturedLeft, first⟩ := first
+      rw [mem_matchArgsAtWith_cons] at first
+      obtain ⟨inner, rest, afterInner, rfl, capturedInner, first⟩ := first
+      rw [mem_matchArgsAtWith_nil] at first
+      obtain ⟨rfl, rfl⟩ := first
+      rw [mem_matchAtWith_fvar, captureWith?_literal] at capturedLeft capturedInner
+      simp only [capture?, Option.bind_eq_bind, Option.bind_eq_some_iff] at capturedLeft capturedInner
+      obtain ⟨leftDependencies, leftDeclared, leftArguments, leftSupplied, leftValue, leftRecovered,
+        leftAssigned⟩ := capturedLeft
+      obtain ⟨innerDependencies, innerDeclared, innerArguments, innerSupplied, innerValue, innerRecovered,
+        innerAssigned⟩ := capturedInner
+      simp [orientedRule, extrusionEquation, ScopedEquationControls.extrusionEquation, dependencies?,
+        arguments?, occurrenceDeclared, sitePattern?, occurrenceAt?] at leftDeclared leftSupplied innerDeclared innerSupplied
+      subst leftDeclared leftSupplied innerDeclared innerSupplied
+      have innerContext := recoverValue?_context _ _ _ _ _ _ innerRecovered
+      have leftContext := recoverValue?_context _ _ _ _ _ _ leftRecovered
+      have innerForward := recoverValue?_forward _ _ _ _ _ _ innerRecovered
+      have leftForward := recoverValue?_forward _ _ _ _ _ _ leftRecovered
+      obtain ⟨innerDeps, innerAmbient, outer⟩ := innerValue
+      simp only at innerContext
+      obtain ⟨rfl, ambientEq⟩ := innerContext
+      subst innerAmbient
+      simp only [assign, lookup, List.find?_nil, Option.map_none, Option.some.injEq] at leftAssigned
+      subst leftAssigned
+      simp [assign, lookup] at innerAssigned
+      subst innerAssigned
+      have root : closedRoot [("Q", (⟨[], ambient, outer⟩ : ContextualValue)), ("P", leftValue)] =
+          [("Q", outer)] := by
+        simp [closedRoot, leftContext.1]
+      rw [root] at premises
+      have kept := ((declared_premises_spec allowed fuel outer final).mp premises).1
+      subst kept
+      have extended : extendClosed ambient [("Q", (⟨[], ambient, outer⟩ : ContextualValue)), ("P", leftValue)]
+          [("Q", outer)] = [("Q", ⟨[], ambient, outer⟩), ("P", leftValue)] := by
+        rw [← root, extendClosed_closedRoot]
+      rw [extended] at applied
+      have rootRead := instantiateValue?_root innerForward
+      simp [reduct?, instantiateAt?, instantiateWith?, instantiateArgsWith?, orientedRule, extrusionEquation,
+        ScopedEquationControls.extrusionEquation, arguments?, dependencies?, occurrenceDeclared, sitePattern?,
+        occurrenceAt?, lookup, leftForward, rootRead] at applied
+      subst applied
+      exact ⟨binder, left, inner, outer, [("Q", outer)], innerForward, premises,
+        Or.inl ⟨rfl, rfl, innerRecovered⟩⟩
+  | reverse =>
+      obtain rfl : spec = (orientedRule extrusionEquation .reverse).bindings.getD { dependencies := [] } := by
+        rw [bound]; rfl
+      simp only [matchRuleAt, matchRuleWithAt] at matched
+      rw [show (orientedRule extrusionEquation .reverse).left =
+          .apply "Pair" [.apply "Nu" [.lambda none (.fvar "P")], .fvar "Q"] from rfl,
+        mem_matchAtWith_apply] at matched
+      obtain ⟨components, rfl, matched⟩ := matched
+      rw [mem_matchArgsAtWith_cons] at matched
+      obtain ⟨restriction, rest, middle, rfl, first, matched⟩ := matched
+      rw [mem_matchArgsAtWith_cons] at matched
+      obtain ⟨outer, rest, afterOuter, rfl, capturedOuter, matched⟩ := matched
+      rw [mem_matchArgsAtWith_nil] at matched
+      obtain ⟨rfl, rfl⟩ := matched
+      rw [mem_matchAtWith_apply] at first
+      obtain ⟨arguments, rfl, first⟩ := first
+      rw [mem_matchArgsAtWith_cons] at first
+      obtain ⟨argument, rest, afterBinder, rfl, binderMatched, first⟩ := first
+      rw [mem_matchArgsAtWith_nil] at first
+      obtain ⟨rfl, rfl⟩ := first
+      rw [mem_matchAtWith_lambda] at binderMatched
+      obtain ⟨binder, left, rfl, capturedLeft⟩ := binderMatched
+      rw [mem_matchAtWith_fvar, captureWith?_literal] at capturedLeft capturedOuter
+      simp only [capture?, Option.bind_eq_bind, Option.bind_eq_some_iff] at capturedLeft capturedOuter
+      obtain ⟨leftDependencies, leftDeclared, leftArguments, leftSupplied, leftValue, leftRecovered,
+        leftAssigned⟩ := capturedLeft
+      obtain ⟨outerDependencies, outerDeclared, outerArguments, outerSupplied, outerValue, outerRecovered,
+        outerAssigned⟩ := capturedOuter
+      simp [orientedRule, extrusionEquation, ScopedEquationControls.extrusionEquation, dependencies?,
+        arguments?, occurrenceDeclared, sitePattern?, occurrenceAt?, ScopedEquationExecution.exchangeBindings,
+        ScopedEquationExecution.exchangeOccurrence, ScopedEquationExecution.exchangeSite] at leftDeclared leftSupplied outerDeclared outerSupplied
+      subst leftDeclared leftSupplied outerDeclared outerSupplied
+      have leftContext := recoverValue?_context _ _ _ _ _ _ leftRecovered
+      have leftForward := recoverValue?_forward _ _ _ _ _ _ leftRecovered
+      have outerRead := recoverValue?_root outerRecovered
+      subst outerRead
+      simp only [assign, lookup, List.find?_nil, Option.map_none, Option.some.injEq] at leftAssigned
+      subst leftAssigned
+      simp [assign, lookup] at outerAssigned
+      subst outerAssigned
+      have root : closedRoot [("Q", (⟨[], ambient, outer⟩ : ContextualValue)), ("P", leftValue)] =
+          [("Q", outer)] := by
+        simp [closedRoot, leftContext.1]
+      rw [root] at premises
+      have kept := ((declared_premises_spec allowed fuel outer final).mp premises).1
+      subst kept
+      have extended : extendClosed ambient [("Q", (⟨[], ambient, outer⟩ : ContextualValue)), ("P", leftValue)]
+          [("Q", outer)] = [("Q", ⟨[], ambient, outer⟩), ("P", leftValue)] := by
+        rw [← root, extendClosed_closedRoot]
+      rw [extended] at applied
+      simp only [reduct?, instantiateAt?, instantiateWith?, instantiateArgsWith?, orientedRule, extrusionEquation,
+        ScopedEquationControls.extrusionEquation, Option.bind_eq_bind, Option.bind_eq_some_iff] at applied
+      simp [arguments?, dependencies?, occurrenceDeclared, sitePattern?, occurrenceAt?, lookup, leftForward,
+        ScopedEquationExecution.exchangeBindings, ScopedEquationExecution.exchangeOccurrence,
+        ScopedEquationExecution.exchangeSite] at applied
+      obtain ⟨inner, shifted, rfl⟩ := applied
+      exact ⟨binder, left, inner, outer, [("Q", outer)], shifted, premises,
+        Or.inr ⟨rfl, rfl, outerRecovered⟩⟩
+
+/-- Read through its declaration, the extrusion moves a named restriction out over its guard. -/
+theorem declared_named_forward {ambient : Nat} (allowed : List Token) (binder : Option String)
     (name : Fin (ambient + 1)) (key : Token) (admitted : key ∈ allowed) :
     EquationInstance (base allowed) language
       (displayedPattern binder ⟨.tucked, name, key⟩)
       (State.pattern (⟨.exposed, name, key⟩ : State ambient)) := by
-  refine ⟨0, .forward (equation := extrusionEquation)
-    (initialBindings := rawCaptured name.val key) (finalBindings := rawCaptured name.val key)
-    (List.Mem.head _) ?_ ?_ ?_⟩
-  · rw [raw_match_displayed_forward]
-    simp
-  · exact (raw_premises_spec allowed name.val key 0 _).mpr ⟨rfl, admitted⟩
-  · simp [applyBindings, rawCaptured, extrusionEquation,
-      ScopedEquationControls.extrusionEquation, State.pattern, nu, pair, cell,
-      EquationFrontierBinderProfile.guard]
+  have matched : captured ambient name key ∈ matchRuleAt (orientedRule extrusionEquation .forward)
+      ((orientedRule extrusionEquation .forward).bindings.getD { dependencies := [] }) ambient
+      (displayedPattern binder ⟨.tucked, name, key⟩) := by
+    have computed : matchRuleAt (orientedRule extrusionEquation .forward)
+        ((orientedRule extrusionEquation .forward).bindings.getD { dependencies := [] }) ambient
+        (displayedPattern binder ⟨.tucked, name, key⟩) = [captured ambient name key] := by
+      simp [displayedPattern, matchRuleAt, matchRuleWithAt, matchAtWith, matchArgsAtWith, captureWith?_literal,
+        capture?, orientedRule, extrusionEquation, ScopedEquationControls.extrusionEquation, pair,
+        dependencies?, arguments?, occurrenceDeclared, sitePattern?, occurrenceAt?, recover_cellValue,
+        recover_guardValue, captured, assign, lookup]
+    rw [computed]
+    exact List.mem_singleton_self _
+  have root : closedRoot (captured ambient name key) = [("Q", guard key)] := by
+    simp [closedRoot, captured, guardValue, cellValue]
+  have extended : extendClosed ambient (captured ambient name key) [("Q", guard key)] =
+      captured ambient name key := by
+    rw [← root, extendClosed_closedRoot]
+  refine ⟨0, .declared (orientation := .forward) (ambient := ambient) (List.Mem.head _) extrusion_not_raw
+    ⟨_, captured ambient name key, [("Q", guard key)], rfl, extrusion_admitted .forward, ?_, matched, ?_, ?_,
+      ?_⟩⟩
+  · simp [displayedPattern, pair, cell, EquationFrontierBinderProfile.guard, Token.pattern,
+      Pattern.isWellScopedAt, Pattern.isWellScopedListAt]
+  · rw [root]
+    exact (declared_premises_spec allowed 0 _ _).mpr ⟨rfl, key, admitted, rfl⟩
+  · rw [extended]
+    exact reduct_extrusion_forward ambient name key
+  · simp [State.pattern, pair, nu, cell, EquationFrontierBinderProfile.guard, Token.pattern,
+      Pattern.isWellScopedAt, Pattern.isWellScopedListAt]
+
+end Declared
 
 /-- The raw equation class of a canonical source contains arbitrarily named
 presentations. Exact raw-state coverage by canonical endpoints would be false. -/
@@ -106,7 +384,7 @@ theorem raw_metadata_separator {ambient : Nat} (allowed : List Token) (binder : 
         = false := by
   constructor
   · exact Relation.EqvGen.symm _ _ (equationInstance_equivalent
-      (raw_named_forward allowed (some binder) name key admitted))
+      (declared_named_forward allowed (some binder) name key admitted))
   · simp [displayedPattern, pair, cell, EquationFrontierBinderProfile.guard, Token.pattern,
       Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList]
 
@@ -275,21 +553,34 @@ theorem authored_equation_unique {equation : Equation}
   | head => rfl
   | tail _ rest => cases rest
 
+/-- The guarded extrusion is read only through its declaration. -/
+theorem instance_declared (allowed : List Token) {fuel : Nat} {source target : Pattern}
+    (equationInstance : EquationInstanceAt (base allowed) language fuel source target) :
+    ∃ ambient orientation,
+      DeclaredInstanceAt (base allowed) language fuel ambient extrusionEquation orientation source target := by
+  cases equationInstance with
+  | forward authored raw =>
+    rw [authored_equation_unique authored, extrusion_not_raw] at raw
+    cases raw
+  | reverse authored raw =>
+    rw [authored_equation_unique authored, extrusion_not_raw] at raw
+    cases raw
+  | @declared equation orientation ambient _ _ authored _ declared =>
+    rw [authored_equation_unique authored] at declared
+    exact ⟨ambient, orientation, declared⟩
+
 theorem inert_no_instance (allowed : List Token) {source target : Pattern}
     (inert : EquationInert source) (equationInstance : EquationInstance (base allowed) language source target) :
     False := by
   obtain ⟨_, equationInstance⟩ := equationInstance
-  cases equationInstance with
-  | forward authored matched _ _ =>
-    have equal := authored_equation_unique authored
-    subst_vars
-    rw [inert.no_root.1] at matched
-    cases matched
-  | reverse authored matched _ _ =>
-    have equal := authored_equation_unique authored
-    subst_vars
-    rw [inert.no_root.2] at matched
-    cases matched
+  obtain ⟨_, _, declared⟩ := instance_declared allowed equationInstance
+  obtain ⟨binder, left, inner, outer, _, -, -, ⟨rfl, -⟩ | ⟨rfl, -⟩⟩ := declared_instance_shape allowed declared
+  · have none := inert.no_root.1
+    simp [extrusionEquation, ScopedEquationControls.extrusionEquation, pair, matchPattern, matchArgs,
+      mergeBindings] at none
+  · have none := inert.no_root.2
+    simp [extrusionEquation, ScopedEquationControls.extrusionEquation, pair, matchPattern, matchArgs,
+      mergeBindings] at none
 
 theorem inert_no_generator (allowed : List Token) {source target : Pattern}
     (inert : EquationInert source) (generator : EquationGenerator (base allowed) language source target) :
@@ -327,127 +618,19 @@ theorem equation_context_root {ambient : Nat} (allowed : List Token) (binder : O
     cases state with
     | mk phase name key => cases phase <;> simp [displayedPattern, pair, OneHoleContext.fill] at source
 
-theorem apply_match_shape (constructor : String) (patterns : List Pattern)
-    (target : Pattern) (bindings : Bindings)
-    (member : bindings ∈ matchPattern (.apply constructor patterns) target) :
-    ∃ arguments, target = .apply constructor arguments ∧
-      patterns.length = arguments.length ∧ bindings ∈ matchArgs patterns arguments := by
-  cases target <;> simp only [matchPattern] at member
-  all_goals try simp only [List.not_mem_nil] at member
-  case apply other arguments =>
-    split at member
-    · rename_i selected
-      have selected' : (constructor == other) = true ∧
-          (patterns.length == arguments.length) = true := by
-        simpa only [Bool.and_eq_true] using selected
-      have nameEqual := beq_iff_eq.mp selected'.1
-      have lengthEqual := beq_iff_eq.mp selected'.2
-      subst_vars
-      exact ⟨_, rfl, lengthEqual, member⟩
-    · simp only [List.not_mem_nil] at member
-
-theorem lambda_match_shape (body : Pattern) (target : Pattern) (bindings : Bindings)
-    (member : bindings ∈ matchPattern (.lambda none body) target) :
-    ∃ binder inner, target = .lambda binder inner ∧
-      bindings ∈ matchPattern body inner := by
-  cases target <;> simp only [matchPattern] at member
-  all_goals try simp only [List.not_mem_nil] at member
-  exact ⟨_, _, rfl, member⟩
-
-theorem matchArgs_singleton (pattern target : Pattern) :
-    matchArgs [pattern] [target] = matchPattern pattern target := by
-  simp [matchArgs, mergeBindings]
-
-theorem list_length_one {α : Type} (list : List α) (length : list.length = 1) :
-    ∃ value, list = [value] := by
-  cases list with
-  | nil => simp at length
-  | cons value rest =>
-    cases rest with
-    | nil => exact ⟨value, rfl⟩
-    | cons _ _ => simp at length
-
-theorem list_length_two {α : Type} (list : List α) (length : list.length = 2) :
-    ∃ first second, list = [first, second] := by
-  cases list with
-  | nil => simp at length
-  | cons first rest =>
-    cases rest with
-    | nil => simp at length
-    | cons second rest =>
-      cases rest with
-      | nil => exact ⟨first, second, rfl⟩
-      | cons _ _ => simp at length
-
-theorem raw_left_match_shape (source : Pattern) (bindings : Bindings)
-    (member : bindings ∈ matchPattern extrusionEquation.left source) :
-    ∃ binder left right,
-      source = .apply "Nu" [.lambda binder (pair left right)] ∧
-      bindings = [("Q", right), ("P", left)] := by
-  have outer := apply_match_shape "Nu" [.lambda none (pair (.fvar "P") (.fvar "Q"))]
-    source bindings member
-  obtain ⟨arguments, rfl, length, matched⟩ := outer
-  obtain ⟨argument, rfl⟩ := list_length_one arguments length.symm
-  rw [matchArgs_singleton] at matched
-  obtain ⟨binder, body, rfl, matchedBody⟩ := lambda_match_shape _ argument bindings matched
-  obtain ⟨arguments, rfl, length, matchedPair⟩ :=
-    apply_match_shape "Pair" [.fvar "P", .fvar "Q"] body bindings matchedBody
-  obtain ⟨left, right, rfl⟩ := list_length_two arguments length.symm
-  simp [matchArgs, matchPattern, mergeBindings] at matchedPair
-  exact ⟨binder, left, right, rfl, matchedPair⟩
-
-theorem raw_right_match_shape (source : Pattern) (bindings : Bindings)
-    (member : bindings ∈ matchPattern extrusionEquation.right source) :
-    ∃ binder left right,
-      source = pair (.apply "Nu" [.lambda binder left]) right ∧
-      bindings = [("Q", right), ("P", left)] := by
-  obtain ⟨arguments, rfl, length, matched⟩ :=
-    apply_match_shape "Pair" [.apply "Nu" [.lambda none (.fvar "P")], .fvar "Q"]
-      source bindings member
-  obtain ⟨outer, right, rfl⟩ := list_length_two arguments length.symm
-  simp only [matchArgs] at matched
-  obtain ⟨initial, matchedOuter, merged⟩ := List.mem_flatMap.mp matched
-  obtain ⟨arguments, rfl, length, matchedNu⟩ :=
-    apply_match_shape "Nu" [.lambda none (.fvar "P")] outer initial matchedOuter
-  obtain ⟨argument, rfl⟩ := list_length_one arguments length.symm
-  rw [matchArgs_singleton] at matchedNu
-  obtain ⟨binder, left, rfl, matchedP⟩ := lambda_match_shape _ argument initial matchedNu
-  simp only [matchPattern, List.mem_singleton] at matchedP
-  subst initial
-  simp [matchPattern, mergeBindings] at merged
-  exact ⟨binder, left, right, rfl, merged⟩
-
-theorem raw_apply_right_match (bindings : Bindings) :
-    matchPattern extrusionEquation.right (applyBindings bindings extrusionEquation.right) =
-      [[("Q", applyBindings bindings (.fvar "Q")),
-        ("P", applyBindings bindings (.fvar "P"))]] := by
-  simp [extrusionEquation, ScopedEquationControls.extrusionEquation,
-    applyBindings, matchPattern, matchArgs, mergeBindings]
-
-theorem raw_apply_left_match (bindings : Bindings) :
-    matchPattern extrusionEquation.left (applyBindings bindings extrusionEquation.left) =
-      [[("Q", applyBindings bindings (.fvar "Q")),
-        ("P", applyBindings bindings (.fvar "P"))]] := by
-  simp [extrusionEquation, ScopedEquationControls.extrusionEquation,
-    applyBindings, matchPattern, matchArgs, mergeBindings]
-
 theorem inert_no_instance_target (allowed : List Token) {source target : Pattern}
     (inert : EquationInert target)
     (equationInstance : EquationInstance (base allowed) language source target) : False := by
   obtain ⟨_, equationInstance⟩ := equationInstance
-  cases equationInstance with
-  | forward authored _ _ reduct =>
-    have equal := authored_equation_unique authored
-    subst_vars
-    have matched := inert.no_root.2
-    rw [raw_apply_right_match] at matched
-    cases matched
-  | reverse authored _ _ reduct =>
-    have equal := authored_equation_unique authored
-    subst_vars
-    have matched := inert.no_root.1
-    rw [raw_apply_left_match] at matched
-    cases matched
+  obtain ⟨_, _, declared⟩ := instance_declared allowed equationInstance
+  obtain ⟨binder, left, inner, outer, _, -, -, ⟨-, rfl, -⟩ | ⟨-, rfl, -⟩⟩ :=
+    declared_instance_shape allowed declared
+  · have none := inert.no_root.2
+    simp [extrusionEquation, ScopedEquationControls.extrusionEquation, pair, nu, matchPattern, matchArgs,
+      mergeBindings] at none
+  · have none := inert.no_root.1
+    simp [extrusionEquation, ScopedEquationControls.extrusionEquation, pair, nu, matchPattern, matchArgs,
+      mergeBindings] at none
 
 theorem inert_no_generator_target (allowed : List Token) {source target : Pattern}
     (inert : EquationInert target)
@@ -484,41 +667,26 @@ theorem equation_context_root_target {ambient : Nat} (allowed : List Token)
     cases state with
     | mk phase name key => cases phase <;> simp [displayedPattern, pair, OneHoleContext.fill] at target
 
-def rawValues (left right : Pattern) : Bindings := [("Q", right), ("P", left)]
+theorem list_length_one {α : Type} (list : List α) (length : list.length = 1) :
+    ∃ value, list = [value] := by
+  cases list with
+  | nil => simp at length
+  | cons value rest =>
+    cases rest with
+    | nil => exact ⟨value, rfl⟩
+    | cons _ _ => simp at length
 
-theorem raw_instance_shape (allowed : List Token) {source target : Pattern}
-    (equationInstance : EquationInstance (base allowed) language source target) :
-    ∃ binder left right fuel result,
-      PremisesAt (base allowed) language fuel (rawValues left right)
-        extrusionEquation.premises result ∧
-      ((source = .apply "Nu" [.lambda binder (pair left right)] ∧
-          target = pair (nu left) right) ∨
-        (source = pair (.apply "Nu" [.lambda binder left]) right ∧
-          target = nu (pair left right))) := by
-  obtain ⟨fuel, equationInstance⟩ := equationInstance
-  cases equationInstance with
-  | forward authored matched premises reduct =>
-    have unique := authored_equation_unique authored
-    subst_vars
-    obtain ⟨binder, left, right, sourceEq, captures⟩ := raw_left_match_shape _ _ matched
-    subst_vars
-    have extension := premises.bindingsExtends
-    have foundQ := extension "Q" right (by simp)
-    have foundP := extension "P" left (by simp)
-    refine ⟨binder, left, right, fuel, _, premises, Or.inl ⟨rfl, ?_⟩⟩
-    simp [extrusionEquation, ScopedEquationControls.extrusionEquation,
-      applyBindings, foundQ, foundP, pair, nu]
-  | reverse authored matched premises reduct =>
-    have unique := authored_equation_unique authored
-    subst_vars
-    obtain ⟨binder, left, right, sourceEq, captures⟩ := raw_right_match_shape _ _ matched
-    subst_vars
-    have extension := premises.bindingsExtends
-    have foundQ := extension "Q" right (by simp)
-    have foundP := extension "P" left (by simp)
-    refine ⟨binder, left, right, fuel, _, premises, Or.inr ⟨rfl, ?_⟩⟩
-    simp [extrusionEquation, ScopedEquationControls.extrusionEquation,
-      applyBindings, foundQ, foundP, pair, nu]
+theorem list_length_two {α : Type} (list : List α) (length : list.length = 2) :
+    ∃ first second, list = [first, second] := by
+  cases list with
+  | nil => simp at length
+  | cons first rest =>
+    cases rest with
+    | nil => simp at length
+    | cons second rest =>
+      cases rest with
+      | nil => exact ⟨first, second, rfl⟩
+      | cons _ _ => simp at length
 
 theorem erasure_apply_shape (constructor : String) (arguments : List Pattern)
     (source : Pattern) (equal : source.eraseBinderMetadata = .apply constructor arguments) :
@@ -624,18 +792,25 @@ theorem raw_instance_from_displayed {ambient : Nat} (allowed : List Token)
       (displayedPattern sourceBinder source) target) :
     ∃ next : State ambient, target = next.pattern ∧
       (EquationEdge allowed source next ∨ EquationEdge allowed next source) := by
-  obtain ⟨binder, left, right, fuel, result, premises, shape⟩ :=
-    raw_instance_shape allowed equationInstance
+  obtain ⟨fuel, equationInstance⟩ := equationInstance
+  obtain ⟨scope, _, declared⟩ := instance_declared allowed equationInstance
+  obtain ⟨binder, left, inner, outer, result, shifted, premises, shape⟩ := declared_instance_shape allowed declared
   cases source with
   | mk phase name key =>
-    rcases shape with ⟨sourceEq, targetEq⟩ | ⟨sourceEq, targetEq⟩
+    rcases shape with ⟨sourceEq, targetEq, recovered⟩ | ⟨sourceEq, targetEq, recovered⟩
     · cases phase with
       | tucked =>
         simp only [displayedPattern, pair, Pattern.apply.injEq, Pattern.lambda.injEq,
           List.cons.injEq, and_true, true_and] at sourceEq
         rcases sourceEq with ⟨rfl, rfl, rfl⟩
-        have admitted := (raw_premises_spec allowed name.val key fuel result).mp premises
-        exact ⟨⟨.exposed, name, key⟩, targetEq, Or.inl (.extrusion name key admitted.2)⟩
+        rw [recover_guardValue] at recovered
+        have outerEq : outer = guard key := by
+          simpa [guardValue] using (congrArg ContextualValue.body (Option.some.inj recovered)).symm
+        subst outerEq
+        obtain ⟨-, found, member, sameGuard⟩ := (declared_premises_spec allowed _ _ result).mp premises
+        rw [guard_eq_iff] at sameGuard
+        subst sameGuard
+        exact ⟨⟨.exposed, name, found⟩, targetEq, Or.inl (.extrusion name found member)⟩
       | exposed => simp [displayedPattern, pair] at sourceEq
       | finished => simp [displayedPattern, done, pair] at sourceEq
     · cases phase with
@@ -644,8 +819,14 @@ theorem raw_instance_from_displayed {ambient : Nat} (allowed : List Token)
         simp only [displayedPattern, pair, Pattern.apply.injEq, Pattern.lambda.injEq,
           List.cons.injEq, and_true, true_and] at sourceEq
         rcases sourceEq with ⟨⟨rfl, rfl⟩, rfl⟩
-        have admitted := (raw_premises_spec allowed name.val key fuel result).mp premises
-        exact ⟨⟨.tucked, name, key⟩, targetEq, Or.inr (.extrusion name key admitted.2)⟩
+        have read : instantiateValue? (guardValue scope key) scope 1 [] = some inner := shifted
+        rw [instantiate_guardValue] at read
+        have innerEq := Option.some.inj read
+        subst innerEq
+        obtain ⟨-, found, member, sameGuard⟩ := (declared_premises_spec allowed _ _ result).mp premises
+        rw [guard_eq_iff] at sameGuard
+        subst sameGuard
+        exact ⟨⟨.tucked, name, found⟩, targetEq, Or.inr (.extrusion name found member)⟩
       | finished => simp [displayedPattern, pair] at sourceEq
 
 theorem raw_instance_into_displayed {ambient : Nat} (allowed : List Token)
@@ -654,29 +835,38 @@ theorem raw_instance_into_displayed {ambient : Nat} (allowed : List Token)
       (displayedPattern targetBinder target)) :
     ∃ (binder : Option String) (previous : State ambient), source = displayedPattern binder previous ∧
       (EquationEdge allowed previous target ∨ EquationEdge allowed target previous) := by
-  obtain ⟨binder, left, right, fuel, result, premises, shape⟩ :=
-    raw_instance_shape allowed equationInstance
+  obtain ⟨fuel, equationInstance⟩ := equationInstance
+  obtain ⟨scope, _, declared⟩ := instance_declared allowed equationInstance
+  obtain ⟨binder, left, inner, outer, result, shifted, premises, shape⟩ := declared_instance_shape allowed declared
   cases target with
   | mk phase name key =>
-    rcases shape with ⟨sourceEq, targetEq⟩ | ⟨sourceEq, targetEq⟩
+    rcases shape with ⟨sourceEq, targetEq, recovered⟩ | ⟨sourceEq, targetEq, recovered⟩
     · cases phase with
       | tucked => simp [displayedPattern, pair, nu] at targetEq
       | exposed =>
         simp only [displayedPattern, pair, nu, Pattern.apply.injEq, Pattern.lambda.injEq,
           List.cons.injEq, and_true, true_and] at targetEq
         rcases targetEq with ⟨⟨rfl, rfl⟩, rfl⟩
-        have admitted := (raw_premises_spec allowed name.val key fuel result).mp premises
-        exact ⟨binder, ⟨.tucked, name, key⟩, sourceEq,
-          Or.inl (.extrusion name key admitted.2)⟩
+        have read : instantiateValue? (guardValue scope key) scope 1 [] = some inner := shifted
+        rw [instantiate_guardValue] at read
+        have innerEq := Option.some.inj read
+        subst innerEq
+        obtain ⟨-, found, member, sameGuard⟩ := (declared_premises_spec allowed _ _ result).mp premises
+        rw [guard_eq_iff] at sameGuard
+        subst sameGuard
+        exact ⟨binder, ⟨.tucked, name, found⟩, sourceEq, Or.inl (.extrusion name found member)⟩
       | finished => simp [displayedPattern, pair, nu] at targetEq
     · cases phase with
       | tucked =>
         simp only [displayedPattern, pair, nu, Pattern.apply.injEq, Pattern.lambda.injEq,
           List.cons.injEq, and_true, true_and] at targetEq
         rcases targetEq with ⟨rfl, rfl, rfl⟩
-        have admitted := (raw_premises_spec allowed name.val key fuel result).mp premises
-        exact ⟨binder, ⟨.exposed, name, key⟩, sourceEq,
-          Or.inr (.extrusion name key admitted.2)⟩
+        have outerEq := instantiateValue?_guard shifted
+        subst outerEq
+        obtain ⟨-, found, member, sameGuard⟩ := (declared_premises_spec allowed _ _ result).mp premises
+        rw [guard_eq_iff] at sameGuard
+        subst sameGuard
+        exact ⟨binder, ⟨.exposed, name, found⟩, sourceEq, Or.inr (.extrusion name found member)⟩
       | exposed => simp [displayedPattern, pair, nu] at targetEq
       | finished => simp [displayedPattern, pair, nu, done] at targetEq
 
@@ -781,7 +971,7 @@ theorem finite_equiv_raw {ambient : Nat} (allowed : List Token)
     cases edge with
     | extrusion name key admitted =>
       simpa only [displayed_none] using equationInstance_equivalent
-        (raw_named_forward allowed none name key admitted)
+        (declared_named_forward allowed none name key admitted)
   | refl source => exact .refl source.pattern
   | symm source target relation ih => exact .symm _ _ ih
   | trans source middle target first second firstIH secondIH =>

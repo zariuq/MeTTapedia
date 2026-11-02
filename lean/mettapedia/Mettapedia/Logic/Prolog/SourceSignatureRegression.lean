@@ -34,13 +34,13 @@ theorem cons_has_swi_list_indicator (head tail : Term) :
     match cons head tail with
     | .app indicator _ => indicator.name = "[|]" ∧ indicator.arity = 2
     | _ => False := by
-  simp [cons, compound]
+  simp [cons, ListEncoding.cons, swiLists, compound]
 
 theorem atom_and_zero_arity_compound_are_distinct (name : String) :
     atom name ≠ compound name [] :=
   atom_ne_zero_arity_compound name
 
-theorem nil_is_atom : nil = .const (.atom "[]") := rfl
+theorem nil_is_distinct_constant : nil = .const .nil := rfl
 
 theorem singleton_list_exact (element : Term) :
     list [element] = cons element nil := rfl

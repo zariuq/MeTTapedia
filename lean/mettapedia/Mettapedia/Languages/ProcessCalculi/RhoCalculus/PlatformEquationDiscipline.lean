@@ -73,7 +73,7 @@ theorem stop_equated_with_quotedDropOfStop (base : BasePremiseEvaluator) :
       (Or.inl ⟨0, EquationInstanceAt.reverse
         (equation := quoteDropEquation) (initialBindings := [("N", stop)])
         (finalBindings := [("N", stop)])
-        (List.Mem.head _)
+        (List.Mem.head _) (by decide)
         (by decide +kernel)
         (PremisesAt.nil _)
         (by decide +kernel)⟩))
@@ -90,7 +90,7 @@ theorem every_pattern_equated_with_its_quote (base : BasePremiseEvaluator)
       (Or.inl ⟨0, EquationInstanceAt.reverse
         (equation := quoteDropEquation) (initialBindings := [("N", term)])
         (finalBindings := [("N", term)])
-        (List.Mem.head _)
+        (List.Mem.head _) (by decide)
         (by simp [quoteDropEquation, matchPattern])
         (PremisesAt.nil _)
         (by simp [quoteDropEquation, applyBindings, quoteLabel, dropLabel])⟩))
@@ -138,7 +138,7 @@ theorem quote_of_drop_of_a_name (base : BasePremiseEvaluator) (process : Pattern
         (equation := quoteDropEquation)
         (initialBindings := [("N", .apply quoteLabel [process])])
         (finalBindings := [("N", .apply quoteLabel [process])])
-        (List.Mem.head _)
+        (List.Mem.head _) (by decide)
         (by simp [quoteDropEquation, quoteLabel, dropLabel, matchPattern,
           matchArgs, mergeBindings])
         (PremisesAt.nil _)
@@ -287,8 +287,8 @@ theorem sortedInstance_quoteHeaded_iff (base : BasePremiseEvaluator)
     QuoteHeaded source ↔ QuoteHeaded target := by
   obtain ⟨fuel, instance'⟩ := sorted
   cases instance' with
-  | forward member matched premises sortedBindings applied =>
-      rename_i equation initialBindings finalBindings
+  | forward member _ matched premises sortedBindings applied =>
+      rename_i equation initialBindings finalBindings _
       have memList : equation ∈ platform.equations := member
       have equationEq : equation = quoteDropEquation := by
         simpa [rhoPlatform] using memList
@@ -315,8 +315,8 @@ theorem sortedInstance_quoteHeaded_iff (base : BasePremiseEvaluator)
         rw [← applied]
         exact name_is_quoteHeaded object typed
       exact iff_of_true sourceQuoted targetQuoted
-  | reverse member matched premises sortedBindings applied =>
-      rename_i equation initialBindings finalBindings
+  | reverse member _ matched premises sortedBindings applied =>
+      rename_i equation initialBindings finalBindings _
       have memList : equation ∈ platform.equations := member
       have equationEq : equation = quoteDropEquation := by
         simpa [rhoPlatform] using memList

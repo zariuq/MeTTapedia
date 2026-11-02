@@ -1,0 +1,15 @@
+import Mettapedia.Machines.CanonicalNameAdmission
+import Mettapedia.Machines.NamedDAGSize
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Module-owned foundation audit. Compiler runtime counterparts are listed
+separately and are not counted as checked mathematical bodies. -/
+
+#foundation_manifest_module Mettapedia.Machines.NamesOverStores
+#foundation_manifest_module Mettapedia.Machines.CanonicalNameAdmission
+#foundation_manifest_module Mettapedia.Machines.NamedShapeGraph
+#foundation_manifest_module Mettapedia.Machines.ShapeScopedUnification
+#foundation_manifest_module Mettapedia.Machines.NamedStoreHolders
+#foundation_manifest_module Mettapedia.Machines.NamedStoreModel
+#foundation_manifest_module Mettapedia.Machines.NamedShapeCursor
+#foundation_manifest_module Mettapedia.Machines.NamedDAGSize

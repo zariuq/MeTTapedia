@@ -63,7 +63,8 @@ theorem quoteDrop_generator (name : Pattern) :
     Generator relEnv rhoCalc (.apply "NQuote" [.apply "PDrop" [name]]) name := by
   refine (generator_iff_unconditional rhoCalc_unconditional rhoCalc_equationsAligned).mp (Or.inl ⟨0, ?_⟩)
   refine EquationInstanceAt.forward (equation := quoteDropEquation) (initialBindings := [("N", name)])
-    (finalBindings := [("N", name)]) quoteDropEquation_mem ?_ (PremisesAt.nil _) ?_
+    (finalBindings := [("N", name)]) quoteDropEquation_mem
+    (Mettapedia.GSLT.LanguageDef.EquationSemantics.readsRaw_of_none rfl) ?_ (PremisesAt.nil _) ?_
   · rw [matchPattern_iff_matchRel]
     exact MatchRel.apply
       (MatchArgsRel.cons (MatchRel.apply (MatchArgsRel.cons MatchRel.fvar MatchArgsRel.nil rfl) rfl)
@@ -78,7 +79,8 @@ theorem syntax_relates_process_to_quote (process : Pattern) :
   have reversed : Generator relEnv rhoCalc process (.apply "NQuote" [.apply "PDrop" [process]]) := by
     refine (generator_iff_unconditional rhoCalc_unconditional rhoCalc_equationsAligned).mp (Or.inl ⟨0, ?_⟩)
     refine EquationInstanceAt.reverse (equation := quoteDropEquation) (initialBindings := [("N", process)])
-      (finalBindings := [("N", process)]) quoteDropEquation_mem ?_ (PremisesAt.nil _) ?_
+      (finalBindings := [("N", process)]) quoteDropEquation_mem
+      (Mettapedia.GSLT.LanguageDef.EquationSemantics.readsRaw_of_none rfl) ?_ (PremisesAt.nil _) ?_
     · rw [matchPattern_iff_matchRel]
       exact MatchRel.fvar
     · simp [quoteDropEquation, applyBindings]
@@ -617,16 +619,19 @@ theorem equationInstanceAt_base {base base' : Mettapedia.OSLF.MeTTaIL.Contextual
     {fuel : ℕ} {source target : Pattern} (instance_ : EquationInstanceAt base rhoCalc fuel source target) :
     EquationInstanceAt base' rhoCalc fuel source target := by
   cases instance_ with
-  | forward member matched premises applied =>
+  | forward member raw matched premises applied =>
     have none := rhoCalc_unconditional _ member
     rw [none] at premises
     cases premises
-    exact .forward member matched (by rw [none]; exact PremisesAt.nil _) applied
-  | reverse member matched premises applied =>
+    exact .forward member raw matched (by rw [none]; exact PremisesAt.nil _) applied
+  | reverse member raw matched premises applied =>
     have none := rhoCalc_unconditional _ member
     rw [none] at premises
     cases premises
-    exact .reverse member matched (by rw [none]; exact PremisesAt.nil _) applied
+    exact .reverse member raw matched (by rw [none]; exact PremisesAt.nil _) applied
+  | declared member notRaw _ =>
+    exact absurd (Mettapedia.OSLF.MeTTaIL.ReferenceStep.equationAligned_parts (rhoCalc_equationsAligned _ member)).1
+      (by simp [notRaw])
 
 /-- **A step of the syntax theory keeps the canonical form**, whatever it binds its variables to. -/
 theorem canonicalize_eq_of_equationStep {source target : Pattern} (step : EquationStep relEnv rhoCalc source target) :

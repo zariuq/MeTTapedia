@@ -197,7 +197,8 @@ theorem ErasingEquation.generator {lang : LanguageDef} {sort : String} {rule : G
   have differ' : (erased == kept) = false := beq_eq_false_iff_ne.mpr (Ne.symm distinct)
   refine .inl ⟨0, .forward (equation := equation)
     (initialBindings := [(erased, second), (kept, first)])
-    (finalBindings := [(erased, second), (kept, first)]) erasing.authored ?_ ?_ ?_⟩
+    (finalBindings := [(erased, second), (kept, first)]) erasing.authored
+    (by simp [readsRaw, left, right, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList]) ?_ ?_ ?_⟩
   · rw [left]
     simp [matchPattern, matchArgs, mergeBindings, differ]
   · rw [erasing.premiseFree]
@@ -245,7 +246,8 @@ theorem CopyingEquation.generator {lang : LanguageDef} {sort : String} {copy pai
     EquationGenerator base lang (.apply copy.label [pattern]) (.apply pair.label [pattern, pattern]) := by
   obtain ⟨copied, left, right⟩ := copying.sides
   refine .inl ⟨0, .forward (equation := equation) (initialBindings := [(copied, pattern)])
-    (finalBindings := [(copied, pattern)]) copying.authored ?_ ?_ ?_⟩
+    (finalBindings := [(copied, pattern)]) copying.authored
+    (by simp [readsRaw, left, right, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList]) ?_ ?_ ?_⟩
   · rw [left]
     simp [matchPattern, matchArgs, mergeBindings]
   · rw [copying.premiseFree]

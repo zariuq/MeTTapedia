@@ -8,8 +8,9 @@ import Mettapedia.Languages.ProcessCalculi.CCS.Continued
 A section of the static equivalence picks one representative per class, and
 where a class has more than one member there is more than one way to pick.
 Any section followed by a re-choice of representative within the class is
-again a section.  For a bag theory, listing the components of the outermost
-bag in the opposite order is such a re-choice.
+again a section.  For a bag theory, and for a calculus with restriction,
+listing the components of the outermost bag in the opposite order is such a
+re-choice.
 
 CCS therefore carries two different sections, and so two different continued
 presentations over the one iGSLT.  Passing from continued presentations to
@@ -111,26 +112,91 @@ def reversedBagSection (theory : IGSLT)
 
 end BagNormalForm
 
+/-! ## A second section of a calculus with restriction -/
+
+namespace RestrictionBlocks
+
+variable {language : LanguageDef} {block : Block} [laws : BlockLanguage language block]
+
+include laws in
+/-- Reversing the outermost bag of a process is a chain of laws through processes, or none. -/
+theorem reverseTop_sorted {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern} {sort : String}
+    (typed : HasType language free bound pattern (.base sort)) :
+    SortedEquiv language free bound (.base sort) pattern (BagNormalForm.reverseTop pattern) := by
+  match pattern, typed with
+  | .collection .hashBag elements none, typed =>
+      obtain ⟨-, rfl, -⟩ := laws.bag_members typed
+      have members := members_of_bag (block := block) typed
+      have reversedTyped : HasType language free bound (.collection .hashBag elements.reverse none)
+          (.base block.proc) :=
+        bag_typed (block := block) fun element member => members element (List.mem_reverse.mp member)
+      obtain ⟨bag, presented, category⟩ := laws.bag
+      exact SortedEquiv.ofDerived
+        (DerivedInstance.bagPerm_of_sorted (category := bag.category) ⟨free, bound, by rwa [category]⟩
+          (List.reverse_perm elements).symm) typed reversedTyped
+  | .collection .hashBag _ (some _), _ => exact Relation.EqvGen.refl _
+  | .collection .vec _ _, _ => exact Relation.EqvGen.refl _
+  | .collection .hashSet _ _, _ => exact Relation.EqvGen.refl _
+  | .bvar _, _ => exact Relation.EqvGen.refl _
+  | .fvar _, _ => exact Relation.EqvGen.refl _
+  | .apply _ _, _ => exact Relation.EqvGen.refl _
+  | .lambda _ _, _ => exact Relation.EqvGen.refl _
+  | .multiLambda _ _ _, _ => exact Relation.EqvGen.refl _
+  | .subst _ _, _ => exact Relation.EqvGen.refl _
+
+end RestrictionBlocks
+
+open RestrictionBlocks (Block BlockLanguage)
+
+/-- Reversing the outermost bag of a closed process of a calculus with restriction keeps it closed. -/
+def reverseTopBlockClosed (theory : IGSLT) (block : Block)
+    [laws : BlockLanguage theory.presentation.presentation.language block]
+    (term : theory.toGSLT.Term) : theory.toGSLT.Term :=
+  ⟨BagNormalForm.reverseTop term.1,
+    RestrictionBlocks.closed_of_sorted (block := block) term.2
+      (RestrictionBlocks.reverseTop_sorted (block := block) term.2.1)⟩
+
+/-- It stays within the class. -/
+theorem reverseTopBlockClosed_equivalent (theory : IGSLT) (block : Block)
+    [laws : BlockLanguage theory.presentation.presentation.language block]
+    (term : theory.toGSLT.Term) :
+    theory.toGSLT.equations.r (reverseTopBlockClosed theory block term) term :=
+  theory.toGSLT.equations.iseqv.symm
+    (presented_of_sorted (block := block) (RestrictionBlocks.reverseTop_sorted (block := block) term.2.1)
+      term.2 _)
+
+/-- **A second section of a calculus with restriction**: the canonical form with the outermost bag listed in the
+opposite order. -/
+def reversedBlockSection (theory : IGSLT) (block : Block)
+    [laws : BlockLanguage theory.presentation.presentation.language block] :
+    ComputableCanonicalSection theory :=
+  (blockCanonicalSection theory block).rerepresent (reverseTopBlockClosed theory block)
+    (reverseTopBlockClosed_equivalent theory block)
+
+@[simp] theorem reversedBlockSection_normalize_val (theory : IGSLT) (block : Block)
+    [laws : BlockLanguage theory.presentation.presentation.language block] (term : theory.toGSLT.Term) :
+    ((reversedBlockSection theory block).normalize term).1 =
+      BagNormalForm.reverseTop (RestrictionBlocks.canon block term.1) :=
+  rfl
+
 /-! ## Two sections, two continued presentations, one iGSLT -/
 
 section CCS
 
 open Mettapedia.Languages.ProcessCalculi.CCS
-open BagNormalForm
 
 /-- The second section of CCS. -/
 def ccsReversedSection : ComputableCanonicalSection ccsIGSLT :=
-  reversedBagSection ccsIGSLT (ccs_bagTheory.asBare rfl)
+  reversedBlockSection (laws := Mettapedia.Languages.ProcessCalculi.CCS.Blocks.ccsBlockLanguage) ccsIGSLT
+    Mettapedia.Languages.ProcessCalculi.CCS.Blocks.ccsBlock
 
-/-- The two sections choose different representatives of the handshake. -/
+/-- **The two sections choose different representatives** of `τ.0 | τ.τ.0`. -/
 theorem ccs_sections_differ : ccsCanonicalSection ≠ ccsReversedSection := by
   intro same
-  have first := handshake_representative.1
-  have second : (ccsReversedSection.normalize handshakeTerm).1 = handshakeSwapped := by
-    show reverseTop (normalForm (some "CNil") handshakeTerm.1) = handshakeSwapped
-    have normal : normalForm (some "CNil") handshakeTerm.1 = handshake := first
-    rw [normal]
-    rfl
+  have first : (ccsCanonicalSection.normalize silentPairTerm).1 = par [silentOnce, silentTwice] := by
+    decide +kernel
+  have second : (ccsReversedSection.normalize silentPairTerm).1 = par [silentTwice, silentOnce] := by
+    decide +kernel
   rw [same, second] at first
   revert first
   decide

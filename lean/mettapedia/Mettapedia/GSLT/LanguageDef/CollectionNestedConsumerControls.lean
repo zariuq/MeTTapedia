@@ -2582,6 +2582,7 @@ theorem equationEquiv_same {permitted : Bool} {first second : Pattern}
     cases authored with
     | forward member _ _ _ => rw [core_has_no_equations] at member; cases member
     | reverse member _ _ _ => rw [core_has_no_equations] at member; cases member
+    | declared member _ _ => rw [core_has_no_equations] at member; cases member
   · obtain ⟨noSets,noAlgebra⟩ := core_has_no_set_or_algebra permitted
     cases derived with
     | bagPerm declaration sorted permutation =>
@@ -3081,8 +3082,8 @@ theorem ordinary_complete_receipts (bound : List TypeExpr) (type : TypeExpr) (so
 /-- Singleton collapse is retained as an actual authored row of the core;
 it is not an intrinsic CanonicalBags identification. -/
 theorem actual_singleton_row :
-    (language.equations[3]?).map (fun row => (row.left,row.right,row.premises)) =
-      some (.collection .hashSet [.fvar "P"] none,.fvar "P",[]) := by cbv
+    (language.equations[3]?).map (fun row => (row.left,row.right,row.premises,ReferenceStep.readsRaw row)) =
+      some (.collection .hashSet [.fvar "P"] none,.fvar "P",[],true) := by cbv
 
 /-- The existing independent reference equation judgment realizes the real
 singleton row, with its exact raw matching and source substitution. -/
@@ -3090,7 +3091,7 @@ theorem actual_singleton_instance (value : Pattern) :
     ReferenceStep.AuthoredEquation Engine.RelationEnv.empty language (sum [value]) value := by
   obtain ⟨row,declared,shape⟩ := Option.map_eq_some_iff.mp actual_singleton_row
   simp only [Prod.mk.injEq] at shape
-  obtain ⟨leftShape,rightShape,premisesShape⟩ := shape
+  obtain ⟨leftShape,rightShape,premisesShape,undeclared⟩ := shape
   let bindings : Match.Bindings := [("P",value)]
   have matched : bindings ∈ Match.matchPattern row.left (sum [value]) := by
     rw [leftShape]
@@ -3106,7 +3107,7 @@ theorem actual_singleton_instance (value : Pattern) :
     simp [Match.applyBindingsScoped,ReferenceStep.captureSitesOf,Match.captureDepth,Match.captureDepthList,
       bindings,Substitution.liftBVars_zero]
   have authoredInstance := ReferenceStep.AuthoredEquation.forward
-    (List.mem_of_getElem? declared) matched premises
+    (List.mem_of_getElem? declared) undeclared matched premises
   simpa only [read] using authoredInstance
 
 /-- This is the original full-syntax source equivalence, not a new quotient

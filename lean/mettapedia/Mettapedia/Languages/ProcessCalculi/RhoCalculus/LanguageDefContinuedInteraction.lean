@@ -312,6 +312,7 @@ theorem rhoContinuationRetyping_equationsRetypable :
   subst equation
   refine
     { premiseFree := rfl
+      undeclared := rfl
       leftInstantiationStable := by
         simp [schemaInstantiationStable,
           schemaHasNoCollectionRest, schemaListHasNoCollectionRest,

@@ -103,7 +103,7 @@ theorem deep_not_underlying (theory : WrappableIGSLT) : IsEmpty (forget.obj theo
   obtain rfl := (CIGSLT.mapPattern_eq_fvar_iff _ _ _).mp innerImage
   obtain ⟨-, environment⟩ := theory.cut.operands_of_binary_left shape
     (by simp [containsContactShape, containsContactShapeList])
-    (by simp [containsContactShape, containsContactShapeList])
+    (by simp [containsContactShape, containsContactShapeList]) rfl rfl
   obtain ⟨-, selected⟩ := theory.cut.environment.of_apply environment
   match index : theory.cut.environment.continuation.index, selected with
   | 0, selected =>
@@ -127,6 +127,8 @@ theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
       .apply introduction contractumArguments)
     (programPlain : containsContactShape (.apply introduction programArguments) = false)
     (environmentPlain : containsContactShape environment = false)
+    (programDirect : choiceForm (.apply introduction programArguments) = false)
+    (environmentDirect : choiceForm environment = false)
     (theory : WrappableIGSLT) : IsEmpty (source ⟶ forget.obj theory) := by
   constructor
   intro morphism
@@ -144,6 +146,13 @@ theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
       rw [shape]
       exact programPlain)
     (by rw [containsContactShape_mapPattern]; exact environmentPlain)
+    (by
+      have shape := choiceForm_mapPattern (IGSLT.Morphism.structural morphism).structural.symbols
+        (.apply introduction programArguments)
+      simp only [mapPattern] at shape
+      rw [shape]
+      exact programDirect)
+    (by rw [choiceForm_mapPattern]; exact environmentDirect)
   obtain ⟨programLabel, -⟩ := theory.cut.program.of_apply program
   exact (theory.contractum_head_ne_introductions mappedRight.symm).1 programLabel
 
@@ -153,7 +162,7 @@ theorem successor_not_underlying (theory : WrappableIGSLT) :
   no_morphism_of_contractum_headed_by_program (source := calculatorRewritingIGSLT)
     (contact := "Add") (introduction := "Succ") (programArguments := [.fvar "m"])
     (contractumArguments := [.apply "Add" [.fvar "m", .fvar "n"]])
-    (environment := .fvar "n") rfl rfl (by decide) (by decide) theory
+    (environment := .fvar "n") rfl rfl (by decide) (by decide) rfl rfl theory
 
 /-- **Visible composition in an interaction category maps into no wrappable
 theory**, for the same reason: the composite is headed by the action prefix
@@ -166,7 +175,7 @@ theorem visibleComposition_not_underlying (theory : WrappableIGSLT) :
     (programArguments := [.fvar "a", .fvar "b", .fvar "p"])
     (contractumArguments := [.fvar "a", .fvar "c", .apply "Comp" [.fvar "p", .fvar "q"]])
     (environment := .apply "Act" [.fvar "b", .fvar "c", .fvar "q"]) rfl rfl
-    (by decide) (by decide) theory
+    (by decide) (by decide) rfl rfl theory
 
 /-! ## The essential image -/
 
@@ -225,9 +234,11 @@ theorem no_morphism_of_contractum_headed_by_program {source : IGSLT}
       .apply introduction contractumArguments)
     (programPlain : containsContactShape (.apply introduction programArguments) = false)
     (environmentPlain : containsContactShape environment = false)
+    (programDirect : choiceForm (.apply introduction programArguments) = false)
+    (environmentDirect : choiceForm environment = false)
     (theory : CIGSLT) : IsEmpty (source ⟶ forget.obj theory) :=
   WrappableIGSLT.no_morphism_of_contractum_headed_by_program left right programPlain
-    environmentPlain theory.toWrappableIGSLT
+    environmentPlain programDirect environmentDirect theory.toWrappableIGSLT
 
 /-- **Successor arithmetic maps into no continued theory.** -/
 theorem successor_not_underlying (theory : CIGSLT) :

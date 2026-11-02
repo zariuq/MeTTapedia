@@ -17,8 +17,8 @@ def protocol : Protocol :=
   { name := "admit"
     contextType := "Context"
     hooks := [
-      ⟨"guard", "admit_guard", .guard, ["input"], [], ["valid"]⟩,
-      ⟨"ready", "admit_ready", .prepare, ["valid"], ["pending"], ["reserved"]⟩]
+      ⟨"guard", "admit_guard", .guard, ["input"], [], ["valid"], []⟩,
+      ⟨"ready", "admit_ready", .prepare, ["valid"], ["pending"], ["reserved"], []⟩]
     resources := [⟨"pending", "admit_acquire", "admit_release", "admit_transfer",
       ["valid"], ["reserved"]⟩]
     entryFacts := ["input"]

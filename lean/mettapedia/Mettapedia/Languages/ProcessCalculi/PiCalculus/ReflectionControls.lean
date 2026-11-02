@@ -21,6 +21,8 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.GSLT.LanguageDef.BagNormalForm
 open Mettapedia.GSLT.LanguageDef.EquationSemantics
 open Mettapedia.OSLF.MeTTaIL.PatternCode
+open Mettapedia.GSLT.LanguageDef.WellSorted (HasType)
+open Mettapedia.OSLF.Framework.TypeSynthesis (langBox)
 open PiCalcInstance
 
 def receiver : Pattern := .apply "PiInp" [.fvar "a", .lambda none
@@ -150,20 +152,25 @@ theorem named_exchange_has_native_atomic_result :
 theorem singleton_message_has_same_native_atomic_type :
     atomicNativeType 0
       (.apply "PiOut" [.fvar "a", .collection .hashBag [.fvar "b"] none]) := by
-  change AtomicPi 0 (normalForm (some "PiNil") _)
-  simpa [normalForm, normalFormList, normalizeBag, bagContents, splice, collapse] using
-    (AtomicPi.output (AtomicName.free 0 "a") (AtomicName.free 0 "b"))
+  have singleton : EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+      (.collection .hashBag [.fvar "b"] none) (.fvar "b") := derivedInstance_equivalent
+    (DerivedInstance.singleton piBagPresentation.bagAlgebraRule rfl
+      ⟨fun _ => some (.base "Proc"), [], bag_hasType (piBagPresentation.asBare rfl) (.cons (.fvar rfl) (.nil _ _))⟩)
+  exact ⟨.apply "PiOut" [.fvar "a", .fvar "b"],
+    equationEquiv_fill (.apply "PiOut" [.fvar "a"] .hole []) singleton,
+    .output (AtomicName.free 0 "a") (AtomicName.free 0 "b")⟩
 
-theorem process_message_has_no_native_atomic_type :
-    ¬ atomicNativeType 0 (.apply "PiOut" [.fvar "a", .apply "PiNil" []]) :=
+/-- In the parallel fragment, a process-valued message has no atomic type. -/
+theorem process_message_has_no_parallel_atomic_type :
+    ¬ parallelAtomicType 0 (.apply "PiOut" [.fvar "a", .apply "PiNil" []]) :=
   process_message_not_atomic 0
 
 def processMessageExchange : Pattern := .collection .hashBag
   [.apply "PiInp" [.fvar "a", .lambda none (.apply "PiNil" [])],
     .apply "PiOut" [.fvar "a", .apply "PiNil" []]] none
 
-private theorem processMessageExchange_not_native_atomic :
-    ¬ atomicNativeType 0 processMessageExchange := by
+private theorem processMessageExchange_not_parallel_atomic :
+    ¬ parallelAtomicType 0 processMessageExchange := by
   let components : List Pattern :=
     [.apply "PiInp" [.fvar "a", .lambda none (.apply "PiNil" [])],
       .apply "PiOut" [.fvar "a", .apply "PiNil" []]]
@@ -184,12 +191,12 @@ private theorem processMessageExchange_not_native_atomic :
   apply process_message_not_atomic 0
   exact all _ (mem_sortPatterns.mpr (by simp [components]))
 
-/-- The native box ranges over all predecessors in the declared one-sort
+/-- The fragment's native box ranges over all predecessors in the declared one-sort
 GSLT. An atomic endpoint can have a predecessor with a process-valued message;
 forward closure of the atomic executor does not exclude that predecessor. -/
 theorem atomic_endpoint_has_nonatomic_native_predecessor :
-    atomicNativeType 0 (.apply "PiNil" []) ∧
-      ¬ piCalcBox (atomicNativeType 0) (.apply "PiNil" []) := by
+    parallelAtomicType 0 (.apply "PiNil" []) ∧
+      ¬ langBox piParallelFragment (parallelAtomicType 0) (.apply "PiNil" []) := by
   refine ⟨(AtomicPi.nil 0).normalForm, ?_⟩
   intro boxed
   have firing : PiRawStep processMessageExchange
@@ -201,12 +208,13 @@ theorem atomic_endpoint_has_nonatomic_native_predecessor :
         .apply "PiOut" [.fvar "a", .apply "PiNil" []]]) (tail := none)
       0 (by decide) 0 (by decide) (.fvar "a") none
       (.apply "PiNil" []) (.apply "PiNil" []) rfl rfl)
-  have singleton : EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
+  have singleton : EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment
       (.collection .hashBag [.apply "PiNil" []] none) (.apply "PiNil" []) :=
-    derivedInstance_equivalent (.singleton piBagTheory.bagAlgebraRule rfl
-      ⟨piNameContext, [], bag_hasType (piBagTheory.asBare rfl)
-        (.cons (piToPattern_hasType .nil) (.nil _ _))⟩)
-  exact processMessageExchange_not_native_atomic
-    ((pi_native_box_iff_raw _ _).mp boxed _ _ firing singleton)
+    derivedInstance_equivalent (.singleton piParallelBagTheory.bagAlgebraRule rfl
+      ⟨piNameContext, [], bag_hasType (piParallelBagTheory.toBagPresentation.asBare rfl)
+        (.cons (HasType.of_terms_subset (source := piCalc) (target := piParallelFragment) (fun _ member => member)
+          (piToPattern_hasType .nil)) (.nil _ _))⟩)
+  exact processMessageExchange_not_parallel_atomic
+    ((parallel_native_box_iff_raw _ _).mp boxed _ _ firing singleton)
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus.ReflectionControls

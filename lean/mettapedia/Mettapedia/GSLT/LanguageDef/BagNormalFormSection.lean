@@ -96,7 +96,7 @@ theorem sortedAt_of_admissible (laws : BareBagTheory language bag unit)
       (.collection .hashBag elements none))
     (collectionless : collectionFree type = true) :
     SortedAt language (.collection .hashBag elements none) bag.category := by
-  obtain ⟨-, rfl, -⟩ := bag_typing laws admissible.typed collectionless
+  obtain ⟨-, rfl, -⟩ := bag_typing laws.toBareBagPresentation admissible.typed collectionless
   exact ⟨free, bound, admissible.typed⟩
 
 section Flattening
@@ -288,7 +288,7 @@ theorem path_normalForm (laws : BareBagTheory language bag unit)
       simp [isObjectPattern] at object
   | hcollection kind elements rest recurse =>
       intro free bound type admissible collectionless
-      obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws admissible.typed collectionless
+      obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation admissible.typed collectionless
       have object := admissible.object
       simp only [isObjectPattern, Bool.and_eq_true, Option.isNone_iff_eq_none] at object
       obtain ⟨rfl, objectElements⟩ := object

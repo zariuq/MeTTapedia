@@ -43,7 +43,7 @@ inductive OpenSortedEquationInstanceAt
   | forward
       {fuel : Nat} {equation : Equation} {source target : Pattern}
       {initialBindings finalBindings : Bindings} :
-      List.Mem equation language.equations →
+      List.Mem equation language.equations → readsRaw equation = true →
       initialBindings ∈ matchPattern equation.left source →
       PremisesAt base language fuel initialBindings equation.premises
         finalBindings →
@@ -53,7 +53,7 @@ inductive OpenSortedEquationInstanceAt
   | reverse
       {fuel : Nat} {equation : Equation} {source target : Pattern}
       {initialBindings finalBindings : Bindings} :
-      List.Mem equation language.equations →
+      List.Mem equation language.equations → readsRaw equation = true →
       initialBindings ∈ matchPattern equation.right source →
       PremisesAt base language fuel initialBindings equation.premises
         finalBindings →
@@ -75,10 +75,10 @@ theorem equationInstance_of_openSortedEquationInstance
   obtain ⟨fuel, instance'⟩ := sorted
   refine ⟨fuel, ?_⟩
   cases instance' with
-  | forward member matched premises _ applied =>
-      exact EquationInstanceAt.forward member matched premises applied
-  | reverse member matched premises _ applied =>
-      exact EquationInstanceAt.reverse member matched premises applied
+  | forward member raw matched premises _ applied =>
+      exact EquationInstanceAt.forward member raw matched premises applied
+  | reverse member raw matched premises _ applied =>
+      exact EquationInstanceAt.reverse member raw matched premises applied
 
 /-- A type-checked open instance is a generator of the canonical authored
 equation theory; this is inclusion, not an identification of the relations. -/
@@ -100,20 +100,20 @@ theorem openSortedEquationInstance_empty_iff_sorted
   · rintro ⟨fuel, instance'⟩
     refine ⟨fuel, ?_⟩
     cases instance' with
-    | forward member matched premises sorted applied =>
-        exact SortedEquationInstanceAt.forward member matched premises
+    | forward member raw matched premises sorted applied =>
+        exact SortedEquationInstanceAt.forward member raw matched premises
           ((sortedBindingsIn_empty_iff _ _ _).mp sorted) applied
-    | reverse member matched premises sorted applied =>
-        exact SortedEquationInstanceAt.reverse member matched premises
+    | reverse member raw matched premises sorted applied =>
+        exact SortedEquationInstanceAt.reverse member raw matched premises
           ((sortedBindingsIn_empty_iff _ _ _).mp sorted) applied
   · rintro ⟨fuel, instance'⟩
     refine ⟨fuel, ?_⟩
     cases instance' with
-    | forward member matched premises sorted applied =>
-        exact OpenSortedEquationInstanceAt.forward member matched premises
+    | forward member raw matched premises sorted applied =>
+        exact OpenSortedEquationInstanceAt.forward member raw matched premises
           ((sortedBindingsIn_empty_iff _ _ _).mpr sorted) applied
-    | reverse member matched premises sorted applied =>
-        exact OpenSortedEquationInstanceAt.reverse member matched premises
+    | reverse member raw matched premises sorted applied =>
+        exact OpenSortedEquationInstanceAt.reverse member raw matched premises
           ((sortedBindingsIn_empty_iff _ _ _).mpr sorted) applied
 
 #print axioms equationInstance_of_openSortedEquationInstance

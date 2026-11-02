@@ -80,7 +80,7 @@ theorem undefinedGlobalError_term (name : SourceSignature.Constant) :
 
 /-- Concrete Prolog list symbols used by the shared collector. -/
 def collectionEncoding : LP.RuntimeQuery.CollectionEncoding Sigma where
-  nil := .atom "[]"
+  nil := .nil
   cons := { name := "[|]", arity := 2 }
   cons_arity_two := rfl
 
@@ -159,6 +159,7 @@ pinned SWI's inline tagged range also fail closed: their indirect GMP-byte
 encoding is intentionally outside this partial conformance claim. -/
 def termHashEncoding : LP.RuntimeTermHash.Encoding Sigma where
   primitive
+    | .nil => some (.atom "[]")
     | .atom name => some (.atom name)
     | .integer value =>
         if value < (-72057594037927936 : Int) ∨
@@ -1080,7 +1081,7 @@ def decodeDcgAux : Nat → Heap Sigma.scoped → Addr → Addr → Addr →
       match cell with
       | .var _ none => .error .dcgBodyUnbound
       | .var _ (some _) => .error (.memory .illFormedHeap)
-      | .const (.atom "[]") =>
+      | .const .nil =>
           pure (.addressTerminals collectionEncoding [])
       | .const (.string value) =>
           pure (.constantTerminals collectionEncoding
@@ -1121,7 +1122,6 @@ def decodeDcg (heap : Heap Sigma.scoped) (body input rest : Addr) :
   decodeDcgAux (heap.size + 1) heap body input rest
 
 private def isAtomConstant : SourceSignature.Constant → Bool
-  | .atom "[]" => false
   | .atom _ => true
   | _ => false
 

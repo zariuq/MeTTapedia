@@ -48,7 +48,7 @@ private def atomName? : SourceSignature.Term → Option String
 private def properListAux : Nat → SourceSignature.Term →
     Option (List SourceSignature.Term)
   | 0, _ => none
-  | _ + 1, .const (.atom "[]") => some []
+  | _ + 1, .const .nil => some []
   | fuel + 1, .app indicator arguments =>
       match indicator.name, List.ofFn arguments with
       | "[|]", [head, tail] => do
