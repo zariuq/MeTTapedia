@@ -16,6 +16,10 @@ Positive example:
 Negative example:
 - this is a pure process-calculus slice only; it does not claim any extra host
   runtime features beyond what the Rust Ambient language already uses.
+
+The kernel checks the equation indices and the shapes of the authored equations. The declaration gate and the
+exported text are checked by evaluation (`#guard`): the gate reads binder names through functions defined by
+well-founded recursion, and the text checks search strings, neither of which the kernel unfolds.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.Ambient.LanguageDefDSL
@@ -71,13 +75,13 @@ def exportedRustSyntax : String :=
   renderLanguageWithUserSyntax ambientCore
 
 private def newCommEq : Equation :=
-  ambientCore.equations.get ⟨0, by native_decide⟩
+  ambientCore.equations.get ⟨0, by decide⟩
 
 private def scopeExtrusionEq : Equation :=
-  ambientCore.equations.get ⟨1, by native_decide⟩
+  ambientCore.equations.get ⟨1, by decide⟩
 
 private def inNewEq : Equation :=
-  ambientCore.equations.get ⟨2, by native_decide⟩
+  ambientCore.equations.get ⟨2, by decide⟩
 
 private def inNewHasStructuredPrefixApps : Bool :=
   match inNewEq.left, inNewEq.right with
@@ -99,8 +103,7 @@ private def scopeExtrusionHasFreshnessAndRest : Bool :=
       fc.varName == "x" && fc.term == .collection .hashBag [] (some "rest")
   | _, _, _ => false
 
-example : LanguageDef.validate ambientCore = [] := by
-  native_decide
+#guard (LanguageDef.validate ambientCore).isEmpty
 
 example : ambientCore.terms.length = 7 := rfl
 example : ambientCore.equations.length = 6 := rfl
@@ -108,39 +111,24 @@ example : ambientCore.rewrites.length = 6 := rfl
 example : (ambientCore.rewrites.flatMap compileRuleContexts).length = 3 := by
   decide +kernel
 example : newCommPreservesBinderOrder = true := by
-  native_decide
+  decide +kernel
 example : scopeExtrusionHasFreshnessAndRest = true := by
-  native_decide
+  decide +kernel
 example : inNewHasStructuredPrefixApps = true := by
-  native_decide
+  decide +kernel
 
-example :
-    hasSubstring "name: Ambient" exportedRustSyntax = true := by
-  native_decide
+#guard hasSubstring "name: Ambient" exportedRustSyntax
 
-example :
-    hasSubstring "PNew . ^x.p:[Name -> Proc] |- \"new\" \"(\" x \",\" p \")\" : Proc;"
-      exportedRustSyntax = true := by
-  native_decide
+#guard hasSubstring "PNew . ^x.p:[Name -> Proc] |- \"new\" \"(\" x \",\" p \")\" : Proc;" exportedRustSyntax
 
-example :
-    hasSubstring "ScopeExtrusion . | x # ...rest |- (PPar {(PNew ^x.P), ...rest}) = (PNew ^x.(PPar {P, ...rest}));"
-      exportedRustSyntax = true := by
-  native_decide
+#guard hasSubstring "ScopeExtrusion . | x # ...rest |- (PPar {(PNew ^x.P), ...rest}) = (PNew ^x.(PPar {P, ...rest}));"
+  exportedRustSyntax
 
-example :
-    hasSubstring "InNew . | x # P |- (PIn N (PNew ^x.P)) = (PNew ^x.(PIn N P));"
-      exportedRustSyntax = true := by
-  native_decide
+#guard hasSubstring "InNew . | x # P |- (PIn N (PNew ^x.P)) = (PNew ^x.(PIn N P));" exportedRustSyntax
 
-example :
-    hasSubstring "OpenRule . |- (PPar {(POpen N P), (PAmb N Q), ...rest}) ~> (PPar {P, Q, ...rest});"
-      exportedRustSyntax = true := by
-  native_decide
+#guard hasSubstring "OpenRule . |- (PPar {(POpen N P), (PAmb N Q), ...rest}) ~> (PPar {P, Q, ...rest});"
+  exportedRustSyntax
 
-example :
-    hasSubstring "AmbCong . | S ~> T |- (PAmb N S) ~> (PAmb N T);"
-      exportedRustSyntax = true := by
-  native_decide
+#guard hasSubstring "AmbCong . | S ~> T |- (PAmb N S) ~> (PAmb N T);" exportedRustSyntax
 
 end Mettapedia.Languages.ProcessCalculi.Ambient.LanguageDefDSL

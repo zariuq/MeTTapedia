@@ -69,14 +69,14 @@ def painEvidence : List (SourceItem PainSource PainCandidate) := [
       | .stateOfMind       => ⟨2, 0⟩
       | .split             => ⟨0, 2⟩,
     note := "SNOMED Clinical Terms: Pain as Finding, not Process" },
-  { source := .sumoAxiom, kind := .empirical,
+  { source := .sumoAxiom, kind := .textInterpreted,
     support := fun
       | .pathologicProcess => ⟨0, 3⟩
       | .emotionalState    => ⟨3, 0⟩
       | .stateOfMind       => ⟨3, 0⟩
       | .split             => ⟨0, 0⟩,
     note := "SUMO axiom: (contraryAttribute Pleasure Pain) demands Attribute" },
-  { source := .sumoProcess, kind := .empirical,
+  { source := .sumoProcess, kind := .textInterpreted,
     support := fun
       | .pathologicProcess => ⟨2, 0⟩
       | .emotionalState    => ⟨0, 0⟩
@@ -98,6 +98,11 @@ def painEvidence : List (SourceItem PainSource PainCandidate) := [
       | .split             => ⟨0, 0⟩,
     note := "Wikipedia: 'distressing feeling associated with tissue damage'" }
 ]
+
+/-- These support scores are interpretations of source material, not measured
+trial counts or checked logical certificates. -/
+theorem painEvidence_not_empirical :
+    painEvidence.all (fun item => item.kind != .empirical) = true := by decide
 
 /-! ## 3. Kernel-checked evidence computation -/
 

@@ -1,0 +1,21 @@
+import Mettapedia.Machines.ImprovementRegionControls
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Owner-module and primitive-axiom inventory for the keyed-improvement
+region. Native implementation and costs are separate qualification duties. -/
+
+#print axioms Mettapedia.Machines.KeyedImprovement.row_improve_refines
+#print axioms Mettapedia.Machines.KeyedImprovement.Transactions.refresh_exact
+#print axioms Mettapedia.Machines.WeightedRelaxation.closed_sound_eq_distance
+#print axioms Mettapedia.Machines.WeightedRelaxation.Worklist.eventually_quiescent
+#print axioms Mettapedia.Machines.WeightedRelaxation.Worklist.finite_shortest_paths
+#print axioms Mettapedia.Machines.WeightedRelaxation.Lattice.target_eq_distance
+#print axioms Mettapedia.Machines.WeightedRelaxation.Adjacency.captured_loop_exact
+
+#foundation_manifest_module Mettapedia.Machines.KeyedImprovement
+#foundation_manifest_module Mettapedia.Machines.KeyedImprovementTransactions
+#foundation_manifest_module Mettapedia.Machines.WeightedPathRelaxation
+#foundation_manifest_module Mettapedia.Machines.ShortestPathWorklist
+#foundation_manifest_module Mettapedia.Machines.LatticeRelaxationClosure
+#foundation_manifest_module Mettapedia.Machines.RelaxationAdjacency
+#foundation_manifest_module Mettapedia.Machines.ImprovementRegionControls

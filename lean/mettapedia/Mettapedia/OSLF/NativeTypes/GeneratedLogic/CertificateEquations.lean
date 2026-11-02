@@ -458,21 +458,21 @@ theorem authored_eval_eq {relEnv : RelationEnv} (contextual : certificate.contex
     (Mettapedia.OSLF.Framework.FiniteModels.Certificate.contextual_preorder contextual)
   obtain ⟨-, -, authoredChecked⟩ := equationsValid_parts equations
   cases authored with
-  | @forward equation _ initial final witnesses member matched premises =>
+  | @forward equation _ initial final witnesses member _ matched premises =>
     have checked := authoredChecked equation member
     simp only [equationCheck, Bool.and_eq_true, List.all_eq_true, beq_iff_eq] at checked
     obtain ⟨shape, agree⟩ := checked
     obtain ⟨leftFree, rightFree, leftScoped, rightScoped, rightRests, -, aligned⟩ := equationShape_parts shape
-    obtain ⟨-, -, forwardRight, -⟩ := equationAligned_parts aligned
+    obtain ⟨-, -, -, forwardRight, -⟩ := equationAligned_parts aligned
     rw [applyBindingsScoped_eq_applyBindings_of_notDeeper _ _ 0 equation.right forwardRight]
     exact side_eval_eq commutes (equationSpec_keys equation) (fun entry inside => equationSpec_covers equation inside)
       leftFree rightFree leftScoped rightScoped rightRests agree matched (premisesValid_extends premises) object outer
-  | @reverse equation _ initial final witnesses member matched premises =>
+  | @reverse equation _ initial final witnesses member _ matched premises =>
     have checked := authoredChecked equation member
     simp only [equationCheck, Bool.and_eq_true, List.all_eq_true, beq_iff_eq] at checked
     obtain ⟨shape, agree⟩ := checked
     obtain ⟨leftFree, rightFree, leftScoped, rightScoped, -, leftRests, aligned⟩ := equationShape_parts shape
-    obtain ⟨-, -, -, reverseLeft⟩ := equationAligned_parts aligned
+    obtain ⟨-, -, -, -, reverseLeft⟩ := equationAligned_parts aligned
     rw [applyBindingsScoped_eq_applyBindings_of_notDeeper _ _ 0 equation.left reverseLeft]
     refine side_eval_eq commutes (equationSpec_keys equation) (fun entry inside => equationSpec_covers equation ?_)
       rightFree leftFree rightScoped leftScoped leftRests (fun table member => (agree table member).symm) matched
@@ -480,6 +480,16 @@ theorem authored_eval_eq {relEnv : RelationEnv} (contextual : certificate.contex
     rcases List.mem_append.mp inside with here | there
     · exact List.mem_append_right _ here
     · exact List.mem_append_left _ there
+  | @declared equation _ _ _ _ member notRaw _ =>
+    have checked := authoredChecked equation member
+    simp only [equationCheck, Bool.and_eq_true, List.all_eq_true, beq_iff_eq] at checked
+    obtain ⟨-, -, -, -, -, -, aligned⟩ := equationShape_parts checked.1
+    exact absurd (equationAligned_parts aligned).1 (by simp [notRaw])
+  | @premised equation _ _ _ _ _ member notRaw _ _ =>
+    have checked := authoredChecked equation member
+    simp only [equationCheck, Bool.and_eq_true, List.all_eq_true, beq_iff_eq] at checked
+    obtain ⟨-, -, -, -, -, -, aligned⟩ := equationShape_parts checked.1
+    exact absurd (equationAligned_parts aligned).1 (by simp [notRaw])
 
 end Certificate
 

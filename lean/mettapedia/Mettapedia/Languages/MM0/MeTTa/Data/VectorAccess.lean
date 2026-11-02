@@ -153,10 +153,14 @@ theorem vector_body_returns (state : State) (handle : Handle) (rows : List Atom)
       let answers := indexedQuery rows index
       let found := ("found", .expression answers) :: bound
       apply let_returns program bound found state state state (.var "found") _ _ (.expression answers) _
-      · apply match_collapse_returns program bound state state "space"
-          (.expression [.var "index", .var "value"]) (.var "value") answers
-        simp [bound, vectorEnvironment, environment, applySubst, Subst.lookup,
-          applySubst.applySubstList, represented, indexedQuery, answers]
+      · have collected := match_collapse_returns program bound state "space"
+          (.expression [.var "index", .var "value"]) (.var "value") rows
+          (by simp [bound, vectorEnvironment, environment, applySubst, Subst.lookup, represented])
+          (fun bound => applySubst bound (.var "value"))
+          (fun _ bound _ => variable_returns program bound state "value")
+        rwa [ListAccess.keyed_rows_indexedQuery bound "index" index rows
+          (by simp [bound, vectorEnvironment, environment, Subst.lookup])
+          (by simp [bound, vectorEnvironment, environment, Subst.lookup])] at collected
       · simp [SpaceSemantics.matchValue, matchAtom, bound, vectorEnvironment, environment,
           Subst.lookup, found]
       · exact found_body_returns state handle size index answers

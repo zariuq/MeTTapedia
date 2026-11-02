@@ -63,6 +63,46 @@ is measured in nats; dividing by `log 2` gives the normalized entropy in bits.
 | `MeasureTheoreticBridge.lean` | embeds finite distributions into Mathlib `Measure (Fin n)` over counting measure; connects to `klDiv` |
 | `Main.lean` | reviewer-friendly shipping entry point for the entropy axiomatizations |
 
+### `KnowledgeQuantification/` — knowledge as standardized compression
+
+D. Fanelli, [*A theory and methodology to quantify knowledge*](https://doi.org/10.1098/rsos.181055),
+R. Soc. open sci. 6: 181055 (2019), measures knowledge by
+
+```
+K = n_Y (H(Y) − H(Y | X, τ)) / (n_Y H(Y) + n_X H(X) − log p(τ))
+```
+
+the share of all the information in an explanandum `Y` (used `n_Y` times), an input `X`
+(measured `n_X` times) and a theory `τ` that the explanation compresses. Its numerator is
+`n_Y` times the mutual information of input and explanandum
+(`FiniteSystem.budget_explained_eq_mutualInfo`), equivalently the conditional mutual
+information given the selected theory (`FiniteSystem.budget_explained_eq_condMutualInfo`).
+
+| File | Contents |
+|------|----------|
+| `Basic.lean` | `K` of an information budget: `K = k η`, the range `[0, 1)`, the odds form, the marginal rule (the paper's progress, resolution and cumulative conditions are instances), relative Ockham, compression `K > 1 − η`, the two-part-code counterexample, bias-corrected and predictive knowledge |
+| `Amortization.lean` | limits as uses grow (`1/2`, `1`, `0`), consilience, unknown use counts: adopting a theory when its `K` reaches one half is the 2-competitive rent-or-buy policy |
+| `Entropic.lean` | finite systems on the Bayesian joint law: the entropy of a mixture, `I = H(Y) − H(Y | X)`, `I ≤ H(X)`, `K ≤ 1/2` under direct measurement, predictive knowledge, the gain from ruling out a hypothesis |
+| `Hypotheses.lean` | a conclusive negative result as Bayesian conditioning; ruling out the most probable hypothesis can raise the entropy; the claimed symmetry `K(Y; X, T) = K(T; Y, X)` fails, and the exchange identity `I(Y; X, T) = I(T; Y, X) + I(Y; X) − I(T; X)` replaces it; selecting a theory reduces conditional to plain mutual information |
+| `Resolution.lean` | entropy under coarsening and refinement (at most `log q`), data processing |
+| `Coding.lean` | codebook relativity and its disappearance with use, summable priors force unbounded theory lengths, Kolmogorov floors, `K` beside the two-part code among razor profiles |
+| `Causal.lean` | interventional knowledge on structural models: setting against measuring, correlation without causation |
+| `ProofSharing.lean` | theoretical knowledge of shared and of tree-shaped proofs |
+| `Main.lean` | entry point |
+
+Corrections to the paper, as theorems:
+
+- minimizers of the two-part code length need not maximize `K`
+  (`Budget.mdl_choice_ne_knowledge_choice`); the two agree at a fixed theory length and for
+  lossless theories, and `K > 0` does not mean compression
+  (`Budget.bloated_knowledge_pos_not_compresses`);
+- causal knowledge needs the interventional kernel: a common cause gives positive
+  observational and zero causal knowledge (`confounded_correlation_without_causation`);
+- `K(Y; X, T) = K(T; Y, X)` (eq. 3.24) fails when the input is informative
+  (`mutualInfo_not_symmetric_in_hypothesis`);
+- refining a resolution can add no entropy (`shannonEntropyFin_coarsen_dirac`), so the strict
+  lower bound of eq. E 1 is false.
+
 ## Proof qualification
 
 Faddeev's prime-coefficient equality is transported from the canonical standalone
@@ -97,4 +137,5 @@ to the canonical axioms or coefficient definitions are caught at compilation.
 - Claude E. Shannon, [*A Mathematical Theory of Communication*](https://onlinelibrary.wiley.com/doi/abs/10.1002/j.1538-7305.1948.tb01338.x), Bell System Technical Journal 27 (1948), 379–423 and 623–656 ([archive scan](https://ia803209.us.archive.org/27/items/bstj27-3-379/bstj27-3-379_text.pdf)) — the origin of entropy (`Shannon1948.lean`).
 - D. K. Faddeev, "On the concept of entropy of a finite probabilistic scheme" (Russian), Uspekhi Mat. Nauk 11 (1956), no. 1(67), 227–231 — the binary-continuity characterization (`Faddeev.lean`); see this [English translation](https://arrowtheory.com/pub/notes/025-faddeev-entropy.html) and the discussion in John Baez's [*Entropy as a functor*](https://ncatlab.org/johnbaez/show/Entropy+as+a+functor).
 - A. Ya. Khinchin, [*Mathematical Foundations of Information Theory*](https://archive.org/details/mathematicalfoun0000khin) (Dover, 1957) — the Shannon–Khinchin axioms (`ShannonKhinchin.lean`).
+- Daniele Fanelli, [*A theory and methodology to quantify knowledge*](https://doi.org/10.1098/rsos.181055), R. Soc. open sci. 6 (2019), 181055 — the knowledge quantity `K` (`KnowledgeQuantification/`).
 - Tom Leinster, [*An Operadic Introduction to Entropy*](https://golem.ph.utexas.edu/category/2011/05/an_operadic_introduction_to_en.html) (The n-Category Café, 2011) — cited in `Faddeev.lean` for the operadic/uniqueness viewpoint.

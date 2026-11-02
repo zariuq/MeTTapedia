@@ -8,6 +8,12 @@ Theorem-level index mapping the equations and rules in:
 - `hyperon/rho4u/metta-calculus/metta-calculus.core.tex`
 
 to concrete Lean theorem names in this repository.
+
+The executable canaries below concern the bounded, COMM-only-lookahead
+profile in `Reduction.lean`. The displayed recursive REFL rule is compared
+separately in `ReflectionClosure.lean`; its nested-reflection control rejects
+an unconditional identification of the two profiles. The shared-fragment
+bridges retain their stated source restrictions.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus
@@ -35,22 +41,22 @@ theorem paper_equiv_par_assoc (p q r : Proc) :
 /-- Paper `COMM` canary (positive): a concrete symmetric rendezvous step. -/
 theorem paper_comm_positive :
     demoCommTarget ∈ step demoCommSource := by
-  simpa using (show demoCommTarget ∈ step demoCommSource from by native_decide)
+  simpa using (show demoCommTarget ∈ step demoCommSource from by decide +kernel)
 
 /-- Paper `COMM` canary (negative): mismatched terms block rendezvous. -/
 theorem paper_comm_negative :
     step demoBlocked = [] := by
-  simpa using (show step demoBlocked = [] from by native_decide)
+  simpa using (show step demoBlocked = [] from by decide +kernel)
 
 /-- Paper `REFL` canary (positive): one-step reflection emits future state. -/
 theorem paper_refl_positive :
     demoReflectTarget ∈ step demoReflectSource := by
-  simpa using (show demoReflectTarget ∈ step demoReflectSource from by native_decide)
+  simpa using (show demoReflectTarget ∈ step demoReflectSource from by decide +kernel)
 
 /-- Paper `REFL` canary (negative): no future step means no reflection output. -/
 theorem paper_refl_negative :
     step (pReflect demoChan demoBlocked) = [] := by
-  simpa using (show step (pReflect demoChan demoBlocked) = [] from by native_decide)
+  simpa using (show step (pReflect demoChan demoBlocked) = [] from by decide +kernel)
 
 /-! ## Shared-fragment bridge theorems -/
 

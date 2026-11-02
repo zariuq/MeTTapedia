@@ -44,8 +44,10 @@ syntax (name := moduleTreeCommand) "#module_tree " str " as " ident : command
   let `(command| #module_tree $file:str as $exportId:ident) := stx | throwUnsupportedSyntax
   let source := System.FilePath.mk (← getFileName)
   let (name,_) ← load (source.parent.getD "." / file.getString) [] []
-  let target := mkIdent (exportId.getId ++ `language)
-  let value := mkIdent (name ++ `language)
-  elabCommand (← `(def $target := $value))
+  let currentNamespace ← getCurrNamespace
+  for field in [`module, `library, `language] do
+    let target := mkIdent (exportId.getId ++ field)
+    let value := mkIdent (currentNamespace ++ name ++ field)
+    elabCommand (← `(def $target := $value))
 
 end Mettapedia.GSLT.LanguageDef.ModuleSource.Loader

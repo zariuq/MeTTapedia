@@ -2,13 +2,15 @@ import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIRQuery
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIRProgram
 import Mettapedia.Languages.Datalog.DerivationIdentity
 import Mettapedia.Languages.Datalog.Comparisons
+import Mettapedia.Languages.Datalog.SymbolOrder
 import Mettapedia.OSLF.MeTTaIL.GeneralExecutionAdmission
 
 /-! Executable positive Datalog preparation. Compilation emits ordinary GSLT
 rules; primitive comparison rows contain no joins or derived facts. Native
 carrier references expand through an explicit dictionary into semantic IR.
 The basic scalar profile admits symbols, signed numbers and unsigned numbers.
-Floating values and ordered symbol constraints have explicit diagnostics. -/
+Symbol ordering uses the independent decoded UTF-8 byte-order policy.
+Floating values have an explicit diagnostic. -/
 
 set_option autoImplicit false
 set_option maxRecDepth 16384
@@ -44,6 +46,9 @@ def compare (operator : ComparisonOperator) (left right : Value) : Bool :=
   | .equal => left == right
   | .different => left != right
   | _ => match left,right with
+    | .symbol a,.symbol b => match operator with
+      | .less => SymbolOrder.less a b | .lessEqual => SymbolOrder.less a b || a == b
+      | .greater => SymbolOrder.less b a | .greaterEqual => SymbolOrder.less b a || a == b | _ => false
     | .number a,.number b => match operator with
       | .less => decide (a < b) | .lessEqual => decide (a ≤ b)
       | .greater => decide (a > b) | .greaterEqual => decide (a ≥ b) | _ => false
@@ -57,13 +62,18 @@ def policy : Comparisons.Policy where
     | .equal => left = right
     | .different => left ≠ right
     | _ => match left,right with
+      | .symbol a,.symbol b => match operator with
+        | .less => SymbolOrder.Less a b | .lessEqual => SymbolOrder.Less a b ∨ a = b
+        | .greater => SymbolOrder.Less b a | .greaterEqual => SymbolOrder.Less b a ∨ a = b | _ => False
       | .number a,.number b => match operator with
         | .less => a < b | .lessEqual => a ≤ b | .greater => a > b | .greaterEqual => a ≥ b | _ => False
       | .unsigned a,.unsigned b => match operator with
         | .less => a < b | .lessEqual => a ≤ b | .greater => a > b | .greaterEqual => a ≥ b | _ => False
       | _,_ => False
   check := compare
-  exact := by intro operator left right; cases operator <;> cases left <;> cases right <;> simp [compare]
+  exact := by
+    intro operator left right
+    cases operator <;> cases left <;> cases right <;> simp [compare, SymbolOrder.less_exact]
 
 def operators (program : Program) : List ComparisonOperator :=
   (program.statements.flatMap fun statement => match statement with
@@ -88,11 +98,7 @@ def scalarDiagnostic? (program : Program) (pools : Pools) : Option String :=
   if pools.literals.any (fun value => match value with | .floating _ => true | _ => false) ||
       (ProgramStatic.declarations program).any (fun declaration => declaration.attributes.any (·.type == .floating)) then
     some "floating scalars require a declared floating comparison profile"
-  else program.statements.findSome? fun statement => match statement with
-    | .rule clause => (Comparisons.guards clause).findSome? fun guard =>
-        if guard.operator != .equal && guard.operator != .different && operandType program clause guard.left == some .symbol
-        then some "ordered symbol constraints require a declared symbol ordering profile" else none
-    | _ => none
+  else none
 
 structure Prepared where
   source : Program

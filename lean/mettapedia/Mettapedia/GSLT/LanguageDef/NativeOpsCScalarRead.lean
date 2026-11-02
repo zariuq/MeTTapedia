@@ -44,6 +44,12 @@ inductive Value (Ptr : Type) where
 abbrev Environment (Ptr : Type) := Name → Option (Value Ptr)
 abbrev FieldReader (Ptr : Type) := Ptr → Name → Option (Value Ptr)
 
+/-- A declared pure service receives every evaluated operand in source order.
+Its implementation checks the name, arity and argument types. -/
+abbrev CallReader (Ptr : Type) := Name → List (Value Ptr) → Option (Value Ptr)
+
+def noCalls : CallReader Ptr := fun _ _ => none
+
 def truth? : Value Ptr → Option Bool
   | .byte value => some (value != 0)
   | .boolean value => some value
@@ -208,10 +214,12 @@ theorem unsigned64_negation_keeps_modulus (value : UInt64) :
   simp only [numericNegation?, Option.map_some, UInt64.toNat_sub]
   rfl
 
+mutual
 /-- All operand reads in this fragment are pure. Short-circuit selection is
 retained even when the unselected operand would have no defined read. -/
-def expression (environment : Environment Ptr) (fields : FieldReader Ptr) :
-    CExpr → Option (Value Ptr)
+def expression (environment : Environment Ptr) (fields : FieldReader Ptr)
+    (operand : CExpr) (calls : CallReader Ptr := noCalls) : Option (Value Ptr) :=
+  match operand with
   | .identifier name => environment name
   | .decimal value => signedDecimal? value
   | .unsignedInteger value =>
@@ -219,60 +227,88 @@ def expression (environment : Environment Ptr) (fields : FieldReader Ptr) :
   | .word value => some (.unsigned64 (UInt64.ofNat value.toNat))
   | .bool value => some (.boolean value)
   | .null => some (.identity none)
+  | .call name operands => do
+      let values ← arguments environment fields operands calls
+      calls name values
   | .unary .negate operand => do
-      let value ← expression environment fields operand
+      let value ← expression environment fields operand calls
       numericNegation? value
   | .unary .not operand => do
-      let value ← expression environment fields operand
+      let value ← expression environment fields operand calls
       let truth ← truth? value
       some (.boolean (!truth))
   | .field record name true => do
-      let .identity (some owner) ← expression environment fields record | none
+      let .identity (some owner) ← expression environment fields record calls | none
       fields owner name
   | .field record name false => do
-      let .wordRecord members ← expression environment fields record | none
+      let .wordRecord members ← expression environment fields record calls | none
       (members.find? (fun member => member.1 == name)).map
         (fun member => .unsigned64 member.2)
   | .index array index => do
-      let .identities values ← expression environment fields array | none
-      let .unsigned position ← expression environment fields index | none
+      let .identities values ← expression environment fields array calls | none
+      let .unsigned position ← expression environment fields index calls | none
       (values[position.toNat]?).map Value.identity
   | .binary .and left right => do
-      let first ← expression environment fields left
+      let first ← expression environment fields left calls
       let selected ← truth? first
       if selected then do
-        let second ← expression environment fields right
+        let second ← expression environment fields right calls
         let selectedSecond ← truth? second
         some (.boolean selectedSecond)
       else some (.boolean false)
   | .binary .or left right => do
-      let first ← expression environment fields left
+      let first ← expression environment fields left calls
       let selected ← truth? first
       if selected then some (.boolean true) else do
-        let second ← expression environment fields right
+        let second ← expression environment fields right calls
         let selectedSecond ← truth? second
         some (.boolean selectedSecond)
   | .binary .eq left right => do
-      let first ← expression environment fields left
-      let second ← expression environment fields right
+      let first ← expression environment fields left calls
+      let second ← expression environment fields right calls
       (equal? first second).map Value.boolean
   | .binary .ne left right => do
-      let first ← expression environment fields left
-      let second ← expression environment fields right
+      let first ← expression environment fields left calls
+      let second ← expression environment fields right calls
       (equal? first second).map (fun value => Value.boolean (!value))
   | .binary .lt left right => do
-      let first ← expression environment fields left
-      let second ← expression environment fields right
+      let first ← expression environment fields left calls
+      let second ← expression environment fields right calls
       numericBinary .lt first second
   | .binary operator left right => do
-      let first ← expression environment fields left
-      let second ← expression environment fields right
+      let first ← expression environment fields left calls
+      let second ← expression environment fields right calls
       numericBinary operator first second
   | .conditional condition yes no => do
-      let value ← expression environment fields condition
+      let value ← expression environment fields condition calls
       let selected ← truth? value
-      if selected then expression environment fields yes else expression environment fields no
+      if selected then expression environment fields yes calls else expression environment fields no calls
   | _ => none
+termination_by structural operand
+
+def arguments (environment : Environment Ptr) (fields : FieldReader Ptr)
+    (operands : List CExpr) (calls : CallReader Ptr := noCalls) : Option (List (Value Ptr)) :=
+  match operands with
+  | [] => some []
+  | operand :: rest => do
+      let first ← expression environment fields operand calls
+      let remaining ← arguments environment fields rest calls
+      some (first :: remaining)
+termination_by structural operands
+end
+
+/-- Calls retain the ordered values of the complete actual operand list. -/
+theorem call_reads_all_arguments (environment : Environment Ptr) (fields : FieldReader Ptr)
+    (name : Name) (operands : List CExpr) (calls : CallReader Ptr) :
+    expression environment fields (.call name operands) calls =
+      (arguments environment fields operands calls).bind (calls name) := rfl
+
+theorem undefined_call_argument_refuses (environment : Environment Ptr)
+    (fields : FieldReader Ptr) (name : Name) (operands : List CExpr) (calls : CallReader Ptr)
+    (undefined : arguments environment fields operands calls = none) :
+    expression environment fields (.call name operands) calls = none := by
+  rw [call_reads_all_arguments, undefined]
+  rfl
 
 /-- A declared local pointer supplies the owner; the reader supplies the
 selected live member. Neither a spelling nor non-nullness supplies layout. -/
@@ -289,11 +325,28 @@ theorem pointer_field_read (locals : Environment Ptr) (reader : FieldReader Ptr)
 
 /-- Pure Boolean operands compose without inventing a read of the skipped
 branch. Undefined selected operands still have no execution. -/
+theorem boolean_and_read_with_calls (locals : Environment Ptr) (reader : FieldReader Ptr)
+    (left right : CExpr) (first second : Bool) {calls : CallReader Ptr}
+    (readLeft : expression locals reader left calls = some (.boolean first))
+    (readRight : expression locals reader right calls = some (.boolean second)) :
+    expression locals reader (.binary .and left right) calls = some (.boolean (first && second)) := by
+  rw [expression, readLeft]
+  cases first <;> simp [truth?, readRight]
+
 theorem boolean_and_read (locals : Environment Ptr) (reader : FieldReader Ptr)
     (left right : CExpr) (first second : Bool)
     (readLeft : expression locals reader left = some (.boolean first))
     (readRight : expression locals reader right = some (.boolean second)) :
     expression locals reader (.binary .and left right) = some (.boolean (first && second)) := by
+  rw [expression, readLeft]
+  cases first <;> simp [truth?, readRight]
+
+
+theorem boolean_or_read_with_calls (locals : Environment Ptr) (reader : FieldReader Ptr)
+    (left right : CExpr) (first second : Bool) {calls : CallReader Ptr}
+    (readLeft : expression locals reader left calls = some (.boolean first))
+    (readRight : expression locals reader right calls = some (.boolean second)) :
+    expression locals reader (.binary .or left right) calls = some (.boolean (first || second)) := by
   rw [expression, readLeft]
   cases first <;> simp [truth?, readRight]
 
@@ -304,6 +357,41 @@ theorem boolean_or_read (locals : Environment Ptr) (reader : FieldReader Ptr)
     expression locals reader (.binary .or left right) = some (.boolean (first || second)) := by
   rw [expression, readLeft]
   cases first <;> simp [truth?, readRight]
+
+
+/-- Conditions use their admitted C truth conversion, including wide words
+and nullable identities, rather than requiring Boolean-valued operands. -/
+theorem boolean_and_truth_read (locals : Environment Ptr) (reader : FieldReader Ptr)
+    (left right : CExpr) (first second : Bool) {calls : CallReader Ptr}
+    (readLeft : (expression locals reader left calls).bind truth? = some first)
+    (readRight : (expression locals reader right calls).bind truth? = some second) :
+    expression locals reader (.binary .and left right) calls =
+      some (.boolean (first && second)) := by
+  cases hl : expression locals reader left calls with
+  | none => simp [hl] at readLeft
+  | some lv =>
+      have lt : truth? lv = some first := by simpa [hl] using readLeft
+      cases hr : expression locals reader right calls with
+      | none => simp [hr] at readRight
+      | some rv =>
+          have rt : truth? rv = some second := by simpa [hr] using readRight
+          cases first <;> simp [expression, hl, hr, lt, rt]
+
+theorem boolean_or_truth_read (locals : Environment Ptr) (reader : FieldReader Ptr)
+    (left right : CExpr) (first second : Bool) {calls : CallReader Ptr}
+    (readLeft : (expression locals reader left calls).bind truth? = some first)
+    (readRight : (expression locals reader right calls).bind truth? = some second) :
+    expression locals reader (.binary .or left right) calls =
+      some (.boolean (first || second)) := by
+  cases hl : expression locals reader left calls with
+  | none => simp [hl] at readLeft
+  | some lv =>
+      have lt : truth? lv = some first := by simpa [hl] using readLeft
+      cases hr : expression locals reader right calls with
+      | none => simp [hr] at readRight
+      | some rv =>
+          have rt : truth? rv = some second := by simpa [hr] using readRight
+          cases first <;> simp [expression, hl, hr, lt, rt]
 
 def assignValue? : Value Ptr → Value Ptr → Option (Value Ptr)
   | .byte _, .byte value => some (.byte value)
@@ -316,10 +404,10 @@ def assignValue? : Value Ptr → Value Ptr → Option (Value Ptr)
   | _, _ => none
 
 def assignment (environment : Environment Ptr) (fields : FieldReader Ptr)
-    (location value : CExpr) : Option (Environment Ptr) := do
+    (location value : CExpr) (calls : CallReader Ptr := noCalls) : Option (Environment Ptr) := do
   let .identifier name := location | none
   let previous ← environment name
-  let evaluated ← expression environment fields value
+  let evaluated ← expression environment fields value calls
   let converted ← assignValue? previous evaluated
   some (Function.update environment name (some converted))
 
@@ -328,19 +416,19 @@ conversion back to bool. Both operands are read; logical short circuit is not
 an implementation of this compound assignment. Other operand types are not
 admitted by this Boolean fragment. -/
 def booleanOrAssignment (environment : Environment Ptr) (fields : FieldReader Ptr)
-    (location value : CExpr) : Option (Environment Ptr) := do
+    (location value : CExpr) (calls : CallReader Ptr := noCalls) : Option (Environment Ptr) := do
   let .identifier name := location | none
   let .boolean previous ← environment name | none
-  let .boolean evaluated ← expression environment fields value | none
+  let .boolean evaluated ← expression environment fields value calls | none
   some (Function.update environment name (some (.boolean (previous || evaluated))))
 
 /-- Compound unsigned arithmetic reads the local lvalue once and stores the
 actual machine result. A Boolean comparison is not an arithmetic assignment. -/
 def unsignedCompoundAssignment (environment : Environment Ptr) (fields : FieldReader Ptr)
-    (operator : BinaryOperator) (location value : CExpr) : Option (Environment Ptr) := do
+    (operator : BinaryOperator) (location value : CExpr) (calls : CallReader Ptr := noCalls) : Option (Environment Ptr) := do
   let .identifier name := location | none
   let .unsigned previous ← environment name | none
-  let .unsigned evaluated ← expression environment fields value | none
+  let .unsigned evaluated ← expression environment fields value calls | none
   let .unsigned combined ← unsignedBinary (Ptr := Ptr) operator previous evaluated | none
   some (Function.update environment name (some (.unsigned combined)))
 
@@ -360,13 +448,14 @@ theorem boolean_or_assignment_reads_both_operands (environment : Environment Ptr
       some (Function.update environment name (some (.boolean (previous || evaluated)))) := by
   simp only [booleanOrAssignment, oldRead, valueRead, bind, Option.bind]
 
-def statements (fields : FieldReader Ptr) (environment : Environment Ptr) :
-    List CStatement → Option (Environment Ptr)
+def statements (fields : FieldReader Ptr) (environment : Environment Ptr)
+    (body : List CStatement) (calls : CallReader Ptr := noCalls) : Option (Environment Ptr) :=
+  match body with
   | [] => some environment
-  | .empty :: rest => statements fields environment rest
+  | .empty :: rest => statements fields environment rest calls
   | .assign location value :: rest =>
-      (assignment environment fields location value).bind fun updated =>
-        statements fields updated rest
+      (assignment environment fields location value calls).bind fun updated =>
+        statements fields updated rest calls
   | _ => none
 
 def increment (environment : Environment Ptr) : CExpr → Option (Environment Ptr)
@@ -380,17 +469,17 @@ inductive Result (Ptr : Type) where
   | exhausted
 
 def run (fields : FieldReader Ptr) (condition step : CExpr)
-    (body : List CStatement) (fuel : Nat) (environment : Environment Ptr) : Result Ptr :=
-  match (expression environment fields condition).bind truth? with
+    (body : List CStatement) (fuel : Nat) (environment : Environment Ptr) (calls : CallReader Ptr := noCalls) : Result Ptr :=
+  match (expression environment fields condition calls).bind truth? with
   | none => .finished none
   | some false => .finished (some environment)
   | some true => match fuel with
     | 0 => .exhausted
-    | fuel + 1 => match statements fields environment body with
+    | fuel + 1 => match statements fields environment body calls with
       | none => .finished none
       | some updated => match increment updated step with
         | none => .finished none
-        | some advanced => run fields condition step body fuel advanced
+        | some advanced => run fields condition step body fuel advanced calls
 
 def restore (result : Result Ptr) (name : Name) (old : Option (Value Ptr)) : Result Ptr :=
   match result with
@@ -400,13 +489,14 @@ def restore (result : Result Ptr) (name : Name) (old : Option (Value Ptr)) : Res
 
 /-- Header admission returns and executes the actual body. It does not compare
 that body to a successful scan template or synthesize missing assignments. -/
-def countedLoop (fields : FieldReader Ptr) (fuel : Nat) (environment : Environment Ptr) :
-    CStatement → Option (Result Ptr)
+def countedLoop (fields : FieldReader Ptr) (fuel : Nat) (environment : Environment Ptr)
+    (statement : CStatement) (calls : CallReader Ptr := noCalls) : Option (Result Ptr) :=
+  match statement with
   | .forLoop type counter initial condition step body =>
       if type = ⟨"uint32_t".toList, 0⟩ then do
-        let .unsigned first ← expression environment fields initial | none
+        let .unsigned first ← expression environment fields initial calls | none
         let initialized := Function.update environment counter (some (.unsigned first))
-        some (restore (run fields condition step body fuel initialized)
+        some (restore (run fields condition step body fuel initialized calls)
           counter (environment counter))
       else none
   | _ => none
@@ -438,6 +528,50 @@ def environment : Environment Nat := fun name =>
   else none
 
 def noFields : FieldReader Nat := fun _ _ => none
+
+private def orderedCalls : CallReader Nat := fun name values =>
+  if name = "ordered".toList then
+    match values with
+    | [.unsigned first, .unsigned second] => some (.boolean (decide (first < second)))
+    | _ => none
+  else if name = "constant".toList then
+    match values with
+    | [] => some (.unsigned 7)
+    | _ => none
+  else none
+
+theorem declared_call_keeps_two_ordered_arguments :
+    expression environment noFields
+      (.call "ordered".toList [.unsignedInteger 1, .unsignedInteger 2]) orderedCalls =
+      some (.boolean true) := rfl
+
+theorem reversing_call_arguments_changes_the_answer :
+    expression environment noFields
+      (.call "ordered".toList [.unsignedInteger 2, .unsignedInteger 1]) orderedCalls =
+      some (.boolean false) := rfl
+
+theorem declared_zero_argument_call_is_admitted :
+    expression environment noFields (.call "constant".toList []) orderedCalls =
+      some (.unsigned 7) := rfl
+
+theorem extra_call_argument_is_not_discarded :
+    expression environment noFields
+      (.call "ordered".toList [.unsignedInteger 1, .unsignedInteger 2, .unsignedInteger 3])
+      orderedCalls = none := rfl
+
+theorem undefined_argument_is_not_replaced_by_a_call_result :
+    expression environment noFields
+      (.call "ordered".toList [.identifier "missing".toList, .unsignedInteger 2])
+      orderedCalls = none := rfl
+
+theorem unselected_call_is_not_read :
+    expression environment noFields
+      (.binary .and (.bool false) (.call "unknown".toList [])) orderedCalls =
+      some (.boolean false) := rfl
+
+theorem selected_unknown_call_is_not_a_false_return :
+    expression environment noFields
+      (.binary .and (.bool true) (.call "unknown".toList [])) orderedCalls = none := rfl
 
 theorem false_short_circuit_does_not_read_missing_operand :
     expression environment noFields

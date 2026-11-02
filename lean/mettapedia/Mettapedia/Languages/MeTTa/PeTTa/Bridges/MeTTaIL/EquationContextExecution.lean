@@ -119,10 +119,8 @@ private theorem helper_clause (helper : Helper) (values : List Atom)
   have selected := PureData.match_variable_values helper.names values [] (by cases helper <;> decide) length
     (by intro name _; rfl)
   simp only [List.append_nil] at selected
-  have tuple : SpaceSemantics.matchValue [] (.expression (helper.names.map Atom.var)) (.expression values) =
-      some (helper.names.zip values).reverse := by
-    cases helper <;> simpa only [Helper.names, List.map_cons, List.map_nil, SpaceSemantics.matchValue] using selected
-  simp [formals, tuple, environment]
+  -- `clauses` matches the argument list element by element, which is `selected`.
+  simp [formals, selected, environment]
 
 set_option maxHeartbeats 1000000 in
 private theorem helper_call (helper : Helper) (caller : Subst) (state : State)

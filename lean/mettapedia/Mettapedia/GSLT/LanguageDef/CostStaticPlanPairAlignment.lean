@@ -53,8 +53,8 @@ def sourceDeclaration
         profile base language left right → SourceGeneratorDeclaration
   | .core (.equation _ instanceWitness) =>
       match instanceWitness with
-      | .forward _ used _ _ _ _ _ => .equation used.1
-      | .reverse _ used _ _ _ _ _ => .equation used.1
+      | .forward _ used _ _ _ _ _ _ => .equation used.1
+      | .reverse _ used _ _ _ _ _ _ => .equation used.1
   | .core (.derived _ lawWitness) => .derived lawWitness.rule
   | .reflective _ used _ => .reflective used.1
 

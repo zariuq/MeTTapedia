@@ -76,7 +76,7 @@ theorem rho_costEquationInstance_collapsingEndpoint
             rhoReflectivePresentation.toReflectivePresentationDecl)
           contractum := by
   cases witness with
-  | forward fuel equation initialBindings finalBindings matched premises
+  | forward fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       obtain ⟨origin⟩ :=
         nonempty_rhoCostEquationDeclarationOrigin_of_mem equation.2
@@ -93,7 +93,7 @@ theorem rho_costEquationInstance_collapsingEndpoint
       rw [leftEq] at matched
       obtain ⟨termArguments, redexEq⟩ := matchPattern_apply_shape matched
       exact Or.inl ⟨termArguments, redexEq⟩
-  | reverse fuel equation initialBindings finalBindings matched premises
+  | reverse fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       obtain ⟨origin⟩ :=
         nonempty_rhoCostEquationDeclarationOrigin_of_mem equation.2

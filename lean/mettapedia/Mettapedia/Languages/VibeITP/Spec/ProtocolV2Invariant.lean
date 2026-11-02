@@ -22,6 +22,19 @@ open Mettapedia.Languages.VibeITP.Presentation
 abbrev Invariant (state : State) (observations : List ExecutionObservation) : Prop :=
   LogicalInvariantFor DerivesWithExecutionV2 ⟨state, observations⟩
 
+theorem enterProofs_preserves (before : State) {observations : List ExecutionObservation}
+    (invariant : Invariant before observations) : Invariant (enterProofs before) observations :=
+  ProtocolMaintenance.enterProofs_invariant ⟨before, observations⟩ invariant
+
+theorem allocate_derivation (before : State) (info : SymInfo)
+    {observations : List ExecutionObservation} {statement : Term}
+    (invariant : Invariant before observations)
+    (derived : DerivesWithExecutionV2 before.theory observations statement) :
+    DerivesWithExecutionV2 (before.allocate info).2.theory observations statement :=
+  SimultaneousExtension.theory_extension invariant.theory
+    (ProtocolAdmission.allocate_theory_extension before info invariant.theory)
+    (fun _ member => member) derived
+
 theorem legacy_machineBounded (instruction : Instr) (bounded : instruction.Bounded) :
     instruction.MachineBounded := (instruction.bounded_iff_machineBounded).mp bounded
 
@@ -142,6 +155,45 @@ theorem closed_run_derives_registered_goal (instructions : List Instruction) (in
   have final := runInstrs_preserves instructions index invariant bounded accepted
   obtain ⟨finalAccounting, _, retained⟩ := runInstrs_tracks instructions index accounted accepted
   exact closed_tracked_is_derived final finalAccounting closed (retained goal tracked)
+
+theorem runFiles_preserves (files : List (List Instruction)) (index : Nat)
+    {before after : State} {observations : List ExecutionObservation}
+    (invariant : Invariant before observations)
+    (bounded : ∀ instructions ∈ files, ∀ instruction ∈ instructions, instruction.Bounded)
+    (accepted : ProtocolV2.runFiles before index files = .ok after) :
+    Invariant after observations := by
+  induction files generalizing before index with
+  | nil => cases accepted; exact invariant
+  | cons instructions rest ih =>
+      simp only [ProtocolV2.runFiles] at accepted
+      cases first : ProtocolV2.runInstrs before 0 instructions with
+      | error position error => simp [first] at accepted
+      | unsupported position => simp [first] at accepted
+      | ok next =>
+          simp only [first] at accepted
+          exact ih (index + 1)
+            (runInstrs_preserves instructions 0 invariant (bounded instructions (by simp)) first)
+            (fun batch member => bounded batch (List.mem_cons_of_mem _ member)) accepted
+
+theorem runFiles_tracks (files : List (List Instruction)) (index : Nat)
+    {before after : State} (accounted : Accounting before)
+    (accepted : ProtocolV2.runFiles before index files = .ok after) :
+    Accounting after ∧ after.phase = before.phase ∧
+      ∀ goal, Tracked before goal → Tracked after goal := by
+  induction files generalizing before index with
+  | nil => cases accepted; exact ⟨accounted, rfl, fun _ h => h⟩
+  | cons instructions rest ih =>
+      simp only [ProtocolV2.runFiles] at accepted
+      cases first : ProtocolV2.runInstrs before 0 instructions with
+      | error position error => simp [first] at accepted
+      | unsupported position => simp [first] at accepted
+      | ok next =>
+          simp only [first] at accepted
+          obtain ⟨middleAccounting, phase, tracked⟩ := runInstrs_tracks instructions 0 accounted first
+          obtain ⟨finalAccounting, finalPhase, finalTracked⟩ :=
+            ih (index + 1) middleAccounting accepted
+          exact ⟨finalAccounting, finalPhase.trans phase,
+            fun goal present => finalTracked goal (tracked goal present)⟩
 
 #print axioms executeMany_preserves
 #print axioms runInstrs_preserves

@@ -1,0 +1,14 @@
+import Mettapedia.Machines.GuardEvaluationRegimes
+import Mettapedia.Machines.GuardedSetMultiplicity
+import Mettapedia.Machines.FirstRepresentativeGuardBatch
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Module-owned audit of the guard compiler and consumer contracts. Compiler
+runtime counterparts are separately inventoried, not mathematical proofs. -/
+
+#foundation_manifest_module Mettapedia.Machines.GuardConjunctionCompiler
+#foundation_manifest_module Mettapedia.Machines.GuardEvaluationRegimes
+#foundation_manifest_module Mettapedia.Machines.GuardedConsumerProjection
+#foundation_manifest_module Mettapedia.Machines.OrderedInsertGuardBatch
+#foundation_manifest_module Mettapedia.Machines.GuardedSetMultiplicity
+#foundation_manifest_module Mettapedia.Machines.FirstRepresentativeGuardBatch

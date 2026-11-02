@@ -2194,7 +2194,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
           target := by
   cases witness with
   | @forward equation source target initialBindings finalBindings membership
-      matched premises targetEquality =>
+      _ matched premises targetEquality =>
       have membership' : equation ∈ rhoCIGSLT.costStaticEquations := by
         change equation ∈ rhoCIGSLT.costStaticEquations at membership
         exact membership
@@ -2245,7 +2245,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
             Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
   | @reverse equation source target initialBindings finalBindings membership
-      matched premises targetEquality =>
+      _ matched premises targetEquality =>
       have membership' : equation ∈ rhoCIGSLT.costStaticEquations := by
         change equation ∈ rhoCIGSLT.costStaticEquations at membership
         exact membership
@@ -2295,6 +2295,9 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
             Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
+  | declared membership notRaw _ =>
+      rw [costWholeLanguage_readsRaw rhoCIGSLT.toWrappableIGSLT _ membership] at notRaw
+      cases notRaw
 
 /-- The only source rho declaration represented by one bare collection is
 parallel composition.  This local inversion is used before the public

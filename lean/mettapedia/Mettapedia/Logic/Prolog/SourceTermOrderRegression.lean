@@ -31,6 +31,7 @@ private def xId : SourceSignature.Variable := { spelling := "X", occurrence := 0
 
 private inductive Shape where
   | variable (scope : Nat) (spelling : String) (occurrence : Nat)
+  | nil
   | atom (name : String)
   | integer (value : Int)
   | floatBits (bits : UInt64)
@@ -54,7 +55,8 @@ mutual
   private def Shape.render : Shape → String
     | .variable scope spelling occurrence =>
         s!"_{spelling}_{scope}_{occurrence}"
-    | .atom name => name
+    | .nil => "[]"
+    | .atom name => if name == "[]" then "'[]'" else name
     | .integer value => toString value
     | .floatBits bits => renderFloat bits
     | .string value => s!"\"{value}\""
@@ -67,7 +69,7 @@ mutual
         s!"{name}({String.intercalate "," (arguments.map Shape.render)})"
 
   private def Shape.renderListTail : Shape → String
-    | .atom "[]" => ""
+    | .nil => ""
     | .compound "[|]" [head, tail] =>
         s!",{head.render}{Shape.renderListTail tail}"
     | tail => s!"|{tail.render}"
@@ -79,6 +81,7 @@ private def rendered (value : Option Shape) : Option String :=
 private def shape : LP.Term Sigma.scoped → Shape
   | .var identity =>
       .variable identity.scope identity.name.spelling identity.name.occurrence
+  | .const .nil => .nil
   | .const (.atom name) => .atom name
   | .const (.integer value) => .integer value
   | .const (.floatBits bits) => .floatBits bits

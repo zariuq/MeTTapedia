@@ -121,13 +121,11 @@ theorem authored_variable_call_returns (program : Program) (bindings callee : Su
     (selected : Eval.clauses program head
       (names.map (fun name => applySubst bindings (.var name))) = [.evaluate callee body])
     (computed : PureReturns program callee before body after answer)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer := by
   have shape : DeclarativeSpec.controlForm (.expression (.symbol head :: names.map Atom.var)) = false := by
-    simp at ordinary
-    simp only [DeclarativeSpec.controlForm]
-    split <;> simp_all
+    exact Eval.controlForm_of_ordinary ordinary
   exact (authored_call_enters program bindings callee before head names body shape notIO notNative registered selected).trans
     ((computed.with_caller_frames (callerCells (names.length + 1))).trans
       (discharge_caller_cells program after [answer] (names.length + 1)))
@@ -137,13 +135,12 @@ theorem native_variable_call_returns (program : Program) (bindings : Subst)
     (notIO : Eval.ioHead head = false) (native : StdLib.known head = true)
     (computed : StdLib.apply before head
       (names.map (fun name => applySubst bindings (.var name))) = .ok (after, [answer]))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer := by
   have shape : DeclarativeSpec.controlForm (.expression (.symbol head :: names.map Atom.var)) = false := by
-    simp at ordinary
-    simp only [DeclarativeSpec.controlForm]
-    split <;> simp_all
+    exact Eval.controlForm_of_ordinary ordinary
   have arguments := variable_prefix_enters program bindings before (.function head) names [] [] 0
   have finish : CorePath program
       { state := before, control := .arguments bindings (.function head) []
@@ -204,6 +201,18 @@ theorem evaluated_argument_returns (program : Program) (bindings : Subst)
     ((rest.with_caller_frames (callerCells 1)).trans
       (discharge_caller_cells program after [answer] 1))
 
+/-- An application that is not control syntax enters the call of its head. -/
+theorem application_returns (program : Program) (bindings : Subst)
+    (before after : State) (head : String) (arguments : List Atom) (answer : Atom)
+    (dispatch : (Eval.ioHead head || StdLib.known head ||
+      program.equations.any (·.head == head)) = true)
+    (computed : CorePath program
+      { state := before, control := .arguments bindings (.function head) arguments [] 0 }
+      (finished after [answer] [] []))
+    (notControl : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false) :
+    PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
+  .step rfl (DeclarativeSpec.Transition.call_enter rfl notControl dispatch) computed
+
 theorem call_returns (program : Program) (bindings : Subst)
     (before after : State) (head : String) (arguments : List Atom) (answer : Atom)
     (dispatch : (Eval.ioHead head || StdLib.known head ||
@@ -211,13 +220,11 @@ theorem call_returns (program : Program) (bindings : Subst)
     (computed : CorePath program
       { state := before, control := .arguments bindings (.function head) arguments [] 0 }
       (finished after [answer] [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
-    PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer := by
-  have shape : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false := by
-    simp at ordinary
-    simp only [DeclarativeSpec.controlForm]
-    split <;> simp_all
-  exact .step rfl (DeclarativeSpec.Transition.call_enter rfl shape dispatch) computed
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+    PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
+  application_returns program bindings before after head arguments answer dispatch computed
+    (Eval.controlForm_of_ordinary ordinary)
 
 theorem authored_function_arguments_return (program : Program) (bindings callee : Subst)
     (before after : State) (head : String) (values : List Atom) (index : Nat)
@@ -255,9 +262,10 @@ theorem native_binary_call_returns (program : Program) (bindings : Subst)
     (leftReturns : PureReturns program bindings before left firstState leftValue)
     (rightReturns : PureReturns program bindings firstState right secondState rightValue)
     (computed : StdLib.apply secondState head [leftValue, rightValue] = .ok (after, [answer]))
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after answer := by
-  apply call_returns program bindings before after head [left, right] answer (by simp [native]) _ notControl
+  apply application_returns program bindings before after head [left, right] answer (by simp [native]) _
+    (Eval.controlForm_of_ordinary notControl)
   have last := native_function_arguments_return program bindings secondState after head
     [leftValue, rightValue] 2 answer ordinary native computed
   have rest := evaluated_argument_returns program bindings firstState secondState after (.function head)
@@ -271,9 +279,10 @@ theorem native_unary_call_returns (program : Program) (bindings : Subst)
     (demanded : Eval.argumentIsRaw program head 0 = false)
     (argumentReturns : PureReturns program bindings before argument middle value)
     (computed : StdLib.apply middle head [value] = .ok (after, [answer]))
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression [.symbol head, argument]) after answer := by
-  apply call_returns program bindings before after head [argument] answer (by simp [native]) _ notControl
+  apply application_returns program bindings before after head [argument] answer (by simp [native]) _
+    (Eval.controlForm_of_ordinary notControl)
   exact evaluated_argument_returns program bindings before middle after (.function head) argument value answer
     [] [] 0 demanded argumentReturns
     (native_function_arguments_return program bindings middle after head [value] 1 answer ordinary native computed)
@@ -286,9 +295,10 @@ theorem authored_unary_call_returns (program : Program) (bindings callee : Subst
     (argumentReturns : PureReturns program bindings before argument middle value)
     (selected : Eval.clauses program head [value] = [.evaluate callee body])
     (computed : PureReturns program callee middle body after answer)
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression [.symbol head, argument]) after answer := by
-  apply call_returns program bindings before after head [argument] answer (by simp [registered]) _ notControl
+  apply application_returns program bindings before after head [argument] answer (by simp [registered]) _
+    (Eval.controlForm_of_ordinary notControl)
   exact evaluated_argument_returns program bindings before middle after (.function head) argument value answer
     [] [] 0 demanded argumentReturns
     (authored_function_arguments_return program bindings callee middle after head [value] 1 body answer
@@ -305,9 +315,10 @@ theorem authored_binary_call_returns (program : Program) (bindings callee : Subs
     (rightReturns : PureReturns program bindings firstState right secondState rightValue)
     (selected : Eval.clauses program head [leftValue, rightValue] = [.evaluate callee body])
     (computed : PureReturns program callee secondState body after answer)
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after answer := by
-  apply call_returns program bindings before after head [left, right] answer (by simp [registered]) _ notControl
+  apply application_returns program bindings before after head [left, right] answer (by simp [registered]) _
+    (Eval.controlForm_of_ordinary notControl)
   have last := authored_function_arguments_return program bindings callee secondState after head
     [leftValue, rightValue] 2 body answer ordinary authored selected computed
   have rest := evaluated_argument_returns program bindings firstState secondState after (.function head)
@@ -327,18 +338,19 @@ theorem data_call_returns (program : Program) (bindings : Subst)
     (computed : CorePath program
       { state := before, control := .arguments bindings .data (.symbol head :: arguments) [] 0 }
       (finished after [answer] [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer := by
   have shape : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false := by
-    simp at ordinary
-    simp only [DeclarativeSpec.controlForm]
-    split <;> simp_all
+    have notKnown : StdLib.known head = false := by
+      simp only [Bool.or_eq_false_iff] at inert
+      exact inert.1.2
+    exact Eval.controlForm_of_ordinary ordinary
   exact .step rfl (DeclarativeSpec.Transition.data_enter rfl shape inert) computed
 
 theorem binary_constructor_returns (program : Program) (bindings : Subst)
     (before middle after : State) (head : String) (left right leftValue rightValue : Atom)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (first : PureReturns program bindings before left middle leftValue)
     (second : PureReturns program bindings middle right after rightValue) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after
@@ -355,7 +367,7 @@ theorem binary_constructor_returns (program : Program) (bindings : Subst)
 theorem unary_constructor_of_returns (program : Program) (bindings : Subst)
     (before after : State) (head : String) (expression value : Atom)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (computed : PureReturns program bindings before expression after value) :
     PureReturns program bindings before (.expression [.symbol head, expression]) after
       (.expression [.symbol head, value]) := by
@@ -385,7 +397,7 @@ theorem arguments_return (program : Program) (bindings : Subst)
 theorem constructor_return (program : Program) (bindings : Subst)
     (state : State) (head : String) (expressions values : List Atom)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (computed : List.Forall₂ (fun expression value =>
       PureReturns program bindings state expression state value) expressions values) :
     PureReturns program bindings state (.expression (.symbol head :: expressions)) state
@@ -401,13 +413,14 @@ theorem literal_return (program : Program) (bindings : Subst)
   | grounded value => exact grounded_returns program bindings state value
   | symbol name => exact symbol_returns program bindings state name
   | constructor head arguments inert ordinary _ ih =>
-      apply constructor_return program bindings state head arguments arguments inert ordinary
+      apply constructor_return program bindings state head arguments arguments inert
+        (fun member => ordinary (by simp only [List.mem_cons, List.not_mem_nil, or_false] at member ⊢; tauto))
       exact List.forall₂_same.mpr ih
 
 theorem constructor_variables_return (program : Program) (bindings : Subst)
     (state : State) (head : String) (names : List String)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings state (.expression (.symbol head :: names.map Atom.var)) state
       (.expression (.symbol head :: names.map fun name => applySubst bindings (.var name))) := by
   apply constructor_return program bindings state head _ _ inert ordinary
@@ -451,7 +464,7 @@ head is never executed merely because it is a constructor field. -/
 theorem unary_constructor_returns (program : Program) (bindings : Subst)
     (state : State) (head name : String)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings state (.expression [.symbol head, .var name]) state
       (.expression [.symbol head, applySubst bindings (.var name)]) := by
   have ordinary : DeclarativeSpec.controlForm (.expression [.symbol head, .var name]) = false := by
@@ -492,13 +505,11 @@ theorem authored_variable_call_returns (program : Program) (bindings callee : Su
     (selected : Eval.clauses program head
       (names.map (fun name => applySubst bindings (.var name))) = [.evaluate callee body])
     (computed : PureReturns program callee before body after answer)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer := by
   have shape : DeclarativeSpec.controlForm (.expression (.symbol head :: names.map Atom.var)) = false := by
-    simp at ordinary
-    simp only [DeclarativeSpec.controlForm]
-    split <;> simp_all
+    exact Eval.controlForm_of_ordinary ordinary
   exact path_trans (CorePath.authored_call_enters program bindings callee before head names body
     shape notIO notNative registered selected).extended
     (path_trans (path_with_caller_frames program (callerCells (names.length + 1)) computed)
@@ -594,12 +605,11 @@ theorem call_returns (program : Program) (bindings : Subst)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings (.function head) arguments [] 0 }
       (finished after [answer] [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer := by
   have shape : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false := by
-    simp at ordinary
-    simp only [DeclarativeSpec.controlForm]
-    split <;> simp_all
+    exact Eval.controlForm_of_ordinary ordinary
   exact .step (.core rfl (DeclarativeSpec.Transition.call_enter rfl shape dispatch)) computed
 
 /-- Captured prefix arguments and a computed final argument are supplied to

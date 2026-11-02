@@ -2126,12 +2126,11 @@ continuation. This says nothing about overriding primitive priority. -/
 theorem original_clause_continuation {program : SpaceSemantics.Program} {head : String}
     {values : List Atom} {equation : SpaceSemantics.Equation} {bindings : Subst}
     (member : equation ∈ program.equations) (named : equation.head = head)
-    (matched : SpaceSemantics.ValueMatch [] (.expression equation.arguments)
-      (.expression values) bindings) :
+    (matched : SpaceSemantics.ValueMatches [] equation.arguments values bindings) :
     Eval.Control.evaluate bindings equation.body ∈ Eval.clauses program head values := by
   apply List.mem_filterMap.mpr
   refine ⟨equation, member, ?_⟩
-  simp only [named, ↓reduceIte, SpaceSemantics.matchValue_complete matched, Option.map_some]
+  simp only [named, ↓reduceIte, SpaceSemantics.matchValues_complete matched, Option.map_some]
 
 /-- A guard-free original callable equation has precisely the original
 prepared body continuation in the extended profile. -/

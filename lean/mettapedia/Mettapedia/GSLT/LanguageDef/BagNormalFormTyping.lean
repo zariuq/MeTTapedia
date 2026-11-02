@@ -132,7 +132,7 @@ theorem collectionFree_parameterType {parameter : TermParam} {expected : TypeExp
 
 /-- A bag node sorted at a collection-free type is sorted by the bag
 constructor: its type is the bag's sort and its components have that sort. -/
-theorem bag_typing (laws : BareBagTheory language bag unit) {free : FreeTypeContext}
+theorem bag_typing (laws : BareBagPresentation language bag unit) {free : FreeTypeContext}
     {bound : List TypeExpr} {kind : CollType} {elements : List Pattern}
     {rest : Option String} {type : TypeExpr}
     (typed : HasType language free bound (.collection kind elements rest) type)
@@ -145,13 +145,13 @@ theorem bag_typing (laws : BareBagTheory language bag unit) {free : FreeTypeCont
   · subst typeEq
     simp [collectionFree] at collectionless
   · obtain ⟨rfl, kindEq, elementEq⟩ :=
-      laws.toBagTheory.eq_bag_of_collectionParameter membership
+      laws.toBagPresentation.eq_bag_of_collectionParameter membership
       ((GrammarRule.bareParams_cons_iff _ _ _).mp shape).2
     subst elementEq
     exact ⟨kindEq, typeEq, elementsTyped⟩
 
 /-- A list of components of the bag's sort is a bag of the bag's sort. -/
-theorem bag_hasType (laws : BareBagTheory language bag unit) {free : FreeTypeContext}
+theorem bag_hasType (laws : BareBagPresentation language bag unit) {free : FreeTypeContext}
     {bound : List TypeExpr} {elements : List Pattern} {rest : Option String}
     (elementsTyped : ElementsHaveType language free bound elements (.base bag.category)) :
     HasType language free bound (.collection .hashBag elements rest)
@@ -228,7 +228,7 @@ theorem argumentsHaveTypes_join {free : FreeTypeContext} {bound : List TypeExpr}
 `context.fill original` types `original` at some collection-free type under
 the binders of the context, and any replacement of that type that meets the
 same parameter representations can be put back. -/
-theorem hasType_fill_replace (laws : BareBagTheory language bag unit)
+theorem hasType_fill_replace (laws : BareBagPresentation language bag unit)
     {free : FreeTypeContext} :
     ∀ (context : OneHoleContext) {bound : List TypeExpr} {original : Pattern}
       {type : TypeExpr},
@@ -413,7 +413,7 @@ theorem hasCanonicalBinderMetadata_fill_replace :
 
 /-- Each bag law, read from left to right, keeps the type of the bag it
 rewrites. -/
-theorem derived_hasType (laws : BareBagTheory language bag unit)
+theorem derived_hasType (laws : BareBagPresentation language bag unit)
     {free : FreeTypeContext} {bound : List TypeExpr} {type : TypeExpr}
     {source target : Pattern} (derived : DerivedInstance language source target)
     (typed : HasType language free bound source type)
@@ -575,10 +575,10 @@ theorem step_admissible (laws : BareBagTheory language bag unit)
       · exact absurd authored
           (no_equationInstance_of_equations_eq_nil laws.equationsEmpty redex contractum)
       · obtain ⟨holeBound, holeType, holeFree, redexTyped, rebuild⟩ :=
-          hasType_fill_replace laws context admissible.typed collectionless admissible.object
+          hasType_fill_replace laws.toBareBagPresentation context admissible.typed collectionless admissible.object
         exact
           { typed := rebuild contractum (derived_represents derived)
-              (derived_hasType laws derived redexTyped holeFree)
+              (derived_hasType laws.toBareBagPresentation derived redexTyped holeFree)
             canonical := hasCanonicalBinderMetadata_fill_replace context admissible.canonical
               (derived_hasCanonicalBinderMetadata derived)
             object := isObjectPattern_fill_replace context admissible.object

@@ -7,13 +7,15 @@ import Mettapedia.OSLF.Syntax.EquationalQuotient
 # Typed scope equations on the authored pi signature
 
 The operators below are derived from the actual constructors of `piCalc`.
-Four equations use the existing binding-signature templates and equation
-closure: restriction of inaction, exchange of restrictions, scope extrusion,
-and guarded replication unfolding. Every instance retains the separately typed
-dependency prefix and ambient context of its metavariable bodies.
+Eight equations use the existing binding-signature templates and equation
+closure: restriction of inaction, exchange of restrictions and scope extrusion,
+and the five laws of replication (unfolding, replicated inaction, idempotence,
+distribution over parallel composition, duplication). Every instance retains the
+separately typed dependency prefix and ambient context of its metavariable bodies.
+A guarded server unfolds as an instance of the general unfolding (`unfold_guarded`).
 
 These laws supplement the parallel collection algebra. They are intrinsic
-static equations over the authored one-sort signature; they do not change
+static equations over the authored signature of processes and names; they do not change
 `piCalc.equations`, its bag canonical section, or its directed rewrite list.
 The raw equation compiler currently does not accept binding metavariables, and
 no automatic compilation or full named-structural-congruence comparison is
@@ -33,6 +35,7 @@ set_option autoImplicit false
 
 abbrev signature := signatureOf piCalc
 abbrev processSort : TypeExpr := .base "Proc"
+abbrev nameSort : TypeExpr := .base "Name"
 
 def nilOperator : signature.Op processSort :=
   .constructor piCalc.terms[0] (List.getElem_mem (by decide))
@@ -45,24 +48,23 @@ def parallelOperator : signature.Op processSort :=
 def inputOperator : signature.Op processSort :=
   .constructor piCalc.terms[2] (List.getElem_mem (by decide))
     (by simp [UsesBareCollection, piCalc])
-    (.cons (.simple "x" processSort)
-      (.cons (.abstraction none "body" processSort processSort) .nil))
+    (.cons (.simple "x" nameSort)
+      (.cons (.abstraction none "body" nameSort processSort) .nil))
 
 def outputOperator : signature.Op processSort :=
   .constructor piCalc.terms[3] (List.getElem_mem (by decide))
     (by simp [UsesBareCollection, piCalc])
-    (.cons (.simple "x" processSort) (.cons (.simple "z" processSort) .nil))
+    (.cons (.simple "x" nameSort) (.cons (.simple "z" nameSort) .nil))
 
 def restrictionOperator : signature.Op processSort :=
   .constructor piCalc.terms[4] (List.getElem_mem (by decide))
     (by simp [UsesBareCollection, piCalc])
-    (.cons (.abstraction none "body" processSort processSort) .nil)
+    (.cons (.abstraction none "body" nameSort processSort) .nil)
 
 def replicationOperator : signature.Op processSort :=
   .constructor piCalc.terms[5] (List.getElem_mem (by decide))
     (by simp [UsesBareCollection, piCalc])
-    (.cons (.simple "x" processSort)
-      (.cons (.abstraction none "body" processSort processSort) .nil))
+    (.cons (.simple "p" processSort) .nil)
 
 def nilTerm {Γ : Ctx signature} : Term signature Γ processSort :=
   .op nilOperator .nil
@@ -71,21 +73,21 @@ def parallelTerm {Γ : Ctx signature}
     (left right : Term signature Γ processSort) : Term signature Γ processSort :=
   .op parallelOperator (.cons left (.cons right .nil))
 
-def inputTerm {Γ : Ctx signature} (channel : Term signature Γ processSort)
-    (body : Term signature (processSort :: Γ) processSort) : Term signature Γ processSort :=
+def inputTerm {Γ : Ctx signature} (channel : Term signature Γ nameSort)
+    (body : Term signature (nameSort :: Γ) processSort) : Term signature Γ processSort :=
   .op inputOperator (.cons channel (.cons body .nil))
 
-def outputTerm {Γ : Ctx signature} (channel datum : Term signature Γ processSort) :
+def outputTerm {Γ : Ctx signature} (channel datum : Term signature Γ nameSort) :
     Term signature Γ processSort :=
   .op outputOperator (.cons channel (.cons datum .nil))
 
 def restrictionTerm {Γ : Ctx signature}
-    (body : Term signature (processSort :: Γ) processSort) : Term signature Γ processSort :=
+    (body : Term signature (nameSort :: Γ) processSort) : Term signature Γ processSort :=
   .op restrictionOperator (.cons body .nil)
 
-def replicationTerm {Γ : Ctx signature} (channel : Term signature Γ processSort)
-    (body : Term signature (processSort :: Γ) processSort) : Term signature Γ processSort :=
-  .op replicationOperator (.cons channel (.cons body .nil))
+def replicationTerm {Γ : Ctx signature} (process : Term signature Γ processSort) :
+    Term signature Γ processSort :=
+  .op replicationOperator (.cons process .nil)
 
 @[simp] theorem erase_nilTerm {Γ : Ctx signature} :
     erase (nilTerm (Γ := Γ)) = .apply "PiNil" [] := rfl
@@ -96,33 +98,29 @@ def replicationTerm {Γ : Ctx signature} (channel : Term signature Γ processSor
       .collection .hashBag [erase left, erase right] none := rfl
 
 @[simp] theorem erase_restrictionTerm {Γ : Ctx signature}
-    (body : Term signature (processSort :: Γ) processSort) :
+    (body : Term signature (nameSort :: Γ) processSort) :
     erase (restrictionTerm body) = .apply "PiNu" [.lambda none (erase body)] := rfl
 
-@[simp] theorem erase_inputTerm {Γ : Ctx signature} (channel : Term signature Γ processSort)
-    (body : Term signature (processSort :: Γ) processSort) :
+@[simp] theorem erase_inputTerm {Γ : Ctx signature} (channel : Term signature Γ nameSort)
+    (body : Term signature (nameSort :: Γ) processSort) :
     erase (inputTerm channel body) = .apply "PiInp" [erase channel, .lambda none (erase body)] := rfl
 
 @[simp] theorem erase_outputTerm {Γ : Ctx signature}
-    (channel datum : Term signature Γ processSort) :
+    (channel datum : Term signature Γ nameSort) :
     erase (outputTerm channel datum) = .apply "PiOut" [erase channel, erase datum] := rfl
 
-@[simp] theorem erase_replicationTerm {Γ : Ctx signature}
-    (channel : Term signature Γ processSort)
-    (body : Term signature (processSort :: Γ) processSort) :
-    erase (replicationTerm channel body) =
-      .apply "PiRep" [erase channel, .lambda none (erase body)] := rfl
+@[simp] theorem erase_replicationTerm {Γ : Ctx signature} (process : Term signature Γ processSort) :
+    erase (replicationTerm process) = .apply "PiRep" [erase process] := rfl
 
-/-- The body of a scope law may depend on one or two local variables. The
-extruded component and listening channel have no local dependency prefix. -/
+/-- The body of a scope law may depend on one or two local names. The extruded component has no local dependency
+prefix, nor have the processes of the replication laws; distribution takes two of them. -/
 abbrev metavariables : List (MetaArity signature) :=
-  [([processSort], processSort), ([processSort, processSort], processSort),
-   ([], processSort), ([], processSort)]
+  [([nameSort], processSort), ([nameSort, nameSort], processSort), ([], processSort), ([], processSort)]
 
 abbrev oneIndex : Fin metavariables.length := ⟨0, by decide⟩
 abbrev twoIndex : Fin metavariables.length := ⟨1, by decide⟩
 abbrev outsideIndex : Fin metavariables.length := ⟨2, by decide⟩
-abbrev channelIndex : Fin metavariables.length := ⟨3, by decide⟩
+abbrev otherIndex : Fin metavariables.length := ⟨3, by decide⟩
 abbrev schemaSignature := withMetas signature metavariables
 
 private def schemaNil {Γ : Ctx schemaSignature} : Term schemaSignature Γ processSort :=
@@ -133,26 +131,24 @@ private def schemaParallel {Γ : Ctx schemaSignature}
   .op (.inl parallelOperator) (.cons left (.cons right .nil))
 
 private def schemaRestriction {Γ : Ctx schemaSignature}
-    (body : Term schemaSignature (processSort :: Γ) processSort) :
+    (body : Term schemaSignature (nameSort :: Γ) processSort) :
     Term schemaSignature Γ processSort :=
   .op (.inl restrictionOperator) (.cons body .nil)
 
-private def schemaInput {Γ : Ctx schemaSignature} (channel : Term schemaSignature Γ processSort)
-    (body : Term schemaSignature (processSort :: Γ) processSort) :
+private def schemaInput {Γ : Ctx schemaSignature} (channel : Term schemaSignature Γ nameSort)
+    (body : Term schemaSignature (nameSort :: Γ) processSort) :
     Term schemaSignature Γ processSort :=
   .op (.inl inputOperator) (.cons channel (.cons body .nil))
 
-private def schemaReplication {Γ : Ctx schemaSignature}
-    (channel : Term schemaSignature Γ processSort)
-    (body : Term schemaSignature (processSort :: Γ) processSort) :
+private def schemaReplication {Γ : Ctx schemaSignature} (process : Term schemaSignature Γ processSort) :
     Term schemaSignature Γ processSort :=
-  .op (.inl replicationOperator) (.cons channel (.cons body .nil))
+  .op (.inl replicationOperator) (.cons process .nil)
 
 /-- Exchange the two local restriction variables while keeping each ambient
 variable at its original position. -/
 def exchangeRestrictions {Γ : List TypeExpr} (sort : TypeExpr)
-    (position : Var (processSort :: processSort :: Γ) sort) :
-    Var (processSort :: processSort :: Γ) sort := by
+    (position : Var (nameSort :: nameSort :: Γ) sort) :
+    Var (nameSort :: nameSort :: Γ) sort := by
   cases position with
   | zero => exact .succ .zero
   | succ position =>
@@ -161,7 +157,7 @@ def exchangeRestrictions {Γ : List TypeExpr} (sort : TypeExpr)
     | succ position => exact .succ (.succ position)
 
 @[simp] theorem exchangeRestrictions_involution {Γ : List TypeExpr}
-    {sort : TypeExpr} (position : Var (processSort :: processSort :: Γ) sort) :
+    {sort : TypeExpr} (position : Var (nameSort :: nameSort :: Γ) sort) :
     exchangeRestrictions sort (exchangeRestrictions sort position) = position := by
   cases position with
   | zero => rfl
@@ -184,43 +180,71 @@ def restrictionExtrusion : EqAxiom signature metavariables where
   ctx := []
   sort := processSort
   lhs := schemaRestriction
-    (schemaParallel (metaVar oneIndex) (weaken (t := processSort) (metaVar outsideIndex)))
+    (schemaParallel (metaVar oneIndex) (weaken (t := nameSort) (metaVar outsideIndex)))
   rhs := schemaParallel (schemaRestriction (metaVar oneIndex)) (metaVar outsideIndex)
 
-def guardedUnfolding : EqAxiom signature metavariables where
+/-- `!P = {P, !P}`: a replicated process unfolds into a copy beside itself. -/
+def replicationUnfold : EqAxiom signature metavariables where
   ctx := []
   sort := processSort
-  lhs := schemaReplication (metaVar channelIndex) (metaVar oneIndex)
-  rhs := schemaParallel
-    (schemaInput (metaVar channelIndex) (metaVar oneIndex))
-    (schemaReplication (metaVar channelIndex) (metaVar oneIndex))
+  lhs := schemaReplication (metaVar outsideIndex)
+  rhs := schemaParallel (metaVar outsideIndex) (schemaReplication (metaVar outsideIndex))
 
-/-- The four non-monoid static laws of the maintained guarded pi dialect. -/
+/-- `!0 = 0` -/
+def replicationNil : EqAxiom signature metavariables where
+  ctx := []
+  sort := processSort
+  lhs := schemaReplication schemaNil
+  rhs := schemaNil
+
+/-- `!!P = !P` -/
+def replicationTwice : EqAxiom signature metavariables where
+  ctx := []
+  sort := processSort
+  lhs := schemaReplication (schemaReplication (metaVar outsideIndex))
+  rhs := schemaReplication (metaVar outsideIndex)
+
+/-- `!{P, Q} = {!P, !Q}` -/
+def replicationPar : EqAxiom signature metavariables where
+  ctx := []
+  sort := processSort
+  lhs := schemaReplication (schemaParallel (metaVar outsideIndex) (metaVar otherIndex))
+  rhs := schemaParallel (schemaReplication (metaVar outsideIndex)) (schemaReplication (metaVar otherIndex))
+
+/-- `{!P, !P} = !P` -/
+def replicationIdempotent : EqAxiom signature metavariables where
+  ctx := []
+  sort := processSort
+  lhs := schemaParallel (schemaReplication (metaVar outsideIndex)) (schemaReplication (metaVar outsideIndex))
+  rhs := schemaReplication (metaVar outsideIndex)
+
+/-- The eight non-monoid static laws of `piCalc`: three of restriction, five of replication. -/
 def equations : List (EqAxiom signature metavariables) :=
-  [restrictionNil, restrictionExchange, restrictionExtrusion, guardedUnfolding]
+  [restrictionNil, restrictionExchange, restrictionExtrusion, replicationUnfold, replicationNil, replicationTwice,
+    replicationPar, replicationIdempotent]
 
 private def identitySub (Γ : Ctx signature) : Sub signature Γ Γ := fun _ v => .var v
 private def emptySub (Γ : Ctx signature) : Sub signature [] Γ := fun _ v => nomatch v
-private def localOne (Γ : Ctx signature) : Sub signature [processSort] (processSort :: Γ) :=
-  liftSub (emptySub Γ) [processSort]
+private def localOne (Γ : Ctx signature) : Sub signature [nameSort] (nameSort :: Γ) :=
+  liftSub (emptySub Γ) [nameSort]
 private def localTwo (Γ : Ctx signature) :
-    Sub signature [processSort, processSort] (processSort :: processSort :: Γ) :=
-  liftSub (emptySub Γ) [processSort, processSort]
-private def ambientOne (Γ : Ctx signature) : Sub signature Γ (processSort :: Γ) :=
-  ContextualAssignment.weakenSub (S := signature) [processSort] (identitySub Γ)
+    Sub signature [nameSort, nameSort] (nameSort :: nameSort :: Γ) :=
+  liftSub (emptySub Γ) [nameSort, nameSort]
+private def ambientOne (Γ : Ctx signature) : Sub signature Γ (nameSort :: Γ) :=
+  ContextualAssignment.weakenSub (S := signature) [nameSort] (identitySub Γ)
 private def ambientTwo (Γ : Ctx signature) :
-    Sub signature Γ (processSort :: processSort :: Γ) :=
-  ContextualAssignment.weakenSub (S := signature) [processSort] (ambientOne Γ)
+    Sub signature Γ (nameSort :: nameSort :: Γ) :=
+  ContextualAssignment.weakenSub (S := signature) [nameSort] (ambientOne Γ)
 
 private theorem join_one_identity (Γ : Ctx signature) :
     ContextualAssignment.joinSub (localOne Γ) (ambientOne Γ) =
-      identitySub (processSort :: Γ) := by
+      identitySub (nameSort :: Γ) := by
   funext sort position
   cases position <;> rfl
 
 private theorem join_two_identity (Γ : Ctx signature) :
     ContextualAssignment.joinSub (localTwo Γ) (ambientTwo Γ) =
-      identitySub (processSort :: processSort :: Γ) := by
+      identitySub (nameSort :: nameSort :: Γ) := by
   funext sort position
   cases position with
   | zero => rfl
@@ -279,25 +303,25 @@ private theorem interpret_outside {Γ : Ctx signature}
 private theorem interpret_outside_under_binder {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
     ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ)
-      (weaken (t := processSort) (metaVar outsideIndex)) =
-      weaken (t := processSort) (body outsideIndex) := by
+      (weaken (t := nameSort) (metaVar outsideIndex)) =
+      weaken (t := nameSort) (body outsideIndex) := by
   rw [weaken, ContextualAssignment.instantiate_rename,
     ContextualAssignment.instantiate_metaVar (S := signature) (M := metavariables)]
   change bind (ambientOne Γ) (body outsideIndex) = weaken (body outsideIndex)
   exact bind_var_eq_rename _ _
 
-private theorem interpret_channel {Γ : Ctx signature}
+private theorem interpret_other {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
-    ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar channelIndex) =
-      body channelIndex := by
-  rw [ContextualAssignment.instantiate_metaVar body (identitySub Γ) channelIndex (emptySub Γ)]
-  change bind (identitySub Γ) (body channelIndex) = body channelIndex
+    ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar otherIndex) =
+      body otherIndex := by
+  rw [ContextualAssignment.instantiate_metaVar body (identitySub Γ) otherIndex (emptySub Γ)]
+  change bind (identitySub Γ) (body otherIndex) = body otherIndex
   exact bind_id _
 
 theorem restrictionNil_interprets {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
     ContextualEquationInstances.instantiateAt restrictionNil body (emptySub Γ) =
-      (restrictionTerm (nilTerm (Γ := processSort :: Γ)), nilTerm (Γ := Γ)) := rfl
+      (restrictionTerm (nilTerm (Γ := nameSort :: Γ)), nilTerm (Γ := Γ)) := rfl
 
 theorem restrictionExchange_interprets {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
@@ -322,7 +346,7 @@ theorem restrictionExtrusion_interprets {Γ : Ctx signature}
   · change restrictionTerm (parallelTerm
       (ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ) (metaVar oneIndex))
       (ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ)
-        (weaken (t := processSort) (metaVar outsideIndex)))) = _
+        (weaken (t := nameSort) (metaVar outsideIndex)))) = _
     rw [interpret_one, interpret_outside_under_binder]
   · change parallelTerm
       (restrictionTerm (ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ)
@@ -331,31 +355,68 @@ theorem restrictionExtrusion_interprets {Γ : Ctx signature}
         (metaVar outsideIndex)) = _
     rw [interpret_one, interpret_outside]
 
-theorem guardedUnfolding_interprets {Γ : Ctx signature}
+theorem replicationUnfold_interprets {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
-    ContextualEquationInstances.instantiateAt guardedUnfolding body (emptySub Γ) =
-      (replicationTerm (body channelIndex) (body oneIndex),
-       parallelTerm (inputTerm (body channelIndex) (body oneIndex))
-         (replicationTerm (body channelIndex) (body oneIndex))) := by
+    ContextualEquationInstances.instantiateAt replicationUnfold body (emptySub Γ) =
+      (replicationTerm (body outsideIndex),
+        parallelTerm (body outsideIndex) (replicationTerm (body outsideIndex))) := by
   apply Prod.ext
   · change replicationTerm
-      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ)
-        (metaVar channelIndex))
-      (ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ)
-        (metaVar oneIndex)) = _
-    rw [interpret_channel, interpret_one]
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex)) = _
+    rw [interpret_outside]
   · change parallelTerm
-      (inputTerm
-        (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ)
-          (metaVar channelIndex))
-        (ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ)
-          (metaVar oneIndex)))
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex))
       (replicationTerm
-        (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ)
-          (metaVar channelIndex))
-        (ContextualAssignment.instantiate body (ambientOne Γ) (localOne Γ)
-          (metaVar oneIndex))) = _
-    rw [interpret_channel, interpret_one]
+        (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex))) = _
+    rw [interpret_outside]
+
+theorem replicationNil_interprets {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    ContextualEquationInstances.instantiateAt replicationNil body (emptySub Γ) =
+      (replicationTerm (nilTerm (Γ := Γ)), nilTerm (Γ := Γ)) := rfl
+
+theorem replicationTwice_interprets {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    ContextualEquationInstances.instantiateAt replicationTwice body (emptySub Γ) =
+      (replicationTerm (replicationTerm (body outsideIndex)), replicationTerm (body outsideIndex)) := by
+  apply Prod.ext
+  · change replicationTerm (replicationTerm
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex))) = _
+    rw [interpret_outside]
+  · change replicationTerm
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex)) = _
+    rw [interpret_outside]
+
+theorem replicationPar_interprets {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    ContextualEquationInstances.instantiateAt replicationPar body (emptySub Γ) =
+      (replicationTerm (parallelTerm (body outsideIndex) (body otherIndex)),
+       parallelTerm (replicationTerm (body outsideIndex)) (replicationTerm (body otherIndex))) := by
+  apply Prod.ext
+  · change replicationTerm (parallelTerm
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex))
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar otherIndex))) = _
+    rw [interpret_outside, interpret_other]
+  · change parallelTerm
+      (replicationTerm (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex)))
+      (replicationTerm (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar otherIndex))) = _
+    rw [interpret_outside, interpret_other]
+
+theorem replicationIdempotent_interprets {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    ContextualEquationInstances.instantiateAt replicationIdempotent body (emptySub Γ) =
+      (parallelTerm (replicationTerm (body outsideIndex)) (replicationTerm (body outsideIndex)),
+       replicationTerm (body outsideIndex)) := by
+  apply Prod.ext
+  · change parallelTerm
+      (replicationTerm
+        (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex)))
+      (replicationTerm
+        (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex))) = _
+    rw [interpret_outside]
+  · change replicationTerm
+      (ContextualAssignment.instantiate body (identitySub Γ) (emptySub Γ) (metaVar outsideIndex)) = _
+    rw [interpret_outside]
 
 /-- All ambient contexts and typed captured values enter the existing axiom
 constructor, rather than a new equation relation. -/
@@ -369,7 +430,7 @@ theorem declared_instance {Γ : Ctx signature} (index : Fin equations.length)
 
 theorem restriction_nil {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
-    EqClosure equations (restrictionTerm (nilTerm (Γ := processSort :: Γ)))
+    EqClosure equations (restrictionTerm (nilTerm (Γ := nameSort :: Γ)))
       (nilTerm (Γ := Γ)) := by
   have instance' := declared_instance ⟨0, by decide⟩ body (emptySub Γ)
   change EqClosure equations
@@ -401,59 +462,128 @@ theorem restriction_extrusion {Γ : Ctx signature}
   rw [restrictionExtrusion_interprets] at instance'
   exact instance'
 
-theorem guarded_unfolding {Γ : Ctx signature}
+theorem replication_unfold {Γ : Ctx signature}
     (body : ContextualAssignment signature metavariables Γ) :
-    EqClosure equations (replicationTerm (body channelIndex) (body oneIndex))
-      (parallelTerm (inputTerm (body channelIndex) (body oneIndex))
-        (replicationTerm (body channelIndex) (body oneIndex))) := by
+    EqClosure equations (replicationTerm (body outsideIndex))
+      (parallelTerm (body outsideIndex) (replicationTerm (body outsideIndex))) := by
   have instance' := declared_instance ⟨3, by decide⟩ body (emptySub Γ)
   change EqClosure equations
-    (ContextualEquationInstances.instantiateAt guardedUnfolding body (emptySub Γ)).1
-    (ContextualEquationInstances.instantiateAt guardedUnfolding body (emptySub Γ)).2 at instance'
-  rw [guardedUnfolding_interprets] at instance'
+    (ContextualEquationInstances.instantiateAt replicationUnfold body (emptySub Γ)).1
+    (ContextualEquationInstances.instantiateAt replicationUnfold body (emptySub Γ)).2 at instance'
+  rw [replicationUnfold_interprets] at instance'
+  exact instance'
+
+theorem replication_nil {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    EqClosure equations (replicationTerm (nilTerm (Γ := Γ))) (nilTerm (Γ := Γ)) := by
+  have instance' := declared_instance ⟨4, by decide⟩ body (emptySub Γ)
+  change EqClosure equations
+    (ContextualEquationInstances.instantiateAt replicationNil body (emptySub Γ)).1
+    (ContextualEquationInstances.instantiateAt replicationNil body (emptySub Γ)).2 at instance'
+  rw [replicationNil_interprets] at instance'
+  exact instance'
+
+theorem replication_twice {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    EqClosure equations (replicationTerm (replicationTerm (body outsideIndex)))
+      (replicationTerm (body outsideIndex)) := by
+  have instance' := declared_instance ⟨5, by decide⟩ body (emptySub Γ)
+  change EqClosure equations
+    (ContextualEquationInstances.instantiateAt replicationTwice body (emptySub Γ)).1
+    (ContextualEquationInstances.instantiateAt replicationTwice body (emptySub Γ)).2 at instance'
+  rw [replicationTwice_interprets] at instance'
+  exact instance'
+
+theorem replication_par {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    EqClosure equations (replicationTerm (parallelTerm (body outsideIndex) (body otherIndex)))
+      (parallelTerm (replicationTerm (body outsideIndex)) (replicationTerm (body otherIndex))) := by
+  have instance' := declared_instance ⟨6, by decide⟩ body (emptySub Γ)
+  change EqClosure equations
+    (ContextualEquationInstances.instantiateAt replicationPar body (emptySub Γ)).1
+    (ContextualEquationInstances.instantiateAt replicationPar body (emptySub Γ)).2 at instance'
+  rw [replicationPar_interprets] at instance'
+  exact instance'
+
+theorem replication_idempotent {Γ : Ctx signature}
+    (body : ContextualAssignment signature metavariables Γ) :
+    EqClosure equations (parallelTerm (replicationTerm (body outsideIndex)) (replicationTerm (body outsideIndex)))
+      (replicationTerm (body outsideIndex)) := by
+  have instance' := declared_instance ⟨7, by decide⟩ body (emptySub Γ)
+  change EqClosure equations
+    (ContextualEquationInstances.instantiateAt replicationIdempotent body (emptySub Γ)).1
+    (ContextualEquationInstances.instantiateAt replicationIdempotent body (emptySub Γ)).2 at instance'
+  rw [replicationIdempotent_interprets] at instance'
   exact instance'
 
 /-- Supply arbitrary typed values at each declared dependency prefix. -/
 def assignment {Γ : Ctx signature}
-    (one : Term signature (processSort :: Γ) processSort)
-    (two : Term signature (processSort :: processSort :: Γ) processSort)
-    (outside channel : Term signature Γ processSort) :
+    (one : Term signature (nameSort :: Γ) processSort)
+    (two : Term signature (nameSort :: nameSort :: Γ) processSort)
+    (outside : Term signature Γ processSort) (other : Term signature Γ processSort := nilTerm) :
     ContextualAssignment signature metavariables Γ :=
   fun index => Fin.cases one
     (fun index => Fin.cases two
       (fun index => Fin.cases outside
-        (fun index => Fin.cases channel (fun index => Fin.elim0 index) index) index) index) index
+        (fun index => Fin.cases other (fun index => Fin.elim0 index) index) index) index) index
 
 /-- Restricting inaction is valid in every ambient context. -/
 theorem restrict_inaction (Γ : Ctx signature) :
-    EqClosure equations (restrictionTerm (nilTerm (Γ := processSort :: Γ)))
+    EqClosure equations (restrictionTerm (nilTerm (Γ := nameSort :: Γ)))
       (nilTerm (Γ := Γ)) :=
-  restriction_nil (assignment nilTerm nilTerm nilTerm nilTerm)
+  restriction_nil (assignment nilTerm nilTerm nilTerm)
 
 /-- Exchange restrictions by transporting their bodies along the exchange of
 the two local variables, rather than leaving a de Bruijn body unchanged. -/
 theorem exchange_scopes {Γ : Ctx signature}
-    (body : Term signature (processSort :: processSort :: Γ) processSort) :
+    (body : Term signature (nameSort :: nameSort :: Γ) processSort) :
     EqClosure equations (restrictionTerm (restrictionTerm body))
       (restrictionTerm (restrictionTerm (rename exchangeRestrictions body))) :=
-  restriction_exchange (assignment nilTerm body nilTerm nilTerm)
+  restriction_exchange (assignment nilTerm body nilTerm)
 
 /-- The outside component has only the ambient context. Weakening it under the
 restriction is the intrinsic freshness condition for extrusion. -/
 theorem extrude_scope {Γ : Ctx signature}
-    (inside : Term signature (processSort :: Γ) processSort)
+    (inside : Term signature (nameSort :: Γ) processSort)
     (outside : Term signature Γ processSort) :
     EqClosure equations
       (restrictionTerm (parallelTerm inside (weaken outside)))
       (parallelTerm (restrictionTerm inside) outside) :=
-  restriction_extrusion (assignment inside nilTerm outside nilTerm)
+  restriction_extrusion (assignment inside nilTerm outside)
 
+/-- A replicated process unfolds in every ambient context. -/
+theorem unfold_replication {Γ : Ctx signature} (process : Term signature Γ processSort) :
+    EqClosure equations (replicationTerm process) (parallelTerm process (replicationTerm process)) :=
+  replication_unfold (assignment nilTerm nilTerm process)
+
+/-- Replicated inaction is inaction in every ambient context. -/
+theorem replicate_inaction (Γ : Ctx signature) :
+    EqClosure equations (replicationTerm (nilTerm (Γ := Γ))) (nilTerm (Γ := Γ)) :=
+  replication_nil (assignment nilTerm nilTerm nilTerm)
+
+/-- Replication is idempotent. -/
+theorem replicate_twice {Γ : Ctx signature} (process : Term signature Γ processSort) :
+    EqClosure equations (replicationTerm (replicationTerm process)) (replicationTerm process) :=
+  replication_twice (assignment nilTerm nilTerm process)
+
+/-- Replication distributes over parallel composition. -/
+theorem replicate_parallel {Γ : Ctx signature} (first second : Term signature Γ processSort) :
+    EqClosure equations (replicationTerm (parallelTerm first second))
+      (parallelTerm (replicationTerm first) (replicationTerm second)) :=
+  replication_par (assignment nilTerm nilTerm first second)
+
+/-- Two replications of one process are one. -/
+theorem replicate_duplicate {Γ : Ctx signature} (process : Term signature Γ processSort) :
+    EqClosure equations (parallelTerm (replicationTerm process) (replicationTerm process)) (replicationTerm process) :=
+  replication_idempotent (assignment nilTerm nilTerm process)
+
+/-- **A guarded server unfolds**: `!x(y).P = {x(y).P, !x(y).P}`, the general unfolding at an input. -/
 theorem unfold_guarded {Γ : Ctx signature}
-    (channel : Term signature Γ processSort)
-    (body : Term signature (processSort :: Γ) processSort) :
-    EqClosure equations (replicationTerm channel body)
-      (parallelTerm (inputTerm channel body) (replicationTerm channel body)) :=
-  guarded_unfolding (assignment body nilTerm nilTerm channel)
+    (channel : Term signature Γ nameSort)
+    (body : Term signature (nameSort :: Γ) processSort) :
+    EqClosure equations (replicationTerm (inputTerm channel body))
+      (parallelTerm (inputTerm channel body) (replicationTerm (inputTerm channel body))) :=
+  unfold_replication (inputTerm channel body)
 
 /-- Actual instances retain the authored result sort and a common ambient
 context at both endpoints. -/
@@ -507,48 +637,46 @@ theorem parallel_congr {Γ : Ctx signature}
   .cong parallelOperator (.cons first (.cons second .nil))
 
 theorem restriction_congr {Γ : Ctx signature}
-    {body body' : Term signature (processSort :: Γ) processSort}
+    {body body' : Term signature (nameSort :: Γ) processSort}
     (related : EqClosure equations body body') :
     EqClosure equations (restrictionTerm body) (restrictionTerm body') :=
   .cong restrictionOperator (.cons related .nil)
 
 theorem input_congr {Γ : Ctx signature}
-    {channel channel' : Term signature Γ processSort}
-    {body body' : Term signature (processSort :: Γ) processSort}
+    {channel channel' : Term signature Γ nameSort}
+    {body body' : Term signature (nameSort :: Γ) processSort}
     (channels : EqClosure equations channel channel')
     (bodies : EqClosure equations body body') :
     EqClosure equations (inputTerm channel body) (inputTerm channel' body') :=
   .cong inputOperator (.cons channels (.cons bodies .nil))
 
 theorem replication_congr {Γ : Ctx signature}
-    {channel channel' : Term signature Γ processSort}
-    {body body' : Term signature (processSort :: Γ) processSort}
-    (channels : EqClosure equations channel channel')
-    (bodies : EqClosure equations body body') :
-    EqClosure equations (replicationTerm channel body) (replicationTerm channel' body') :=
-  .cong replicationOperator (.cons channels (.cons bodies .nil))
+    {process process' : Term signature Γ processSort}
+    (related : EqClosure equations process process') :
+    EqClosure equations (replicationTerm process) (replicationTerm process') :=
+  .cong replicationOperator (.cons related .nil)
 
 namespace Controls
 
 theorem restriction_nil_instance_in_closure :
-    EqClosure equations (restrictionTerm (nilTerm (Γ := [processSort])))
+    EqClosure equations (restrictionTerm (nilTerm (Γ := [nameSort])))
       (nilTerm (Γ := [])) :=
   restrict_inaction []
 
-def exchangeBody : Term signature [processSort, processSort] processSort :=
+def exchangeBody : Term signature [nameSort, nameSort] processSort :=
   outputTerm (.var .zero) (.var (.succ .zero))
 
-def extrusionInside : Term signature [processSort, processSort] processSort :=
+def extrusionInside : Term signature [nameSort, nameSort] processSort :=
   outputTerm (.var .zero) (.var (.succ .zero))
 
-def extrusionOutside : Term signature [processSort] processSort :=
+def extrusionOutside : Term signature [nameSort] processSort :=
   outputTerm (.var .zero) (.var .zero)
 
 def exchangeAssignment : ContextualAssignment signature metavariables [] :=
-  assignment nilTerm exchangeBody nilTerm nilTerm
+  assignment nilTerm exchangeBody nilTerm
 
-def extrusionAssignment : ContextualAssignment signature metavariables [processSort] :=
-  assignment extrusionInside nilTerm extrusionOutside nilTerm
+def extrusionAssignment : ContextualAssignment signature metavariables [nameSort] :=
+  assignment extrusionInside nilTerm extrusionOutside
 
 theorem exchange_instance_has_permuted_endpoint :
     Prod.map erase erase
@@ -578,7 +706,7 @@ theorem exchange_instance_in_closure :
 theorem extrusion_instance_preserves_ambient_reference :
     Prod.map erase erase
       (ContextualEquationInstances.instantiateAt restrictionExtrusion
-        extrusionAssignment (emptySub [processSort])) =
+        extrusionAssignment (emptySub [nameSort])) =
       (.apply "PiNu" [.lambda none (.collection .hashBag
         [.apply "PiOut" [.bvar 0, .bvar 1], .apply "PiOut" [.bvar 1, .bvar 1]] none)],
        .collection .hashBag
@@ -616,31 +744,31 @@ private theorem lifted_pattern_not_dependent_output (pattern : Pattern) :
 the newly introduced restriction variable through weakening. -/
 theorem dependent_component_cannot_be_extruded {Γ : Ctx signature}
     (outside : Term signature Γ processSort) :
-    erase (weaken (t := processSort) outside) ≠
+    erase (weaken (t := nameSort) outside) ≠
       .apply "PiOut" [.bvar 0, .bvar 0] := by
   rw [erase_weaken]
   exact lifted_pattern_not_dependent_output _
 
-def guardedChannel : Term signature [processSort] processSort := .var .zero
+def guardedChannel : Term signature [nameSort] nameSort := .var .zero
 
-def guardedBody : Term signature [processSort, processSort] processSort :=
+def guardedBody : Term signature [nameSort, nameSort] processSort :=
   outputTerm (.var (.succ .zero)) (.var .zero)
 
 theorem guarded_instance_retains_server :
     Prod.map erase erase
-      (ContextualEquationInstances.instantiateAt guardedUnfolding
-        (assignment guardedBody nilTerm nilTerm guardedChannel) (emptySub [processSort])) =
-      (.apply "PiRep" [.bvar 0, .lambda none (.apply "PiOut" [.bvar 1, .bvar 0])],
+      (ContextualEquationInstances.instantiateAt replicationUnfold
+        (assignment nilTerm nilTerm (inputTerm guardedChannel guardedBody)) (emptySub [nameSort])) =
+      (.apply "PiRep" [.apply "PiInp" [.bvar 0, .lambda none (.apply "PiOut" [.bvar 1, .bvar 0])]],
        .collection .hashBag
         [.apply "PiInp" [.bvar 0, .lambda none (.apply "PiOut" [.bvar 1, .bvar 0])],
-         .apply "PiRep" [.bvar 0, .lambda none (.apply "PiOut" [.bvar 1, .bvar 0])]] none) := by
-  rw [guardedUnfolding_interprets]
+         .apply "PiRep" [.apply "PiInp" [.bvar 0, .lambda none (.apply "PiOut" [.bvar 1, .bvar 0])]]] none) := by
+  rw [replicationUnfold_interprets]
   rfl
 
 theorem guarded_instance_in_closure :
-    EqClosure equations (replicationTerm guardedChannel guardedBody)
+    EqClosure equations (replicationTerm (inputTerm guardedChannel guardedBody))
       (parallelTerm (inputTerm guardedChannel guardedBody)
-        (replicationTerm guardedChannel guardedBody)) :=
+        (replicationTerm (inputTerm guardedChannel guardedBody))) :=
   unfold_guarded guardedChannel guardedBody
 
 end Controls

@@ -4,26 +4,18 @@ import Mettapedia.GSLT.Dynamics.ObservationTransport
 import Mettapedia.GSLT.LanguageDef.GradedObservationDiscipline
 
 /-!
-# Capability-indexed observation-discipline crown
+# Collection capabilities and reachable policy support
 
-An observation discipline has four semantically distinct layers:
+An observation discipline separates execution events, retained witness
+containers, their value readout, and downstream policies. Chronological and
+certified-independent composition are distinct collector capabilities.
 
-* the execution system and its proof-relevant events;
-* the witness container populated by an event history;
-* a declared value readout from retained witnesses;
-* a downstream policy that may use only distinctions retained by that readout.
-
-This module closes two remaining seams in that factorization.
-
-First, chronological and certified-independent composition are indexed
-capabilities of a collector.  They are not fields required of every observer,
-and one capability does not determine the other.
-
-Second, operational policy support is characterized on the exact image of the
-collector.  The earlier global policy criterion remains useful when every
-abstract container value is part of the public contract, but an unreachable
-container must not invalidate a policy that is exact on every executable
-history.  The two notions are separated by a checked counterexample.
+Policy factorization is restricted to containers produced by accepted event
+histories. A policy may be supported on this reachable image while failing
+on the entire declared carrier; the counterexample below preserves this
+boundary. Maximum-score selection uses the same reachable information
+criterion. Neither support nor compositionality is inferred from a readout's
+existence alone.
 -/
 
 namespace Mettapedia.GSLT.Dynamics
@@ -149,30 +141,16 @@ theorem supportsReachablePolicy_iff_constantOnReachableReadoutFibers
     discipline.SupportsReachablePolicy policy ↔
       discipline.PolicyConstantOnReachableReadoutFibers policy := by
   constructor
-  · rintro ⟨observedPolicy, agrees⟩ first second firstReachable
-      secondReachable sameReadout
-    rw [← agrees firstReachable, ← agrees secondReachable, sameReadout]
+  · rintro ⟨recover, agrees⟩ first second firstReachable secondReachable sameReadout
+    exact (agrees firstReachable).symm.trans
+      ((congrArg recover sameReadout).trans (agrees secondReachable))
   · intro constant
-    classical
-    let fallback : Decision := Classical.choice inferInstance
-    let observedPolicy : discipline.Value → Decision := fun value =>
-      if reachable : ∃ container,
-          discipline.collection.Reachable container ∧
-            discipline.readout container = value then
-        policy (Classical.choose reachable)
-      else
-        fallback
-    refine ⟨observedPolicy, ?_⟩
-    intro container containerReachable
-    simp only [observedPolicy]
-    split
-    · rename_i reachable
-      exact constant
-        (Classical.choose_spec reachable).1 containerReachable
-        (Classical.choose_spec reachable).2
-    · rename_i unreachable
-      exact False.elim
-        (unreachable ⟨container, containerReachable, rfl⟩)
+    obtain ⟨recover, agrees⟩ :=
+      (Mettapedia.GSLT.Core.NonFactorization.factors_iff_constantOnFibers_of_nonempty
+        (fun state : discipline.ReachableContainer => discipline.readout state.val)
+        (fun state => policy state.val)).mpr
+          (fun first second same => constant first.property second.property same)
+    exact ⟨recover, fun {state} reachable => agrees ⟨state, reachable⟩⟩
 
 /-- **Exact reachable scheduler criterion.**  A readout can implement
 maximum-score selection over executable witness states precisely when the
@@ -185,14 +163,9 @@ theorem supportsReachableMaxSelection_iff
       discipline.PolicyConstantOnReachableReadoutFibers score := by
   unfold SupportsReachableMaxSelection
   rw [Mettapedia.GSLT.Core.observationSupportsMaxSelection_iff]
-  constructor
-  · intro constant first second firstReachable secondReachable sameReadout
-    exact constant
-      (first := ⟨first, firstReachable⟩)
-      (second := ⟨second, secondReachable⟩)
-      sameReadout
-  · intro constant first second sameReadout
-    exact constant first.property second.property sameReadout
+  exact ⟨fun constant _ _ firstReachable secondReachable sameReadout =>
+    constant (first := ⟨_, firstReachable⟩) (second := ⟨_, secondReachable⟩) sameReadout,
+    fun constant first second sameReadout => constant first.property second.property sameReadout⟩
 
 /-- Maximum-selection support and ordinary score-policy support have the
 same information criterion on the executable image. -/
@@ -256,10 +229,8 @@ theorem chronological_ne_independentParallel :
       (workSpanCapability .independentParallel).algebra.op
         ⟨1, 1⟩ ⟨1, 1⟩ := by
   intro equal
-  have values : (⟨2, 2⟩ : WorkSpan) = ⟨2, 1⟩ :=
-    Option.some.inj equal
-  have spans := congrArg WorkSpan.span values
-  norm_num at spans
+  have impossible : (2 : Nat) = 1 := congrArg WorkSpan.span (Option.some.inj equal)
+  omega
 
 /-- A valid observation discipline whose collector rejects every history. -/
 def nowhere : ObservationDiscipline Unit where
@@ -273,12 +244,7 @@ def nowhere : ObservationDiscipline Unit where
 must be supplied, never inferred from the existence of a readout. -/
 theorem nowhere_has_no_chronological_capability :
     IsEmpty (nowhere.CollectionCapability .chronological) :=
-  ⟨by
-    intro capability
-    have impossible :
-        nowhere.collection.collect [] = some capability.algebra.unit :=
-      capability.collect_nil
-    simp [nowhere] at impossible⟩
+  ⟨fun capability => by cases capability.collect_nil⟩
 
 end CapabilityCanary
 

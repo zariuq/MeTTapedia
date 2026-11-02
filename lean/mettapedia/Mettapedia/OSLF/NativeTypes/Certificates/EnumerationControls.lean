@@ -85,7 +85,7 @@ theorem second_seed_found :
   have bad : Controls.damagedFamily.check conditionalJudgment = false := by decide
   have good : Controls.conditional.check conditionalJudgment = true := Controls.conditional_checked
   simp [NativeEnumeration.searchWithSeeds, SeededSearch.search, SeededSearch.run,
-    SeededSearch.step, Search.initial, SeededSearch.candidate, formationSeeds, bad, good]
+    Search.Scheduled.step, Search.initial, SeededSearch.candidate, formationSeeds, bad, good]
 
 theorem seeded_resume_exact (first second : Nat) :
     NativeEnumeration.searchWithSeeds formationSeeds conditionalJudgment (first + second) =

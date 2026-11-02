@@ -103,7 +103,7 @@ private theorem exchange_match_inv (listener : String) {source : Pattern} {bindi
         exact ⟨_, _, i, hi, j, hj, _, binder, body, datum,
           rfl, firstShape, secondShape, rfl⟩
 
-/-- An occurrence-based specification of the four internal rules. Display
+/-- An occurrence-based specification of the three internal rules. Display
 metadata and open collection tails are visible only at the raw matcher
 boundary; the atomic object fragment below excludes both. -/
 inductive PiRawStep : Pattern → Pattern → Prop where
@@ -116,16 +116,6 @@ inductive PiRawStep : Pattern → Pattern → Prop where
       PiRawStep (.collection .hashBag elements tail)
         (.collection .hashBag
           (instantiateBVar datum body :: (elements.eraseIdx i).eraseIdx j) none)
-  | repComm {elements : List Pattern} {tail : Option String}
-      (i : Nat) (hi : i < elements.length)
-      (j : Nat) (hj : j < (elements.eraseIdx i).length)
-      (channel : Pattern) (binder : Option String) (body datum : Pattern)
-      (input : elements[i] = .apply "PiRep" [channel, .lambda binder body])
-      (output : (elements.eraseIdx i)[j] = .apply "PiOut" [channel, datum]) :
-      PiRawStep (.collection .hashBag elements tail)
-        (.collection .hashBag
-          ([instantiateBVar datum body, .apply "PiRep" [channel, .lambda none body]] ++
-            (elements.eraseIdx i).eraseIdx j) none)
   | par {elements : List Pattern} {tail : Option String}
       (i : Nat) (hi : i < elements.length) {target : Pattern}
       (inner : PiRawStep elements[i] target) :
@@ -177,7 +167,7 @@ private theorem piRawStep_of_stepAt {fuel : Nat} {source target : Pattern}
       simp only [List.mem_cons, List.not_mem_nil, or_false] at member
       rw [matchPatternForRule_eq_syntactic] at matching
       have matchRel := matchPattern_iff_matchRel.mp matching
-      rcases member with rfl | rfl | rfl | rfl
+      rcases member with rfl | rfl | rfl
       · change MatchRel (.collection .hashBag
           [.apply "PiInp" [.fvar "x", .lambda none (.fvar "body")],
             .apply "PiOut" [.fvar "x", .fvar "z"]] (some "rest")) source initial at matchRel
@@ -223,16 +213,6 @@ private theorem piRawStep_of_stepAt {fuel : Nat} {source target : Pattern}
             rw [piResCong_apply_exact] at result
             cases result
             exact .res binder (ih innerFuel (by omega) (by simpa [applyBindings] using inner))
-      · change MatchRel (.collection .hashBag
-          [.apply "PiRep" [.fvar "x", .lambda none (.fvar "body")],
-            .apply "PiOut" [.fvar "x", .fvar "z"]] (some "rest")) source initial at matchRel
-        obtain ⟨elements, tail, i, hi, j, hj, channel, binder, body, datum,
-          rfl, atInput, atOutput, rfl⟩ := exchange_match_inv "PiRep" matchRel
-        change PremisesAt _ _ _ _ [] _ at premises
-        cases premises
-        rw [piRepComm_apply_exact] at result
-        cases result
-        exact .repComm i hi j hj channel binder body datum atInput atOutput
 
 /-- Every supplied authored endpoint has a reduction derivation in the
 independent occurrence specification. -/
@@ -276,12 +256,6 @@ theorem step_of_piRawStep {source target : Pattern} (step : PiRawStep source tar
     · rw [piCalc_rewrites]; simp
     · rw [matchPatternForRule_eq_syntactic]
       exact piExchange_selected_match "PiInp" i hi j hj channel binder body datum input output
-  | repComm i hi j hj channel binder body datum input output =>
-    refine ⟨1, .rule (rule := piRepCommRewrite) ?_ ?_ (.nil _)
-      (piRepComm_apply_exact channel body datum _)⟩
-    · rw [piCalc_rewrites]; simp
-    · rw [matchPatternForRule_eq_syntactic]
-      exact piExchange_selected_match "PiRep" i hi j hj channel binder body datum input output
   | @par elements tail i hi target _ ih =>
     obtain ⟨fuel, inner⟩ := ih
     refine ⟨fuel + 1, .rule (rule := piParCongRewrite)

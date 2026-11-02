@@ -38,9 +38,9 @@ inductive AtomicPi : Nat → Pattern → Prop where
   | restriction {depth : Nat} {body : Pattern}
       (continuation : AtomicPi (depth + 1) body) :
       AtomicPi depth (.apply "PiNu" [.lambda none body])
-  | server {depth : Nat} {channel body : Pattern}
-      (name : AtomicName depth channel) (continuation : AtomicPi (depth + 1) body) :
-      AtomicPi depth (.apply "PiRep" [channel, .lambda none body])
+  | replication {depth : Nat} {process : Pattern}
+      (copied : AtomicPi depth process) :
+      AtomicPi depth (.apply "PiRep" [process])
   | parallel {depth : Nat} {elements : List Pattern}
       (components : ∀ element ∈ elements, AtomicPi depth element) :
       AtomicPi depth (.collection .hashBag elements none)
@@ -82,8 +82,7 @@ theorem AtomicPi.substitute {source target : Nat} {process : Pattern}
   | output subject payload =>
     exact .output (subject.substitute assignment images) (payload.substitute assignment images)
   | restriction _ ih => exact .restriction (ih _ (atomic_lift_assignment images))
-  | server name _ ih =>
-    exact .server (name.substitute assignment images) (ih _ (atomic_lift_assignment images))
+  | replication _ ih => exact .replication (ih _ images)
   | parallel _ ih =>
     simp only [ContextSubstitution.substitute, ContextSubstitution.substituteList_eq_map]
     apply AtomicPi.parallel
@@ -131,9 +130,9 @@ theorem AtomicPi.closeFVar {depth : Nat} {process : Pattern} (atomic : AtomicPi 
   | restriction _ ih =>
     simp only [Substitution.closeFVar, List.map_cons, List.map_nil]
     exact .restriction (ih (index + 1) (by omega))
-  | server name _ ih =>
+  | replication _ ih =>
     simp only [Substitution.closeFVar, List.map_cons, List.map_nil]
-    exact .server (name.closeFVar index inScope free) (ih (index + 1) (by omega))
+    exact .replication (ih index inScope)
   | parallel _ ih =>
     simp only [Substitution.closeFVar]
     apply AtomicPi.parallel
@@ -165,7 +164,8 @@ theorem piToPattern_atomic (process : Process) : AtomicPi 0 (piToPattern process
   | input channel bound _ ih => exact .input (.free _ channel) (ih.closeFVar 0 (by omega) bound)
   | output channel datum => exact .output (.free _ channel) (.free _ datum)
   | nu bound _ ih => exact .restriction (ih.closeFVar 0 (by omega) bound)
-  | replicate channel bound _ ih => exact .server (.free _ channel) (ih.closeFVar 0 (by omega) bound)
+  | replicate channel bound _ ih =>
+    exact .replication (.input (.free _ channel) (ih.closeFVar 0 (by omega) bound))
 
 private theorem atomic_parallel_member {depth : Nat} {elements : List Pattern}
     (atomic : AtomicPi depth (.collection .hashBag elements none))
@@ -183,12 +183,6 @@ private theorem atomic_output_inversion {depth : Nat} {channel datum : Pattern}
     (atomic : AtomicPi depth (.apply "PiOut" [channel, datum])) :
     AtomicName depth channel ∧ AtomicName depth datum := by
   generalize shape : Pattern.apply "PiOut" [channel, datum] = process at atomic
-  cases atomic <;> simp_all
-
-private theorem atomic_server_inversion {depth : Nat} {channel body : Pattern} {binder : Option String}
-    (atomic : AtomicPi depth (.apply "PiRep" [channel, .lambda binder body])) :
-    binder = none ∧ AtomicName depth channel ∧ AtomicPi (depth + 1) body := by
-  generalize shape : Pattern.apply "PiRep" [channel, .lambda binder body] = process at atomic
   cases atomic <;> simp_all
 
 private theorem atomic_restriction_inversion {depth : Nat} {body : Pattern} {binder : Option String}
@@ -217,24 +211,6 @@ theorem PiRawStep.atomic {source target : Pattern} (step : PiRawStep source targ
       intro element member
       rcases List.mem_cons.mp member with rfl | residual
       · exact continuation.instantiate message
-      · exact components element (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx residual))
-  | @repComm elements tail i hi j hj channel binder body datum atInput atOutput =>
-    cases atomic with
-    | parallel components =>
-      have inputTyped := components elements[i] (List.getElem_mem hi)
-      rw [atInput] at inputTyped
-      have outputMember : (elements.eraseIdx i)[j] ∈ elements :=
-        List.mem_of_mem_eraseIdx (List.getElem_mem hj)
-      have outputTyped := components _ outputMember
-      rw [atOutput] at outputTyped
-      obtain ⟨_, subject, continuation⟩ := atomic_server_inversion inputTyped
-      obtain ⟨_, message⟩ := atomic_output_inversion outputTyped
-      apply AtomicPi.parallel
-      intro element member
-      simp only [List.cons_append, List.nil_append, List.mem_cons] at member
-      rcases member with rfl | rfl | residual
-      · exact continuation.instantiate message
-      · exact .server subject continuation
       · exact components element (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx residual))
   | @par elements tail i hi target _ ih =>
     cases atomic with
@@ -279,8 +255,10 @@ theorem AtomicPi.canonical {depth : Nat} {process : Pattern} (atomic : AtomicPi 
     process.hasCanonicalBinderMetadata = true := by
   induction atomic with
   | nil => rfl
-  | input name _ ih | server name _ ih =>
+  | input name _ ih =>
     simp [Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList, name.canonical, ih]
+  | replication _ ih =>
+    simp [Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList, ih]
   | output subject payload =>
     simp [Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList,
       subject.canonical, payload.canonical]
@@ -299,8 +277,9 @@ theorem AtomicPi.object {depth : Nat} {process : Pattern} (atomic : AtomicPi dep
     isObjectPattern process = true := by
   induction atomic with
   | nil => rfl
-  | input name _ ih | server name _ ih =>
+  | input name _ ih =>
     simp [isObjectPattern, isObjectPatternList, name.object, ih]
+  | replication _ ih => simp [isObjectPattern, isObjectPatternList, ih]
   | output subject payload =>
     simp [isObjectPattern, isObjectPatternList, subject.object, payload.object]
   | restriction _ ih => simp [isObjectPattern, isObjectPatternList, ih]
@@ -313,14 +292,14 @@ open Mettapedia.GSLT.LanguageDef.BagNormalForm
 open Mettapedia.OSLF.MeTTaIL.PatternCode
 
 theorem AtomicName.hasType {depth : Nat} {name : Pattern} (atomic : AtomicName depth name) :
-    HasType piCalc piNameContext (List.replicate depth (.base "Proc")) name (.base "Proc") := by
+    HasType piCalc piNameContext (List.replicate depth (.base "Name")) name (.base "Name") := by
   cases atomic with
   | free name => exact .fvar rfl
   | bound inScope => exact .bvar (List.getElem?_replicate_of_lt inScope)
 
 /-- The fragment supplies actual declaration typing at every ambient depth. -/
 theorem AtomicPi.hasType {depth : Nat} {process : Pattern} (atomic : AtomicPi depth process) :
-    HasType piCalc piNameContext (List.replicate depth (.base "Proc")) process (.base "Proc") := by
+    HasType piCalc piNameContext (List.replicate depth (.base "Name")) process (.base "Proc") := by
   induction atomic with
   | nil =>
     exact .constructor (List.getElem_mem (l := piCalc.terms) (n := 0) (by decide))
@@ -337,11 +316,10 @@ theorem AtomicPi.hasType {depth : Nat} {process : Pattern} (atomic : AtomicPi de
     exact .constructor (List.getElem_mem (l := piCalc.terms) (n := 4) (by decide))
       (by simp [UsesBareCollection, piCalc])
       (.cons trivial rfl (.lambda (by simpa [List.replicate_succ] using ih)) .nil)
-  | server name _ ih =>
+  | replication _ ih =>
     exact .constructor (List.getElem_mem (l := piCalc.terms) (n := 5) (by decide))
-      (by simp [UsesBareCollection, piCalc]) (.cons trivial rfl name.hasType
-        (.cons trivial rfl (.lambda (by simpa [List.replicate_succ] using ih)) .nil))
-  | parallel _ ih => exact bag_hasType (piBagTheory.asBare rfl) (elementsHaveType_iff.mpr ih)
+      (by simp [UsesBareCollection, piCalc]) (.cons trivial rfl ih .nil)
+  | parallel _ ih => exact bag_hasType (piBagPresentation.asBare rfl) (elementsHaveType_iff.mpr ih)
 
 theorem AtomicName.normalForm {depth : Nat} {name : Pattern} (atomic : AtomicName depth name) :
     normalForm (some "PiNil") name = name := by cases atomic <;> rfl
@@ -383,9 +361,9 @@ theorem AtomicPi.normalForm {depth : Nat} {process : Pattern} (atomic : AtomicPi
       subject.normalForm, payload.normalForm] using
       AtomicPi.output subject payload
   | restriction _ ih => exact .restriction ih
-  | server name _ ih =>
-    simpa only [Mettapedia.GSLT.LanguageDef.BagNormalForm.normalForm, normalFormList,
-      name.normalForm] using AtomicPi.server name ih
+  | replication _ ih =>
+    simpa only [Mettapedia.GSLT.LanguageDef.BagNormalForm.normalForm, normalFormList] using
+      AtomicPi.replication ih
   | parallel _ ih =>
     rw [normalForm_bag]
     apply AtomicPi.normalizeBag

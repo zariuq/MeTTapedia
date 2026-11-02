@@ -379,6 +379,7 @@ theorem bagZ2A_step_isCollection {left right : Pattern}
         · cases authored with
           | forward member => cases member
           | reverse member => cases member
+          | declared member => cases member
         · cases derived with
           | bagPerm => simp [OneHoleContext.fill, IsCollection]
           | setPerm => simp [OneHoleContext.fill, IsCollection]

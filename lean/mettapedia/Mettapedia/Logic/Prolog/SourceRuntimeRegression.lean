@@ -200,6 +200,7 @@ def runTermsFor (program : SourceSignature.Program)
 these source-runtime regressions. -/
 inductive RuntimeTermShape where
   | variable (scope : Nat) (spelling : String) (occurrence : Nat)
+  | nil
   | atom (name : String)
   | integer (value : Int)
   | floatBits (bits : UInt64)
@@ -211,6 +212,7 @@ deriving BEq, Repr
 def runtimeTermShape : LP.Term Sigma.scoped → RuntimeTermShape
   | .var identity =>
       .variable identity.scope identity.name.spelling identity.name.occurrence
+  | .const .nil => .nil
   | .const (.atom name) => .atom name
   | .const (.integer value) => .integer value
   | .const (.floatBits bits) => .floatBits bits
@@ -222,7 +224,7 @@ def runtimeTermShape : LP.Term Sigma.scoped → RuntimeTermShape
 
 def RuntimeTermShape.listElements? : RuntimeTermShape →
     Option (List RuntimeTermShape)
-  | .atom "[]" => some []
+  | .nil => some []
   | .compound "[|]" [head, tail] => do
       let rest ← tail.listElements?
       pure (head :: rest)
@@ -1488,7 +1490,7 @@ private def repeatedPairVariables? (term : LP.Term Sigma.scoped) :
                   consSymbol.name, List.ofFn consArguments with
               | "pair", [.var firstLeft, .var firstRight], "[|]", [second, nil] =>
                   match second, nil with
-                  | .app secondSymbol secondArguments, .const (.atom "[]") =>
+                  | .app secondSymbol secondArguments, .const .nil =>
                       match secondSymbol.name, List.ofFn secondArguments with
                       | "pair", [.var secondLeft, .var secondRight] =>
                           if firstLeft = firstRight && secondLeft = secondRight &&
@@ -1506,7 +1508,7 @@ private def oneSeparatedPair? (term : LP.Term Sigma.scoped) : Bool :=
   match term with
   | .app consSymbol consArguments =>
       match consSymbol.name, List.ofFn consArguments with
-      | "[|]", [pairTerm, .const (.atom "[]")] =>
+      | "[|]", [pairTerm, .const .nil] =>
           match pairTerm with
           | .app pairSymbol pairArguments =>
               match pairSymbol.name, List.ofFn pairArguments with
@@ -2165,6 +2167,14 @@ def runQueryErrorWithServices? (services : RuntimeControl.Services Sigma)
 #guard runCount [] metaForallFails == some (0, 0, 0)
 #guard runAtoms [] metaForallRestoresBindings == some (["c"], 0, 0)
 #guard runCount [] atomAcceptsAtom == some (1, 0, 0)
+#guard runCount [] (SourceSignature.call "atom" [atom "[]"]) == some (1, 0, 0)
+#guard runCount [] (SourceSignature.call "is_list" [atom "[]"]) == some (0, 0, 0)
+#guard runCount [] (.unify SourceSignature.nil (atom "[]")) == some (0, 0, 0)
+#guard runCount [] (termCompare (atom "<") SourceSignature.nil (atom "[]")) == some (1, 0, 0)
+#guard runCount [] (termCompare (atom ">") SourceSignature.nil (atom "[]")) == some (0, 0, 0)
+#guard runCount [] (.conj
+  (SourceSignature.call "term_hash" [SourceSignature.nil,SourceSignature.var "H" 0])
+  (SourceSignature.call "term_hash" [atom "[]",SourceSignature.var "H" 0])) == some (1, 0, 0)
 #guard runCount [] atomRejectsInteger == some (0, 0, 0)
 #guard runCount [] atomRejectsListNil == some (0, 0, 0)
 #guard runCount [] atomicAcceptsString == some (1, 0, 0)
@@ -2187,11 +2197,11 @@ def runQueryErrorWithServices? (services : RuntimeControl.Services Sigma)
 #guard runCount [] isListRejectsRationalSpine == some (0, 0, 0)
 #guard runCount [] isListAcceptsCyclicHead == some (1, 0, 0)
 #guard runShapesFor [] formatAtomicCodes xIdentity ==
-  some ([.compound "[|]" [.integer 97, .atom "[]"]], 0, 0)
+  some ([.compound "[|]" [.integer 97, .nil]], 0, 0)
 #guard runShapesFor [] (formatAtomicCodes (SourceSignature.list [integer 33]))
     xIdentity ==
   some ([.compound "[|]" [.integer 97,
-    .compound "[|]" [.integer 33, .atom "[]"]]], 0, 0)
+    .compound "[|]" [.integer 33, .nil]]], 0, 0)
 #guard runShapesFor [] atomCodesForward xIdentity ==
   some ([runtimeTermShape (expectedScoped
     (SourceSignature.list [integer 97, integer 955]))], 0, 0)

@@ -57,7 +57,11 @@ private theorem decrement_call_returns (state : State) (head : String) (fuel : N
     (returned : PureReturns program (callBindings fuel matching codes target) state (callExpression head) state answer) :
     PureReturns program bindings state
       (.expression (.symbol head :: .expression [.symbol "-", .var "fuel", natural 1] :: remaining)) state answer := by
-  apply call_returns program bindings state state head _ _ dispatch _ ordinary
+  -- Four arguments: never the three-argument `match` query.
+  have three : remaining.length = 3 := by simpa using congrArg List.length captured
+  apply application_answers program bindings state state head
+    (.expression [.symbol "-", .var "fuel", natural 1] :: remaining) [answer] dispatch _
+    (controlForm_application ordinary (.inr (by simp [three])))
   apply evaluated_argument_returns program bindings state state state (.function head)
     (.expression [.symbol "-", .var "fuel", natural 1]) (natural fuel) _ remaining [] 0 number
   · apply native_binary_call_returns program bindings state state state state "-" (.var "fuel") (natural 1)
@@ -67,10 +71,10 @@ private theorem decrement_call_returns (state : State) (head : String) (fuel : N
     · exact grounded_returns program bindings state (.int 1)
     · simp [StdLib.integer_subtraction, natural]
   · apply raw_arguments_return program bindings state state head remaining [natural fuel] 1 answer raw
-    have stage := captured_function_arguments_returns program
+    have stage := captured_function_arguments_returns_of_shape program
       (callBindings fuel matching codes target) bindings state state head
       [.var "fuel", .var "matching", .var "codes", .var "target"] (1 + remaining.length) answer
-      dispatch ordinary (by
+      dispatch (controlForm_application ordinary (.inr (by simp))) (by
         intro offset argument found
         have bounded : offset < 4 := by
           have inside := (getElem?_eq_some_iff.mp found).choose

@@ -159,7 +159,7 @@ theorem coreEquiv_quoteDrop (name : Pattern) :
   apply EquationSemantics.equationInstance_equivalent
   refine ⟨0, EquationInstanceAt.forward (equation := quoteDropEquation)
     (initialBindings := [("N", name)]) (finalBindings := [("N", name)])
-    quoteDropEquation_mem ?_ (PremisesAt.nil _) ?_⟩
+    quoteDropEquation_mem (EquationSemantics.readsRaw_of_none rfl) ?_ (PremisesAt.nil _) ?_⟩
   · rw [matchPattern_iff_matchRel]
     exact MatchRel.apply
       (MatchArgsRel.cons

@@ -88,11 +88,24 @@ def readTarget : Atom → Option Target
     readTarget (targetData target) = some target := by
   cases target <;> rfl
 
+def readIndices : List Atom → Option (List Nat)
+  | [] => some []
+  | first :: rest => do return (← readIndex first) :: (← readIndices rest)
+
+@[simp] theorem readIndices_map (values : List Nat) :
+    readIndices (values.map index) = some values := by
+  induction values with
+  | nil => rfl
+  | cons first rest ih => simp [readIndices, ih]
+
 def faultData : Fault → Atom
   | .invalidSpace => .symbol "petta-fault-space-v1"
   | .zeroDivisor => .symbol "petta-fault-zero-v1"
   | .missingCell name => .expression [.symbol "petta-fault-cell-v1", text name]
   | .invalidArguments head => .expression [.symbol "petta-fault-arguments-v1", text head]
+  | .overApplication head arities count =>
+      .expression [.symbol "petta-fault-over-application-v1", text head,
+        .expression (arities.map index), index count]
 
 def readFault : Atom → Option Fault
   | .symbol "petta-fault-space-v1" => some .invalidSpace
@@ -101,11 +114,14 @@ def readFault : Atom → Option Fault
       some (.missingCell name)
   | .expression [.symbol "petta-fault-arguments-v1", .grounded (.string head)] =>
       some (.invalidArguments head)
+  | .expression [.symbol "petta-fault-over-application-v1", .grounded (.string head),
+      .expression arities, count] => do
+      return .overApplication head (← readIndices arities) (← readIndex count)
   | _ => none
 
 @[simp] theorem readFault_faultData (fault : Fault) :
     readFault (faultData fault) = some fault := by
-  cases fault <;> rfl
+  cases fault <;> first | rfl | simp [faultData, readFault, text]
 
 mutual
   /-- All control constructors, including recursively pending alternatives. -/
@@ -192,6 +208,8 @@ def frameData : Frame → Atom
   | .sequence remaining answers =>
       .expression [.symbol "petta-frame-sequence-v1", .expression (controlsData remaining),
         .expression answers]
+  | .query bindings pattern body =>
+      .expression [.symbol "petta-frame-query-v1", bindingsData bindings, pattern, body]
 
 def readFrame : Atom → Option Frame
   | .expression [.symbol "petta-frame-bind-v1", bindings, pattern, body] => do
@@ -208,6 +226,8 @@ def readFrame : Atom → Option Frame
   | .expression [.symbol "petta-frame-sequence-v1", .expression remaining,
       .expression answers] => do
       return .sequence (← readControls remaining) answers
+  | .expression [.symbol "petta-frame-query-v1", bindings, pattern, body] => do
+      return .query (← readBindings bindings) pattern body
   | _ => none
 
 @[simp] theorem readFrame_frameData (frame : Frame) :

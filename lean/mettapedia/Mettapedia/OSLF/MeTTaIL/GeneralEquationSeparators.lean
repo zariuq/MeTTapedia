@@ -50,8 +50,9 @@ theorem unit_generator (base : BasePremiseEvaluator) (pattern : Pattern) :
   apply EquationContextStep.inContext .hole
   apply Or.inl
   refine ⟨0, EquationInstanceAt.forward (equation := unitEquation)
-    (initialBindings := [("P", pattern)]) (finalBindings := [("P", pattern)]) ?_ ?_ (.nil _) ?_⟩
+    (initialBindings := [("P", pattern)]) (finalBindings := [("P", pattern)]) ?_ ?_ ?_ (.nil _) ?_⟩
   · exact List.Mem.head _
+  · decide
   · simp [unitEquation, matchPattern]
   · simp [unitEquation, applyBindings]
 

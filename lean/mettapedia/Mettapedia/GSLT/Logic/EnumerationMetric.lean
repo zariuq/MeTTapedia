@@ -38,11 +38,9 @@ theorem enumerated_distance_first {State : Type u} (reading : Nat → State → 
     by_cases earlier : index < first
     · rw [if_pos (before index earlier)]
       exact (pow_pos (by norm_num : (0 : ℝ) < 1 / 2) first).le
-    · have decreasing := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
-        (by norm_num : (1 / 2 : ℝ) ≤ 1) (Nat.le_of_not_gt earlier)
-      split_ifs
-      · exact (pow_pos (by norm_num : (0 : ℝ) < 1 / 2) first).le
-      · exact decreasing
+    · exact ((enumeratedTests reading).score_le_weight index left right).trans
+        (pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+          (by norm_num : (1 / 2 : ℝ) ≤ 1) (Nat.le_of_not_gt earlier))
   · have lower := (enumeratedTests reading).score_le_distance first left right
     change (if reading first left ↔ reading first right then 0 else (1 / 2 : ℝ) ^ first) ≤ _ at lower
     rwa [if_neg different] at lower
@@ -55,11 +53,6 @@ theorem enumerated_zero_iff {State : Type u} {Test : Type v}
     (enumeratedTests (fun index => reading (enumeration index))).distance left right = 0 ↔
       ∀ test, reading test left ↔ reading test right := by
   rw [BudgetedObservations.distance_eq_zero_iff]
-  constructor
-  · intro same test
-    obtain ⟨index, rfl⟩ := covers test
-    exact same index
-  · intro same index
-    exact same (enumeration index)
+  exact (covers.forall (p := fun test => reading test left ↔ reading test right)).symm
 
 end Mettapedia.GSLT.Logic

@@ -227,7 +227,7 @@ theorem sem_iff_satisfies_forward (enc : AtomEncoding)
       exact hbox q hRpq ((ih hdia q).mp hq)
     · intro h
       by_contra hnoex
-      push_neg at hnoex
+      push Not at hnoex
       exact h (fun q hRpq hq => by
         have := (ih hdia q).mpr hq
         exact absurd this (hnoex q hRpq))

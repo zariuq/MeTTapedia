@@ -4,8 +4,8 @@ import Mettapedia.Languages.ProcessCalculi.CCS.LanguageDef
 /-!
 # CCS by structural operational rules, and its bialgebraic semantics
 
-The interacting fragment of CCS (inaction, input and output prefixes, and
-binary parallel composition) over a finite set of names is given by its
+The prefix-and-composition part of CCS (inaction, input and output prefixes,
+and binary parallel composition) over a finite set of names is given by its
 labelled rules:
 
 * `a.p` has an `a` transition to `p`, and `ā.p` an `ā` transition to `p`;
@@ -30,12 +30,11 @@ Exactness also fails on the other side: every transition shrinks a closed
 process (`size_lt_of_mem_step`), so the behaviour of a silent loop is the
 semantics of no closed process (`semantics_not_surjective`).
 
-`toPattern` reads a closed process as a term of `ccsCalc`. The handshake
-reads as the authored handshake, and its one silent transition is an authored
-reduction (`handshake_transitions_reduce`); the two-name mismatch reads as the
-authored mismatch and is stuck in both. A harmony theorem for all closed
-processes (silent transitions agree with reductions up to the bag laws) is
-not proved here.
+`toPattern` reads a closed process as a term of `ccsCalc`, each prefix a sum
+of one summand, and each name a free name of the name sort, spelled by a given
+map. The handshake reads as the authored handshake, and its one silent
+transition is an authored reduction (`handshake_transitions_reduce`); the
+two-name mismatch reads as the authored mismatch and is stuck in both.
 
 **Control.** A constructor that tests its two arguments for syntactic
 equality is outside the format. Bisimilarity is not preserved by it, so no
@@ -671,20 +670,15 @@ theorem mismatch_stuck {first second : Name} (different : first ≠ second) :
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-- The unary numeral naming the `k`-th name in `ccsCalc`. -/
-def nameCode : Nat → Pattern
-  | 0 => .apply "NBase" []
-  | k + 1 => .apply "NNext" [nameCode k]
-
-/-- Read a closed process as a term of the authored presentation `ccsCalc`:
-prefixes become `CAct` and `CCoAct`, and a binary composition a two-element bag. -/
-def toPattern {count : Nat} (process : Closed (Fin count)) : Pattern :=
+/-- Read a closed process as a term of the authored presentation `ccsCalc`: each prefix becomes a sum of one summand,
+`CAct` or `CCoAct` on the free name that `spell` gives, and a binary composition a two-element bag. -/
+def toPattern {count : Nat} (spell : Fin count → String) (process : Closed (Fin count)) : Pattern :=
   IndexedPolynomial.Free.fold (signature (Fin count)).polynomial
     (carrier := fun _ _ => Pattern) (fun _ _ hole => PEmpty.elim hole)
     { act := fun _ _ layer => match layer with
         | ⟨.nil, _⟩ => Pattern.apply "CNil" []
-        | ⟨.input name, child⟩ => Pattern.apply "CAct" [nameCode name, child ()]
-        | ⟨.output name, child⟩ => Pattern.apply "CCoAct" [nameCode name, child ()]
+        | ⟨.input name, child⟩ => CCS.sum [CCS.act (.fvar (spell name)) (child ())]
+        | ⟨.output name, child⟩ => CCS.sum [CCS.coact (.fvar (spell name)) (child ())]
         | ⟨.par, children⟩ =>
             Pattern.collection .hashBag [children false, children true] none }
     PUnit.unit () process
@@ -692,7 +686,7 @@ def toPattern {count : Nat} (process : Closed (Fin count)) : Pattern :=
 /-- The handshake `a.0 | ā.(a.0)` over one name. -/
 def handshakeProcess : Closed (Fin 1) := par (input 0 nil) (output 0 (input 0 nil))
 
-theorem toPattern_handshake : toPattern handshakeProcess = CCS.handshake := rfl
+theorem toPattern_handshake : toPattern (fun _ => "a") handshakeProcess = CCS.handshake := rfl
 
 /-- The handshake has exactly one silent transition. -/
 theorem step_handshake :
@@ -724,17 +718,17 @@ presentation `ccsCalc`, read through `toPattern`. -/
 theorem handshake_transitions_reduce :
     ∀ next ∈ step handshakeProcess .tau,
       Mettapedia.OSLF.MeTTaIL.ContextualStep.Step CCS.base CCS.ccsCalc
-        (toPattern handshakeProcess) (toPattern next) := by
+        (toPattern (fun _ => "a") handshakeProcess) (toPattern (fun _ => "a") next) := by
   intro next member
   rw [step_handshake, Finset.mem_singleton] at member
   subst member
   exact CCS.handshake_steps
 
-/-- Prefixes on the two different names `a` and `a'`. It reads as the authored
-`mismatch`, which `ccsCalc` cannot rewrite (`CCS.mismatch_stuck`); here it has
-no silent transition (`mismatch_stuck`). -/
+/-- Prefixes on the two different names `a` and `b`. It reads as the authored `mismatch`, which `ccsCalc` cannot
+rewrite (`CCS.mismatch_stuck`); here it has no silent transition (`mismatch_stuck`). -/
 def mismatchProcess : Closed (Fin 2) := par (input 0 nil) (output 1 nil)
 
-theorem toPattern_mismatch : toPattern mismatchProcess = CCS.mismatch := rfl
+theorem toPattern_mismatch :
+    toPattern (fun name => if name.val = 0 then "a" else "b") mismatchProcess = CCS.mismatch := rfl
 
 end Mettapedia.Languages.ProcessCalculi.CCS.Bialgebraic

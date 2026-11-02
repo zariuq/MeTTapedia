@@ -56,16 +56,9 @@ theorem finite_refutation_iff (budget index length : Nat) :
   rw [chain_observation]
   change (if min (index + 1) (length + 1) ≤ budget then some (decide (index ≤ length)) else none) =
     some false ↔ length < index ∧ length < budget
-  by_cases before : index ≤ length
-  · have notLater : ¬ length < index := by omega
-    simp only [before, decide_true, notLater, false_and]
-    split <;> simp
-  · have price : min (index + 1) (length + 1) = length + 1 := by omega
-    by_cases cheap : length + 1 ≤ budget
-    · simp [price, cheap]
-      omega
-    · simp [price, cheap]
-      omega
+  split_ifs with funded <;>
+    simp only [Option.some.injEq, decide_eq_false_iff_not, false_iff] <;>
+    omega
 
 theorem profile_equality_classifies (budget : Nat) (first second : Option Nat) :
     view budget first = view budget second ↔ classify budget first = classify budget second := by
@@ -117,12 +110,9 @@ theorem profile_equality_classifies (budget : Nat) (first second : Option Nat) :
                   (agrees.trans secondRefutes)).2
               simp only [classify, dif_neg firstVisible, dif_neg secondInvisible]
   · intro same
-    calc
-      view budget first = view budget (representative budget (classify budget first)) :=
-        (representative_profiles budget first).symm
-      _ = view budget (representative budget (classify budget second)) :=
-        congrArg (fun code => view budget (representative budget code)) same
-      _ = view budget second := representative_profiles budget second
+    exact (representative_profiles budget first).symm.trans
+      ((congrArg (fun code => view budget (representative budget code)) same).trans
+        (representative_profiles budget second))
 
 def profile (budget : Nat) (code : Class budget) := view budget (representative budget code)
 
@@ -137,11 +127,10 @@ def realize (budget : Nat) (code : Class budget) : ActualProfile budget :=
   ⟨profile budget code, representative budget code, rfl⟩
 
 theorem realize_bijective (budget : Nat) : Function.Bijective (realize budget) := by
-  constructor
-  · intro first second same
-    exact profile_injective budget (congrArg Subtype.val same)
-  · rintro ⟨supplied, state, rfl⟩
-    exact ⟨classify budget state, Subtype.ext (representative_profiles budget state)⟩
+  refine ⟨Function.Injective.of_comp (f := Subtype.val) (g := realize budget)
+    (profile_injective budget), ?_⟩
+  rintro ⟨supplied, state, rfl⟩
+  exact ⟨classify budget state, Subtype.ext (representative_profiles budget state)⟩
 
 /-- The actual funded profile image has exactly these finite classes. -/
 noncomputable def imageEquivalence (budget : Nat) : Class budget ≃ ActualProfile budget :=
@@ -153,32 +142,20 @@ theorem actual_profile_cardinality (budget : Nat) : Nat.card (ActualProfile budg
 
 theorem state_readout_factors_iff {Value : Type*} (budget : Nat) (readout : Option Nat → Value) :
     Factors (view budget) readout ↔ ConstantOnFibers (classify budget) readout := by
-  constructor
-  · intro factor first second same
-    exact factor.constantOnFibers first second ((profile_equality_classifies budget first second).mpr same)
-  · intro invariant
-    classical
-    let consumer : (Nat → Option Bool × Nat) → Value := fun supplied =>
-      if reachable : ∃ state, view budget state = supplied then readout reachable.choose else readout none
-    refine ⟨consumer, ?_⟩
-    intro state
-    have reachable : ∃ actual, view budget actual = view budget state := ⟨state, rfl⟩
-    dsimp only [consumer]
-    rw [dif_pos reachable]
-    exact invariant reachable.choose state
-      ((profile_equality_classifies budget reachable.choose state).mp reachable.choose_spec)
+  let : Nonempty Value := ⟨readout none⟩
+  rw [factors_iff_constantOnFibers_of_nonempty]
+  exact forall_congr' fun first => forall_congr' fun second =>
+    imp_congr (profile_equality_classifies budget first second) Iff.rfl
 
 /-- The universal readout is computed on representatives, and is unique
 on every class. Invariance must be earned by the supplied consumer. -/
 theorem class_consumer_universal {Value : Type*} (budget : Nat) (readout : Option Nat → Value)
     (invariant : ConstantOnFibers (classify budget) readout) :
     ∃! consumer : Class budget → Value, ∀ state, consumer (classify budget state) = readout state := by
-  refine ⟨fun code => readout (representative budget code), ?_, ?_⟩
-  · intro state
-    exact invariant (representative budget (classify budget state)) state
-      (classify_representative budget (classify budget state))
-  · intro other correct
-    funext code
-    simpa only [classify_representative] using correct (representative budget code)
+  refine ⟨fun code => readout (representative budget code),
+    fun state => invariant _ state (classify_representative budget (classify budget state)), ?_⟩
+  intro other correct
+  funext code
+  simpa only [classify_representative] using correct (representative budget code)
 
 end Mettapedia.OSLF.Framework.FundedNuObservationClasses

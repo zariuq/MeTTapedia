@@ -49,7 +49,7 @@ theorem Instr.bounded_iff_machineBounded (instruction : Instr) :
     instruction.Bounded ↔ instruction.MachineBounded := by
   cases instruction <;>
     simp [Instr.Bounded, Instr.words, Instr.MachineBounded, Instr.machineWords,
-      and_assoc, and_left_comm, and_comm]
+      or_imp, forall_and, and_assoc, and_left_comm, and_comm]
 
 def Parser.Establishes {α : Type} (parser : Parser α) (property : α → Prop) : Prop :=
   ∀ bytes value rest, parser bytes = .ok (value, rest) → property value

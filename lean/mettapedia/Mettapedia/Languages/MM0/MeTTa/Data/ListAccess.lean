@@ -466,4 +466,48 @@ theorem append_captured_returns (bindings : Subst) (state : State) (left right :
     (by decide) (by decide) (by decide) _ (append_body_returns state left right) (by decide)
   simpa [capturedLeft, capturedRight] using append_clause left right
 
+/-- A `match` of `($key $value)` whose `$key` the caller has bound to `index` and whose
+`$value` is free answers, per stored row, exactly what `indexedQuery` answers: the bound
+variable tests the row's index and `$value` binds its value. -/
+theorem keyed_rows_indexedQuery (env : Subst) (key : String) (index : Nat) (entries : List Atom)
+    (keyBound : Subst.lookup env key = some (natural index))
+    (valueFree : Subst.lookup env "value" = none) :
+    (entries.filterMap fun row =>
+      (SpaceSemantics.matchValue env (.expression [.var key, .var "value"]) row).map
+        fun bound => applySubst bound (.var "value")) = Store.indexedQuery entries index := by
+  unfold Store.indexedQuery SpaceSemantics.query
+  apply List.filterMap_congr
+  intro row _
+  cases row with
+  | var name => simp [SpaceSemantics.matchValue]
+  | symbol name => simp [SpaceSemantics.matchValue]
+  | grounded value => simp [SpaceSemantics.matchValue]
+  | expression items =>
+      rw [SpaceSemantics.matchValue_expression_of_not_cons _ _ _
+          (by intro first rest same; simp at same),
+        SpaceSemantics.matchValue_expression_of_not_cons _ _ _
+          (by intro first rest same; simp [natural] at same)]
+      rcases items with _ | ⟨first, _ | ⟨second, _ | ⟨third, rest⟩⟩⟩
+      · simp [SpaceSemantics.matchValue.matchValues]
+      · simp [SpaceSemantics.matchValue.matchValues]
+      · have keyTest : SpaceSemantics.matchValue env (.var key) first =
+            if first = natural index then some env else none := by
+          simp [SpaceSemantics.matchValue, matchAtom, keyBound]
+        have literalTest : SpaceSemantics.matchValue [] (natural index) first =
+            if first = natural index then some [] else none := by
+          show SpaceSemantics.matchValue [] (.grounded (.int index)) first = _
+          rw [SpaceSemantics.matchValue_literal (SpaceSemantics.Literal.grounded _)]
+          by_cases same : first = natural index <;> simp_all [natural, eq_comm]
+        simp only [SpaceSemantics.matchValue.matchValues, keyTest, literalTest]
+        by_cases same : first = natural index
+        · have valueBind : SpaceSemantics.matchValue env (.var "value") second =
+              some (("value", second) :: env) := by
+            simp [SpaceSemantics.matchValue, matchAtom, valueFree]
+          have emptyBind : SpaceSemantics.matchValue [] (.var "value") second =
+              some [("value", second)] := by
+            simp [SpaceSemantics.matchValue, matchAtom, Subst.lookup]
+          simp [same, valueBind, emptyBind, applySubst, Subst.lookup]
+        · simp [same]
+      · simp [SpaceSemantics.matchValue.matchValues]
+
 end Mettapedia.Languages.MM0.MeTTa.ListAccess

@@ -150,7 +150,7 @@ theorem piResCong_step_iff (source target : Pattern) :
     | @rule fuel _ _ rule initial final member matching premises result =>
       rw [piCalc_rewrites] at member
       simp only [List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl | rfl | rfl
+      rcases member with rfl | rfl | rfl
       · rw [matchPatternForRule_eq_syntactic] at matching
         simp [piCommRewrite, piCalc, matchPattern] at matching
       · rw [matchPatternForRule_eq_syntactic] at matching
@@ -175,48 +175,7 @@ theorem piResCong_step_iff (source target : Pattern) :
             have endpoint : candidate = target := by simpa using result
             subst candidate
             exact ⟨fuel, by simpa [applyBindings] using inner⟩
-      · rw [matchPatternForRule_eq_syntactic] at matching
-        simp [piRepCommRewrite, piCalc, matchPattern] at matching
   · exact piResCong_step
-
-
-/-- A guarded server and one message have the same captures as an ordinary input. -/
-theorem piRepComm_match_exact (channel body datum : Pattern) (rest : List Pattern) :
-    piCommMatchedBindings channel body datum rest ∈ matchPatternForRule piCalc piRepCommRewrite
-      (.collection .hashBag
-        ([.apply "PiRep" [channel, .lambda none body], .apply "PiOut" [channel, datum]] ++ rest) none) := by
-  rw [matchPatternForRule_eq_syntactic]
-  exact matchPattern_iff_matchRel.mpr (exchange_matchRel "PiRep" channel body datum rest)
-
-/-- A server firing substitutes only its released body and retains the original server. -/
-theorem piRepComm_apply_exact (channel body datum : Pattern) (rest : List Pattern) :
-    applyBindingsForRule piCalc piRepCommRewrite (piCommMatchedBindings channel body datum rest) =
-      .collection .hashBag
-        ([instantiateBVar datum body, .apply "PiRep" [channel, .lambda none body]] ++ rest) none := by
-  rw [applyBindingsForRule_eq_applyBindings _ _ _ (by decide +kernel)]
-  simp [piRepCommRewrite, piCalc, piCommMatchedBindings, applyBindings]
-
-/-- The authored guarded-server firing preserves the parallel residue. -/
-theorem piRepComm_step (channel body datum : Pattern) (rest : List Pattern) :
-    Step (engineBasePremises RelationEnv.empty) piCalc
-      (.collection .hashBag
-        ([.apply "PiRep" [channel, .lambda none body], .apply "PiOut" [channel, datum]] ++ rest) none)
-      (.collection .hashBag
-        ([instantiateBVar datum body, .apply "PiRep" [channel, .lambda none body]] ++ rest) none) := by
-  exact ⟨1, .rule (rule := piRepCommRewrite)
-    (by rw [piCalc_rewrites]; simp)
-    (piRepComm_match_exact channel body datum rest) (.nil _)
-    (piRepComm_apply_exact channel body datum rest)⟩
-
-/-- Capture-avoiding named server communication has the exact authored endpoint. -/
-theorem piRepComm_named_step (channel bound datum : Name) (P : Process) (rest : List Pattern) :
-    Step (engineBasePremises RelationEnv.empty) piCalc
-      (.collection .hashBag
-        ([piToPattern (.replicate channel bound P), piToPattern (.output channel datum)] ++ rest) none)
-      (.collection .hashBag
-        ([piToPattern (P.substitute bound datum), piToPattern (.replicate channel bound P)] ++ rest) none) := by
-  rw [← piToPattern_instantiate_substitute]
-  exact piRepComm_step (.fvar channel) (closeFVar 0 bound (piToPattern P)) (.fvar datum) rest
 
 theorem piParCong_match_exact (source : Pattern) (rest : List Pattern) :
     [("rest", .collection .hashBag rest none), ("S", source)] ∈

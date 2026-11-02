@@ -242,7 +242,7 @@ def constLayer : TermLayer V T T where
   equivalence := equivalence
   vars := fun _ => ∅
   inst := fun _ p => some p
-  inst_isSome := by simp
+  inst_bound := by simp
   inst_local := by simp
   inst_congr := fun _ _ p _ => Option.Rel.some (equivalence.refl p)
 

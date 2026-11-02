@@ -279,7 +279,7 @@ variable {relEnv : RelationEnv}
 theorem authored_unwrap {source target : Pattern} (authored : AuthoredEquation relEnv wrapped source target) :
     source = wrap target ∨ target = wrap source := by
   cases authored with
-  | forward member matched premises =>
+  | forward member _ matched premises =>
     simp only [wrapped, List.mem_singleton] at member
     subst member
     cases premises
@@ -287,7 +287,7 @@ theorem authored_unwrap {source target : Pattern} (authored : AuthoredEquation r
     left
     show wrap inner = wrap (applyBindingsScoped (captureSitesOf (wrap (.fvar "x")) []) _ 0 (.fvar "x"))
     rw [scoped_x (sites := captureSitesOf (wrap (.fvar "x")) []) found (by decide)]
-  | reverse member matched premises =>
+  | reverse member _ matched premises =>
     simp only [wrapped, List.mem_singleton] at member
     subst member
     cases premises
@@ -296,6 +296,14 @@ theorem authored_unwrap {source target : Pattern} (authored : AuthoredEquation r
     right
     show wrap (applyBindingsScoped (captureSitesOf (.fvar "x") []) [("x", source)] 0 (.fvar "x")) = wrap source
     rw [scoped_x (sites := captureSitesOf (.fvar "x") []) (value := source) (by simp) (by decide)]
+  | declared member notRaw _ =>
+    simp only [wrapped, List.mem_singleton] at member
+    subst member
+    exact absurd notRaw (by decide)
+  | premised member notRaw _ _ =>
+    simp only [wrapped, List.mem_singleton] at member
+    subst member
+    exact absurd notRaw (by decide)
 
 theorem unwrap_generator {source target : Pattern} (generator : Generator relEnv wrapped source target) :
     unwrap source = unwrap target := by
@@ -326,7 +334,7 @@ theorem unwrap_same {first second : Pattern} (equivalent : ObjectEquivalent relE
 theorem unwrap_step {inner : Pattern} (object : IsObject inner) : ObjectStep relEnv wrapped .syntax (wrap inner) inner := by
   have instance_ : AuthoredEquation relEnv wrapped (wrap inner)
       (applyBindingsScoped (captureSitesOf (wrap (.fvar "x")) []) [("x", inner)] 0 (.fvar "x")) :=
-    AuthoredEquation.forward (equation := unwrapEquation) (initial := [("x", inner)]) (List.mem_singleton_self _)
+    AuthoredEquation.forward (equation := unwrapEquation) (initial := [("x", inner)]) (List.mem_singleton_self _) rfl
       (matchRel_complete (.apply (.cons .fvar .nil rfl) rfl)) (PremisesValid.nil _)
   rw [scoped_x (sites := captureSitesOf (wrap (.fvar "x")) []) (value := inner) (by simp) (by decide)] at instance_
   have objectWrap : IsObject (wrap inner) := by

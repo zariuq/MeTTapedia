@@ -41,27 +41,21 @@ noncomputable def distance (left right : State) : ℝ :=
 
 theorem score_nonneg (test : tests.Test) (left right : State) :
     0 ≤ tests.score test left right := by
-  classical
   unfold score
   split_ifs
   · exact le_rfl
   · exact (tests.positive test).le
-
-theorem score_le_one (test : tests.Test) (left right : State) :
-    tests.score test left right ≤ 1 := by
-  classical
-  unfold score
-  split_ifs
-  · exact zero_le_one
-  · exact tests.bounded test
 
 theorem score_le_weight (test : tests.Test) (left right : State) :
     tests.score test left right ≤ tests.weight test := by
-  classical
   unfold score
   split_ifs
   · exact (tests.positive test).le
   · exact le_rfl
+
+theorem score_le_one (test : tests.Test) (left right : State) :
+    tests.score test left right ≤ 1 :=
+  (tests.score_le_weight test left right).trans (tests.bounded test)
 
 private theorem scores_bounded (left right : State) :
     BddAbove (insert 0 (Set.range (fun test => tests.score test left right))) := by
@@ -80,34 +74,19 @@ theorem distance_nonneg (left right : State) : 0 ≤ tests.distance left right :
 theorem distance_le_iff (left right : State) (bound : ℝ) :
     tests.distance left right ≤ bound ↔
       0 ≤ bound ∧ ∀ test, tests.score test left right ≤ bound := by
-  constructor
-  · intro bounded
-    exact ⟨(tests.distance_nonneg left right).trans bounded,
-      fun test => (tests.score_le_distance test left right).trans bounded⟩
-  · rintro ⟨nonneg, bounded⟩
-    apply csSup_le (Set.insert_nonempty _ _)
-    rintro _ (rfl | ⟨test, rfl⟩)
-    · exact nonneg
-    · exact bounded test
+  simp only [distance, csSup_le_iff (tests.scores_bounded left right) (Set.insert_nonempty _ _),
+    Set.forall_mem_insert, Set.forall_mem_range]
 
 theorem distance_le_one (left right : State) : tests.distance left right ≤ 1 :=
   (tests.distance_le_iff left right 1).mpr ⟨zero_le_one, fun test => tests.score_le_one test left right⟩
 
-@[simp] theorem distance_self (state : State) : tests.distance state state = 0 := by
-  apply le_antisymm
-  · apply (tests.distance_le_iff state state 0).mpr
-    exact ⟨le_rfl, fun _ => by simp [score]⟩
-  · exact tests.distance_nonneg state state
-
 theorem score_symm (test : tests.Test) (left right : State) :
     tests.score test left right = tests.score test right left := by
-  classical
   simp only [score, Iff.comm]
 
 theorem distance_symm (left right : State) : tests.distance left right = tests.distance right left := by
-  have scores : (fun test => tests.score test left right) =
-      (fun test => tests.score test right left) := funext fun test => tests.score_symm test left right
-  simp only [distance, scores]
+  exact congrArg (fun scores => sSup (insert 0 (Set.range scores)))
+    (funext fun test => tests.score_symm test left right)
 
 theorem score_ultrametric (test : tests.Test) (first middle last : State) :
     tests.score test first last ≤ max (tests.score test first middle) (tests.score test middle last) := by
@@ -140,16 +119,14 @@ theorem distance_eq_zero_iff (left right : State) :
     · exact (tests.distance_le_iff left right 0).mpr ⟨le_rfl, fun test => by simp [score, same test]⟩
     · exact tests.distance_nonneg left right
 
+@[simp] theorem distance_self (state : State) : tests.distance state state = 0 :=
+  (tests.distance_eq_zero_iff state state).mpr (fun _ => Iff.rfl)
+
 theorem distance_congr {left left' right right' : State}
     (before : ∀ test, tests.holds test left ↔ tests.holds test left')
     (after : ∀ test, tests.holds test right ↔ tests.holds test right') :
     tests.distance left right = tests.distance left' right' := by
-  classical
-  have scores : (fun test => tests.score test left right) =
-      (fun test => tests.score test left' right') := by
-    funext test
-    simp only [score, before, after]
-  simp only [distance, scores]
+  simp only [distance, score, before, after]
 
 variable {Target : Type w} (targetTests : BudgetedObservations.{w, z} Target)
 
@@ -165,18 +142,8 @@ theorem distance_transport (mapState : State → Target) (mapTest : tests.Test �
       tests.score test left right := by
     intro test
     simp only [score, preserves, weights]
-  apply le_antisymm
-  · apply (targetTests.distance_le_iff _ _ _).mpr
-    refine ⟨tests.distance_nonneg left right, ?_⟩
-    intro targetTest
-    obtain ⟨test, rfl⟩ := covers targetTest
-    rw [scores]
-    exact tests.score_le_distance test left right
-  · apply (tests.distance_le_iff _ _ _).mpr
-    refine ⟨targetTests.distance_nonneg _ _, ?_⟩
-    intro test
-    rw [← scores]
-    exact targetTests.score_le_distance (mapTest test) _ _
+  exact congrArg (fun values => sSup (insert 0 values))
+    ((covers.range_comp _).symm.trans (congrArg Set.range (funext scores)))
 
 end BudgetedObservations
 

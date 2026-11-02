@@ -30,7 +30,7 @@ open _root_.Mettapedia.Languages.MeTTa.PeTTa.Effects (State)
 open Eval
 
 /-- The evaluator's special forms. An authored head is never one of them. -/
-def specialForms : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]
+def specialForms : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]
 
 /-- The head an arrow declaration `(: head (-> …))` declares. -/
 def arrowHead : Atom → Option String
@@ -257,9 +257,11 @@ theorem call_in {allowed : String → Bool} {program : Program}
     rw [← agreement.demand head index supported]
     have same : arguments.length = values.length := by simpa using congrArg List.length captured
     exact raw index (by omega)
-  · rw [captured, ← agreement.bodies head values supported]
-    exact PureData.named_equation_clause L.runtime head equation (L.formals head) values
+  · rw [captured]
+    have sourceSelected := PureData.named_equation_clause L.runtime head equation (L.formals head) values
       rows arguments' distinct length
+    apply PureData.selected_clause_agreement agreement supported
+    simpa only [bind] using sourceSelected
   · exact returned
 
 /-- Reuse an owned raw call under equal capture in the target program, without scanning its rows. -/

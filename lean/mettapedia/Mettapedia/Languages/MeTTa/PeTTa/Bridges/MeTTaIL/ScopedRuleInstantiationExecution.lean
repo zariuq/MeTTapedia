@@ -208,7 +208,7 @@ private theorem named_let_returns (caller : Subst) (state : State) (name : Strin
 
 private theorem constructor_variables (head : String) (names : List String)
     (inert : (ioHead head || StdLib.known head || runtime.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureData.Template runtime (a head (names.map v)) := by
   apply PureData.Template.constructor head _ inert ordinary
   intro argument member

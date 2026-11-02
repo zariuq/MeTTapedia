@@ -150,12 +150,7 @@ private theorem helper_clause (helper : Helper) (values : List Atom)
   have selected := PureData.match_variable_values helper.names values [] (helper_names_nodup helper) length
     (by intro name _; rfl)
   simp only [List.append_nil] at selected
-  have selectedExpression : SpaceSemantics.matchValue []
-      (.expression (helper.names.map Atom.var)) (.expression values) =
-        some (helper.names.zip values).reverse := by
-    cases helper <;> simpa only [Helper.names, List.map_cons, List.map_nil,
-      SpaceSemantics.matchValue] using selected
-  simp [helper_arguments, selectedExpression, environment]
+  simp [helper_arguments, selected, environment]
 
 private theorem helper_call (helper : Helper) (caller : Subst) (state : State)
     (values arguments : List Atom) (answer : Atom)
@@ -687,7 +682,7 @@ private theorem instances_shape : (equation .instances).body =
 
 private theorem variables_template (head : String) (names : List String)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
     PureData.Template program (a head (names.map Atom.var)) := by
   apply PureData.Template.constructor _ _ inert ordinary
   intro argument member

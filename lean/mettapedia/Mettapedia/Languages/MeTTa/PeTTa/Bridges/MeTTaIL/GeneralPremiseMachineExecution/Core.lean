@@ -1297,7 +1297,7 @@ private theorem machine_data_template (head : String) (arguments : List Atom)
     PureData.Template Base.runtime (Base.a head arguments) := by
   have checked : machineDataHeads.all (fun name => decide
       ((ioHead name || StdLib.known name || Base.runtime.equations.any (·.head == name)) = false ∧
-        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])) = true := by
+        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
     decide +kernel
   have row := List.all_eq_true.mp checked head supported
   rw [decide_eq_true_eq] at row

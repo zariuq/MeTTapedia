@@ -46,15 +46,14 @@ def collectionFree : TypeExpr → Bool
   | .multiBinder body => collectionFree body
   | .collection _ _ => false
 
-/-- A presentation whose static laws are those of one bag.
+/-- A presentation with one bag: its bag constructor over its own sort, and no other constructor taking a
+collection. The presentation may author further equations.
 
 `bag` is the bag constructor and `unit` records its algebra: `none` for a bag
 with no declared algebra, `some name` for the flattening algebra whose unit is
 the nullary constructor `name`. -/
-structure BagTheory (language : LanguageDef) (bag : GrammarRule)
+structure BagPresentation (language : LanguageDef) (bag : GrammarRule)
     (unit : Option String) : Prop where
-  /-- No equation is authored. -/
-  equationsEmpty : language.equations = []
   /-- The bag constructor is declared. -/
   bagAuthored : bag ∈ language.terms
   /-- Its single parameter is a bag over its own sort. -/
@@ -71,13 +70,19 @@ structure BagTheory (language : LanguageDef) (bag : GrammarRule)
     ∃ unitRule ∈ language.terms,
       unitRule.label = name ∧ unitRule.category = bag.category ∧ unitRule.params = []
 
-namespace BagTheory
+/-- A presentation whose static laws are those of one bag: a bag presentation authoring no equation. -/
+structure BagTheory (language : LanguageDef) (bag : GrammarRule)
+    (unit : Option String) : Prop extends BagPresentation language bag unit where
+  /-- No equation is authored. -/
+  equationsEmpty : language.equations = []
+
+namespace BagPresentation
 
 variable {language : LanguageDef} {bag : GrammarRule} {unit : Option String}
 
 /-- A declared constructor whose single parameter is a collection is the bag,
 and the collection is a bag over the bag's sort. -/
-theorem eq_bag_of_collectionParameter (laws : BagTheory language bag unit)
+theorem eq_bag_of_collectionParameter (laws : BagPresentation language bag unit)
     {rule : GrammarRule} (authored : rule ∈ language.terms)
     {parameterName : String} {kind : CollType} {elementType : TypeExpr}
     (shape : rule.params = [.simple parameterName (.collection kind elementType)]) :
@@ -108,7 +113,7 @@ private theorem collectionTypeOccurs_not_collectionFree
 
 /-- The profile's actual parameter inventory admits only its own bag kind.
 This uses declared type occurrences, independently of bare representation. -/
-theorem collectionTyped (laws : BagTheory language bag unit) {rule : GrammarRule}
+theorem collectionTyped (laws : BagPresentation language bag unit) {rule : GrammarRule}
     {kind : CollType} {elements : List Pattern} (authored : rule ∈ language.terms)
     (typed : WellSorted.CollectionTypedAt language rule kind elements) :
     rule = bag ∧ kind = .hashBag := by
@@ -129,7 +134,7 @@ theorem collectionTyped (laws : BagTheory language bag unit) {rule : GrammarRule
   | element inner => cases inner
 
 /-- Every collection carrier of the presentation is the bag. -/
-theorem carrier (laws : BagTheory language bag unit) {rule : GrammarRule}
+theorem carrier (laws : BagPresentation language bag unit) {rule : GrammarRule}
     {kind : CollType} (declared : CollectionCarrierRule language rule kind) :
     rule = bag ∧ kind = .hashBag := by
   obtain ⟨parameterName, elementType, shape⟩ := declared.selfSorted
@@ -138,7 +143,7 @@ theorem carrier (laws : BagTheory language bag unit) {rule : GrammarRule}
 
 /-- Every declared collection algebra is the bag's flattening algebra with its
 unit. -/
-theorem algebraRule (laws : BagTheory language bag unit) {rule : GrammarRule}
+theorem algebraRule (laws : BagPresentation language bag unit) {rule : GrammarRule}
     {kind : CollType} {algebra : CollectionAlgebra}
     (declared : AlgebraRule language rule kind algebra) :
     rule = bag ∧ kind = .hashBag ∧
@@ -156,14 +161,14 @@ theorem algebraRule (laws : BagTheory language bag unit) {rule : GrammarRule}
       exact ⟨name, rfl, algebraEq.symm⟩
 
 /-- The collection-carrier evidence of the bag itself. -/
-theorem bagCarrier (laws : BagTheory language bag unit) :
+theorem bagCarrier (laws : BagPresentation language bag unit) :
     CollectionCarrierRule language bag .hashBag := by
   obtain ⟨parameterName, shape⟩ := laws.bagShape
   exact ⟨laws.bagAuthored, parameterName, .base bag.category, shape⟩
 
 /-- The algebra evidence of the bag when it declares its unit. -/
 theorem bagAlgebraRule {unitName : String}
-    (laws : BagTheory language bag (some unitName)) :
+    (laws : BagPresentation language bag (some unitName)) :
     AlgebraRule language bag .hashBag { flatten := true, unit := some unitName } := by
   refine ⟨laws.bagAuthored, by simpa using laws.bagAlgebra, laws.bagShape, ?_⟩
   intro name declaredUnit
@@ -171,7 +176,7 @@ theorem bagAlgebraRule {unitName : String}
   subst declaredUnit
   exact laws.unitAuthored unitName rfl
 
-end BagTheory
+end BagPresentation
 
 /-- Algebraic bag laws together with their bare-collection representation.
 Wrapped algebraic presentations remain covered by `BagTheory`; this extra
@@ -180,9 +185,28 @@ structure BareBagTheory (language : LanguageDef) (bag : GrammarRule)
     (unit : Option String) : Prop extends BagTheory language bag unit where
   representedBare : bag.collectionRepresentation = .bare
 
+/-- A bag presentation with its actual bare representation. -/
+structure BareBagPresentation (language : LanguageDef) (bag : GrammarRule)
+    (unit : Option String) : Prop extends BagPresentation language bag unit where
+  representedBare : bag.collectionRepresentation = .bare
+
 instance {language : LanguageDef} {bag : GrammarRule} {unit : Option String} :
     Coe (BareBagTheory language bag unit) (BagTheory language bag unit) :=
   ⟨BareBagTheory.toBagTheory⟩
+
+/-- A bare bag theory is a bare bag presentation. -/
+theorem BareBagTheory.toBareBagPresentation {language : LanguageDef} {bag : GrammarRule} {unit : Option String}
+    (laws : BareBagTheory language bag unit) : BareBagPresentation language bag unit :=
+  ⟨laws.toBagPresentation, laws.representedBare⟩
+
+instance {language : LanguageDef} {bag : GrammarRule} {unit : Option String} :
+    Coe (BareBagTheory language bag unit) (BareBagPresentation language bag unit) :=
+  ⟨BareBagTheory.toBareBagPresentation⟩
+
+/-- Qualify a bag presentation with its actual representation choice. -/
+theorem BagPresentation.asBare {language : LanguageDef} {bag : GrammarRule} {unit : Option String}
+    (laws : BagPresentation language bag unit) (bare : bag.collectionRepresentation = .bare) :
+    BareBagPresentation language bag unit := ⟨laws, bare⟩
 
 /-- Qualify an algebraic theory with its actual representation choice. -/
 theorem BagTheory.asBare {language : LanguageDef} {bag : GrammarRule} {unit : Option String}
@@ -190,12 +214,18 @@ theorem BagTheory.asBare {language : LanguageDef} {bag : GrammarRule} {unit : Op
     BareBagTheory language bag unit := ⟨laws, bare⟩
 
 /-- The bare parameter shape combines algebra and representation at the same bag. -/
-theorem BareBagTheory.bareShape {language : LanguageDef} {bag : GrammarRule}
-    {unit : Option String} (laws : BareBagTheory language bag unit) :
+theorem BareBagPresentation.bareShape {language : LanguageDef} {bag : GrammarRule}
+    {unit : Option String} (laws : BareBagPresentation language bag unit) :
     ∃ parameterName,
       bag.bareParams = [.simple parameterName (.collection .hashBag (.base bag.category))] := by
   obtain ⟨name, shape⟩ := laws.bagShape
   exact ⟨name, by simpa only [GrammarRule.bareParams_of_bare _ laws.representedBare] using shape⟩
+
+theorem BareBagTheory.bareShape {language : LanguageDef} {bag : GrammarRule}
+    {unit : Option String} (laws : BareBagTheory language bag unit) :
+    ∃ parameterName,
+      bag.bareParams = [.simple parameterName (.collection .hashBag (.base bag.category))] :=
+  laws.toBareBagPresentation.bareShape
 
 /-- A wrapped source declaration cannot supply a bare representation license. -/
 theorem BareBagTheory.not_wrapped {language : LanguageDef} {bag : GrammarRule}
@@ -596,4 +626,4 @@ theorem normalForm_eq_of_equationEquiv {language : LanguageDef} {bag : GrammarRu
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm
 
-#print axioms Mettapedia.GSLT.LanguageDef.BagNormalForm.BagTheory.collectionTyped
+#print axioms Mettapedia.GSLT.LanguageDef.BagNormalForm.BagPresentation.collectionTyped

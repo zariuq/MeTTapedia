@@ -257,33 +257,69 @@ def instrumentRules (cut : CollType) (rule : GrammarRule) : List RewriteRule :=
     (projectablePositions rule).map fun position =>
       projectionRule rule.label rule.params.length position.1
 
+/-- **The opening rule for a summand of a declared choice**: a constructor that
+meets the cut as one summand of a choice opens there.  A request beside the
+choice selects the summand and releases its arguments; the other summands are
+discarded, as in the theory's own interaction with that choice.
+
+`{Ask⟨c⟩, s(c(x₁ … xₙ) + others)} ⇝ Args⟨c⟩(x₁ … xₙ)` -/
+def summandOpeningRule (cut : CollType) (choice constructor : String) (arity : Nat) :
+    RewriteRule where
+  name := "open-" ++ constructor
+  typeContext := []
+  premises := []
+  left := .collection cut
+    [.apply (askLabel constructor) [],
+      .apply choice [.collection .hashBag [.apply constructor (argPatterns arity)] (some "obsOthers")]]
+    none
+  right := .apply (argsLabel constructor) (argPatterns arity)
+
+/-- Every declaration adjoined for a summand of a choice.  The request sits
+beside the choice in the cut, so it is a term of the choice's sort. -/
+def summandDeclarations (choice rule : GrammarRule) : List GrammarRule :=
+  { askDeclaration rule with category := choice.category } :: argsDeclaration rule ::
+    buildDeclaration rule :: (projectablePositions rule).map (getDeclaration rule)
+
+/-- Every rule adjoined for a summand of a choice. -/
+def summandRules (cut : CollType) (choice rule : GrammarRule) : List RewriteRule :=
+  summandOpeningRule cut choice.label rule.label rule.params.length ::
+    buildRule rule.label rule.params.length ::
+    (projectablePositions rule).map fun position =>
+      projectionRule rule.label rule.params.length position.1
+
 /-- The presentation extended with the observer's instruments.  The authored
 sorts, grammar, equations and rewrites are retained exactly; a fresh sort, four
 administrative formers per opened constructor, and their rules are adjoined, so
 the extended theory is an ordinary presentation in which every rule cites only
-declared constructors. -/
+declared constructors.  With a declared `choice`, the opened constructors are
+its summands: they meet the cut inside it, and open there. -/
 def observerExtension (lang : LanguageDef) (cut : CollType)
-    (opened : List String) : LanguageDef where
+    (opened : List String) (choice : Option GrammarRule := none) : LanguageDef where
   name := lang.name ++ "+Obs"
   types := lang.types ++ (openedRules lang opened).flatMap instrumentSorts
-  terms := lang.terms ++ (openedRules lang opened).flatMap instrumentDeclarations
+  terms := lang.terms ++ (openedRules lang opened).flatMap
+    (match choice with
+      | none => instrumentDeclarations
+      | some sum => summandDeclarations sum)
   equations := lang.equations
-  rewrites := lang.rewrites ++
-    (openedRules lang opened).flatMap (instrumentRules cut)
+  rewrites := lang.rewrites ++ (openedRules lang opened).flatMap
+    (match choice with
+      | none => instrumentRules cut
+      | some sum => summandRules cut sum)
 
 /-- The extension retains every authored rule. -/
 theorem mem_rewrites_of_mem (lang : LanguageDef) (cut : CollType)
     (opened : List String) {rule : RewriteRule}
-    (member : rule ∈ lang.rewrites) :
-    rule ∈ (observerExtension lang cut opened).rewrites := by
+    (member : rule ∈ lang.rewrites) (choice : Option GrammarRule := none) :
+    rule ∈ (observerExtension lang cut opened choice).rewrites := by
   simp only [observerExtension, List.mem_append]
   exact Or.inl member
 
 /-- And every authored declaration. -/
 theorem mem_terms_of_mem (lang : LanguageDef) (cut : CollType)
     (opened : List String) {rule : GrammarRule}
-    (member : rule ∈ lang.terms) :
-    rule ∈ (observerExtension lang cut opened).terms := by
+    (member : rule ∈ lang.terms) (choice : Option GrammarRule := none) :
+    rule ∈ (observerExtension lang cut opened choice).terms := by
   simp only [observerExtension, List.mem_append]
   exact Or.inl member
 
@@ -339,11 +375,13 @@ theorem answerSort_declared (lang : LanguageDef) (cut : CollType)
 /-- The build rule is adjoined. -/
 theorem buildRule_mem (lang : LanguageDef) (cut : CollType)
     (opened : List String) {rule : GrammarRule}
-    (member : rule ∈ openedRules lang opened) :
+    (member : rule ∈ openedRules lang opened) (choice : Option GrammarRule := none) :
     buildRule rule.label rule.params.length ∈
-      (observerExtension lang cut opened).rewrites := by
+      (observerExtension lang cut opened choice).rewrites := by
   simp only [observerExtension, List.mem_append, List.mem_flatMap]
-  exact Or.inr ⟨rule, member, by simp [instrumentRules]⟩
+  cases choice with
+  | none => exact Or.inr ⟨rule, member, by simp [instrumentRules]⟩
+  | some sum => exact Or.inr ⟨rule, member, by simp [summandRules]⟩
 
 /-! ## Freshness of the administrative vocabulary
 
@@ -374,6 +412,19 @@ def AdministrativeFresh (lang : LanguageDef) (opened : List String) : Prop :=
 instance (lang : LanguageDef) (opened : List String) :
     Decidable (AdministrativeFresh lang opened) := by
   unfold AdministrativeFresh; infer_instance
+
+/-- Each adjoined rule of a summand is one of the three shapes. -/
+theorem summandRules_cases (cut : CollType) {choice declaration : GrammarRule}
+    {rule : RewriteRule} (member : rule ∈ summandRules cut choice declaration) :
+    rule = summandOpeningRule cut choice.label declaration.label declaration.params.length ∨
+      rule = buildRule declaration.label declaration.params.length ∨
+      ∃ position ∈ projectablePositions declaration,
+        rule = projectionRule declaration.label declaration.params.length position.1 := by
+  simp only [summandRules, List.mem_cons, List.mem_map] at member
+  rcases member with rfl | rfl | ⟨position, positionMember, rfl⟩
+  · exact Or.inl rfl
+  · exact Or.inr (Or.inl rfl)
+  · exact Or.inr (Or.inr ⟨position, positionMember, rfl⟩)
 
 /-- Each adjoined rule is one of the three shapes, at an opened constructor. -/
 theorem instrumentRules_cases (cut : CollType) {declaration : GrammarRule}
@@ -489,10 +540,11 @@ the observer gains instruments, it does not lose behaviour. -/
 theorem step_of_base (lang : LanguageDef) (cut : CollType)
     (opened : List String)
     {relEnv : RelationEnv} {source target : Pattern}
-    (step : Step (engineBasePremises relEnv) lang source target) :
+    (step : Step (engineBasePremises relEnv) lang source target)
+    (choice : Option GrammarRule := none) :
     Step (engineBasePremises relEnv)
-      (observerExtension lang cut opened) source target :=
-  Step.mono_rules (fun _ member => mem_rewrites_of_mem lang cut opened member) step
+      (observerExtension lang cut opened choice) source target :=
+  Step.mono_rules (fun _ member => mem_rewrites_of_mem lang cut opened member choice) step
 
 /-! ## The minting exclusion -/
 

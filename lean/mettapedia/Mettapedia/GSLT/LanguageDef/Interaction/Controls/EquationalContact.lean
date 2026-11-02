@@ -269,7 +269,7 @@ theorem assoc_rebrackets :
       ∃ bindings ∈ matchPattern assocLaw.left (join (join termA termB) termC),
         applyBindings bindings assocLaw.right = join termA (join termB termC) := by
     decide +kernel
-  exact ⟨0, EquationInstanceAt.forward (equation := assocLaw) (List.Mem.head _) matched
+  exact ⟨0, EquationInstanceAt.forward (equation := assocLaw) (List.Mem.head _) (by decide) matched
     (PremisesAt.nil bindings) applied⟩
 
 /-- Associativity preserves the number of constructor occurrences. -/
@@ -317,7 +317,7 @@ theorem unit_deletes :
       ∃ bindings ∈ matchPattern unitLaw.left (join termNil termA),
         applyBindings bindings unitLaw.right = termA := by
     decide +kernel
-  exact ⟨0, EquationInstanceAt.forward (equation := unitLaw) (List.Mem.head _) matched
+  exact ⟨0, EquationInstanceAt.forward (equation := unitLaw) (List.Mem.head _) (by decide) matched
     (PremisesAt.nil bindings) applied⟩
 
 /-- **A unit law forges a contact.**  A contact is equal to a term that is
@@ -345,7 +345,7 @@ theorem idem_deletes :
       ∃ bindings ∈ matchPattern idemLaw.left (join termA termA),
         applyBindings bindings idemLaw.right = termA := by
     decide +kernel
-  exact ⟨0, EquationInstanceAt.forward (equation := idemLaw) (List.Mem.head _) matched
+  exact ⟨0, EquationInstanceAt.forward (equation := idemLaw) (List.Mem.head _) (by decide) matched
     (PremisesAt.nil bindings) applied⟩
 
 /-- **Idempotence forges a contact.** -/
@@ -374,7 +374,7 @@ theorem comm_swaps :
         applyBindings bindings commLaw.right = join termB termA := by
     decide +kernel
   exact ⟨0, EquationInstanceAt.forward (equation := commLaw)
-    (List.Mem.tail _ (List.Mem.head _)) matched (PremisesAt.nil bindings) applied⟩
+    (List.Mem.tail _ (List.Mem.head _)) (by decide) matched (PremisesAt.nil bindings) applied⟩
 
 /-- The weight that counts occurrences of `A`. -/
 def countA (label : String) : Nat := if label = "A" then 1 else 0
@@ -445,7 +445,7 @@ theorem collapse_wraps :
       ∃ bindings ∈ matchPattern collapseLaw.right (join termA termB),
         applyBindings bindings collapseLaw.left = wrap (join termA termB) := by
     decide +kernel
-  exact ⟨0, EquationInstanceAt.reverse (equation := collapseLaw) (List.Mem.head _) matched
+  exact ⟨0, EquationInstanceAt.reverse (equation := collapseLaw) (List.Mem.head _) (by decide) matched
     (PremisesAt.nil bindings) applied⟩
 
 /-- **Absence of the contact from the equations is not rigidity.**  The
@@ -484,7 +484,7 @@ theorem free_operand_changes :
         ∃ bindings ∈ matchPattern wrapLaw.left (wrap termA),
           applyBindings bindings wrapLaw.right = termB := by
       decide +kernel
-    exact ⟨0, EquationInstanceAt.forward (equation := wrapLaw) (List.Mem.head _) matched
+    exact ⟨0, EquationInstanceAt.forward (equation := wrapLaw) (List.Mem.head _) (by decide) matched
       (PremisesAt.nil bindings) applied⟩
   exact equationEquiv_apply_of_forall₂ "Join"
     (.cons inner (.cons (Relation.EqvGen.refl _) .nil))

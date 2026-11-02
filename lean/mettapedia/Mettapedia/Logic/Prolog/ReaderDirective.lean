@@ -41,20 +41,21 @@ private def atomName? : SourceSignature.Term -> Option String
   | .const (.atom name) => some name
   | _ => none
 
-private def properListAux : Nat -> SourceSignature.Term ->
+private def properListAux (lists : SourceSignature.ListEncoding) : Nat -> SourceSignature.Term ->
     Option (List SourceSignature.Term)
   | 0, _ => none
-  | _ + 1, .const (.atom "[]") => some []
+  | _ + 1, .const c => if c = lists.nilConstant then some [] else none
   | fuel + 1, term =>
       match application? term with
-      | some ("[|]", [head, tail]) => do
-          let rest <- properListAux fuel tail
-          pure (head :: rest)
+      | some (name, [head, tail]) => do
+          if name != lists.consName then none else do
+            let rest <- properListAux lists fuel tail
+            pure (head :: rest)
       | _ => none
 
-private def properList? (term : SourceSignature.Term) :
+private def properList? (lists : SourceSignature.ListEncoding) (term : SourceSignature.Term) :
     Option (List SourceSignature.Term) :=
-  properListAux (term.size + 1) term
+  properListAux lists (term.size + 1) term
 
 private def specifier? : String -> Option ReaderOperator.Specifier
   | "fx" => some .fx
@@ -66,14 +67,17 @@ private def specifier? : String -> Option ReaderOperator.Specifier
   | "yfx" => some .yfx
   | _ => none
 
-private def operatorNames? (term : SourceSignature.Term) : Option (List String) :=
+private def operatorNames? (lists : SourceSignature.ListEncoding) (term : SourceSignature.Term) : Option (List String) :=
+  if let .const c := term then
+    if c = lists.nilConstant then some [] else atomName? term |>.map (fun name => [name])
+  else
   match atomName? term with
   | some name => some [name]
   | none => do
-      let terms <- properList? term
+      let terms <- properList? lists term
       terms.mapM atomName?
 
-private def decodeUpdateArguments
+private def decodeUpdateArguments (lists : SourceSignature.ListEncoding)
     (arguments : List SourceSignature.Term) : Option Update := do
   let [priorityTerm, specifierTerm, namesTerm] := arguments | none
   let priority <- match priorityTerm with
@@ -81,12 +85,12 @@ private def decodeUpdateArguments
     | _ => none
   let specifierName <- atomName? specifierTerm
   let specifier <- specifier? specifierName
-  let names <- operatorNames? namesTerm
+  let names <- operatorNames? lists namesTerm
   pure { priority, specifier, names }
 
-private def decodeUpdate? (term : SourceSignature.Term) : Option Update := do
+private def decodeUpdate? (lists : SourceSignature.ListEncoding) (term : SourceSignature.Term) : Option Update := do
   let (name, arguments) <- application? term
-  if name = "op" then decodeUpdateArguments arguments else none
+  if name = "op" then decodeUpdateArguments lists arguments else none
 
 private def applyUpdate (update : Update) (operators : ReaderOperator.Table) :
     Except (Error rho) ReaderOperator.Table :=
@@ -99,65 +103,69 @@ private def applyUpdates (updates : List Update)
     Except (Error rho) ReaderOperator.Table :=
   updates.foldlM (fun table update => applyUpdate update table) operators
 
-private def importSources (term : SourceSignature.Term) :
+private def importSources (lists : SourceSignature.ListEncoding) (term : SourceSignature.Term) :
     List SourceSignature.Term :=
-  match properList? term with
+  match properList? lists term with
   | some sources => sources
   | none => [term]
 
-private def applyImports (profile : ImportProfile rho)
+private def applyImports (lists : SourceSignature.ListEncoding) (profile : ImportProfile rho)
     (sourceTerm : SourceSignature.Term) (operators : ReaderOperator.Table) :
     Except (Error rho) ReaderOperator.Table :=
-  (importSources sourceTerm).foldlM (fun table source => do
+  (importSources lists sourceTerm).foldlM (fun table source => do
     let updates <- (profile source).mapError .import
     applyUpdates updates table) operators
 
-private def applyExportList (exports : SourceSignature.Term)
+private def applyExportList (lists : SourceSignature.ListEncoding) (exports : SourceSignature.Term)
     (operators : ReaderOperator.Table) :
     Except (Error rho) ReaderOperator.Table := do
-  let entries <- match properList? exports with
+  let entries <- match properList? lists exports with
     | some entries => pure entries
     | none => .error .malformedOperatorDirective
   entries.foldlM (fun table entry =>
     match application? entry with
     | some ("op", arguments) =>
-        match decodeUpdateArguments arguments with
+        match decodeUpdateArguments lists arguments with
         | some update => applyUpdate update table
         | none => .error .malformedOperatorDirective
     | _ => .ok table) operators
 
-private def applyCall (profile : ImportProfile rho)
+private def applyCall (lists : SourceSignature.ListEncoding) (profile : ImportProfile rho)
     (atom : SourceSignature.Atom) (operators : ReaderOperator.Table) :
     Except (Error rho) ReaderOperator.Table :=
   let arguments := List.ofFn atom.args
   match atom.symbol.name, arguments with
   | "op", arguments =>
-      match decodeUpdateArguments arguments with
+      match decodeUpdateArguments lists arguments with
       | some update => applyUpdate update operators
       | none => .error .malformedOperatorDirective
-  | "module", [_moduleName, exports] => applyExportList exports operators
-  | "use_module", source :: _ => applyImports profile source operators
-  | "autoload", source :: _ => applyImports profile source operators
-  | "ensure_loaded", [source] => applyImports profile source operators
+  | "module", [_moduleName, exports] => applyExportList lists exports operators
+  | "use_module", source :: _ => applyImports lists profile source operators
+  | "autoload", source :: _ => applyImports lists profile source operators
+  | "ensure_loaded", [source] => applyImports lists profile source operators
   | _, _ => .ok operators
 
-private def applyGoal (profile : ImportProfile rho) :
+private def applyGoal (lists : SourceSignature.ListEncoding) (profile : ImportProfile rho) :
     SourceSignature.Goal -> ReaderOperator.Table ->
       Except (Error rho) ReaderOperator.Table
-  | .call atom, operators => applyCall profile atom operators
+  | .call atom, operators => applyCall lists profile atom operators
   | .conj left right, operators => do
-      let afterLeft <- applyGoal profile left operators
-      applyGoal profile right afterLeft
+      let afterLeft <- applyGoal lists profile left operators
+      applyGoal lists profile right afterLeft
   | _, operators => .ok operators
 
 /-- Reader effect that applies only read-time operator consequences. The
 directive itself remains in the returned source-form list for ordinary runtime
 execution. -/
-def effectWith (profile : ImportProfile rho) :
+def effectWithLists (lists : SourceSignature.ListEncoding) (profile : ImportProfile rho) :
     ReaderLoader.Effect (Error rho) :=
   fun form operators =>
     match form with
-    | .directive goal => applyGoal profile goal operators
+    | .directive goal => applyGoal lists profile goal operators
     | _ => .ok operators
+
+/-- Existing runtime loading uses the SWI source list representation. -/
+def effectWith (profile : ImportProfile rho) : ReaderLoader.Effect (Error rho) :=
+  effectWithLists SourceSignature.swiLists profile
 
 end Mettapedia.Logic.Prolog.ReaderDirective

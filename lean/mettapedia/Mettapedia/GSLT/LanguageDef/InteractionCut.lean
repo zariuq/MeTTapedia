@@ -10,6 +10,12 @@ continuation positions, residual constructor, and ordered source
 factorization of the interaction rewrite already authored by the retained
 `LanguageDef`.  The rewrite schema and its least declarative interpretation
 remain the sole authority for contraction.
+
+An operand meets the contact either as itself or as one summand of a declared
+choice: a named multiset of summands, of which the interaction selects the
+operand and discards the others (`OperandOccurrence`).  This is the additive
+cut: CCS's action and co-action stand as summands of two sums, and their
+reaction releases both continuations and drops every other summand.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
@@ -279,24 +285,60 @@ inductive InteractionOperandPlacement
       (atSide : operand.continuation.index = side.binaryIndex) :
       InteractionOperandPlacement contact side operand
 
+/-- A declared choice: a constructor whose one argument is a named multiset of
+summands, wrapped in its own application. -/
+def IsChoice (constructor : GrammarRule) : Prop :=
+  constructor.collectionRepresentation = .wrapped ∧
+    ∃ parameterName elementType,
+      constructor.params = [.simple parameterName (.collection .hashBag elementType)]
+
+/-- **How an ordered operand meets the contact**: as itself, or as one summand
+of a declared choice whose other summands, the open rest `others`, the
+interaction discards. -/
+inductive OperandOccurrence {presentation : ValidatedLanguageDef} (operand : Pattern) : Pattern → Prop where
+  | itself : OperandOccurrence operand operand
+  | summand (choice : DeclaredConstructor presentation) (others : String) (isChoice : IsChoice choice.1) :
+      OperandOccurrence operand (.apply choice.1.label [.collection .hashBag [operand] (some others)])
+
+/-- Whether a pattern has the form of one summand selected from a choice. -/
+def choiceForm : Pattern → Bool
+  | .apply _ [argument] =>
+      match argument with
+      | .collection .hashBag [_] (some _) => true
+      | _ => false
+  | _ => false
+
+/-- An operand occurring in a pattern that is no choice form is that pattern. -/
+theorem OperandOccurrence.eq_of_choiceForm {presentation : ValidatedLanguageDef} {operand term : Pattern}
+    (occurrence : OperandOccurrence (presentation := presentation) operand term)
+    (direct : choiceForm term = false) : operand = term := by
+  cases occurrence with
+  | itself => rfl
+  | summand => simp [choiceForm] at direct
+
 /-- The selected interaction core has an ordered program/environment contact.
 Collection contact may retain an open surrounding context, but the two
-principal introductions remain ordered data. -/
+principal introductions remain ordered data, each as itself or as a summand of
+a declared choice. -/
 inductive CutSourceShape
     {presentation : ValidatedLanguageDef}
     (contact : CoreContactPresentation presentation)
     (program environment : Pattern) : Pattern → Prop where
-  | binary
+  | binary {programTerm environmentTerm : Pattern}
+      (programOccurs : OperandOccurrence (presentation := presentation) program programTerm)
+      (environmentOccurs : OperandOccurrence (presentation := presentation) environment environmentTerm)
       (binaryContact : contact.representation = .binary) :
       CutSourceShape contact program environment
-        (.apply contact.constructor.1.label [program, environment])
+        (.apply contact.constructor.1.label [programTerm, environmentTerm])
   | collection
-      {collectionType : CollType} (context : List Pattern)
+      {collectionType : CollType} {programTerm environmentTerm : Pattern} (context : List Pattern)
       (rest : Option String)
+      (programOccurs : OperandOccurrence (presentation := presentation) program programTerm)
+      (environmentOccurs : OperandOccurrence (presentation := presentation) environment environmentTerm)
       (collectionContact :
         contact.representation = .collection collectionType) :
       CutSourceShape contact program environment
-        (.collection collectionType (program :: environment :: context) rest)
+        (.collection collectionType (programTerm :: environmentTerm :: context) rest)
 
 /-- An interaction core may occur beneath one structural envelope in the
 authored rewrite source.  The core still contains the ordered program and
@@ -592,7 +634,7 @@ def rhoInteractionCut : InteractionCutPresentation rhoIGSLT where
           rhoEnvironmentIntroduction.schemaTerm rhoCommRewrite.left
         simpa [rhoCommRewrite, rhoProgramIntroduction,
           rhoEnvironmentIntroduction] using
-          (CutSourceShape.collection [] (some "rest") rfl :
+          (CutSourceShape.collection [] (some "rest") .itself .itself rfl :
             CutSourceShape rhoCoreContact
               rhoProgramIntroduction.schemaTerm
               rhoEnvironmentIntroduction.schemaTerm

@@ -201,7 +201,7 @@ theorem onePlusOne_equation :
         applyBindings bindings addSucc.right = onePlusOneUnfolded := by
     decide +kernel
   exact ⟨0, EquationInstanceAt.forward (equation := addSucc)
-    (List.Mem.tail _ (List.Mem.head _)) matched (PremisesAt.nil bindings) applied⟩
+    (List.Mem.tail _ (List.Mem.head _)) (by decide) matched (PremisesAt.nil bindings) applied⟩
 
 /-- In the rewriting presentation the same law is a step. -/
 theorem onePlusOne_rewrites :

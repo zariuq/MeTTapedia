@@ -25,6 +25,9 @@ import Mettapedia.OSLF.NativeTypes.Instances.MeTTaFamily.EquationSite
 import Mettapedia.OSLF.NativeTypes.Instances.Natural
 import Mettapedia.OSLF.NativeTypes.Instances.Dedukti.FrontDoorControls
 import Mettapedia.OSLF.NativeTypes.Instances.MeTTaZero.FrontDoor
+import Mettapedia.OSLF.NativeTypes.Instances.MeTTaHE.FrontDoor
+import Mettapedia.OSLF.NativeTypes.Instances.PeTTa.FrontDoor
+import Mettapedia.OSLF.NativeTypes.Instances.MeTTaDialectControls
 import Mettapedia.OSLF.NativeTypes.Instances.Partrec.FormulaControls
 import Mettapedia.OSLF.NativeTypes.Instances.Partrec.MachineFormulaControls
 import Mettapedia.OSLF.NativeTypes.Instances.Rho.BindingAdmission

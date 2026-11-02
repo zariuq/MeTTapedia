@@ -8,9 +8,9 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.ExecutableProtocol.Controls
 
-def eligible : Hook := ⟨"eligible", "can_run", .guard, [], [], ["ready"]⟩
-def prepare : Hook := ⟨"prepare", "resolve", .prepare, ["ready"], [], ["arguments"]⟩
-def execute : Hook := ⟨"execute", "run_effect", .effect, ["arguments"], ["frame"], []⟩
+def eligible : Hook := ⟨"eligible", "can_run", .guard, [], [], ["ready"], []⟩
+def prepare : Hook := ⟨"prepare", "resolve", .prepare, ["ready"], [], ["arguments"], []⟩
+def execute : Hook := ⟨"execute", "run_effect", .effect, ["arguments"], ["frame"], [], []⟩
 def frame : Resource := ⟨"frame", "open_frame", "close_frame", "move_frame", [], []⟩
 
 def executionBody : Body :=
@@ -24,7 +24,7 @@ def executionBody : Body :=
     (.ret .declined)
 
 def exampleProtocol : Protocol :=
-  ⟨"invoke", "Invocation", [eligible, prepare, execute], [frame], [], [], executionBody⟩
+  ⟨"invoke", "Invocation", [eligible, prepare, execute], [frame], [], [], executionBody, []⟩
 
 /-- An independently written target, not a definition by applying `lower`. -/
 def expectedC : CStmt :=
@@ -228,7 +228,7 @@ theorem entry_owner_must_be_declared : check { exampleProtocol with
 theorem duplicate_entry_owner_refused : check { exampleProtocol with
     entryOwned := ["frame", "frame"], body := .release "frame" (.ret .done) } = false := by decide
 
-def effectOnly : Hook := ⟨"effect_only", "effect_only_c", .effect, [], [], []⟩
+def effectOnly : Hook := ⟨"effect_only", "effect_only_c", .effect, [], [], [], []⟩
 
 theorem false_effect_also_blocks_decline : check { exampleProtocol with
     hooks := [effectOnly], body :=
@@ -239,7 +239,7 @@ theorem true_effect_blocks_decline : check { exampleProtocol with
       .call "effect_only" (.ret .declined) (.ret .raised) } = false := by decide
 
 theorem pure_prepare_can_decline : check { exampleProtocol with
-    hooks := [⟨"prepare", "prepare_c", .prepare, [], [], []⟩], body :=
+    hooks := [⟨"prepare", "prepare_c", .prepare, [], [], [], []⟩], body :=
       .call "prepare" (.ret .declined) (.ret .declined) } = true := by decide
 
 theorem unknown_hook_refused : check (withBody
@@ -432,5 +432,43 @@ theorem duplicate_token_handoff_refused :
   have unique : ([8, 8] : List Nat).Nodup := included.nodup (by
     simp [transferBoundary])
   simp at unique
+
+def mutateCurrent : Hook :=
+  ⟨"mutate", "mutate_current", .effect, ["current"], [], [], ["current"]⟩
+
+def refreshCurrent : Hook :=
+  ⟨"refresh", "refresh_current", .guard, [], [], ["current"], []⟩
+
+def useCurrent : Hook :=
+  ⟨"use", "use_current", .effect, ["current"], [], [], []⟩
+
+def afterWrite : Protocol :=
+  { name := "after_write", contextType := "CurrentContext"
+    hooks := [mutateCurrent, refreshCurrent, useCurrent], resources := []
+    entryFacts := ["current"], entryOwned := []
+    body := .call "mutate"
+      (.call "refresh" (.call "use" (.ret .done) (.ret .raised)) (.ret .raised))
+      (.ret .raised) }
+
+theorem revalidated_after_write : check afterWrite = true := by decide
+
+theorem stale_after_success_refused :
+    check { afterWrite with body := (.call "mutate"
+      (.call "use" (.ret .done) (.ret .raised)) (.ret .raised)) } = false := by decide
+
+theorem stale_after_failure_refused :
+    check { afterWrite with body := (.call "mutate" (.ret .raised)
+      (.call "use" (.ret .done) (.ret .raised))) } = false := by decide
+
+theorem failed_hook_still_invalidates :
+    "current" ∉ (callContext (initial afterWrite) mutateCurrent false).facts := by decide
+
+theorem forgotten_is_not_negated :
+    (callContext (initial afterWrite) { refreshCurrent with proves := [], invalidates := ["current"] }
+      true).facts = [] := by decide
+
+#print axioms revalidated_after_write
+#print axioms stale_after_success_refused
+#print axioms stale_after_failure_refused
 
 end Mettapedia.GSLT.LanguageDef.ExecutableProtocol.Controls

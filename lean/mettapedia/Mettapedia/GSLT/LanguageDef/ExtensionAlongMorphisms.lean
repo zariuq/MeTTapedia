@@ -9,6 +9,7 @@ import Mettapedia.GSLT.LanguageDef.StructuralCoproduct
 import Mettapedia.GSLT.LanguageDef.ModuleAlgebra.RawDeclarationLayers
 import Mettapedia.GSLT.LanguageDef.WellSorted
 import Mettapedia.GSLT.LanguageDef.InferenceNewJudgmentConservativity
+import Mettapedia.GSLT.LanguageDef.StructuralPatternScope
 
 /-!
 # Extension layers along morphisms of their cores
@@ -518,43 +519,6 @@ theorem metavariableOccurrences_mapPattern (pattern : Pattern) :
       | nil => rfl
       | cons element elements tailHypothesis =>
           simp only [List.map_cons, patternsMetavariableOccurrencesAt]
-          rw [inductionHypothesis element (by simp) depth,
-            tailHypothesis (fun item member => inductionHypothesis item (by simp [member]))]
-
-theorem isWellScopedAt_mapPattern (pattern : Pattern) :
-    ∀ depth, (mapPattern symbols pattern).isWellScopedAt depth =
-      pattern.isWellScopedAt depth := by
-  induction pattern using Pattern.inductionOn with
-  | hbvar index => intro depth; simp [mapPattern, Pattern.isWellScopedAt]
-  | hfvar name => intro depth; simp [mapPattern, Pattern.isWellScopedAt]
-  | happly constructor arguments inductionHypothesis =>
-      intro depth
-      simp only [mapPattern, mapPatternList_eq_map, Pattern.isWellScopedAt]
-      induction arguments with
-      | nil => rfl
-      | cons argument arguments tailHypothesis =>
-          simp only [List.map_cons, Pattern.isWellScopedListAt]
-          rw [inductionHypothesis argument (by simp) depth,
-            tailHypothesis (fun item member => inductionHypothesis item (by simp [member]))]
-  | hlambda binder body inductionHypothesis =>
-      intro depth
-      simp only [mapPattern, Pattern.isWellScopedAt]
-      exact inductionHypothesis (depth + 1)
-  | hmultiLambda arity binders body inductionHypothesis =>
-      intro depth
-      simp only [mapPattern, Pattern.isWellScopedAt]
-      exact inductionHypothesis (depth + arity)
-  | hsubst body replacement bodyHypothesis replacementHypothesis =>
-      intro depth
-      simp only [mapPattern, Pattern.isWellScopedAt]
-      rw [bodyHypothesis (depth + 1), replacementHypothesis depth]
-  | hcollection collectionType elements rest inductionHypothesis =>
-      intro depth
-      simp only [mapPattern, mapPatternList_eq_map, Pattern.isWellScopedAt]
-      induction elements with
-      | nil => rfl
-      | cons element elements tailHypothesis =>
-          simp only [List.map_cons, Pattern.isWellScopedListAt]
           rw [inductionHypothesis element (by simp) depth,
             tailHypothesis (fun item member => inductionHypothesis item (by simp [member]))]
 

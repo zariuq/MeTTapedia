@@ -182,7 +182,7 @@ theorem shift_instance :
   have instance' := AuthoredEquation.forward (relEnv := RelationEnv.empty) (language := shiftLanguage)
     (equation := shiftEquation) (source := .apply "Shift" [.bvar 0]) (initial := [("x", .bvar 0)])
     (final := [("x", .bvar 0)]) (witnesses := [])
-    (by simp [shiftLanguage]) (by decide +kernel) (.nil _)
+    (by simp [shiftLanguage]) rfl (by decide +kernel) (.nil _)
   have target : Match.applyBindingsScoped (captureSitesOf shiftEquation.left shiftEquation.premises) [("x", .bvar 0)] 0
       shiftEquation.right = lam (.bvar 1) := by decide +kernel
   rw [target] at instance'

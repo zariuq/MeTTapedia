@@ -40,6 +40,46 @@ theorem numbered_values (start : Nat) (nodes : List Node) :
   | nil => rfl
   | cons node rest ih => simp [numbered, ih]
 
+/-- Every serviced and still-pending occurrence retains a successor-closed
+invariant. This applies to arbitrary finite prefixes, not just complete runs. -/
+theorem run_preserves_invariant (cost : Node → Nat) (successors : Node → List Node)
+    (invariant : Node → Prop)
+    (closed : ∀ node, invariant node → ∀ child ∈ successors node, invariant child)
+    (fuel : Nat) (queue : Queue Node)
+    (initial : ∀ node ∈ queue.pending.map Entry.value, invariant node) :
+    (∀ node ∈ (run cost successors fuel queue).1.map Entry.value, invariant node) ∧
+      (∀ node ∈ (run cost successors fuel queue).2.pending.map Entry.value, invariant node) := by
+  induction fuel generalizing queue with
+  | zero => exact ⟨by simp [run], initial⟩
+  | succ fuel ih =>
+      cases popped : pop cost queue with
+      | none =>
+          constructor
+          · simp [run, tick, popped]
+          · simpa [run, tick, popped] using initial
+      | some choice =>
+          obtain ⟨selected, remaining⟩ := choice
+          have chosen : invariant selected.value := initial _
+            (List.mem_map.mpr ⟨selected,
+              (pop_perm cost queue popped).mem_iff.mp (List.mem_cons_self ..), rfl⟩)
+          have rest : ∀ node ∈ (after successors queue selected remaining).pending.map Entry.value,
+              invariant node := by
+            intro node member
+            simp only [after, List.map_append, numbered_values, List.mem_append] at member
+            rcases member with old | generated
+            · obtain ⟨entry, present, rfl⟩ := List.mem_map.mp old
+              exact initial _ (List.mem_map.mpr ⟨entry,
+                (pop_perm cost queue popped).mem_iff.mp (List.mem_cons_of_mem _ present), rfl⟩)
+            · exact closed _ chosen _ generated
+          obtain ⟨serviced, pending⟩ := ih _ rest
+          constructor
+          · intro node member
+            simp only [run, tick, popped, Option.map_some, List.map_cons, List.mem_cons] at member
+            rcases member with rfl | later
+            · exact chosen
+            · exact serviced _ later
+          · simpa [run, tick, popped] using pending
+
 /-- Equal payloads do not merge tickets: the selected occurrence is the one
 that was already waiting, regardless of newly generated equal values. -/
 theorem entry_serviced_within (cost : Node → Nat) (successors : Node → List Node)
@@ -215,6 +255,8 @@ theorem equal_values_keep_distinct_occurrences :
       [0, 1] := by decide
 
 end CoverageControls
+
+#print axioms run_preserves_invariant
 
 end Mettapedia.Algorithms.Compression.FairQueue
 

@@ -98,7 +98,7 @@ def bareCut : InteractionCutPresentation bare where
   sourceShape :=
     { core := syncRule.left
       coreShape :=
-        (CutSourceShape.binary rfl :
+        (CutSourceShape.binary .itself .itself rfl :
           CutSourceShape bareCoreContact inputOperand.schemaTerm outputOperand.schemaTerm
             (.apply bareCoreContact.constructor.1.label
               [inputOperand.schemaTerm, outputOperand.schemaTerm]))

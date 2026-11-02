@@ -126,13 +126,14 @@ private def takeNumberTail : Char -> List Char -> List Char × List Char
       else
         ([], character :: rest)
 
-private def simpleEscape : Char -> Option Char
+def simpleEscape : Char -> Option Char
   | 'a' => some '\u0007'
   | 'b' => some '\u0008'
   | 'e' => some '\u001b'
   | 'f' => some '\u000c'
   | 'n' => some '\n'
   | 'r' => some '\r'
+  | 's' => some ' '
   | 't' => some '\t'
   | 'v' => some '\u000b'
   | '\\' => some '\\'

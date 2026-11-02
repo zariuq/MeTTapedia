@@ -395,7 +395,7 @@ private theorem source_capture {before after : State} {head : String} {one two :
     {caller : Subst} {answer : Atom}
     (dispatch : program.equations.any (·.head == head) = true)
     (raw : ∀ index < one.length, argumentIsRaw program head index = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
     (captured : one = two.map (applySubst caller))
     (returned : PureReturns program [] before (a head one) after answer) :
     PureReturns program caller before (a head two) after answer := by

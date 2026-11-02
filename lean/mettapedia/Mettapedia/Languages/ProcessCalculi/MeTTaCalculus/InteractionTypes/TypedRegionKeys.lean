@@ -157,7 +157,7 @@ def layer (φ : F → F) : TermLayer W (Tm F) (Pat W F) where
   equivalence := ⟨fun _ => rfl, fun h => h.symm, fun h k => h.trans k⟩
   vars := Pat.vars
   inst σ p := p.inst σ
-  inst_isSome σ p := Pat.inst_isSome σ p
+  inst_bound σ p := (Pat.inst_isSome σ p).mp
   inst_local σ τ p := Pat.inst_local σ τ p
   inst_congr σ τ p := inst_congr φ σ τ p
 

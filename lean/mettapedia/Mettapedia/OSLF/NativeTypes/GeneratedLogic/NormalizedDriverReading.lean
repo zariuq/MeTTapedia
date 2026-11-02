@@ -8,10 +8,10 @@ A normalized profile (`Instances.Normalized.Profile`) runs a generated plan nati
 receipts between representatives equal under the profile's equality, which a certified normal form decides, and its
 observations are predicates of normal forms. The front door reads a language through its reference structure.
 
-- **What a reading needs** (`Agreement`): a region of object terms holding the admitted ones, on which the profile's
-  steps are the reference structure's steps, which its steps do not leave, and on which its equality is the reference
-  structure's identification. The region is the admitted terms when the profile's equality keeps them so; a profile
-  whose equality reaches terms its sorting does not admit takes their class.
+- **What a reading needs** (`Agreement`): a region of object terms, on which the profile's steps are the reference
+  structure's steps, which its steps do not leave, and on which its equality is the reference structure's
+  identification. The region is the admitted terms when the profile's equality keeps them so; a profile whose equality
+  reaches terms its sorting does not admit takes their class.
 - **Observations that test for a term** (`Tests`): an observation holding exactly at one admitted term in normal form
   is the formula `is t`, since equality is identification in the reference structure (`test_agrees`).
 - **The reading** (`reading`): from an agreement, a faithful reading in the reference structure, covering every
@@ -37,12 +37,11 @@ open LocalReading (pairVariable pairClosing pairClosing_positive pairClosing_neg
 
 variable {generated : Generated} {expected : TypeExpr}
 
-/-- **What the front door must agree on to read a normalized profile**: a region of object terms holding the admitted
-ones, on which the profile's steps are the reference structure's, which its steps do not leave, and on which its
-equality is the reference structure's identification. -/
+/-- **What the front door must agree on to read a normalized profile**: a region of object terms, on which the
+profile's steps are the reference structure's, which its steps do not leave, and on which its equality is the reference
+structure's identification. -/
 structure Agreement (profile : Profile generated [] expected) (relEnv : RelationEnv) (language : LanguageDef)
     (reading : LanguageReading) (region : Pattern → Prop) : Prop where
-  admitted : ∀ source, Source generated [] expected source → region source
   object : ∀ source, region source → IsObject source
   steps : ∀ source, region source → ∀ target,
     ((referenceStructure relEnv language reading).step source .any target ↔ profile.system.Step source target)
@@ -74,12 +73,13 @@ variable {profile}
 /-- **An observation that tests for a term is the formula `is t`** at admitted closed terms. -/
 theorem test_agrees {relEnv : RelationEnv} {language : LanguageDef} {reading : LanguageReading}
     {region : Pattern → Prop} (agreement : Agreement profile relEnv language reading region) {leaf : profile.Leaf}
-    {term : Pattern} (tests : Tests profile leaf term) {source : Pattern} (inside : region source) :
+    {term : Pattern} (tests : Tests profile leaf term) (termInside : region term) {source : Pattern}
+    (inside : region source) :
     profile.observations[leaf].observe (profile.nf source) = true ↔
       (referenceStructure relEnv language reading).sat Env.closed (.is term) source := by
   rw [tests.observe]
   show profile.nf source = term ↔ IsObject source ∧ ObjectEquivalent relEnv language reading source term
-  rw [agreement.equal source term inside (agreement.admitted _ tests.admitted), tests.normal]
+  rw [agreement.equal source term inside termInside, tests.normal]
   exact ⟨fun same => ⟨agreement.object source inside, same⟩, fun holds => holds.2⟩
 
 variable (profile)
@@ -96,11 +96,11 @@ def reading (relEnv : RelationEnv) (language : LanguageDef) (equations : Languag
   closed := agreement.closed
   rendering := (BoundedMorphism.identity _).toSplit
   renders := rfl
-  covers leaf := ∃ term, terms leaf = some term ∧ Tests profile leaf term
+  covers leaf := ∃ term, terms leaf = some term ∧ Tests profile leaf term ∧ region term
   test := testFormula profile terms
   testAgrees := by
-    rintro leaf ⟨term, found, tests⟩ source admitted
-    have key := test_agrees agreement tests admitted
+    rintro leaf ⟨term, found, tests, termInside⟩ source admitted
+    have key := test_agrees agreement tests termInside admitted
     rw [show testFormula profile terms leaf = .is term by simp [testFormula, found]]
     exact key
   closing := pairClosing (testFormula profile terms)
@@ -136,7 +136,7 @@ theorem agreement_rootPlan (profile : Profile generated [] expected) (authored :
     refine (profile.step_iff_source source target).trans ?_
     rw [authored]
     exact Iff.rfl
-  refine ⟨fun _ typed => typed, fun _ typed => (isState_of_typed typed).2, fun source typed target => ?_,
+  refine ⟨fun _ typed => (isState_of_typed typed).2, fun source typed target => ?_,
     fun source target _ step => ?_, fun first second _ _ => ?_⟩
   · refine Iff.trans ?_ (system source target).symm
     have typed' : OpenPatternWellSorted (rootPlan language provider).snapshot.language

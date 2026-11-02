@@ -52,12 +52,14 @@ def hasEvery : SourceList V T P → Bool
   | .done => false
   | .every _ => true
   | .cons _ rest => hasEvery rest
+  | .absent _ rest => hasEvery rest
 
 /-- **The vacuous-`every` lint**: some kernel source takes, and an `every` suffix follows it. -/
 def vacuousEveryLint : SourceList V T P → Bool
   | .done => false
   | .every _ => false
   | .cons s rest => (sourceTakes s && hasEvery rest) || vacuousEveryLint rest
+  | .absent _ rest => vacuousEveryLint rest
 
 /-- The lint flags a take before an `every`. -/
 theorem lint_flags_kernel_take (a p : P) :
@@ -172,7 +174,7 @@ def dataLayer : TermLayer ℕ CVal CPat where
   inst := fun σ p => match p with
     | .fromVar => (σ 0).map CVal.from_
     | .lit v => some v
-  inst_isSome := by intro σ p; cases p <;> simp
+  inst_bound := by intro σ p; cases p <;> simp
   inst_local := by
     intro σ τ p same
     cases p with
@@ -197,7 +199,7 @@ def evalLayer : TermLayer ℕ CVal CPat where
   equivalence := ⟨fun _ => rfl, fun h => h.symm, fun h k => h.trans k⟩
   vars := dataLayer.vars
   inst := fun σ p => dataLayer.inst (fun k => (σ k).map CVal.eval) p
-  inst_isSome := by intro σ p; cases p <;> simp [dataLayer]
+  inst_bound := by intro σ p; cases p <;> simp [dataLayer]
   inst_local := by
     intro σ τ p same
     cases p with

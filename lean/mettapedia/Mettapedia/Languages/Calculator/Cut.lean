@@ -112,7 +112,7 @@ def successorCut : InteractionCutPresentation calculatorRewritingIGSLT where
   sourceShape :=
     { core := (directed addSucc).left
       coreShape :=
-        (CutSourceShape.binary rfl :
+        (CutSourceShape.binary .itself .itself rfl :
           CutSourceShape additionCoreContact successorOperand.schemaTerm
             summandOperand.schemaTerm
             (.apply additionCoreContact.constructor.1.label

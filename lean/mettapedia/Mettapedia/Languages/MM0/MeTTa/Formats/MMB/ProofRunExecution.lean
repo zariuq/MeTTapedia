@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.PureData
 import Mettapedia.Languages.MM0.MeTTa.Formats.MMB.MMBExecution
 import Mettapedia.Languages.MM0.MeTTa.Kernel.Hypothesis
 import Mettapedia.Languages.MM0.Kernel.ProofChecking
@@ -1313,7 +1314,7 @@ theorem kernel_hypothesis_returns (bindings : Subst) (state : State)
   apply authored_variable_call_returns program bindings inner state state "mm0:proof"
     [tableName, definitionsName, theoremsName, contextName, hypothesesName, witnessName]
     MeTTa.proofEquation.body _ (by decide +kernel) (by decide +kernel) (by decide +kernel) _ returned (by decide)
-  rw [← checker_agreement.bodies "mm0:proof" _ (by decide +kernel)]
+  apply PureData.selected_clause_agreement checker_agreement (by decide +kernel)
   have original := Hypothesis.proof_clause table definitions theorems context hypotheses index
   change clauses MeTTa.program "mm0:proof"
     [table, definitions, theorems, context, listValue hypotheses, Hypothesis.witness index] =

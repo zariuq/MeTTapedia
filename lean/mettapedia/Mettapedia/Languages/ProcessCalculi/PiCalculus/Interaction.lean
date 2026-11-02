@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance
 import Mettapedia.OSLF.MeTTaIL.GeneratedRuleValidation
 import Mettapedia.OSLF.MeTTaIL.FlowAdmission
+import Mettapedia.OSLF.MeTTaIL.EquationalAdmission
 import Mettapedia.GSLT.LanguageDef.ClosedTermChecker
 import Mettapedia.GSLT.LanguageDef.Interaction.Presentability
 import Mettapedia.GSLT.LanguageDef.Interaction.Migration
@@ -14,17 +15,10 @@ parallel composition, and communication is a base rule headed by it.  This
 module establishes, for that one definition,
 
 * that it passes the declaration gate and the binding-flow gate;
-* that communication is an interaction cut between an input, whose subject is
-  the channel and whose continuation is the abstracted body, and an output,
-  whose subject is the same channel and whose continuation is the name it
-  carries;
-* that the contraction migrates by binding: the carried name is substituted
-  into the body of the input;
-* that the contraction is wrappable: the redex and the contractum stay sorted
-  when the two continuations are moved to the wrapped fibre.
-
-An asynchronous output has nothing after the name it carries, so the whole
-environment continuation is the datum that migrates.
+* that a communication between restricted names is a step of the presented calculus;
+* that communication is no interaction cut: the input's abstracted body is a continuation of the process sort, and
+  the asynchronous output, whose parameters are the channel and the name it carries, has none
+  (`piOutput_no_continuation`). The synchronous calculus, whose output continues as a process, is the cut.
 -/
 
 set_option autoImplicit false
@@ -53,12 +47,9 @@ def piParCongRewrite : RewriteRule := piCalc.rewrites[1]
 /-- The contextual rule for restriction. -/
 def piResCongRewrite : RewriteRule := piCalc.rewrites[2]
 
-/-- Communication with a guarded server. -/
-def piRepCommRewrite : RewriteRule := piCalc.rewrites[3]
-
-/-- The two communication rules and two contextual rules are authored. -/
+/-- The communication rule and two contextual rules are authored. -/
 theorem piCalc_rewrites : piCalc.rewrites =
-    [piCommRewrite, piParCongRewrite, piResCongRewrite, piRepCommRewrite] :=
+    [piCommRewrite, piParCongRewrite, piResCongRewrite] :=
   rfl
 
 theorem piCommRewrite_validates :
@@ -87,43 +78,43 @@ theorem piResCongRewrite_validates :
       | decide
       | rule_patterns [piResCongRewrite, piCalc]
 
-theorem piRepCommRewrite_validates :
-    LanguageDef.validateRewrite piCalc piRepCommRewrite = [] := by
-  apply LanguageDef.validateRewrite_eq_nil_of_premiseFree <;>
-    first
-      | rfl
-      | decide
-      | rule_patterns [piRepCommRewrite, piCalc]
-
 /-- The asynchronous pi calculus passes the declaration gate. -/
 theorem piCalc_validate_eq_nil : piCalc.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
-  · rfl
+  apply LanguageDef.validate_eq_nil_of_concreteSyntaxEquationsAndRewrites
+  · decide
   · decide
   · decide
   · decide
   · decide
   · decide
   · decide +kernel
+  · intro equation membership
+    simp only [piCalc, List.mem_cons, List.not_mem_nil, or_false] at membership
+    rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+      apply LanguageDef.validateEquation_eq_nil_of_premiseFree <;>
+        first
+          | rfl
+          | decide
+          | rule_patterns [restrictionNil, restrictionExchange, scopeExtrusion, replicationUnfold, replicationNil,
+              replicationTwice, replicationPar, replicationIdempotent, piCalc]
   · intro rewrite membership
     rw [piCalc_rewrites] at membership
     simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
-    rcases membership with rfl | rfl | rfl | rfl
+    rcases membership with rfl | rfl | rfl
     · exact piCommRewrite_validates
     · exact piParCongRewrite_validates
     · exact piResCongRewrite_validates
-    · exact piRepCommRewrite_validates
 
-/-- Communication binds every variable of its contractum in its redex, and
-the contextual rules read only their reduction hypotheses. -/
+/-- Communication binds every variable of its contractum in its redex, the
+contextual rules read only their reduction hypotheses, and each restriction law
+has the same variables on both sides. -/
 theorem piCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
     piCalc.executionFlowErrors modes = [] := by
-  apply LanguageDef.executionFlowErrors_eq_nil_of_ruleFlows
-  · rfl
+  apply LanguageDef.executionFlowErrors_eq_nil_of_ruleAndEquationFlows
   · intro rule membership
     rw [piCalc_rewrites] at membership
     simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
-    rcases membership with rfl | rfl | rfl | rfl
+    rcases membership with rfl | rfl | rfl
     · refine .plain rfl ?_
       intro name nameMembership
       simp [piCommRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
@@ -139,11 +130,12 @@ theorem piCalc_executionFlowErrors_eq_nil (modes : RelationModeTable) :
       · intro name nameMembership
         simp [piResCongRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
         tauto
-
-    · refine .plain rfl ?_
-      intro name nameMembership
-      simp [piRepCommRewrite, piCalc, Pattern.freeFvarNames] at nameMembership ⊢
-      tauto
+  · intro equation membership
+    simp only [piCalc, List.mem_cons, List.not_mem_nil, or_false] at membership
+    rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> refine ⟨rfl, ?_, ?_⟩ <;>
+      · intro name nameMembership
+        simp_all [restrictionNil, restrictionExchange, scopeExtrusion, replicationUnfold, replicationNil,
+          replicationTwice, replicationPar, replicationIdempotent, Pattern.freeFvarNames]
 
 /-- The calculus passes the ordered binding-flow gate with no relation mode. -/
 theorem piCalc_executionAdmissionErrors_eq_nil :
@@ -221,28 +213,27 @@ theorem pi_parCong_not_base : ¬ IsBaseRewrite piParCongRewrite :=
 /-- The engine with no external relations. -/
 abbrev base : BasePremiseEvaluator := engineBasePremises RelationEnv.empty
 
-/-- Inaction. -/
-def piNil : Pattern := .apply "PiNil" []
+/-- Two restricted names, a channel `x` outside and a datum `d` inside: `(νx)(νd) P`, where `P` reads `x` as the
+bound variable `1` and `d` as `0`. -/
+def piRestrictTwo (body : Pattern) : Pattern :=
+  .apply "PiNu" [.lambda none (.apply "PiNu" [.lambda none body])]
 
-/-- The name sent: a term other than inaction, so that the substitution can
-be seen. -/
-def piDatum : Pattern := .apply "PiOut" [piNil, piNil]
-
-/-- A listener that forwards on the name it receives, beside a sender of
-`piDatum` on the same channel. -/
+/-- A listener on `x` that sends on the name it receives that same name, beside a sender of `d` on `x`:
+`(νx)(νd)(x(y).y⟨y⟩ | x⟨d⟩)`. The datum is another name than the channel, so that the substitution can be
+seen. -/
 def piExchange : Pattern :=
-  .collection .hashBag [
-    .apply "PiInp" [piNil, .lambda none (.apply "PiOut" [.bvar 0, piNil])],
-    .apply "PiOut" [piNil, piDatum]] none
+  piRestrictTwo (.collection .hashBag [
+    .apply "PiInp" [.bvar 1, .lambda none (.apply "PiOut" [.bvar 0, .bvar 0])],
+    .apply "PiOut" [.bvar 1, .bvar 0]] none)
 
-/-- What is left: the body of the listener with the received name in place of
-its bound name. -/
+/-- What is left: the body of the listener with the received name in place of its bound name,
+`(νx)(νd) d⟨d⟩`. -/
 def piExchanged : Pattern :=
-  .collection .hashBag [.apply "PiOut" [piDatum, piNil]] none
+  piRestrictTwo (.collection .hashBag [.apply "PiOut" [.bvar 0, .bvar 0]] none)
 
-/-- The communication is a step of the authored calculus. -/
+/-- The communication is a step of the authored calculus, under both restrictions. -/
 theorem piExchange_steps : Step base piCalc piExchange piExchanged :=
-  exists_mem_rewriteAt_iff_step.mp ⟨1, by decide +kernel⟩
+  exists_mem_rewriteAt_iff_step.mp ⟨3, by decide +kernel⟩
 
 /-- The two processes as closed terms of the interacting fibre. -/
 def piExchangeTerm : piInteractivePresentation.Term :=
@@ -257,194 +248,24 @@ theorem piExchange_semantic_step : piIGSLT.toGSLT.Step piExchangeTerm piExchange
   primitiveStep_to_presentedStep (base := defaultBasePremises)
     (presentation := piInteractivePresentation) piExchange_steps
 
-/-! ## The interaction cut -/
+/-! ## No interaction cut
 
-/-- The program side: an input, the channel its subject and the abstracted
-body its continuation. -/
-def piProgramIntroduction : InteractionOperandProfile piInteractivePresentation where
-  constructor := piInputConstructor
-  schemaTerm := .apply "PiInp" [.fvar "x", .lambda none (.fvar "body")]
-  continuation :=
-    { index := 1
-      inBounds := by decide
-      hasInteractingResult := by rfl }
-  continuationPattern := .lambda none (.fvar "body")
-  continuationVariable := .abstraction none "body"
-  subject := .argument { index := 0, inBounds := by decide } (.fvar "x") (by rfl)
-  form := .introduced (by
-      simp [RepresentedBy, UsesBareCollection, piInputConstructor, piCalc])
-    (by rfl)
+An interaction cut selects, on each side, a continuation of the interacting sort. The input's abstracted body is
+one; the asynchronous output carries a name and nothing after it, and a name is not a process. -/
 
-/-- The environment side: an output, the channel its subject and the name it
-carries its continuation. -/
-def piEnvironmentIntroduction : InteractionOperandProfile piInteractivePresentation where
-  constructor := piOutputConstructor
-  schemaTerm := .apply "PiOut" [.fvar "x", .fvar "z"]
-  continuation :=
-    { index := 1
-      inBounds := by decide
-      hasInteractingResult := by rfl }
-  continuationPattern := .fvar "z"
-  continuationVariable := .plain "z"
-  subject := .argument { index := 0, inBounds := by decide } (.fvar "x") (by rfl)
-  form := .introduced (by
-      simp [RepresentedBy, UsesBareCollection, piOutputConstructor, piCalc])
-    (by rfl)
+/-- **The asynchronous output has no continuation of the process sort**: both its parameters are names. -/
+theorem piOutput_no_continuation
+    (position : ContinuationPosition piInteractivePresentation piOutputConstructor) : False := by
+  obtain ⟨⟨index, inside⟩, result⟩ := position
+  have small : index < 2 := inside
+  rcases (by omega : index = 0 ∨ index = 1) with rfl | rfl <;>
+    simp [ConstructorParameter.parameter, continuationResult?, parameterType?, piOutputConstructor, piCalc,
+      piInteractivePresentation, piProcessSort] at result <;> exact absurd result (by decide)
 
-/-- The core contact is parallel composition itself. -/
-def piCoreContact : CoreContactPresentation piValidatedLanguageDef where
-  sort := piInteractivePresentation.interactingSort
-  constructor := piInteractivePresentation.contactConstructor
-  representation := piInteractivePresentation.contactRepresentation
-  representsCore := by rfl
-
-/-- Communication as an interaction cut. -/
-def piInteractionCut : InteractionCutPresentation piIGSLT where
-  program := piProgramIntroduction
-  environment := piEnvironmentIntroduction
-  coreContact := piCoreContact
-  programPlacement := .of_label_ne rfl (by decide)
-  environmentPlacement := .of_label_ne rfl (by decide)
-  sourceShape :=
-    { core := piCommRewrite.left
-      coreShape :=
-        (CutSourceShape.collection [] (some "rest") rfl :
-          CutSourceShape piCoreContact
-            piProgramIntroduction.schemaTerm
-            piEnvironmentIntroduction.schemaTerm
-            (.collection .hashBag
-              (piProgramIntroduction.schemaTerm ::
-                piEnvironmentIntroduction.schemaTerm :: [])
-              (some "rest")))
-      envelope := .hole
-      fillsSource := rfl }
-  sourceEnvelopeInSignature := .hole "Proc"
-  interactionPremisesEmpty := rfl
-  residual := .constructor piParallelConstructor (by
-    change RepresentedBy piParallelConstructor.1 piCommRewrite.right
-    exact ⟨"ps", .base "Proc", rfl⟩)
-  subjectsAgree := .nominal (.fvar "x") rfl rfl
-
-/-- **The subject is carried by name.**  Both operands select the channel. -/
-theorem pi_subject_nominal :
-    piInteractionCut.program.subject.pattern = some (.fvar "x") ∧
-      piInteractionCut.environment.subject.pattern = some (.fvar "x") :=
-  ⟨rfl, rfl⟩
-
-/-! ## What the contraction moves -/
-
-/-- The environment brings the carried name; the program brings the body. -/
-theorem pi_cut_variables :
-    piInteractionCut.environmentVariables = ["z"] ∧
-      piInteractionCut.programVariables = ["body"] := by
-  decide +kernel
-
-/-- The carried name is substituted into the body of the input. -/
-theorem pi_bindsFromEnvironment : piInteractionCut.BindsFromEnvironment := by
-  decide +kernel
-
-/-- **The asynchronous pi calculus migrates by binding.** -/
-theorem pi_migrationMode : piInteractionCut.migrationMode = .binding :=
-  piInteractionCut.migrationMode_eq_binding_of_bindsFromEnvironment pi_bindsFromEnvironment
-
-/-- The contractum is a parallel composition around a substitution node whose
-body is the input body and whose replacement mentions the carried name. -/
-theorem pi_binds_through_substitution :
-    ∃ (outer inner : OneHoleContext) (replacement : Pattern),
-      piCommRewrite.right = outer.fill (.subst (inner.fill (.fvar "body")) replacement) ∧
-        ∃ source ∈ piInteractionCut.environmentVariables,
-          source ∈ replacement.freeFvarNames :=
-  exists_subst_of_bindsInto pi_bindsFromEnvironment
-
-/-! ## Wrappability -/
-
-/-- The contractum is headed by parallel composition, which is neither
-introduction. -/
-theorem piContinuationRetyping : ContinuationRetypingPlan piInteractionCut :=
-  ⟨mem_continuationConstructors_of_label_ne piInteractionCut piParallelConstructor
-    (by decide) (by decide)⟩
-
-@[simp]
-theorem pi_costBaseParallel_params :
-    (costBaseConstructor piInteractionCut piCalc.terms[1]).params =
-      [.simple "ps" (.collection .hashBag (.base (costBaseSortName "Proc")))] := by
-  decide +kernel
-
-@[simp]
-theorem pi_costBaseInput_params :
-    (costBaseConstructor piInteractionCut piCalc.terms[2]).params =
-      [.simple "x" (.base (costBaseSortName "Proc")),
-        .abstraction "body"
-          (.arrow (.base costWrappedSortName) (.base costWrappedSortName))] := by
-  decide +kernel
-
-@[simp]
-theorem pi_costBaseOutput_params :
-    (costBaseConstructor piInteractionCut piCalc.terms[3]).params =
-      [.simple "x" (.base (costBaseSortName "Proc")),
-        .simple "z" (.base costWrappedSortName)] := by
-  decide +kernel
-
-@[simp]
-theorem pi_costWrappedParallel_params :
-    (costWrappedConstructor (theory := piIGSLT) piCalc.terms[1]).params =
-      [.simple "ps" (.collection .hashBag (.base costWrappedSortName))] := by
-  decide +kernel
-
-/-- The redex stays sorted when the body of the input and the carried name
-are moved to the wrapped fibre. -/
-theorem piContinuationRetyping_redexRetypable :
-    piContinuationRetyping.RedexRetypable := by
-  rw [ContinuationRetypingPlan.redexRetypable_def]
-  change HasType piContinuationRetyping.generatedLanguage
-    piContinuationRetyping.generatedFreeContext []
-    (.collection .hashBag
-      [.apply (costBaseConstructorName "PiInp") [.fvar "x", .lambda none (.fvar "body")],
-        .apply (costBaseConstructorName "PiOut") [.fvar "x", .fvar "z"]]
-      (some "rest"))
-    (.base (costBaseSortName "Proc"))
-  apply HasType.collectionConstructor
-    (rule := costBaseConstructor piInteractionCut piCalc.terms[1])
-    (parameterName := "ps") (elementType := .base (costBaseSortName "Proc"))
-  · exact piContinuationRetyping.costBaseConstructor_mem_generated _
-      piParallelConstructor.2
-  · exact pi_costBaseParallel_params
-  · apply ElementsHaveType.cons
-    · apply HasType.constructor (rule := costBaseConstructor piInteractionCut piCalc.terms[2])
-      · exact piContinuationRetyping.costBaseConstructor_mem_generated _
-          piInputConstructor.2
-      · simp [UsesBareCollection, GrammarRule.bareParams_cons_iff, pi_costBaseInput_params]
-      · rw [pi_costBaseInput_params]
-        exact .cons trivial rfl (HasType.fvar rfl)
-          (.cons trivial rfl (HasType.lambda (HasType.fvar rfl)) .nil)
-    · apply ElementsHaveType.cons
-      · apply HasType.constructor
-          (rule := costBaseConstructor piInteractionCut piCalc.terms[3])
-        · exact piContinuationRetyping.costBaseConstructor_mem_generated _
-            piOutputConstructor.2
-        · simp [UsesBareCollection, GrammarRule.bareParams_cons_iff, pi_costBaseOutput_params]
-        · rw [pi_costBaseOutput_params]
-          exact .cons trivial rfl (HasType.fvar rfl) (.cons trivial rfl (HasType.fvar rfl) .nil)
-      · exact .nil _ _
-
-/-- **The contraction is wrappable.**  The contractum, a parallel composition
-around the substitution of the carried name into the body, has the wrapped
-sort. -/
-theorem piContinuationRetyping_wrappable : piContinuationRetyping.Wrappable := by
-  rw [ContinuationRetypingPlan.wrappable_def]
-  change HasType piContinuationRetyping.generatedLanguage
-    piContinuationRetyping.generatedFreeContext []
-    (.collection .hashBag [.subst (.fvar "body") (.fvar "z")] (some "rest"))
-    (.base costWrappedSortName)
-  apply HasType.collectionConstructor
-    (rule := costWrappedConstructor (theory := piIGSLT) piCalc.terms[1])
-    (parameterName := "ps") (elementType := .base costWrappedSortName)
-  · exact piContinuationRetyping.costWrappedConstructor_mem_of_label_ne
-      piParallelConstructor (by decide) (by decide)
-  · exact pi_costWrappedParallel_params
-  · exact .cons
-      (HasType.subst (domain := .base costWrappedSortName) (HasType.fvar rfl)
-        (HasType.fvar rfl))
-      (.nil _ _)
+/-- The input's abstracted body is a continuation of the process sort. -/
+def piInputContinuation : ContinuationPosition piInteractivePresentation piInputConstructor where
+  index := 1
+  inBounds := by decide
+  hasInteractingResult := by rfl
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction

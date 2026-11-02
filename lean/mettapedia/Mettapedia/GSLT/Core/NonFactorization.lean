@@ -2,32 +2,21 @@ import Mathlib.Logic.Function.Basic
 import Mathlib.Logic.Equiv.Basic
 
 /-!
-# Factorization through a projection
+# Factorization through an observation
 
-Every obstruction compiled in this development so far has one shape.  A
-projection forgets something, an invariant depends on what was forgotten, and
-the invariant therefore cannot be computed from the projection's output.
-Derivation cost against provability, the coinductive discharge licence
-against a checker's verdict, a translated term against the source judgment,
-bisimilarity against forward simulation — all the same statement, each
-proved separately on its own fixture.
+`Factors shadow invariant` means that a total function of the observed value
+recovers the invariant. A collision with different invariant values refutes
+factorization; postprocessing cannot repair such a collision.
 
-This module states it once.
+The exact positive criterion has two parts: the invariant is constant on
+observation fibres, and an inhabited observation carrier permits an inhabited
+result carrier. The second condition matters when the source is empty.
+Surjective observations or inhabited result types discharge it automatically.
+The general converse uses classical choice; a supplied recovery remains
+explicit computational data.
 
-The content is elementary and deliberately so.  Its value is not depth but
-*organization*: it turns a pile of independent negative results into
-instances of one criterion, and — more usefully — it turns the discovery of
-new obstructions into a routine.  To show an invariant is unreachable from a
-projection, exhibit two ambient points with the same shadow and different
-value.  Nothing else is ever required.
-
-The positive direction matters just as much.  When the fibres *are* trivial
-the invariant does factor, and that is the precise sense in which a
-projection loses nothing.  Both signs live here so that a development can say
-which one it is claiming.
-
-Nothing in this file mentions proofs, presentations, or any particular
-semantics; the instances live where their fixtures live.
+Factorization composes. Its obstructions transport along coarsenings and
+changes of coordinates, independently of the particular language or policy.
 -/
 
 namespace Mettapedia.GSLT.Core.NonFactorization
@@ -52,12 +41,44 @@ theorem Factors.constantOnFibers {A : Sort uA} {S : Sort uS} {V : Sort uV}
     {shadow : A → S} {invariant : A → V} (factors : Factors shadow invariant) :
     ConstantOnFibers shadow invariant := by
   obtain ⟨recover, recovers⟩ := factors
-  intro a b sameShadow
-  rw [← recovers a, ← recovers b, sameShadow]
+  exact fun a b sameShadow => (recovers a).symm.trans
+    ((congrArg recover sameShadow).trans (recovers b))
 
-/-- **The witness.**  Two ambient points sharing a shadow but differing in
-value.  Producing one of these is the whole method for refuting
-factorization, and every negative result in this development is one. -/
+/-- Total recovery needs both agreement on used fibres and a possible result
+for every observation, including values outside the image. -/
+theorem factors_iff_fibres_and_nonempty {A : Sort uA} {S : Sort uS} {V : Sort uV}
+    (shadow : A → S) (invariant : A → V) :
+    Factors shadow invariant ↔
+      ConstantOnFibers shadow invariant ∧ (Nonempty S → Nonempty V) := by
+  classical
+  constructor
+  · rintro ⟨recover, recovers⟩
+    exact ⟨Factors.constantOnFibers ⟨recover, recovers⟩, Nonempty.map recover⟩
+  · rintro ⟨constant, possible⟩
+    refine ⟨fun value => if seen : ∃ a, shadow a = value then invariant seen.choose
+      else Classical.choice (possible ⟨value⟩), fun a => ?_⟩
+    have seen : ∃ other, shadow other = shadow a := ⟨a, rfl⟩
+    dsimp only
+    rw [dif_pos seen]
+    exact constant seen.choose a seen.choose_spec
+
+/-- An inhabited result type supplies all unused observation values. -/
+theorem factors_iff_constantOnFibers_of_nonempty
+    {A : Sort uA} {S : Sort uS} {V : Sort uV} [Nonempty V]
+    (shadow : A → S) (invariant : A → V) :
+    Factors shadow invariant ↔ ConstantOnFibers shadow invariant :=
+  (factors_iff_fibres_and_nonempty shadow invariant).trans
+    ⟨And.left, fun constant => ⟨constant, fun _ => inferInstance⟩⟩
+
+/-- Recovering a view and then a result composes without choosing representatives. -/
+theorem Factors.trans {A : Sort uA} {B : Sort uS} {C : Sort uV} {D : Sort*}
+    {first : A → B} {second : A → C} {third : A → D}
+    (before : Factors first second) (after : Factors second third) : Factors first third := by
+  obtain ⟨recover, recovers⟩ := before
+  obtain ⟨finish, finishes⟩ := after
+  exact ⟨finish ∘ recover, fun a => (congrArg finish (recovers a)).trans (finishes a)⟩
+
+/-- Two points with one observed value and distinct invariant values. -/
 structure NonTrivialFiber {A : Sort uA} {S : Sort uS} {V : Sort uV}
     (shadow : A → S) (invariant : A → V) where
   /-- One ambient point. -/
@@ -104,10 +125,8 @@ def NonTrivialFiber.ofProp {A : Sort uA} {S : Sort uS} {shadow : A → S}
   sameShadow := sameShadow
   differentValue := fun equalValues => fails (equalValues ▸ holds)
 
-/-- **The characterization**, for a projection that reaches every shadow.
-Surjectivity is what lets fibre-constancy be assembled into a function; the
-criterion above needs no such hypothesis, which is why it is the form the
-instances use. -/
+/-- Surjectivity supplies every output value. This proof uses only choice;
+the general extension criterion also covers unused observation values. -/
 theorem factors_iff_constantOnFibers {A S V : Type*} {shadow : A → S}
     (surjective : Function.Surjective shadow) (invariant : A → V) :
     Factors shadow invariant ↔ ConstantOnFibers shadow invariant := by
@@ -125,12 +144,8 @@ theorem factors_precomp_equiv_iff
     (equivalence : Equiv A B) (shadow : B → S) (invariant : B → V) :
     Factors (shadow ∘ equivalence) (invariant ∘ equivalence) ↔
       Factors shadow invariant := by
-  constructor
-  · rintro ⟨recover, recovers⟩
-    refine ⟨recover, fun value => ?_⟩
-    simpa using recovers (equivalence.symm value)
-  · rintro ⟨recover, recovers⟩
-    exact ⟨recover, fun value => recovers (equivalence value)⟩
+  exact exists_congr fun recover =>
+    (equivalence.surjective.forall (p := fun value => recover (shadow value) = invariant value)).symm
 
 /-- Nonfactorization is invariant under the same equivalent change of ambient
 coordinates. -/
@@ -138,27 +153,20 @@ theorem not_factors_precomp_equiv_iff
     {A : Type uA} {B : Type*} {S : Type uS} {V : Type uV}
     (equivalence : Equiv A B) (shadow : B → S) (invariant : B → V) :
     (¬ Factors (shadow ∘ equivalence) (invariant ∘ equivalence)) ↔
-      ¬ Factors shadow invariant := by
-  rw [not_congr (factors_precomp_equiv_iff equivalence shadow invariant)]
+      ¬ Factors shadow invariant :=
+  not_congr (factors_precomp_equiv_iff equivalence shadow invariant)
 
 /-! ## Coarsening
 
-A projection that factors through a finer one cannot recover more than the
-finer one does.  This is what makes a single obstruction propagate: an
-invariant unreachable from a derivation's erasure is unreachable from
-anything that erasure passes through. -/
+Further forgetting cannot repair a distinction already erased. -/
 
 /-- If `shadow` is `fine` followed by a further forgetting step, then
 anything recoverable from `shadow` was already recoverable from `fine`. -/
 theorem Factors.of_coarsening {A : Sort uA} {S : Sort uS} {S' : Sort*}
     {V : Sort uV} {shadow : A → S} {fine : A → S'} {coarsen : S' → S}
     (coarsens : ∀ a, shadow a = coarsen (fine a)) {invariant : A → V}
-    (factors : Factors shadow invariant) : Factors fine invariant := by
-  obtain ⟨recover, recovers⟩ := factors
-  refine ⟨fun s => recover (coarsen s), fun a => ?_⟩
-  show recover (coarsen (fine a)) = invariant a
-  rw [← coarsens a]
-  exact recovers a
+    (factors : Factors shadow invariant) : Factors fine invariant :=
+  (show Factors fine shadow from ⟨coarsen, fun a => (coarsens a).symm⟩).trans factors
 
 /-- **Obstructions propagate outward.**  Failing to factor through a finer
 projection implies failing to factor through any coarsening of it. -/
@@ -181,12 +189,8 @@ def NonTrivialFiber.coarsen {A : Sort uA} {S : Sort uS} {S' : Sort*}
 
 /-! ## Subsingleton shadows
 
-The sharpest case, and the one proof irrelevance puts us in.  When the
-shadow type has at most one inhabitant it separates nothing, so *every*
-non-constant invariant fails to factor.  A projection into a proposition is
-of this kind, which is why truncating a derivation to its provability
-destroys every proof-distinguishing quantity at once rather than one at a
-time. -/
+A proposition-valued view separates no inhabitants. Thus erasing a derivation
+to mere provability loses every nonconstant proof readout. -/
 
 /-- Into a subsingleton, any two points share a shadow. -/
 def NonTrivialFiber.ofSubsingleton {A : Sort uA} {S : Sort uS} {V : Sort uV}
@@ -208,5 +212,24 @@ theorem factors_subsingleton_iff_constant {A : Sort uA} {S : Sort uS}
   refine ⟨fun factors a b => factors.constantOnFibers a b (Subsingleton.elim _ _),
     fun constant => ?_⟩
   refine ⟨fun _ => invariant (Classical.arbitrary A), fun a => constant _ a⟩
+
+namespace Controls
+
+/-- A used view can support a concrete result despite having unused codes. -/
+theorem unused_view_recovery :
+    ¬ Function.Surjective (fun _ : Unit => false) ∧
+      Factors (fun _ : Unit => false) (fun _ => (7 : Nat)) := by
+  refine ⟨?_, ⟨fun _ => 7, fun _ => rfl⟩⟩
+  intro onto
+  obtain ⟨_, impossible⟩ := onto true
+  cases impossible
+
+/-- Fibre constancy alone misses the obstruction to filling unused codes. -/
+theorem empty_source_requires_output :
+    ConstantOnFibers (fun _ : Empty => ()) (id : Empty → Empty) ∧
+      ¬ Factors (fun _ : Empty => ()) (id : Empty → Empty) :=
+  ⟨(fun a => nomatch a), fun ⟨recover, _⟩ => nomatch recover ()⟩
+
+end Controls
 
 end Mettapedia.GSLT.Core.NonFactorization

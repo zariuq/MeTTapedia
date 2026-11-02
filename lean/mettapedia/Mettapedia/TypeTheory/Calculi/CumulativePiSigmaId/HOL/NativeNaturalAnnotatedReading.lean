@@ -287,6 +287,13 @@ theorem ofGeneric {operations : Operations Base Const} {Γ : HOL.Ctx Base} {type
   | abstraction _ _ domain body => exact .abstraction domain body
   | product _ _ domain family => exact .product domain family
 
+  | dependentSum lookup _ _ _ _ => cases lookup
+  | identity lookup _ _ _ _ _ _ => cases lookup
+  | pair lookup _ _ _ _ => cases lookup
+  | first lookup _ _ => cases lookup
+  | second lookup _ _ => cases lookup
+  | reflexivity lookup _ _ => cases lookup
+
 theorem generic_iff {operations : Operations Base Const} {Γ : HOL.Ctx Base} {type : HOL.Ty Base}
     {source : CTm Tower.Head Γ.length} {code : HOL.Term Const Γ type} :
     AnnotatedPredicateReading.Reads (lexicalReading operations) source code ↔ AnnotatedReads operations source code :=

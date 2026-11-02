@@ -416,7 +416,7 @@ private theorem reflectionMachine_data_template (head : String) (arguments : Lis
     PureData.Template reflectionRuntime (reflectionA head arguments) := by
   have checked : reflectionMachineDataHeads.all (fun name => decide
       ((ioHead name || StdLib.known name || reflectionRuntime.equations.any (·.head == name)) = false ∧
-        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])) = true := by
+        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
     rfl
   have row := List.all_eq_true.mp checked head supported
   rw [decide_eq_true_eq] at row

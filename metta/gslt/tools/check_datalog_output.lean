@@ -1,4 +1,6 @@
-import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIRClosureWire
+import Mettapedia.Languages.Datalog.IRCodec
+import Mettapedia.OSLF.MeTTaIL.Match
+import Mettapedia.GSLT.LanguageDef.InferenceCettaWireFormat
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CettaWireAtomRead
 
@@ -49,9 +51,11 @@ def main (arguments : List String) : IO Unit := do
   let some keys := decodeList (key? dictionary) keys | throw (IO.userError "logical-key decoding failed")
   let output := System.FilePath.mk outputPath
   IO.FS.createDirAll output
-  for relation in (facts.map (·.relation)).eraseDups do
+  let declaredRelations := dictionary.filterMap fun (_,pattern) => IRCodec.relation? pattern
+  for relation in (declaredRelations ++ facts.map (·.relation)).eraseDups do
     let rows := (facts.filter (·.relation == relation)).map fun fact =>
-      String.intercalate "\t" (fact.values.map textValue)
-    IO.FS.writeFile (output / (String.intercalate "." relation ++ ".csv")) (String.intercalate "\n" rows ++ "\n")
+      if fact.values.isEmpty then "()" else String.intercalate "\t" (fact.values.map textValue)
+    IO.FS.writeFile (output / (String.intercalate "." relation ++ ".csv"))
+      (if rows.isEmpty then "" else String.intercalate "\n" rows ++ "\n")
   IO.FS.writeFile (output / "keys.txt") (reprStr keys ++ "\n")
   IO.println s!"complete: rounds={rounds}, facts={facts.length}, keys={keys.length}"

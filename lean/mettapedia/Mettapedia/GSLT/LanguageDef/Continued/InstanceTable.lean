@@ -11,6 +11,7 @@ import Mettapedia.Languages.ProcessCalculi.Ambient.Continued
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredSemantics
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousSection
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SynchronousDecoration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 import Mettapedia.Languages.InteractionCategory.Continued
@@ -82,8 +83,10 @@ section CCS
 open Mettapedia.Languages.ProcessCalculi.CCS
 
 /-- **CCS: continued interactive.**  Contact: parallel composition, a bag
-whose laws exchange and regroup its components.  Surfaces: the name on both
-prefixes.  Contraction: pure release.  Section: the bag normal form. -/
+whose laws exchange and regroup its components.  Operands: the two prefixes,
+each a summand of a sum that the cut resolves.  Surfaces: the name on both
+prefixes.  Contraction: pure release.  Section: the canonical form of its
+restriction blocks. -/
 theorem ccs_row :
     IsInteractive ccsCalc ∧
       (ccsInteractionCut.program.subject.pattern = some (.fvar "a") ∧
@@ -93,7 +96,8 @@ theorem ccs_row :
   ⟨ccsCalc_isInteractive, ccs_subject_nominal, ccs_migrationMode, ccs_isContinued⟩
 
 /-- The contact of CCS is commutative and associative: the two orders of the
-handshake are equal, and so is the handshake regrouped. -/
+private handshake are equal, and so is the handshake regrouped, under its
+restriction. -/
 theorem ccs_contact_laws :
     ccsIGSLT.toGSLT.equations.r handshakeTerm handshakeSwappedTerm ∧
       ccsIGSLT.toGSLT.equations.r handshakeNestedTerm handshakeTerm :=
@@ -164,32 +168,16 @@ theorem rho_row :
       CIGSLT.forget.obj rhoCIGSLT = rhoIGSLT :=
   ⟨rhoCalc_isInteractive, rho_subject_nominal, rho_migrationMode, rfl⟩
 
-/-- The static laws of asynchronous pi are those of one bag. -/
-theorem pi_bagTheory : BagTheory piCalc piParallelConstructor.1 (some "PiNil") :=
-  piBagTheory
-
-/-- The bag normal form is a section of asynchronous pi. -/
-def piCanonicalSection : ComputableCanonicalSection piIGSLT :=
-  bagCanonicalSection piIGSLT (pi_bagTheory.asBare rfl)
-
-/-- The three clauses for asynchronous pi. -/
-def piContinuedPresentation : ContinuedPresentation piIGSLT where
-  cut := piInteractionCut
-  canonical := piCanonicalSection
-  retyping := ContinuationDecorationProfile.ofRetypingPlan piContinuationRetyping
-  redexRetypable :=
-    (ContinuationDecorationProfile.ofRetypingPlan_redexRetypable_iff _).mpr
-      piContinuationRetyping_redexRetypable
-  wrappable :=
-    (ContinuationDecorationProfile.ofRetypingPlan_wrappable_iff _).mpr
-      piContinuationRetyping_wrappable
-
-/-- **Pi, asynchronous: continued interactive.** -/
+/-- **Pi, asynchronous: interactive, and no interaction cut.**  Its output
+carries a name and nothing after it, so it has no continuation of the process
+sort (`piOutput_no_continuation`). Its static theory is not one bag
+(`piCalc_not_bagTheory`): it authors the restriction laws, so the bag normal
+form is no section of it; the restriction-block canonical form decides it. -/
 theorem pi_row :
     IsInteractive piCalc ∧
-      piInteractionCut.migrationMode = .binding ∧
-      IsContinued piIGSLT :=
-  ⟨piCalc_isInteractive, pi_migrationMode, ⟨piContinuedPresentation⟩⟩
+      IsEmpty (ContinuationPosition piInteractivePresentation piOutputConstructor) ∧
+      ¬ BagTheory piCalc piParallelConstructor.1 (some "PiNil") :=
+  ⟨piCalc_isInteractive, ⟨piOutput_no_continuation⟩, piCalc_not_bagTheory⟩
 
 end Asynchronous
 
@@ -200,33 +188,26 @@ section Synchronous
 open Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Synchronous
 
-/-- The static laws of synchronous pi are those of one bag. -/
-theorem piSync_bagTheory : BagTheory piSyncCalc piSyncParallelConstructor.1 (some "PiNil") :=
+/-- The restriction-free fragment of synchronous pi is one bag. -/
+theorem piSyncParallel_bagTheory : BagTheory piSyncParallelFragment piSyncParallelConstructor.1 (some "PiNil") :=
   bagTheory_of_check (by decide +kernel)
 
-/-- The bag normal form is a section of synchronous pi. -/
-def piSyncCanonicalSection : ComputableCanonicalSection piSyncIGSLT :=
-  bagCanonicalSection piSyncIGSLT (piSync_bagTheory.asBare rfl)
+/-- Synchronous pi authors the laws of restriction and replication, so its static theory is not one bag. -/
+theorem piSyncCalc_not_bagTheory : ¬ BagTheory piSyncCalc piSyncParallelConstructor.1 (some "PiNil") :=
+  fun laws => by
+    have none := laws.equationsEmpty
+    simp [piSyncCalc] at none
 
-/-- The three clauses for synchronous pi. -/
-def piSyncContinuedPresentation : ContinuedPresentation piSyncIGSLT where
-  cut := piSyncInteractionCut
-  canonical := piSyncCanonicalSection
-  retyping := ContinuationDecorationProfile.ofRetypingPlan piSyncContinuationRetyping
-  redexRetypable :=
-    (ContinuationDecorationProfile.ofRetypingPlan_redexRetypable_iff _).mpr
-      piSyncContinuationRetyping_redexRetypable
-  wrappable :=
-    (ContinuationDecorationProfile.ofRetypingPlan_wrappable_iff _).mpr
-      piSyncContinuationRetyping_wrappable
-
-/-- **Pi, synchronous: continued interactive.**  The carried name is bound
-into the input body; the process after the output is released. -/
+/-- **Pi, synchronous: continued interactive, migrating by binding.**  The carried name is bound into the input body;
+the process after the output is released. Its static theory is not one bag (`piSyncCalc_not_bagTheory`): it authors
+the laws of restriction and replication, so the bag normal form is no section of it; its section is the canonical form
+with replication (`piSyncCanonicalSection`). -/
 theorem piSync_row :
     IsInteractive piSyncCalc ∧
       piSyncInteractionCut.migrationMode = .binding ∧
+      ¬ BagTheory piSyncCalc piSyncParallelConstructor.1 (some "PiNil") ∧
       IsContinued piSyncIGSLT :=
-  ⟨piSyncCalc_isInteractive, piSync_migrationMode, ⟨piSyncContinuedPresentation⟩⟩
+  ⟨piSyncCalc_isInteractive, piSync_migrationMode, piSyncCalc_not_bagTheory, piSync_isContinued⟩
 
 /-- A genuine algebraic section of synchronous rho's ordinary authored
 equation quotient. The use of choice supplies no code-tracking theorem. -/
@@ -347,13 +328,13 @@ end Machines
 /-! ## The migration spectrum -/
 
 /-- **The four modes each occur.**  None: CCS and silent composition.
-Binding: rho, pi and lambda.  Spatial: ambients.  Interface composition:
+Binding: rho, synchronous pi and lambda.  Spatial: ambients.  Interface composition:
 visible composition and the successor law. -/
 theorem migration_spectrum :
     Mettapedia.Languages.ProcessCalculi.CCS.ccsInteractionCut.migrationMode = .none ∧
       (Mettapedia.Languages.InteractionCategory.cut .silent).migrationMode = .none ∧
       rhoInteractionCut.migrationMode = .binding ∧
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction.piInteractionCut.migrationMode =
+      Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous.piSyncInteractionCut.migrationMode =
         .binding ∧
       LambdaContinuedInteraction.lambdaInteractionCut.migrationMode = .binding ∧
       Mettapedia.Languages.ProcessCalculi.Ambient.Mobile.dissolutionCut.migrationMode =
@@ -361,7 +342,7 @@ theorem migration_spectrum :
       (Mettapedia.Languages.InteractionCategory.cut .visible).migrationMode = .interface :=
   ⟨Mettapedia.Languages.ProcessCalculi.CCS.ccs_migrationMode,
     Mettapedia.Languages.InteractionCategory.silent_migrationMode, rho_migrationMode,
-    Mettapedia.Languages.ProcessCalculi.PiCalculus.Interaction.pi_migrationMode,
+    Mettapedia.Languages.ProcessCalculi.PiCalculus.Synchronous.piSync_migrationMode,
     lambda_migrationMode,
     Mettapedia.Languages.ProcessCalculi.Ambient.Mobile.dissolution_migrationMode,
     Mettapedia.Languages.InteractionCategory.visible_migrationMode⟩

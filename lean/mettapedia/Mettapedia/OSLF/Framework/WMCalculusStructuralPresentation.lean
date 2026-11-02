@@ -255,7 +255,7 @@ theorem combine_zero_equivalent (term : Pattern) :
   apply Or.inl
   refine ⟨0, EquationInstanceAt.forward (equation := combineZeroEquation)
     (initialBindings := [("e", term)]) (finalBindings := [("e", term)])
-    combine_zero_is_equation ?_
+    combine_zero_is_equation (readsRaw_of_none rfl) ?_
     (.nil _) ?_⟩
   · simp [combineZeroEquation, pCombine, pEvidenceZero,
       matchPattern, matchArgs, mergeBindings]
@@ -271,7 +271,7 @@ theorem combine_zero_contextStep (term : Pattern) :
   apply Or.inl
   refine ⟨0, EquationInstanceAt.forward (equation := combineZeroEquation)
     (initialBindings := [("e", term)]) (finalBindings := [("e", term)])
-    combine_zero_is_equation ?_
+    combine_zero_is_equation (readsRaw_of_none rfl) ?_
     (.nil _) ?_⟩
   · simp [combineZeroEquation, pCombine, pEvidenceZero,
       matchPattern, matchArgs, mergeBindings]
@@ -288,7 +288,7 @@ theorem combine_assoc_equivalent (first second third : Pattern) :
     [("e3", third), ("e2", second), ("e1", first)]
   refine ⟨0, EquationInstanceAt.forward (equation := combineAssocEquation)
     (initialBindings := bindings) (finalBindings := bindings)
-    combine_assoc_is_equation ?_ (.nil _) ?_⟩
+    combine_assoc_is_equation (readsRaw_of_none rfl) ?_ (.nil _) ?_⟩
   · simp [bindings, combineAssocEquation, pCombine, matchPattern,
       matchArgs, mergeBindings]
   · simp [bindings, combineAssocEquation, pCombine, applyBindings]
@@ -302,7 +302,7 @@ theorem combine_comm_equivalent (first second : Pattern) :
   let bindings : Bindings := [("e2", second), ("e1", first)]
   refine ⟨0, EquationInstanceAt.forward (equation := combineCommEquation)
     (initialBindings := bindings) (finalBindings := bindings)
-    combine_comm_is_equation ?_ (.nil _) ?_⟩
+    combine_comm_is_equation (readsRaw_of_none rfl) ?_ (.nil _) ?_⟩
   · simp [bindings, combineCommEquation, pCombine, matchPattern,
       matchArgs, mergeBindings]
   · simp [bindings, combineCommEquation, pCombine, applyBindings]
@@ -362,7 +362,7 @@ theorem typed_zero_instance (free : FreeTypeContext)
     (equation := combineZeroEquation)
     (initialBindings := [("e", encodeWM term)])
     (finalBindings := [("e", encodeWM term)])
-    combine_zero_is_equation ?_ (.nil _) ?_ ?_⟩
+    combine_zero_is_equation (readsRaw_of_none rfl) ?_ (.nil _) ?_ ?_⟩
   · simp [combineZeroEquation, pCombine, pEvidenceZero,
       matchPattern, matchArgs, mergeBindings]
   · intro key ty member
@@ -388,7 +388,7 @@ theorem typed_comm_instance (free : FreeTypeContext)
   refine ⟨0, OpenSortedEquationInstanceAt.forward
     (equation := combineCommEquation)
     (initialBindings := bindings) (finalBindings := bindings)
-    combine_comm_is_equation ?_ (.nil _) ?_ ?_⟩
+    combine_comm_is_equation (readsRaw_of_none rfl) ?_ (.nil _) ?_ ?_⟩
   · simp [bindings, combineCommEquation, pCombine,
       matchPattern, matchArgs, mergeBindings]
   · intro key ty member
@@ -420,7 +420,7 @@ theorem typed_assoc_instance (free : FreeTypeContext)
   refine ⟨0, OpenSortedEquationInstanceAt.forward
     (equation := combineAssocEquation)
     (initialBindings := bindings) (finalBindings := bindings)
-    combine_assoc_is_equation ?_ (.nil _) ?_ ?_⟩
+    combine_assoc_is_equation (readsRaw_of_none rfl) ?_ (.nil _) ?_ ?_⟩
   · simp [bindings, combineAssocEquation, pCombine,
       matchPattern, matchArgs, mergeBindings]
   · intro key ty member

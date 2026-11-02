@@ -143,4 +143,51 @@ theorem bound_result_not_closed :
   rw [equality] at count
   exact Nat.zero_ne_one count.symm
 
+/-- A single selected subterm, including selections below binders. The
+second context records the object variables available at the hole. -/
+inductive Context : Ctx sig → Ctx sig → Type where
+  | hole {Γ : Ctx sig} : Context Γ Γ
+  | appLeft {Γ Δ : Ctx sig} : Context Γ Δ → Term sig Γ .term → Context Γ Δ
+  | appRight {Γ Δ : Ctx sig} : Term sig Γ .term → Context Γ Δ → Context Γ Δ
+  | underLam {Γ Δ : Ctx sig} : Context (.term :: Γ) Δ → Context Γ Δ
+
+def Context.plug : {Γ Δ : Ctx sig} → Context Γ Δ → Term sig Δ .term → Term sig Γ .term
+  | _, _, .hole, term => term
+  | _, _, .appLeft inner argument, term => appT (inner.plug term) argument
+  | _, _, .appRight function inner, term => appT function (inner.plug term)
+  | _, _, .underLam inner, term => lamT (inner.plug term)
+
+theorem Context.congr_step {Γ Δ : Ctx sig} (context : Context Γ Δ)
+    {source target : Term sig Δ .term} (step : Step Δ source target) :
+    Step Γ (context.plug source) (context.plug target) := by
+  induction context with
+  | hole => exact step
+  | appLeft inner argument ih => exact .appCongL argument (ih step)
+  | appRight function inner ih => exact .appCongR function (ih step)
+  | underLam inner ih => exact .lamCong (ih step)
+
+/-- The independent four-rule semantics selects exactly one contextual
+beta contraction. Contexts cannot erase or duplicate their selected hole. -/
+theorem step_iff_context_beta {Γ : Ctx sig} {source target : Term sig Γ .term} :
+    Step Γ source target ↔
+      ∃ (Δ : Ctx sig) (context : Context Γ Δ) (body : Term sig (.term :: Δ) .term)
+        (argument : Term sig Δ .term),
+        source = context.plug (appT (lamT body) argument) ∧
+        target = context.plug (inst body argument) := by
+  constructor
+  · intro step
+    induction step with
+    | beta body argument => exact ⟨_, .hole, body, argument, rfl, rfl⟩
+    | appCongL argument step ih =>
+        obtain ⟨Δ, context, body, input, rfl, rfl⟩ := ih
+        exact ⟨Δ, .appLeft context argument, body, input, rfl, rfl⟩
+    | appCongR function step ih =>
+        obtain ⟨Δ, context, body, input, rfl, rfl⟩ := ih
+        exact ⟨Δ, .appRight function context, body, input, rfl, rfl⟩
+    | lamCong step ih =>
+        obtain ⟨Δ, context, body, input, rfl, rfl⟩ := ih
+        exact ⟨Δ, .underLam context, body, input, rfl, rfl⟩
+  · rintro ⟨Δ, context, body, argument, rfl, rfl⟩
+    exact context.congr_step (.beta body argument)
+
 end Mettapedia.OSLF.Binding.LambdaContextualRung

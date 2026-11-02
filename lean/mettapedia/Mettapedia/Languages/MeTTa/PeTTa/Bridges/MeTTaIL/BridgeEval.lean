@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.WireKit
 import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.BridgeMixedCapture
 
 /-!
 # Evaluating a library body in a proof
@@ -146,6 +147,7 @@ macro_rules
           `(tactic| first
             | metta_capture $checked using $fact unfolding [$unfold,*]
             | metta_capture_any $fact unfolding [$unfold,*]
+            | metta_capture_mixed $fact unfolding [$unfold,*]
             | $(⟨rest.raw⟩):tacticSeq)
       | none, none => lemmas.foldlM (init := nothing) fun rest fact =>
           `(tactic| first | metta_capture_any $fact unfolding [$unfold,*] | $(⟨rest.raw⟩):tacticSeq)

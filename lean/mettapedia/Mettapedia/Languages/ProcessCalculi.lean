@@ -8,6 +8,10 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus
 import Mettapedia.Languages.ProcessCalculi.CCS.Bialgebraic
 import Mettapedia.Languages.ProcessCalculi.CCS.Continued
 import Mettapedia.Languages.ProcessCalculi.CCS.Observed
+import Mettapedia.Languages.ProcessCalculi.CCS.StaticTheory
+import Mettapedia.Languages.ProcessCalculi.CCS.Steps
+import Mettapedia.Languages.ProcessCalculi.CCS.RecursiveSteps
+import Mettapedia.Languages.ProcessCalculi.CCS.LabelledRelabel
 
 /-!
 # Process Calculi

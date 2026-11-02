@@ -190,6 +190,6 @@ theorem absorbing_legacyRetyping_isEmpty
   isEmpty_retypingPlan_of_contractum_headed_by_program
     (contact := "Meet") (introduction := "Flag") (programArguments := [.fvar "x"])
     (contractumArguments := [.fvar "x"]) (environment := .apply "Flag" [.fvar "y"])
-    rfl rfl (by decide) (by decide) cut
+    rfl rfl (by decide) (by decide) rfl rfl cut
 
 end Mettapedia.Languages.PartrecMachine

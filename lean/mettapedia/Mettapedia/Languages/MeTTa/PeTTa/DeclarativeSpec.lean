@@ -9,8 +9,14 @@ configuration carriers. They are independent of the executable step and fuel
 functions. `Runs` relates an initial configuration to a completed observation
 or a primitive fault. Exhaustion is a machine outcome, not a logical refusal.
 
-These rules specify the implemented closed, saturated profile. Open calls,
-run-time function redefinition and the unsupported control forms remain
+These rules specify the implemented closed profile. An authored function's
+equations are selected by matching their argument lists element by element
+against the call's values. A call with a number of arguments no equation takes
+is classified as PeTTa classifies it (P-APP-1): a partial application when an
+equation takes more, an over-application fault otherwise. `match` with three
+arguments runs its body once for each stored row its pattern matches, in row
+order, under that row's bindings, as PeTTa's translator compiles it. Open
+calls, run-time function redefinition and the unsupported control forms remain
 separate coverage obligations. The selected Pattern presentation is in
 `PatternRewrite.DeclarativeSpec`; it is not this whole-program judgment.
 -/
@@ -69,12 +75,140 @@ theorem argumentIsRaw_iff_declaredAtom
     refine ⟨_, member, ?_⟩
     simp [literal]
 
+/-- The bodies of the equations of `head` whose argument patterns match the
+call's values, in source order. The argument list is matched element by
+element: a call's arguments are never read through the `cons` list view, so
+`(h 1 2)` cannot select `(= (h cons $a $b) $b)`. Each argument pattern keeps
+the list view of `SpaceSemantics.matchValue`. -/
 def clauses (program : Program) (head : String) (values : List Atom) : List Control :=
   program.equations.filterMap fun equation =>
     if equation.head = head then
-      (SpaceSemantics.matchValue [] (.expression equation.arguments) (.expression values)).map
+      (SpaceSemantics.matchValue.matchValues [] equation.arguments values).map
         fun bindings => .evaluate bindings equation.body
     else none
+
+/-- The input arities the equations of `head` record, one per equation, in
+source order (P-DEF-1). -/
+def arities (program : Program) (head : String) : List Nat :=
+  (program.equations.filter (·.head == head)).map (·.arguments.length)
+
+/-- Insert into an ascending list without repeats. -/
+def insertArity (arity : Nat) : List Nat → List Nat
+  | [] => [arity]
+  | first :: rest =>
+      if arity < first then arity :: first :: rest
+      else if arity = first then first :: rest
+      else first :: insertArity arity rest
+
+/-- The recorded input arities, ascending and without repeats, as PeTTa's
+over-application error lists them. -/
+def knownArities (program : Program) (head : String) : List Nat :=
+  (arities program head).foldr insertArity []
+
+/-- A grounded tag that source text cannot spell. A partial application is
+`(tag f (values))`, so it prints as `(partial f (values))` while authored data
+spelled `(partial f (values))` stays a different value, as in PeTTa, where the
+partial is a compound term and not an expression list. -/
+def partialTag : Atom := .grounded (.custom "PeTTa.Partial" "")
+
+/-- PeTTa's value `partial(f, values)`: `f` applied to fewer arguments than an
+equation takes, with those argument values held. -/
+def partialValue (head : String) (values : List Atom) : Atom :=
+  .expression [partialTag, .symbol head, .expression values]
+
+/-- The control of a call of an authored function once its arguments are values
+(P-APP-1). When an equation of this many arguments matches, the selected bodies
+run in source order. Otherwise the arity decides: if some equation takes exactly
+this many arguments, the call has no answers; if some equation takes more, or
+none is recorded, the call answers the partial application; otherwise it is an
+over-application fault. `application_classified` states the rule arity first. -/
+@[simp] def application (program : Program) (head : String) (values : List Atom) : Control :=
+  match clauses program head values with
+  | [] =>
+      if values.length ∈ arities program head then .sequence [] []
+      else if (arities program head).all (· < values.length) &&
+          !(arities program head).isEmpty then
+        .fault (.overApplication head (knownArities program head) values.length)
+      else .returned [partialValue head values]
+  | selected => .sequence selected []
+
+/-- The bodies one `match` runs on the rows `rows`: the body once for every row
+its pattern matches, in row order, under the caller's bindings extended by that
+row's. A variable the caller has bound tests the row, as a variable bound
+earlier tests a `let` value. The body is code, evaluated under these bindings;
+captured values are not evaluated again. -/
+def queryBodies (bindings : Subst) (rows : List Atom) (pattern body : Atom) : List Control :=
+  rows.filterMap fun row =>
+    (SpaceSemantics.matchValue bindings pattern row).map fun bound => .evaluate bound body
+
+/-- The alternatives of one query of the space value `space`: the bodies on its
+rows as they are when the query starts, or an invalid-space fault. -/
+def queryAlternatives (state : State) (bindings : Subst) (space pattern body : Atom) :
+    List Control :=
+  match Effects.readHandle space >>= state.read with
+  | some rows => queryBodies bindings rows pattern body
+  | none => [.fault .invalidSpace]
+
+/-- A matching equation of this arity selects the call. -/
+theorem application_of_selected {program : Program} {head : String} {values : List Atom}
+    {first : Control} {rest : List Control}
+    (selected : clauses program head values = first :: rest) :
+    application program head values = .sequence (first :: rest) [] := by
+  simp [application, selected]
+
+/-- Element-by-element matching relates lists of the same length. -/
+theorem matchValues_length {bindings bound : Subst} :
+    {patterns values : List Atom} →
+    SpaceSemantics.matchValue.matchValues bindings patterns values = some bound →
+      patterns.length = values.length
+  | [], [], _ => rfl
+  | [], _ :: _, matched => by simp [SpaceSemantics.matchValue.matchValues] at matched
+  | _ :: _, [], matched => by simp [SpaceSemantics.matchValue.matchValues] at matched
+  | pattern :: patterns, value :: values, matched => by
+      simp only [SpaceSemantics.matchValue.matchValues] at matched
+      cases first : SpaceSemantics.matchValue bindings pattern value with
+      | none => simp [first] at matched
+      | some middle =>
+          simp only [first, Option.bind_eq_bind, Option.bind_some] at matched
+          simp [matchValues_length (bindings := middle) matched]
+
+/-- A selected equation records the call's arity. -/
+theorem arity_of_selected {program : Program} {head : String} {values : List Atom}
+    {control : Control} (member : control ∈ clauses program head values) :
+    values.length ∈ arities program head := by
+  unfold clauses at member
+  obtain ⟨equation, equationMember, selected⟩ := List.mem_filterMap.mp member
+  by_cases same : equation.head = head
+  · simp only [same, if_true] at selected
+    cases matched : SpaceSemantics.matchValue.matchValues [] equation.arguments values with
+    | none => simp [matched] at selected
+    | some bindings =>
+        have lengths := matchValues_length matched
+        simp only [arities, List.mem_map, List.mem_filter]
+        exact ⟨equation, ⟨equationMember, by simp [same]⟩, lengths⟩
+  · simp [same] at selected
+
+/-- P-APP-1, arity first: a call when an equation takes exactly this many
+arguments (its bodies run in source order), a partial application when one
+takes more or none is recorded, and an over-application fault otherwise. -/
+theorem application_classified (program : Program) (head : String) (values : List Atom) :
+    application program head values =
+      if values.length ∈ arities program head then .sequence (clauses program head values) []
+      else if (arities program head).all (· < values.length) &&
+          !(arities program head).isEmpty then
+        .fault (.overApplication head (knownArities program head) values.length)
+      else .returned [partialValue head values] := by
+  cases selected : clauses program head values with
+  | nil => simp [application, selected]
+  | cons first rest =>
+      have arity := arity_of_selected (selected ▸ List.mem_cons_self : first ∈ clauses program head values)
+      simp [application, selected, arity]
+
+/-- A call with an arity some equation records is the ordinary selection. -/
+theorem application_saturated {program : Program} {head : String} {values : List Atom}
+    (saturated : values.length ∈ arities program head) :
+    application program head values = .sequence (clauses program head values) [] := by
+  rw [application_classified, if_pos saturated]
 
 def readCases : List Atom → Option Cases
   | [] => some []
@@ -108,7 +242,8 @@ def controlForm : Atom → Bool
   | .expression [.symbol "collapse", _]
   | .expression [.symbol "superpose", .expression _]
   | .expression [.symbol "empty"]
-  | .expression [.symbol "quote", _] => true
+  | .expression [.symbol "quote", _]
+  | .expression [.symbol "match", _, _, _] => true
   | _ => false
 
 /-- Syntax-directed transitions. The constructors do not invoke the machine's
@@ -168,7 +303,7 @@ inductive Transition (program : Program) : Configuration → Configuration → P
       {index : Nat} {values : List Atom}
       (control : source.control = .arguments bindings (.function head) [] values index)
       (ordinary : ioHead head = false) (notNative : StdLib.known head = false) :
-      Transition program source { source with control := .sequence (clauses program head values) [] }
+      Transition program source { source with control := application program head values }
   | raw_argument {source : Configuration} {bindings : Subst} {target : Target}
       {first : Atom} {rest values : List Atom} {index : Nat}
       (control : source.control = .arguments bindings target (first :: rest) values index)
@@ -307,6 +442,23 @@ inductive Transition (program : Program) : Configuration → Configuration → P
       Transition program source
         { source with control := .sequence (answers.map fun value =>
             .evaluate bindings (if value == Effects.boolean true then yes else no)) [], frames := rest }
+  /-- `(match space pattern body)` evaluates `space`; the pattern and body are
+  held as written (translator.pl:289-292 at b74af1b). -/
+  | query_enter {source : Configuration} {bindings : Subst} {space pattern body : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "match", space, pattern, body])) :
+      Transition program source
+        { source with
+          control := .evaluate bindings space
+          frames := .query bindings pattern body :: source.frames }
+  /-- Each space value is queried in turn: the body runs once per matching row. -/
+  | query_return {source : Configuration} {answers : List Atom} {bindings : Subst}
+      {pattern body : Atom} {rest : List Frame}
+      (control : source.control = .returned answers)
+      (frames : source.frames = .query bindings pattern body :: rest) :
+      Transition program source
+        { source with control := .sequence (answers.flatMap fun space =>
+            queryAlternatives source.state bindings space pattern body) [], frames := rest }
 
 /-- The whole-program judgment for finite execution in this profile. Completed
 results retain the entire store and the ordered remaining input/output. -/

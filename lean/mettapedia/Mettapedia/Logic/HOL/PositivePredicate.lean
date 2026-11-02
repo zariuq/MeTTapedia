@@ -1,5 +1,6 @@
 import Mettapedia.Logic.HOL.PredicateFixedPoint
 import Mettapedia.Logic.HOL.ContextualTrinity
+import Mettapedia.Logic.HOL.TermInterpretationLaws
 
 /-!
 # Retained monotonicity proofs for positive predicate formulas
@@ -29,6 +30,21 @@ inductive Code (Const : Ty Base → Type v) (source : Ty Base) : Ctx Base → Ty
 
 namespace Code
 
+universe u' v'
+variable {Target : Type u'} {Symbols : Ty Target → Type v'}
+
+/-- Retype a positive program and read its fixed atoms by closed terms. -/
+def read (reading : TermInterpretation Base Const Target Symbols) :
+    {context : Ctx Base} → Code Const source context →
+      Code Symbols (Ty.substitute reading.types source) (context.map (Ty.substitute reading.types))
+  | _, .atom formula => .atom (reading.term formula)
+  | _, .member point => .member (reading.term point)
+  | _, .conj left right => .conj (read reading left) (read reading right)
+  | _, .disj left right => .disj (read reading left) (read reading right)
+  | _, .guard premise body => .guard (reading.term premise) (read reading body)
+  | _, .all body => .all (read reading body)
+  | _, .ex body => .ex (read reading body)
+
 def interpret : {context : Ctx Base} → Code Const source context →
     Term Const context (source ⇒ .prop) → Formula Const context
   | _, .atom formula, _ => formula
@@ -38,6 +54,32 @@ def interpret : {context : Ctx Base} → Code Const source context →
   | _, .guard premise body, predicate => .imp premise (interpret body predicate)
   | _, .all body, predicate => .all (interpret body (weaken predicate))
   | _, .ex body, predicate => .ex (interpret body (weaken predicate))
+
+theorem interpret_read (reading : TermInterpretation Base Const Target Symbols) :
+    ∀ {context : Ctx Base} (code : Code Const source context)
+      (predicate : Term Const context (source ⇒ .prop)),
+      reading.term (code.interpret predicate) = (code.read reading).interpret (reading.term predicate)
+  | _, .atom _, _ => rfl
+  | _, .member _, _ => rfl
+  | _, .conj left right, predicate => by
+    simp only [interpret, read, TermInterpretation.term_and,
+      interpret_read reading left predicate, interpret_read reading right predicate]
+    rfl
+  | _, .disj left right, predicate => by
+    simp only [interpret, read, TermInterpretation.term_or,
+      interpret_read reading left predicate, interpret_read reading right predicate]
+    rfl
+  | _, .guard premise body, predicate => by
+    simp only [interpret, read, TermInterpretation.term_imp, interpret_read reading body predicate]
+    rfl
+  | _, .all body, predicate => by
+    simp only [interpret, read, TermInterpretation.term_all]
+    rw [interpret_read, TermInterpretation.term_weaken]
+    rfl
+  | _, .ex body, predicate => by
+    simp only [interpret, read, TermInterpretation.term_ex]
+    rw [interpret_read, TermInterpretation.term_weaken]
+    rfl
 
 def rename {context target : Ctx Base} (mapping : Rename Base context target) :
     Code Const source context → Code Const source target
@@ -58,6 +100,40 @@ def subst {context target : Ctx Base} (mapping : Subst Const context target) :
   | .guard premise body => .guard (HOL.subst mapping premise) (subst mapping body)
   | .all body => .all (subst (Subst.lift mapping) body)
   | .ex body => .ex (subst (Subst.lift mapping) body)
+
+private theorem reading_lift_compatible (reading : TermInterpretation Base Const Target Symbols)
+    {context target : Ctx Base} (rho : Rename Base context target)
+    (mapped : Rename Target (context.map (Ty.substitute reading.types)) (target.map (Ty.substitute reading.types)))
+    (compatible : ∀ {type} (index : Var context type),
+      (rho index).mapTypes reading.types = mapped (index.mapTypes reading.types))
+    {domain type : Ty Base} (index : Var (domain :: context) type) :
+    ((Rename.lift rho) index).mapTypes reading.types = (Rename.lift mapped) (index.mapTypes reading.types) := by
+  cases index with
+  | vz => rfl
+  | vs index => exact congrArg Var.vs (compatible index)
+
+theorem read_rename (reading : TermInterpretation Base Const Target Symbols)
+    {context target : Ctx Base} (rho : Rename Base context target)
+    (mapped : Rename Target (context.map (Ty.substitute reading.types)) (target.map (Ty.substitute reading.types)))
+    (compatible : ∀ {type} (index : Var context type),
+      (rho index).mapTypes reading.types = mapped (index.mapTypes reading.types))
+    (code : Code Const source context) :
+    (code.rename rho).read reading = (code.read reading).rename mapped := by
+  induction code generalizing target with
+  | atom formula => exact congrArg Code.atom (reading.term_rename rho mapped compatible formula)
+  | member point => exact congrArg Code.member (reading.term_rename rho mapped compatible point)
+  | conj _ _ first second => simp only [read, rename, first rho mapped compatible, second rho mapped compatible]
+  | disj _ _ first second => simp only [read, rename, first rho mapped compatible, second rho mapped compatible]
+  | guard premise _ body =>
+    exact congrArg₂ Code.guard (reading.term_rename rho mapped compatible premise) (body rho mapped compatible)
+  | all body hypothesis =>
+    simp only [read, rename]
+    exact congrArg Code.all (hypothesis (Rename.lift rho) (Rename.lift mapped)
+      (reading_lift_compatible reading rho mapped compatible))
+  | ex body hypothesis =>
+    simp only [read, rename]
+    exact congrArg Code.ex (hypothesis (Rename.lift rho) (Rename.lift mapped)
+      (reading_lift_compatible reading rho mapped compatible))
 
 theorem rename_comp {context middle target : Ctx Base}
     (first : Rename Base middle target) (second : Rename Base context middle)
@@ -272,6 +348,14 @@ theorem transport_functionExtensionalityFree {context : Ctx Base}
 def operator {context : Ctx Base} (code : Code Const source (source :: context)) :
     Term Const context (PredicateFixedPoint.Operator source) :=
   .lam (.lam ((code.rename (Rename.lift Rename.weaken)).interpret (.var (.vs .vz))))
+
+theorem operator_read (reading : TermInterpretation Base Const Target Symbols)
+    {context : Ctx Base} (code : Code Const source (source :: context)) :
+    reading.term code.operator = (code.read reading).operator := by
+  simp only [operator, TermInterpretation.term_lam]
+  rw [interpret_read, read_rename reading (Rename.lift Rename.weaken) (Rename.lift Rename.weaken)
+    (by intro type index; cases index <;> rfl)]
+  rfl
 
 def body {context : Ctx Base} (code : Code Const source (source :: context))
     (predicate : Term Const context (source ⇒ .prop)) (point : Term Const context source) : Formula Const context :=

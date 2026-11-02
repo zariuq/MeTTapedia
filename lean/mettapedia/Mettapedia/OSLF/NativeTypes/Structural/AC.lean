@@ -77,7 +77,8 @@ theorem detected_commutative {language : LanguageDef} {label : String} {equation
   apply Or.inl
   refine ⟨0, EquationInstanceAt.forward (equation := equation)
     (initialBindings := [("Q", right), ("P", left)])
-    (finalBindings := [("Q", right), ("P", left)]) member ?_ ?_ ?_⟩
+    (finalBindings := [("Q", right), ("P", left)]) member ?_ ?_ ?_ ?_⟩
+  · simp [readsRaw, leftShape, rightShape, commLeft, commRight, binderFree, binderFreeList]
   · rw [leftShape]
     simp [commLeft, matchPattern, matchArgs, mergeBindings]
   · rw [premises]
@@ -96,7 +97,8 @@ theorem detected_associative {language : LanguageDef} {label : String} {equation
   apply Or.inl
   refine ⟨0, EquationInstanceAt.forward (equation := equation)
     (initialBindings := [("Q", second), ("R", third), ("P", first)])
-    (finalBindings := [("Q", second), ("R", third), ("P", first)]) member ?_ ?_ ?_⟩
+    (finalBindings := [("Q", second), ("R", third), ("P", first)]) member ?_ ?_ ?_ ?_⟩
+  · simp [readsRaw, leftShape, rightShape, assocLeft, assocRight, binderFree, binderFreeList]
   · rw [leftShape]
     simp [assocLeft, matchPattern, matchArgs, mergeBindings]
   · rw [premises]

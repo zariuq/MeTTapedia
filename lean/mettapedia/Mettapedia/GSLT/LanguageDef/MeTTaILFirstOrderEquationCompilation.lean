@@ -378,7 +378,7 @@ theorem receipt_witness {relations : RelationEnv} {language : LanguageDef}
         simpa only [orientation, orientedPlan, equationOfPlan, run_eq_matchPattern] using fields.2.2.1
       have target : applyBindings receipt.finalBindings (equationOfPlan plan).right = receipt.target := by
         simpa only [orientation, orientedPlan, equationOfPlan, instantiate_eq_applyBindings] using fields.2.2.2.2
-      refine ⟨.forward fuel ⟨equationOfPlan plan, equationMember⟩ receipt.initialBindings
+      refine ⟨.forward fuel ⟨equationOfPlan plan, equationMember⟩ (readsRaw_of_none rfl) receipt.initialBindings
         receipt.finalBindings matched premises target, ?_, rfl⟩
       rfl
   | reverse =>
@@ -386,7 +386,7 @@ theorem receipt_witness {relations : RelationEnv} {language : LanguageDef}
         simpa only [orientation, orientedPlan, equationOfPlan, run_eq_matchPattern] using fields.2.2.1
       have target : applyBindings receipt.finalBindings (equationOfPlan plan).left = receipt.target := by
         simpa only [orientation, orientedPlan, equationOfPlan, instantiate_eq_applyBindings] using fields.2.2.2.2
-      refine ⟨.reverse fuel ⟨equationOfPlan plan, equationMember⟩ receipt.initialBindings
+      refine ⟨.reverse fuel ⟨equationOfPlan plan, equationMember⟩ (readsRaw_of_none rfl) receipt.initialBindings
         receipt.finalBindings matched premises target, ?_, rfl⟩
       rfl
 
@@ -406,16 +406,16 @@ theorem rootReceipts_sound {relations : RelationEnv} {language : LanguageDef}
   obtain ⟨receipt, member, rfl⟩ := List.mem_map.mp produced
   obtain ⟨witness, _, _⟩ := receipt_witness program source receipt member fuel
   cases witness with
-  | forward _ equation initial final matched premises target =>
+  | forward _ equation raw initial final matched premises target =>
       have exactPremises := (premisesAt_engineBase_iff_mem_applyPremisesWithEnv
         (program.noncontextual_premises equation.1 equation.2)).mp premises
-      exact .forward equation.2 matched
+      exact .forward equation.2 raw matched
         ((premisesAt_engineBase_iff_mem_applyPremisesWithEnv
           (program.noncontextual_premises equation.1 equation.2)).mpr exactPremises) target
-  | reverse _ equation initial final matched premises target =>
+  | reverse _ equation raw initial final matched premises target =>
       have exactPremises := (premisesAt_engineBase_iff_mem_applyPremisesWithEnv
         (program.noncontextual_premises equation.1 equation.2)).mp premises
-      exact .reverse equation.2 matched
+      exact .reverse equation.2 raw matched
         ((premisesAt_engineBase_iff_mem_applyPremisesWithEnv
           (program.noncontextual_premises equation.1 equation.2)).mpr exactPremises) target
 
@@ -426,7 +426,7 @@ theorem rootReceipts_complete {relations : RelationEnv} {language : LanguageDef}
     (instanceAt : EquationInstanceAt (engineBasePremises relations) language fuel source target) :
     target ∈ (rootReceipts relations language program.plans source).map Receipt.target := by
   cases instanceAt with
-  | @forward equation _ _ initial final declared matched premises target_eq =>
+  | @forward equation _ _ initial final declared _ matched premises target_eq =>
       rw [← program.equations_eq_source] at declared
       obtain ⟨plan, member, erased⟩ := List.mem_map.mp declared
       obtain ⟨index, located⟩ := List.mem_iff_getElem?.mp member
@@ -446,7 +446,7 @@ theorem rootReceipts_complete {relations : RelationEnv} {language : LanguageDef}
       refine ⟨plan, located, (mem_rowReceipts_iff _ _ _ _ _ _ _).mpr ⟨rfl, rfl, ?_, traced, ?_⟩⟩
       · simpa only [orientedPlan, run_eq_matchPattern, ← erased, equationOfPlan] using matched
       · simpa only [orientedPlan, instantiate_eq_applyBindings, ← erased, equationOfPlan] using target_eq
-  | @reverse equation _ _ initial final declared matched premises target_eq =>
+  | @reverse equation _ _ initial final declared _ matched premises target_eq =>
       rw [← program.equations_eq_source] at declared
       obtain ⟨plan, member, erased⟩ := List.mem_map.mp declared
       obtain ⟨index, located⟩ := List.mem_iff_getElem?.mp member
@@ -466,6 +466,11 @@ theorem rootReceipts_complete {relations : RelationEnv} {language : LanguageDef}
       refine ⟨plan, located, (mem_rowReceipts_iff _ _ _ _ _ _ _).mpr ⟨rfl, rfl, ?_, traced, ?_⟩⟩
       · simpa only [orientedPlan, run_eq_matchPattern, ← erased, equationOfPlan] using matched
       · simpa only [orientedPlan, instantiate_eq_applyBindings, ← erased, equationOfPlan] using target_eq
+  | declared member notRaw _ =>
+      rw [← program.equations_eq_source] at member
+      obtain ⟨plan, _, rfl⟩ := List.mem_map.mp member
+      rw [readsRaw_of_none rfl] at notRaw
+      cases notRaw
 
 /-- Exact support of the canonical instance relation at every finite premise
 fuel. Order and multiplicity are retained by the stronger list-valued executor. -/

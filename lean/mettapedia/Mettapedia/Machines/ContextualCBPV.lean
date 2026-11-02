@@ -43,6 +43,7 @@ inductive Computation where
   | choice (first second : Computation)
   | scope (body : Computation)
   | commit (value : Value)
+  | commitPacket (packet : Packet Value Fault Delay)
   | failure
   | raised (fault : Fault)
   | handle (producer : Computation) (handler : Fault → Computation)
@@ -112,6 +113,17 @@ theorem retainOutside_suffix {Pending : Type*} (inside outside : List Pending) :
 abbrev KernelSemantics := Semantics Value Call Effect Fault Delay Suspension Context World Worker
 abbrev KernelState := State Value Call Effect Fault Delay Suspension Context World Worker
 
+/-- Commit the current scope while retaining the actual packet and logical
+branch. Value-only cuts use the same transition with a completed packet. -/
+def commitReturn (state : KernelState (Value := Value) (Call := Call) (Effect := Effect)
+    (Fault := Fault) (Delay := Delay) (Suspension := Suspension)
+    (Context := Context) (World := World) (Worker := Worker))
+    (context : Context) (packet : Packet Value Fault Delay)
+    (frames : List (Frame Value Call Effect Fault Delay Suspension Context)) :=
+  {state with
+    focus := ⟨.returned context packet, frames⟩
+    alternatives := retainOutside (choiceFloor frames) state.alternatives}
+
 def initial (world : World) (context : Context)
     (code : Code Value Call Effect Fault Delay Suspension) :
     KernelState (Value := Value) (Call := Call) (Effect := Effect) (Fault := Fault)
@@ -172,9 +184,8 @@ def advance (sem : KernelSemantics (Value := Value) (Call := Call) (Effect := Ef
           some {state with focus := ⟨.compute context body,
             .scope state.alternatives.length :: frames⟩}
       | .commit value =>
-          some {state with
-            focus := ⟨.returned context (.value .completed value), frames⟩
-            alternatives := retainOutside (choiceFloor frames) state.alternatives}
+          some (commitReturn state context (.value .completed value) frames)
+      | .commitPacket packet => some (commitReturn state context packet frames)
       | .failure => some {state with focus := ⟨.failed, frames⟩}
       | .raised fault => some {state with focus := ⟨.returned context (.raised fault), frames⟩}
       | .handle producer handler =>
@@ -808,7 +819,7 @@ theorem commit_keeps_outside (context : Context) (value : Value)
       some {state with
         focus := ⟨.returned context (.value .completed value), frames⟩
         alternatives := outside} := by
-  simp [advance, currentScope, retainOutside_suffix]
+  simp [advance, commitReturn, currentScope, retainOutside_suffix]
 
 /-- Join the concrete newest-first continuation stack to the independent
 ScopedCommit CPS interpreter. Its saved failure continuation is exactly the

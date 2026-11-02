@@ -2,93 +2,36 @@ import Mettapedia.GSLT.Logic.QuotientObservers
 import Mettapedia.Cybernetics.DistinctionConservation
 
 /-!
-# Views of one subject
+# Views, sufficient information and diagonal limits
 
-A *view* of a subject is a map out of it.  Two points are the same in the view
-when the map identifies them, so a view is a quotient bubble: the observers
-admissible for the bubble are exactly the observers that factor through the
-view (`factors_iff_respects`, `factors_iff_admissible`, with the vocabulary of
-`Mettapedia.GSLT.Logic.QuotientObservers`).  A *translation* from one view to
-another is a recovering map in the sense of `Factors`
-(`Mettapedia.GSLT.Core.NonFactorization`): the second view is a function of the
-first.  What a translation keeps is a `Factors` statement; what it forgets is a
-`NonTrivialFiber`, two points the target view identifies and the source view
-separates.  Equivalently, a view determines a feature exactly when it
-conserves every distinction the feature draws (`factors_iff_conserves`, in the
-vocabulary of `Mettapedia.Cybernetics.DistinctionConservation`), and a view
-loses nothing exactly when it conserves every distinction
-(`factors_id_iff_conserves`).  Translations compose (`factors_trans`), and a
-fibre that separates a feature separates every view that determines the
-feature (`NonTrivialFiber.ofDetermined`).
+A view is a map out of a subject. `Factors first second` says that the second
+view is recoverable from the first; `NonTrivialFiber` witnesses a distinction
+that cannot be recovered. The shared factorization criterion is in
+`GSLT.Core.NonFactorization`, including its requirement on unused view values.
+Here it is related to admissible quotient observers and distinction
+conservation (`factors_iff_respects`, `factors_iff_admissible`,
+`factors_iff_conserves`). These are readout laws, not institution comorphisms.
 
-The pluralist stance says: no view is privileged, the views are translated into
-one another, each keeps something the others forget, and they agree on a common
-basis of evaluation.  Its parts, stated without any new structure:
+For a family of views:
+* `Finest` means that every member factors through the selected member.
+* `CommonCoarsening` means that an evaluation factors through every member.
+* `joint` collects all coordinates; its kernel is their meet. A member is
+  finest exactly when it determines this joint view.
 
-* a view is **finest** in a family when every view of the family factors
-  through it (`Finest`): it is lossless for the family;
-* an evaluation is a **common coarsening** of a family when it factors through
-  every view (`CommonCoarsening`): the views agree on it;
-* the **joint view** takes all views at once (`joint`); its bubble is the meet of
-  the members' bubbles (`ker_joint_iff`), and a member is finest exactly when it
-  determines the joint view (`finest_iff_factors_joint`).
+Finest views form a class, rather than a preferred presentation: they factor
+through each other and have equal kernels. A view determines every Boolean
+observation precisely when it is injective. The constant-observation control
+shows why the quantifier over all observations cannot be restricted.
 
-## Finest is lossless, not privileged
+The diagonal limit concerns self-description. Cantor's argument, in Lawvere's
+fixed-point form, rules out naming every Boolean observation by elements of
+the subject itself. It does not exclude lossless views, finite universal
+syntax or self-interpreters. Related universe-level and hyperset obstructions
+are separate results, not consequences asserted here.
 
-Finest members come as a class.  Two finest members factor through each other
-(`Finest.mutual`) and identify the same points (`Finest.sameFibres`,
-`Finest.ker_eq`).  Once one member is finest, the finest members are exactly
-the members through which it factors (`Finest.finest_iff`), equivalently the
-members that identify no more than it does (`Finest.of_sameFibres`).  So a
-finest view settles how much can be told apart and singles out no presentation
-of it: in an exact computational trinity all three faces are finest
-(`TrinityFaces.Exact.finest` in `Mettapedia.GSLT.Logic.ViewPluralism`).  That no
-member of a family is finest is a separate and stronger claim.  What privilege
-can mean, relative to a purpose, is the subject of
-`Mettapedia.GSLT.Logic.PrivilegedView`.
-
-**All two-valued observations.**  A view determines every two-valued
-observation of its subject exactly when it is injective
-(`factors_twoValued_iff_injective`).  Adjoined to the family of all two-valued
-observations, a view is finest exactly when it is injective
-(`finest_adjoinTwoValued_iff_injective`).  Negative example: adjoined to the
-constant observations alone, the view that identifies everything is finest
-(`finest_adjoinTwoValued_constant`), so the family cannot be restricted
-(`not_forall_finest_adjoinTwoValued_iff_injective`).
-
-## The diagonal limit
-
-The joint view of all two-valued observations is injective
-(`joint_twoValued_injective`); its values are families of observations, not
-elements of the subject.  The limit concerns self-description:
-
-* the subject's own elements cannot name every two-valued observation of the
-  subject (`not_surjective_naming`, Cantor's diagonal in Lawvere's fixed-point
-  form, `Function.exists_fixed_point_of_surjective`);
-* a view of the two-valued observations whose values are the subject's own
-  elements is not finest among their two-valued observations
-  (`not_finest_selfDescribing`): a self-describing finest view does not exist.
-
-These do not limit lossless views (the identity is one), nor finite syntax: a
-finite universal instruction set or a self-interpreter is not excluded.
-Related but distinct diagonal arguments show that no type surjects onto a
-universe containing it (`Function.not_surjective_Type`), that no universe of the
-level tower is a member of itself (`LevelTower.universeAt_not_mem_self` in
-`Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerOrdinalLevels`),
-and that no hyperset contains every hyperset (`HSet.not_exists_universal` in
-`Mettapedia.TypeTheory.MaterialSets.Hypersets.NoUniversalSet`), the last under
-anti-foundation.  For streams the limit has a finite-depth form: every view at a
-fixed depth loses information while the tower of all of them separates streams
-(`PrivilegedView.no_prefixView_finest`, `PrivilegedView.joint_prefixViews_injective`).
-
-The words are the library's own (view, bubble, factors, fibre) and the
-order-theoretic ones for partitions (finest, common coarsening, meet).  For
-translations between logics the literature's term is the comorphism of
-institutions (Goguen and Burstall; Goguen and Roşu), present in
-`Mettapedia.Logic.Institution`; what the views here share is factorization, so
-no comorphism is built.  The instances (propositions, verification readings,
-the computational trinity, values equal to their own negation, table runs) are
-in `Mettapedia.GSLT.Logic.ViewPluralism`.
+`ViewPluralism` supplies instances from propositions, computational trinity,
+PLN truth values and table execution. `PrivilegedView` adds a purpose and
+dynamics, including the finite-depth tower and its jointly separating limit.
 -/
 
 set_option autoImplicit false
@@ -108,9 +51,7 @@ section General
 theorem factors_trans {A : Sort u} {B : Sort v} {C : Sort w} {D : Sort x}
     {first : A → B} {second : A → C} {third : A → D}
     (firstSecond : Factors first second) (secondThird : Factors second third) :
-    Factors first third := by
-  obtain ⟨recover, recovers⟩ := firstSecond
-  exact secondThird.of_coarsening fun a => (recovers a).symm
+    Factors first third := firstSecond.trans secondThird
 
 /-- **A fibre that separates a feature separates every view that determines
 it.** -/
@@ -190,14 +131,8 @@ section Observers
 feature's values are inhabited. -/
 theorem factors_of_constantOnFibers {A : Sort u} {S : Sort v} {V : Sort w} [Nonempty V]
     {view : A → S} {feature : A → V} (constant : ConstantOnFibers view feature) :
-    Factors view feature := by
-  classical
-  refine ⟨fun shadow => if seen : ∃ a, view a = shadow then feature seen.choose
-    else Classical.arbitrary V, fun a => ?_⟩
-  have seen : ∃ a', view a' = view a := ⟨a, rfl⟩
-  dsimp only
-  rw [dif_pos seen]
-  exact constant _ _ seen.choose_spec
+    Factors view feature :=
+  (factors_iff_constantOnFibers_of_nonempty _ _).mpr constant
 
 /-- **A view determines a feature exactly when it conserves every distinction
 the feature draws.** -/
@@ -316,13 +251,11 @@ theorem finest_adjoinTwoValued_iff {S : Type v} {ι : Type w} (view : A → S)
     Finest (adjoinTwoValued view observations) none ↔ ∀ i, Factors view (observations i) := by
   constructor
   · intro finest i
-    obtain ⟨recover, recovers⟩ := finest (some i)
-    exact ⟨fun shadow => (recover shadow).down, fun a => congrArg ULift.down (recovers a)⟩
+    exact (finest (some i)).trans ⟨ULift.down, fun _ => rfl⟩
   · intro determines
     rintro (_ | i)
     · exact ⟨id, fun _ => rfl⟩
-    · obtain ⟨recover, recovers⟩ := determines i
-      exact ⟨fun shadow => ULift.up (recover shadow), fun a => congrArg ULift.up (recovers a)⟩
+    · exact (determines i).trans ⟨ULift.up, fun _ => rfl⟩
 
 /-- **Adjoined to all two-valued observations, a view is finest exactly when it
 is injective.** -/

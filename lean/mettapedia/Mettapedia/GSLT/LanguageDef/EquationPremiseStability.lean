@@ -60,12 +60,17 @@ theorem equationInstanceAt_forward
     (evidence : EquationInstanceAt sourceBase source fuel left right) :
     EquationInstanceAt targetBase target fuel left right := by
   cases evidence with
-  | forward member matched premises result =>
-      exact .forward (equations ▸ member) matched
+  | forward member raw matched premises result =>
+      exact .forward (equations ▸ member) raw matched
         ((agreement _ member _ _ _).mp premises) result
-  | reverse member matched premises result =>
-      exact .reverse (equations ▸ member) matched
+  | reverse member raw matched premises result =>
+      exact .reverse (equations ▸ member) raw matched
         ((agreement _ member _ _ _).mp premises) result
+  | declared member notRaw produced =>
+      obtain ⟨spec, captured, final, declared, admitted, sourceScoped, matched, premises, applied,
+        targetScoped⟩ := produced
+      exact .declared (equations ▸ member) notRaw ⟨spec, captured, final, declared, admitted, sourceScoped, matched,
+        (agreement _ member _ _ _).mp premises, applied, targetScoped⟩
 
 theorem equationInstanceAt_iff
     (equations : source.equations = target.equations)
@@ -339,7 +344,7 @@ theorem after_premises : PremisesAt base after 1 [] conditionalEquation.premises
 
 theorem after_equation_instance : EquationInstanceAt base after 1 a b := by
   exact .forward (equation := conditionalEquation) (initialBindings := [])
-    (finalBindings := []) (.head []) (nullary_matches "A")
+    (finalBindings := []) (.head []) (by decide) (nullary_matches "A")
     after_premises (by simp [conditionalEquation, b, applyBindings])
 
 theorem after_equivalent : EquationEquiv base after a b :=
@@ -363,14 +368,19 @@ theorem before_no_equation_instance (left right : Pattern) :
     ¬ EquationInstance base before left right := by
   rintro ⟨fuel, evidence⟩
   cases evidence with
-  | forward member _ premises _ =>
+  | forward member _ _ premises _ =>
       have same : _ = conditionalEquation := List.mem_singleton.mp member
       subst same
       exact before_no_premises _ _ _ premises
-  | reverse member _ premises _ =>
+  | reverse member _ _ premises _ =>
       have same : _ = conditionalEquation := List.mem_singleton.mp member
       subst same
       exact before_no_premises _ _ _ premises
+  | declared member notRaw _ =>
+      have same : _ = conditionalEquation := List.mem_singleton.mp member
+      subst same
+      rw [readsRaw_of_none rfl] at notRaw
+      cases notRaw
 
 private theorem before_no_derived (left right : Pattern) :
     ¬ DerivedInstance before left right :=
@@ -439,7 +449,7 @@ theorem unconditional_nontrivial : a ≠ b ∧ EquationEquiv base unconditionalB
   refine ⟨by decide, ?_⟩
   apply equationInstance_equivalent
   exact ⟨0, .forward (equation := unconditionalEquation) (initialBindings := [])
-    (finalBindings := []) (.head []) (nullary_matches "A") (.nil [])
+    (finalBindings := []) (.head []) (by decide) (nullary_matches "A") (.nil [])
     (by simp [unconditionalEquation, conditionalEquation, b, applyBindings])⟩
 
 theorem unconditional_rewrite_executes : rewriteAt base unconditionalAfter 1 c = [d] := by decide +kernel

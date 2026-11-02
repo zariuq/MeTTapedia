@@ -329,7 +329,7 @@ theorem fresh_authored_eval_eq {relEnv : RelationEnv} {language : LanguageDef}
   have commutes := Mettapedia.OSLF.Framework.FiniteModels.Certificate.preorder_commutes
     (Mettapedia.OSLF.Framework.FiniteModels.Certificate.contextual_preorder contextual)
   cases instance_ with
-  | @forward equation _ initial final witnesses member matched premises _ scope =>
+  | @forward equation _ initial final witnesses member _ matched premises _ scope =>
     have fresh : ScopedValues (captureSitesOf equation.left equation.premises) equation.right final := by
       cases discipline with
       | raw => exact absurd strict (by decide)
@@ -338,7 +338,7 @@ theorem fresh_authored_eval_eq {relEnv : RelationEnv} {language : LanguageDef}
       | closed => exact scope
     exact fresh_direction_eval_eq commutes (freshEquationsValid_equation checked member).1 matched
       (premisesValid_extends premises) fresh object outer
-  | @reverse equation _ initial final witnesses member matched premises _ scope =>
+  | @reverse equation _ initial final witnesses member _ matched premises _ scope =>
     have fresh : ScopedValues (captureSitesOf equation.right equation.premises) equation.left final := by
       cases discipline with
       | raw => exact absurd strict (by decide)
@@ -347,6 +347,12 @@ theorem fresh_authored_eval_eq {relEnv : RelationEnv} {language : LanguageDef}
       | closed => exact scope
     exact fresh_direction_eval_eq commutes (freshEquationsValid_equation checked member).2 matched
       (premisesValid_extends premises) fresh object outer
+  | declared raw _ _ _ =>
+    subst raw
+    exact absurd strict (by decide)
+  | premised raw _ _ _ _ =>
+    subst raw
+    exact absurd strict (by decide)
 
 end Certificate
 

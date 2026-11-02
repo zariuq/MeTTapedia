@@ -256,7 +256,7 @@ def termLayer (comm : F → Bool) : TermLayer V (Tm F) (Pat V F) where
   equivalence := ceq_equivalence
   vars := Pat.vars
   inst σ p := p.inst σ
-  inst_isSome σ p := Pat.inst_isSome σ p
+  inst_bound σ p := (Pat.inst_isSome σ p).mp
   inst_local σ τ p := Pat.inst_local σ τ p
   inst_congr σ τ p := Pat.inst_congr comm σ τ p
 

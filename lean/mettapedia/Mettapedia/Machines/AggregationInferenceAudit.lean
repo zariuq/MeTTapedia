@@ -1,0 +1,27 @@
+import Mettapedia.Machines.GroupedModeRegion
+import Mettapedia.Machines.BinaryModeInformation
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Declaration and primitive-axiom inventory for aggregation inference,
+sorted source mode and continuation-relative information boundaries. -/
+
+#print axioms Mettapedia.Machines.ModeAggregation.countLoop_exact
+#print axioms Mettapedia.Machines.ModeAggregation.mode_spec
+#print axioms Mettapedia.Machines.ModeAggregation.Controls.no_winner_merge
+#print axioms Mettapedia.Machines.ModeAggregation.SortedRun.sorted_source_is_histogram_readout
+#print axioms Mettapedia.Machines.AdditiveFoldInference.normalize_sound
+#print axioms Mettapedia.Machines.AdditiveFoldInference.admitted_iff_translation
+#print axioms Mettapedia.Machines.AdditiveFoldInference.equivalent_programs_same_admission
+#print axioms Mettapedia.Machines.AdditiveFoldInference.accepted_run
+#print axioms Mettapedia.Machines.AdditiveFoldInference.runInferred_exact
+#print axioms Mettapedia.Machines.ModeAggregation.Grouped.grouped_mode_exact
+#print axioms Mettapedia.Machines.ModeAggregation.BinaryInformation.sameFuture_iff_summary
+#print axioms Mettapedia.Machines.ModeAggregation.BinaryInformation.no_finite_future_summary
+#print axioms Mettapedia.Machines.ModeAggregation.BinaryInformation.binary_sorted_source
+#print axioms Mettapedia.Machines.ModeAggregation.BinaryInformation.sameFuture_default_false
+
+#foundation_manifest_module Mettapedia.Machines.ModeAggregation
+#foundation_manifest_module Mettapedia.Machines.SortedRunMode
+#foundation_manifest_module Mettapedia.Machines.AdditiveFoldInference
+#foundation_manifest_module Mettapedia.Machines.GroupedModeRegion
+#foundation_manifest_module Mettapedia.Machines.BinaryModeInformation

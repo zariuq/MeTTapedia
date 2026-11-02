@@ -19,6 +19,30 @@ import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredRFComparison
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredControls
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.ReflectionControls
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.StaticEquationFamily
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.CongruenceToolkit
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.CongruenceKeys
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.CongruenceSubstitution
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.EarlyTransitions
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SaturatedReduction
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexForm
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexCompleteness
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexCoherence
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexTyped
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexSubstitution
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexSteps
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexReflection
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousStepReflection
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousSteps
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SynchronousSection
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.Sums
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SumsReflection
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SumsSteps
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.SumsStore
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexClosing
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.NamedStaticAdequacy
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.ReadBack
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.ReadBackAlpha
+import Mettapedia.Languages.ProcessCalculi.PiCalculus.ReadBackCanonical
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoEndpointOperational
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoEndpointControls
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoNativeTransport
@@ -40,6 +64,12 @@ The authored internal executor has a complete frontier and an exact rule
 comparison. Its static quotient remains the declared parallel monoid; the
 larger binding-aware static family is available separately, with no implicit
 claim that the two quotients coincide.
+
+Structural congruence has its own toolkit: lists of components and restrictions up to congruence
+(`CongruenceToolkit`), processes with equal locally nameless translations are congruent (`CongruenceKeys`), and
+congruence is closed under substitution (`CongruenceSubstitution`). The early labelled transitions have shapes,
+and every silent transition is a reduction (`EarlyTransitions`). Saturated reduction bisimilarity compares
+processes by their reductions beside every process (`SaturatedReduction`).
 
 `RhoEncodingCorrectness.lean` is a separate comparison API; its execution
 theorems retain their explicit fragment and communication-safety conditions.

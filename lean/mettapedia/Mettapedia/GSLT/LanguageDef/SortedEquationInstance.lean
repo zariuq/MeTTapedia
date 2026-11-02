@@ -52,7 +52,7 @@ inductive SortedEquationInstanceAt
   | forward
       {fuel : Nat} {equation : Equation} {source target : Pattern}
       {initialBindings finalBindings : Bindings} :
-      List.Mem equation language.equations →
+      List.Mem equation language.equations → readsRaw equation = true →
       initialBindings ∈ matchPattern equation.left source →
       PremisesAt base language fuel initialBindings equation.premises
         finalBindings →
@@ -62,7 +62,7 @@ inductive SortedEquationInstanceAt
   | reverse
       {fuel : Nat} {equation : Equation} {source target : Pattern}
       {initialBindings finalBindings : Bindings} :
-      List.Mem equation language.equations →
+      List.Mem equation language.equations → readsRaw equation = true →
       initialBindings ∈ matchPattern equation.right source →
       PremisesAt base language fuel initialBindings equation.premises
         finalBindings →
@@ -85,10 +85,10 @@ theorem equationInstance_of_sortedEquationInstance
   obtain ⟨fuel, instance'⟩ := sorted
   refine ⟨fuel, ?_⟩
   cases instance' with
-  | forward member matched premises _ applied =>
-      exact EquationInstanceAt.forward member matched premises applied
-  | reverse member matched premises _ applied =>
-      exact EquationInstanceAt.reverse member matched premises applied
+  | forward member raw matched premises _ applied =>
+      exact EquationInstanceAt.forward member raw matched premises applied
+  | reverse member raw matched premises _ applied =>
+      exact EquationInstanceAt.reverse member raw matched premises applied
 
 /-- One generator of the disciplined equation theory: a sorted authored
 instance, or a presentation-derived law.  The derived laws already carry their

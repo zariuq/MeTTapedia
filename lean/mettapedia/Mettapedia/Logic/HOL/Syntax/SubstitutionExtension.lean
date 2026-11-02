@@ -21,6 +21,21 @@ def Subst.cons (head : Term Const delta domain) (tail : Subst Const gamma delta)
   | _, .vz => head
   | _, .vs index => tail index
 
+theorem Subst.lift_comp_eq {later : Ctx Base} (tau : Subst Const delta later)
+    (sigma : Subst Const gamma delta) :
+    (Subst.comp (Subst.lift (σ := domain) tau) (Subst.lift sigma) : Subst Const (domain :: gamma) (domain :: later)) =
+      (Subst.lift (σ := domain) (Subst.comp tau sigma) : Subst Const (domain :: gamma) (domain :: later)) := by
+  funext type index
+  exact (Subst.lift_comp_apply tau sigma index).symm
+
+theorem Subst.single_lift_eq_cons (argument : Term Const delta domain) (sigma : Subst Const gamma delta) :
+    (Subst.comp (Subst.single argument) (Subst.lift (σ := domain) sigma) : Subst Const (domain :: gamma) delta) =
+      (Subst.cons argument sigma : Subst Const (domain :: gamma) delta) := by
+  funext type index
+  cases index with
+  | vz => rfl
+  | vs prior => exact instantiate_weaken argument (sigma prior)
+
 /-- A finite typed assignment stores each variable image once. -/
 inductive Subst.Table (Const : Ty Base → Type v) (target : Ctx Base) : Ctx Base → Type (max u v) where
   | nil : Subst.Table Const target []

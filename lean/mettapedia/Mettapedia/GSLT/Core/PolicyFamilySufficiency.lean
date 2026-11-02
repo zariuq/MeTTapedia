@@ -106,15 +106,10 @@ theorem supportsReadout_iff_vectorFactors
     {Readout : Type uReadout} (readout : State -> Readout) :
     family.SupportsReadout readout <->
       NonFactorization.Factors readout family.vector := by
-  constructor
-  · rintro ⟨realization⟩
-    exact realization.vectorFactors
-  · rintro ⟨recover, recovers⟩
-    refine ⟨{
-      run := fun policy observed => recover observed policy
-      agrees := ?_ }⟩
-    intro policy state
-    exact congrFun (recovers state) policy
+  refine ⟨fun ⟨realization⟩ => realization.vectorFactors, ?_⟩
+  rintro ⟨recover, recovers⟩
+  exact ⟨⟨fun policy observed => recover observed policy,
+    fun policy state => congrFun (recovers state) policy⟩⟩
 
 /-- **Least-sufficient-readout universal property.**  The policy vector is
 itself sufficient, and every sufficient readout refines it by a fixed
@@ -125,18 +120,15 @@ theorem vector_isLeastSufficient
       forall (Readout : Type uReadout) (readout : State -> Readout),
         family.SupportsReadout readout ->
           NonFactorization.Factors readout family.vector := by
-  constructor
-  · exact ⟨family.vectorRealization⟩
-  · intro Readout readout supported
-    exact (family.supportsReadout_iff_vectorFactors readout).1 supported
+  exact ⟨⟨family.vectorRealization⟩, fun _ readout => (family.supportsReadout_iff_vectorFactors readout).mp⟩
 
 /-- The complete vector of a larger family refines the vector of every
 reindexed subfamily by coordinate projection. -/
 theorem vector_refines_reindexedVector
     (family : PolicyFamily.{uState, uPolicy, uResult} State)
     {RequestedPolicy : Type*} (select : RequestedPolicy -> family.Policy) :
-    NonFactorization.Factors family.vector (family.reindex select).vector := by
-  exact ⟨fun values policy => values (select policy), fun _ => rfl⟩
+    NonFactorization.Factors family.vector (family.reindex select).vector :=
+  ⟨fun values policy => values (select policy), fun _ => rfl⟩
 
 /-- Supporting a request is monotone under removal of policies. -/
 theorem supportsReadout_reindex
@@ -145,8 +137,7 @@ theorem supportsReadout_reindex
     {RequestedPolicy : Type*} (select : RequestedPolicy -> family.Policy)
     (supported : family.SupportsReadout readout) :
     (family.reindex select).SupportsReadout readout := by
-  obtain ⟨realization⟩ := supported
-  exact ⟨realization.reindex select⟩
+  exact supported.map (fun realization => realization.reindex select)
 
 /-- Equality of canonical vectors is exactly observational equivalence for
 every policy in the family. -/
@@ -154,13 +145,7 @@ theorem vector_eq_iff
     (family : PolicyFamily.{uState, uPolicy, uResult} State)
     (first second : State) :
     family.vector first = family.vector second <->
-      forall policy, family.decide policy first = family.decide policy second := by
-  constructor
-  · intro same policy
-    exact congrFun same policy
-  · intro same
-    funext policy
-    exact same policy
+      forall policy, family.decide policy first = family.decide policy second := funext_iff
 
 /-! ## Compression compatibility
 
@@ -194,26 +179,20 @@ def CompatibleReadout
 theorem policyEquivalent_refl
     (family : PolicyFamily.{uState, uPolicy, uResult} State)
     (state : State) :
-    family.PolicyEquivalent state state := by
-  intro policy
-  rfl
+    family.PolicyEquivalent state state := fun _ => rfl
 
 theorem PolicyEquivalent.symm
     {family : PolicyFamily.{uState, uPolicy, uResult} State}
     {first second : State}
     (equivalent : family.PolicyEquivalent first second) :
-    family.PolicyEquivalent second first := by
-  intro policy
-  exact (equivalent policy).symm
+    family.PolicyEquivalent second first := fun policy => (equivalent policy).symm
 
 theorem PolicyEquivalent.trans
     {family : PolicyFamily.{uState, uPolicy, uResult} State}
     {first second third : State}
     (earlier : family.PolicyEquivalent first second)
     (later : family.PolicyEquivalent second third) :
-    family.PolicyEquivalent first third := by
-  intro policy
-  exact (earlier policy).trans (later policy)
+    family.PolicyEquivalent first third := fun policy => (earlier policy).trans (later policy)
 
 /-- Compatibility is exactly constancy of the complete policy vector on the
 fibres of the readout. -/
@@ -222,13 +201,8 @@ theorem compatibleReadout_iff_vector_constantOnFibers
     {Readout : Type uReadout} (readout : State -> Readout) :
     family.CompatibleReadout readout <->
       NonFactorization.ConstantOnFibers readout family.vector := by
-  constructor
-  · intro compatible first second sameReadout
-    exact (family.vector_eq_iff first second).2
-      (compatible first second sameReadout)
-  · intro constant first second sameReadout
-    exact (family.vector_eq_iff first second).1
-      (constant first second sameReadout)
+  exact forall_congr' fun first => forall_congr' fun second =>
+    forall_congr' fun _ => (family.vector_eq_iff first second).symm
 
 /-- Every admitted executable readout is extensionally compatible.  This
 direction is constructive and is the safety theorem used by admission. -/
@@ -265,43 +239,25 @@ theorem supportsReadout_iff_compatible_of_section
     (representative : Readout -> State)
     (represents : Function.RightInverse representative readout) :
     family.SupportsReadout readout <-> family.CompatibleReadout readout := by
-  constructor
-  · exact family.supportsReadout_implies_compatible readout
-  · intro compatible
-    exact ⟨family.readoutRealizationOfSection readout representative
-      represents compatible⟩
+  exact ⟨family.supportsReadout_implies_compatible readout,
+    fun compatible => ⟨family.readoutRealizationOfSection readout representative represents compatible⟩⟩
 
 /-- **Exact extensional compression criterion.**  On a nonempty retained
 state space, a readout supports a complete policy family exactly when every
 pair it identifies is policy-equivalent.
 
-The reverse implication uses classical choice only to assign results to
-unreachable readout values.  A SemanticService admission record still carries an explicit
-`ReadoutRealization`; this theorem does not synthesize production code. -/
+The reverse implication uses classical choice for representatives and
+unused readout values. Admission still requires explicit `ReadoutRealization`
+data; the existential criterion does not synthesize production code. -/
 theorem supportsReadout_iff_compatible
     (family : PolicyFamily.{uState, uPolicy, uResult} State)
     [Nonempty State]
     {Readout : Type uReadout} (readout : State -> Readout) :
     family.SupportsReadout readout <-> family.CompatibleReadout readout := by
-  constructor
-  · exact family.supportsReadout_implies_compatible readout
-  · intro compatible
-    classical
-    let fallback : family.Vector :=
-      family.vector (Classical.choice (inferInstance : Nonempty State))
-    let recover : Readout -> family.Vector := fun observed =>
-      if witnessed : exists state, readout state = observed then
-        family.vector (Classical.choose witnessed)
-      else
-        fallback
-    rw [family.supportsReadout_iff_vectorFactors readout]
-    refine ⟨recover, fun state => ?_⟩
-    have witnessed : exists candidate, readout candidate = readout state :=
-      ⟨state, rfl⟩
-    simp only [recover, dif_pos witnessed]
-    exact (family.vector_eq_iff (Classical.choose witnessed) state).2
-      (compatible (Classical.choose witnessed) state
-        (Classical.choose_spec witnessed))
+  let : Nonempty family.Vector := Nonempty.map family.vector inferInstance
+  rw [family.supportsReadout_iff_vectorFactors,
+    family.compatibleReadout_iff_vector_constantOnFibers,
+    NonFactorization.factors_iff_constantOnFibers_of_nonempty]
 
 /-- One readout collision separated by one declared policy refutes support
 for the complete family. -/
@@ -314,13 +270,8 @@ theorem not_supportsReadout_of_policy_collision
       family.decide policy first ≠ family.decide policy second) :
     Not (family.SupportsReadout readout) := by
   rintro ⟨realization⟩
-  apply differentDecision
-  calc
-    family.decide policy first = realization.run policy (readout first) :=
-      (realization.agrees policy first).symm
-    _ = realization.run policy (readout second) :=
-      congrArg (realization.run policy) sameReadout
-    _ = family.decide policy second := realization.agrees policy second
+  exact differentDecision ((realization.agrees policy first).symm.trans
+    ((congrArg (realization.run policy) sameReadout).trans (realization.agrees policy second)))
 
 /-- Sufficiency is monotone in retained information: anything that can
 reconstruct a sufficient readout is itself sufficient. -/
@@ -330,16 +281,9 @@ theorem supportsReadout_of_refinement
     {fine : State -> Fine} {coarse : State -> Coarse}
     (refines : NonFactorization.Factors fine coarse)
     (coarseSupports : family.SupportsReadout coarse) :
-    family.SupportsReadout fine := by
-  rw [family.supportsReadout_iff_vectorFactors] at coarseSupports ⊢
-  obtain ⟨forget, forgets⟩ := refines
-  obtain ⟨recover, recovers⟩ := coarseSupports
-  refine ⟨recover ∘ forget, fun state => ?_⟩
-  simp only [Function.comp_apply]
-  calc
-    recover (forget (fine state)) = recover (coarse state) :=
-      congrArg recover (forgets state)
-    _ = family.vector state := recovers state
+    family.SupportsReadout fine :=
+  (family.supportsReadout_iff_vectorFactors fine).mpr
+    (refines.trans ((family.supportsReadout_iff_vectorFactors coarse).mp coarseSupports))
 
 end PolicyFamily
 
@@ -368,13 +312,7 @@ def bothAxes : PolicyFamily WorkSpan where
 /-- Retaining the complete state supports both declared coordinates. -/
 theorem identity_supports_bothAxes :
     bothAxes.SupportsReadout (id : WorkSpan -> WorkSpan) := by
-  refine ⟨{
-    run := fun
-      | .work => WorkSpan.work
-      | .span => WorkSpan.span
-    agrees := ?_ }⟩
-  intro policy state
-  cases policy <;> rfl
+  exact ⟨⟨bothAxes.decide, fun _ _ => rfl⟩⟩
 
 /-- Work alone cannot support the two-policy family because equal work can
 hide different span. -/
@@ -392,11 +330,7 @@ def workAxis : PolicyFamily WorkSpan :=
 
 theorem workOnly_supports_workAxis :
     workAxis.SupportsReadout WorkSpan.work := by
-  refine ⟨{
-    run := fun _ observed => observed
-    agrees := ?_ }⟩
-  intro policy state
-  rfl
+  exact ⟨⟨fun _ observed => observed, fun _ _ => rfl⟩⟩
 
 end PolicyFamilyCanary
 

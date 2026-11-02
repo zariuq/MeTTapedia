@@ -18,6 +18,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.Strategies.CallSharingVerdict
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Index.ScopedIdentityStatus
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Index.MetalogicCriteria
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Index.RegularIntegrationBuild
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.CompositionalFoundation
 import Mettapedia.Languages.MeTTa.PrimeComparisons.Dialects.ReductionCarrierCensus
 import Mettapedia.Languages.MeTTa.PrimeComparisons.Rho.ScopedRepresentation
 import Mettapedia.Languages.MeTTa.PrimeComparisons.Rho.ScopedServices
@@ -48,6 +49,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.ScopedComputa
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.ScopedComputationQualification
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.NativeConversionNeedConsumer
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Strategies.NativeSemanticWeights
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Strategies.CertifiedInferenceOperations
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.Bridges.Chaitin.Data
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.RecursiveSynthesisNative
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.ChoiceNonderivability
@@ -59,6 +61,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTran
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.SetReading
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.Qualification
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.NativeCheckedHypothesisCognitiveClient
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.AtomProcArgument
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.TypedEqualityEmbedding
 import Mettapedia.Logic.HOL.Embedding.RelativizedCarrier
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.SimpleFragment

@@ -81,6 +81,8 @@ scoped syntax ident : langDefSyntaxAtom
 scoped syntax ident ".*sep(" str ")" : langDefSyntaxAtom
 scoped syntax ident ".*delim(" str "," str ")" : langDefSyntaxAtom
 scoped syntax langDefSyntaxOp : langDefSyntaxAtom
+/-- A separator item on its own, `sep("|")`, as a constructor's syntax may list one between its parts. -/
+scoped syntax "sep(" str ")" : langDefSyntaxAtom
 
 scoped syntax ident : langDefSyntaxOpSource
 scoped syntax langDefSyntaxOp : langDefSyntaxOpSource
@@ -102,6 +104,7 @@ scoped syntax langDefPatternOp ".*map(" "|" ident,* "|" langDefPattern ")" : lan
 
 scoped syntax "#" num : langDefPattern
 scoped syntax str : langDefPattern
+scoped syntax "?" str : langDefPattern
 scoped syntax ident : langDefPattern
 scoped syntax langDefPatternOp : langDefPattern
 scoped syntax "..." ident : langDefPattern
@@ -121,6 +124,11 @@ scoped syntax "^" ident "." langDefPattern : langDefPattern
 scoped syntax "^" ident ".(" langDefPattern ")" : langDefPattern
 scoped syntax "^" ident "." "(" langDefPattern ")" : langDefPattern
 scoped syntax "^" ident : langDefPattern
+/-- An anonymous binder, `^.p`, whose body refers to its bound variable by index, `#0`. -/
+scoped syntax "^" "." langDefPattern : langDefPattern
+scoped syntax "^" ".(" langDefPattern ")" : langDefPattern
+/-- The substitution of `r` for the bound variable `#0` of the open body `b`, `[r/#0]b`. -/
+scoped syntax "[" langDefPattern "/" "#" num "]" langDefPattern : langDefPattern
 scoped syntax "^[" ident,* "]" "." langDefPattern : langDefPattern
 scoped syntax "^[" ident,* "]" ".(" langDefPattern ")" : langDefPattern
 scoped syntax "^[" ident,* "]" "." "(" langDefPattern ")" : langDefPattern
@@ -155,6 +163,10 @@ scoped syntax ident "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![
 scoped syntax str "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![" "wrapped" "]" ";" : langDefTermDecl
 scoped syntax ident "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![" langDefEvalPolicy "]" "![" "wrapped" "]" ";" : langDefTermDecl
 scoped syntax str "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![" langDefEvalPolicy "]" "![" "wrapped" "]" ";" : langDefTermDecl
+/-- A collection constructor's algebra: `![flatten]`, `![flatten, unit "Nil"]`, `![unit "Nil"]`, or `![]` for neither
+law; and its representation declared bare, `![bare]` or `![bare, flatten, unit "Nil"]`. -/
+scoped syntax ident "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![" ident,* (str)? "]" ";" : langDefTermDecl
+scoped syntax str "." langDefTermParam,* "|-" langDefSyntaxAtom* ":" ident "![" ident,* (str)? "]" ";" : langDefTermDecl
 
 /-- An item of a rule row: a terminal, or a category. -/
 scoped syntax str : langDefRuleItem
@@ -330,12 +342,17 @@ private def expandTermParam : TSyntax `langDefTermParam → MacroM (TSyntax `ter
           $(mkStrTerm (coreName body.getId))
           $ty')
   | `(langDefTermParam| ^ $binderAndBody:ident : [ $ty:langDefTypeExpr ]) => do
-      let (binderName, bodyName) ← splitCompactBinderIdent binderAndBody.getId
       let ty' ← expandTypeExpr ty
-      `(TermParam.abstractionWithBinder
-          $(mkStrTerm binderName)
-          $(mkStrTerm bodyName)
-          $ty')
+      match binderAndBody.getId with
+      | .str .anonymous bodyName =>
+          -- `^body:[T]`: an abstraction whose binder has no name.
+          `(TermParam.abstraction $(mkStrTerm bodyName) $ty')
+      | _ =>
+          let (binderName, bodyName) ← splitCompactBinderIdent binderAndBody.getId
+          `(TermParam.abstractionWithBinder
+              $(mkStrTerm binderName)
+              $(mkStrTerm bodyName)
+              $ty')
   | `(langDefTermParam| ^[ $binders:ident,* ] . $body:ident : [ $ty:langDefTypeExpr ]) => do
       let binderTerms ← binders.getElems.toList.mapM (fun binder =>
         pure (mkStrTerm (coreName binder.getId)))
@@ -424,6 +441,8 @@ private partial def expandSyntaxAtom : TSyntax `langDefSyntaxAtom → MacroM (Ar
       let op' ← expandSyntaxOp op
       let item ← `(SyntaxItem.op $op')
       pure #[item]
+  | `(langDefSyntaxAtom| sep($separator:str)) => do
+      pure #[← `(SyntaxItem.separator $separator)]
   | stx => Macro.throwErrorAt stx "unsupported syntax atom"
 
 end
@@ -524,6 +543,9 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
   | `(langDefPattern| $nm:str) => do
       let term ← `(Pattern.apply $nm [])
       pure (mkExpandedPattern term (renderSourceStringLit nm.getString))
+  | `(langDefPattern| ? $nm:str) => do
+      let term ← `(Pattern.fvar $nm)
+      pure (mkExpandedPattern term ("? " ++ renderSourceStringLit nm.getString))
   | `(langDefPattern| $ctor:ident $args*) => do
       let argSyntax ← args.toList.mapM (fun arg => splitPrefixPatternArgs ⟨arg⟩)
       let args' ← (flattenLists argSyntax).mapM expandPatternInfo
@@ -616,6 +638,18 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
       let binderName := mkStrTerm (coreName binder.getId)
       let term ← `(Pattern.lambda (some $binderName) $bodyTerm)
       pure (mkExpandedPattern term s!"^{binder.getId.toString}.({body'.sourceText})")
+  | `(langDefPattern| ^ . $body:langDefPattern)
+  | `(langDefPattern| ^ .( $body:langDefPattern )) => do
+      let body' ← expandPatternInfo body
+      let term ← `(Pattern.lambda none $(body'.term))
+      pure (mkExpandedPattern term s!"^.({body'.sourceText})")
+  | `(langDefPattern| [ $replacement:langDefPattern / # $index:num ] $body:langDefPattern) => do
+      unless index.getNat == 0 do
+        Macro.throwErrorAt index "a substitution replaces the bound variable #0 of its body"
+      let body' ← expandPatternInfo body
+      let replacement' ← expandPatternInfo replacement
+      let term ← `(Pattern.subst $(body'.term) $(replacement'.term))
+      pure (mkExpandedPattern term s!"[{replacement'.sourceText}/#0]{body'.sourceText}")
   | `(langDefPattern| ^ $binderAndBody:ident) => do
       let (binderName, bodyName) ← splitCompactBinderIdent binderAndBody.getId
       let bodyTerm ← `(Pattern.fvar $(mkStrTerm bodyName))
@@ -859,7 +893,32 @@ private def expandRuleDecl (label : String) (category : TSyntax `ident) (items :
        params := $paramsTerm, syntaxPattern := $synsTerm, evalPolicy? := none,
        algebra? := none, collectionRepresentation := .bare } : GrammarRule))
 
+/-- A collection constructor's algebra from its words: `flatten`, and `unit` with the unit's label. The word `bare`
+declares the constructor's representation (`ModuleSource.Block.terms`); with no law word it states no algebra. -/
+private def expandAlgebra (words : Array (TSyntax `ident)) (unit : Option (TSyntax `str)) :
+    MacroM (TSyntax `term) := do
+  let names := words.toList.map (·.getId.toString)
+  for word in words do
+    unless ["flatten", "unit", "bare"].contains word.getId.toString do
+      Macro.throwErrorAt word "a collection constructor's words are `bare`, `flatten` and `unit \"label\"`"
+  if names.contains "bare" && !names.contains "flatten" && !names.contains "unit" && unit.isNone then
+    return ← `(none)
+  let flatten := names.contains "flatten"
+  match names.contains "unit", unit with
+  | true, some label => `(some ({ flatten := $(quote flatten), unit := some $label } : CollectionAlgebra))
+  | false, none => `(some ({ flatten := $(quote flatten), unit := none } : CollectionAlgebra))
+  | true, none => Macro.throwError "`unit` names the unit's label: `unit \"label\"`"
+  | false, some label => Macro.throwErrorAt label "a label follows `unit`"
+
 private def expandTermDecl : TSyntax `langDefTermDecl → MacroM (TSyntax `term)
+  | `(langDefTermDecl| $label:str . $params:langDefTermParam,* |- $syns:langDefSyntaxAtom* : $category:ident
+      ![ $words:ident,* $[$unit:str]? ] ; ) => do
+      let row ← expandNamedTermDecl label.getString category params.getElems syns none
+      `(({ $row with algebra? := $(← expandAlgebra words.getElems unit) } : GrammarRule))
+  | `(langDefTermDecl| $label:ident . $params:langDefTermParam,* |- $syns:langDefSyntaxAtom* : $category:ident
+      ![ $words:ident,* $[$unit:str]? ] ; ) => do
+      let row ← expandNamedTermDecl (coreName label.getId) category params.getElems syns none
+      `(({ $row with algebra? := $(← expandAlgebra words.getElems unit) } : GrammarRule))
   | `(langDefTermDecl| $label:str . $params:langDefTermParam,* |- $syns:langDefSyntaxAtom* : $category:ident ![ wrapped ] ; ) => do
       let row ← expandNamedTermDecl label.getString category params.getElems syns none
       `(({ $row with collectionRepresentation := .wrapped } : GrammarRule))

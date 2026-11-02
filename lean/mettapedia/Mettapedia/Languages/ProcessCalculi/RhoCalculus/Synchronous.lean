@@ -310,7 +310,7 @@ def rhoSyncInteractionCut : InteractionCutPresentation rhoSyncIGSLT where
   sourceShape :=
     { core := rhoSyncCommRewrite.left
       coreShape :=
-        (CutSourceShape.collection [] (some "rest") rfl :
+        (CutSourceShape.collection [] (some "rest") .itself .itself rfl :
           CutSourceShape rhoSyncCoreContact
             rhoSyncProgramIntroduction.schemaTerm
             rhoSyncEnvironmentIntroduction.schemaTerm

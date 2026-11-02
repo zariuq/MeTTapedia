@@ -117,7 +117,7 @@ theorem calculator_plainEquations : PlainEquations calculator := by
   intro equation membership
   have listed : equation ∈ [addZero, addSucc, mulZero, mulSucc] := membership
   simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
-  rcases listed with rfl | rfl | rfl | rfl <;> exact ⟨rfl, by decide, by decide⟩
+  rcases listed with rfl | rfl | rfl | rfl <;> exact ⟨rfl, by decide, by decide, by decide⟩
 
 /-- Each law has sides of equal value under every substitution. -/
 theorem laws_preserve_value :
@@ -156,7 +156,7 @@ theorem value_eq_of_equationEquiv {left right : Pattern}
 /-- `0 + n = n`, as a step from any pattern of that form. -/
 theorem addZero_step (right : Pattern) :
     EquationContextStep base calculator (.apply "Add" [.apply "Zero" [], right]) right := by
-  refine equationContextStep_of_forward (equation := addZero) (List.Mem.head _) rfl
+  refine equationContextStep_of_forward (equation := addZero) (List.Mem.head _) (by decide) rfl
     (bindings := [("n", right)]) ?_ (by simp [addZero, applyBindings])
   apply matchRel_complete
   exact MatchRel.apply
@@ -171,7 +171,7 @@ theorem addSucc_step (left right : Pattern) :
       (.apply "Add" [.apply "Succ" [left], right])
       (.apply "Succ" [.apply "Add" [left, right]]) := by
   refine equationContextStep_of_forward (equation := addSucc)
-    (List.Mem.tail _ (List.Mem.head _)) rfl
+    (List.Mem.tail _ (List.Mem.head _)) (by decide) rfl
     (bindings := [("n", right), ("m", left)]) ?_ (by simp [addSucc, applyBindings])
   apply matchRel_complete
   exact MatchRel.apply
@@ -187,7 +187,7 @@ theorem mulZero_step (right : Pattern) :
     EquationContextStep base calculator (.apply "Mul" [.apply "Zero" [], right])
       (.apply "Zero" []) := by
   refine equationContextStep_of_forward (equation := mulZero)
-    (List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _))) rfl
+    (List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _))) (by decide) rfl
     (bindings := [("n", right)]) ?_ (by simp [mulZero, applyBindings])
   apply matchRel_complete
   exact MatchRel.apply
@@ -202,7 +202,7 @@ theorem mulSucc_step (left right : Pattern) :
       (.apply "Mul" [.apply "Succ" [left], right])
       (.apply "Add" [right, .apply "Mul" [left, right]]) := by
   refine equationContextStep_of_forward (equation := mulSucc)
-    (List.Mem.tail _ (List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _)))) rfl
+    (List.Mem.tail _ (List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _)))) (by decide) rfl
     (bindings := [("n", right), ("m", left)]) ?_ (by simp [mulSucc, applyBindings])
   apply matchRel_complete
   exact MatchRel.apply

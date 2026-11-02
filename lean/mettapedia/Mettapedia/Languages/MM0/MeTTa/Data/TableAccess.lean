@@ -174,10 +174,14 @@ theorem table_body_returns (state : State) (handle : Handle) (entries : List Ato
     apply let_returns program (tableEnvironment handle index)
       (("found", .expression (indexedQuery entries index)) :: tableEnvironment handle index)
       state state state (.var "found") _ _ (.expression (indexedQuery entries index)) _
-    · apply match_collapse_returns program (tableEnvironment handle index) state state "space" _ _
-        (indexedQuery entries index)
-      simp [tableEnvironment, environment, applySubst, applySubst.applySubstList,
-        Subst.lookup, allocated, Store.indexedQuery]
+    · have collected := match_collapse_returns program (tableEnvironment handle index) state "space"
+        (.expression [.var "key", .var "value"]) (.var "value") entries
+        (by simp [tableEnvironment, environment, applySubst, Subst.lookup, allocated])
+        (fun bound => applySubst bound (.var "value"))
+        (fun _ bound _ => variable_returns program bound state "value")
+      rwa [ListAccess.keyed_rows_indexedQuery (tableEnvironment handle index) "key" index entries
+        (by simp [tableEnvironment, environment, Subst.lookup])
+        (by simp [tableEnvironment, environment, Subst.lookup])] at collected
     · simp [SpaceSemantics.matchValue, matchAtom, tableEnvironment, environment, Subst.lookup]
     · exact found_body_returns state handle index (indexedQuery entries index)
 

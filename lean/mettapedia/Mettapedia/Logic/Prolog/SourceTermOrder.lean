@@ -130,6 +130,11 @@ private def rootCell (heap : Heap Sigma.scoped) (address : Addr) :
       | none => .error (.memory (.invalidAddress root))
 
 private def compareConstants : Constant → Constant → Except Error Ordering
+  | .nil, .nil => .ok .eq
+  | .nil, .atom _ => .ok .lt
+  | .atom _, .nil => .ok .gt
+  | .nil, .integer _ | .nil, .floatBits _ | .nil, .string _ => .ok .gt
+  | .integer _, .nil | .floatBits _, .nil | .string _, .nil => .ok .lt
   | .integer left, .integer right => .ok (compareInt left right)
   | .floatBits left, .floatBits right => .ok (compareFloatBits left right)
   | .floatBits left, .integer right => .ok (compareFloatInt left right)

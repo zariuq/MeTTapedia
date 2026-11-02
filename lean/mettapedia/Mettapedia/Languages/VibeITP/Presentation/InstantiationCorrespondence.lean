@@ -238,6 +238,21 @@ private theorem app_processed (table : SignatureTable) (F : Spec.SymId) (arity o
   exact Evaluates.call (by simp [Special])
     (.cons (.variable (by rfl)) (.cons (.variable (by rfl)) .nil)) (symbol_applies symbol F)
 
+theorem instValue_computes (table : SignatureTable) (arity : Nat) (terms : List Spec.Term)
+    (shifted : Option Spec.Term) :
+    Applies P H "vibe:inst-value"
+      [encodeResult shifted, encodeTable table, natural arity, .list (encodeTerms terms)]
+      (encodeResult (shifted.bind (fun value => Spec.substBVars (signatureOf table) arity terms value 0))) := by
+  cases shifted with
+  | none => exact ⟨1, rfl⟩
+  | some value =>
+      refine Applies.equation (equation := A[24])
+        (environment := [("value", encode value), ("table", encodeTable table),
+          ("arity", natural arity), ("arguments", .list (encodeTerms terms))]) (by rfl) (by rfl) ?_
+      exact Evaluates.call (by simp [Special])
+        (.cons (.variable (by rfl)) (.cons (.variable (by rfl)) (.cons (.variable (by rfl))
+          (.cons (.variable (by rfl)) (.cons (.literal _ _ _ _) .nil))))) (subst_applies table arity terms value 0)
+
 private theorem app_target (table : SignatureTable) (F : Spec.SymId) (arity offset : Nat)
     (value : Spec.Term) (symbol : Spec.SymId) (terms : List Spec.Term) :
     Applies P H "vibe:inst-head" [.sym "True", encodeTable table, encodeSymbol F, natural arity,
@@ -254,15 +269,7 @@ private theorem app_target (table : SignatureTable) (F : Spec.SymId) (arity offs
   · exact Evaluates.call (by simp [Special])
       (.cons (.variable (by rfl)) (.cons (.variable (by rfl))
         (.cons (.variable (by rfl)) (.cons (.variable (by rfl)) .nil)))) (shift_applies table offset arity value)
-  · cases foundShift : Spec.shift (signatureOf table) offset arity value with
-    | none => exact ⟨1, rfl⟩
-    | some shifted =>
-        refine Applies.equation (equation := A[24])
-          (environment := [("value", encode shifted), ("table", encodeTable table),
-            ("arity", natural arity), ("arguments", .list (encodeTerms terms))]) (by rfl) (by rfl) ?_
-        exact Evaluates.call (by simp [Special])
-          (.cons (.variable (by rfl)) (.cons (.variable (by rfl)) (.cons (.variable (by rfl))
-            (.cons (.variable (by rfl)) (.cons (.literal _ _ _ _) .nil))))) (subst_applies table arity terms shifted 0)
+  · exact instValue_computes table arity terms _
 
 private theorem app_result (table : SignatureTable) (F : Spec.SymId) (arity offset : Nat)
     (value : Spec.Term) (symbol : Spec.SymId) (terms : List Spec.Term) (processed : Option (List Spec.Term))
@@ -515,7 +522,7 @@ private theorem statement_depth (table : SignatureTable) (F : Spec.SymId) (arity
   exact Evaluates.call (by simp [Special])
     (.cons (.variable (by rfl)) (.cons (.variable (by rfl)) .nil)) (depth_applies table value)
 
-private theorem statement_result (table : SignatureTable) (result : Option Spec.Term) :
+theorem statement_result (table : SignatureTable) (result : Option Spec.Term) :
     Applies P H "vibe:inst-statement-result" [encodeResult result, encodeTable table]
       (encodeResult (result.bind (fun output =>
         if Spec.depth (signatureOf table) output = 0 then some output else none))) := by

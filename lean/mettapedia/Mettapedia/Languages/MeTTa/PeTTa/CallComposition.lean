@@ -86,10 +86,10 @@ theorem completed_empty_sequence_frames_reflect (program : Program) (fuel : Nat)
             exact ⟨0, by rw [sameSource]; simpa only [same.1, same.2.1, same.2.2.1, same.2.2.2] using
               run_finished program 0 source.state values source.input source.output⟩
 
-private theorem captured_call_stage_path (program : Program) (caller : Subst)
+private theorem captured_call_stage_path_of_shape (program : Program) (caller : Subst)
     (state : State) (head : String) (arguments : List Atom) (fuel : Nat)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (notControl : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false)
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true) :
     run program (fuel + argumentCaptureCost program head 0 arguments.length + 1)
@@ -99,21 +99,20 @@ private theorem captured_call_stage_path (program : Program) (caller : Subst)
         frames := List.replicate arguments.length (.sequence [] [])} := by
   have entered : step program
       {state, control := .evaluate caller (.expression (.symbol head :: arguments))} =
-      some {state, control := .arguments caller (.function head) arguments [] 0} := by
-    simp at ordinary
-    rcases ordinary with ⟨notLet, notLetStar, notCase, notIf, notCollapse⟩
-    simp only [step]
-    split <;> simp_all <;> grind
+      some {state, control := .arguments caller (.function head) arguments [] 0} :=
+    transition_step (.call_enter rfl notControl dispatch)
   rw [run_succ_of_step program _ _ _ entered]
   simpa using captured_arguments_stage program caller state head arguments [] 0 fuel []
     (by simpa using admitted)
 
 /-- The actual completed function stage is independent of the caller's
-bindings and physical argument cursor after all values have been obtained. -/
-theorem captured_function_arguments_returns (program : Program) (first caller : Subst)
+bindings and physical argument cursor after all values have been obtained. The
+application must not be control syntax; `captured_function_arguments_returns`
+states this by the head alone. -/
+theorem captured_function_arguments_returns_of_shape (program : Program) (first caller : Subst)
     (before after : State) (head : String) (arguments : List Atom) (index : Nat) (answer : Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (notControl : DeclarativeSpec.controlForm (.expression (.symbol head :: arguments)) = false)
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (returned : PureReturns program first before (.expression (.symbol head :: arguments)) after answer) :
@@ -125,7 +124,8 @@ theorem captured_function_arguments_returns (program : Program) (first caller : 
     (argumentCaptureCost program head 0 arguments.length + 1) _ after [answer] [] [] completed
   rw [show fuel + (argumentCaptureCost program head 0 arguments.length + 1) =
       fuel + argumentCaptureCost program head 0 arguments.length + 1 by omega,
-    captured_call_stage_path program first before head arguments fuel dispatch ordinary admitted] at enough
+    captured_call_stage_path_of_shape program first before head arguments fuel dispatch notControl
+      admitted] at enough
   obtain ⟨stageFuel, computed⟩ := completed_empty_sequence_frames_reflect program fuel
     {state := before, control := .arguments first (.function head) [] (arguments.map (applySubst first)) arguments.length}
     arguments.length after [answer] [] [] enough
@@ -142,5 +142,21 @@ theorem captured_function_arguments_returns (program : Program) (first caller : 
       have sameResult := (run_succ_of_step program stageFuel initial next advanced).symm.trans increased
       exact completed_run_has_path program (stageFuel + 1) target after [answer] [] []
         ((run_succ_of_step program stageFuel target next targetStep).trans sameResult)
+
+/-- The completed function stage of an application whose head is no special
+form. -/
+theorem captured_function_arguments_returns (program : Program) (first caller : Subst)
+    (before after : State) (head : String) (arguments : List Atom) (index : Nat) (answer : Atom)
+    (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
+    (ordinary : head ∉
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+    (admitted : ∀ offset argument, arguments[offset]? = some argument →
+      argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
+    (returned : PureReturns program first before (.expression (.symbol head :: arguments)) after answer) :
+    (theory program).MultiStep
+      {state := before, control := .arguments caller (.function head) [] (arguments.map (applySubst first)) index}
+      (finished after [answer] [] []) :=
+  captured_function_arguments_returns_of_shape program first caller before after head arguments index
+    answer dispatch (controlForm_of_ordinary ordinary) admitted returned
 
 end Mettapedia.Languages.MeTTa.PeTTa.Eval

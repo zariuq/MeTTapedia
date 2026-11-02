@@ -36,6 +36,9 @@ structure LexicalMap {Head' : Type} (source : LexicalReading Head Base Const)
     source.constCode? name = some ⟨type, code⟩ → target.constCode? name = some ⟨type, code⟩
   heads : ∀ head type (code : HOL.ClosedTerm Const type),
     source.headCode? head = some ⟨type, code⟩ → target.headCode? (headMap head) = some ⟨type, code⟩
+  structural : ∀ operator result (code : HOL.ClosedTerm Const (operator.codeType result)),
+    source.structuralCode? operator = some ⟨result, code⟩ →
+      target.structuralCode? operator = some ⟨result, code⟩
 
 theorem Reads.mapLexical {Head' : Type} {source : LexicalReading Head Base Const}
     {target : LexicalReading Head' Base Const} {headMap : Head → Head'}
@@ -50,6 +53,14 @@ theorem Reads.mapLexical {Head' : Type} {source : LexicalReading Head Base Const
   | application _ _ first second => exact .application first second
   | abstraction _ _ first second => exact .abstraction first second
   | product _ _ first second => exact .product first second
+  | dependentSum lookup _ _ domain family =>
+      exact .dependentSum (mapping.structural _ _ _ lookup) domain family
+  | identity lookup _ _ _ domain left right =>
+      exact .identity (mapping.structural _ _ _ lookup) domain left right
+  | pair lookup _ _ left right => exact .pair (mapping.structural _ _ _ lookup) left right
+  | first lookup _ argument => exact .first (mapping.structural _ _ _ lookup) argument
+  | second lookup _ argument => exact .second (mapping.structural _ _ _ lookup) argument
+  | reflexivity lookup _ argument => exact .reflexivity (mapping.structural _ _ _ lookup) argument
 
 theorem LexicalMap.carrier_eq_of_collision {Head' : Type}
     {source : LexicalReading Head Base Const} {target : LexicalReading Head' Base Const}

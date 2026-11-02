@@ -43,8 +43,8 @@ theorem instrumentBody_invariants (p : Protocol) (checks : List Validator)
     lower p body = some target.erase ∧ Disciplined last target := by
   induction body generalizing last target with
   | ret outcome =>
-      have erased := wrap_erase checks (allOwnerRequests p []) _ target compiled
-      refine ⟨?_, wrap_disciplined checks (allOwnerRequests p []) last _ target compiled ?_⟩
+      have erased := wrap_erase checks (factRequests (exitRequires p outcome) ++ allOwnerRequests p []) _ target compiled
+      refine ⟨?_, wrap_disciplined checks (factRequests (exitRequires p outcome) ++ allOwnerRequests p []) last _ target compiled ?_⟩
       · rw [erased]
         by_cases h : outcome = .declined <;> simp [lower, h, IStmt.erase]
       · by_cases h : outcome = .declined
@@ -587,7 +587,7 @@ theorem PlanValid.normal_safe {World : Type} {plan : RecordedPlan}
     (normal : (eval mode host validator plan.target world replies counters).status = .core status) :
     ∃ last, Trace plan.protocol (initial plan.protocol)
       (coreCalls (eval mode host validator plan.target world replies counters).observations) last ∧
-        SafeStop last status := by
+        SafeStop plan.protocol last status := by
   obtain ⟨last, trace, safe⟩ := lower_target_safe valid.source.body plan.target.erase
     (instrument_erases plan.protocol plan.checks plan.target valid.target) host world replies
   rw [eval_normal_refines mode host validator plan.target world replies counters status normal]
@@ -605,7 +605,7 @@ theorem PlanValid.decline_no_publication {World : Type} {plan : RecordedPlan}
   obtain ⟨last, trace, safe⟩ := valid.normal_safe mode host validator world replies counters
     (.returned .declined) declined
   cases safe with
-  | returned _ _ clean =>
+  | returned _ _ clean _ =>
       exact trace.no_irreversible_of_false valid.source.metadata (clean rfl)
 
 end Mettapedia.GSLT.LanguageDef.ExecutableProtocol.Instrumentation

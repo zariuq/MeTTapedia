@@ -1,0 +1,32 @@
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.SourceCompositionalControls
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.SourceLexicalControls
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.SourceContextCompilation
+import Mettapedia.Machines.BranchLocalNeed.CallTimeChoiceContextCompilationControls
+import Mettapedia.Machines.ScopedCommitCursorControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FormationResourcesInformation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunicationProfileControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OrderedMailboxControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ResourcePublicationControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualProcessCutControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualUniformPromotionRegistryControls
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Computation.ScopedNeedRecordedExecutionControls
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.ScopedSourceExecution
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.OpenAliasBoundary
+import Mettapedia.Machines.BranchLocalNeed.OrderedPathsControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualExecutionCommutationCoverageControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualBindingPermissionFiringControls
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.PolarizedConstraintControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSelectedControls
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.PolarizedScopedInstantiationControls
+
+/-!
+# Compositional tests of the concurrent constraint multiset candidate
+
+The independent source judgments remain in their original owners. These
+adapters preserve their declared observations and retain their negative
+controls. The call-time-choice, named-scope and finite-search profiles are
+not identified as one evaluator. Common-frame guard inspection does not
+reorder execution. Actual producer swaps additionally carry an explicit
+fresh-name correspondence; binding grants protect joint possibilities.
+The native publication obligations remain explicit.
+-/

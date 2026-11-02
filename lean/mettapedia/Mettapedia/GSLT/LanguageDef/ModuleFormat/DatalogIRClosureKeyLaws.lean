@@ -12,7 +12,6 @@ namespace Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIR.ClosureMachine
 
 open Mettapedia.Languages.Datalog
 open Mettapedia.OSLF.MeTTaIL Syntax RuleBinding
-open Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL
 
 theorem grounding_fields (names : List String) (assignment : ScopedRuleMatching.Assignment)
     (values : List (String × Pattern)) (read : grounding? names assignment = some values) :

@@ -75,9 +75,9 @@ def RhoCostEquationInstanceOrigin {redex contractum : Pattern}
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum) :
     Type :=
   match witness with
-  | .forward _ equation _ _ _ _ _ =>
+  | .forward _ equation _ _ _ _ _ _ =>
       RhoCostEquationDeclarationOrigin equation.1
-  | .reverse _ equation _ _ _ _ _ =>
+  | .reverse _ equation _ _ _ _ _ _ =>
       RhoCostEquationDeclarationOrigin equation.1
 
 /-- Static colour retained by the exact declaration origin of a generated
@@ -88,9 +88,9 @@ def RhoCostEquationInstanceOrigin.color
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum} :
     RhoCostEquationInstanceOrigin witness → CostStaticColor :=
   match witness with
-  | .forward _ _ _ _ _ _ _ => fun origin =>
+  | .forward _ _ _ _ _ _ _ _ => fun origin =>
       RhoCostEquationDeclarationOrigin.color origin
-  | .reverse _ _ _ _ _ _ _ => fun origin =>
+  | .reverse _ _ _ _ _ _ _ _ => fun origin =>
       RhoCostEquationDeclarationOrigin.color origin
 
 /-- Every proof-relevant generated rho equation instance selects exactly one
@@ -101,10 +101,10 @@ theorem nonempty_rhoCostEquationInstanceOrigin
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum) :
     Nonempty (RhoCostEquationInstanceOrigin witness) := by
   cases witness with
-  | forward fuel equation initialBindings finalBindings matched premises
+  | forward fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       exact nonempty_rhoCostEquationDeclarationOrigin_of_mem equation.2
-  | reverse fuel equation initialBindings finalBindings matched premises
+  | reverse fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       exact nonempty_rhoCostEquationDeclarationOrigin_of_mem equation.2
 
@@ -153,9 +153,9 @@ def RhoCostAuthoredGeneratorOrigin.color
   match witness with
   | .core (.equation _ instanceWitness) =>
       match instanceWitness with
-      | .forward _ _ _ _ _ _ _ => fun origin =>
+      | .forward _ _ _ _ _ _ _ _ => fun origin =>
           some (RhoCostEquationDeclarationOrigin.color origin)
-      | .reverse _ _ _ _ _ _ _ => fun origin =>
+      | .reverse _ _ _ _ _ _ _ _ => fun origin =>
           some (RhoCostEquationDeclarationOrigin.color origin)
   | .core (.derived _ _) => fun _ => none
   | .reflective _ _ _ => fun origin =>
@@ -197,7 +197,7 @@ theorem nonempty_rhoCostTypedGeneratorOccurrence
     Nonempty (RhoCostTypedGeneratorOccurrence generator) := by
   obtain ⟨witness, erasesTo⟩ :=
     ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.exists_erasing_to
-      generator
+      (costWholeLanguage_readsRaw rhoCIGSLT.toWrappableIGSLT) generator
   obtain ⟨origin⟩ := nonempty_rhoCostAuthoredGeneratorOrigin witness
   exact ⟨⟨witness, erasesTo, origin⟩⟩
 

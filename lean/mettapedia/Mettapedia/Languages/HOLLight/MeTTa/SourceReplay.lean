@@ -111,7 +111,10 @@ private theorem step_capture_stage (bindings : Subst) (state : State) (fuel : Na
   have raw2 : argumentIsRaw program "hol-light:step" 2 = false := by decide
   have ordinary : ioHead "hol-light:step" = false := by decide
   have authored : StdLib.known "hol-light:step" = false := by decide
-  simp [run, step, dispatched, raw0, raw1, raw2, ordinary, authored]
+  have saturated : 3 ∈ arities program "hol-light:step" := by decide
+  simp [run, step, dispatched, raw0, raw1, raw2, ordinary, authored, -application,
+    application_saturated (values := [applySubst bindings (.var "state"),
+      applySubst bindings (.var "key"), applySubst bindings (.var "request")]) saturated]
 
 private theorem step_capture_returns (first second : Subst) (state : State) (answer : Atom)
     (same : [applySubst first (.var "state"), applySubst first (.var "key"),

@@ -66,22 +66,27 @@ theorem equationInstance_canonicalize_eq
     Canonical.canonicalize source = Canonical.canonicalize target := by
   have sourceInstance : EquationInstanceAt defaultBasePremises rhoCalc fuel source target := by
     cases witness with
-    | forward member matched premises same =>
+    | forward member raw matched premises same =>
       have oldMember := equations _ member
       have empty : _ := List.mem_singleton.mp oldMember
       have premiseShape : _ := congrArg Equation.premises empty
       change _ = [] at premiseShape
       rw [premiseShape] at premises
       cases premises
-      exact .forward oldMember matched (by rw [premiseShape]; exact .nil _) same
-    | reverse member matched premises same =>
+      exact .forward oldMember raw matched (by rw [premiseShape]; exact .nil _) same
+    | reverse member raw matched premises same =>
       have oldMember := equations _ member
       have empty : _ := List.mem_singleton.mp oldMember
       have premiseShape : _ := congrArg Equation.premises empty
       change _ = [] at premiseShape
       rw [premiseShape] at premises
       cases premises
-      exact .reverse oldMember matched (by rw [premiseShape]; exact .nil _) same
+      exact .reverse oldMember raw matched (by rw [premiseShape]; exact .nil _) same
+    | declared member notRaw _ =>
+      have oldMember := equations _ member
+      rw [List.mem_singleton.mp oldMember, Mettapedia.GSLT.LanguageDef.EquationSemantics.readsRaw_of_none rfl]
+        at notRaw
+      cases notRaw
   exact rhoEquationContextStep_canonicalize_eq
     (.core (.inContext .hole (Or.inl ⟨fuel, sourceInstance⟩)))
 

@@ -66,6 +66,8 @@ def faultJson : Effects.Fault → Json
   | .missingCell name => Json.mkObj [("kind", .str "missingCell"), ("name", .str name)]
   | .invalidArguments head => Json.mkObj [("kind", .str "invalidArguments"), ("head", .str head)]
   | .zeroDivisor => Json.mkObj [("kind", .str "zeroDivisor")]
+  | .overApplication head arities count => Json.mkObj [("kind", .str "overApplication"),
+      ("head", .str head), ("arities", toJson arities), ("count", toJson count)]
 
 def casesJson (cases : SpaceSemantics.Cases) : Json :=
   toJson (cases.map fun (pattern, body) =>

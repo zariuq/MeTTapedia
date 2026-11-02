@@ -12,6 +12,7 @@ import Mettapedia.OSLF.NativeTypes.GeneratedLogic.ContextLabels
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Substitution
 import Mettapedia.GSLT.LanguageDef.ModuleSource.Commands
 import Mettapedia.OSLF.MeTTaIL.CoreLanguageDef
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.CCSRecPartnerAdequacy
 
 /-!
 # The command-line front door: queries as text
@@ -414,14 +415,46 @@ def Settings.read (words : List String) : Except String Settings :=
       | none => .error s!"not a hint bound: {value}"
     | _ => .error s!"unknown setting {word}"
 
-/-- The core of a loaded module's language. -/
-def coreOf (loaded : Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error LanguageDef) : Except String LanguageDef :=
+/-- Whether a row writes a binder with a name. -/
+def namesBinders (left right : Pattern) (premises : List Premise) : Bool :=
+  !(left.hasCanonicalBinderMetadata && right.hasCanonicalBinderMetadata &&
+    (premises.flatMap LanguageDef.premisePatterns).all Pattern.hasCanonicalBinderMetadata)
+
+/-- **A language as its rows are written**: a rule or equation with named binders means its core reduction, in which
+binder names decide each metavariable's dependencies and arguments (`CoreReduction.reduceRule`); a rule or equation
+with anonymous binders means itself. -/
+def directReading (language : LanguageDef) : Except Mettapedia.OSLF.MeTTaIL.CoreReduction.Failure LanguageDef := do
+  let grammar := Mettapedia.OSLF.MeTTaIL.CoreReduction.canonicalGrammar language
+  let equations ← language.equations.mapM fun row =>
+    if namesBinders row.left row.right row.premises then
+      Mettapedia.OSLF.MeTTaIL.CoreReduction.reduceEquation grammar row
+    else pure row
+  let rewrites ← language.rewrites.mapM fun row =>
+    if namesBinders row.left row.right row.premises then
+      Mettapedia.OSLF.MeTTaIL.CoreReduction.reduceRewrite grammar row
+    else pure row
+  pure { language with «equations» := equations, «rewrites» := rewrites }
+
+/-- **The languages certified in the environment of admitted definitions**: CCS with recursion, whose canonical forms
+and decider hold in the environment its definitions serve (`askRecursive`). -/
+def certifiedWithDefinitions : List LanguageDef := [Mettapedia.Languages.ProcessCalculi.CCS.Recursive.ccsRecCalc]
+
+/-- **The language a loaded module is read as**: as its rows are written (`directReading`) when that is a language
+with certified forms, or certified in the environment of admitted definitions, which their theorems are about as
+written; otherwise its core (`LanguageDef.toCore`). -/
+def readingOf (loaded : Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error LanguageDef) :
+    Except String LanguageDef :=
   match loaded with
   | .error problem => .error s!"the module does not elaborate: {repr problem}"
   | .ok language =>
-    match language.toCore with
-    | .ok core => .ok core.language
-    | .error problem => .error s!"the language has no core: {repr problem}"
+    let core : Except String LanguageDef :=
+      match language.toCore with
+      | .ok core => .ok core.language
+      | .error problem => .error s!"the language has no core: {repr problem}"
+    match directReading language with
+    | .ok direct =>
+      if certified.any (·.language == direct) || certifiedWithDefinitions.contains direct then .ok direct else core
+    | .error _ => core
 
 /-- Whether the language has bags. -/
 def hasBags (language : LanguageDef) : Bool := (signatureOf language).contains (.collectionUnit .hashBag)
@@ -451,7 +484,8 @@ def formsOf (language : LanguageDef) (fuel : ℕ) : Option (CanonicalForms Relat
   | none => bagFormsOf language fuel
 
 /-- **A certified decider as the last strategy**: an answer the search left open is the decider's, when it gives one. -/
-def thenDecide {reading : LanguageReading} (decider : Decider RelationEnv.empty language reading) (formula : Formula 0)
+def thenDecide {relEnv : RelationEnv} {reading : LanguageReading} (decider : Decider relEnv language reading)
+    (formula : Formula 0)
     (term : Pattern) : Answer → Answer
   | .unknown rounds =>
     match decider.decide formula term with
@@ -460,12 +494,12 @@ def thenDecide {reading : LanguageReading} (decider : Decider RelationEnv.empty 
     | none => .unknown rounds
   | settled => settled
 
-theorem thenDecide_proved {reading : LanguageReading} {decider : Decider RelationEnv.empty language reading}
+theorem thenDecide_proved {relEnv : RelationEnv} {reading : LanguageReading} {decider : Decider relEnv language reading}
     {formula : Formula 0} {term : Pattern} {answer : Answer} {evidence : Evidence}
     (searched : ∀ {evidence}, answer = .proved evidence →
-      (referenceStructure RelationEnv.empty language reading).sat Env.closed formula term)
+      (referenceStructure relEnv language reading).sat Env.closed formula term)
     (answered : thenDecide decider formula term answer = .proved evidence) :
-    (referenceStructure RelationEnv.empty language reading).sat Env.closed formula term := by
+    (referenceStructure relEnv language reading).sat Env.closed formula term := by
   unfold thenDecide at answered
   split at answered
   · split at answered
@@ -475,12 +509,12 @@ theorem thenDecide_proved {reading : LanguageReading} {decider : Decider Relatio
     · cases answered
   · exact searched answered
 
-theorem thenDecide_refuted {reading : LanguageReading} {decider : Decider RelationEnv.empty language reading}
+theorem thenDecide_refuted {relEnv : RelationEnv} {reading : LanguageReading} {decider : Decider relEnv language reading}
     {formula : Formula 0} {term : Pattern} {answer : Answer} {evidence : Evidence}
     (searched : ∀ {evidence}, answer = .refuted evidence →
-      ¬ (referenceStructure RelationEnv.empty language reading).sat Env.closed formula term)
+      ¬ (referenceStructure relEnv language reading).sat Env.closed formula term)
     (answered : thenDecide decider formula term answer = .refuted evidence) :
-    ¬ (referenceStructure RelationEnv.empty language reading).sat Env.closed formula term := by
+    ¬ (referenceStructure relEnv language reading).sat Env.closed formula term := by
   unfold thenDecide at answered
   split at answered
   · split at answered
@@ -499,7 +533,8 @@ def sortsOf (language : LanguageDef) (fuel budget : ℕ) {reading : LanguageRead
     (predecessorDecider RelationEnv.empty language (signatureOf language) fuel forms compatible 3 64 budget)
 
 /-- **Ask with what the executable knows for a language**: the certified forms of a language that has them, or its
-sorted bags' forms; then, for a question the search leaves open, for a language with sorted bags whose premises are
+sorted bags' forms; then, for a question the search leaves open, for a certified language, its certified decider and the
+witness deciders; for a language with sorted bags whose premises are
 guards, the modal decider over its sorted successors, the bag parts decider and named terms by sorted forms; otherwise
 the bag parts decider of a language with sorted bags; or, for an equation-free language, the modal decider, which evaluates the connectives and the step modalities, context
 labels included, at the listed successors, over the cut decider and the static decider, which decide the structural
@@ -509,7 +544,8 @@ def askKnown (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) (term :
     Answer :=
   match certifiedFormsOf language fuel with
   | some forms =>
-    thenDecide (sortsOf language fuel budget (some forms) (rfl : FormsFor (some forms) forms.reading)) formula term
+    thenDecide (((certifiedDeciderOf language forms.reading).getD noDecider).orElse
+        (sortsOf language fuel budget (some forms) (rfl : FormsFor (some forms) forms.reading))) formula term
       (askFound RelationEnv.empty language fuel formula term hintBound budget (some forms))
   | none =>
     if hasBags language then
@@ -663,42 +699,271 @@ theorem answerWith_refuted (answered : answerWith settings language formula term
 
 end Soundness
 
+/-! ## Languages run in the environment of their definitions -/
+
+open Mettapedia.Languages.ProcessCalculi.CCS.Recursive (Definition admits definitionsEnv ccsRecCalc)
+
+/-- **Ask CCS with recursion in the environment of admitted definitions**: with the canonical forms its theorems
+certify, then, for a question the search leaves open, its modal decider, which answers its partners' labels and named
+terms. -/
+def askRecursive (definitions : List Definition) (admitted : admits definitions = true) (fuel : ℕ) (formula : Formula 0)
+    (term : Pattern) (hintBound budget : ℕ) : Answer :=
+  thenDecide (CCSRecPartners.decider admitted) formula term
+    (askFound (definitionsEnv definitions) ccsRecCalc fuel formula term hintBound budget
+      (some (CCSRecForms.forms admitted fuel)))
+
+/-- **What `askRecursive` establishes holds** of CCS with recursion in the environment of the definitions. -/
+theorem askRecursive_proved {definitions : List Definition} {admitted : admits definitions = true} {fuel : ℕ}
+    {formula : Formula 0} {term : Pattern} {hintBound budget : ℕ} {evidence : Evidence}
+    (answered : askRecursive definitions admitted fuel formula term hintBound budget = .proved evidence) :
+    (referenceStructure (definitionsEnv definitions) ccsRecCalc CCSRecForms.reading).sat Env.closed formula term :=
+  thenDecide_proved (fun found => askFound_proved found) answered
+
+/-- **What `askRecursive` refutes fails** of CCS with recursion in the environment of the definitions. -/
+theorem askRecursive_refuted {definitions : List Definition} {admitted : admits definitions = true} {fuel : ℕ}
+    {formula : Formula 0} {term : Pattern} {hintBound budget : ℕ} {evidence : Evidence}
+    (answered : askRecursive definitions admitted fuel formula term hintBound budget = .refuted evidence) :
+    ¬ (referenceStructure (definitionsEnv definitions) ccsRecCalc CCSRecForms.reading).sat Env.closed formula term :=
+  thenDecide_refuted (fun found => askFound_refuted found) answered
+
+/-! ## Definitions beside a language
+
+CCS with recursion is asked in the environment of its definitions: a program, given beside the language, not part of
+it. A definitions file writes one definition a line: its arity, then its summands in the executable's term syntax, the
+parameters as bound variables, `1 | (CAct (bvar 0) (CCall CZ (CArgCons (bvar 0) CArgNil)))`. A call names its constant
+by the definition's position, `CZ`, `(CS CZ)`, …. Blank lines and lines starting with `#` are skipped. -/
+
+/-- **Definitions as text**, one a line. -/
+def definitionsText (definitions : List Definition) : String :=
+  String.join (definitions.map fun definition =>
+    " | ".intercalate (toString definition.arity :: definition.guards.map patternText) ++ "\n")
+
+/-- **Definitions from a text**, as `definitionsText` writes them. -/
+def readDefinitions (text : String) : Except String (List Definition) :=
+  (text.splitOn "\n").filterMap (fun line =>
+      let trimmed := line.trimAscii.toString
+      if trimmed.isEmpty || trimmed.startsWith "#" then none else some trimmed)
+    |>.mapM fun line =>
+      match (line.splitOn "|").map (·.trimAscii.toString) with
+      | arity :: guards =>
+        match arity.toNat? with
+        | some arity => do pure ⟨arity, ← guards.mapM readPattern⟩
+        | none => .error s!"not an arity: {arity}"
+      | [] => .error s!"a definition needs its arity: {line}"
+
 /-- The displayed status of an answer. -/
 def display : Answer → String
   | .proved evidence => s!"established, by {Verdicts.describe evidence}"
   | .refuted evidence => s!"refuted, by {Verdicts.describe evidence}"
   | .unknown rounds => s!"suspended after {rounds} rounds"
 
+/-! ## Resumed answers
+
+The search is resumed from one budget to the next with the progress of the question (`Resumption.Progress`), grown
+with the canonical forms the executable knows, so that a resumed question answers as asking afresh with all the rounds
+(`Resumption.resumed_answer`); then what it leaves open is settled as `askKnown` settles it (`settleKnown`). So each
+resumed answer is the executable's answer at its budget (`answers_eq`). -/
+
+section Resumed
+
+variable {relEnv : RelationEnv} {language : LanguageDef} {fuel : ℕ}
+  {signature : Mettapedia.OSLF.Framework.FiniteModels.Signature} {formula : Formula 0} {term : Pattern}
+
+/-- The answers at the budgets that follow, each from the progress resumed to it and settled at it. -/
+def resumeAnswers (settle : ℕ → Answer → Answer) (forms : Option (CanonicalForms relEnv language fuel))
+    (hint : Option CertificateCandidate) (progress : Progress language signature formula term) :
+    List ℕ → List (ℕ × Answer)
+  | [] => []
+  | budget :: rest =>
+    let resumed := progress.resume relEnv fuel (canonOf forms) (presentationsOf forms)
+      (budget - progress.rounds) (rulesOf forms)
+    (resumed.rounds, settle resumed.rounds (resumed.answer relEnv fuel forms hint)) ::
+      resumeAnswers settle forms hint resumed rest
+
+/-- **Each resumed answer is the answer afresh**, from a progress grown with the forms. -/
+theorem resumeAnswers_eq (settle : ℕ → Answer → Answer) (forms : Option (CanonicalForms relEnv language fuel))
+    (hint : Option CertificateCandidate) :
+    ∀ (budgets : List ℕ) (rounds : ℕ) (entry : ℕ × Answer),
+      entry ∈ resumeAnswers settle forms hint
+        (Progress.at relEnv language fuel signature formula term (canonOf forms) (presentationsOf forms)
+          rounds (rulesOf forms)) budgets →
+      entry.2 = settle entry.1 (ask relEnv signature language fuel formula term hint entry.1 forms)
+  | [], _, _, member => by simp [resumeAnswers] at member
+  | budget :: rest, rounds, entry, member => by
+    simp only [resumeAnswers, List.mem_cons] at member
+    rw [resume_at (rules := rulesOf forms)] at member
+    rcases member with rfl | later
+    · exact congrArg (settle _) (answer_at _ _ _ _ _)
+    · exact resumeAnswers_eq settle forms hint rest _ entry later
+
+end Resumed
+
+/-- **What the executable settles of an answer its search leaves open**, at a budget: the deciders `askKnown` takes for
+the language. -/
+def settleKnown (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) (term : Pattern) (budget : ℕ) :
+    Answer → Answer :=
+  match certifiedFormsOf language fuel with
+  | some forms =>
+    thenDecide (((certifiedDeciderOf language forms.reading).getD noDecider).orElse
+        (sortsOf language fuel budget (some forms) (rfl : FormsFor (some forms) forms.reading))) formula term
+  | none =>
+    if hasBags language then
+      if noEquations : language.equations = [] then
+        if noAlgebra : language.hasAlgebraDeclarations = false then
+          if guarded : language.rewrites.all (fun rule => rule.premises.all BagForms.guard) = true then
+            thenDecide
+              (modalDecider (bagSuccessors fuel noEquations noAlgebra guarded)
+                (((partsDecider (fuel := fuel) (presentations := List.singleton) (BagForms.canonical noEquations noAlgebra)
+                  (BagForms.coherent noEquations noAlgebra guarded fuel) (BagForms.parts noEquations noAlgebra)
+                  budget).orElse (namedDecider _ _ (BagForms.canonical noEquations noAlgebra))).orElse
+                  (sortsOf language fuel budget (some (BagForms.forms noEquations noAlgebra guarded fuel)) rfl)))
+              formula term
+          else if queried : language.rewrites.all (fun rule => rule.premises.all BagForms.query) = true then
+            thenDecide
+              ((partsDecider (fuel := fuel) (presentations := List.singleton) (BagForms.canonical noEquations noAlgebra)
+                (BagForms.coherentQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)
+                (BagForms.parts noEquations noAlgebra) budget).orElse
+                (sortsOf language fuel budget
+                  (some (BagForms.formsQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)) rfl))
+              formula term
+          else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
+        else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
+      else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
+    else if free : language.isEquationFree = true then
+      thenDecide (modalDecider (equationFreeSuccessors fuel free)
+          (((equationFreeDecider free fuel budget).orElse (staticDecider free)).orElse
+            (sortsOf language fuel budget none (formsFor_none (reading := .syntax)))))
+        formula term
+    else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
+
+/-- **`askKnown` is the search with the forms the executable knows, settled.** -/
+theorem askKnown_eq (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) (term : Pattern) (hintBound budget : ℕ) :
+    askKnown language fuel formula term hintBound budget =
+      settleKnown language fuel formula term budget
+        (askFound RelationEnv.empty language fuel formula term hintBound budget (formsOf language fuel)) := by
+  unfold askKnown settleKnown formsOf bagFormsOf
+  cases certifiedFormsOf language fuel with
+  | some forms => rfl
+  | none => split_ifs <;> rfl
+
 /-- **Ask the front door** about a term of a language, at each budget in turn, resuming the question's progress from
-one budget to the next. -/
+one budget to the next, grown with the canonical forms the executable knows, and settling each answer as `askKnown`
+does. -/
 def answers (settings : Settings) (language : LanguageDef) (formula : Formula 0) (term : Pattern) (budgets : List ℕ) :
     List (ℕ × Answer) :=
   let language := flattenScoped language
   let signature := signatureOf language
   let hint := findHint signature language formula term settings.hintBound
   let forms := formsOf language settings.fuel
+  let settle := fun budget => settleKnown language settings.fuel formula term budget
   match budgets with
   | [] => []
   | first :: rest =>
-    let start := Progress.at RelationEnv.empty language settings.fuel signature formula term id List.singleton first
-    let (_, collected) := rest.foldl (fun (progress, collected) budget =>
-        let resumed := progress.resume RelationEnv.empty settings.fuel id List.singleton (budget - progress.rounds)
-        (resumed, collected ++ [(resumed.rounds, resumed.answer RelationEnv.empty settings.fuel forms hint)]))
-      (start, [(first, start.answer RelationEnv.empty settings.fuel forms hint)])
-    collected
+    let start := Progress.at RelationEnv.empty language settings.fuel signature formula term (canonOf forms)
+      (presentationsOf forms) first (rulesOf forms)
+    (first, settle first (start.answer RelationEnv.empty settings.fuel forms hint)) ::
+      resumeAnswers settle forms hint start rest
+
+/-- **Every resumed answer is the executable's answer at its budget**: resuming from one budget to the next answers as
+asking afresh. -/
+theorem answers_eq (settings : Settings) (language : LanguageDef) (formula : Formula 0) (term : Pattern)
+    (budgets : List ℕ) :
+    ∀ entry ∈ answers settings language formula term budgets,
+      entry.2 = answerWith settings language formula term entry.1 := by
+  intro entry member
+  unfold answers at member
+  rw [answerWith, askKnown_eq]
+  split at member
+  · simp at member
+  · simp only [List.mem_cons] at member
+    rcases member with rfl | later
+    · simp only
+      rw [answer_at]
+      rfl
+    · rw [resumeAnswers_eq _ _ _ _ _ entry later]
+      rfl
+
+/-- **Ask CCS with recursion** in the environment of admitted definitions, at each budget in turn, resuming the
+question's progress from one budget to the next, grown with the forms certified for that environment, and settling each
+answer with its decider, as `askRecursive` does. -/
+def answersRecursive (definitions : List Definition) (admitted : admits definitions = true) (settings : Settings)
+    (formula : Formula 0) (term : Pattern) (budgets : List ℕ) : List (ℕ × Answer) :=
+  let signature := signatureOf ccsRecCalc
+  let hint := findHint signature ccsRecCalc formula term settings.hintBound
+  let forms := some (CCSRecForms.forms admitted settings.fuel)
+  let settle := fun (_ : ℕ) => thenDecide (CCSRecPartners.decider admitted) formula term
+  match budgets with
+  | [] => []
+  | first :: rest =>
+    let start := Progress.at (definitionsEnv definitions) ccsRecCalc settings.fuel signature formula term
+      (canonOf forms) (presentationsOf forms) first (rulesOf forms)
+    (first, settle first (start.answer (definitionsEnv definitions) settings.fuel forms hint)) ::
+      resumeAnswers settle forms hint start rest
+
+/-- **Every resumed answer of CCS with recursion is `askRecursive`'s at its budget.** -/
+theorem answersRecursive_eq (definitions : List Definition) (admitted : admits definitions = true)
+    (settings : Settings) (formula : Formula 0) (term : Pattern) (budgets : List ℕ) :
+    ∀ entry ∈ answersRecursive definitions admitted settings formula term budgets,
+      entry.2 = askRecursive definitions admitted settings.fuel formula term settings.hintBound entry.1 := by
+  intro entry member
+  unfold answersRecursive at member
+  unfold askRecursive askFound
+  split at member
+  · simp at member
+  · simp only [List.mem_cons] at member
+    rcases member with rfl | later
+    · simp only
+      rw [answer_at]
+    · exact resumeAnswers_eq _ _ _ _ _ entry later
+
+/-- The answers CCS with recursion takes from a definitions text. -/
+def withDefinitions {α : Type} (definitionsText : Option String)
+    (ask : (definitions : List Definition) → admits definitions = true → α) : Except String α :=
+  match definitionsText with
+  | none => .error "CCS with recursion is asked in the environment of its definitions: give definitions=FILE"
+  | some text => do
+    let definitions ← readDefinitions text
+    if admitted : admits definitions = true then pure (ask definitions admitted)
+    else .error "the definitions are not admitted: each summand is a guard over its parameters"
+
+/-- **The executable's answers at each budget**: CCS with recursion in the environment of the definitions given beside
+it (`answersRecursive`), every other language in the empty environment (`answers`). -/
+def answersFor (settings : Settings) (language : LanguageDef) (formula : Formula 0) (term : Pattern)
+    (budgets : List ℕ) (definitionsText : Option String) : Except String (List (ℕ × Answer)) :=
+  if language = ccsRecCalc then
+    withDefinitions definitionsText fun definitions admitted =>
+      answersRecursive definitions admitted settings formula term budgets
+  else
+    match definitionsText with
+    | some _ => .error s!"only CCS with recursion takes definitions, not {language.name}"
+    | none => pure (answers settings language formula term budgets)
+
+/-- **The executable's answer at a budget**: as `answersFor`, asked once. -/
+def answerFor (settings : Settings) (language : LanguageDef) (formula : Formula 0) (term : Pattern) (budget : ℕ)
+    (definitionsText : Option String) : Except String Answer :=
+  if language = ccsRecCalc then
+    withDefinitions definitionsText fun definitions admitted =>
+      askRecursive definitions admitted settings.fuel formula term settings.hintBound budget
+  else
+    match definitionsText with
+    | some _ => .error s!"only CCS with recursion takes definitions, not {language.name}"
+    | none => pure (answerWith settings language formula term budget)
 
 /-- **The report** of the command-line front door. -/
 def report (loaded : Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error LanguageDef) (formulaText termText : String)
-    (budgets : List ℕ) (settingWords : List String := []) : IO Unit := do
-  match coreOf loaded, Settings.read settingWords with
-  | .error problem, _ | _, .error problem => IO.println s!"oslf: {problem}"
+    (budgets : List ℕ) (settingWords : List String := []) (definitionsText : Option String := none) : IO Unit := do
+  match readingOf loaded, Settings.read settingWords with
+  | .error problem, _ | _, .error problem => throw (IO.userError s!"oslf: {problem}")
   | .ok language, .ok settings =>
     match readFormula (language.rewrites.map fun rule : RewriteRule => rule.name) formulaText, readPattern termText with
-    | .error problem, _ | _, .error problem => IO.println s!"oslf: {problem}"
+    | .error problem, _ | _, .error problem => throw (IO.userError s!"oslf: {problem}")
     | .ok formula, .ok term =>
       IO.println s!"language {language.name}: {language.terms.length} constructors, {language.rewrites.length} rules, {language.equations.length} equations"
-      for (budget, answer) in answers settings language formula term budgets do
-        IO.println s!"budget {budget}: {display answer}"
+      match answersFor settings language formula term budgets definitionsText with
+      | .error problem => throw (IO.userError s!"oslf: {problem}")
+      | .ok answered =>
+        for (budget, answer) in answered do
+          IO.println s!"budget {budget}: {display answer}"
 
 /-- The kind of a status: established, refuted or suspended. -/
 def statusKind : Answer → String
@@ -715,12 +980,12 @@ def asExpected (expected : String) (answer : Answer) : Bool :=
 /-- **Check rows of the matrix**: each language, formula, term, budget and settings against the expected answer.
 Fails when some row does not answer as expected. -/
 def checkRows (rows : List (String × Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error LanguageDef × String ×
-    String × ℕ × String × List String)) : IO Unit := do
+    String × ℕ × String × List String × Option String)) : IO Unit := do
   let mut failures := 0
   let mut total := 0
-  for (label, loaded, formulaText, termText, budget, expected, settingWords) in rows do
+  for (label, loaded, formulaText, termText, budget, expected, settingWords, definitionsText) in rows do
     let read := do
-      let language ← coreOf loaded
+      let language ← readingOf loaded
       let settings ← Settings.read settingWords
       let formula ← readFormula (language.rewrites.map fun rule : RewriteRule => rule.name) formulaText
       let term ← readPattern termText
@@ -731,14 +996,19 @@ def checkRows (rows : List (String × Except Mettapedia.GSLT.LanguageDef.ModuleS
       IO.println s!"FAIL {label} {formulaText} {termText}: {problem}"
     | .ok (language, settings, formula, term) =>
       let start ← IO.monoNanosNow
-      let answer ← IO.lazyPure fun _ => answerWith settings language formula term budget
+      let answered ← IO.lazyPure fun _ => answerFor settings language formula term budget definitionsText
       let time := ((← IO.monoNanosNow) - start) / 1000
       total := total + time
-      if asExpected expected answer then
-        IO.println s!"ok   {label} {formulaText} at {termText}: {display answer} [{time} µs]"
-      else
-        failures := failures + 1
-        IO.println s!"FAIL {label} {formulaText} at {termText}: expected {expected}, {display answer} [{time} µs]"
+      match answered with
+      | .error problem =>
+          failures := failures + 1
+          IO.println s!"FAIL {label} {formulaText} {termText}: {problem}"
+      | .ok answer =>
+          if asExpected expected answer then
+            IO.println s!"ok   {label} {formulaText} at {termText}: {display answer} [{time} µs]"
+          else
+            failures := failures + 1
+            IO.println s!"FAIL {label} {formulaText} at {termText}: expected {expected}, {display answer} [{time} µs]"
   IO.println s!"{rows.length - failures} of {rows.length} rows as expected, answered in {total / 1000} ms"
   if failures > 0 then throw (IO.userError s!"{failures} rows did not answer as expected")
 

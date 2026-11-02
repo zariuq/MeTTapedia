@@ -60,12 +60,13 @@ structure Protocol where
   entryFacts : List String
   entryOwned : List String
   body : Body
+  exitFacts : List (Outcome × List String) := []
   deriving DecidableEq, Repr
 
 /-- A non-executable metadata projection for the existing declaration checker
 and lookups. The dummy finite body is never interpreted. -/
 def metadata (p : Protocol) : ExecutableProtocol.Protocol :=
-  ⟨p.name, p.contextType, p.hooks, p.resources, p.entryFacts, p.entryOwned, .ret .done⟩
+  ⟨p.name, p.contextType, p.hooks, p.resources, p.entryFacts, p.entryOwned, .ret .done, p.exitFacts⟩
 
 def initial (p : Protocol) : Context := ⟨p.entryFacts, p.entryOwned, false⟩
 
@@ -87,7 +88,8 @@ theorem checkCarries_iff (entry current : Context) :
 
 inductive WellFormed (p : Protocol) : Option Context → Context → Body → Prop where
   | ret (loop : Option Context) (c : Context) (outcome : Outcome)
-      (empty : c.owned = []) (decline : outcome = .declined → c.irreversible = false) :
+      (empty : c.owned = []) (decline : outcome = .declined → c.irreversible = false)
+      (facts : ∀ fact ∈ exitRequires (metadata p) outcome, fact ∈ c.facts) :
       WellFormed p loop c (.ret outcome)
   | call (loop : Option Context) (c : Context) (id : String) (hook : Hook) (yes no : Body)
       (declared : findHook (metadata p) id = some hook)
@@ -120,7 +122,8 @@ inductive WellFormed (p : Protocol) : Option Context → Context → Body → Pr
       WellFormed p (some entry) c .cont
 
 def checkBody (p : Protocol) : Option Context → Context → Body → Bool
-  | _, c, .ret outcome => c.owned.isEmpty && (!c.irreversible || outcome != .declined)
+  | _, c, .ret outcome => c.owned.isEmpty && (!c.irreversible || outcome != .declined) &&
+      (exitRequires (metadata p) outcome).all c.facts.contains
   | loop, c, .call id yes no =>
       match findHook (metadata p) id with
       | none => false
@@ -153,14 +156,14 @@ theorem checkBody_iff (p : Protocol) (loop : Option Context) (c : Context) (body
   induction body generalizing loop c with
   | ret outcome =>
       simp only [checkBody, Bool.and_eq_true, List.isEmpty_iff, Bool.or_eq_true,
-        Bool.not_eq_true', bne_iff_ne]
+        Bool.not_eq_true', bne_iff_ne, List.all_eq_true, List.contains_iff_mem]
       constructor
-      · rintro ⟨empty, decline⟩
-        exact .ret loop c outcome empty (fun h => decline.resolve_right (by simp [h]))
+      · rintro ⟨⟨empty, decline⟩, facts⟩
+        exact .ret loop c outcome empty (fun h => decline.resolve_right (by simp [h])) facts
       · intro wf
         cases wf with
-        | ret _ _ _ empty decline =>
-            refine ⟨empty, ?_⟩
+        | ret _ _ _ empty decline facts =>
+            refine ⟨⟨empty, ?_⟩, facts⟩
             by_cases h : outcome = .declined
             · exact Or.inl (decline h)
             · exact Or.inr h
@@ -264,7 +267,7 @@ theorem committed_no_decline {p : Protocol} {loop : Option Context} {current : C
     ¬ WellFormed p loop current (.ret .declined) := by
   intro wf
   cases wf with
-  | ret _ _ _ _ decline => simp [committed] at decline
+  | ret _ _ _ _ decline _ => simp [committed] at decline
 
 inductive CStmt where
   | ret (outcome : Outcome)
@@ -502,6 +505,12 @@ structure PlanValid (plan : Plan) : Prop where
 theorem checkPlan_iff (plan : Plan) : checkPlan plan = true ↔ PlanValid plan := by
   simp only [checkPlan, Bool.and_eq_true, check_iff, decide_eq_true_eq]
   exact ⟨fun h => ⟨h.1, h.2⟩, fun h => ⟨h.source, h.lowering⟩⟩
+
+theorem changed_target_refused {plan : Plan} (valid : PlanValid plan)
+    (target : CStmt) (different : target ≠ plan.target) :
+    checkPlan { plan with target := target } = false := by
+  have unequal : plan.target ≠ target := Ne.symm different
+  simp [checkPlan, valid.lowering, unequal]
 
 theorem PlanValid.eval_exact {World : Type} {plan : Plan} (valid : PlanValid plan)
     (host : Host World) (world : World) (replies : List Bool) :

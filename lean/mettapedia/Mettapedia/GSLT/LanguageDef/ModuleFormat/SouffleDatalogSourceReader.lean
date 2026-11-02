@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogCSTToCore
 import Mettapedia.GSLT.Parsing.ClassAwareParserPackOutput
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.SourceSyntaxExport
 
 /-! Checked finite ParserPack certificates reach the actual source grammar
 and the composed Core. Compilation agreement is derived for this authored
@@ -18,14 +19,9 @@ open Mettapedia.GSLT.Parsing
 open LanguageDefSyntaxCompiler LanguageDefScalarSyntax PresentationExprSemantics
 open ClassAwareParserPackCorrespondence ClassAwareParserPackCertificate
 
-def literalReference (text : String) : String :=
-  "literal:" ++ String.intercalate ":" (text.toList.map fun point => toString point.toNat)
+def literalReference : String → String := SourceSyntaxExport.literalName
 
-def binding : Binding where
-  literalRef := fun text => some (literalReference text)
-  lexicalSortRef := SourceViews.profile.lexicalRule?
-  categoryRef := ("category:" ++ ·)
-  ruleRef := ("rule:" ++ ·)
+def binding : Binding := SourceSyntaxExport.binding SourceViews.profile
 
 def rules? : Option (List CompiledRule) := compileRules? binding SourceViews.grammar
 def rules : List CompiledRule := rules?.get (by decide +kernel)
@@ -84,13 +80,8 @@ theorem readCertificate?_certificate {input : List Nat} {sort : String} {start s
     {certificate : Certificate} {reading : Reading input sort start stop}
     (read : readCertificate? input sort start stop certificate = some reading) :
     reading.certificate = certificate := by
-  unfold readCertificate? at read
-  cases parsed : ClassAwareParserPackReplay.replay SourceViews.profile plan input sort start stop certificate with
-  | none => simp [parsed] at read
-  | some result =>
-    simp only [parsed] at read
-    cases Option.some.inj read
-    rfl
+  obtain ⟨parsed, _, same⟩ := Option.bind_eq_some_iff.mp read
+  exact Option.some.inj same ▸ rfl
 
 theorem Reading.core_exact {input : List Nat} {sort : String} {start stop : Nat}
     (reading : Reading input sort start stop)
@@ -114,18 +105,12 @@ theorem source_has_reading {input : List Nat} {sort : String} {start stop : Nat}
       reading.tree = tree ∧ reading.core = SourceToCore.reify source := by
   obtain ⟨sourcePlan⟩ := LanguageDefScalarSyntax.preserve rules_compiled source
   let target := preserveSourcePlanDerivation agreement sourcePlan
-  let certificate := Certificate.ofDerivation target
   have replayed := Replays.ofDerivation target
-  obtain ⟨reading, read⟩ := Option.isSome_iff_exists.mp
-    ((readCertificate?_isSome_iff input sort start stop certificate).mpr ⟨tree, ⟨replayed⟩⟩)
-  have certificateExact := readCertificate?_certificate read
-  have actual : Replays SourceViews.profile plan input certificate sort start stop reading.tree := by
-    simpa only [certificateExact] using reading.replayed
-  have sameTree := ClassAwareParserPackOutput.output_unique actual replayed
-  refine ⟨certificate, reading, read, sameTree, ?_⟩
-  have built := reading.construction
-  rw [sameTree, CSTToCore.lower_source source] at built
-  exact (Option.some.inj built).symm
+  have read := ClassAwareParserPackOutput.replay_exact replayed
+  refine ⟨Certificate.ofDerivation target,
+    ⟨_, tree, replayed, ⟨source⟩, SourceToCore.reify source, CSTToCore.lower_source source,
+      (SourceToCore.closedTerm source).property⟩, ?_, rfl, rfl⟩
+  simp [readCertificate?, read, CSTToCore.checkedTerm, CSTToCore.lower_source source]
 
 def readProgramCertificate? (input : List Nat) (certificate : Certificate) :
     Option (Reading input SourceViews.profile.startSort 0 input.length) :=

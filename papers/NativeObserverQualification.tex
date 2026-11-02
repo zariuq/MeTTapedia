@@ -1,0 +1,452 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=25mm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,tabularx,xurl,xcolor,hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,
+ pdftitle={Observer Directed Native Qualification},pdfauthor={Mettapedia Working Notes}}
+\setlength{\emergencystretch}{3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\newcommand{\code}[1]{\nolinkurl{#1}}
+\title{Observer Directed Native Qualification}
+\author{Mettapedia Working Notes}
+\date{1 November 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+A deterministic source generator crosses thirteen candidate native execution
+families with six explicit observers. Its runner distinguishes answer bags,
+ordered values, caught errors and effect traces, preserves reproducible
+execution receipts, and shrinks confirmed discrepancies under declared
+reductions. Scalar admission controls are exported to the existing Lean
+source extractor. The original r82 cohort agrees on its first twelve families;
+an added existence family exposes false absence for open compact facts. A
+separately frozen successor candidate passes the expanded fourteen-route
+handoff. Hash-pinned
+debugger probes distinguish worker completion from mere recognizer entry,
+and archived mutants qualify the generator's boundary cases. This is empirical
+qualification infrastructure, not a universal correctness proof. Separate S6
+modules establish the ownership and transfer correspondence laws.
+\end{abstract}
+
+\section{The observer is part of the test}
+
+Write $O_C(P)$ for the observation of program $P$ under a declared contract
+$C$. The native/reference obligation is
+\[
+ O_C(P_{\mathrm{native}})=O_C(P_{\mathrm{ordinary}}).
+\]
+It is not equality after an arbitrary common normalization. In particular,
+seeing parentheses in an output does not license treating its fields as an
+unordered bag.
+
+The generated source wraps query results in fresh, numbered observation
+packets. Packet interpretation comes from the case manifest:
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Contract & Preserved distinctions\\
+\midrule
+Answer bag & Answer multiplicity, term structure and shared-variable aliasing\\
+Collected bag & Element multiplicity and ordered fields within each element\\
+Ordered value & Element and field order, literal strings and term structure\\
+Caught error & The actual error packet, not just a success/failure bit\\
+Effect trace & Exact order and text, including whitespace and line endings\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Alpha comparison uses the existing complete-collection bijection, so two
+answers sharing a variable cannot be renamed independently. Literal strings
+containing variable-looking text remain literal strings. Unmarked output is
+compared as an ordered text trace. Only explicitly requested runtime counters
+and dense-storage diagnostics are separated from stderr; other stderr remains
+an observation.
+
+Timeout, output-limit termination, invalid UTF-8, a native crash, a failed
+reference program and malformed observation packets have distinct recorded
+outcomes. They never become matching empty answer bags. Output capture is
+bounded, and a stopped test terminates its own process group.
+
+\section{Source generation and admission}
+
+The candidate families are scalar folds, filtered matches, grouped counts,
+listed matches, dead rules, kept relations, row take-over, open joins,
+guarded insert batches, arithmetic folds, saturation, relaxation and
+ground-pattern match existence.
+Each family records its inspected source entry point. This inventory covers
+the native query/fold/dense-region lane; it is not an inventory of every
+optimization in the runtime's other language engines.
+The HE coordinate-form existence caller is a fourteenth, separately driven
+route because it has a different language surface and a partitioned
+compact/row contract. The machine-readable inventory distinguishes named
+function returns, inlined checkpoints, operation traces and this caller chain.
+
+The scalar syntax mirrors \code{Machines.TypedScalar}'s data/test distinction.
+Constructors reject an arithmetic operation on a predicate, except for an
+explicit negative-control node that requests ordinary fallback. The source
+contains signed integers, mixed Boolean/numeric/symbol keys, floats in
+relational controls, repeated variables, duplicate occurrences and selected
+integer-overflow and non-integer-order cases.
+
+The generator's Python checks are not a proof of the Python implementation.
+It exports each scalar body's source admission assertion into a Lean file
+using the existing \code{PeTTa.Bridges.ScalarSource.elaborate}. The checked
+cohort contains twenty-one such assertions, including the rejected Boolean
+arithmetic control. These assertions concern source extraction, not C
+execution or whole-fold semantics.
+
+Entry shapes matter independently of output correctness. The saturation
+schema seeds its insertion function through a match; relaxation uses a listed
+frontier; grouped counts include the disjoint additions their recognizer
+requires; arithmetic folds use \code{foldall}. A matching result from a shape
+that always declines is not evidence for the intended specialization.
+
+Collective consumers are generated separately from streaming contexts.
+For each relevant query family, count and existence results flow to all six
+observers. Open-join controls include stored variables and set effects;
+listed-match controls include flat facts, duplicate list elements and at
+least sixteen entries. The nested, streaming and mixed-kind cases remain
+in the corpus: their ordinary fallback is tested rather than silently
+reclassified as worker coverage.
+
+\section{Metamorphic laws need hypotheses}
+
+The runner tests an additional unrelated equation against the original
+program, independently on both execution routes. It also compares observations
+across plain-row, normal dense and eager dense storage. The source snapshots,
+binary hash, environment switches and case parameters are retained.
+
+Two controls prevent unlicensed ordering assumptions. First, numerically equal
+but differently represented values can tie under sorting. Ordered and effect
+probes therefore construct ground structural keys using \code{repr}, sort
+those keys with their original payloads, and retain the payloads for the
+observer. Second, the arithmetic-fold input is an unordered match; its positive
+step is additive in the accumulator. Explicit-list scalar folds remain
+available for order-sensitive steps.
+
+Observer construction itself has source semantics. Generated binders are fresh
+relative to the region. A computed collection is bound before it is passed
+to \code{superpose}; placing a sorting computation directly in that raw
+argument position would enumerate syntax rather than the intended values.
+Twelve fixed controls check the complete observer outputs for integer 7 and
+Boolean true, including the stored effect values. Nonempty witnesses additionally
+prevent an accidentally unproductive positive schema from passing vacuously.
+
+These checks do not justify arbitrary input permutations or arbitrary changes
+to function definitions. Each added metamorphic transformation needs its own
+source-level preservation conditions.
+
+\section{Reproduction and shrinking}
+
+Every case is serializable and can be replayed independently. The output
+directory records the generated source, binary and harness hashes, observer
+contracts, route settings, stdout, stderr, exit disposition, counters and
+comparison verdicts. Source-file hashes are an inspected working-source
+snapshot; correspondence to a frozen binary still requires its build receipt.
+
+The shrinker removes inputs, simplifies expression subtrees and integer
+literals, reduces storage histories and removes optional boundary features.
+It preserves family-specific
+conditions such as the additive arithmetic-fold schema. A candidate must
+reproduce the same family/observer discrepancy twice. Where direct route
+evidence exists, the candidate must retain that evidence too. Equal source
+programs are not redundantly tested merely because unused generator metadata
+changed.
+
+The result is either a local fixed point under the declared reductions, a
+budget-limited result or an unstable/nonreproducible case. No global-minimum
+claim is made. On the frozen Boolean-bug baseline, a generated nested equality
+reduced to a one-item equality fold; the saved case replays without a
+discrepancy on the repaired binary.
+
+\section{Direct evidence from a frozen executable}
+
+The reviewed probe profile names the r82 executable by its full SHA-256 and
+requires its x86-64 ABI. Unknown executable hashes have no admitted profile.
+Named workers are observed at instruction entry and completion; successful
+return tags are distinguished from refusal and interruption. Inlined grouped,
+listed and saturation paths use reviewed instruction checkpoints relative to
+their containing symbol. A checkpoint is associated with its enclosing
+invocation, whose completion is checked too. Dead-rule pruning and saturation
+success must belong to the same invocation.
+
+A generic native-query completion is not credited to a guarded batch unless
+the query actually has an effect consumer, effects and a guard. Its field
+offsets and return tags were checked against compiled headers and accesses in
+the pinned executable. Kept-storage activation can occur on both query routes:
+the query-reference switch does not disable relation representation.
+
+The route-coverage debugger calls no inferior functions and writes no data or registers.
+Software breakpoints temporarily alter instruction bytes in the private
+debugged process. Every probed program's output is compared with its
+uninstrumented counterpart, on both native and ordinary routes. Missing
+receipts, incomplete returns, event limits, debugger errors and changed
+observations cannot confirm coverage. Probe failure never replaces an already
+observed runtime mismatch with an inconclusive result. Execution, output files and event
+capture are bounded. This is coverage evidence, not a timing or concurrency
+measurement. Binary and harness hashes are rechecked at the end of the run.
+
+\section{Current evidence and its limit}
+
+The original twelve-family r82 baseline used 266 programs in three storage
+modes: 798 native/reference pairs. All those observations agree. Another
+798 unrelated-definition pairs and 532 cross-storage comparisons agree.
+All twelve fixed observer controls agree with their expected outputs on both
+routes. Fifty-three observer/mutant harness controls pass, and the twenty-one emitted
+scalar admission assertions pass strict Lean checks.
+
+The normal-promotion history directly records 4,074 rows moving into a relation,
+followed by shrinking during removal. It retains duplicate occurrences and
+compares the complete result bags and remaining store. This is activation
+evidence and a finite behavioral control, not a proof of exact ownership or
+AtomId-reuse safety.
+Twelve additional take-over programs cross diagonal and star-shaped binary
+facts with all six observers. These complement the nested tuple-table case;
+promotion traces confirm the binary take-over in normal storage mode.
+
+The other eleven candidate families now have direct successful-worker
+evidence from the pinned probes. Coverage is recorded per case and observer;
+not every context is expected to enter a worker. A future cohort lacking a
+family witness still reports \code{observations-agree-coverage-incomplete}
+and exits 2 when qualification is requested. Family coverage is not a claim
+that every internal branch, language profile or concurrent interleaving has
+been exercised. Arithmetic folds now have witnesses for ordered scan,
+constant-item runs, join moments and exact bigint continuation. Qualification
+requires all four subroutes, not merely one successful fold. Bigint evidence
+must belong to a completed native fold, including when the wrapper's tail
+call removes its frame name. Exact finite-sum oracles additionally check
+duplicate contributions, the join multiplier and results above int64.
+Overflowing moments and non-integer scan inputs exercise ordinary fallback.
+
+Of the 798 case/mode cells, 446 carry successful debugger-return evidence
+and thirteen carry take-over traces. The other 339 retain observation
+agreement without a positive activation claim; they include streaming,
+unsupported-value and disabled-storage contexts. All 744 traced native runs
+and 744 traced ordinary runs preserve their corresponding uninstrumented
+observations.
+
+The frozen pre-repair baseline fails ten scalar cases while its constant
+observer controls pass. This qualifies discrepancy detection and shrinking
+against a real regression rather than only against synthetic comparator
+mutations. It does not establish detection of every defect in the other
+families.
+
+Ten selected archived native mutants are also rejected by generated
+observations: loose strict-order comparison, wrapped integer addition,
+dropped filters, incorrect grouped keys, a nonzero absent-group count,
+dropped listed rows, set-valued list multiplicity, per-hole variable frames,
+ignored guards and unsound dead-rule coverage. These are existing frozen
+mutant artifacts, not claimed to be isolated patches over r82. Their ordinary
+routes agree with the repaired executable in 239 generated comparisons.
+
+Five initially survived the narrower corpus. The added controls expose the
+missing distinctions: equal operands at a strict-order boundary, a group
+with zero matches, a guard key already present, a ground fact establishing a
+kept shape before an open fact, and recursive rules missing required firing
+directions. Independent finite oracles check designated boundary results in
+addition to differential agreement.
+
+The frame mutant preserves the answer count while replacing concrete stored
+values with fresh variables; the post-state observer rejects it. The recursive
+control has two seeds and two incompletely triggered consequences. Either
+sequential seed order leaves three facts, while unsound batched admission
+leaves four. The source observes that order-independent count, so no arbitrary
+choice of seed order is hidden by the comparator. Three retained failing
+cases reach local fixed points under the declared reductions and replay
+without discrepancies on r82; these are not global-minimum claims.
+
+\subsection{Open compact facts expose a false absence}
+
+The added existence family is a distinct native admission route, not a
+successful return from the joined-query worker. Its positive evidence is
+\code{space_match_exists_ground_exact} returning an applicable observation;
+found and absent are separate values. A refusal must not be counted as an
+absence. The probe records the applicability output as well as the return
+value.
+
+Eighteen additional programs cross present, absent and open-stored-fact
+cases with all six observers. The focused 54-comparison tranche has six
+discrepancies, all in eager storage mode, with no inconclusive cases. Ordinary
+matching finds the open fact while the specialized existence test reports
+absence. A minimal source pattern is:
+\begin{verbatim}
+!(bind! &s (new-space set))
+!(add-atom &s (seen0 $open))
+!(== (collapse (match &s (seen0 b) t)) ())
+\end{verbatim}
+The last answer is true natively and false on the ordinary route. Inserting
+under that absence guard changes the final store as well. The discrepancy
+reproduces with only \code{CETTA_NATIVE_QUERY_REFERENCE} varied; the other
+three reference switches are not necessary. It is related to a retained
+failure in the original r82 eager-law log (program 17 in that receipt), not
+a claim that the historical programme-96 issue has been repaired.
+
+The source inspection and pinned trace identify an incomplete exactness
+certificate: \code{space_contains_only_exact_atoms} returns true while a
+variable-containing fact is kept compactly. The full negative certificate
+must cover all logical matching candidates, not only ordinary rows. The
+new \code{MatchExistenceAdmission} laws and controls formalize this boundary.
+All six focused failures shrink to one open fact and a ground query under
+the declared reductions while retaining route evidence. This unresolved
+native discrepancy blocks an unconditional qualification claim; the
+earlier positive cohort does not erase it.
+The complete expanded run contains 284 programs and 852 native/reference
+comparisons: 846 agree and six differ. Of 568 cross-storage comparisons,
+562 agree and the same six eager-mode observations differ. The unrelated
+definition preserves each route's own result in all 852 metamorphic pairs,
+but the six cross-route failures remain in those variants. The qualification
+command exits 1. No timeout or invalid-reference case accounts for these
+discrepancies.
+
+\subsection{Coordinate existence composes two storage domains}
+
+\code{space_match_exists_flat_linear_view64} first asks compact storage, then
+ordinary rows. A compact hit completes the observation. A certified compact
+miss permits a row-only query. An undecidable compact match settles the
+relevant head before the row query. The lower-level coordinate helper is
+therefore qualified only together with its enclosing caller's domain evidence.
+
+Twelve pinned scenarios cross ground, open and unrelated-open facts with
+plain/eager storage and direct/materialized observation. All return their
+independent fixed answers on r82 and the successor candidate. Read-only
+debugger receipts attribute nested results to the same enclosing call.
+Materialized controls execute no view-existence call. Eight negative harness
+controls reject missing or late settlement, cross-call evidence, false
+completion, coordinate refusal treated as absence, and a zero compact count
+without a completed compact check. The checked
+\code{MatchExistencePartition} module supplies the domain laws.
+
+\subsection{A frozen successor candidate closes the expanded gate}
+
+The provenance-backed frozen executable \code{cetta-codex-scoped-owners-20261101}
+has identity
+\begin{center}\small
+\code{d89724427430ecaae39ec4e712a711aa6748cea36c2af6a0b081dd3e5ad9e3c0}
+\end{center}
+identifies itself as \code{cetta 1.5.0-dev (python)} and has ELF build ID
+\code{cafb754323b5186487222177aff18629308032fa}. It retains an open first
+fact as a plain row when its head later takes a relation; the same minimal
+existence program then agrees on native and ordinary routes. This is observed
+binary behavior, not an attribution of the repair or a source-build proof.
+
+The expanded candidate run has 284 programs, 852 native/reference
+comparisons, 852 unrelated-definition comparisons and 568 cross-storage
+comparisons. Every comparison agrees. All thirteen generated families have
+direct activation evidence, the coordinate caller has its separate caller-chain
+evidence, and all four arithmetic-fold subroutes are covered. The candidate
+also passes the fixed-seed 200-program eager native-query law.
+
+The same hash governs twelve coordinate scenarios, sixteen retained-reader
+scenarios, nineteen reached publication controls and all ten archived-mutant
+checks. The joined handoff validates current harness identities and source
+anchor hashes, the fourteen-route inventory and the eighteen-module formal
+manifest. This candidate is qualified evidence; selecting it as the project's
+agreed successor remains an integration decision.
+
+Its saved source patch applies to recorded HEAD
+\code{08e9f948756cb71472c4cb02402d4f7c1f13e873} in an isolated index.
+Of 5,963 ledger entries, 5,940 indexed files reproduce byte-for-byte,
+including all 524 runtime and build paths; the remaining 23 are tests.
+The completed build/test record, patch and ledger are independently hashed.
+This is a reconstructible source receipt, not a cryptographic proof that the
+compiler consumed exactly those bytes.
+
+\section{Allocation failure and partial publication}
+
+A separate pinned debugger driver deliberately injects NULL returns at
+reviewed allocator call instructions, before those calls allocate anything.
+It does not alter runtime source or executable files. This mutating child
+probe is distinct from the observation-only coverage probes. Every fault
+must be reached exactly once, and stopped processes are not counted as
+completed terminations. Eight harness controls check those classifications.
+
+Nineteen controls cover nested tuple facts, diagonal binary facts and binary
+star facts: thirteen recoverable failures preserve observations, three fatal
+snapshot-copy failures terminate with SIGABRT, and three deliberate
+source-removal mutants produce a detected bag mismatch. Growth failures
+exercise representation give-back as well as refusal. Native row-kind
+receipts establish both an array row and an actual bit row in the binary
+tests. The model is a single NULL return, not arbitrary allocator, errno or
+concurrency behavior. The driver records full call-site receipts and checks
+executable, source and harness identities at completion.
+
+\section{Retained readers and collection}
+
+Sixteen further cases cross nested/flat facts, one/seventeen retained readers,
+plain/eager relation storage and disabled/eager reclamation. Each reader
+delivers a prefix before the source facts are removed and replaced; its
+remaining answers must still complete the original bag. Independent oracles
+also check the new store and an unrelated live owner. All cases agree with
+their ordinary routes and those oracles.
+Keys are computed before insertion rather than supplied as source literals,
+so later input constants do not incidentally retain every tested value.
+
+The pinned layout probe checks registration, cache materialization, exact
+root callbacks and deregistration. To bound debugger work, it selects the
+first collection per universe, active snapshot-context set and cache
+generation. All 582 callbacks in 70 selected live collections agree with
+the snapshot fields, and every active snapshot provider in each selected
+census is visited. Off-mode cases do not count as collection evidence.
+The program and expected answers are unchanged by this tracing policy.
+Eleven unit controls reject missing providers, incomplete probes, inexact
+callbacks and false collection witnesses. One reached allocation fault during
+kept-reader provider registration terminates with SIGABRT, not normal refusal.
+
+\section{Reproducing the qualification}
+
+The test entry points live under \code{tests/support/} in the CeTTa checkout.
+In the commands below, replace \code{BINARY} with the executable path and
+\code{HASH} with its reviewed SHA-256. The r82 hash is
+\code{2acbee5636155b7b175c5965e3fb6d0fbc12b50064f56b39f018a59c2c2d4aed};
+the qualified successor-candidate hash is the one above.
+{\small\begin{verbatim}
+python3 tests/support/check_native_observers.py BINARY \
+  --out COHORT --per-family 6 --modes off on eager \
+  --gdb-probe --emit-lean --qualified --expected-sha256 HASH
+\end{verbatim}}
+The runner clears inherited \code{CETTA_*} switches, installs the declared
+route settings and records relevant runtime settings with each comparison.
+Specialized drivers explicitly install their collection settings afterward.
+
+The retained-reader and provider-growth controls run separately:
+{\small\begin{verbatim}
+python3 tests/support/check_reader_lifetimes.py BINARY --out READERS
+python3 tests/support/check_existence_domains.py BINARY --out DOMAINS
+python3 tests/support/check_relation_publication_faults.py BINARY \
+  --out FAULTS --shape deep
+\end{verbatim}}
+Repeat the publication driver with \verb|--shape flat| and
+\verb|--shape flat-star|, choosing a fresh output directory each time.
+Unknown executable hashes are refused.
+
+The archived-mutant driver checks individually hash-pinned artifacts, ordinary-route
+agreement and three minimized replays. Its five gate controls reject survival,
+timeouts, reference disagreement and unknown statuses. Artifacts have the
+layout \code{ARTIFACTS/NAME/mutant}; they are inputs, not binaries rebuilt by
+the checker:
+{\small\begin{verbatim}
+python3 tests/support/check_native_observer_mutants.py BINARY \
+  --oracle-run COHORT --mutants-root ARTIFACTS --out MUTANTS
+python3 tests/support/check_native_route_inventory.py BINARY --out INVENTORY
+python3 tests/support/check_native_source_receipt.py BINARY \
+  --repo REPO --patch PATCH --ledger LEDGER --build-log BUILD_LOG \
+  --out SOURCE_RECEIPT
+\end{verbatim}}
+Every output directory must be new. The emitted scalar Lean file
+and \code{RelationCorrespondenceAudit} supply the separate formal checks.
+Mutation detection can pass on its selected, agreeing oracle cases while
+another family has a production discrepancy; the mutation receipt retains
+that full-cohort status. It does not turn the failing native gate green.
+\code{check_native_qualification_handoff.py} joins the completed cohort,
+domain, reader, three publication, mutant and inventory receipts with the
+Lean foundation-manifest JSON. It exits successfully only when every package
+names the same unchanged binary, the source receipt is qualified and every
+component gate is green.
+
+The separate \code{RelationOwnershipTransfer} note gives the eighteen
+checked mathematical modules and the remaining native implementation
+obligations; neither its proofs nor this finite gate certify the whole C runtime.
+
+\end{document}

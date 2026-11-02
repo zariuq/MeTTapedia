@@ -24,12 +24,25 @@ open Effects (State)
 open TypeSubstitution (typeAtom)
 open Representation (registeredOperatorAtom)
 
+/-- A data head is not a primitive, so it is not `match` either: it avoids every
+special form. -/
+private theorem notForm (head : String)
+    (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have notMatch : head ≠ "match" := ne_match_of_not_known (by
+    simp only [Bool.or_eq_false_iff] at inert
+    exact inert.1.2)
+  intro member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member ordinary
+  tauto
+
 private theorem two_literal (head : String) (first second : Atom)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
     (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
     (left : PureData.Literal program first) (right : PureData.Literal program second) :
     PureData.Literal program (.expression [.symbol head, first, second]) := by
-  apply PureData.Literal.constructor head [first, second] inert ordinary
+  apply PureData.Literal.constructor head [first, second] inert (notForm head inert ordinary)
   intro argument member
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
@@ -41,7 +54,7 @@ private theorem one_literal (head : String) (value : Atom)
     (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
     (child : PureData.Literal program value) :
     PureData.Literal program (.expression [.symbol head, value]) := by
-  apply PureData.Literal.constructor head [value] inert ordinary
+  apply PureData.Literal.constructor head [value] inert (notForm head inert ordinary)
   intro argument member
   have equal := List.mem_singleton.mp member
   exact equal ▸ child
@@ -58,7 +71,7 @@ theorem authored_boolean_type_certificate (bindings : Subst) (state : State) :
     have unique : program.equations.filter (fun row => row.head == "hol-light:bool") = [booleanEquation] := by rfl
     rw [unique]
     have formals : booleanEquation.arguments = [] := by decide
-    simp [formals, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues]
+    simp [formals, SpaceSemantics.matchValue.matchValues]
   · have body : booleanEquation.body = .expression [.symbol "Tyapp", .grounded (.string "bool"), .symbol "HOL:Nil"] := by decide
     rw [body]
     have literal : PureData.Literal program booleanEquation.body := by

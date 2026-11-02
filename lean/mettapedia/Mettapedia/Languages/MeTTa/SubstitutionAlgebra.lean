@@ -65,6 +65,12 @@ where
     | [] => []
     | a :: as => subst σ a :: substList σ as
 
+theorem substList_append (σ : Subst) (first second : List Atom) :
+    subst.substList σ (first ++ second) = subst.substList σ first ++ subst.substList σ second := by
+  induction first with
+  | nil => rfl
+  | cons head tail ih => simp only [List.cons_append, subst.substList, ih]
+
 /-- Restrict a substitution to a set of variables. -/
 def restrict (σ : Subst) (support : List Var) : Subst :=
   fun v => if v ∈ support then σ v else none

@@ -34,7 +34,7 @@ physical allocator, concurrent pointer access or the whole cost ledger.
 Source identity and the rest of the ledger remain separate obligations.
 The Task runner additionally retains its whole source body, independently
 authored operation tree and complete scoped flow. By-value record copies,
-assertion macro profiles and both cleanup guards use the common memory
+assertion macro profiles and all three cleanup guards use the common memory
 services; their physical providers and argument-order agreement remain
 separate realization obligations. The complete task tree also instantiates
 the common polynomial resumption through the primitive-tree isomorphism. Its
@@ -3715,181 +3715,246 @@ private def text2 : List Char := "        return false;\n".toList
 private def tokens2 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
 private theorem scanned2 : text2.foldl step initial = completed tokens2 := by decide +kernel
 
-private def text3 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT && frame->weight_index)\n".toList
-private def tokens3 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "weight_index".toList, .punctuation ")".toList]
+private def text3 : List Char := "    if(frame->call_force_service)return false;\n".toList
+private def tokens3 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "call_force_service".toList, .punctuation ")".toList, .identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
 private theorem scanned3 : text3.foldl step initial = completed tokens3 := by decide +kernel
 
-private def text4 : List Char := "        return false;\n".toList
-private def tokens4 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
+private def text4 : List Char := "    /* Copying to a waiter can refuse after every source row was delivered.\n     * That debt remains runnable even while the producer has live children. */\n".toList
+private def tokens4 : List Token := []
 private theorem scanned4 : text4.foldl step initial = completed tokens4 := by decide +kernel
 
-private def text5 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_CONTROL_NESTED && frame->control_nested_parked)\n".toList
-private def tokens5 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_CONTROL_NESTED".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_nested_parked".toList, .punctuation ")".toList]
+private def text5 : List Char := "    if (prime_eval_stack_return_retry_pending(frame))\n".toList
+private def tokens5 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "prime_eval_stack_return_retry_pending".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation ")".toList, .punctuation ")".toList]
 private theorem scanned5 : text5.foldl step initial = completed tokens5 := by decide +kernel
 
-private def text6 : List Char := "        return false;\n".toList
-private def tokens6 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
+private def text6 : List Char := "        return true;\n".toList
+private def tokens6 : List Token := [.identifier "return".toList, .identifier "true".toList, .punctuation ";".toList]
 private theorem scanned6 : text6.foldl step initial = completed tokens6 := by decide +kernel
 
-private def text7 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_MATCH_ROWS)\n".toList
-private def tokens7 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_MATCH_ROWS".toList, .punctuation ")".toList]
+private def text7 : List Char := "    /* control_pending == 0 would otherwise resume this empty force and pop it. */\n".toList
+private def tokens7 : List Token := []
 private theorem scanned7 : text7.foldl step initial = completed tokens7 := by decide +kernel
 
-private def text8 : List Char := "        return frame->match_rows && !frame->match_rows->blocked;\n".toList
-private def tokens8 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "match_rows".toList, .punctuation "&&".toList, .punctuation "!".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "match_rows".toList, .punctuation "->".toList, .identifier "blocked".toList, .punctuation ";".toList]
+private def text8 : List Char := "    if (frame->shared_need_wait)\n".toList
+private def tokens8 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "shared_need_wait".toList, .punctuation ")".toList]
 private theorem scanned8 : text8.foldl step initial = completed tokens8 := by decide +kernel
 
-private def text9 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_ALTERNATIVES)\n".toList
-private def tokens9 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_ALTERNATIVES".toList, .punctuation ")".toList]
+private def text9 : List Char := "        return frame->force_producer != NULL &&\n".toList
+private def tokens9 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "force_producer".toList, .punctuation "!=".toList, .identifier "NULL".toList, .punctuation "&&".toList]
 private theorem scanned9 : text9.foldl step initial = completed tokens9 := by decide +kernel
 
-private def text10 : List Char := "        return true;\n".toList
-private def tokens10 : List Token := [.identifier "return".toList, .identifier "true".toList, .punctuation ";".toList]
+private def text10 : List Char := "            frame->child_initialized && frame->index < frame->child.len;\n".toList
+private def tokens10 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "child_initialized".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
 private theorem scanned10 : text10.foldl step initial = completed tokens10 := by decide +kernel
 
-private def text11 : List Char := "    if (frame->control_pending == 0u)\n".toList
-private def tokens11 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_pending".toList, .punctuation "==".toList, .number "0u".toList, .punctuation ")".toList]
+private def text11 : List Char := "    if (frame->ordinary_ordered && frame->control_pending) return false;\n".toList
+private def tokens11 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "ordinary_ordered".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_pending".toList, .punctuation ")".toList, .identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
 private theorem scanned11 : text11.foldl step initial = completed tokens11 := by decide +kernel
 
-private def text12 : List Char := "        return true;\n".toList
-private def tokens12 : List Token := [.identifier "return".toList, .identifier "true".toList, .punctuation ";".toList]
+private def text12 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_LET && frame->control_pending &&\n".toList
+private def tokens12 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_LET".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_pending".toList, .punctuation "&&".toList]
 private theorem scanned12 : text12.foldl step initial = completed tokens12 := by decide +kernel
 
-private def text13 : List Char := "    switch (frame->kind) {\n".toList
-private def tokens13 : List Token := [.identifier "switch".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation ")".toList, .punctuation "{".toList]
+private def text13 : List Char := "        (atom_head_symbol_id(frame->atom) == g_builtin_syms.chain ||\n".toList
+private def tokens13 : List Token := [.punctuation "(".toList, .identifier "atom_head_symbol_id".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation "==".toList, .identifier "g_builtin_syms".toList, .punctuation ".".toList, .identifier "chain".toList, .punctuation "||".toList]
 private theorem scanned13 : text13.foldl step initial = completed tokens13 := by decide +kernel
 
-private def text14 : List Char := "    case PRIME_EVAL_STACK_FRAME_EQUATION_SEARCH:\n".toList
-private def tokens14 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_EQUATION_SEARCH".toList, .punctuation ":".toList]
+private def text14 : List Char := "         atom_head_symbol_id(frame->atom) == g_builtin_syms.abt_chain_v1 ||\n".toList
+private def tokens14 : List Token := [.identifier "atom_head_symbol_id".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation "==".toList, .identifier "g_builtin_syms".toList, .punctuation ".".toList, .identifier "abt_chain_v1".toList, .punctuation "||".toList]
 private theorem scanned14 : text14.foldl step initial = completed tokens14 := by decide +kernel
 
-private def text15 : List Char := "        return frame->equation_search &&\n".toList
-private def tokens15 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "equation_search".toList, .punctuation "&&".toList]
+private def text15 : List Char := "         atom_head_symbol_id(frame->atom) == g_builtin_syms.eval ||\n".toList
+private def tokens15 : List Token := [.identifier "atom_head_symbol_id".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation "==".toList, .identifier "g_builtin_syms".toList, .punctuation ".".toList, .identifier "eval".toList, .punctuation "||".toList]
 private theorem scanned15 : text15.foldl step initial = completed tokens15 := by decide +kernel
 
-private def text16 : List Char := "            (frame->equation_search->state == PRIME_NEED_EQUATION_SEARCH_BUILD_PUBLICATION ||\n".toList
-private def tokens16 : List Token := [.punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "equation_search".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_NEED_EQUATION_SEARCH_BUILD_PUBLICATION".toList, .punctuation "||".toList]
+private def text16 : List Char := "         atom_head_symbol_id(frame->atom) == g_builtin_syms.function))\n".toList
+private def tokens16 : List Token := [.identifier "atom_head_symbol_id".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation "==".toList, .identifier "g_builtin_syms".toList, .punctuation ".".toList, .identifier "function".toList, .punctuation ")".toList, .punctuation ")".toList]
 private theorem scanned16 : text16.foldl step initial = completed tokens16 := by decide +kernel
 
-private def text17 : List Char := "             (frame->control_force_stream &&\n".toList
-private def tokens17 : List Token := [.punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_force_stream".toList, .punctuation "&&".toList]
+private def text17 : List Char := "        return false;\n".toList
+private def tokens17 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
 private theorem scanned17 : text17.foldl step initial = completed tokens17 := by decide +kernel
 
-private def text18 : List Char := "              frame->equation_search->state == PRIME_NEED_EQUATION_SEARCH_WAIT_FORCE &&\n".toList
-private def tokens18 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "equation_search".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_NEED_EQUATION_SEARCH_WAIT_FORCE".toList, .punctuation "&&".toList]
+private def text18 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT && frame->weight_index)\n".toList
+private def tokens18 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "weight_index".toList, .punctuation ")".toList]
 private theorem scanned18 : text18.foldl step initial = completed tokens18 := by decide +kernel
 
-private def text19 : List Char := "              frame->index < frame->child.len));\n".toList
-private def tokens19 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ")".toList, .punctuation ")".toList, .punctuation ";".toList]
+private def text19 : List Char := "        return false;\n".toList
+private def tokens19 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
 private theorem scanned19 : text19.foldl step initial = completed tokens19 := by decide +kernel
 
-private def text20 : List Char := "    case PRIME_EVAL_STACK_FRAME_FORCE:\n".toList
-private def tokens20 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_FORCE".toList, .punctuation ":".toList]
+private def text20 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_CONTROL_NESTED && frame->control_nested_parked)\n".toList
+private def tokens20 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_CONTROL_NESTED".toList, .punctuation "&&".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_nested_parked".toList, .punctuation ")".toList]
 private theorem scanned20 : text20.foldl step initial = completed tokens20 := by decide +kernel
 
-private def text21 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_EXACT_RATIONAL:\n".toList
-private def tokens21 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_EXACT_RATIONAL".toList, .punctuation ":".toList]
+private def text21 : List Char := "        return false;\n".toList
+private def tokens21 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
 private theorem scanned21 : text21.foldl step initial = completed tokens21 := by decide +kernel
 
-private def text22 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_WHERE:\n".toList
-private def tokens22 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_WHERE".toList, .punctuation ":".toList]
+private def text22 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_MATCH_ROWS)\n".toList
+private def tokens22 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_MATCH_ROWS".toList, .punctuation ")".toList]
 private theorem scanned22 : text22.foldl step initial = completed tokens22 := by decide +kernel
 
-private def text23 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT:\n".toList
-private def tokens23 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT".toList, .punctuation ":".toList]
+private def text23 : List Char := "        return frame->match_rows && !frame->match_rows->blocked;\n".toList
+private def tokens23 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "match_rows".toList, .punctuation "&&".toList, .punctuation "!".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "match_rows".toList, .punctuation "->".toList, .identifier "blocked".toList, .punctuation ";".toList]
 private theorem scanned23 : text23.foldl step initial = completed tokens23 := by decide +kernel
 
-private def text24 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_ALGEBRA:\n".toList
-private def tokens24 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_ALGEBRA".toList, .punctuation ":".toList]
+private def text24 : List Char := "    if (frame->kind == PRIME_EVAL_STACK_FRAME_ALTERNATIVES)\n".toList
+private def tokens24 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_ALTERNATIVES".toList, .punctuation ")".toList]
 private theorem scanned24 : text24.foldl step initial = completed tokens24 := by decide +kernel
 
-private def text25 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_READ:\n".toList
-private def tokens25 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_READ".toList, .punctuation ":".toList]
+private def text25 : List Char := "        return !frame->ref || !frame->control_pending ||\n".toList
+private def tokens25 : List Token := [.identifier "return".toList, .punctuation "!".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "ref".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_pending".toList, .punctuation "||".toList]
 private theorem scanned25 : text25.foldl step initial = completed tokens25 := by decide +kernel
 
-private def text26 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_FOLD:\n".toList
-private def tokens26 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_FOLD".toList, .punctuation ":".toList]
+private def text26 : List Char := "            frame->stream_forwarded < frame->child.len;\n".toList
+private def tokens26 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "stream_forwarded".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
 private theorem scanned26 : text26.foldl step initial = completed tokens26 := by decide +kernel
 
-private def text27 : List Char := "    case PRIME_EVAL_STACK_FRAME_DIALECT_SOURCE:\n".toList
-private def tokens27 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_DIALECT_SOURCE".toList, .punctuation ":".toList]
+private def text27 : List Char := "    if (frame->control_pending == 0u)\n".toList
+private def tokens27 : List Token := [.identifier "if".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_pending".toList, .punctuation "==".toList, .number "0u".toList, .punctuation ")".toList]
 private theorem scanned27 : text27.foldl step initial = completed tokens27 := by decide +kernel
 
-private def text28 : List Char := "        return frame->index < frame->child.len;\n".toList
-private def tokens28 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private def text28 : List Char := "        return true;\n".toList
+private def tokens28 : List Token := [.identifier "return".toList, .identifier "true".toList, .punctuation ";".toList]
 private theorem scanned28 : text28.foldl step initial = completed tokens28 := by decide +kernel
 
-private def text29 : List Char := "    case PRIME_EVAL_STACK_FRAME_BIND_FINISH:\n".toList
-private def tokens29 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_BIND_FINISH".toList, .punctuation ":".toList]
+private def text29 : List Char := "    switch (frame->kind) {\n".toList
+private def tokens29 : List Token := [.identifier "switch".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "kind".toList, .punctuation ")".toList, .punctuation "{".toList]
 private theorem scanned29 : text29.foldl step initial = completed tokens29 := by decide +kernel
 
-private def text30 : List Char := "        return frame->stream_forwarded < frame->child.len;\n".toList
-private def tokens30 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "stream_forwarded".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private def text30 : List Char := "    case PRIME_EVAL_STACK_FRAME_EQUATION_SEARCH:\n".toList
+private def tokens30 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_EQUATION_SEARCH".toList, .punctuation ":".toList]
 private theorem scanned30 : text30.foldl step initial = completed tokens30 := by decide +kernel
 
-private def text31 : List Char := "    case PRIME_EVAL_STACK_FRAME_NORMALIZE_ATOM:\n".toList
-private def tokens31 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_NORMALIZE_ATOM".toList, .punctuation ":".toList]
+private def text31 : List Char := "        return frame->equation_search &&\n".toList
+private def tokens31 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "equation_search".toList, .punctuation "&&".toList]
 private theorem scanned31 : text31.foldl step initial = completed tokens31 := by decide +kernel
 
-private def text32 : List Char := "    case PRIME_EVAL_STACK_FRAME_NORMALIZE_CHILDREN:\n".toList
-private def tokens32 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_NORMALIZE_CHILDREN".toList, .punctuation ":".toList]
+private def text32 : List Char := "            (frame->equation_search->state == PRIME_NEED_EQUATION_SEARCH_BUILD_PUBLICATION ||\n".toList
+private def tokens32 : List Token := [.punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "equation_search".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_NEED_EQUATION_SEARCH_BUILD_PUBLICATION".toList, .punctuation "||".toList]
 private theorem scanned32 : text32.foldl step initial = completed tokens32 := by decide +kernel
 
-private def text33 : List Char := "        return frame->state == PRIME_EVAL_STACK_FRAME_WAIT_CALL &&\n".toList
-private def tokens33 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_WAIT_CALL".toList, .punctuation "&&".toList]
+private def text33 : List Char := "             (frame->control_force_stream &&\n".toList
+private def tokens33 : List Token := [.punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "control_force_stream".toList, .punctuation "&&".toList]
 private theorem scanned33 : text33.foldl step initial = completed tokens33 := by decide +kernel
 
-private def text34 : List Char := "            frame->index < frame->child.len;\n".toList
-private def tokens34 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private def text34 : List Char := "              frame->equation_search->state == PRIME_NEED_EQUATION_SEARCH_WAIT_FORCE &&\n".toList
+private def tokens34 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "equation_search".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_NEED_EQUATION_SEARCH_WAIT_FORCE".toList, .punctuation "&&".toList]
 private theorem scanned34 : text34.foldl step initial = completed tokens34 := by decide +kernel
 
-private def text35 : List Char := "    case PRIME_EVAL_STACK_FRAME_LET:\n".toList
-private def tokens35 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_LET".toList, .punctuation ":".toList]
+private def text35 : List Char := "              frame->index < frame->child.len));\n".toList
+private def tokens35 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ")".toList, .punctuation ")".toList, .punctuation ";".toList]
 private theorem scanned35 : text35.foldl step initial = completed tokens35 := by decide +kernel
 
-private def text36 : List Char := "    case PRIME_EVAL_STACK_FRAME_STRICT:\n".toList
-private def tokens36 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_STRICT".toList, .punctuation ":".toList]
+private def text36 : List Char := "    case PRIME_EVAL_STACK_FRAME_FORCE:\n".toList
+private def tokens36 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_FORCE".toList, .punctuation ":".toList]
 private theorem scanned36 : text36.foldl step initial = completed tokens36 := by decide +kernel
 
-private def text37 : List Char := "        return (frame->state == PRIME_EVAL_STACK_FRAME_DEMAND ||\n".toList
-private def tokens37 : List Token := [.identifier "return".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_DEMAND".toList, .punctuation "||".toList]
+private def text37 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_EXACT_RATIONAL:\n".toList
+private def tokens37 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_EXACT_RATIONAL".toList, .punctuation ":".toList]
 private theorem scanned37 : text37.foldl step initial = completed tokens37 := by decide +kernel
 
-private def text38 : List Char := "                frame->state == PRIME_EVAL_STACK_FRAME_WAIT_BRANCH ||\n".toList
-private def tokens38 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_WAIT_BRANCH".toList, .punctuation "||".toList]
+private def text38 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_WHERE:\n".toList
+private def tokens38 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_WHERE".toList, .punctuation ":".toList]
 private theorem scanned38 : text38.foldl step initial = completed tokens38 := by decide +kernel
 
-private def text39 : List Char := "                frame->state == PRIME_EVAL_STACK_FRAME_ITERATE) &&\n".toList
-private def tokens39 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_ITERATE".toList, .punctuation ")".toList, .punctuation "&&".toList]
+private def text39 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT:\n".toList
+private def tokens39 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_ADMIT".toList, .punctuation ":".toList]
 private theorem scanned39 : text39.foldl step initial = completed tokens39 := by decide +kernel
 
-private def text40 : List Char := "            frame->index < frame->child.len;\n".toList
-private def tokens40 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private def text40 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_ALGEBRA:\n".toList
+private def tokens40 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_ALGEBRA".toList, .punctuation ":".toList]
 private theorem scanned40 : text40.foldl step initial = completed tokens40 := by decide +kernel
 
-private def text41 : List Char := "    default:\n".toList
-private def tokens41 : List Token := [.identifier "default".toList, .punctuation ":".toList]
+private def text41 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_READ:\n".toList
+private def tokens41 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_READ".toList, .punctuation ":".toList]
 private theorem scanned41 : text41.foldl step initial = completed tokens41 := by decide +kernel
 
-private def text42 : List Char := "        return false;\n".toList
-private def tokens42 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
+private def text42 : List Char := "    case PRIME_EVAL_STACK_FRAME_WEIGHT_FOLD:\n".toList
+private def tokens42 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_WEIGHT_FOLD".toList, .punctuation ":".toList]
 private theorem scanned42 : text42.foldl step initial = completed tokens42 := by decide +kernel
 
-private def text43 : List Char := "    }\n".toList
-private def tokens43 : List Token := [.punctuation "}".toList]
+private def text43 : List Char := "    case PRIME_EVAL_STACK_FRAME_DIALECT_SOURCE:\n".toList
+private def tokens43 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_DIALECT_SOURCE".toList, .punctuation ":".toList]
 private theorem scanned43 : text43.foldl step initial = completed tokens43 := by decide +kernel
 
-private def text44 : List Char := "}\n".toList
-private def tokens44 : List Token := [.punctuation "}".toList]
+private def text44 : List Char := "        return frame->index < frame->child.len;\n".toList
+private def tokens44 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
 private theorem scanned44 : text44.foldl step initial = completed tokens44 := by decide +kernel
 
-private def pieces : List (List Char × List Token) := [(text0, tokens0), (text1, tokens1), (text2, tokens2), (text3, tokens3), (text4, tokens4), (text5, tokens5), (text6, tokens6), (text7, tokens7), (text8, tokens8), (text9, tokens9), (text10, tokens10), (text11, tokens11), (text12, tokens12), (text13, tokens13), (text14, tokens14), (text15, tokens15), (text16, tokens16), (text17, tokens17), (text18, tokens18), (text19, tokens19), (text20, tokens20), (text21, tokens21), (text22, tokens22), (text23, tokens23), (text24, tokens24), (text25, tokens25), (text26, tokens26), (text27, tokens27), (text28, tokens28), (text29, tokens29), (text30, tokens30), (text31, tokens31), (text32, tokens32), (text33, tokens33), (text34, tokens34), (text35, tokens35), (text36, tokens36), (text37, tokens37), (text38, tokens38), (text39, tokens39), (text40, tokens40), (text41, tokens41), (text42, tokens42), (text43, tokens43), (text44, tokens44)]
+private def text45 : List Char := "    case PRIME_EVAL_STACK_FRAME_BIND_FINISH:\n".toList
+private def tokens45 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_BIND_FINISH".toList, .punctuation ":".toList]
+private theorem scanned45 : text45.foldl step initial = completed tokens45 := by decide +kernel
+
+private def text46 : List Char := "        return frame->stream_forwarded < frame->child.len;\n".toList
+private def tokens46 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "stream_forwarded".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private theorem scanned46 : text46.foldl step initial = completed tokens46 := by decide +kernel
+
+private def text47 : List Char := "    case PRIME_EVAL_STACK_FRAME_NORMALIZE_ATOM:\n".toList
+private def tokens47 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_NORMALIZE_ATOM".toList, .punctuation ":".toList]
+private theorem scanned47 : text47.foldl step initial = completed tokens47 := by decide +kernel
+
+private def text48 : List Char := "    case PRIME_EVAL_STACK_FRAME_NORMALIZE_CHILDREN:\n".toList
+private def tokens48 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_NORMALIZE_CHILDREN".toList, .punctuation ":".toList]
+private theorem scanned48 : text48.foldl step initial = completed tokens48 := by decide +kernel
+
+private def text49 : List Char := "        return frame->state == PRIME_EVAL_STACK_FRAME_WAIT_CALL &&\n".toList
+private def tokens49 : List Token := [.identifier "return".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_WAIT_CALL".toList, .punctuation "&&".toList]
+private theorem scanned49 : text49.foldl step initial = completed tokens49 := by decide +kernel
+
+private def text50 : List Char := "            frame->index < frame->child.len;\n".toList
+private def tokens50 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private theorem scanned50 : text50.foldl step initial = completed tokens50 := by decide +kernel
+
+private def text51 : List Char := "    case PRIME_EVAL_STACK_FRAME_LET:\n".toList
+private def tokens51 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_LET".toList, .punctuation ":".toList]
+private theorem scanned51 : text51.foldl step initial = completed tokens51 := by decide +kernel
+
+private def text52 : List Char := "    case PRIME_EVAL_STACK_FRAME_STRICT:\n".toList
+private def tokens52 : List Token := [.identifier "case".toList, .identifier "PRIME_EVAL_STACK_FRAME_STRICT".toList, .punctuation ":".toList]
+private theorem scanned52 : text52.foldl step initial = completed tokens52 := by decide +kernel
+
+private def text53 : List Char := "        return (frame->state == PRIME_EVAL_STACK_FRAME_DEMAND ||\n".toList
+private def tokens53 : List Token := [.identifier "return".toList, .punctuation "(".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_DEMAND".toList, .punctuation "||".toList]
+private theorem scanned53 : text53.foldl step initial = completed tokens53 := by decide +kernel
+
+private def text54 : List Char := "                frame->state == PRIME_EVAL_STACK_FRAME_WAIT_BRANCH ||\n".toList
+private def tokens54 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_WAIT_BRANCH".toList, .punctuation "||".toList]
+private theorem scanned54 : text54.foldl step initial = completed tokens54 := by decide +kernel
+
+private def text55 : List Char := "                frame->state == PRIME_EVAL_STACK_FRAME_ITERATE) &&\n".toList
+private def tokens55 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "state".toList, .punctuation "==".toList, .identifier "PRIME_EVAL_STACK_FRAME_ITERATE".toList, .punctuation ")".toList, .punctuation "&&".toList]
+private theorem scanned55 : text55.foldl step initial = completed tokens55 := by decide +kernel
+
+private def text56 : List Char := "            frame->index < frame->child.len;\n".toList
+private def tokens56 : List Token := [.identifier "frame".toList, .punctuation "->".toList, .identifier "index".toList, .punctuation "<".toList, .identifier "frame".toList, .punctuation "->".toList, .identifier "child".toList, .punctuation ".".toList, .identifier "len".toList, .punctuation ";".toList]
+private theorem scanned56 : text56.foldl step initial = completed tokens56 := by decide +kernel
+
+private def text57 : List Char := "    default:\n".toList
+private def tokens57 : List Token := [.identifier "default".toList, .punctuation ":".toList]
+private theorem scanned57 : text57.foldl step initial = completed tokens57 := by decide +kernel
+
+private def text58 : List Char := "        return false;\n".toList
+private def tokens58 : List Token := [.identifier "return".toList, .identifier "false".toList, .punctuation ";".toList]
+private theorem scanned58 : text58.foldl step initial = completed tokens58 := by decide +kernel
+
+private def text59 : List Char := "    }\n".toList
+private def tokens59 : List Token := [.punctuation "}".toList]
+private theorem scanned59 : text59.foldl step initial = completed tokens59 := by decide +kernel
+
+private def text60 : List Char := "}\n".toList
+private def tokens60 : List Token := [.punctuation "}".toList]
+private theorem scanned60 : text60.foldl step initial = completed tokens60 := by decide +kernel
+
+private def pieces : List (List Char × List Token) := [(text0, tokens0), (text1, tokens1), (text2, tokens2), (text3, tokens3), (text4, tokens4), (text5, tokens5), (text6, tokens6), (text7, tokens7), (text8, tokens8), (text9, tokens9), (text10, tokens10), (text11, tokens11), (text12, tokens12), (text13, tokens13), (text14, tokens14), (text15, tokens15), (text16, tokens16), (text17, tokens17), (text18, tokens18), (text19, tokens19), (text20, tokens20), (text21, tokens21), (text22, tokens22), (text23, tokens23), (text24, tokens24), (text25, tokens25), (text26, tokens26), (text27, tokens27), (text28, tokens28), (text29, tokens29), (text30, tokens30), (text31, tokens31), (text32, tokens32), (text33, tokens33), (text34, tokens34), (text35, tokens35), (text36, tokens36), (text37, tokens37), (text38, tokens38), (text39, tokens39), (text40, tokens40), (text41, tokens41), (text42, tokens42), (text43, tokens43), (text44, tokens44), (text45, tokens45), (text46, tokens46), (text47, tokens47), (text48, tokens48), (text49, tokens49), (text50, tokens50), (text51, tokens51), (text52, tokens52), (text53, tokens53), (text54, tokens54), (text55, tokens55), (text56, tokens56), (text57, tokens57), (text58, tokens58), (text59, tokens59), (text60, tokens60)]
 def source : List Char := pieces.flatMap Prod.fst
 private def tokens : List Token := pieces.flatMap Prod.snd
 
 private theorem scanned : List.Forall (fun piece =>
     piece.1.foldl step initial = completed piece.2) pieces := by
-  exact ⟨scanned0, ⟨scanned1, ⟨scanned2, ⟨scanned3, ⟨scanned4, ⟨scanned5, ⟨scanned6, ⟨scanned7, ⟨scanned8, ⟨scanned9, ⟨scanned10, ⟨scanned11, ⟨scanned12, ⟨scanned13, ⟨scanned14, ⟨scanned15, ⟨scanned16, ⟨scanned17, ⟨scanned18, ⟨scanned19, ⟨scanned20, ⟨scanned21, ⟨scanned22, ⟨scanned23, ⟨scanned24, ⟨scanned25, ⟨scanned26, ⟨scanned27, ⟨scanned28, ⟨scanned29, ⟨scanned30, ⟨scanned31, ⟨scanned32, ⟨scanned33, ⟨scanned34, ⟨scanned35, ⟨scanned36, ⟨scanned37, ⟨scanned38, ⟨scanned39, ⟨scanned40, ⟨scanned41, ⟨scanned42, ⟨scanned43, scanned44⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩
+  simp only [pieces, List.forall_cons]
+  exact ⟨scanned0, scanned1, scanned2, scanned3, scanned4, scanned5, scanned6, scanned7, scanned8, scanned9, scanned10, scanned11, scanned12, scanned13, scanned14, scanned15, scanned16, scanned17, scanned18, scanned19, scanned20, scanned21, scanned22, scanned23, scanned24, scanned25, scanned26, scanned27, scanned28, scanned29, scanned30, scanned31, scanned32, scanned33, scanned34, scanned35, scanned36, scanned37, scanned38, scanned39, scanned40, scanned41, scanned42, scanned43, scanned44, scanned45, scanned46, scanned47, scanned48, scanned49, scanned50, scanned51, scanned52, scanned53, scanned54, scanned55, scanned56, scanned57, scanned58, scanned59, scanned60, by trivial⟩
 
 private theorem lexed : lex source = .ok tokens :=
   lex_of_completed source tokens (completed_pieces pieces scanned)
@@ -3931,15 +3996,46 @@ private def arms : List (CExpr × List CStatement) := [
     (tag "STRICT", reply (.binary .and
       (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread))]
 
+
+private def head : CExpr := .call "atom_head_symbol_id".toList [field "atom"]
+private def builtin (name : String) : CExpr :=
+  .field (.identifier "g_builtin_syms".toList) name.toList false
+private def headIs (name : String) : CExpr := .binary .eq head (builtin name)
+private def retryCall : CExpr := .call "prime_eval_stack_return_retry_pending".toList [f]
+
+private def sharedAnswer : CExpr :=
+  .binary .and (.binary .and (.binary .ne (field "force_producer") .null)
+    (field "child_initialized")) unread
+private def orderedCondition : CExpr :=
+  .binary .and (field "ordinary_ordered") (field "control_pending")
+private def letHeads : CExpr :=
+  .binary .or (.binary .or (.binary .or (headIs "chain") (headIs "abt_chain_v1"))
+    (headIs "eval")) (headIs "function")
+private def letCondition : CExpr :=
+  .binary .and (.binary .and (kind "LET") (field "control_pending")) letHeads
+
+private def alternativesExpression : CExpr :=
+  .binary .or (.binary .or (.unary .not (field "ref"))
+    (.unary .not (field "control_pending")))
+    (.binary .lt (field "stream_forwarded") length)
+
 def body : List CStatement := [
   .branch (.binary .or (.binary .or (.unary .not f) (field "control_closed"))
     (field "weight_ownership_parked")) (reply (.bool false)) [],
+  .branch (field "call_force_service") (reply (.bool false)) [],
+  .branch retryCall (reply (.bool true)) [],
+  .branch (field "shared_need_wait")
+    (reply sharedAnswer) [],
+  .branch orderedCondition
+    (reply (.bool false)) [],
+  .branch letCondition (reply (.bool false)) [],
   .branch (.binary .and (kind "WEIGHT_ADMIT") (field "weight_index")) (reply (.bool false)) [],
   .branch (.binary .and (kind "CONTROL_NESTED") (field "control_nested_parked"))
     (reply (.bool false)) [],
   .branch (kind "MATCH_ROWS") (reply (.binary .and (field "match_rows")
     (.unary .not (.field (field "match_rows") "blocked".toList true)))) [],
-  .branch (kind "ALTERNATIVES") (reply (.bool true)) [],
+  .branch (kind "ALTERNATIVES")
+    (reply alternativesExpression) [],
   .branch (.binary .eq (field "control_pending") (.unsignedInteger 0)) (reply (.bool true)) [],
   .switch (field "kind") arms (reply (.bool false))]
 
@@ -3947,16 +4043,47 @@ def parsed : CQualifiedFunction :=
   ⟨⟨"bool".toList, 0⟩, "prime_native_control_frame_ready".toList,
     [⟨⟨⟨"PrimeEvalStackFrame".toList, 1⟩, "frame".toList⟩, true⟩], body⟩
 
-private theorem token_count : tokens.length = 263 := by decide +kernel
+private theorem token_count : tokens.length = 401 := by decide +kernel
 
+set_option maxRecDepth 8192 in
 private theorem parsed_exact : qualifiedFunction?
     (2 * tokens.length + 4) types (ordinaryFunctionTokens tokens) = some (parsed, []) := by
-  rw [token_count]
-  rfl
+  native_c_parser_reflexivity
 
 theorem source_recognized : qualifiedFunctionText? types source = some parsed :=
   function_text_using_of_parts (qualifiedParameter? types) types source tokens parsed lexed parsed_exact
 
+private def retryKindBody : List CStatement :=
+  reply (.binary .and f (.binary .or (kind "FORCE")
+    (.binary .and (kind "LET") (.binary .or (headIs "eval") (headIs "function")))))
+
+private def retryPendingBody : List CStatement :=
+  reply (.binary .and (.call "prime_eval_stack_return_retry_kind".toList [f])
+    (.conditional (kind "FORCE") (field "force_retry_pending") (field "return_retry_pending")))
+
+private def retryParsed (name : String) (body : List CStatement) : CQualifiedFunction :=
+  ⟨⟨"bool".toList, 0⟩, name.toList,
+    [⟨⟨⟨"PrimeEvalStackFrame".toList, 1⟩, "frame".toList⟩, true⟩], body⟩
+
+def retryKindSource : String := "static bool prime_eval_stack_return_retry_kind(const PrimeEvalStackFrame *frame) {\n    return frame && (frame->kind == PRIME_EVAL_STACK_FRAME_FORCE ||\n        (frame->kind == PRIME_EVAL_STACK_FRAME_LET &&\n         (atom_head_symbol_id(frame->atom) == g_builtin_syms.eval ||\n          atom_head_symbol_id(frame->atom) == g_builtin_syms.function)));\n}"
+private def retryKindCharacters : List Char := native_c_characters% "static bool prime_eval_stack_return_retry_kind(const PrimeEvalStackFrame *frame) {\n    return frame && (frame->kind == PRIME_EVAL_STACK_FRAME_FORCE ||\n        (frame->kind == PRIME_EVAL_STACK_FRAME_LET &&\n         (atom_head_symbol_id(frame->atom) == g_builtin_syms.eval ||\n          atom_head_symbol_id(frame->atom) == g_builtin_syms.function)));\n}"
+private theorem retryKind_characters : retryKindSource.toList = retryKindCharacters := by
+  native_c_character_reflexivity
+set_option maxRecDepth 8192 in
+theorem retryKind_source_recognized : qualifiedFunctionText? types retryKindSource.toList =
+    some (retryParsed "prime_eval_stack_return_retry_kind" retryKindBody) := by
+  rw [retryKind_characters]
+  native_c_parser_reflexivity
+
+def retryPendingSource : String := "static bool prime_eval_stack_return_retry_pending(const PrimeEvalStackFrame *frame) {\n    return prime_eval_stack_return_retry_kind(frame) &&\n        (frame->kind == PRIME_EVAL_STACK_FRAME_FORCE\n            ? frame->force_retry_pending : frame->return_retry_pending);\n}"
+private def retryPendingCharacters : List Char := native_c_characters% "static bool prime_eval_stack_return_retry_pending(const PrimeEvalStackFrame *frame) {\n    return prime_eval_stack_return_retry_kind(frame) &&\n        (frame->kind == PRIME_EVAL_STACK_FRAME_FORCE\n            ? frame->force_retry_pending : frame->return_retry_pending);\n}"
+private theorem retryPending_characters : retryPendingSource.toList = retryPendingCharacters := by
+  native_c_character_reflexivity
+set_option maxRecDepth 8192 in
+theorem retryPending_source_recognized : qualifiedFunctionText? types retryPendingSource.toList =
+    some (retryParsed "prime_eval_stack_return_retry_pending" retryPendingBody) := by
+  rw [retryPending_characters]
+  native_c_parser_reflexivity
 
 namespace ReadView
 open ScalarRead
@@ -4010,6 +4137,9 @@ def Role.code : Role → UInt32
   | .matchRows => 20
   | .alternatives => 21
 
+
+/-- An immutable source readout includes the compared symbol identities and
+nullable frame links. Their native layout and lifetime remain provider duties. -/
 structure Frame where
   role : Role
   phase : UInt32
@@ -4024,6 +4154,33 @@ structure Frame where
   rowsBlocked : Option Bool
   equationPhase : Option UInt32
   forceStream : Bool
+  servicePresent : Bool := false
+  sharedWait : Bool := false
+  producerPresent : Bool := false
+  childInitialized : Bool := false
+  ordered : Bool := false
+  referencePresent : Bool := false
+  forceRetry : Bool := false
+  returnRetry : Bool := false
+  atomHead : UInt32 := 4
+  chainSymbol : UInt32 := 0
+  abtChainSymbol : UInt32 := 1
+  evalSymbol : UInt32 := 2
+  functionSymbol : UInt32 := 3
+
+def symbolEqual (a b : UInt32) : Bool :=
+  a.toUInt64 == b.toUInt64
+
+theorem symbolEqual_eq (a b : UInt32) : symbolEqual a b = (a == b) := by
+  change (a.toUInt64 == b.toUInt64) = (a == b)
+  simp only [Bool.beq_eq_decide_eq, UInt32.toUInt64_inj]
+
+def retryKind (frame : Frame) : Bool :=
+  frame.role == .force || (frame.role == .letBody &&
+    (symbolEqual frame.atomHead frame.evalSymbol || symbolEqual frame.atomHead frame.functionSymbol))
+
+def retryPending (frame : Frame) : Bool :=
+  retryKind frame && (if frame.role == .force then frame.forceRetry else frame.returnRetry)
 
 def waiting (frame : Frame) : Bool :=
   let unread := decide (frame.cursor < frame.childLength)
@@ -4036,21 +4193,33 @@ def waiting (frame : Frame) : Bool :=
   | .letBody | .strict => (frame.phase == 0 || frame.phase == 2 || frame.phase == 3) && unread
   | _ => false
 
-/-- Readiness is permission to make local progress. A row consumer's missing
-or blocked cursor stays unavailable even when it has no producer obligations. -/
+/-- Runnable local progress respects service ownership, exact return debt,
+shared-reader availability and the authored ordered-LET barriers. -/
+private def tailReady (frame : Frame) : Bool :=
+  if frame.role == .admit && frame.weightIndex != 0 then false
+  else if frame.role == .nested && frame.nestedParked then false
+  else match frame.role with
+    | .matchRows => frame.rowsBlocked.any (! ·)
+    | .alternatives => !frame.referencePresent || frame.pending == 0 ||
+        decide (frame.forwarded < frame.childLength)
+    | _ => frame.pending == 0 || waiting frame
+
 def ready : Option Frame → Bool
   | none => false
   | some frame =>
       if frame.closed || frame.ownershipParked then false
-      else if frame.role == .admit && frame.weightIndex != 0 then false
-      else if frame.role == .nested && frame.nestedParked then false
-      else match frame.role with
-        | .matchRows => frame.rowsBlocked.any (! ·)
-        | .alternatives => true
-        | _ => frame.pending == 0 || waiting frame
+      else if frame.servicePresent then false
+      else if retryPending frame then true
+      else if frame.sharedWait then
+        frame.producerPresent && frame.childInitialized && decide (frame.cursor < frame.childLength)
+      else if frame.ordered && frame.pending != 0 then false
+      else if frame.role == .letBody && frame.pending != 0 &&
+        (symbolEqual frame.atomHead frame.chainSymbol || symbolEqual frame.atomHead frame.abtChainSymbol ||
+         symbolEqual frame.atomHead frame.evalSymbol || symbolEqual frame.atomHead frame.functionSymbol) then false
+      else tailReady frame
 
 inductive Address where
-  | frame | rows | equation
+  | frame | rows | equation | atom | service | producer | reference
   deriving DecidableEq, Repr
 
 def macroValue (name : Name) : Option (Value Address) :=
@@ -4085,37 +4254,70 @@ def macroValue (name : Name) : Option (Value Address) :=
   else if name = ['P', 'R', 'I', 'M', 'E', '_', 'N', 'E', 'E', 'D', '_', 'E', 'Q', 'U', 'A', 'T', 'I', 'O', 'N', '_', 'S', 'E', 'A', 'R', 'C', 'H', '_', 'W', 'A', 'I', 'T', '_', 'F', 'O', 'R', 'C', 'E'] then some (.unsigned 1)
   else none
 
+
 def environment (view : Option Frame) : Environment Address := fun name =>
-  if name = ['f', 'r', 'a', 'm', 'e'] then some (.identity (view.map fun _ => .frame))
+  if name = "frame".toList then some (.identity (view.map fun _ => .frame))
+  else if name = "g_builtin_syms".toList then do
+    let frame ← view
+    some (.wordRecord [("chain".toList, frame.chainSymbol.toUInt64),
+      ("abt_chain_v1".toList, frame.abtChainSymbol.toUInt64),
+      ("eval".toList, frame.evalSymbol.toUInt64),
+      ("function".toList, frame.functionSymbol.toUInt64)])
   else macroValue name
 
 def fields (view : Option Frame) : FieldReader Address := fun address name => do
   let frame ← view
   match address with
   | .frame =>
-      if name = ['k', 'i', 'n', 'd'] then some (.unsigned frame.role.code)
-      else if name = ['s', 't', 'a', 't', 'e'] then some (.unsigned frame.phase)
-      else if name = ['c', 'o', 'n', 't', 'r', 'o', 'l', '_', 'c', 'l', 'o', 's', 'e', 'd'] then some (.boolean frame.closed)
-      else if name = ['w', 'e', 'i', 'g', 'h', 't', '_', 'o', 'w', 'n', 'e', 'r', 's', 'h', 'i', 'p', '_', 'p', 'a', 'r', 'k', 'e', 'd'] then some (.boolean frame.ownershipParked)
-      else if name = ['w', 'e', 'i', 'g', 'h', 't', '_', 'i', 'n', 'd', 'e', 'x'] then some (.unsigned64 frame.weightIndex)
-      else if name = ['c', 'o', 'n', 't', 'r', 'o', 'l', '_', 'n', 'e', 's', 't', 'e', 'd', '_', 'p', 'a', 'r', 'k', 'e', 'd'] then some (.boolean frame.nestedParked)
-      else if name = ['m', 'a', 't', 'c', 'h', '_', 'r', 'o', 'w', 's'] then some (.identity (frame.rowsBlocked.map fun _ => .rows))
-      else if name = ['e', 'q', 'u', 'a', 't', 'i', 'o', 'n', '_', 's', 'e', 'a', 'r', 'c', 'h'] then some (.identity (frame.equationPhase.map fun _ => .equation))
-      else if name = ['c', 'o', 'n', 't', 'r', 'o', 'l', '_', 'p', 'e', 'n', 'd', 'i', 'n', 'g'] then some (.unsigned64 frame.pending)
-      else if name = ['c', 'o', 'n', 't', 'r', 'o', 'l', '_', 'f', 'o', 'r', 'c', 'e', '_', 's', 't', 'r', 'e', 'a', 'm'] then some (.boolean frame.forceStream)
-      else if name = ['i', 'n', 'd', 'e', 'x'] then some (.unsigned64 frame.cursor)
-      else if name = ['s', 't', 'r', 'e', 'a', 'm', '_', 'f', 'o', 'r', 'w', 'a', 'r', 'd', 'e', 'd'] then some (.unsigned64 frame.forwarded)
-      else if name = ['c', 'h', 'i', 'l', 'd'] then some (.wordRecord [(['l', 'e', 'n'], frame.childLength)])
+      if name = "kind".toList then some (.unsigned frame.role.code)
+      else if name = "state".toList then some (.unsigned frame.phase)
+      else if name = "control_closed".toList then some (.boolean frame.closed)
+      else if name = "weight_ownership_parked".toList then some (.boolean frame.ownershipParked)
+      else if name = "weight_index".toList then some (.unsigned64 frame.weightIndex)
+      else if name = "control_nested_parked".toList then some (.boolean frame.nestedParked)
+      else if name = "match_rows".toList then some (.identity (frame.rowsBlocked.map fun _ => .rows))
+      else if name = "equation_search".toList then some (.identity (frame.equationPhase.map fun _ => .equation))
+      else if name = "control_pending".toList then some (.unsigned64 frame.pending)
+      else if name = "control_force_stream".toList then some (.boolean frame.forceStream)
+      else if name = "index".toList then some (.unsigned64 frame.cursor)
+      else if name = "stream_forwarded".toList then some (.unsigned64 frame.forwarded)
+      else if name = "child".toList then some (.wordRecord [("len".toList, frame.childLength)])
+      else if name = "call_force_service".toList then some (.identity (if frame.servicePresent then some .service else none))
+      else if name = "shared_need_wait".toList then some (.boolean frame.sharedWait)
+      else if name = "force_producer".toList then some (.identity (if frame.producerPresent then some .producer else none))
+      else if name = "child_initialized".toList then some (.boolean frame.childInitialized)
+      else if name = "ordinary_ordered".toList then some (.boolean frame.ordered)
+      else if name = "ref".toList then some (.identity (if frame.referencePresent then some .reference else none))
+      else if name = "force_retry_pending".toList then some (.boolean frame.forceRetry)
+      else if name = "return_retry_pending".toList then some (.boolean frame.returnRetry)
+      else if name = "atom".toList then some (.identity (some .atom))
       else none
-  | .rows => if name = ['b', 'l', 'o', 'c', 'k', 'e', 'd'] then frame.rowsBlocked.map Value.boolean else none
-  | .equation => if name = ['s', 't', 'a', 't', 'e'] then frame.equationPhase.map Value.unsigned else none
+  | .rows => if name = "blocked".toList then frame.rowsBlocked.map Value.boolean else none
+  | .equation => if name = "state".toList then frame.equationPhase.map Value.unsigned else none
+  | _ => none
+
+/-- Pure helpers receive the actual argument list. Retry predicates are
+computed from separate kind, head and debt fields, never from `ready`. -/
+def calls (view : Option Frame) : CallReader Address := fun name values =>
+  match values with
+  | [.identity none] =>
+      if name = "prime_eval_stack_return_retry_kind".toList ||
+          name = "prime_eval_stack_return_retry_pending".toList then some (.boolean false)
+      else none
+  | [.identity (some .frame)] => do
+      let frame ← view
+      if name = "prime_eval_stack_return_retry_kind".toList then some (.boolean (retryKind frame))
+      else if name = "prime_eval_stack_return_retry_pending".toList then some (.boolean (retryPending frame))
+      else none
+  | [.identity (some .atom)] => do
+      let frame ← view
+      if name = "atom_head_symbol_id".toList then some (.unsigned frame.atomHead) else none
+  | _ => none
 
 def returned (view : Option Frame) (answer : Bool) : LocalBlock.Result Address :=
   .finished (some (.returned (environment view) (some (.boolean answer))))
 
-theorem null_frame_returns_false :
-    LocalBlock.execute (fields none) 32 (environment none) body = returned none false := rfl
-
+variable {readerCalls : CallReader Address}
 
 @[simp] private theorem environment_frame (view : Option Frame) :
     environment view ['f', 'r', 'a', 'm', 'e'] = some (.identity (view.map fun _ => .frame)) := rfl
@@ -4257,12 +4459,12 @@ private theorem result_if (view : Option Frame) (selected yes no : Bool) :
 private theorem branch_returns_or_continues (reader : FieldReader Address)
     (locals : Environment Address) (fuel : Nat) (condition : CExpr)
     (selected answer : Bool) (rest : List CStatement)
-    (read : (expression locals reader condition).bind truth? = some selected) :
+    (read : (expression locals reader condition readerCalls).bind truth? = some selected) :
     LocalBlock.execute reader (fuel + 2) locals
-      (.branch condition (reply (.bool answer)) [] :: rest) =
+      (.branch condition (reply (.bool answer)) [] :: rest) readerCalls =
       if selected then .finished (some (.returned locals (some (.boolean answer))))
-      else LocalBlock.execute reader (fuel + 1) locals rest :=
-  LocalBlock.branch_returns_expression reader locals fuel condition (.bool answer)
+      else LocalBlock.execute reader (fuel + 1) locals rest readerCalls :=
+  LocalBlock.branch_returns_expression_with_calls (calls := readerCalls) reader locals fuel condition (.bool answer)
     selected (.boolean answer) rest read rfl
 
 private theorem role_code_equal (left right : Role) :
@@ -4277,13 +4479,13 @@ private def nestedCondition : CExpr := .binary .and (kind "CONTROL_NESTED") (fie
 private def pendingCondition : CExpr := .binary .eq (field "control_pending") (.unsignedInteger 0)
 
 private theorem closed_read (frame : Frame) :
-    (expression (environment (some frame)) (fields (some frame)) closedCondition).bind truth? =
+    (expression (environment (some frame)) (fields (some frame)) closedCondition readerCalls).bind truth? =
       some (frame.closed || frame.ownershipParked) := by
   cases h : frame.closed <;>
     simp [closedCondition, f, field, expression, truth?, h]
 
 private theorem admit_read (frame : Frame) :
-    (expression (environment (some frame)) (fields (some frame)) admitCondition).bind truth? =
+    (expression (environment (some frame)) (fields (some frame)) admitCondition readerCalls).bind truth? =
       some (frame.role == .admit && frame.weightIndex != 0) := by
   have code : (frame.role.code == (15 : UInt32)) = (frame.role == .admit) :=
     role_code_equal frame.role .admit
@@ -4291,7 +4493,7 @@ private theorem admit_read (frame : Frame) :
     simp [admitCondition, kind, field, tag, f, expression, truth?, equal?, code, h]
 
 private theorem nested_read (frame : Frame) :
-    (expression (environment (some frame)) (fields (some frame)) nestedCondition).bind truth? =
+    (expression (environment (some frame)) (fields (some frame)) nestedCondition readerCalls).bind truth? =
       some (frame.role == .nested && frame.nestedParked) := by
   have code : (frame.role.code == (12 : UInt32)) = (frame.role == .nested) :=
     role_code_equal frame.role .nested
@@ -4299,82 +4501,82 @@ private theorem nested_read (frame : Frame) :
     simp [nestedCondition, kind, field, tag, f, expression, truth?, equal?, code, h]
 
 private theorem rows_kind_read (frame : Frame) :
-    (expression (environment (some frame)) (fields (some frame)) (kind "MATCH_ROWS")).bind truth? =
+    (expression (environment (some frame)) (fields (some frame)) (kind "MATCH_ROWS") readerCalls).bind truth? =
       some (frame.role == .matchRows) := by
   have code : (frame.role.code == (20 : UInt32)) = (frame.role == .matchRows) :=
     role_code_equal frame.role .matchRows
   simp [kind, field, tag, f, expression, truth?, equal?, code]
 
 private theorem alternatives_kind_read (frame : Frame) :
-    (expression (environment (some frame)) (fields (some frame)) (kind "ALTERNATIVES")).bind truth? =
+    (expression (environment (some frame)) (fields (some frame)) (kind "ALTERNATIVES") readerCalls).bind truth? =
       some (frame.role == .alternatives) := by
   have code : (frame.role.code == (21 : UInt32)) = (frame.role == .alternatives) :=
     role_code_equal frame.role .alternatives
   simp [kind, field, tag, f, expression, truth?, equal?, code]
 
 private theorem pending_read (frame : Frame) :
-    (expression (environment (some frame)) (fields (some frame)) pendingCondition).bind truth? =
+    (expression (environment (some frame)) (fields (some frame)) pendingCondition readerCalls).bind truth? =
       some (frame.pending == 0) := by
   simp [pendingCondition, field, f, expression, truth?, equal?]
 
 
 private theorem unread_read (frame : Frame) :
-    expression (environment (some frame)) (fields (some frame)) unread =
+    expression (environment (some frame)) (fields (some frame)) unread readerCalls =
       some (.boolean (decide (frame.cursor < frame.childLength))) := by
   simp [unread, length, field, f, expression, numericBinary, unsigned64Binary]
 
 private theorem forwarded_read (frame : Frame) :
     expression (environment (some frame)) (fields (some frame))
-      (.binary .lt (field "stream_forwarded") length) =
+      (.binary .lt (field "stream_forwarded") length) readerCalls =
       some (.boolean (decide (frame.forwarded < frame.childLength))) := by
   simp [length, field, f, expression, numericBinary, unsigned64Binary]
 
 private theorem phase_call_read (frame : Frame) :
-    expression (environment (some frame)) (fields (some frame)) (phase "WAIT_CALL") =
+    expression (environment (some frame)) (fields (some frame)) (phase "WAIT_CALL") readerCalls =
       some (.boolean (frame.phase == 1)) := by
   simp [phase, field, tag, f, expression, equal?]
 
 private theorem phase_demand_read (frame : Frame) :
-    expression (environment (some frame)) (fields (some frame)) (phase "DEMAND") =
+    expression (environment (some frame)) (fields (some frame)) (phase "DEMAND") readerCalls =
       some (.boolean (frame.phase == 0)) := by
   simp [phase, field, tag, f, expression, equal?]
 
 private theorem phase_branch_read (frame : Frame) :
-    expression (environment (some frame)) (fields (some frame)) (phase "WAIT_BRANCH") =
+    expression (environment (some frame)) (fields (some frame)) (phase "WAIT_BRANCH") readerCalls =
       some (.boolean (frame.phase == 2)) := by
   simp [phase, field, tag, f, expression, equal?]
 
 private theorem phase_iterate_read (frame : Frame) :
-    expression (environment (some frame)) (fields (some frame)) (phase "ITERATE") =
+    expression (environment (some frame)) (fields (some frame)) (phase "ITERATE") readerCalls =
       some (.boolean (frame.phase == 3)) := by
   simp [phase, field, tag, f, expression, equal?]
 
 private theorem normalize_read (frame : Frame) :
     expression (environment (some frame)) (fields (some frame))
-      (.binary .and (phase "WAIT_CALL") unread) =
+      (.binary .and (phase "WAIT_CALL") unread) readerCalls =
       some (.boolean (frame.phase == 1 && decide (frame.cursor < frame.childLength))) :=
-  boolean_and_read _ _ _ _ _ _ (phase_call_read frame) (unread_read frame)
+  boolean_and_read_with_calls (calls := readerCalls) _ _ _ _ _ _ (phase_call_read (readerCalls := readerCalls) frame) (unread_read (readerCalls := readerCalls) frame)
 
 private theorem strict_read (frame : Frame) :
     expression (environment (some frame)) (fields (some frame))
       (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH"))
-        (phase "ITERATE")) unread) =
+        (phase "ITERATE")) unread) readerCalls =
       some (.boolean ((frame.phase == 0 || frame.phase == 2 || frame.phase == 3) &&
         decide (frame.cursor < frame.childLength))) :=
-  boolean_and_read _ _ _ _ _ _
-    (boolean_or_read _ _ _ _ _ _
-      (boolean_or_read _ _ _ _ _ _ (phase_demand_read frame) (phase_branch_read frame))
-      (phase_iterate_read frame)) (unread_read frame)
+  boolean_and_read_with_calls (calls := readerCalls) _ _ _ _ _ _
+    (boolean_or_read_with_calls (calls := readerCalls) _ _ _ _ _ _
+      (boolean_or_read_with_calls (calls := readerCalls) _ _ _ _ _ _ (phase_demand_read (readerCalls := readerCalls) frame) (phase_branch_read (readerCalls := readerCalls) frame))
+      (phase_iterate_read (readerCalls := readerCalls) frame)) (unread_read (readerCalls := readerCalls) frame)
 
 private theorem rows_read (frame : Frame) :
     expression (environment (some frame)) (fields (some frame))
       (.binary .and (field "match_rows")
-        (.unary .not (.field (field "match_rows") "blocked".toList true))) =
+        (.unary .not (.field (field "match_rows") "blocked".toList true))) readerCalls =
       some (.boolean (frame.rowsBlocked.any (! ·))) := by
   cases h : frame.rowsBlocked <;> simp [field, f, expression, truth?, h]
 
 private theorem equation_read (frame : Frame) :
-    expression (environment (some frame)) (fields (some frame)) equation =
+    expression (environment (some frame)) (fields (some frame)) equation readerCalls =
       some (.boolean (frame.equationPhase.any fun phaseValue =>
         phaseValue == 2 || (frame.forceStream && phaseValue == 1 &&
           decide (frame.cursor < frame.childLength)))) := by
@@ -4389,644 +4591,800 @@ private theorem equation_read (frame : Frame) :
 
 private theorem select_bindFinish (frame : Frame) (role : frame.role = .bindFinish) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_strict (frame : Frame) (role : frame.role = .strict) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 13).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_conditional (frame : Frame) (role : frame.role = .conditional) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_letBody (frame : Frame) (role : frame.role = .letBody) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_equationSearch (frame : Frame) (role : frame.role = .equationSearch) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 0).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_force (frame : Frame) (role : frame.role = .force) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 1).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_normalizeAtom (frame : Frame) (role : frame.role = .normalizeAtom) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 10).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_normalizeChildren (frame : Frame) (role : frame.role = .normalizeChildren) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 11).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_streamResume (frame : Frame) (role : frame.role = .streamResume) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_score (frame : Frame) (role : frame.role = .score) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_goal (frame : Frame) (role : frame.role = .goal) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_cost (frame : Frame) (role : frame.role = .cost) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_nested (frame : Frame) (role : frame.role = .nested) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_exactRational (frame : Frame) (role : frame.role = .exactRational) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 2).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_whereWeight (frame : Frame) (role : frame.role = .whereWeight) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 3).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_admit (frame : Frame) (role : frame.role = .admit) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 4).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_algebra (frame : Frame) (role : frame.role = .algebra) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 5).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_read (frame : Frame) (role : frame.role = .read) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 6).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_fold (frame : Frame) (role : frame.role = .fold) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 7).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_dialect (frame : Frame) (role : frame.role = .dialect) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some ((arms.drop 8).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_matchRows (frame : Frame) (role : frame.role = .matchRows) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem select_alternatives (frame : Frame) (role : frame.role = .alternatives) :
     LocalBlock.selectedSwitch? (fields (some frame)) (environment (some frame))
-      (field "kind") arms (reply (.bool false)) =
+      (field "kind") arms (reply (.bool false)) readerCalls =
       some [.block (reply (.bool false))] := by
   simp [LocalBlock.selectedSwitch?, LocalBlock.switchBody?, arms, field, f, tag,
     expression, equal?, Role.code, role]
 
 private theorem switch_bindFinish (frame : Frame) (role : frame.role = .bindFinish) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_bindFinish frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_bindFinish (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.binary .lt (field "stream_forwarded") length)) :: ((arms.drop 10).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.binary .lt (field "stream_forwarded") length) (.boolean (decide (frame.forwarded < frame.childLength))) ((arms.drop 10).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (forwarded_read frame)
+      (List.replicate 0 (.block []) ++ .block (reply (.binary .lt (field "stream_forwarded") length)) :: ((arms.drop 10).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.binary .lt (field "stream_forwarded") length) (.boolean (decide (frame.forwarded < frame.childLength))) ((arms.drop 10).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (forwarded_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_strict (frame : Frame) (role : frame.role = .strict) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_strict frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_strict (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread)) :: ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread) (.boolean ((frame.phase == 0 || frame.phase == 2 || frame.phase == 3) && decide (frame.cursor < frame.childLength))) ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (strict_read frame)
+      (List.replicate 0 (.block []) ++ .block (reply (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread)) :: ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread) (.boolean ((frame.phase == 0 || frame.phase == 2 || frame.phase == 3) && decide (frame.cursor < frame.childLength))) ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (strict_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_conditional (frame : Frame) (role : frame.role = .conditional) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_conditional frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_conditional (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_letBody (frame : Frame) (role : frame.role = .letBody) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_letBody frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_letBody (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (20 + 1 + 2) _
-      (List.replicate 1 (.block []) ++ .block (reply (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread)) :: ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 20 1 (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread) (.boolean ((frame.phase == 0 || frame.phase == 2 || frame.phase == 3) && decide (frame.cursor < frame.childLength))) ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (strict_read frame)
+      (List.replicate 1 (.block []) ++ .block (reply (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread)) :: ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 20 1 (.binary .and (.binary .or (.binary .or (phase "DEMAND") (phase "WAIT_BRANCH")) (phase "ITERATE")) unread) (.boolean ((frame.phase == 0 || frame.phase == 2 || frame.phase == 3) && decide (frame.cursor < frame.childLength))) ((arms.drop 14).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (strict_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_equationSearch (frame : Frame) (role : frame.role = .equationSearch) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_equationSearch frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_equationSearch (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply equation) :: ((arms.drop 1).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 equation (.boolean (frame.equationPhase.any fun phaseValue => phaseValue == 2 || (frame.forceStream && phaseValue == 1 && decide (frame.cursor < frame.childLength)))) ((arms.drop 1).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (equation_read frame)
+      (List.replicate 0 (.block []) ++ .block (reply equation) :: ((arms.drop 1).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 equation (.boolean (frame.equationPhase.any fun phaseValue => phaseValue == 2 || (frame.forceStream && phaseValue == 1 && decide (frame.cursor < frame.childLength)))) ((arms.drop 1).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (equation_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_force (frame : Frame) (role : frame.role = .force) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_force frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_force (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (14 + 7 + 2) _
-      (List.replicate 7 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 14 7 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 7 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 14 7 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_normalizeAtom (frame : Frame) (role : frame.role = .normalizeAtom) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_normalizeAtom frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_normalizeAtom (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (20 + 1 + 2) _
-      (List.replicate 1 (.block []) ++ .block (reply (.binary .and (phase "WAIT_CALL") unread)) :: ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 20 1 (.binary .and (phase "WAIT_CALL") unread) (.boolean (frame.phase == 1 && decide (frame.cursor < frame.childLength))) ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (normalize_read frame)
+      (List.replicate 1 (.block []) ++ .block (reply (.binary .and (phase "WAIT_CALL") unread)) :: ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 20 1 (.binary .and (phase "WAIT_CALL") unread) (.boolean (frame.phase == 1 && decide (frame.cursor < frame.childLength))) ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (normalize_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_normalizeChildren (frame : Frame) (role : frame.role = .normalizeChildren) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_normalizeChildren frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_normalizeChildren (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.binary .and (phase "WAIT_CALL") unread)) :: ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.binary .and (phase "WAIT_CALL") unread) (.boolean (frame.phase == 1 && decide (frame.cursor < frame.childLength))) ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (normalize_read frame)
+      (List.replicate 0 (.block []) ++ .block (reply (.binary .and (phase "WAIT_CALL") unread)) :: ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.binary .and (phase "WAIT_CALL") unread) (.boolean (frame.phase == 1 && decide (frame.cursor < frame.childLength))) ((arms.drop 12).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (normalize_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_streamResume (frame : Frame) (role : frame.role = .streamResume) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_streamResume frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_streamResume (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_score (frame : Frame) (role : frame.role = .score) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_score frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_score (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_goal (frame : Frame) (role : frame.role = .goal) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_goal frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_goal (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_cost (frame : Frame) (role : frame.role = .cost) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_cost frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_cost (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_nested (frame : Frame) (role : frame.role = .nested) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_nested frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_nested (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_exactRational (frame : Frame) (role : frame.role = .exactRational) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_exactRational frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_exactRational (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (15 + 6 + 2) _
-      (List.replicate 6 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 15 6 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 6 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 15 6 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_whereWeight (frame : Frame) (role : frame.role = .whereWeight) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_whereWeight frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_whereWeight (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (16 + 5 + 2) _
-      (List.replicate 5 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 16 5 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 5 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 16 5 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_admit (frame : Frame) (role : frame.role = .admit) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_admit frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_admit (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (17 + 4 + 2) _
-      (List.replicate 4 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 17 4 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 4 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 17 4 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_algebra (frame : Frame) (role : frame.role = .algebra) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_algebra frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_algebra (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (18 + 3 + 2) _
-      (List.replicate 3 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 18 3 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 3 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 18 3 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_read (frame : Frame) (role : frame.role = .read) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_read frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_read (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (19 + 2 + 2) _
-      (List.replicate 2 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 19 2 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 2 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 19 2 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_fold (frame : Frame) (role : frame.role = .fold) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_fold frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_fold (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (20 + 1 + 2) _
-      (List.replicate 1 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 20 1 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 1 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 20 1 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_dialect (frame : Frame) (role : frame.role = .dialect) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_dialect frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_dialect (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]))) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read frame)
+      (List.replicate 0 (.block []) ++ .block (reply unread) :: ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))])) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 unread (.boolean (decide (frame.cursor < frame.childLength))) ((arms.drop 9).map (fun arm => .block arm.2) ++ [.block (reply (.bool false))]) (unread_read (readerCalls := readerCalls) frame)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_matchRows (frame : Frame) (role : frame.role = .matchRows) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_matchRows frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_matchRows (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_alternatives (frame : Frame) (role : frame.role = .alternatives) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
-  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] = _
-  rw [LocalBlock.switch_executes_selected_body _ 23 _ _ _ _ _ [] (select_alternatives frame role)]
+  change LocalBlock.execute _ 24 _ [.switch (field "kind") arms (reply (.bool false))] readerCalls = _
+  rw [LocalBlock.switch_executes_selected_body_with_calls (calls := readerCalls) _ 23 _ _ _ _ _ [] (select_alternatives (readerCalls := readerCalls) frame role)]
   change LocalBlock.switchResume _
     (LocalBlock.execute _ (21 + 0 + 2) _
-      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: [])) = _
-  have run := LocalBlock.empty_blocks_then_return (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
+      (List.replicate 0 (.block []) ++ .block (reply (.bool false)) :: []) readerCalls) = _
+  have run := LocalBlock.empty_blocks_then_return_with_calls (calls := readerCalls) (fields (some frame)) (environment (some frame)) 21 0 (.bool false) (.boolean false) [] (rfl)
   simp only [reply] at run ⊢
   rw [run]
   simp only [LocalBlock.switchResume, returned, waiting, role]
 
 private theorem switch_returns_waiting (frame : Frame) :
-    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 6) =
+    LocalBlock.execute (fields (some frame)) 24 (environment (some frame)) (body.drop 11) readerCalls =
       returned (some frame) (waiting frame) := by
   cases role : frame.role with
-  | bindFinish => exact switch_bindFinish frame role
-  | strict => exact switch_strict frame role
-  | conditional => exact switch_conditional frame role
-  | letBody => exact switch_letBody frame role
-  | equationSearch => exact switch_equationSearch frame role
-  | force => exact switch_force frame role
-  | normalizeAtom => exact switch_normalizeAtom frame role
-  | normalizeChildren => exact switch_normalizeChildren frame role
-  | streamResume => exact switch_streamResume frame role
-  | score => exact switch_score frame role
-  | goal => exact switch_goal frame role
-  | cost => exact switch_cost frame role
-  | nested => exact switch_nested frame role
-  | exactRational => exact switch_exactRational frame role
-  | whereWeight => exact switch_whereWeight frame role
-  | admit => exact switch_admit frame role
-  | algebra => exact switch_algebra frame role
-  | read => exact switch_read frame role
-  | fold => exact switch_fold frame role
-  | dialect => exact switch_dialect frame role
-  | matchRows => exact switch_matchRows frame role
-  | alternatives => exact switch_alternatives frame role
+  | bindFinish => exact switch_bindFinish (readerCalls := readerCalls) frame role
+  | strict => exact switch_strict (readerCalls := readerCalls) frame role
+  | conditional => exact switch_conditional (readerCalls := readerCalls) frame role
+  | letBody => exact switch_letBody (readerCalls := readerCalls) frame role
+  | equationSearch => exact switch_equationSearch (readerCalls := readerCalls) frame role
+  | force => exact switch_force (readerCalls := readerCalls) frame role
+  | normalizeAtom => exact switch_normalizeAtom (readerCalls := readerCalls) frame role
+  | normalizeChildren => exact switch_normalizeChildren (readerCalls := readerCalls) frame role
+  | streamResume => exact switch_streamResume (readerCalls := readerCalls) frame role
+  | score => exact switch_score (readerCalls := readerCalls) frame role
+  | goal => exact switch_goal (readerCalls := readerCalls) frame role
+  | cost => exact switch_cost (readerCalls := readerCalls) frame role
+  | nested => exact switch_nested (readerCalls := readerCalls) frame role
+  | exactRational => exact switch_exactRational (readerCalls := readerCalls) frame role
+  | whereWeight => exact switch_whereWeight (readerCalls := readerCalls) frame role
+  | admit => exact switch_admit (readerCalls := readerCalls) frame role
+  | algebra => exact switch_algebra (readerCalls := readerCalls) frame role
+  | read => exact switch_read (readerCalls := readerCalls) frame role
+  | fold => exact switch_fold (readerCalls := readerCalls) frame role
+  | dialect => exact switch_dialect (readerCalls := readerCalls) frame role
+  | matchRows => exact switch_matchRows (readerCalls := readerCalls) frame role
+  | alternatives => exact switch_alternatives (readerCalls := readerCalls) frame role
 
-theorem frame_returns_ready (frame : Frame) :
-    LocalBlock.execute (fields (some frame)) 30 (environment (some frame)) body =
-      returned (some frame) (ready (some frame)) := by
-  change LocalBlock.execute _ 30 _
-    (.branch closedCondition (reply (.bool false)) [] :: body.drop 1) = _
-  rw [branch_returns_or_continues _ _ 28 _ _ false _ (closed_read frame)]
-  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+@[simp] private theorem fields_call_force_service (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "call_force_service") = some (.identity (if frame.servicePresent then some .service else none)) := rfl
+
+@[simp] private theorem fields_shared_need_wait (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "shared_need_wait") = some (.boolean frame.sharedWait) := rfl
+
+@[simp] private theorem fields_force_producer (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "force_producer") = some (.identity (if frame.producerPresent then some .producer else none)) := rfl
+
+@[simp] private theorem fields_child_initialized (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "child_initialized") = some (.boolean frame.childInitialized) := rfl
+
+@[simp] private theorem fields_ordinary_ordered (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "ordinary_ordered") = some (.boolean frame.ordered) := rfl
+
+@[simp] private theorem fields_ref (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "ref") = some (.identity (if frame.referencePresent then some .reference else none)) := rfl
+
+@[simp] private theorem fields_atom (frame : Frame) :
+    fields (some frame) .frame (native_c_characters% "atom") = some (.identity (some .atom)) := rfl
+
+private theorem service_read (frame : Frame) :
+    (expression (environment (some frame)) (fields (some frame)) (field "call_force_service") readerCalls).bind truth? =
+      some frame.servicePresent := by
+  cases h : frame.servicePresent <;> simp [field, f, expression, truth?, h]
+
+private theorem shared_read (frame : Frame) :
+    (expression (environment (some frame)) (fields (some frame)) (field "shared_need_wait") readerCalls).bind truth? =
+      some frame.sharedWait := by
+  simp [field, f, expression, truth?]
+
+private theorem retry_read (frame : Frame) :
+    (expression (environment (some frame)) (fields (some frame)) retryCall (calls (some frame))).bind truth? =
+      some (retryPending frame) := by
+  simp [retryCall, f, expression, ScalarRead.arguments, calls, truth?]
+
+private theorem producer_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame))
+      (.binary .ne (field "force_producer") .null) readerCalls =
+      some (.boolean frame.producerPresent) := by
+  cases h : frame.producerPresent <;> simp [field, f, expression, equal?, h]
+
+private theorem child_initialized_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) (field "child_initialized") readerCalls =
+      some (.boolean frame.childInitialized) := by
+  simp [field, f, expression]
+
+private theorem shared_answer_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) sharedAnswer readerCalls =
+      some (.boolean (frame.producerPresent && frame.childInitialized && decide (frame.cursor < frame.childLength))) := by
+  exact boolean_and_read_with_calls (calls := readerCalls) _ _ _ _ _ _
+    (boolean_and_read_with_calls (calls := readerCalls) _ _ _ _ _ _ (producer_read (readerCalls := readerCalls) frame) (child_initialized_read (readerCalls := readerCalls) frame)) (unread_read (readerCalls := readerCalls) frame)
+
+private theorem ordered_read (frame : Frame) :
+    (expression (environment (some frame)) (fields (some frame)) orderedCondition readerCalls).bind truth? =
+      some (frame.ordered && frame.pending != 0) := by
+  have actual := boolean_and_truth_read (environment (some frame)) (fields (some frame))
+    (field "ordinary_ordered") (field "control_pending") frame.ordered (frame.pending != 0)
+    (calls := readerCalls) (by simp [field, f, expression, truth?])
+    (by simp [field, f, expression, truth?])
+  change (expression _ _ (.binary .and _ _) _).bind truth? = _
+  rw [actual]
+  rfl
+
+private theorem let_kind_read (frame : Frame) :
+    (expression (environment (some frame)) (fields (some frame)) (kind "LET") readerCalls).bind truth? =
+      some (frame.role == .letBody) := by
+  have code : (frame.role.code == (3 : UInt32)) = (frame.role == .letBody) := role_code_equal frame.role .letBody
+  simp [kind, field, tag, f, expression, equal?, truth?, code]
+
+private theorem head_chain_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) (headIs "chain") (calls (some frame)) =
+      some (.boolean (symbolEqual frame.atomHead frame.chainSymbol)) := by
+  simp [headIs, head, builtin, field, f, expression, ScalarRead.arguments,
+    environment, calls, equal?, symbolEqual]
+
+private theorem head_abt_chain_v1_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) (headIs "abt_chain_v1") (calls (some frame)) =
+      some (.boolean (symbolEqual frame.atomHead frame.abtChainSymbol)) := by
+  simp [headIs, head, builtin, field, f, expression, ScalarRead.arguments,
+    environment, calls, equal?, symbolEqual]
+
+private theorem head_eval_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) (headIs "eval") (calls (some frame)) =
+      some (.boolean (symbolEqual frame.atomHead frame.evalSymbol)) := by
+  simp [headIs, head, builtin, field, f, expression, ScalarRead.arguments,
+    environment, calls, equal?, symbolEqual]
+
+private theorem head_function_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) (headIs "function") (calls (some frame)) =
+      some (.boolean (symbolEqual frame.atomHead frame.functionSymbol)) := by
+  simp [headIs, head, builtin, field, f, expression, ScalarRead.arguments,
+    environment, calls, equal?, symbolEqual]
+
+private theorem let_heads_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) letHeads (calls (some frame)) =
+      some (.boolean (symbolEqual frame.atomHead frame.chainSymbol || symbolEqual frame.atomHead frame.abtChainSymbol ||
+        symbolEqual frame.atomHead frame.evalSymbol || symbolEqual frame.atomHead frame.functionSymbol)) :=
+  boolean_or_read_with_calls (calls := calls (some frame)) _ _ _ _ _ _
+    (boolean_or_read_with_calls (calls := calls (some frame)) _ _ _ _ _ _
+      (boolean_or_read_with_calls (calls := calls (some frame)) _ _ _ _ _ _ (head_chain_read frame) (head_abt_chain_v1_read frame))
+      (head_eval_read frame)) (head_function_read frame)
+
+private theorem let_read (frame : Frame) :
+    (expression (environment (some frame)) (fields (some frame)) letCondition (calls (some frame))).bind truth? =
+      some (frame.role == .letBody && frame.pending != 0 &&
+        (symbolEqual frame.atomHead frame.chainSymbol || symbolEqual frame.atomHead frame.abtChainSymbol ||
+          symbolEqual frame.atomHead frame.evalSymbol || symbolEqual frame.atomHead frame.functionSymbol)) := by
+  have left := boolean_and_truth_read (environment (some frame)) (fields (some frame))
+    (kind "LET") (field "control_pending") (frame.role == .letBody) (frame.pending != 0)
+    (calls := calls (some frame)) (let_kind_read (readerCalls := calls (some frame)) frame) (by simp [field, f, expression, truth?])
+  have actual := boolean_and_read_with_calls (calls := calls (some frame)) _ _ _ _ _ _ left (let_heads_read frame)
+  change (expression _ _ (.binary .and _ _) _).bind truth? = _
+  rw [actual]
+  rfl
+
+private theorem alternatives_read (frame : Frame) :
+    expression (environment (some frame)) (fields (some frame)) alternativesExpression readerCalls =
+      some (.boolean (!frame.referencePresent || frame.pending == 0 ||
+        decide (frame.forwarded < frame.childLength))) := by
+  cases h : frame.referencePresent <;> by_cases hp : frame.pending = 0 <;>
+    simp [alternativesExpression, field, f, expression, truth?,
+      h, hp, length, numericBinary, unsigned64Binary, Bool.beq_eq_decide_eq]
+
+private theorem tail_returns_ready (frame : Frame) :
+    LocalBlock.execute (fields (some frame)) 29 (environment (some frame)) (body.drop 6) readerCalls =
+      returned (some frame) (tailReady frame) := by
+  change (
     LocalBlock.execute _ 29 _
-      (.branch admitCondition (reply (.bool false)) [] :: body.drop 2)) = _
-  rw [branch_returns_or_continues _ _ 27 _ _ false _ (admit_read frame)]
-  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+      (.branch admitCondition (reply (.bool false)) [] :: body.drop 7) readerCalls) = _
+  rw [branch_returns_or_continues (readerCalls := readerCalls) _ _ 27 _ _ false _ (admit_read (readerCalls := readerCalls) frame)]
+  change (
     if frame.role == .admit && frame.weightIndex != 0 then returned (some frame) false else
     LocalBlock.execute _ 28 _
-      (.branch nestedCondition (reply (.bool false)) [] :: body.drop 3)) = _
-  rw [branch_returns_or_continues _ _ 26 _ _ false _ (nested_read frame)]
-  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+      (.branch nestedCondition (reply (.bool false)) [] :: body.drop 8) readerCalls) = _
+  rw [branch_returns_or_continues (readerCalls := readerCalls) _ _ 26 _ _ false _ (nested_read (readerCalls := readerCalls) frame)]
+  change (
     if frame.role == .admit && frame.weightIndex != 0 then returned (some frame) false else
     if frame.role == .nested && frame.nestedParked then returned (some frame) false else
     LocalBlock.execute _ 27 _
       (.branch (kind "MATCH_ROWS")
         (reply (.binary .and (field "match_rows")
           (.unary .not (.field (field "match_rows") "blocked".toList true)))) [] ::
-        body.drop 4)) = _
+        body.drop 9) readerCalls) = _
   simp only [reply]
-  rw [LocalBlock.branch_returns_expression _ _ 25 _ _ _ _ _ (rows_kind_read frame) (rows_read frame)]
-  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+  rw [LocalBlock.branch_returns_expression_with_calls (calls := readerCalls) _ _ 25 _ _ _ _ _ (rows_kind_read (readerCalls := readerCalls) frame) (rows_read (readerCalls := readerCalls) frame)]
+  change (
     if frame.role == .admit && frame.weightIndex != 0 then returned (some frame) false else
     if frame.role == .nested && frame.nestedParked then returned (some frame) false else
     if frame.role == .matchRows then returned (some frame) (frame.rowsBlocked.any (! ·)) else
     LocalBlock.execute _ 26 _
-      (.branch (kind "ALTERNATIVES") (reply (.bool true)) [] :: body.drop 5)) = _
-  rw [branch_returns_or_continues _ _ 24 _ _ true _ (alternatives_kind_read frame)]
-  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+      (.branch (kind "ALTERNATIVES") (reply alternativesExpression) [] :: body.drop 10) readerCalls) = _
+  simp only [reply]
+  rw [LocalBlock.branch_returns_expression_with_calls (calls := readerCalls) _ _ 24 _ _ _ _ _
+    (alternatives_kind_read (readerCalls := readerCalls) frame) (alternatives_read (readerCalls := readerCalls) frame)]
+  change (
     if frame.role == .admit && frame.weightIndex != 0 then returned (some frame) false else
     if frame.role == .nested && frame.nestedParked then returned (some frame) false else
     if frame.role == .matchRows then returned (some frame) (frame.rowsBlocked.any (! ·)) else
-    if frame.role == .alternatives then returned (some frame) true else
+    if frame.role == .alternatives then returned (some frame) (!frame.referencePresent || frame.pending == 0 || decide (frame.forwarded < frame.childLength)) else
     LocalBlock.execute _ 25 _
-      (.branch pendingCondition (reply (.bool true)) [] :: body.drop 6)) = _
-  rw [branch_returns_or_continues _ _ 23 _ _ true _ (pending_read frame),
-    switch_returns_waiting frame]
-  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+      (.branch pendingCondition (reply (.bool true)) [] :: body.drop 11) readerCalls) = _
+  rw [branch_returns_or_continues (readerCalls := readerCalls) _ _ 23 _ _ true _ (pending_read (readerCalls := readerCalls) frame),
+    switch_returns_waiting (readerCalls := readerCalls) frame]
+  change (
     if frame.role == .admit && frame.weightIndex != 0 then returned (some frame) false else
     if frame.role == .nested && frame.nestedParked then returned (some frame) false else
     if frame.role == .matchRows then returned (some frame) (frame.rowsBlocked.any (! ·)) else
-    if frame.role == .alternatives then returned (some frame) true else
+    if frame.role == .alternatives then returned (some frame) (!frame.referencePresent || frame.pending == 0 || decide (frame.forwarded < frame.childLength)) else
     if frame.pending == 0 then returned (some frame) true else
       returned (some frame) (waiting frame)) = _
   simp only [result_if]
   congr 1
-  cases role : frame.role <;> simp [ready, role] <;> simp only [Bool.beq_eq_decide_eq]
+  cases role : frame.role <;> simp [tailReady, role] <;> simp only [Bool.beq_eq_decide_eq]
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 400000 in
+theorem retry_kind_returns (view : Option Frame) :
+    LocalBlock.execute (fields view) 4 (environment view) retryKindBody (calls view) =
+      returned view (view.any retryKind) := by
+  cases view with
+  | none => rfl
+  | some frame =>
+      cases role : frame.role <;>
+        simp [retryKindBody, reply, f, kind, tag, headIs, head, builtin, field,
+          LocalBlock.execute, ScalarRead.expression, ScalarRead.arguments, environment, macroValue,
+          fields, calls, Role.code, truth?, equal?, returned, retryKind, symbolEqual, role]
+      all_goals
+        by_cases he : frame.atomHead.toUInt64 = frame.evalSymbol.toUInt64 <;>
+          by_cases hf : frame.atomHead.toUInt64 = frame.functionSymbol.toUInt64 <;>
+          simp_all [Bool.beq_eq_decide_eq]
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 400000 in
+theorem retry_pending_returns (view : Option Frame) :
+    LocalBlock.execute (fields view) 4 (environment view) retryPendingBody (calls view) =
+      returned view (view.any retryPending) := by
+  cases view with
+  | none => rfl
+  | some frame =>
+      cases role : frame.role <;>
+        simp [retryPendingBody, reply, f, kind, tag, field,
+          LocalBlock.execute, ScalarRead.expression, ScalarRead.arguments, environment, macroValue,
+          fields, calls, Role.code, truth?, equal?, returned, retryPending, retryKind, symbolEqual, role]
+      all_goals
+        by_cases he : frame.atomHead.toUInt64 = frame.evalSymbol.toUInt64 <;>
+          by_cases hf : frame.atomHead.toUInt64 = frame.functionSymbol.toUInt64 <;>
+          simp_all [Bool.beq_eq_decide_eq]
+
+theorem frame_returns_ready (frame : Frame) :
+    LocalBlock.execute (fields (some frame)) 35 (environment (some frame)) body (calls (some frame)) =
+      returned (some frame) (ready (some frame)) := by
+  change (LocalBlock.execute _ 35 _
+    (.branch (closedCondition) (reply (.bool false)) [] :: body.drop 1) (calls (some frame))) = _
+  rw [branch_returns_or_continues (readerCalls := calls (some frame)) _ _ 33 _ _ false _ (closed_read (readerCalls := calls (some frame)) frame)]
+  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+    LocalBlock.execute _ 34 _
+    (.branch (field "call_force_service") (reply (.bool false)) [] :: body.drop 2) (calls (some frame))) = _
+  rw [branch_returns_or_continues (readerCalls := calls (some frame)) _ _ 32 _ _ false _ (service_read (readerCalls := calls (some frame)) frame)]
+  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+    if frame.servicePresent then returned (some frame) false else
+    LocalBlock.execute _ 33 _
+    (.branch (retryCall) (reply (.bool true)) [] :: body.drop 3) (calls (some frame))) = _
+  rw [branch_returns_or_continues (readerCalls := calls (some frame)) _ _ 31 _ _ true _ (retry_read frame)]
+  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+    if frame.servicePresent then returned (some frame) false else
+    if retryPending frame then returned (some frame) true else
+    LocalBlock.execute _ 32 _
+    (.branch (field "shared_need_wait") (reply (sharedAnswer)) [] :: body.drop 4) (calls (some frame))) = _
+  simp only [reply]
+  rw [LocalBlock.branch_returns_expression_with_calls (calls := calls (some frame)) _ _ 30 _ _ _ _ _ (shared_read (readerCalls := calls (some frame)) frame) (shared_answer_read (readerCalls := calls (some frame)) frame)]
+  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+    if frame.servicePresent then returned (some frame) false else
+    if retryPending frame then returned (some frame) true else
+    if frame.sharedWait then returned (some frame) (frame.producerPresent && frame.childInitialized && decide (frame.cursor < frame.childLength)) else
+    LocalBlock.execute _ 31 _
+    (.branch (orderedCondition) (reply (.bool false)) [] :: body.drop 5) (calls (some frame))) = _
+  rw [branch_returns_or_continues (readerCalls := calls (some frame)) _ _ 29 _ _ false _ (ordered_read (readerCalls := calls (some frame)) frame)]
+  change (if frame.closed || frame.ownershipParked then returned (some frame) false else
+    if frame.servicePresent then returned (some frame) false else
+    if retryPending frame then returned (some frame) true else
+    if frame.sharedWait then returned (some frame) (frame.producerPresent && frame.childInitialized && decide (frame.cursor < frame.childLength)) else
+    if frame.ordered && frame.pending != 0 then returned (some frame) false else
+    LocalBlock.execute _ 30 _
+    (.branch (letCondition) (reply (.bool false)) [] :: body.drop 6) (calls (some frame))) = _
+  rw [branch_returns_or_continues (readerCalls := calls (some frame)) _ _ 28 _ _ false _ (let_read frame)]
+  rw [tail_returns_ready (readerCalls := calls (some frame)) frame]
+  rw [ready]
+  split_ifs <;> rfl
 
 theorem source_returns_ready (view : Option Frame) :
-    LocalBlock.execute (fields view) 30 (environment view) body =
+    LocalBlock.execute (fields view) 35 (environment view) body (calls view) =
       returned view (ready view) := by
   cases view with
   | none => rfl
   | some frame => exact frame_returns_ready frame
 
-
 namespace Controls
 
 def base : Frame :=
-  ⟨.force, 1, false, false, 0, false, 1, 0, 0, 1, none, none, false⟩
+  { role := .force, phase := 1, closed := false, ownershipParked := false,
+    weightIndex := 0, nestedParked := false, pending := 1, cursor := 0,
+    forwarded := 0, childLength := 1, rowsBlocked := none,
+    equationPhase := none, forceStream := false }
+
+theorem service_ownership_blocks_return_debt :
+    ready (some {base with servicePresent := true, forceRetry := true}) = false := rfl
+
+theorem return_debt_progresses_before_ordered_children :
+    ready (some {base with forceRetry := true, ordered := true}) = true := rfl
+
+theorem shared_wait_requires_actual_unread_child :
+    ready (some {base with sharedWait := true}) = false ∧
+    ready (some {base with sharedWait := true, producerPresent := true, childInitialized := true}) = true ∧
+    ready (some {base with sharedWait := true, producerPresent := true, childInitialized := true, cursor := 1}) = false := ⟨rfl, rfl, rfl⟩
+
+theorem ordered_wait_does_not_take_a_buffered_child :
+    ready (some {base with ordered := true}) = false := rfl
+
+theorem let_chain_waits_but_other_heads_progress :
+    ready (some {base with role := .letBody, phase := 0, atomHead := 0}) = false ∧
+    ready (some {base with role := .letBody, phase := 0, atomHead := 4}) = true := ⟨rfl, rfl⟩
+
+theorem eval_return_debt_has_priority_over_let_barrier :
+    ready (some {base with role := .letBody, atomHead := 2, returnRetry := true}) = true ∧
+    ready (some {base with role := .letBody, atomHead := 2}) = false := ⟨rfl, rfl⟩
+
+theorem alternatives_do_not_restart_a_waiting_reference :
+    ready (some {base with role := .alternatives, referencePresent := true, forwarded := 1}) = false ∧
+    ready (some {base with role := .alternatives, referencePresent := true}) = true ∧
+    ready (some {base with role := .alternatives, referencePresent := false, forwarded := 1}) = true :=
+      ⟨rfl, rfl, rfl⟩
 
 theorem wide_prefix_is_ready :
-    let view := some {base with cursor := 4294967296, childLength := 4294967297}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view true := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
+    ready (some {base with cursor := 4294967296, childLength := 4294967297}) = true := rfl
 
 theorem wide_nonzero_obligation_does_not_become_zero :
-    let view := some {base with role := .conditional, pending := 4294967296}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
+    ready (some {base with role := .conditional, pending := 4294967296}) = false := rfl
+
+theorem actual_source_preserves_return_debt_priority :
+    let view := some {base with forceRetry := true, ordered := true}
+    LocalBlock.execute (fields view) 35 (environment view) body (calls view) = returned view true := by
   dsimp only
   rw [source_returns_ready]
   rfl
 
-theorem closed_work_is_unavailable :
-    let view := some {base with closed := true, pending := 0}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
+theorem actual_source_respects_service_owner :
+    let view := some {base with servicePresent := true, forceRetry := true}
+    LocalBlock.execute (fields view) 35 (environment view) body (calls view) = returned view false := by
   dsimp only
   rw [source_returns_ready]
   rfl
 
-theorem parked_weight_owner_is_unavailable :
-    let view := some {base with ownershipParked := true, pending := 0}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
+theorem missing_helper_is_undefined_instead_of_a_false_return :
+    LocalBlock.execute (fields (some base)) 35 (environment (some base)) body = .finished none := rfl
 
-theorem admission_pending_verdict_blocks_zero_obligation :
-    let view := some {base with role := .admit, weightIndex := 4294967296, pending := 0}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem nested_park_blocks_zero_obligation :
-    let view := some {base with role := .nested, nestedParked := true, pending := 0}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem missing_rows_are_not_made_ready_by_zero_obligation :
-    let view := some {base with role := .matchRows, pending := 0}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem blocked_rows_are_not_made_ready_by_zero_obligation :
-    let view := some {base with role := .matchRows, rowsBlocked := some true, pending := 0}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem available_rows_progress_with_producer_obligations :
-    let view := some {base with role := .matchRows, rowsBlocked := some false}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view true := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem alternatives_progress_with_producer_obligations :
-    let view := some {base with role := .alternatives}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view true := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem binding_uses_forwarded_cursor_instead_of_input_cursor :
-    let view := some {base with role := .bindFinish, cursor := 0, forwarded := 1}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem publication_progress_does_not_require_an_unread_child :
-    let view := some {base with role := .equationSearch, equationPhase := some 2, cursor := 1}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view true := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem waiting_equation_requires_stream_permission :
-    let view := some {base with role := .equationSearch, equationPhase := some 1}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
-
-theorem strict_wait_call_does_not_consume_an_available_branch :
-    let view := some {base with role := .strict, phase := 1}
-    LocalBlock.execute (fields view) 30 (environment view) body = returned view false := by
-  dsimp only
-  rw [source_returns_ready]
-  rfl
+theorem helper_extra_operand_is_refused :
+    calls (some base) "prime_eval_stack_return_retry_pending".toList
+      [.identity (some .frame), .identity (some .frame)] = none := rfl
 
 end Controls
-
 end ReadView
-/-- Complete source consumption and execution agree with the independent
-readiness contract for a coherent immutable view of the admitted frame roles.
-The execution retains the whole local environment. Physical pointer validity,
-layout, compiler correctness and concurrent reads remain service obligations. -/
+
+/-- The complete current body executes the independently specified readiness
+contract on this immutable readout. The two retry helpers are checked against their own complete quoted bodies;
+native Atom-head reads, pointer/layout validity and synchronization remain provider obligations. -/
 theorem source_view_exact (view : Option ReadView.Frame) :
     qualifiedFunctionText? types source = some parsed ∧
-    NativeC.LocalBlock.execute (ReadView.fields view) 30 (ReadView.environment view) parsed.body =
+    LocalBlock.execute (ReadView.fields view) 35 (ReadView.environment view) parsed.body (ReadView.calls view) =
       ReadView.returned view (ReadView.ready view) :=
   ⟨source_recognized, ReadView.source_returns_ready view⟩
 
@@ -7671,9 +8029,9 @@ def failureBody : List CStatement :=
   [.effect (.call "prime_eval_stack_task_free".toList [.unary .address (ident "task")]),
    .return (some (.bool false))]
 
-/-- The expected syntax is specified independently of the parser result.
-It retains the automatic object, all field writes, the captured driver,
-both capture refusals and both publication paths. -/
+/-- The current caller retains its automatic destination, all capture arguments,
+callee refusal, capsule-aware dispatch and both publication paths. The capture
+callee is a stateful typed service; its internal realization is separate. -/
 def taskSyntax : CDeclaratorFunction :=
   ⟨⟨"bool".toList, 0⟩, "prime_eval_stack_set_task".toList,
    [⟨⟨"PrimeEvalStackTaskKind".toList, false, []⟩, "kind".toList⟩,
@@ -7695,27 +8053,10 @@ def taskSyntax : CDeclaratorFunction :=
       (.unary .not (.call "prime_eval_stack_target_is_owned".toList [ident "target"])))
       [.return (some (.bool false))] [],
     .declareUninitialized ⟨"PrimeEvalStackTask".toList, 0⟩ "task".toList,
-    .effect (.call "memset".toList
-      [.unary .address (ident "task"), .decimal 0, .sizeOfExpr (ident "task")]),
-    .assign (taskField "kind") (ident "kind"),
-    .assign (taskField "pure_authority") (driverField "pure_authority"),
-    .assign (taskField "space") (ident "s"),
-    .assign (taskField "arena") (ident "a"),
-    .assign (taskField "atom") (ident "atom"),
-    .assign (taskField "etype") (ident "etype"),
-    .assign (taskField "fuel") (ident "fuel"),
-    .assign (taskField "preserve_bindings") (ident "preserve_bindings"),
-    .assign (taskField "strict_ready_argument") (ident "strict_ready_argument"),
-    .assign (taskField "target") (ident "target"),
-    .assign (taskField "evaluator_id") (ident "evaluator_id"),
-    .branch (.unary .not (.call "prime_eval_stack_capture_dynamic_env".toList
-      [.unary .address (taskField "dynamic_env"), ident "dynamic_env"])) failureBody [],
-    .assign (taskField "dynamic_env_initialized") (.bool true),
-    .branch (ident "seed_env")
-      [.branch (.unary .not (.call "bindings_clone".toList
-        [.unary .address (taskField "seed_env"), ident "seed_env"])) failureBody [],
-       .assign (taskField "seed_env_initialized") (.bool true)] [],
-    .branch (driverField "control")
+    .branch (.unary .not (.call "prime_eval_stack_capture_task".toList
+      ([.unary .address (ident "task")] ++ [ident "kind", ident "s", ident "a", ident "atom", ident "etype", ident "fuel", ident "preserve_bindings", ident "strict_ready_argument", ident "target", ident "dynamic_env", ident "seed_env", ident "evaluator_id"])))
+      [.return (some (.bool false))] [],
+    .branch (.call "prime_eval_stack_queued".toList [ident "driver"])
       [.branch (.unary .not (.call "prime_native_control_enqueue_task".toList
         [driverField "control", .unary .address (ident "task"), driverField "top"])) failureBody [],
        .effect (.postIncrement (driverField "continuation_generation")),
@@ -7725,8 +8066,9 @@ def taskSyntax : CDeclaratorFunction :=
     .effect (.postIncrement (driverField "continuation_generation")),
     .return (some (.bool true))]⟩
 
-def source : String := "static bool prime_eval_stack_set_task(\n    PrimeEvalStackTaskKind kind, Space *s, Arena *a,\n    Atom *atom, Atom *etype, int fuel, bool preserve_bindings,\n    int strict_ready_argument, OutcomeSet *target,\n    const Bindings *dynamic_env, const Bindings *seed_env,\n    uint64_t evaluator_id) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    if (!driver || driver->task_ready ||\n        !prime_eval_stack_target_is_owned(target))\n        return false;\n    PrimeEvalStackTask task;\n    memset(&task, 0, sizeof(task));\n    task.kind = kind;\n    task.pure_authority = driver->pure_authority;\n    task.space = s;\n    task.arena = a;\n    task.atom = atom;\n    task.etype = etype;\n    task.fuel = fuel;\n    task.preserve_bindings = preserve_bindings;\n    task.strict_ready_argument = strict_ready_argument;\n    task.target = target;\n    task.evaluator_id = evaluator_id;\n    if (!prime_eval_stack_capture_dynamic_env(\n            &task.dynamic_env, dynamic_env)) {\n        prime_eval_stack_task_free(&task);\n        return false;\n    }\n    task.dynamic_env_initialized = true;\n    if (seed_env) {\n        if (!bindings_clone(&task.seed_env, seed_env)) {\n            prime_eval_stack_task_free(&task);\n            return false;\n        }\n        task.seed_env_initialized = true;\n    }\n    if (driver->control) {\n        if (!prime_native_control_enqueue_task(\n                driver->control, &task, driver->top)) {\n            prime_eval_stack_task_free(&task);\n            return false;\n        }\n        driver->continuation_generation++;\n        return true;\n    }\n    driver->task = task;\n    driver->task_ready = true;\n    driver->continuation_generation++;\n    return true;\n}"
-def characters : List Char := native_c_characters% "static bool prime_eval_stack_set_task(\n    PrimeEvalStackTaskKind kind, Space *s, Arena *a,\n    Atom *atom, Atom *etype, int fuel, bool preserve_bindings,\n    int strict_ready_argument, OutcomeSet *target,\n    const Bindings *dynamic_env, const Bindings *seed_env,\n    uint64_t evaluator_id) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    if (!driver || driver->task_ready ||\n        !prime_eval_stack_target_is_owned(target))\n        return false;\n    PrimeEvalStackTask task;\n    memset(&task, 0, sizeof(task));\n    task.kind = kind;\n    task.pure_authority = driver->pure_authority;\n    task.space = s;\n    task.arena = a;\n    task.atom = atom;\n    task.etype = etype;\n    task.fuel = fuel;\n    task.preserve_bindings = preserve_bindings;\n    task.strict_ready_argument = strict_ready_argument;\n    task.target = target;\n    task.evaluator_id = evaluator_id;\n    if (!prime_eval_stack_capture_dynamic_env(\n            &task.dynamic_env, dynamic_env)) {\n        prime_eval_stack_task_free(&task);\n        return false;\n    }\n    task.dynamic_env_initialized = true;\n    if (seed_env) {\n        if (!bindings_clone(&task.seed_env, seed_env)) {\n            prime_eval_stack_task_free(&task);\n            return false;\n        }\n        task.seed_env_initialized = true;\n    }\n    if (driver->control) {\n        if (!prime_native_control_enqueue_task(\n                driver->control, &task, driver->top)) {\n            prime_eval_stack_task_free(&task);\n            return false;\n        }\n        driver->continuation_generation++;\n        return true;\n    }\n    driver->task = task;\n    driver->task_ready = true;\n    driver->continuation_generation++;\n    return true;\n}"
+
+def source : String := "static bool prime_eval_stack_set_task(\n    PrimeEvalStackTaskKind kind, Space *s, Arena *a,\n    Atom *atom, Atom *etype, int fuel, bool preserve_bindings,\n    int strict_ready_argument, OutcomeSet *target,\n    const Bindings *dynamic_env, const Bindings *seed_env,\n    uint64_t evaluator_id) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    if (!driver || driver->task_ready ||\n        !prime_eval_stack_target_is_owned(target))\n        return false;\n    PrimeEvalStackTask task;\n    if (!prime_eval_stack_capture_task(&task,kind,s,a,atom,etype,fuel,\n            preserve_bindings,strict_ready_argument,target,dynamic_env,seed_env,evaluator_id))\n        return false;\n    if (prime_eval_stack_queued(driver)) {\n        if (!prime_native_control_enqueue_task(\n                driver->control, &task, driver->top)) {\n            prime_eval_stack_task_free(&task);\n            return false;\n        }\n        driver->continuation_generation++;\n        return true;\n    }\n    driver->task = task;\n    driver->task_ready = true;\n    driver->continuation_generation++;\n    return true;\n}"
+def characters : List Char := native_c_characters% "static bool prime_eval_stack_set_task(\n    PrimeEvalStackTaskKind kind, Space *s, Arena *a,\n    Atom *atom, Atom *etype, int fuel, bool preserve_bindings,\n    int strict_ready_argument, OutcomeSet *target,\n    const Bindings *dynamic_env, const Bindings *seed_env,\n    uint64_t evaluator_id) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    if (!driver || driver->task_ready ||\n        !prime_eval_stack_target_is_owned(target))\n        return false;\n    PrimeEvalStackTask task;\n    if (!prime_eval_stack_capture_task(&task,kind,s,a,atom,etype,fuel,\n            preserve_bindings,strict_ready_argument,target,dynamic_env,seed_env,evaluator_id))\n        return false;\n    if (prime_eval_stack_queued(driver)) {\n        if (!prime_native_control_enqueue_task(\n                driver->control, &task, driver->top)) {\n            prime_eval_stack_task_free(&task);\n            return false;\n        }\n        driver->continuation_generation++;\n        return true;\n    }\n    driver->task = task;\n    driver->task_ready = true;\n    driver->continuation_generation++;\n    return true;\n}"
 
 theorem characters_are_actual_source : source.toList = characters := by
   native_c_character_reflexivity
@@ -7786,202 +8128,92 @@ private def lexTokens10 : List Token := [.identifier (native_c_characters% "Prim
 private theorem lexPiece10 : lexCharacters10.foldl step initial = completed lexTokens10 := by
   native_c_parser_reflexivity
 
-private def lexCharacters11 : List Char := native_c_characters% "    memset(&task, 0, sizeof(task));\n"
-private def lexTokens11 : List Token := [.identifier (native_c_characters% "memset"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ","), .number (native_c_characters% "0"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "sizeof"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters11 : List Char := native_c_characters% "    if (!prime_eval_stack_capture_task(&task,kind,s,a,atom,etype,fuel,\n"
+private def lexTokens11 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "!"), .identifier (native_c_characters% "prime_eval_stack_capture_task"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "kind"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "s"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "a"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "etype"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece11 : lexCharacters11.foldl step initial = completed lexTokens11 := by
   native_c_parser_reflexivity
 
-private def lexCharacters12 : List Char := native_c_characters% "    task.kind = kind;\n"
-private def lexTokens12 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "kind"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "kind"), .punctuation (native_c_characters% ";")]
+private def lexCharacters12 : List Char := native_c_characters% "            preserve_bindings,strict_ready_argument,target,dynamic_env,seed_env,evaluator_id))\n"
+private def lexTokens12 : List Token := [.identifier (native_c_characters% "preserve_bindings"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "strict_ready_argument"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "seed_env"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")")]
 private theorem lexPiece12 : lexCharacters12.foldl step initial = completed lexTokens12 := by
   native_c_parser_reflexivity
 
-private def lexCharacters13 : List Char := native_c_characters% "    task.pure_authority = driver->pure_authority;\n"
-private def lexTokens13 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "pure_authority"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "pure_authority"), .punctuation (native_c_characters% ";")]
+private def lexCharacters13 : List Char := native_c_characters% "        return false;\n"
+private def lexTokens13 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece13 : lexCharacters13.foldl step initial = completed lexTokens13 := by
   native_c_parser_reflexivity
 
-private def lexCharacters14 : List Char := native_c_characters% "    task.space = s;\n"
-private def lexTokens14 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "s"), .punctuation (native_c_characters% ";")]
+private def lexCharacters14 : List Char := native_c_characters% "    if (prime_eval_stack_queued(driver)) {\n"
+private def lexTokens14 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "prime_eval_stack_queued"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
 private theorem lexPiece14 : lexCharacters14.foldl step initial = completed lexTokens14 := by
   native_c_parser_reflexivity
 
-private def lexCharacters15 : List Char := native_c_characters% "    task.arena = a;\n"
-private def lexTokens15 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "a"), .punctuation (native_c_characters% ";")]
+private def lexCharacters15 : List Char := native_c_characters% "        if (!prime_native_control_enqueue_task(\n"
+private def lexTokens15 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "!"), .identifier (native_c_characters% "prime_native_control_enqueue_task"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece15 : lexCharacters15.foldl step initial = completed lexTokens15 := by
   native_c_parser_reflexivity
 
-private def lexCharacters16 : List Char := native_c_characters% "    task.atom = atom;\n"
-private def lexTokens16 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ";")]
+private def lexCharacters16 : List Char := native_c_characters% "                driver->control, &task, driver->top)) {\n"
+private def lexTokens16 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "control"), .punctuation (native_c_characters% ","), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "top"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
 private theorem lexPiece16 : lexCharacters16.foldl step initial = completed lexTokens16 := by
   native_c_parser_reflexivity
 
-private def lexCharacters17 : List Char := native_c_characters% "    task.etype = etype;\n"
-private def lexTokens17 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "etype"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "etype"), .punctuation (native_c_characters% ";")]
+private def lexCharacters17 : List Char := native_c_characters% "            prime_eval_stack_task_free(&task);\n"
+private def lexTokens17 : List Token := [.identifier (native_c_characters% "prime_eval_stack_task_free"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece17 : lexCharacters17.foldl step initial = completed lexTokens17 := by
   native_c_parser_reflexivity
 
-private def lexCharacters18 : List Char := native_c_characters% "    task.fuel = fuel;\n"
-private def lexTokens18 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ";")]
+private def lexCharacters18 : List Char := native_c_characters% "            return false;\n"
+private def lexTokens18 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece18 : lexCharacters18.foldl step initial = completed lexTokens18 := by
   native_c_parser_reflexivity
 
-private def lexCharacters19 : List Char := native_c_characters% "    task.preserve_bindings = preserve_bindings;\n"
-private def lexTokens19 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "preserve_bindings"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "preserve_bindings"), .punctuation (native_c_characters% ";")]
+private def lexCharacters19 : List Char := native_c_characters% "        }\n"
+private def lexTokens19 : List Token := [.punctuation (native_c_characters% "}")]
 private theorem lexPiece19 : lexCharacters19.foldl step initial = completed lexTokens19 := by
   native_c_parser_reflexivity
 
-private def lexCharacters20 : List Char := native_c_characters% "    task.strict_ready_argument = strict_ready_argument;\n"
-private def lexTokens20 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "strict_ready_argument"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "strict_ready_argument"), .punctuation (native_c_characters% ";")]
+private def lexCharacters20 : List Char := native_c_characters% "        driver->continuation_generation++;\n"
+private def lexTokens20 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "continuation_generation"), .punctuation (native_c_characters% "++"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece20 : lexCharacters20.foldl step initial = completed lexTokens20 := by
   native_c_parser_reflexivity
 
-private def lexCharacters21 : List Char := native_c_characters% "    task.target = target;\n"
-private def lexTokens21 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ";")]
+private def lexCharacters21 : List Char := native_c_characters% "        return true;\n"
+private def lexTokens21 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece21 : lexCharacters21.foldl step initial = completed lexTokens21 := by
   native_c_parser_reflexivity
 
-private def lexCharacters22 : List Char := native_c_characters% "    task.evaluator_id = evaluator_id;\n"
-private def lexTokens22 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% ";")]
+private def lexCharacters22 : List Char := native_c_characters% "    }\n"
+private def lexTokens22 : List Token := [.punctuation (native_c_characters% "}")]
 private theorem lexPiece22 : lexCharacters22.foldl step initial = completed lexTokens22 := by
   native_c_parser_reflexivity
 
-private def lexCharacters23 : List Char := native_c_characters% "    if (!prime_eval_stack_capture_dynamic_env(\n"
-private def lexTokens23 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "!"), .identifier (native_c_characters% "prime_eval_stack_capture_dynamic_env"), .punctuation (native_c_characters% "(")]
+private def lexCharacters23 : List Char := native_c_characters% "    driver->task = task;\n"
+private def lexTokens23 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece23 : lexCharacters23.foldl step initial = completed lexTokens23 := by
   native_c_parser_reflexivity
 
-private def lexCharacters24 : List Char := native_c_characters% "            &task.dynamic_env, dynamic_env)) {\n"
-private def lexTokens24 : List Token := [.punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
+private def lexCharacters24 : List Char := native_c_characters% "    driver->task_ready = true;\n"
+private def lexTokens24 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task_ready"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece24 : lexCharacters24.foldl step initial = completed lexTokens24 := by
   native_c_parser_reflexivity
 
-private def lexCharacters25 : List Char := native_c_characters% "        prime_eval_stack_task_free(&task);\n"
-private def lexTokens25 : List Token := [.identifier (native_c_characters% "prime_eval_stack_task_free"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters25 : List Char := native_c_characters% "    driver->continuation_generation++;\n"
+private def lexTokens25 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "continuation_generation"), .punctuation (native_c_characters% "++"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece25 : lexCharacters25.foldl step initial = completed lexTokens25 := by
   native_c_parser_reflexivity
 
-private def lexCharacters26 : List Char := native_c_characters% "        return false;\n"
-private def lexTokens26 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
+private def lexCharacters26 : List Char := native_c_characters% "    return true;\n"
+private def lexTokens26 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece26 : lexCharacters26.foldl step initial = completed lexTokens26 := by
   native_c_parser_reflexivity
 
-private def lexCharacters27 : List Char := native_c_characters% "    }\n"
+private def lexCharacters27 : List Char := native_c_characters% "}"
 private def lexTokens27 : List Token := [.punctuation (native_c_characters% "}")]
 private theorem lexPiece27 : lexCharacters27.foldl step initial = completed lexTokens27 := by
   native_c_parser_reflexivity
 
-private def lexCharacters28 : List Char := native_c_characters% "    task.dynamic_env_initialized = true;\n"
-private def lexTokens28 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env_initialized"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece28 : lexCharacters28.foldl step initial = completed lexTokens28 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters29 : List Char := native_c_characters% "    if (seed_env) {\n"
-private def lexTokens29 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "seed_env"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
-private theorem lexPiece29 : lexCharacters29.foldl step initial = completed lexTokens29 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters30 : List Char := native_c_characters% "        if (!bindings_clone(&task.seed_env, seed_env)) {\n"
-private def lexTokens30 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "!"), .identifier (native_c_characters% "bindings_clone"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "seed_env"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "seed_env"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
-private theorem lexPiece30 : lexCharacters30.foldl step initial = completed lexTokens30 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters31 : List Char := native_c_characters% "            prime_eval_stack_task_free(&task);\n"
-private def lexTokens31 : List Token := [.identifier (native_c_characters% "prime_eval_stack_task_free"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece31 : lexCharacters31.foldl step initial = completed lexTokens31 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters32 : List Char := native_c_characters% "            return false;\n"
-private def lexTokens32 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece32 : lexCharacters32.foldl step initial = completed lexTokens32 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters33 : List Char := native_c_characters% "        }\n"
-private def lexTokens33 : List Token := [.punctuation (native_c_characters% "}")]
-private theorem lexPiece33 : lexCharacters33.foldl step initial = completed lexTokens33 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters34 : List Char := native_c_characters% "        task.seed_env_initialized = true;\n"
-private def lexTokens34 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "seed_env_initialized"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece34 : lexCharacters34.foldl step initial = completed lexTokens34 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters35 : List Char := native_c_characters% "    }\n"
-private def lexTokens35 : List Token := [.punctuation (native_c_characters% "}")]
-private theorem lexPiece35 : lexCharacters35.foldl step initial = completed lexTokens35 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters36 : List Char := native_c_characters% "    if (driver->control) {\n"
-private def lexTokens36 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "control"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
-private theorem lexPiece36 : lexCharacters36.foldl step initial = completed lexTokens36 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters37 : List Char := native_c_characters% "        if (!prime_native_control_enqueue_task(\n"
-private def lexTokens37 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "!"), .identifier (native_c_characters% "prime_native_control_enqueue_task"), .punctuation (native_c_characters% "(")]
-private theorem lexPiece37 : lexCharacters37.foldl step initial = completed lexTokens37 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters38 : List Char := native_c_characters% "                driver->control, &task, driver->top)) {\n"
-private def lexTokens38 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "control"), .punctuation (native_c_characters% ","), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "top"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
-private theorem lexPiece38 : lexCharacters38.foldl step initial = completed lexTokens38 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters39 : List Char := native_c_characters% "            prime_eval_stack_task_free(&task);\n"
-private def lexTokens39 : List Token := [.identifier (native_c_characters% "prime_eval_stack_task_free"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece39 : lexCharacters39.foldl step initial = completed lexTokens39 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters40 : List Char := native_c_characters% "            return false;\n"
-private def lexTokens40 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece40 : lexCharacters40.foldl step initial = completed lexTokens40 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters41 : List Char := native_c_characters% "        }\n"
-private def lexTokens41 : List Token := [.punctuation (native_c_characters% "}")]
-private theorem lexPiece41 : lexCharacters41.foldl step initial = completed lexTokens41 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters42 : List Char := native_c_characters% "        driver->continuation_generation++;\n"
-private def lexTokens42 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "continuation_generation"), .punctuation (native_c_characters% "++"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece42 : lexCharacters42.foldl step initial = completed lexTokens42 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters43 : List Char := native_c_characters% "        return true;\n"
-private def lexTokens43 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece43 : lexCharacters43.foldl step initial = completed lexTokens43 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters44 : List Char := native_c_characters% "    }\n"
-private def lexTokens44 : List Token := [.punctuation (native_c_characters% "}")]
-private theorem lexPiece44 : lexCharacters44.foldl step initial = completed lexTokens44 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters45 : List Char := native_c_characters% "    driver->task = task;\n"
-private def lexTokens45 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece45 : lexCharacters45.foldl step initial = completed lexTokens45 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters46 : List Char := native_c_characters% "    driver->task_ready = true;\n"
-private def lexTokens46 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task_ready"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece46 : lexCharacters46.foldl step initial = completed lexTokens46 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters47 : List Char := native_c_characters% "    driver->continuation_generation++;\n"
-private def lexTokens47 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "continuation_generation"), .punctuation (native_c_characters% "++"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece47 : lexCharacters47.foldl step initial = completed lexTokens47 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters48 : List Char := native_c_characters% "    return true;\n"
-private def lexTokens48 : List Token := [.identifier (native_c_characters% "return"), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
-private theorem lexPiece48 : lexCharacters48.foldl step initial = completed lexTokens48 := by
-  native_c_parser_reflexivity
-
-private def lexCharacters49 : List Char := native_c_characters% "}"
-private def lexTokens49 : List Token := [.punctuation (native_c_characters% "}")]
-private theorem lexPiece49 : lexCharacters49.foldl step initial = completed lexTokens49 := by
-  native_c_parser_reflexivity
-
-private def sourcePieces : List (List Char × List Token) := [(lexCharacters0, lexTokens0), (lexCharacters1, lexTokens1), (lexCharacters2, lexTokens2), (lexCharacters3, lexTokens3), (lexCharacters4, lexTokens4), (lexCharacters5, lexTokens5), (lexCharacters6, lexTokens6), (lexCharacters7, lexTokens7), (lexCharacters8, lexTokens8), (lexCharacters9, lexTokens9), (lexCharacters10, lexTokens10), (lexCharacters11, lexTokens11), (lexCharacters12, lexTokens12), (lexCharacters13, lexTokens13), (lexCharacters14, lexTokens14), (lexCharacters15, lexTokens15), (lexCharacters16, lexTokens16), (lexCharacters17, lexTokens17), (lexCharacters18, lexTokens18), (lexCharacters19, lexTokens19), (lexCharacters20, lexTokens20), (lexCharacters21, lexTokens21), (lexCharacters22, lexTokens22), (lexCharacters23, lexTokens23), (lexCharacters24, lexTokens24), (lexCharacters25, lexTokens25), (lexCharacters26, lexTokens26), (lexCharacters27, lexTokens27), (lexCharacters28, lexTokens28), (lexCharacters29, lexTokens29), (lexCharacters30, lexTokens30), (lexCharacters31, lexTokens31), (lexCharacters32, lexTokens32), (lexCharacters33, lexTokens33), (lexCharacters34, lexTokens34), (lexCharacters35, lexTokens35), (lexCharacters36, lexTokens36), (lexCharacters37, lexTokens37), (lexCharacters38, lexTokens38), (lexCharacters39, lexTokens39), (lexCharacters40, lexTokens40), (lexCharacters41, lexTokens41), (lexCharacters42, lexTokens42), (lexCharacters43, lexTokens43), (lexCharacters44, lexTokens44), (lexCharacters45, lexTokens45), (lexCharacters46, lexTokens46), (lexCharacters47, lexTokens47), (lexCharacters48, lexTokens48), (lexCharacters49, lexTokens49)]
+private def sourcePieces : List (List Char × List Token) := [(lexCharacters0, lexTokens0), (lexCharacters1, lexTokens1), (lexCharacters2, lexTokens2), (lexCharacters3, lexTokens3), (lexCharacters4, lexTokens4), (lexCharacters5, lexTokens5), (lexCharacters6, lexTokens6), (lexCharacters7, lexTokens7), (lexCharacters8, lexTokens8), (lexCharacters9, lexTokens9), (lexCharacters10, lexTokens10), (lexCharacters11, lexTokens11), (lexCharacters12, lexTokens12), (lexCharacters13, lexTokens13), (lexCharacters14, lexTokens14), (lexCharacters15, lexTokens15), (lexCharacters16, lexTokens16), (lexCharacters17, lexTokens17), (lexCharacters18, lexTokens18), (lexCharacters19, lexTokens19), (lexCharacters20, lexTokens20), (lexCharacters21, lexTokens21), (lexCharacters22, lexTokens22), (lexCharacters23, lexTokens23), (lexCharacters24, lexTokens24), (lexCharacters25, lexTokens25), (lexCharacters26, lexTokens26), (lexCharacters27, lexTokens27)]
 
 private theorem characters_from_pieces : sourcePieces.flatMap Prod.fst = characters := by
   native_c_parser_reflexivity
@@ -7993,7 +8225,7 @@ theorem actual_characters_lexed : lex characters = .ok tokens := by
   apply lex_of_completed
   apply completed_pieces sourcePieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨lexPiece0, lexPiece1, lexPiece2, lexPiece3, lexPiece4, lexPiece5, lexPiece6, lexPiece7, lexPiece8, lexPiece9, lexPiece10, lexPiece11, lexPiece12, lexPiece13, lexPiece14, lexPiece15, lexPiece16, lexPiece17, lexPiece18, lexPiece19, lexPiece20, lexPiece21, lexPiece22, lexPiece23, lexPiece24, lexPiece25, lexPiece26, lexPiece27, lexPiece28, lexPiece29, lexPiece30, lexPiece31, lexPiece32, lexPiece33, lexPiece34, lexPiece35, lexPiece36, lexPiece37, lexPiece38, lexPiece39, lexPiece40, lexPiece41, lexPiece42, lexPiece43, lexPiece44, lexPiece45, lexPiece46, lexPiece47, lexPiece48, lexPiece49, by trivial⟩
+  exact ⟨lexPiece0, lexPiece1, lexPiece2, lexPiece3, lexPiece4, lexPiece5, lexPiece6, lexPiece7, lexPiece8, lexPiece9, lexPiece10, lexPiece11, lexPiece12, lexPiece13, lexPiece14, lexPiece15, lexPiece16, lexPiece17, lexPiece18, lexPiece19, lexPiece20, lexPiece21, lexPiece22, lexPiece23, lexPiece24, lexPiece25, lexPiece26, lexPiece27, by trivial⟩
 
 theorem actual_tokens_parsed :
     functionUsing? (declaratorParameter? names) (2 * tokens.length + 4) names
@@ -8023,6 +8255,7 @@ structure TaskLayout where
 
 def taskFields (layout : TaskLayout) : Layout := fun name =>
   if name = "kind".toList then some ⟨layout.taskOffset name, .word⟩ else
+  if name = "context".toList then some ⟨layout.taskOffset name, .pointer⟩ else
   if name = "pure_authority".toList then some ⟨layout.taskOffset name, .boolean⟩ else
   if name = "space".toList then some ⟨layout.taskOffset name, .pointer⟩ else
   if name = "arena".toList then some ⟨layout.taskOffset name, .pointer⟩ else
@@ -8033,6 +8266,7 @@ def taskFields (layout : TaskLayout) : Layout := fun name =>
   if name = "strict_ready_argument".toList then some ⟨layout.taskOffset name, .signedWord⟩ else
   if name = "target".toList then some ⟨layout.taskOffset name, .pointer⟩ else
   if name = "dynamic_env".toList then some ⟨layout.taskOffset name, .embedded⟩ else
+  if name = "dynamic_env_is_seed".toList then some ⟨layout.taskOffset name, .boolean⟩ else
   if name = "dynamic_env_initialized".toList then some ⟨layout.taskOffset name, .boolean⟩ else
   if name = "seed_env".toList then some ⟨layout.taskOffset name, .embedded⟩ else
   if name = "seed_env_initialized".toList then some ⟨layout.taskOffset name, .boolean⟩ else
@@ -8043,6 +8277,7 @@ def taskFields (layout : TaskLayout) : Layout := fun name =>
 
 def driverFields (layout : TaskLayout) : Layout := fun name =>
   if name = "task_ready".toList then some ⟨layout.driverOffset name, .boolean⟩ else
+  if name = "capsule_stack".toList then some ⟨layout.driverOffset name, .boolean⟩ else
   if name = "pure_authority".toList then some ⟨layout.driverOffset name, .boolean⟩ else
   if name = "task".toList then some ⟨layout.driverOffset name, .embedded⟩ else
   if name = "control".toList then some ⟨layout.driverOffset name, .pointer⟩ else
@@ -8053,6 +8288,7 @@ def driverFields (layout : TaskLayout) : Layout := fun name =>
 def fieldTypes : ScalarBytes.FieldTypes := fun owner name =>
   if owner = type "PrimeEvalStackTask" then
     if name = "kind".toList then some (type "PrimeEvalStackTaskKind" 0) else
+    if name = "context".toList then some (type "PrimeEvalContext" 1) else
     if name = "pure_authority".toList then some (type "bool" 0) else
     if name = "space".toList then some (type "Space" 1) else
     if name = "arena".toList then some (type "Arena" 1) else
@@ -8063,6 +8299,7 @@ def fieldTypes : ScalarBytes.FieldTypes := fun owner name =>
     if name = "strict_ready_argument".toList then some (type "int" 0) else
     if name = "target".toList then some (type "OutcomeSet" 1) else
     if name = "dynamic_env".toList then some (type "Bindings" 0) else
+    if name = "dynamic_env_is_seed".toList then some (type "bool" 0) else
     if name = "dynamic_env_initialized".toList then some (type "bool" 0) else
     if name = "seed_env".toList then some (type "Bindings" 0) else
     if name = "seed_env_initialized".toList then some (type "bool" 0) else
@@ -8073,6 +8310,7 @@ def fieldTypes : ScalarBytes.FieldTypes := fun owner name =>
   else
   if owner = type "PrimeEvalStackDriver" then
     if name = "task_ready".toList then some (type "bool" 0) else
+    if name = "capsule_stack".toList then some (type "bool" 0) else
     if name = "pure_authority".toList then some (type "bool" 0) else
     if name = "task".toList then some (type "PrimeEvalStackTask" 0) else
     if name = "control".toList then some (type "PrimeNativeControl" 1) else
@@ -8125,30 +8363,73 @@ def inputContext (input : TaskInputs) : Context := fun name =>
     some (.scalar (type "uint64_t" 0) (some (.u64 input.evaluator_id))) else
   none
 
-/-- Inner providers retain actual nullable references and their complete state
-transitions. No whole-constructor service or successful-result assumption is
-substituted for the original control flow. -/
+/-- Conversion for the declared unsigned-compatible 32-bit enum profile.
+Signed native enum constants retain their bits; this does not assert a
+platform-independent ABI or introduce general mixed-width conversions. -/
+def kindWord? : CVal → Option UInt32
+  | .i32 value => some value.toUInt32
+  | .u32 value => some value
+  | _ => none
+
+/-- The exact twelve-argument boundary retains nullable references, signed
+indices and the complete evaluator word. Unknown tags or arity are outside
+this source interpretation; they do not manufacture a task request. -/
+def TaskInputs.ofArguments? : List CVal → Option TaskInputs
+  | [kind, .ptr space, .ptr arena, .ptr atom, .ptr expectedType,
+      .i32 fuel, .bool preserve, .i32 strictIndex, .ptr target,
+      .ptr dynamic, .ptr seed, .u64 evaluator] =>
+      (kindWord? kind).map fun actualKind =>
+        { kind := actualKind, s := space, a := arena, atom := atom,
+          etype := expectedType, fuel := fuel, preserve_bindings := preserve,
+          strict_ready_argument := strictIndex, target := target,
+          dynamic_env := dynamic, seed_env := seed, evaluator_id := evaluator }
+  | _ => none
+
+/-- Exact argument decoding and stateful helper boundaries retain failures and
+all heap effects. Capture is not assumed to initialize or successfully accept
+its destination. Its native resource implementation remains an obligation. -/
 structure TaskOperations where
   targetOwned : Option Ptr → CProg CVal Bool
-  captureDynamic : Ptr → Option Ptr → CProg CVal Bool
-  cloneBindings : Ptr → Option Ptr → CProg CVal Bool
+  captureTask : Ptr → TaskInputs → CProg CVal Bool
   enqueue : Option Ptr → Ptr → Option Ptr → CProg CVal Bool
-  zeroTask : Ptr → UInt64 → CProg CVal Unit
   releaseTask : Ptr → CProg CVal Unit
   region : AutomaticRegion Context
 
 private def boolResult (operation : CProg CVal Bool) : CProg CVal CVal :=
   operation >>= fun accepted => pure (.bool accepted)
 
-def calls (operations : TaskOperations) : Calls := fun name arguments =>
+
+
+private def driverRead (layout : TaskLayout) (driver : Option Ptr) (name : String) : CProg CVal CVal :=
+  field (driverFields layout) (.ptr driver) name.toList
+
+
+
+/-- The actual helper reads control before capsule state, and never reads a
+field through a null driver or after a null control. Reads occur when called. -/
+def queued (layout : TaskLayout) (driver : Option Ptr) : CProg CVal Bool := do
+  let present ← truth (.ptr driver)
+  if present then do
+    let control ← driverRead layout driver "control"
+    let managed ← truth control
+    if managed then do
+      let capsule ← driverRead layout driver "capsule_stack"
+      let localStack ← truth capsule
+      pure (!localStack)
+    else pure false
+  else pure false
+
+def calls (operations : TaskOperations) (layout : TaskLayout) : Calls := fun name arguments =>
   if name = "prime_eval_stack_target_is_owned".toList then match arguments with
     | [.ptr target] => boolResult (operations.targetOwned target)
     | _ => CProg.undefined
-  else if name = "prime_eval_stack_capture_dynamic_env".toList then match arguments with
-    | [.ptr (some destination), .ptr source] => boolResult (operations.captureDynamic destination source)
+  else if name = "prime_eval_stack_capture_task".toList then match arguments with
+    | .ptr (some destination) :: parameters => match TaskInputs.ofArguments? parameters with
+      | some input => boolResult (operations.captureTask destination input)
+      | none => CProg.undefined
     | _ => CProg.undefined
-  else if name = "bindings_clone".toList then match arguments with
-    | [.ptr (some destination), .ptr source] => boolResult (operations.cloneBindings destination source)
+  else if name = "prime_eval_stack_queued".toList then match arguments with
+    | [.ptr driver] => boolResult (queued layout driver)
     | _ => CProg.undefined
   else if name = "prime_native_control_enqueue_task".toList then match arguments with
     | [.ptr control, .ptr (some task), .ptr top] => boolResult (operations.enqueue control task top)
@@ -8156,11 +8437,7 @@ def calls (operations : TaskOperations) : Calls := fun name arguments =>
   else CProg.undefined
 
 def effects (operations : TaskOperations) : CallService Unit := fun name arguments =>
-  if name = "memset".toList then match arguments with
-    | [.ptr (some task), .i32 zero, .u64 bytes] =>
-        if zero = 0 then operations.zeroTask task bytes else CProg.undefined
-    | _ => CProg.undefined
-  else if name = "prime_eval_stack_task_free".toList then match arguments with
+  if name = "prime_eval_stack_task_free".toList then match arguments with
     | [.ptr (some task)] => operations.releaseTask task
     | _ => CProg.undefined
   else CProg.undefined
@@ -8171,7 +8448,7 @@ private def recordLayouts (layout : TaskLayout) : CType → Layout := fun record
   else fun _ => none
 
 def profile (operations : TaskOperations) (layout : TaskLayout) : StatementBlock.ObjectBindings.Profile where
-  values := calls operations
+  values := calls operations layout
   locations := fun name => if name = "g_prime_eval_stack_driver".toList then
     some (layout.currentDriver, .pointer) else none
   outsideTypes := fun name => if name = "g_prime_eval_stack_driver".toList then
@@ -8198,19 +8475,17 @@ private def bindTask (context : Context) (task : Ptr) : Context :=
 private def returned (context : Context) (accepted : Bool) : CProg CVal (Result Context) :=
   pure (.finished (.returned context (some (.bool accepted))))
 
-private def driverRead (layout : TaskLayout) (driver : Option Ptr) (name : String) : CProg CVal CVal :=
-  field (driverFields layout) (.ptr driver) name.toList
-
 private def driverPlace (layout : TaskLayout) (driver : Option Ptr) (name : String) : CProg CVal Ptr :=
   fieldAddress (driverFields layout) (.ptr driver) name.toList
 
-private def taskStore (layout : TaskLayout) (task : Ptr) (name : String) (value : CVal) : CProg CVal Unit :=
-  CProg.store (task + layout.taskOffset name.toList) value
+
 
 private def cleanup (operations : TaskOperations) (context : Context) (task : Ptr) :
     CProg CVal (Result Context) := do
   operations.releaseTask task
   returned context false
+
+
 
 private def publishUnmanaged (layout : TaskLayout) (context : Context)
     (driver : Option Ptr) (task : Ptr) : CProg CVal (Result Context) := do
@@ -8222,13 +8497,13 @@ private def publishUnmanaged (layout : TaskLayout) (context : Context)
   CProg.incrementU64 generation
   returned context true
 
+
 /-- The publication specification is independent of the statement interpreter.
-It retains a second control read for the enqueue operands, the complete record
+It retains the capsule-aware helper, later control reads for enqueue, the complete record
 snapshot on the unmanaged path, and the sequential generation read/store. -/
 def publish (operations : TaskOperations) (layout : TaskLayout) (context : Context)
     (driver : Option Ptr) (task : Ptr) : CProg CVal (Result Context) := do
-  let controlValue ← driverRead layout driver "control"
-  let managed ← truth controlValue
+  let managed ← queued layout driver
   if managed then do
     let controlValue ← driverRead layout driver "control"
     let topValue ← driverRead layout driver "top"
@@ -8242,49 +8517,13 @@ def publish (operations : TaskOperations) (layout : TaskLayout) (context : Conte
       returned context true
   else publishUnmanaged layout context driver task
 
-/-- A seed reference is tested at its actual use. Successful capture changes
-only its declared flag before publication; refusal retains cleanup and return. -/
-def seedAndPublish (operations : TaskOperations) (layout : TaskLayout) (input : TaskInputs)
+/-- Capture refusal returns directly: the callee owns its unsuccessful local
+cleanup. Only enqueue refusal releases the successfully captured caller task. -/
+def captureAndPublish (operations : TaskOperations) (layout : TaskLayout) (input : TaskInputs)
     (context : Context) (driver : Option Ptr) (task : Ptr) : CProg CVal (Result Context) := do
-  let present ← truth (.ptr input.seed_env)
-  if present then do
-    let accepted ← operations.cloneBindings (task + layout.taskOffset "seed_env".toList) input.seed_env
-    if !accepted then cleanup operations context task
-    else do
-      taskStore layout task "seed_env_initialized" (.bool true)
-      publish operations layout context driver task
+  let accepted ← operations.captureTask task input
+  if !accepted then returned context false
   else publish operations layout context driver task
-
-private def initializationAfterFuel (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (context : Context) (driver : Option Ptr) (task : Ptr) : CProg CVal (Result Context) := do
-  taskStore layout task "preserve_bindings" (.bool input.preserve_bindings)
-  taskStore layout task "strict_ready_argument" (.i32 input.strict_ready_argument)
-  taskStore layout task "target" (.ptr input.target)
-  taskStore layout task "evaluator_id" (.u64 input.evaluator_id)
-  let captured ← operations.captureDynamic (task + layout.taskOffset "dynamic_env".toList) input.dynamic_env
-  if !captured then cleanup operations context task
-  else do
-    taskStore layout task "dynamic_env_initialized" (.bool true)
-    seedAndPublish operations layout input context driver task
-
-private def initializationAfterAuthority (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (context : Context) (driver : Option Ptr) (task : Ptr) : CProg CVal (Result Context) := do
-  taskStore layout task "space" (.ptr input.s)
-  taskStore layout task "arena" (.ptr input.a)
-  taskStore layout task "atom" (.ptr input.atom)
-  taskStore layout task "etype" (.ptr input.etype)
-  taskStore layout task "fuel" (.i32 input.fuel)
-  initializationAfterFuel operations layout input context driver task
-
-/-- The initialization tree retains each scalar write, the authoritative
-Boolean read from the captured driver and the actual dynamic capture. -/
-def initializeTask (operations : TaskOperations) (layout : TaskLayout) (input : TaskInputs)
-    (context : Context) (driver : Option Ptr) (task : Ptr) : CProg CVal (Result Context) := do
-  operations.zeroTask task (UInt64.ofNat layout.taskBytes)
-  taskStore layout task "kind" (.u32 input.kind)
-  let pureAuthority ← driverRead layout driver "pure_authority"
-  taskStore layout task "pure_authority" pureAuthority
-  initializationAfterAuthority operations layout input context driver task
 
 /-- The guard follows the exact left-to-right short circuit. It keeps the
 live pointer comparison, readiness load and ownership service; no allocation
@@ -8312,7 +8551,7 @@ def taskOperations (operations : TaskOperations) (layout : TaskLayout) (input : 
     if refused then returned withDriver false
     else do
       let flow ← operations.region "task".toList layout.taskCells (fun task =>
-        initializeTask operations layout input (bindTask withDriver task) driver task)
+        captureAndPublish operations layout input (bindTask withDriver task) driver task)
       pure (StatementBlock.ObjectBindings.restore "task".toList (withDriver "task".toList) flow)
   pure (StatementBlock.ObjectBindings.restore "driver".toList (outer "driver".toList) result)
 
@@ -8323,12 +8562,16 @@ private def read (operations : TaskOperations) (layout : TaskLayout) (context : 
     (operand : CExpr) : CProg CVal CVal :=
   (services operations layout).read emptyLayout context operand
 
+
+
 private theorem local_read (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (name : Name) (localType : CType) (value : CVal)
     (known : context name = some (.scalar localType (some value))) :
     read operations layout context (.identifier name) = pure value := by
   exact StatementBlock.ObjectBindings.initialized_local_keeps_its_value
     (profile operations layout) emptyLayout context name localType value known
+
+
 
 
 private theorem driver_field_layout (operations : TaskOperations) (layout : TaskLayout)
@@ -8342,14 +8585,6 @@ private theorem driver_field_layout (operations : TaskOperations) (layout : Task
     "driver".toList "PrimeEvalStackDriver".toList 0 driver (by rfl) known
 
 
-private theorem task_field_layout (operations : TaskOperations) (layout : TaskLayout)
-    (context : Context) (task : Ptr)
-    (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    (StatementBlock.ObjectBindings.objects (profile operations layout) context).fieldLayout
-      emptyLayout (.identifier "task".toList) false = taskFields layout := by
-  exact StatementBlock.ObjectBindings.local_object_keeps_field_inventory
-    (profile operations layout) emptyLayout context (recordLayouts layout)
-    "task".toList (type "PrimeEvalStackTask") task (by rfl) known
 
 
 private theorem driver_field_read (operations : TaskOperations) (layout : TaskLayout)
@@ -8363,6 +8598,8 @@ private theorem driver_field_read (operations : TaskOperations) (layout : TaskLa
     "driver".toList name.toList "PrimeEvalStackDriver".toList 0 driver (by rfl) known
 
 
+
+
 private theorem task_identifier_place (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (task : Ptr)
     (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
@@ -8372,31 +8609,6 @@ private theorem task_identifier_place (operations : TaskOperations) (layout : Ta
     (profile operations layout) emptyLayout context "task".toList (type "PrimeEvalStackTask") task known
 
 
-private theorem task_field_place (operations : TaskOperations) (layout : TaskLayout)
-    (context : Context) (task : Ptr) (name : String) (kind : FieldKind)
-    (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (selected : taskFields layout name.toList = some ⟨layout.taskOffset name.toList, kind⟩) :
-    StatementBlock.ObjectBindings.place (profile operations layout) emptyLayout context
-      (.field (.identifier "task".toList) name.toList false) =
-      pure (task + layout.taskOffset name.toList) := by
-  exact StatementBlock.ObjectBindings.local_object_field_keeps_address
-    (profile operations layout) emptyLayout context (recordLayouts layout)
-    "task".toList name.toList (type "PrimeEvalStackTask") task
-    (layout.taskOffset name.toList) kind (by rfl) known selected
-
-
-private theorem task_field_address (operations : TaskOperations) (layout : TaskLayout)
-    (context : Context) (task : Ptr) (name : String) (kind : FieldKind)
-    (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (selected : taskFields layout name.toList = some ⟨layout.taskOffset name.toList, kind⟩) :
-    read operations layout context
-      (.unary .address (.field (.identifier "task".toList) name.toList false)) =
-      pure (.ptr (some (task + layout.taskOffset name.toList))) := by
-  change (StatementBlock.ObjectBindings.place (profile operations layout) emptyLayout context
-    (.field (.identifier "task".toList) name.toList false) >>= fun address =>
-      pure (CVal.ptr (some address))) = _
-  rw [task_field_place operations layout context task name kind known selected]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
 
 
 private theorem driver_field_place (operations : TaskOperations) (layout : TaskLayout)
@@ -8409,61 +8621,7 @@ private theorem driver_field_place (operations : TaskOperations) (layout : TaskL
     (profile operations layout) emptyLayout context (recordLayouts layout)
     "driver".toList name.toList "PrimeEvalStackDriver".toList 0 driver (by rfl) known
 
-private theorem task_field_type (operations : TaskOperations) (layout : TaskLayout)
-    (context : Context) (task : Ptr) (name : String) (scalarType : CType)
-    (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (selected : fieldTypes (type "PrimeEvalStackTask") name.toList = some scalarType) :
-    ScalarBytes.typeOf?
-      (StatementBlock.ObjectBindings.types context (profile operations layout).outsideTypes)
-      (.field (.identifier "task".toList) name.toList false)
-      (profile operations layout).fieldTypes = some scalarType := by
-  simp only [ScalarBytes.typeOf?, StatementBlock.ObjectBindings.types, known,
-    bind, Option.bind_some, Bool.false_eq_true, if_false]
-  exact selected
 
-private theorem task_scalar_assignment (operations : TaskOperations) (layout : TaskLayout)
-    (context : Context) (task : Ptr) (name : String) (scalarType : CType)
-    (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (typed : fieldTypes (type "PrimeEvalStackTask") name.toList = some scalarType)
-    (scalarCell : (profile operations layout).recordExtent scalarType = none)
-    (value : CVal) (rhs : CExpr)
-    (selected : taskFields layout name.toList =
-      some ⟨layout.taskOffset name.toList, valueKind value⟩)
-    (actual : read operations layout context rhs = pure value) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
-      (.assign (.field (.identifier "task".toList) name.toList false) rhs) =
-      (taskStore layout task name value >>= fun _ => pure context) := by
-  rw [StatementBlock.ObjectBindings.assignment,
-    task_field_type operations layout context task name scalarType known typed]
-  simp only [resolved, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, scalarCell]
-  change (read operations layout context rhs >>= fun value =>
-    StatementBlock.ObjectBindings.writeValue (profile operations layout) emptyLayout context
-      (.field (.identifier "task".toList) name.toList false) value) = _
-  rw [actual]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
-  rw [StatementBlock.ObjectBindings.scalar_field_write_keeps_place_and_value
-    (profile operations layout) emptyLayout context (.identifier "task".toList)
-    name.toList false value (layout.taskOffset name.toList)
-    (by rw [task_field_layout operations layout context task known]; exact selected)]
-  rw [task_field_place operations layout context task name _ known selected]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, taskStore]
-
-private theorem task_size_is_unevaluated (operations : TaskOperations) (layout : TaskLayout)
-    (context : Context) (task : Ptr)
-    (known : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    read operations layout context (.sizeOfExpr (.identifier "task".toList)) =
-      pure (.u64 (UInt64.ofNat layout.taskBytes)) := by
-  change resolved (StatementBlock.ObjectBindings.size (profile operations layout) context
-    (.sizeOfExpr (.identifier "task".toList))) = _
-  have inferred : ScalarBytes.typeOf?
-      (StatementBlock.ObjectBindings.types context (profile operations layout).outsideTypes)
-      (.identifier "task".toList) (profile operations layout).fieldTypes =
-      some (type "PrimeEvalStackTask") := by
-    simp only [ScalarBytes.typeOf?, StatementBlock.ObjectBindings.types, known]
-  simp only [StatementBlock.ObjectBindings.size, inferred, bind, Option.bind_some]
-  change resolved (if layout.taskBytes < 2 ^ 64 then
-    some (CVal.u64 (UInt64.ofNat layout.taskBytes)) else none) = _
-  simp only [layout.taskBytesBound, ↓reduceIte, resolved]
 
 private theorem global_driver_load (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (absent : context "g_prime_eval_stack_driver".toList = none) :
@@ -8478,6 +8636,8 @@ private theorem global_driver_load (operations : TaskOperations) (layout : TaskL
   have zero : layout.currentDriver + 0 = layout.currentDriver := by cases layout.currentDriver; rfl
   simp only [field, pointer, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, zero]
 
+
+
 private theorem read_negated (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (operand : CExpr) (program : CProg CVal Bool)
     (actual : read operations layout context operand =
@@ -8488,6 +8648,8 @@ private theorem read_negated (operations : TaskOperations) (layout : TaskLayout)
     truth value >>= fun selected => pure (CVal.bool (!selected))) = _
   rw [actual]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, truth]
+
+
 
 private theorem read_or (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (left right : CExpr) (program : CProg CVal Bool)
@@ -8506,6 +8668,8 @@ private theorem read_or (operations : TaskOperations) (layout : TaskLayout)
   rw [actual]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, truth]
 
+
+
 private theorem read_pointer_not (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (name : Name) (localType : CType) (value : Option Ptr)
     (known : context name = some (.scalar localType (some (.ptr value)))) :
@@ -8515,6 +8679,8 @@ private theorem read_pointer_not (operations : TaskOperations) (layout : TaskLay
     truth value >>= fun selected => pure (CVal.bool (!selected))) = _
   rw [local_read operations layout context name localType _ known]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
+
+
 
 private theorem read_ownership (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (target : Option Ptr)
@@ -8541,10 +8707,14 @@ private theorem read_ownership (operations : TaskOperations) (layout : TaskLayou
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
   rfl
 
+
+
 private def guardExpression : CExpr :=
   .binary .or (.binary .or (.unary .not (.identifier "driver".toList))
     (.field (.identifier "driver".toList) "task_ready".toList true))
     (.unary .not (.call "prime_eval_stack_target_is_owned".toList [.identifier "target".toList]))
+
+
 
 private theorem read_guard (operations : TaskOperations) (layout : TaskLayout)
     (input : TaskInputs) (driver : Option Ptr) :
@@ -8583,15 +8753,21 @@ private theorem read_guard (operations : TaskOperations) (layout : TaskLayout)
   rfl
 
 
+
+
 def interpretedTask (operations : TaskOperations) (layout : TaskLayout) (input : TaskInputs) :
     CProg CVal (Result Context) :=
   StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 64
     (inputContext input) taskSyntax.body
 
+
+
 private theorem return_boolean (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (value : Bool) (fuel : Nat) (rest : List CStatement) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 1)
       context (.return (some (.bool value)) :: rest) = returned context value := rfl
+
+
 
 private theorem driver_declaration_keeps_snapshot (operations : TaskOperations) (layout : TaskLayout)
     (input : TaskInputs) :
@@ -8629,6 +8805,8 @@ private theorem driver_declaration_keeps_snapshot (operations : TaskOperations) 
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind,
     StatementBlock.objectInitialValue, type, Nat.zero_lt_succ, ↓reduceIte, pointer, bindDriver]
 
+
+
 private theorem guard_preserves_selected_continuation (operations : TaskOperations) (layout : TaskLayout)
     (input : TaskInputs) (driver : Option Ptr) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 63
@@ -8653,6 +8831,8 @@ private theorem guard_preserves_selected_continuation (operations : TaskOperatio
   funext refused
   cases refused <;> rfl
 
+
+
 private theorem driver_field_type (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (driver : Option Ptr) (name : String) (scalarType : CType)
     (known : context "driver".toList =
@@ -8665,6 +8845,8 @@ private theorem driver_field_type (operations : TaskOperations) (layout : TaskLa
   simp only [ScalarBytes.typeOf?, StatementBlock.ObjectBindings.types, known,
     bind, Option.bind_some, type, ↓reduceIte]
   exact selected
+
+
 
 private theorem driver_ready_assignment (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (driver : Option Ptr)
@@ -8692,6 +8874,8 @@ private theorem driver_ready_assignment (operations : TaskOperations) (layout : 
   rw [driver_field_place operations layout context driver "task_ready" known]
   simp only [Prog.bind_eq, Prog.pure_eq]
 
+
+
 private theorem driver_task_assignment (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (driver : Option Ptr) (task : Ptr)
     (knownDriver : context "driver".toList =
@@ -8715,6 +8899,8 @@ private theorem driver_task_assignment (operations : TaskOperations) (layout : T
     task_identifier_place operations layout context task knownTask]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
 
+
+
 private theorem generation_effect_retains_read_store (operations : TaskOperations) (layout : TaskLayout)
     (context : Context) (driver : Option Ptr)
     (known : context "driver".toList =
@@ -8733,20 +8919,22 @@ private theorem generation_effect_retains_read_store (operations : TaskOperation
   dsimp only [ident]
   rw [driver_field_place operations layout context driver "continuation_generation" known]
 
+
+
 private theorem unmanaged_publication_retains_complete_copy (operations : TaskOperations)
     (layout : TaskLayout) (context : Context) (driver : Option Ptr) (task : Ptr)
     (knownDriver : context "driver".toList =
       some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
-      (taskSyntax.body.drop 19) = publishUnmanaged layout context driver task := by
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 59 context
+      (taskSyntax.body.drop 5) = publishUnmanaged layout context driver task := by
+  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 59 context
     [.assign (driverField "task") (ident "task"), .assign (driverField "task_ready") (.bool true),
      .effect (.postIncrement (driverField "continuation_generation")), .return (some (.bool true))] = _
   rw [StatementBlock.executeScopedWith.eq_def]
   change (StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
     (.assign (driverField "task") (ident "task")) >>= fun context =>
-      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 44 context
+      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 58 context
         [.assign (driverField "task_ready") (.bool true),
          .effect (.postIncrement (driverField "continuation_generation")), .return (some (.bool true))]) = _
   rw [driver_task_assignment operations layout context driver task knownDriver knownTask]
@@ -8759,7 +8947,7 @@ private theorem unmanaged_publication_retains_complete_copy (operations : TaskOp
   rw [StatementBlock.executeScopedWith.eq_def]
   change (StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
     (.assign (driverField "task_ready") (.bool true)) >>= fun context =>
-      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 43 context
+      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 57 context
         [.effect (.postIncrement (driverField "continuation_generation")), .return (some (.bool true))]) = _
   rw [driver_ready_assignment operations layout context driver knownDriver]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
@@ -8770,10 +8958,10 @@ private theorem unmanaged_publication_retains_complete_copy (operations : TaskOp
   rw [StatementBlock.executeScopedWith.eq_def]
   change ((services operations layout).effect emptyLayout context
     (.postIncrement (driverField "continuation_generation")) >>= fun _ =>
-      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 42 context
+      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 56 context
         [.return (some (.bool true))]) = _
   rw [generation_effect_retains_read_store operations layout context driver knownDriver,
-    return_boolean operations layout context true 41 []]
+    return_boolean operations layout context true 55 []]
   simp only [Prog.bind_eq, Prog.bind_assoc]
 
 
@@ -8841,7 +9029,7 @@ private theorem enqueue_retains_second_control_and_top_reads (operations : TaskO
   change (read operations layout context (driverField "control") >>= fun controlValue =>
     read operations layout context (.unary .address (ident "task")) >>= fun taskValue =>
       read operations layout context (driverField "top") >>= fun topValue =>
-        calls operations "prime_native_control_enqueue_task".toList [controlValue, taskValue, topValue]) = _
+        calls operations layout "prime_native_control_enqueue_task".toList [controlValue, taskValue, topValue]) = _
   have controlRead := driver_field_read operations layout context driver "control" knownDriver
   have topRead := driver_field_read operations layout context driver "top" knownDriver
   change read operations layout context (driverField "control") = _ at controlRead
@@ -8855,8 +9043,8 @@ private theorem enqueue_retains_second_control_and_top_reads (operations : TaskO
   have notOwned : "prime_native_control_enqueue_task".toList ≠
       "prime_eval_stack_target_is_owned".toList := by decide
   have notCaptured : "prime_native_control_enqueue_task".toList ≠
-      "prime_eval_stack_capture_dynamic_env".toList := by decide
-  have notCloned : "prime_native_control_enqueue_task".toList ≠ "bindings_clone".toList := by decide
+      "prime_eval_stack_capture_task".toList := by decide
+  have notCloned : "prime_native_control_enqueue_task".toList ≠ "prime_eval_stack_queued".toList := by decide
   simp only [calls, notOwned, notCaptured, notCloned, ↓reduceIte]
   cases controlValue <;> cases topValue <;>
     simp only [pointer, boolResult, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
@@ -8898,7 +9086,7 @@ private theorem managed_publication_retains_refusal (operations : TaskOperations
     (knownDriver : context "driver".toList =
       some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context managedBody =
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 59 context managedBody =
       (enqueueOperation operations layout driver task >>= fun accepted =>
         if !accepted then cleanup operations context task else
           driverPlace layout driver "continuation_generation" >>= fun generation =>
@@ -8914,10 +9102,10 @@ private theorem managed_publication_retains_refusal (operations : TaskOperations
     (.unary .not (.call "prime_native_control_enqueue_task".toList
       [driverField "control", .unary .address (ident "task"), driverField "top"])) >>= fun value =>
       truth value >>= fun refused =>
-        StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 44 context
+        StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 58 context
           (if refused then failureBody else []) >>=
         resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 44 updated
+          emptyLayout 0 58 updated
           [.effect (.postIncrement (driverField "continuation_generation")), .return (some (.bool true))])) = _
   rw [read_negated operations layout context _ _ actual]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, truth]
@@ -8925,17 +9113,17 @@ private theorem managed_publication_retains_refusal (operations : TaskOperations
   funext accepted
   cases accepted with
   | false =>
-      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 44 context
+      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 58 context
         failureBody >>= resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 44 updated
+          emptyLayout 0 58 updated
           [.effect (.postIncrement (driverField "continuation_generation")), .return (some (.bool true))])) =
         cleanup operations context task
-      rw [refusal_cleanup_retains_effect_and_return operations layout context task 42 knownTask]
+      rw [refusal_cleanup_retains_effect_and_return operations layout context task 56 knownTask]
       simp only [cleanup, returned, Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, resume]
   | true =>
-      change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 44 context
+      change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 58 context
         [.effect (.postIncrement (driverField "continuation_generation")), .return (some (.bool true))] = _
-      exact generation_and_return operations layout context driver 42 knownDriver
+      exact generation_and_return operations layout context driver 56 knownDriver
 
 private theorem managed_return_prevents_unmanaged_fallthrough (operations : TaskOperations)
     (layout : TaskLayout) (context : Context) (driver : Option Ptr) (task : Ptr)
@@ -8943,7 +9131,7 @@ private theorem managed_return_prevents_unmanaged_fallthrough (operations : Task
       some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
     (continuation : Context → CProg CVal (Result Context)) :
-    (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context managedBody
+    (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 59 context managedBody
       >>= resume continuation) =
       (enqueueOperation operations layout driver task >>= fun accepted =>
         if !accepted then cleanup operations context task else
@@ -8964,553 +9152,234 @@ private theorem managed_return_prevents_unmanaged_fallthrough (operations : Task
             CProg.incrementU64 generation >>= fun _ => returned context true)
       simp only [returned, Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, resume]
 
+/-- The helper's complete source is admitted independently of the caller tree. -/
+def queuedSource : String := "static bool prime_eval_stack_queued(const PrimeEvalStackDriver *driver) {\n    return driver && driver->control && !driver->capsule_stack;\n}"
+
+def queuedCharacters : List Char := native_c_characters% "static bool prime_eval_stack_queued(const PrimeEvalStackDriver *driver) {\n    return driver && driver->control && !driver->capsule_stack;\n}"
+
+theorem queued_characters_are_actual_source : queuedSource.toList = queuedCharacters := by
+  native_c_character_reflexivity
+
+def queuedExpression : CExpr := .binary .and
+  (.binary .and (ident "driver") (driverField "control"))
+  (.unary .not (driverField "capsule_stack"))
+
+def queuedSyntax : CDeclaratorFunction :=
+  ⟨⟨"bool".toList, 0⟩, "prime_eval_stack_queued".toList,
+   [⟨⟨"PrimeEvalStackDriver".toList, true, [false]⟩, "driver".toList⟩],
+   [.return (some queuedExpression)]⟩
+
+theorem queued_source_recognized :
+    declaratorFunctionText? names queuedSource.toList = some queuedSyntax := by
+  rw [queued_characters_are_actual_source]
+  native_c_parser_reflexivity
+
+private theorem queued_formula_reads_live_fields (operations : TaskOperations)
+    (layout : TaskLayout) (context : Context) (driver : Option Ptr)
+    (known : context "driver".toList =
+      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver)))) :
+    read operations layout context queuedExpression =
+      (queued layout driver >>= fun ready => pure (.bool ready)) := by
+  have control := driver_field_read operations layout context driver "control" known
+  have capsule := driver_field_read operations layout context driver "capsule_stack" known
+  change read operations layout context (driverField "control") = _ at control
+  change read operations layout context (driverField "capsule_stack") = _ at capsule
+  have middle : read operations layout context
+      (.binary .and (ident "driver") (driverField "control")) =
+      (truth (.ptr driver) >>= fun present => if present then do
+        let value ← driverRead layout driver "control"
+        let managed ← truth value
+        pure (.bool managed)
+      else pure (.bool false)) := by
+    change (read operations layout context (ident "driver") >>= fun first =>
+      truth first >>= fun present => if present then do
+        let second ← read operations layout context (driverField "control")
+        let managed ← truth second
+        pure (CVal.bool managed)
+      else pure (CVal.bool false)) = _
+    have actualDriver := local_read operations layout context _ _ _ known
+    change read operations layout context (ident "driver") = pure (.ptr driver) at actualDriver
+    rw [actualDriver, control]
+    simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
+  change (read operations layout context (.binary .and (ident "driver") (driverField "control")) >>=
+    fun first => truth first >>= fun managed => if managed then do
+      let capsule ← read operations layout context (.unary .not (driverField "capsule_stack"))
+      let available ← truth capsule
+      pure (CVal.bool available)
+    else pure (CVal.bool false)) = _
+  rw [middle]
+  have negated : read operations layout context (.unary .not (driverField "capsule_stack")) =
+      (driverRead layout driver "capsule_stack" >>= fun value =>
+        truth value >>= fun localStack => pure (.bool (!localStack))) := by
+    change (read operations layout context (driverField "capsule_stack") >>= fun value =>
+      truth value >>= fun localStack => pure (CVal.bool (!localStack))) = _
+    rw [capsule]
+  rw [negated]
+  unfold queued
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc,
+    BindSchedule.bind_boolean_choice, truth]
+  rfl
+
+/-- The helper equation is derived from its actual field reads, including both
+short-circuit exits. It does not cache control, capsule state or a prior result. -/
+theorem original_queued_executes_live_fields (operations : TaskOperations)
+    (layout : TaskLayout) (context : Context) (driver : Option Ptr)
+    (known : context "driver".toList =
+      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver)))) :
+    (declaratorFunctionText? names queuedSource.toList).map
+      (fun function => StatementBlock.executeScopedWith (services operations layout)
+        emptyLayout 0 1 context function.body) =
+      some (queued layout driver >>= fun ready => returned context ready) := by
+  rw [queued_source_recognized, Option.map_some]
+  change some (read operations layout context queuedExpression >>= fun value =>
+    pure (Result.finished (Flow.returned context (some value)))) = _
+  rw [queued_formula_reads_live_fields operations layout context driver known]
+  simp only [returned, Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind]
+
+private theorem queued_call_reads_actual_driver (operations : TaskOperations)
+    (layout : TaskLayout) (context : Context) (driver : Option Ptr)
+    (known : context "driver".toList =
+      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver)))) :
+    read operations layout context (.call "prime_eval_stack_queued".toList [ident "driver"]) =
+      (queued layout driver >>= fun ready => pure (.bool ready)) := by
+  change expressionWithNames
+    (localOrLocated (StatementBlock.ObjectBindings.values context)
+      (StatementBlock.ObjectBindings.declared context) (profile operations layout).locations)
+    (profile operations layout).values emptyLayout
+    (.call "prime_eval_stack_queued".toList [ident "driver"])
+    (StatementBlock.ObjectBindings.objects (profile operations layout) context) = _
+  rw [absent_argument_call_preserves_scalar_path _ _ _ _ _ _ (by rfl)]
+  simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
+  change (read operations layout context (ident "driver") >>= fun actual =>
+    calls operations layout "prime_eval_stack_queued".toList [actual]) = _
+  have actualDriver := local_read operations layout context _ _ _ known
+  change read operations layout context (ident "driver") = pure (.ptr driver) at actualDriver
+  rw [actualDriver]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
+  rfl
+
 private theorem publication_retains_source_paths (operations : TaskOperations)
     (layout : TaskLayout) (context : Context) (driver : Option Ptr) (task : Ptr)
     (knownDriver : context "driver".toList =
       some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context
-      (taskSyntax.body.drop 18) = publish operations layout context driver task := by
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context
-    (.branch (driverField "control") managedBody [] :: taskSyntax.body.drop 19) = _
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 60 context
+      (taskSyntax.body.drop 4) = publish operations layout context driver task := by
+  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 60 context
+    (.branch (.call "prime_eval_stack_queued".toList [ident "driver"]) managedBody [] ::
+      taskSyntax.body.drop 5) = _
   rw [StatementBlock.executeScopedWith.eq_def]
-  change (read operations layout context (driverField "control") >>= fun controlValue =>
-    truth controlValue >>= fun managed =>
-      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
+  change (read operations layout context (.call "prime_eval_stack_queued".toList [ident "driver"]) >>=
+    fun actual => truth actual >>= fun managed =>
+      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 59 context
         (if managed then managedBody else []) >>=
       resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-        emptyLayout 0 45 updated (taskSyntax.body.drop 19))) = _
-  have actual := driver_field_read operations layout context driver "control" knownDriver
-  change read operations layout context (driverField "control") = _ at actual
-  rw [actual]
+        emptyLayout 0 59 updated (taskSyntax.body.drop 5))) = _
+  rw [queued_call_reads_actual_driver operations layout context driver knownDriver]
   unfold publish
-  simp only [Prog.bind_eq]
-  congr 1
-  funext controlValue
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, truth]
   congr 1
   funext managed
   cases managed with
   | false =>
-      change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
-        (taskSyntax.body.drop 19) = publishUnmanaged layout context driver task
       exact unmanaged_publication_retains_complete_copy operations layout context driver task knownDriver knownTask
   | true =>
-      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
+      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 59 context
         managedBody >>= resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 45 updated (taskSyntax.body.drop 19))) = _
+          emptyLayout 0 59 updated (taskSyntax.body.drop 5))) = _
       rw [managed_return_prevents_unmanaged_fallthrough operations layout context driver task
         knownDriver knownTask]
       simp only [enqueueOperation, Prog.bind_eq, Prog.bind_assoc]
       rfl
 
-private theorem embedded_capture_keeps_place_and_source (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (task : Ptr) (fieldName sourceName callee : String)
-    (source : Option Ptr)
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (knownSource : context sourceName.toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr source))))
-    (selected : taskFields layout fieldName.toList =
-      some ⟨layout.taskOffset fieldName.toList, .embedded⟩) :
-    read operations layout context (.call callee.toList
-      [.unary .address (taskField fieldName), ident sourceName]) =
-      calls operations callee.toList [.ptr (some (task + layout.taskOffset fieldName.toList)), .ptr source] := by
-  change expressionWithNames
-    (localOrLocated (StatementBlock.ObjectBindings.values context)
-      (StatementBlock.ObjectBindings.declared context) (profile operations layout).locations)
-    (profile operations layout).values emptyLayout
-    (.call callee.toList [.unary .address (taskField fieldName), ident sourceName])
-    (StatementBlock.ObjectBindings.objects (profile operations layout) context) = _
-  rw [expressionWithNames.eq_def]
-  simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
-  change (read operations layout context (.unary .address (taskField fieldName)) >>= fun destination =>
-    read operations layout context (ident sourceName) >>= fun sourceValue =>
-      calls operations callee.toList [destination, sourceValue]) = _
-  have address := task_field_address operations layout context task fieldName .embedded knownTask selected
-  change read operations layout context (.unary .address (taskField fieldName)) = _ at address
-  have inputRead := local_read operations layout context sourceName.toList _ (.ptr source) knownSource
-  change read operations layout context (ident sourceName) = _ at inputRead
-  rw [address, inputRead]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
-
-private theorem clone_read_keeps_embedded_destination (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (task : Ptr) (source : Option Ptr)
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (knownSource : context "seed_env".toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr source)))) :
-    read operations layout context (.call "bindings_clone".toList
-      [.unary .address (taskField "seed_env"), ident "seed_env"]) =
-      (operations.cloneBindings (task + layout.taskOffset "seed_env".toList) source >>=
-        fun accepted => pure (.bool accepted)) := by
-  rw [embedded_capture_keeps_place_and_source operations layout context task "seed_env" "seed_env"
-    "bindings_clone" source knownTask knownSource (by rfl)]
-  rfl
-
-private theorem dynamic_read_keeps_embedded_destination (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (task : Ptr) (source : Option Ptr)
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (knownSource : context "dynamic_env".toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr source)))) :
-    read operations layout context (.call "prime_eval_stack_capture_dynamic_env".toList
-      [.unary .address (taskField "dynamic_env"), ident "dynamic_env"]) =
-      (operations.captureDynamic (task + layout.taskOffset "dynamic_env".toList) source >>=
-        fun accepted => pure (.bool accepted)) := by
-  rw [embedded_capture_keeps_place_and_source operations layout context task "dynamic_env" "dynamic_env"
-    "prime_eval_stack_capture_dynamic_env" source knownTask knownSource (by rfl)]
-  rfl
-
-private theorem flag_assignment_keeps_store (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (task : Ptr) (name : String)
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (typed : fieldTypes (type "PrimeEvalStackTask") name.toList = some (type "bool"))
-    (selected : taskFields layout name.toList = some ⟨layout.taskOffset name.toList, .boolean⟩) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
-      (.assign (taskField name) (.bool true)) =
-      (taskStore layout task name (.bool true) >>= fun _ => pure context) := by
-  exact task_scalar_assignment operations layout context task name (type "bool")
-    knownTask typed (by rfl) (.bool true) (.bool true) selected (by rfl)
-
-private def seedBody : List CStatement :=
-  [.branch (.unary .not (.call "bindings_clone".toList
-    [.unary .address (taskField "seed_env"), ident "seed_env"])) failureBody [],
-   .assign (taskField "seed_env_initialized") (.bool true)]
-
-private theorem seed_body_resumes_publication (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (driver : Option Ptr) (task : Ptr) (source : Option Ptr)
-    (knownDriver : context "driver".toList =
-      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (knownSource : context "seed_env".toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr source)))) :
-    (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context seedBody >>=
-      resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-        emptyLayout 0 46 updated (taskSyntax.body.drop 18))) =
-      (operations.cloneBindings (task + layout.taskOffset "seed_env".toList) source >>= fun accepted =>
-        if !accepted then cleanup operations context task else
-          taskStore layout task "seed_env_initialized" (.bool true) >>= fun _ =>
-            publish operations layout context driver task) := by
-  have actual := clone_read_keeps_embedded_destination operations layout context task source knownTask knownSource
-  unfold seedBody
-  rw [StatementBlock.executeScopedWith.eq_def]
-  change ((read operations layout context
-    (.unary .not (.call "bindings_clone".toList
-      [.unary .address (taskField "seed_env"), ident "seed_env"])) >>= fun value =>
-      truth value >>= fun refused =>
-        StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
-          (if refused then failureBody else []) >>=
-        resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 45 updated [.assign (taskField "seed_env_initialized") (.bool true)])) >>=
-      resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-        emptyLayout 0 46 updated (taskSyntax.body.drop 18))) = _
-  rw [read_negated operations layout context _ _ actual]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, truth]
-  congr 1
-  funext accepted
-  cases accepted with
-  | false =>
-      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
-        failureBody >>= fun result =>
-          resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-            emptyLayout 0 45 updated [.assign (taskField "seed_env_initialized") (.bool true)]) result >>=
-          resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-            emptyLayout 0 46 updated (taskSyntax.body.drop 18))) = cleanup operations context task
-      rw [refusal_cleanup_retains_effect_and_return operations layout context task 43 knownTask]
-      simp only [cleanup, returned, Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, resume]
-  | true =>
-      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 45 context
-        [.assign (taskField "seed_env_initialized") (.bool true)] >>=
-        resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 46 updated (taskSyntax.body.drop 18))) =
-        (taskStore layout task "seed_env_initialized" (.bool true) >>= fun _ =>
-          publish operations layout context driver task)
-      rw [StatementBlock.executeScopedWith.eq_def]
-      change ((StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
-        (.assign (taskField "seed_env_initialized") (.bool true)) >>= fun updated =>
-          StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 44 updated []) >>=
-        resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 46 updated (taskSyntax.body.drop 18))) = _
-      rw [flag_assignment_keeps_store operations layout context task "seed_env_initialized" knownTask
-        (by rfl) (by rfl)]
-      simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
-      change (taskStore layout task "seed_env_initialized" (.bool true) >>= fun _ =>
-        StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context
-          (taskSyntax.body.drop 18)) = _
-      rw [publication_retains_source_paths operations layout context driver task knownDriver knownTask]
-      simp only [Prog.bind_eq]
-
-private theorem seed_choice_retains_reference (operations : TaskOperations)
-    (layout : TaskLayout) (input : TaskInputs) (context : Context) (driver : Option Ptr) (task : Ptr)
-    (knownDriver : context "driver".toList =
-      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (knownSource : context "seed_env".toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr input.seed_env)))) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 47 context
-      (taskSyntax.body.drop 17) = seedAndPublish operations layout input context driver task := by
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 47 context
-    (.branch (ident "seed_env") seedBody [] :: taskSyntax.body.drop 18) = _
-  rw [StatementBlock.executeScopedWith.eq_def]
-  change (read operations layout context (ident "seed_env") >>= fun source => truth source >>= fun present =>
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context
-      (if present then seedBody else []) >>=
-    resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-      emptyLayout 0 46 updated (taskSyntax.body.drop 18))) = _
-  have actual := local_read operations layout context "seed_env".toList _ (.ptr input.seed_env) knownSource
-  change read operations layout context (ident "seed_env") = _ at actual
-  rw [actual]
-  unfold seedAndPublish
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
-  congr 1
-  funext present
-  cases present with
-  | false =>
-      change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context
-        (taskSyntax.body.drop 18) = publish operations layout context driver task
-      exact publication_retains_source_paths operations layout context driver task knownDriver knownTask
-  | true =>
-      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 46 context seedBody >>=
-        resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 46 updated (taskSyntax.body.drop 18))) = _
-      rw [seed_body_resumes_publication operations layout context driver task input.seed_env
-        knownDriver knownTask knownSource]
-      rfl
-
-private theorem dynamic_choice_keeps_refusal_and_seed (operations : TaskOperations)
-    (layout : TaskLayout) (input : TaskInputs) (context : Context) (driver : Option Ptr) (task : Ptr)
-    (knownDriver : context "driver".toList =
-      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task))
-    (knownDynamic : context "dynamic_env".toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr input.dynamic_env))))
-    (knownSeed : context "seed_env".toList =
-      some (.scalar (type "Bindings" 1) (some (.ptr input.seed_env)))) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 49 context
-      (taskSyntax.body.drop 15) =
-      (operations.captureDynamic (task + layout.taskOffset "dynamic_env".toList) input.dynamic_env >>=
-        fun accepted => if !accepted then cleanup operations context task else
-          taskStore layout task "dynamic_env_initialized" (.bool true) >>= fun _ =>
-            seedAndPublish operations layout input context driver task) := by
-  have actual := dynamic_read_keeps_embedded_destination operations layout context task input.dynamic_env
-    knownTask knownDynamic
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 49 context
-    (.branch (.unary .not (.call "prime_eval_stack_capture_dynamic_env".toList
-      [.unary .address (taskField "dynamic_env"), ident "dynamic_env"])) failureBody [] ::
-      taskSyntax.body.drop 16) = _
-  rw [StatementBlock.executeScopedWith.eq_def]
-  change (read operations layout context
-    (.unary .not (.call "prime_eval_stack_capture_dynamic_env".toList
-      [.unary .address (taskField "dynamic_env"), ident "dynamic_env"])) >>= fun value =>
-      truth value >>= fun refused =>
-        StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 48 context
-          (if refused then failureBody else []) >>=
-        resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 48 updated (taskSyntax.body.drop 16))) = _
-  rw [read_negated operations layout context _ _ actual]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc, truth]
-  congr 1
-  funext accepted
-  cases accepted with
-  | false =>
-      change (StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 48 context
-        failureBody >>= resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
-          emptyLayout 0 48 updated (taskSyntax.body.drop 16))) = cleanup operations context task
-      rw [refusal_cleanup_retains_effect_and_return operations layout context task 46 knownTask]
-      simp only [cleanup, returned, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc, resume]
-  | true =>
-      change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 48 context
-        (taskSyntax.body.drop 16) =
-        (taskStore layout task "dynamic_env_initialized" (.bool true) >>= fun _ =>
-          seedAndPublish operations layout input context driver task)
-      change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 48 context
-        (.assign (taskField "dynamic_env_initialized") (.bool true) :: taskSyntax.body.drop 17) = _
-      rw [StatementBlock.executeScopedWith.eq_def]
-      change (StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
-        (.assign (taskField "dynamic_env_initialized") (.bool true)) >>= fun updated =>
-          StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 47 updated
-            (taskSyntax.body.drop 17)) = _
-      rw [flag_assignment_keeps_store operations layout context task "dynamic_env_initialized"
-        knownTask (by rfl) (by rfl)]
-      simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
-      rw [seed_choice_retains_reference operations layout input context driver task knownDriver knownTask knownSeed]
-
-private theorem memset_keeps_signed_zero_address_and_extent (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (task : Ptr)
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    (services operations layout).effect emptyLayout context (.call "memset".toList
-      [.unary .address (ident "task"), .decimal 0, .sizeOfExpr (ident "task")]) =
-      operations.zeroTask task (UInt64.ofNat layout.taskBytes) := by
-  change EffectStatements.withObjects (profile operations layout) (effects operations) emptyLayout context
-    (.call "memset".toList [.unary .address (ident "task"), .decimal 0, .sizeOfExpr (ident "task")]) = _
-  rw [EffectStatements.object_void_call_keeps_all_actual_arguments]
-  simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
-  change (read operations layout context (.unary .address (ident "task")) >>= fun address =>
-    read operations layout context (.decimal 0) >>= fun zero =>
-      read operations layout context (.sizeOfExpr (ident "task")) >>= fun extent =>
-        effects operations "memset".toList [address, zero, extent]) = _
-  have decimal : read operations layout context (.decimal 0) = pure (.i32 0) := rfl
-  have size := task_size_is_unevaluated operations layout context task knownTask
-  change read operations layout context (.sizeOfExpr (ident "task")) = _ at size
-  rw [task_address_is_not_object_value operations layout context task knownTask, decimal, size]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
-  rfl
-
 private def bodyContext (input : TaskInputs) (driver : Option Ptr) (task : Ptr) : Context :=
   bindTask (bindDriver (inputContext input) driver) task
 
-private theorem task_authority_assignment_keeps_typed_load (operations : TaskOperations)
-    (layout : TaskLayout) (context : Context) (driver : Option Ptr) (task : Ptr)
-    (knownDriver : context "driver".toList =
-      some (.scalar (type "PrimeEvalStackDriver" 1) (some (.ptr driver))))
-    (knownTask : context "task".toList = some (.object (type "PrimeEvalStackTask") task)) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout context
-      (.assign (taskField "pure_authority") (driverField "pure_authority")) =
-      (driverRead layout driver "pure_authority" >>= fun value =>
-        taskStore layout task "pure_authority" value >>= fun _ => pure context) := by
-  have inferred := task_field_type operations layout context task "pure_authority" (type "bool")
-    knownTask (by rfl)
-  dsimp only [taskField, ident]
-  rw [StatementBlock.ObjectBindings.assignment, inferred]
-  have scalarCell : (profile operations layout).recordExtent (type "bool") = none := rfl
-  simp only [resolved, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, scalarCell]
-  change (read operations layout context (driverField "pure_authority") >>= fun value =>
-    StatementBlock.ObjectBindings.writeValue (profile operations layout) emptyLayout context
-      (.field (.identifier "task".toList) "pure_authority".toList false) value) = _
-  have actual := driver_field_read operations layout context driver "pure_authority" knownDriver
-  change read operations layout context (driverField "pure_authority") = _ at actual
-  rw [actual]
-  unfold driverRead
-  cases driver with
-  | none =>
-      rw [null_owner_field_is_undefined]
-      rw [← Prog.bind_eq, undefined_bind]
-      rw [undefined_bind]
-  | some owner =>
-      rw [boolean_field_uses_actual_offset (driverFields layout) owner "pure_authority".toList
-        (layout.driverOffset "pure_authority".toList) (by rfl)]
-      simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
-      congr 1
-      funext authority
-      rw [StatementBlock.ObjectBindings.scalar_field_write_keeps_place_and_value
-        (profile operations layout) emptyLayout context (.identifier "task".toList)
-        "pure_authority".toList false (.bool authority) (layout.taskOffset "pure_authority".toList)
-        (by rw [task_field_layout operations layout context task knownTask]; rfl)]
-      rw [task_field_place operations layout context task "pure_authority" .boolean knownTask (by rfl)]
-      simp only [taskStore, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
+private def captureExpression : CExpr :=
+  .call "prime_eval_stack_capture_task".toList
+    [.unary .address (ident "task"), ident "kind", ident "s", ident "a", ident "atom",
+     ident "etype", ident "fuel", ident "preserve_bindings", ident "strict_ready_argument",
+     ident "target", ident "dynamic_env", ident "seed_env", ident "evaluator_id"]
 
-private theorem initialize_kind_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "kind") (ident "kind")) =
-      (taskStore layout task "kind" (.u32 input.kind) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "kind"
-    (type "PrimeEvalStackTaskKind" 0) (by rfl) (by rfl) (by rfl) (.u32 input.kind) (ident "kind")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "kind".toList
-      (type "PrimeEvalStackTaskKind" 0) (.u32 input.kind) (by rfl))
-
-private theorem initialize_space_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "space") (ident "s")) =
-      (taskStore layout task "space" (.ptr input.s) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "space"
-    (type "Space" 1) (by rfl) (by rfl) (by rfl) (.ptr input.s) (ident "s")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "s".toList
-      (type "Space" 1) (.ptr input.s) (by rfl))
-
-private theorem initialize_arena_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "arena") (ident "a")) =
-      (taskStore layout task "arena" (.ptr input.a) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "arena"
-    (type "Arena" 1) (by rfl) (by rfl) (by rfl) (.ptr input.a) (ident "a")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "a".toList
-      (type "Arena" 1) (.ptr input.a) (by rfl))
-
-private theorem initialize_atom_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "atom") (ident "atom")) =
-      (taskStore layout task "atom" (.ptr input.atom) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "atom"
-    (type "Atom" 1) (by rfl) (by rfl) (by rfl) (.ptr input.atom) (ident "atom")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "atom".toList
-      (type "Atom" 1) (.ptr input.atom) (by rfl))
-
-private theorem initialize_etype_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "etype") (ident "etype")) =
-      (taskStore layout task "etype" (.ptr input.etype) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "etype"
-    (type "Atom" 1) (by rfl) (by rfl) (by rfl) (.ptr input.etype) (ident "etype")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "etype".toList
-      (type "Atom" 1) (.ptr input.etype) (by rfl))
-
-private theorem initialize_fuel_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "fuel") (ident "fuel")) =
-      (taskStore layout task "fuel" (.i32 input.fuel) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "fuel"
-    (type "int" 0) (by rfl) (by rfl) (by rfl) (.i32 input.fuel) (ident "fuel")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "fuel".toList
-      (type "int" 0) (.i32 input.fuel) (by rfl))
-
-private theorem initialize_preserve_bindings_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "preserve_bindings") (ident "preserve_bindings")) =
-      (taskStore layout task "preserve_bindings" (.bool input.preserve_bindings) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "preserve_bindings"
-    (type "bool" 0) (by rfl) (by rfl) (by rfl) (.bool input.preserve_bindings) (ident "preserve_bindings")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "preserve_bindings".toList
-      (type "bool" 0) (.bool input.preserve_bindings) (by rfl))
-
-private theorem initialize_strict_ready_argument_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "strict_ready_argument") (ident "strict_ready_argument")) =
-      (taskStore layout task "strict_ready_argument" (.i32 input.strict_ready_argument) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "strict_ready_argument"
-    (type "int" 0) (by rfl) (by rfl) (by rfl) (.i32 input.strict_ready_argument) (ident "strict_ready_argument")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "strict_ready_argument".toList
-      (type "int" 0) (.i32 input.strict_ready_argument) (by rfl))
-
-private theorem initialize_target_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "target") (ident "target")) =
-      (taskStore layout task "target" (.ptr input.target) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "target"
-    (type "OutcomeSet" 1) (by rfl) (by rfl) (by rfl) (.ptr input.target) (ident "target")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "target".toList
-      (type "OutcomeSet" 1) (.ptr input.target) (by rfl))
-
-private theorem initialize_evaluator_id_keeps_input (operations : TaskOperations) (layout : TaskLayout)
-    (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "evaluator_id") (ident "evaluator_id")) =
-      (taskStore layout task "evaluator_id" (.u64 input.evaluator_id) >>= fun _ =>
-        pure (bodyContext input driver task)) := by
-  exact task_scalar_assignment operations layout (bodyContext input driver task) task "evaluator_id"
-    (type "uint64_t" 0) (by rfl) (by rfl) (by rfl) (.u64 input.evaluator_id) (ident "evaluator_id")
-    (by rfl) (local_read operations layout (bodyContext input driver task) "evaluator_id".toList
-      (type "uint64_t" 0) (.u64 input.evaluator_id) (by rfl))
-
-private theorem initialization_after_fuel (operations : TaskOperations)
+set_option maxRecDepth 8192 in
+private theorem capture_reads_complete_arguments (operations : TaskOperations)
     (layout : TaskLayout) (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 53
-      (bodyContext input driver task) (taskSyntax.body.drop 11) =
-      initializationAfterFuel operations layout input (bodyContext input driver task) driver task := by
-  let entries : List ((CExpr × CExpr) × CProg CVal Unit) :=
-    [((taskField "preserve_bindings", ident "preserve_bindings"), taskStore layout task "preserve_bindings" (.bool input.preserve_bindings)),
-     ((taskField "strict_ready_argument", ident "strict_ready_argument"), taskStore layout task "strict_ready_argument" (.i32 input.strict_ready_argument)),
-     ((taskField "target", ident "target"), taskStore layout task "target" (.ptr input.target)),
-     ((taskField "evaluator_id", ident "evaluator_id"), taskStore layout task "evaluator_id" (.u64 input.evaluator_id))]
-  have actual := StatementBlock.scoped_assignment_prefix_keeps_operations
-    (services operations layout) emptyLayout 0 49 (bodyContext input driver task) entries
-    (taskSyntax.body.drop 15) (by
-      intro entry member
-      simp only [entries, List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl | rfl | rfl
-      · exact initialize_preserve_bindings_keeps_input operations layout input driver task
-      · exact initialize_strict_ready_argument_keeps_input operations layout input driver task
-      · exact initialize_target_keeps_input operations layout input driver task
-      · exact initialize_evaluator_id_keeps_input operations layout input driver task)
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 53
-    (bodyContext input driver task) (taskSyntax.body.drop 11) = _ at actual
-  rw [actual]
-  rw [dynamic_choice_keeps_refusal_and_seed operations layout input (bodyContext input driver task)
-    driver task (by rfl) (by rfl) (by rfl) (by rfl)]
-  simp only [entries, List.foldr_cons, List.foldr_nil, initializationAfterFuel, Prog.bind_eq]
+    read operations layout (bodyContext input driver task) captureExpression =
+      (operations.captureTask task input >>= fun accepted => pure (.bool accepted)) := by
+  let context := bodyContext input driver task
+  change expressionWithNames
+    (localOrLocated (StatementBlock.ObjectBindings.values context)
+      (StatementBlock.ObjectBindings.declared context) (profile operations layout).locations)
+    (profile operations layout).values emptyLayout captureExpression
+    (StatementBlock.ObjectBindings.objects (profile operations layout) context) = _
+  unfold captureExpression
+  rw [absent_argument_call_preserves_scalar_path _ _ _ _ _ _ (by rfl)]
+  simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
+  change (read operations layout context (.unary .address (ident "task")) >>= fun destination =>
+    read operations layout context (.identifier "kind".toList) >>= fun kind =>
+    read operations layout context (.identifier "s".toList) >>= fun space =>
+    read operations layout context (.identifier "a".toList) >>= fun arena =>
+    read operations layout context (.identifier "atom".toList) >>= fun atom =>
+    read operations layout context (.identifier "etype".toList) >>= fun expectedType =>
+    read operations layout context (.identifier "fuel".toList) >>= fun fuel =>
+    read operations layout context (.identifier "preserve_bindings".toList) >>= fun preserve =>
+    read operations layout context (.identifier "strict_ready_argument".toList) >>= fun strictIndex =>
+    read operations layout context (.identifier "target".toList) >>= fun target =>
+    read operations layout context (.identifier "dynamic_env".toList) >>= fun dynamic =>
+    read operations layout context (.identifier "seed_env".toList) >>= fun seed =>
+    read operations layout context (.identifier "evaluator_id".toList) >>= fun evaluator =>
+    calls operations layout "prime_eval_stack_capture_task".toList
+      [destination, kind, space, arena, atom, expectedType, fuel, preserve, strictIndex,
+       target, dynamic, seed, evaluator]) = _
+  rw [task_address_is_not_object_value operations layout context task (by rfl),
+    local_read operations layout context "kind".toList _ (.u32 input.kind) (by rfl),
+    local_read operations layout context "s".toList _ (.ptr input.s) (by rfl),
+    local_read operations layout context "a".toList _ (.ptr input.a) (by rfl),
+    local_read operations layout context "atom".toList _ (.ptr input.atom) (by rfl),
+    local_read operations layout context "etype".toList _ (.ptr input.etype) (by rfl),
+    local_read operations layout context "fuel".toList _ (.i32 input.fuel) (by rfl),
+    local_read operations layout context "preserve_bindings".toList _ (.bool input.preserve_bindings) (by rfl),
+    local_read operations layout context "strict_ready_argument".toList _ (.i32 input.strict_ready_argument) (by rfl),
+    local_read operations layout context "target".toList _ (.ptr input.target) (by rfl),
+    local_read operations layout context "dynamic_env".toList _ (.ptr input.dynamic_env) (by rfl),
+    local_read operations layout context "seed_env".toList _ (.ptr input.seed_env) (by rfl),
+    local_read operations layout context "evaluator_id".toList _ (.u64 input.evaluator_id) (by rfl)]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
+  rfl
 
-private theorem initialization_after_authority (operations : TaskOperations)
-    (layout : TaskLayout) (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 58
-      (bodyContext input driver task) (taskSyntax.body.drop 6) =
-      initializationAfterAuthority operations layout input (bodyContext input driver task) driver task := by
-  let entries : List ((CExpr × CExpr) × CProg CVal Unit) :=
-    [((taskField "space", ident "s"), taskStore layout task "space" (.ptr input.s)),
-     ((taskField "arena", ident "a"), taskStore layout task "arena" (.ptr input.a)),
-     ((taskField "atom", ident "atom"), taskStore layout task "atom" (.ptr input.atom)),
-     ((taskField "etype", ident "etype"), taskStore layout task "etype" (.ptr input.etype)),
-     ((taskField "fuel", ident "fuel"), taskStore layout task "fuel" (.i32 input.fuel))]
-  have actual := StatementBlock.scoped_assignment_prefix_keeps_operations
-    (services operations layout) emptyLayout 0 53 (bodyContext input driver task) entries
-    (taskSyntax.body.drop 11) (by
-      intro entry member
-      simp only [entries, List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl | rfl | rfl | rfl
-      · exact initialize_space_keeps_input operations layout input driver task
-      · exact initialize_arena_keeps_input operations layout input driver task
-      · exact initialize_atom_keeps_input operations layout input driver task
-      · exact initialize_etype_keeps_input operations layout input driver task
-      · exact initialize_fuel_keeps_input operations layout input driver task)
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 58
-    (bodyContext input driver task) (taskSyntax.body.drop 6) = _ at actual
-  rw [actual]
-  rw [initialization_after_fuel]
-  simp only [entries, List.foldr_cons, List.foldr_nil, initializationAfterAuthority, Prog.bind_eq]
-
-private theorem initialization_retains_complete_sequence (operations : TaskOperations)
+private theorem capture_keeps_callee_refusal_and_publication (operations : TaskOperations)
     (layout : TaskLayout) (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 61
       (bodyContext input driver task) (taskSyntax.body.drop 3) =
-      initializeTask operations layout input (bodyContext input driver task) driver task := by
-  let authority : CProg CVal Unit := do
-    let value ← driverRead layout driver "pure_authority"
-    taskStore layout task "pure_authority" value
-  have authorityRealized : (services operations layout).assignment emptyLayout
-      (bodyContext input driver task) (.assign (taskField "pure_authority") (driverField "pure_authority")) =
-      (authority >>= fun _ => pure (bodyContext input driver task)) := by
-    change StatementBlock.ObjectBindings.assignment (profile operations layout) emptyLayout
-      (bodyContext input driver task) (.assign (taskField "pure_authority") (driverField "pure_authority")) = _
-    rw [task_authority_assignment_keeps_typed_load operations layout (bodyContext input driver task)
-      driver task (by rfl) (by rfl)]
-    simp only [authority, Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc]
-  let entries : List ((CExpr × CExpr) × CProg CVal Unit) :=
-    [((taskField "kind", ident "kind"), taskStore layout task "kind" (.u32 input.kind)),
-     ((taskField "pure_authority", driverField "pure_authority"), authority)]
-  have actual := StatementBlock.scoped_assignment_prefix_keeps_operations
-    (services operations layout) emptyLayout 0 58 (bodyContext input driver task) entries
-    (taskSyntax.body.drop 6) (by
-      intro entry member
-      simp only [entries, List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl
-      · exact initialize_kind_keeps_input operations layout input driver task
-      · exact authorityRealized)
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 60
-    (bodyContext input driver task) (taskSyntax.body.drop 4) = _ at actual
-  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 61
-    (bodyContext input driver task)
-    (.effect (.call "memset".toList
-      [.unary .address (ident "task"), .decimal 0, .sizeOfExpr (ident "task")]) ::
+      captureAndPublish operations layout input (bodyContext input driver task) driver task := by
+  let context := bodyContext input driver task
+  change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 61 context
+    (.branch (.unary .not captureExpression) [.return (some (.bool false))] [] ::
       taskSyntax.body.drop 4) = _
-  rw [StatementBlock.scoped_effect_keeps_continuation]
-  change ((services operations layout).effect emptyLayout (bodyContext input driver task)
-    (.call "memset".toList [.unary .address (ident "task"), .decimal 0, .sizeOfExpr (ident "task")]) >>=
-      fun _ => StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 60
-        (bodyContext input driver task) (taskSyntax.body.drop 4)) = _
-  rw [memset_keeps_signed_zero_address_and_extent operations layout (bodyContext input driver task) task (by rfl),
-    actual, initialization_after_authority]
-  simp only [entries, authority, List.foldr_cons, List.foldr_nil, initializeTask,
-    Prog.bind_eq, Prog.bind_assoc]
+  rw [StatementBlock.executeScopedWith.eq_def]
+  change (read operations layout context (.unary .not captureExpression) >>= fun value =>
+    truth value >>= fun refused =>
+      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 60 context
+        (if refused then [.return (some (.bool false))] else []) >>=
+      resume (fun updated => StatementBlock.executeScopedWith (services operations layout)
+        emptyLayout 0 60 updated (taskSyntax.body.drop 4))) = _
+  rw [read_negated operations layout context captureExpression (operations.captureTask task input)
+    (capture_reads_complete_arguments operations layout input driver task)]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, Prog.ret_bind, truth]
+  unfold captureAndPublish
+  simp only [Prog.bind_eq]
+  congr 1
+  funext accepted
+  cases accepted with
+  | false => rfl
+  | true => exact publication_retains_source_paths operations layout context driver task (by rfl) (by rfl)
 
 private theorem automatic_task_keeps_region_and_restoration (operations : TaskOperations)
     (layout : TaskLayout) (input : TaskInputs) (driver : Option Ptr) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 62
       (bindDriver (inputContext input) driver) (taskSyntax.body.drop 2) =
       (operations.region "task".toList layout.taskCells (fun task =>
-        initializeTask operations layout input (bodyContext input driver task) driver task) >>= fun result =>
+        captureAndPublish operations layout input (bodyContext input driver task) driver task) >>= fun result =>
           pure (StatementBlock.ObjectBindings.restore "task".toList
             ((bindDriver (inputContext input) driver) "task".toList) result)) := by
   change StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 62
@@ -9528,15 +9397,15 @@ private theorem automatic_task_keeps_region_and_restoration (operations : TaskOp
   have bodies : (fun task => StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 61
       (Function.update (bindDriver (inputContext input) driver) "task".toList
         (some (.object (type "PrimeEvalStackTask") task))) (taskSyntax.body.drop 3)) =
-      (fun task => initializeTask operations layout input (bodyContext input driver task) driver task) := by
+      (fun task => captureAndPublish operations layout input (bodyContext input driver task) driver task) := by
     funext task
-    exact initialization_retains_complete_sequence operations layout input driver task
+    exact capture_keeps_callee_refusal_and_publication operations layout input driver task
   rw [bodies]
 
-/-- Every statement in the admitted constructor has an independent operation
-meaning. The theorem retains allocation scope, complete copying, all provider
-refusals, and the lexical driver snapshot without moving effects. Physical
-provider realization and native record encoding are separate obligations. -/
+/-- Every statement in the current caller has an independent operation meaning.
+The theorem preserves destination lifetime, exact capture inputs, both refusal
+paths, capsule dispatch, complete record publication and the lexical driver.
+Capture/enqueue implementations and native record encoding remain separate. -/
 theorem interpreted_task_is_complete_operation_tree (operations : TaskOperations)
     (layout : TaskLayout) (input : TaskInputs) :
     interpretedTask operations layout input = taskOperations operations layout input := by
@@ -9560,10 +9429,8 @@ theorem interpreted_task_is_complete_operation_tree (operations : TaskOperations
       simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc, bodyContext]
       rfl
 
-/-- The actual source text parses to the independent syntax and executes
-its complete scoped operation tree under the declared providers. This is a
-source interpretation theorem; physical layout, encoding, lifetime, argument
-order and the compiled implementation require separate comparisons. -/
+/-- Actual caller text, independent syntax and complete scoped operation tree
+agree under the declared helper providers. This is not compiled-C refinement. -/
 theorem original_task_executes_complete_operation_tree (operations : TaskOperations)
     (layout : TaskLayout) (input : TaskInputs) :
     (declaratorFunctionText? names source.toList).map
@@ -9576,50 +9443,52 @@ theorem original_task_executes_complete_operation_tree (operations : TaskOperati
 namespace Controls
 
 theorem missing_capture_destination_is_not_invented (operations : TaskOperations)
-    (source : Option Ptr) :
-    calls operations "prime_eval_stack_capture_dynamic_env".toList [.ptr none, .ptr source] =
+    (layout : TaskLayout) (parameters : List CVal) :
+    calls operations layout "prime_eval_stack_capture_task".toList (.ptr none :: parameters) =
       CProg.undefined := by
-  simp only [calls, ↓reduceIte, ite_self]
+  have different : "prime_eval_stack_capture_task".toList ≠ "prime_eval_stack_target_is_owned".toList := by decide
+  simp only [calls, different, ↓reduceIte]
 
-theorem clone_arity_is_checked (operations : TaskOperations) :
-    calls operations "bindings_clone".toList [] = CProg.undefined := by
-  simp only [calls, ↓reduceIte, ite_self]
-
-theorem unsigned_zero_is_not_the_memset_int_argument (operations : TaskOperations)
-    (task : Ptr) (extent : UInt64) :
-    effects operations "memset".toList [.ptr (some task), .u32 0, .u64 extent] =
+theorem incomplete_capture_arguments_are_refused (operations : TaskOperations)
+    (layout : TaskLayout) (destination : Ptr) :
+    calls operations layout "prime_eval_stack_capture_task".toList [.ptr (some destination)] =
       CProg.undefined := by
-  simp only [effects, ↓reduceIte]
+  have different : "prime_eval_stack_capture_task".toList ≠ "prime_eval_stack_target_is_owned".toList := by decide
+  simp only [calls, different, TaskInputs.ofArguments?, ↓reduceIte]
 
-theorem signed_zero_retains_memset_address_and_extent (operations : TaskOperations)
-    (task : Ptr) (extent : UInt64) :
-    effects operations "memset".toList [.ptr (some task), .i32 0, .u64 extent] =
-      operations.zeroTask task extent := by
-  simp only [effects, ↓reduceIte]
+theorem queued_arity_is_checked (operations : TaskOperations) (layout : TaskLayout) :
+    calls operations layout "prime_eval_stack_queued".toList [] = CProg.undefined := by
+  have different : "prime_eval_stack_queued".toList ≠ "prime_eval_stack_target_is_owned".toList := by decide
+  have other : "prime_eval_stack_queued".toList ≠ "prime_eval_stack_capture_task".toList := by decide
+  simp only [calls, different, other, ↓reduceIte]
+
+/-- A refused capture returns without a second release in the caller. -/
+theorem refused_capture_does_not_run_caller_retirement (operations : TaskOperations)
+    (layout : TaskLayout) (input : TaskInputs) (driver : Option Ptr) (task : Ptr) :
+    StatementBlock.executeScopedWith
+      (services { operations with captureTask := fun _ _ => pure false } layout)
+      emptyLayout 0 61 (bodyContext input driver task) (taskSyntax.body.drop 3) =
+      returned (bodyContext input driver task) false := by
+  rw [capture_keeps_callee_refusal_and_publication]
+  simp only [captureAndPublish, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Bool.not_false, if_true]
+
+/-- The accepted provider's write stays before every publication operation. -/
+theorem capture_effect_precedes_publication (operations : TaskOperations)
+    (layout : TaskLayout) (input : TaskInputs) (driver : Option Ptr) (task marker : Ptr)
+    (value : UInt64) :
+    let staged := { operations with captureTask := fun _ _ => do
+      CProg.store marker (.u64 value)
+      pure true }
+    StatementBlock.executeScopedWith (services staged layout) emptyLayout 0 61
+      (bodyContext input driver task) (taskSyntax.body.drop 3) =
+      (CProg.store marker (.u64 value) >>= fun _ =>
+        publish staged layout (bodyContext input driver task) driver task) := by
+  dsimp only
+  rw [capture_keeps_callee_refusal_and_publication]
+  simp only [captureAndPublish, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind,
+    Prog.bind_assoc, Bool.not_true, Bool.false_eq_true, if_false]
 
 end Controls
-
-/-- Conversion for the declared unsigned-compatible 32-bit enum profile.
-Signed native enum constants retain their bits; this does not assert a
-platform-independent ABI or introduce general mixed-width conversions. -/
-def kindWord? : CVal → Option UInt32
-  | .i32 value => some value.toUInt32
-  | .u32 value => some value
-  | _ => none
-
-/-- The exact twelve-argument boundary retains nullable references, signed
-indices and the complete evaluator word. Unknown tags or arity are outside
-this source interpretation; they do not manufacture a task request. -/
-def TaskInputs.ofArguments? : List CVal → Option TaskInputs
-  | [kind, .ptr space, .ptr arena, .ptr atom, .ptr expectedType,
-      .i32 fuel, .bool preserve, .i32 strictIndex, .ptr target,
-      .ptr dynamic, .ptr seed, .u64 evaluator] =>
-      (kindWord? kind).map fun actualKind =>
-        { kind := actualKind, s := space, a := arena, atom := atom,
-          etype := expectedType, fuel := fuel, preserve_bindings := preserve,
-          strict_ready_argument := strictIndex, target := target,
-          dynamic_env := dynamic, seed_env := seed, evaluator_id := evaluator }
-  | _ => none
 
 /-- The caller observes only an explicit returned Boolean. A suspended,
 falling-through or wrongly typed result is not a refused or accepted task. -/
@@ -9807,6 +9676,7 @@ open TaskAdmission (ident taskField driverField)
 
 def names : TypeNames := TaskAdmission.names ++ ["void".toList,
   "PrimeEvalAuthorityGuard".toList, "PrimeNeedActiveGuard".toList,
+  "PrimeEvalContextGuard".toList, "PrimeEvalContext".toList,
   "PrimeEvalStackFrame".toList, "CettaCount".toList]
 
 /-- These independent arms retain the real effect order, the CALL seed
@@ -9827,7 +9697,9 @@ def callArm : List CStatement :=
      [taskField "space", taskField "arena", taskField "atom", taskField "etype",
       taskField "fuel", taskField "preserve_bindings",
       .conditional (taskField "seed_env_initialized")
-        (.unary .address (taskField "seed_env")) .null,
+        (.unary .address (taskField "seed_env"))
+        (.conditional (taskField "dynamic_env_is_seed")
+          (.unary .address (taskField "dynamic_env")) .null),
       taskField "strict_ready_argument", taskField "target"]), .break]
 
 def normalizeArm : List CStatement :=
@@ -9843,8 +9715,12 @@ def normalizeArm : List CStatement :=
        [.effect (.call "eval_mark_incomplete".toList
          [ident "CETTA_EVAL_INCOMPLETE_CAPACITY"])]], .break]
 
+def branchArm : List CStatement :=
+  [.effect (.call "prime_eval_stack_run_branch".toList [.unary .address (ident "task")]),
+   .break]
+
 /-- The complete expected source syntax is independent of the reader result.
-Both cleanup callbacks remain declarations. No attribute is stripped and no
+All three cleanup callbacks remain declarations. No attribute is stripped and no
 unbraced arm is rewritten into new source text. -/
 def runSyntax : CDeclaratorFunction :=
   ⟨⟨"void".toList, 0⟩, "prime_eval_stack_run_task".toList, [],
@@ -9854,6 +9730,9 @@ def runSyntax : CDeclaratorFunction :=
     .effect (.call "assert".toList [driverField "task_ready"]),
     .effect (.call "assert".toList [.unary .not (driverField "running_task")]),
     .declare ⟨"PrimeEvalStackTask".toList, 0⟩ "task".toList (driverField "task"),
+    .declareCleanup ⟨"PrimeEvalContextGuard".toList, 0⟩ "context".toList
+      (some (.call "prime_eval_stack_context_enter".toList [taskField "context"]))
+      "prime_eval_stack_context_leave".toList,
     .declareCleanup ⟨"PrimeEvalAuthorityGuard".toList, 0⟩ "authority".toList
       (some (.call "prime_eval_authority_enter".toList [taskField "pure_authority"]))
       "prime_eval_authority_leave".toList,
@@ -9866,15 +9745,17 @@ def runSyntax : CDeclaratorFunction :=
       (.conditional (taskField "target")
         (.field (taskField "target") "len".toList true) (.unsignedInteger 0)),
     .declareCleanup ⟨"PrimeNeedActiveGuard".toList, 0⟩ "need_guard".toList
-      (some (.call "prime_need_active_enter".toList [.unary .address (taskField "dynamic_env")]))
-      "prime_need_active_leave".toList,
+      none "prime_need_active_leave".toList,
+    .effect (.call "prime_need_active_enter".toList
+      [.unary .address (ident "need_guard"), .unary .address (taskField "dynamic_env")]),
     .declare ⟨"uint64_t".toList, 0⟩ "previous_evaluator_id".toList
       (ident "g_prime_need_evaluator_id"),
     .assign (ident "g_prime_need_evaluator_id") (taskField "evaluator_id"),
     .switch (taskField "kind")
       [(ident "PRIME_EVAL_STACK_TASK_BIND", bindArm),
        (ident "PRIME_EVAL_STACK_TASK_CALL", callArm),
-       (ident "PRIME_EVAL_STACK_TASK_NORMALIZE", normalizeArm)] [],
+       (ident "PRIME_EVAL_STACK_TASK_NORMALIZE", normalizeArm),
+       (ident "PRIME_EVAL_STACK_TASK_BRANCH", branchArm)] [],
     .assign (ident "g_prime_need_evaluator_id") (ident "previous_evaluator_id"),
     .assign (driverField "active_task") .null,
     .branch (.binary .and (taskField "target")
@@ -9883,8 +9764,8 @@ def runSyntax : CDeclaratorFunction :=
     .effect (.call "prime_eval_stack_task_free".toList [.unary .address (ident "task")]),
     .assign (driverField "running_task") (.bool false)]⟩
 
-def source : String := "static void prime_eval_stack_run_task(void) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    assert(driver != NULL);\n    assert(driver->task_ready);\n    assert(!driver->running_task);\n    PrimeEvalStackTask task = driver->task;\n    __attribute__((cleanup(prime_eval_authority_leave)))\n    PrimeEvalAuthorityGuard authority = prime_eval_authority_enter(task.pure_authority);\n    memset(&driver->task, 0, sizeof(driver->task));\n    driver->task_ready = false;\n    driver->active_task = &task;\n    driver->running_task = true;\n    CettaCount published_before = task.target ? task.target->len : 0u;\n\n    __attribute__((cleanup(prime_need_active_leave)))\n    PrimeNeedActiveGuard need_guard =\n        prime_need_active_enter(&task.dynamic_env);\n    uint64_t previous_evaluator_id = g_prime_need_evaluator_id;\n    g_prime_need_evaluator_id = task.evaluator_id;\n    switch (task.kind) {\n    case PRIME_EVAL_STACK_TASK_BIND:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND);\n        driver->running_bind_task = true;\n        metta_eval_bind(\n            task.space, task.arena, task.atom,\n            task.fuel, task.target);\n        driver->running_bind_task = false;\n        break;\n    case PRIME_EVAL_STACK_TASK_CALL:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL);\n        metta_call_impl(\n            task.space, task.arena, task.atom, task.etype,\n            task.fuel, task.preserve_bindings,\n            task.seed_env_initialized ? &task.seed_env : NULL,\n            task.strict_ready_argument, task.target);\n        break;\n    case PRIME_EVAL_STACK_TASK_NORMALIZE:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE);\n        {\n            PrimeEvalStackFrame *frame =\n                prime_eval_stack_normalize_atom_frame_new(\n                    task.space, task.arena, task.atom, task.fuel,\n                    &task.dynamic_env, task.evaluator_id,\n                    task.target);\n            if (frame)\n                prime_eval_stack_push(frame);\n            else\n                eval_mark_incomplete(\n                    CETTA_EVAL_INCOMPLETE_CAPACITY);\n        }\n        break;\n    }\n    g_prime_need_evaluator_id = previous_evaluator_id;\n    driver->active_task = NULL;\n    if (task.target && task.target->len > published_before)\n        prime_eval_stack_stream_note(task.target);\n    prime_eval_stack_task_free(&task);\n    driver->running_task = false;\n}"
-def characters : List Char := native_c_characters% "static void prime_eval_stack_run_task(void) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    assert(driver != NULL);\n    assert(driver->task_ready);\n    assert(!driver->running_task);\n    PrimeEvalStackTask task = driver->task;\n    __attribute__((cleanup(prime_eval_authority_leave)))\n    PrimeEvalAuthorityGuard authority = prime_eval_authority_enter(task.pure_authority);\n    memset(&driver->task, 0, sizeof(driver->task));\n    driver->task_ready = false;\n    driver->active_task = &task;\n    driver->running_task = true;\n    CettaCount published_before = task.target ? task.target->len : 0u;\n\n    __attribute__((cleanup(prime_need_active_leave)))\n    PrimeNeedActiveGuard need_guard =\n        prime_need_active_enter(&task.dynamic_env);\n    uint64_t previous_evaluator_id = g_prime_need_evaluator_id;\n    g_prime_need_evaluator_id = task.evaluator_id;\n    switch (task.kind) {\n    case PRIME_EVAL_STACK_TASK_BIND:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND);\n        driver->running_bind_task = true;\n        metta_eval_bind(\n            task.space, task.arena, task.atom,\n            task.fuel, task.target);\n        driver->running_bind_task = false;\n        break;\n    case PRIME_EVAL_STACK_TASK_CALL:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL);\n        metta_call_impl(\n            task.space, task.arena, task.atom, task.etype,\n            task.fuel, task.preserve_bindings,\n            task.seed_env_initialized ? &task.seed_env : NULL,\n            task.strict_ready_argument, task.target);\n        break;\n    case PRIME_EVAL_STACK_TASK_NORMALIZE:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE);\n        {\n            PrimeEvalStackFrame *frame =\n                prime_eval_stack_normalize_atom_frame_new(\n                    task.space, task.arena, task.atom, task.fuel,\n                    &task.dynamic_env, task.evaluator_id,\n                    task.target);\n            if (frame)\n                prime_eval_stack_push(frame);\n            else\n                eval_mark_incomplete(\n                    CETTA_EVAL_INCOMPLETE_CAPACITY);\n        }\n        break;\n    }\n    g_prime_need_evaluator_id = previous_evaluator_id;\n    driver->active_task = NULL;\n    if (task.target && task.target->len > published_before)\n        prime_eval_stack_stream_note(task.target);\n    prime_eval_stack_task_free(&task);\n    driver->running_task = false;\n}"
+def source : String := "static void prime_eval_stack_run_task(void) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    assert(driver != NULL);\n    assert(driver->task_ready);\n    assert(!driver->running_task);\n    PrimeEvalStackTask task = driver->task;\n    __attribute__((cleanup(prime_eval_stack_context_leave)))\n    PrimeEvalContextGuard context=prime_eval_stack_context_enter(task.context);\n    __attribute__((cleanup(prime_eval_authority_leave)))\n    PrimeEvalAuthorityGuard authority = prime_eval_authority_enter(task.pure_authority);\n    memset(&driver->task, 0, sizeof(driver->task));\n    driver->task_ready = false;\n    driver->active_task = &task;\n    driver->running_task = true;\n    CettaCount published_before = task.target ? task.target->len : 0u;\n\n    __attribute__((cleanup(prime_need_active_leave)))\n    PrimeNeedActiveGuard need_guard;\n    prime_need_active_enter(&need_guard, &task.dynamic_env);\n    uint64_t previous_evaluator_id = g_prime_need_evaluator_id;\n    g_prime_need_evaluator_id = task.evaluator_id;\n    switch (task.kind) {\n    case PRIME_EVAL_STACK_TASK_BIND: {\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND);\n        driver->running_bind_task = true;\n        metta_eval_bind(\n            task.space, task.arena, task.atom,\n            task.fuel, task.target);\n        driver->running_bind_task = false;\n        break;\n    }\n    case PRIME_EVAL_STACK_TASK_CALL:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL);\n        metta_call_impl(\n            task.space, task.arena, task.atom, task.etype,\n            task.fuel, task.preserve_bindings,\n            task.seed_env_initialized ? &task.seed_env :\n                task.dynamic_env_is_seed ? &task.dynamic_env : NULL,\n            task.strict_ready_argument, task.target);\n        break;\n    case PRIME_EVAL_STACK_TASK_NORMALIZE:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE);\n        {\n            PrimeEvalStackFrame *frame =\n                prime_eval_stack_normalize_atom_frame_new(\n                    task.space, task.arena, task.atom, task.fuel,\n                    &task.dynamic_env, task.evaluator_id,\n                    task.target);\n            if (frame)\n                prime_eval_stack_push(frame);\n            else\n                eval_mark_incomplete(\n                    CETTA_EVAL_INCOMPLETE_CAPACITY);\n        }\n        break;\n    case PRIME_EVAL_STACK_TASK_BRANCH:\n        prime_eval_stack_run_branch(&task);\n        break;\n    }\n    g_prime_need_evaluator_id = previous_evaluator_id;\n    driver->active_task = NULL;\n    if (task.target && task.target->len > published_before)\n        prime_eval_stack_stream_note(task.target);\n    prime_eval_stack_task_free(&task);\n    driver->running_task = false;\n}"
+def characters : List Char := native_c_characters% "static void prime_eval_stack_run_task(void) {\n    PrimeEvalStackDriver *driver = g_prime_eval_stack_driver;\n    assert(driver != NULL);\n    assert(driver->task_ready);\n    assert(!driver->running_task);\n    PrimeEvalStackTask task = driver->task;\n    __attribute__((cleanup(prime_eval_stack_context_leave)))\n    PrimeEvalContextGuard context=prime_eval_stack_context_enter(task.context);\n    __attribute__((cleanup(prime_eval_authority_leave)))\n    PrimeEvalAuthorityGuard authority = prime_eval_authority_enter(task.pure_authority);\n    memset(&driver->task, 0, sizeof(driver->task));\n    driver->task_ready = false;\n    driver->active_task = &task;\n    driver->running_task = true;\n    CettaCount published_before = task.target ? task.target->len : 0u;\n\n    __attribute__((cleanup(prime_need_active_leave)))\n    PrimeNeedActiveGuard need_guard;\n    prime_need_active_enter(&need_guard, &task.dynamic_env);\n    uint64_t previous_evaluator_id = g_prime_need_evaluator_id;\n    g_prime_need_evaluator_id = task.evaluator_id;\n    switch (task.kind) {\n    case PRIME_EVAL_STACK_TASK_BIND: {\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND);\n        driver->running_bind_task = true;\n        metta_eval_bind(\n            task.space, task.arena, task.atom,\n            task.fuel, task.target);\n        driver->running_bind_task = false;\n        break;\n    }\n    case PRIME_EVAL_STACK_TASK_CALL:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL);\n        metta_call_impl(\n            task.space, task.arena, task.atom, task.etype,\n            task.fuel, task.preserve_bindings,\n            task.seed_env_initialized ? &task.seed_env :\n                task.dynamic_env_is_seed ? &task.dynamic_env : NULL,\n            task.strict_ready_argument, task.target);\n        break;\n    case PRIME_EVAL_STACK_TASK_NORMALIZE:\n        cetta_runtime_stats_inc(\n            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE);\n        {\n            PrimeEvalStackFrame *frame =\n                prime_eval_stack_normalize_atom_frame_new(\n                    task.space, task.arena, task.atom, task.fuel,\n                    &task.dynamic_env, task.evaluator_id,\n                    task.target);\n            if (frame)\n                prime_eval_stack_push(frame);\n            else\n                eval_mark_incomplete(\n                    CETTA_EVAL_INCOMPLETE_CAPACITY);\n        }\n        break;\n    case PRIME_EVAL_STACK_TASK_BRANCH:\n        prime_eval_stack_run_branch(&task);\n        break;\n    }\n    g_prime_need_evaluator_id = previous_evaluator_id;\n    driver->active_task = NULL;\n    if (task.target && task.target->len > published_before)\n        prime_eval_stack_stream_note(task.target);\n    prime_eval_stack_task_free(&task);\n    driver->running_task = false;\n}"
 
 theorem characters_are_actual_source : source.toList = characters := by
   native_c_character_reflexivity
@@ -9919,287 +9800,322 @@ private def lexTokens5 : List Token := [.identifier (native_c_characters% "Prime
 private theorem lexPiece5 : lexCharacters5.foldl step initial = completed lexTokens5 := by
   native_c_parser_reflexivity
 
-private def lexCharacters6 : List Char := native_c_characters% "    __attribute__((cleanup(prime_eval_authority_leave)))\n"
-private def lexTokens6 : List Token := [.identifier (native_c_characters% "__attribute__"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "cleanup"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "prime_eval_authority_leave"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")")]
+private def lexCharacters6 : List Char := native_c_characters% "    __attribute__((cleanup(prime_eval_stack_context_leave)))\n"
+private def lexTokens6 : List Token := [.identifier (native_c_characters% "__attribute__"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "cleanup"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "prime_eval_stack_context_leave"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")")]
 private theorem lexPiece6 : lexCharacters6.foldl step initial = completed lexTokens6 := by
   native_c_parser_reflexivity
 
-private def lexCharacters7 : List Char := native_c_characters% "    PrimeEvalAuthorityGuard authority = prime_eval_authority_enter(task.pure_authority);\n"
-private def lexTokens7 : List Token := [.identifier (native_c_characters% "PrimeEvalAuthorityGuard"), .identifier (native_c_characters% "authority"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "prime_eval_authority_enter"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "pure_authority"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters7 : List Char := native_c_characters% "    PrimeEvalContextGuard context=prime_eval_stack_context_enter(task.context);\n"
+private def lexTokens7 : List Token := [.identifier (native_c_characters% "PrimeEvalContextGuard"), .identifier (native_c_characters% "context"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "prime_eval_stack_context_enter"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "context"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece7 : lexCharacters7.foldl step initial = completed lexTokens7 := by
   native_c_parser_reflexivity
 
-private def lexCharacters8 : List Char := native_c_characters% "    memset(&driver->task, 0, sizeof(driver->task));\n"
-private def lexTokens8 : List Token := [.identifier (native_c_characters% "memset"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ","), .number (native_c_characters% "0"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "sizeof"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters8 : List Char := native_c_characters% "    __attribute__((cleanup(prime_eval_authority_leave)))\n"
+private def lexTokens8 : List Token := [.identifier (native_c_characters% "__attribute__"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "cleanup"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "prime_eval_authority_leave"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")")]
 private theorem lexPiece8 : lexCharacters8.foldl step initial = completed lexTokens8 := by
   native_c_parser_reflexivity
 
-private def lexCharacters9 : List Char := native_c_characters% "    driver->task_ready = false;\n"
-private def lexTokens9 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task_ready"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
+private def lexCharacters9 : List Char := native_c_characters% "    PrimeEvalAuthorityGuard authority = prime_eval_authority_enter(task.pure_authority);\n"
+private def lexTokens9 : List Token := [.identifier (native_c_characters% "PrimeEvalAuthorityGuard"), .identifier (native_c_characters% "authority"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "prime_eval_authority_enter"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "pure_authority"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece9 : lexCharacters9.foldl step initial = completed lexTokens9 := by
   native_c_parser_reflexivity
 
-private def lexCharacters10 : List Char := native_c_characters% "    driver->active_task = &task;\n"
-private def lexTokens10 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "active_task"), .punctuation (native_c_characters% "="), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ";")]
+private def lexCharacters10 : List Char := native_c_characters% "    memset(&driver->task, 0, sizeof(driver->task));\n"
+private def lexTokens10 : List Token := [.identifier (native_c_characters% "memset"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ","), .number (native_c_characters% "0"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "sizeof"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece10 : lexCharacters10.foldl step initial = completed lexTokens10 := by
   native_c_parser_reflexivity
 
-private def lexCharacters11 : List Char := native_c_characters% "    driver->running_task = true;\n"
-private def lexTokens11 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
+private def lexCharacters11 : List Char := native_c_characters% "    driver->task_ready = false;\n"
+private def lexTokens11 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "task_ready"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece11 : lexCharacters11.foldl step initial = completed lexTokens11 := by
   native_c_parser_reflexivity
 
-private def lexCharacters12 : List Char := native_c_characters% "    CettaCount published_before = task.target ? task.target->len : 0u;\n"
-private def lexTokens12 : List Token := [.identifier (native_c_characters% "CettaCount"), .identifier (native_c_characters% "published_before"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "?"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "len"), .punctuation (native_c_characters% ":"), .number (native_c_characters% "0u"), .punctuation (native_c_characters% ";")]
+private def lexCharacters12 : List Char := native_c_characters% "    driver->active_task = &task;\n"
+private def lexTokens12 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "active_task"), .punctuation (native_c_characters% "="), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece12 : lexCharacters12.foldl step initial = completed lexTokens12 := by
   native_c_parser_reflexivity
 
-private def lexCharacters13 : List Char := native_c_characters% "\n"
-private def lexTokens13 : List Token := []
+private def lexCharacters13 : List Char := native_c_characters% "    driver->running_task = true;\n"
+private def lexTokens13 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece13 : lexCharacters13.foldl step initial = completed lexTokens13 := by
   native_c_parser_reflexivity
 
-private def lexCharacters14 : List Char := native_c_characters% "    __attribute__((cleanup(prime_need_active_leave)))\n"
-private def lexTokens14 : List Token := [.identifier (native_c_characters% "__attribute__"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "cleanup"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "prime_need_active_leave"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")")]
+private def lexCharacters14 : List Char := native_c_characters% "    CettaCount published_before = task.target ? task.target->len : 0u;\n"
+private def lexTokens14 : List Token := [.identifier (native_c_characters% "CettaCount"), .identifier (native_c_characters% "published_before"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "?"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "len"), .punctuation (native_c_characters% ":"), .number (native_c_characters% "0u"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece14 : lexCharacters14.foldl step initial = completed lexTokens14 := by
   native_c_parser_reflexivity
 
-private def lexCharacters15 : List Char := native_c_characters% "    PrimeNeedActiveGuard need_guard =\n"
-private def lexTokens15 : List Token := [.identifier (native_c_characters% "PrimeNeedActiveGuard"), .identifier (native_c_characters% "need_guard"), .punctuation (native_c_characters% "=")]
+private def lexCharacters15 : List Char := native_c_characters% "\n"
+private def lexTokens15 : List Token := []
 private theorem lexPiece15 : lexCharacters15.foldl step initial = completed lexTokens15 := by
   native_c_parser_reflexivity
 
-private def lexCharacters16 : List Char := native_c_characters% "        prime_need_active_enter(&task.dynamic_env);\n"
-private def lexTokens16 : List Token := [.identifier (native_c_characters% "prime_need_active_enter"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters16 : List Char := native_c_characters% "    __attribute__((cleanup(prime_need_active_leave)))\n"
+private def lexTokens16 : List Token := [.identifier (native_c_characters% "__attribute__"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "cleanup"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "prime_need_active_leave"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ")")]
 private theorem lexPiece16 : lexCharacters16.foldl step initial = completed lexTokens16 := by
   native_c_parser_reflexivity
 
-private def lexCharacters17 : List Char := native_c_characters% "    uint64_t previous_evaluator_id = g_prime_need_evaluator_id;\n"
-private def lexTokens17 : List Token := [.identifier (native_c_characters% "uint64_t"), .identifier (native_c_characters% "previous_evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "g_prime_need_evaluator_id"), .punctuation (native_c_characters% ";")]
+private def lexCharacters17 : List Char := native_c_characters% "    PrimeNeedActiveGuard need_guard;\n"
+private def lexTokens17 : List Token := [.identifier (native_c_characters% "PrimeNeedActiveGuard"), .identifier (native_c_characters% "need_guard"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece17 : lexCharacters17.foldl step initial = completed lexTokens17 := by
   native_c_parser_reflexivity
 
-private def lexCharacters18 : List Char := native_c_characters% "    g_prime_need_evaluator_id = task.evaluator_id;\n"
-private def lexTokens18 : List Token := [.identifier (native_c_characters% "g_prime_need_evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% ";")]
+private def lexCharacters18 : List Char := native_c_characters% "    prime_need_active_enter(&need_guard, &task.dynamic_env);\n"
+private def lexTokens18 : List Token := [.identifier (native_c_characters% "prime_need_active_enter"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "need_guard"), .punctuation (native_c_characters% ","), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece18 : lexCharacters18.foldl step initial = completed lexTokens18 := by
   native_c_parser_reflexivity
 
-private def lexCharacters19 : List Char := native_c_characters% "    switch (task.kind) {\n"
-private def lexTokens19 : List Token := [.identifier (native_c_characters% "switch"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "kind"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
+private def lexCharacters19 : List Char := native_c_characters% "    uint64_t previous_evaluator_id = g_prime_need_evaluator_id;\n"
+private def lexTokens19 : List Token := [.identifier (native_c_characters% "uint64_t"), .identifier (native_c_characters% "previous_evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "g_prime_need_evaluator_id"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece19 : lexCharacters19.foldl step initial = completed lexTokens19 := by
   native_c_parser_reflexivity
 
-private def lexCharacters20 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_BIND:\n"
-private def lexTokens20 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_BIND"), .punctuation (native_c_characters% ":")]
+private def lexCharacters20 : List Char := native_c_characters% "    g_prime_need_evaluator_id = task.evaluator_id;\n"
+private def lexTokens20 : List Token := [.identifier (native_c_characters% "g_prime_need_evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece20 : lexCharacters20.foldl step initial = completed lexTokens20 := by
   native_c_parser_reflexivity
 
-private def lexCharacters21 : List Char := native_c_characters% "        cetta_runtime_stats_inc(\n"
-private def lexTokens21 : List Token := [.identifier (native_c_characters% "cetta_runtime_stats_inc"), .punctuation (native_c_characters% "(")]
+private def lexCharacters21 : List Char := native_c_characters% "    switch (task.kind) {\n"
+private def lexTokens21 : List Token := [.identifier (native_c_characters% "switch"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "kind"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% "{")]
 private theorem lexPiece21 : lexCharacters21.foldl step initial = completed lexTokens21 := by
   native_c_parser_reflexivity
 
-private def lexCharacters22 : List Char := native_c_characters% "            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND);\n"
-private def lexTokens22 : List Token := [.identifier (native_c_characters% "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters22 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_BIND: {\n"
+private def lexTokens22 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_BIND"), .punctuation (native_c_characters% ":"), .punctuation (native_c_characters% "{")]
 private theorem lexPiece22 : lexCharacters22.foldl step initial = completed lexTokens22 := by
   native_c_parser_reflexivity
 
-private def lexCharacters23 : List Char := native_c_characters% "        driver->running_bind_task = true;\n"
-private def lexTokens23 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_bind_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
+private def lexCharacters23 : List Char := native_c_characters% "        cetta_runtime_stats_inc(\n"
+private def lexTokens23 : List Token := [.identifier (native_c_characters% "cetta_runtime_stats_inc"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece23 : lexCharacters23.foldl step initial = completed lexTokens23 := by
   native_c_parser_reflexivity
 
-private def lexCharacters24 : List Char := native_c_characters% "        metta_eval_bind(\n"
-private def lexTokens24 : List Token := [.identifier (native_c_characters% "metta_eval_bind"), .punctuation (native_c_characters% "(")]
+private def lexCharacters24 : List Char := native_c_characters% "            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND);\n"
+private def lexTokens24 : List Token := [.identifier (native_c_characters% "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece24 : lexCharacters24.foldl step initial = completed lexTokens24 := by
   native_c_parser_reflexivity
 
-private def lexCharacters25 : List Char := native_c_characters% "            task.space, task.arena, task.atom,\n"
-private def lexTokens25 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ",")]
+private def lexCharacters25 : List Char := native_c_characters% "        driver->running_bind_task = true;\n"
+private def lexTokens25 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_bind_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "true"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece25 : lexCharacters25.foldl step initial = completed lexTokens25 := by
   native_c_parser_reflexivity
 
-private def lexCharacters26 : List Char := native_c_characters% "            task.fuel, task.target);\n"
-private def lexTokens26 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters26 : List Char := native_c_characters% "        metta_eval_bind(\n"
+private def lexTokens26 : List Token := [.identifier (native_c_characters% "metta_eval_bind"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece26 : lexCharacters26.foldl step initial = completed lexTokens26 := by
   native_c_parser_reflexivity
 
-private def lexCharacters27 : List Char := native_c_characters% "        driver->running_bind_task = false;\n"
-private def lexTokens27 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_bind_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
+private def lexCharacters27 : List Char := native_c_characters% "            task.space, task.arena, task.atom,\n"
+private def lexTokens27 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece27 : lexCharacters27.foldl step initial = completed lexTokens27 := by
   native_c_parser_reflexivity
 
-private def lexCharacters28 : List Char := native_c_characters% "        break;\n"
-private def lexTokens28 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
+private def lexCharacters28 : List Char := native_c_characters% "            task.fuel, task.target);\n"
+private def lexTokens28 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece28 : lexCharacters28.foldl step initial = completed lexTokens28 := by
   native_c_parser_reflexivity
 
-private def lexCharacters29 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_CALL:\n"
-private def lexTokens29 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_CALL"), .punctuation (native_c_characters% ":")]
+private def lexCharacters29 : List Char := native_c_characters% "        driver->running_bind_task = false;\n"
+private def lexTokens29 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_bind_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece29 : lexCharacters29.foldl step initial = completed lexTokens29 := by
   native_c_parser_reflexivity
 
-private def lexCharacters30 : List Char := native_c_characters% "        cetta_runtime_stats_inc(\n"
-private def lexTokens30 : List Token := [.identifier (native_c_characters% "cetta_runtime_stats_inc"), .punctuation (native_c_characters% "(")]
+private def lexCharacters30 : List Char := native_c_characters% "        break;\n"
+private def lexTokens30 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece30 : lexCharacters30.foldl step initial = completed lexTokens30 := by
   native_c_parser_reflexivity
 
-private def lexCharacters31 : List Char := native_c_characters% "            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL);\n"
-private def lexTokens31 : List Token := [.identifier (native_c_characters% "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters31 : List Char := native_c_characters% "    }\n"
+private def lexTokens31 : List Token := [.punctuation (native_c_characters% "}")]
 private theorem lexPiece31 : lexCharacters31.foldl step initial = completed lexTokens31 := by
   native_c_parser_reflexivity
 
-private def lexCharacters32 : List Char := native_c_characters% "        metta_call_impl(\n"
-private def lexTokens32 : List Token := [.identifier (native_c_characters% "metta_call_impl"), .punctuation (native_c_characters% "(")]
+private def lexCharacters32 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_CALL:\n"
+private def lexTokens32 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_CALL"), .punctuation (native_c_characters% ":")]
 private theorem lexPiece32 : lexCharacters32.foldl step initial = completed lexTokens32 := by
   native_c_parser_reflexivity
 
-private def lexCharacters33 : List Char := native_c_characters% "            task.space, task.arena, task.atom, task.etype,\n"
-private def lexTokens33 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "etype"), .punctuation (native_c_characters% ",")]
+private def lexCharacters33 : List Char := native_c_characters% "        cetta_runtime_stats_inc(\n"
+private def lexTokens33 : List Token := [.identifier (native_c_characters% "cetta_runtime_stats_inc"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece33 : lexCharacters33.foldl step initial = completed lexTokens33 := by
   native_c_parser_reflexivity
 
-private def lexCharacters34 : List Char := native_c_characters% "            task.fuel, task.preserve_bindings,\n"
-private def lexTokens34 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "preserve_bindings"), .punctuation (native_c_characters% ",")]
+private def lexCharacters34 : List Char := native_c_characters% "            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL);\n"
+private def lexTokens34 : List Token := [.identifier (native_c_characters% "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece34 : lexCharacters34.foldl step initial = completed lexTokens34 := by
   native_c_parser_reflexivity
 
-private def lexCharacters35 : List Char := native_c_characters% "            task.seed_env_initialized ? &task.seed_env : NULL,\n"
-private def lexTokens35 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "seed_env_initialized"), .punctuation (native_c_characters% "?"), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "seed_env"), .punctuation (native_c_characters% ":"), .identifier (native_c_characters% "NULL"), .punctuation (native_c_characters% ",")]
+private def lexCharacters35 : List Char := native_c_characters% "        metta_call_impl(\n"
+private def lexTokens35 : List Token := [.identifier (native_c_characters% "metta_call_impl"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece35 : lexCharacters35.foldl step initial = completed lexTokens35 := by
   native_c_parser_reflexivity
 
-private def lexCharacters36 : List Char := native_c_characters% "            task.strict_ready_argument, task.target);\n"
-private def lexTokens36 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "strict_ready_argument"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters36 : List Char := native_c_characters% "            task.space, task.arena, task.atom, task.etype,\n"
+private def lexTokens36 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "etype"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece36 : lexCharacters36.foldl step initial = completed lexTokens36 := by
   native_c_parser_reflexivity
 
-private def lexCharacters37 : List Char := native_c_characters% "        break;\n"
-private def lexTokens37 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
+private def lexCharacters37 : List Char := native_c_characters% "            task.fuel, task.preserve_bindings,\n"
+private def lexTokens37 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "preserve_bindings"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece37 : lexCharacters37.foldl step initial = completed lexTokens37 := by
   native_c_parser_reflexivity
 
-private def lexCharacters38 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_NORMALIZE:\n"
-private def lexTokens38 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_NORMALIZE"), .punctuation (native_c_characters% ":")]
+private def lexCharacters38 : List Char := native_c_characters% "            task.seed_env_initialized ? &task.seed_env :\n"
+private def lexTokens38 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "seed_env_initialized"), .punctuation (native_c_characters% "?"), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "seed_env"), .punctuation (native_c_characters% ":")]
 private theorem lexPiece38 : lexCharacters38.foldl step initial = completed lexTokens38 := by
   native_c_parser_reflexivity
 
-private def lexCharacters39 : List Char := native_c_characters% "        cetta_runtime_stats_inc(\n"
-private def lexTokens39 : List Token := [.identifier (native_c_characters% "cetta_runtime_stats_inc"), .punctuation (native_c_characters% "(")]
+private def lexCharacters39 : List Char := native_c_characters% "                task.dynamic_env_is_seed ? &task.dynamic_env : NULL,\n"
+private def lexTokens39 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env_is_seed"), .punctuation (native_c_characters% "?"), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ":"), .identifier (native_c_characters% "NULL"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece39 : lexCharacters39.foldl step initial = completed lexTokens39 := by
   native_c_parser_reflexivity
 
-private def lexCharacters40 : List Char := native_c_characters% "            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE);\n"
-private def lexTokens40 : List Token := [.identifier (native_c_characters% "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters40 : List Char := native_c_characters% "            task.strict_ready_argument, task.target);\n"
+private def lexTokens40 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "strict_ready_argument"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece40 : lexCharacters40.foldl step initial = completed lexTokens40 := by
   native_c_parser_reflexivity
 
-private def lexCharacters41 : List Char := native_c_characters% "        {\n"
-private def lexTokens41 : List Token := [.punctuation (native_c_characters% "{")]
+private def lexCharacters41 : List Char := native_c_characters% "        break;\n"
+private def lexTokens41 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece41 : lexCharacters41.foldl step initial = completed lexTokens41 := by
   native_c_parser_reflexivity
 
-private def lexCharacters42 : List Char := native_c_characters% "            PrimeEvalStackFrame *frame =\n"
-private def lexTokens42 : List Token := [.identifier (native_c_characters% "PrimeEvalStackFrame"), .punctuation (native_c_characters% "*"), .identifier (native_c_characters% "frame"), .punctuation (native_c_characters% "=")]
+private def lexCharacters42 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_NORMALIZE:\n"
+private def lexTokens42 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_NORMALIZE"), .punctuation (native_c_characters% ":")]
 private theorem lexPiece42 : lexCharacters42.foldl step initial = completed lexTokens42 := by
   native_c_parser_reflexivity
 
-private def lexCharacters43 : List Char := native_c_characters% "                prime_eval_stack_normalize_atom_frame_new(\n"
-private def lexTokens43 : List Token := [.identifier (native_c_characters% "prime_eval_stack_normalize_atom_frame_new"), .punctuation (native_c_characters% "(")]
+private def lexCharacters43 : List Char := native_c_characters% "        cetta_runtime_stats_inc(\n"
+private def lexTokens43 : List Token := [.identifier (native_c_characters% "cetta_runtime_stats_inc"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece43 : lexCharacters43.foldl step initial = completed lexTokens43 := by
   native_c_parser_reflexivity
 
-private def lexCharacters44 : List Char := native_c_characters% "                    task.space, task.arena, task.atom, task.fuel,\n"
-private def lexTokens44 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ",")]
+private def lexCharacters44 : List Char := native_c_characters% "            CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE);\n"
+private def lexTokens44 : List Token := [.identifier (native_c_characters% "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece44 : lexCharacters44.foldl step initial = completed lexTokens44 := by
   native_c_parser_reflexivity
 
-private def lexCharacters45 : List Char := native_c_characters% "                    &task.dynamic_env, task.evaluator_id,\n"
-private def lexTokens45 : List Token := [.punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% ",")]
+private def lexCharacters45 : List Char := native_c_characters% "        {\n"
+private def lexTokens45 : List Token := [.punctuation (native_c_characters% "{")]
 private theorem lexPiece45 : lexCharacters45.foldl step initial = completed lexTokens45 := by
   native_c_parser_reflexivity
 
-private def lexCharacters46 : List Char := native_c_characters% "                    task.target);\n"
-private def lexTokens46 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters46 : List Char := native_c_characters% "            PrimeEvalStackFrame *frame =\n"
+private def lexTokens46 : List Token := [.identifier (native_c_characters% "PrimeEvalStackFrame"), .punctuation (native_c_characters% "*"), .identifier (native_c_characters% "frame"), .punctuation (native_c_characters% "=")]
 private theorem lexPiece46 : lexCharacters46.foldl step initial = completed lexTokens46 := by
   native_c_parser_reflexivity
 
-private def lexCharacters47 : List Char := native_c_characters% "            if (frame)\n"
-private def lexTokens47 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "frame"), .punctuation (native_c_characters% ")")]
+private def lexCharacters47 : List Char := native_c_characters% "                prime_eval_stack_normalize_atom_frame_new(\n"
+private def lexTokens47 : List Token := [.identifier (native_c_characters% "prime_eval_stack_normalize_atom_frame_new"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece47 : lexCharacters47.foldl step initial = completed lexTokens47 := by
   native_c_parser_reflexivity
 
-private def lexCharacters48 : List Char := native_c_characters% "                prime_eval_stack_push(frame);\n"
-private def lexTokens48 : List Token := [.identifier (native_c_characters% "prime_eval_stack_push"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "frame"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters48 : List Char := native_c_characters% "                    task.space, task.arena, task.atom, task.fuel,\n"
+private def lexTokens48 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "space"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "arena"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "atom"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "fuel"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece48 : lexCharacters48.foldl step initial = completed lexTokens48 := by
   native_c_parser_reflexivity
 
-private def lexCharacters49 : List Char := native_c_characters% "            else\n"
-private def lexTokens49 : List Token := [.identifier (native_c_characters% "else")]
+private def lexCharacters49 : List Char := native_c_characters% "                    &task.dynamic_env, task.evaluator_id,\n"
+private def lexTokens49 : List Token := [.punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "dynamic_env"), .punctuation (native_c_characters% ","), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "evaluator_id"), .punctuation (native_c_characters% ",")]
 private theorem lexPiece49 : lexCharacters49.foldl step initial = completed lexTokens49 := by
   native_c_parser_reflexivity
 
-private def lexCharacters50 : List Char := native_c_characters% "                eval_mark_incomplete(\n"
-private def lexTokens50 : List Token := [.identifier (native_c_characters% "eval_mark_incomplete"), .punctuation (native_c_characters% "(")]
+private def lexCharacters50 : List Char := native_c_characters% "                    task.target);\n"
+private def lexTokens50 : List Token := [.identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece50 : lexCharacters50.foldl step initial = completed lexTokens50 := by
   native_c_parser_reflexivity
 
-private def lexCharacters51 : List Char := native_c_characters% "                    CETTA_EVAL_INCOMPLETE_CAPACITY);\n"
-private def lexTokens51 : List Token := [.identifier (native_c_characters% "CETTA_EVAL_INCOMPLETE_CAPACITY"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters51 : List Char := native_c_characters% "            if (frame)\n"
+private def lexTokens51 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "frame"), .punctuation (native_c_characters% ")")]
 private theorem lexPiece51 : lexCharacters51.foldl step initial = completed lexTokens51 := by
   native_c_parser_reflexivity
 
-private def lexCharacters52 : List Char := native_c_characters% "        }\n"
-private def lexTokens52 : List Token := [.punctuation (native_c_characters% "}")]
+private def lexCharacters52 : List Char := native_c_characters% "                prime_eval_stack_push(frame);\n"
+private def lexTokens52 : List Token := [.identifier (native_c_characters% "prime_eval_stack_push"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "frame"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece52 : lexCharacters52.foldl step initial = completed lexTokens52 := by
   native_c_parser_reflexivity
 
-private def lexCharacters53 : List Char := native_c_characters% "        break;\n"
-private def lexTokens53 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
+private def lexCharacters53 : List Char := native_c_characters% "            else\n"
+private def lexTokens53 : List Token := [.identifier (native_c_characters% "else")]
 private theorem lexPiece53 : lexCharacters53.foldl step initial = completed lexTokens53 := by
   native_c_parser_reflexivity
 
-private def lexCharacters54 : List Char := native_c_characters% "    }\n"
-private def lexTokens54 : List Token := [.punctuation (native_c_characters% "}")]
+private def lexCharacters54 : List Char := native_c_characters% "                eval_mark_incomplete(\n"
+private def lexTokens54 : List Token := [.identifier (native_c_characters% "eval_mark_incomplete"), .punctuation (native_c_characters% "(")]
 private theorem lexPiece54 : lexCharacters54.foldl step initial = completed lexTokens54 := by
   native_c_parser_reflexivity
 
-private def lexCharacters55 : List Char := native_c_characters% "    g_prime_need_evaluator_id = previous_evaluator_id;\n"
-private def lexTokens55 : List Token := [.identifier (native_c_characters% "g_prime_need_evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "previous_evaluator_id"), .punctuation (native_c_characters% ";")]
+private def lexCharacters55 : List Char := native_c_characters% "                    CETTA_EVAL_INCOMPLETE_CAPACITY);\n"
+private def lexTokens55 : List Token := [.identifier (native_c_characters% "CETTA_EVAL_INCOMPLETE_CAPACITY"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece55 : lexCharacters55.foldl step initial = completed lexTokens55 := by
   native_c_parser_reflexivity
 
-private def lexCharacters56 : List Char := native_c_characters% "    driver->active_task = NULL;\n"
-private def lexTokens56 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "active_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "NULL"), .punctuation (native_c_characters% ";")]
+private def lexCharacters56 : List Char := native_c_characters% "        }\n"
+private def lexTokens56 : List Token := [.punctuation (native_c_characters% "}")]
 private theorem lexPiece56 : lexCharacters56.foldl step initial = completed lexTokens56 := by
   native_c_parser_reflexivity
 
-private def lexCharacters57 : List Char := native_c_characters% "    if (task.target && task.target->len > published_before)\n"
-private def lexTokens57 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "&&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "len"), .punctuation (native_c_characters% ">"), .identifier (native_c_characters% "published_before"), .punctuation (native_c_characters% ")")]
+private def lexCharacters57 : List Char := native_c_characters% "        break;\n"
+private def lexTokens57 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece57 : lexCharacters57.foldl step initial = completed lexTokens57 := by
   native_c_parser_reflexivity
 
-private def lexCharacters58 : List Char := native_c_characters% "        prime_eval_stack_stream_note(task.target);\n"
-private def lexTokens58 : List Token := [.identifier (native_c_characters% "prime_eval_stack_stream_note"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters58 : List Char := native_c_characters% "    case PRIME_EVAL_STACK_TASK_BRANCH:\n"
+private def lexTokens58 : List Token := [.identifier (native_c_characters% "case"), .identifier (native_c_characters% "PRIME_EVAL_STACK_TASK_BRANCH"), .punctuation (native_c_characters% ":")]
 private theorem lexPiece58 : lexCharacters58.foldl step initial = completed lexTokens58 := by
   native_c_parser_reflexivity
 
-private def lexCharacters59 : List Char := native_c_characters% "    prime_eval_stack_task_free(&task);\n"
-private def lexTokens59 : List Token := [.identifier (native_c_characters% "prime_eval_stack_task_free"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private def lexCharacters59 : List Char := native_c_characters% "        prime_eval_stack_run_branch(&task);\n"
+private def lexTokens59 : List Token := [.identifier (native_c_characters% "prime_eval_stack_run_branch"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece59 : lexCharacters59.foldl step initial = completed lexTokens59 := by
   native_c_parser_reflexivity
 
-private def lexCharacters60 : List Char := native_c_characters% "    driver->running_task = false;\n"
-private def lexTokens60 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
+private def lexCharacters60 : List Char := native_c_characters% "        break;\n"
+private def lexTokens60 : List Token := [.identifier (native_c_characters% "break"), .punctuation (native_c_characters% ";")]
 private theorem lexPiece60 : lexCharacters60.foldl step initial = completed lexTokens60 := by
   native_c_parser_reflexivity
 
-private def lexCharacters61 : List Char := native_c_characters% "}"
+private def lexCharacters61 : List Char := native_c_characters% "    }\n"
 private def lexTokens61 : List Token := [.punctuation (native_c_characters% "}")]
 private theorem lexPiece61 : lexCharacters61.foldl step initial = completed lexTokens61 := by
   native_c_parser_reflexivity
 
-private def sourcePieces : List (List Char × List Token) := [(lexCharacters0, lexTokens0), (lexCharacters1, lexTokens1), (lexCharacters2, lexTokens2), (lexCharacters3, lexTokens3), (lexCharacters4, lexTokens4), (lexCharacters5, lexTokens5), (lexCharacters6, lexTokens6), (lexCharacters7, lexTokens7), (lexCharacters8, lexTokens8), (lexCharacters9, lexTokens9), (lexCharacters10, lexTokens10), (lexCharacters11, lexTokens11), (lexCharacters12, lexTokens12), (lexCharacters13, lexTokens13), (lexCharacters14, lexTokens14), (lexCharacters15, lexTokens15), (lexCharacters16, lexTokens16), (lexCharacters17, lexTokens17), (lexCharacters18, lexTokens18), (lexCharacters19, lexTokens19), (lexCharacters20, lexTokens20), (lexCharacters21, lexTokens21), (lexCharacters22, lexTokens22), (lexCharacters23, lexTokens23), (lexCharacters24, lexTokens24), (lexCharacters25, lexTokens25), (lexCharacters26, lexTokens26), (lexCharacters27, lexTokens27), (lexCharacters28, lexTokens28), (lexCharacters29, lexTokens29), (lexCharacters30, lexTokens30), (lexCharacters31, lexTokens31), (lexCharacters32, lexTokens32), (lexCharacters33, lexTokens33), (lexCharacters34, lexTokens34), (lexCharacters35, lexTokens35), (lexCharacters36, lexTokens36), (lexCharacters37, lexTokens37), (lexCharacters38, lexTokens38), (lexCharacters39, lexTokens39), (lexCharacters40, lexTokens40), (lexCharacters41, lexTokens41), (lexCharacters42, lexTokens42), (lexCharacters43, lexTokens43), (lexCharacters44, lexTokens44), (lexCharacters45, lexTokens45), (lexCharacters46, lexTokens46), (lexCharacters47, lexTokens47), (lexCharacters48, lexTokens48), (lexCharacters49, lexTokens49), (lexCharacters50, lexTokens50), (lexCharacters51, lexTokens51), (lexCharacters52, lexTokens52), (lexCharacters53, lexTokens53), (lexCharacters54, lexTokens54), (lexCharacters55, lexTokens55), (lexCharacters56, lexTokens56), (lexCharacters57, lexTokens57), (lexCharacters58, lexTokens58), (lexCharacters59, lexTokens59), (lexCharacters60, lexTokens60), (lexCharacters61, lexTokens61)]
+private def lexCharacters62 : List Char := native_c_characters% "    g_prime_need_evaluator_id = previous_evaluator_id;\n"
+private def lexTokens62 : List Token := [.identifier (native_c_characters% "g_prime_need_evaluator_id"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "previous_evaluator_id"), .punctuation (native_c_characters% ";")]
+private theorem lexPiece62 : lexCharacters62.foldl step initial = completed lexTokens62 := by
+  native_c_parser_reflexivity
+
+private def lexCharacters63 : List Char := native_c_characters% "    driver->active_task = NULL;\n"
+private def lexTokens63 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "active_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "NULL"), .punctuation (native_c_characters% ";")]
+private theorem lexPiece63 : lexCharacters63.foldl step initial = completed lexTokens63 := by
+  native_c_parser_reflexivity
+
+private def lexCharacters64 : List Char := native_c_characters% "    if (task.target && task.target->len > published_before)\n"
+private def lexTokens64 : List Token := [.identifier (native_c_characters% "if"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "&&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "len"), .punctuation (native_c_characters% ">"), .identifier (native_c_characters% "published_before"), .punctuation (native_c_characters% ")")]
+private theorem lexPiece64 : lexCharacters64.foldl step initial = completed lexTokens64 := by
+  native_c_parser_reflexivity
+
+private def lexCharacters65 : List Char := native_c_characters% "        prime_eval_stack_stream_note(task.target);\n"
+private def lexTokens65 : List Token := [.identifier (native_c_characters% "prime_eval_stack_stream_note"), .punctuation (native_c_characters% "("), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% "."), .identifier (native_c_characters% "target"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private theorem lexPiece65 : lexCharacters65.foldl step initial = completed lexTokens65 := by
+  native_c_parser_reflexivity
+
+private def lexCharacters66 : List Char := native_c_characters% "    prime_eval_stack_task_free(&task);\n"
+private def lexTokens66 : List Token := [.identifier (native_c_characters% "prime_eval_stack_task_free"), .punctuation (native_c_characters% "("), .punctuation (native_c_characters% "&"), .identifier (native_c_characters% "task"), .punctuation (native_c_characters% ")"), .punctuation (native_c_characters% ";")]
+private theorem lexPiece66 : lexCharacters66.foldl step initial = completed lexTokens66 := by
+  native_c_parser_reflexivity
+
+private def lexCharacters67 : List Char := native_c_characters% "    driver->running_task = false;\n"
+private def lexTokens67 : List Token := [.identifier (native_c_characters% "driver"), .punctuation (native_c_characters% "->"), .identifier (native_c_characters% "running_task"), .punctuation (native_c_characters% "="), .identifier (native_c_characters% "false"), .punctuation (native_c_characters% ";")]
+private theorem lexPiece67 : lexCharacters67.foldl step initial = completed lexTokens67 := by
+  native_c_parser_reflexivity
+
+private def lexCharacters68 : List Char := native_c_characters% "}"
+private def lexTokens68 : List Token := [.punctuation (native_c_characters% "}")]
+private theorem lexPiece68 : lexCharacters68.foldl step initial = completed lexTokens68 := by
+  native_c_parser_reflexivity
+
+private def sourcePieces : List (List Char × List Token) := [(lexCharacters0, lexTokens0), (lexCharacters1, lexTokens1), (lexCharacters2, lexTokens2), (lexCharacters3, lexTokens3), (lexCharacters4, lexTokens4), (lexCharacters5, lexTokens5), (lexCharacters6, lexTokens6), (lexCharacters7, lexTokens7), (lexCharacters8, lexTokens8), (lexCharacters9, lexTokens9), (lexCharacters10, lexTokens10), (lexCharacters11, lexTokens11), (lexCharacters12, lexTokens12), (lexCharacters13, lexTokens13), (lexCharacters14, lexTokens14), (lexCharacters15, lexTokens15), (lexCharacters16, lexTokens16), (lexCharacters17, lexTokens17), (lexCharacters18, lexTokens18), (lexCharacters19, lexTokens19), (lexCharacters20, lexTokens20), (lexCharacters21, lexTokens21), (lexCharacters22, lexTokens22), (lexCharacters23, lexTokens23), (lexCharacters24, lexTokens24), (lexCharacters25, lexTokens25), (lexCharacters26, lexTokens26), (lexCharacters27, lexTokens27), (lexCharacters28, lexTokens28), (lexCharacters29, lexTokens29), (lexCharacters30, lexTokens30), (lexCharacters31, lexTokens31), (lexCharacters32, lexTokens32), (lexCharacters33, lexTokens33), (lexCharacters34, lexTokens34), (lexCharacters35, lexTokens35), (lexCharacters36, lexTokens36), (lexCharacters37, lexTokens37), (lexCharacters38, lexTokens38), (lexCharacters39, lexTokens39), (lexCharacters40, lexTokens40), (lexCharacters41, lexTokens41), (lexCharacters42, lexTokens42), (lexCharacters43, lexTokens43), (lexCharacters44, lexTokens44), (lexCharacters45, lexTokens45), (lexCharacters46, lexTokens46), (lexCharacters47, lexTokens47), (lexCharacters48, lexTokens48), (lexCharacters49, lexTokens49), (lexCharacters50, lexTokens50), (lexCharacters51, lexTokens51), (lexCharacters52, lexTokens52), (lexCharacters53, lexTokens53), (lexCharacters54, lexTokens54), (lexCharacters55, lexTokens55), (lexCharacters56, lexTokens56), (lexCharacters57, lexTokens57), (lexCharacters58, lexTokens58), (lexCharacters59, lexTokens59), (lexCharacters60, lexTokens60), (lexCharacters61, lexTokens61), (lexCharacters62, lexTokens62), (lexCharacters63, lexTokens63), (lexCharacters64, lexTokens64), (lexCharacters65, lexTokens65), (lexCharacters66, lexTokens66), (lexCharacters67, lexTokens67), (lexCharacters68, lexTokens68)]
 
 private theorem characters_from_pieces : sourcePieces.flatMap Prod.fst = characters := by
   native_c_parser_reflexivity
@@ -10211,7 +10127,7 @@ theorem actual_characters_lexed : lex characters = .ok tokens := by
   apply lex_of_completed
   apply completed_pieces sourcePieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨lexPiece0, lexPiece1, lexPiece2, lexPiece3, lexPiece4, lexPiece5, lexPiece6, lexPiece7, lexPiece8, lexPiece9, lexPiece10, lexPiece11, lexPiece12, lexPiece13, lexPiece14, lexPiece15, lexPiece16, lexPiece17, lexPiece18, lexPiece19, lexPiece20, lexPiece21, lexPiece22, lexPiece23, lexPiece24, lexPiece25, lexPiece26, lexPiece27, lexPiece28, lexPiece29, lexPiece30, lexPiece31, lexPiece32, lexPiece33, lexPiece34, lexPiece35, lexPiece36, lexPiece37, lexPiece38, lexPiece39, lexPiece40, lexPiece41, lexPiece42, lexPiece43, lexPiece44, lexPiece45, lexPiece46, lexPiece47, lexPiece48, lexPiece49, lexPiece50, lexPiece51, lexPiece52, lexPiece53, lexPiece54, lexPiece55, lexPiece56, lexPiece57, lexPiece58, lexPiece59, lexPiece60, lexPiece61, by trivial⟩
+  exact ⟨lexPiece0, lexPiece1, lexPiece2, lexPiece3, lexPiece4, lexPiece5, lexPiece6, lexPiece7, lexPiece8, lexPiece9, lexPiece10, lexPiece11, lexPiece12, lexPiece13, lexPiece14, lexPiece15, lexPiece16, lexPiece17, lexPiece18, lexPiece19, lexPiece20, lexPiece21, lexPiece22, lexPiece23, lexPiece24, lexPiece25, lexPiece26, lexPiece27, lexPiece28, lexPiece29, lexPiece30, lexPiece31, lexPiece32, lexPiece33, lexPiece34, lexPiece35, lexPiece36, lexPiece37, lexPiece38, lexPiece39, lexPiece40, lexPiece41, lexPiece42, lexPiece43, lexPiece44, lexPiece45, lexPiece46, lexPiece47, lexPiece48, lexPiece49, lexPiece50, lexPiece51, lexPiece52, lexPiece53, lexPiece54, lexPiece55, lexPiece56, lexPiece57, lexPiece58, lexPiece59, lexPiece60, lexPiece61, lexPiece62, lexPiece63, lexPiece64, lexPiece65, lexPiece66, lexPiece67, lexPiece68, by trivial⟩
 
 theorem actual_tokens_parsed :
     functionUsing? (declaratorParameter? names) (2 * tokens.length + 4) names
@@ -10245,7 +10161,7 @@ theorem original_source_executes_retained_body
   unfold fromOriginal
   rw [original_source_recognized, StatementBlock.execute_parsed_body_some]
 
-theorem source_keeps_twenty_top_level_statements : runSyntax.body.length = 20 := rfl
+theorem source_keeps_twenty_two_top_level_statements : runSyntax.body.length = 22 := rfl
 
 end Mettapedia.Languages.MeTTa.CeTTaNativeCost.RunTaskSource
 
@@ -10682,13 +10598,15 @@ structure RunLayout extends TaskAdmission.TaskLayout where
   outcomeLength : Nat
   needCells : Nat
   needCellsPositive : 0 < needCells
+  contextCells : Nat
+  contextCellsPositive : 0 < contextCells
 
 def RunLayout.authority (layout : RunLayout) : Authority.Layout :=
   ⟨layout.currentDriver, layout.driverOffset "pure_authority".toList⟩
 
-/-- Each void callback retains its actual typed source operands. The Need
-entry returns every guard cell by value; no pointer or Boolean stands in
-for the guard. Normalization reuses the existing interpreted constructor,
+/-- Each callback retains its actual typed source operands. Need entry receives
+its live guard destination and environment; context entry returns the complete
+saved record. Normalization reuses the existing interpreted constructor,
 including its allocation, root capture, refusal and retirement operations.
 Automatic storage and native callback/lifetime realization remain explicit
 obligations of these supplied services. -/
@@ -10698,7 +10616,10 @@ structure Operations where
     Option Ptr → Int32 → Option Ptr → CProg CVal Unit
   constructor : NormalizeAtomConstructor.ConstructorOperations
   constructorLayout : NormalizeAtomConstructor.FrameLayout
-  needEnter : Ptr → CProg CVal (List CVal)
+  needEnter : Ptr → Option Ptr → CProg CVal Unit
+  contextEnter : Option Ptr → CProg CVal (List CVal)
+  contextLeave : Ptr → CProg CVal Unit
+  branchTask : Ptr → CProg CVal Unit
   needLeave : Ptr → CProg CVal Unit
   zeroTask : Ptr → UInt64 → CProg CVal Unit
   releaseTask : Ptr → CProg CVal Unit
@@ -10726,17 +10647,17 @@ def constructorValues (operations : Operations) : Calls := fun name arguments =>
     | _ => CProg.undefined
   else CProg.undefined
 
-def needRecord (operations : Operations) : StatementBlock.ObjectBindings.RecordCall where
+def contextRecord (operations : Operations) : StatementBlock.ObjectBindings.RecordCall where
   mode := .scalar
-  resultType := ctype "PrimeNeedActiveGuard"
+  resultType := ctype "PrimeEvalContextGuard"
   invoke := fun arguments => match arguments with
-    | [.ptr (some environment)] => operations.needEnter environment
+    | [.ptr context] => operations.contextEnter context
     | _ => CProg.undefined
 
 def recordCalls (operations : Operations) (layout : RunLayout) :
     Name → Option StatementBlock.ObjectBindings.RecordCall := fun name =>
   if name = "prime_eval_authority_enter".toList then some (Authority.recordCall layout.authority)
-  else if name = "prime_need_active_enter".toList then some (needRecord operations)
+  else if name = "prime_eval_stack_context_enter".toList then some (contextRecord operations)
   else none
 
 /-- Assertions are source macros. An enabled assertion evaluates its actual
@@ -10749,6 +10670,12 @@ def effects (operations : Operations) : CallService Unit := fun name arguments =
   if name = "assert".toList then match arguments with
     | [value] => truth value >>= fun accepted =>
         if accepted then pure () else CProg.undefined
+    | _ => CProg.undefined
+  else if name = "prime_need_active_enter".toList then match arguments with
+    | [.ptr (some guard), .ptr environment] => operations.needEnter guard environment
+    | _ => CProg.undefined
+  else if name = "prime_eval_stack_run_branch".toList then match arguments with
+    | [.ptr (some task)] => operations.branchTask task
     | _ => CProg.undefined
   else if name = "metta_eval_bind".toList then match arguments with
     | [.ptr space, .ptr arena, .ptr atom, .i32 fuel, .ptr target] =>
@@ -10783,13 +10710,14 @@ def effects (operations : Operations) : CallService Unit := fun name arguments =
 def omittedMacros (operations : Operations) : EffectStatements.OmittedMacros := fun name =>
   if !operations.assertions && name == "assert".toList then some 1 else none
 
-/-- Cleanup dispatches only the two authored callbacks. Each receives the
+/-- Cleanup dispatches only the three authored callbacks. Each receives the
 actual still-live automatic guard address and retains the completed flow
 until restoration. Unknown callback names are not silent no-ops. -/
 def cleanup (operations : Operations) (layout : RunLayout) :
     Name → Ptr → ReadBlock.Flow Context → CProg CVal Unit := fun name guard _ =>
   if name = "prime_eval_authority_leave".toList then Authority.leave layout.authority guard
   else if name = "prime_need_active_leave".toList then operations.needLeave guard
+  else if name = "prime_eval_stack_context_leave".toList then operations.contextLeave guard
   else CProg.undefined
 
 def driverFields (layout : RunLayout) : Layout := fun name =>
@@ -10817,19 +10745,21 @@ def fieldTypes : ScalarBytes.FieldTypes := fun owner name =>
 def caseConstants : ScalarRead.Environment Ptr := fun name =>
   if name = "PRIME_EVAL_STACK_TASK_BIND".toList then some (.unsigned 0) else
   if name = "PRIME_EVAL_STACK_TASK_CALL".toList then some (.unsigned 1) else
-  if name = "PRIME_EVAL_STACK_TASK_NORMALIZE".toList then some (.unsigned 2) else none
+  if name = "PRIME_EVAL_STACK_TASK_NORMALIZE".toList then some (.unsigned 2) else
+  if name = "PRIME_EVAL_STACK_TASK_BRANCH".toList then some (.unsigned 3) else none
 
 /-- Immutable source enumeration bindings use signed int values for the
-counter/reason call operands. Their exact source enumeration and effective
-representation are checked separately; they are not selected by runtime
+counter/reason call operands. The maintained literal audit checks the three
+counter values against the generated header. Effective enum representation
+and the non-counter reason binding are separate obligations; they are not selected by runtime
 boundness or the current mathematical weight algebra. -/
 def initialContext : Context := fun name =>
   if name = "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList then
-    some (.scalar (ctype "int") (some (.i32 262))) else
+    some (.scalar (ctype "int") (some (.i32 261))) else
   if name = "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList then
-    some (.scalar (ctype "int") (some (.i32 263))) else
+    some (.scalar (ctype "int") (some (.i32 262))) else
   if name = "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList then
-    some (.scalar (ctype "int") (some (.i32 264))) else
+    some (.scalar (ctype "int") (some (.i32 263))) else
   if name = "CETTA_EVAL_INCOMPLETE_CAPACITY".toList then
     some (.scalar (ctype "int") (some (.i32 4))) else none
 
@@ -10850,13 +10780,14 @@ def profile (operations : Operations) (layout : RunLayout) : StatementBlock.Obje
   cellExtent := fun record =>
     if record = ctype "PrimeEvalStackTask" then some layout.taskCells else
     if record = ctype "PrimeEvalAuthorityGuard" then some 2 else
-    if record = ctype "PrimeNeedActiveGuard" then some layout.needCells else none
+    if record = ctype "PrimeNeedActiveGuard" then some layout.needCells else
+    if record = ctype "PrimeEvalContextGuard" then some layout.contextCells else none
   byteExtent := fun record =>
     if record = ctype "PrimeEvalStackTask" then some layout.taskBytes else none
   sizeWidth := .bits64
   recordFields := some (recordLayouts layout)
   recordTypes := [ctype "PrimeEvalStackTask", ctype "PrimeEvalAuthorityGuard",
-    ctype "PrimeNeedActiveGuard"]
+    ctype "PrimeNeedActiveGuard", ctype "PrimeEvalContextGuard"]
   caseConstants := caseConstants
   recordCalls := recordCalls operations layout
   scalarAliases := fun record =>
@@ -10916,10 +10847,15 @@ theorem call_callback_keeps_all_nine_source_operands (operations : Operations)
         .ptr seed, .i32 strictIndex, .ptr target] =
       operations.call space arena atom etype fuel preserve seed strictIndex target := rfl
 
-theorem need_entry_keeps_the_actual_environment_address (operations : Operations)
-    (environment : Ptr) :
-    (needRecord operations).invoke [.ptr (some environment)] =
-      operations.needEnter environment := rfl
+theorem need_entry_keeps_guard_and_environment (operations : Operations)
+    (guard : Ptr) (environment : Option Ptr) :
+    effects operations "prime_need_active_enter".toList
+      [.ptr (some guard), .ptr environment] =
+      operations.needEnter guard environment := rfl
+
+theorem context_entry_keeps_actual_nullable_scope (operations : Operations)
+    (context : Option Ptr) :
+    (contextRecord operations).invoke [.ptr context] = operations.contextEnter context := rfl
 
 theorem authority_cleanup_keeps_the_actual_guard_address (operations : Operations)
     (layout : RunLayout) (guard : Ptr) (flow : ReadBlock.Flow Context) :
@@ -10989,7 +10925,7 @@ theorem pointer_in_place_of_call_boolean_is_not_reinterpreted (operations : Oper
         .ptr seed, .i32 strictIndex, .ptr target] = CProg.undefined := rfl
 
 theorem null_need_environment_is_not_an_initialized_record (operations : Operations) :
-    (needRecord operations).invoke [.ptr none] = CProg.undefined := rfl
+    effects operations "prime_need_active_enter".toList [.ptr none, .ptr none] = CProg.undefined := rfl
 
 theorem exhausted_constructor_is_not_a_frame : frameReply .exhausted = CProg.undefined := rfl
 
@@ -11010,6 +10946,36 @@ theorem disabled_assertion_omits_an_unavailable_operand (operations : Operations
   · simp only [omittedMacros, disabled]
     rfl
   · rfl
+
+theorem ordinary_need_entry_is_void (operations : Operations) (layout : RunLayout) :
+    recordCalls operations layout "prime_need_active_enter".toList = none := rfl
+
+theorem obsolete_need_call_arity_is_refused (operations : Operations) (environment : Ptr) :
+    effects operations "prime_need_active_enter".toList [.ptr (some environment)] =
+      CProg.undefined := rfl
+
+theorem absent_need_destination_is_refused (operations : Operations) (environment : Option Ptr) :
+    effects operations "prime_need_active_enter".toList [.ptr none, .ptr environment] =
+      CProg.undefined := rfl
+
+theorem nullable_need_environment_is_retained (operations : Operations) (guard : Ptr) :
+    effects operations "prime_need_active_enter".toList [.ptr (some guard), .ptr none] =
+      operations.needEnter guard none := rfl
+
+theorem context_entry_arity_is_checked (operations : Operations) :
+    (contextRecord operations).invoke [] = CProg.undefined := rfl
+
+theorem context_cleanup_keeps_actual_address (operations : Operations) (layout : RunLayout)
+    (guard : Ptr) (flow : ReadBlock.Flow Context) :
+    cleanup operations layout "prime_eval_stack_context_leave".toList guard flow =
+      operations.contextLeave guard := rfl
+
+theorem branch_callback_keeps_copied_task_address (operations : Operations) (task : Ptr) :
+    effects operations "prime_eval_stack_run_branch".toList [.ptr (some task)] =
+      operations.branchTask task := rfl
+
+theorem branch_callback_does_not_invent_missing_task (operations : Operations) :
+    effects operations "prime_eval_stack_run_branch".toList [] = CProg.undefined := rfl
 
 end Controls
 
@@ -11064,7 +11030,7 @@ def assertions (operations : Operations) (layout : RunLayout) (driver : Option P
 load and the actual void callback. Its break belongs to the switch. -/
 def bindOperations (operations : Operations) (layout : RunLayout)
     (context : Context) (driver : Option Ptr) (task : Ptr) : CProg CVal (ReadBlock.Result Context) := do
-  operations.statistics 262
+  operations.statistics 261
   driverStore layout driver "running_bind_task" (.bool true)
   let space ← CProg.loadPtr (task + layout.taskOffset "space".toList)
   let arena ← CProg.loadPtr (task + layout.taskOffset "arena".toList)
@@ -11079,7 +11045,7 @@ def bindOperations (operations : Operations) (layout : RunLayout)
 No environment snapshot replaces the source's borrowed pointer identity. -/
 def callOperations (operations : Operations) (layout : RunLayout)
     (context : Context) (task : Ptr) : CProg CVal (ReadBlock.Result Context) := do
-  operations.statistics 263
+  operations.statistics 262
   let space ← CProg.loadPtr (task + layout.taskOffset "space".toList)
   let arena ← CProg.loadPtr (task + layout.taskOffset "arena".toList)
   let atom ← CProg.loadPtr (task + layout.taskOffset "atom".toList)
@@ -11087,10 +11053,17 @@ def callOperations (operations : Operations) (layout : RunLayout)
   let fuel ← CProg.loadI32 (task + layout.taskOffset "fuel".toList)
   let preserve ← CProg.loadBool (task + layout.taskOffset "preserve_bindings".toList)
   let seedInitialized ← CProg.loadBool (task + layout.taskOffset "seed_env_initialized".toList)
-  let seed := if seedInitialized then some (task + layout.taskOffset "seed_env".toList) else none
+  let seed ← if seedInitialized then pure (some (task + layout.taskOffset "seed_env".toList)) else do
+    let dynamicIsSeed ← CProg.loadBool (task + layout.taskOffset "dynamic_env_is_seed".toList)
+    pure (if dynamicIsSeed then some (task + layout.taskOffset "dynamic_env".toList) else none)
   let strictIndex ← CProg.loadI32 (task + layout.taskOffset "strict_ready_argument".toList)
   let target ← CProg.loadPtr (task + layout.taskOffset "target".toList)
   operations.call space arena atom etype fuel preserve seed strictIndex target
+  pure (.finished (.broken context))
+
+def branchOperations (operations : Operations) (context : Context) (task : Ptr) :
+    CProg CVal (ReadBlock.Result Context) := do
+  operations.branchTask task
   pure (.finished (.broken context))
 
 /-- Normalization's source effects retain all operands, constructor flow,
@@ -11117,7 +11090,7 @@ def normalizeEffects (operations : Operations) (layout : RunLayout) (task : Ptr)
 complete normalization effect tree. -/
 def normalizeOperations (operations : Operations) (layout : RunLayout)
     (context : Context) (task : Ptr) : CProg CVal (ReadBlock.Result Context) := do
-  operations.statistics 264
+  operations.statistics 263
   normalizeEffects operations layout task
   pure (.finished (.broken context))
 
@@ -11160,6 +11133,7 @@ def dispatch (operations : Operations) (layout : RunLayout) (context : Context)
   if kind = 0 then bindOperations operations layout context driver task
   else if kind = 1 then callOperations operations layout context task
   else if kind = 2 then normalizeOperations operations layout context task
+  else if kind = 3 then branchOperations operations context task
   else pure (.finished (.next context))
 
 /-- Evaluator installation and selected dispatch retain the full completion
@@ -11184,7 +11158,7 @@ def evaluatorBody (operations : Operations) (layout : RunLayout) (context : Cont
   pure (StatementBlock.ObjectBindings.restore "previous_evaluator_id".toList
     (context "previous_evaluator_id".toList) finished)
 
-/-- The Need region keeps the complete by-value result, exact extent check,
+/-- The Need region supplies the actual live destination before entry,
 evaluator installation and complete scoped continuation. A returned callback
 flow reaches cleanup before automatic-region exit and lexical restoration. -/
 def needBody (operations : Operations) (layout : RunLayout) (context : Context)
@@ -11193,8 +11167,7 @@ def needBody (operations : Operations) (layout : RunLayout) (context : Context)
     (fun _ address _ _ => operations.needLeave address)
     "need_guard".toList layout.needCells fun guard => do
       let withGuard := bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard
-      let fields ← operations.needEnter (task + layout.taskOffset "dynamic_env".toList)
-      if fields.length = layout.needCells then CProg.initializeCells guard fields else CProg.undefined
+      operations.needEnter guard (some (task + layout.taskOffset "dynamic_env".toList))
       evaluatorBody operations layout withGuard driver task published
   pure (StatementBlock.ObjectBindings.restore "need_guard".toList (context "need_guard".toList) result)
 
@@ -11245,14 +11218,28 @@ def authorityBody (operations : Operations) (layout : RunLayout) (context : Cont
       prepareBody operations layout withAuthority driver task
   pure (StatementBlock.ObjectBindings.restore "authority".toList (context "authority".toList) result)
 
-/-- The source's full Task copy precedes authority entry. Lexical restoration
+/-- Context cleanup encloses authority and Need cleanup and preserves the
+whole context-service post-state and every saved record cell. -/
+def contextBody (operations : Operations) (layout : RunLayout) (context : Context)
+    (driver : Option Ptr) (task : Ptr) : CProg CVal (ReadBlock.Result Context) := do
+  let result ← StatementBlock.AutomaticRegion.withCleanup operations.region
+    (fun _ address _ _ => operations.contextLeave address)
+    "context".toList layout.contextCells fun guard => do
+      let withContext := bindObject context "context" (runType "PrimeEvalContextGuard") guard
+      let incoming ← CProg.loadPtr (task + layout.taskOffset "context".toList)
+      let fields ← operations.contextEnter incoming
+      if fields.length = layout.contextCells then CProg.initializeCells guard fields else CProg.undefined
+      authorityBody operations layout withContext driver task
+  pure (StatementBlock.ObjectBindings.restore "context".toList (context "context".toList) result)
+
+/-- The source's full Task copy precedes context and authority entry. Lexical restoration
 runs only after the automatic region has inspected the entire inner flow. -/
 def taskBody (operations : Operations) (layout : RunLayout) (context : Context)
     (driver : Option Ptr) : CProg CVal (ReadBlock.Result Context) := do
   let result ← operations.region "task".toList layout.taskCells fun task => do
     let original ← driverPlace layout driver "task"
     CProg.copyCells original task layout.taskCells
-    authorityBody operations layout
+    contextBody operations layout
       (bindObject context "task" (runType "PrimeEvalStackTask") task) driver task
   pure (StatementBlock.ObjectBindings.restore "task".toList (context "task".toList) result)
 
@@ -11465,7 +11452,7 @@ theorem bind_arm_is_complete_operation_tree (operations : Operations) (layout : 
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownCounter : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262)))) :
+      some (.scalar (runType "int") (some (.i32 261)))) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 5)
       context bindArm = bindOperations operations layout context driver task := by
   unfold bindArm
@@ -11476,7 +11463,7 @@ theorem bind_arm_is_complete_operation_tree (operations : Operations) (layout : 
         fun _ => StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 4)
           context _) = _
   simp only [TaskAdmission.ident]
-  rw [statistics_effect operations layout context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" 262 knownCounter]
+  rw [statistics_effect operations layout context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" 261 knownCounter]
   unfold bindOperations
   simp only [Prog.bind_eq]
   congr 1
@@ -11509,19 +11496,49 @@ theorem bind_arm_is_complete_operation_tree (operations : Operations) (layout : 
   rfl
 
 
+private theorem dynamic_seed_keeps_selected_address (operations : Operations) (layout : RunLayout)
+    (context : Context) (task : Ptr)
+    (known : context "task".toList = some (.object (runType "PrimeEvalStackTask") task)) :
+    runRead operations layout context
+      (.conditional (TaskAdmission.taskField "dynamic_env_is_seed")
+        (.unary .address (TaskAdmission.taskField "dynamic_env")) .null) =
+      (CProg.loadBool (task + layout.taskOffset "dynamic_env_is_seed".toList) >>= fun dynamicIsSeed =>
+        pure (.ptr (if dynamicIsSeed then some (task + layout.taskOffset "dynamic_env".toList) else none))) := by
+  change (runRead operations layout context (TaskAdmission.taskField "dynamic_env_is_seed") >>=
+    fun value => truth value >>= fun dynamicIsSeed =>
+      (if dynamicIsSeed then runRead operations layout context
+        (.unary .address (TaskAdmission.taskField "dynamic_env"))
+       else runRead operations layout context .null)) = _
+  rw [task_field_read operations layout context task "dynamic_env_is_seed" known]
+  unfold taskRead
+  rw [boolean_field_uses_actual_offset _ task "dynamic_env_is_seed".toList _ (by rfl)]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc, truth]
+  congr 1
+  funext dynamicIsSeed
+  cases dynamicIsSeed
+  · rfl
+  · simp only [↓reduceIte]
+    exact task_field_address operations layout context task "dynamic_env" .embedded known (by rfl)
+
 private theorem call_seed_keeps_selected_address (operations : Operations) (layout : RunLayout)
     (context : Context) (task : Ptr)
     (known : context "task".toList = some (.object (runType "PrimeEvalStackTask") task)) :
     runRead operations layout context
       (.conditional (TaskAdmission.taskField "seed_env_initialized")
-        (.unary .address (TaskAdmission.taskField "seed_env")) .null) =
+        (.unary .address (TaskAdmission.taskField "seed_env"))
+        (.conditional (TaskAdmission.taskField "dynamic_env_is_seed")
+          (.unary .address (TaskAdmission.taskField "dynamic_env")) .null)) =
       (CProg.loadBool (task + layout.taskOffset "seed_env_initialized".toList) >>= fun initialized =>
-        pure (.ptr (if initialized then some (task + layout.taskOffset "seed_env".toList) else none))) := by
+        if initialized then pure (.ptr (some (task + layout.taskOffset "seed_env".toList))) else
+          CProg.loadBool (task + layout.taskOffset "dynamic_env_is_seed".toList) >>= fun dynamicIsSeed =>
+            pure (.ptr (if dynamicIsSeed then some (task + layout.taskOffset "dynamic_env".toList) else none))) := by
   change (runRead operations layout context (TaskAdmission.taskField "seed_env_initialized") >>=
     fun value => truth value >>= fun initialized =>
       (if initialized then runRead operations layout context
         (.unary .address (TaskAdmission.taskField "seed_env"))
-       else runRead operations layout context .null)) = _
+       else runRead operations layout context
+         (.conditional (TaskAdmission.taskField "dynamic_env_is_seed")
+           (.unary .address (TaskAdmission.taskField "dynamic_env")) .null))) = _
   rw [task_field_read operations layout context task "seed_env_initialized" known]
   unfold taskRead
   rw [boolean_field_uses_actual_offset _ task "seed_env_initialized".toList _ (by rfl)]
@@ -11529,7 +11546,7 @@ private theorem call_seed_keeps_selected_address (operations : Operations) (layo
   congr 1
   funext initialized
   cases initialized
-  · rfl
+  · exact dynamic_seed_keeps_selected_address operations layout context task known
   · simp only [↓reduceIte]
     exact task_field_address operations layout context task "seed_env" .embedded known (by rfl)
 
@@ -11545,7 +11562,9 @@ private theorem call_effect_keeps_nine_loads (operations : Operations) (layout :
           TaskAdmission.taskField "etype", TaskAdmission.taskField "fuel",
           TaskAdmission.taskField "preserve_bindings",
           .conditional (TaskAdmission.taskField "seed_env_initialized")
-            (.unary .address (TaskAdmission.taskField "seed_env")) .null,
+            (.unary .address (TaskAdmission.taskField "seed_env"))
+        (.conditional (TaskAdmission.taskField "dynamic_env_is_seed")
+          (.unary .address (TaskAdmission.taskField "dynamic_env")) .null),
           TaskAdmission.taskField "strict_ready_argument", TaskAdmission.taskField "target"]) =
       (do
         let space ← CProg.loadPtr (task + layout.taskOffset "space".toList)
@@ -11555,7 +11574,9 @@ private theorem call_effect_keeps_nine_loads (operations : Operations) (layout :
         let fuel ← CProg.loadI32 (task + layout.taskOffset "fuel".toList)
         let preserve ← CProg.loadBool (task + layout.taskOffset "preserve_bindings".toList)
         let initialized ← CProg.loadBool (task + layout.taskOffset "seed_env_initialized".toList)
-        let seed := if initialized then some (task + layout.taskOffset "seed_env".toList) else none
+        let seed ← if initialized then pure (some (task + layout.taskOffset "seed_env".toList)) else do
+          let dynamicIsSeed ← CProg.loadBool (task + layout.taskOffset "dynamic_env_is_seed".toList)
+          pure (if dynamicIsSeed then some (task + layout.taskOffset "dynamic_env".toList) else none)
         let strictIndex ← CProg.loadI32 (task + layout.taskOffset "strict_ready_argument".toList)
         let target ← CProg.loadPtr (task + layout.taskOffset "target".toList)
         operations.call space arena atom etype fuel preserve seed strictIndex target) := by
@@ -11569,7 +11590,9 @@ private theorem call_effect_keeps_nine_loads (operations : Operations) (layout :
             runRead operations layout context (TaskAdmission.taskField "preserve_bindings") >>= fun preserve =>
               runRead operations layout context
                 (.conditional (TaskAdmission.taskField "seed_env_initialized")
-                  (.unary .address (TaskAdmission.taskField "seed_env")) .null) >>= fun seed =>
+                  (.unary .address (TaskAdmission.taskField "seed_env"))
+        (.conditional (TaskAdmission.taskField "dynamic_env_is_seed")
+          (.unary .address (TaskAdmission.taskField "dynamic_env")) .null)) >>= fun seed =>
                 runRead operations layout context (TaskAdmission.taskField "strict_ready_argument") >>= fun strictIndex =>
                   runRead operations layout context (TaskAdmission.taskField "target") >>= fun target =>
                     effects operations "metta_call_impl".toList
@@ -11593,7 +11616,7 @@ private theorem call_effect_keeps_nine_loads (operations : Operations) (layout :
     signed_field_uses_actual_offset _ task "strict_ready_argument".toList _ (by rfl),
     pointer_field_uses_actual_offset _ task "target".toList _ (by rfl)]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc,
-    call_callback_keeps_all_nine_source_operands]
+    call_callback_keeps_all_nine_source_operands, BindSchedule.bind_boolean_choice]
 
 /-- The CALL arm compares the real source statement list with its complete
 independent memory/callback tree, including the owning switch break. -/
@@ -11601,20 +11624,20 @@ theorem call_arm_is_complete_operation_tree (operations : Operations) (layout : 
     (context : Context) (task : Ptr) (fuel : Nat)
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownCounter : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263)))) :
+      some (.scalar (runType "int") (some (.i32 262)))) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 3)
       context callArm = callOperations operations layout context task := by
   unfold callArm
   rw [StatementBlock.scoped_effect_keeps_continuation]
   simp only [TaskAdmission.ident]
-  rw [statistics_effect operations layout context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" 263 knownCounter]
+  rw [statistics_effect operations layout context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" 262 knownCounter]
   unfold callOperations
   simp only [Prog.bind_eq]
   congr 1
   funext ignored
   rw [StatementBlock.scoped_effect_keeps_continuation]
   rw [call_effect_keeps_nine_loads operations layout context task knownTask]
-  simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.bind_assoc, BindSchedule.bind_boolean_choice]
   rfl
 
 
@@ -11839,7 +11862,7 @@ theorem normalize_arm_is_complete_operation_tree (operations : Operations) (layo
     (context : Context) (task : Ptr) (fuel : Nat)
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownCounter : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4)))) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 5)
@@ -11853,7 +11876,7 @@ theorem normalize_arm_is_complete_operation_tree (operations : Operations) (layo
           context _) = _
   simp only [TaskAdmission.ident]
   rw [statistics_effect operations layout context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE"
-    264 knownCounter]
+    263 knownCounter]
   unfold normalizeOperations normalizeEffects
   simp only [Prog.bind_eq]
   congr 1
@@ -11897,16 +11920,38 @@ theorem normalize_arm_is_complete_operation_tree (operations : Operations) (layo
       ReadBlock.resume, StatementBlock.executeScopedWith.eq_def]
 
 
+private theorem branch_arm_is_complete_operation_tree (operations : Operations) (layout : RunLayout)
+    (context : Context) (task : Ptr) (fuel : Nat)
+    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task)) :
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 2)
+      context branchArm = branchOperations operations context task := by
+  unfold branchArm
+  rw [StatementBlock.scoped_effect_keeps_continuation,
+    effect_keeps_arguments operations layout context "prime_eval_stack_run_branch".toList _ (by decide)]
+  simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
+  have taskAddress := StatementBlock.ObjectBindings.local_object_address_does_not_read_value
+    (profile operations layout) emptyLayout context "task".toList (runType "PrimeEvalStackTask") task knownTask
+  change runRead operations layout context (.unary .address (TaskAdmission.ident "task")) = _ at taskAddress
+  change (runRead operations layout context (.unary .address (TaskAdmission.ident "task")) >>=
+    fun address => effects operations "prime_eval_stack_run_branch".toList [address] >>= fun _ =>
+      StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 1) context [.break]) = _
+  rw [taskAddress]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
+  rfl
+
 private def taskCases : List (CExpr × List CStatement) :=
   [(TaskAdmission.ident "PRIME_EVAL_STACK_TASK_BIND", bindArm),
     (TaskAdmission.ident "PRIME_EVAL_STACK_TASK_CALL", callArm),
-    (TaskAdmission.ident "PRIME_EVAL_STACK_TASK_NORMALIZE", normalizeArm)]
+    (TaskAdmission.ident "PRIME_EVAL_STACK_TASK_NORMALIZE", normalizeArm),
+    (TaskAdmission.ident "PRIME_EVAL_STACK_TASK_BRANCH", branchArm)]
 
 private def selectedPlan (kind : UInt32) : List CStatement :=
-  if kind = 0 then [.block bindArm, .block callArm, .block normalizeArm, .block []]
-  else if kind = 1 then [.block callArm, .block normalizeArm, .block []]
-  else if kind = 2 then [.block normalizeArm, .block []]
+  if kind = 0 then [.block bindArm, .block callArm, .block normalizeArm, .block branchArm, .block []]
+  else if kind = 1 then [.block callArm, .block normalizeArm, .block branchArm, .block []]
+  else if kind = 2 then [.block normalizeArm, .block branchArm, .block []]
+  else if kind = 3 then [.block branchArm, .block []]
   else [.block []]
+
 
 /-- Static enum planning preserves the source's full fall-through suffix,
 including its default block; only execution's break will suppress that suffix. -/
@@ -11925,9 +11970,15 @@ private theorem case_plan_keeps_actual_fallthrough (kind : UInt32) :
       · simp [StatementBlock.integerSwitchBody, LocalBlock.switchBody?, ScalarRead.expression,
           ScalarRead.equal?, scalar, resolved, caseConstants, taskCases, TaskAdmission.ident,
           selectedPlan, two]
-      · simp [StatementBlock.integerSwitchBody, LocalBlock.switchBody?, ScalarRead.expression,
-          ScalarRead.equal?, scalar, resolved, caseConstants, taskCases, TaskAdmission.ident,
-          selectedPlan, zero, one, two]
+      · by_cases three : kind = 3
+        · simp [StatementBlock.integerSwitchBody, LocalBlock.switchBody?, ScalarRead.expression,
+            ScalarRead.equal?, scalar, resolved, caseConstants, taskCases, TaskAdmission.ident,
+            selectedPlan, three]
+        · simp [StatementBlock.integerSwitchBody, LocalBlock.switchBody?, ScalarRead.expression,
+            ScalarRead.equal?, scalar, resolved, caseConstants, taskCases, TaskAdmission.ident,
+            selectedPlan, zero, one, two, three]
+
+
 
 
 /-- The source retains every fall-through arm but its actual break suppresses
@@ -11938,11 +11989,11 @@ private theorem selected_plan_is_complete_tree (operations : Operations) (layout
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4)))) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 6)
@@ -11950,6 +12001,7 @@ private theorem selected_plan_is_complete_tree (operations : Operations) (layout
       (if kind = 0 then bindOperations operations layout context driver task
        else if kind = 1 then callOperations operations layout context task
        else if kind = 2 then normalizeOperations operations layout context task
+       else if kind = 3 then branchOperations operations context task
        else pure (.finished (.next context))) := by
   by_cases zero : kind = 0
   · simp only [selectedPlan, zero, ↓reduceIte]
@@ -11960,15 +12012,22 @@ private theorem selected_plan_is_complete_tree (operations : Operations) (layout
     · simp [selectedPlan, one]
       rw [StatementBlock.scoped_nested_block_keeps_flow _ _ _ _ _ _ _ (by rfl),
         call_arm_is_complete_operation_tree operations layout context task (fuel + 2) knownTask knownCall]
-      simp only [callOperations, Prog.bind_eq, Prog.bind_assoc, Prog.pure_eq, Prog.ret_bind, ReadBlock.resume]
+      simp only [callOperations, Prog.bind_eq, Prog.bind_assoc, Prog.pure_eq, Prog.ret_bind, ReadBlock.resume, BindSchedule.bind_boolean_choice]
     · by_cases two : kind = 2
       · simp [selectedPlan, two]
         rw [StatementBlock.scoped_nested_block_keeps_flow _ _ _ _ _ _ _ (by rfl),
           normalize_arm_is_complete_operation_tree operations layout context task fuel knownTask knownNormalize knownCapacity]
         simp only [normalizeOperations, Prog.bind_eq, Prog.bind_assoc, Prog.pure_eq, Prog.ret_bind, ReadBlock.resume]
-      · simp only [selectedPlan, zero, one, two, ↓reduceIte]
-        rw [StatementBlock.scoped_nested_block_keeps_flow _ _ _ _ _ _ _ (by rfl)]
-        simp only [StatementBlock.executeScopedWith.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, ReadBlock.resume]
+      · by_cases three : kind = 3
+        · simp only [selectedPlan, if_neg zero, if_neg one, if_neg two, if_pos three]
+          rw [StatementBlock.scoped_nested_block_keeps_flow _ _ _ _ _ _ _ (by rfl),
+            branch_arm_is_complete_operation_tree operations layout context task (fuel + 3) knownTask]
+          simp only [branchOperations, Prog.bind_eq, Prog.bind_assoc, Prog.pure_eq, Prog.ret_bind, ReadBlock.resume]
+        · simp only [selectedPlan, zero, one, two, three, ↓reduceIte]
+          rw [StatementBlock.scoped_nested_block_keeps_flow _ _ _ _ _ _ _ (by rfl)]
+          simp only [StatementBlock.executeScopedWith.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, ReadBlock.resume]
+
+
 
 
 /-- The nested arrow retains Task.target's actual pointer and OutcomeSet's
@@ -12050,11 +12109,11 @@ private theorem dispatch_statement_keeps_complete_tree (operations : Operations)
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4)))) :
     StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 7)
@@ -12190,7 +12249,7 @@ private def completionStatements : List CStatement :=
    .assign (TaskAdmission.driverField "running_task") (.bool false)]
 
 private theorem completion_is_actual_source_suffix :
-    runSyntax.body.drop 15 = completionStatements := rfl
+    runSyntax.body.drop 17 = completionStatements := rfl
 
 /-- Publication reads the live count before retirement. The final flag write
 occurs before enclosing guard cleanup; no effect is moved across that order. -/
@@ -12276,28 +12335,32 @@ private theorem evaluator_read_keeps_global_word (operations : Operations) (layo
     "g_prime_need_evaluator_id".toList 0 (by rfl)]
   rfl
 
-private def needInitializer : CExpr :=
-  .call "prime_need_active_enter".toList [.unary .address (TaskAdmission.taskField "dynamic_env")]
+private def needEntry : CExpr :=
+  .call "prime_need_active_enter".toList
+    [.unary .address (TaskAdmission.ident "need_guard"),
+     .unary .address (TaskAdmission.taskField "dynamic_env")]
 
-/-- By-value Need entry keeps every returned guard cell and the exact source
-dynamic-environment address. Ordinary overlay remains the supplied service. -/
-private theorem need_initializer_retains_every_guard_cell (operations : Operations) (layout : RunLayout)
-    (context : Context) (task guard : Ptr)
-    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task)) :
-    StatementBlock.ObjectBindings.initializeRecord (profile operations layout) emptyLayout context
-      (runType "PrimeNeedActiveGuard") layout.needCells guard needInitializer =
-      (operations.needEnter (task + layout.taskOffset "dynamic_env".toList) >>= fun fields =>
-        if fields.length = layout.needCells then CProg.initializeCells guard fields else CProg.undefined) := by
-  unfold needInitializer
-  rw [StatementBlock.ObjectBindings.record_call_keeps_arguments_and_complete_return
-    (profile operations layout) emptyLayout context (runType "PrimeNeedActiveGuard")
-    layout.needCells guard "prime_need_active_enter".toList _ (needRecord operations) (by rfl) (by rfl)]
+/-- The actual void entry gets both live addresses without reading the
+uninitialized guard record as an rvalue or inventing returned guard cells. -/
+private theorem need_entry_retains_destination_and_environment (operations : Operations)
+    (layout : RunLayout) (context : Context) (task guard : Ptr)
+    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
+    (knownGuard : context "need_guard".toList = some (.object (runType "PrimeNeedActiveGuard") guard)) :
+    (services operations layout).effect emptyLayout context needEntry =
+      operations.needEnter guard (some (task + layout.taskOffset "dynamic_env".toList)) := by
+  unfold needEntry
+  rw [effect_keeps_arguments operations layout context "prime_need_active_enter".toList _ (by decide)]
   simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
-  change (runRead operations layout context
-      (.unary .address (TaskAdmission.taskField "dynamic_env")) >>= fun value =>
-    (needRecord operations).invoke [value] >>= fun fields =>
-      if fields.length = layout.needCells then CProg.initializeCells guard fields else CProg.undefined) = _
-  rw [task_field_address operations layout context task "dynamic_env" .embedded knownTask (by rfl)]
+  change (runRead operations layout context (.unary .address (TaskAdmission.ident "need_guard")) >>=
+    fun actualGuard => runRead operations layout context
+      (.unary .address (TaskAdmission.taskField "dynamic_env")) >>= fun environment =>
+        effects operations "prime_need_active_enter".toList [actualGuard, environment]) = _
+  have guardAddress := StatementBlock.ObjectBindings.local_object_address_does_not_read_value
+    (profile operations layout) emptyLayout context "need_guard".toList
+    (runType "PrimeNeedActiveGuard") guard knownGuard
+  change runRead operations layout context (.unary .address (TaskAdmission.ident "need_guard")) = _ at guardAddress
+  rw [guardAddress,
+    task_field_address operations layout context task "dynamic_env" .embedded knownTask (by rfl)]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind]
   rfl
 
@@ -12327,6 +12390,33 @@ private theorem authority_initializer_retains_both_saved_cells (operations : Ope
   rw [boolean_field_uses_actual_offset _ task "pure_authority".toList _ (by rfl)]
   simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
   rfl
+
+
+private def contextInitializer : CExpr :=
+  .call "prime_eval_stack_context_enter".toList [TaskAdmission.taskField "context"]
+private theorem context_initializer_retains_every_saved_cell (operations : Operations)
+    (layout : RunLayout) (context : Context) (task guard : Ptr)
+    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task)) :
+    StatementBlock.ObjectBindings.initializeRecord (profile operations layout) emptyLayout context
+      (runType "PrimeEvalContextGuard") layout.contextCells guard contextInitializer =
+      (CProg.loadPtr (task + layout.taskOffset "context".toList) >>= fun incoming =>
+        operations.contextEnter incoming >>= fun fields =>
+          if fields.length = layout.contextCells then CProg.initializeCells guard fields else CProg.undefined) := by
+  unfold contextInitializer
+  rw [StatementBlock.ObjectBindings.record_call_keeps_arguments_and_complete_return
+    (profile operations layout) emptyLayout context (runType "PrimeEvalContextGuard")
+    layout.contextCells guard "prime_eval_stack_context_enter".toList _ (contextRecord operations) (by rfl) (by rfl)]
+  simp only [argumentsWithNames.eq_def, Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
+  change (runRead operations layout context (TaskAdmission.taskField "context") >>= fun value =>
+    (contextRecord operations).invoke [value] >>= fun fields =>
+      if fields.length = layout.contextCells then CProg.initializeCells guard fields else CProg.undefined) = _
+  rw [task_field_read operations layout context task "context" knownTask]
+  unfold taskRead
+  rw [pointer_field_uses_actual_offset _ task "context".toList _ (by rfl)]
+  simp only [Prog.bind_eq, Prog.pure_eq, Prog.ret_bind, Prog.bind_assoc]
+  rfl
+
+
 
 
 private theorem evaluator_assignment_keeps_live_reader (operations : Operations) (layout : RunLayout)
@@ -12372,7 +12462,7 @@ private def evaluatorStatements : List CStatement :=
    .switch (TaskAdmission.taskField "kind") taskCases []] ++ completionStatements
 
 private theorem evaluator_is_actual_source_suffix :
-    runSyntax.body.drop 12 = evaluatorStatements := rfl
+    runSyntax.body.drop 14 = evaluatorStatements := rfl
 
 
 /-- Every dispatch arm retains the same lexical context beneath its
@@ -12392,11 +12482,16 @@ private theorem dispatch_continuation_congr (operations : Operations) (layout : 
       Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, agreement]
   · split
     · simp only [callOperations, Prog.bind_eq, Prog.bind_assoc,
-        Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, agreement]
+        Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, agreement, BindSchedule.bind_boolean_choice]
     · split
       · simp only [normalizeOperations, Prog.bind_eq, Prog.bind_assoc,
           Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, agreement]
-      · simp only [Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, ReadBlock.resume, agreement]
+      · split
+        · simp only [branchOperations, Prog.bind_eq, Prog.bind_assoc,
+            Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, agreement]
+        · simp only [Prog.pure_eq, Prog.ret_bind, StatementBlock.resumeSwitch, ReadBlock.resume, agreement]
+
+
 
 
 private theorem previous_evaluator_declaration_keeps_read_and_scope (operations : Operations)
@@ -12452,11 +12547,11 @@ private theorem installed_evaluator_keeps_dispatch_and_completion (operations : 
     (knownPublished : context "published_before".toList =
       some (.scalar (runType "CettaCount") (some (.u64 published))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
@@ -12494,11 +12589,11 @@ private theorem installed_evaluator_keeps_complete_readout (operations : Operati
     (knownPublished : context "published_before".toList =
       some (.scalar (runType "CettaCount") (some (.u64 published))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none)
@@ -12522,11 +12617,11 @@ private theorem saved_evaluator_suffix_keeps_flow_readout (operations : Operatio
     (knownPublished : context "published_before".toList =
       some (.scalar (runType "CettaCount") (some (.u64 published))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none)
@@ -12594,17 +12689,17 @@ private theorem saved_evaluator_suffix_keeps_flow_readout (operations : Operatio
     rewrite [Function.update_of_ne distinct_publishedIn]
     exact knownPublished
   have bindIn : (bindScalar context "previous_evaluator_id" (runType "uint64_t") (.u64 previous)) "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))) := by
+      some (.scalar (runType "int") (some (.i32 261))) := by
     unfold bindScalar
     rewrite [Function.update_of_ne distinct_bindIn]
     exact knownBind
   have callIn : (bindScalar context "previous_evaluator_id" (runType "uint64_t") (.u64 previous)) "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))) := by
+      some (.scalar (runType "int") (some (.i32 262))) := by
     unfold bindScalar
     rewrite [Function.update_of_ne distinct_callIn]
     exact knownCall
   have normalizeIn : (bindScalar context "previous_evaluator_id" (runType "uint64_t") (.u64 previous)) "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))) := by
+      some (.scalar (runType "int") (some (.i32 263))) := by
     unfold bindScalar
     rewrite [Function.update_of_ne distinct_normalizeIn]
     exact knownNormalize
@@ -12637,11 +12732,11 @@ private theorem evaluator_scope_keeps_complete_continuation (operations : Operat
     (knownPublished : context "published_before".toList =
       some (.scalar (runType "CettaCount") (some (.u64 published))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
@@ -12671,65 +12766,42 @@ private theorem object_slot_keeps_other (context : Context) (slot name : String)
   exact distinct (String.toList_inj.mp same)
 
 private def needStatements : List CStatement :=
-  .declareCleanup (runType "PrimeNeedActiveGuard") "need_guard".toList (some needInitializer)
-    "prime_need_active_leave".toList :: evaluatorStatements
+  .declareCleanup (runType "PrimeNeedActiveGuard") "need_guard".toList none
+    "prime_need_active_leave".toList :: .effect needEntry :: evaluatorStatements
 
 private theorem need_is_actual_source_suffix :
-    runSyntax.body.drop 11 = needStatements := rfl
+    runSyntax.body.drop 12 = needStatements := rfl
 
-/-- Need introduction retains the complete initialized guard, callback and
-unprojected continuation, before lexical restoration. -/
+/-- The cleanup declaration creates a live destination before the separate
+void entry. It performs no by-value construction or speculative guard read. -/
 private theorem need_declaration_keeps_entire_guard (operations : Operations) (layout : RunLayout)
-    (context : Context) (task : Ptr)
-    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
-    (continuation : Context → CProg CVal (ReadBlock.Result Context)) :
+    (context : Context) (continuation : Context → CProg CVal (ReadBlock.Result Context)) :
     StatementBlock.ObjectBindings.declarationCleanup (profile operations layout)
       operations.region (cleanup operations layout) emptyLayout context
-      (runType "PrimeNeedActiveGuard") "need_guard".toList (some needInitializer)
+      (runType "PrimeNeedActiveGuard") "need_guard".toList none
       "prime_need_active_leave".toList continuation =
       (StatementBlock.AutomaticRegion.withCleanup operations.region
         (fun _ address _ _ => operations.needLeave address)
-        "need_guard".toList layout.needCells (fun guard => do
-          let fields ← operations.needEnter (task + layout.taskOffset "dynamic_env".toList)
-          if fields.length = layout.needCells then CProg.initializeCells guard fields
-          else CProg.undefined
+        "need_guard".toList layout.needCells (fun guard =>
           continuation (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)) >>=
         fun result => pure (StatementBlock.ObjectBindings.restore "need_guard".toList
           (context "need_guard".toList) result)) := by
-  rewrite [StatementBlock.ObjectBindings.cleanup_declaration_keeps_region_and_callback
+  rw [StatementBlock.ObjectBindings.cleanup_declaration_keeps_region_and_callback
     (profile operations layout) operations.region (cleanup operations layout) emptyLayout context
     (runType "PrimeNeedActiveGuard") "need_guard".toList "prime_need_active_leave".toList
-    (some needInitializer) layout.needCells (by rfl)]
-  rewrite [StatementBlock.ObjectBindings.initialized_record_keeps_initializer_region_and_flow
+    none layout.needCells (by rfl)]
+  rw [StatementBlock.ObjectBindings.declared_record_keeps_entry_and_continuation
     (profile operations layout)
     (StatementBlock.AutomaticRegion.withCleanup operations.region
       (fun _ address _ flow => cleanup operations layout "prime_need_active_leave".toList address flow))
-    emptyLayout context (runType "PrimeNeedActiveGuard") "need_guard".toList layout.needCells
-    needInitializer (by rfl)]
-  apply congrArg (fun body =>
-    StatementBlock.AutomaticRegion.withCleanup operations.region
-      (fun _ address _ _ => operations.needLeave address)
-      "need_guard".toList layout.needCells body >>= fun result =>
-        pure (StatementBlock.ObjectBindings.restore "need_guard".toList
-          (context "need_guard".toList) result))
-  funext guard
-  have taskIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
-      "task".toList = some (.object (runType "PrimeEvalStackTask") task) :=
-    (object_slot_keeps_other context "need_guard" "task" _ guard (by decide)).trans knownTask
-  change (StatementBlock.ObjectBindings.initializeRecord (profile operations layout) emptyLayout
-    (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
-    (runType "PrimeNeedActiveGuard") layout.needCells guard needInitializer >>= fun _ =>
-      continuation (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)) = _
-  rewrite [need_initializer_retains_every_guard_cell operations layout
-    (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard) task guard taskIn]
-  simp only [Prog.bind_eq, Prog.bind_assoc]
-  congr 1
-  funext fields
-  split <;> rfl
+    emptyLayout context (runType "PrimeNeedActiveGuard") "need_guard".toList layout.needCells (by rfl)]
+  rfl
 
-/-- The full ordinary Need guard is initialized in its own automatic region.
-Its cleanup follows evaluator restoration and Task retirement, before lexical
-restoration and automatic-region exit. Every guard cell remains in the tree. -/
+
+/-- Ordinary Need entry receives its live automatic destination. Its cleanup
+follows evaluator restoration and Task retirement, before lexical restoration
+and automatic-region exit. The provider's guard writes remain a separate
+realization obligation. -/
 private theorem need_scope_keeps_full_guard_and_flow (operations : Operations) (layout : RunLayout)
     (context : Context) (driver : Option Ptr) (task : Ptr) (published : UInt64) (fuel : Nat)
     (knownDriver : context "driver".toList =
@@ -12738,22 +12810,22 @@ private theorem need_scope_keeps_full_guard_and_flow (operations : Operations) (
     (knownPublished : context "published_before".toList =
       some (.scalar (runType "CettaCount") (some (.u64 published))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 10)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 11)
       context needStatements = needBody operations layout context driver task published := by
   unfold needStatements
   rewrite [StatementBlock.scoped_cleanup_declaration_retains_provider]
   have provider : (services operations layout).declarationCleanup =
       StatementBlock.ObjectBindings.declarationCleanup (profile operations layout)
         operations.region (cleanup operations layout) := rfl
-  rewrite [provider, need_declaration_keeps_entire_guard operations layout context task knownTask]
+  rewrite [provider, need_declaration_keeps_entire_guard operations layout context]
   unfold needBody
   apply congrArg (fun body => StatementBlock.AutomaticRegion.withCleanup operations.region
     (fun _ address _ _ => operations.needLeave address) "need_guard".toList layout.needCells body >>=
@@ -12770,13 +12842,13 @@ private theorem need_scope_keeps_full_guard_and_flow (operations : Operations) (
       "published_before".toList = some (.scalar (runType "CettaCount") (some (.u64 published))) :=
     (object_slot_keeps_other context "need_guard" "published_before" _ guard (by decide)).trans knownPublished
   have bindIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 262))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 261))) :=
     (object_slot_keeps_other context "need_guard" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" _ guard (by decide)).trans knownBind
   have callIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 263))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 262))) :=
     (object_slot_keeps_other context "need_guard" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" _ guard (by decide)).trans knownCall
   have normalizeIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 264))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 263))) :=
     (object_slot_keeps_other context "need_guard" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE" _ guard (by decide)).trans knownNormalize
   have capacityIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
       "CETTA_EVAL_INCOMPLETE_CAPACITY".toList = some (.scalar (runType "int") (some (.i32 4))) :=
@@ -12784,11 +12856,15 @@ private theorem need_scope_keeps_full_guard_and_flow (operations : Operations) (
   have outsideIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
       "g_prime_need_evaluator_id".toList = none :=
     (object_slot_keeps_other context "need_guard" "g_prime_need_evaluator_id" _ guard (by decide)).trans outside
-  apply congrArg (fun next : CProg CVal (ReadBlock.Result Context) => operations.needEnter
-    (task + layout.taskOffset "dynamic_env".toList) >>= fun fields =>
-      if fields.length = layout.needCells then
-        CProg.initializeCells guard fields >>= fun _ => next
-      else CProg.undefined >>= fun _ => next)
+  have guardIn : (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard)
+      "need_guard".toList = some (.object (runType "PrimeNeedActiveGuard") guard) := by
+    unfold bindObject
+    exact Function.update_self _ _ _
+  rw [StatementBlock.scoped_effect_keeps_continuation,
+    need_entry_retains_destination_and_environment operations layout
+      (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard) task guard taskIn guardIn]
+  apply congrArg (fun next : CProg CVal (ReadBlock.Result Context) =>
+    operations.needEnter guard (some (task + layout.taskOffset "dynamic_env".toList)) >>= fun _ => next)
   exact evaluator_scope_keeps_complete_continuation operations layout
     (bindObject context "need_guard" (runType "PrimeNeedActiveGuard") guard) driver task published fuel
     driverIn taskIn publishedIn bindIn callIn normalizeIn capacityIn outsideIn
@@ -12888,7 +12964,7 @@ private def publishedStatements : List CStatement :=
   .declare (runType "CettaCount") "published_before".toList publishedInitializer :: needStatements
 
 private theorem publication_is_actual_source_suffix :
-    runSyntax.body.drop 10 = publishedStatements := rfl
+    runSyntax.body.drop 11 = publishedStatements := rfl
 
 /-- Publication initialization, Need cleanup and the saved evaluator scope
 compose on the complete flow without erasing any local binding early. -/
@@ -12898,15 +12974,15 @@ private theorem publication_scope_keeps_complete_continuation (operations : Oper
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 11)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 12)
       context publishedStatements = publishedBody operations layout context driver task := by
   unfold publishedStatements
   rewrite [StatementBlock.scoped_initialized_declaration_keeps_continuation]
@@ -12923,13 +12999,13 @@ private theorem publication_scope_keeps_complete_continuation (operations : Oper
       "task".toList = some (.object (runType "PrimeEvalStackTask") task) :=
     (scalar_slot_keeps_other context "published_before" "task" _ _ (by decide)).trans knownTask
   have bindIn : (bindScalar context "published_before" (runType "CettaCount") (.u64 published))
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 262))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 261))) :=
     (scalar_slot_keeps_other context "published_before" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" _ _ (by decide)).trans knownBind
   have callIn : (bindScalar context "published_before" (runType "CettaCount") (.u64 published))
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 263))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 262))) :=
     (scalar_slot_keeps_other context "published_before" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" _ _ (by decide)).trans knownCall
   have normalizeIn : (bindScalar context "published_before" (runType "CettaCount") (.u64 published))
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 264))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 263))) :=
     (scalar_slot_keeps_other context "published_before" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE" _ _ (by decide)).trans knownNormalize
   have capacityIn : (bindScalar context "published_before" (runType "CettaCount") (.u64 published))
       "CETTA_EVAL_INCOMPLETE_CAPACITY".toList = some (.scalar (runType "int") (some (.i32 4))) :=
@@ -13084,15 +13160,15 @@ private theorem preparation_writes_keep_original_order (operations : Operations)
     (knownDriver : context "driver".toList =
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task)) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 14)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 15)
       context (preparationStatements ++ publishedStatements) =
       (driverStore layout driver "task_ready" (.bool false) >>= fun _ =>
         driverStore layout driver "active_task" (.ptr (some task)) >>= fun _ =>
           driverStore layout driver "running_task" (.bool true) >>= fun _ =>
-            StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 11)
+            StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 12)
               context publishedStatements) := by
   have agreement := StatementBlock.scoped_assignment_prefix_keeps_operations
-    (services operations layout) emptyLayout 0 (fuel + 11) context
+    (services operations layout) emptyLayout 0 (fuel + 12) context
     (preparationAssignments layout driver task) publishedStatements
     (preparation_assignments_keep_complete_context operations layout context driver task knownDriver knownTask)
   exact agreement
@@ -13104,7 +13180,7 @@ private def prepareStatements : List CStatement :=
       (preparationStatements ++ publishedStatements)
 
 private theorem preparation_is_actual_source_suffix :
-    runSyntax.body.drop 6 = prepareStatements := rfl
+    runSyntax.body.drop 7 = prepareStatements := rfl
 
 /-- Clearing the original queued record, installing the copied Task as active
 and publication/Need scopes keep their exact source order and full flow. -/
@@ -13114,15 +13190,15 @@ private theorem prepare_scope_keeps_complete_continuation (operations : Operatio
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 15)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 16)
       context prepareStatements = prepareBody operations layout context driver task := by
   unfold prepareStatements
   rewrite [StatementBlock.scoped_effect_keeps_continuation,
@@ -13190,7 +13266,7 @@ private def authorityStatements : List CStatement :=
     "prime_eval_authority_leave".toList :: prepareStatements
 
 private theorem authority_is_actual_source_suffix :
-    runSyntax.body.drop 5 = authorityStatements := rfl
+    runSyntax.body.drop 6 = authorityStatements := rfl
 
 /-- The complete saved authority region surrounds all preparation, dispatch,
 Task retirement and Need cleanup; its own cleanup remains last in that scope. -/
@@ -13200,15 +13276,15 @@ private theorem authority_scope_keeps_complete_continuation (operations : Operat
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 16)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 17)
       context authorityStatements = authorityBody operations layout context driver task := by
   unfold authorityStatements
   rewrite [StatementBlock.scoped_cleanup_declaration_retains_provider]
@@ -13229,13 +13305,13 @@ private theorem authority_scope_keeps_complete_continuation (operations : Operat
       "task".toList = some (.object (runType "PrimeEvalStackTask") task) :=
     (object_slot_keeps_other context "authority" "task" _ guard (by decide)).trans knownTask
   have bindIn : (bindObject context "authority" (runType "PrimeEvalAuthorityGuard") guard)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 262))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 261))) :=
     (object_slot_keeps_other context "authority" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" _ guard (by decide)).trans knownBind
   have callIn : (bindObject context "authority" (runType "PrimeEvalAuthorityGuard") guard)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 263))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 262))) :=
     (object_slot_keeps_other context "authority" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" _ guard (by decide)).trans knownCall
   have normalizeIn : (bindObject context "authority" (runType "PrimeEvalAuthorityGuard") guard)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 264))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 263))) :=
     (object_slot_keeps_other context "authority" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE" _ guard (by decide)).trans knownNormalize
   have capacityIn : (bindObject context "authority" (runType "PrimeEvalAuthorityGuard") guard)
       "CETTA_EVAL_INCOMPLETE_CAPACITY".toList = some (.scalar (runType "int") (some (.i32 4))) :=
@@ -13255,6 +13331,126 @@ private theorem authority_scope_keeps_complete_continuation (operations : Operat
 
 /-- The full by-value Task initializer copies all cells from the queued record
 before the automatic Task's complete inner continuation begins. -/
+private theorem context_declaration_keeps_every_saved_cell (operations : Operations)
+    (layout : RunLayout) (context : Context) (task : Ptr)
+    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
+    (continuation : Context → CProg CVal (ReadBlock.Result Context)) :
+    StatementBlock.ObjectBindings.declarationCleanup (profile operations layout)
+      operations.region (cleanup operations layout) emptyLayout context
+      (runType "PrimeEvalContextGuard") "context".toList (some contextInitializer)
+      "prime_eval_stack_context_leave".toList continuation =
+      (StatementBlock.AutomaticRegion.withCleanup operations.region
+        (fun _ address _ _ => operations.contextLeave address)
+        "context".toList layout.contextCells (fun guard => do
+          let incoming ← CProg.loadPtr (task + layout.taskOffset "context".toList)
+          let fields ← operations.contextEnter incoming
+          if fields.length = layout.contextCells then CProg.initializeCells guard fields else CProg.undefined
+          continuation (bindObject context "context" (runType "PrimeEvalContextGuard") guard)) >>=
+        fun result => pure (StatementBlock.ObjectBindings.restore "context".toList
+          (context "context".toList) result)) := by
+  rewrite [StatementBlock.ObjectBindings.cleanup_declaration_keeps_region_and_callback
+    (profile operations layout) operations.region (cleanup operations layout) emptyLayout context
+    (runType "PrimeEvalContextGuard") "context".toList "prime_eval_stack_context_leave".toList
+    (some contextInitializer) layout.contextCells (by rfl)]
+  rewrite [StatementBlock.ObjectBindings.initialized_record_keeps_initializer_region_and_flow
+    (profile operations layout)
+    (StatementBlock.AutomaticRegion.withCleanup operations.region
+      (fun _ address _ flow => cleanup operations layout "prime_eval_stack_context_leave".toList address flow))
+    emptyLayout context (runType "PrimeEvalContextGuard") "context".toList layout.contextCells
+    contextInitializer (by rfl)]
+  apply congrArg (fun body =>
+    StatementBlock.AutomaticRegion.withCleanup operations.region
+      (fun _ address _ _ => operations.contextLeave address)
+      "context".toList layout.contextCells body >>= fun result =>
+        pure (StatementBlock.ObjectBindings.restore "context".toList
+          (context "context".toList) result))
+  funext guard
+  have taskIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "task".toList = some (.object (runType "PrimeEvalStackTask") task) :=
+    (object_slot_keeps_other context "context" "task" _ guard (by decide)).trans knownTask
+  change (StatementBlock.ObjectBindings.initializeRecord (profile operations layout) emptyLayout
+    (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+    (runType "PrimeEvalContextGuard") layout.contextCells guard contextInitializer >>= fun _ =>
+      continuation (bindObject context "context" (runType "PrimeEvalContextGuard") guard)) = _
+  rewrite [context_initializer_retains_every_saved_cell operations layout
+    (bindObject context "context" (runType "PrimeEvalContextGuard") guard) task guard taskIn]
+  simp only [Prog.bind_eq, Prog.bind_assoc]
+  congr 1
+  funext incoming
+  congr 1
+  funext fields
+  split <;> rfl
+
+
+
+
+private def contextStatements : List CStatement :=
+  .declareCleanup (runType "PrimeEvalContextGuard") "context".toList (some contextInitializer)
+    "prime_eval_stack_context_leave".toList :: authorityStatements
+
+private theorem context_is_actual_source_suffix :
+    runSyntax.body.drop 5 = contextStatements := rfl
+
+private theorem context_scope_keeps_complete_continuation (operations : Operations)
+    (layout : RunLayout) (context : Context) (driver : Option Ptr) (task : Ptr) (fuel : Nat)
+    (knownDriver : context "driver".toList =
+      some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
+    (knownTask : context "task".toList = some (.object (runType "PrimeEvalStackTask") task))
+    (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
+      some (.scalar (runType "int") (some (.i32 261))))
+    (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
+      some (.scalar (runType "int") (some (.i32 262))))
+    (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
+      some (.scalar (runType "int") (some (.i32 263))))
+    (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
+      some (.scalar (runType "int") (some (.i32 4))))
+    (outside : context "g_prime_need_evaluator_id".toList = none) :
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 18)
+      context contextStatements = contextBody operations layout context driver task := by
+  unfold contextStatements
+  rewrite [StatementBlock.scoped_cleanup_declaration_retains_provider]
+  have provider : (services operations layout).declarationCleanup =
+      StatementBlock.ObjectBindings.declarationCleanup (profile operations layout)
+        operations.region (cleanup operations layout) := rfl
+  rewrite [provider, context_declaration_keeps_every_saved_cell operations layout context task knownTask]
+  unfold contextBody
+  apply congrArg (fun body => StatementBlock.AutomaticRegion.withCleanup operations.region
+    (fun _ address _ _ => operations.contextLeave address) "context".toList layout.contextCells body >>=
+      fun result => pure (StatementBlock.ObjectBindings.restore "context".toList
+        (context "context".toList) result))
+  funext guard
+  have driverIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "driver".toList = some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))) :=
+    (object_slot_keeps_other context "context" "driver" _ guard (by decide)).trans knownDriver
+  have taskIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "task".toList = some (.object (runType "PrimeEvalStackTask") task) :=
+    (object_slot_keeps_other context "context" "task" _ guard (by decide)).trans knownTask
+  have bindIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 261))) :=
+    (object_slot_keeps_other context "context" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" _ guard (by decide)).trans knownBind
+  have callIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 262))) :=
+    (object_slot_keeps_other context "context" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" _ guard (by decide)).trans knownCall
+  have normalizeIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 263))) :=
+    (object_slot_keeps_other context "context" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE" _ guard (by decide)).trans knownNormalize
+  have capacityIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "CETTA_EVAL_INCOMPLETE_CAPACITY".toList = some (.scalar (runType "int") (some (.i32 4))) :=
+    (object_slot_keeps_other context "context" "CETTA_EVAL_INCOMPLETE_CAPACITY" _ guard (by decide)).trans knownCapacity
+  have outsideIn : (bindObject context "context" (runType "PrimeEvalContextGuard") guard)
+      "g_prime_need_evaluator_id".toList = none :=
+    (object_slot_keeps_other context "context" "g_prime_need_evaluator_id" _ guard (by decide)).trans outside
+  apply congrArg (fun next : CProg CVal (ReadBlock.Result Context) =>
+    CProg.loadPtr (task + layout.taskOffset "context".toList) >>= fun incoming =>
+      operations.contextEnter incoming >>= fun fields =>
+        if fields.length = layout.contextCells then CProg.initializeCells guard fields >>= fun _ => next
+        else CProg.undefined >>= fun _ => next)
+  exact authority_scope_keeps_complete_continuation operations layout
+    (bindObject context "context" (runType "PrimeEvalContextGuard") guard) driver task fuel
+    driverIn taskIn bindIn callIn normalizeIn capacityIn outsideIn
+
+
+
 private theorem task_declaration_keeps_complete_copy (operations : Operations)
     (layout : RunLayout) (context : Context) (driver : Option Ptr)
     (knownDriver : context "driver".toList =
@@ -13307,7 +13503,7 @@ private theorem task_declaration_keeps_complete_copy (operations : Operations)
 
 
 private def taskStatements : List CStatement :=
-  .declare (runType "PrimeEvalStackTask") "task".toList (TaskAdmission.driverField "task") :: authorityStatements
+  .declare (runType "PrimeEvalStackTask") "task".toList (TaskAdmission.driverField "task") :: contextStatements
 
 private theorem task_is_actual_source_suffix :
     runSyntax.body.drop 4 = taskStatements := rfl
@@ -13319,15 +13515,15 @@ private theorem task_scope_keeps_complete_continuation (operations : Operations)
     (knownDriver : context "driver".toList =
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 17)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 19)
       context taskStatements = taskBody operations layout context driver := by
   unfold taskStatements
   rewrite [StatementBlock.scoped_initialized_declaration_keeps_continuation]
@@ -13342,13 +13538,13 @@ private theorem task_scope_keeps_complete_continuation (operations : Operations)
       "driver".toList = some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))) :=
     (object_slot_keeps_other context "task" "driver" _ task (by decide)).trans knownDriver
   have bindIn : (bindObject context "task" (runType "PrimeEvalStackTask") task)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 262))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList = some (.scalar (runType "int") (some (.i32 261))) :=
     (object_slot_keeps_other context "task" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND" _ task (by decide)).trans knownBind
   have callIn : (bindObject context "task" (runType "PrimeEvalStackTask") task)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 263))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList = some (.scalar (runType "int") (some (.i32 262))) :=
     (object_slot_keeps_other context "task" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL" _ task (by decide)).trans knownCall
   have normalizeIn : (bindObject context "task" (runType "PrimeEvalStackTask") task)
-      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 264))) :=
+      "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList = some (.scalar (runType "int") (some (.i32 263))) :=
     (object_slot_keeps_other context "task" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE" _ task (by decide)).trans knownNormalize
   have capacityIn : (bindObject context "task" (runType "PrimeEvalStackTask") task)
       "CETTA_EVAL_INCOMPLETE_CAPACITY".toList = some (.scalar (runType "int") (some (.i32 4))) :=
@@ -13363,9 +13559,11 @@ private theorem task_scope_keeps_complete_continuation (operations : Operations)
   apply congrArg (fun next : CProg CVal (ReadBlock.Result Context) =>
     driverPlace layout driver "task" >>= fun original =>
       CProg.copyCells original task layout.taskCells >>= fun _ => next)
-  exact authority_scope_keeps_complete_continuation operations layout
+  exact context_scope_keeps_complete_continuation operations layout
     (bindObject context "task" (runType "PrimeEvalStackTask") task) driver task fuel
     driverIn taskIn bindIn callIn normalizeIn capacityIn outsideIn
+
+
 
 private theorem assertion_keeps_macro_profile (operations : Operations) (layout : RunLayout)
     (context : Context) (operand : CExpr) :
@@ -13469,15 +13667,15 @@ private theorem assertion_scope_keeps_complete_continuation (operations : Operat
     (knownDriver : context "driver".toList =
       some (.scalar (runType "PrimeEvalStackDriver" 1) (some (.ptr driver))))
     (knownBind : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))))
+      some (.scalar (runType "int") (some (.i32 261))))
     (knownCall : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))))
+      some (.scalar (runType "int") (some (.i32 262))))
     (knownNormalize : context "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))))
+      some (.scalar (runType "int") (some (.i32 263))))
     (knownCapacity : context "CETTA_EVAL_INCOMPLETE_CAPACITY".toList =
       some (.scalar (runType "int") (some (.i32 4))))
     (outside : context "g_prime_need_evaluator_id".toList = none) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 20)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 22)
       context (assertionStatements ++ taskStatements) =
         (assertions operations layout driver >>= fun _ => taskBody operations layout context driver) := by
   unfold assertionStatements
@@ -13546,18 +13744,18 @@ private theorem initial_slot_absent (name : String)
 
 private theorem initial_bind_enumeration :
     initialContext "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-      some (.scalar (runType "int") (some (.i32 262))) := rfl
+      some (.scalar (runType "int") (some (.i32 261))) := rfl
 
 private theorem initial_call_enumeration :
     initialContext "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-      some (.scalar (runType "int") (some (.i32 263))) := by
+      some (.scalar (runType "int") (some (.i32 262))) := by
   unfold initialContext
   rewrite [if_neg (name_keeps_string_distinction _ _ (by decide)), if_pos rfl]
   rfl
 
 private theorem initial_normalize_enumeration :
     initialContext "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-      some (.scalar (runType "int") (some (.i32 264))) := by
+      some (.scalar (runType "int") (some (.i32 263))) := by
   unfold initialContext
   rewrite [if_neg (name_keeps_string_distinction _ _ (by decide)),
     if_neg (name_keeps_string_distinction _ _ (by decide)), if_pos rfl]
@@ -13578,7 +13776,7 @@ copy, flow, scope inspection and restoration remains in the same computation.
 This is a model-level source denotation, not compiled-provider verification. -/
 theorem original_body_keeps_complete_operation_tree (operations : Operations)
     (layout : RunLayout) (fuel : Nat) :
-    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 21)
+    StatementBlock.executeScopedWith (services operations layout) emptyLayout 0 (fuel + 23)
       initialContext runSyntax.body = runOperations operations layout := by
   have body : runSyntax.body = .declare (runType "PrimeEvalStackDriver" 1) "driver".toList
       (TaskAdmission.ident "g_prime_eval_stack_driver") :: (assertionStatements ++ taskStatements) := rfl
@@ -13596,17 +13794,17 @@ theorem original_body_keeps_complete_operation_tree (operations : Operations)
     exact Function.update_self _ _ _
   have bindIn : (bindScalar initialContext "driver" (runType "PrimeEvalStackDriver" 1) (.ptr driver))
       "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND".toList =
-        some (.scalar (runType "int") (some (.i32 262))) :=
+        some (.scalar (runType "int") (some (.i32 261))) :=
     (scalar_slot_keeps_other initialContext "driver" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_BIND"
       _ (.ptr driver) (by decide)).trans initial_bind_enumeration
   have callIn : (bindScalar initialContext "driver" (runType "PrimeEvalStackDriver" 1) (.ptr driver))
       "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL".toList =
-        some (.scalar (runType "int") (some (.i32 263))) :=
+        some (.scalar (runType "int") (some (.i32 262))) :=
     (scalar_slot_keeps_other initialContext "driver" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_CALL"
       _ (.ptr driver) (by decide)).trans initial_call_enumeration
   have normalizeIn : (bindScalar initialContext "driver" (runType "PrimeEvalStackDriver" 1) (.ptr driver))
       "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE".toList =
-        some (.scalar (runType "int") (some (.i32 264))) :=
+        some (.scalar (runType "int") (some (.i32 263))) :=
     (scalar_slot_keeps_other initialContext "driver" "CETTA_RUNTIME_COUNTER_PRIME_EVAL_STACK_TASK_NORMALIZE"
       _ (.ptr driver) (by decide)).trans initial_normalize_enumeration
   have capacityIn : (bindScalar initialContext "driver" (runType "PrimeEvalStackDriver" 1) (.ptr driver))
@@ -13628,7 +13826,7 @@ fuel, flow, service inventory or lexical scope. Provider realization remains
 an explicit independent obligation. -/
 theorem original_source_keeps_complete_operation_tree (operations : Operations)
     (layout : RunLayout) (fuel : Nat) :
-    fromOriginal (services operations layout) emptyLayout 0 (fuel + 21) initialContext =
+    fromOriginal (services operations layout) emptyLayout 0 (fuel + 23) initialContext =
       runOperations operations layout := by
   rewrite [original_source_executes_retained_body]
   exact original_body_keeps_complete_operation_tree operations layout fuel
@@ -13641,7 +13839,7 @@ result; actual physical provider realization remains a separate obligation. -/
 theorem original_source_keeps_common_resumption (operations : Operations)
     (layout : RunLayout) (fuel : Nat) :
     Prog.toResumption
-        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 21) initialContext) =
+        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 23) initialContext) =
       Prog.toResumption (runOperations operations layout) :=
   congrArg Prog.toResumption (original_source_keeps_complete_operation_tree operations layout fuel)
 
@@ -13651,7 +13849,7 @@ theorem original_source_has_common_stateful_denotation {State : Type}
     (act : (operation : Op CVal) → Action State (Op.Ret operation))
     (operations : Operations) (layout : RunLayout) (fuel : Nat) :
     Resumption.denote act (Prog.toResumption
-        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 21) initialContext)) =
+        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 23) initialContext)) =
       (runOperations operations layout).denote act := by
   rw [Resumption.denote_toResumption]
   exact congrArg (fun program => program.denote act)
@@ -13661,7 +13859,7 @@ theorem original_source_keeps_common_fault_avoidance {State : Type}
     (act : (operation : Op CVal) → Action State (Op.Ret operation))
     (operations : Operations) (layout : RunLayout) (fuel : Nat) (before : State) :
     (Resumption.denote act (Prog.toResumption
-        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 21) initialContext))).Safe before ↔
+        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 23) initialContext))).Safe before ↔
       (runOperations operations layout).Safe act before := by
   rw [original_source_has_common_stateful_denotation]
   rfl
@@ -13671,7 +13869,7 @@ theorem original_source_keeps_common_whole_state_runs {State : Type}
     (operations : Operations) (layout : RunLayout) (fuel : Nat)
     (before after : State) (result : ReadBlock.Result Context) :
     (Resumption.denote act (Prog.toResumption
-        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 21) initialContext))).Step
+        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 23) initialContext))).Step
         before result after ↔ (runOperations operations layout).Runs act before result after := by
   rw [original_source_has_common_stateful_denotation]
   rfl
@@ -13683,7 +13881,7 @@ theorem original_source_keeps_common_handler {Observation : Type}
     (onOperation : (operation : Op CVal) → (Op.Ret operation → Observation) → Observation)
     (operations : Operations) (layout : RunLayout) (fuel : Nat) :
     ResumptionAlgebra.fold onReturn onOperation (Prog.toResumption
-        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 21) initialContext)) =
+        (fromOriginal (services operations layout) (fun _ => none) 0 (fuel + 23) initialContext)) =
       ResumptionAlgebra.fold onReturn onOperation (Prog.toResumption (runOperations operations layout)) := by
   rw [original_source_keeps_common_resumption]
 
@@ -13701,7 +13899,7 @@ theorem original_source_keeps_cursor_account {State Fault : Type}
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge cost step) inspections (base := PUnit.unit)
         ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-          0 (sourceFuel + 21) initialContext), before⟩ =
+          0 (sourceFuel + 23) initialContext), before⟩ =
       Cursor.advance (Cursor.PrimitiveProgram.provider step)
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge cost step) inspections (base := PUnit.unit)
@@ -13723,7 +13921,7 @@ theorem original_source_has_direct_bounded_interpretation {State Fault : Type}
       (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
       (Cursor.PrimitiveProgram.charge cost step) inspections (base := PUnit.unit)
       ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-        0 (sourceFuel + 21) initialContext), before⟩
+        0 (sourceFuel + 23) initialContext), before⟩
     (result.1, Cursor.PrimitiveProgram.readOutcome step result.2) =
       Cursor.PrimitiveProgram.direct step cost inspections
         (.ok (runOperations operations layout)) before := by
@@ -13747,7 +13945,7 @@ theorem original_source_cursor_keeps_safe_outcome {State Fault : Type}
           (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
           (Cursor.PrimitiveProgram.charge cost step) inspections (base := PUnit.unit)
           ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-            0 (sourceFuel + 21) initialContext), before⟩).2) := by
+            0 (sourceFuel + 23) initialContext), before⟩).2) := by
   rw [original_source_keeps_cursor_account]
   exact Cursor.PrimitiveProgram.advance_safe_outcome act step localLaw cost inspections
     (runOperations operations layout) before safe
@@ -13763,7 +13961,7 @@ theorem original_source_cursor_split_retains_account {State Fault : Type}
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge cost step) (earlier + later) (base := PUnit.unit)
         ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-          0 (sourceFuel + 21) initialContext), before⟩ =
+          0 (sourceFuel + 23) initialContext), before⟩ =
       Cursor.resume (Cursor.PrimitiveProgram.provider step)
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge cost step) later (base := PUnit.unit)
@@ -13771,7 +13969,7 @@ theorem original_source_cursor_split_retains_account {State Fault : Type}
           (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
           (Cursor.PrimitiveProgram.charge cost step) earlier (base := PUnit.unit)
           ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-            0 (sourceFuel + 21) initialContext), before⟩) :=
+            0 (sourceFuel + 23) initialContext), before⟩) :=
   Cursor.advance_add (Cursor.PrimitiveProgram.provider step)
     (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
     (Cursor.PrimitiveProgram.charge cost step) earlier later (base := PUnit.unit) _
@@ -13799,7 +13997,7 @@ theorem original_source_keeps_related_cursor_account
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge leftCost leftStep) inspections (base := PUnit.unit)
         ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-          0 (sourceFuel + 21) initialContext), before⟩)
+          0 (sourceFuel + 23) initialContext), before⟩)
       (Cursor.advance (Cursor.PrimitiveProgram.provider rightStep)
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge rightCost rightStep) inspections (base := PUnit.unit)
@@ -13839,7 +14037,7 @@ theorem original_source_related_cursor_split_retains_account
           (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
           (Cursor.PrimitiveProgram.charge leftCost leftStep) earlier (base := PUnit.unit)
           ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-            0 (sourceFuel + 21) initialContext), before⟩))
+            0 (sourceFuel + 23) initialContext), before⟩))
       (Cursor.resume (Cursor.PrimitiveProgram.provider rightStep)
         (Cursor.PrimitiveProgram.client (Op CVal) Op.Ret (ReadBlock.Result Context) Fault)
         (Cursor.PrimitiveProgram.charge rightCost rightStep) later (base := PUnit.unit)
@@ -13884,7 +14082,7 @@ theorem original_source_keeps_related_generated_histories
       (ProtocolHistory.advanceHistory (Cursor.PrimitiveProgram.provider leftStep) C
         (Cursor.PrimitiveProgram.charge leftCost leftStep) inspections (base := PUnit.unit)
         ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-          0 (sourceFuel + 21) initialContext), before⟩) ∧
+          0 (sourceFuel + 23) initialContext), before⟩) ∧
     HEq ((ProtocolHistory.homForward C
         (Cursor.Bisimulation.rightProjection rel localLaw) PUnit.unit).histories.map history)
       (ProtocolHistory.advanceHistory (Cursor.PrimitiveProgram.provider rightStep) C
@@ -13912,7 +14110,7 @@ theorem original_source_generated_history_pays_runner_account {State Fault : Typ
     Multiplicative.toAdd ((ProtocolHistory.providerAccount M C charge PUnit.unit).of
       (ProtocolHistory.advanceHistory M C charge inspections (base := PUnit.unit)
         ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-          0 (sourceFuel + 21) initialContext), before⟩)) =
+          0 (sourceFuel + 23) initialContext), before⟩)) =
       (Cursor.advance M C charge inspections (base := PUnit.unit)
         ⟨PUnit.unit, .ok (runOperations operations layout), before⟩).1 := by
   dsimp only
@@ -13930,7 +14128,7 @@ theorem original_source_split_keeps_generated_history {State Fault : Type}
     let charge : Cursor.Charge M := Cursor.PrimitiveProgram.charge cost step
     let packet : Cursor.Packet M C PUnit.unit :=
       ⟨PUnit.unit, .ok (fromOriginal (services operations layout) (fun _ => none)
-        0 (sourceFuel + 21) initialContext), before⟩
+        0 (sourceFuel + 23) initialContext), before⟩
     HEq (ProtocolHistory.advanceHistory M C charge (earlier + later) packet)
       ((ProtocolHistory.advanceHistory M C charge earlier packet).comp
         (ProtocolHistory.resumeHistory M C charge later

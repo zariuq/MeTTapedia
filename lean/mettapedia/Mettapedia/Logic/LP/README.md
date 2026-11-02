@@ -72,7 +72,7 @@ lake build Mettapedia.Logic.LP
 | [MMMeasure.lean](MMMeasure.lean) | Term-size measure for well-founded recursion |
 | [Stratification.lean](Stratification.lean) | Stratified fixpoint semantics for normal programs with negation-as-failure (per-stratum `OrderHom.lfp`) |
 | [NormalGrounding.lean](NormalGrounding.lean) | First-order normal (ProbLog-style) clauses grounded and evaluated via the stratified semantics |
-| [PrologInstance.lean](PrologInstance.lean) | A concrete `LPSignature` showing the kernel models standard Prolog (function symbols, compound terms, recursion) |
+| [HornClauseExamples.lean](HornClauseExamples.lean) | First-order Horn-clause examples with function symbols and recursion; separate from Prolog source and control semantics |
 
 ### Bridges
 

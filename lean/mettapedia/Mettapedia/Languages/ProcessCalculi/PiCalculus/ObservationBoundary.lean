@@ -7,12 +7,10 @@ The generated modalities are characterized by the independent occurrence
 reduction and the actual static equation relation. Diamond looks forward;
 the OSLF right-adjoint box looks universally over predecessors. An atomic
 grammar test on the supplied syntax is not equation invariant, because a
-singleton bag may wrap a channel or a message. Testing the canonical normal
-form instead gives a native predicate of the declared monoid quotient.
-
-These results concern `piCalc` with its declared bag laws. They do not add
-the larger restriction and unfolding equations or assert that arbitrary
-equation representatives remain in the syntactic atomic grammar.
+singleton bag may wrap a channel or a message. Having an atomic representative
+is a native predicate of `piCalc`'s static quotient, restriction laws included
+(`atomicNativeType`). In the parallel fragment, testing the bag normal form
+decides it (`parallelAtomicType`).
 -/
 
 set_option autoImplicit false
@@ -70,20 +68,60 @@ theorem pi_native_box_iff_raw
   · intro holds source ⟨redex, contractum, before, firing, after⟩
     exact (property.2 before).mpr (holds redex contractum (piRawStep_of_step firing) after)
 
-/-- Canonical atomic membership is an observation of the actual static quotient. -/
+/-- **Having an atomic representative** is an observation of `piCalc`'s static quotient. -/
 def atomicNativeType (depth : Nat) : EquationPredicate (langGSLT piCalc) :=
-  ⟨fun process => AtomicPi depth (normalForm (some "PiNil") process), by
+  ⟨fun process => ∃ representative,
+      EquationEquiv (engineBasePremises RelationEnv.empty) piCalc process representative ∧
+        AtomicPi depth representative, by
     intro left right equivalent
-    have same := normalForm_eq_of_equationEquiv piBagTheory equivalent
-    simp only [same]⟩
+    constructor
+    · rintro ⟨representative, related, atomic⟩
+      exact ⟨representative, .trans _ _ _ (.symm _ _ equivalent) related, atomic⟩
+    · rintro ⟨representative, related, atomic⟩
+      exact ⟨representative, .trans _ _ _ equivalent related, atomic⟩⟩
 
 theorem named_has_atomic_native_type (process : Process) :
-    atomicNativeType 0 (piToPattern process) := (piToPattern_atomic process).normalForm
+    atomicNativeType 0 (piToPattern process) := ⟨_, .refl _, piToPattern_atomic process⟩
+
+/-- **In the parallel fragment, the bag normal form decides atomicity**: an observation of the fragment's
+quotient. -/
+def parallelAtomicType (depth : Nat) : EquationPredicate (langGSLT piParallelFragment) :=
+  ⟨fun process => AtomicPi depth (normalForm (some "PiNil") process), by
+    intro left right equivalent
+    have same := normalForm_eq_of_equationEquiv piParallelBagTheory equivalent
+    simp only [same]⟩
+
+/-- A fragment step is a step of `piCalc`: the fragment keeps every rule. -/
+theorem step_of_parallel_step {source target : Pattern}
+    (step : Step (engineBasePremises RelationEnv.empty) piParallelFragment source target) :
+    Step (engineBasePremises RelationEnv.empty) piCalc source target :=
+  Step.mono_rules (lang₁ := piParallelFragment) (lang₂ := piCalc) (fun _ member => member) step
+
+theorem parallel_step_of_step {source target : Pattern}
+    (step : Step (engineBasePremises RelationEnv.empty) piCalc source target) :
+    Step (engineBasePremises RelationEnv.empty) piParallelFragment source target :=
+  Step.mono_rules (lang₁ := piCalc) (lang₂ := piParallelFragment) (fun _ member => member) step
+
+/-- The fragment's native right adjoint quantifies over incoming firings. -/
+theorem parallel_native_box_iff_raw
+    (property : EquationPredicate (langGSLT piParallelFragment)) (target : Pattern) :
+    langBox piParallelFragment property target ↔
+      ∀ redex contractum, PiRawStep redex contractum →
+        EquationEquiv (engineBasePremises RelationEnv.empty) piParallelFragment contractum target →
+        property redex := by
+  change gsltBox (langGSLT piParallelFragment) property.1 target ↔ _
+  erw [gsltBox_spec]
+  constructor
+  · intro holds redex contractum firing after
+    exact holds redex ⟨redex, contractum, .refl _, parallel_step_of_step (step_of_piRawStep firing), after⟩
+  · intro holds source ⟨redex, contractum, before, firing, after⟩
+    exact (property.2 before).mpr
+      (holds redex contractum (piRawStep_of_step (step_of_parallel_step firing)) after)
 
 theorem atomic_step_admissible {depth : Nat} {source target : Pattern}
     (atomic : AtomicPi depth source)
     (firing : Step (engineBasePremises RelationEnv.empty) piCalc source target) :
-    Admissible piCalc piNameContext (List.replicate depth (.base "Proc")) (.base "Proc") target := by
+    Admissible piCalc piNameContext (List.replicate depth (.base "Name")) (.base "Proc") target := by
   have result := atomic_step_preservation atomic firing
   exact ⟨result.hasType, result.canonical, result.object⟩
 
@@ -93,14 +131,16 @@ theorem atomic_enabled_native_diamond {depth : Nat} {source target : Pattern}
     piCalcDiamond (atomicNativeType depth) source := by
   apply (pi_native_diamond_iff_raw _ _).mpr
   exact ⟨source, target, .refl _, piRawStep_of_step firing,
-    (atomic_step_preservation atomic firing).normalForm⟩
+    ⟨target, .refl _, atomic_step_preservation atomic firing⟩⟩
 
 private theorem collection_not_atomic_name (depth : Nat) (elements : List Pattern) :
     ¬ AtomicName depth (.collection .hashBag elements none) := by
   intro atomic
   cases atomic
 
-/-- A sorted monoid equation may leave the atomic syntax grammar inside a message. -/
+/-- The untyped static theory may leave the atomic syntax grammar inside a message: a one-member bag around a name
+is a process in a context where the name is one. In π's sorted reading a name is no process, and the bag is no
+name. -/
 theorem atomic_grammar_not_equation_invariant :
     ¬ EquationInvariant (langGSLT piCalc) (AtomicPi 0) := by
   intro invariant
@@ -109,8 +149,8 @@ theorem atomic_grammar_not_equation_invariant :
   have same : EquationEquiv (engineBasePremises RelationEnv.empty) piCalc before after := by
     have singleton : EquationEquiv (engineBasePremises RelationEnv.empty) piCalc
         (.collection .hashBag [.fvar "b"] none) (.fvar "b") := derivedInstance_equivalent
-      (DerivedInstance.singleton piBagTheory.bagAlgebraRule rfl
-        ⟨piNameContext, [], bag_hasType (piBagTheory.asBare rfl) (.cons (.fvar rfl) (.nil _ _))⟩)
+      (DerivedInstance.singleton piBagPresentation.bagAlgebraRule rfl
+        ⟨fun _ => some (.base "Proc"), [], bag_hasType (piBagPresentation.asBare rfl) (.cons (.fvar rfl) (.nil _ _))⟩)
     exact equationEquiv_fill (.apply "PiOut" [.fvar "a"] .hole []) (.symm _ _ singleton)
   have first : AtomicPi 0 before := .output (.free 0 "a") (.free 0 "b")
   have escaped : AtomicPi 0 after := (invariant same).mp first

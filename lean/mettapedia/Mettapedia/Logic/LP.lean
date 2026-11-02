@@ -16,7 +16,9 @@ import Mettapedia.Logic.LP.PropositionalChainer
 import Mettapedia.Logic.LP.BackwardViaForward
 import Mettapedia.Logic.LP.BackwardViaForwardMP
 import Mettapedia.Logic.LP.PropositionalConnectionChainer
+import Mettapedia.Logic.LP.PropositionalConnectionControls
 import Mettapedia.Logic.LP.FirstOrderConnectionTrace
+import Mettapedia.Logic.LP.FirstOrderConnectionControls
 import Mettapedia.Logic.LP.FunctionFree
 import Mettapedia.Logic.LP.FunctionFreeEvaluation
 import Mettapedia.Logic.LP.CertifyingDatalogBridge
@@ -52,8 +54,10 @@ Barrel import for the LP module stack:
 | `SLDCompletenessCanaries` | Concrete positive/negative completeness canaries |
 | `FunctionFree` | Function-free fragment: GroundTerm ≃ constants, DecidableEq GroundAtom |
 | `BackwardViaForward` | Nil-style demand materialization: backward chaining via propositional forward chaining |
-| `PropositionalConnectionChainer` | PeTTa-style connection tableau traces, checker soundness/completeness, refinement aliases |
-| `FirstOrderConnectionTrace` | FO trace checker semantics (`proof_fo` shape), replay soundness theorem |
+| `PropositionalConnectionChainer` | Branch-local replay/search, operational correspondence and independent Boolean unsatisfiability |
+| `PropositionalConnectionControls` | Satisfiable sibling-leak counterexample, genuine sibling and ancestor proofs, all-fuel search rejection |
+| `FirstOrderConnectionTrace` | Branch-local FO replay/search and fixed-variable operational correspondence; per-use freshening is separate |
+| `FirstOrderConnectionControls` | Generic sibling-restoration rejection and substitution through separate ancestor paths |
 | `FunctionFreeEvaluation` | HerbrandBase, finiteness, leastModel = ⋃ T_P_LP_iter |
 | `CertifyingDatalogBridge` | CDLGroundAtom ≃ GroundAtom (List↔Fin bridge) |
 | `Provenance` | K-relations, T_P_K_LP, semiring homomorphism theorem |

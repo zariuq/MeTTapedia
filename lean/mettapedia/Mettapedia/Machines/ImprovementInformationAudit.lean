@@ -1,0 +1,27 @@
+import Mettapedia.Machines.ImprovementDescriptionLength
+import Mettapedia.Machines.ImprovementPublication
+import Mettapedia.Machines.ImprovementPlanSelection
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Owner-module and primitive-axiom inventory for information-qualified keyed
+improvement. Source lowering and native resource refinement remain separate. -/
+
+#print axioms Mettapedia.Machines.KeyedImprovement.Information.plan_exact_iff
+#print axioms Mettapedia.Machines.KeyedImprovement.Information.decision_requires_two_codes
+#print axioms Mettapedia.Machines.KeyedImprovement.Information.decision_family_injective
+#print axioms Mettapedia.Machines.KeyedImprovement.Information.source_debit_requires_three_codes
+#print axioms Mettapedia.Machines.KeyedImprovement.Information.result_requires_bits
+#print axioms Mettapedia.Machines.KeyedImprovement.SourceProgram.composed_source_native
+#print axioms Mettapedia.Machines.KeyedImprovement.SourceProgram.native_cursor_completed
+#print axioms Mettapedia.Machines.KeyedImprovement.DescriptionLength.universal_result_floor
+#print axioms Mettapedia.Machines.KeyedImprovement.DescriptionLength.output_in_context_constant_cost
+#print axioms Mettapedia.Machines.KeyedImprovement.Publication.publish_refines
+#print axioms Mettapedia.Machines.KeyedImprovement.Publication.publication_plan_exact_iff
+#print axioms Mettapedia.Machines.KeyedImprovement.Publication.reference_requires_codes
+#print axioms Mettapedia.Machines.KeyedImprovement.PlanSelection.selected_exact
+
+#foundation_manifest_module Mettapedia.Machines.ImprovementInformation
+#foundation_manifest_module Mettapedia.Machines.ImprovementSourceProgram
+#foundation_manifest_module Mettapedia.Machines.ImprovementDescriptionLength
+#foundation_manifest_module Mettapedia.Machines.ImprovementPublication
+#foundation_manifest_module Mettapedia.Machines.ImprovementPlanSelection

@@ -80,7 +80,7 @@ private theorem rhoEquationInstanceAt_canonicalize_eq
     Canonical.canonicalize source = Canonical.canonicalize target := by
   cases equationWitness with
   | @forward equation source target initialBindings finalBindings
-      membership matched premises targetEquality =>
+      membership _ matched premises targetEquality =>
       have equationEquality : equation = rhoQuoteDropEquation := by
         change List.Mem equation [rhoQuoteDropEquation] at membership
         cases membership with
@@ -105,7 +105,7 @@ private theorem rhoEquationInstanceAt_canonicalize_eq
       simp [applyBindings, Canonical.canonicalize, Canonical.canonicalizeList,
         Canonical.normalizeQuote]
   | @reverse equation source target initialBindings finalBindings
-      membership matched premises targetEquality =>
+      membership _ matched premises targetEquality =>
       have equationEquality : equation = rhoQuoteDropEquation := by
         change List.Mem equation [rhoQuoteDropEquation] at membership
         cases membership with
@@ -129,6 +129,14 @@ private theorem rhoEquationInstanceAt_canonicalize_eq
       rw [← sourceEquality, ← targetEquality]
       simp [applyBindings, Canonical.canonicalize, Canonical.canonicalizeList,
         Canonical.normalizeQuote]
+  | @declared equation _ _ _ _ membership notRaw _ =>
+      have equationEquality : equation = rhoQuoteDropEquation := by
+        change List.Mem equation [rhoQuoteDropEquation] at membership
+        cases membership with
+        | head => rfl
+        | tail _ impossible => cases impossible
+      rw [equationEquality, readsRaw_of_none rfl] at notRaw
+      cases notRaw
 
 /-- Rho declares exactly one collection algebra: the parallel bag with unit
 `PZero`, flattening on. -/

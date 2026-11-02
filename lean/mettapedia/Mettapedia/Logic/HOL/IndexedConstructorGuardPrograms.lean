@@ -56,6 +56,21 @@ theorem shapeProgram_denote (values : model.Valuation Γ)
     Soundness.denote_subst, HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend]
   rfl
 
+theorem resultProgram_denote (values : model.Valuation Γ)
+    (payload : Ty.denote model.Carrier (payloadType inventory.fields))
+    (index : Ty.denote model.Carrier inventory.index) :
+    (model.denote inventory.resultProgram values payload index).down ↔
+      ∃ data : inventory.Data model, (inventory.dataAllowed model values data ∧
+        inventory.resultValue model values data = index) ∧
+        payloadEquivalence model inventory.fields payload =
+          TypeTheory.FiniteConstructorEncoding.encode (Ty.denote model.Carrier) inventory.fields data := by
+  change (model.denote ((inventory.subst beneathTwo).resultGuard (.var (.vs .vz)) (.var .vz))
+    (model.extend (model.extend values payload) index)).down ↔ _
+  rw [(inventory.subst beneathTwo).resultGuard_denote model full]
+  simp only [dataAllowed, resultValue, payloadMatches, ConstructorPrograms.subst, CurriedPredicates.holds,
+    Soundness.denote_subst, HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend]
+  rfl
+
 theorem rootProgram_denote (values : model.Valuation Γ)
     (value : Ty.denote model.Carrier space) (index : Ty.denote model.Carrier inventory.index) :
     (model.denote (inventory.rootProgram construct) values value index).down ↔
@@ -71,6 +86,7 @@ theorem rootProgram_denote (values : model.Valuation Γ)
 
 #print axioms rootProgram_denote
 #print axioms shapeProgram_denote
+#print axioms resultProgram_denote
 end ConstructorPrograms
 
 namespace Inventory

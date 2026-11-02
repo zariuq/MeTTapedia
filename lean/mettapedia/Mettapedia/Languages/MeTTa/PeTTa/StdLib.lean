@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
 import Mettapedia.Languages.MeTTa.OSLFCore.ByteString
+import Mathlib.Data.List.Sort
 
 /-!
 # PeTTa ground primitives
@@ -17,7 +18,7 @@ derive.
 
 The closed-value profile also includes eager list operations, metatype queries,
 ground scalar type queries, and the string operations used by source readers.
-Closed string-list sorting retains repeated occurrences, as PeTTa's `msort` does;
+Closed string-list and integer-list sorting retain repeated occurrences, as PeTTa's `msort` does;
 the order of mixed values is outside this primitive fragment.
 Strings retain their exact bytes through the shared ByteString image. Open
 membership and non-scalar type inference remain outside this primitive profile.
@@ -37,7 +38,7 @@ def known (head : String) : Bool :=
     "index-atom", "new-space", "add-atom", "remove-atom", "get-atoms", "match",
     "get-state", "change-state!", "reverse", "is-member", "get-metatype", "get-type",
     "str:byte-length", "str:byte-slice", "str:concat", "str:join", "str:from-codepoints",
-    "parse", "cons-atom", "union-atom", "sort-atom"]
+    "parse", "cons-atom", "union-atom", "sort-atom", "msort"]
 
 /-- Recognize exactly the closed string-list fragment of native sorting. -/
 def strings : List Atom → Option (List String)
@@ -54,6 +55,59 @@ theorem strings_string_atoms (items : List String) : strings (stringAtoms items)
       change (first :: ·) <$> strings (stringAtoms rest) = some (first :: rest)
       rw [ih]
       rfl
+
+/-- Decode only actual integer values. Boolean and foreign grounded values
+do not become integer sort keys merely because a worker has a word encoding. -/
+def integers : List Atom → Option (List Int)
+  | [] => some []
+  | .grounded (.int first) :: rest => (first :: ·) <$> integers rest
+  | _ => none
+
+def integerAtoms (items : List Int) : List Atom := items.map (.grounded ∘ .int)
+
+theorem integers_integer_atoms (items : List Int) : integers (integerAtoms items) = some items := by
+  induction items with
+  | nil => rfl
+  | cons first rest ih =>
+      change (first :: ·) <$> integers (integerAtoms rest) = some (first :: rest)
+      rw [ih]
+      rfl
+
+theorem integers_exact (items : List Atom) (values : List Int) (decoded : integers items = some values) :
+    integerAtoms values = items := by
+  induction items generalizing values with
+  | nil => cases decoded; rfl
+  | cons first rest ih =>
+      cases first with
+      | var _ | symbol _ | expression _ => cases decoded
+      | grounded ground =>
+        cases ground with
+        | int value =>
+          change (integers rest).map (value :: ·) = some values at decoded
+          obtain ⟨tail, decodedTail, same⟩ := Option.map_eq_some_iff.mp decoded
+          cases same
+          change .grounded (.int value) :: integerAtoms tail = _
+          rw [ih tail decodedTail]
+        | string _ | bool _ | custom _ _ => cases decoded
+
+/-- The closed homogeneous fragment of the source's duplicate-preserving
+sort. Mixed-value term order is not specified by this partial decoder. -/
+def sortClosed (items : List Atom) : Option (List Atom) :=
+  match strings items with
+  | some texts => some (stringAtoms (texts.mergeSort (· ≤ ·)))
+  | none => (integers items).map (fun values => integerAtoms (values.mergeSort (· ≤ ·)))
+
+theorem sortClosed_strings (items : List String) :
+    sortClosed (stringAtoms items) = some (stringAtoms (items.mergeSort (· ≤ ·))) := by
+  simp only [sortClosed, strings_string_atoms]
+
+theorem sortClosed_integers (items : List Int) :
+    sortClosed (integerAtoms items) = some (integerAtoms (items.mergeSort (· ≤ ·))) := by
+  cases items with
+  | nil => simp [sortClosed, integerAtoms, strings, stringAtoms]
+  | cons first rest =>
+      have notStrings : strings (integerAtoms (first :: rest)) = none := rfl
+      simp only [sortClosed, notStrings, integers_integer_atoms, Option.map_some]
 
 /-- Native argument demand: patterns, templates and stored data are values;
 numeric operands and locations are evaluated. -/
@@ -223,9 +277,9 @@ def apply (state : State) (head : String) (arguments : List Atom) : Result :=
     | "cons-atom", [first, .expression rest] => answer (.expression (first :: rest))
     | "union-atom", [.expression left, .expression right] =>
         answer (.expression (left ++ right))
-    | "sort-atom", [.expression items] =>
-        match strings items with
-        | some texts => answer (.expression (stringAtoms (texts.mergeSort (· ≤ ·))))
+    | "sort-atom", [.expression items] | "msort", [.expression items] =>
+        match sortClosed items with
+        | some sorted => answer (.expression sorted)
         | none => bad
     | "sort-atom", [.symbol _] | "sort-atom", [.grounded _] => answer (.expression [])
     | "size-atom", [.expression items] => answer (.grounded (.int items.length))
@@ -293,7 +347,31 @@ theorem native_cons (state : State) (first : Atom) (rest : List Atom) :
 theorem string_list_sort (state : State) (items : List String) :
     apply state "sort-atom" [.expression (stringAtoms items)] =
       .ok (state, [.expression (stringAtoms (items.mergeSort (· ≤ ·)))]) := by
-  simp [apply, strings_string_atoms]
+  simp [apply, sortClosed_strings]
+
+theorem integer_list_sort (state : State) (items : List Int) :
+    apply state "sort-atom" [.expression (integerAtoms items)] =
+      .ok (state, [.expression (integerAtoms (items.mergeSort (· ≤ ·)))]) := by
+  simp [apply, sortClosed_integers]
+
+theorem integer_msort (state : State) (items : List Int) :
+    apply state "msort" [.expression (integerAtoms items)] =
+      .ok (state, [.expression (integerAtoms (items.mergeSort (· ≤ ·)))]) := by
+  simp [apply, sortClosed_integers]
+
+theorem msort_registered : known "msort" = true := by decide
+
+theorem boolean_list_not_integer_admission :
+    integers [boolean true] = none ∧ sortClosed [boolean true] = none := by decide
+
+theorem integer_sort_keeps_duplicate_values (state : State) :
+    apply state "msort" [.expression (integerAtoms [3, -2, 3, 1])] =
+      .ok (state, [.expression (integerAtoms [-2, 1, 3, 3])]) := by
+  rw [integer_msort]
+  have sorted : ([3, -2, 3, 1] : List Int).mergeSort (· ≤ ·) = [-2, 1, 3, 3] := by
+    apply List.Perm.eq_of_pairwise' (r := (· ≤ ·)) (List.pairwise_mergeSort' (· ≤ ·) _) (by decide)
+    exact (List.mergeSort_perm _ _).trans (by decide)
+  rw [sorted]
 
 theorem sorting_and_native_cons_registered : known "sort-atom" = true ∧ known "cons-atom" = true := by decide
 

@@ -33,7 +33,7 @@ open Mettapedia.GSLT.LanguageDef.BagNormalForm
 
 /-- **The typed reading at the sorts**: each law relates two closed terms of one sort; the rules by the reference
 relation. -/
-def reading : LanguageReading := { equations := .typed .raw .empty .sorts }
+def reading : LanguageReading := { equations := .typed .raw .empty .sorts none }
 
 variable (language : LanguageDef) (unit : Option String) (sorts : List String)
 

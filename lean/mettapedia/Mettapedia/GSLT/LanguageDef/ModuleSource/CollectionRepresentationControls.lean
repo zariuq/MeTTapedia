@@ -308,7 +308,7 @@ theorem raw_tail_unit_instance (base : BasePremiseEvaluator) :
     EquationInstance base core openTail (.fvar "a") := by
   refine ⟨0,EquationInstanceAt.forward (equation := rightUnit)
     (initialBindings := [("x",.fvar "a")]) (finalBindings := [("x",.fvar "a")])
-    right_unit_member ?_ ?_ ?_⟩
+    right_unit_member (by cbv) ?_ ?_ ?_⟩
   · cbv
     exact .head []
   · rw [(actual_rows rightUnit right_unit_member).1]
@@ -453,10 +453,12 @@ theorem source_equation_shapes : source.equations.map (fun row => (row.left,row.
 
 theorem source_plain : PlainEquations source := by
   have finite : source.equations.all (fun row => row.premises.isEmpty) = true := by cbv
+  have declarations : source.equations.all (fun row => row.bindings.isNone) = true := by cbv
   intro row member
   have unconditional := List.isEmpty_iff.mp (List.all_eq_true.mp finite row member)
   have eligible := source_rows_eligible row member unconditional
-  exact ⟨unconditional,eligible.1.isMatchCorrect,eligible.2.1.isMatchCorrect⟩
+  exact ⟨unconditional,eligible.1.isMatchCorrect,eligible.2.1.isMatchCorrect,
+    readsRaw_of_none (Option.isNone_iff_eq_none.mp (List.all_eq_true.mp declarations row member))⟩
 
 theorem source_rows_projected : ∀ row ∈ source.equations, ∀ bindings : Match.Bindings,
     normalForm (some "PZero") (projectBinary sourceRule.label (applyBindings bindings row.left)) =
@@ -850,9 +852,10 @@ theorem actual_reference_rows_aligned : ReferenceStep.EquationsAligned core := b
   all_goals
     obtain ⟨leftEq,tailEq⟩ := Prod.mk.inj shape
     obtain ⟨rightEq,premiseEq⟩ := Prod.mk.inj tailEq
-    simp only [ReferenceStep.equationAligned,leftEq,rightEq,premiseEq,List.all_nil,Bool.true_and]
+    simp only [ReferenceStep.equationAligned,leftEq,rightEq,premiseEq,List.all_nil]
     simp [ReferenceStep.notDeeper,ReferenceStep.notDeeperList,ReferenceStep.captureSitesOf,
-      captureDepth,captureDepthList,zero]
+      captureDepth,captureDepthList,zero,ReferenceStep.readsRaw,EquationSemantics.readsRaw,leftEq,rightEq,
+      Match.binderFree,Match.binderFreeList]
 
 theorem actual_reference_rows_unconditional : ReferenceStep.UnconditionalEquations core :=
   fun row member => (actual_rows row member).1
@@ -899,9 +902,10 @@ theorem source_reference_rows_aligned : ReferenceStep.EquationsAligned source :=
   all_goals
     obtain ⟨leftEq,tailEq⟩ := Prod.mk.inj shape
     obtain ⟨rightEq,premiseEq⟩ := Prod.mk.inj tailEq
-    simp only [ReferenceStep.equationAligned,leftEq,rightEq,premiseEq,List.all_nil,Bool.true_and]
+    simp only [ReferenceStep.equationAligned,leftEq,rightEq,premiseEq,List.all_nil]
     simp [ReferenceStep.notDeeper,ReferenceStep.notDeeperList,ReferenceStep.captureSitesOf,
-      captureDepth,captureDepthList,zero]
+      captureDepth,captureDepthList,zero,ReferenceStep.readsRaw,EquationSemantics.readsRaw,leftEq,rightEq,
+      Match.binderFree,Match.binderFreeList]
 
 theorem source_reference_rows_unconditional : ReferenceStep.UnconditionalEquations source :=
   fun row member => (source_plain row member).1

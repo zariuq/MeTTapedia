@@ -11,6 +11,7 @@ and native SHA-256; this path uses an explicit recursive renderer and the Lean
 SHA-256 implementation.  The gate compares their emitted bytes and digest.
 The versioned wire spelling is an as-built identifier, not an adopted Prime
 foundation or evidence about the complete runtime.
+The command-line emitter is `scripts/prime_package_identity_v1.lean`.
 -/
 
 set_option autoImplicit false
@@ -183,6 +184,3 @@ def main : IO Unit := do
   IO.println "(PrimePackageIdentityLeanSummaryV1 8 8 0)"
 
 end Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.PackageAuthority
-
-def main : IO Unit :=
-  Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.PackageAuthority.main

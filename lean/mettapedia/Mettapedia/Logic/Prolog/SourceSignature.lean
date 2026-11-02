@@ -21,6 +21,8 @@ namespace Mettapedia.Logic.Prolog.SourceSignature
 number or string conversion. IEEE floats are stored by their 64-bit payload
 so NaNs and signed zero remain distinguishable. -/
 inductive Constant where
+  /-- SWI's empty-list constant, distinct from the ordinary atom named `[]`. -/
+  | nil
   | atom (name : String)
   | integer (value : Int)
   | floatBits (bits : UInt64)
@@ -91,14 +93,30 @@ def predicate (name : String) (args : List Term) : Atom := {
 def call (name : String) (args : List Term) : Goal :=
   .call (predicate name args)
 
-/-- SWI-Prolog's canonical list functor is `[|]/2`; `[]` remains an atom. -/
-def nil : Term := atom "[]"
+/-- The source dialect chooses its actual nil constant and cons functor.
+This dictionary changes notation without collapsing distinct source atoms. -/
+structure ListEncoding where
+  nilConstant : Constant
+  consName : String
+  deriving DecidableEq, Repr
 
-def cons (head tail : Term) : Term :=
-  compound "[|]" [head, tail]
+def ListEncoding.nil (encoding : ListEncoding) : Term := .const encoding.nilConstant
 
-def list (elements : List Term) (tail : Term := nil) : Term :=
-  elements.foldr cons tail
+def ListEncoding.cons (encoding : ListEncoding) (head tail : Term) : Term :=
+  compound encoding.consName [head,tail]
+
+def ListEncoding.list (encoding : ListEncoding) (elements : List Term) (tail : Term := encoding.nil) : Term :=
+  elements.foldr encoding.cons tail
+
+def swiLists : ListEncoding := ⟨.nil, "[|]"⟩
+def isoLists : ListEncoding := ⟨.atom "[]", "."⟩
+
+/-- The existing source-runtime services use the SWI list representation. -/
+def nil : Term := swiLists.nil
+def cons (head tail : Term) : Term := swiLists.cons head tail
+def list (elements : List Term) (tail : Term := nil) : Term := swiLists.list elements tail
+
+theorem swi_nil_ne_atom : nil ≠ atom "[]" := by intro equal; cases equal
 
 @[simp]
 theorem predicate_arity (name : String) (args : List Term) :

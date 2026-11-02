@@ -70,8 +70,8 @@ theorem containsContactShape_of_cutSourceShape {presentation : ValidatedLanguage
     (shape : CutSourceShape contact program environment core) :
     containsContactShape core = true := by
   cases shape with
-  | binary _ => simp [containsContactShape]
-  | collection context rest _ => simp [containsContactShape]
+  | binary _ _ _ => simp [containsContactShape]
+  | collection context rest _ _ _ => simp [containsContactShape]
 
 /-- A pattern containing a filled contact shape contains a contact shape. -/
 theorem containsContactShape_fill :
@@ -136,18 +136,36 @@ theorem containsContactShape_mapPattern (symbols : LanguageDefSymbolMap) (patter
   | hcollection collectionType elements rest recurse =>
       simp [mapPattern, containsContactShape, containsContactShapeList_map elements recurse]
 
+/-- Whether a pattern is a summand selected from a choice is a matter of its form: renaming symbols does not change
+it. -/
+theorem choiceForm_mapPattern (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
+    choiceForm (mapPattern symbols pattern) = choiceForm pattern := by
+  cases pattern with
+  | apply label arguments =>
+      rcases arguments with _ | ⟨argument, _ | ⟨second, others⟩⟩
+      · rfl
+      · cases argument with
+        | collection kind elements rest =>
+            cases kind <;> cases rest <;> rcases elements with _ | ⟨element, _ | ⟨next, more⟩⟩ <;>
+              simp [mapPattern, mapPatternList, choiceForm]
+        | _ => simp [mapPattern, mapPatternList, choiceForm]
+      · simp [mapPattern, mapPatternList, choiceForm]
+  | _ => simp [mapPattern, choiceForm]
+
 namespace InteractionCutPresentation
 
 variable {theory : IGSLT}
 
 /-- **The operands of a binary rule.**  When the selected rule's left side is
-a binary application whose operands contain no contact shape, the cut has no
-envelope and its two operands are those of the left side. -/
+a binary application whose operands contain no contact shape and are no
+summands of a choice, the cut has no envelope and its two operands are those
+of the left side. -/
 theorem operands_of_binary_left (cut : InteractionCutPresentation theory)
     {label : String} {first second : Pattern}
     (left : theory.presentation.interactionRewrite.1.left = .apply label [first, second])
     (firstPlain : containsContactShape first = false)
-    (secondPlain : containsContactShape second = false) :
+    (secondPlain : containsContactShape second = false)
+    (firstDirect : choiceForm first = false) (secondDirect : choiceForm second = false) :
     cut.program.schemaTerm = first ∧ cut.environment.schemaTerm = second := by
   have fills : cut.sourceShape.envelope.fill cut.sourceShape.core =
       .apply label [first, second] := cut.sourceShape.fillsSource.trans left
@@ -165,10 +183,11 @@ theorem operands_of_binary_left (cut : InteractionCutPresentation theory)
       generalize cut.environment.schemaTerm = environment at shape
       generalize source : Pattern.apply label [first, second] = pattern at shape
       cases shape with
-      | binary _ =>
+      | binary programOccurs environmentOccurs _ =>
           simp only [Pattern.apply.injEq, List.cons.injEq, and_true] at source
-          exact ⟨source.2.1.symm, source.2.2.symm⟩
-      | collection _ _ _ => cases source
+          obtain ⟨-, rfl, rfl⟩ := source
+          exact ⟨programOccurs.eq_of_choiceForm firstDirect, environmentOccurs.eq_of_choiceForm secondDirect⟩
+      | collection _ _ _ _ _ => cases source
   | apply constructor before inner after =>
       simp only [OneHoleContext.fill, Pattern.apply.injEq] at fills
       obtain ⟨-, arguments⟩ := fills

@@ -86,6 +86,8 @@ import Mettapedia.OSLF.MeTTaIL.Complete.Normalized
 import Mettapedia.OSLF.MeTTaIL.Upstream.Ambient
 import Mettapedia.OSLF.MeTTaIL.Upstream.AmbientTests
 import Mettapedia.OSLF.MeTTaIL.Upstream.Lambda
+import Mettapedia.OSLF.MeTTaIL.ReferenceStepDeclaredAgreement
+import Mettapedia.OSLF.Framework.ReferenceStepPremisedControls
 
 /-!
 # OSLF

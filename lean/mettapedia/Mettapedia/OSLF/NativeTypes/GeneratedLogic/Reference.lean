@@ -118,10 +118,17 @@ def JudgmentTypes.Admits (language : LanguageDef) : JudgmentTypes → TypeExpr �
 inductive EquationReading where
   /-- Through the instances a binding discipline admits; admitting every binding, the syntax theory. -/
   | instances (discipline : EquationDiscipline)
-  /-- As the typed judgment `⊢ s ≡ t : T` between closed object terms of a judgment type that keep a reflection
-  profile's scope policy, over the instances a discipline admits. -/
+  /-- As the typed judgment `Γ ⊢ s ≡ t : T` between object terms of a judgment type that keep a reflection
+  profile's scope policy, over the instances a discipline admits. The terms have no free bound variable; their free
+  variables are names of one sort, when a sort is given (`names`), and they have none otherwise. -/
   | typed (discipline : EquationDiscipline) (profile : ReflectionProfile) (types : JudgmentTypes)
+      (names : Option String)
   deriving DecidableEq, Repr
+
+/-- The context of a typed reading's free names: every free variable has the sort, or there is none. -/
+def EquationReading.nameContext : Option String → FreeTypeContext
+  | none => FreeTypeContext.empty
+  | some sort => fun _ => some (.base sort)
 
 /-- **The syntax theory**: every instance of an authored equation, whatever it binds its variables to. -/
 abbrev EquationReading.syntax : EquationReading := .instances .raw
@@ -130,9 +137,9 @@ abbrev EquationReading.syntax : EquationReading := .instances .raw
 def readingStep (relEnv : RelationEnv) (language : LanguageDef) : EquationReading → Pattern → Pattern → Prop
   | .instances .raw => EquationStep relEnv language
   | .instances discipline => DisciplinedStep relEnv language discipline
-  | .typed discipline profile types => fun first second =>
-    ∃ type, types.Admits language type ∧ TypedStep relEnv language discipline FreeTypeContext.empty [] type
-      (Mettapedia.GSLT.LanguageDef.ReflectiveWellSorted.ReflectiveScopeSafeAt profile 0) first second
+  | .typed discipline profile types names => fun first second =>
+    ∃ type, types.Admits language type ∧ TypedStep relEnv language discipline (EquationReading.nameContext names) []
+      type (Mettapedia.GSLT.LanguageDef.ReflectiveWellSorted.ReflectiveScopeSafeAt profile 0) first second
 
 /-! ## Readings of the rules -/
 
@@ -228,12 +235,12 @@ theorem readingStep_disciplined {equations : EquationReading} {first second : Pa
   | .instances .sorted, step => exact ⟨.sorted, step⟩
   | .instances .fresh, step => exact ⟨.fresh, step⟩
   | .instances .closed, step => exact ⟨.closed, step⟩
-  | .typed discipline _ _, ⟨_, _, step⟩ => exact ⟨discipline, step.2.2⟩
+  | .typed discipline _ _ _, ⟨_, _, step⟩ => exact ⟨discipline, step.2.2⟩
 
 /-- The binding discipline a reading of the equations reads instances through. -/
 def EquationReading.discipline : EquationReading → EquationDiscipline
   | .instances discipline => discipline
-  | .typed discipline _ _ => discipline
+  | .typed discipline _ _ _ => discipline
 
 /-- **A step in a reading is a step of its discipline.** -/
 theorem readingStep_discipline {equations : EquationReading} {first second : Pattern}
@@ -244,7 +251,7 @@ theorem readingStep_discipline {equations : EquationReading} {first second : Pat
   | .instances .sorted, step => exact step
   | .instances .fresh, step => exact step
   | .instances .closed, step => exact step
-  | .typed _ _ _, ⟨_, _, step⟩ => exact step.2.2
+  | .typed _ _ _ _, ⟨_, _, step⟩ => exact step.2.2
 
 /-- **A step in any reading is a step of the syntax theory.** -/
 theorem readingStep_toSyntax {equations : EquationReading} {first second : Pattern}
@@ -302,8 +309,8 @@ theorem objectEquivalent_iff_eq_of_isEquationFree (free : language.isEquationFre
 
 /-- **The typed reading is contained in the reading of its discipline's instances.** -/
 theorem ObjectEquivalent.typed_instances {discipline : EquationDiscipline} {profile : ReflectionProfile}
-    {types : JudgmentTypes} {rules : RuleReading} {first second : Pattern}
-    (equivalent : ObjectEquivalent relEnv language ⟨.typed discipline profile types, rules⟩ first second) :
+    {types : JudgmentTypes} {names : Option String} {rules : RuleReading} {first second : Pattern}
+    (equivalent : ObjectEquivalent relEnv language ⟨.typed discipline profile types names, rules⟩ first second) :
     ObjectEquivalent relEnv language ⟨.instances discipline, rules⟩ first second := by
   refine Relation.EqvGen.mono (fun _ _ step => ⟨step.1, step.2.1, ?_⟩) _ _ equivalent
   obtain ⟨_, _, typedStep⟩ := step.2.2

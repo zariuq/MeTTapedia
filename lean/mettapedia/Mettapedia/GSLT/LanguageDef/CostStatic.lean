@@ -454,13 +454,16 @@ theorem schemaInstantiationStable_of_mem
 The two sorting fields retain the original declaration-derived retyping
 obligation.  The premise, instantiation, and matcher fields state the
 additional operational boundary explicitly: this first exact transport
-handles no premise evaluator, both orientations must commute with the
-injective schema namespace used by generated Cost equations, and both sides
-must reconstruct their matched instances exactly. -/
+handles no premise evaluator and no binder declaration (the schema renaming
+does not rename a declaration's metavariables), both orientations must
+commute with the injective schema namespace used by generated Cost
+equations, and both sides must reconstruct their matched instances
+exactly. -/
 structure EquationRetypable {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut) (equation : Equation) : Prop where
   premiseFree : equation.premises = []
+  undeclared : equation.bindings = none
   leftInstantiationStable : schemaInstantiationStable equation.left = true
   rightInstantiationStable : schemaInstantiationStable equation.right = true
   leftMatchCorrect :

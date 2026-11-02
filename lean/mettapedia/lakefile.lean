@@ -407,6 +407,51 @@ lean_lib GSLTSouffleDatalogQuotation where
   needs := #[`@/gsltSouffleDatalogSyntaxSource, `@/gsltSouffleDatalogCoreSource,
     `@/gsltSouffleDatalogKernelSource, `@/gsltSouffleDatalogLanguageSource]
 
+input_file gsltGoldSourceLexical where
+  path := "../../metta/gslt/module/gold/SourceLexical.module"
+  text := false
+
+input_file gsltOCamlSyntaxSource where
+  path := "../../metta/gslt/module/gold/OCaml/Syntax.module"
+  text := false
+
+input_file gsltMaudeSyntaxSource where
+  path := "../../metta/gslt/module/gold/Maude/Syntax.module"
+  text := false
+
+input_file gsltErlangSyntaxSource where
+  path := "../../metta/gslt/module/gold/Erlang/Syntax.module"
+  text := false
+
+lean_lib GSLTGoldCoreSyntaxQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.GoldCoreSyntax]
+  needs := #[`@/gsltGoldSourceLexical, `@/gsltOCamlSyntaxSource,
+    `@/gsltMaudeSyntaxSource, `@/gsltErlangSyntaxSource]
+
+input_file gsltOCamlIRSource where
+  path := "../../metta/gslt/module/OCamlIR.module"
+  text := false
+
+input_file gsltOCamlMachineSource where
+  path := "../../metta/gslt/module/OCamlMachine.module"
+  text := false
+
+lean_lib GSLTOCamlMachineQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.OCamlMachine]
+  needs := #[`@/gsltOCamlIRSource, `@/gsltOCamlMachineSource, `@/gsltRadix16ModuleSource]
+
+input_file gsltErlangDataSource where
+  path := "../../metta/gslt/module/ErlangData.module"
+  text := false
+
+input_file gsltErlangMailboxSource where
+  path := "../../metta/gslt/module/ErlangMailbox.module"
+  text := false
+
+lean_lib GSLTErlangMailboxQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.ErlangMailbox]
+  needs := #[`@/gsltErlangDataSource, `@/gsltErlangMailboxSource, `@/gsltRadix16ModuleSource]
+
 input_file gsltRadix16ModuleSource where
   path := "../../metta/gslt/module/Radix16.module"
   text := false
@@ -415,6 +460,46 @@ lean_lib GSLTRadix16Quotation where
   roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.Radix16,
     `Mettapedia.GSLT.LanguageDef.ModuleFormat.Radix16Scalar]
   needs := #[`@/gsltRadix16ModuleSource]
+
+input_file gsltCHRIRSource where
+  path := "../../metta/gslt/module/CHRIR.module"
+  text := false
+
+input_file gsltCHRProgramSource where
+  path := "../../metta/gslt/module/CHRProgram.module"
+  text := false
+
+input_file gsltCHRKernelSource where
+  path := "../../metta/gslt/module/CHRGroundKernel.module"
+  text := false
+
+input_file gsltCHRMatchSource where
+  path := "../../metta/gslt/module/CHRMatch.module"
+  text := false
+
+lean_lib GSLTCHRProgramQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRProgram]
+  needs := #[`@/gsltCHRIRSource, `@/gsltCHRProgramSource]
+
+lean_lib GSLTCHRKernelQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRGroundKernel]
+  needs := #[`@/gsltCHRIRSource, `@/gsltCHRKernelSource]
+
+lean_lib GSLTCHRMatchQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRRuleCompilation]
+  needs := #[`@/gsltCHRIRSource, `@/gsltCHRProgramSource, `@/gsltCHRMatchSource, `@/gsltRadix16ModuleSource]
+
+input_file gsltIntegerSource where
+  path := "../../metta/gslt/lib/gslt_integer.metta"
+  text := false
+
+input_file gsltCHRControllerSource where
+  path := "../../metta/gslt/lib/gslt_chr.metta"
+  text := false
+
+lean_lib GSLTCHRControllerQuotation where
+  roots := #[`Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CHRControllerSource]
+  needs := #[`@/gsltIntegerSource, `@/gsltCHRControllerSource]
 
 lean_lib GSLTSouffleDatalogScalarQuotation where
   roots := #[`Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogScalars]
@@ -802,4 +887,8 @@ lean_exe rhoCandidateServices where
 
 lean_exe oslf where
   root := `Mettapedia.OSLF.NativeTypes.Product.Main
+  supportInterpreter := true
+
+lean_exe sourceSyntax where
+  root := `Mettapedia.GSLT.LanguageDef.ModuleFormat.SourceSyntaxMain
   supportInterpreter := true

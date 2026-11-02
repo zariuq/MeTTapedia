@@ -157,7 +157,7 @@ theorem rho_firesInContexts : FiresInContexts rhoCalc := by
   simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
   rcases listed with rfl | rfl
   · exact .inl (isBaseRewrite_of_premises_eq_nil rfl)
-  · exact .inr (.inr ⟨_, _, _, _, parCong_elementCongruence⟩)
+  · exact .inr (.inr (.inl ⟨_, _, _, _, parCong_elementCongruence⟩))
 
 /-! ## The firing of the authored rule, translated -/
 
@@ -246,6 +246,13 @@ theorem reactive_translation {context residual : OneHoleContext}
   induction reactive with
   | hole => exact inner
   | argument beforeTerms afterTerms membership congruence _ _ _ _ =>
+      have listed : _ ∈ [rhoCommRewrite, rhoParCongRewrite] := membership
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
+      intro source translated
+      rcases listed with rfl | rfl
+      · exact absurd congruence.left (by simp [rhoCommRewrite])
+      · exact absurd congruence.left (by simp [rhoParCongRewrite])
+  | binder _ membership congruence _ _ =>
       have listed : _ ∈ [rhoCommRewrite, rhoParCongRewrite] := membership
       simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
       intro source translated
@@ -906,7 +913,8 @@ theorem quotedSingleton_equivalent :
     EquationSemantics.EquationContextStep.inContext
       (.apply "PInput" [channel] (.lambda none (.apply "POutput" [] .hole [zero])) [])
       (Or.inl ⟨0, EquationSemantics.EquationInstanceAt.forward
-        (equation := quoteDropEquation) quoteDropEquation_mem matched (PremisesAt.nil _)
+        (equation := quoteDropEquation) quoteDropEquation_mem
+        (EquationSemantics.readsRaw_of_none rfl) matched (PremisesAt.nil _)
         applied⟩)
   exact Relation.EqvGen.trans _ quotedDropTerm _ (Relation.EqvGen.rel _ _ first)
     (Relation.EqvGen.rel _ _ second)

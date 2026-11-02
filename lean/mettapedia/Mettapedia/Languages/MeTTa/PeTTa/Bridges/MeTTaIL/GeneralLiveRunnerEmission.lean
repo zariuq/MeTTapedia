@@ -78,7 +78,7 @@ def program (spec : Spec) (name : String) : Program where
 /-- The runtime with the module loaded after it. -/
 def emittedRuntime (spec : Spec) (name : String) : Program := runtime.append (program spec name)
 
-private def specialHeads : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]
+private def specialHeads : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]
 
 private def declaredHeadAllowed (name : String) : Atom → Bool
   | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] => allowed name head

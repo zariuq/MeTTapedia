@@ -91,7 +91,9 @@ private def parCongRule : RewriteRule := {
 
 /-! ## Language definitions -/
 
-/-- Full MeTTa-calculus language (COMM + REFL). -/
+/-- Authored COMM, REFL and parallel rules. The REFL premise names the
+declared COMM-only query; recursive reflection is a separate comparison
+contract in `ReflectionClosure.lean`. -/
 def mettaCalc : LanguageDef := {
   name := "MeTTaCalc"
   types := ["Proc", "Name", "Term"]

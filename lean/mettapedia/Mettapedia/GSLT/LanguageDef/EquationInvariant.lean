@@ -111,11 +111,11 @@ theorem equationEquiv_invariant {α : Type*} (measure : Pattern → α)
   | symm left right _ recurse => exact recurse.symm
   | trans left middle right _ _ first second => exact first.trans second
 
-/-- The authored equations carry no premise and are matched exactly. -/
+/-- The authored equations carry no premise, are matched exactly, and are read by the ordinary matcher. -/
 def PlainEquations (language : LanguageDef) : Prop :=
   ∀ equation : Equation, List.Mem equation language.equations →
     equation.premises = [] ∧ Pattern.isMatchCorrect equation.left = true ∧
-      Pattern.isMatchCorrect equation.right = true
+      Pattern.isMatchCorrect equation.right = true ∧ readsRaw equation = true
 
 /-- An instance of a plain equation is its two sides under one substitution,
 read in one of the two directions. -/
@@ -130,18 +130,20 @@ theorem equationInstance_sides (plain : PlainEquations language)
             target = applyBindings bindings equation.left) := by
   obtain ⟨fuel, authored⟩ := authored
   cases authored with
-  | @forward equation _ _ initial final membership matched premises applied =>
-      obtain ⟨premiseFree, leftCorrect, -⟩ := plain equation membership
+  | @forward equation _ _ initial final membership _ matched premises applied =>
+      obtain ⟨premiseFree, leftCorrect, -, -⟩ := plain equation membership
       rw [premiseFree] at premises
       cases premises
       exact ⟨equation, membership, initial,
         Or.inl ⟨(matchPattern_correct matched leftCorrect).symm, applied.symm⟩⟩
-  | @reverse equation _ _ initial final membership matched premises applied =>
-      obtain ⟨premiseFree, -, rightCorrect⟩ := plain equation membership
+  | @reverse equation _ _ initial final membership _ matched premises applied =>
+      obtain ⟨premiseFree, -, rightCorrect, -⟩ := plain equation membership
       rw [premiseFree] at premises
       cases premises
       exact ⟨equation, membership, initial,
         Or.inr ⟨(matchPattern_correct matched rightCorrect).symm, applied.symm⟩⟩
+  | @declared equation _ _ _ _ membership notRaw _ =>
+      exact absurd (plain equation membership).2.2.2 (by simp [notRaw])
 
 /-- A presentation-derived law preserves a weight when the presentation has
 no set collection and its declared units weigh nothing. -/

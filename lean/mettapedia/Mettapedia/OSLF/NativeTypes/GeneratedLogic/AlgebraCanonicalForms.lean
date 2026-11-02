@@ -215,7 +215,7 @@ theorem hasType_fill_sorted (laws : BareBagTheory language bag unit) (sorted : s
   | collection kind before inner after rest recurse =>
     intro bound original type entries position typed object
     simp only [OneHoleContext.fill] at typed object
-    obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws typed (sortedType_collectionFree position)
+    obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation typed (sortedType_collectionFree position)
     obtain ⟨beforeTyped, middleTyped, afterTyped⟩ := ElementsHaveType.append_cons_split elementsTyped
     have objectMiddle : isObjectPattern (inner.fill original) = true := by
       simp only [isObjectPattern, Bool.and_eq_true] at object
@@ -225,7 +225,7 @@ theorem hasType_fill_sorted (laws : BareBagTheory language bag unit) (sorted : s
     refine ⟨holeBound, holeType, holeEntries, holePosition, originalTyped, ?_⟩
     intro replacement transfer replacementTyped
     simp only [OneHoleContext.fill]
-    apply bag_hasType laws
+    apply bag_hasType laws.toBareBagPresentation
     apply elementsHaveType_iff.mpr
     intro element membership
     simp only [List.mem_append, List.mem_cons] at membership
@@ -246,26 +246,26 @@ theorem derived_hasType_back (laws : BareBagTheory language bag unit) (sorted : 
   have collectionless := sortedType_collectionFree position
   cases derived with
   | bagPerm _ _ permutation =>
-    obtain ⟨-, rfl, elementsTyped⟩ := bag_typing laws typed collectionless
-    exact ⟨bag_hasType laws (elementsHaveType_iff.mpr fun element member =>
+    obtain ⟨-, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation typed collectionless
+    exact ⟨bag_hasType laws.toBareBagPresentation (elementsHaveType_iff.mpr fun element member =>
       elementsHaveType_iff.mp elementsTyped element (permutation.mem_iff.mp member)), represents_collection _ _ _ _⟩
   | setPerm member kindTyped _ => exact absurd (laws.toBagTheory.collectionTyped member kindTyped).2 (by decide)
   | setDedup member kindTyped => exact absurd (laws.toBagTheory.collectionTyped member kindTyped).2 (by decide)
   | flatten algebraRule _ _ =>
     obtain ⟨-, rfl, -⟩ := laws.toBagTheory.algebraRule algebraRule
-    obtain ⟨-, rfl, elementsTyped⟩ := bag_typing laws typed collectionless
-    refine ⟨bag_hasType laws (elementsHaveType_iff.mpr ?_), represents_collection _ _ _ _⟩
+    obtain ⟨-, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation typed collectionless
+    refine ⟨bag_hasType laws.toBareBagPresentation (elementsHaveType_iff.mpr ?_), represents_collection _ _ _ _⟩
     intro element member
     simp only [List.mem_append, List.mem_cons] at member
     rcases member with inBefore | rfl | inAfter
     · exact elementsHaveType_iff.mp elementsTyped element (by simp [inBefore])
-    · exact bag_hasType laws (elementsHaveType_iff.mpr fun inner member =>
+    · exact bag_hasType laws.toBareBagPresentation (elementsHaveType_iff.mpr fun inner member =>
         elementsHaveType_iff.mp elementsTyped inner (by simp [member]))
     · exact elementsHaveType_iff.mp elementsTyped element (by simp [inAfter])
   | singleton algebraRule _ sortedAt =>
     obtain ⟨rfl, rfl, -⟩ := laws.toBagTheory.algebraRule algebraRule
     obtain ⟨free', bound', sortedTyped⟩ := sortedAt
-    obtain ⟨-, -, elementTyped⟩ := bag_typing laws sortedTyped rfl
+    obtain ⟨-, -, elementTyped⟩ := bag_typing laws.toBareBagPresentation sortedTyped rfl
     have elementBase := elementsHaveType_iff.mp elementTyped target (by simp)
     have notLambda : ∀ binder body, target ≠ .lambda binder body := by
       rintro binder body rfl
@@ -274,7 +274,7 @@ theorem derived_hasType_back (laws : BareBagTheory language bag unit) (sorted : 
       rintro arity binders body rfl
       cases elementBase
     obtain rfl := hasType_base_of_sorted sorted entries typed position object notLambda notMulti
-    refine ⟨bag_hasType laws (elementsHaveType_iff.mpr fun element member => by
+    refine ⟨bag_hasType laws.toBareBagPresentation (elementsHaveType_iff.mpr fun element member => by
       rw [List.mem_singleton.mp member]
       exact typed), ?_⟩
     intro parameter matched
@@ -288,7 +288,7 @@ theorem derived_hasType_back (laws : BareBagTheory language bag unit) (sorted : 
       exact absurd rfl (notMulti _ _ _)
   | unitElim algebraRule unitIs _ =>
     obtain ⟨rfl, rfl, -⟩ := laws.toBagTheory.algebraRule algebraRule
-    obtain ⟨-, rfl, elementsTyped⟩ := bag_typing laws typed collectionless
+    obtain ⟨-, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation typed collectionless
     obtain ⟨unitRule, unitMember, labelIs, categoryIs, parametersAre⟩ := algebraRule.unitAuthored _ unitIs
     have unitTyped : HasType language FreeTypeContext.empty bound (.apply unitRule.label [])
         (.base unitRule.category) := by
@@ -297,7 +297,7 @@ theorem derived_hasType_back (laws : BareBagTheory language bag unit) (sorted : 
       cases representation : unitRule.collectionRepresentation <;>
         simp [GrammarRule.bareParams, representation, parametersAre] at shape
     rw [labelIs, categoryIs] at unitTyped
-    refine ⟨bag_hasType laws (elementsHaveType_iff.mpr ?_), represents_collection _ _ _ _⟩
+    refine ⟨bag_hasType laws.toBareBagPresentation (elementsHaveType_iff.mpr ?_), represents_collection _ _ _ _⟩
     intro element member
     simp only [List.mem_append, List.mem_cons] at member
     rcases member with inBefore | rfl | inAfter
@@ -308,7 +308,7 @@ theorem derived_hasType_back (laws : BareBagTheory language bag unit) (sorted : 
     obtain ⟨rfl, rfl, -⟩ := laws.toBagTheory.algebraRule algebraRule
     obtain rfl := hasType_base_of_sorted sorted entries typed position object
       (by intro _ _ same; cases same) (by intro _ _ _ same; cases same)
-    refine ⟨bag_hasType laws (.nil _ _), ?_⟩
+    refine ⟨bag_hasType laws.toBareBagPresentation (.nil _ _), ?_⟩
     intro parameter matched
     cases parameter <;> simp_all [MatchesParameterRepresentation]
 
@@ -425,8 +425,10 @@ theorem equationContextStep_of_step (noEquations : language.equations = []) (bas
   | inContext context generator =>
     rcases generator with authored | derived
     · cases authored with
-      | forward member _ _ => rw [noEquations] at member; cases member
-      | reverse member _ _ => rw [noEquations] at member; cases member
+      | forward member _ _ _ => rw [noEquations] at member; cases member
+      | reverse member _ _ _ => rw [noEquations] at member; cases member
+      | declared member _ _ => rw [noEquations] at member; cases member
+      | premised member _ _ _ => rw [noEquations] at member; cases member
     · exact .inContext context (Or.inr derived)
 
 theorem step_of_equationContextStep (noEquations : language.equations = []) {base : BasePremiseEvaluator}

@@ -44,7 +44,9 @@ structure Replacement where
 inductive Block where
   | types (declarations : List TypeDecl)
   | exports (rows : List Export)
-  | terms (rules : List GrammarRule)
+  /-- Constructors, and those of them declared bare (`![bare]`): a declared-bare constructor keeps its bare
+  collections where it shares its collection kind with another constructor, which would otherwise keep its label. -/
+  | terms (rules : List GrammarRule) (bare : List String := [])
   | replacements (rows : List Replacement)
   | equations (rows : List Equation)
   | rewrites (rows : List RewriteRule)

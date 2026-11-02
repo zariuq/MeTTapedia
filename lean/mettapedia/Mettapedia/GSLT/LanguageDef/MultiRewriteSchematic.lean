@@ -543,7 +543,7 @@ private theorem a_equiv_b :
   apply Or.inl
   refine ⟨0, EquationInstanceAt.forward (equation := equationAB)
     (initialBindings := []) (finalBindings := [])
-    (List.Mem.head []) ?_ (.nil []) ?_⟩
+    (List.Mem.head []) (by decide) ?_ (.nil []) ?_⟩
   · simp [equationAB, chA, matchPattern, matchArgs]
   · simp [equationAB, chB, applyBindings]
 

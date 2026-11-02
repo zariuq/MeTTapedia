@@ -524,6 +524,16 @@ theorem modelClass_literal_not_control (program : Program) (head : String)
       exact False.elim (notControl same)
   exact ⟨ordinary, (modelClass_literal_of_noncontrol program head arguments ordinary).symm.trans classification⟩
 
+/-- Every control form of the eager driver is a control form of the
+declarative rules, so an expression that is not one there is not one in the
+driver either. -/
+private theorem eager_not_control {atom : Atom}
+    (notControl : DeclarativeSpec.controlForm atom = false) :
+    EagerDFS.eagerControlForm atom = false := by
+  revert notControl
+  unfold EagerDFS.eagerControlForm
+  split <;> simp [DeclarativeSpec.controlForm]
+
 theorem passive_source_transition (program : Program) (world : EagerDFS.World)
     (bindings : Subst) (head : String) (arguments : List Atom)
     (frames : List EagerDFS.Frame)
@@ -537,7 +547,7 @@ theorem passive_source_transition (program : Program) (world : EagerDFS.World)
     · simp [modelClass, selected] at passive
   rw [modelClass_literal_of_noncontrol program head arguments ordinary] at passive
   obtain ⟨io, primitive, authored⟩ := (headClass_passive_iff program head).mp passive
-  exact .data_enter ordinary (by simp [io, primitive, authored])
+  exact .data_enter (eager_not_control ordinary) (by simp [io, primitive, authored])
 
 /-- Successful passive admission enters the actual data branch of the driver.
 No unknown application is turned into a language error by this bridge. -/
@@ -598,7 +608,7 @@ theorem admitted_authored_localStep (program : Program) (snapshot : Snapshot)
     (selected.symm.trans authored) (by decide)
   obtain ⟨io, primitive, callable⟩ := (headClass_authored_iff program head).mp classification
   exact EagerDFS.local_transition_step
-    (.call_enter notControl (by simp only [io, primitive, callable, Bool.false_or]))
+    (.call_enter (eager_not_control notControl) (by simp only [io, primitive, callable, Bool.false_or]))
 
 theorem admitted_primitive_source_response (program : Program) (snapshot : Snapshot)
     (address : Address) (world : EagerDFS.World) (bindings : Subst)

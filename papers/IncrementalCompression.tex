@@ -1,0 +1,314 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=25mm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,tabularx,listings,xcolor,xurl,hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,
+  pdftitle={Incremental Source-Library Learning in CeTTa},
+  pdfauthor={Mettapedia Working Notes}}
+\setlength{\emergencystretch}{3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\lstset{basicstyle=\ttfamily\small,columns=fullflexible,keepspaces=true,
+  breaklines=true,frame=single}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\file}[1]{\nolinkurl{#1}}
+\title{Incremental Source-Library Learning in CeTTa\\
+  \large A reproducible, frozen-profile PLN proof of concept}
+\author{Mettapedia Working Notes}
+\date{30 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A native CeTTa learner discovers two reusable computations in an unchanged PLN
+truth-formula library. Successive retained programs contain 2,207, 2,186 and
+2,180 structural nodes, counting helper definitions and calls. The experiment
+checks original-source reconstruction, finite public-call observations and
+stopped/resumed agreement. Its decisive language extension exposes one existing
+authored call, \code{/safe}, while leaving its definition unchanged. The
+extension is isolated in a retained, checksummed profile rather than silently
+installed into the default codec. This note records the algorithmic connection
+to incremental compression, the precise experiment, two semantic
+counterexamples, and interfaces for later integration. It closes a bounded
+experimental tranche, not a universal correctness or optimality claim.
+\end{abstract}
+
+\section{What is being learned}
+
+The input is \file{lib/petta/lib_pln.metta} in the CeTTa NIK source tree.
+The task is \emph{source-level library learning}: find reusable parameterized
+computations in existing truth-function implementations. It is not induction
+of new PLN inference rules, proof compression relative to a proof calculus,
+or fitting a numerical model to observations.
+
+The native loop is
+\[
+ P_0 \longrightarrow (L_1,R_1) \longrightarrow (L_2,R_2),
+ \qquad \operatorname{expand}(L_i,R_i)=P_0.
+\]
+Here $P_0$ is the admitted syntax document, $L_i$ contains learned definitions,
+and $R_i$ is the rewritten source containing calls and arguments. Each step
+starts a new search on the preceding stored program. The second helper need
+not call the first: successive independent abstractions are already incremental;
+hierarchical helper composition is a separate possible result.
+
+Franz, Antonenko and Soletskyi describe compression by feature maps and
+descriptive maps, iterated over residual descriptions~\cite{franz}.
+In this implementation anti-unification proposes features; matching and
+nonoverlapping replacement supply a restricted descriptive map; syntactic
+helper expansion reconstructs the observation. The practical search neither
+finds nor assumes a globally shortest feature. Independence, orthogonality and
+near-optimality conclusions requiring the paper's stronger hypotheses do not
+follow from the checks here.
+
+There is also a useful distinction from residual-only presentations: later
+searches may inspect earlier helper definitions as part of the whole stored
+program. Thus the implementation permits joint library/residual optimization,
+not only a frozen feature sequence with residual-only updates.
+
+\section{Representation, observation and cost}
+
+The source representation retains expression structure, typed literals,
+form-local variable relationships, quotation, rule order and duplicate forms.
+Source reconstruction compares the normalized source emitted by the native
+reader/writer; it does not preserve original comments or layout byte for byte.
+The accumulated library expands newest-first to that original observation.
+
+The selected objective is structural program size:
+\[
+ C(a)=1 \quad\hbox{for an atom},\qquad
+ C((t_1\ldots t_n))=1+\sum_{j=1}^n C(t_j).
+\]
+An empty expression therefore costs one. The measured document includes every
+stored helper equation, parameter occurrence, call and delayed argument.
+Earlier helper definitions remain charged. Literal spelling, source layout
+and variable-inventory/codec metadata are outside this objective. In particular,
+long helper names do not receive a larger structural charge.
+
+This is \emph{not} a demonstrated complete binary MDL code for arbitrary
+literal payloads. Serialized archive lengths are reported separately. The
+profile and runtime retained for this experiment are supplied out of band and
+are not included in those archive lengths; the capsule's total size must not
+be mistaken for the table's encoded-program size.
+
+Every accepted candidate must reconstruct the original observation and
+strictly lower the selected cost. Strict natural-valued descent bounds accepted
+updates but does not guarantee discovery, bounded checking time, semantic
+equivalence under all observations, or optimality of the selected feature.
+
+\section{The two learned computations}
+
+The first abstraction occurs four times:
+\begin{lstlisting}
+(= (ic-learned:a $p0 $p1 $p2)
+   (/ (* (+ 1.0 (/ $p0 $p1)) $p2)
+      (+ 1.0 $p2)))
+\end{lstlisting}
+It factors the shared similarity-to-inheritance strength computation used
+inside transitive similarity. The second occurs in both
+\code{Truth_Deduction} and \code{simpleDeductionStrength}:
+\begin{lstlisting}
+(= (ic-learned:b $p0 $p1 $p2 $p3 $p4 $p5)
+   (if (< $p0 $p1)
+       $p2
+       (+ (* $p3 $p4)
+          (/safe (* (- $p5 $p3)
+                    (- $p2 (* $p1 $p4)))
+                 (- $p5 $p1)))))
+\end{lstlisting}
+The arguments represent the authored threshold, intermediate and consequent
+strengths, the two conditional strengths, and the unit literal. Differences
+between \code{0.9999} and \code{0.99}, and between \code{1} and \code{1.0},
+remain explicit arguments. No algebraic rewriting or literal normalization is
+used to force a match.
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Stored program & Structural nodes & Archive bytes & Helpers retained\\
+\midrule
+Original & 2,207 & 59,537 & 0\\
+After first feature & 2,186 & 59,092 & 1\\
+After second feature & 2,180 & 59,059 & 2\\
+\bottomrule
+\end{tabular}
+\end{center}
+The total reduction is 27 nodes (about $1.22\%$). The second reduction is
+small but fully charged: two 32-node subtrees become two 8-node calls and a
+42-node definition,
+\[
+  2\cdot32-(2\cdot8+42)=6.
+\]
+The significance is an inspectable second feature on real unchanged source,
+not a large compression ratio or an execution speedup.
+
+\section{Why the authored-call boundary mattered}
+
+The stock source profile exposes a fixed inventory of standard operators.
+Unknown calls become opaque captured expressions. Consequently the common
+structure inside \code{/safe} was not available to the template language;
+the associated capture/thunk overhead made the relevant candidate unprofitable.
+
+The returned working review reports a complete census of the stock finite
+same-head pair language: 385 pairs and 41 distinct initial candidates; after
+the first feature, 229 pairs and 38 distinct candidates, none improving.
+The latter region's best candidate grows by five nodes. This is a reported
+finite-language census, not incompressibility under every possible grammar.
+Its Python/native diagnostic cross-check is external-review evidence; the
+local tranche qualification instead directly replays the positive experiment
+and the native controls below.
+
+The experimental profile separates reserved primitive names from admitted
+authored calls and exposes \code{/safe} at arity two. It checks the exact
+source definition before learning:
+\begin{lstlisting}
+(= (/safe $A $B)
+   (if (> $B 0.0) (/ $A $B) (empty)))
+\end{lstlisting}
+Both zero and negative denominators produce no result. The extension must
+agree across traversal, projection, helper construction, argument recovery
+and decoder substitution. Adding a name only to the generator would not
+establish that agreement. Treating an authored call as a reserved intrinsic
+would instead reject its legitimate definition.
+
+The fixed run selects the first four ranked seed pairs at stage one and the
+first pair at stage two, from expanded regions of 965 and 746 pairs. Templates
+and occurrence sites are generated, not supplied as witnesses. These prefixes
+were chosen during diagnosis; they are not an unbiased discovery benchmark
+or an exhaustive search of the expanded grammar. Multiple better incumbents
+can be considered within one stage: the recorded first stage has two such
+updates but retains one helper, not two independently installed features.
+
+\section{Qualification and counterexamples}
+
+The native shell-driven gate checks:
+\begin{enumerate}
+\item the original input hash, two retained helpers and their four/two uses;
+\item native reconstruction to the original after each stage, with a separate
+AWK count agreeing with all three structural sizes;
+\item 33 public-call observations on the stock runtime, covering threshold
+boundaries, empty and duplicate choice, entry effects and nonpositive safe
+division, plus a separate arithmetic-fault comparison;
+\item stopped/resumed search at both stages yielding byte-identical artifacts;
+\item 17 cost controls, the controlled two-step rule-head suite, four exact-call
+profile controls, malformed-archive refusal, and fresh-process capsule replay.
+\end{enumerate}
+This command uses native CeTTa, shell tools and AWK, not a Python reconstruction
+checker. The observation panel is finite and does not prove universal execution
+equivalence.
+
+\paragraph{Ambient type counterexample.}
+An ambient result-type annotation can expose source syntax as a returned value:
+\begin{lstlisting}
+(: audit-f (-> Number Atom))
+\end{lstlisting}
+Factoring three repeated arithmetic
+rules reconstructs exactly and reduces 75 nodes to 49, yet calling
+\code{(audit-f 3)} returns the arithmetic expression in the original and a
+helper-call expression in the rewrite. Source-local annotation checks alone
+do not establish that the target is untyped in the active environment.
+
+\paragraph{Reflection counterexample.}
+An untouched observer using \code{match &self} to inspect the body of a
+rewritten rule can distinguish it. The local negative control reduces
+91 nodes to 65 and reconstructs exactly, but the observer's body-size result
+changes from 4 to 2. Avoiding transformations \emph{inside} a reflective
+function does not prevent it observing transformations elsewhere.
+
+These are reproduced limitations, not acceptable optimizations under arbitrary
+observations. The advertised POC contract is exact admitted-source reconstruction
+plus the specified ordinary public-call observations in fresh, fixed
+environments. General ambient target-type and helper-name freshness checks
+remain integration work. Reflective equivalence requires a separately defined
+reflection contract or decoding before the reflected execution.
+
+\section{Preserved package and extension interfaces}
+
+The ordinary libraries and C dispatch are unchanged. An opt-in experiment
+copies the libraries, applies the two-file profile patch there, and retains
+the matching decoder, runtime and artifacts in a fresh capsule. The input is
+pinned by its full SHA-256. \file{PROFILE.txt}, \file{PROFILE.sha256} and
+\file{ARTIFACTS.sha256} travel with the artifacts; replay verifies them before
+decoding in a fresh process. These checks provide an integrity/reproducibility
+envelope, not an authenticated trust boundary.
+
+In particular, a raw experimental \code{LC2}/\code{LM1} archive does not yet
+carry a general versioned authored-call profile. Its matching capsule is
+required. The emitted ordinary MeTTa definitions themselves run on the stock
+runtime. This difference between executable program export and archive decoding
+is an explicit boundary of the paused tranche.
+
+\begin{lstlisting}
+make BUILD=core ENABLE_LIB_PROLOG=0 CETTA_TEST_ISOLATED=1 demo-ic-pln-mvp
+bash experiments/ic_pln_mvp/replay.sh path/to/capsule
+bash experiments/ic_pln_mvp/check_boundaries.sh path/to/cetta
+\end{lstlisting}
+The last command succeeds when the two negative counterexamples reproduce;
+it is not a general semantic-correctness gate.
+
+The principal extension points are:
+\begin{description}
+\item[Persisted profile.] Keep the profile explicit throughout preparation,
+decoding and resumption. It records reserved primitives, authored signatures
+and definitions, argument demand, the environment and the observation. Changed
+dependencies must invalidate or reprepare the task. Ambient target-type and
+namespace checks must be fixed before broadening automatic installation.
+\item[Exact planning before publication.] Select actual disjoint replacement
+sites, then compute
+\[
+C_{\rm next}=C_{\rm current}+C_{\rm definition}
+ +\sum_{s\in S}(C_{\rm call(s)}-C_{\rm old(s)}).
+\]
+Disjointness makes this an exact structural delta, including actual thunks.
+Only improving plans need whole-document packing; the final checker remains
+authoritative. The current materialization interface receives the stage input,
+not the incumbent: incumbent-based pruning needs its validated cost explicitly.
+\item[Prepared state and deduplication.] Reuse catalogs within a stage. Any
+candidate key must retain sorts/roles, shared-hole relationships, readiness and
+the complete frozen context. Preserve first representatives and search order
+in differential replay. A similar printed body is not a sufficient key.
+\end{description}
+These are future integration tasks, not additional acceptance gates for the
+retained experiment. Broader numerical learning, proof-trace compression,
+ILP metarule discovery and hierarchical helper invention remain separate tasks.
+
+\section{Theory connection and evidence provenance}
+
+Mettapedia contains shared source-frame, template, costed-artifact, layered
+source and search developments under \file{Mettapedia/Algorithms/Compression/},
+and paper-facing definitions under
+\file{Mettapedia/Computability/KolmogorovComplexity/}.
+The concrete \file{SourceAdmissionCounterexample.lean} models the older
+plain-port restriction and proves the empty-list predicate's break-even
+calculation. Those model results do not prove the current C runtime equivalent
+to Lean reduction or establish all source transformations semantically sound.
+No new Lean theorem is asserted by this experimental handoff.
+
+The working diagnostic originated in the returned 30 October 2026 review;
+local packaging adds the native observation-boundary runner and replay envelope.
+The base CeTTa revision was \code{45d3b058}, with the retained source-runner
+changes. The input hash is:
+\begin{quote}\small\file{6b980321bbe9b49e5b12e2fcee0479ab1d5c7550c2104a67b0722a5b473da4ee}\end{quote}
+The returned review archive hash is:
+\begin{quote}\small\file{b705188c3807c6f8fdaee8ac32684a9b3981bc0184e7327c88e393c28545ec2c}\end{quote}
+Executable source, commands and integration notes are owned by
+\file{experiments/ic_pln_mvp/}. Each run retains its own binary/library hashes
+and check outputs. Historical timings from different machines, binaries and
+search-region sizes are not a controlled speed comparison and are not used to
+claim a speedup here.
+
+The defensible conclusion is a small real-program incremental abstraction
+result with exact source reconstruction and an explicit execution profile.
+It is sufficient to pause and preserve this tranche while leaving its broader
+semantic and production extensions clearly identified.
+
+\begin{thebibliography}{9}
+\bibitem{franz}
+Arthur Franz, Oleksandr Antonenko and Roman Soletskyi.
+\emph{A theory of incremental compression}.
+Information Sciences 547 (2021), 28--48.
+\url{https://arxiv.org/abs/1908.03781v2}.
+\end{thebibliography}
+\end{document}

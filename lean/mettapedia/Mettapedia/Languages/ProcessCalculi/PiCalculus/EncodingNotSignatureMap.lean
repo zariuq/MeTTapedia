@@ -14,7 +14,7 @@ make precise that it is not the action of a signature map.
   every choice of the two names, the renamed pi term differs from the
   encoding.  The reason is shape: inaction becomes an empty parallel
   composition, an output acquires a dereference, a restriction becomes a
-  request in parallel with an input, a replication is wrapped.
+  request in parallel with an input.
 * **Not a function of the term.**  The encoding of a restriction determines
   both names, so no function of the pi term alone produces it.
 * **Not into the rho calculus as authored.**  The image uses a replication
@@ -78,7 +78,7 @@ def piShape : Process → PatternShape
   | .input _ _ body => .application [.leaf, .binder (piShape body)]
   | .output _ _ => .application [.leaf, .leaf]
   | .nu _ body => .application [.binder (piShape body)]
-  | .replicate _ _ body => .application [.leaf, .binder (piShape body)]
+  | .replicate _ _ body => .application [.application [.leaf, .binder (piShape body)]]
 
 /-- The shape of the encoding of a process.  It does not depend on the two
 names. -/
@@ -244,26 +244,29 @@ theorem arityCount_zero_rhoShape :
       simp [rhoShape, PatternShape.arityCount, PatternShape.arityCountList,
         arityCount_zero_rhoShape body]
 
-/-- As a pi term a process has one unary application per restriction. -/
+/-- As a pi term a process has one unary application per restriction and one per replication, which wraps the
+server's input. -/
 theorem arityCount_one_piShape :
-    ∀ process : Process, (piShape process).arityCount 1 = process.restrictionCount
+    ∀ process : Process, (piShape process).arityCount 1 = process.restrictionCount + process.replicationCount
   | .nil => by simp [piShape, PatternShape.arityCount, PatternShape.arityCountList,
-      Process.restrictionCount]
+      Process.restrictionCount, Process.replicationCount]
   | .par left right => by
       rw [piShape, arityCount_shapeParallel, arityCount_one_piShape left,
-        arityCount_one_piShape right, Process.restrictionCount]
+        arityCount_one_piShape right, Process.restrictionCount, Process.replicationCount]
+      omega
   | .input _ _ body => by
       simp [piShape, PatternShape.arityCount, PatternShape.arityCountList,
-        arityCount_one_piShape body, Process.restrictionCount]
+        arityCount_one_piShape body, Process.restrictionCount, Process.replicationCount]
   | .output _ _ => by
       simp [piShape, PatternShape.arityCount, PatternShape.arityCountList,
-        Process.restrictionCount]
+        Process.restrictionCount, Process.replicationCount]
   | .nu _ body => by
       simp [piShape, PatternShape.arityCount, PatternShape.arityCountList,
-        arityCount_one_piShape body, Process.restrictionCount]
+        arityCount_one_piShape body, Process.restrictionCount, Process.replicationCount]
   | .replicate _ _ body => by
       simp [piShape, PatternShape.arityCount, PatternShape.arityCountList,
-        arityCount_one_piShape body, Process.restrictionCount]
+        arityCount_one_piShape body, Process.restrictionCount, Process.replicationCount]
+      omega
 
 /-- The encoding of a process has one unary application per output, the
 dereference of the name it carries, and one per replication. -/

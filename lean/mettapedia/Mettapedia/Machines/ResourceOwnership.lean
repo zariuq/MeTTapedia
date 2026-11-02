@@ -1884,6 +1884,156 @@ instance instDecidableMayMutate (use : Use) (state : State Holder Use Resource) 
 def readHolder (holder : Holder) (state : State Holder Use Resource) : Option Resource :=
   if state.current = true ∧ holder ∈ state.holders then state.resource else none
 
+section PayloadTransitions
+
+universe uReply
+variable {Reply : Type uReply}
+
+/-- Advance the owned abstract payload under its current exclusive use.
+The returned state is stored even when the reply denotes refusal or a fault.
+Lifecycle operations retain or extract the payload; this separate computation
+operation changes it. Native address replacement and transitive edge updates
+require their own storage refinement. -/
+def transitionCurrent (use : Use) (step : Resource → Reply × Resource)
+    (state : State Holder Use Resource) : Option (Reply × State Holder Use Resource) :=
+  if state.current = true ∧ mayMutate use state then
+    state.resource.map fun resource =>
+      let reached := step resource
+      (reached.1, { state with resource := some reached.2 })
+  else none
+
+omit [DecidableEq Holder] in
+theorem transitionCurrent_admitted (use : Use) (step : Resource → Reply × Resource)
+    (before after : State Holder Use Resource) (reply : Reply)
+    (accepted : transitionCurrent use step before = some (reply, after)) :
+    before.current = true ∧ mayMutate use before ∧
+      ∃ resource, before.resource = some resource ∧ reply = (step resource).1 ∧
+        after = { before with resource := some (step resource).2 } := by
+  unfold transitionCurrent at accepted
+  split at accepted
+  · rename_i allowed
+    obtain ⟨resource, held, same⟩ := Option.map_eq_some_iff.mp accepted
+    cases same
+    exact ⟨allowed.1, allowed.2, resource, held, rfl, rfl⟩
+  · cases accepted
+
+omit [DecidableEq Holder] in
+theorem transitionCurrent_metadata (use : Use) (step : Resource → Reply × Resource)
+    (before after : State Holder Use Resource) (reply : Reply)
+    (accepted : transitionCurrent use step before = some (reply, after)) :
+    after.current = before.current ∧ after.holders = before.holders ∧
+      after.uses = before.uses ∧ after.exclusive = before.exclusive := by
+  obtain ⟨_, _, _, _, _, rfl⟩ := transitionCurrent_admitted use step before after reply accepted
+  exact ⟨rfl, rfl, rfl, rfl⟩
+
+omit [DecidableEq Holder] in
+theorem transitionCurrent_wellFormed (use : Use) (step : Resource → Reply × Resource)
+    (before after : State Holder Use Resource) (reply : Reply) (valid : WellFormed before)
+    (accepted : transitionCurrent use step before = some (reply, after)) : WellFormed after := by
+  obtain ⟨_, allowed, _, _, _, rfl⟩ := transitionCurrent_admitted use step before after reply accepted
+  exact ⟨⟨fun _ => Or.inr ⟨use, allowed.1⟩, fun _ => rfl⟩, valid.exclusive_issued⟩
+
+omit [DecidableEq Holder] in
+/-- The same issued use sees the actual reached payload. No new use or
+operation authority is minted by storing a computation result. -/
+theorem transitionCurrent_read (use : Use) (step : Resource → Reply × Resource)
+    (before after : State Holder Use Resource) (reply : Reply)
+    (accepted : transitionCurrent use step before = some (reply, after)) :
+    ∃ resource, readUse use before = some resource ∧
+      readUse use after = some (step resource).2 ∧ reply = (step resource).1 ∧
+      after.current = true ∧ mayMutate use after := by
+  obtain ⟨current, allowed, resource, held, answer, rfl⟩ := transitionCurrent_admitted use step before after reply accepted
+  exact ⟨resource, by simp [readUse, allowed.1, held], by simp [readUse, allowed.1], answer, current, allowed⟩
+
+omit [DecidableEq Holder] in
+theorem transitionCurrent_refused (use : Use) (step : Resource → Reply × Resource)
+    (state : State Holder Use Resource) (denied : ¬ (state.current = true ∧ mayMutate use state)) :
+    transitionCurrent use step state = none := by simp [transitionCurrent, denied]
+
+theorem transitionCurrent_readHolder
+    (use : Use) (step : Resource → Reply × Resource) (holder : Holder)
+    (before after : State Holder Use Resource) (reply : Reply)
+    (heldBy : holder ∈ before.holders)
+    (accepted : transitionCurrent use step before = some (reply, after)) :
+    ∃ resource, before.resource = some resource ∧
+      readHolder holder after = some (step resource).2 := by
+  obtain ⟨current, _, resource, held, _, rfl⟩ := transitionCurrent_admitted use step before after reply accepted
+  exact ⟨resource, held, by simp [readHolder, current, heldBy]⟩
+
+omit [DecidableEq Holder] in
+/-- Eligible, well-formed ownership cannot lose a result after the abstract
+step. Native allocation/queue refusal must be represented in that step's reply
+and reached state, not silently discard an earned prefix. -/
+theorem transitionCurrent_total (use : Use) (step : Resource → Reply × Resource)
+    (state : State Holder Use Resource) (valid : WellFormed state)
+    (current : state.current = true) (allowed : mayMutate use state) :
+    ∃ reply next, transitionCurrent use step state = some (reply, next) := by
+  have someResource := valid.retained.mpr (Or.inl current)
+  obtain ⟨resource, held⟩ := Option.isSome_iff_exists.mp someResource
+  exact ⟨(step resource).1, { state with resource := some (step resource).2 },
+    by simp [transitionCurrent, current, allowed, held]⟩
+
+omit [DecidableEq Holder] in
+theorem transitionCurrent_identity (use : Use) (reply : Reply) (state : State Holder Use Resource) :
+    transitionCurrent use (fun resource => (reply, resource)) state =
+      if state.current = true ∧ mayMutate use state ∧ state.resource.isSome then some (reply, state) else none := by
+  cases state with
+  | mk current holders uses exclusive resource =>
+      cases resource <;> simp [transitionCurrent]
+
+omit [DecidableEq Holder] in
+/-- Successive service steps use the reached payload, not a copied initial
+packet. This is a state-composition law; external effects require their actual
+step semantics and delivery contracts. -/
+theorem transitionCurrent_comp {SecondReply : Type uReply}
+    (use : Use) (first : Resource → Reply × Resource) (second : Resource → SecondReply × Resource)
+    (state : State Holder Use Resource) :
+    transitionCurrent use (fun resource =>
+      let left := first resource
+      let right := second left.2
+      ((left.1, right.1), right.2)) state =
+      (transitionCurrent use first state).bind fun left =>
+        (transitionCurrent use second left.2).map fun right => ((left.1, right.1), right.2) := by
+  unfold transitionCurrent
+  split
+  · rename_i allowed
+    cases held : state.resource with
+    | none => simp
+    | some resource =>
+        simp only [Option.map_some, Option.bind_some]
+        have stillAllowed : ({ state with resource := some (first resource).2 }).current = true ∧
+            mayMutate use { state with resource := some (first resource).2 } := allowed
+        simp only [if_pos stillAllowed, Option.map_some]
+  · rfl
+
+namespace TransitionControls
+
+def owner : State Nat Nat (Nat × List Nat) := ⟨true, {1}, {7}, some 7, some (0, [])⟩
+
+/-- A paused/refused reply may still carry earned work which must survive. -/
+def pausedStep (saved : Nat × List Nat) : Bool × (Nat × List Nat) :=
+  (false, (saved.1 + 1, saved.2 ++ [42]))
+
+omit [DecidableEq Holder] in
+theorem refused_reply_keeps_reached_state :
+    (transitionCurrent 7 pausedStep owner).map (fun result => (result.1, result.2.resource)) =
+      some (false, some (1, [42])) := by decide +kernel
+
+omit [DecidableEq Holder] in
+theorem copied_use_observes_later_payload :
+    ((transitionCurrent 7 pausedStep owner).bind fun first => transitionCurrent 7 pausedStep first.2).map
+      (fun result => result.2.resource) = some (some (2, [42, 42])) := by decide +kernel
+
+omit [DecidableEq Holder] in
+theorem dead_unknown_and_lifetime_uses_cannot_step :
+    transitionCurrent 8 pausedStep owner = none ∧
+      transitionCurrent 7 pausedStep { owner with exclusive := none } = none ∧
+      transitionCurrent 7 pausedStep { owner with current := false } = none := by decide +kernel
+
+end TransitionControls
+
+end PayloadTransitions
+
 omit [DecidableEq Holder] in
 theorem extract_current (state : State Holder Use Resource) :
     (extract state).next.current = state.current := by

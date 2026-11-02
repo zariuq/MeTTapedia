@@ -431,7 +431,8 @@ private theorem expand_call (program : Program)
     have small : index = 0 ∨ index = 1 ∨ index = 2 := by omega
     rw [← agreement.demand "gslt:premise:machine-expand" index (by decide)]
     rcases small with rfl | rfl | rfl <;> decide +kernel
-  · rw [captured, ← agreement.bodies "gslt:premise:machine-expand" values (by decide)]
+  · rw [captured]
+    apply PureData.selected_clause_agreement agreement (by decide)
     exact PureData.named_equation_clause premiseRuntimeProgram "gslt:premise:machine-expand"
       expandEquation expandNames values rfl (by decide +kernel) (by decide) length
 

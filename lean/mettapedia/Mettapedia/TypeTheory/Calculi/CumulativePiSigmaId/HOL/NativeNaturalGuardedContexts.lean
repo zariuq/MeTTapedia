@@ -47,6 +47,8 @@ theorem lexical_map (operations : Operations Base Const) :
       subst head
       simpa [lexical] using found
     · cases found
+  · intro operator result code found
+    cases found
 
 def parameters (operations : Operations Base Const) : Telescope Const operations.parameters :=
   .snoc (.snoc (.snoc .nil operations.motiveCode) operations.zeroCode) operations.stepCode

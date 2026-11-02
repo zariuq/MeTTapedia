@@ -244,6 +244,23 @@ def RowPattern (pattern : Pattern) : Prop :=
     ∃ elements, pattern = .collection .hashBag elements none ∧
       ∀ element ∈ elements, Pattern.isMatchCorrect element = true
 
+/-- A row pattern holds no binder. -/
+theorem RowPattern.binderFree {pattern : Pattern} (row : RowPattern pattern) :
+    Mettapedia.OSLF.MeTTaIL.Match.binderFree pattern = true := by
+  rcases row with exact | ⟨elements, rfl, correct⟩
+  · exact Mettapedia.OSLF.MeTTaIL.Match.binderFree_of_isMatchCorrectAux _ exact
+  · have every : ∀ items : List Pattern, (∀ item ∈ items, Pattern.isMatchCorrect item = true) →
+        Mettapedia.OSLF.MeTTaIL.Match.binderFreeList items = true := by
+      intro items
+      induction items with
+      | nil => intro _; rfl
+      | cons item items inductionHypothesis =>
+          intro all
+          simp only [Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, Bool.and_eq_true]
+          exact ⟨Mettapedia.OSLF.MeTTaIL.Match.binderFree_of_isMatchCorrectAux _ (all item (by simp)),
+            inductionHypothesis fun other member => all other (by simp [member])⟩
+    simpa [Mettapedia.OSLF.MeTTaIL.Match.binderFree] using every elements correct
+
 /-- On object sources, actual ordinary matching reconstructs the normal form.
 The object premise is essential: raw matching ignores the target tail field. -/
 theorem match_normalForm {unit : Option String} {pattern subject : Pattern} {bindings : Bindings}
@@ -273,18 +290,21 @@ theorem equationInstance_normalForm {language : LanguageDef} {unit : Option Stri
     normalForm unit source = normalForm unit target := by
   obtain ⟨fuel,step⟩ := step
   cases step with
-  | forward member matched premises applied =>
+  | forward member _ matched premises applied =>
     obtain ⟨empty,leftRow,_,invariant⟩ := rows _ member
     rw [empty] at premises
     cases premises
     rw [← applied]
     exact (match_normalForm leftRow matched object).trans (invariant _)
-  | reverse member matched premises applied =>
+  | reverse member _ matched premises applied =>
     obtain ⟨empty,_,rightRow,invariant⟩ := rows _ member
     rw [empty] at premises
     cases premises
     rw [← applied]
     exact (match_normalForm rightRow matched object).trans (invariant _).symm
+  | declared member notRaw _ =>
+    obtain ⟨-,leftRow,rightRow,-⟩ := rows _ member
+    simp [readsRaw, leftRow.binderFree, rightRow.binderFree] at notRaw
 
 
 
@@ -735,7 +755,7 @@ private theorem equationInstance_tailInvariant {language : LanguageDef} {unit : 
     normalForm unit (eraseTails source) = normalForm unit (eraseTails target) := by
   obtain ⟨fuel,step⟩ := step
   cases step with
-  | forward member matched premises applied =>
+  | forward member _ matched premises applied =>
       obtain ⟨empty,leftRow,rightRow,invariant⟩ := rows _ member
       rw [empty] at premises
       cases premises
@@ -743,7 +763,7 @@ private theorem equationInstance_tailInvariant {language : LanguageDef} {unit : 
       apply (match_tailInvariant leftRow matched).trans
       rw [erase_applyBindings_row _ leftRow,erase_applyBindings_row _ rightRow]
       exact invariant _
-  | reverse member matched premises applied =>
+  | reverse member _ matched premises applied =>
       obtain ⟨empty,leftRow,rightRow,invariant⟩ := rows _ member
       rw [empty] at premises
       cases premises
@@ -751,6 +771,9 @@ private theorem equationInstance_tailInvariant {language : LanguageDef} {unit : 
       apply (match_tailInvariant rightRow matched).trans
       rw [erase_applyBindings_row _ rightRow,erase_applyBindings_row _ leftRow]
       exact (invariant _).symm
+  | declared member notRaw _ =>
+      obtain ⟨-,leftRow,rightRow,-⟩ := rows _ member
+      simp [readsRaw, leftRow.binderFree, rightRow.binderFree] at notRaw
 
 /-- Actual raw equation equivalence preserves the existing normal form at
 object endpoints. The proof uses an internal invariant on all intermediates;
@@ -858,7 +881,7 @@ theorem component_admissible {language : LanguageDef} {bag : GrammarRule} {unitL
     have inElements : component ∈ elements := by simpa using selected
     have comparisonGood := grammar_admissible (source := language)
       (target := {language with equations := []}) rfl good
-    obtain ⟨_, _, typed⟩ := bag_typing laws comparisonGood.typed rfl
+    obtain ⟨_, _, typed⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
     refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
       (elementsHaveType_iff.mp typed component inElements), ?_, ?_⟩
     · have all : Pattern.hasCanonicalBinderMetadataList elements = true := by
@@ -894,7 +917,7 @@ private theorem source_bag_element {language : LanguageDef} {bag : GrammarRule} 
     Admissible language free bound (.base bag.category) element := by
   have comparisonGood := grammar_admissible (source := language)
     (target := {language with equations := []}) rfl good
-  obtain ⟨_, _, typed⟩ := bag_typing laws comparisonGood.typed rfl
+  obtain ⟨_, _, typed⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
   refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
     (elementsHaveType_iff.mp typed element member), ?_, ?_⟩
   · exact hasCanonicalBinderMetadataList_iff.mp
@@ -938,7 +961,7 @@ theorem component_source_origin {language : LanguageDef} {bag : GrammarRule} {un
       · simp only [OneHoleContext.fill, innerFill, split]
       · intro replacement replacementTyped
         apply grammar_hasType (source := {language with equations := []}) (target := language) rfl
-        apply bag_hasType laws
+        apply bag_hasType laws.toBareBagPresentation
         apply grammar_elements (source := language) (target := {language with equations := []}) rfl
         apply elementsHaveType_iff.mpr
         intro item itemMember
@@ -972,7 +995,7 @@ theorem view_admissible {language : LanguageDef} {bag : GrammarRule} {unitLabel 
       (.base bag.category) := elementsHaveType_iff.mpr
     (fun component member => (component_admissible laws good member).typed)
   refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
-    (bag_hasType laws (grammar_elements (source := language)
+    (bag_hasType laws.toBareBagPresentation (grammar_elements (source := language)
       (target := {language with equations := []}) rfl typed)), ?_, ?_⟩
   · change Pattern.hasCanonicalBinderMetadataList _ = true
     exact hasCanonicalBinderMetadataList_iff.mpr
@@ -1279,7 +1302,7 @@ theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {un
           Nat.min_eq_left (Nat.le_of_lt within)]
       · intro replacement replacementTyped
         apply grammar_hasType (source := {language with equations := []}) (target := language) rfl
-        apply bag_hasType laws
+        apply bag_hasType laws.toBareBagPresentation
         apply grammar_elements (source := language) (target := {language with equations := []}) rfl
         apply elementsHaveType_iff.mpr
         intro item itemMember
@@ -1803,7 +1826,7 @@ theorem declared_unit_admissible {language : LanguageDef} {bag : GrammarRule} {u
     (base : BasePremiseEvaluator) (free : FreeTypeContext) (bound : List TypeExpr) :
     Admissible language free bound (.base bag.category) (.apply unitLabel []) := by
   have emptyTyped : HasType {language with equations := []} free bound
-      (.collection .hashBag [] none) (.base bag.category) := bag_hasType laws (.nil _ _)
+      (.collection .hashBag [] none) (.base bag.category) := bag_hasType laws.toBareBagPresentation (.nil _ _)
   have emptyGood : Admissible language free bound (.base bag.category) (.collection .hashBag [] none) :=
     ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl emptyTyped,rfl,rfl⟩
   simpa [normalForm,normalizeBag,bagContents,PatternCode.sortPatterns,collapse] using
@@ -1819,7 +1842,7 @@ theorem contents_data_admissible {language : LanguageDef} {bag : GrammarRule} {u
   have viewGood := view_admissible laws good
   have comparisonGood := grammar_admissible (source := language)
     (target := {language with equations := []}) rfl viewGood
-  obtain ⟨_,_,elementsTyped⟩ := bag_typing laws comparisonGood.typed rfl
+  obtain ⟨_,_,elementsTyped⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
   exact ⟨.collection (grammar_elements (source := {language with equations := []})
     (target := language) rfl elementsTyped),viewGood.canonical,viewGood.object⟩
 
@@ -1832,9 +1855,9 @@ theorem unitExpansion_admissible {language : LanguageDef} {bag : GrammarRule} {u
   have viewGood := view_admissible laws good
   have comparisonGood := grammar_admissible (source := language)
     (target := {language with equations := []}) rfl viewGood
-  obtain ⟨_,_,elementsTyped⟩ := bag_typing laws comparisonGood.typed rfl
+  obtain ⟨_,_,elementsTyped⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
   refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
-    (bag_hasType laws (.cons (grammar_hasType (source := language)
+    (bag_hasType laws.toBareBagPresentation (.cons (grammar_hasType (source := language)
       (target := {language with equations := []}) rfl unitGood.typed) elementsTyped)),?_,?_⟩
   · simpa only [unitExpansion,view,Pattern.hasCanonicalBinderMetadata,
       Pattern.hasCanonicalBinderMetadataList,Bool.true_and] using viewGood.canonical
@@ -2009,7 +2032,7 @@ theorem component_row_admissible {language : LanguageDef} {bag : GrammarRule} {u
   have objects : isObjectPatternList components = true :=
     isObjectPatternList_iff.mpr fun component member => (each component member).object
   exact ⟨⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
-      (bag_hasType laws (grammar_elements (source := language)
+      (bag_hasType laws.toBareBagPresentation (grammar_elements (source := language)
         (target := {language with equations := []}) rfl elementsTyped)),canonical,by simpa [isObjectPattern] using objects⟩,
     ⟨.collection elementsTyped,canonical,by simpa [isObjectPattern] using objects⟩⟩
 
@@ -2598,7 +2621,7 @@ theorem sourceOccurrences_typedAt {language : LanguageDef} {bag : GrammarRule} {
         exact List.take_append_drop index elements
       have comparisonGood := grammar_admissible (source := language)
         (target := {language with equations := []}) rfl good
-      have elementsTyped := (bag_typing laws comparisonGood.typed rfl).2.2
+      have elementsTyped := (bag_typing laws.toBareBagPresentation comparisonGood.typed rfl).2.2
       obtain ⟨parameterName,shape⟩ := laws.bareShape
       apply TypedAt.collectionConstructor (language := language) laws.bagAuthored shape ?_ childTyped
       rw [childFilled,split]
@@ -2678,7 +2701,7 @@ theorem normalizedOccurrences_sound_at {language : LanguageDef} {bag : GrammarRu
   · obtain ⟨elements,rfl⟩ := isBag
     have compared := grammar_admissible (source := language)
       (target := {language with equations := []}) rfl good
-    have same := (bag_typing laws compared.typed collectionless).2.1
+    have same := (bag_typing laws.toBareBagPresentation compared.typed collectionless).2.1
     subst expected
     exact normalizedOccurrences_sound laws good member
   · have filtered := (sortOccurrences_perm (componentOccurrences unitLabel source)).mem_iff.mp member
@@ -7004,7 +7027,7 @@ theorem typed_normalForm_represents {language : LanguageDef} {bag : GrammarRule}
     obtain ⟨body,rfl⟩ := (matchesParameterRepresentation_abstractionNamed_iff binder bodyName type source).mp represented
     have nonbag : ¬ IsBagNode target := by
       rintro ⟨elements,rfl⟩
-      have equation := (bag_typing laws
+      have equation := (bag_typing laws.toBareBagPresentation
         (grammar_hasType (source := language) (target := {language with equations := []}) rfl targetGood.typed)
         collectionless).2.1
       have typed := sourceGood.typed
@@ -7018,7 +7041,7 @@ theorem typed_normalForm_represents {language : LanguageDef} {bag : GrammarRule}
     obtain ⟨arity,body,rfl⟩ := (matchesParameterRepresentation_multiAbstractionNamed_iff binders bodyName type source).mp represented
     have nonbag : ¬ IsBagNode target := by
       rintro ⟨elements,rfl⟩
-      have equation := (bag_typing laws
+      have equation := (bag_typing laws.toBareBagPresentation
         (grammar_hasType (source := language) (target := {language with equations := []}) rfl targetGood.typed)
         collectionless).2.1
       have typed := sourceGood.typed
@@ -7887,7 +7910,7 @@ theorem Focus.scalar_nonbag {language : LanguageDef} {bag : GrammarRule} {unitLa
           (.collection .hashBag elements none) expected := by
         rw [equal] at good
         exact good.1.typed.of_terms_subset (by intro row member; exact member)
-      exact role (bag_typing laws typed good.2).2.1
+      exact role (bag_typing laws.toBareBagPresentation typed good.2).2.1
   | grouped bound components =>
     exact sourceHead_original_nonbag_of physical found
 
@@ -11026,7 +11049,7 @@ theorem normalize_path {language : LanguageDef} {bag : GrammarRule} {unitLabel :
       simp [isObjectPattern] at object
   | hcollection kind elements rest recurse =>
       intro free bound expected good collectionless
-      obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws good.typed collectionless
+      obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation good.typed collectionless
       have object := good.object
       simp only [isObjectPattern, Bool.and_eq_true, Option.isNone_iff_eq_none] at object
       obtain ⟨rfl, objectElements⟩ := object
@@ -11111,7 +11134,7 @@ theorem source_collections {language : LanguageDef} {bag : GrammarRule} {unit : 
       simp [isObjectPattern] at object
   | hcollection kind elements rest recurse =>
       intro free bound expected good collectionless
-      obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws good.typed collectionless
+      obtain ⟨rfl, rfl, elementsTyped⟩ := bag_typing laws.toBareBagPresentation good.typed collectionless
       have object := good.object
       simp only [isObjectPattern, Bool.and_eq_true, Option.isNone_iff_eq_none] at object
       obtain ⟨rfl, objectElements⟩ := object
@@ -11255,7 +11278,7 @@ theorem data_source_readout {language : LanguageDef} {bag : GrammarRule} {unitLa
       rw [targetShape] at targetGood
       have comparisonTyped := targetGood.typed.of_terms_subset
         (target := {language with equations := []}) (by intro declaration member; exact member)
-      obtain ⟨_, _, outputElements⟩ := bag_typing laws comparisonTyped rfl
+      obtain ⟨_, _, outputElements⟩ := bag_typing laws.toBareBagPresentation comparisonTyped rfl
       have dataTyped : HasType language free bound (.collection .hashBag targetElements none)
           (.collection .hashBag (.base bag.category)) :=
         .collection (outputElements.of_terms_subset (by intro declaration member; exact member))
@@ -11817,8 +11840,10 @@ private theorem unlicensed_generator_intrinsic (relEnv : Engine.RelationEnv) {fi
     CanonicalBags.BagStep first second := by
   rcases generator with authored | derived
   · cases authored with
-    | forward member _ _ => cases member
-    | reverse member _ _ => cases member
+    | forward member _ _ _ => cases member
+    | reverse member _ _ _ => cases member
+    | declared member _ _ => cases member
+    | premised member _ _ _ => cases member
   · cases derived with
     | bagPerm _ _ permutation => exact .permute rfl permutation
     | setPerm _ _ permutation => exact .permute rfl permutation

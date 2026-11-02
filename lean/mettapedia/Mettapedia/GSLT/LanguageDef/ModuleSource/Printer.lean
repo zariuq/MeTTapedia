@@ -5,9 +5,17 @@ import Mettapedia.OSLF.MeTTaIL.Export
 # Printing `.module` text
 
 `print` writes a module back in the format: imports, the module's theories and its entry. Rows are
-written as `languageDef!` writes them; a bound variable is written by its binder's name, an
-application of an authored abstraction as `(subst body argument)`, a nullary constructor as
-`"Zero"`, a curried binder type as `[A -> B -> C]` (an arrow domain in parentheses). Equations are anonymous in the format and are written without their generated names.
+written as `languageDef!` writes them:
+- a named binder as `^x.p`, its bound variable by its name; an anonymous binder as `^.p`, its bound variable by index
+  (`#0`); an abstraction parameter without a binder name as `^body:[A -> B]`;
+- an application of an authored abstraction as `(subst body argument)`, and the substitution for the bound variable
+  of an open body as `[argument/#0]body`;
+- a nullary constructor as `"Zero"`, a curried binder type as `[A -> B -> C]` (an arrow domain in parentheses);
+- a variable name as `? "name"`, retaining punctuation and keywords with the same name resolution as an identifier;
+- a separator item as `sep("|")`, a collection constructor's algebra as `![flatten, unit "Nil"]`, and a constructor
+  declared bare as `![bare]`;
+- an equation under its name, except one with the name the reader gives an unnamed equation and no typing context,
+  which is written unnamed.
 
 `#module_roundtrip X` (in `ModuleSource.Commands`) prints `X.module`, reads the text back with the
 same syntax and checks that the data is unchanged.
@@ -49,11 +57,17 @@ def type : TypeExpr → String
       let collection := match kind with | .vec => "Vec" | .hashBag => "HashBag" | .hashSet => "HashSet"
       collection ++ "(" ++ type element ++ ")"
 
-/-- A pattern, with enclosing binders innermost first. Quoted constructor
-heads retain punctuation, keywords and escaped literal contents. -/
-def pattern (names : List String) : Pattern → String
-  | .bvar index => (names[index]?).getD s!"#{index}"
-  | .fvar name => name
+/-- A pattern, with the names of the enclosing binders innermost first. Quoted constructor heads retain punctuation,
+keywords and escaped literal contents. A named binder is written `^x.p` and its bound variable by its name; an
+anonymous binder is written `^.p` and its bound variable by index, `#0`. A binder whose body is a collection writes
+a space before the body, `^x. {…}`: `.{` is Lean's token for explicit universes. The substitution of `r` for the
+bound variable `#0` of a body `b` is written `[r/#0]b`. -/
+def pattern (names : List (Option String)) : Pattern → String
+  | .bvar index =>
+      match names[index]? with
+      | some (some name) => name
+      | _ => s!"#{index}"
+  | .fvar name => "? " ++ stringLiteral name
   | .apply label [] => stringLiteral label
   | .apply label arguments =>
       if label == Pattern.evalHead then
@@ -61,11 +75,19 @@ def pattern (names : List String) : Pattern → String
       else
         stringLiteral label ++ "(" ++ commas (arguments.map (pattern names)) ++ ")"
   | .lambda binder body =>
-      let name := binder.getD s!"x{names.length}"
-      s!"^{name}." ++ pattern (name :: names) body
+      let head := match binder with
+        | some name => s!"^{name}."
+        | none => "^."
+      let text := pattern (binder :: names) body
+      match body with
+      | .collection .. => head ++ " " ++ text
+      | _ => head ++ text
   | .multiLambda _ binders body =>
-      "^[" ++ ",".intercalate binders ++ "]." ++ pattern (binders.reverse ++ names) body
-  | .subst body replacement => "(eval " ++ pattern names body ++ " " ++ pattern names replacement ++ ")"
+      let text := pattern (binders.reverse.map some ++ names) body
+      match body with
+      | .collection .. => "^[" ++ ",".intercalate binders ++ "]. " ++ text
+      | _ => "^[" ++ ",".intercalate binders ++ "]." ++ text
+  | .subst body replacement => "[" ++ pattern names replacement ++ "/#0]" ++ pattern names body
   | .collection kind elements rest =>
       let open_ := match kind with | .hashBag => "{" | .vec => "[" | .hashSet => "#{"
       let close := match kind with | .hashBag => "}" | .vec => "]" | .hashSet => "}"
@@ -73,15 +95,15 @@ def pattern (names : List String) : Pattern → String
       open_ ++ commas items ++ close
 decreasing_by all_goals sizeOf_pattern_dec
 
-theorem pattern_nullary (names : List String) (label : String) :
+theorem pattern_nullary (names : List (Option String)) (label : String) :
     pattern names (.apply label []) = stringLiteral label := by
   rw [pattern]
 
-theorem pattern_free (names : List String) (name : String) :
-    pattern names (.fvar name) = name := by
+theorem pattern_free (names : List (Option String)) (name : String) :
+    pattern names (.fvar name) = "? " ++ stringLiteral name := by
   rw [pattern]
 
-theorem pattern_apply_one (names : List String) (label : String) (child : Pattern)
+theorem pattern_apply_one (names : List (Option String)) (label : String) (child : Pattern)
     (ordinary : label ≠ Pattern.evalHead) :
     pattern names (.apply label [child]) =
       stringLiteral label ++ "(" ++ pattern names child ++ ")" := by
@@ -96,12 +118,13 @@ def premise : Premise → String
   | .scopedStep step =>
       s!"scopedStep([{commas (step.binders.map type)}], {type step.resultType}, " ++
         s!"{pattern [] step.source}, {pattern [] step.target})"
-  | .relationQuery relation arguments => s!"{relation}({commas (arguments.map (pattern []))})"
+  | .relationQuery relation arguments => s!"{stringLiteral relation}({commas (arguments.map (pattern []))})"
   | .forAll collection param body => s!"forAll({collection}, {param}, {premise body})"
 
 def termParam : TermParam → String
   | .simple name sort => s!"{name}:{type sort}"
-  | .abstractionNamed binder name sort => s!"^{binder.getD "x"}.{name}:[{type sort}]"
+  | .abstractionNamed none name sort => s!"^{name}:[{type sort}]"
+  | .abstractionNamed (some binder) name sort => s!"^{binder}.{name}:[{type sort}]"
   | .multiAbstractionNamed binders name sort => s!"^[{",".intercalate binders}].{name}:[{type sort}]"
 
 mutual
@@ -117,11 +140,19 @@ def syntaxOp : SyntaxPatternOp → String
 def syntaxItem : SyntaxItem → String
   | .terminal text => stringLiteral text
   | .nonTerminal name => name
-  | .separator text => stringLiteral text
+  | .separator text => s!"sep({stringLiteral text})"
   | .delimiter left right => stringLiteral left ++ " " ++ stringLiteral right
   | .op op => syntaxOp op
 
 end
+
+/-- A constructor's syntax: a nonterminal followed by its delimiters is written `n.*delim("(", ")")`, as it is read.
+(A delimiter after anything else has no spelling of its own; the reader makes one only after a nonterminal.) -/
+def syntaxItems : List SyntaxItem → List String
+  | .nonTerminal name :: .delimiter left right :: rest =>
+      s!"{name}.*delim({stringLiteral left}, {stringLiteral right})" :: syntaxItems rest
+  | item :: rest => syntaxItem item :: syntaxItems rest
+  | [] => []
 
 def evalPolicy : Option TermEvalPolicy → String
   | none => ""
@@ -129,18 +160,40 @@ def evalPolicy : Option TermEvalPolicy → String
   | some .fold => " ![fold]"
   | some .oracle => " ![oracle]"
 
-def rule (row : GrammarRule) : String :=
+/-- A collection constructor's algebra and declared representation: `![flatten]`, `![flatten, unit "Nil"]`,
+`![unit "Nil"]`, `![]` for neither law; `bare` first among the words when the constructor is declared bare,
+`![bare]` with no algebra. (A constructor declared bare with an algebra of neither law has no spelling.) -/
+def algebra (algebra : Option CollectionAlgebra) (bare : Bool := false) : String :=
+  let laws := match algebra with
+    | none => []
+    | some { flatten, unit } => (if flatten then ["flatten"] else []) ++ (if unit.isSome then ["unit"] else [])
+  let words := (if bare then ["bare"] else []) ++ laws
+  let label := match algebra with
+    | some { unit := some unit, .. } => " " ++ stringLiteral unit
+    | _ => ""
+  if algebra.isNone && !bare then "" else " ![" ++ commas words ++ label ++ "]"
+
+/-- A constructor row; `bare` when the constructor is declared bare. -/
+def rule (row : GrammarRule) (bare : Bool := false) : String :=
   let representation := match row.collectionRepresentation with
     | .bare => ""
     | .wrapped => " ![wrapped]"
-  s!"{stringLiteral row.label} . {commas (row.params.map termParam)} |- {" ".intercalate (row.syntaxPattern.map syntaxItem)} : " ++
-    s!"{row.category}{evalPolicy row.evalPolicy?}{representation};"
+  s!"{stringLiteral row.label} . {commas (row.params.map termParam)} |- {" ".intercalate (syntaxItems row.syntaxPattern)} : " ++
+    s!"{row.category}{evalPolicy row.evalPolicy?}{representation}{algebra row.algebra? bare};"
 
 private def guarded (premises : List Premise) (body : String) : String :=
   if premises.isEmpty then body else s!"if {commas (premises.map premise)} then {body}"
 
+/-- Whether an equation's name is the one the reader gives an unnamed equation, `Theory:equation:i`. -/
+def generatedEquationName (name : String) : Bool :=
+  match name.splitOn ":equation:" with
+  | [owner, index] => !owner.isEmpty && !index.isEmpty && index.all Char.isDigit
+  | _ => false
+
+/-- An equation: unnamed, `l == r;`, when its name is the reader's for an unnamed equation and it has no typing
+context; otherwise under its name. -/
 def equation (row : Equation) : String :=
-  if row.typeContext.isEmpty then
+  if row.typeContext.isEmpty && generatedEquationName row.name then
     guarded row.premises s!"{pattern [] row.left} == {pattern [] row.right};"
   else
     let context := commas (row.typeContext.map fun (name, sort) => s!"{name}:{type sort}")
@@ -148,12 +201,9 @@ def equation (row : Equation) : String :=
     s!"{stringLiteral row.name} . {context}{conditions} |- {pattern [] row.left} = {pattern [] row.right};"
 
 def rewrite (row : RewriteRule) : String :=
-  if row.typeContext.isEmpty then
-    s!"{row.name} : " ++ guarded row.premises s!"{pattern [] row.left} ~> {pattern [] row.right};"
-  else
-    let context := commas (row.typeContext.map fun (name, sort) => s!"{name}:{type sort}")
-    let conditions := if row.premises.isEmpty then "" else " | " ++ commas (row.premises.map premise)
-    s!"{stringLiteral row.name} . {context}{conditions} |- {pattern [] row.left} ~> {pattern [] row.right};"
+  let context := commas (row.typeContext.map fun (name, sort) => s!"{name}:{type sort}")
+  let conditions := if row.premises.isEmpty then "" else " | " ++ commas (row.premises.map premise)
+  s!"{stringLiteral row.name} . {context}{conditions} |- {pattern [] row.left} ~> {pattern [] row.right};"
 
 /-! ## Modules -/
 
@@ -178,7 +228,7 @@ def block : Block → List String
   | .exports rows => blockLines "Exports" (rows.map fun row => match row.renamed with
       | none => row.sort ++ ";"
       | some target => s!"{row.sort} => {target};")
-  | .terms rows => blockLines "Terms" (rows.map rule)
+  | .terms rows bare => blockLines "Terms" (rows.map fun row => rule row (bare.contains row.label))
   | .replacements rows => blockLines "Replacements" (rows.map fun row => s!"{row.old} => {rule row.rule}")
   | .equations rows => blockLines "Equations" (rows.map equation)
   | .rewrites rows => blockLines "Rewrites" (rows.map rewrite)

@@ -62,21 +62,22 @@ theorem meaning_via_final (process : Closed (Fin count)) :
 
 theorem parallel_congr {left left' right right' : Closed (Fin count)}
     (sameLeft : meaning left = meaning left') (sameRight : meaning right = meaning right') :
-    meaning (par left right) = meaning (par left' right') :=
+    meaning (Bialgebraic.par left right) = meaning (Bialgebraic.par left' right') :=
   (meaning_eq_iff_bisimilar _ _).mpr
     (par_congr ((meaning_eq_iff_bisimilar _ _).mp sameLeft)
       ((meaning_eq_iff_bisimilar _ _).mp sameRight))
 
 theorem parallel_unit (process : Closed (Fin count)) :
-    meaning (par process Bialgebraic.nil) = meaning process :=
+    meaning (Bialgebraic.par process Bialgebraic.nil) = meaning process :=
   (meaning_eq_iff_bisimilar _ _).mpr (par_nil_bisimilar process)
 
 theorem parallel_comm (left right : Closed (Fin count)) :
-    meaning (par left right) = meaning (par right left) :=
+    meaning (Bialgebraic.par left right) = meaning (Bialgebraic.par right left) :=
   (meaning_eq_iff_bisimilar _ _).mpr (par_comm_bisimilar left right)
 
 theorem parallel_assoc (first second third : Closed (Fin count)) :
-    meaning (par (par first second) third) = meaning (par first (par second third)) :=
+    meaning (Bialgebraic.par (Bialgebraic.par first second) third) =
+      meaning (Bialgebraic.par first (Bialgebraic.par second third)) :=
   (meaning_eq_iff_bisimilar _ _).mpr (par_assoc_bisimilar first second third)
 
 /-- Canonical semantics still loses the distinction between two programs. -/

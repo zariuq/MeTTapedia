@@ -19,6 +19,9 @@ open Mettapedia.Machines.CMemory.Borrowing
 inductive Parameter where
   | value
   | borrowed (count : Nat) (writing : Bool)
+  | optionalBorrowed (count : Nat) (writing : Bool)
+  | optionalOwned (count family : Nat)
+  | static (nullable : Bool)
   | viewed (writing : Bool)
   | owned (count family : Nat)
   | released (family : Nat)
@@ -36,6 +39,7 @@ structure Signature where
   parameters : List Parameter
   variadicRead : Bool
   result : ReturnShape
+  fields : List (Nat × ReturnShape) := []
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
 structure Callable where
@@ -57,6 +61,20 @@ def passBorrow (s : State) (count : Nat) (writing : Bool) (id : Nat) : Option St
 def passArgument (s : State) : Parameter → Argument → Option State
   | .value, .value => some s
   | .borrowed count writing, .loan id => passBorrow s count writing id
+  | .optionalBorrowed count writing, .loan id
+  | .optionalBorrowed count writing, .maybe id => passBorrow s count writing id
+  | .optionalBorrowed _ _, .null => some s
+  | .optionalOwned count family, .owned holder => receipt s holder family .owned count
+  | .optionalOwned _ _, .null => some s
+  | .static _, .loan id => do
+      require (id == 0)
+      pure s
+  | .static nullable, .maybe id => do
+      require (nullable && id == 0)
+      pure s
+  | .static nullable, .null => do
+      require nullable
+      pure s
   | .viewed writing, .loan id => passBorrow s 0 writing id
   | .owned count family, .owned holder => receipt s holder family .owned count
   | .released family, .released holder => receipt s holder family .released 0
@@ -80,7 +98,7 @@ def invoke (signature : Signature) (s : State) (arguments : List Argument) : Opt
   let extra := arguments.drop signature.parameters.length
   if signature.variadicRead then passVariadic after extra
   else do
-    require extra.isEmpty
+    require (extra.all (fun argument => argument == .value))
     pure after
 
 theorem valid_change_transfers (s : State) (transfers : List Transfer) :
@@ -98,6 +116,10 @@ theorem passArgument_preserves_valid {s after : State} {parameter : Parameter} {
   cases parameter <;> cases argument <;> simp only [passArgument] at step <;> try contradiction
   all_goals try exact receipt_preserves_valid step valid
   all_goals try { cases Option.some.inj step; exact valid }
+  all_goals try {
+    obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp step
+    cases Option.some.inj same
+    exact valid }
   all_goals
     obtain ⟨l, _, rest⟩ := Option.bind_eq_some_iff.mp step
     obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp rest
@@ -230,6 +252,12 @@ theorem read_call_admitted : passArgument borrowedState (.borrowed 8 false) (.lo
 theorem wrong_rights_call_refused : passArgument borrowedState (.borrowed 8 true) (.loan 1) = none := by decide
 theorem short_argument_refused : passArgument borrowedState (.borrowed 17 false) (.loan 1) = none := by decide
 theorem wrong_argument_kind_refused : passArgument borrowedState (.borrowed 8 false) .value = none := by decide
+
+theorem scalar_variadic_arguments_admitted :
+    invoke ⟨[], false, .value, []⟩ initial [.value, .value] = some initial := by decide
+
+theorem pointer_variadic_requires_read_contract :
+    invoke ⟨[], false, .value, []⟩ borrowedState [.loan 1] = none := by decide
 
 def transferred : State := { initial with transfers := [⟨3, 9, ⟨7, 0, 16⟩, .owned⟩] }
 theorem one_owner_one_call : (passArguments transferred [.owned 8 9] [.owned 3]).isSome = true := by decide

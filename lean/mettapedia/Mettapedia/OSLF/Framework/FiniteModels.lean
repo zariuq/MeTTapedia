@@ -16,7 +16,8 @@ A certificate is a finite model with a preorder on its carrier (`Certificate`), 
 side of every rule is below its right side under every valuation of the rule's metavariables. A
 metavariable bound under binders on the left side denotes a function of their values, so the
 valuations that matter are finitely many tables (`tables`, `exists_table`), and validity is a finite
-check (`Certificate.valid`). The right side may use a metavariable under more binders, as nested
+check (`Certificate.valid`), which visits the tables one at a time and stops at the first that fails
+(`allTables`, `allTables_eq`). The right side may use a metavariable under more binders, as nested
 substitutions do: a value matched in a closed state only reads the binders above its match
 (`scoped_of_matchRel`, `eval_take`).
 
@@ -1025,6 +1026,22 @@ def tables : List (String × ℕ) → List (Table A)
       (vectors elements (vectors elements depth).length).flatMap fun outputs =>
         (tables rest).map ((name, depth, outputs) :: ·)
 
+/-- **Every table passes a check**, the tables visited one at a time, stopping at the first that fails, without
+listing them all. -/
+def allTables : (Table A → Bool) → List (String × ℕ) → Bool
+  | check, [] => check []
+  | check, (name, depth) :: rest =>
+      (vectors elements (vectors elements depth).length).all fun outputs =>
+        allTables (fun table => check ((name, depth, outputs) :: table)) rest
+
+omit [DecidableEq A] in
+/-- **Visiting the tables one at a time is checking the list of them all.** -/
+theorem allTables_eq : ∀ (check : Table A → Bool) (spec : List (String × ℕ)),
+    allTables elements check spec = (tables elements spec).all check
+  | check, [] => by simp [allTables, tables]
+  | check, (name, depth) :: rest => by
+    simp only [allTables, tables, List.all_flatMap, List.all_map, Function.comp_def, allTables_eq _ rest]
+
 omit [DecidableEq A] in
 theorem getD_map_idxOf [DecidableEq A] {domain : List (List A)} {vector : List A} (member : vector ∈ domain)
     (function : List A → A) (fallback : A) :
@@ -1119,10 +1136,11 @@ variable (certificate : Certificate A)
 /-- A rule goes down the preorder under every table. -/
 def ruleCheck (rule : RewriteRule) : Bool :=
   ruleShape rule && restsCovered rule &&
-    (tables certificate.elements (ruleSpec rule)).all fun table =>
+    allTables certificate.elements (fun table =>
       certificate.below
         (eval certificate.model (tableValuation certificate.model certificate.elements table) [] rule.left)
-        (eval certificate.model (tableValuation certificate.model certificate.elements table) [] rule.right)
+        (eval certificate.model (tableValuation certificate.model certificate.elements table) [] rule.right))
+      (ruleSpec rule)
 
 /-- The join of every unordered collection kind is left-commutative. -/
 def commutes : Bool :=
@@ -1187,7 +1205,7 @@ theorem rule_below (checked : certificate.valid language = true) {rule : Rewrite
     certificate.below (eval certificate.model valuation [] rule.left)
       (eval certificate.model valuation [] rule.right) = true := by
   have ruleChecked := rule_checked checked member
-  simp only [ruleCheck, ruleShape, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at ruleChecked
+  simp only [ruleCheck, ruleShape, Bool.and_eq_true, allTables_eq, List.all_eq_true, decide_eq_true_eq] at ruleChecked
   obtain ⟨⟨⟨leftHomes, rightHomes⟩, _⟩, tablesChecked⟩ := ruleChecked
   obtain ⟨table, tableMember, realizes⟩ := exists_table certificate.model certificate.elements
     certificate.complete valuation (ruleSpec rule) (firstDepths_keys _)

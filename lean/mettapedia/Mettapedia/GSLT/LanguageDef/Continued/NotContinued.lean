@@ -40,12 +40,14 @@ theorem isEmpty_retypingPlan_of_contractum_headed_by_program {theory : IGSLT}
       .apply introduction contractumArguments)
     (programPlain : containsContactShape (.apply introduction programArguments) = false)
     (environmentPlain : containsContactShape environment = false)
+    (programDirect : choiceForm (.apply introduction programArguments) = false)
+    (environmentDirect : choiceForm environment = false)
     (cut : InteractionCutPresentation theory) :
     IsEmpty (ContinuationRetypingPlan cut) := by
   constructor
   intro retyping
   obtain ⟨program, -⟩ :=
-    cut.operands_of_binary_left left programPlain environmentPlain
+    cut.operands_of_binary_left left programPlain environmentPlain programDirect environmentDirect
   obtain ⟨programLabel, -⟩ := cut.program.of_apply program
   exact (retyping.contractum_head_ne_introductions right).1 programLabel
 
@@ -56,11 +58,19 @@ theorem isEmpty_cut_of_opaque_environment {theory : IGSLT}
       .apply contact [program, .apply introduction arguments])
     (programPlain : containsContactShape program = false)
     (environmentPlain : containsContactShape (.apply introduction arguments) = false)
+    (programDirect : choiceForm program = false)
     (applications : ∀ argument ∈ arguments, ∃ label inner, argument = .apply label inner) :
     IsEmpty (InteractionCutPresentation theory) := by
   constructor
   intro cut
-  obtain ⟨-, environment⟩ := cut.operands_of_binary_left left programPlain environmentPlain
+  have environmentDirect : choiceForm (.apply introduction arguments) = false := by
+    rcases arguments with _ | ⟨argument, _ | ⟨second, others⟩⟩
+    · rfl
+    · obtain ⟨label, inner, rfl⟩ := applications argument (by simp)
+      rfl
+    · rfl
+  obtain ⟨-, environment⟩ :=
+    cut.operands_of_binary_left left programPlain environmentPlain programDirect environmentDirect
   obtain ⟨-, selected⟩ := cut.environment.of_apply environment
   obtain ⟨label, inner, shape⟩ := applications _ (List.mem_of_getElem? selected)
   exact cut.environment.continuationPattern_ne_apply label inner shape
@@ -72,7 +82,7 @@ theorem successor_legacyRetyping_isEmpty
   isEmpty_retypingPlan_of_contractum_headed_by_program
     (contact := "Add") (introduction := "Succ") (programArguments := [.fvar "m"])
     (contractumArguments := [.apply "Add" [.fvar "m", .fvar "n"]])
-    (environment := .fvar "n") rfl rfl (by decide) (by decide) cut
+    (environment := .fvar "n") rfl rfl (by decide) (by decide) rfl rfl cut
 
 /-- Visible composition has no legacy non-principal retyping plan at any cut. -/
 theorem visibleComposition_legacyRetyping_isEmpty
@@ -84,13 +94,13 @@ theorem visibleComposition_legacyRetyping_isEmpty
     (programArguments := [.fvar "a", .fvar "b", .fvar "p"])
     (contractumArguments := [.fvar "a", .fvar "c", .apply "Comp" [.fvar "p", .fvar "q"]])
     (environment := .apply "Act" [.fvar "b", .fvar "c", .fvar "q"]) rfl rfl
-    (by decide) (by decide) cut
+    (by decide) (by decide) rfl rfl cut
 
 /-- The unwrapping contact theory has no interaction cut. -/
 theorem deep_no_cut : IsEmpty (InteractionCutPresentation deep) :=
   isEmpty_cut_of_opaque_environment (contact := "Join") (introduction := "Out")
     (program := input (.fvar "x")) (arguments := [wrap (.fvar "y")]) rfl
-    (by decide) (by decide)
+    (by decide) (by decide) (by decide)
     (by
       intro argument membership
       obtain rfl := List.mem_singleton.mp membership

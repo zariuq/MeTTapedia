@@ -179,6 +179,12 @@ import Mettapedia.CategoryTheory.GeneralizedOpenMaps
 
 -- Information theory (combinatorial bounds)
 import Mettapedia.InformationTheory.BinomialEntropy
+import Mettapedia.InformationTheory.RelationStoreFloors
+import Mettapedia.InformationTheory.RelationStoreKolmogorov
+import Mettapedia.InformationTheory.RelationStorePrefixFloor
+import Mettapedia.InformationTheory.RelationStoreRentOrBuy
+import Mettapedia.InformationTheory.RelationStoreVariantKeys
+import Mettapedia.InformationTheory.RelationStoreEliasFano
 
 -- Machine learning
 import Mettapedia.MachineLearning
@@ -855,6 +861,7 @@ import Mettapedia.OSLF
 import Mettapedia.OSLF.NativeTypes
 import Mettapedia.OSLF.NativeTypes.Consumers
 import Mettapedia.OSLF.NativeTypes.Instances.Normalized
+import Mettapedia.OSLF.NativeTypes.AcceptanceLedger
 import Mettapedia.GSLT.Dynamics.ContextualStrategyQualification
 import Mettapedia.GSLT.Dynamics.DemandAgreement
 import Mettapedia.CacheCoherenceAndMatcherInstances
@@ -1041,3 +1048,30 @@ import Mettapedia.Machines.NativeStoreScopes
 import Mettapedia.Machines.NativeProviderDomain
 import Mettapedia.Machines.NativeProviderAdmission
 import Mettapedia.Machines.NativeProviderPolicy
+import Mettapedia.Machines.SharedViewCost
+import Mettapedia.Machines.RegistryIndexCost
+import Mettapedia.Machines.PostingRemovalCost
+import Mettapedia.Machines.RentOrBuyIndex
+import Mettapedia.Machines.PerVisitJoinChoice
+import Mettapedia.Machines.BackoffRetryCost
+import Mettapedia.Machines.IntegerPageCost
+import Mettapedia.Machines.DeepTermCost
+import Mettapedia.Machines.AbsentRemovalCost
+import Mettapedia.Machines.SecondSideAnswers
+import Mettapedia.Machines.SpaceReclamationCost
+import Mettapedia.Machines.HeadIndexCost
+import Mettapedia.Machines.SetPresenceChurn
+import Mettapedia.Machines.PresenceSetForm
+import Mettapedia.Machines.BoundedProbeTable
+import Mettapedia.Machines.ShrinkingTableCost
+import Mettapedia.Machines.RelationNumberingCost
+import Mettapedia.Machines.RelationTransferCost
+import Mettapedia.Machines.KeptSnapshotSize
+import Mettapedia.Machines.ContainerFormCost
+import Mettapedia.Machines.NestedSafePoints
+import Mettapedia.Machines.KeptCursorCeiling
+import Mettapedia.Machines.DeterminateReadAhead
+import Mettapedia.Machines.TrieWindowKeys
+import Mettapedia.Machines.DenseRowCost
+import Mettapedia.Machines.ShapeStore
+import Mettapedia.Machines.PolyCursor

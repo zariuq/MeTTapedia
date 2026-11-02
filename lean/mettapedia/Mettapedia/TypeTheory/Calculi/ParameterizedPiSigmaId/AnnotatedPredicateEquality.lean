@@ -1,4 +1,4 @@
-import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.AnnotatedPredicateReading
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.AnnotatedPredicateInstantiation
 
 /-!
 # Retained equality proofs over a lexical predicate reading
@@ -30,20 +30,6 @@ structure EqualityAt (lex : LexicalReading Head Base Const) (closed : List (HOL.
 abbrev EqualityReading (lex : LexicalReading Head Base Const) (closed : List (HOL.ClosedFormula Const))
     (Γ : HOL.Ctx Base) (source target : CTm Head Γ.length) :=
   (carrier : HOL.Ty Base) × EqualityAt lex closed Γ source target carrier
-
-namespace Reads
-
-theorem instantiate {domain codomain : HOL.Ty Base}
-    {body : CTm Head (domain :: Γ).length} {argument : CTm Head Γ.length}
-    {bodyCode : HOL.Term Const (domain :: Γ) codomain} {argumentCode : HOL.Term Const Γ domain}
-    (bodyRead : Reads lex body bodyCode) (argumentRead : Reads lex argument argumentCode) :
-    Reads lex (CTm.inst0 argument body) (HOL.instantiate argumentCode bodyCode) := by
-  apply bodyRead.substitute (HOL.Subst.single argumentCode) (CTm.subst0 argument)
-  intro type index
-  cases index with
-  | vz => exact argumentRead
-  | vs prior => exact .var prior
-end Reads
 
 namespace EqualityAt
 

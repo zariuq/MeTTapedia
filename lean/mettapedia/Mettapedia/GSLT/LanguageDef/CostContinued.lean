@@ -537,6 +537,38 @@ def costBaseCoreContact (source : WrappableIGSLT) :
   representation := source.cut.coreContact.representation
   representsCore := source.costBaseCore_representsCore
 
+/-- A declared choice stays a choice in the base copy: its one argument is still a multiset of summands, of the
+transported sort. -/
+private theorem IsChoice.costBase (source : WrappableIGSLT)
+    {choice : GrammarRule} (isChoice : IsChoice choice) :
+    IsChoice (costBaseConstructor source.cut choice) := by
+  obtain ⟨wrapped, parameterName, elementType, params⟩ := isChoice
+  refine ⟨by simpa using wrapped, ?_⟩
+  rw [costBaseConstructor_def]
+  simp only [params, List.zipIdx_cons, List.zipIdx_nil, List.map_cons, List.map_nil, costBaseParameter_def]
+  split
+  · exact ⟨parameterName, costWrappedTypeExpr source.theory.presentation.interactingSort.1.name elementType,
+      by simp [mapParameterType, costWrappedTypeExpr]⟩
+  · exact ⟨parameterName, costBaseTypeExpr elementType, by simp [mapParameterType, costBaseTypeExpr]⟩
+
+/-- How an operand meets the contact transports: itself stays itself, and a summand of a choice becomes a summand of
+the choice's base copy. -/
+private theorem OperandOccurrence.costBase (source : WrappableIGSLT) {operand term : Pattern}
+    (occurs : OperandOccurrence (presentation := source.theory.presentation.presentation) operand term) :
+    OperandOccurrence (presentation := source.costIGSLT.presentation.presentation)
+      (costBaseSchemaPattern operand) (costBaseSchemaPattern term) := by
+  cases occurs with
+  | itself => exact .itself
+  | summand choice others isChoice =>
+      have mapped : costBaseSchemaPattern (.apply choice.1.label [.collection .hashBag [operand] (some others)]) =
+          .apply (source.costBaseDeclaredConstructor choice).1.label
+            [.collection .hashBag [costBaseSchemaPattern operand] (some (costSourceSchemaName others))] := by
+        simp [costBaseSchemaPattern, costBaseDeclaredConstructor, costBaseConstructor_def,
+          costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames, mapPatternListSchemaNames_eq_map,
+          mapPatternList]
+      rw [mapped]
+      exact .summand _ _ (IsChoice.costBase source isChoice)
+
 /-- The ordered source interaction core transports without changing binary
 versus collection contact shape. -/
 private theorem CutSourceShape.costBase
@@ -546,7 +578,7 @@ private theorem CutSourceShape.costBase
       (costBaseSchemaPattern program) (costBaseSchemaPattern environment)
       (costBaseSchemaPattern core) := by
   cases shape with
-  | binary binaryContact =>
+  | @binary programTerm environmentTerm programOccurs environmentOccurs binaryContact =>
       simpa [costBaseCoreContact, costBaseDeclaredConstructor,
         costBaseConstructor_def, costBaseSchemaPattern,
         costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames,
@@ -555,8 +587,11 @@ private theorem CutSourceShape.costBase
           (contact := source.costBaseCoreContact)
           (program := costBaseSchemaPattern program)
           (environment := costBaseSchemaPattern environment)
+          (OperandOccurrence.costBase source programOccurs)
+          (OperandOccurrence.costBase source environmentOccurs)
           binaryContact)
-  | collection context rest collectionContact =>
+  | @collection collectionType programTerm environmentTerm context rest programOccurs environmentOccurs
+      collectionContact =>
       simpa [costBaseCoreContact, costBaseSchemaPattern,
         costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames,
         mapPatternListSchemaNames_eq_map, List.map_map] using
@@ -566,7 +601,10 @@ private theorem CutSourceShape.costBase
           (environment := costBaseSchemaPattern environment)
           (mapPatternListSchemaNames costSourceSchemaName
             (context.map (mapPattern costBaseLanguageDefSymbolMap)))
-          (rest.map costSourceSchemaName) collectionContact)
+          (rest.map costSourceSchemaName)
+          (OperandOccurrence.costBase source programOccurs)
+          (OperandOccurrence.costBase source environmentOccurs)
+          collectionContact)
 
 theorem costBaseCoreShape (source : WrappableIGSLT) :
     CutSourceShape source.costBaseCoreContact

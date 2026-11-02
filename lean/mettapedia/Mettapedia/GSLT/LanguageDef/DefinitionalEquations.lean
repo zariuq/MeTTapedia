@@ -65,6 +65,20 @@ structure Defines (equation : Equation) (row : Row) : Prop where
   left : equation.left = row.left
   right : equation.right = row.body
 
+private theorem formals_binderFree (names : List String) :
+    binderFreeList (names.map Pattern.fvar) = true := by
+  induction names with
+  | nil => rfl
+  | cons name rest previous =>
+      simp only [List.map_cons, binderFreeList, binderFree, previous, Bool.and_self]
+
+/-- A well-formed first-order definition is read by the raw matcher even
+when binding metadata is present: neither schema side introduces a binder. -/
+theorem readsRaw_of_defines {equation : Equation} {row : Row}
+    (defines : Defines equation row) (formed : row.WellFormed) : readsRaw equation = true := by
+  simp only [readsRaw, defines.left, defines.right, Row.left, binderFree,
+    formals_binderFree, formed.schema.binderFree, Bool.and_self, Bool.or_true]
+
 /-! ## Binding application on first-order schemas -/
 
 theorem applyBindings_fvar_of_find {bindings : Bindings} {name : String}
@@ -213,7 +227,7 @@ theorem instance_equivalent {base : BasePremiseEvaluator} {language : LanguageDe
     exact applyBindings_fvar_of_find (find?_of_mem_of_nodup matched distinct pair)
   have witness : EquationInstance base language (.apply row.head values)
       (applyBindings bindings row.body) :=
-    ⟨0, EquationInstanceAt.forward authored matchedLeft
+    ⟨0, EquationInstanceAt.forward authored (readsRaw_of_defines defines formed) matchedLeft
       (by rw [defines.noPremises]; exact PremisesAt.nil matched) target⟩
   rw [applyBindings_left]
   exact equationInstance_equivalent witness
@@ -233,7 +247,7 @@ theorem instance_shape {base : BasePremiseEvaluator} {language : LanguageDef}
             target = applyBindings bindings row.left)) := by
   obtain ⟨fuel, instanceAt⟩ := witness
   cases instanceAt with
-  | @forward equation _ _ initial final authored matched premises applied =>
+  | @forward equation _ _ initial final authored _ matched premises applied =>
     obtain ⟨row, defines, formed⟩ := definitional equation authored
     rw [defines.noPremises] at premises
     cases premises
@@ -244,7 +258,7 @@ theorem instance_shape {base : BasePremiseEvaluator} {language : LanguageDef}
       exact correct.symm
     · rw [← defines.right]
       exact applied.symm
-  | @reverse equation _ _ initial final authored matched premises applied =>
+  | @reverse equation _ _ initial final authored _ matched premises applied =>
     obtain ⟨row, defines, formed⟩ := definitional equation authored
     rw [defines.noPremises] at premises
     cases premises
@@ -255,6 +269,10 @@ theorem instance_shape {base : BasePremiseEvaluator} {language : LanguageDef}
       exact correct.symm
     · rw [← defines.left]
       exact applied.symm
+  | declared authored notRaw _ =>
+    obtain ⟨row, defines, formed⟩ := definitional _ authored
+    rw [readsRaw_of_defines defines formed] at notRaw
+    cases notRaw
 
 /-! ## Unfolding one definition -/
 

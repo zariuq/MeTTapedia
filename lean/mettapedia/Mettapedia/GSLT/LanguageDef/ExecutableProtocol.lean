@@ -11,9 +11,10 @@ tree of ordinary Boolean C calls, void C calls and returns.
 The two interpreters retain the complete host state, ordered call occurrences,
 and remaining Boolean replies. Hooks are interpreted by an explicit host;
 their declared purity and fact-establishing behavior remain host obligations.
-Known facts are monotone certificates: the host must preserve their meaning
-across subsequent hook and resource operations. A precondition list does not
-prove that a mutable condition survives an intervening operation.
+Hooks explicitly invalidate certificates whose mutable dependencies they may
+change. Invalidation forgets knowledge on both Boolean branches; it does not
+assert the condition's negation or revoke live memory loans. Resource operations
+must preserve certificates; a mutating operation is represented by a hook.
 Neither this syntax nor its lowering introduces an implicit resumable machine.
 -/
 
@@ -36,6 +37,7 @@ structure Hook where
   requires : List String
   uses : List String
   proves : List String
+  invalidates : List String := []
   deriving DecidableEq, Repr
 
 structure Resource where
@@ -63,7 +65,11 @@ structure Protocol where
   entryFacts : List String
   entryOwned : List String
   body : Body
+  exitFacts : List (Outcome × List String) := []
   deriving DecidableEq, Repr
+
+def exitRequires (p : Protocol) (outcome : Outcome) : List String :=
+  p.exitFacts.flatMap fun entry => if entry.1 == outcome then entry.2 else []
 
 structure Context where
   facts : List String
@@ -81,7 +87,8 @@ def findResource (p : Protocol) (id : String) : Option Resource :=
 
 def callContext (c : Context) (hook : Hook) (reply : Bool) : Context :=
   { c with
-    facts := if reply then hook.proves ++ c.facts else c.facts
+    facts := (if reply then hook.proves else []) ++
+      c.facts.filter (fun fact => !hook.invalidates.contains fact)
     irreversible := c.irreversible || hook.kind == .effect }
 
 def acquireContext (c : Context) (id : String) (reply : Bool) : Context :=
@@ -98,7 +105,8 @@ def transferContext (c : Context) (id : String) : Context :=
 inductive WellFormed (p : Protocol) : Context → Body → Prop where
   | ret (c : Context) (outcome : Outcome)
       (empty : c.owned = [])
-      (decline : outcome = .declined → c.irreversible = false) :
+      (decline : outcome = .declined → c.irreversible = false)
+      (facts : ∀ fact ∈ exitRequires p outcome, fact ∈ c.facts) :
       WellFormed p c (.ret outcome)
   | call (c : Context) (id : String) (hook : Hook) (yes no : Body)
       (declared : findHook p id = some hook)
@@ -128,7 +136,8 @@ inductive WellFormed (p : Protocol) : Context → Body → Prop where
 
 def checkBody (p : Protocol) : Context → Body → Bool
   | c, .ret outcome => c.owned.isEmpty &&
-      (!c.irreversible || outcome != .declined)
+      (!c.irreversible || outcome != .declined) &&
+      (exitRequires p outcome).all c.facts.contains
   | c, .call id yes no =>
       match findHook p id with
       | none => false
@@ -159,14 +168,14 @@ theorem checkBody_iff (p : Protocol) (c : Context) (body : Body) :
   induction body generalizing c with
   | ret outcome =>
       simp only [checkBody, Bool.and_eq_true, List.isEmpty_iff,
-        Bool.or_eq_true, Bool.not_eq_true', bne_iff_ne]
+        Bool.or_eq_true, Bool.not_eq_true', bne_iff_ne, List.all_eq_true, List.contains_iff_mem]
       constructor
-      · rintro ⟨empty, decline⟩
-        exact .ret c outcome empty (fun h => decline.resolve_right (by simp [h]))
+      · rintro ⟨⟨empty, decline⟩, facts⟩
+        exact .ret c outcome empty (fun h => decline.resolve_right (by simp [h])) facts
       · intro wf
         cases wf with
-        | ret _ _ empty decline =>
-            refine ⟨empty, ?_⟩
+        | ret _ _ empty decline facts =>
+            refine ⟨⟨empty, ?_⟩, facts⟩
             by_cases h : outcome = .declined
             · exact Or.inl (decline h)
             · exact Or.inr h
@@ -244,10 +253,10 @@ def cNames (p : Protocol) : List String :=
 
 def sourceNames (p : Protocol) : List String :=
   [p.name, p.contextType] ++ p.hooks.flatMap
-    (fun h => [h.id, h.cName] ++ h.requires ++ h.uses ++ h.proves) ++
+    (fun h => [h.id, h.cName] ++ h.requires ++ h.uses ++ h.proves ++ h.invalidates) ++
     p.resources.flatMap (fun r => [r.id, r.acquire, r.release, r.transfer] ++
       r.acquireRequires ++ r.transferRequires) ++
-    p.entryFacts ++ p.entryOwned
+    p.entryFacts ++ p.entryOwned ++ p.exitFacts.flatMap Prod.snd
 
 structure MetadataValid (p : Protocol) : Prop where
   names : ∀ name ∈ sourceNames p, DeclaredTables.identifier name = true
@@ -260,9 +269,11 @@ structure MetadataValid (p : Protocol) : Prop where
   hookResources : ∀ hook ∈ p.hooks, ∀ id ∈ hook.uses,
     ∃ resource, findResource p id = some resource
   hookLists : ∀ hook ∈ p.hooks,
-    hook.requires.Nodup ∧ hook.uses.Nodup ∧ hook.proves.Nodup
+    hook.requires.Nodup ∧ hook.uses.Nodup ∧ hook.proves.Nodup ∧ hook.invalidates.Nodup
   resourceLists : ∀ resource ∈ p.resources,
     resource.acquireRequires.Nodup ∧ resource.transferRequires.Nodup
+  exitLists : (p.exitFacts.map Prod.fst).Nodup ∧
+    ∀ entry ∈ p.exitFacts, entry.2.Nodup
 
 def checkMetadata (p : Protocol) : Bool :=
   (sourceNames p).all DeclaredTables.identifier &&
@@ -272,28 +283,32 @@ def checkMetadata (p : Protocol) : Bool :=
   p.entryOwned.all (fun id => (findResource p id).isSome) &&
   p.hooks.all (fun hook => hook.uses.all (fun id => (findResource p id).isSome)) &&
   p.hooks.all (fun hook => decide hook.requires.Nodup && decide hook.uses.Nodup &&
-    decide hook.proves.Nodup) &&
+    decide hook.proves.Nodup && decide hook.invalidates.Nodup) &&
   p.resources.all (fun resource => decide resource.acquireRequires.Nodup &&
-    decide resource.transferRequires.Nodup)
+    decide resource.transferRequires.Nodup) &&
+  (decide (p.exitFacts.map Prod.fst).Nodup &&
+    p.exitFacts.all (fun entry => decide entry.2.Nodup))
 
 theorem checkMetadata_iff (p : Protocol) :
     checkMetadata p = true ↔ MetadataValid p := by
   simp only [checkMetadata, Bool.and_eq_true, List.all_eq_true,
     decide_eq_true_eq, Option.isSome_iff_exists]
   constructor
-  · rintro ⟨⟨⟨⟨⟨⟨⟨⟨⟨names, hooks⟩, resources⟩, calls⟩, entryOwners⟩, entryFacts⟩,
-      entryDeclared⟩, hookResources⟩, hookLists⟩, resourceLists⟩
+  · rintro ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨names, hooks⟩, resources⟩, calls⟩, entryOwners⟩, entryFacts⟩,
+      entryDeclared⟩, hookResources⟩, hookLists⟩, resourceLists⟩, exitLists⟩
     exact ⟨names, hooks, resources, calls, entryOwners, entryFacts, entryDeclared,
-      hookResources, (fun hook member => ⟨(hookLists hook member).1.1,
-        (hookLists hook member).1.2, (hookLists hook member).2⟩), resourceLists⟩
+      hookResources, (fun hook member => ⟨(hookLists hook member).1.1.1,
+        (hookLists hook member).1.1.2, (hookLists hook member).1.2,
+        (hookLists hook member).2⟩), resourceLists, exitLists⟩
   · rintro ⟨names, hooks, resources, calls, entryOwners, entryFacts, entryDeclared,
-      hookResources, hookLists, resourceLists⟩
+      hookResources, hookLists, resourceLists, exitLists⟩
     have hookChecks : ∀ hook ∈ p.hooks,
-        (hook.requires.Nodup ∧ hook.uses.Nodup) ∧ hook.proves.Nodup :=
-      fun hook member => ⟨⟨(hookLists hook member).1,
-        (hookLists hook member).2.1⟩, (hookLists hook member).2.2⟩
-    exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨names, hooks⟩, resources⟩, calls⟩, entryOwners⟩, entryFacts⟩,
-      entryDeclared⟩, hookResources⟩, hookChecks⟩, resourceLists⟩
+        ((hook.requires.Nodup ∧ hook.uses.Nodup) ∧ hook.proves.Nodup) ∧ hook.invalidates.Nodup :=
+      fun hook member => ⟨⟨⟨(hookLists hook member).1,
+        (hookLists hook member).2.1⟩, (hookLists hook member).2.2.1⟩,
+        (hookLists hook member).2.2.2⟩
+    exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨names, hooks⟩, resources⟩, calls⟩, entryOwners⟩, entryFacts⟩,
+      entryDeclared⟩, hookResources⟩, hookChecks⟩, resourceLists⟩, exitLists⟩
 
 def check (p : Protocol) : Bool :=
   checkMetadata p && checkBody p (initial p) p.body

@@ -102,6 +102,7 @@ def termParam (atom : Atom) : Decode TermParam := do
   match ← node atom with
   | ("TPSimple", [name, type]) => pure (.simple (← token name) (← typeExpr type))
   | ("TPBinder", [binder, name, type]) => pure (.abstractionNamed (some (← token binder)) (← token name) (← typeExpr type))
+  | ("TPAnon", [name, type]) => pure (.abstractionNamed none (← token name) (← typeExpr type))
   | (label, _) => throw s!"unexpected parameter {label}"
 
 def syntaxItem (atom : Atom) : Decode SyntaxItem := do
@@ -109,7 +110,17 @@ def syntaxItem (atom : Atom) : Decode SyntaxItem := do
   | ("SITerminal", [lexeme]) => pure (.terminal (← token lexeme))
   | ("SIVariable", [name]) => pure (.nonTerminal (← token name))
   | ("SISep", [name, separator]) => pure (.op (.sep (← token name) (← token separator) none))
+  | ("SISepItem", [separator]) => pure (.separator (← token separator))
   | (label, _) => throw s!"unexpected syntax item {label}"
+
+/-- A constructor's syntax items: `n.*delim("(", ")")` is the nonterminal followed by its delimiters. -/
+def syntaxItemsOf (atoms : List Atom) : Decode (List SyntaxItem) := do
+  let items ← atoms.mapM fun item => do
+    match ← node item with
+    | ("SIDelim", [name, left, right]) =>
+        pure [SyntaxItem.nonTerminal (← token name), .delimiter (← token left) (← token right)]
+    | _ => pure [← syntaxItem item]
+  pure items.flatten
 
 /-- A rule row's items: each category becomes the next parameter, `argument:0`, `argument:1`, …, as `languageDef!`
 names them. -/
@@ -137,34 +148,72 @@ def termDecl (atom : Atom) : Decode GrammarRule := do
   match ← node atom with
   | ("TDecl", [label, params, items, category]) =>
       pure { label := ← token label, category := ← token category,
-             params := ← (← list params).mapM termParam, syntaxPattern := ← (← list items).mapM syntaxItem }
+             params := ← (← list params).mapM termParam, syntaxPattern := ← syntaxItemsOf (← list items) }
   | ("TDeclCore", [label, params, items, category]) =>
       pure { label := ← token label, category := ← token category,
-             params := ← (← list params).mapM termParam, syntaxPattern := ← (← list items).mapM syntaxItem }
+             params := ← (← list params).mapM termParam, syntaxPattern := ← syntaxItemsOf (← list items) }
   | ("TDeclWrapped", [label, params, items, category])
   | ("TDeclCoreWrapped", [label, params, items, category]) =>
       pure { label := ← token label, category := ← token category,
-             params := ← (← list params).mapM termParam, syntaxPattern := ← (← list items).mapM syntaxItem,
+             params := ← (← list params).mapM termParam, syntaxPattern := ← syntaxItemsOf (← list items),
              collectionRepresentation := .wrapped }
   | ("TDeclPolicy", [label, params, items, category, policy])
   | ("TDeclCorePolicy", [label, params, items, category, policy]) =>
       pure { label := ← token label, category := ← token category,
-             params := ← (← list params).mapM termParam, syntaxPattern := ← (← list items).mapM syntaxItem,
+             params := ← (← list params).mapM termParam, syntaxPattern := ← syntaxItemsOf (← list items),
              evalPolicy? := some (← evalPolicy policy) }
   | ("TDeclPolicyWrapped", [label, params, items, category, policy])
   | ("TDeclCorePolicyWrapped", [label, params, items, category, policy]) =>
       pure { label := ← token label, category := ← token category,
-             params := ← (← list params).mapM termParam, syntaxPattern := ← (← list items).mapM syntaxItem,
+             params := ← (← list params).mapM termParam, syntaxPattern := ← syntaxItemsOf (← list items),
              evalPolicy? := some (← evalPolicy policy), collectionRepresentation := .wrapped }
   | ("TRule", [label, category, items]) =>
       let (params, syntaxPattern) ← ruleItems (← list items)
       pure { label := ← token label, category := ← token category, params, syntaxPattern }
   | (label, _) => throw s!"unexpected constructor {label}"
 
+/-- A collection constructor's algebra from its words, as `languageDef!` reads them: `flatten`, `unit` with the
+unit's label, and `bare`, which alone states no algebra. -/
+def algebraOf (words : List String) (unit : Option String) : Decode (Option CollectionAlgebra) := do
+  for word in words do
+    unless ["flatten", "unit", "bare"].contains word do throw s!"unexpected constructor word {word}"
+  if words.contains "bare" && !words.contains "flatten" && !words.contains "unit" && unit.isNone then
+    return none
+  match words.contains "unit", unit with
+  | true, some label => pure (some { flatten := words.contains "flatten", unit := some label })
+  | false, none => pure (some { flatten := words.contains "flatten", unit := none })
+  | _, _ => throw "`unit` takes the unit's label"
+
+/-- A constructor, and whether it is declared bare. -/
+def termDeclWithBare (atom : Atom) : Decode (GrammarRule × Bool) := do
+  let modified (label params items category words : Atom) (unit : Option Atom) : Decode (GrammarRule × Bool) := do
+    let words ← (← list words).mapM fun word => do
+      match ← node word with
+      | ("MWord", [name]) => token name
+      | (other, _) => throw s!"unexpected constructor word {other}"
+    let unit ← unit.mapM token
+    let ruleLabel ← token label
+    let ruleCategory ← token category
+    let ruleParams ← (← list params).mapM termParam
+    let ruleSyntax ← syntaxItemsOf (← list items)
+    let ruleAlgebra ← algebraOf words unit
+    let rule : GrammarRule :=
+      { label := ruleLabel, category := ruleCategory, params := ruleParams, syntaxPattern := ruleSyntax,
+        algebra? := ruleAlgebra }
+    pure (rule, words.contains "bare")
+  match ← node atom with
+  | ("TDeclMod", [label, params, items, category, words])
+  | ("TDeclCoreMod", [label, params, items, category, words]) =>
+      modified label params items category words none
+  | ("TDeclModUnit", [label, params, items, category, words, unit])
+  | ("TDeclCoreModUnit", [label, params, items, category, words, unit]) =>
+      modified label params items category words (some unit)
+  | _ => pure (← termDecl atom, false)
+
 /-- A pattern under binders, innermost first. -/
 partial def pattern (binders : List String) (atom : Atom) : Decode Pattern := do
   match ← node atom with
-  | ("PVar", [name]) =>
+  | ("PVar", [name]) | ("PQuotedVar", [name]) =>
       let name ← token name
       pure (match binders.idxOf? name with
         | some index => .bvar index
@@ -194,8 +243,17 @@ partial def pattern (binders : List String) (atom : Atom) : Decode Pattern := do
   | ("PBinder", [binder, body]) =>
       let name ← token binder
       pure (.lambda (some name) (← pattern (name :: binders) body))
+  | ("PBinderAnon", [body]) => pure (.lambda none (← pattern ("" :: binders) body))
+  | ("PIndex", [index]) =>
+      match (← token index).toNat? with
+      | some index => pure (.bvar index)
+      | none => throw "an index is a number"
+  | ("PInstantiate", [replacement, index, body]) =>
+      unless (← token index) == "0" do throw "a substitution replaces the bound variable #0 of its body"
+      pure (.subst (← pattern ("" :: binders) body) (← pattern binders replacement))
   | ("PCall", [label, arguments]) =>
       pure (.apply (← token label) (← callArguments binders arguments))
+  | ("PConst", [label]) => pure (.apply (← token label) [])
   | (label, _) => throw s!"unexpected pattern {label}"
 where
   callArguments (binders : List String) (atom : Atom) : Decode (List Pattern) := do
@@ -309,7 +367,9 @@ def block (atom : Atom) : Numbered Block := do
         | ("ERow", [name]) => pure ⟨← token name, none⟩
         | ("ERename", [name, target]) => pure ⟨← token name, some (← token target)⟩
         | (label, _) => throw s!"unexpected export {label}"))
-  | ("BTerms", [rows]) => pure (.terms (← ((← list rows).mapM termDecl : Decode _)))
+  | ("BTerms", [rows]) =>
+      let rows ← ((← list rows).mapM termDeclWithBare : Decode _)
+      pure (.terms (rows.map (·.1)) (rows.filterMap fun (rule, bare) => if bare then some rule.label else none))
   | ("BReplacements", [rows]) =>
       pure (.replacements (← (← list rows).mapM fun row => do
         match ← node row with

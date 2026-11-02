@@ -34,7 +34,7 @@ def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
       (mapPattern (color.symbols source) input)
       (mapPattern (color.symbols source) output) := by
   cases witness with
-  | @forward fuel equation initialBindings finalBindings matched premises
+  | @forward fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       have retypable := source.equationsRetypable equation.1 equation.2
       have final_eq : finalBindings = initialBindings := by
@@ -65,6 +65,8 @@ def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
       refine .forward fuel
         ⟨costStaticEquationDecl source color equation.1,
           costStaticEquationDecl_mem source color equation.1 equation.2⟩
+        (costWholeLanguage_readsRaw source.toWrappableIGSLT _
+          (costStaticEquationDecl_mem source color equation.1 equation.2))
         (mapCostStaticBindings source color initialBindings)
         (mapCostStaticBindings source color initialBindings) ?_ ?_ ?_
       · simpa only [costStaticEquationDecl_left] using mappedMatched
@@ -81,7 +83,7 @@ def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
               equation.1.right retypable.rightInstantiationStable rightCovered
           _ = mapPattern (color.symbols source) output :=
             congrArg (mapPattern (color.symbols source)) target_eq
-  | @reverse fuel equation initialBindings finalBindings matched premises
+  | @reverse fuel equation _ initialBindings finalBindings matched premises
       target_eq =>
       have retypable := source.equationsRetypable equation.1 equation.2
       have final_eq : finalBindings = initialBindings := by
@@ -112,6 +114,8 @@ def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
       refine .reverse fuel
         ⟨costStaticEquationDecl source color equation.1,
           costStaticEquationDecl_mem source color equation.1 equation.2⟩
+        (costWholeLanguage_readsRaw source.toWrappableIGSLT _
+          (costStaticEquationDecl_mem source color equation.1 equation.2))
         (mapCostStaticBindings source color initialBindings)
         (mapCostStaticBindings source color initialBindings) ?_ ?_ ?_
       · simpa only [costStaticEquationDecl_right] using mappedMatched

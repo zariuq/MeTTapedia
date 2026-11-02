@@ -91,7 +91,7 @@ private theorem normalizeUseN_equationInstance
     normalizeUseN source = normalizeUseN target := by
   obtain ⟨fuel, boundedWitness⟩ := instanceWitness
   cases boundedWitness with
-  | @forward equation _ _ initialBindings finalBindings equationMembership
+  | @forward equation _ _ initialBindings finalBindings equationMembership _
       matchMembership premises application =>
       have equationEquality : equation = useNIdentityEquation := by
         change equation ∈ [useNIdentityEquation] at equationMembership
@@ -109,7 +109,7 @@ private theorem normalizeUseN_equationInstance
                   (applyBindings initialBindings useNIdentityEquation.right) := by
               simp [useNIdentityEquation, applyBindings]
             _ = normalizeUseN target := congrArg normalizeUseN application
-  | @reverse equation _ _ initialBindings finalBindings equationMembership
+  | @reverse equation _ _ initialBindings finalBindings equationMembership _
       matchMembership premises application =>
       have equationEquality : equation = useNIdentityEquation := by
         change equation ∈ [useNIdentityEquation] at equationMembership
@@ -127,6 +127,13 @@ private theorem normalizeUseN_equationInstance
                   (applyBindings initialBindings useNIdentityEquation.left) := by
               simp [useNIdentityEquation, applyBindings]
             _ = normalizeUseN target := congrArg normalizeUseN application
+  | @declared equation _ _ _ _ equationMembership notRaw _ =>
+      have equationEquality : equation = useNIdentityEquation := by
+        change equation ∈ [useNIdentityEquation] at equationMembership
+        simpa using equationMembership
+      subst equationEquality
+      rw [readsRaw_of_none rfl] at notRaw
+      cases notRaw
 
 /-- The GF presentation declares no bag, so no permutation law is generated. -/
 private theorem gfLegacySemanticLanguageDef_no_bags :
@@ -182,8 +189,9 @@ private theorem useN_equivalent (argument : Pattern) :
   refine ⟨0, EquationInstanceAt.forward
     (equation := useNIdentityEquation)
     (initialBindings := [("x", argument)])
-    (finalBindings := [("x", argument)]) ?_ ?_ (.nil _) ?_⟩
+    (finalBindings := [("x", argument)]) ?_ ?_ ?_ (.nil _) ?_⟩
   · exact .head _
+  · decide
   · simp [useNIdentityEquation, matchPattern, matchArgs, mergeBindings]
   · simp [useNIdentityEquation, applyBindings]
 

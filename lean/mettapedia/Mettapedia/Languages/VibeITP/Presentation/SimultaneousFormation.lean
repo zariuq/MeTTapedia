@@ -16,6 +16,49 @@ namespace Mettapedia.Languages.VibeITP.Presentation.SimultaneousFormation
 open Mettapedia.Languages.VibeITP.Spec
 open Spec.SimultaneousInstantiation
 
+def argumentList (sig : Spec.Sig) (entries : List Spec.SimultaneousInstantiation.Entry) (offset : Nat) :
+    List Nat → List Spec.Term → Option (List Spec.Term)
+  | _, [] => some []
+  | binders, first :: rest =>
+      if offset + binders.headD 0 < Spec.wordBound then
+        match Spec.SimultaneousInstantiation.go sig entries (offset + binders.headD 0) first,
+            argumentList sig entries offset binders.tail rest with
+        | some first', some rest' => some (first' :: rest')
+        | _, _ => none
+      else none
+
+theorem args_eq_argumentList (sig : Spec.Sig) (entries : List Spec.SimultaneousInstantiation.Entry)
+    (symbol : Spec.SymId) (offset : Nat) : ∀ (index : Nat) (arguments : List Spec.Term),
+    Spec.SimultaneousInstantiation.args sig entries symbol offset index arguments =
+      argumentList sig entries offset ((bindersOf sig symbol).drop index) arguments
+  | _, [] => rfl
+  | index, first :: rest => by
+      rw [Spec.SimultaneousInstantiation.args, argumentList,
+        args_eq_argumentList sig entries symbol offset (index + 1) rest,
+        binderAt_eq, drop_headD, drop_tail]
+      split <;> rfl
+
+theorem argumentList_length (sig : Sig) (entries : List Entry) (offset : Nat) :
+    ∀ (binders : List Nat) (source result : List Spec.Term),
+      argumentList sig entries offset binders source = some result → result.length = source.length
+  | _, [], result, accepted => by
+      have same : [] = result := Option.some.inj accepted
+      subst result
+      rfl
+  | binders, first :: rest, result, accepted => by
+      simp only [argumentList] at accepted
+      split at accepted
+      · cases head : go sig entries (offset + binders.headD 0) first with
+        | none => simp only [head] at accepted; cases accepted
+        | some output =>
+            cases tail : argumentList sig entries offset binders.tail rest with
+            | none => simp only [head, tail] at accepted; cases accepted
+            | some outputs =>
+                have same : output :: outputs = result := by simpa only [head, tail, Option.some.injEq] using accepted
+                subst result
+                simp only [List.length_cons, argumentList_length sig entries offset binders.tail rest outputs tail]
+      · cases accepted
+
 def EntryShape (sig : Sig) (entry : Entry) : Prop :=
   IsFvarOf sig entry.symbol entry.arity ∧ TermShape sig entry.value
 

@@ -17,18 +17,6 @@ namespace KolmogorovComplexity
 
 open scoped Classical
 
-/-- Program lengths producing `x` under auxiliary condition `condition`. -/
-def conditionalPlainLengthsFor
-    (U : ConditionalAlgorithm) (condition x : BinString) : Set Nat :=
-  {n | ∃ p : BinString, x ∈ U p condition ∧ p.length = n}
-
-/-- Plain conditional complexity relative to `U`.  As in `plainComplexity`, the
-infimum of an empty set of natural lengths is `0`; range premises are explicit in
-all shortest-program and invariance results. -/
-noncomputable def plainConditionalComplexity
-    (U : ConditionalAlgorithm) (x condition : BinString) : Nat :=
-  sInf (conditionalPlainLengthsFor U condition x)
-
 notation "Cc[" U "](" x " | " condition ")" =>
   plainConditionalComplexity U x condition
 

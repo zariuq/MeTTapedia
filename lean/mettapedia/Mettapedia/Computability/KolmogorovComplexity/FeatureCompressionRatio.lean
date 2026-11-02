@@ -1,4 +1,5 @@
 import Mettapedia.Computability.KolmogorovComplexity.FeatureInformation
+import Mettapedia.Computability.KolmogorovComplexity.FeatureBPredicates
 import Mathlib.Data.Real.Basic
 import Mathlib.Tactic.Linarith
 
@@ -20,21 +21,6 @@ set_option autoImplicit false
 namespace KolmogorovComplexity.FeatureTheory
 
 open scoped Classical
-
-def BDescriptiveMap (U : ConditionalAlgorithm) (factor : ℝ) (feature descriptive source : BinString) : Prop :=
-  ∃ residual, residual ∈ U descriptive source ∧ source ∈ U feature residual ∧
-    feature.length + residual.length < source.length ∧ factor * residual.length ≤ source.length
-
-def BFeature (U : ConditionalAlgorithm) (factor : ℝ) (feature source : BinString) : Prop :=
-  ∃ descriptive, BDescriptiveMap U factor feature descriptive source
-
-def ShortestBFeature (U : ConditionalAlgorithm) (factor : ℝ) (feature source : BinString) : Prop :=
-  BFeature U factor feature source ∧ ∀ other, BFeature U factor other source → feature.length ≤ other.length
-
-def ShortestBDescriptiveMap (U : ConditionalAlgorithm) (factor : ℝ)
-    (feature descriptive source : BinString) : Prop :=
-  BDescriptiveMap U factor feature descriptive source ∧
-    ∀ other, BDescriptiveMap U factor feature other source → descriptive.length ≤ other.length
 
 theorem BFeature.feature {U : ConditionalAlgorithm} {factor : ℝ} {feature source : BinString}
     (present : BFeature U factor feature source) : Feature U feature source := by

@@ -121,7 +121,8 @@ private def declaration (priority : Nat) (specifier : Specifier)
   specifier
 }
 
-/-- The SWI/ISO operator set required before source directives run. -/
+/-- The pinned SWI operator inventory before source directives run.
+`ReaderProfile.isoOperators` supplies the separate ISO inventory. -/
 def defaults : Table := [
   declaration 1 .fx "$",
   declaration 100 .yfx ".",

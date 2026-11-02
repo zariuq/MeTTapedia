@@ -107,6 +107,16 @@ private def pathTerm (qualified : Name) : MacroM Term := do
 
 private def listTerm (items : Array Term) : MacroM Term := `([$items,*])
 
+/-- The label of a constructor row declared bare, `![bare]` among its words. -/
+private def declaredBareLabel : TSyntax `langDefTermDecl → Option String
+  | `(langDefTermDecl| $label:str . $_:langDefTermParam,* |- $_:langDefSyntaxAtom* : $_:ident
+      ![ $words:ident,* $[$_:str]? ] ;) =>
+      if words.getElems.any (·.getId.toString == "bare") then some label.getString else none
+  | `(langDefTermDecl| $label:ident . $_:langDefTermParam,* |- $_:langDefSyntaxAtom* : $_:ident
+      ![ $words:ident,* $[$_:str]? ] ;) =>
+      if words.getElems.any (·.getId.toString == "bare") then some (label.getId.toString (escape := false)) else none
+  | _ => none
+
 /-- The rows of one fragment, through `languageDef!`. -/
 private def fragment (termRows : Array (TSyntax `langDefTermDecl)) (equationRows : Array (TSyntax `langDefEquationDecl))
     (rewriteRows : Array (TSyntax `langDefRewriteDecl)) : MacroM Term :=
@@ -217,7 +227,8 @@ private def blockTerm : TSyntax `moduleBlock → Expand Term
       `(Block.exports $rows)
   | `(moduleBlock| Terms { $rows:langDefTermDecl* }) => do
       let built ← fragment rows #[] #[]
-      `(Block.terms (LanguageDef.terms $built))
+      let bare ← listTerm ((rows.filterMap declaredBareLabel).map str)
+      `(Block.terms (LanguageDef.terms $built) $bare)
   | `(moduleBlock| Replacements { $rows:moduleReplacement* }) => do
       let rows ← listTerm (← rows.mapM fun row => (replacementRow row : MacroM _))
       `(Block.replacements $rows)
@@ -352,27 +363,31 @@ scoped syntax (name := moduleFileCommand) "#module_file " str : command
 that the module data is unchanged. -/
 scoped syntax (name := moduleRoundtripCommand) "#module_roundtrip " ident : command
 
+/-- **The module a `.module` text reads as**, with the format's syntax, without its imports' modules. -/
+unsafe def readModuleText (text : String) (source : String := "<text>") : CommandElabM ModuleSource.ModuleData := do
+  activateScoped `Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
+  activateScoped `Mettapedia.GSLT.LanguageDef.ModuleSource.Commands
+  match Parser.runParserCategory (← getEnv) `moduleFile (stripBlockComments text) source with
+  | .error message => throwError "{source} does not read: {message}\n{text}"
+  | .ok parsed =>
+      let (_, data, _) ← liftMacroM (moduleTerm ⟨parsed⟩)
+      liftTermElabM do
+        let term ← elabTermEnsuringType data (some (Lean.mkConst ``ModuleSource.ModuleData))
+        synthesizeSyntheticMVarsNoPostponing
+        let term ← instantiateMVars term
+        Lean.Meta.evalExpr ModuleSource.ModuleData (Lean.mkConst ``ModuleSource.ModuleData) term
+
 @[command_elab moduleRoundtripCommand] unsafe def elabModuleRoundtrip : CommandElab := fun stx => do
   match stx with
   | `(#module_roundtrip $base:ident) => do
       let constant ← liftCoreM (realizeGlobalConstNoOverload (mkIdent (base.getId ++ `module)))
       let original ← liftTermElabM (evalConst ModuleSource.ModuleData constant)
       let text := ModuleSource.Printer.print original
-      activateScoped `Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
-      activateScoped `Mettapedia.GSLT.LanguageDef.ModuleSource.Commands
-      match Parser.runParserCategory (← getEnv) `moduleFile text "<printed>" with
-      | .error message => throwError "the printed module does not read back: {message}\n{text}"
-      | .ok parsed =>
-          let (_, data, _) ← liftMacroM (moduleTerm ⟨parsed⟩)
-          let reread ← liftTermElabM do
-            let term ← elabTermEnsuringType data (some (Lean.mkConst ``ModuleSource.ModuleData))
-            synthesizeSyntheticMVarsNoPostponing
-            let term ← instantiateMVars term
-            Lean.Meta.evalExpr ModuleSource.ModuleData (Lean.mkConst ``ModuleSource.ModuleData) term
-          if reprStr reread == reprStr original then
-            logInfo m!"{base.getId}: printed and read back unchanged ({text.length} characters)"
-          else
-            throwError "{base.getId}: the module changed in the round trip\n{text}"
+      let reread ← readModuleText text "the printed module"
+      if reprStr reread == reprStr original then
+        logInfo m!"{base.getId}: printed and read back unchanged ({text.length} characters)"
+      else
+        throwError "{base.getId}: the module changed in the round trip\n{text}"
   | _ => throwUnsupportedSyntax
 
 end Mettapedia.GSLT.LanguageDef.ModuleSource.Commands

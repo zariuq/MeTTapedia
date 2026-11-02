@@ -424,7 +424,7 @@ private theorem equationInstanceAt_canonicalize_eq
     canonicalize presentation source = canonicalize presentation target := by
   cases witness with
   | @forward equation source target initialBindings finalBindings
-      membership matched premises targetEquality =>
+      membership _ matched premises targetEquality =>
       have equationEquality : equation = quoteDropEquation := by
         change List.Mem equation [quoteDropEquation] at membership
         cases membership with
@@ -449,7 +449,7 @@ private theorem equationInstanceAt_canonicalize_eq
       simp [applyBindings, canonicalize, canonicalizeList, presentation,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
   | @reverse equation source target initialBindings finalBindings
-      membership matched premises targetEquality =>
+      membership _ matched premises targetEquality =>
       have equationEquality : equation = quoteDropEquation := by
         change List.Mem equation [quoteDropEquation] at membership
         cases membership with
@@ -473,6 +473,14 @@ private theorem equationInstanceAt_canonicalize_eq
       rw [← sourceEquality, ← targetEquality]
       simp [applyBindings, canonicalize, canonicalizeList, presentation,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
+  | @declared equation _ _ _ _ membership notRaw _ =>
+      have equationEquality : equation = quoteDropEquation := by
+        change List.Mem equation [quoteDropEquation] at membership
+        cases membership with
+        | head => rfl
+        | tail _ impossible => cases impossible
+      rw [equationEquality, EquationSemantics.readsRaw_of_none rfl] at notRaw
+      cases notRaw
 
 private theorem derivedInstance_canonicalize_eq
     {left right : Pattern}

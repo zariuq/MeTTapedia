@@ -10,7 +10,7 @@ preceding length. This is an ordered sequence, not a set of child indices.
 
 set_option autoImplicit false
 namespace Mettapedia.TypeTheory.OrderedPositionSegments
-universe u
+universe u v
 variable {Index : Type u}
 
 abbrev Segment (Index : Type u) := Nat × Index
@@ -25,6 +25,15 @@ theorem flatten_cons (count : Nat) (index : Index) (rest : List (Segment Index))
 
 theorem flatten_append (first second : List (Segment Index)) :
     flatten (first ++ second) = flatten first ++ flatten second := List.flatMap_append
+
+theorem flatten_map {Target : Type v} (mapping : Index → Target) (segments : List (Segment Index)) :
+    flatten (segments.map (fun segment => (segment.1, mapping segment.2))) =
+      (flatten segments).map mapping := by
+  induction segments with
+  | nil => rfl
+  | cons segment rest hypothesis =>
+      rcases segment with ⟨count, index⟩
+      simp only [List.map_cons, flatten_cons, List.map_append, List.map_replicate, hypothesis]
 
 theorem length_flatten (segments : List (Segment Index)) :
     (flatten segments).length = (segments.map Prod.fst).sum := by

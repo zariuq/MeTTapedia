@@ -9,8 +9,12 @@ import Mettapedia.Languages.TuringMachine.NotInteractive
 /-!
 # Where the instances stand on the three strengths
 
-* Rho, the lambda calculus, CCS and composition in an interaction category
-  have the third strength literally: every rule's left side is a cut.
+* Rho, the lambda calculus and composition in an interaction category have
+  the third strength literally: every rule's left side is a cut.
+* CCS has the first strength, and the second for the family of parallel
+  composition and the sum: a silent step is a base rule headed by the sum.
+  Reduction under a restriction is no cut either. Up to the equations every
+  rule is a cut, by the unit of parallel composition.
 * Mobile ambients have the first strength and not the second for the family
   of the contact: leaving an ambient is a base rule headed by the boundary.
   They have the third strength only up to the equations, where the unit of
@@ -51,12 +55,6 @@ theorem lambda_everyRuleIsCut : lambdaInteractivePresentation.EveryRuleIsCut := 
   obtain rfl := List.mem_singleton.mp membership
   exact ⟨rfl, rfl⟩
 
-/-- CCS has one rule, and its left side is a parallel composition. -/
-theorem ccs_everyRuleIsCut :
-    Mettapedia.Languages.ProcessCalculi.CCS.ccsInteractivePresentation.EveryRuleIsCut := by
-  intro rewrite membership
-  obtain rfl := List.mem_singleton.mp membership
-  exact ⟨rfl, by decide⟩
 
 /-- Composition in an interaction category has one rule, and its left side is
 a composition. -/
@@ -171,6 +169,91 @@ theorem ambient_everyRuleIsCutUpToEquations :
       rfl, by decide⟩
 
 end Ambients
+
+/-! ## CCS: the second strength for the contact and the sum -/
+
+section CCS
+
+open Mettapedia.Languages.ProcessCalculi.CCS
+
+/-- A silent step is a base rule headed by the sum, not by parallel composition. -/
+theorem ccs_not_baseRewritesHeaded :
+    ¬ BaseRewritesHeadedBy ccsCalc [ccsInteractivePresentation.contactHead] :=
+  ccsInteractivePresentation.not_baseRewritesHeadedBy_of_other_head (rewrite := ccsTauRewrite)
+    (List.Mem.tail _ (List.Mem.head _)) (isBaseRewrite_of_premises_eq_nil rfl)
+    (head := .constructor "CSum") rfl (by decide)
+
+/-- Its base rules are headed by parallel composition or by the sum. -/
+theorem ccs_baseRewritesHeaded_family :
+    BaseRewritesHeadedBy ccsCalc [.collection .hashBag, .constructor "CSum"] := by
+  intro rewrite membership base
+  rw [ccsCalc_rewrites] at membership
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
+  rcases membership with rfl | rfl | rfl | rfl
+  · exact ⟨_, List.Mem.head _, rfl⟩
+  · exact ⟨_, List.Mem.tail _ (List.Mem.head _), rfl⟩
+  · exact absurd base (not_isBaseRewrite_of_congruence (List.Mem.head _))
+  · exact absurd base (not_isBaseRewrite_of_congruence (List.Mem.head _))
+
+/-- Not every rule's left side is literally a cut: the silent step is headed by the sum. -/
+theorem ccs_not_everyRuleIsCut : ¬ ccsInteractivePresentation.EveryRuleIsCut :=
+  ccsInteractivePresentation.not_everyRuleIsCut_of_rule (rewrite := ccsTauRewrite)
+    (List.Mem.tail _ (List.Mem.head _)) (fun isCut => isCut)
+
+/-- Parallel composition declares the flattening algebra with unit. -/
+theorem ccs_algebraRule :
+    AlgebraRule ccsCalc ccsInteractivePresentation.contactConstructor.1 .hashBag
+      { flatten := true, unit := some "CNil" } where
+  authored := ccsInteractivePresentation.contactConstructor.2
+  declared := rfl
+  selfSorted := ⟨"ps", rfl⟩
+  unitAuthored := by
+    intro unit declared
+    obtain rfl : "CNil" = unit := Option.some.inj declared
+    exact ⟨ccsCalc.terms[0], List.getElem_mem (by decide), rfl, rfl, rfl⟩
+
+/-- A typing of the schema variables of the rules headed elsewhere than the contact: the silent continuation and the
+reducing body are processes. -/
+def ccsRuleContext : FreeTypeContext := fun name =>
+  if name = "p" ∨ name = "S" then some (.base "Proc") else some (.base "Name")
+
+/-- The left side of the silent step is a process: a sum of the silent guard and the other summands. -/
+theorem tau_left_sorted : HasSort ccsCalc ccsRuleContext [] ccsTauRewrite.left "Proc" :=
+  HasType.constructor (rule := ccsCalc.terms[2]) (List.getElem_mem (by decide))
+    (by
+      rintro ⟨parameterName, collectionType, elementType, shape⟩
+      change ([] : List TermParam) = _ at shape
+      simp at shape)
+    (.cons trivial rfl
+      (HasType.collection (.cons
+        (HasType.constructor (rule := ccsCalc.terms[6]) (List.getElem_mem (by decide))
+          (by rintro ⟨parameterName, collectionType, elementType, shape⟩; cases shape)
+          (.cons trivial rfl (HasType.fvar rfl) .nil))
+        (.nil _ _)))
+      .nil)
+
+/-- The left side of reduction under a restriction is a process. -/
+theorem resCong_left_sorted : HasSort ccsCalc ccsRuleContext [] ccsResCongRewrite.left "Proc" :=
+  HasType.constructor (rule := ccsCalc.terms[3]) (List.getElem_mem (by decide))
+    (by rintro ⟨parameterName, collectionType, elementType, shape⟩; cases shape)
+    (.cons trivial rfl (HasType.lambda (HasType.fvar rfl)) .nil)
+
+/-- **Up to the equations every rule of CCS is a cut**, the silent step and reduction under a restriction included:
+each is equal to the composition of itself with the unit. -/
+theorem ccs_everyRuleIsCutUpToEquations :
+    ccsInteractivePresentation.EveryRuleIsCutUpToEquations
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty) := by
+  intro rewrite membership
+  have listed : rewrite ∈ [ccsReactRewrite, ccsTauRewrite, ccsParCongRewrite, ccsResCongRewrite] := membership
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at listed
+  rcases listed with rfl | rfl | rfl | rfl
+  · exact ⟨_, Relation.EqvGen.refl _, rfl, by decide⟩
+  · exact ⟨_, equationEquiv_cut_with_unit ccs_algebraRule rfl rfl rfl tau_left_sorted, rfl, by decide⟩
+  · exact ⟨_, Relation.EqvGen.refl _, rfl, by decide⟩
+  · exact ⟨_, equationEquiv_cut_with_unit ccs_algebraRule rfl rfl rfl resCong_left_sorted, rfl, by decide⟩
+
+end CCS
 
 /-! ## The first strength without the second -/
 

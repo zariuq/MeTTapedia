@@ -272,8 +272,8 @@ theorem quoteDrop_instance {lang : LanguageDef} (equations : lang.equations = [q
     source = quoted (dropped target) ∨ target = quoted (dropped source) := by
   obtain ⟨fuel, authored⟩ := authored
   cases authored with
-  | forward member matched premises applied =>
-      rename_i equation initial final
+  | forward member _ matched premises applied =>
+      rename_i equation initial final _
       rw [equations] at member
       obtain rfl : equation = quoteDropEquation := List.mem_singleton.mp member
       have same : final = initial := by
@@ -285,8 +285,8 @@ theorem quoteDrop_instance {lang : LanguageDef} (equations : lang.equations = [q
       refine .inl ?_
       rw [← rebuilt, ← applied]
       simp [quoteDropEquation, applyBindings, quoted, dropped]
-  | reverse member matched premises applied =>
-      rename_i equation initial final
+  | reverse member _ matched premises applied =>
+      rename_i equation initial final _
       rw [equations] at member
       obtain rfl : equation = quoteDropEquation := List.mem_singleton.mp member
       have same : final = initial := by
@@ -300,6 +300,11 @@ theorem quoteDrop_instance {lang : LanguageDef} (equations : lang.equations = [q
       refine .inr ?_
       rw [← applied]
       simp [quoteDropEquation, applyBindings, quoted, dropped]
+  | @declared equation _ _ _ _ member notRaw _ =>
+      rw [equations] at member
+      obtain rfl : equation = quoteDropEquation := List.mem_singleton.mp member
+      rw [readsRaw_of_none rfl] at notRaw
+      cases notRaw
 
 /-- **The contraction of a pattern, with the members of its bags in one
 order.** -/

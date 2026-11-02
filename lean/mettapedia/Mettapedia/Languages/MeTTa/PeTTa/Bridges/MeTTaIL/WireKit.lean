@@ -81,7 +81,7 @@ private theorem native_binary (program : Program) (caller : Subst) (state : Stat
     PureReturns program caller state (apply head [left, right]) state answer :=
   native_binary_call_returns program caller state state state state head left right leftValue rightValue answer
     notIO native (by simp [argumentIsRaw, native, leftRaw]) (by simp [argumentIsRaw, native, rightRaw])
-    leftReturns rightReturns computed (by simpa [BridgeKit.specialForms] using ordinary)
+    leftReturns rightReturns computed (by simp_all [BridgeKit.specialForms])
 
 /-- **Natural equality.** -/
 theorem natural_equal_returns (program : Program) (caller : Subst) (state : State) (left right : Atom)
