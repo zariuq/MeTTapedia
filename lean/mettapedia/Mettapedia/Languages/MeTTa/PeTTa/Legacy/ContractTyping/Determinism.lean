@@ -1,5 +1,5 @@
-import Mettapedia.Languages.MeTTa.PeTTa.ContractTyping.Contract
-import Mettapedia.Languages.MeTTa.PeTTa.ContractTyping.Coverage
+import Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping.Contract
+import Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping.Coverage
 import Mettapedia.Languages.MeTTa.PeTTa.CheckedCardinality
 
 /-!
@@ -19,7 +19,7 @@ is allowed by the callee's declaration. Effect-polymorphic arrows `-[$e]->` are 
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+namespace Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
 
 open Mettapedia.Machines.AnswerCardinality
 open Mettapedia.Languages.MeTTa.PeTTa.CheckedCardinality (Declaration validates validates_iff)
@@ -572,4 +572,4 @@ theorem covering_heads :
 
 end Examples
 
-end Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+end Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping

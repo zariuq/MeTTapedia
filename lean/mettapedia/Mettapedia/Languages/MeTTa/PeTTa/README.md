@@ -2,6 +2,36 @@
 
 Upstream: https://github.com/trueagi-io/PeTTa
 
+## Runtime typing foundation
+
+The current runtime predicate-typing candidate is
+[`RuntimeTyping.lean`](RuntimeTyping.lean), built on the generic theory
+[`Logic.ConstraintTypes`](../../../Logic/ConstraintTypes/README.md).
+It specifies function-entry contracts, argument modes before evaluation,
+shared polymorphic constraints, regular constructor membership and live lookup.
+`RuntimeTyping/Controls.lean` contains executable examples;
+`RuntimeTyping/Audit.lean` prints the theorem axiom dependencies.
+Build the focused target with `lake build RuntimeTypingTheory`.
+
+The older `TypeSystem`/`TypedEval` pattern fragment, the `RelationalTyping`
+profiles, and the main-line `TypecheckV3*`/`MainlineCallGuard*` compiler studies
+retain their own definitions and hypotheses. They do not jointly specify the
+runtime candidate, and agreement with another dialect is not a justification
+for its rules. The former six-module contract/determinism calculus is preserved
+under [`Legacy/ContractTyping`](Legacy/ContractTyping/README.md).
+The explicit [`TypingResearch.lean`](TypingResearch.lean) umbrella collects
+static-checker and compiler research profiles. The general language catalogue
+and specification index import it explicitly; it is separate from the runtime
+typing entry point. Active direct consumers retain their named imports.
+
+The call adapter is a candidate protocol, not a source-to-SWI conformance
+theorem. Non-callable variable heads return data after preparing arguments.
+`Runtime.modes` remains an explicit policy input for disagreeing declarations;
+the theory has not chosen a dialect-wide resolution rule for such conflicts.
+Likewise, its fault-preserving execution must not be mistaken for a proof of
+the existing dispatcher's exception-catching behavior. Changing that behavior
+is a separate untyped runtime change.
+
 ## What this is about
 
 MeTTa, the meta-language of OpenCog Hyperon, runs programs by

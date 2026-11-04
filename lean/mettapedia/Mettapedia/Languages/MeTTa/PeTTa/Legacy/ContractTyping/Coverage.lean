@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PeTTa.ContractTyping.Rules
+import Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping.Rules
 
 /-!
 # Exhaustive heads: pattern-matrix usefulness
@@ -16,7 +16,7 @@ their variables are anonymous, as `lib_det` keeps only heads without a repeated 
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+namespace Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
 
 inductive Pat where
   | var
@@ -303,4 +303,4 @@ theorem bool_heads :
 
 end Examples
 
-end Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+end Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping

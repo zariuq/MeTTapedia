@@ -42,6 +42,7 @@ import Mettapedia.Languages.MeTTa.MeTTaFiniteRevisionedKernel
 import Mettapedia.Languages.MeTTa.MeTTaZeroHornFragment
 import Mettapedia.Languages.MeTTa.MeTTaZeroCertifiedPlanning
 import Mettapedia.Languages.MeTTa.PeTTa
+import Mettapedia.Languages.MeTTa.PeTTa.TypingResearch
 import Mettapedia.Languages.MeTTa.PLeaTTa
 import Mettapedia.Languages.MeTTa.CoreProfile
 import Mettapedia.Languages.MeTTa.DialectProfile

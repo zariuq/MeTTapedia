@@ -21,7 +21,7 @@ values, metatypes, and `get-type` rules of the program.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+namespace Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
 
 /-! ## Values -/
 
@@ -751,4 +751,4 @@ theorem body_view :
 
 end Examples
 
-end Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+end Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping

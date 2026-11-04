@@ -74,6 +74,15 @@ lean_lib PLeaTTaTheory where
   globs := #[Glob.one `Mettapedia.Languages.MeTTa.PLeaTTa,
     Glob.submodules `Mettapedia.Languages.MeTTa.PLeaTTa]
 
+/-- Generic predicate contracts and their runtime call-protocol instance. -/
+lean_lib RuntimeTypingTheory where
+  roots := #[`Mettapedia.Logic.ConstraintTypes.Audit,
+    `Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Audit]
+  globs := #[Glob.one `Mettapedia.Logic.ConstraintTypes,
+    Glob.submodules `Mettapedia.Logic.ConstraintTypes,
+    Glob.one `Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping,
+    Glob.submodules `Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping]
+
 /-- The standalone attention-budget models use this package's existing cache. -/
 lean_lib AttentionEconomyTheory where
   srcDir := "../pettaclaw"

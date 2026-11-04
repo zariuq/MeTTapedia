@@ -6,6 +6,10 @@ open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
 /-!
 # Type-Gated PeTTa Evaluation
 
+Historical pattern-level refinement, under the rules of `TypeSystem.lean`.
+It does not establish the behavior of production SWI-PeTTa typed calls. The
+current runtime predicate-contract specification is `PeTTa.RuntimeTyping`.
+
 Extends `PeTTaEval` with a **type pre-check** on rule application, mirroring the
 MeTTa spec's `check_if_function_type_is_applicable` predicate and the PeTTa
 transpiler's type-checking layer.

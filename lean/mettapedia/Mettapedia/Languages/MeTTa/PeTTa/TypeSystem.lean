@@ -5,6 +5,11 @@ open Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite (RewriteResults)
 /-!
 # MeTTa Type System (Minimal Fragment)
 
+Historical pattern-level typing fragment. Its rules are local definitions, not
+a specification of production SWI-PeTTa or of the runtime predicate-typing
+candidate. The current foundation is `Mettapedia.Logic.ConstraintTypes`, with
+the PeTTa call adapter in `PeTTa.RuntimeTyping`.
+
 Formalizes the **type judgment** for MeTTa's type system, grounded in the
 `PeTTaSpace` / `EvalState` infrastructure.
 

@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PeTTa.ContractTyping.Determinism
+import Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping.Determinism
 
 /-!
 # Contract typing for PeTTa: soundness
@@ -33,7 +33,7 @@ The theorems whose axioms are printed below are the headline; `compiled_call_era
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+namespace Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
 
 open Mettapedia.Machines.AnswerCardinality
 open Mettapedia.Languages.MeTTa.PeTTa.CheckedCardinality (Declaration)
@@ -87,4 +87,4 @@ theorem det_validation_covers {sig : Sig} (chk : Checker sig) (k : Nat) (P : Str
 #print axioms compiled_call_erasure
 #print axioms det_validation_covers
 
-end Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+end Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping

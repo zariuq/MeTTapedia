@@ -2,6 +2,7 @@ import Mettapedia.OSLF.Main
 import Mettapedia.OSLF.DeliverableAudit
 import Mettapedia.OSLF.CoreMain
 import Mettapedia.Languages.MeTTa.PeTTa
+import Mettapedia.Languages.MeTTa.PeTTa.TypingResearch
 import Mettapedia.Logic.LP
 import Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge
 import Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge

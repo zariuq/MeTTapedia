@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PeTTa.ContractTyping.Rules
+import Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping.Rules
 
 /-!
 # Runs with checks, retained obligations, and erasure
@@ -26,7 +26,7 @@ such a check only on runs without type errors, through `erasure_preserves_observ
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+namespace Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
 
 /-- The bindings of a branch. -/
 abbrev Bindings := Nat → Term
@@ -251,4 +251,4 @@ theorem open_alias_needs_retention :
 
 end OpenAlias
 
-end Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+end Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping

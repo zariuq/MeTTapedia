@@ -1,0 +1,49 @@
+import Mettapedia.Logic.ConstraintTypes.Audit
+import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls
+import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy
+
+/-! Kernel dependency audit of the call-protocol adapter and its controls. -/
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Runtime.direct_indirect_agree
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Runtime.partial_direct_agree
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Runtime.nested_capture_associates
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Runtime.held_syntax_never_evaluated
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Runtime.captured_value_never_reevaluated
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Runtime.input_fault_is_not_a_type_mismatch
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.live_result_membership
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.recursive_number_list_accepted
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.recursive_mixed_list_rejected
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.recursive_acceptance_has_a_derivation
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.bad_head_rejected_before_tail_is_bound
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.good_head_transfers_the_tail_requirement
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.open_overload_accepts_a_later_string
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.open_number_rejects_a_later_string
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.wrong_binding_fails_while_another_argument_remains_open
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.shared_type_variable_rejects_mixed_arguments
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.shared_type_variable_accepts_different_numbers
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.compiled_shared_type_variable_rejects_mixed_arguments
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.joint_witness_from_an_infinite_type_universe
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.a_ground_answer_exports_no_hidden_constraints
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.declaration_added_in_body_is_visible_at_return
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.failed_output_check_does_not_hide_a_body_fault
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.direct_number_call_rejects_string
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.indirect_number_call_rejects_string
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.direct_Atom_call_holds_its_argument
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.indirect_Atom_call_holds_its_argument
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.completed_partial_call_holds_its_argument
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.ordinary_evaluated_argument_keeps_its_fault
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.nonfunction_head_returns_data
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.unbound_head_returns_data
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.a_head_bound_during_argument_evaluation_is_called
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.binding_the_head_does_not_repeat_argument_effects
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls.duplicated_evidence_does_not_repeat_body_effects
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.wildcard_spelling_is_not_a_proper_name
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.input_mode_agrees_with_source_protocol
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.every_literal_wildcard_omits_the_value_check
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.type_substitution_never_changes_literal_argument_mode
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.nested_atom_and_underscore_accept_mixed_elements
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.nested_undefined_accepts_mixed_elements
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.shared_type_variables_still_reject_incompatible_primitives
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.let_return_preserves_body_observations
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.checked_worker_uses_the_pattern_boundary

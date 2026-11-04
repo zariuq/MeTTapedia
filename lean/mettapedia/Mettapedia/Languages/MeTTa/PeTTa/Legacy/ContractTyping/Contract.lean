@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PeTTa.ContractTyping.Erasure
+import Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping.Erasure
 
 /-!
 # The call contract
@@ -22,7 +22,7 @@ only the result. Runs without type errors are the same (`erasure_preserves_obser
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+namespace Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
 
 universe u
 
@@ -265,4 +265,4 @@ theorem single_declaration_entry (d : Decl) (body : Bindings → W → List Bind
 
 end Checker
 
-end Mettapedia.Languages.MeTTa.PeTTa.ContractTyping
+end Mettapedia.Languages.MeTTa.PeTTa.Legacy.ContractTyping
