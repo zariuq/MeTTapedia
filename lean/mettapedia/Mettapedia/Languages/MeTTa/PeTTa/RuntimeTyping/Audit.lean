@@ -1,6 +1,7 @@
 import Mettapedia.Logic.ConstraintTypes.Audit
 import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls
 import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy
+import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes
 
 /-! Kernel dependency audit of the call-protocol adapter and its controls. -/
 
@@ -47,3 +48,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy
 #print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.shared_type_variables_still_reject_incompatible_primitives
 #print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.let_return_preserves_body_observations
 #print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy.checked_worker_uses_the_pattern_boundary
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.ground_typed
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.ground_typed_list
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.variable_untyped
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.waive_entry_iff_on_ground
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.waive_joint_iff_on_ground

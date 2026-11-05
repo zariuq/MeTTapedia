@@ -112,6 +112,11 @@ mentions. `allowed_map_iff` lifts a per-signature rewrite to overloaded
 declarations. A shared parameter is unaffected; `shared_parameter_iff_common_type`
 remains its meaning. Values are finite trees, so finiteness belongs to the
 value domain; an implementation that admits cyclic terms is outside these laws.
+`RuntimeTyping.CanonicalTypes` discharges the hypothesis for PeTTa: every
+ground atom has a canonical type (a primitive or grounded type, `Symbol` or a
+declared nominal type, or the structural tuple of its elements), so in any PeTTa
+model containing these facts an unshared parameter imposes no check on a ground
+argument (`waive_entry_iff_on_ground`, `waive_joint_iff_on_ground`).
 
 `CheckCost` counts element checks for a structural element-wise check.
 Re-checking every known element after each arrival costs `n (n + 1) / 2` checks
