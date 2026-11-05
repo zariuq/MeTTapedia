@@ -1,6 +1,7 @@
 import Mettapedia.Logic.ConstraintTypes
 import Mettapedia.Logic.ConstraintTypes.Controls
 import Mettapedia.Logic.ConstraintTypes.PatternControls
+import Mettapedia.Logic.ConstraintTypes.CheckCostControls
 
 /-! Kernel dependency audit of the generic foundation and its controls. -/
 
@@ -275,3 +276,19 @@ import Mettapedia.Logic.ConstraintTypes.PatternControls
 #print axioms Mettapedia.Logic.ConstraintTypes.PatternControls.unrestricted_result_retains_effects_and_faults
 #print axioms Mettapedia.Logic.ConstraintTypes.Trace.bind_return
 #print axioms Mettapedia.Logic.ConstraintTypes.PatternContracts.undeclared_body_identity
+#print axioms Mettapedia.Logic.ConstraintTypes.UnsharedParameters.matches_congr
+#print axioms Mettapedia.Logic.ConstraintTypes.UnsharedParameters.waive_weakens_entry
+#print axioms Mettapedia.Logic.ConstraintTypes.UnsharedParameters.waive_entry_iff
+#print axioms Mettapedia.Logic.ConstraintTypes.UnsharedParameters.waive_joint_iff
+#print axioms Mettapedia.Logic.ConstraintTypes.UnsharedParameters.untyped_value_rejected
+#print axioms Mettapedia.Logic.ConstraintTypes.UnsharedParameters.allowed_map_iff
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.revalidate_eq_accumulate
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.incremental_exact
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.accumulate_last
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.revalidateCost_closed
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.revalidation_quadratic
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.walk_quadratic
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCost.entry_check_covers_suffixes
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCostControls.matches_list_iff
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCostControls.unshared_first_accepts_any_value
+#print axioms Mettapedia.Logic.ConstraintTypes.CheckCostControls.unshared_first_does_not_waive_other_inputs

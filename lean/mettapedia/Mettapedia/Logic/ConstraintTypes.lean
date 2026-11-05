@@ -11,6 +11,8 @@ import Mettapedia.Logic.ConstraintTypes.DeterminedMembership
 import Mettapedia.Logic.ConstraintTypes.CallTyping
 import Mettapedia.Logic.ConstraintTypes.CheckingPatterns
 import Mettapedia.Logic.ConstraintTypes.PatternContracts
+import Mettapedia.Logic.ConstraintTypes.UnsharedParameters
+import Mettapedia.Logic.ConstraintTypes.CheckCost
 import Mettapedia.Logic.ConstraintTypes.Constraints
 import Mettapedia.Logic.ConstraintTypes.OpenMembership
 import Mettapedia.Logic.ConstraintTypes.Execution
