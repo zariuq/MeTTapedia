@@ -137,6 +137,16 @@ are derived from the models, deployed, and re-observed live.
 - `ContextAttention.lean` — an interruptible task capsule with a separate
   foreground human-event lane, exact acknowledgement, stop dominance, and
   bounded semantic retrieval that cannot erase required context.
+- `RemoveByIndex.lean` — when a workspace removal may read an index instead
+  of every row: removing every match through a complete index removes the
+  rows the scan removes; removing one occurrence agrees with the scan only for
+  an index that follows row order, and the store's index (exact values, then
+  variables) does not, so a bounded removal keeps the scan.
+- `RepeatedOccurrence.lean` — a publication may edit an occurrence once:
+  checking the collected keys for a repeat only where staging stops (at the
+  end, before a failed edit, at a failed count or index step) gives exactly
+  the answer of testing each key against the earlier ones, which lets the
+  runtime check once with a hash set instead of n²/2 comparisons.
 - `TurnLedger.lean` — the agent ledger as one state machine (accept, capture,
   decide, restore, report, observe, attest, finish, dispositions, checkpoint):
   only deciding the pending turn creates an action, recovery never re-issues,
@@ -279,6 +289,8 @@ LEAN_PATH=. lean ContextAttention.lean
 lean RecallProvenance.lean
 lean ConsoleView.lean
 lean TurnLedger.lean
+lean RemoveByIndex.lean
+lean RepeatedOccurrence.lean
 lean InputDelivery.lean
 LEAN_PATH=. lean AgentArchitecture.lean
 LEAN_PATH=. lean VerifiedFrontier.lean
