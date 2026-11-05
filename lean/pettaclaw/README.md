@@ -142,6 +142,15 @@ are derived from the models, deployed, and re-observed live.
   rows the scan removes; removing one occurrence agrees with the scan only for
   an index that follows row order, and the store's index (exact values, then
   variables) does not, so a bounded removal keeps the scan.
+- `OverlayIndex.lean` — a transaction's own edits read through an index
+  instead of a scan: a row that unifies with a pattern lies in the slot list of
+  the pattern's key, the keyless list or the variable list; the cursor's
+  three-way walk of those lists yields the scan's matching rows in slot order,
+  whichever exact position it reads; an open cursor is unchanged by later
+  edits; the hash set of removed stored rows answers what the old scan of the
+  removals answered; marking removed rows and filtering at commit keeps the
+  rows that erasing them kept; and with ground keyed rows a read visits only
+  the pattern's bucket.
 - `RepeatedOccurrence.lean` — a publication may edit an occurrence once:
   checking the collected keys for a repeat only where staging stops (at the
   end, before a failed edit, at a failed count or index step) gives exactly
@@ -299,6 +308,7 @@ lean ConsoleView.lean
 lean TurnLedger.lean
 lean ObservedReceipts.lean
 lean RemoveByIndex.lean
+lean OverlayIndex.lean
 lean RepeatedOccurrence.lean
 lean InputDelivery.lean
 LEAN_PATH=. lean AgentArchitecture.lean
