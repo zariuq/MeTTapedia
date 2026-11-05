@@ -151,7 +151,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.StagedReflective.LanguageDefAd
 import Mettapedia.Languages.MeTTa.PrimeCandidates.StagedReflective.LanguageOperationFactorization
 import Mettapedia.Languages.MeTTa.PrimeCandidates.StagedReflective.LanguageOperationAdmission
 import Mettapedia.Languages.MeTTa.PrimeCandidates.StagedReflective.LanguageOperationSyntax
-import Mettapedia.Algebra.ListRepresentations
+import Mettapedia.Algebra.Collections.Sequences
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Strategies.MinimalCheckingPackage
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.EntryModeSelection
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.IntegratedExecutionCapabilities

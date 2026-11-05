@@ -1,4 +1,4 @@
-import Mettapedia.Algebra.CollectionFold
+import Mettapedia.Algebra.Collections.Free
 import Mathlib.Algebra.Group.Pi.Basic
 
 /-!
@@ -10,7 +10,7 @@ join's enumeration is a permutation of the collected order, so:
 
 * a fold whose generator values commute gives one value for every
   enumeration (`fold_perm`); these are exactly the folds that consume bags
-  (`CollectionFold.Boom.foldList_factors_bag_iff`);
+  (`Algebra.Collections.foldList_factors_bag_iff`);
 * grouping is one fold into the product monoid over the keys: its value at a
   key is the fold of that key's group (`groupFold_apply`); it maps
   concatenation to product, so the solutions may be split among workers and
@@ -32,7 +32,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Machines.JoinAggregation
 
-open Mettapedia.Algebra.CollectionFold Boom
+open Mettapedia.Algebra.Collections
 
 variable {α K M : Type*}
 
@@ -114,9 +114,9 @@ theorem count_merged_differs :
 
 /-- **Merging equal answers leaves a maximum.** -/
 theorem max_merged_same :
-    foldBag Mettapedia.Algebra.CollectionFold.Controls.MaxNat.of ({7, 7} : Multiset ℕ) =
+    foldBag Mettapedia.Algebra.Collections.Controls.MaxNat.of ({7, 7} : Multiset ℕ) =
       ∏ a ∈ ({7, 7} : Multiset ℕ).toFinset,
-        Mettapedia.Algebra.CollectionFold.Controls.MaxNat.of a := by
+        Mettapedia.Algebra.Collections.Controls.MaxNat.of a := by
   apply foldBag_eq_distinct
   intro value
   exact max_self (α := ℕ) value

@@ -497,7 +497,8 @@ sensor) is unchanged.}
 Evidence can be neither \emph{fabricated} (inference cannot create
 support that was not present in the premises) nor \emph{overcounted}
 (the same observation cannot contribute twice to the same query).
-Formally, three conservation laws hold under exact-inverse forgetting:
+Formally, three conservation laws hold for every revision~$\Delta$ that
+forgetting its scope~$S$ erases ($\mathrm{forget}(S, \Delta) = 0$):
 \begin{enumerate}
 \item \textbf{Anti-hallucination}: a revision $\Delta$ within scope
   $S$ contributes zero evidence to queries outside~$S$.
@@ -546,8 +547,8 @@ twice.
 D7 is discharged by the evidence conservation pack
 (\code{EvidenceConservationPack} in
 Chapter~\ref{ch:state-ops}, \S``Conservation Theorems'') and the
-exact-inverse no-go theorem (if evidence leaked, forgetting cannot
-exactly undo it).
+erasure no-go theorem (if evidence leaked, forgetting cannot erase
+it).
 
 \paragraph{Independence witness.}
 A system with scoped forgetting (D6) but no conservation guarantee
@@ -609,9 +610,9 @@ The book contains a substantial family of boundary results:
 \item \textbf{No binary mixed policy}
   (Chapter~\ref{ch:intensional}): the classical two-channel
   intensional mixture is refuted.
-\item \textbf{Exact-inverse no-go}
+\item \textbf{Erasure no-go}
   (Chapter~\ref{ch:state-ops}): if evidence leaked, forgetting
-  cannot exactly undo it.
+  cannot erase it.
 \item \textbf{Strength non-monotonicity}
   (Chapter~\ref{ch:views}): more evidence can yield lower strength.
 \end{itemize}

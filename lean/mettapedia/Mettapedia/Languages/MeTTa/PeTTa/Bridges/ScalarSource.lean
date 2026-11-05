@@ -54,7 +54,7 @@ instance (program : SpaceSemantics.Program) (head : String) : Decidable (Clear p
 
 def Inert (program : SpaceSemantics.Program) (head : String) : Prop :=
   (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false ∧
-  head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]
+  head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]
 
 instance (program : SpaceSemantics.Program) (head : String) : Decidable (Inert program head) :=
   inferInstanceAs (Decidable (_ ∧ _))

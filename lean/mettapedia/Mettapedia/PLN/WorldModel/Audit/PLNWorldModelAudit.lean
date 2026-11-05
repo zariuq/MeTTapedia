@@ -11,7 +11,8 @@ import Mettapedia.PLN.WorldModel.Semitopology.PLNSemitopologyProvenanceBridge
 
 Small audit-facing wrappers over the existing WM theorem family:
 
-- evidence-conservation checks (no hallucination / zero outside-scope leakage),
+- evidence-conservation checks for revisions that forgetting erases (no
+  hallucination / zero outside-scope leakage),
 - non-commutative order-sensitivity signal (`SwapDefect`),
 - overlap-separation criterion for safe additive recovery after overlap forgetting.
 -/
@@ -42,17 +43,17 @@ def NoHallucinationOutsideScope
     AdditiveWorldModel.extract
       (State := State) (Query := Query) (Ev := Ev) Δ q = 0
 
-theorem noHallucinationOutsideScope_of_exactInverse
+theorem noHallucinationOutsideScope_of_erases
     (F : ForgettingLayer State Scope Query Ev)
     (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
     {S : Scope} {Δ : State}
-    (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
+    (herase : F.forget S Δ = 0) :
     NoHallucinationOutsideScope (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
       F S Δ := by
   intro q hout
-  exact ForgettingLayer.exactInverse_revision_supported
+  exact ForgettingLayer.erased_revision_supported
     (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
-    F hzero hinv q hout
+    F hzero herase q hout
 
 end Conservation
 
@@ -61,11 +62,11 @@ section ConservationCount
 variable {State Scope Query Ev : Type*}
 variable [EvidenceType State] [ConjugateEvidence Ev] [AdditiveWorldModel State Query Ev]
 
-theorem zeroLeakageOutsideScope_of_exactInverse
+theorem zeroLeakageOutsideScope_of_erases
     (F : ForgettingLayer State Scope Query Ev)
     (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
     {S : Scope} {Δ : State}
-    (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
+    (herase : F.forget S Δ = 0) :
     ∀ q, ¬ F.inScope S q →
       AdditiveWorldModel.queryObservationCount
         (State := State) (Query := Query) (Ev := Ev) Δ q = 0 := by
@@ -73,9 +74,9 @@ theorem zeroLeakageOutsideScope_of_exactInverse
   have hEv :
       AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q = 0 :=
-    ForgettingLayer.exactInverse_revision_supported
+    ForgettingLayer.erased_revision_supported
       (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
-      F hzero hinv q hout
+      F hzero herase q hout
   unfold AdditiveWorldModel.queryObservationCount
   simpa [hEv] using (ConjugateEvidence.observationCount_zero (Ev := Ev))
 

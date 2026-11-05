@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseMachineExecution.Environment
+import Mettapedia.Languages.MeTTa.PeTTa.CodeSupportAlgebra
 
 /-! Reflective rule selection and transport for the original premise operations. -/
 
@@ -166,44 +167,6 @@ theorem premise_returns_in_extension (target : Program)
 private def extendedPreviousHeads (head : String) : Bool :=
   premiseExecutionHeads head && !(["gslt:premise:reflective-rules", "gslt:premise:reflective-presentations",
     "gslt:premise:presentation-named", "gslt:premise:substitution-presentation"].contains head)
-
-private theorem expressionHeadWithin_and (first second : String → Bool) (items : List Atom) :
-    expressionHeadWithin (fun head => first head && second head) items =
-      (expressionHeadWithin first items && expressionHeadWithin second items) := by
-  cases items with
-  | nil => rfl
-  | cons item items =>
-      cases item with
-      | symbol head =>
-          change ((first head && second head) && head != "eval") =
-            ((first head && head != "eval") && (second head && head != "eval"))
-          cases first head <;> cases second head <;> cases (head != "eval") <;> rfl
-      | _ => rfl
-
-mutual
-  private theorem codeWithin_and (first second : String → Bool) (code : Atom) :
-      codeWithin (fun head => first head && second head) code =
-        (codeWithin first code && codeWithin second code) := by
-    cases code with
-    | expression items =>
-        have children := atomsWithin_and first second items
-        simp only [codeWithin, expressionHeadWithin_and, children]
-        simp only [Bool.and_assoc, Bool.and_comm, Bool.and_left_comm]
-    | _ => rfl
-  termination_by sizeOf code
-
-  private theorem atomsWithin_and (first second : String → Bool) (items : List Atom) :
-      atomsWithin (fun head => first head && second head) items =
-        (atomsWithin first items && atomsWithin second items) := by
-    cases items with
-    | nil => rfl
-    | cons code items =>
-        have firstPart := codeWithin_and first second code
-        have restPart := atomsWithin_and first second items
-        simp only [atomsWithin, firstPart, restPart]
-        simp only [Bool.and_assoc, Bool.and_comm, Bool.and_left_comm]
-  termination_by sizeOf items
-end
 
 private theorem program_closed_restrict (allowed further : String → Bool) (program : Program)
     (closed : ProgramClosed allowed program) (binding : further "let" = true)
@@ -416,7 +379,7 @@ private theorem reflectionMachine_data_template (head : String) (arguments : Lis
     PureData.Template reflectionRuntime (reflectionA head arguments) := by
   have checked : reflectionMachineDataHeads.all (fun name => decide
       ((ioHead name || StdLib.known name || reflectionRuntime.equations.any (·.head == name)) = false ∧
-        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
+        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
     rfl
   have row := List.all_eq_true.mp checked head supported
   rw [decide_eq_true_eq] at row

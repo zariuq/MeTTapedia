@@ -49,8 +49,8 @@ theorem symbol_returns (fragment : Fragment) (program : Program) (bindings : Sub
 special form. -/
 private theorem data_head_not_form {program : Program} {head : String}
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
-    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
   have notMatch : head ≠ "match" := Eval.ne_match_of_not_known (by
     simp only [Bool.or_eq_false_iff] at inert
     exact inert.1.2)
@@ -61,7 +61,7 @@ private theorem data_head_not_form {program : Program} {head : String}
 theorem unary_constructor_of_returns (fragment : Fragment) (program : Program) (bindings : Subst)
     (before after : State) (head : String) (expression value : Atom)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (computed : PureReturns fragment program bindings before expression after value) :
     PureReturns fragment program bindings before (.expression [.symbol head, expression]) after
       (.expression [.symbol head, value]) := by
@@ -74,7 +74,7 @@ theorem unary_constructor_of_returns (fragment : Fragment) (program : Program) (
 theorem constructor_return (fragment : Fragment) (program : Program) (bindings : Subst)
     (state : State) (head : String) (expressions values : List Atom)
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (computed : List.Forall₂ (fun expression value =>
       PureReturns fragment program bindings state expression state value) expressions values) :
     PureReturns fragment program bindings state (.expression (.symbol head :: expressions)) state

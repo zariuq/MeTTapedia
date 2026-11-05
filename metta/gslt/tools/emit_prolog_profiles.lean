@@ -9,7 +9,7 @@ def main (arguments : List String) : IO Unit := do
   let [directory] := arguments | throw (IO.userError "expected output directory")
   let root : System.FilePath := directory
   IO.FS.createDirAll root
-  IO.FS.writeFile (root / "CommonSyntax.module")
+  IO.FS.writeFile (root / "PrologCommonSyntax.module")
     (Mettapedia.GSLT.LanguageDef.ModuleSource.Printer.print PrologSyntaxModule.common)
   for (name, profile) in [("ISO", iso), ("SWI", swi)] do
     IO.FS.writeFile (root / (name ++ "Syntax.module"))

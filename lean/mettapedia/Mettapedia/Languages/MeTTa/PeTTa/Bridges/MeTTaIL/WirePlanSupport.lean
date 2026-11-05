@@ -26,7 +26,7 @@ def tags : List String := WireCodecSupport.tags ++
 
 def Supported (allowed : String → Bool) : Prop := ∀ tag ∈ tags, allowed tag = true
 
-private theorem tag_static : ∀ tag ∈ tags, tag ≠ "eval" := by decide +kernel
+private theorem tag_static : ∀ tag ∈ tags, tag ≠ "eval" ∧ tag ≠ "unique" := by decide +kernel
 
 theorem base (allowed : String → Bool) (supported : Supported allowed) : WireCodecSupport.Supported allowed := by
   intro tag member
@@ -35,7 +35,9 @@ theorem base (allowed : String → Bool) (supported : Supported allowed) : WireC
 theorem app (allowed : String → Bool) (supported : Supported allowed) (head : String)
     (member : head ∈ tags) (arguments : List Term) (children : checkMany allowed arguments = true) :
     check allowed (.application head arguments) = true :=
-  check_application allowed head arguments (supported head member) (tag_static head member) children
+  check_application allowed head arguments (by
+    have static := tag_static head member
+    simp [Eval.expressionHeadWithin, supported head member, static.1, static.2]) children
 
 theorem list (allowed : String → Bool) (supported : Supported allowed) {α : Type}
     (encode : α → Term) (values : List α) (valid : ∀ value ∈ values, check allowed (encode value) = true) :

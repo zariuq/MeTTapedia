@@ -44,6 +44,6 @@ theorem namesFresh_of_canonical_entryChecks (spec : Spec) (name : String) (canon
   simp only [beginBody, runBody, exploreBody, edgesBody, codeWithin, expressionHeadWithin, atomsWithin,
     backendAtom, plan, normal, beginAllowed, advanceAllowed, traceAllowed, exploreAllowed, roundsAllowed,
     statesAllowed, edgesAllowed, letAllowed, Bool.true_and, Bool.and_true]
-  decide +kernel
+  simp +decide
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteEmissionSupport

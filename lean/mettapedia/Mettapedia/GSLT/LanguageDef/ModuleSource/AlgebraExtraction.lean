@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.ModuleSource.Elaborate
-import Mettapedia.Algebra.CollectionFold
+import Mettapedia.Algebra.Collections.Folds
 import Mettapedia.OSLF.MeTTaIL.CoreLanguageDef
 import Mettapedia.OSLF.MeTTaIL.CanonicalBags
 

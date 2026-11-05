@@ -2,32 +2,75 @@ import Mettapedia.PLN.WorldModel.PLNWorldModelSupportForgetting
 import Mettapedia.PLN.WorldModel.WorldModelConservationPack
 
 /-!
-# Forgetting laws: no manufactured evidence, and support-closed deletion
+# Forgetting laws: exact unlearning, no manufactured evidence, support closure and relevance
 
-The existing forgetting layer fixes idempotence and invariance outside the
-forgotten scope.  Those two laws leave the operation almost entirely open
-inside the scope: a layer that resets in-scope claims to a prior satisfies
-both.  Two further laws close that gap for a world model whose readouts are
-evidence.
+The forgetting layer of `GenericWorldModelForgetting` fixes idempotence and
+invariance outside the forgotten scope.  Those two laws leave the operation
+almost entirely open inside the scope: a layer that resets in-scope claims to a
+prior satisfies both.  Forgetting a scope withdraws the sources in its
+footprint, and the laws below say what that must do.
 
-* **No manufactured evidence.**  Forgetting never increases the extracted
-  evidence of any query, in the evidence order.  Zeroing evidence in scope is
-  allowed; resetting to a prior or redistributing counts is not.  Under this
-  law every observation count is non-increasing, so confidence can only fall.
+## The law set
 
-* **Support-closed deletion.**  With support tracking, the support retained
-  after forgetting is part of the earlier support and avoids the forgotten
-  footprint, and nonzero evidence always has nonempty support.  Consequently
-  every conclusion supported only inside the footprint is deleted, and every
-  surviving conclusion keeps a derivation that does not pass through the
-  forgotten sources.  This is causal deletion, as opposed to zeroing one claim
-  while leaving its dependants standing.
+Each law is read off a theory of retraction: provenance semirings (deletion is
+the homomorphism that sends the withdrawn tokens to zero), deletion propagation
+and view maintenance, truth maintenance (labels are sets of environments, and
+retracting an assumption removes the environments containing it), belief-base
+contraction (success, inclusion, relevance, core retainment) and exact
+unlearning (the result equals recomputing without the data).
 
-Both are stated as structure fields, so a forgetting profile must carry them
-explicitly.  The canaries show that the pre-existing interface does not imply
-either law: a reset-to-prior layer satisfies idempotence and outside
-invariance and manufactures evidence, whereas a zeroing layer satisfies the
-first new law with nothing further assumed.
+1. **Exact unlearning.**  The result is what would have been computed without
+   the withdrawn sources.  On an additive state: forgetting a supported
+   revision of a clean base recovers the base
+   (`SupportTrackedForgettingLayer.exactInverse_of_clean`).  It is asked only
+   of clean bases.  Asked of every base it is degenerate: the layer forgets
+   nothing and the revision is zero
+   (`ForgettingLayer.exactInverse_everywhere_degenerate`).
+2. **Homomorphism.**  Forgetting commutes with revision
+   (`SupportTrackedForgettingLayer.forget_add`), so a supported revision is
+   absorbed on every base (`forget_add_of_supported`).  On provenance
+   polynomials forgetting is the substitution homomorphism, which commutes with
+   deduction too and with every stage of a recursive derivation
+   (`ProvenanceRetraction`).
+3. **No manufactured evidence** (inclusion, read on evidence): forgetting never
+   increases the extracted evidence of any query
+   (`EvidenceMonotoneForgettingLayer`).  Under this law every observation
+   count is non-increasing, so confidence can only fall.
+4. **Support closure** (inclusion and success, read on supports): the support
+   retained after forgetting is part of the earlier support and avoids the
+   forgotten footprint, and nonzero evidence always has nonempty support
+   (`SupportClosedForgettingLayer`).  Consequently every conclusion supported
+   only inside the footprint is deleted, and every surviving conclusion keeps a
+   derivation that does not pass through the forgotten sources.  This is causal
+   deletion, as opposed to zeroing one claim while leaving its dependants
+   standing.
+5. **Relevance** (relevance and core retainment): a claim whose support avoids
+   the footprint keeps its evidence exactly
+   (`RetractionLayer.extract_forget_of_disjoint`).
+6. **Idempotence and commutation** are derived rather than assumed.
+   Idempotence follows from support closure and the clean law
+   (`SupportClosedForgettingLayer.forget_forget_of_closed`); on the ledger and
+   on provenance polynomials two forgettings commute and compose to forgetting
+   the union.
+
+`RetractionLayer` carries laws 1 to 5.  On the ledger of identified
+observations, exact unlearning alone determines forgetting: it is causal
+deletion (`LedgerRetraction`).  The discriminator controls
+(`LedgerRetractionControls`) show that laws 3, 4 (its two parts) and 5 are
+independent, each failing alone under one policy, and that exact unlearning is
+strictly stronger than their conjunction.
+
+Forgetting a symbol (Lin and Reiter; uniform interpolation) is a different
+operation: it removes vocabulary and keeps every consequence stated in the
+remaining vocabulary, whereas retraction removes data, and the consequences
+that rested on it go with it.
+
+## Canaries
+
+The canaries show that the earlier interface implies none of the new laws: a
+reset-to-prior layer satisfies idempotence and outside invariance and
+manufactures evidence, whereas a zeroing layer satisfies the evidence law with
+nothing further assumed.
 -/
 
 set_option autoImplicit false
@@ -176,16 +219,75 @@ theorem exists_outside_support_of_retained
   refine ⟨s, L.retained_support_subset S W q hs, ?_⟩
   exact Finset.disjoint_left.mp (L.retained_support_disjoint S W q) hs
 
-/-- A revision whose support lies inside the footprint is exactly undone
-(inherited), and after forgetting it contributes nothing anywhere. -/
+/-- A revision whose support lies inside the footprint vanishes on forgetting:
+it leaves no trace on any base.  On a clean base the base is recovered exactly
+(`SupportTrackedForgettingLayer.exactInverse_of_clean`). -/
 theorem revision_inside_footprint_vanishes
     (L : SupportClosedForgettingLayer State Scope Query Ev Supp)
     {S : Scope} {Δ : State}
     (hsupp : ∀ q, L.support Δ q ⊆ L.scopeFootprint S) (W : State) :
-    L.forget S (W + Δ) = W :=
-  L.exactInverse_of_supported hsupp W
+    L.forget S (W + Δ) = L.forget S W :=
+  L.toSupportTrackedForgettingLayer.forget_add_of_supported hsupp W
+
+/-- **Idempotence is derived**: a forgotten state is clean, so forgetting it
+again changes nothing. -/
+theorem forget_forget_of_closed
+    (L : SupportClosedForgettingLayer State Scope Query Ev Supp)
+    (S : Scope) (W : State) :
+    L.forget S (L.forget S W) = L.forget S W :=
+  L.forget_eq_self_of_clean fun q => L.retained_support_disjoint S W q
 
 end SupportClosedForgettingLayer
+
+/-! ## Retraction: both laws, exact unlearning and relevance -/
+
+/-- **A retraction layer**: support-closed deletion with exact unlearning on
+clean bases, no manufactured evidence, and relevance: a claim whose support
+avoids the footprint keeps its evidence exactly. -/
+structure RetractionLayer (State Scope Query Ev Supp : Type*)
+    [EvidenceType State] [AddCommMonoid Ev] [PartialOrder Ev]
+    [AdditiveWorldModel State Query Ev]
+    extends SupportClosedForgettingLayer State Scope Query Ev Supp,
+      EvidenceMonotoneForgettingLayer State Scope Query Ev where
+  extract_forget_of_disjoint : ∀ {S : Scope} {W : State} {q : Query},
+    Disjoint (support W q) (scopeFootprint S) →
+      AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev)
+          (forget S W) q =
+        AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev) W q
+
+namespace RetractionLayer
+
+variable {State Scope Query Ev Supp : Type*}
+variable [EvidenceType State] [AddCommMonoid Ev] [PartialOrder Ev]
+variable [AdditiveWorldModel State Query Ev]
+
+/-- **Exact unlearning on clean bases.** -/
+theorem exactInverse_of_clean (L : RetractionLayer State Scope Query Ev Supp)
+    {S : Scope} {Δ W : State}
+    (hsupp : ∀ q, L.support Δ q ⊆ L.scopeFootprint S)
+    (hclean : ∀ q, Disjoint (L.support W q) (L.scopeFootprint S)) :
+    L.forget S (W + Δ) = W :=
+  L.toSupportTrackedForgettingLayer.exactInverse_of_clean hsupp hclean
+
+/-- **No manufactured evidence.** -/
+theorem extract_forget_le (L : RetractionLayer State Scope Query Ev Supp)
+    (S : Scope) (W : State) (q : Query) :
+    AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev)
+        (L.forget S W) q ≤
+      AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev) W q :=
+  L.toEvidenceMonotoneForgettingLayer.forget_le S W q
+
+/-- **Success**: a claim supported only inside the footprint loses all its
+evidence. -/
+theorem extract_forget_eq_zero_of_support_subset
+    (L : RetractionLayer State Scope Query Ev Supp)
+    {S : Scope} {W : State} {q : Query}
+    (hsub : L.support W q ⊆ L.scopeFootprint S) :
+    AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := Ev)
+      (L.forget S W) q = 0 :=
+  L.toSupportClosedForgettingLayer.extract_forget_eq_zero_of_support_subset hsub
+
+end RetractionLayer
 
 /-! ## Canaries on a one-query numeric world model -/
 
@@ -247,6 +349,13 @@ theorem reset_and_zero_share_earlier_laws :
       (∀ S W, resetLayer.forget S (resetLayer.forget S W) = resetLayer.forget S W) ∧
       (∀ S W, zeroLayer.forget S (zeroLayer.forget S W) = zeroLayer.forget S W) :=
   ⟨rfl, fun _ _ => rfl, fun _ _ => rfl⟩
+
+/-- **The zeroing layer undoes nothing but zero.**  It is the identity on no
+nonzero state, so it undoes no nonzero revision on every base: the
+all-bases inverse law fails for it at every nonzero revision. -/
+theorem zeroLayer_no_allBases_inverse {Δ : ℕ} (hΔ : Δ ≠ 0) :
+    ¬ ∀ W : ℕ, zeroLayer.forget () (W + Δ) = W :=
+  fun hinv => hΔ (zeroLayer.exactInverse_everywhere_degenerate hinv).2
 
 end Canary
 

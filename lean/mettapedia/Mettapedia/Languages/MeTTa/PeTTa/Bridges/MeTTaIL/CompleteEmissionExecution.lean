@@ -91,7 +91,7 @@ theorem fresh_parts (fresh : namesFresh spec name profile = true) :
   exact ⟨row.1.1, row.1.2, row.2⟩
 
 theorem entry_facts (fresh : namesFresh spec name profile = true) {head : String} (member : head ∈ entries name) :
-    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] ∧ ioHead head = false ∧
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] ∧ ioHead head = false ∧
       StdLib.known head = false := by
   obtain ⟨special, io, known⟩ := (fresh_parts fresh).2.1 head member
   exact ⟨by simpa [specialHeads] using special, io, known⟩

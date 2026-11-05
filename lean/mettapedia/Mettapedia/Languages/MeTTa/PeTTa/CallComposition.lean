@@ -149,7 +149,7 @@ theorem captured_function_arguments_returns (program : Program) (first caller : 
     (before after : State) (head : String) (arguments : List Atom) (index : Nat) (answer : Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (returned : PureReturns program first before (.expression (.symbol head :: arguments)) after answer) :

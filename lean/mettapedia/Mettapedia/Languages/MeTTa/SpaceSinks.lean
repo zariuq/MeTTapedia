@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.SpaceKinds
-import Mettapedia.Algebra.SupportObservation
-import Mettapedia.Algebra.CollectionFold
+import Mettapedia.Algebra.Collections.SupportObservation
+import Mettapedia.Algebra.Collections.Free
 import Mathlib.Data.Finset.Dedup
 
 /-!
@@ -23,11 +23,11 @@ unordered join.
   repeat.  The direction from right to left goes through deduplication
   (`insertBatch_dedup`).
 
-A batch is the fold of the Boom hierarchy
-(`Mettapedia.Algebra.CollectionFold.Boom.foldList`) for the generator sending an
+A batch is the list fold
+(`Mettapedia.Algebra.Collections.foldList`) for the generator sending an
 atom to its insertion, in the opposite monoid of state transformers
 (`insertBatch_eq_foldList`, `orderIndependent_iff_commute`).  The bag statement
-is then `Boom.foldList_factors_bag_iff`; the set statement there assumes a
+is then `Algebra.Collections.foldList_factors_bag_iff`; the set statement there assumes a
 commutative monoid, while state transformers form a non-commutative one in which
 only the generators commute, which is the case proved here.
 
@@ -66,8 +66,8 @@ order between the two phases is
 `Mettapedia.Algebra.LocatedUpdates.removeAfterAdd_eq_addAfterRemove_iff`.
 Aggregating sinks that stage their instances in a set and write a function of it
 (count, sum, the least `k`) are support observations by construction
-(`Mettapedia.Algebra.SupportObservation.factorsThroughSupport_iff`); a count of
-occurrences is not (`Mettapedia.Algebra.SupportObservation.Controls.use_count_not_support`).
+(`Mettapedia.Algebra.Collections.SupportObservation.factorsThroughSupport_iff`); a count of
+occurrences is not (`Mettapedia.Algebra.Collections.SupportObservation.Controls.use_count_not_support`).
 -/
 
 set_option autoImplicit false
@@ -75,7 +75,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.SpaceSinks
 
 open Mettapedia.Languages.MeTTa.SpaceKinds
-open Mettapedia.Algebra.SupportObservation
+open Mettapedia.Algebra.Collections.SupportObservation
 
 universe u v
 
@@ -108,10 +108,10 @@ transformers: the product of two generators performs them in list order. -/
 def generator (κ : Kind.{u, v} α) (atom : α) : (Function.End κ.State)ᵐᵒᵖ :=
   MulOpposite.op fun state => κ.add state atom
 
-/-- **A batch is the Boom fold of the discipline.** -/
+/-- **A batch is the list fold of the discipline.** -/
 theorem insertBatch_eq_foldList (κ : Kind.{u, v} α) (state : κ.State) (batch : List α) :
     insertBatch κ state batch =
-      (MulOpposite.unop (Mettapedia.Algebra.CollectionFold.Boom.foldList (generator κ) batch)) state := by
+      (MulOpposite.unop (Mettapedia.Algebra.Collections.foldList (generator κ) batch)) state := by
   induction batch generalizing state with
   | nil => rfl
   | cons atom rest ih =>

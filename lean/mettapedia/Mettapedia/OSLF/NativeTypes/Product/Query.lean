@@ -4,6 +4,8 @@ import Mettapedia.OSLF.NativeTypes.GeneratedLogic.BackwardReach
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Hints
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.ScopedCongruences
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.BagCanonicalForms
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.BagJudgmentPremises
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.BagStores
 import Mettapedia.OSLF.NativeTypes.Product.CertifiedForms
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.FrontDoorParts
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.SortWitnesses
@@ -459,25 +461,33 @@ def readingOf (loaded : Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error La
 /-- Whether the language has bags. -/
 def hasBags (language : LanguageDef) : Bool := (signatureOf language).contains (.collectionUnit .hashBag)
 
-/-- Sorted bags, for a language with bags, no authored equations, no collection algebra, and rules whose premises
-are guards or queries over metavariables. -/
-def bagFormsOf (language : LanguageDef) (fuel : ℕ) : Option (CanonicalForms RelationEnv.empty language fuel) :=
+/-- **Sorted bags in a relation environment that answers modulo the bag laws**, for a language with bags, no authored
+equations, no collection algebra, and rules whose premises are queries over metavariables (the guards among them) or
+judgment steps (a judgment over captures stepping to a first-order verdict, or such a step at each element of a captured
+collection), in an environment whose tuples have no set. -/
+def bagFormsIn (relEnv : RelationEnv) (respects : BagForms.RespectsCanon relEnv)
+    (tuplesFree : BagForms.TuplesSetFree relEnv) (language : LanguageDef) (fuel : ℕ) :
+    Option (CanonicalForms relEnv language fuel) :=
   if hasBags language then
     if noEquations : language.equations = [] then
       if noAlgebra : language.hasAlgebraDeclarations = false then
         if guarded : language.rewrites.all (fun rule => rule.premises.all BagForms.guard) = true then
           some (BagForms.forms noEquations noAlgebra guarded fuel)
-        else if queried : language.rewrites.all (fun rule => rule.premises.all BagForms.query) = true then
-          some (BagForms.formsQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)
+        else if judged : language.rewrites.all (fun rule => rule.premises.all BagForms.judgmentPremise) = true then
+          some (BagForms.formsJudgments noEquations noAlgebra respects tuplesFree judged fuel)
         else none
       else none
     else none
   else none
 
+/-- Sorted bags in the empty relation environment. -/
+def bagFormsOf (language : LanguageDef) (fuel : ℕ) : Option (CanonicalForms RelationEnv.empty language fuel) :=
+  bagFormsIn RelationEnv.empty BagForms.respectsCanon_empty BagForms.tuplesSetFree_empty language fuel
+
 /-- **The canonical forms the executable knows for a language**: the certified forms of a language that has them
 (`certifiedFormsOf`); otherwise sorted bags, for a language with bags, no authored equations, no collection algebra,
-and rules whose premises are guards or queries over metavariables. Otherwise none, and the language is read as
-written. -/
+and rules whose premises are guards, judgment steps or queries over metavariables. Otherwise none, and the language is
+read as written. -/
 def formsOf (language : LanguageDef) (fuel : ℕ) : Option (CanonicalForms RelationEnv.empty language fuel) :=
   match certifiedFormsOf language fuel with
   | some forms => some forms
@@ -526,11 +536,17 @@ theorem thenDecide_refuted {relEnv : RelationEnv} {reading : LanguageReading} {d
 
 /-- The witness deciders the executable uses, for the sort quantifiers and the past modalities: candidates to depth
 three, at most sixty-four of them. -/
+def sortsIn (relEnv : RelationEnv) (language : LanguageDef) (fuel budget : ℕ) {reading : LanguageReading}
+    (forms : Option (CanonicalForms relEnv language fuel)) (compatible : FormsFor forms reading) :
+    Decider relEnv language reading :=
+  (sortDecider relEnv language (signatureOf language) fuel forms compatible 3 64 budget).orElse
+    (predecessorDecider relEnv language (signatureOf language) fuel forms compatible 3 64 budget)
+
+/-- The witness deciders in the empty relation environment. -/
 def sortsOf (language : LanguageDef) (fuel budget : ℕ) {reading : LanguageReading}
     (forms : Option (CanonicalForms RelationEnv.empty language fuel)) (compatible : FormsFor forms reading) :
     Decider RelationEnv.empty language reading :=
-  (sortDecider RelationEnv.empty language (signatureOf language) fuel forms compatible 3 64 budget).orElse
-    (predecessorDecider RelationEnv.empty language (signatureOf language) fuel forms compatible 3 64 budget)
+  sortsIn RelationEnv.empty language fuel budget forms compatible
 
 /-- **Ask with what the executable knows for a language**: the certified forms of a language that has them, or its
 sorted bags' forms; then, for a question the search leaves open, for a certified language, its certified decider and the
@@ -561,16 +577,15 @@ def askKnown (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) (term :
               formula term
               (askFound RelationEnv.empty language fuel formula term hintBound budget
                 (some (BagForms.forms noEquations noAlgebra guarded fuel)))
-          else if queried : language.rewrites.all (fun rule => rule.premises.all BagForms.query) = true then
+          else if judged : language.rewrites.all (fun rule => rule.premises.all BagForms.judgmentPremise) = true then
             thenDecide
               ((partsDecider (fuel := fuel) (presentations := List.singleton) (BagForms.canonical noEquations noAlgebra)
-                (BagForms.coherentQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)
+                (BagForms.coherentJudgments noEquations noAlgebra BagForms.respectsCanon_empty BagForms.tuplesSetFree_empty judged fuel)
                 (BagForms.parts noEquations noAlgebra) budget).orElse
-                (sortsOf language fuel budget
-                  (some (BagForms.formsQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)) rfl))
+                (sortsOf language fuel budget (some (BagForms.formsJudgments noEquations noAlgebra BagForms.respectsCanon_empty BagForms.tuplesSetFree_empty judged fuel)) rfl))
               formula term
               (askFound RelationEnv.empty language fuel formula term hintBound budget
-                (some (BagForms.formsQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)))
+                (some (BagForms.formsJudgments noEquations noAlgebra BagForms.respectsCanon_empty BagForms.tuplesSetFree_empty judged fuel)))
           else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
             (askFound RelationEnv.empty language fuel formula term hintBound budget none)
         else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
@@ -594,7 +609,7 @@ theorem askKnown_proved {language : LanguageDef} {fuel : ℕ} {formula : Formula
   unfold formsOf
   split at answered
   · exact thenDecide_proved (fun found => askFound_proved found) answered
-  · unfold bagFormsOf
+  · unfold bagFormsOf bagFormsIn
     split at answered
     · rw [if_pos ‹_›]
       split at answered
@@ -610,11 +625,11 @@ theorem askKnown_proved {language : LanguageDef} {fuel : ℕ} {formula : Formula
           · rename_i unguarded
             rw [dif_neg unguarded]
             split at answered
-            · rename_i queried
-              rw [dif_pos queried]
+            · rename_i judged
+              rw [dif_pos judged]
               exact thenDecide_proved (fun found => askFound_proved found) answered
-            · rename_i unqueried
-              rw [dif_neg unqueried]
+            · rename_i unjudged
+              rw [dif_neg unjudged]
               exact thenDecide_proved (fun found => askFound_proved found) answered
         · rename_i algebra
           rw [dif_neg algebra]
@@ -637,7 +652,7 @@ theorem askKnown_refuted {language : LanguageDef} {fuel : ℕ} {formula : Formul
   unfold formsOf
   split at answered
   · exact thenDecide_refuted (fun found => askFound_refuted found) answered
-  · unfold bagFormsOf
+  · unfold bagFormsOf bagFormsIn
     split at answered
     · rw [if_pos ‹_›]
       split at answered
@@ -653,11 +668,11 @@ theorem askKnown_refuted {language : LanguageDef} {fuel : ℕ} {formula : Formul
           · rename_i unguarded
             rw [dif_neg unguarded]
             split at answered
-            · rename_i queried
-              rw [dif_pos queried]
+            · rename_i judged
+              rw [dif_pos judged]
               exact thenDecide_refuted (fun found => askFound_refuted found) answered
-            · rename_i unqueried
-              rw [dif_neg unqueried]
+            · rename_i unjudged
+              rw [dif_neg unjudged]
               exact thenDecide_refuted (fun found => askFound_refuted found) answered
         · rename_i algebra
           rw [dif_neg algebra]
@@ -818,13 +833,12 @@ def settleKnown (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) (ter
                   budget).orElse (namedDecider _ _ (BagForms.canonical noEquations noAlgebra))).orElse
                   (sortsOf language fuel budget (some (BagForms.forms noEquations noAlgebra guarded fuel)) rfl)))
               formula term
-          else if queried : language.rewrites.all (fun rule => rule.premises.all BagForms.query) = true then
+          else if judged : language.rewrites.all (fun rule => rule.premises.all BagForms.judgmentPremise) = true then
             thenDecide
               ((partsDecider (fuel := fuel) (presentations := List.singleton) (BagForms.canonical noEquations noAlgebra)
-                (BagForms.coherentQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)
+                (BagForms.coherentJudgments noEquations noAlgebra BagForms.respectsCanon_empty BagForms.tuplesSetFree_empty judged fuel)
                 (BagForms.parts noEquations noAlgebra) budget).orElse
-                (sortsOf language fuel budget
-                  (some (BagForms.formsQueries noEquations noAlgebra queried BagForms.respectsCanon_empty fuel)) rfl))
+                (sortsOf language fuel budget (some (BagForms.formsJudgments noEquations noAlgebra BagForms.respectsCanon_empty BagForms.tuplesSetFree_empty judged fuel)) rfl))
               formula term
           else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
         else thenDecide (sortsOf language fuel budget none (formsFor_none (reading := .syntax))) formula term
@@ -841,7 +855,7 @@ theorem askKnown_eq (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) 
     askKnown language fuel formula term hintBound budget =
       settleKnown language fuel formula term budget
         (askFound RelationEnv.empty language fuel formula term hintBound budget (formsOf language fuel)) := by
-  unfold askKnown settleKnown formsOf bagFormsOf
+  unfold askKnown settleKnown formsOf bagFormsOf bagFormsIn
   cases certifiedFormsOf language fuel with
   | some forms => rfl
   | none => split_ifs <;> rfl
@@ -916,6 +930,207 @@ theorem answersRecursive_eq (definitions : List Definition) (admitted : admits d
       rw [answer_at]
     · exact resumeAnswers_eq _ _ _ _ _ entry later
 
+/-! ## Languages run beside tables -/
+
+open Mettapedia.GSLT.LanguageDef.DecidableRelations (Table tablesEnv isFirstOrderList isFirstOrderList_iff_firstOrder)
+
+/-- **Ask a language in a relation environment that answers modulo the bag laws**: with its sorted bags, when it has
+them, then, for a question the search leaves open, the bag parts decider (and, for guarded rules, the modal decider
+over its sorted successors), then the witness deciders. -/
+def askIn (relEnv : RelationEnv) (respects : BagForms.RespectsCanon relEnv) (tuplesFree : BagForms.TuplesSetFree relEnv)
+    (language : LanguageDef) (fuel : ℕ) (formula : Formula 0) (term : Pattern) (hintBound budget : ℕ) : Answer :=
+  if hasBags language then
+    if noEquations : language.equations = [] then
+      if noAlgebra : language.hasAlgebraDeclarations = false then
+        if guarded : language.rewrites.all (fun rule => rule.premises.all BagForms.guard) = true then
+          thenDecide
+            (modalDecider (bagSuccessors fuel noEquations noAlgebra guarded)
+              ((partsDecider (fuel := fuel) (presentations := List.singleton) (BagForms.canonical noEquations noAlgebra)
+                (BagForms.coherent noEquations noAlgebra guarded fuel) (BagForms.parts noEquations noAlgebra)
+                budget).orElse
+                (sortsIn relEnv language fuel budget (some (BagForms.forms noEquations noAlgebra guarded fuel)) rfl)))
+            formula term
+            (askFound relEnv language fuel formula term hintBound budget
+              (some (BagForms.forms noEquations noAlgebra guarded fuel)))
+        else if judged : language.rewrites.all (fun rule => rule.premises.all BagForms.judgmentPremise) = true then
+          thenDecide
+            ((partsDecider (fuel := fuel) (presentations := List.singleton) (BagForms.canonical noEquations noAlgebra)
+              (BagForms.coherentJudgments noEquations noAlgebra respects tuplesFree judged fuel)
+              (BagForms.parts noEquations noAlgebra) budget).orElse
+              (sortsIn relEnv language fuel budget (some (BagForms.formsJudgments noEquations noAlgebra respects tuplesFree judged fuel)) rfl))
+            formula term
+            (askFound relEnv language fuel formula term hintBound budget
+              (some (BagForms.formsJudgments noEquations noAlgebra respects tuplesFree judged fuel)))
+        else thenDecide (sortsIn relEnv language fuel budget none (formsFor_none (reading := .syntax))) formula term
+          (askFound relEnv language fuel formula term hintBound budget none)
+      else thenDecide (sortsIn relEnv language fuel budget none (formsFor_none (reading := .syntax))) formula term
+        (askFound relEnv language fuel formula term hintBound budget none)
+    else thenDecide (sortsIn relEnv language fuel budget none (formsFor_none (reading := .syntax))) formula term
+      (askFound relEnv language fuel formula term hintBound budget none)
+  else thenDecide (sortsIn relEnv language fuel budget none (formsFor_none (reading := .syntax))) formula term
+    (askFound relEnv language fuel formula term hintBound budget none)
+
+section InEnvironment
+
+variable {relEnv : RelationEnv} {respects : BagForms.RespectsCanon relEnv} {tuplesFree : BagForms.TuplesSetFree relEnv}
+  {language : LanguageDef} {fuel : ℕ} {formula : Formula 0} {term : Pattern} {hintBound budget : ℕ}
+  {evidence : Evidence}
+
+/-- **What `askIn` establishes holds** in the environment, in the reading of its sorted bags. -/
+theorem askIn_proved
+    (answered : askIn relEnv respects tuplesFree language fuel formula term hintBound budget = .proved evidence) :
+    (referenceStructure relEnv language (formsReading (bagFormsIn relEnv respects tuplesFree language fuel))).sat
+      Env.closed formula term := by
+  unfold askIn at answered
+  unfold bagFormsIn
+  split at answered
+  · rw [if_pos ‹_›]
+    split at answered
+    · rename_i noEquations
+      rw [dif_pos noEquations]
+      split at answered
+      · rename_i noAlgebra
+        rw [dif_pos noAlgebra]
+        split at answered
+        · rename_i guarded
+          rw [dif_pos guarded]
+          exact thenDecide_proved (fun found => askFound_proved found) answered
+        · rename_i unguarded
+          rw [dif_neg unguarded]
+          split at answered
+          · rename_i judged
+            rw [dif_pos judged]
+            exact thenDecide_proved (fun found => askFound_proved found) answered
+          · rename_i unjudged
+            rw [dif_neg unjudged]
+            exact thenDecide_proved (fun found => askFound_proved found) answered
+      · rename_i algebra
+        rw [dif_neg algebra]
+        exact thenDecide_proved (fun found => askFound_proved found) answered
+    · rename_i equations
+      rw [dif_neg equations]
+      exact thenDecide_proved (fun found => askFound_proved found) answered
+  · rw [if_neg ‹_›]
+    exact thenDecide_proved (fun found => askFound_proved found) answered
+
+/-- **What `askIn` refutes fails** in the environment, in the reading of its sorted bags. -/
+theorem askIn_refuted
+    (answered : askIn relEnv respects tuplesFree language fuel formula term hintBound budget = .refuted evidence) :
+    ¬ (referenceStructure relEnv language (formsReading (bagFormsIn relEnv respects tuplesFree language fuel))).sat
+      Env.closed formula term := by
+  unfold askIn at answered
+  unfold bagFormsIn
+  split at answered
+  · rw [if_pos ‹_›]
+    split at answered
+    · rename_i noEquations
+      rw [dif_pos noEquations]
+      split at answered
+      · rename_i noAlgebra
+        rw [dif_pos noAlgebra]
+        split at answered
+        · rename_i guarded
+          rw [dif_pos guarded]
+          exact thenDecide_refuted (fun found => askFound_refuted found) answered
+        · rename_i unguarded
+          rw [dif_neg unguarded]
+          split at answered
+          · rename_i judged
+            rw [dif_pos judged]
+            exact thenDecide_refuted (fun found => askFound_refuted found) answered
+          · rename_i unjudged
+            rw [dif_neg unjudged]
+            exact thenDecide_refuted (fun found => askFound_refuted found) answered
+      · rename_i algebra
+        rw [dif_neg algebra]
+        exact thenDecide_refuted (fun found => askFound_refuted found) answered
+    · rename_i equations
+      rw [dif_neg equations]
+      exact thenDecide_refuted (fun found => askFound_refuted found) answered
+  · rw [if_neg ‹_›]
+    exact thenDecide_refuted (fun found => askFound_refuted found) answered
+
+end InEnvironment
+
+/-- **The executable's answer in an environment**: the language with its scoped steps flattened, asked with `askIn`. -/
+def answerIn (relEnv : RelationEnv) (respects : BagForms.RespectsCanon relEnv)
+    (tuplesFree : BagForms.TuplesSetFree relEnv) (settings : Settings) (language : LanguageDef) (formula : Formula 0)
+    (term : Pattern) (budget : ℕ) : Answer :=
+  askIn relEnv respects tuplesFree (flattenScoped language) settings.fuel formula term settings.hintBound budget
+
+/-- **What the executable establishes beside tables holds of the language read from the file**, in the reading of its
+sorted bags. -/
+theorem answerIn_proved {relEnv : RelationEnv} {respects : BagForms.RespectsCanon relEnv}
+    {tuplesFree : BagForms.TuplesSetFree relEnv} {settings : Settings}
+    {language : LanguageDef} {formula : Formula 0} {term : Pattern} {budget : ℕ} {evidence : Evidence}
+    (answered : answerIn relEnv respects tuplesFree settings language formula term budget = .proved evidence)
+    (reference :
+      (formsReading (bagFormsIn relEnv respects tuplesFree (flattenScoped language) settings.fuel)).rules = .reference) :
+    (referenceStructure relEnv language
+      (formsReading (bagFormsIn relEnv respects tuplesFree (flattenScoped language) settings.fuel))).sat Env.closed
+        formula term :=
+  (sat_flattenScoped_iff relEnv language _ reference Env.closed formula term).mp (askIn_proved answered)
+
+/-- **What the executable refutes beside tables fails of the language read from the file.** -/
+theorem answerIn_refuted {relEnv : RelationEnv} {respects : BagForms.RespectsCanon relEnv}
+    {tuplesFree : BagForms.TuplesSetFree relEnv} {settings : Settings}
+    {language : LanguageDef} {formula : Formula 0} {term : Pattern} {budget : ℕ} {evidence : Evidence}
+    (answered : answerIn relEnv respects tuplesFree settings language formula term budget = .refuted evidence)
+    (reference :
+      (formsReading (bagFormsIn relEnv respects tuplesFree (flattenScoped language) settings.fuel)).rules = .reference) :
+    ¬ (referenceStructure relEnv language
+      (formsReading (bagFormsIn relEnv respects tuplesFree (flattenScoped language) settings.fuel))).sat Env.closed
+        formula term :=
+  fun holds => askIn_refuted answered ((sat_flattenScoped_iff relEnv language _ reference Env.closed formula term).mpr holds)
+
+/-- Add a row to the table of its relation, opening the table if it is new. -/
+def addRow (tables : List Table) (relation : String) (row : List Pattern) : List Table :=
+  if tables.any (·.relation == relation) then
+    tables.map fun table => if table.relation == relation then { table with rows := table.rows ++ [row] } else table
+  else tables ++ [{ relation, rows := [row] }]
+
+/-- Close the table of a relation under the name of its complement, opening the table if it is new. -/
+def closeTable (tables : List Table) (relation complement : String) : Except String (List Table) :=
+  if relation == complement || relation == "eq" || complement == "eq" then
+    .error s!"a table and its complement need distinct names other than eq: {relation}, {complement}"
+  else if tables.any (fun table => table.names.contains complement) then
+    .error s!"{complement} is already the name of a table or its complement"
+  else if tables.any (fun table => table.relation == relation && table.complement.isSome) then
+    .error s!"{relation} is closed twice"
+  else if tables.any (·.relation == relation) then
+    pure (tables.map fun table => if table.relation == relation then { table with complement := some complement } else table)
+  else pure (tables ++ [{ relation, complement := some complement, rows := [] }])
+
+/-- **Tables from a text**: a row is a term `(Relation argument …)`, one per line; `closed Relation Complement` closes the
+table of a relation under the name of its complement. Blank lines and lines starting with `#` are skipped. -/
+def readTables (text : String) : Except String (List Table) :=
+  (text.splitOn "\n").foldlM (init := []) fun tables line => do
+    let trimmed := line.trimAscii.toString
+    if trimmed.isEmpty || trimmed.startsWith "#" then pure tables
+    else match (trimmed.splitOn " ").filter (· ≠ "") with
+      | ["closed", relation, complement] => closeTable tables relation complement
+      | _ =>
+        match readPattern trimmed with
+        | .ok (.apply relation row) =>
+          if relation == "eq" then .error "eq is built in, not a table"
+          else if tables.any (fun table => table.complement == some relation) then
+            .error s!"{relation} is the complement of a closed table and has no rows"
+          else pure (addRow tables relation row)
+        | .ok _ => .error s!"a row is a term (Relation argument …): {trimmed}"
+        | .error problem => .error problem
+
+/-- **The answers a language takes beside tables**: the tables read from a text, when their rows are first-order terms,
+plugged in together as a relation environment that answers modulo the bag laws. -/
+def withTables {α : Type} (text : String)
+    (ask : (relEnv : RelationEnv) → BagForms.RespectsCanon relEnv → BagForms.TuplesSetFree relEnv → α) :
+    Except String α := do
+  let tables ← readTables text
+  if first : (tables.all fun table => table.rows.all isFirstOrderList) = true then
+    have rowsFirst := fun table member row inRows =>
+      isFirstOrderList_iff_firstOrder.mp (List.all_eq_true.mp (List.all_eq_true.mp first table member) row inRows)
+    pure (ask (tablesEnv tables) (BagForms.respectsCanon_tablesEnv rowsFirst) (BagForms.tuplesSetFree_tablesEnv rowsFirst))
+  else .error "the rows of a table are first-order terms"
+
 /-- The answers CCS with recursion takes from a definitions text. -/
 def withDefinitions {α : Type} (definitionsText : Option String)
     (ask : (definitions : List Definition) → admits definitions = true → α) : Except String α :=
@@ -926,10 +1141,18 @@ def withDefinitions {α : Type} (definitionsText : Option String)
     if admitted : admits definitions = true then pure (ask definitions admitted)
     else .error "the definitions are not admitted: each summand is a guard over its parameters"
 
-/-- **The executable's answers at each budget**: CCS with recursion in the environment of the definitions given beside
-it (`answersRecursive`), every other language in the empty environment (`answers`). -/
+/-- **The executable's answers at each budget**: a language beside tables in their environment (`answerIn`), CCS with
+recursion in the environment of the definitions given beside it (`answersRecursive`), every other language in the empty
+environment (`answers`). -/
 def answersFor (settings : Settings) (language : LanguageDef) (formula : Formula 0) (term : Pattern)
-    (budgets : List ℕ) (definitionsText : Option String) : Except String (List (ℕ × Answer)) :=
+    (budgets : List ℕ) (definitionsText : Option String) (tablesText : Option String := none) :
+    Except String (List (ℕ × Answer)) :=
+  match tablesText with
+  | some text =>
+    if definitionsText.isSome then .error "definitions and tables are not given together"
+    else withTables text fun relEnv respects tuplesFree =>
+      budgets.map fun budget => (budget, answerIn relEnv respects tuplesFree settings language formula term budget)
+  | none =>
   if language = ccsRecCalc then
     withDefinitions definitionsText fun definitions admitted =>
       answersRecursive definitions admitted settings formula term budgets
@@ -940,7 +1163,13 @@ def answersFor (settings : Settings) (language : LanguageDef) (formula : Formula
 
 /-- **The executable's answer at a budget**: as `answersFor`, asked once. -/
 def answerFor (settings : Settings) (language : LanguageDef) (formula : Formula 0) (term : Pattern) (budget : ℕ)
-    (definitionsText : Option String) : Except String Answer :=
+    (definitionsText : Option String) (tablesText : Option String := none) : Except String Answer :=
+  match tablesText with
+  | some text =>
+    if definitionsText.isSome then .error "definitions and tables are not given together"
+    else withTables text fun relEnv respects tuplesFree =>
+      answerIn relEnv respects tuplesFree settings language formula term budget
+  | none =>
   if language = ccsRecCalc then
     withDefinitions definitionsText fun definitions admitted =>
       askRecursive definitions admitted settings.fuel formula term settings.hintBound budget
@@ -951,7 +1180,8 @@ def answerFor (settings : Settings) (language : LanguageDef) (formula : Formula 
 
 /-- **The report** of the command-line front door. -/
 def report (loaded : Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error LanguageDef) (formulaText termText : String)
-    (budgets : List ℕ) (settingWords : List String := []) (definitionsText : Option String := none) : IO Unit := do
+    (budgets : List ℕ) (settingWords : List String := []) (definitionsText : Option String := none)
+    (tablesText : Option String := none) : IO Unit := do
   match readingOf loaded, Settings.read settingWords with
   | .error problem, _ | _, .error problem => throw (IO.userError s!"oslf: {problem}")
   | .ok language, .ok settings =>
@@ -959,7 +1189,7 @@ def report (loaded : Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error Langu
     | .error problem, _ | _, .error problem => throw (IO.userError s!"oslf: {problem}")
     | .ok formula, .ok term =>
       IO.println s!"language {language.name}: {language.terms.length} constructors, {language.rewrites.length} rules, {language.equations.length} equations"
-      match answersFor settings language formula term budgets definitionsText with
+      match answersFor settings language formula term budgets definitionsText tablesText with
       | .error problem => throw (IO.userError s!"oslf: {problem}")
       | .ok answered =>
         for (budget, answer) in answered do
@@ -980,10 +1210,10 @@ def asExpected (expected : String) (answer : Answer) : Bool :=
 /-- **Check rows of the matrix**: each language, formula, term, budget and settings against the expected answer.
 Fails when some row does not answer as expected. -/
 def checkRows (rows : List (String × Except Mettapedia.GSLT.LanguageDef.ModuleSource.Error LanguageDef × String ×
-    String × ℕ × String × List String × Option String)) : IO Unit := do
+    String × ℕ × String × List String × Option String × Option String)) : IO Unit := do
   let mut failures := 0
   let mut total := 0
-  for (label, loaded, formulaText, termText, budget, expected, settingWords, definitionsText) in rows do
+  for (label, loaded, formulaText, termText, budget, expected, settingWords, definitionsText, tablesText) in rows do
     let read := do
       let language ← readingOf loaded
       let settings ← Settings.read settingWords
@@ -996,7 +1226,7 @@ def checkRows (rows : List (String × Except Mettapedia.GSLT.LanguageDef.ModuleS
       IO.println s!"FAIL {label} {formulaText} {termText}: {problem}"
     | .ok (language, settings, formula, term) =>
       let start ← IO.monoNanosNow
-      let answered ← IO.lazyPure fun _ => answerFor settings language formula term budget definitionsText
+      let answered ← IO.lazyPure fun _ => answerFor settings language formula term budget definitionsText tablesText
       let time := ((← IO.monoNanosNow) - start) / 1000
       total := total + time
       match answered with

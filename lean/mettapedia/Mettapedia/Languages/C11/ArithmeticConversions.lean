@@ -21,7 +21,8 @@ convert that pair to `_Float16`, which the precision order also gives.
 `sysvFloating` holds the i386 and x86-64 System V formats: IEEE binary16,
 bfloat16, IEEE binary32 and binary64, the x87 64-bit-significand extended format for `long double` and
 `_Float64x`, and IEEE binary128. `windowsFloating` gives `long double` the
-format of `double`. With the ILP32, LP64 and LLP64 integer profiles they are
+format of `double`. `aapcs64Floating` gives AArch64 `long double` the IEEE
+binary128 format. With the ILP32, LP64 and LLP64 integer profiles they are
 the targets of Cesta's elaborated arithmetic, whose tables are kernel-checked
 against these definitions.
 
@@ -104,6 +105,21 @@ def windowsFloatingPrecision : RealFloatingType → Nat
 def windowsFloating : FloatingProfile where
   name := "x86-64 Windows floating formats"
   precision := windowsFloatingPrecision
+  standardNested := by decide
+  rankInjective := by
+    intro first second
+    cases first <;> cases second <;> decide
+
+def aapcs64FloatingPrecision : RealFloatingType → Nat
+  | .bfloat16 => 8
+  | .float16 => 11
+  | .float | .float32 => 24
+  | .double | .float64 | .float32x => 53
+  | .longDouble | .float128 | .float64x => 113
+
+def aapcs64Floating : FloatingProfile where
+  name := "AArch64 AAPCS64 floating formats"
+  precision := aapcs64FloatingPrecision
   standardNested := by decide
   rankInjective := by
     intro first second
@@ -274,6 +290,13 @@ example : lp64UsualArithmetic (.complex .float) (.real .double) = .complex .doub
 /-- Where `long double` has `double`'s format it still outranks `double`. -/
 example : usualArithmeticType (integerValueProfile .llp64) windowsFloating (.real .double) (.real .longDouble) =
     .real .longDouble := by decide
+
+/-- AAPCS64 `long double` has the IEEE binary128 value set. -/
+example : aapcs64Floating.precision .longDouble = 113 := by decide
+
+/-- AAPCS64 `long double` outranks `double`. -/
+example : usualArithmeticType (integerValueProfile .lp64) aapcs64Floating
+    (.real .double) (.real .longDouble) = .real .longDouble := by decide
 
 /-- An integer never decides a floating common type. -/
 example : lp64UsualArithmetic (.integer (.unsigned (.extended .int128))) (.real .float) = .real .float := by decide

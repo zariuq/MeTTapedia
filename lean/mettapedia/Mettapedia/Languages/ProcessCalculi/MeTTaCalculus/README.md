@@ -18,10 +18,15 @@ the rho-calculus formalized next door.
 Two reduction rules drive it:
 
 - **COMM**: two guarded inputs on the same channel unify their payload patterns by
-  first-order unification; each body continues under dot-substitution (bound
-  variables are quoted into names).
-- **REFL**: a process inspects its own future via one-step COMM-only lookahead,
-  emitting the successor state as a guarded listener.
+  first-order unification; each body continues under dot-substitution: every
+  pattern variable is quoted, a bound one as its value and an unbound one as
+  itself (the uniform dot). The two inputs are opened apart, so neither body can
+  capture the other's names; the semantics is `Corrected.Step Corrected.uniform`
+  (`CorrectedReduction.lean`). The naive reading, which can capture, is kept only
+  for the separating theorems.
+- **REFL**: a process inspects its own future, emitting the successor state as a
+  guarded listener. Modulo the bag laws it quotes the canonical representative
+  of the successor (`CorrectedReflection.lean`).
 
 Names *are* quoted processes (`@(P)`), which is what makes the calculus reflective.
 
@@ -45,10 +50,19 @@ avoid self-reference).
 | File | Contents |
 |------|----------|
 | `Syntax.lean` | Grammar as `Pattern` abbreviations; `commSymRule`, `reflRule`; `mettaCalc` / `mettaCalcCommOnly` `LanguageDef` |
-| `StructuralCongruence.lean` | `SC` relation (11 constructors): nil, comm, assoc, par-perm, par-cong, QuoteDrop; paper-mapped equivalence theorems |
-| `Reduction.lean` | Dot-substitution (`dotBindings`, `applyDot`); fuel-bounded MGU (256 steps, occurs check); `step` function |
+| `StructuralCongruence.lean` | `SC` relation (11 constructors: refl, symm, trans, alpha as syntactic identity, par_singleton, par_nil_left/right, par_comm, par_assoc, par_perm, par_cong); paper-mapped equivalence theorems. Quote/drop is the `QuoteDrop` equation of the `mettaCalc` language definition, not an `SC` constructor |
+| `Reduction.lean` | Dot-substitution (`dotBindings`, `applyDot`); fuel-bounded MGU (256 steps, occurs check); the naive `step`, which can capture, kept only for the separating theorems |
+| `CorrectedUnification.lean` | First-order heads for MeTTa-IL patterns; principal idempotent occurs-checked unifier |
+| `CorrectedReduction.lean` | The semantics: capture-avoiding COMM and REFL (`Corrected.Step`, admissions `conventional`, `uniform` and `closing`), locally nameless closed forms, `AlphaEq`; executable `cstep` with `cstep_sound_uniform` and `cstep_complete` |
+| `CorrectedAlpha.lean` | On tame processes the manuscript's alpha-equivalence is equality of closed forms (`alpha_iff_alphaEq`), with the separating control for codes |
+| `CorrectedResidual.lean` | Completeness with residual variables up to renaming (`cstep_complete_residual`); principal unifiers agree up to renaming (`principal_renaming`); the manuscript's dot is not determined up to renaming |
+| `CorrectedCongruence.lean` | The corrected step modulo the bag laws (`Corrected.BagStep`) |
+| `CorrectedReflection.lean` | REFL quoting the canonical representative of its reduct (`CanonicalBagStep`, `cstepCanon`): sound, complete on the closing fragment including REFL, and the listener depends only on the class of the reduct |
+| `CorrectedNominal.lean` | Patterns that quote guards: closing commutes with capture-free substitution of closed values (`closeIn_psubst_closed`), so alpha-unification is first-order unification of closed forms (`alphaEq_psubst_iff`); principality and escaping codes |
+| `CorrectedAdequacy.lean` | Corrected COMM as one firing of the transform candidate step (`comm_adequacy_corrected`) |
+| `CorrectedControls.lean` | Separating examples: the literal rule admits capture (`literal_rule_admits_capture`); the corrected step does not (`capture_not_conventional_step`); nested reflection |
 | `Premises.lean` | `PremiseProgram` IR: two relations, two builtins; machine-checked stratification and well-formedness |
-| `Adequacy.lean` | Premise-runtime adequacy: 4 bridge theorems including `reducesViaPremiseContract_iff_reduces` |
+| `Adequacy.lean` | Premise-runtime adequacy for the corrected COMM: witness adapter supplied with the process's free names, `comm_witness_sound` at root redexes on any channel, `stepViaPremiseContract_sound` (every reduct is a step modulo the bag laws), `stepViaPremiseContract_complete_comm` (COMM between two elements of one bag), controls where it stops |
 | `Interoperability.lean` | `toRhoSharedProc?` translation; shared-core forward/backward simulation and star-closure bisimulation w.r.t. rho-calculus |
 | `PaperMap.lean` | Theorem index mapping the paper's equations and rules to Lean proofs; `paper_shared_to_rho_*` family |
 | `Regression.lean` | Positive/negative canaries for COMM and REFL (`paper_comm_positive`, `paper_refl_negative`, ...) |
@@ -110,17 +124,28 @@ an implementation refinement.
 ## Key Results
 
 - **COMM/REFL canaries** (`paper_comm_positive` / `paper_comm_negative`,
-  `paper_refl_positive` / `paper_refl_negative`): validate the unifier and
+  `paper_refl_positive` / `paper_refl_negative`): validate the corrected step (`cstep`), its unifier and
   dot-substitution at the kernel level.
-- **`reducesViaPremiseContract_iff_reduces`**: the datalog-IR stepping function
-  agrees with the direct `step` function.
+- **Corrected COMM** (`CorrectedReduction.lean`): `cstep_sound_uniform` (every
+  executable reduct of a calculus term is a `Corrected.Step uniform`) and
+  `cstep_complete` (closing fragment, up to `AlphaEq`); `capture_not_conventional_step`
+  separates it from the naive reading.
+- **Residual variables** (`CorrectedResidual.lean`): `cstep_complete_residual`, on
+  guard-free patterns every uniform step is an executable reduct up to renaming
+  its residual names, by a renaming that fixes the free names of the source.
+- **Alpha** (`CorrectedAlpha.lean`): `alpha_iff_alphaEq` on tame processes.
+- **REFL modulo the bag laws** (`CorrectedReflection.lean`): `cstepCanon_complete`,
+  `reflect_respects_bagEq`.
+- **Premise contract** (`Adequacy.lean`): `comm_witness_sound`, every corrected
+  witness at a root redex is a corrected step; `stepViaPremiseContract_sound`;
+  `stepViaPremiseContract_complete_comm`; `premise_contract_no_capture`.
 - **`sharedCore_stepStar_bisimulation`** (declared in `Interoperability.lean`):
   combined star-level forward + backward shared-core bisimulation between
   MeTTa-calculus and rho-calculus on the quote/drop/parallel fragment.
 - **SC paper map**: the four par/nil structural-congruence equations are verified
   in `PaperMap.lean` — `paper_equiv_par_nil_left`, `paper_equiv_par_nil_right`,
-  `paper_equiv_par_comm`, `paper_equiv_par_assoc`. (Quote/drop is carried as the
-  `QuoteDrop` constructor of the `SC` relation in `StructuralCongruence.lean`.)
+  `paper_equiv_par_comm`, `paper_equiv_par_assoc`. (Quote/drop is the `QuoteDrop`
+  equation of the `mettaCalc` language definition in `Syntax.lean`, not an `SC` constructor.)
 
 ## Historical formalization inventory
 

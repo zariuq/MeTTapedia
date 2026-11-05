@@ -103,6 +103,8 @@ def step (program : Program) (configuration : Configuration) : Option Configurat
       | .expression [.symbol "if", condition, yes, no] =>
           push (.branch bindings yes no) bindings condition
       | .expression [.symbol "collapse", expression] => push .collect bindings expression
+      | .expression [.symbol "unique", expression] =>
+          some { configuration with control := .evaluate bindings expression, frames := uniqueFrames bindings ++ frames }
       | .expression [.symbol "superpose", .expression alternatives] =>
           advance (.sequence (alternatives.map (.evaluate bindings)) [])
       | .expression [.symbol "empty"] => advance (.returned [])
@@ -164,7 +166,7 @@ theorem transition_step {program : Program} {source target : Configuration}
     (derivation : Transition program source target) :
     step program source = some target := by
   cases derivation
-  all_goals try solve | simp_all [step, controlForm, ioHead]
+  all_goals try solve | simp_all [step, controlForm, ioHead, uniqueFrames]
   case raw_argument bindings target first rest values index control raw =>
     cases target <;> simp_all [step]
   case evaluated_argument bindings target first rest values index control demanded =>
@@ -305,6 +307,8 @@ theorem step_transition {program : Program} {source target : Configuration}
       · cases computed
         exact .collapse_enter rfl
       · cases computed
+        exact .unique_enter rfl
+      · cases computed
         exact .superpose_enter rfl
       · cases computed
         exact .empty_enter rfl
@@ -431,7 +435,7 @@ theorem step_eq_of_program_agreement {first second : Program} {source : Configur
           | expression items =>
               simp only [step]
               split <;> try rfl
-              rename_i _ head arguments _ _ _ _ _ _ _ _ _ shape
+              rename_i _ head arguments _ _ _ _ _ _ _ _ _ _ shape
               rw [dispatch bindings head arguments (congrArg (Control.evaluate bindings) shape)]
 
 /-- Transport a finite path after checking the program observations along it.
@@ -456,9 +460,12 @@ theorem path_of_program_agreement {first second : Program} :
 
 /-- The literal application head of a code expression. Values held in an
 environment are not inspected: returning a captured value does not execute it.
-The dynamic `eval` operation requires a separate code-support premise. -/
+The dynamic `eval` operation requires a separate code-support premise.
+The vocabulary also accounts for native operations introduced by `unique`;
+this preserves both dependency transport and read-only effect invariants. -/
 def expressionHeadWithin (allowed : String → Bool) : List Atom → Bool
-  | .symbol head :: _ => allowed head && head != "eval"
+  | .symbol head :: _ => (allowed head && head != "eval") &&
+      (head != "unique" || (allowed "unique-atom" && allowed "superpose"))
   | _ => true
 
 mutual
@@ -660,6 +667,9 @@ theorem transition_within {allowed : String → Bool} {program : Program}
     simp only [controlWithin, targetWithin, atomsWithin, Bool.and_true,
       Bool.and_eq_true] at controlCode
     exact ⟨application_within allowed closed controlCode.1 values, frameCodes⟩
+  case unique_enter bindings expression control =>
+    simp_all [controlWithin, codeWithin, atomsWithin, expressionHeadWithin,
+      uniqueFrames, frameWithin, targetWithin, Bool.and_eq_true]
   case query_return answers bindings pattern body rest _ frames =>
     rw [frames] at frameCodes
     simp only [List.all_cons, frameWithin, Bool.and_eq_true] at frameCodes
@@ -745,7 +755,7 @@ theorem configuration_agreement_on {allowed : String → Bool} {first second : P
     rw [shape] at supported
     simp only [controlWithin, codeWithin, expressionHeadWithin, atomsWithin,
       Bool.true_and, Bool.and_eq_true] at supported
-    exact agreement.dispatch head supported.1.1
+    exact agreement.dispatch head supported.1.1.1
   · intro bindings head argument pending values index shape
     have supported := within.1
     rw [shape] at supported
@@ -1684,7 +1694,7 @@ theorem variable_arguments_return (program : Program) (bindings : MORK.Subst)
 /-- An application is control syntax only at a control head's own shape;
 `match` is a query only with three arguments (P-APP-2). -/
 theorem controlForm_application {head : String} {arguments : List Atom}
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (notQuery : head ≠ "match" ∨ arguments.length ≠ 3) :
     controlForm (.expression (.symbol head :: arguments)) = false := by
   unfold controlForm
@@ -1692,7 +1702,7 @@ theorem controlForm_application {head : String} {arguments : List Atom}
 
 theorem controlForm_of_ordinary {head : String} {arguments : List Atom}
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     controlForm (.expression (.symbol head :: arguments)) = false :=
   controlForm_application (by simp_all) (.inl (by intro same; simp_all))
 
@@ -1722,7 +1732,7 @@ theorem call_answers (program : Program) (bindings : MORK.Subst)
       { state := before, control := .arguments bindings (.function head) arguments [] 0 }
       (finished after answer [] []))
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     Returns program bindings before (.expression (.symbol head :: arguments)) after answer :=
   application_answers program bindings before after head arguments answer dispatch computed
     (controlForm_of_ordinary ordinary)
@@ -1735,7 +1745,7 @@ theorem call_returns (program : Program) (bindings : MORK.Subst)
       { state := before, control := .arguments bindings (.function head) arguments [] 0 }
       (finished after [answer] [] []))
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
   call_answers program bindings before after head arguments [answer] dispatch computed ordinary
 
@@ -1749,7 +1759,7 @@ theorem raw_call_returns (program : Program) (bindings : MORK.Subst)
           (arguments.map (MORK.applySubst bindings)) arguments.length }
       (finished after [answer] [] []))
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
   call_returns program bindings before after head arguments answer dispatch
     (raw_arguments_return program bindings before after head arguments [] 0 answer
@@ -1762,7 +1772,7 @@ theorem native_variable_call_answers (program : Program) (bindings : MORK.Subst)
     (computed : StdLib.apply before head
       (names.map (fun name => MORK.applySubst bindings (.var name))) = .ok (after, answers))
     (notControl : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     Returns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answers := by
   apply call_answers program bindings before after head (names.map Atom.var) answers
@@ -1779,7 +1789,7 @@ theorem native_variable_call_returns (program : Program) (bindings : MORK.Subst)
     (computed : StdLib.apply before head
       (names.map (fun name => MORK.applySubst bindings (.var name))) = .ok (after, [answer]))
     (notControl : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer :=
   native_variable_call_answers program bindings before after head names [answer] ordinary native computed notControl
@@ -1793,7 +1803,7 @@ theorem native_binary_call_returns (program : Program) (bindings : MORK.Subst)
     (leftReturns : PureReturns program bindings before left firstState leftValue)
     (rightReturns : PureReturns program bindings firstState right secondState rightValue)
     (computed : StdLib.apply secondState head [leftValue, rightValue] = .ok (after, [answer]))
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after answer := by
   apply application_answers program bindings before after head [left, right] [answer]
     (by simp [native]) _ (controlForm_application notControl (.inr (by simp)))
@@ -1810,7 +1820,7 @@ theorem native_unary_call_returns (program : Program) (bindings : MORK.Subst)
     (demanded : argumentIsRaw program head 0 = false)
     (argumentReturns : PureReturns program bindings before argument middle value)
     (computed : StdLib.apply middle head [value] = .ok (after, [answer]))
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings before (.expression [.symbol head, argument]) after answer := by
   apply application_answers program bindings before after head [argument] [answer]
     (by simp [native]) _ (controlForm_application notControl (.inr (by simp)))
@@ -1826,7 +1836,7 @@ theorem authored_variable_call_returns (program : Program) (bindings callee : MO
     (selected : clauses program head
       (names.map (fun name => MORK.applySubst bindings (.var name))) = [.evaluate callee body])
     (computed : PureReturns program callee before body after answer)
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings before
       (.expression (.symbol head :: names.map Atom.var)) after answer := by
   apply application_answers program bindings before after head (names.map Atom.var) [answer]
@@ -1848,7 +1858,7 @@ theorem authored_binary_call_returns (program : Program) (bindings callee : MORK
     (rightReturns : PureReturns program bindings firstState right secondState rightValue)
     (selected : clauses program head [leftValue, rightValue] = [.evaluate callee body])
     (computed : PureReturns program callee secondState body after answer)
-    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (notControl : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after answer := by
   apply application_answers program bindings before after head [left, right] [answer]
     (by simp [dispatch]) _
@@ -1874,7 +1884,7 @@ theorem data_call_answers (program : Program) (bindings : MORK.Subst)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings .data (.symbol head :: arguments) [] 0 }
       (finished after answers [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     Returns program bindings before (.expression (.symbol head :: arguments)) after answers := by
   have notKnown : StdLib.known head = false := by
     simp only [Bool.or_eq_false_iff] at inert
@@ -1890,7 +1900,7 @@ theorem data_call_returns (program : Program) (bindings : MORK.Subst)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings .data (.symbol head :: arguments) [] 0 }
       (finished after [answer] [] []))
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings before (.expression (.symbol head :: arguments)) after answer :=
   data_call_answers program bindings before after head arguments [answer] inert computed ordinary
 
@@ -1898,7 +1908,7 @@ theorem constructor_variables_return (program : Program) (bindings : MORK.Subst)
     (state : State) (head : String) (names : List String)
     (inert : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings state
       (.expression (.symbol head :: names.map Atom.var)) state
       (.expression (.symbol head :: names.map (fun name => MORK.applySubst bindings (.var name)))) := by
@@ -1926,7 +1936,7 @@ theorem unary_constructor_returns (program : Program) (bindings : MORK.Subst)
     (state : State) (head name : String)
     (inert : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings state (.expression [.symbol head, .var name]) state
       (.expression [.symbol head, MORK.applySubst bindings (.var name)]) :=
   constructor_variables_return program bindings state head [name] inert ordinary
@@ -1935,7 +1945,7 @@ theorem empty_constructor_returns (program : Program) (bindings : MORK.Subst)
     (state : State) (head : String)
     (inert : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     PureReturns program bindings state
       (.expression [.symbol head, .expression []]) state
       (.expression [.symbol head, .expression []]) := by
@@ -1952,7 +1962,7 @@ theorem unary_constructor_of_returns (program : Program) (bindings : MORK.Subst)
     (before after : State) (head : String) (expression value : Atom)
     (inert : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (computed : PureReturns program bindings before expression after value) :
     PureReturns program bindings before (.expression [.symbol head, expression]) after
       (.expression [.symbol head, value]) := by
@@ -1968,7 +1978,7 @@ theorem binary_constructor_returns (program : Program) (bindings : MORK.Subst)
     (before middle after : State) (head : String) (left right leftValue rightValue : Atom)
     (inert : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (leftReturns : PureReturns program bindings before left middle leftValue)
     (rightReturns : PureReturns program bindings middle right after rightValue) :
     PureReturns program bindings before (.expression [.symbol head, left, right]) after
@@ -2054,7 +2064,7 @@ private theorem raw_unary_stage (program : Program) (bindings : Subst)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
     (raw : argumentIsRaw program head 0 = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     run program (fuel + 4)
       { state, control := .evaluate bindings (.expression [.symbol head, argument]) } =
     run program fuel
@@ -2083,7 +2093,7 @@ theorem raw_unary_capture_run_eq (program : Program) (first second : Subst)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
     (raw : argumentIsRaw program head 0 = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (captured : applySubst first one = applySubst second two) :
     run program (fuel + 5)
       { state, control := .evaluate first (.expression [.symbol head, one]) } =
@@ -2109,7 +2119,7 @@ theorem raw_unary_capture_returns (program : Program) (first second : Subst)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
     (raw : argumentIsRaw program head 0 = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (captured : applySubst first one = applySubst second two)
     (returned : PureReturns program first before (.expression [.symbol head, one]) after answer) :
     PureReturns program second before (.expression [.symbol head, two]) after answer := by
@@ -2135,7 +2145,9 @@ open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi
 open SpaceSemantics (Program patternHeads)
 
-def blocked (excluded : List String) (head : String) : Bool := ioHead head || excluded.contains head
+def blocked (excluded : List String) (head : String) : Bool :=
+  ioHead head || excluded.contains head ||
+    (head == "unique" && (excluded.contains "unique-atom" || excluded.contains "superpose"))
 
 def codeSafe (excluded : List String) (expression : Atom) : Bool :=
   (patternHeads expression).all fun head => !blocked excluded head
@@ -2356,6 +2368,12 @@ theorem transition_safe (program : Program) (excluded : List String)
   case equations =>
     apply application_safe program excluded _ _ closed
     simpa using safe.1
+  case unique_enter =>
+    have hidden : "unique" ∉ excluded ∧ "unique-atom" ∉ excluded ∧ "superpose" ∉ excluded := by
+      simpa [blocked, ioHead] using safe.1.1
+    rw [List.all_append, Bool.and_eq_true]
+    refine ⟨?_, safe.2⟩
+    simp [uniqueFrames, frameSafe, targetSafe, blocked, ioHead, hidden.2.1, hidden.2.2]
   case query_return =>
     rename_i answers bindings pattern body rest control frames
     apply (controls_safe_iff _ _).mpr
@@ -2522,7 +2540,7 @@ theorem call_io_returns (program : Program) (bindings : Subst) (before after : S
     (head : String) (arguments : List Atom) (answer : Atom) (input output remaining printed : List Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings (.function head) arguments [] 0, input, output }
       (finished after [answer] remaining printed)) :
@@ -2534,7 +2552,7 @@ theorem call_io_returns (program : Program) (bindings : Subst) (before after : S
 theorem variable_argument_io_returns (program : Program) (bindings : Subst) (before after : State)
     (head name : String) (value answer : Atom) (input output remaining printed : List Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (demanded : argumentIsRaw program head 0 = false) (captured : applySubst bindings (.var name) = value)
     (computed : (theory program).MultiStep
       { state := before, control := .arguments bindings (.function head) [] [value] 1, input, output }
@@ -2596,7 +2614,7 @@ body or primitive executes, retaining the actual I/O observation. -/
 theorem nullary_capture_run_eq (program : SpaceSemantics.Program) (first second : Subst)
     (state : State) (head : String) (fuel : Nat) (input output : List Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
     run program (fuel + 2)
       { state, control := .evaluate first (.expression [.symbol head]), input, output } =
     run program (fuel + 2)
@@ -2621,7 +2639,7 @@ theorem nullary_capture_run_eq (program : SpaceSemantics.Program) (first second 
 theorem nullary_capture_io_returns (program : SpaceSemantics.Program) (first second : Subst)
     (before after : State) (head : String) (answer : Atom) (input output remaining printed : List Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (returned : PureReturnsIO program first before (.expression [.symbol head]) after answer
       input output remaining printed) :
     PureReturnsIO program second before (.expression [.symbol head]) after answer input output remaining printed := by
@@ -2725,7 +2743,7 @@ private theorem captured_call_stage (program : Program) (caller : Subst)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true) :
     run program (fuel + argumentCaptureCost program head 0 arguments.length + 1)
@@ -2745,7 +2763,7 @@ theorem captured_call_run_eq (program : Program) (first second : Subst)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (firstAdmitted : ∀ offset argument, one[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (secondAdmitted : ∀ offset argument, two[offset]? = some argument →
@@ -2779,7 +2797,7 @@ theorem captured_call_returns (program : Program) (first second : Subst)
     (dispatch : (ioHead head || StdLib.known head ||
       program.equations.any (·.head == head)) = true)
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (firstAdmitted : ∀ offset argument, one[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (secondAdmitted : ∀ offset argument, two[offset]? = some argument →
@@ -2818,7 +2836,7 @@ theorem captured_call_in_extension {allowed : String → Bool} {first second : P
     (dispatch : (ioHead head || StdLib.known head ||
       first.equations.any (·.head == head)) = true)
     (ordinary : head ∉
-      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+      ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (admitted : ∀ offset argument, arguments[offset]? = some argument →
       argumentIsRaw first head offset = true ∨ passiveArgument argument = true)
     (captured : arguments.map (applySubst caller) = (names.map Atom.var).map (applySubst capturedCaller))
@@ -2828,7 +2846,8 @@ theorem captured_call_in_extension {allowed : String → Bool} {first second : P
     (names.map Atom.var) answer dispatch ordinary admitted
     (variable_capture_admitted first head names) captured returned
   have within : codeWithin allowed (.expression (.symbol head :: names.map Atom.var)) = true := by
-    simp [codeWithin, expressionHeadWithin, atomsWithin_eq_all, notEval, supported]
+    have notUnique : head ≠ "unique" := by intro same; simp [same] at ordinary
+    simp [codeWithin, expressionHeadWithin, atomsWithin_eq_all, notEval, notUnique, supported]
   have transported : PureReturns second capturedCaller before
       (.expression (.symbol head :: names.map Atom.var)) after answer :=
     path_of_closed_agreement closed agreement ⟨within, rfl⟩ aliasReturned

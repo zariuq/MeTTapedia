@@ -118,7 +118,7 @@ theorem source_monoid_word_model :
       wordOperations, List.append_assoc]
 
 theorem source_monoid_has_variadic_model :
-    ∃ unit : String, ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat),
+    ∃ unit : String, ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat),
       model.fold [] = wordOperations unit [] ∧
       ∀ first second, model.fold [first, second] = first ++ second := by
   obtain ⟨unit, model, empty, binary, _, _⟩ :=
@@ -162,7 +162,7 @@ def binarySourceRule : GrammarRule :=
 /-- The fold model is now obtained from the actual authored replacement's
 success, not from a separately supplied faithfulness-check result. -/
 theorem actual_word_replacement_has_fold_model :
-    ∃ unit : String, ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat),
+    ∃ unit : String, ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat),
       model.fold [] = wordOperations unit [] ∧
       ∀ first second, model.fold [first, second] = first ++ second := by
   have selected : sourceMonoidValue.entries.find? (·.label == (.term, wordReplacement.old)) =

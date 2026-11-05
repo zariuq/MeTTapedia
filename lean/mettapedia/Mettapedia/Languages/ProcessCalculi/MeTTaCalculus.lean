@@ -2,6 +2,15 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Syntax
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Premises
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Reduction
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedUnification
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedReduction
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedAdequacy
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedCongruence
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedControls
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedAlpha
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedResidual
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedReflection
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedNominal
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SpaceChannelBoundary
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SpaceInteraction
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CausalInteraction
@@ -82,6 +91,25 @@ This module is intentionally small and shares:
 
 Source alignment: the F1R3FLY MeTTa-calculus manuscript,
 `metta-calculus.core.tex`.
+
+## The semantics
+
+The step is the corrected one, `Corrected.cstep`, with the relational rules
+`Corrected.Step`: COMM unifies the two patterns by a principal, idempotent,
+occurs-checked unifier (`CorrectedUnification`), opens both inputs apart with
+fresh names, and applies the dot once, on a locally nameless closed form
+(`CorrectedReduction`). The dot is uniform: the binding list names every
+pattern variable, so each is quoted (`Corrected.uniform`). The step is
+alpha-invariant, sound for the calculus, complete up to alpha on the closing
+fragment, and complete up to renaming residual names on guard-free patterns
+(`CorrectedResidual`); on tame processes the manuscript's alpha-equivalence is
+equality of closed forms (`CorrectedAlpha`); COMM is one firing of the
+candidate step (`CorrectedAdequacy`); the bag laws act on the composition
+being executed (`CorrectedCongruence`), and REFL quotes the canonical
+representative of its reduct (`CorrectedReflection`). For patterns that quote
+guards, alpha-unification is first-order unification of closed forms, for
+capture-free substitutions (`CorrectedNominal`). `Reduction.step` is the
+naive reading, kept for the separating theorems (`CorrectedControls`).
 
 ## The interaction basis
 

@@ -83,7 +83,7 @@ theorem guarded_forget_step_and_sound (table : HandleTable)
     (success : [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       applyPremisesWithEnv (relationEnv table)
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     langReducesUsing (relationEnv table)
         (wmExtVertexLanguageDefGuarded combinedVertex)
@@ -144,7 +144,7 @@ theorem outside_premise_accepted :
     [("q", outsideHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       applyPremisesWithEnv (relationEnv demoTable)
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", outsideHandle), ("W", worldHandle), ("S", scopeHandle)] := by
   decide +kernel
 
@@ -156,7 +156,7 @@ theorem inside_row_rejected :
 theorem inside_premise_rejected :
     applyPremisesWithEnv (relationEnv demoTable)
       (wmExtVertexLanguageDefGuarded combinedVertex)
-      ruleForgetOutsideGuarded.premises
+      ruleForgetOutside.premises
       [("q", insideHandle), ("W", worldHandle), ("S", scopeHandle)] = [] := by
   decide +kernel
 
@@ -168,7 +168,7 @@ theorem unknown_row_rejected :
 theorem unknown_premise_rejected :
     applyPremisesWithEnv (relationEnv demoTable)
       (wmExtVertexLanguageDefGuarded combinedVertex)
-      ruleForgetOutsideGuarded.premises
+      ruleForgetOutside.premises
       [("q", .fvar "query:unknown"), ("W", worldHandle),
         ("S", scopeHandle)] = [] := by
   decide +kernel

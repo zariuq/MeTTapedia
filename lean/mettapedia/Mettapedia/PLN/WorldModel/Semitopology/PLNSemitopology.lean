@@ -16,7 +16,9 @@ Minimal semitopology / coalition layer for non-additive WM reasoning.
   incompatible values.
 
 This module is intentionally lightweight and extends the existing overlap and
-support-tracked forgetting perimeter rather than replacing the additive core.
+support-tracked forgetting perimeter rather than replacing the additive core:
+a revision supported inside an actionable footprint is undone exactly on clean
+bases and absorbed on every base.
 -/
 
 namespace Mettapedia.PLN.WorldModel
@@ -231,13 +233,26 @@ def SupportedInActionableScope
   T.actionable (↑(F.scopeFootprint S) : Set Supp) ∧
   ∀ q, F.support Δ q ⊆ F.scopeFootprint S
 
+/-- A revision supported inside an actionable footprint is undone exactly on
+every base that is clean for the scope. -/
 theorem exactInverse_of_supportedInActionableScope
     (T : Semitopology Supp)
     (F : SupportTrackedForgettingLayer State Scope Query Ev Supp)
     {S : Scope} {Δ : State}
-    (hsupp : SupportedInActionableScope T F S Δ) :
-    ∀ W : State, F.forget S (W + Δ) = W := by
-  exact F.exactInverse_revision_of_support_subset hsupp.2
+    (hsupp : SupportedInActionableScope T F S Δ) {W : State}
+    (hclean : ∀ q, Disjoint (F.support W q) (F.scopeFootprint S)) :
+    F.forget S (W + Δ) = W :=
+  F.exactInverse_of_clean hsupp.2 hclean
+
+/-- On every base, a revision supported inside an actionable footprint leaves
+no trace after forgetting. -/
+theorem forget_add_of_supportedInActionableScope
+    (T : Semitopology Supp)
+    (F : SupportTrackedForgettingLayer State Scope Query Ev Supp)
+    {S : Scope} {Δ : State}
+    (hsupp : SupportedInActionableScope T F S Δ) (W : State) :
+    F.forget S (W + Δ) = F.forget S W :=
+  F.forget_add_of_supported hsupp.2 W
 
 end Semitopology
 end Mettapedia.PLN.WorldModel

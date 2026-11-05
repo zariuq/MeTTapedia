@@ -93,14 +93,14 @@ structure Callable (program : Program) (head : String) (arity : Nat) : Prop wher
   notIO : ioHead head = false
   notNative : StdLib.known head = false
   registered : program.equations.any (·.head == head) = true
-  ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]
+  ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]
   demanded : ∀ index < arity, argumentIsRaw program head index = false
 
 def callable (program : Program) (head : String) (arity : Nat) : Option (PLift (Callable program head arity)) :=
   if notIO : ioHead head = false then
     if notNative : StdLib.known head = false then
       if registered : program.equations.any (·.head == head) = true then
-        if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] then
+        if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] then
           if demanded : ∀ index ∈ List.range arity, argumentIsRaw program head index = false then
             some ⟨⟨notIO, notNative, registered, ordinary, fun index bounded =>
               demanded index (List.mem_range.mpr bounded)⟩⟩
@@ -342,7 +342,7 @@ def Certified.recapture {program : Program} {first second : Subst}
     {head : String} {one two : List Atom}
     (compiled : Certified program first (.expression (.symbol head :: one)))
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (firstAdmitted : ∀ offset argument, one[offset]? = some argument →
       argumentIsRaw program head offset = true ∨ passiveArgument argument = true)
     (secondAdmitted : ∀ offset argument, two[offset]? = some argument →

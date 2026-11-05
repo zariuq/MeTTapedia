@@ -76,8 +76,11 @@ theorem codeWithin_mono {fewer more : String → Bool} (within : ∀ head, fewer
       match items, head with
       | [], _ => rfl
       | .symbol name :: _, head =>
-          simp only [expressionHeadWithin, Bool.and_eq_true] at head ⊢
-          exact ⟨within name head.1, head.2⟩
+          simp only [expressionHeadWithin, Bool.and_eq_true, Bool.or_eq_true] at head ⊢
+          refine ⟨⟨within name head.1.1, head.1.2⟩, ?_⟩
+          rcases head.2 with ordinary | helpers
+          · exact .inl ordinary
+          · exact .inr ⟨within _ helpers.1, within _ helpers.2⟩
       | .var _ :: _, _ => rfl
       | .grounded _ :: _, _ => rfl
       | .expression _ :: _, _ => rfl
@@ -86,6 +89,12 @@ decreasing_by
   have := List.sizeOf_lt_of_mem member
   simp only [Mettapedia.Languages.MeTTa.OSLFCore.Atom.expression.sizeOf_spec]
   omega
+
+example : codeWithin (fun head => head == "unique")
+    (.expression [.symbol "unique", .var "x"]) = false := by decide +kernel
+
+example : codeWithin (fun head => head == "unique" || head == "unique-atom" || head == "superpose")
+    (.expression [.symbol "unique", .var "x"]) = true := by decide +kernel
 
 /-- A program is closed under heads when every body of a kept head stays within them. -/
 theorem closed_of_all (allowed : String → Bool) (program : Program) (binding : allowed "let" = true)
@@ -147,7 +156,7 @@ theorem Library.lift_call {L : Library} (checked : L.check = true) {head : Strin
     {state : Effects.State} {answer : Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (fact : PureReturns L.base [] state (.expression (.symbol head :: values)) state answer) :
     PureReturns L.runtime [] state (.expression (.symbol head :: values)) state answer := by
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
     simpa [specialForms] using ordinary
   have unchanged : values.map (applySubst []) = values := by
     have identity : applySubst [] = id := by
@@ -161,8 +170,12 @@ theorem Library.lift_call {L : Library} (checked : L.check = true) {head : Strin
     PureData.raw_capture_returns L.base [] (names.zip values) state state head values _ answer dispatch
       (fun index bounded => raw index (by omega)) special (by rw [unchanged, reads]) fact
   have supported : codeWithin L.inherited code = true := by
+    have notUnique : head ≠ "unique" := by
+      intro same
+      subst head
+      simp [specialForms] at ordinary
     simp only [Library.inherited] at inherited
-    simp [code, codeWithin, expressionHeadWithin, Library.inherited, inherited, notEval]
+    simp [code, codeWithin, expressionHeadWithin, Library.inherited, inherited, notEval, notUnique]
   have lifted := L.lift checked supported bound
   have agreed := Library.agreement checked
   apply PureData.raw_capture_returns L.runtime (names.zip values) [] state state head
@@ -189,7 +202,7 @@ theorem transport_call {allowed : String → Bool} {first second : Program}
     {state : Effects.State} {answer : Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (fact : PureReturns first [] state (.expression (.symbol head :: values)) state answer) :
     PureReturns second [] state (.expression (.symbol head :: values)) state answer := by
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
     simpa [specialForms] using ordinary
   have unchanged : values.map (applySubst []) = values := by
     have identity : applySubst [] = id := by
@@ -203,7 +216,11 @@ theorem transport_call {allowed : String → Bool} {first second : Program}
     PureData.raw_capture_returns first [] (names.zip values) state state head values _ answer dispatch
       (fun index bounded => raw index (by omega)) special (by rw [unchanged, reads]) fact
   have supported : codeWithin allowed code = true := by
-    simp [code, codeWithin, expressionHeadWithin, kept, notEval]
+    have notUnique : head ≠ "unique" := by
+      intro same
+      subst head
+      simp [specialForms] at ordinary
+    simp [code, codeWithin, expressionHeadWithin, kept, notEval, notUnique]
   have moved := transport closed agreement supported bound
   apply PureData.raw_capture_returns second (names.zip values) [] state state head
     (names.map Mettapedia.Languages.MeTTa.OSLFCore.Atom.var) values answer
@@ -229,7 +246,7 @@ theorem call_of_bound {program : Program} {head : String}
     (bound : PureReturns program (names.zip values) state
       (.expression (.symbol head :: names.map Mettapedia.Languages.MeTTa.OSLFCore.Atom.var)) state answer) :
     PureReturns program [] state (.expression (.symbol head :: values)) state answer := by
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
     simpa [specialForms] using ordinary
   have unchanged : values.map (applySubst []) = values := by
     have identity : applySubst [] = id := by

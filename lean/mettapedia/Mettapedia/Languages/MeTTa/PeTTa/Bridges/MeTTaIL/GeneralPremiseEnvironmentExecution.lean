@@ -190,7 +190,7 @@ theorem data_template (program : Program) (agreement : ProgramAgreementOn ownedH
     rw [← agreement.dispatch head supported]
     have checked : dataHeads.all (fun name => decide
         ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
-          name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
+          name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
       rfl
     have row := List.all_eq_true.mp checked head member
     rw [decide_eq_true_eq] at row

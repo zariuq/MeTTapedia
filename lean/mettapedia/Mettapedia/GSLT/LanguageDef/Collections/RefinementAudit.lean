@@ -1,0 +1,26 @@
+import Mettapedia.GSLT.LanguageDef.Collections
+import Mettapedia.Logic.KernelFoundationManifest
+
+/-! Joined foundation inventory for collection unifier bases, functional
+evaluation, linear recognition and actual core-list wire-printing laws.
+This audit does not certify native layout correspondence or HE adequacy. -/
+
+set_option autoImplicit false
+
+#foundation_manifest_module Mettapedia.Algebra.Collections.BoundedWordCompression
+#foundation_manifest_module Mettapedia.Algebra.Collections.BoundedSequenceUnification
+#foundation_manifest_module Mettapedia.Algebra.Collections.BoundedSequenceControls
+#foundation_manifest_module Mettapedia.Algebra.Collections.NamedBoundedSequence
+#foundation_manifest_module Mettapedia.GSLT.LanguageDef.Collections.LinearPatterns
+#foundation_manifest_module Mettapedia.GSLT.LanguageDef.Collections.WirePrinting
+#foundation_manifest_module Mettapedia.Algebra.Collections.FiniteUnifierBasis
+#foundation_manifest_module Mettapedia.Algebra.Collections.FlatElementEncoding
+#foundation_manifest_module Mettapedia.Algebra.Collections.FlatBagUnifiers
+#foundation_manifest_module Mettapedia.Algebra.Collections.FlatBagSubsumption
+#foundation_manifest_module Mettapedia.Algebra.Collections.FlatBagBasis
+#foundation_manifest_module Mettapedia.Algebra.Collections.FlatBagBasisControls
+#foundation_manifest_module Mettapedia.Algebra.Collections.SyntacticUnification
+#foundation_manifest_module Mettapedia.GSLT.LanguageDef.Collections.FunctionalEvaluation
+#foundation_manifest_module Mettapedia.GSLT.LanguageDef.Collections.FunctionalEvaluationControls
+#foundation_manifest_module Mettapedia.Logic.LP.UnificationRestriction
+

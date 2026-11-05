@@ -1,0 +1,350 @@
+\section{Runtime Snapshot: 5 November 2026}
+\label{app:runtimes-20261105}
+
+This appendix measures the Linux preview's working source before its next
+commit.  It is a dated local snapshot, not a claim that the historical tables
+elsewhere describe the current executable.  The reproducibility record is
+\code{benchmarks/snapshots/2026-11-05/} in the CeTTa repository: individual
+trials, source and oracle hashes, the selected workload manifest, corpus
+fixture policy, and build/environment metadata.  The problems are generated
+by the tracked \code{benchmarks/mam\_families/app\_panel.py},
+\code{join\_panel.py} and \code{path\_panel.py}; the shared runner is
+\code{run.py}.  Expected answers are computed independently in Python.
+Native MM2 fixtures also live under \code{tests/support/mork\_mm2/}; the
+wider \code{benchmarks/mm2\_corpus/manifest.tsv} additionally names external
+MORK resources and a separately versioned fork, so that wider corpus is not
+entirely self-contained.
+
+\subsection{Identity and measurement conditions}
+
+The machine is an AMD Ryzen 7 9800X3D, with eight cores and sixteen logical
+CPUs, running Linux x86\_64.  It is a shared workstation, not an isolated
+benchmark host.  Process startup, library loading and normal output are
+included.  The paired panel uses one logical CPU and three alternating trials
+for every applicable engine/case pair; reported times are medians.  Its
+five-second per-invocation cap was not reached.  Peak RSS is the largest
+observed process peak over those trials, recorded separately in the TSV data.
+Small millisecond differences are startup-dominated observations, not
+steady-state kernel throughput.
+
+The CeTTa executable reports \code{1.5.0-dev (main)}, with SHA-256 prefix
+\code{5b05f6158ea3ce8f}; its source is based on commit \code{2ca1c923b93d}
+plus the pending preview repairs.  Full digests are in the metadata.
+This is the bridge-enabled \code{BUILD=main} CLI, linked with GMP,
+SWI-Prolog and CPython 3.13.  Its timings do not measure the Prolog-free
+Python-wheel runtime.
+
+The SWI-PeTTa checkout is based on \code{b74af1bc26af}, with local edits to
+its launcher, parser, reader and translator; its tracked diff digest and
+individual example hashes are recorded.  This screen is therefore against
+that working PeTTa tree, not a new conformance claim against an unmodified
+release oracle.
+
+\textbf{MORK provenance limitation.}  The measured artifact is the available
+MORK release executable, with SHA-256 prefix
+\code{13bd3d0b7a913b73}.
+The adjacent source checkout is \code{ed57c6716d8c}, but the executable's
+association with that source revision is unverified.  An attempted
+\code{cargo build -{}-release -{}-locked -{}-offline -p mork} refused a
+lock-file update.  No lock file was changed.  The numbers below compare these
+identified local executables; they do not establish performance against a
+fresh build of current upstream MORK.
+
+\subsection{Generated application, join and path panel}
+
+All 192 timed executions passed their declared independent answer oracle:
+17 selected cases, three trials per engine, with two cases applicable only
+to CeTTa-PeTTa and SWI-PeTTa.  A dash means the generator supplies no program
+for that engine/case pair, not a timed failure.  The comparison is between
+explicit programs solving the same task, sometimes with different execution
+plans or answer encodings.  It does not assert an identical algorithm or a
+general MM2-to-MeTTa compiler result.  Both faster and slower observations are
+retained; no best-of-trials selection or aggregate superiority claim is made.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.43\linewidth}rrrr@{}}
+\toprule
+case & CeTTa-P & CeTTa-HE & SWI-P & MORK artifact \\
+ & \multicolumn{4}{c}{median wall time, milliseconds} \\
+\midrule
+\nolinkurl{ancestor_chain_256_natural} & 4.27 & 6.29 & 56.50 & 32.92 \\
+\nolinkurl{ancestor_chain_256_levelwise} & 4.58 & 22.47 & 55.06 & 31.89 \\
+\nolinkurl{closure_ring_32_levelwise} & 6.33 & 67.66 & 55.47 & 9.71 \\
+\nolinkurl{counter_64_natural} & 3.76 & 43.52 & 49.15 & 2634.35 \\
+\nolinkurl{sort_64_natural} & 3.39 & 4.21 & 48.84 & 10.12 \\
+\nolinkurl{arithmetic_10000} & 45.07 & 48.17 & 218.57 & 23.27 \\
+\nolinkurl{tally_1000x8} & 8.32 & 19.64 & 200.89 & 14.23 \\
+\nolinkurl{kb_load_10000} & 149.30 & -- & 605.47 & -- \\
+\nolinkurl{space_step_1000_2000} & 11.11 & -- & 63.05 & -- \\
+\nolinkurl{triangle_dense_32_count} & 4.40 & 4.86 & 97.25 & 65.56 \\
+\nolinkurl{guarded_triangle_32_count} & 4.64 & 4.92 & 111.47 & 6.14 \\
+\nolinkurl{triangle_duplicates_witnesses} & 2.74 & 3.57 & 46.87 & 2.18 \\
+\nolinkurl{triangle_empty_witnesses} & 2.56 & 3.27 & 46.39 & 2.04 \\
+\nolinkurl{path_product_12_count} & 3.51 & 54.88 & 52.42 & 29.58 \\
+\nolinkurl{path_product_12_separator_count} & 3.38 & 54.89 & 53.61 & 2.36 \\
+\nolinkurl{path_correlated_6_witnesses} & 2.54 & 3.89 & 47.74 & 2.62 \\
+\nolinkurl{path_isolated_8_512_count} & 4.98 & 12.13 & 118.45 & 7.58 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For example, the arithmetic batch favors this MORK executable, while the
+counter program favors CeTTa's ordinary MeTTa solution.  The two path-product
+rows make the plan visible: the same product can be counted through complete
+combination work or a separator plan.  These distinctions belong to the
+comparison, rather than being hidden inside one speedup number.  The full
+trial ranges, RSS observations, source programs and result contracts are
+recoverable from the snapshot and its tracked generators.
+
+\subsection{The native MM2 front end and standalone MORK}
+
+The same generated MM2 programs were also run directly through
+\code{cetta -{}-lang mm2}, with their declared step counts and result-head
+projections.  All 45 supplemental executions passed their independent answer
+oracle.  This is the default MORK-bridge route, not a claim of an independent
+C implementation of the MM2 kernel.  CeTTa prints the final store to stdout;
+standalone MORK writes it to a file.  These end-to-end times include those
+normal publication costs.  Three trials were measured per case after the
+original panel; the MORK medians below reuse its original trials rather than
+claiming a new alternating pair.  The artifact-provenance limitation above
+continues to apply.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.55\linewidth}rr@{}}
+\toprule
+case & CeTTa-MM2 & MORK artifact \\
+ & \multicolumn{2}{c}{median wall time, milliseconds} \\
+\midrule
+\nolinkurl{ancestor_chain_256_natural} & 19.16 & 32.92 \\
+\nolinkurl{ancestor_chain_256_levelwise} & 20.82 & 31.89 \\
+\nolinkurl{closure_ring_32_levelwise} & 7.51 & 9.71 \\
+\nolinkurl{counter_64_natural} & 1571.62 & 2634.35 \\
+\nolinkurl{sort_64_natural} & 15.80 & 10.12 \\
+\nolinkurl{arithmetic_10000} & 45.48 & 23.27 \\
+\nolinkurl{tally_1000x8} & 32.04 & 14.23 \\
+\nolinkurl{triangle_dense_32_count} & 48.58 & 65.56 \\
+\nolinkurl{guarded_triangle_32_count} & 14.68 & 6.14 \\
+\nolinkurl{triangle_duplicates_witnesses} & 2.82 & 2.18 \\
+\nolinkurl{triangle_empty_witnesses} & 2.36 & 2.04 \\
+\nolinkurl{path_product_12_count} & 16.54 & 29.58 \\
+\nolinkurl{path_product_12_separator_count} & 2.62 & 2.36 \\
+\nolinkurl{path_correlated_6_witnesses} & 2.76 & 2.62 \\
+\nolinkurl{path_isolated_8_512_count} & 14.28 & 7.58 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Complete tracked top-level PeTTa example screen}
+
+The population is all 164 tracked \code{examples/*.metta} files directly
+inside the PeTTa example directory; nested directories are not included.
+Each engine has one timed invocation per case and a two-second cap.  This
+is a bounded coverage/timing screen, not a repeated latency study.  The
+existing corpus fixture policy supplies scripted input and isolated I/O;
+explicitly mapped cases use corrected-source or library fixtures.  The
+snapshot records the fixture kind and actual fixture-source digest as well
+as the original example digest.
+
+There are 156 matching normalized observations, five capped SWI-PeTTa
+invocations, and three exit differences.  The exit differences are
+\nolinkurl{python.metta}, \nolinkurl{python_import.metta} and
+\nolinkurl{test_unify_eval_branches.metta}: the first two expose provider
+value/string distinctions, and the last fails to load \code{lib/lib\_he} on
+CeTTa.  They remain visible rather than contributing speedup ratios.  Nor is
+an agreement necessarily a successful application: matching exit status and
+normalized output can include a shared deliberate failure.  The TSV records
+both exit codes.  In the table, ``ok'' means matching observations, ``cap''
+means the SWI invocation was incomplete, and ``exit'' means differing exit
+status.  Times are milliseconds; $>2000$ is the cap, not a completed runtime.
+
+\begingroup
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}p{0.54\linewidth}rrl@{}}
+\toprule
+example & CeTTa-P & SWI-P & observation \\
+\midrule
+\endfirsthead
+\toprule
+example (continued) & CeTTa-P & SWI-P & observation \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\nolinkurl{add_atom_fun_space.metta} & 3.10 & 58.04 & ok \\
+\nolinkurl{and_or.metta} & 3.29 & 57.26 & ok \\
+\nolinkurl{atomops.metta} & 3.14 & 54.97 & ok \\
+\nolinkurl{booleansolver.metta} & 2.18 & 48.42 & ok \\
+\nolinkurl{builin_types.metta} & 4.94 & 59.88 & ok \\
+\nolinkurl{callquoteevalreduce.metta} & 2.88 & 61.07 & ok \\
+\nolinkurl{callquoteevalreduce2.metta} & 3.98 & 58.04 & ok \\
+\nolinkurl{case.metta} & 2.93 & 58.76 & ok \\
+\nolinkurl{case2.metta} & 3.45 & 59.50 & ok \\
+\nolinkurl{caseconstrain.metta} & 2.38 & 57.53 & ok \\
+\nolinkurl{caseempty.metta} & 3.55 & 59.56 & ok \\
+\nolinkurl{casenew.metta} & 2.84 & 54.52 & ok \\
+\nolinkurl{chain.metta} & 3.40 & 52.77 & ok \\
+\nolinkurl{collapse.metta} & 2.41 & 52.70 & ok \\
+\nolinkurl{comments.metta} & 3.07 & 51.17 & ok \\
+\nolinkurl{constanthead.metta} & 2.31 & 51.72 & ok \\
+\nolinkurl{curry.metta} & 3.73 & 56.40 & ok \\
+\nolinkurl{cut.metta} & 2.47 & 55.16 & ok \\
+\nolinkurl{empty.metta} & 2.81 & 51.72 & ok \\
+\nolinkurl{eval.metta} & 2.42 & 54.92 & ok \\
+\nolinkurl{factorial.metta} & 2.96 & 52.33 & ok \\
+\nolinkurl{fib.metta} & 52.81 & 376.26 & ok \\
+\nolinkurl{fibadd.metta} & 48.27 & 413.25 & ok \\
+\nolinkurl{fibsmart.metta} & 2.74 & 48.83 & ok \\
+\nolinkurl{fibsmartimport.metta} & 3.25 & 47.46 & ok \\
+\nolinkurl{foldall.metta} & 3.27 & 50.59 & ok \\
+\nolinkurl{foldallmatch.metta} & 3.03 & 49.46 & ok \\
+\nolinkurl{foldallspacecount.metta} & 2.51 & 50.45 & ok \\
+\nolinkurl{forall.metta} & 3.62 & 57.23 & ok \\
+\nolinkurl{functionhead.metta} & 2.30 & 48.08 & ok \\
+\nolinkurl{functionhead2.metta} & 4.43 & 54.38 & ok \\
+\nolinkurl{functionhead3.metta} & 2.66 & 52.93 & ok \\
+\nolinkurl{functionremoval.metta} & 4.71 & 53.60 & ok \\
+\nolinkurl{functionremovalspec.metta} & 4.16 & 49.42 & ok \\
+\nolinkurl{functiontypes.metta} & 2.85 & 46.98 & ok \\
+\nolinkurl{git_import.metta} & 14.31 & 49.79 & ok \\
+\nolinkurl{git_import2.metta} & 84.20 & 124.83 & ok \\
+\nolinkurl{greedy_chess.metta} & 5.45 & 85.83 & ok \\
+\nolinkurl{he_assert.metta} & 3.60 & 50.07 & ok \\
+\nolinkurl{he_atomspace.metta} & 3.09 & 50.42 & ok \\
+\nolinkurl{he_equalreduct.metta} & 3.80 & 53.57 & ok \\
+\nolinkurl{he_error.metta} & 16.46 & 51.52 & ok \\
+\nolinkurl{he_evaluation.metta} & 3.53 & 51.63 & ok \\
+\nolinkurl{he_math.metta} & 2.16 & 49.66 & ok \\
+\nolinkurl{he_minimalmetta.metta} & 1585.32 & $>2000$ & cap \\
+\nolinkurl{he_quoting.metta} & 3.18 & 52.63 & ok \\
+\nolinkurl{he_types.metta} & 4.30 & 57.57 & ok \\
+\nolinkurl{holbenchmark.metta} & 819.03 & $>2000$ & cap \\
+\nolinkurl{holfunctions.metta} & 3.53 & 57.88 & ok \\
+\nolinkurl{holfunctions_intrinsicop.metta} & 2.93 & 48.11 & ok \\
+\nolinkurl{hyperpose_primes.metta} & 193.35 & 1035.62 & ok \\
+\nolinkurl{identity.metta} & 2.98 & 46.31 & ok \\
+\nolinkurl{if.metta} & 2.48 & 46.78 & ok \\
+\nolinkurl{if2.metta} & 1.90 & 45.69 & ok \\
+\nolinkurl{if3.metta} & 2.53 & 46.89 & ok \\
+\nolinkurl{if4.metta} & 1.81 & 46.65 & ok \\
+\nolinkurl{ifcasenondet.metta} & 2.66 & 45.35 & ok \\
+\nolinkurl{ifsimple.metta} & 1.93 & 45.40 & ok \\
+\nolinkurl{invertfunction.metta} & 15.50 & 45.05 & ok \\
+\nolinkurl{invertpeanoplus.metta} & 2.57 & 47.17 & ok \\
+\nolinkurl{is_alpha_member_test.metta} & 3.53 & 51.55 & ok \\
+\nolinkurl{iter.metta} & 2.03 & 47.44 & ok \\
+\nolinkurl{lambda.metta} & 3.44 & 47.02 & ok \\
+\nolinkurl{lambda_fresh_names.metta} & 2.14 & 49.23 & ok \\
+\nolinkurl{let_superpose_if_case.metta} & 3.07 & 60.16 & ok \\
+\nolinkurl{letext.metta} & 2.07 & 51.23 & ok \\
+\nolinkurl{letlet.metta} & 2.58 & 47.65 & ok \\
+\nolinkurl{letstar.metta} & 1.85 & 46.35 & ok \\
+\nolinkurl{lib_roman_pair_helpers.metta} & 3.68 & 53.34 & ok \\
+\nolinkurl{library.metta} & 2.77 & 56.59 & ok \\
+\nolinkurl{listhead.metta} & 3.13 & 47.97 & ok \\
+\nolinkurl{llm_cities.metta} & 13.31 & 89.56 & ok \\
+\nolinkurl{logicprog.metta} & 2.67 & 48.52 & ok \\
+\nolinkurl{logicprogset.metta} & 1.98 & 48.76 & ok \\
+\nolinkurl{matchnested.metta} & 2.74 & 49.04 & ok \\
+\nolinkurl{matchnested2.metta} & 2.04 & 49.36 & ok \\
+\nolinkurl{matchsingle.metta} & 3.67 & 50.05 & ok \\
+\nolinkurl{matchtypes.metta} & 2.50 & 49.39 & ok \\
+\nolinkurl{matespace.metta} & 255.39 & $>2000$ & cap \\
+\nolinkurl{matespace2.metta} & 455.65 & $>2000$ & cap \\
+\nolinkurl{matespacefast.metta} & 1315.33 & $>2000$ & cap \\
+\nolinkurl{math.metta} & 2.83 & 52.16 & ok \\
+\nolinkurl{meta_types.metta} & 2.67 & 48.93 & ok \\
+\nolinkurl{metta4_prog.metta} & 1.90 & 47.16 & ok \\
+\nolinkurl{metta4_streams.metta} & 3.05 & 53.74 & ok \\
+\nolinkurl{mettaset.metta} & 1.97 & 60.71 & ok \\
+\nolinkurl{multicall.metta} & 2.63 & 48.01 & ok \\
+\nolinkurl{multiset_operations.metta} & 2.06 & 52.23 & ok \\
+\nolinkurl{mutex_and_transaction.metta} & 2.97 & 58.78 & ok \\
+\nolinkurl{myinterpreter.metta} & 2.45 & 51.99 & ok \\
+\nolinkurl{nars_direct.metta} & 5.72 & 68.14 & ok \\
+\nolinkurl{nars_tuffy.metta} & 119.50 & 357.34 & ok \\
+\nolinkurl{nestedcons.metta} & 2.91 & 51.25 & ok \\
+\nolinkurl{newtons_method.metta} & 2.27 & 53.47 & ok \\
+\nolinkurl{nilbc.metta} & 18.19 & 673.11 & ok \\
+\nolinkurl{once.metta} & 3.06 & 50.11 & ok \\
+\nolinkurl{outputtype.metta} & 3.07 & 50.81 & ok \\
+\nolinkurl{parametric_types.metta} & 2.32 & 50.09 & ok \\
+\nolinkurl{parse.metta} & 2.80 & 55.76 & ok \\
+\nolinkurl{partialdef.metta} & 2.45 & 50.26 & ok \\
+\nolinkurl{patrick_iterate_fib.metta} & 3.32 & 51.81 & ok \\
+\nolinkurl{patrick_iterate_quad.metta} & 1373.66 & 660.59 & ok \\
+\nolinkurl{patrick_test.metta} & 3.78 & 53.91 & ok \\
+\nolinkurl{peano.metta} & 14.66 & 1663.08 & ok \\
+\nolinkurl{peanofast.metta} & 5.04 & 466.01 & ok \\
+\nolinkurl{permutations.metta} & 560.27 & 721.23 & ok \\
+\nolinkurl{pln_direct.metta} & 6.97 & 70.62 & ok \\
+\nolinkurl{pln_roman.metta} & 35.18 & 119.61 & ok \\
+\nolinkurl{pln_tuffy.metta} & 9.69 & 71.86 & ok \\
+\nolinkurl{plntest.metta} & 2.70 & 51.09 & ok \\
+\nolinkurl{plntestdirect.metta} & 4.00 & 51.81 & ok \\
+\nolinkurl{prologimport.metta} & 24.12 & 58.87 & ok \\
+\nolinkurl{python.metta} & 12.54 & 83.80 & exit \\
+\nolinkurl{python_import.metta} & 11.16 & 64.23 & exit \\
+\nolinkurl{recursive_types.metta} & 3.18 & 50.29 & ok \\
+\nolinkurl{recursive_types2.metta} & 2.50 & 52.50 & ok \\
+\nolinkurl{repl.metta} & 3.61 & 51.50 & ok \\
+\nolinkurl{repr.metta} & 2.10 & 50.90 & ok \\
+\nolinkurl{roman_test.metta} & 5.53 & 59.04 & ok \\
+\nolinkurl{scale.metta} & 462.39 & 897.91 & ok \\
+\nolinkurl{selfprog.metta} & 2.87 & 51.74 & ok \\
+\nolinkurl{smartdispatch.metta} & 2.42 & 51.23 & ok \\
+\nolinkurl{spacefunction.metta} & 2.77 & 50.98 & ok \\
+\nolinkurl{spaces.metta} & 2.08 & 48.84 & ok \\
+\nolinkurl{spaces2.metta} & 2.88 & 49.42 & ok \\
+\nolinkurl{spaces3.metta} & 2.25 & 50.88 & ok \\
+\nolinkurl{spaces_find.metta} & 3.30 & 49.70 & ok \\
+\nolinkurl{spaces_removeallatoms.metta} & 2.84 & 52.58 & ok \\
+\nolinkurl{spaces_succeedspredicate.metta} & 3.30 & 51.50 & ok \\
+\nolinkurl{specialize.metta} & 3.70 & 52.68 & ok \\
+\nolinkurl{specialize_recursive_wrap.metta} & 3.84 & 66.58 & ok \\
+\nolinkurl{specializecyclic.metta} & 2.57 & 52.71 & ok \\
+\nolinkurl{specializefunctiontypes.metta} & 3.54 & 55.20 & ok \\
+\nolinkurl{state.metta} & 4.02 & 58.05 & ok \\
+\nolinkurl{streamops.metta} & 3.45 & 57.46 & ok \\
+\nolinkurl{string.metta} & 2.09 & 51.50 & ok \\
+\nolinkurl{supercollapse.metta} & 2.89 & 53.11 & ok \\
+\nolinkurl{superpose_nested.metta} & 3.53 & 53.39 & ok \\
+\nolinkurl{superpose_primes.metta} & 4.16 & 58.34 & ok \\
+\nolinkurl{swrite_variable_identity.metta} & 3.29 & 63.53 & ok \\
+\nolinkurl{tabling_fib.metta} & 4.09 & 62.77 & ok \\
+\nolinkurl{test_alpha_unique_atom.metta} & 3.45 & 67.77 & ok \\
+\nolinkurl{test_datetime.metta} & 20.00 & 63.78 & ok \\
+\nolinkurl{test_memo_aggregate.metta} & 3.06 & 64.79 & ok \\
+\nolinkurl{test_memo_dependency_invalidation.metta} & 5.72 & 80.29 & ok \\
+\nolinkurl{test_memo_multi_answer.metta} & 5.59 & 69.83 & ok \\
+\nolinkurl{test_memo_per_arity.metta} & 3.26 & 67.27 & ok \\
+\nolinkurl{test_memo_same_name_multi_arity.metta} & 2.60 & 72.29 & ok \\
+\nolinkurl{test_memo_stats.metta} & 3.79 & 83.31 & ok \\
+\nolinkurl{test_memo_variant_nonground.metta} & 3.18 & 87.79 & ok \\
+\nolinkurl{test_string_comments.metta} & 5.38 & 69.51 & ok \\
+\nolinkurl{test_unify_eval_branches.metta} & 2.73 & 64.81 & exit \\
+\nolinkurl{tests.metta} & 4.58 & 55.56 & ok \\
+\nolinkurl{tilepuzzle.metta} & 1134.99 & 1974.13 & ok \\
+\nolinkurl{torch.metta} & 12.65 & 82.08 & ok \\
+\nolinkurl{translatepredicate.metta} & 3.28 & 56.12 & ok \\
+\nolinkurl{translatorrule.metta} & 3.29 & 55.90 & ok \\
+\nolinkurl{translatorrule_fib.metta} & 2.49 & 58.84 & ok \\
+\nolinkurl{translatorrule_for.metta} & 3.32 & 54.77 & ok \\
+\nolinkurl{twostage.metta} & 2.81 & 51.76 & ok \\
+\nolinkurl{types.metta} & 3.61 & 61.17 & ok \\
+\nolinkurl{types_dependent.metta} & 16.48 & 64.60 & ok \\
+\nolinkurl{types_nondet.metta} & 3.05 & 49.52 & ok \\
+\nolinkurl{xor.metta} & 2.09 & 52.38 & ok \\
+\end{longtable}
+\endgroup
+
+\paragraph{Reproduction boundary.}  The snapshot's \code{reproduce.txt}
+lists the generator and runner commands and selected cases.  Raw process logs
+and stores were retained with the measurement run; the repository carries the
+small machine-readable receipts and independent workload definitions.
+This snapshot does not requalify portable wheels, physical AArch64, GMP
+allocation-failure recovery, Prime or the paper's older heavy genomic and
+proof-search benchmarks.

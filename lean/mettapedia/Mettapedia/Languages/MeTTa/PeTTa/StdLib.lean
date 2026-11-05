@@ -34,11 +34,11 @@ open Effects
 open SpaceSemantics (query)
 
 def known (head : String) : Bool :=
-  head ∈ ["+", "-", "*", "%", "<", "<=", ">", ">=", "==", "and", "or", "cons", "size-atom",
+  head ∈ ["+", "-", "*", "%", "<", "<=", ">", ">=", "==", "and", "or", "not", "cons", "size-atom",
     "index-atom", "new-space", "add-atom", "remove-atom", "get-atoms", "match",
     "get-state", "change-state!", "reverse", "is-member", "get-metatype", "get-type",
     "str:byte-length", "str:byte-slice", "str:concat", "str:join", "str:from-codepoints",
-    "parse", "cons-atom", "union-atom", "sort-atom", "msort"]
+    "parse", "cons-atom", "union-atom", "sort-atom", "msort", "unique-atom", "superpose"]
 
 /-- Recognize exactly the closed string-list fragment of native sorting. -/
 def strings : List Atom → Option (List String)
@@ -273,10 +273,15 @@ def apply (state : State) (head : String) (arguments : List Atom) : Result :=
     | ">", [.grounded (.int left), .grounded (.int right)] => answer (boolean (left > right))
     | ">=", [.grounded (.int left), .grounded (.int right)] => answer (boolean (left ≥ right))
     | "==", [left, right] => answer (boolean (left == right))
+    | "not", [.grounded (.bool value)] => answer (boolean (!value))
     | "cons", [first, .expression rest] => answer (.expression (first :: rest))
     | "cons-atom", [first, .expression rest] => answer (.expression (first :: rest))
     | "union-atom", [.expression left, .expression right] =>
         answer (.expression (left ++ right))
+    | "unique-atom", [.expression items] => answer (.expression items.eraseDups)
+    | "unique-atom", [.symbol _] | "unique-atom", [.grounded _] => answer (.expression [])
+    | "superpose", [.expression items] => .ok (state, items)
+    | "superpose", [.symbol _] | "superpose", [.grounded _] => .ok (state, [])
     | "sort-atom", [.expression items] | "msort", [.expression items] =>
         match sortClosed items with
         | some sorted => answer (.expression sorted)
@@ -404,6 +409,20 @@ theorem boolean_and (state : State) (left right : Bool) :
 
 theorem boolean_or (state : State) (left right : Bool) :
     apply state "or" [boolean left, boolean right] = .ok (state, [boolean (left || right)]) := rfl
+
+/-- Registered closed-Boolean negation. Relational calls with unbound input
+remain outside this ground primitive profile. -/
+theorem boolean_not (state : State) (value : Bool) :
+    apply state "not" [boolean value] = .ok (state, [boolean (!value)]) := rfl
+
+theorem boolean_not_registered : known "not" = true := by decide
+
+theorem boolean_not_true_is_one_false_answer (state : State) :
+    apply state "not" [boolean true] = .ok (state, [boolean false]) ∧
+      apply state "not" [boolean true] ≠ .ok (state, []) := by
+  constructor
+  · rfl
+  · simp [boolean_not]
 
 theorem boolean_calls_registered : known "and" = true ∧ known "or" = true := by decide
 

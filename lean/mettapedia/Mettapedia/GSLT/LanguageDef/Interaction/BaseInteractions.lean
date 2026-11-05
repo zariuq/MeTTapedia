@@ -12,6 +12,12 @@ leaves the absence of reduction hypotheses to be checked.  It holds for each
 presentation already in the tree: communication in rho and beta in lambda
 have no premise at all, and communication in the MeTTa-calculus has a single
 relation query, which is a side condition and not a reduction of a subterm.
+The runtime answers the query with the corrected COMM
+(`Adequacy.correctedCommWitness`): both inputs opened apart, their patterns
+unified by the principal unifier, and the dot applied once. The
+behavioral theory of the MeTTa-calculus, `GSLTInteraction.mettaCalcGSLT`, is
+the corrected relational step, whose COMM likewise carries only side
+conditions: a principal unifier and the variable convention.
 
 Rho's contextual rule is the control: it has a reduction hypothesis, it is
 headed by the same contact, and it is not a base rule.
@@ -34,7 +40,8 @@ theorem lambda_baseInteraction : lambdaInteractivePresentation.BaseInteraction :
   isBaseRewrite_of_premises_eq_nil rfl
 
 /-- The MeTTa-calculus communication rule is a base rule: its one premise is
-a relation query. -/
+a relation query, which the runtime answers with the corrected COMM of the
+two inputs. -/
 theorem mettaCalc_baseInteraction :
     mettaCalcInteractivePresentation.BaseInteraction := by
   decide

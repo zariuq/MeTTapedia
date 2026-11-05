@@ -55,7 +55,15 @@ names do not acquire operator meaning. ISO does not make that distinction. -/
 def bareAtom (name : String) : Bool :=
   ["!", ";", "[]", "{}"].contains name ||
   (name.toList.head?.any Char.isLower && name.toList.all (fun c => c.isAlphanum || c == '_')) ||
-  (!name.isEmpty && name.toList.all (fun c => "#$&*+-./:<=>?@\\^~".toList.contains c))
+  (!name.isEmpty && name.toList.all ReaderLexer.isGraphic)
+
+theorem bareAtom_graphic_spelling (name : String) : bareAtom name =
+    (["!", ";", "[]", "{}"].contains name ||
+      (name.toList.head?.any Char.isLower && name.toList.all (fun c => c.isAlphanum || c == '_')) ||
+      (!name.isEmpty && name.toList.all (fun c => "#$&*+-./:<=>?@\\^~".toList.contains c))) := by
+  have predicate : ReaderLexer.isGraphic =
+      (fun c => "#$&*+-./:<=>?@\\^~".toList.contains c) := funext ReaderLexer.isGraphic_spelling
+  simp only [bareAtom, predicate]
 
 def Profile.quotedOperator (profile : Profile) (name : String) : Bool :=
   profile.dialect == .iso || !bareAtom name

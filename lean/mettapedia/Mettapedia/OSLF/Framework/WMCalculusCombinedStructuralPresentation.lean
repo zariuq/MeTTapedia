@@ -30,7 +30,7 @@ set_option maxHeartbeats 2000000
 /-- The guarded extension computations, with the outside-scope premise
 retained on its authored rule. -/
 def extensionComputations : List RewriteRule :=
-  [ruleOverlapExtract, ruleForgetOutsideGuarded, ruleForgetIdempotent]
+  [ruleOverlapExtract, ruleForgetOutside, ruleForgetIdempotent]
 
 def combinedStructuralLanguageDef : LanguageDef :=
   LanguageDef.ofCore "WMCalculusCombinedStructural"
@@ -153,7 +153,7 @@ theorem combinedStructural_validation :
         List.not_mem_nil, or_false] at member ⊢
       tauto
     change rule ∈ coreRules ++ [ruleOverlapExtract] ++
-      [ruleForgetOutsideGuarded, ruleForgetIdempotent]
+      [ruleForgetOutside, ruleForgetIdempotent]
     simp [memberCore]
   have extensionRows : extensionComputations.flatMap
       (LanguageDef.validateRewrite combinedStructuralLanguageDef) = [] := by
@@ -161,7 +161,7 @@ theorem combinedStructural_validation :
     intro rule member
     apply checked_existingRewrite
     change rule ∈ coreRules ++ [ruleOverlapExtract] ++
-      [ruleForgetOutsideGuarded, ruleForgetIdempotent]
+      [ruleForgetOutside, ruleForgetIdempotent]
     simp only [extensionComputations, List.mem_cons,
       List.not_mem_nil, or_false] at member
     simp only [List.mem_append, List.mem_cons, List.not_mem_nil,

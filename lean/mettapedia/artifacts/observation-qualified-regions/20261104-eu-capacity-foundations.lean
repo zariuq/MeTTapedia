@@ -1,0 +1,19 @@
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundAdmissionControls
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundCompletionControls
+import Mettapedia.Logic.KernelFoundationManifest
+
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.NamedGuardedCandidateBatch
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilAdmissionFrame
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilLeafAdmission
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilCaptureAdmission
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedQueryAdmission
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundAdmission
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundAdmissionControls
+#foundation_manifest_module Mettapedia.Languages.MeTTa.MetavariableFrameStoreCapacity
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScalarCopyCapacity
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.GuardedQueryCapacity
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilLeafCompletion
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedQueryWordCompletion
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.GuardedQueryCopyCapacity
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundCompletion
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundCompletionControls

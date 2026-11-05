@@ -2,6 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CausalInteraction
 import Mettapedia.GSLT.Causality.ResourceReads
 import Mettapedia.GSLT.Causality.ResourceFrontier
 import Mettapedia.GSLT.Causality.ResourceProduct
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedReduction
 
 /-!
 # Guarded transactions as interaction on a bag of located atoms
@@ -18,7 +19,9 @@ enabled at the bag, and it reaches the network of the fired bag. The theory of
 resource firings therefore applies to transactions. Two transactions that
 claim one occurrence conflict; transactions that only observe it in common
 are concurrent and commute. The direct communication of the MeTTa-calculus
-claims both guarded parties.
+claims both guarded parties. Its premise is the corrected one: the two inputs
+are apart and the bindings are the principal unifier of their patterns, and
+every such contact is a step of the corrected relational semantics.
 
 For single located requests, which publish nothing, a commuting square of the
 two orders is exactly concurrency. A transaction that publishes again what it
@@ -490,21 +493,51 @@ section DirectContact
 
 open DirectCommBridge
 
+/-- **The corrected COMM premise** for two guarded parties: the inputs are apart
+(the variable convention) and `substitution` is the principal, idempotent unifier
+of their patterns computed by `Corrected.unify`, completed so that it names every
+pattern variable (the uniform dot). -/
+def correctedContact : ContactPremise := fun left right substitution =>
+  (∃ bs, Corrected.unify left.term right.term = some bs ∧
+    substitution = Corrected.completeBindings
+      (Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsComm.pvars left.term ++
+        Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsComm.pvars right.term) bs) ∧
+    Corrected.Apart left.term left.continuation right.term right.continuation
+
+/-- Every corrected direct contact is a root COMM of the corrected relational
+semantics, with the uniform dot. -/
+theorem correctedContact_step {source target : Proc} (step : DirectComm correctedContact source target) :
+    Corrected.Step Corrected.uniform source target := by
+  cases step with
+  | @contact location left right substitution admitted =>
+      obtain ⟨⟨bs, found, rfl⟩, apart⟩ := admitted
+      exact .comm left.term right.term location left.continuation right.continuation _
+        (Corrected.principal_completeBindings (Corrected.unify_principal found))
+        ⟨apart, Corrected.complete_completeBindings _ _ _⟩
+
+/-- Two inert guards on inert patterns meet under the corrected premise. -/
+theorem corrected_identical_zero_guards_contact (location : Name) :
+    DirectComm correctedContact
+      (pPar [pFor pZero location pZero, pFor pZero location pZero])
+      (pPar [pZero, pZero]) :=
+  identical_zero_guards_contact location
+    ⟨⟨[], by decide +kernel, by decide +kernel⟩, by refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> decide +kernel⟩
+
 /-- The direct contact of two guarded parties, as a firing. -/
 def contact (location : Name) (left right : GuardedParty) (substitution : Bindings)
-    (unifies : unifyPattern? left.term right.term = some substitution) :
-    Choice directSelection (directCommand location left right) :=
+    (admitted : correctedContact left right substitution) :
+    Choice (directSelection correctedContact) (directCommand location left right) :=
   ⟨([.party left, .party right], substitution), rfl,
-    ⟨location, left, right, rfl, rfl, unifies⟩⟩
+    ⟨location, left, right, rfl, rfl, admitted⟩⟩
 
 /-- **Direct communication claims both parties** and observes nothing. -/
 theorem contact_claims_both (location : Name) (left right : GuardedParty)
-    (substitution : Bindings) (unifies : unifyPattern? left.term right.term = some substitution) :
+    (substitution : Bindings) (admitted : correctedContact left right substitution) :
     claims (directCommand location left right).guards
-        (contact location left right substitution unifies).1.1 =
+        (contact location left right substitution admitted).1.1 =
       {(some location, .party left), (some location, .party right)} ∧
     sightings (directCommand location left right).guards
-        (contact location left right substitution unifies).1.1 = 0 :=
+        (contact location left right substitution admitted).1.1 = 0 :=
   ⟨rfl, rfl⟩
 
 /-- **Two contacts claiming one party conflict.** When the party is present once,
@@ -512,17 +545,17 @@ the contacts are not concurrent, and after either the other is disabled. -/
 theorem contacts_sharing_a_party_conflict
     (enabled : Command ContactLocation ContactOccurrence GuardedParty Bindings → Prop)
     (location : Name) (left right right' : GuardedParty) (substitution substitution' : Bindings)
-    (unifies : unifyPattern? left.term right.term = some substitution)
-    (unifies' : unifyPattern? left.term right'.term = some substitution')
+    (admitted : correctedContact left right substitution)
+    (admitted' : correctedContact left right' substitution')
     (commandEnabled : enabled (directCommand location left right))
     (commandEnabled' : enabled (directCommand location left right'))
     (M : Multiset (ContactLocation × ContactOccurrence))
     (once : M.count (some location, .party left) ≤ 1) :
-    ¬ (transactions directSelection enabled).Concurrent M
+    ¬ (transactions (directSelection correctedContact) enabled).Concurrent M
         (site₁ := ⟨_, commandEnabled⟩) (site₂ := ⟨_, commandEnabled'⟩)
-        (contact location left right substitution unifies)
-        (contact location left right' substitution' unifies') :=
-  (transactions directSelection enabled).not_concurrent_of_shared_consumption M
+        (contact location left right substitution admitted)
+        (contact location left right' substitution' admitted') :=
+  (transactions (directSelection correctedContact) enabled).not_concurrent_of_shared_consumption M
     (site₁ := ⟨_, commandEnabled⟩) (site₂ := ⟨_, commandEnabled'⟩) _ _
     (some location, .party left)
     (by simp [transactions, contact, directCommand, claims])

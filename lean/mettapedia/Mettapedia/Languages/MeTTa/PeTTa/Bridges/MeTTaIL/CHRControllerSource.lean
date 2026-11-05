@@ -24,7 +24,7 @@ def integerSource : ProgramQuotation.QuotedProgram := petta_source_file%
 
 def source : ProgramQuotation.QuotedProgram := petta_source_file%
   "../../../../../../../../metta/gslt/lib/gslt_chr.metta"
-  sha256 "66aba1ed522b1eca52a82fb87b0246a4d9e7c3b268eebb47789cbd5088327ea2"
+  sha256 "dcd322f7ef4560a1ca15f58c934a2bf1f7c96553532900b484f7e81cea30509e"
 
 def integerLibrary : Library := ⟨CompleteEmission.runtime, integerSource.program, ["gslt:integer:"]⟩
 def library : Library := ⟨integerLibrary.runtime, source.program, ["gslt:chr:"]⟩

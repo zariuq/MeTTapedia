@@ -48,6 +48,15 @@ theorem changed_iff (store : Store Key Value) (key : Key) (candidate : Value) :
   | none => simp [improve, denote, held]
   | some old => by_cases better : candidate < old <;> simp [improve, denote, held, better]
 
+omit [DecidableEq Key] in
+theorem present_of_denote_le (before after : Store Key Value) (bounded : denote after ≤ denote before)
+    (key : Key) (value : Value) (present : before key = some value) : ∃ next, after key = some next := by
+  cases found : after key with
+  | none =>
+      have bound := bounded key
+      simp [denote, found, present] at bound
+  | some next => exact ⟨next, rfl⟩
+
 theorem denote_improve (store : Store Key Value) (key : Key) (candidate : Value) :
     denote (improve store key candidate).1 = lower (denote store) key candidate := by
   funext other

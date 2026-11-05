@@ -72,7 +72,7 @@
 \normalsize How to program it, how it is built, and what each line of
 development has achieved}
 \author{Zar Goertzel\\Oru\v{z}i}
-\date{27 October 2026}
+\date{5 November 2026\\\small Tutorial and historical results: 27 October and earlier}
 
 \begin{document}
 \maketitle
@@ -103,7 +103,10 @@ one object that differs only in the rights a holder has; region profiles as
 metadata.  The Prime draft runs this basis as a native kernel.  The
 reflective rho calculus with its Lean-characterized evaluation at
 communication, the cross-runtime benchmark ladder and the abstract-machine
-design record are kept, with their dates.
+design record are kept, with their dates.  The November preview adds a reusable
+C embedding interface, a Python package, NumPy interoperability and bounded
+dot-product and matrix--vector operations.  A separate dated appendix records
+the preview's example timings and correctness-gated MM2/MORK comparisons.
 \end{abstract}
 
 %% ────────────────────────────────────────────────────────────────────
@@ -129,12 +132,22 @@ families of implementation exist:
 
 \noindent
 The dialects share a surface syntax and differ in meaning.  \HE{} leaves an
-expression it cannot rewrite as data; \PeTTa{} makes a call that no clause
-accepts fail; Prime evaluates by need, so an argument the body never demands
+expression it cannot rewrite as data; \PeTTa{} can fail when a defined
+relation has no matching clause, while an unknown head remains uninterpreted;
+Prime evaluates by need, so an argument the body never demands
 never runs.  A program written for one is not, in general, a program for
 another, and \CeTTa{} treats each as a named semantic product with its own
 oracle: upstream \HE{} for the \HE{} lane, SWI-\PeTTa{} for the \PeTTa{} lane,
 and the Prime metatheory for Prime.
+
+\paragraph{Reading the dates.}  The tutorial listings and the line-by-line
+development account retain their October snapshots.  In particular, their
+references to staged work and open repairs describe those dates, not the
+current preview's release checklist.  Section~\ref{sec:embedding-preview}
+describes the Linux embedding preview as of 5 November, and
+Appendix~\ref{app:runtimes-20261105} gives fresh runtime measurements with
+binary and source identities.  A usable preview is distinct from exhaustive
+qualification of every dialect, platform and resource-failure path.
 
 \paragraph{What this paper is for.}  Earlier versions of this paper described
 \CeTTa{} through its evidence.  This version is first a guide.
@@ -1091,7 +1104,8 @@ and space substrate.
 
 \subsection{Size and parts}
 
-The pre-main tree, the candidate for the next \code{main}, has 182 C sources
+In the 27 October snapshot, the pre-main tree, the candidate for the next
+\code{main}, has 182 C sources
 in its core (about 434{,}000 lines with headers), 65 native modules (about
 72{,}000 lines), and four Rust crates that bridge to \PathMap{} and MORK.  The
 Prime draft's core has 228 C sources (about 559{,}000 lines); the published
@@ -1135,9 +1149,64 @@ space service, and the Prime judgments.
   linkage), so differently configured products never overwrite one another.
 \end{description}
 
+\subsection{Linux embedding preview: Python and the C ABI}
+\label{sec:embedding-preview}
+
+The November preview exposes the existing evaluator through a versioned C
+header, \code{include/cetta\_embed.h}, and a thin CPython extension.  The
+standalone C library and the Python package share the embedding core.  The
+Python package's runtime does not require SWI-Prolog, Rust or C++; the CLI's
+optional providers and bridge builds have their own dependencies.
+
+From a source checkout, the ordinary installation and first call are:
+\begin{lstlisting}
+python3 -m pip install .
+python3 -m pip install '.[numpy]'     # optional numerical interface
+\end{lstlisting}
+\begin{lstlisting}[language=Python]
+from cetta import Engine
+
+with Engine(language="petta") as engine:
+    engine.run("(= (square $x) (* $x $x))")
+    assert engine.call("square", 7).to_python() == [49]
+
+with Engine(language="he") as engine:
+    assert engine.eval("(+ 20 22)").to_python() == [42]
+\end{lstlisting}
+
+Whole-result calls return retained answer bags; queries also provide a
+closable stream and optional bounded physical stepping.  Structured atoms
+keep symbols distinct from strings and preserve variable identity and
+duplicate answers.  Independent engines have separate mutable runtime
+contexts.  Python callbacks, output capture and interruption use host hooks;
+embedding does not initialize or finalize its host Python interpreter.
+Hosting the engine in Python is a separate surface from importing Python
+functions inside a MeTTa program; the latter retains its provider-specific
+compatibility requirements.
+
+Dense and sparse numerical exchange retains buffer owners.  Immutable native
+results can back read-only NumPy views; mutable inputs copy when necessary
+for stable values, and an incompatible explicit no-copy request is rejected.
+The opt-in \code{tensor:dot-bounds} and \code{tensor:matvec-bounds} operations
+return a value with an error enclosure under their admitted floating-point
+conditions.  These are bounds on the specified linear arithmetic, not a
+certificate for an entire neural likelihood or for arbitrary \code{exp} and
+\code{log} implementations.
+
+The C SDK installs with \code{make install-cabi PREFIX=...}; it includes the
+public header, shared and static libraries, resources and \code{cetta.pc}.
+See \code{docs/python\_embedding.txt} and the ordinary Python notebook
+\code{examples/python/getting\_started.ipynb} in the CeTTa repository.
+The current local package was checked on CPython 3.13; the earlier portable
+matrix covers CPython 3.11--3.15 on glibc and musl, on x86\_64 and emulated
+AArch64, and is not a measurement of this exact November source snapshot.
+Physical AArch64 remains unverified.  The engine's memory limit accounts for
+CeTTa-owned allocations, excluding GMP and borrowed buffers; an allocation
+failure inside GMP can still abort the host process.
+
 \subsection{Tests and gates}
 
-The test manifest of the pre-main tree lists 705 programs, of which 640 run on
+The 27 October test manifest of the pre-main tree lists 705 programs, of which 640 run on
 the \HE{} lane and 65 on the Prime lane; 476 belong to the ordinary
 \code{make test} lane and 659 compare against a golden output.  The Prime
 draft's manifest lists 898 (646 and 252).  Beyond the manifest the trees track
@@ -1147,6 +1216,14 @@ removal lane (Section~\ref{sec:langdefpack}), the \HE{} I/O semantic suite
 against upstream \HE{} (Section~\ref{sec:conformance}), sanitizer portfolios,
 the \PathMap{} and MORK lanes, and the Prime gates.  The receipts of these
 gates for each line are given with the line in Section~\ref{sec:lines}.
+
+For the November preview, \code{make main-readiness} is a bounded candidate
+check with a default twenty-minute budget including builds.  It runs the
+ordinary suite, selected \PeTTa{}/\HE{} and lifetime controls, and the Python
+tests, preserving passing checks for reuse on matching inputs.  A timeout
+reports incomplete.  Focused fixes use the affected target; the broad
+sanitizer, performance and exhaustive campaigns remain explicit qualification
+lanes rather than being restarted after each small repair.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Specification-Driven Semantics: Profiles, Conformance, and the
@@ -2140,6 +2217,10 @@ staged but not committed.  It targets the programs MORK's MM2 language runs
 well, against MORK rebuilt from current upstream and SWI-\PeTTa{} running the
 faster correct program per task.  MORK and SWI-\PeTTa{} are single runs or
 best of two; \CeTTa{} is best of three.
+
+These unequal trial counts make this an exploratory historical table, not a
+controlled same-snapshot speedup estimate.  The November appendix uses equal
+trial counts and retains its local-artifact provenance limits explicitly.
 
 \begin{center}
 \small
@@ -5988,6 +6069,8 @@ wait index, is the main thing still to build.
 
 \appendix
 
+\input{CeTTa-runtimes-2026-11-05.tex}
+
 %% ════════════════════════════════════════════════════════════════════
 \section{How the Listings Were Run}
 \label{app:runs}
@@ -6044,8 +6127,6 @@ indicative only.
 \item the rho cost examples of Section~\ref{sec:rho-cost}, compared with their
   expected outputs.
 \end{itemize}
-
-\appendix
 
 \section{\LeaTTa{} Cross-Check Appendix}
 \label{app:leatta}
@@ -6503,7 +6584,7 @@ bind Prime or \CeTTa{} development.}
 
 %% ════════════════════════════════════════════════════════════════════
 
-\section{Appendix: The Prime Living Specification, Distilled}
+\section{The Prime Living Specification, Distilled}
 \label{app:prime-spec}
 
 This appendix distills the Prime living specification and decision ledger
@@ -6619,7 +6700,7 @@ persistence; typed-laziness coherence as a mechanized refinement; the
 cell-causal native contender behind its confidence gate; and
 finite-budget fairness under adversarial ranking.
 
-\section{Appendix: Core Design, Implementation, and Specification
+\section{Core Design, Implementation, and Specification
 Principles}
 \label{app:principles}
 
@@ -6629,7 +6710,7 @@ opens with its load-bearing head.  They overlap deliberately with
 Appendix~\ref{app:prime-spec}: the Prime principles are the language-level
 refinement of these project-wide commitments.
 
-\subsection*{B.1 Authority: who may mint truth}
+\subsection{Authority: who may mint truth}
 \textbf{Checking-first.}  Producers --- search procedures, elaborators,
 learned models, external provers, the runtime itself --- are untrusted
 proposers; theoremhood is conferred only when a generic checker replays an
@@ -6644,7 +6725,7 @@ specialization requires a determinism proof); passing test suites are
 evidence, never theorems; and checking is search with the answers pinned
 --- one kernel, two guidance policies, heuristics never deciding truth.
 
-\subsection*{B.2 Inertness and honest verdicts}
+\subsection{Inertness and honest verdicts}
 \textbf{Unknown stays inert.}  The evaluator does not evaluate what it
 cannot interpret: unmatched forms are their own normal form, and no
 profile emits ``feature unavailable.''  Externally this becomes a layered
@@ -6657,7 +6738,7 @@ may flip as fuel increases; ``must'' judgments require nonemptiness plus
 completeness; and fuel is never a semantic premise --- the semantics is
 pure, with resource outcomes layered outside it.
 
-\subsection*{B.3 Specification as source}
+\subsection{Specification as source}
 \textbf{Syntax is a GSLT; one root per language.}  Concrete syntax is
 itself a graph-structured lambda theory --- streams as terms, productions
 as rewrites --- and the parser is that theory's evaluator (print-parse as
@@ -6679,7 +6760,7 @@ canary, not an anchor.  Before accepting an obstruction, ask whether it
 survives in the canonical mathematical object or is an artifact of the
 encoding.
 
-\subsection*{B.4 Minimality}
+\subsection{Minimality}
 \textbf{Mechanism in the kernel, policy in the library.}  The core owns
 rewriting, the checking judgment, and one resumable fair scheduling
 primitive; strategies --- including proof search as type inhabitation ---
@@ -6692,7 +6773,7 @@ typing, and guest-logic adequacy, or it is an extension package; each
 core principle carries an independence witness (something breaks without
 it, nothing else forces it).
 
-\subsection*{B.5 Pluralism}
+\subsection{Pluralism}
 \textbf{Profiles are conservative extensions; no sovereign object
 theory.}  A profile is legitimate while existing programs run unchanged;
 the first non-gateable conservativity violation is the dialect trigger,
@@ -6704,7 +6785,7 @@ checker accepted a derivation relative to package $P$'' is categorically
 different from ``$P$ is sound''; bridges between logics are theorems or
 they are nothing.
 
-\subsection*{B.6 Homoiconicity, reflection, binding}
+\subsection{Homoiconicity, reflection, binding}
 \textbf{No second grammar, and quotation confers no authority.}  Types,
 judgments, packages, and claims are ordinary atoms the reasoner can
 inspect and rewrite; one sigil-to-expansion table drives the reader and
@@ -6717,7 +6798,7 @@ taxed at the dangerous act, not the epistemic one: looking is cheap and
 pure, forcing carries the ceremony, and receipts attach where claims are
 made.
 
-\subsection*{B.7 Typing and graduality}
+\subsection{Typing and graduality}
 \textbf{Graduality is a same-program theorem.}  A validly typed working
 program with annotations erased computes the same results --- always
 typed-versus-untyped of one program, never a cross-profile comparison.
@@ -6728,7 +6809,7 @@ typing is never advertised as sound gradual typing without cast-and-blame
 enforcement; and there is no subtyping without coercion coherence ---
 honest poverty over dishonest wealth.
 
-\subsection*{B.8 Equality}
+\subsection{Equality}
 \textbf{Stratified, weakest-in-core.}  Identity and typed equality answer
 different questions (a cross-type comparison is ill-posed, not false);
 commitments form a lattice (same-atom, conversion, equal-at-type,
@@ -6741,7 +6822,7 @@ conversion, and no registered equality may identify a suspension with its
 origin or two cells by origin equality, because observation is a
 projection and identifying across it destroys sharing.
 
-\subsection*{B.9 Laziness, sharing, capability}
+\subsection{Laziness, sharing, capability}
 \textbf{Sharing is semantics.}  Branch-local call-by-need with call-time
 choice makes cell identity observable: a shared argument forces once per
 branch and every consumer sees the same value.  A suspension has three
@@ -6757,7 +6838,7 @@ suspension being one request with a memoized response and resampling the
 explicit freshness boundary --- which also gives sample-once stochastic
 choice for free.
 
-\subsection*{B.10 Occurrences, cost, and enrichment}
+\subsection{Occurrences, cost, and enrichment}
 \textbf{The non-conflation chain.}  Legal transition $\neq$ occurrence
 identity $\neq$ probability/rate $\neq$ scheduling priority $\neq$
 resource cost $\neq$ utility $\neq$ provenance/authority; every
@@ -6777,7 +6858,7 @@ is an effect property, not a global mode; and a system that modifies its
 own laws accepts a delta only with a proof that the delta preserves what
 it claims.
 
-\subsection*{B.11 Effects, errors, resources}
+\subsection{Effects, errors, resources}
 \textbf{Unmetered by default; errors are values.}  Budgets and ledgers
 are opt-in and zero-cost when absent; effectful power is capability-gated
 and never hidden inside conversion; errors are inspectable, matchable
@@ -6785,7 +6866,7 @@ atoms in the result bag --- branch-local, never process-killing, and
 richer than a boolean; default judgment forms carry no fuel argument, and
 exhaustion surfaces only when it changes the answer.
 
-\subsection*{B.12 Evidence and confidence}
+\subsection{Evidence and confidence}
 \textbf{Counts-primal, ladder-honest.}  Hard pruning requires proven
 legality or impossibility with recall preservation; everything uncertain
 is soft ranking, demonstrated by a counterexample of an uncertified mask
@@ -6798,7 +6879,7 @@ blind to candidate artifacts; and a reviewed specification plus a
 kernel-checked divergent witness is a factive, \emph{generative}
 refutation --- first mismatch, certified continuations, repair targets.
 
-\subsection*{B.13 From semantics to machines; method and naming}
+\subsection{From semantics to machines; method and naming}
 \textbf{Machines are derived, not designed.}  Abstract machines arise
 from evaluators by the functional correspondence, so the eager and lazy
 lines share a substrate while requiring distinct control cores --- now a
@@ -6819,7 +6900,7 @@ violations only, with scope stated positively; ergonomics is a
 first-class late phase, redone against collected real confusion once the
 semantics settles.
 
-\subsection*{B.14 Supersession, on the record}
+\subsection{Supersession, on the record}
 The principles themselves are governed by B.3: superseded forms stay
 recorded rather than deleted.  Notable retirements: notation as a
 side-record superseded by syntax-as-GSLT; early list-shaped cost receipts
@@ -6833,7 +6914,7 @@ B.8.
 
 %% ════════════════════════════════════════════════════════════════════
 
-\section{Appendix: Concrete Syntax}
+\section{Concrete Syntax}
 \label{app:grammar}
 
 The authoritative syntax of every profile is its \code{LanguageDef}: the
@@ -6937,7 +7018,7 @@ an artifact of its truncation.
 
 %% ════════════════════════════════════════════════════════════════════
 
-\section{Appendix: Moving from \HE{} and \PeTTa{} to Prime}
+\section{Moving from \HE{} and \PeTTa{} to Prime}
 \label{app:migration}
 
 Prime is a sibling, not an extension: most programs written against the
@@ -6998,7 +7079,7 @@ it in data instead.
 
 %% ════════════════════════════════════════════════════════════════════
 
-\section{Appendix: Implementation Algorithms and Asymptotics}
+\section{Implementation Algorithms and Asymptotics}
 \label{app:algorithms}
 
 This appendix records the algorithmic decisions behind the engine's

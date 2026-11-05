@@ -86,6 +86,10 @@ def Selection.ActiveAt (selection : Selection) (active headIndex : Nat) : Prop :
 def Selection.Fresh (selection : Selection) (rule : Rule) (ruleIndex : Nat) (history : List Key) : Prop :=
   rule.removed = [] → selection.key ruleIndex ∉ history
 
+instance Selection.freshDecidable (selection : Selection) (rule : Rule) (ruleIndex : Nat) (history : List Key) :
+    Decidable (selection.Fresh rule ruleIndex history) :=
+  inferInstanceAs (Decidable (rule.removed = [] → selection.key ruleIndex ∉ history))
+
 def commit (state : State) (rule : Rule) (ruleIndex : Nat) (environment : Environment)
     (selection : Selection) (active cursor : Nat) (tail : List Task) : State :=
   { state with

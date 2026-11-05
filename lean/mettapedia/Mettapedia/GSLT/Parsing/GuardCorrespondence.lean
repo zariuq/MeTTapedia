@@ -242,7 +242,7 @@ mutual
 end
 
 mutual
-  private def preserveDerivation
+  private theorem preserveDerivation
       {presentation : SourceDefinition} {fullInput category start stop tree}
       (derivation : SourceDerivesAt presentation fullInput category start stop tree) :
       CompiledDerivesAt (compile presentation) fullInput category start stop tree :=
@@ -252,7 +252,7 @@ mutual
           (List.mem_map.mpr ⟨rule, member, rfl⟩)
           (preserveBody body) (preserveGuards guards)
 
-  private def preserveBody
+  private theorem preserveBody
       {presentation : SourceDefinition} {fullInput symbols start stop children}
       (derivation : SourceBodyDerivesAt presentation fullInput symbols
         start stop children) :
@@ -265,7 +265,7 @@ mutual
     | .call head rest =>
         .nonterminal (preserveDerivation head) (preserveBody rest)
 
-  private def preserveGuards
+  private theorem preserveGuards
       {presentation : SourceDefinition} {fullInput guards cursor}
       (derivation : SourceGuardsHold presentation fullInput guards cursor) :
       CompiledGuardsHold (compile presentation) fullInput
@@ -456,7 +456,7 @@ theorem validatePlanCorrespondence_iff
   ⟨validatePlanCorrespondence_sound, validatePlanCorrespondence_complete⟩
 
 mutual
-  private def planPreserveDerivation
+  private theorem planPreserveDerivation
       {raw emitted : CompiledGrammar}
       (witness : PlanCorrespondence raw emitted)
       {fullInput category start stop tree}
@@ -474,7 +474,7 @@ mutual
           CompiledDerivesAt.apply emittedProduction emittedMember
             emittedBody emittedGuards
 
-  private def planPreserveBody
+  private theorem planPreserveBody
       {raw emitted : CompiledGrammar}
       (witness : PlanCorrespondence raw emitted)
       {fullInput symbols start stop children}
@@ -493,7 +493,7 @@ mutual
         .nonterminal (planPreserveDerivation witness head)
           (planPreserveBody witness rest)
 
-  private def planPreserveGuards
+  private theorem planPreserveGuards
       {raw emitted : CompiledGrammar}
       (witness : PlanCorrespondence raw emitted)
       {fullInput guards cursor}
@@ -521,7 +521,7 @@ theorem planCorrespondence_preserves
   planPreserveDerivation witness derivation
 
 mutual
-  private def planReflectDerivation
+  private theorem planReflectDerivation
       {raw emitted : CompiledGrammar}
       (witness : PlanCorrespondence raw emitted)
       {fullInput category start stop tree}
@@ -538,7 +538,7 @@ mutual
         simpa [categoryEq, sourceRuleEq] using
           CompiledDerivesAt.apply rawProduction rawMember rawBody rawGuards
 
-  private def planReflectBody
+  private theorem planReflectBody
       {raw emitted : CompiledGrammar}
       (witness : PlanCorrespondence raw emitted)
       {fullInput symbols start stop children}
@@ -557,7 +557,7 @@ mutual
         .nonterminal (planReflectDerivation witness head)
           (planReflectBody witness rest)
 
-  private def planReflectGuards
+  private theorem planReflectGuards
       {raw emitted : CompiledGrammar}
       (witness : PlanCorrespondence raw emitted)
       {fullInput guards cursor}
@@ -711,7 +711,7 @@ theorem validateTerminalCompaction_iff
   ⟨validateTerminalCompaction_sound, validateTerminalCompaction_complete⟩
 
 mutual
-  private def preserveTerminalCompactionDerivation
+  private theorem preserveTerminalCompactionDerivation
       {raw compacted : CompiledGrammar}
       (witness : TerminalCompaction raw compacted)
       {fullInput category start stop tree}
@@ -731,7 +731,7 @@ mutual
           CompiledDerivesAt.apply compactedProduction compactedMember
             compactedBody compactedGuards
 
-  private def preserveTerminalCompactionBody
+  private theorem preserveTerminalCompactionBody
       {raw compacted : CompiledGrammar}
       (witness : TerminalCompaction raw compacted)
       {fullInput rawSymbols compactedSymbols start stop trees}
@@ -755,7 +755,7 @@ mutual
         .nonterminal (preserveTerminalCompactionDerivation witness head)
           (preserveTerminalCompactionBody witness rest restExpansion)
 
-  private def preserveTerminalCompactionGuards
+  private theorem preserveTerminalCompactionGuards
       {raw compacted : CompiledGrammar}
       (witness : TerminalCompaction raw compacted)
       {fullInput guards cursor}
@@ -785,7 +785,7 @@ theorem terminalCompaction_preserves
   preserveTerminalCompactionDerivation witness derivation
 
 mutual
-  private def reflectTerminalCompactionDerivation
+  private theorem reflectTerminalCompactionDerivation
       {raw compacted : CompiledGrammar}
       (witness : TerminalCompaction raw compacted)
       {fullInput category start stop tree}
@@ -805,7 +805,7 @@ mutual
         simpa [categoryEq, sourceRuleEq] using
           CompiledDerivesAt.apply rawProduction rawMember rawBody rawGuards
 
-  private def reflectTerminalCompactionBody
+  private theorem reflectTerminalCompactionBody
       {raw compacted : CompiledGrammar}
       (witness : TerminalCompaction raw compacted)
       {fullInput compactedSymbols start stop trees}
@@ -837,7 +837,7 @@ mutual
           .nonterminal (reflectTerminalCompactionDerivation witness head)
             rawRest⟩
 
-  private def reflectTerminalCompactionGuards
+  private theorem reflectTerminalCompactionGuards
       {raw compacted : CompiledGrammar}
       (witness : TerminalCompaction raw compacted)
       {fullInput guards cursor}
@@ -940,7 +940,7 @@ mutual
 end
 
 mutual
-  private def certificateCompiledSound
+  private theorem certificateCompiledSound
       {grammar : CompiledGrammar} {fullInput certificate category start stop tree}
       (replay : CertificateReplays grammar fullInput certificate
         category start stop tree) :
@@ -949,7 +949,7 @@ mutual
     | .node production member body guards =>
         .apply production member (certificateBodyCompiledSound body) guards
 
-  private def certificateBodyCompiledSound
+  private theorem certificateBodyCompiledSound
       {grammar : CompiledGrammar} {fullInput symbols start stop certificates trees}
       (replay : CertificateBodyReplays grammar fullInput symbols
         start stop certificates trees) :

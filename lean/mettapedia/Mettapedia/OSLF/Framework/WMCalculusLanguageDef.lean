@@ -32,6 +32,7 @@ along the weakness order is `id`-on-terms with rule-subset containment.
 - `WorldModelCalculus.lean` — query-rewrite layer
 - `WorldModelOverlap.lean` — `OverlapLayer`
 - `GenericWorldModelForgetting.lean` — `ForgettingLayer`
+- `PLNWorldModelSupportForgetting.lean` — `SupportTrackedForgettingLayer`
 - `PLNSelectorLanguageDef.lean` — analogous PLN selector LanguageDef (pattern)
 -/
 
@@ -331,20 +332,21 @@ def overlapRules : WMOverlapMode → List RewriteRule
   | .additive => []
   | .overlapAware => [ruleOverlapExtract]
 
-/-- Forgetting-specific rewrite rules.
-
-    `scopeBased`:
-    - Extract(Forget(S, W), q) ↦ Extract(W, q)  [when q ∉ scope S]
-    This captures `ForgettingLayer.outsideInvariant`. -/
+/-- Outside-scope invariance: `Extract(Forget(S, W), q) ↦ Extract(W, q)` when
+`q` lies outside `S` (`ForgettingLayer.outsideInvariant`).  The condition is
+the relation premise `outsideScope(S, q)`.  Inside the scope forgetting changes
+the evidence, and the rule does not fire there. -/
 def ruleForgetOutside : RewriteRule := {
   name := "WM_ForgetOutside"
   typeContext := [("S", .base "Scope"), ("W", .base "State"), ("q", .base "Query")]
-  premises := []  -- side condition (q ∉ scope S) is semantic, not syntactic
+  premises := [.relationQuery "outsideScope" [.fvar "S", .fvar "q"]]
   left := pExtract (pForget (.fvar "S") (.fvar "W")) (.fvar "q")
   right := pExtract (.fvar "W") (.fvar "q")
 }
 
-/-- Forgetting idempotence: Forget(S, Forget(S, W)) ↦ Forget(S, W) -/
+/-- Forgetting idempotence: `Forget(S, Forget(S, W)) ↦ Forget(S, W)`.  It has no
+premise because every forgetting layer forgets idempotently
+(`ForgettingLayer.idempotent`). -/
 def ruleForgetIdempotent : RewriteRule := {
   name := "WM_ForgetIdempotent"
   typeContext := [("S", .base "Scope"), ("W", .base "State")]
@@ -353,28 +355,68 @@ def ruleForgetIdempotent : RewriteRule := {
   right := pForget (.fvar "S") (.fvar "W")
 }
 
+/-- The forgetting rules.  The raw and the guarded calculi share them; a
+support-tracked vertex adds `supportTrackedRules`. -/
 def forgettingRules : WMForgettingMode → List RewriteRule
   | .none => []
   | .scopeBased => [ruleForgetOutside, ruleForgetIdempotent]
   | .supportTracked => [ruleForgetOutside, ruleForgetIdempotent]
-      -- supportTracked adds the exact-inverse theorem but that is a
-      -- BinaryWorldModel-level theorem, not a new rewrite rule
 
-/-! ## Support-Tracked Forgetting Rules -/
+/-- The only forgetting rule without a premise is idempotence, a law of every
+forgetting layer. -/
+theorem forgettingRules_premiseFree (mode : WMForgettingMode) :
+    ∀ rule ∈ forgettingRules mode, rule.premises = [] → rule = ruleForgetIdempotent := by
+  cases mode <;> simp [forgettingRules, ruleForgetOutside]
 
-/-- Exact inverse: Forget(S, Revise(W, Δ)) ↦ W when support(Δ) ⊆ scopeFootprint(S).
-    From `SupportTrackedForgettingLayer.exactInverse_of_supported`. -/
-def ruleExactInverse : RewriteRule := {
-  name := "WM_ExactInverse"
+/-! ## Support-Tracked Forgetting Rules
+
+In a `SupportTrackedForgettingLayer` a state is *supported* in a scope when
+its supports lie inside the scope's footprint, and *clean* for the scope when
+they avoid it.  The layer's laws hold only under these conditions, so each rule
+below states its condition as a relation premise and fires only on a row that
+the relation environment supplies:
+
+- **absorption**: `Forget(S, Revise(W, D)) ↦ Forget(S, W)` when `D` is
+  supported in `S` (`SupportTrackedForgettingLayer.forget_add_of_supported`);
+- **clean-base identity**: `Forget(S, W) ↦ W` when `W` is clean for `S` (the
+  field `forget_eq_self_of_clean`).
+
+Applied in turn they undo a supported revision of a clean base
+(`SupportTrackedForgettingLayer.exactInverse_of_clean`).  Rewriting
+`Forget(S, Revise(W, D))` to `W` without the clean-base condition asserts the
+inverse on every base, which only identity forgetting and zero revisions
+satisfy (`ForgettingLayer.exactInverse_everywhere_degenerate`). -/
+
+/-- Absorption: `Forget(S, Revise(W, D)) ↦ Forget(S, W)` when `D` is supported
+in `S`. -/
+def ruleForgetAbsorbSupported : RewriteRule := {
+  name := "WM_ForgetAbsorbSupported"
   typeContext := [("S", .base "Scope"), ("W", .base "State"), ("D", .base "State")]
-  premises := []  -- side condition: support(Δ) ⊆ scopeFootprint(S)
+  premises := [.relationQuery "supportedInScope" [.fvar "S", .fvar "D"]]
   left := pForget (.fvar "S") (pRevise (.fvar "W") (.fvar "D"))
+  right := pForget (.fvar "S") (.fvar "W")
+}
+
+/-- Clean-base identity: `Forget(S, W) ↦ W` when `W` is clean for `S`. -/
+def ruleForgetClean : RewriteRule := {
+  name := "WM_ForgetClean"
+  typeContext := [("S", .base "Scope"), ("W", .base "State")]
+  premises := [.relationQuery "cleanForScope" [.fvar "S", .fvar "W"]]
+  left := pForget (.fvar "S") (.fvar "W")
   right := .fvar "W"
 }
 
+/-- The support-tracked forgetting rules.  They carry their premises, and the
+raw and the guarded calculi share them. -/
 def supportTrackedRules : WMForgettingMode → List RewriteRule
-  | .supportTracked => [ruleExactInverse]
+  | .supportTracked => [ruleForgetAbsorbSupported, ruleForgetClean]
   | _ => []
+
+/-- No support-tracked rule is unconditional. -/
+theorem supportTrackedRules_premises_ne_nil (mode : WMForgettingMode) :
+    ∀ rule ∈ supportTrackedRules mode, rule.premises ≠ [] := by
+  cases mode <;>
+    simp [supportTrackedRules, ruleForgetAbsorbSupported, ruleForgetClean]
 
 /-! ## Extended Pattern Vocabulary -/
 
@@ -692,38 +734,73 @@ instance : Preorder WMConservationMode where
   le_refl a := by cases a <;> simp [LE.le]
   le_trans a b c := by cases a <;> cases b <;> cases c <;> simp [LE.le]
 
-/-- Anti-hallucination: Extract(Δ, q) ↦ EvidenceZero when q is outside scope and
-    Δ is a scoped revision with exact inverse. -/
+/-! The conservation pack (`WorldModelConservationPack`) holds for a revision `Δ`
+that forgetting a scope `S` erases, `forget S Δ = 0`.  Each rule below states
+that condition as the relation premise `erasesInScope(S, D)`, and a rule that
+reads a query `q` places it outside the same scope with `outsideScope(S, q)`:
+
+- **anti-hallucination**: `Extract(D, q) ↦ EvidenceZero`
+  (`antiHallucination_outsideScope_of_erases`);
+- **Noether conservation**: `Extract(Revise(W, D), q) ↦ Extract(W, q)`
+  (`outsideScopeEvidence_conserved_of_erases`);
+- **zero leakage**: the budget judgment `LeakageBudget(S, D, EvidenceZero)`
+  (`outsideLeakageBudget_zero_of_erases`).
+
+Anti-hallucination and Noether conservation have no scope on their left-hand
+sides.  Their scope is a rule variable: the erasure premise binds it from a
+returned row, and the outside-scope premise reads that binding.  Both calculi
+carry the two rules with their premises, so under the empty relation
+environment neither fires.  Zero leakage is in no rule list. -/
+
+/-- The conservation premises: forgetting the scope `S` erases `D`, and `q` lies
+outside `S`.  The erasure premise comes first and binds `S`. -/
+def erasedOutsideScopePremises : List Premise :=
+  [.relationQuery "erasesInScope" [.fvar "S", .fvar "D"],
+   .relationQuery "outsideScope" [.fvar "S", .fvar "q"]]
+
+/-- Anti-hallucination: `Extract(D, q) ↦ EvidenceZero` when forgetting some scope
+`S` erases `D` and `q` lies outside `S`. -/
 def ruleAntiHallucination : RewriteRule := {
   name := "WM_AntiHallucination"
-  typeContext := [("D", .base "State"), ("q", .base "Query")]
-  premises := []  -- side conditions: q ∉ scope, exact-inverse property
+  typeContext := [("S", .base "Scope"), ("D", .base "State"), ("q", .base "Query")]
+  premises := erasedOutsideScopePremises
   left := pExtract (.fvar "D") (.fvar "q")
   right := pEvidenceZero
 }
 
-/-- Noether conservation: Extract(Revise(W,Δ), q) ↦ Extract(W, q)
-    Outside-scope evidence is transparent to scoped revision. -/
+/-- Noether conservation: `Extract(Revise(W, D), q) ↦ Extract(W, q)` when
+forgetting some scope `S` erases `D` and `q` lies outside `S`. -/
 def ruleNoetherConservation : RewriteRule := {
   name := "WM_NoetherConservation"
-  typeContext := [("W", .base "State"), ("D", .base "State"), ("q", .base "Query")]
-  premises := []  -- side condition: q ∉ scope of Δ
+  typeContext := [("S", .base "Scope"), ("W", .base "State"), ("D", .base "State"),
+    ("q", .base "Query")]
+  premises := erasedOutsideScopePremises
   left := pExtract (pRevise (.fvar "W") (.fvar "D")) (.fvar "q")
   right := pExtract (.fvar "W") (.fvar "q")
 }
 
-/-- Zero leakage: LeakageBudget(S, Δ, 0) holds under exact-inverse forgetting. -/
+/-- Zero leakage: the self-loop on `LeakageBudget(S, D, EvidenceZero)` fires when
+forgetting `S` erases `D`, so that `D` leaks nothing outside `S`. -/
 def ruleZeroLeakage : RewriteRule := {
   name := "WM_ZeroLeakage"
   typeContext := [("S", .base "Scope"), ("D", .base "State")]
-  premises := []  -- side condition: exact-inverse property
+  premises := [.relationQuery "erasesInScope" [.fvar "S", .fvar "D"]]
   left := pLeakageBudget (.fvar "S") (.fvar "D") pEvidenceZero
   right := pLeakageBudget (.fvar "S") (.fvar "D") pEvidenceZero
 }
 
+/-- The conservation rules.  They carry their premises, and the raw and the
+guarded calculi share them. -/
 def conservationRules : WMConservationMode → List RewriteRule
   | .none => []
   | .conserving => [ruleAntiHallucination, ruleNoetherConservation]
+
+/-- No conservation rule is unconditional. -/
+theorem conservationRules_premises_ne_nil (mode : WMConservationMode) :
+    ∀ rule ∈ conservationRules mode, rule.premises ≠ [] := by
+  cases mode <;>
+    simp [conservationRules, ruleAntiHallucination, ruleNoetherConservation,
+      erasedOutsideScopePremises]
 
 /-! ## Experiment Channel Rules -/
 
@@ -921,27 +998,11 @@ def carrierRules : WMCarrierMode → List RewriteRule
 
 Each side-conditioned rule gets a guarded variant using `Premise.relationQuery`.
 The guarded variant has the same `left`/`right` but non-empty `premises`.
-A `RelationEnv` must supply the side-condition oracle at reduction time. -/
-
--- Forgetting guards --
-
-/-- Guarded: Extract(Forget(S, W), q) ↦ Extract(W, q) when q ∉ scope S. -/
-def ruleForgetOutsideGuarded : RewriteRule := {
-  name := "WM_ForgetOutside_Guarded"
-  typeContext := [("S", .base "Scope"), ("W", .base "State"), ("q", .base "Query")]
-  premises := [.relationQuery "outsideScope" [.fvar "S", .fvar "q"]]
-  left := pExtract (pForget (.fvar "S") (.fvar "W")) (.fvar "q")
-  right := pExtract (.fvar "W") (.fvar "q")
-}
-
-/-- Guarded: Forget(S, Revise(W, Δ)) ↦ W when support(Δ) ⊆ scopeFootprint(S). -/
-def ruleExactInverseGuarded : RewriteRule := {
-  name := "WM_ExactInverse_Guarded"
-  typeContext := [("S", .base "Scope"), ("W", .base "State"), ("D", .base "State")]
-  premises := [.relationQuery "supportedBy" [.fvar "D", .fvar "S"]]
-  left := pForget (.fvar "S") (pRevise (.fvar "W") (.fvar "D"))
-  right := .fvar "W"
-}
+A `RelationEnv` must supply the side-condition oracle at reduction time.
+The forgetting rules (`forgettingRules`), the support-tracked rules
+(`supportTrackedRules`) and the conservation rules (`conservationRules`) have no
+guarded variant: each carries the premise its law needs, if any, and both
+calculi share them. -/
 
 -- Provenance guards --
 
@@ -1015,36 +1076,6 @@ def ruleSwapAnomalyZeroGuarded : RewriteRule := {
   right := pEvidenceZero
 }
 
--- Conservation guards --
-
-/-- Guarded: Extract(Δ, q) ↦ EvidenceZero when q ∉ scope and exact-inverse holds. -/
-def ruleAntiHallucinationGuarded : RewriteRule := {
-  name := "WM_AntiHallucination_Guarded"
-  typeContext := [("D", .base "State"), ("q", .base "Query")]
-  premises := [.relationQuery "outsideScope" [.fvar "D", .fvar "q"],
-               .relationQuery "exactInverseProperty" [.fvar "D"]]
-  left := pExtract (.fvar "D") (.fvar "q")
-  right := pEvidenceZero
-}
-
-/-- Guarded: Extract(Revise(W,Δ), q) ↦ Extract(W, q) when q ∉ scope of Δ. -/
-def ruleNoetherConservationGuarded : RewriteRule := {
-  name := "WM_NoetherConservation_Guarded"
-  typeContext := [("W", .base "State"), ("D", .base "State"), ("q", .base "Query")]
-  premises := [.relationQuery "outsideScope" [.fvar "D", .fvar "q"]]
-  left := pExtract (pRevise (.fvar "W") (.fvar "D")) (.fvar "q")
-  right := pExtract (.fvar "W") (.fvar "q")
-}
-
-/-- Guarded: ZeroLeakage when exact-inverse holds. -/
-def ruleZeroLeakageGuarded : RewriteRule := {
-  name := "WM_ZeroLeakage_Guarded"
-  typeContext := [("S", .base "Scope"), ("D", .base "State")]
-  premises := [.relationQuery "exactInverseProperty" [.fvar "D"]]
-  left := pLeakageBudget (.fvar "S") (.fvar "D") pEvidenceZero
-  right := pLeakageBudget (.fvar "S") (.fvar "D") pEvidenceZero
-}
-
 -- Experiment guards --
 
 /-- Guarded: Blackwell pullback when factorization holds. -/
@@ -1101,15 +1132,6 @@ def ruleQueryEquivTransportGuarded : RewriteRule := {
 
 /-! ### Guarded Axis Rule Selectors -/
 
-def forgettingRulesGuarded : WMForgettingMode → List RewriteRule
-  | .none => []
-  | .scopeBased => [ruleForgetOutsideGuarded, ruleForgetIdempotent]
-  | .supportTracked => [ruleForgetOutsideGuarded, ruleForgetIdempotent]
-
-def supportTrackedRulesGuarded : WMForgettingMode → List RewriteRule
-  | .supportTracked => [ruleExactInverseGuarded]
-  | _ => []
-
 def provenanceRulesGuarded : WMProvenanceMode → List RewriteRule
   | .none => []
   | .sourceLabeled => [ruleCompatibleSymm, ruleFallbackCompatibleGuarded,
@@ -1127,10 +1149,6 @@ def fixpointRulesGuarded : WMFixpointMode → List RewriteRule
 def costRulesGuarded : WMCostMode → List RewriteRule
   | .none => []
   | .costTracked => [ruleSwapAnomalySymm, ruleSwapAnomalyZeroGuarded, ruleScheduleErrorSymm]
-
-def conservationRulesGuarded : WMConservationMode → List RewriteRule
-  | .none => []
-  | .conserving => [ruleAntiHallucinationGuarded, ruleNoetherConservationGuarded]
 
 def experimentRulesGuarded : WMExperimentMode → List RewriteRule
   | .none => []
@@ -1272,7 +1290,8 @@ def wmTypes (v : WMExtVertex) : List String :=
 def wmFullTypes (v : WMFullVertex) : List String :=
   let base := ["State", "Query", "BinaryEvidence"]
   let overlap := match v.overlap with | .additive => [] | .overlapAware => ["Overlap"]
-  let scope := match v.forgetting with | .none => [] | _ => ["Scope"]
+  let scope := match v.forgetting, v.conservation with
+    | .none, .none => [] | _, _ => ["Scope"]
   let source := match v.provenance with | .none => [] | _ => ["Source", "Policy"]
   let ruleset := match v.fixpoint with | .none => [] | _ => ["RuleSet", "QuerySet", "Nat"]
   let schedule := match v.cost with | .none => [] | _ => ["Schedule"]
@@ -1329,8 +1348,9 @@ def wmVertexLanguageDef (v : WMVertex) : LanguageDef :=
 
 /-! ### Guarded LanguageDef Constructors -/
 
-/-- Guarded WM calculus LanguageDef for a 6-axis vertex.
-    Uses guarded variants of side-conditioned rules; core rules are unchanged. -/
+/-- Guarded WM calculus LanguageDef for a 6-axis vertex.  Its rewrite rules are
+those of `wmExtVertexLanguageDef v`, because both share the forgetting rules
+(`wmExtVertexLanguageDefGuarded_rewrites_eq`); only the name differs. -/
 def wmExtVertexLanguageDefGuarded (v : WMExtVertex) : LanguageDef := {
   name := s!"WMCalculusGuarded"
   types := wmTypes v
@@ -1342,8 +1362,14 @@ def wmExtVertexLanguageDefGuarded (v : WMExtVertex) : LanguageDef := {
     ++ intervalRules (v.base .interval)
     ++ typingRules (v.base .typing)
     ++ overlapRules v.overlap
-    ++ forgettingRulesGuarded v.forgetting
+    ++ forgettingRules v.forgetting
 }
+
+/-- At a 6-axis vertex the raw and the guarded calculus have the same rewrite
+rules. -/
+theorem wmExtVertexLanguageDefGuarded_rewrites_eq (v : WMExtVertex) :
+    (wmExtVertexLanguageDefGuarded v).rewrites = (wmExtVertexLanguageDef v).rewrites :=
+  rfl
 
 /-- Guarded WM calculus LanguageDef for a 13-axis vertex.
     All side-conditioned rules use `Premise.relationQuery` guards. -/
@@ -1358,20 +1384,20 @@ def wmFullVertexLanguageDefGuarded (v : WMFullVertex) : LanguageDef := {
     ++ intervalRules (v.base .interval)
     ++ typingRules (v.base .typing)
     ++ overlapRules v.overlap
-    ++ forgettingRulesGuarded v.forgetting
-    ++ supportTrackedRulesGuarded v.forgetting
+    ++ forgettingRules v.forgetting
+    ++ supportTrackedRules v.forgetting
     ++ provenanceRulesGuarded v.provenance
     ++ fixpointRulesGuarded v.fixpoint
     ++ costRulesGuarded v.cost
-    ++ conservationRulesGuarded v.conservation
+    ++ conservationRules v.conservation
     ++ experimentRulesGuarded v.experiment
     ++ kripkeRulesGuarded v.kripke
     ++ carrierRulesGuarded v.carrier
 }
 
 /-- The 6-axis and full LanguageDefs have the same rewrite rules (when extra axes are off).
-    The names differ ("WMCalculus" vs "WMCalculusFull") and supportTracked adds
-    the exact-inverse rule in the full version. -/
+    The names differ ("WMCalculus" vs "WMCalculusFull"), and at a supportTracked
+    vertex only the full version carries the two support-tracked rules. -/
 theorem wmExtToFull_rewrites_eq (v : WMExtVertex)
     (hf : v.forgetting ≠ .supportTracked) :
     (wmFullVertexLanguageDef (wmExtToFull v)).rewrites =
@@ -1427,27 +1453,10 @@ guarded reduction is also a raw reduction). The direction is:
 The key insight: for a rule with `premises = []`, `applyPremisesWithEnv` is
 the identity on bindings. For a guarded rule, `applyPremisesWithEnv` filters
 bindings through the RelationEnv. Since both rules share `left`/`right`, any
-bindings that survive premise checking also match the raw rule. -/
-
-/-- Every guarded rule in `forgettingRulesGuarded` has a same-`left`/`right`
-    counterpart in `forgettingRules`. -/
-theorem forgettingRulesGuarded_left_right_match (mode : WMForgettingMode) :
-    ∀ rg ∈ forgettingRulesGuarded mode,
-    ∃ rr ∈ forgettingRules mode,
-      rg.left = rr.left ∧ rg.right = rr.right := by
-  intro rg hrg
-  cases mode with
-  | none => simp [forgettingRulesGuarded] at hrg
-  | scopeBased =>
-    simp only [forgettingRulesGuarded, List.mem_cons, List.mem_nil_iff, or_false] at hrg
-    rcases hrg with rfl | rfl
-    · exact ⟨ruleForgetOutside, by simp [forgettingRules], rfl, rfl⟩
-    · exact ⟨ruleForgetIdempotent, by simp [forgettingRules], rfl, rfl⟩
-  | supportTracked =>
-    simp only [forgettingRulesGuarded, List.mem_cons, List.mem_nil_iff, or_false] at hrg
-    rcases hrg with rfl | rfl
-    · exact ⟨ruleForgetOutside, by simp [forgettingRules], rfl, rfl⟩
-    · exact ⟨ruleForgetIdempotent, by simp [forgettingRules], rfl, rfl⟩
+bindings that survive premise checking also match the raw rule.  The
+forgetting, the support-tracked and the conservation rules are the exception:
+both calculi carry them with their premises (`forgettingRules_premiseFree`,
+`supportTrackedRules_premises_ne_nil`, `conservationRules_premises_ne_nil`). -/
 
 /-! ## LanguageDef Step Lemmas -/
 
@@ -1610,44 +1619,138 @@ theorem wmFullLangReduces_overlapExtract (v : WMFullVertex)
   · simp [bs, ruleOverlapExtract, applyPremisesWithEnv]
   · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleOverlapExtract, pExtract, pOverlapCorrect, pOverlapFactor, applyBindings]
 
-/-- Forget-outside at a forgetting-enabled full vertex. -/
-theorem wmFullLangReduces_forgetOutside (v : WMFullVertex)
-    (hfg : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked)
-    (pS pw pq : Pattern) :
-    wmFullLangReduces v
-      (pExtract (pForget pS pw) pq)
-      (pExtract pw pq) := by
-  unfold wmFullLangReduces langReduces langReducesUsing
-  let bs : Bindings := [("q", pq), ("W", pw), ("S", pS)]
-  refine contextualStep_of_premiseFree_rule
-    (relEnv := RelationEnv.empty) (lang := wmFullVertexLanguageDef v)
-    (rule := ruleForgetOutside)
-    ?hr bs ?hmatch bs ?hprem ?happly rfl
-  · simp only [wmFullVertexLanguageDef, List.mem_append]
-    rcases hfg with hfg | hfg <;> simp [hfg, forgettingRules]
-  · simp [bs, ruleForgetOutside, pExtract, pForget, matchPattern, matchArgs, mergeBindings]
-  · simp [bs, ruleForgetOutside, applyPremisesWithEnv]
-  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleForgetOutside, pExtract, applyBindings]
+/-! ### Outside-Scope Forgetting Steps
 
-/-- Exact-inverse at a support-tracked full vertex. -/
-theorem wmFullLangReduces_exactInverse (v : WMFullVertex)
-    (hfg : v.forgetting = .supportTracked)
-    (pS pw pD : Pattern) :
-    wmFullLangReduces v
-      (pForget pS (pRevise pw pD))
-      pw := by
-  unfold wmFullLangReduces langReduces langReducesUsing
+Outside-scope invariance fires only on a row certifying that the query lies
+outside the scope.  The empty environment supplies none, so
+`wmFullLangReduces`, which reduces under it, never applies the rule. -/
+
+/-- Under the empty relation environment outside-scope invariance accepts no
+bindings. -/
+theorem ruleForgetOutside_refuse_empty (lang : LanguageDef) (bindings : Bindings) :
+    applyPremisesWithEnv RelationEnv.empty lang ruleForgetOutside.premises bindings = [] := by
+  simp [ruleForgetOutside, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
+    builtinRelationTuples, RelationEnv.empty]
+
+/-- Outside-scope invariance fires in any language containing it when the
+relation environment returns the row certifying that `q` lies outside `S`. -/
+theorem langReducesUsing_forgetOutside (relEnv : RelationEnv)
+    (lang : LanguageDef) (ruleMember : ruleForgetOutside ∈ lang.rewrites)
+    (pS pw pq : Pattern)
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langReducesUsing relEnv lang (pExtract (pForget pS pw) pq) (pExtract pw pq) := by
+  unfold langReducesUsing
+  let bs : Bindings := [("q", pq), ("W", pw), ("S", pS)]
+  refine step_of_rule (initialBindings := bs) (finalBindings := bs) ruleMember
+    ?hmatch (.relationQuery .nil) ?hprem ?happly
+  · simp [bs, ruleForgetOutside, pExtract, pForget, matchPattern, matchArgs, mergeBindings]
+  · simp [bs, ruleForgetOutside, applyPremisesWithEnv, premiseStepWithEnv,
+      relationQueryStep, builtinRelationTuples, applyBindings, mergeBindings]
+    exact ⟨_, outside, by
+      simp [matchRelationArgs, matchRelationArgument, Bindings.lookup, mergeBindings]⟩
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleForgetOutside,
+      pExtract, applyBindings]
+
+/-- Outside-scope invariance at a forgetting-enabled guarded full vertex. -/
+theorem wmFullGuardedReduces_forgetOutside (relEnv : RelationEnv)
+    (v : WMFullVertex) (hfg : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked)
+    (pS pw pq : Pattern)
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+      (pExtract (pForget pS pw) pq) (pExtract pw pq) := by
+  refine langReducesUsing_forgetOutside relEnv _ ?_ pS pw pq outside
+  simp only [wmFullVertexLanguageDefGuarded, List.mem_append]
+  rcases hfg with hfg | hfg <;> simp [hfg, forgettingRules]
+
+#print axioms forgettingRules_premiseFree
+#print axioms wmExtVertexLanguageDefGuarded_rewrites_eq
+#print axioms ruleForgetOutside_refuse_empty
+#print axioms langReducesUsing_forgetOutside
+#print axioms wmFullGuardedReduces_forgetOutside
+
+/-! ### Support-Tracked Forgetting Steps
+
+The support-tracked rules fire only on rows that the relation environment
+supplies.  The empty environment supplies none, so `wmFullLangReduces`, which
+reduces under it, never applies them. -/
+
+/-- Under the empty relation environment no support-tracked rule accepts any
+bindings. -/
+theorem supportTrackedRules_refuse_empty (mode : WMForgettingMode)
+    (lang : LanguageDef) (bindings : Bindings) :
+    ∀ rule ∈ supportTrackedRules mode,
+      applyPremisesWithEnv RelationEnv.empty lang rule.premises bindings = [] := by
+  cases mode <;>
+    simp [supportTrackedRules, ruleForgetAbsorbSupported, ruleForgetClean,
+      applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
+      builtinRelationTuples, RelationEnv.empty]
+
+/-- Absorption fires in any language containing it when the relation
+environment returns the row certifying that `D` is supported in `S`. -/
+theorem langReducesUsing_forgetAbsorbSupported (relEnv : RelationEnv)
+    (lang : LanguageDef) (ruleMember : ruleForgetAbsorbSupported ∈ lang.rewrites)
+    (pS pw pD : Pattern)
+    (supported : [pS, pD] ∈ relEnv.tuples "supportedInScope" [pS, pD]) :
+    langReducesUsing relEnv lang (pForget pS (pRevise pw pD)) (pForget pS pw) := by
+  unfold langReducesUsing
   let bs : Bindings := [("W", pw), ("D", pD), ("S", pS)]
-  refine contextualStep_of_premiseFree_rule
-    (relEnv := RelationEnv.empty) (lang := wmFullVertexLanguageDef v)
-    (rule := ruleExactInverse)
-    ?hr bs ?hmatch bs ?hprem ?happly rfl
-  · simp only [wmFullVertexLanguageDef, hfg, supportTrackedRules, List.mem_append,
-               List.mem_cons, List.mem_nil_iff]
-    tauto
-  · simp [bs, ruleExactInverse, pForget, pRevise, matchPattern, matchArgs, mergeBindings]
-  · simp [bs, ruleExactInverse, applyPremisesWithEnv]
-  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleExactInverse, applyBindings]
+  refine step_of_rule (initialBindings := bs) (finalBindings := bs) ruleMember
+    ?hmatch (.relationQuery .nil) ?hprem ?happly
+  · simp [bs, ruleForgetAbsorbSupported, pForget, pRevise, matchPattern, matchArgs,
+      mergeBindings]
+  · simp [bs, ruleForgetAbsorbSupported, applyPremisesWithEnv, premiseStepWithEnv,
+      relationQueryStep, builtinRelationTuples, applyBindings, mergeBindings]
+    exact ⟨_, supported, by
+      simp [matchRelationArgs, matchRelationArgument, Bindings.lookup, mergeBindings]⟩
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleForgetAbsorbSupported,
+      pForget, applyBindings]
+
+/-- The clean-base identity fires in any language containing it when the
+relation environment returns the row certifying that `W` is clean for `S`. -/
+theorem langReducesUsing_forgetClean (relEnv : RelationEnv)
+    (lang : LanguageDef) (ruleMember : ruleForgetClean ∈ lang.rewrites)
+    (pS pw : Pattern)
+    (clean : [pS, pw] ∈ relEnv.tuples "cleanForScope" [pS, pw]) :
+    langReducesUsing relEnv lang (pForget pS pw) pw := by
+  unfold langReducesUsing
+  let bs : Bindings := [("W", pw), ("S", pS)]
+  refine step_of_rule (initialBindings := bs) (finalBindings := bs) ruleMember
+    ?hmatch (.relationQuery .nil) ?hprem ?happly
+  · simp [bs, ruleForgetClean, pForget, matchPattern, matchArgs, mergeBindings]
+  · simp [bs, ruleForgetClean, applyPremisesWithEnv, premiseStepWithEnv,
+      relationQueryStep, builtinRelationTuples, applyBindings, mergeBindings]
+    exact ⟨_, clean, by
+      simp [matchRelationArgs, matchRelationArgument, Bindings.lookup, mergeBindings]⟩
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleForgetClean,
+      applyBindings]
+
+/-- Absorption at a support-tracked guarded full vertex. -/
+theorem wmFullGuardedReduces_forgetAbsorbSupported (relEnv : RelationEnv)
+    (v : WMFullVertex) (hfg : v.forgetting = .supportTracked) (pS pw pD : Pattern)
+    (supported : [pS, pD] ∈ relEnv.tuples "supportedInScope" [pS, pD]) :
+    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+      (pForget pS (pRevise pw pD)) (pForget pS pw) := by
+  refine langReducesUsing_forgetAbsorbSupported relEnv _ ?_ pS pw pD supported
+  simp only [wmFullVertexLanguageDefGuarded, hfg, supportTrackedRules, List.mem_append,
+    List.mem_cons, List.mem_nil_iff]
+  tauto
+
+/-- The clean-base identity at a support-tracked guarded full vertex. -/
+theorem wmFullGuardedReduces_forgetClean (relEnv : RelationEnv)
+    (v : WMFullVertex) (hfg : v.forgetting = .supportTracked) (pS pw : Pattern)
+    (clean : [pS, pw] ∈ relEnv.tuples "cleanForScope" [pS, pw]) :
+    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v) (pForget pS pw) pw := by
+  refine langReducesUsing_forgetClean relEnv _ ?_ pS pw clean
+  simp only [wmFullVertexLanguageDefGuarded, hfg, supportTrackedRules, List.mem_append,
+    List.mem_cons, List.mem_nil_iff]
+  tauto
+
+#print axioms supportTrackedRules_premises_ne_nil
+#print axioms supportTrackedRules_refuse_empty
+#print axioms langReducesUsing_forgetAbsorbSupported
+#print axioms langReducesUsing_forgetClean
+#print axioms wmFullGuardedReduces_forgetAbsorbSupported
+#print axioms wmFullGuardedReduces_forgetClean
 
 /-- Compatible-symmetry at a provenance-enabled full vertex. -/
 theorem wmFullLangReduces_compatibleSymm (v : WMFullVertex)
@@ -1707,24 +1810,162 @@ theorem wmFullLangReduces_swapAnomalySymm (v : WMFullVertex)
   · simp [bs, ruleSwapAnomalySymm, applyPremisesWithEnv]
   · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleSwapAnomalySymm, pSwapAnomaly, applyBindings]
 
-/-- Anti-hallucination at a conserving full vertex. -/
-theorem wmFullLangReduces_antiHallucination (v : WMFullVertex)
-    (hcons : v.conservation = .conserving) (pD pq : Pattern) :
-    wmFullLangReduces v
-      (pExtract pD pq)
-      pEvidenceZero := by
-  unfold wmFullLangReduces langReduces langReducesUsing
+/-! ### Conservation Steps
+
+The conservation rules fire only on rows that the relation environment
+supplies, so `wmFullLangReduces`, which reduces under the empty environment,
+never applies them.  Anti-hallucination and Noether conservation ask the
+erasure query with the scope unbound: the engine passes the pattern `S` itself
+in that position, and the returned row binds it. -/
+
+/-- Under the empty relation environment no conservation rule accepts any
+bindings. -/
+theorem conservationRules_refuse_empty (mode : WMConservationMode)
+    (lang : LanguageDef) (bindings : Bindings) :
+    ∀ rule ∈ conservationRules mode,
+      applyPremisesWithEnv RelationEnv.empty lang rule.premises bindings = [] := by
+  cases mode <;>
+    simp [conservationRules, ruleAntiHallucination, ruleNoetherConservation,
+      erasedOutsideScopePremises, applyPremisesWithEnv, premiseStepWithEnv,
+      relationQueryStep, builtinRelationTuples, RelationEnv.empty]
+
+/-- The conservation premises accept the bindings of a matched redex extended by
+the scope, when the environment returns a row certifying that forgetting the
+scope erases the revision and a row certifying that the query lies outside the
+scope.  `bindings` must already bind `D` and `q`, and not `S`. -/
+private theorem erasedOutsideScopePremises_accept (relEnv : RelationEnv)
+    (lang : LanguageDef) (bindings : Bindings) (pS pD pq : Pattern)
+    (freeS : bindings.find? (·.1 == "S") = none)
+    (foundD : bindings.find? (·.1 == "D") = some ("D", pD))
+    (foundQ : bindings.find? (·.1 == "q") = some ("q", pq))
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    ("S", pS) :: bindings ∈
+      applyPremisesWithEnv relEnv lang erasedOutsideScopePremises bindings := by
+  have applyS : applyBindings bindings (.fvar "S") = .fvar "S" := by
+    simp [applyBindings, freeS]
+  have applyD : applyBindings bindings (.fvar "D") = pD := by
+    simp [applyBindings, foundD]
+  have extendedS : applyBindings (("S", pS) :: bindings) (.fvar "S") = pS := by
+    simp [applyBindings]
+  have extendedQ : applyBindings (("S", pS) :: bindings) (.fvar "q") = pq := by
+    simp [applyBindings, foundQ]
+  have matchErased :
+      [("S", pS)] ∈ matchRelationArgs bindings [.fvar "S", .fvar "D"] [pS, pD] := by
+    simp [matchRelationArgs, matchRelationArgument, Bindings.lookup, freeS, foundD,
+      mergeBindings]
+  have mergeErased :
+      mergeBindings bindings [("S", pS)] = some (("S", pS) :: bindings) := by
+    simp [mergeBindings, freeS]
+  have matchOutside :
+      [] ∈ matchRelationArgs (("S", pS) :: bindings) [.fvar "S", .fvar "q"] [pS, pq] := by
+    simp [matchRelationArgs, matchRelationArgument, Bindings.lookup, foundQ, mergeBindings]
+  have mergeOutside :
+      mergeBindings (("S", pS) :: bindings) [] = some (("S", pS) :: bindings) := by
+    simp [mergeBindings]
+  simp only [applyPremisesWithEnv, erasedOutsideScopePremises, List.foldl,
+    List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_flatMap]
+  refine ⟨("S", pS) :: bindings, ?_, ?_⟩
+  · simp only [premiseStepWithEnv, relationQueryStep, List.mem_flatMap, List.mem_filterMap,
+      List.map_cons, List.map_nil, applyS, applyD]
+    exact ⟨[pS, pD], List.mem_append.mpr (Or.inr erases), [("S", pS)], matchErased,
+      mergeErased⟩
+  · simp only [premiseStepWithEnv, relationQueryStep, List.mem_flatMap, List.mem_filterMap,
+      List.map_cons, List.map_nil, extendedS, extendedQ]
+    exact ⟨[pS, pq], List.mem_append.mpr (Or.inr outside), [], matchOutside, mergeOutside⟩
+
+/-- Anti-hallucination fires in any language containing it when the relation
+environment returns a row certifying that forgetting `S` erases `D` and a row
+certifying that `q` lies outside `S`. -/
+theorem langReducesUsing_antiHallucination (relEnv : RelationEnv)
+    (lang : LanguageDef) (ruleMember : ruleAntiHallucination ∈ lang.rewrites)
+    (pS pD pq : Pattern)
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langReducesUsing relEnv lang (pExtract pD pq) pEvidenceZero := by
+  unfold langReducesUsing
   let bs : Bindings := [("q", pq), ("D", pD)]
-  refine contextualStep_of_premiseFree_rule
-    (relEnv := RelationEnv.empty) (lang := wmFullVertexLanguageDef v)
-    (rule := ruleAntiHallucination)
-    ?hr bs ?hmatch bs ?hprem ?happly rfl
-  · simp only [wmFullVertexLanguageDef, hcons, conservationRules, List.mem_append,
-               List.mem_cons, List.mem_nil_iff]
-    tauto
+  refine step_of_rule (initialBindings := bs) (finalBindings := ("S", pS) :: bs) ruleMember
+    ?hmatch (.relationQuery (.relationQuery .nil)) ?hprem ?happly
   · simp [bs, ruleAntiHallucination, pExtract, matchPattern, matchArgs, mergeBindings]
-  · simp [bs, ruleAntiHallucination, applyPremisesWithEnv]
-  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleAntiHallucination, pEvidenceZero]
+  · exact erasedOutsideScopePremises_accept relEnv lang bs pS pD pq
+      (by simp [bs]) (by simp [bs]) (by simp [bs])
+      erases outside
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleAntiHallucination,
+      pEvidenceZero]
+
+/-- Noether conservation fires in any language containing it under the same two
+rows. -/
+theorem langReducesUsing_noetherConservation (relEnv : RelationEnv)
+    (lang : LanguageDef) (ruleMember : ruleNoetherConservation ∈ lang.rewrites)
+    (pS pw pD pq : Pattern)
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langReducesUsing relEnv lang (pExtract (pRevise pw pD) pq) (pExtract pw pq) := by
+  unfold langReducesUsing
+  let bs : Bindings := [("q", pq), ("D", pD), ("W", pw)]
+  refine step_of_rule (initialBindings := bs) (finalBindings := ("S", pS) :: bs) ruleMember
+    ?hmatch (.relationQuery (.relationQuery .nil)) ?hprem ?happly
+  · simp [bs, ruleNoetherConservation, pExtract, pRevise, matchPattern, matchArgs,
+      mergeBindings]
+  · exact erasedOutsideScopePremises_accept relEnv lang bs pS pD pq
+      (by simp [bs]) (by simp [bs]) (by simp [bs])
+      erases outside
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleNoetherConservation,
+      pExtract, applyBindings]
+
+/-- Zero leakage fires in any language containing it when the relation
+environment returns the row certifying that forgetting `S` erases `D`. -/
+theorem langReducesUsing_zeroLeakage (relEnv : RelationEnv)
+    (lang : LanguageDef) (ruleMember : ruleZeroLeakage ∈ lang.rewrites)
+    (pS pD : Pattern)
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [pS, pD]) :
+    langReducesUsing relEnv lang (pLeakageBudget pS pD pEvidenceZero)
+      (pLeakageBudget pS pD pEvidenceZero) := by
+  unfold langReducesUsing
+  let bs : Bindings := [("D", pD), ("S", pS)]
+  refine step_of_rule (initialBindings := bs) (finalBindings := bs) ruleMember
+    ?hmatch (.relationQuery .nil) ?hprem ?happly
+  · simp [bs, ruleZeroLeakage, pLeakageBudget, pEvidenceZero, matchPattern, matchArgs,
+      mergeBindings]
+  · simp [bs, ruleZeroLeakage, applyPremisesWithEnv, premiseStepWithEnv,
+      relationQueryStep, builtinRelationTuples, applyBindings, mergeBindings]
+    exact ⟨_, erases, by
+      simp [matchRelationArgs, matchRelationArgument, Bindings.lookup, mergeBindings]⟩
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleZeroLeakage,
+      pLeakageBudget, pEvidenceZero, applyBindings]
+
+/-- Anti-hallucination at a conserving guarded full vertex. -/
+theorem wmFullGuardedReduces_antiHallucination (relEnv : RelationEnv)
+    (v : WMFullVertex) (hcons : v.conservation = .conserving) (pS pD pq : Pattern)
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+      (pExtract pD pq) pEvidenceZero := by
+  refine langReducesUsing_antiHallucination relEnv _ ?_ pS pD pq erases outside
+  simp only [wmFullVertexLanguageDefGuarded, hcons, conservationRules, List.mem_append,
+    List.mem_cons, List.mem_nil_iff]
+  tauto
+
+/-- Noether conservation at a conserving guarded full vertex. -/
+theorem wmFullGuardedReduces_noetherConservation (relEnv : RelationEnv)
+    (v : WMFullVertex) (hcons : v.conservation = .conserving) (pS pw pD pq : Pattern)
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+      (pExtract (pRevise pw pD) pq) (pExtract pw pq) := by
+  refine langReducesUsing_noetherConservation relEnv _ ?_ pS pw pD pq erases outside
+  simp only [wmFullVertexLanguageDefGuarded, hcons, conservationRules, List.mem_append,
+    List.mem_cons, List.mem_nil_iff]
+  tauto
+
+#print axioms conservationRules_premises_ne_nil
+#print axioms conservationRules_refuse_empty
+#print axioms langReducesUsing_antiHallucination
+#print axioms langReducesUsing_noetherConservation
+#print axioms langReducesUsing_zeroLeakage
+#print axioms wmFullGuardedReduces_antiHallucination
+#print axioms wmFullGuardedReduces_noetherConservation
 
 /-- Experiment evidence additivity at an experiment-enabled full vertex. -/
 theorem wmFullLangReduces_experimentEvidenceAdd (v : WMFullVertex)

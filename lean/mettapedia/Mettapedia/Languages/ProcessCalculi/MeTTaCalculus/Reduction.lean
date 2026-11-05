@@ -7,12 +7,26 @@ import Mettapedia.Languages.ProcessCalculi.Common.Common
 import Mathlib.Data.Finset.Basic
 
 /-!
-# MeTTa-Calculus Reduction (Executable)
+# The naive executable reading of MeTTa-calculus reduction
 
-Executable one-step semantics for the symmetric MeTTa-calculus:
+This module is the naive reading of the symmetric MeTTa-calculus, kept as the
+record of its defects. It is not the semantics. The semantics is the corrected
+step `Corrected.cstep` and the relational `Corrected.Step` in
+`CorrectedReduction.lean`: a principal, idempotent, occurs-checked unifier, the
+two inputs opened apart with fresh names, and the dot applied once.
 
-- `COMM` uses a lightweight first-order unifier over `Pattern`
-- `REFL` uses one-step lookahead in the COMM-only fragment
+The naive reading:
+
+- `COMM` unifies the two patterns as written with `unifyPattern?`, whose
+  triangular binding list `applyDot` reads in one pass, and substitutes into
+  both continuations without renaming the inputs apart;
+- `REFL` uses one-step lookahead in the COMM-only fragment.
+
+It captures a free name of one input with the other input's bound name, depends
+on the choice of bound names, misses COMM between inputs that share a bound
+name, accepts a cyclic problem that has no unifier, and has no nested REFL
+result. The separating theorems are `MeTTaOperationsComm.Executable` and
+`Corrected.Controls`; they are the only clients of `step` and `unifyPattern?`.
 
 ## Source attribution
 
@@ -25,11 +39,11 @@ especially:
 - `COMM`: `for(t <- x)P | for(u <- x)Q → P·σ | Q·σ`
 - `REFL`: `x?P → for((P') <- x)0` when `P → P'`
 
-The executable profile bounds unification and contextual traversal and
+The naive profile bounds unification and contextual traversal and
 restricts the REFL premise to COMM-only stepping. `ReflectionClosure.lean`
-records the recursive four-rule closure and a separating nested-reflection
-case. Consequently this executor is not an unrestricted implementation of
-all displayed manuscript rules.
+states the displayed four rules as a relation; the nested-reflection
+separation is `Corrected.Controls.naive_step_misses_nested_reflection`.
+Consequently this executor is not an implementation of the displayed rules.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus
@@ -102,31 +116,35 @@ private def unifyLoop : Nat → List (Pattern × Pattern) → Bindings → Optio
               none
         | _, _ => none
 
-/-- Lightweight first-order unification used by `COMM` premise generation. -/
+/-- The naive reading's unifier. It returns a triangular binding list and
+resolves terms through that list only one link deep, so its occurs check
+misses a cycle through the list and it accepts a problem that has no unifier
+(`Corrected.Controls.old_unifier_accepts_cycle`).
+Kept for the separating theorems; the semantics unifies with
+`Corrected.unify`, which is principal, idempotent and occurs-checked. -/
 def unifyPattern? (lhs rhs : Pattern) : Option Bindings :=
   -- Fixed fuel keeps this executable even when `Pattern.sizeOf` is noncomputable.
   unifyLoop 256 [(lhs, rhs)] []
 
-/-- Reflexivity of the executable unifier, proved by unfolding its first
-work-list step.  This is a kernel-checked fact, independent of executable
-regression fixtures. -/
-theorem unifyPattern_self (term : Pattern) :
-    unifyPattern? term term = some [] := by
-  simp [unifyPattern?, unifyLoop]
-
-/-- Dot-substitution from the paper:
-turn variable-to-term bindings into variable-to-name bindings by quoting RHS. -/
+/-- The dotted bindings: every bound value quoted into a name. -/
 def dotBindings (σ : Bindings) : Bindings :=
   σ.map (fun (x, v) => (x, nQuote v))
 
+/-- The dot: substitute the dotted bindings in one pass. For an idempotent
+principal unifier, such as the one `Corrected.unify` returns, this is the
+manuscript's `P·σ̇` (`Corrected.applyDot_unify`), and the corrected step
+applies it so, once per continuation. Applied to the naive reading's
+triangular list it reads only the first link of a chain. -/
 def applyDot (σ : Bindings) (p : Proc) : Proc :=
   applyBindings (dotBindings σ) p
 
 /-! ## Premise environments for executable COMM/REFL -/
 
-/-- Runtime adapter for premise builtin `mettaCommWitness`.
-Returns witness values encoded as `MRef(pOut, qOut)` to match the
-`Premises.lean` rule body deconstruction. -/
+/-- The naive reading's runtime adapter for premise builtin `mettaCommWitness`:
+the patterns unified as written and both continuations dotted, without opening
+the inputs apart. Returns witness values encoded as `MRef(pOut, qOut)` to
+match the `Premises.lean` rule body deconstruction. The corrected adapter is
+`Adequacy.correctedCommWitness`. -/
 def mettaCommWitnessBuiltinMany : List Pattern → List Pattern
   | [t, u, p, q] =>
       match unifyPattern? t u with
@@ -157,15 +175,16 @@ private def commOnlyRelEnv : RelationEnv where
 unbounded semantics remains `ContextualStep.Step`. -/
 def executableContextFuel : Nat := 64
 
+/-- The naive reading's COMM-only lookahead. -/
 def commOnlyStep (p : Proc) : List Proc :=
   reductsUsing commOnlyRelEnv mettaCalcCommOnly executableContextFuel p
 
-/-- Runtime adapter for premise builtin `mettaCommOnlyStep`. -/
+/-- The naive reading's runtime adapter for premise builtin `mettaCommOnlyStep`. -/
 def mettaCommOnlyStepBuiltinMany : List Pattern → List Pattern
   | [src] => commOnlyStep src
   | _ => []
 
-/-- Runtime builtin-dispatch entry for MeTTa-calculus premise builtins. -/
+/-- The naive reading's builtin dispatch for the MeTTa-calculus premise builtins. -/
 def mettaCalcBuiltinMany (builtin : String) (args : List Pattern) : List Pattern :=
   if builtin == builtinMettaCommWitness then
     mettaCommWitnessBuiltinMany args
@@ -174,18 +193,13 @@ def mettaCalcBuiltinMany (builtin : String) (args : List Pattern) : List Pattern
   else
     []
 
-/-- Single-result variant of `mettaCalcBuiltinMany`. -/
-def mettaCalcBuiltin (builtin : String) (args : List Pattern) : Option Pattern :=
-  (mettaCalcBuiltinMany builtin args).head?
-
 private def mettaStepNoReflectTuplesFromBuiltin : List Pattern → List (List Pattern)
   | [src, _] =>
       (mettaCalcBuiltinMany builtinMettaCommOnlyStep [src]).map (fun tgt => [src, tgt])
   | _ => []
 
-/-- Relation environment for full MeTTa-calculus execution.
-`mettaStepNoReflect` intentionally uses COMM-only stepping to avoid recursive
-premise self-reference through REFL. -/
+/-- The naive reading's relation environment. `mettaStepNoReflect` uses COMM-only
+stepping to avoid recursive premise self-reference through REFL. -/
 def mettaCalcRelEnv : RelationEnv where
   tuples := fun rel args =>
     if rel == relMettaComm then
@@ -195,52 +209,22 @@ def mettaCalcRelEnv : RelationEnv where
     else
       []
 
+/-- **The naive reading of the step**, not the semantics. It captures
+(`MeTTaOperationsComm.Executable.executable_capture`), is not alpha-invariant,
+fires a COMM without a unifier (`Corrected.Controls.old_step_fires_without_unifier`)
+and has no nested REFL result. Kept for the separating theorems; the semantics
+is `Corrected.cstep`. -/
 def step (p : Proc) : List Proc :=
   reductsUsing mettaCalcRelEnv mettaCalc executableContextFuel p
 
-/-- Canonicalized one-step results (duplicate-insensitive view). -/
-def stepCanonical (p : Proc) : Finset Proc := (step p).toFinset
+/-! ## Canaries of the naive reading
 
-def Reduces (p q : Proc) : Prop := q ∈ step p
-
-def ReducesCanonical (p q : Proc) : Prop := q ∈ stepCanonical p
-
-notation:50 p " ↦ " q => Reduces p q
-
-notation:50 p " ↦ₙ " q => ReducesCanonical p q
-
-open _root_.ProcessCalculi
-
-abbrev ReducesStar := ProcessCalculi.RTClosureProp Reduces
-
-notation:50 p " ↦* " q => ReducesStar p q
-
-/-- Canonical-step membership is equivalent to raw-step membership. -/
-theorem mem_stepCanonical_iff_mem_step {p q : Proc} :
-    q ∈ stepCanonical p ↔ q ∈ step p := by
-  simp [stepCanonical]
-
-/-- Canonical reduction proposition is equivalent to raw reduction proposition. -/
-theorem reducesCanonical_iff_reduces {p q : Proc} :
-    ReducesCanonical p q ↔ Reduces p q := by
-  simpa [ReducesCanonical, Reduces] using (mem_stepCanonical_iff_mem_step (p := p) (q := q))
-
-/-- Reduction modulo structural congruence. -/
-inductive ReducesSC : Proc → Proc → Prop where
-  | base (p q : Proc) : Reduces p q → ReducesSC p q
-  | equiv (p0 p1 q1 q0 : Proc) :
-      SC p0 p1 → ReducesSC p1 q1 → SC q1 q0 → ReducesSC p0 q0
-
-abbrev ReducesSCStar := ProcessCalculi.RTClosureProp ReducesSC
-
-theorem reduces_to_reducesSC {p q : Proc} (h : Reduces p q) : ReducesSC p q :=
-  ReducesSC.base p q h
-
-theorem reducesSC_mod {p0 p1 q1 q0 : Proc}
-    (hp : SC p0 p1) (h : ReducesSC p1 q1) (hq : SC q1 q0) : ReducesSC p0 q0 :=
-  ReducesSC.equiv p0 p1 q1 q0 hp h hq
-
-/-! ## Positive and negative canaries -/
+The processes are the shared canaries. `demoCommCapture` and
+`demoReflectCapture` are the naive reading's reducts: `@0 | @0` identifies the
+second input's free `a` with the first input's bound `a`. The corrected
+reducts are `@0 | a` and its listener (`demoCommReduct` and
+`demoReflectReduct` in `PaperMap.lean`, `Corrected.Controls.corrected_canary`). The examples below record the naive
+reading's behaviour; they are not the semantics. -/
 
 def demoChan : Name := nQuote pZero
 
@@ -250,7 +234,8 @@ def demoCommSource : Proc :=
     pFor pZero demoChan (.fvar "a")
   ]
 
-def demoCommTarget : Proc := pPar [nQuote pZero, nQuote pZero]
+/-- The naive reading's capturing reduct of `demoCommSource`. -/
+def demoCommCapture : Proc := pPar [nQuote pZero, nQuote pZero]
 
 def demoBlocked : Proc :=
   pPar [
@@ -260,7 +245,8 @@ def demoBlocked : Proc :=
 
 def demoReflectSource : Proc := pReflect demoChan demoCommSource
 
-def demoReflectTarget : Proc := pFor (tProc demoCommTarget) demoChan pZero
+/-- The naive reading's listener for `demoReflectSource`, quoting the capturing reduct. -/
+def demoReflectCapture : Proc := pFor (tProc demoCommCapture) demoChan pZero
 
 example : unifyPattern? (.fvar "x") pZero = some [("x", pZero)] := by
   decide +kernel
@@ -268,13 +254,13 @@ example : unifyPattern? (.fvar "x") pZero = some [("x", pZero)] := by
 example : unifyPattern? pZero (tSym "Mismatch") = none := by
   decide +kernel
 
-example : demoCommTarget ∈ step demoCommSource := by
+example : demoCommCapture ∈ step demoCommSource := by
   decide +kernel
 
 example : step demoBlocked = [] := by
   decide +kernel
 
-example : demoReflectTarget ∈ step demoReflectSource := by
+example : demoReflectCapture ∈ step demoReflectSource := by
   decide +kernel
 
 example : step (pReflect demoChan demoBlocked) = [] := by

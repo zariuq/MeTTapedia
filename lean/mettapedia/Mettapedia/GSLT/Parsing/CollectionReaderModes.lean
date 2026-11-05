@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Parsing.CollectionLiteralPresentation
-import Mettapedia.Algebra.CollectionCanonicalForm
+import Mettapedia.Algebra.Collections.CanonicalForm
 
 /-!
 # Reader modes for collection literals
@@ -157,7 +157,7 @@ end AnyKind
 
 section Nested
 
-open Mettapedia.Algebra.CollectionCanonicalForm
+open Mettapedia.Algebra.Collections.CanonicalForm
 
 variable {K : Type*} {α : Type*}
 

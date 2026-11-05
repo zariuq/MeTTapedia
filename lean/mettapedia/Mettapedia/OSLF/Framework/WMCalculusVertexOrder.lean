@@ -275,7 +275,7 @@ theorem wm_ext_forward_transport {v w : WMExtVertex} (h : v ≤ w)
 
 /-! ## §5: Bounded Order -/
 
-/-- The maximal full vertex (36 rules) is the bottom of the weakness order. -/
+/-- The maximal full vertex (37 rules) is the bottom of the weakness order. -/
 theorem wmFullVertexMaximal_le (w : WMFullVertex) : wmFullVertexMaximal ≤ w := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · cases w.overlap <;> trivial

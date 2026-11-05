@@ -1564,7 +1564,7 @@ theorem arguments_path (program : Program) (caller : Subst) (head : String) (sta
       simpa [shape, List.append_assoc, Nat.add_assoc, Nat.add_comm 1] using tail
 
 theorem ordinary_not_control (f : String) (items : List Atom)
-    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (notMatch : f ≠ "match") :
     controlForm (.expression (.symbol f :: items)) = false := by
   rw [controlForm_eq_shape]
@@ -1582,7 +1582,7 @@ theorem call_reaches_body (program : Program) (f : String) (params args : List S
       [⟨f, params.map .var, body⟩])
     (distinct : params.Nodup) (lengths : args.length = params.length)
     (notPrimitive : StdLib.known f = false) (notIO : ioHead f = false)
-    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (caller : Subst) (state : State) (frames : List Frame) (input output : List Atom) :
     ∃ callee : Subst,
       (∀ i (h₁ : i < params.length) (h₂ : i < args.length),
@@ -1658,7 +1658,7 @@ structure Inlinable : Prop where
   /-- `f` is an authored function, not a primitive, an I/O operation or control syntax. -/
   notPrimitive : StdLib.known f = false
   notIO : ioHead f = false
-  ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]
+  ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]
   /-- Every argument variable is bound in the caller's environment. -/
   bound : ∀ a ∈ args, ∃ value, Subst.lookup caller a = some value
 

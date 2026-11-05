@@ -1662,6 +1662,8 @@ refine the reached environment; they do not restore an earlier capture. -/
 inductive Goal where
   | evaluate (expression destination : Atom)
   | equate (value destination : Atom)
+  /-- The condition has returned; neither authored branch has run yet. -/
+  | branch (condition yes no destination : Atom)
   | invoke (head : String) (arguments : List Atom) (destination : Atom)
   | argumentReturn (value destination : Atom) (callerDepth : Nat)
   | openCommit
@@ -1671,6 +1673,7 @@ inductive Goal where
 
 def Goal.atoms : Goal → List Atom
   | .evaluate expression destination | .equate expression destination => [expression, destination]
+  | .branch condition yes no destination => [condition, yes, no, destination]
   | .invoke _ arguments destination => destination :: arguments
   | .argumentReturn value destination _ => [value, destination]
   | .openCommit | .commit | .restoreCommit _ => []
@@ -1815,6 +1818,9 @@ def prepare (policy : Policy) (program : SpaceSemantics.Program)
       resume [.commit,.equate (Effects.boolean true) destination]
   | .expression [.symbol "once", child] =>
       resume [.openCommit,.evaluate child destination,.commit,.restoreCommit control.cutBoundary]
+  | .expression [.symbol "if", condition, yes, no] =>
+      let value := Atom.var (freshName control 0)
+      resume [.evaluate condition value, .branch value yes no destination]
   | .expression (.symbol head :: arguments) =>
       if callable program head then
         let (pending, ready) := callArguments program head arguments
@@ -1854,6 +1860,12 @@ def machine {Context : Type} (policy : Policy) (program : SpaceSemantics.Program
             { cursor.control with bindings, goals := older } }
     | .evaluate expression destination :: older =>
         .silent { cursor with control := prepare policy program cursor.control expression destination older }
+    | .branch condition yes no destination :: older =>
+        match resolve cursor.control.bindings with
+        | none => .call .invalidEnvironment cursor
+        | some environment =>
+            .silent {cursor with control := (replace cursor.control
+              (.evaluate (if read environment condition == Effects.boolean true then yes else no) destination :: older))}
     | .argumentReturn value destination callerDepth :: remaining =>
         match resolve cursor.control.bindings with
         | none => .call .invalidEnvironment cursor
@@ -2235,6 +2247,8 @@ or erasing goal occurrences. The same table is supplied for every position. -/
 def Goal.readout (table : TypeSubst) : Goal → Goal
   | .evaluate expression destination => .evaluate (table.apply expression) (table.apply destination)
   | .equate value destination => .equate (table.apply value) (table.apply destination)
+  | .branch condition yes no destination =>
+      .branch (table.apply condition) (table.apply yes) (table.apply no) (table.apply destination)
   | .invoke head arguments destination => .invoke head (arguments.map table.apply) (table.apply destination)
   | .argumentReturn value destination depth => .argumentReturn (table.apply value) (table.apply destination) depth
   | .openCommit => .openCommit
@@ -2676,6 +2690,7 @@ theorem prepare_wellDelimited (policy : Policy) (program : SpaceSemantics.Progra
   · exact prefix_wellDelimited _ _ (letGoals_plain _ _ _ _ _ _ _) valid
   · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
   · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
+  · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
   · split
     · apply prefix_wellDelimited _ _ ?_ valid
       intro goal occurs
@@ -2725,6 +2740,14 @@ theorem step_wellDelimited {Context : Type} (policy : Policy) (program : SpaceSe
           simp only [machine, goals, Option.some.injEq, Transition.silent.injEq] at advanced
           subst target
           exact prepare_wellDelimited policy program cursor.control expression destination older valid
+      | branch condition yes no destination =>
+          simp only [machine, goals] at advanced
+          cases resolved : resolve cursor.control.bindings with
+          | none => simp [resolved] at advanced
+          | some environment =>
+              simp only [resolved, Option.some.injEq, Transition.silent.injEq] at advanced
+              subst target
+              exact valid
       | equate value destination =>
           simp only [machine, goals] at advanced
           cases refined : refine cursor.control.bindings value destination with
@@ -2775,6 +2798,9 @@ theorem no_invalidDelimiter_step {Context : Type} (policy : Policy) (program : S
       cases goal with
       | openCommit | commit | restoreCommit _ => simp [machine, goals] at bad
       | evaluate => simp [machine, goals] at bad
+      | branch condition yes no destination =>
+          simp only [machine, goals] at bad
+          cases resolved : resolve cursor.control.bindings <;> simp_all
       | equate value destination =>
           simp only [machine, goals] at bad
           cases refined : refine cursor.control.bindings value destination <;> simp_all
@@ -7169,6 +7195,9 @@ open Mettapedia.Languages.MeTTa.MetavariableFrameStore.Shared
 def Goal.rename (rename : String → String) : Goal → Goal
   | .evaluate expression destination => .evaluate (renameTypeVars rename expression) (renameTypeVars rename destination)
   | .equate value destination => .equate (renameTypeVars rename value) (renameTypeVars rename destination)
+  | .branch condition yes no destination =>
+      .branch (renameTypeVars rename condition) (renameTypeVars rename yes)
+        (renameTypeVars rename no) (renameTypeVars rename destination)
   | .invoke head arguments destination => .invoke head (arguments.map (renameTypeVars rename)) (renameTypeVars rename destination)
   | .argumentReturn value destination depth =>
       .argumentReturn (renameTypeVars rename value) (renameTypeVars rename destination) depth
@@ -8506,6 +8535,7 @@ def lexicalForm : Atom → Bool
   | .expression [.symbol "quote", _]
   | .expression [.symbol "let", _, _, _]
   | .expression [.symbol "cut"]
+  | .expression [.symbol "if", _, _, _]
   | .expression [.symbol "once", _] => true
   | _ => false
 
@@ -8537,6 +8567,10 @@ inductive Prepared (policy : Policy) (program : Program) (control : Control)
       Prepared policy program control destination older (.expression [.symbol "once",child])
         (replace control (.openCommit :: .evaluate child destination :: .commit ::
           .restoreCommit control.cutBoundary :: older))
+  | conditional (condition yes no : Atom) :
+      Prepared policy program control destination older (.expression [.symbol "if", condition, yes, no])
+        (replace control (.evaluate condition (.var (freshName control 0)) ::
+          .branch (.var (freshName control 0)) yes no destination :: older))
   | application (head : String) (arguments : List Atom)
       (ordinary : lexicalForm (.expression (.symbol head :: arguments)) = false)
       (declared : callable program head = true) :
@@ -8571,6 +8605,7 @@ theorem Prepared.execution {policy : Policy} {program : Program} {control : Cont
   | binding _ _ _ => rfl
   | cut => rfl
   | once _ => rfl
+  | conditional _ _ _ => rfl
   | application head arguments ordinary declared =>
       unfold prepare
       split <;> simp_all [lexicalForm, replace, List.append_assoc]
@@ -8601,6 +8636,7 @@ theorem prepare_has_source (policy : Policy) (program : Program) (control : Cont
   · exact .binding _ _ _
   · exact .cut
   · exact .once _
+  · exact .conditional _ _ _
   · split
     · apply Prepared.application
       · unfold lexicalForm
@@ -8655,6 +8691,8 @@ inductive Licensed (control : Control) : Prop where
       (ordinary : scopedForm expression = false) : Licensed control
   | equation (value destination : Atom) (older : List Goal)
       (atGoal : control.goals = .equate value destination :: older) : Licensed control
+  | conditional (condition yes no destination : Atom) (older : List Goal)
+      (atGoal : control.goals = .branch condition yes no destination :: older) : Licensed control
   | argument (value destination : Atom) (depth : Nat) (remaining : List Goal)
       (atGoal : control.goals = .argumentReturn value destination depth :: remaining) : Licensed control
   | invocation (head : String) (arguments : List Atom) (destination : Atom) (older : List Goal)
@@ -8664,10 +8702,12 @@ inductive Licensed (control : Control) : Prop where
   | restoring (boundary : Nat) (older : List Goal)
       (atGoal : control.goals = .restoreCommit boundary :: older) : Licensed control
 
-/-- Only return, invocation and end-of-branch inspect a solved presentation.
+/-- Return, conditional selection, invocation and end-of-branch inspect a solved presentation.
 The finite-term solver is the existing proved logical operation. -/
 inductive ReadSite (control : Control) : Prop where
   | ended (atEnd : control.goals = []) : ReadSite control
+  | conditional (condition yes no destination : Atom) (older : List Goal)
+      (atGoal : control.goals = .branch condition yes no destination :: older) : ReadSite control
   | argument (value destination : Atom) (depth : Nat) (remaining : List Goal)
       (atGoal : control.goals = .argumentReturn value destination depth :: remaining) : ReadSite control
   | invocation (head : String) (arguments : List Atom) (destination : Atom) (older : List Goal)
@@ -8703,6 +8743,11 @@ inductive Step {Context : Type} (policy : Policy) (program : Program)
       (resolved : resolve cursor.control.bindings = some environment) :
       Step policy program cursor
         (.finish (.value (read environment cursor.control.destination) cursor.control.bindings, cursor))
+  | conditional (condition yes no destination : Atom) (older : List Goal) (environment : Environment)
+      (atGoal : cursor.control.goals = .branch condition yes no destination :: older)
+      (resolved : resolve cursor.control.bindings = some environment) :
+      Step policy program cursor (.silent {cursor with control := (replace cursor.control
+        (.evaluate (if read environment condition == Effects.boolean true then yes else no) destination :: older))})
   | inconsistent (site : ReadSite cursor.control)
       (noSolution : ¬∃ environment, Solves environment cursor.control.bindings) :
       Step policy program cursor (.call .invalidEnvironment cursor)
@@ -8744,6 +8789,8 @@ theorem Step.execution {Context : Type} {policy : Policy} {program : Program}
   | refused value destination older atGoal source =>
       simp only [machine, atGoal, (refinement_iff _ _ _ _).mp source]
   | returned environment atEnd resolved => simp only [machine, atEnd, resolved]
+  | conditional condition yes no destination older environment atGoal resolved =>
+      simp only [machine, atGoal, resolved]
   | inconsistent site noSolution =>
       have invalid := (resolve_none_iff _).mpr noSolution
       cases site <;> simp_all only [machine]
@@ -8786,6 +8833,14 @@ theorem step_has_source {Context : Type} (policy : Policy) (program : Program)
       | some after =>
           exact ⟨_, .accepted value destination older after atGoal ((refinement_iff _ _ _ _).mpr refined),
             by simp only [machine, atGoal, refined]⟩
+  | conditional condition yes no destination older atGoal =>
+      cases resolved : resolve cursor.control.bindings with
+      | none =>
+          exact ⟨_, .inconsistent (.conditional condition yes no destination older atGoal)
+            ((resolve_none_iff _).mp resolved), by simp only [machine, atGoal, resolved]⟩
+      | some environment =>
+          exact ⟨_, .conditional condition yes no destination older environment atGoal resolved,
+            by simp only [machine, atGoal, resolved]⟩
   | argument value destination depth remaining atGoal =>
       by_cases valid : depth ≤ remaining.length
       · let older := remaining.drop (remaining.length - depth)
@@ -9045,9 +9100,13 @@ theorem Step.licensed {Context : Type} {policy : Policy} {program : Program}
   | accepted value destination older _ atGoal _ | refused value destination older atGoal _ =>
       exact .equation value destination older atGoal
   | returned _ atEnd _ => exact .ended atEnd
+  | conditional condition yes no destination older _ atGoal _ =>
+      exact .conditional condition yes no destination older atGoal
   | inconsistent site _ =>
       cases site with
       | ended atEnd => exact .ended atEnd
+      | conditional condition yes no destination older atGoal =>
+          exact .conditional condition yes no destination older atGoal
       | argument value destination depth remaining atGoal => exact .argument value destination depth remaining atGoal
       | invocation head arguments destination older atGoal => exact .invocation head arguments destination older atGoal
   | argument value destination younger older action atGoal _ =>
@@ -9548,6 +9607,7 @@ theorem active_has_source {Supply Context : Type} (fresh : FreshOperations Suppl
       | commit => exact .committing older atGoal
       | restoreCommit boundary => exact .restoring boundary older atGoal
       | equate value destination => exact .equation value destination older atGoal
+      | branch condition yes no destination => exact .conditional condition yes no destination older atGoal
       | invoke head arguments destination => exact .invocation head arguments destination older atGoal
       | argumentReturn value destination depth => exact .argument value destination depth older atGoal
       | evaluate expression destination =>
@@ -9568,6 +9628,7 @@ theorem active_has_source {Supply Context : Type} (fresh : FreshOperations Suppl
       · exact ⟨_,.invalidCommit older atGoal (by omega)⟩
   | restoring => exact ⟨_,.next _ original⟩
   | expanded => exact ⟨_, .next _ original⟩
+  | conditional => exact ⟨_, .next _ original⟩
   | accepted => exact ⟨_, .next _ original⟩
   | refused => exact ⟨_, .refused _ _ original⟩
   | returned => exact ⟨_, .answered _ _ _ original⟩

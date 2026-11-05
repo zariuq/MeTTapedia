@@ -1,4 +1,4 @@
-import Mettapedia.Algebra.CollectionUnification
+import Mettapedia.Algebra.Collections.Unification
 import Mettapedia.Languages.MeTTa.SpaceQueryPolicy
 
 /-!
@@ -35,7 +35,7 @@ namespace Mettapedia.Languages.MeTTa.CollectionPatternQuery
 
 open Mettapedia.Languages.MeTTa.WeightedAnswerAlgebra
 open Mettapedia.Languages.MeTTa.SpaceQueryPolicy
-open Mettapedia.Algebra.CollectionRest Mettapedia.Algebra.CollectionUnification
+open Mettapedia.Algebra.Collections.Rest Mettapedia.Algebra.Collections.Unification
 
 universe u
 

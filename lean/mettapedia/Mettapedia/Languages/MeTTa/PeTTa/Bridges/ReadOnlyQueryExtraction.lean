@@ -106,7 +106,7 @@ where
       Option (Certified program caller (.expression (.symbol head :: sources))) := do
     let args ← arguments program caller (compile caller) sources
     if inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false then
-      if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"] then
+      if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"] then
         return data inert ordinary args
       else none
     else

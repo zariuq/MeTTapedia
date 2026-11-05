@@ -156,11 +156,11 @@ import Mettapedia.QuantumTheory.FromSymmetry
 import Mettapedia.Algebra.PrimeDecomposition
 import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.Algebra.TemporalQuantale
-import Mettapedia.Algebra.CollectionFold
-import Mettapedia.Algebra.CollectionRest
-import Mettapedia.Algebra.CollectionUnification
-import Mettapedia.Algebra.CollectionCanonicalForm
-import Mettapedia.Algebra.SupportObservation
+import Mettapedia.Algebra.Collections.Folds
+import Mettapedia.Algebra.Collections.Rest
+import Mettapedia.Algebra.Collections.Unification
+import Mettapedia.Algebra.Collections.CanonicalForm
+import Mettapedia.Algebra.Collections.SupportObservation
 import Mettapedia.Algebra.QuadraticAlgebras
 import Mettapedia.GSLT.LanguageDef.HyperoperationModule
 
@@ -1057,6 +1057,20 @@ import Mettapedia.Machines.BackoffRetryCost
 import Mettapedia.Machines.IntegerPageCost
 import Mettapedia.Machines.DeepTermCost
 import Mettapedia.Machines.AbsentRemovalCost
+import Mettapedia.Machines.QueryBodyOnTier
+import Mettapedia.Machines.StateReadSharing
+import Mettapedia.Machines.CollectorFirstBaseline
+import Mettapedia.Machines.RemoveAtomUnifies
+import Mettapedia.Machines.SpaceFileLaws
+import Mettapedia.Machines.SpaceFileOverlay
+import Mettapedia.Machines.SpaceFileTerms
+import Mettapedia.Machines.SpaceFileRuns
+import Mettapedia.Machines.PeTTaConsAsData
+import Mettapedia.Machines.AdmissionModuloEquations
+import Mettapedia.Machines.MaximalSharingEquality
+import Mettapedia.Machines.SharedPrependCost
+import Mettapedia.Machines.TierDeoptimization
+import Mettapedia.Machines.AdmissionRewriting
 import Mettapedia.Machines.SecondSideAnswers
 import Mettapedia.Machines.SpaceReclamationCost
 import Mettapedia.Machines.HeadIndexCost
@@ -1073,5 +1087,9 @@ import Mettapedia.Machines.KeptCursorCeiling
 import Mettapedia.Machines.DeterminateReadAhead
 import Mettapedia.Machines.TrieWindowKeys
 import Mettapedia.Machines.DenseRowCost
+import Mettapedia.Machines.TailFrameCost
+import Mettapedia.Machines.KeyedPlacementCost
+import Mettapedia.Machines.SliceReadCost
+import Mettapedia.Machines.SharedWalkCost
 import Mettapedia.Machines.ShapeStore
 import Mettapedia.Machines.PolyCursor

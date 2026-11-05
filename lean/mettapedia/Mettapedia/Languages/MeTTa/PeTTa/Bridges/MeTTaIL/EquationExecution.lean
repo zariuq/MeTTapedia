@@ -682,7 +682,7 @@ private theorem instances_shape : (equation .instances).body =
 
 private theorem variables_template (head : String) (names : List String)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     PureData.Template program (a head (names.map Atom.var)) := by
   apply PureData.Template.constructor _ _ inert ordinary
   intro argument member

@@ -103,15 +103,27 @@ def declare (priority : Nat) (specifier : Specifier) (name : String)
 
 def prefixes (table : Table) (name : String) : List Declaration :=
   table.filter (fun declaration =>
-    declaration.name = name && declaration.specifier.isPrefix)
+    declaration.specifier.isPrefix && declaration.name = name)
 
 def postfixes (table : Table) (name : String) : List Declaration :=
   table.filter (fun declaration =>
-    declaration.name = name && declaration.specifier.isPostfix)
+    declaration.specifier.isPostfix && declaration.name = name)
 
 def infixes (table : Table) (name : String) : List Declaration :=
   table.filter (fun declaration =>
-    declaration.name = name && declaration.specifier.isInfix)
+    declaration.specifier.isInfix && declaration.name = name)
+
+theorem prefixes_by_name (table : Table) (name : String) : prefixes table name =
+    table.filter (fun declaration => declaration.name = name && declaration.specifier.isPrefix) := by
+  simp only [prefixes, Bool.and_comm]
+
+theorem postfixes_by_name (table : Table) (name : String) : postfixes table name =
+    table.filter (fun declaration => declaration.name = name && declaration.specifier.isPostfix) := by
+  simp only [postfixes, Bool.and_comm]
+
+theorem infixes_by_name (table : Table) (name : String) : infixes table name =
+    table.filter (fun declaration => declaration.name = name && declaration.specifier.isInfix) := by
+  simp only [infixes, Bool.and_comm]
 
 private def declaration (priority : Nat) (specifier : Specifier)
     (name : String) (positive : 0 < priority := by omega)

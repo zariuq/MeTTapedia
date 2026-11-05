@@ -461,6 +461,7 @@ import Mettapedia.GSLT.LanguageDef.BiformDependentContext
 import Mettapedia.GSLT.LanguageDef.BiformDependentIdentityCanary
 import Mettapedia.GSLT.Coordination
 import Mettapedia.GSLT.Timing
+import Mettapedia.GSLT.LanguageDef.DecidableRelations
 
 /-!
 # Graph-Structured Lambda Theories (GSLT)

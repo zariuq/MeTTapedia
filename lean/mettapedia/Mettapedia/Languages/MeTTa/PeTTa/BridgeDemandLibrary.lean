@@ -37,19 +37,13 @@ theorem demanded_rows {L : Library} (checked : L.check = true) {head : String} {
   have formals : L.formals equation.head = formalNames equation := by simp [Library.formals, found]
   rw [formals]
   refine ⟨?_, arguments, distinct, by simpa using ordinary, notIO, notNative⟩
-  have below : L.base.equations.filter (·.head == equation.head) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro other present selected
-    have kept := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp checkParts.1.1.2 other present)).1
-    rw [beq_iff_eq.mp selected] at kept
-    simp only [inherited, owned, Bool.not_true] at kept
-    cases kept
   have own : L.source.equations.filter (·.head == equation.head) = [equation] := by
     obtain ⟨only, rows⟩ := List.length_eq_one_iff.mp single
     have present : equation ∈ L.source.equations.filter (·.head == equation.head) := List.mem_filter.mpr ⟨member, by simp⟩
     rw [rows] at present ⊢
     rw [List.mem_singleton.mp present]
-  simp only [runtime, SpaceSemantics.Program.append, List.filter_append, below, own, List.nil_append]
+  rw [owned_equations checked owned]
+  exact own
 
 theorem demand_call {L : Library} (checked : L.check = true) {head : String} {equation : Equation}
     (found : L.equationOf head = some equation) (ready : demandReady L equation = true)
