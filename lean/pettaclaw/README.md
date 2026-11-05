@@ -153,6 +153,14 @@ are derived from the models, deployed, and re-observed live.
   receipts are write-once, achievement needs a checked successful receipt, a
   checkpoint commits its working set, inputs and request together, and settled
   inputs stay settled. The specification a native ledger must satisfy.
+- `ObservedReceipts.lean` — when an action counts as observed, the mark that
+  attest, finish and the protected view's waiting receipts depend on. If
+  answered prompts mark nothing, no action created since is ever observed or
+  checkable, a shown result stays unobserved (a concrete trace), and two
+  waiting receipts keep every later one out of the view. If an answered prompt
+  marks the actions it carried completely, observed means exactly shown, a
+  shown action with its receipt stays checkable, and the view waits only on
+  receipts never shown.
 - `ConsoleView.lean` — the operator console's promises: commands printed at
   column 0 copy back exactly (an indented here-document never ends), and the
   status row drops fields in one fixed order, so essentials stay, kept fields
@@ -289,6 +297,7 @@ LEAN_PATH=. lean ContextAttention.lean
 lean RecallProvenance.lean
 lean ConsoleView.lean
 lean TurnLedger.lean
+lean ObservedReceipts.lean
 lean RemoveByIndex.lean
 lean RepeatedOccurrence.lean
 lean InputDelivery.lean
