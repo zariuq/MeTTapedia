@@ -137,6 +137,22 @@ are derived from the models, deployed, and re-observed live.
 - `ContextAttention.lean` — an interruptible task capsule with a separate
   foreground human-event lane, exact acknowledgement, stop dominance, and
   bounded semantic retrieval that cannot erase required context.
+- `TurnLedger.lean` — the agent ledger as one state machine (accept, capture,
+  decide, restore, report, observe, attest, finish, dispositions, checkpoint):
+  only deciding the pending turn creates an action, recovery never re-issues,
+  receipts are write-once, achievement needs a checked successful receipt, a
+  checkpoint commits its working set, inputs and request together, and settled
+  inputs stay settled. The specification a native ledger must satisfy.
+- `ConsoleView.lean` — the operator console's promises: commands printed at
+  column 0 copy back exactly (an indented here-document never ends), and the
+  status row drops fields in one fixed order, so essentials stay, kept fields
+  keep their order, the row fits, and a wider terminal never hides a field.
+- `RecallProvenance.lean` — recall over a best-first ranking keeps one
+  candidate per distinct memory text: kept texts are distinct, a later copy
+  changes nothing, the dedupe of a prefix is a prefix of the dedupe of the
+  whole (so a fetch that grows until it has `k` texts or exhausts the ranking
+  is exact), copies merge by an idempotent max, and the oldest-copy
+  representative is stable when newer copies arrive.
 - `ContextCore.lean` — the proposed context layer over that batch rule, with
   no count limit (a proposal runs in order up to the first command the host
   holds back): a paired task transcript, a pending list that resolves each entry once,
@@ -260,6 +276,9 @@ LEAN_PATH=. lean -o IterAuthoring.olean IterAuthoring.lean
 LEAN_PATH=. lean ProtectedPlasticity.lean
 LEAN_PATH=. lean CodingAgent.lean
 LEAN_PATH=. lean ContextAttention.lean
+lean RecallProvenance.lean
+lean ConsoleView.lean
+lean TurnLedger.lean
 lean InputDelivery.lean
 LEAN_PATH=. lean AgentArchitecture.lean
 LEAN_PATH=. lean VerifiedFrontier.lean
