@@ -51,6 +51,11 @@ theorem continuation (result other : Result)
 
 end Boundary
 
+-- Realize reserved helpers at their defining owner. Otherwise independent
+-- clients can each export a copy, making joined declaration ownership ambiguous.
+#print axioms Boundary.mk.congr_simp
+#print axioms Boundary.reference.eq_1
+
 structure CertifiedRegion {Input Result Summary : Type u}
     (boundary : Boundary Input Result Summary) (Regime : Type v) where
   regime : Regime

@@ -197,7 +197,7 @@ frame per argument. -/
 theorem call_reaches_clauses (program : Program) (f : String) (args : List String)
     (callable : (ioHead f || StdLib.known f || program.equations.any (·.head == f)) = true)
     (notPrimitive : StdLib.known f = false) (notIO : ioHead f = false)
-    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (saturated : args.length ∈ arities program f)
     (caller : Subst) (state : Effects.State) (frames : List Frame) (input output : List Atom) :
     (theory program).MultiStep
@@ -302,7 +302,7 @@ theorem beta_superpose (program : Program) (f : String) (equations : List (List 
     (shapes : ∀ e ∈ equations, e.1.Nodup ∧ Within e.1 e.2 ∧ e.1.length = args.length ∧
       ∀ i (h₁ : i < e.1.length) (h₂ : i < args.length), names e e.1[i] = args[i])
     (notPrimitive : StdLib.known f = false) (notIO : ioHead f = false)
-    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (bound : ∀ a ∈ args, ∃ value, Subst.lookup caller a = some value) :
     Equivalent program (.evaluate caller (.expression (.symbol f :: args.map .var)))
       (.evaluate caller (.expression [.symbol "superpose",
@@ -379,7 +379,7 @@ theorem beta_let (program : Program) (f x fresh : String) (body argument : Atom)
       [⟨f, [.var x], body⟩])
     (closed : Within [x] body)
     (notPrimitive : StdLib.known f = false) (notIO : ioHead f = false)
-    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (evaluated : argumentIsRaw program f 0 = false)
     (caller : Subst) (unbound : Subst.lookup caller fresh = none) :
     Equivalent program (.evaluate caller (.expression [.symbol f, argument]))

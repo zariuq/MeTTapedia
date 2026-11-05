@@ -260,11 +260,11 @@ theorem wmFullVertexMinimal_ruleCount :
         conservationRules, experimentRules, kripkeRules, carrierRules]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The maximal vertex has 5 core + 1 overlap + 2 forgetting + 1 support +
+/-- The maximal vertex has 5 core + 1 overlap + 2 forgetting + 2 support +
     6 provenance + 4 fixpoint + 3 cost + 2 conservation + 7 experiment +
-    3 kripke + 2 generic = 36 rules. -/
+    3 kripke + 2 generic = 37 rules. -/
 theorem wmFullVertexMaximal_ruleCount :
-    wmFullVertexRuleCount wmFullVertexMaximal = 36 := by
+    wmFullVertexRuleCount wmFullVertexMaximal = 37 := by
   simp [wmFullVertexRuleCount, wmFullVertexLanguageDef, wmFullVertexMaximal,
         coreRules, logicRules_nil, tvRules_nil, intervalRules_nil, typingRules_nil,
         overlapRules, forgettingRules, supportTrackedRules,

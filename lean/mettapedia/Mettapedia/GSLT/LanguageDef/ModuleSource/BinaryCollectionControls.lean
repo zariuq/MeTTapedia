@@ -139,7 +139,7 @@ theorem actual_model (row : Replacement)
     (shape : row.rule.params = [.simple "xs" (.collection .vec item)])
     (represented : checkRepresentation source (target row) old row.rule .vec = true)
     (fresh : BinaryCollectionInterpretation.checkFreshLabel source old row.rule = true) :
-    ∃ unit, ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat),
+    ∃ unit, ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat),
       model.fold [] = AlgebraExtractionControls.wordOperations unit [] ∧
       (∀ first second, model.fold [first, second] = first ++ second) ∧
       ∀ assignment context bound pattern type answer,
@@ -159,7 +159,7 @@ theorem actual_model (row : Replacement)
   exact (read assignment context bound pattern type answer typed computed).1
 
 theorem bare_nested_interpretation :
-    ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat), ∀ assignment,
+    ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat), ∀ assignment,
       BinaryCollectionInterpretation.read? AlgebraExtractionControls.wordOperations assignment "Word" .vec model
         (lowered bareRow nested) = some (assignment "x" ++ assignment "y" ++ assignment "z") := by
   obtain ⟨_, model, _, _, interpreted⟩ := actual_model bareRow bare_accepted rfl
@@ -168,7 +168,7 @@ theorem bare_nested_interpretation :
     simp [nested, AlgebraInterpretation.read?, AlgebraExtractionControls.wordOperations])⟩
 
 theorem wrapped_nested_interpretation :
-    ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat), ∀ assignment,
+    ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat), ∀ assignment,
       BinaryCollectionInterpretation.read? AlgebraExtractionControls.wordOperations assignment "Word" .vec model
         (lowered wrappedRow nested) = some (assignment "x" ++ assignment "y" ++ assignment "z") := by
   obtain ⟨_, model, _, _, interpreted⟩ := actual_model wrappedRow wrapped_accepted rfl
@@ -192,7 +192,7 @@ theorem normalized_interpretation (row : Replacement)
     (represented : BinaryCollectionLowering.checkRepresentation source (target row) old row.rule .vec = true)
     (fresh : BinaryCollectionInterpretation.checkFreshLabel source old row.rule = true)
     (oldLabel : row.old = bareRow.old) :
-    ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat), ∀ assignment,
+    ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat), ∀ assignment,
       BinaryCollectionInterpretation.read? AlgebraExtractionControls.wordOperations assignment row.rule.label .vec model
         (lawNormal [⟨.vec, some "One"⟩] (lowered row nestedWithUnit)) =
           some (assignment "x" ++ assignment "y" ++ assignment "z") := by
@@ -216,7 +216,7 @@ theorem normalized_interpretation (row : Replacement)
   exact ⟨different, by simpa [AlgebraExtractionControls.wordOperations] using empty.symm⟩
 
 theorem bare_normalized_interpretation :
-    ∃ model : Mettapedia.Algebra.CollectionFold.Model (List Nat), ∀ assignment,
+    ∃ model : Mettapedia.Algebra.Collections.Folds.Model (List Nat), ∀ assignment,
       BinaryCollectionInterpretation.read? AlgebraExtractionControls.wordOperations assignment "Word" .vec model
         (lawNormal [⟨.vec, some "One"⟩] (lowered bareRow nestedWithUnit)) =
           some (assignment "x" ++ assignment "y" ++ assignment "z") :=
@@ -233,7 +233,7 @@ theorem bare_normalized_interpretation :
 def distinctUnitOperations (label : String) (arguments : List (List Nat)) : List Nat :=
   if label = "Wrong" then [9] else arguments.flatten
 
-def wordFold : Mettapedia.Algebra.CollectionFold.Model (List Nat) where
+def wordFold : Mettapedia.Algebra.Collections.Folds.Model (List Nat) where
   «fold» := List.flatten
   singleton := by intro value; simp
   flatten := by intro pieces; exact List.flatten_flatten
@@ -292,7 +292,7 @@ def language : LanguageDef := (authored.toCore.toOption.map (·.language)).getD 
 selected fold value. Its operational correspondence is reused directly. -/
 theorem native_normalize_preserves_interpretation {A : Type}
     (operations : String → List A → A) (assignment : String → A)
-    (label : String) (kind : CollType) (algebra : Mettapedia.Algebra.CollectionFold.Model A)
+    (label : String) (kind : CollType) (algebra : Mettapedia.Algebra.Collections.Folds.Model A)
     (laws : List CollectionLaws.Laws)
     (units : ∀ law, CollectionLaws.lawFor laws kind = some law →
       ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = algebra.fold [])

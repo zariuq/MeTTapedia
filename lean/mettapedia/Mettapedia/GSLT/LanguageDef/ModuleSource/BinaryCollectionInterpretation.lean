@@ -31,7 +31,7 @@ variable {A : Type u}
 argument; the collection itself is interpreted by the earned finite fold.
 Other constructor labels retain their source operations. -/
 def read? (operations : String → List A → A) (assignment : String → A)
-    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A) :
+    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A) :
     Pattern → Option A
   | .fvar name => some (assignment name)
   | .apply head arguments => do
@@ -88,7 +88,7 @@ mutual
       (shape : new.params = [.simple name (.collection kind (.base sort))])
       (fresh : checkFreshLabel source old new = true)
       (operations : String → List A → A) (assignment : String → A)
-      (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (binary : ∀ first second, fold.fold [first, second] = operations old.label [first, second])
       (free : FreeTypeContext) (bound : List TypeExpr) {pattern : Pattern} {type : TypeExpr}
       (typed : HasType source free bound pattern type) {value : A}
@@ -144,7 +144,7 @@ mutual
       (shape : new.params = [.simple name (.collection kind (.base sort))])
       (fresh : checkFreshLabel source old new = true)
       (operations : String → List A → A) (assignment : String → A)
-      (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (binary : ∀ first second, fold.fold [first, second] = operations old.label [first, second])
       (free : FreeTypeContext) (bound : List TypeExpr)
       {arguments : List Pattern} {parameters : List TermParam}
@@ -172,7 +172,7 @@ end
 
 /-- Arrangement by the existing canonicalizer is licensed by the same fold
 that interprets packing: bags forget order, sets also forget repetition. -/
-theorem fold_arrange (fold : Mettapedia.Algebra.CollectionFold.Model A)
+theorem fold_arrange (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (kind : CollType) (permutation : kind ≠ .vec → fold.PermutationInvariant)
     (membership : kind = .hashSet → fold.MembershipInvariant)
     (interpret : Pattern → A) (elements : List Pattern) :
@@ -193,7 +193,7 @@ theorem fold_arrange (fold : Mettapedia.Algebra.CollectionFold.Model A)
 
 /-- Splicing uses the same earned fold as binary packing. This law says
 nothing about an independent observation of the input list as vector data. -/
-theorem fold_splice (fold : Mettapedia.Algebra.CollectionFold.Model A)
+theorem fold_splice (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (before middle after : List A) :
     fold.fold (before ++ fold.fold middle :: after) =
       fold.fold (before ++ middle ++ after) := by
@@ -209,7 +209,7 @@ theorem fold_splice (fold : Mettapedia.Algebra.CollectionFold.Model A)
       simpa only [fold.fold_append before middle] using
         (fold.fold_append (before ++ middle) after).symm
 
-theorem fold_remove_unit (fold : Mettapedia.Algebra.CollectionFold.Model A)
+theorem fold_remove_unit (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (before after : List A) :
     fold.fold (before ++ fold.fold [] :: after) = fold.fold (before ++ after) := by
   simpa using fold_splice fold before [] after
@@ -245,7 +245,7 @@ private theorem mapM_getD (read : Pattern → Option A) (fallback : A) (elements
 mutual
   /-- Canonical arrangement preserves every defined interpretation, including nested collections. -/
   theorem read_canon (operations : String → List A → A) (assignment : String → A)
-      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (arranged : ∀ (interpret : Pattern → A) (elements : List Pattern),
         fold.fold ((arrange kind elements).map interpret) = fold.fold (elements.map interpret))
       {pattern : Pattern} {value : A}
@@ -290,7 +290,7 @@ mutual
   decreasing_by all_goals sizeOf_pattern_dec
 
   theorem arguments_canon (operations : String → List A → A) (assignment : String → A)
-      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (arranged : ∀ (interpret : Pattern → A) (elements : List Pattern),
         fold.fold ((arrange kind elements).map interpret) = fold.fold (elements.map interpret))
       {arguments : List Pattern} {values : List A}
@@ -316,7 +316,7 @@ end
 /-! ## Declared flattening and units in the same interpretation -/
 
 private theorem read_splice (operations : String → List A → A) (assignment : String → A)
-    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (law : Laws) (sameKind : law.kind = kind)
     (unitRead : ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = fold.fold [])
     {pattern : Pattern} {value : A}
@@ -355,7 +355,7 @@ private theorem read_splice (operations : String → List A → A) (assignment :
   | _ => simpa only [splice] using singleton computed
 
 private theorem read_spliced_list (operations : String → List A → A) (assignment : String → A)
-    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (law : Laws) (sameKind : law.kind = kind)
     (unitRead : ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = fold.fold [])
     {patterns : List Pattern} {values : List A}
@@ -387,7 +387,7 @@ private theorem read_spliced_list (operations : String → List A → A) (assign
 
 mutual
   theorem read_normalize (operations : String → List A → A) (assignment : String → A)
-      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (laws : List Laws)
       (units : ∀ law, lawFor laws kind = some law →
         ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = fold.fold [])
@@ -425,7 +425,7 @@ mutual
   decreasing_by all_goals sizeOf_pattern_dec
 
   theorem arguments_normalize (operations : String → List A → A) (assignment : String → A)
-      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (laws : List Laws)
       (units : ∀ law, lawFor laws kind = some law →
         ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = fold.fold [])
@@ -449,7 +449,7 @@ mutual
 end
 
 theorem read_lawNormal (operations : String → List A → A) (assignment : String → A)
-    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (laws : List Laws)
     (units : ∀ law, lawFor laws kind = some law →
       ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = fold.fold [])
@@ -466,7 +466,7 @@ theorem read_lawNormal (operations : String → List A → A) (assignment : Stri
 first-order interpretation is defined. Normalization witnesses are not
 additional interpreted events. -/
 theorem read_lawSame (operations : String → List A → A) (assignment : String → A)
-    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label : String) (kind : CollType) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (laws : List Laws)
     (units : ∀ law, lawFor laws kind = some law →
       ∀ unit, law.unit = some unit → unit ≠ label ∧ operations unit [] = fold.fold [])
@@ -499,7 +499,7 @@ theorem replacement_model {value result : Value} {row : Replacement} {item : Ite
     (fresh : checkFreshLabel (flattenRaw sourceName value) old row.rule = true)
     (operations : String → List A → A)
     (holds : AlgebraInterpretation.SourceEquationsHold operations value) :
-    ∃ unit : String, ∃ fold : Mettapedia.Algebra.CollectionFold.Model A,
+    ∃ unit : String, ∃ fold : Mettapedia.Algebra.Collections.Folds.Model A,
       fold.fold [] = operations unit [] ∧
       (∀ first second, fold.fold [first, second] = operations old.label [first, second]) ∧
       (∀ (interpret : Pattern → A) (elements : List Pattern),
@@ -541,7 +541,7 @@ theorem equation_read_translated (signature : Signature source target old new)
     (shape : new.params = [.simple name (.collection kind (.base sort))])
     (fresh : checkFreshLabel source old new = true)
     (operations : String → List A → A)
-    (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (binary : ∀ first second, fold.fold [first, second] = operations old.label [first, second])
     (free : FreeTypeContext) (bound : List TypeExpr) {left right : Pattern} {type : TypeExpr}
     (leftTyped : HasType source free bound left type) (rightTyped : HasType source free bound right type)
@@ -567,7 +567,7 @@ theorem equation_read_lawNormal (signature : Signature source target old new)
     (shape : new.params = [.simple name (.collection kind (.base sort))])
     (fresh : checkFreshLabel source old new = true)
     (operations : String → List A → A)
-    (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (binary : ∀ first second, fold.fold [first, second] = operations old.label [first, second])
     (laws : List Laws)
     (units : ∀ law, lawFor laws kind = some law →
@@ -590,7 +590,7 @@ theorem equation_read_lawNormal (signature : Signature source target old new)
 /-! ## The full source-equational bag normal form in the earned model -/
 
 private theorem read_filtered_units (operations : String → List A → A) (assignment : String → A)
-    (label unit : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label unit : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (different : unit ≠ label) (empty : operations unit [] = fold.fold [])
     {patterns : List Pattern} {values : List A}
     (computed : patterns.mapM (read? operations assignment label .hashBag fold) = some values) :
@@ -639,7 +639,7 @@ private theorem bag_splice_eq (pattern : Pattern) :
   | _ => rfl
 
 private theorem read_bag_contents (operations : String → List A → A) (assignment : String → A)
-    (label unit : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label unit : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (different : unit ≠ label) (empty : operations unit [] = fold.fold [])
     {patterns : List Pattern} {values : List A}
     (computed : patterns.mapM (read? operations assignment label .hashBag fold) = some values) :
@@ -653,7 +653,7 @@ private theorem read_bag_contents (operations : String → List A → A) (assign
   simpa only [BagNormalForm.bagContents, funext bag_splice_eq] using keptReads
 
 private theorem read_sort (operations : String → List A → A) (assignment : String → A)
-    (label : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (permutation : fold.PermutationInvariant) {patterns : List Pattern} {values : List A}
     (computed : patterns.mapM (read? operations assignment label .hashBag fold) = some values) :
     ∃ sorted, (PatternCode.sortPatterns patterns).mapM
@@ -671,7 +671,7 @@ private theorem read_sort (operations : String → List A → A) (assignment : S
     (congrArg fold.fold sameValues)⟩
 
 private theorem read_collapse (operations : String → List A → A) (assignment : String → A)
-    (label unit : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label unit : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (different : unit ≠ label) (empty : operations unit [] = fold.fold [])
     {patterns : List Pattern} {values : List A}
     (computed : patterns.mapM (read? operations assignment label .hashBag fold) = some values) :
@@ -696,7 +696,7 @@ private theorem read_collapse (operations : String → List A → A) (assignment
           simpa only [BagNormalForm.collapse, read?, ↓reduceIte, Option.map_some] using congrArg (Option.map fold.fold) computed
 
 private theorem read_normalizeBag (operations : String → List A → A) (assignment : String → A)
-    (label unit : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+    (label unit : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
     (different : unit ≠ label) (empty : operations unit [] = fold.fold [])
     (permutation : fold.PermutationInvariant) {patterns : List Pattern} {values : List A}
     (computed : patterns.mapM (read? operations assignment label .hashBag fold) = some values) :
@@ -711,7 +711,7 @@ mutual
   /-- The existing full bag normal form, including empty and singleton
   collapse, preserves every defined interpretation in the earned bag fold. -/
   theorem read_bagNormalForm (operations : String → List A → A) (assignment : String → A)
-      (label unit : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (label unit : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (different : unit ≠ label) (empty : operations unit [] = fold.fold [])
       (permutation : fold.PermutationInvariant) {pattern : Pattern} {value : A}
       (computed : read? operations assignment label .hashBag fold pattern = some value) :
@@ -745,7 +745,7 @@ mutual
   decreasing_by all_goals sizeOf_pattern_dec
 
   theorem arguments_bagNormalForm (operations : String → List A → A) (assignment : String → A)
-      (label unit : String) (fold : Mettapedia.Algebra.CollectionFold.Model A)
+      (label unit : String) (fold : Mettapedia.Algebra.Collections.Folds.Model A)
       (different : unit ≠ label) (empty : operations unit [] = fold.fold [])
       (permutation : fold.PermutationInvariant) {arguments : List Pattern} {values : List A}
       (computed : arguments.mapM (read? operations assignment label .hashBag fold) = some values) :

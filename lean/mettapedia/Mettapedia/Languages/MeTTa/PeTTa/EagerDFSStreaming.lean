@@ -3830,6 +3830,10 @@ theorem prepared_attach {policy : Policy} {program : SpaceSemantics.Program}
           (destination := destination) (older := older.map (shift suffix.length) ++ suffix) pattern producer body)
   | cut => exact .cut
   | once child => exact .once child
+  | conditional condition yes no =>
+      simpa only [attach_replace, List.map_cons, shift, fresh, List.cons_append] using
+        (Source.Prepared.conditional (policy := policy) (program := program) (control := attach suffix control)
+          (destination := destination) (older := older.map (shift suffix.length) ++ suffix) condition yes no)
   | application head arguments ordinary declared =>
       simpa only [attach_replace, List.map_append, shift_callArguments, List.map_cons,
         List.map_nil, shift, slots, List.append_assoc] using
@@ -4078,6 +4082,7 @@ theorem step_reserved {Context : Type} {policy : Policy} {program : SpaceSemanti
   | restoring => rfl
   | expanded _ _ _ _ _ _ prepared => exact prepared.retains_frame.2.2
   | accepted => rfl
+  | conditional => rfl
   | printed => rfl
   | argument _ _ _ _ _ _ returned => cases returned <;> rfl
 
@@ -4102,6 +4107,10 @@ theorem step_attach {Context : Type} {policy : Policy} {program : SpaceSemantics
       apply Source.Step.accepted value destination (older.map (shift suffix.length) ++ suffix) bindings
       · simp only [attachCursor, attach, atGoal, List.map_cons, shift, List.cons_append]
       · exact refined
+  | conditional condition yes no destination older environment atGoal resolved =>
+      apply Source.Step.conditional condition yes no destination (older.map (shift suffix.length) ++ suffix) environment
+      · simp only [attachCursor, attach, atGoal, List.map_cons, shift, List.cons_append]
+      · exact resolved
   | printed arguments destination older environment value atGoal resolved readout =>
       apply Source.Step.printed arguments destination (older.map (shift suffix.length) ++ suffix)
         environment value

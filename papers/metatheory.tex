@@ -15215,6 +15215,14 @@ postponed.
   \leanname{Controls.overlap_double_counted}); source-keyed maximum
   under-counts without per-source nesting
   (\leanname{Controls.sourceMerge_undercounts}).
+\item \textbf{Undoing a revision on every base is degenerate.}  A forgetting
+  operation that undoes a revision on every base state forgets nothing, and the
+  revision is zero
+  (\leanname{ForgettingLayer.exactInverse_everywhere_degenerate}); with sound
+  supports no layer undoes even one observation on every base
+  (\leanname{LedgerRetraction.no_sound_allBases_exactInverse}).  Lineage alone
+  cannot carry exact retraction
+  (\leanname{ProvenanceRetraction.lineage_not_deletion_compatible}).
 \item \textbf{The total of a paired product is not a sample size.}  Its
   variance equals that of independent joint samples only for single samples
   (\leanname{PairedSampleDispersion.paired_variance_eq_joint_iff}).
@@ -15833,14 +15841,36 @@ postponed.
 \item Specify and compare lawful forgetting profiles for world models,
   including provenance retention, causal deletion, and observer-relative
   readout.  The current revision and extraction soundness laws are checked not
-  to determine forgetting.  Two further laws are now checked as explicit
-  fields of a forgetting profile: forgetting never increases extracted
-  evidence, so observation counts never rise; and, with support tracking,
-  retained support shrinks and avoids the forgotten footprint while nonzero
-  evidence is always supported, so every conclusion supported only inside the
-  footprint is deleted and every survivor keeps a source outside it.  A
-  reset-to-prior layer satisfies the earlier interface and violates the first
-  law.  The remaining obligation is to compare provenance-retaining,
+  to determine forgetting.  With support tracking, forgetting commutes with
+  revision, erases states supported inside the forgotten footprint and fixes
+  states whose supports avoid it, so a supported revision is undone exactly on
+  every base that carries nothing forgotten
+  (\leanname{SupportTrackedForgettingLayer.exactInverse_of_clean}); asked of
+  every base, the inverse is degenerate.  Three further laws are checked as
+  fields of a retraction profile
+  (\leanname{ForgettingEvidenceLaws.RetractionLayer}): forgetting never
+  increases extracted evidence, so observation counts never rise; retained
+  support shrinks and avoids the forgotten footprint while nonzero evidence is
+  always supported, so every conclusion supported only inside the footprint is
+  deleted and every survivor keeps a source outside it; and a claim whose
+  support avoids the footprint keeps its evidence exactly.  A reset-to-prior
+  layer satisfies the earlier interface and violates the first law.  Causal
+  deletion on the identified-observation ledger is a retraction profile, and
+  the only exact unlearning there
+  (\leanname{LedgerRetraction.causalRetractionLayer},
+  \leanname{eq_causalForget_of_exactInverse_of_clean}).  Deletion on
+  how-provenance polynomials, the homomorphism sending the withdrawn sources
+  to zero, is a retraction profile once polynomials are ordered
+  coefficientwise; it propagates through revision and deduction and through
+  every stage of a recursive derivation, where support counting is inexact
+  (\leanname{ProvenanceRetraction.provRetractionLayer},
+  \leanname{deletion_prov},
+  \leanname{cycle_counting_fails_provenance_succeeds}).  On the retracted
+  sighting, no manufactured evidence, shrinking and avoiding supports, sound
+  supports and relevance each fail alone under one policy, and causal deletion
+  passes all of them (\leanname{LedgerRetraction.Controls.independence},
+  \leanname{Controls.causal_laws}).
+  The remaining obligation is to compare provenance-retaining,
   causal-deletion, and observer-relative profiles against these laws on the
   live world model.
 \item Lift countable disjunction and conjunction to the monotone-certificate

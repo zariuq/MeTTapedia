@@ -59,7 +59,7 @@ theorem checked_premise_supports {State Query Ev Ov Scope : Type}
     (success : [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (WMCalculusCheckedScopeRelationProvider.relationEnv provider) lang
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     (outsideCapability reading scope).supports state query :=
   WMCalculusCheckedScopeRelationProvider.premise_success_implies_outside
@@ -82,7 +82,7 @@ theorem checked_premise_native_answer {State Query Ev Ov Scope : Type}
     (success : [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (WMCalculusCheckedScopeRelationProvider.relationEnv provider) lang
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)])
     (X : Opposite (ConstructorObj CoreLanguage)) :
     ((state, query), reading.core.extract state query) ∈
@@ -107,7 +107,7 @@ theorem checked_premise_sigma_support {State Query Ev Ov Scope : Type}
     (success : [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (WMCalculusCheckedScopeRelationProvider.relationEnv provider) lang
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)])
     (X : Opposite (ConstructorObj CoreLanguage)) :
     (state, query) ∈

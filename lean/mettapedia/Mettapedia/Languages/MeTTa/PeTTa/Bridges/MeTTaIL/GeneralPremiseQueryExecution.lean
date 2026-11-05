@@ -389,7 +389,7 @@ theorem data_template (head : String) (arguments : List Atom)
     PureData.Template runtime (a head arguments) := by
   have checked : dataHeads.all (fun name => decide
       ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
-        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
+        name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
     rfl
   have row := List.all_eq_true.mp checked head supported
   rw [decide_eq_true_eq] at row
@@ -728,7 +728,7 @@ theorem data_template (program : Program) (agreement : ProgramAgreementOn ownedH
     rw [← agreement.dispatch head supported]
     have checked : dataHeads.all (fun name => decide
         ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
-          name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])) = true := by
+          name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
       rfl
     have row := List.all_eq_true.mp checked head member
     rw [decide_eq_true_eq] at row
@@ -1076,7 +1076,7 @@ theorem template_in_program (program : Program)
   | constructor head arguments inert ordinary children ih =>
       simp only [codeWithin, expressionHeadWithin, Bool.and_eq_true, atomsWithin_eq_all, List.all_eq_true] at supported
       refine .constructor head arguments ?_ ordinary ?_
-      · rw [← agreement.dispatch head supported.1.1]
+      · rw [← agreement.dispatch head supported.1.1.1]
         exact inert
       · intro child member
         exact ih child member (supported.2 child (List.mem_cons_of_mem _ member))
@@ -2666,7 +2666,7 @@ theorem move_raw (program : Program)
   let values := arguments.map (applySubst caller)
   have rawArguments : ∀ index < arguments.length, argumentIsRaw RuleExecutionProgram.scopedMachineProgram head index = true := by
     simpa only [count] using raw
-  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+  have special : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
     simpa only [specialForms] using ordinary
   have atValues : PureReturns RuleExecutionProgram.scopedMachineProgram [] host (WireKit.apply head values) host answer :=
     PureData.raw_capture_returns RuleExecutionProgram.scopedMachineProgram caller [] host host head arguments values answer dispatch

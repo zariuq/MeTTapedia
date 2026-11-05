@@ -53,7 +53,7 @@ private def checkedLanguage : LanguageDef :=
     (coreTerms ++ [overlapMergeDecl, overlapFactorDecl, overlapCorrectDecl]
       ++ [forgetDecl]) []
     (coreRules ++ [ruleOverlapExtract] ++
-      [ruleForgetOutsideGuarded, ruleForgetIdempotent])
+      [ruleForgetOutside, ruleForgetIdempotent])
 
 private theorem checkedLanguage_eq :
     wmExtVertexLanguageDefGuarded combinedVertex = checkedLanguage := rfl
@@ -101,8 +101,8 @@ private theorem checked_overlapExtract :
   decide +kernel
 
 private theorem checked_forgetOutside :
-    checkedLanguage.validateRewrite ruleForgetOutsideGuarded = [] := by
-  simp only [LanguageDef.validateRewrite, ruleForgetOutsideGuarded,
+    checkedLanguage.validateRewrite ruleForgetOutside = [] := by
+  simp only [LanguageDef.validateRewrite, ruleForgetOutside,
     List.append_eq_nil_iff, and_assoc]
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   all_goals try decide +kernel
@@ -135,7 +135,7 @@ theorem combined_validation :
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   all_goals try decide +kernel
   change (coreRules ++ [ruleOverlapExtract] ++
-    [ruleForgetOutsideGuarded, ruleForgetIdempotent]).flatMap
+    [ruleForgetOutside, ruleForgetIdempotent]).flatMap
       (LanguageDef.validateRewrite checkedLanguage) = []
   simp only [List.flatMap_append, coreRows, List.flatMap_cons,
     checked_overlapExtract, checked_forgetOutside, checked_forgetIdempotent,

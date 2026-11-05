@@ -145,12 +145,12 @@ structure Certified (program : Program) (head : String) where
   body : BodyCertificate program names equation.body
   notIO : ioHead head = false
   notNative : StdLib.known head = false
-  ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]
+  ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]
 
 def infer (program : Program) (head : String) : Option (Certified program head) := do
   if notIO : ioHead head = false then
     if notNative : StdLib.known head = false then
-      if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"] then
+      if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"] then
         match selected : program.equations.filter (fun equation => equation.head == head) with
         | [equation] =>
             match formals : equation.arguments with

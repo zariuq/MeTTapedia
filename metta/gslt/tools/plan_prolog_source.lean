@@ -29,7 +29,7 @@ def main (arguments : List String) : IO Unit := do
     let directory := output / toString index
     IO.FS.createDirAll directory
     IO.FS.writeFile (directory / "sentence.pl") sentence.text
-    IO.FS.writeFile (directory / "CommonSyntax.module")
+    IO.FS.writeFile (directory / "PrologCommonSyntax.module")
       (Mettapedia.GSLT.LanguageDef.ModuleSource.Printer.print PrologSyntaxModule.common)
     let module := PrologSyntaxModule.module sentence.before
     IO.FS.writeFile (directory / (module.name ++ ".module"))
@@ -39,7 +39,7 @@ def main (arguments : List String) : IO Unit := do
       ("operatorCount",Lean.toJson sentence.before.operators.length)])
   IO.FS.writeFile (output / "sentences.json") ((Lean.Json.arr manifest).pretty ++ "\n")
   IO.FS.createDirAll (output / "final")
-  IO.FS.writeFile (output / "final" / "CommonSyntax.module")
+  IO.FS.writeFile (output / "final" / "PrologCommonSyntax.module")
     (Mettapedia.GSLT.LanguageDef.ModuleSource.Printer.print PrologSyntaxModule.common)
   let finalModule := PrologSyntaxModule.module final
   IO.FS.writeFile (output / "final" / (finalModule.name ++ ".module"))

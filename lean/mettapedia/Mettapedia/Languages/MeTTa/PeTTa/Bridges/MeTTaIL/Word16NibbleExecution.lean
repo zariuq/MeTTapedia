@@ -30,19 +30,8 @@ private theorem nibble_selected (digit : Fin 16) :
 theorem nibble_clauses (digit : Fin 16) :
     clauses wordLibrary.runtime "gslt:word16:nibble" [number digit.val] =
       [.evaluate [] (encoded (nibble digit.val))] := by
-  have parts := word_checked
-  simp only [Library.check, Bool.and_eq_true] at parts
-  have noBase : wordLibrary.base.equations.filter (fun row => row.head == "gslt:word16:nibble") = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro row member selected
-    have kept := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp parts.1.1.2 row member)).1
-    rw [beq_iff_eq.mp selected] at kept
-    have impossible : wordLibrary.inherited "gslt:word16:nibble" = false := by decide +kernel
-    rw [impossible] at kept
-    cases kept
   rw [clauses_use_only_the_named_equations]
-  simp only [Library.runtime, SpaceSemantics.Program.append]
-  rw [List.filter_append, noBase, List.nil_append]
+  rw [Library.owned_equations word_checked (by decide +kernel)]
   have rows : wordLibrary.source.equations.filter (fun row => row.head == "gslt:word16:nibble") =
       (List.range 16).map (fun digit => SpaceSemantics.Equation.mk "gslt:word16:nibble"
         [number digit] (encoded (nibble digit))) := by rfl

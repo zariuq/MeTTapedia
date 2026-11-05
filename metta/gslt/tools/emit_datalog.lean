@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.DatalogIREmission
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogFrontend
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogFrontendSource
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.SouffleDatalogPrinterAdmissionCheck
@@ -50,31 +51,11 @@ def main (arguments : List String) : IO Unit := do
   let canonical ← match SouffleDatalog.SourcePrinter.print? program with
     | .ok text => pure text
     | .error reason => throw (IO.userError s!"source printing refused: {reason}")
-  let spec := ClosureMachine.spec prepared prepared.seedFacts
-  let .ok _ := CompleteEmission.emitText? spec entry .classes
-    | throw (IO.userError s!"GSLT execution admission refused: {reprStr spec.plan.obligations}")
-  let plan := (CompletePlanWire.planTerm spec.plan spec.plan.snapshot.freeTypes [] (.base "DlStatement")).render
-  let standard := (ClosureMachine.standardTerm prepared).render
-  let source := CettaWire.Term.render (InferenceCettaWire.encodePattern (Executable.request prepared.vocabulary))
-  let metadata := (ClosureMachine.metadataTerm prepared).render
-  let static := (encodeList PremiseOperationsExecution.GeneralExecution.providerRowTerm prepared.staticRows).render
-  let facts := (encodeList InferenceCettaWire.encodePattern prepared.seedFacts).render
-  let declarations := "(: " ++ entry ++ ":begin (-> %Undefined%))\n" ++
-    "(= (" ++ entry ++ ":begin) (let* (($plan (quote " ++ plan ++ ")) ($standard (quote " ++ standard ++
-    ")) ($source (quote " ++ source ++ ")) ($metadata (quote " ++ metadata ++ ")) ($static (quote " ++ static ++
-    ")) ($facts (quote " ++ facts ++ "))) (gslt:snapshot:begin $plan $standard $source $metadata " ++ reprStr Query.factRelation ++ " $static $facts)))\n" ++
-    "(: " ++ entry ++ ":run (-> Atom Atom %Undefined%))\n" ++
-    "(= (" ++ entry ++ ":run $ticks $quantum) (let $initial (" ++ entry ++ ":begin) (gslt:snapshot:advance $initial $ticks $quantum)))\n" ++
-    "(: " ++ entry ++ ":resume (-> Atom Atom Atom %Undefined%))\n" ++
-    "(= (" ++ entry ++ ":resume $machine $ticks $quantum) (gslt:snapshot:advance $machine $ticks $quantum))\n"
-  let sources := RuleExecutionProgram.scopedSource :: CollectionOccurrenceSearchExecution.SelectedNativeSource.sources
-  IO.FS.writeFile outputPath (String.intercalate "\n" (sources.map (·.text)) ++ "\n" ++
-    SnapshotClosureExecution.source.text ++ "\n" ++ declarations)
-  let dictionary := Executable.dictionary prepared.vocabulary
-  let decoded := CettaWire.encodeList (fun (name,value) => Term.application "Binding"
-    [.string name,InferenceCettaWire.encodePattern value]) dictionary
-  IO.FS.writeFile (outputPath ++ ".dictionary.metta") decoded.render
+  let emitted ← match DatalogIR.Emission.emit prepared entry with
+    | .ok result => pure result
+    | .error reason => throw (IO.userError reason)
+  IO.FS.writeFile outputPath emitted.definitions
+  IO.FS.writeFile (outputPath ++ ".dictionary.metta") emitted.dictionary
   IO.FS.writeFile (outputPath ++ ".source.dl") canonical
-  IO.FS.writeFile (outputPath ++ ".program.metta")
-    (CettaWire.Term.render (InferenceCettaWire.encodePattern (IRCodec.program program)))
+  IO.FS.writeFile (outputPath ++ ".program.metta") emitted.programPayload
   IO.println s!"compiled ordinary Datalog: {program.statements.length} statements, {prepared.compiled.rewrites.length} rules, {seeds.length} input facts"

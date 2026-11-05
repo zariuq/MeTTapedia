@@ -208,7 +208,7 @@ private theorem named_let_returns (caller : Subst) (state : State) (name : Strin
 
 private theorem constructor_variables (head : String) (names : List String)
     (inert : (ioHead head || StdLib.known head || runtime.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]) :
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]) :
     PureData.Template runtime (a head (names.map v)) := by
   apply PureData.Template.constructor head _ inert ordinary
   intro argument member
@@ -3753,12 +3753,18 @@ theorem runtime_closed : ProgramClosed executionHeads runtime := by
 private theorem variable_call_supported (head : String) (names : List String)
     (headSupported : executionHeads head = true) (notEval : head ≠ "eval") :
     codeWithin executionHeads (a head (names.map Atom.var)) = true := by
+  have notUnique : head ≠ "unique" := by
+    intro same
+    subst head
+    have excluded : executionHeads "unique" = false := by decide +kernel
+    rw [excluded] at headSupported
+    cases headSupported
   have variablesSupported : atomsWithin executionHeads (names.map Atom.var) = true := by
     induction names with
     | nil => rfl
     | cons name names ih => simpa only [List.map_cons, atomsWithin, codeWithin, Bool.true_and] using ih
   simp only [codeWithin, expressionHeadWithin, headSupported,
-    atomsWithin, Bool.true_and, variablesSupported, Bool.and_true]
+    atomsWithin, Bool.true_and, variablesSupported, bne_iff_ne.mpr notUnique, Bool.true_or, Bool.and_true]
   exact bne_iff_ne.mpr notEval
 
 theorem instantiate_ordinary_variables_returns_in_extension (target : Program)

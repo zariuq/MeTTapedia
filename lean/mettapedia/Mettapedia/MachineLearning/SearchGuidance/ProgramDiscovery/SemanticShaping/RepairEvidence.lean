@@ -154,25 +154,30 @@ theorem zeroDrift_recovers_exactOverlapCorrectedAddition
 namespace WMAlignment
 
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
+open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-- The maximal WM calculus exposes both overlap correction and forgetting as
-actual reduction steps, so the repair ledger's two non-additive operations
-use the same operational vocabulary as WM-PLN. -/
-theorem overlap_and_forgetting_are_wmSteps
-    (first second query scope state : Pattern) :
+/-- The maximal WM calculus exposes overlap correction as an unconditional
+reduction step, and forgetting as a reduction step wherever the relation
+environment certifies that the query lies outside the scope.  So the repair
+ledger's two non-additive operations use the same operational vocabulary as
+WM-PLN. -/
+theorem overlap_and_forgetting_are_wmSteps (relEnv : RelationEnv)
+    (first second query scope state : Pattern)
+    (outside : [scope, query] ∈ relEnv.tuples "outsideScope" [scope, query]) :
     wmFullLangReduces wmFullVertexMaximal
         (pExtract (pOverlapMerge first second) query)
         (pOverlapCorrect (pExtract first query) (pExtract second query)
           (pOverlapFactor first second query)) ∧
-      wmFullLangReduces wmFullVertexMaximal
+      langReducesUsing relEnv (wmFullVertexLanguageDef wmFullVertexMaximal)
         (pExtract (pForget scope state) query)
         (pExtract state query) := by
   constructor
   · exact wmFullLangReduces_overlapExtract wmFullVertexMaximal rfl
       first second query
-  · exact wmFullLangReduces_forgetOutside wmFullVertexMaximal
-      (Or.inr rfl) scope state query
+  · refine langReducesUsing_forgetOutside relEnv _ ?_ scope state query outside
+    simp [wmFullVertexLanguageDef, wmFullVertexMaximal, forgettingRules]
 
 end WMAlignment
 

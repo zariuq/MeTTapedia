@@ -17,7 +17,11 @@ This is intentionally a boundary theorem rather than a guessed repair.
 Forgetting may later be specified by provenance masks, a partial subtraction,
 a residual, a source-indexed action, or an explicit refusal.  Each choice has
 different algebraic requirements and should be a separate property in the
-world-model profile.
+world-model profile.  The laws of such a property are stated in
+`ForgettingEvidenceLaws`, with causal deletion on the identified-observation
+ledger (`LedgerRetraction`) and deletion on provenance polynomials
+(`ProvenanceRetraction`) as instances; `CalculusSound` itself still does not
+constrain forgetting.
 -/
 
 set_option autoImplicit false

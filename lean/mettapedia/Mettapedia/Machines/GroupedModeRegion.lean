@@ -19,7 +19,7 @@ set_option autoImplicit false
 namespace Mettapedia.Machines.ModeAggregation.Grouped
 
 open AdditiveFoldInference
-open Mettapedia.Algebra.CollectionFold.Boom
+open Mettapedia.Algebra.Collections
 
 def extendCounts (n : Nat) (counts : Fin n → Nat) (label : Nat) : Nat :=
   if bound : label < n then counts ⟨label, bound⟩ else 0

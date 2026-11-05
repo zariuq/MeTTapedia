@@ -1,4 +1,4 @@
-import Mettapedia.Algebra.CollectionFold
+import Mettapedia.Algebra.Collections.Folds
 import Mettapedia.Algorithms.Retrieval.OrderedGroupedFold
 
 /-!
@@ -6,7 +6,7 @@ import Mettapedia.Algorithms.Retrieval.OrderedGroupedFold
 
 An index changes how occurrences are found, not whether occurrences count.
 The reference carrier here is a list: callers may observe its sequence, its
-permutation class, or only membership. The existing `CollectionFold.Model`
+permutation class, or only membership. The existing `Collections.Folds.Model`
 laws characterize which reductions may forget order or multiplicity.
 
 Keyed lookup retains every matching occurrence. A functional map requires an
@@ -88,7 +88,7 @@ theorem snapshot_vs_insert (accepts : Key → Row → Bool) (key : Key)
       (lookup accepts key rows).length + 1 := by
   simp [lookup_insert, hit]
 
-open Mettapedia.Algebra.CollectionFold in
+open Mettapedia.Algebra.Collections.Folds in
 /-- The reused algebraic boundary: forgetting multiplicity additionally
 requires idempotence; commutativity alone licenses only forgetting order. -/
 theorem set_fold_conditions {A : Type*} (algebra : Model A) :

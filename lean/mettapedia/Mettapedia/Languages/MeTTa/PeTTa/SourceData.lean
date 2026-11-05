@@ -23,7 +23,7 @@ inductive Tree (program : Program) : Atom → Prop where
   | symbol (name : String) : Tree program (.symbol name)
   | constructor (head : String) (arguments : List Atom)
       (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-      (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+      (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
       (children : ∀ argument ∈ arguments, Tree program argument) :
       Tree program (.expression (.symbol head :: arguments))
 
@@ -31,8 +31,8 @@ inductive Tree (program : Program) : Atom → Prop where
 special form. -/
 private theorem data_head_not_form {program : Program} {head : String}
     (inert : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
-    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
   have notMatch : head ≠ "match" := Eval.ne_match_of_not_known (by
     simp only [Bool.or_eq_false_iff] at inert
     exact inert.1.2)

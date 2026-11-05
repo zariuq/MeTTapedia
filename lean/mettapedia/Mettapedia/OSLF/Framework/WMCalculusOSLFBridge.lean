@@ -110,6 +110,17 @@ def wmExtGuardedPredicateUsing
     rcases v with ⟨base, overlap, forgetting⟩
     cases overlap <;> cases forgetting <;> rfl) predicate
 
+/-- Equation-respecting observation for a guarded full WM vertex. -/
+def wmFullGuardedPredicateUsing
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (v : WMFullVertex)
+    (predicate : Pattern → Prop) :
+    GSLTTypeSynthesis.EquationPredicate
+      (langGSLTUsing relEnv (wmFullVertexLanguageDefGuarded v)) :=
+  equationPredicateUsingOfEquationFree relEnv (by
+    rcases v with ⟨base, overlap, forgetting, provenance, fixpoint, cost,
+      conservation, experiment, kripke, carrier⟩
+    cases overlap <;> cases forgetting <;> rfl) predicate
+
 /-! ## Section 2: Diamond Theorems (Layer 1)
 
 Each ◇ theorem composes `langDiamond_spec` with a step lemma to prove that
@@ -424,15 +435,22 @@ theorem full_diamond_closureFixpoint (v : WMFullVertex)
   exact ⟨_, langReduces_to_semantic _
     (wmFullLangReduces_closureFixpoint v hfp pR pw pseed), ⟨_, _, _, rfl⟩⟩
 
-/-- ◇(isZeroEvidence) at conserving vertices: anti-hallucination. -/
-theorem full_diamond_antiHallucination (v : WMFullVertex)
-    (hcons : v.conservation = .conserving) (pD pq : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v)
-      (wmFullPredicate v isZeroEvidence)
+/-- ◇(isZeroEvidence) at conserving guarded vertices: anti-hallucination, when
+the relation environment certifies that forgetting a scope erases the revision
+and that the query lies outside that scope. -/
+theorem full_guarded_diamond_antiHallucination
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (v : WMFullVertex)
+    (hcons : v.conservation = .conserving) (pS pD pq : Pattern)
+    (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
+    (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
+    langDiamondUsing relEnv (wmFullVertexLanguageDefGuarded v)
+      (wmFullGuardedPredicateUsing relEnv v isZeroEvidence)
       (pExtract pD pq) := by
-  rw [langDiamond_spec]
-  exact ⟨_, langReduces_to_semantic _
-    (wmFullLangReduces_antiHallucination v hcons pD pq), rfl⟩
+  rw [langDiamondUsing_spec]
+  exact ⟨_, langReducesUsing_to_semantic relEnv _
+    (wmFullGuardedReduces_antiHallucination relEnv v hcons pS pD pq erases outside), rfl⟩
+
+#print axioms full_guarded_diamond_antiHallucination
 
 /-- ◇(isCombined) for experiment evidence at experiment-enabled vertices. -/
 theorem full_diamond_experimentDecomposable (v : WMFullVertex)

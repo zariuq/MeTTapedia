@@ -6,15 +6,18 @@ import Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 This module adds an explicit forgetting/contraction layer on top of the generic
 world-model interface.
 
-The point is deliberately modest:
-
 - forgetting is *not* default revision;
 - it is a separate operation with its own laws;
-- exact inverse forgetting is only possible for revisions whose evidence lies
-  entirely inside the forgotten scope.
-
-The last theorem is the precise no-go result proved here. Stronger inverse
-forgetting principles would need richer provenance or support tracking.
+- asking forgetting to undo a revision on **every** base state is degenerate:
+  with idempotence it forces forgetting to be the identity and the revision to
+  be zero (`ForgettingLayer.exactInverse_everywhere_degenerate`).  A base that
+  already carries forgotten material must lose it too, so the inverse law can
+  only be asked of bases that carry nothing forgotten.  That law needs
+  supports and is stated in `PLNWorldModelSupportForgetting`;
+- at this level, a revision that forgetting erases contributes no evidence
+  outside the forgotten scope (`ForgettingLayer.erased_revision_supported`),
+  and a revision with evidence outside the scope cannot be erased
+  (`ForgettingLayer.not_erased_of_nonzero_outside_scope`).
 -/
 
 namespace Mettapedia.PLN.WorldModel.GenericWorldModelForgetting
@@ -72,39 +75,50 @@ theorem outsideInvariant'
       (State := State) (Query := Query) (Ev := Ev) W q :=
   F.outsideInvariant hout
 
-/-- Exact inverse forgetting can only undo revisions whose evidence vanishes
-outside the forgotten scope. -/
-theorem exactInverse_revision_supported
+/-- **An exact inverse at every base is degenerate.**  If forgetting `S` undoes
+the revision `Δ` on every base state, then forgetting `S` is the identity and
+`Δ = 0`: by idempotence `forget S W = forget S (forget S (W + Δ)) = forget S (W + Δ) = W`,
+and the base `0` then gives `Δ = forget S (0 + Δ) = 0`. -/
+theorem exactInverse_everywhere_degenerate
+    (F : ForgettingLayer State Scope Query Ev)
+    {S : Scope} {Δ : State}
+    (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
+    (∀ W : State, F.forget S W = W) ∧ Δ = 0 := by
+  have identity : ∀ W : State, F.forget S W = W := by
+    intro W
+    calc F.forget S W = F.forget S (F.forget S (W + Δ)) := by rw [hinv W]
+      _ = F.forget S (W + Δ) := F.idempotent S (W + Δ)
+      _ = W := hinv W
+  refine ⟨identity, ?_⟩
+  calc Δ = 0 + Δ := (zero_add Δ).symm
+    _ = F.forget S (0 + Δ) := (identity (0 + Δ)).symm
+    _ = 0 := hinv 0
+
+/-- **A revision that forgetting erases is supported inside the scope**: it
+contributes no evidence to any query outside the forgotten scope. -/
+theorem erased_revision_supported
     (F : ForgettingLayer State Scope Query Ev)
     (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
     {S : Scope} {Δ : State}
-    (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
+    (herase : F.forget S Δ = 0) :
     ∀ q, ¬ F.inScope S q →
       AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q = 0 := by
   intro q hout
-  have hOutside :=
-    F.outsideInvariant (S := S) (W := (0 : State) + Δ) (q := q) hout
-  have hInv0 : F.forget S ((0 : State) + Δ) = (0 : State) := by
-    simpa using hinv (0 : State)
   calc
     AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q
       = AdditiveWorldModel.extract
-          (State := State) (Query := Query) (Ev := Ev) ((0 : State) + Δ) q := by
-            simp
-    _ = AdditiveWorldModel.extract
-          (State := State) (Query := Query) (Ev := Ev) (F.forget S ((0 : State) + Δ)) q := by
-            symm
-            exact hOutside
+          (State := State) (Query := Query) (Ev := Ev) (F.forget S Δ) q :=
+            (F.outsideInvariant hout).symm
     _ = AdditiveWorldModel.extract
           (State := State) (Query := Query) (Ev := Ev) (0 : State) q := by
-            rw [hInv0]
+            rw [herase]
     _ = 0 := hzero q
 
-/-- No forgetting layer can be an exact inverse to a revision that changes a
-query outside the forgotten scope. -/
-theorem no_exactInverse_revision_of_nonzero_outside_scope
+/-- **No forgetting erases a revision that changes a query outside the
+forgotten scope.** -/
+theorem not_erased_of_nonzero_outside_scope
     (F : ForgettingLayer State Scope Query Ev)
     (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
     {S : Scope} {Δ : State} {q : Query}
@@ -112,11 +126,10 @@ theorem no_exactInverse_revision_of_nonzero_outside_scope
     (hne :
       AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q ≠ 0) :
-    ¬ ∀ W : State, F.forget S (W + Δ) = W := by
-  intro hinv
-  exact hne (exactInverse_revision_supported
+    F.forget S Δ ≠ 0 :=
+  fun herase => hne (erased_revision_supported
     (State := State) (Scope := Scope) (Query := Query) (Ev := Ev)
-    F hzero hinv q hout)
+    F hzero herase q hout)
 
 end ForgettingLayer
 
@@ -183,20 +196,19 @@ theorem ForgettingLayer.forget_profile_invariant
         (State := State) (Query := Query) (Ev := Ev) W q) :=
   fun _ hq => F.outsideInvariant hq
 
-/-- Under exact inverse forgetting, a revision's evidence profile
-    vanishes outside the scope.  This is `exactInverse_revision_supported`
-    lifted to profile level. -/
-theorem ForgettingLayer.exactInverse_profile_vanishes
+/-- The evidence profile of a revision that forgetting erases vanishes outside
+    the scope.  This is `erased_revision_supported` lifted to profile level. -/
+theorem ForgettingLayer.erased_profile_vanishes
     {State Scope Query Ev : Type*}
     [EvidenceType State] [AddCommMonoid Ev] [AdditiveWorldModel State Query Ev]
     (F : ForgettingLayer State Scope Query Ev)
     (hzero : GenericWorldModelZeroPreserving (State := State) (Query := Query) (Ev := Ev))
     {S : Scope} {Δ : State}
-    (hinv : ∀ W : State, F.forget S (W + Δ) = W) :
+    (herase : F.forget S Δ = 0) :
     profileAgreesOutsideScope F.inScope S
       (fun q => AdditiveWorldModel.extract
         (State := State) (Query := Query) (Ev := Ev) Δ q)
       (fun _ => (0 : Ev)) :=
-  fun q hq => F.exactInverse_revision_supported hzero hinv q hq
+  fun q hq => F.erased_revision_supported hzero herase q hq
 
 end Mettapedia.PLN.WorldModel.GenericWorldModelForgetting

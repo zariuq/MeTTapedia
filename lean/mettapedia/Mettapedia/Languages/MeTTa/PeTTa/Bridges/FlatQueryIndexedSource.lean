@@ -169,6 +169,27 @@ namespace Controls
 
 open FlatQueryConjunctionCompilation.Controls
 
+def noNames : Inventory String := ⟨[], by decide⟩
+def comma : Atom := .expression [.symbol ","]
+
+theorem active_empty_conjunction_refuses :
+    prepare integers noNames [] [comma] (fun _ => none) 0 = none := by decide +kernel
+
+theorem active_variable_conjunction_refuses :
+    prepare integers names rows [.expression [.symbol ",", .var "x", .var "y"]] (fun _ => none) 0 = none := by
+  decide +kernel
+
+theorem active_conjunction_has_no_compiled_region :
+    (classify .completedResult integers noNames {equations := [], declarations := []} []
+      (NamedSpaces.Store.new [] []) "&self" [comma] 0).isNone = true := by decide +kernel
+
+def emptyPrepared : Prepared integers noNames [] [] (fun _ => none) :=
+  (prepare integers noNames [] [] (fun _ => none) 0).get (by decide +kernel)
+
+theorem empty_ir_conjunction_still_has_one_witness : emptyPrepared.count 0 = 1 := by
+  rw [emptyPrepared.count_exact]
+  rfl
+
 def prepared : Prepared integers names rows patterns (fun _ => none) :=
   (prepare integers names rows patterns (fun _ => none) 0).get (by decide +kernel)
 

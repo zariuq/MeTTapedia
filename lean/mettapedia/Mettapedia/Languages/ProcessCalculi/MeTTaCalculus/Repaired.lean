@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LocatedSubstitution
-import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.ReflectionClosure
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedCongruence
 
 /-!
 # A proposed repaired interaction profile for the MeTTa calculus
@@ -212,18 +212,100 @@ theorem requests_cannot_answer_an_empty_data_store (base : SubstitutionAction T 
   obtain ⟨occurrence, present, same, _⟩ := read_requires_and_keeps_data base label space pattern valid
   exact noData occurrence present (congrArg Prod.fst same)
 
+section LiteralFacts
+
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsComm (psubst pvars PSubst)
+
+/-- Two copies of one stored fact communicate under the corrected step. Each
+copy is opened apart with its own fresh names, the two renamed patterns are
+unified by mapping the second copy's names to the first's, and both inert
+continuations stay inert. -/
+theorem equal_facts_communicate (term channel : Pattern) (calcT : Corrected.calcTerm term = true)
+    (free : Corrected.guardFree term = true) :
+    par pZero pZero ∈ Corrected.cstep (par (pFor term channel pZero) (pFor term channel pZero)) := by
+  have closedForm : Corrected.close (par (pFor term channel pZero) (pFor term channel pZero)) =
+      par (pFor (Corrected.closeIn [Corrected.frame term] term) (Corrected.closeIn [] channel) pZero)
+        (pFor (Corrected.closeIn [Corrected.frame term] term) (Corrected.closeIn [] channel) pZero) := by
+    unfold Corrected.close
+    rw [Corrected.closeIn_par, Corrected.closeIn_pFor, Corrected.closeIn_pZero]
+  unfold Corrected.cstep
+  rw [closedForm, Corrected.stepClosed_par]
+  apply List.mem_append_left
+  generalize pvars (par (pFor (Corrected.closeIn [Corrected.frame term] term) (Corrected.closeIn [] channel) pZero)
+    (pFor (Corrected.closeIn [Corrected.frame term] term) (Corrected.closeIn [] channel) pZero)) = avoid
+  obtain ⟨openL, longL⟩ := Corrected.opened_pattern avoid 0 term calcT free
+  obtain ⟨openR, longR⟩ := Corrected.opened_pattern avoid
+    (Corrected.codeCount (Corrected.closeIn [Corrected.frame term] term)) term calcT free
+  generalize hn : Corrected.codeCount (Corrected.closeIn [Corrected.frame term] term) = n at openL openR longL longR
+  generalize hL : Corrected.freshNames avoid 0 n = L at openL longL
+  generalize hR : Corrected.freshNames avoid n n = R at openR longR
+  have frameIs : Corrected.frame term = pvars term := Corrected.frame_of_guardFree term free
+  -- the names of the second copy, mapped back to those of the first
+  let back : PSubst := fun w =>
+    ((Corrected.frame term).find? fun v => Corrected.nameOf R (Corrected.frame term) v == w).map
+      fun v => .fvar (Corrected.nameOf L (Corrected.frame term) v)
+  have apartLR : ∀ name, name ∈ L → name ∈ R → False := by
+    intro name inL inR
+    rw [← hL] at inL; rw [← hR] at inR
+    exact Corrected.freshNames_disjoint inL inR
+  have injR := Corrected.nameOf_injOn (hR ▸ Corrected.freshNames_nodup avoid n n) longR
+  have backL : ∀ v ∈ Corrected.frame term, back (Corrected.nameOf L (Corrected.frame term) v) = none := by
+    intro v member
+    simp only [back, Option.map_eq_none_iff, List.find?_eq_none, beq_iff_eq]
+    intro w wIn same
+    exact apartLR _ (Corrected.nameOf_mem longL member) (same ▸ Corrected.nameOf_mem longR wIn)
+  have backR : ∀ v ∈ Corrected.frame term,
+      back (Corrected.nameOf R (Corrected.frame term) v) = some (.fvar (Corrected.nameOf L (Corrected.frame term) v)) := by
+    intro v member
+    have found : ((Corrected.frame term).find? fun w =>
+        Corrected.nameOf R (Corrected.frame term) w == Corrected.nameOf R (Corrected.frame term) v).isSome := by
+      rw [List.find?_isSome]
+      exact ⟨v, member, by simp⟩
+    obtain ⟨w, hw⟩ := Option.isSome_iff_exists.mp found
+    have wIn := List.mem_of_find?_eq_some hw
+    have wSame := List.find?_some hw
+    simp only [beq_iff_eq] at wSame
+    have := injR w wIn v member wSame
+    subst this
+    simp only [back, hw, Option.map_some]
+  have solvable : ∃ τ : PSubst, psubst τ (Corrected.openPattern L (Corrected.closeIn [Corrected.frame term] term)) =
+      psubst τ (Corrected.openPattern R (Corrected.closeIn [Corrected.frame term] term)) := by
+    refine ⟨back, ?_⟩
+    rw [openL, openR, Corrected.psubst_rename, Corrected.psubst_rename]
+    apply Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsComm.psubst_congr
+    intro v occurs
+    have member : v ∈ Corrected.frame term := frameIs ▸ occurs
+    simp only [psubst, backL v member, backR v member, Option.getD_none, Option.getD_some]
+  obtain ⟨bs, found⟩ : ∃ bs, Corrected.unify (Corrected.openPattern L (Corrected.closeIn [Corrected.frame term] term))
+      (Corrected.openPattern R (Corrected.closeIn [Corrected.frame term] term)) = some bs := by
+    cases unified : Corrected.unify (Corrected.openPattern L (Corrected.closeIn [Corrected.frame term] term))
+        (Corrected.openPattern R (Corrected.closeIn [Corrected.frame term] term)) with
+    | none => exact absurd solvable ((Corrected.unify_eq_none_iff _ _).mp unified)
+    | some bs => exact ⟨bs, rfl⟩
+  have guardFreeClosed : Corrected.guardFree (Corrected.closeIn [Corrected.frame term] term) = true := by
+    rw [Corrected.guardFree_closeIn]; exact free
+  simp only [Corrected.commClosed, Corrected.asGuard_pFor, guardFreeClosed, and_self, if_true, hn, hL, hR,
+    found, List.mem_singleton]
+  simp [Corrected.openWith, Corrected.instantiateAt, Corrected.instantiateList, applyDot, dotBindings,
+    Mettapedia.OSLF.MeTTaIL.Match.applyBindings, pZero]
+
 /-- The manuscript's literal stored-fact encoding permits two equal entries
-to consume each other by its original symmetric COMM rule. This refutes that
-particular passive-store interpretation, not the calculus's ability to use
-a richer encoding or an explicitly active rendezvous protocol. -/
-theorem literal_fact_pair_consumes_both (channel : Name) (term : Term) :
-    ReflectionClosure.Step ReflectionClosure.executableUnifier SC
+to consume each other by its symmetric COMM rule, under the corrected
+semantics with the bag laws: a guard-free fact pattern on a calculus channel.
+This refutes that particular passive-store interpretation, not the
+calculus's ability to use a richer encoding or an explicitly active
+rendezvous protocol. -/
+theorem literal_fact_pair_consumes_both (channel : Name) (term : Term)
+    (calcT : Corrected.calcTerm term = true) (free : Corrected.guardFree term = true)
+    (calcC : Corrected.calcTerm channel = true) :
+    Corrected.BagStep Corrected.conventional
       (par (pFor term channel pZero) (pFor term channel pZero)) pZero := by
-  have unifies : ReflectionClosure.executableUnifier term term [] := unifyPattern_self term
-  have root := ReflectionClosure.Step.comm (unifies := ReflectionClosure.executableUnifier) (equivalent := SC)
-    term term channel pZero pZero [] unifies
-  apply ReflectionClosure.Step.congruence (SC.refl _) root
-  simpa [applyDot, dotBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindings, pZero, par, pPar] using
-    (SC.par_nil_right pZero)
+  have inCalc : Corrected.calcTerm (par (pFor term channel pZero) (pFor term channel pZero)) = true := by
+    simp [par, pPar, pFor, pZero, Corrected.calcTerm, Corrected.calcList, calcT, calcC]
+  have step := Corrected.cstep_sound inCalc (equal_facts_communicate term channel calcT free)
+  exact .congruence (Corrected.BagEq.refl _) step.toBagStep (Corrected.BagEq.par_zero pZero)
+
+end LiteralFacts
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Repaired

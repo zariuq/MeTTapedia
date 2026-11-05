@@ -195,6 +195,7 @@ import Mettapedia.GSLT.LanguageDef.BindingCollectionEquationWire
 import Mettapedia.GSLT.LanguageDef.GSLTILNativeKernel
 import Mettapedia.GSLT.LanguageDef.GSLTILNativeKernelWire
 import Mettapedia.GSLT.LanguageDef.ModuleSource
+import Mettapedia.GSLT.LanguageDef.Collections
 
 /-!
 # Compositional language definitions

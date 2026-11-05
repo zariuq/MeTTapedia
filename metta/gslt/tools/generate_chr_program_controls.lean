@@ -1,5 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRExecutionData
 import Mettapedia.Languages.CHR.Examples
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRPrologFrontend
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRPrologPrinter
 
 /-! Whole prepared-IR CHR controls. The expected final constraints are
 independent program fixtures, also checked in SWI. Ordinary source reading
@@ -14,9 +16,8 @@ open Mettapedia.GSLT.LanguageDef.ModuleFormat CHRCompilation
 open Mettapedia.OSLF.MeTTaIL
 open Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL
 
-def generate (directory label : String) : IO Unit := do
-  let some sample := Examples.examples.find? (fun sample => sample.name == label)
-    | throw (IO.userError "unknown CHR reference example")
+def generateSample (directory : String) (sample : Examples.Example) : IO Unit := do
+  let label := sample.name
   let .ok prepared := prepare sample.program sample.inputs
     | throw (IO.userError s!"CHR preparation refused: {reprStr (prepare sample.program sample.inputs)}")
   let .ok emitted := ExecutionData.emitText? prepared sample.inputs "prepared-chr"
@@ -49,6 +50,7 @@ def generate (directory label : String) : IO Unit := do
   IO.FS.createDirAll output
   IO.FS.writeFile (output / "query.metta") emitted
   IO.FS.writeFile (output / "controls.metta") (controls ++ String.join wireControls)
+  IO.FS.writeFile (output / "canonical.chr") (CHRPrologPrinter.program sample.program sample.inputs)
   IO.FS.writeFile (output / "preparation.json")
     (Lean.Json.mkObj [("program", .str label), ("sourceRules", Lean.toJson sample.program.rules.length),
       ("compiledOccurrences", Lean.toJson prepared.entries.length),
@@ -56,8 +58,41 @@ def generate (directory label : String) : IO Unit := do
       ("scope", .str "Prepared IR native controls; source frontend and semantic correspondence remain open")]).pretty
   IO.println s!"prepared {label}: {prepared.entries.length} compiled head occurrences"
 
+def generate (directory label : String) : IO Unit := do
+  let some sample := Examples.examples.find? (fun sample => sample.name == label)
+    | throw (IO.userError "unknown CHR reference example")
+  generateSample directory sample
+
+def generateSource (directory label sourcePath packetPath : String) : IO Unit := do
+  let some reference := Examples.examples.find? (fun sample => sample.name == label)
+    | throw (IO.userError "unknown CHR source control")
+  let source ← IO.FS.readFile sourcePath
+  let .ok packets := Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics.readSource (← IO.FS.readFile packetPath)
+    | throw (IO.userError "invalid source packet catalogue")
+  let readings ← packets.mapM fun packet => do
+    let .expression [.symbol "result", tree, .symbol "nil"] := packet
+      | throw (IO.userError "invalid source packet envelope")
+    match CHRPrologFrontend.read source tree with
+    | .error reason => throw (IO.userError reason)
+    | .ok retained =>
+        unless ScalarSyntaxCore.printText? CHRPrologFrontend.description "ChrSourceProgram" retained.sourceCore == some source do
+          throw (IO.userError "CHR source printing differs from its original text")
+        pure retained
+  let first :: rest := readings | throw (IO.userError "no selected source interpretation")
+  unless rest.all (fun reading => decide (reading.lowered = first.lowered)) do
+    throw (IO.userError "CHR source alternatives have different IR interpretations")
+  unless first.lowered.program = reference.program ∧ first.lowered.inputs = reference.inputs do
+    throw (IO.userError s!"CHR source differs from independent IR fixture: {reprStr first.lowered}")
+  generateSample directory ⟨label, first.lowered.program, first.lowered.inputs, reference.expected⟩
+  IO.FS.writeFile (System.FilePath.mk directory / "source.txt") source
+  IO.FS.writeFile (System.FilePath.mk directory / "source-control.json")
+    (Lean.Json.mkObj [("alternatives", Lean.toJson readings.length),
+      ("irAgrees", .bool true), ("exactSourcePrinting", .bool true),
+      ("forestCoverageCheckedByThisCommand", .bool false)]).pretty
+
 def main (arguments : List String) : IO Unit := do
   match arguments with
+  | [directory, "--source", label, source, packets] => generateSource directory label source packets
   | directory :: "--batch" :: labels =>
       if labels.isEmpty then throw (IO.userError "expected example names after --batch")
       for label in labels do

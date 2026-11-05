@@ -148,7 +148,7 @@ private theorem increment_returns (bindings : Subst) (state : State) (count : Na
 private theorem two_raw_number_call (bindings callee : Subst) (state : State)
     (head : String) (one two third oneValue twoValue : Atom) (count : Nat) (body answer : Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])
     (notIO : ioHead head = false) (notNative : StdLib.known head = false)
     (firstRaw : argumentIsRaw program head 0 = true)
     (secondRaw : argumentIsRaw program head 1 = true)

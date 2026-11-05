@@ -566,8 +566,14 @@ one$\to Q$) biject with MORK's two \texttt{FoldPicksSubResult} choices
 
 The MeTTa-calculus~\cite{MeredithMeTTaCalculus2024} formalizes the core
 of the MeTTa language as a symmetric reflective higher-order concurrent
-calculus with backchaining.  The formalization comprises 9~files
-totaling 1{,}174~lines under \texttt{ProcessCalculi/MeTTaCalculus/}.
+calculus with backchaining.  Two inputs communicate by unifying their
+patterns, and patterns bind variables.  Read without the variable
+convention, the communication rule lets one input's bound name capture the
+other input's free name.  The formalization therefore states
+\textsc{Comm} with a principal, idempotent unifier and with the two inputs
+opened apart, quotes every pattern variable in the continuations, computes
+the rule on a locally nameless closed form, and proves each adequacy claim
+on a stated fragment.
 
 \subsection{Syntax}
 
@@ -587,8 +593,9 @@ reflection (inspect~$P$ and emit its future state on~$x$), $@(P)$
 quotes a process into a name, and ${*}x$ drops (unquotes) a name back
 to a process.
 
-\texttt{Syntax.lean} (135~lines) encodes the grammar as abbreviations of
-the shared \texttt{Pattern} AST:
+\texttt{Syntax.lean} (168~lines) encodes the grammar as abbreviations of
+the shared \texttt{Pattern} AST.  Pattern variables are its free
+variables:
 
 \begin{lstlisting}[caption={MeTTa-calculus syntax (from \texttt{Syntax.lean})}]
 abbrev Proc := Pattern   -- processes
@@ -607,14 +614,32 @@ def pReflect (x : Name) (p : Proc) : Proc :=
 \end{lstlisting}
 
 \noindent
-Two language definitions are provided: \texttt{mettaCalc} (full COMM +
-REFL rules) and \texttt{mettaCalcCommOnly} (the COMM-only fragment, used
-to avoid self-reference in the REFL rule's recursive stepping).
+Two language definitions are provided: \texttt{mettaCalc} (the
+\textsc{Comm}, \textsc{Refl} and parallel rules) and
+\texttt{mettaCalcCommOnly} (the \textsc{Comm}-only fragment, which the
+premise contract of Section~\ref{sec:metta-premises} uses as the lookahead
+of \textsc{Refl}).
+
+\paragraph{Binding and alpha-equivalence.}
+A guard $\mathsf{for}(t \leftarrow x)\,P$ binds every variable of its
+pattern~$t$, in~$t$ and in~$P$; the channel~$x$ is outside its scope.
+A guard quoted inside a pattern binds its own variables.
+Alpha-equivalence is decided on a locally nameless closed
+form~\cite{deBruijn1972,Chargueraud2012}: \texttt{close} replaces every
+bound occurrence by a code for the depth of its guard and its position in
+that guard's pattern, and $P \equiv_\alpha Q$ is
+$\mathtt{close}\,P = \mathtt{close}\,Q$ (\texttt{AlphaEq}).
+Renaming a bound variable~$y$ of a guard to~$z$ preserves the closed form
+(\texttt{alpha\_alphaEq}) when $z$ occurs neither in the pattern nor in the
+continuation and $y$ is not rebound inside the continuation.  The
+manuscript requires only $z \notin \mathrm{FN}(P)$; without $z \notin t$
+the renaming merges two variables of one pattern and changes the guard's
+reducts (\texttt{alpha\_side\_condition\_needed}).
 
 \subsection{Structural Congruence}
 
-Structural congruence ($\equiv$) is the smallest equivalence closed
-under:
+The manuscript's structural congruence ($\equiv$) is the smallest
+equivalence closed under:
 \begin{align}
   P \mathbin{|} \mathbf{0}  &\equiv P
     \tag{\textsc{Nil}} \\
@@ -628,9 +653,13 @@ under:
 \end{align}
 
 \texttt{StructuralCongruence.lean} (67~lines) defines the inductive
-relation \texttt{SC} (notation~$\approx_m$) with 11~constructors
-covering all clauses above plus $\alpha$-equivalence, permutation, and
-pointwise congruence:
+relation \texttt{SC} (notation~$\approx_m$) with 11~constructors: the
+equivalence closure, a constructor \texttt{alpha} for syntactic identity,
+the singleton, unit, commutativity and associativity laws of the bag,
+permutation, and pointwise congruence.  \textsc{QuoteDrop} is an equation
+of the language definition \texttt{mettaCalc}.  Alpha-equivalence is not a
+constructor of \texttt{SC}; it is \texttt{AlphaEq}, and the corrected
+relational rules below use it as their equivalence.
 
 \begin{lstlisting}[caption={Structural congruence (from \texttt{StructuralCongruence.lean})}]
 inductive SC : Proc -> Proc -> Prop where
@@ -638,10 +667,9 @@ inductive SC : Proc -> Proc -> Prop where
   | symm   (p q : Proc) : SC p q -> SC q p
   | trans  (p q r : Proc) : SC p q -> SC q r -> SC p r
   | alpha  (p q : Proc) : p = q -> SC p q
-  | par_nil_left  (p : Proc) :
-      SC (pPar [pZero, p]) p
-  | par_nil_right (p : Proc) :
-      SC (pPar [p, pZero]) p
+  | par_singleton (p : Proc) : SC (pPar [p]) p
+  | par_nil_left  (p : Proc) : SC (pPar [pZero, p]) p
+  | par_nil_right (p : Proc) : SC (pPar [p, pZero]) p
   | par_comm  (p q : Proc) :
       SC (pPar [p, q]) (pPar [q, p])
   | par_assoc (p q r : Proc) :
@@ -658,103 +686,290 @@ inductive SC : Proc -> Proc -> Prop where
 \noindent
 Paper-mapped equivalence theorems:
 \begin{itemize}
-\item \texttt{paper\_equiv\_par\_nil\_left}: $P \mathbin{|} \mathbf{0} \approx_m P$
-\item \texttt{paper\_equiv\_par\_nil\_right}: $\mathbf{0} \mathbin{|} P \approx_m P$
+\item \texttt{paper\_equiv\_par\_nil\_left}: $\mathbf{0} \mathbin{|} P \approx_m P$
+\item \texttt{paper\_equiv\_par\_nil\_right}: $P \mathbin{|} \mathbf{0} \approx_m P$
 \item \texttt{paper\_equiv\_par\_comm}: $P \mathbin{|} Q \approx_m Q \mathbin{|} P$
 \item \texttt{paper\_equiv\_par\_assoc}: $(P \mathbin{|} Q) \mathbin{|} R \approx_m P \mathbin{|} (Q \mathbin{|} R)$
 \end{itemize}
 
 \subsection{Reduction Semantics}
+\label{sec:metta-reduction}
 
-The calculus has two reduction rules.  The \textsc{Comm} rule performs a
-symmetric rendezvous: two guarded inputs listening on the same channel
-unify their payload patterns and continue with substituted bodies:
+\paragraph{The capture-avoiding \textsc{Comm}.}
+Two guarded inputs on the same channel communicate when their patterns
+unify:
 \begin{equation}
-  \frac{\sigma = \mathit{mgu}(t, u)}
+  \frac{\sigma \text{ a principal idempotent unifier of } t \text{ and } u
+        \qquad \text{the two inputs apart}}
        {\mathsf{for}(t \leftarrow x)\, P \mathbin{|}
         \mathsf{for}(u \leftarrow x)\, Q
         \;\longrightarrow\;
         P\dot\sigma \mathbin{|} Q\dot\sigma}
   \tag{\textsc{Comm}}
 \end{equation}
-where $\dot\sigma$ is \emph{dot-substitution}: each binding $(v \mapsto
-T)$ in~$\sigma$ becomes $(v \mapsto @(T))$, quoting the term into a
-name.  The \textsc{Refl} rule lets a process inspect its own future
-via one-step \textsc{Comm}-only lookahead:
+Here $\dot\sigma$ is \emph{dot-substitution}: each pattern variable~$v$
+becomes the name $@(v\sigma)$, the quotation of its value, so a variable
+that~$\sigma$ leaves unbound becomes $@v$.  This \emph{uniform dot} is the
+manuscript's dot of a principal binding list that names every pattern
+variable, a bound one with its value and an unbound one with itself
+(\texttt{completeBindings}, \texttt{applyDot\_completeBindings}).  Because
+$\sigma$ is idempotent, the dot is applied once to each continuation.  The
+two inputs are \emph{apart} under the variable
+convention~\cite{Barendregt1984,UrbanBerghoferNorrish2007}
+(\texttt{Apart}): the two patterns share no variable, neither input
+mentions the other's pattern variables, and no guard inside a
+continuation rebinds its own input's pattern variables.  As the convention
+prescribes, bound names are renamed apart, up to alpha-equivalence, before
+the rule applies.
+
+\paragraph{The relational rules.}
+\texttt{Corrected.Step admit} has the manuscript's four rules:
+\textsc{Comm} with a principal unifier and an admission on the redex,
+\textsc{Par}, \textsc{Equiv} by~$\equiv_\alpha$, and \textsc{Refl}, whose
+premise is the same relation, so that reflection is recursive:
 \begin{equation}
-  \frac{P \longrightarrow_{\textsc{Comm}} P'}
+  \frac{P \longrightarrow P'}
        {x\mathbin{?}P \;\longrightarrow\;
         \mathsf{for}((P') \leftarrow x)\, \mathbf{0}}
   \tag{\textsc{Refl}}
 \end{equation}
+The admission \texttt{conventional} is \texttt{Apart}.  The admission
+\texttt{uniform}, the semantics, adds that the binding list names every
+pattern variable (\texttt{Complete}), so that the dot is uniform;
+\texttt{uniformCalc} restricts it to guard-free patterns and to patterns and
+continuations of the calculus fragment.  The admission \texttt{closing} adds
+to \texttt{conventional} that both patterns are guard-free, that patterns and
+continuations belong to the calculus fragment, and that the unifier binds
+every pattern variable a continuation reads to a ground term.
+\texttt{Principal t u bs} says that one pass of~\texttt{bs} makes $t$
+and~$u$ equal and that every unifier of $t$ and~$u$ absorbs it.
 
-\texttt{Reduction.lean} (264~lines) encodes both rules as OSLF rewrite
-rules with premise queries.  The \textsc{Comm} rule uses a
-fuel-bounded first-order unifier (256~steps) with an occurs check:
+\paragraph{Unification.}
+\texttt{Corrected.unify} encodes patterns injectively as first-order terms
+and runs a Martelli--Montanari solver~\cite{MartelliMontanari1982} with an
+occurs check.  The solver is evaluated by the kernel and proved equal to a
+total unification algorithm, and \texttt{unify} returns each moved
+variable with its final value.  It is sound, most general and idempotent,
+and it fails exactly when no substitution unifies the two
+patterns~\cite{Robinson1965}.
 
-\begin{lstlisting}[caption={COMM rewrite rule (from \texttt{Syntax.lean})}]
-private def commSymRule : RewriteRule := {
-  name := "CommSym"
-  typeContext := [("t", .base "Term"), ("u", .base "Term"),
-    ("x", .base "Name"), ("p", .base "Proc"),
-    ("q", .base "Proc"), ("pOut", .base "Proc"),
-    ("qOut", .base "Proc")]
-  premises := [
-    .relationQuery relMettaComm
-      [.fvar "t", .fvar "u", .fvar "p", .fvar "q",
-       .fvar "pOut", .fvar "qOut"] ]
-  left := .collection .hashBag [
-    .apply "MFor" [.fvar "t", .fvar "x", .fvar "p"],
-    .apply "MFor" [.fvar "u", .fvar "x", .fvar "q"]
-  ] (some "rest")
-  right := .collection .hashBag
-    [.fvar "pOut", .fvar "qOut"] (some "rest")
-}
+\paragraph{The executable step.}
+\texttt{cstep}~$P$ works on $\mathtt{close}\,P$.  At a binary composition
+of two guards on one channel with guard-free patterns, it opens the two
+inputs with distinct names fresh for the whole process, unifies the opened
+patterns, completes the unifier with the opened variables it leaves
+unbound, and applies the dot once to each opened continuation.  It also
+steps the left component of a composition, and it steps a reflected
+process with the same function, so it has the nested reflection result.
+
+\begin{lstlisting}[caption={The corrected COMM (from \texttt{CorrectedReduction.lean})}]
+def commClosed (avoid : List String) (first second : Pattern) :
+    List Pattern :=
+  match asGuard first, asGuard second with
+  | some (t, x, k), some (u, y, l) =>
+      if x = y /\ guardFree t = true /\ guardFree u = true then
+        let leftNames  := freshNames avoid 0 (codeCount t)
+        let rightNames := freshNames avoid (codeCount t) (codeCount u)
+        match unify (openPattern leftNames t)
+                    (openPattern rightNames u) with
+        | some bs =>
+            let all := completeBindings
+              (pvars (openPattern leftNames t) ++
+               pvars (openPattern rightNames u)) bs
+            [par (applyDot all (openWith leftNames k))
+                 (applyDot all (openWith rightNames l))]
+        | none => []
+      else []
+  | _, _ => []
+
+def cstep (p : Pattern) : List Pattern :=
+  stepClosed (pvars (close p)) (close p)
 \end{lstlisting}
 
-\begin{lstlisting}[caption={REFL rewrite rule (from \texttt{Syntax.lean})}]
-private def reflRule : RewriteRule := {
-  name := "Refl"
-  typeContext := [("x", .base "Name"),
-    ("p", .base "Proc"), ("pNext", .base "Proc")]
-  premises := [.relationQuery relMettaStepNoReflect
-    [.fvar "p", .fvar "pNext"]]
-  left  := .apply "MRef" [.fvar "x", .fvar "p"]
-  right := .apply "MFor"
-    [.apply "MTermProc" [.fvar "pNext"],
-     .fvar "x", .apply "MZero" []]
-}
-\end{lstlisting}
+\begin{theorem}[The corrected step]
+\label{thm:metta-corrected}
+Each claim holds on the fragment named.
+\begin{enumerate}[nosep]
+\item \emph{Unifier, all patterns:} \texttt{unify} returns a principal,
+  idempotent unifier when one exists and fails otherwise
+  (\texttt{unify\_sound}, \texttt{unify\_most\_general},
+  \texttt{unify\_idempotent}, \texttt{unify\_eq\_none\_iff}); one pass of
+  its dotted bindings is $P\dot\sigma$ (\texttt{applyDot\_unify}).
+\item \emph{Alpha-invariance, all processes:} if $P \equiv_\alpha P'$ then
+  $\mathtt{cstep}\,P = \mathtt{cstep}\,P'$
+  (\texttt{cstep\_alpha\_invariant}, \texttt{cstep\_alpha\_rule\_invariant}).
+\item \emph{Alpha, tame processes:} on processes of the calculus fragment
+  whose guards have guard-free patterns, the manuscript's renaming rule,
+  closed under equivalence and contexts, is exactly equality of closed forms
+  (\texttt{alpha\_iff\_alphaEq}).  Outside them a code inside a process is
+  indistinguishable from a bound occurrence
+  (\texttt{alphaEq\_not\_alpha\_with\_code}).
+\item \emph{Soundness, the calculus fragment:} every $Q \in \mathtt{cstep}\,P$
+  is a step $P \longrightarrow Q$ of the relational rules with the uniform
+  dot (\texttt{cstep\_sound\_uniform}).
+\item \emph{Completeness up to alpha, the closing fragment:} for every step
+  $P \longrightarrow Q$ whose \textsc{Comm} instances are closing there is
+  $Q' \in \mathtt{cstep}\,P$ with $Q' \equiv_\alpha Q$
+  (\texttt{cstep\_complete}, \texttt{cstep\_adequate}).
+\item \emph{Completeness up to renaming, guard-free patterns:} for every
+  step $P \longrightarrow Q$ of the uniform dot on guard-free patterns there
+  are $Q' \in \mathtt{cstep}\,P$ and a renaming~$\rho$ that fixes every free
+  name of~$P$, is injective on the other names of~$Q'$, and makes
+  $\rho\,Q' \equiv_\alpha Q$ (\texttt{cstep\_complete\_residual}).  The
+  renaming comes from the fact that two principal unifiers agree up to a
+  renaming of their residual variables (\texttt{principal\_renaming}).
+\item \emph{Parallel composition:} modulo the commutativity, associativity
+  and unit laws, applied to the composition being executed and never inside
+  patterns, the step that fires \textsc{Comm} at any pair of guards and
+  \textsc{Refl} at any reflected component is sound for calculus processes
+  (\texttt{cstepBag\_sound}), and on the closing fragment it is complete for
+  the rules without \textsc{Refl} (\texttt{cstepBag\_complete}).  When
+  \textsc{Refl} quotes the canonical representative of its reduct, the
+  listener depends only on the class of the reduct
+  (\texttt{reflect\_respects\_bagEq}), and the step is complete on the
+  closing fragment for all four rules (\texttt{cstepCanon\_complete}).
+\item \emph{Firing:} for any principal unifier of inputs that are apart,
+  with first-order continuations and a store whose variables are apart
+  from the patterns, \textsc{Comm} is one valid firing of a multiset
+  rewriting step with an equation store; every solution of the resulting
+  store reads each output as the uniform dot below, which is the dotted
+  continuation wherever the unifier binds the variables it reads
+  (\texttt{comm\_adequacy\_corrected}).
+\end{enumerate}
+\end{theorem}
 
-\noindent
-The dot-substitution and unification implementations complete the
-executable semantics:
+\paragraph{Why the uniform dot.}
+With the manuscript's dot of an arbitrary principal binding list, the
+reduct depends on how a most general unifier is oriented: for
+$\{X \mapsto Y\}$ and $\{Y \mapsto X\}$ the continuation~$X$ reads $@Y$
+and~$X$ (\texttt{manuscript\_dot\_depends\_on\_orientation}), and the
+reduct $X \mathbin{|} @X$ of
+$\mathsf{for}(X \leftarrow @\mathbf{0})\,X \mathbin{|}
+ \mathsf{for}(Y \leftarrow @\mathbf{0})\,Y$ is related by no renaming to
+any executable reduct, since one of its continuations is not quoted
+(\texttt{manuscript\_dot\_not\_up\_to\_renaming}).  The uniform dot reads
+$@Z \mathbin{|} @Z$ for one residual name~$Z$, whatever the orientation
+(\texttt{uniform\_dot\_up\_to\_renaming}).  It agrees with the manuscript's
+dot wherever every read variable is bound (\texttt{uniformDot\_eq\_applyDot}),
+and every solution of the firing's store reads it, for any principal
+unifier (\texttt{firing\_reads\_uniform\_dot}).  The renaming of
+completeness cannot be injective on all names: the relational rule may
+choose as a residual name a free name of the surrounding process, which
+the executable, fresh for the whole process, never does
+(\texttt{residual\_meets\_context}).
 
-\begin{lstlisting}[caption={Dot-substitution and step function (from \texttt{Reduction.lean})}]
-def dotBindings (s : Bindings) : Bindings :=
-  s.map (fun (x, v) => (x, nQuote v))
+\paragraph{Reflection modulo the monoid laws.}
+A reflected listener quotes a process, and a partner can compare quoted
+processes.  If the listener quoted whichever representative of the reduct
+a derivation produced, one class of reducts would give listeners that a
+partner tells apart (\texttt{representative\_reflection\_two\_listeners},
+\texttt{partner\_tells\_listeners\_apart}), and the order of a parallel
+composition would become observable.  In the reflective
+calculi a name is a quoted process taken up to structural congruence, so
+that $P \equiv Q$ implies $@P \equiv_N @Q$~\cite{MeredithRadestock2005};
+order is not observable while multiplicity is.  Following that, the
+formalization's \textsc{Refl} quotes the canonical representative of the
+reduct's class: its closed components, sorted by an injective structural
+code, with their multiplicities (\texttt{canonicalBag},
+\texttt{bagEq\_iff\_canonicalBag\_eq}).  From either order of the control's
+two inputs, every listener is the same one
+(\texttt{canonical\_reflection\_one\_listener}).  The canonical order is
+exact for ground names.  A pattern that quotes a bag with variables is
+still compared by unification as written, and a partner quoting another
+order misses the listener (\texttt{written\_order\_partner\_misses});
+comparing such patterns modulo the laws needs unification modulo
+associativity and commutativity, which yields complete sets of unifiers
+rather than one, and is not part of the rules.
 
-def applyDot (s : Bindings) (p : Proc) : Proc :=
-  applyBindings (dotBindings s) p
+\paragraph{Patterns that quote guards.}
+The executable step does not fire on patterns that quote guards, even when
+the two patterns are alpha-equivalent
+(\texttt{guard\_quoting\_partners\_refused}).  Unifying such patterns up to
+their bound names is the problem of nominal unification~\cite{Pitts2003}.
+On closed forms it becomes first-order: closing commutes with a
+substitution of closed values that captures nothing
+(\texttt{closeIn\_psubst\_closed}), so such a substitution unifies two
+patterns up to alpha exactly when it unifies their closed forms, on which a
+bound name is a code compared as a constant
+(\texttt{alphaEq\_psubst\_iff}).  The first-order unifier of the closed
+forms is principal among capture-free alpha-unifiers
+(\texttt{alpha\_unifier\_absorbs}); when it binds a pattern variable to a
+code that a quoted guard binds, no capture-free alpha-unifier exists
+(\texttt{no\_alpha\_unifier\_of\_escaping}).  Extending the executable
+\textsc{Comm} and its admission to such patterns is the remaining step.
 
-def step (p : Proc) : List Proc :=
-  rewriteWithContextWithPremisesUsing
-    mettaCalcRelEnv mettaCalc p
-\end{lstlisting}
-
-\noindent
-Positive and negative canaries validate both rules at the kernel level:
-\begin{itemize}
-\item \texttt{paper\_comm\_positive}/\texttt{paper\_comm\_negative}:
-  a concrete COMM rendezvous succeeds; mismatched channels block.
-\item \texttt{paper\_refl\_positive}/\texttt{paper\_refl\_negative}:
-  a concrete REFL step emits a future state; a non-stepping body
-  produces no output.
+\paragraph{The naive reading.}
+\texttt{Reduction.lean} keeps a naive executable reading of the rules,
+which unifies the patterns as written with a triangular binding list read
+in one pass and substitutes into both continuations without renaming the
+inputs apart.  Kernel-computed examples separate it from the rules:
+\begin{itemize}[nosep]
+\item \emph{Capture.}
+  $\mathsf{for}(a \leftarrow @\mathbf{0})\,a \mathbin{|}
+   \mathsf{for}(\mathbf{0} \leftarrow @\mathbf{0})\,a$ reduces to
+  $@\mathbf{0} \mathbin{|} @\mathbf{0}$, identifying the second input's
+  free~$a$ with the first input's bound~$a$; its alpha-variant reduces to
+  $@\mathbf{0} \mathbin{|} a$, which is the corrected reduct of both.
+\item \emph{A triangular list read once.}
+  $\mathsf{for}(f(X,X) \leftarrow @\mathbf{0})\,X \mathbin{|}
+   \mathsf{for}(f(Y,a) \leftarrow @\mathbf{0})\,\mathbf{0}$ reduces to
+  $@Y \mathbin{|} \mathbf{0}$, while every unifier reads $@a$.
+\item \emph{No renaming.}
+  $\mathsf{for}(X \leftarrow @\mathbf{0})\,X \mathbin{|}
+   \mathsf{for}(f(X) \leftarrow @\mathbf{0})\,\mathbf{0}$ has no naive
+  reduct; its corrected reduct is $@f(z) \mathbin{|} \mathbf{0}$ for a
+  fresh~$z$.
+\item \emph{The occurs check defeated.} $f(X, g(Z), Z, X)$ and
+  $f(f(Y), Y, W, W)$ have no unifier, yet the naive unifier accepts them and
+  the naive step fires.
+\item \emph{Nested reflection.} The naive \textsc{Comm}-only lookahead has
+  no result for a reflection of a reflection, so it misses a step of the
+  relational rules (\texttt{naive\_step\_misses\_nested\_reflection}).
 \end{itemize}
+The defect is the missing convention, not only the unifier: the rules read
+literally, with no admission on \textsc{Comm}, relate the canary to the
+capturing reduct even with a principal unifier and alpha-equivalence
+(\texttt{literal\_rule\_admits\_capture}), and the corrected rules exclude
+it under the convention alone (\texttt{capture\_not\_conventional\_step}).
+
+\subsection{The MeTTa-Calculus as a GSLT}
+
+\texttt{GSLTInteraction.lean} (265~lines) gives the behavioral theory
+\texttt{mettaCalcGSLT}: its terms are the processes of the calculus
+fragment, its equations are alpha-equivalence, and its rewrites are the
+relational rules under the convention with the uniform dot.
+\textsc{Equiv} makes the rewrites
+respect the equations on both sides.  Every reduct of the corrected step
+that is a calculus process is a rewrite
+(\texttt{executable\_step\_to\_mettaCalcGSLT}); on the closing fragment
+every rewrite is a reduct up to alpha (\texttt{closing\_step\_executes}),
+and on guard-free patterns every rewrite is a reduct up to renaming its
+residual names (\texttt{uniform\_step\_executes\_up\_to\_renaming}).
+A second theory, \texttt{mettaCalcBagGSLT}, takes the monoid laws as its
+equations and the rules with canonical reflection as its rewrites, so that
+the order of a parallel composition is not observable; on the closing
+fragment every rewrite is a reduct of the step with canonical reflection,
+up to the laws (\texttt{closing\_bag\_step\_executes}).
+The naive reading's capturing reduct of the canary is not a rewrite
+(\texttt{mettaCalcGSLT\_no\_capture}).
+A reduct may keep a guard of a continuation in closed form, and is then
+not itself a term of the theory.  The authored language definition
+supplies the interactive presentation: the process sort, the parallel
+constructor and the symmetric \textsc{Comm} rewrite, a base interaction
+whose one premise is a relation query.  The theory the generic engine
+presents from the authored definition has closed ground terms as its
+carrier, which contain no pattern variable, so it can express neither
+binding nor capture and is not used as the behavioral theory.  The direct
+contact of two guarded parties through the located-transaction layer
+takes its premise as a parameter; with the corrected premise, inputs apart
+and the principal unifier of their patterns completed to name every pattern
+variable, every contact is a root \textsc{Comm} of the relational rules with
+the uniform dot (\texttt{correctedContact\_step}).
 
 \subsection{Premise Intermediate Representation and Adequacy}
+\label{sec:metta-premises}
 
-\texttt{Premises.lean} (88~lines) declares a \texttt{PremiseProgram}---a
+\texttt{Premises.lean} (95~lines) declares a \texttt{PremiseProgram}---a
 datalog-style intermediate representation (IR) with two relations and
 two builtins:
 \[
@@ -768,27 +983,56 @@ two builtins:
 \]
 with machine-checked stratification and wellformedness proofs.
 
-\texttt{Adequacy.lean} (79~lines) bridges the abstract premise contract
-to the concrete runtime:
+\texttt{Adequacy.lean} (757~lines) answers the contract with the corrected
+\textsc{Comm}.  A rule sees only its own bag, so the names a residual must
+avoid cannot come from the rule; the runtime supplies the free names of the
+process being stepped, which is how the corrected step chooses its fresh
+names too.
 
 \begin{theorem}[Premise--Runtime Adequacy]
 \label{thm:metta-adequacy}
 The following are proven:
 \begin{enumerate}[nosep]
-\item \texttt{runtime\_covers\_declared\_relations}: every declared
-  relation is implemented by the runtime dispatcher.
-\item \texttt{runtime\_covers\_declared\_builtins}: every declared
-  builtin is implemented.
-\item \texttt{stepViaPremiseContract\_eq\_step}: the IR-based
-  stepping function agrees with the direct \texttt{step} function.
-\item \texttt{reducesViaPremiseContract\_iff\_reduces}:
-  $\texttt{ReducesViaPremiseContract}\;p\;q \iff \texttt{Reduces}\;p\;q$.
+\item \texttt{runtime\_covers\_declared\_relations},
+  \texttt{runtime\_covers\_declared\_builtins}: every declared relation and
+  builtin is implemented by the runtime dispatcher.
+\item \texttt{comm\_witness\_adapter\_spec}: the witness for
+  $\mathit{mettaCommWitness}(t, u, P, Q)$ is the corrected \textsc{Comm} of
+  the two inputs, closed, opened apart with names fresh for its four
+  arguments and the supplied names, unified, and dotted once.
+\item \texttt{comm\_witness\_sound}: at a root redex of calculus terms, on
+  any channel, every witness is a step of the relational rules under the
+  convention.
+\item \texttt{stepViaPremiseContract\_sound}: every reduct of the run of the
+  authored rules on a calculus process is a step of the relational rules
+  modulo the monoid laws.  The proof goes through the engine's relational
+  specification of its fuel-bounded run and inverts the authored rules'
+  matches (\texttt{engine\_sound}).
+\item \texttt{stepViaPremiseContract\_complete\_comm}: if two elements of
+  one bag communicate on the closing fragment, the run produces the reduct,
+  the other elements kept, up to the monoid laws.
+\item \texttt{premise\_contract\_comm\_canary},
+  \texttt{premise\_contract\_no\_capture},
+  \texttt{premise\_contract\_comm\_bagEq}: the authored rules reduce the
+  canary to its corrected reduct in both orders of the bag and never to the
+  capturing one, and each of their reducts is the corrected step's reduct
+  up to the monoid laws.
 \end{enumerate}
 \end{theorem}
 
+\noindent
+Outside the fragment of the completeness item the run stops short: two
+inputs in different bags have no reduct, although the monoid laws bring
+them together (\texttt{nested\_bag\_missed}), and a reflection whose process
+is itself a reflection has none, because the contract's \textsc{Refl}
+premise is the declared \textsc{Comm}-only lookahead
+(\texttt{nested\_reflection\_missed}).  Without the supplied names a
+witness is fresh for its redex only, and its residual name can be a free
+name of the surrounding bag (\texttt{supply\_keeps\_residuals\_fresh}).
+
 \subsection{Interoperability with \texorpdfstring{$\rho$}{rho}-Calculus}
 
-\texttt{Interoperability.lean} (301~lines) provides a shared-fragment
+\texttt{Interoperability.lean} (319~lines) provides a shared-fragment
 translation from the quote/drop/parallel subset of MeTTa-calculus into
 $\rho$-calculus.  The translation \texttt{toRhoSharedProc?}~succeeds on
 the translatable fragment and fails gracefully outside it.
@@ -830,17 +1074,32 @@ cross-language bisimulation theorem.
 
 \subsection{Regression and Paper Map}
 
-\texttt{PaperMap.lean} (147~lines) provides a theorem-level index mapping
+\texttt{PaperMap.lean} (190~lines) provides a theorem-level index mapping
 each clause of the specification~\cite{MeredithMeTTaCalculus2024} to its
-Lean proof, including wrappers for step/star forward simulation, backward
-simulation, intrinsic backward inversion, and combined bisimulation
+Lean proof.  Its reduction canaries are kernel computations of the
+corrected step: the canary reduces to exactly
+$@\mathbf{0} \mathbin{|} a$ (\texttt{paper\_comm\_positive}), its
+reflection emits the listener that quotes this reduct
+(\texttt{paper\_refl\_positive}), and mismatched patterns block both
+(\texttt{paper\_comm\_negative}, \texttt{paper\_refl\_negative});
+\texttt{paper\_comm\_relational} derives the same reduct by the relational
+rules, and \texttt{paper\_comm\_sound}, \texttt{paper\_comm\_complete},
+\texttt{paper\_comm\_alpha\_invariant} and
+\texttt{paper\_comm\_unifier\_principal} index
+Theorem~\ref{thm:metta-corrected}.  The index also wraps step and star
+forward simulation, backward simulation, intrinsic backward inversion,
+and combined bisimulation for the shared fragment
 (\texttt{paper\_shared\_to\_rho\_*} theorems).
 \texttt{CoreMain.lean} now also exposes an explicit HM endpoint map
 (\texttt{coreMain\_hm\_endpoint\_recommendation\_map}) distinguishing global
 canonical wrappers (assumption-scoped predecessor-finiteness) from the
 assumption-free scoped SC-quotiented family.
-\texttt{Regression.lean} (65~lines) provides a regression corpus with
-positive and negative test cases for both COMM and REFL rules.
+\texttt{Regression.lean} (79~lines) fixes the exact outputs of the
+corrected step on the positive and negative \textsc{Comm} and \textsc{Refl}
+canaries and in a parallel context: as a list, as a set, and modulo the
+monoid laws, where \textsc{Comm} fires at either order of the pair.
+\texttt{CorrectedControls.lean} holds the separating examples against the
+naive reading.
 \texttt{RelationNames.lean} (28~lines) is a single source of truth for
 relation and builtin string identifiers.
 

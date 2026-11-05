@@ -44,7 +44,7 @@ theorem checked_premise_receipt {State Query Ev Ov Scope : Type}
     (success : [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv provider) lang
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     Nonempty ((capabilityAnswerRelation (outsideCapability reading scope)).evidence
       (state, query) (reading.core.extract state query)) := by

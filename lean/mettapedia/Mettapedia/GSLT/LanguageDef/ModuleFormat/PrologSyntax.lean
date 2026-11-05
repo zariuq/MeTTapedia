@@ -169,6 +169,20 @@ def lexical (profile : Profile) : ParserProfileLayer := {
 
 def description (profile : Profile) : Portable.SyntaxDescription := ⟨grammar profile, lexical profile⟩
 
+/-- Extend the source grammar without changing the term reader's dialect,
+operator interpretation or lexical classes. Program-level frontends can
+reuse the sentence constructors and choose their own root sort. -/
+def extended (profile : Profile) (extra : List GrammarRule) (start name : String) :
+    Portable.SyntaxDescription :=
+  let allRows := rows profile ++ extra
+  ⟨{ grammar profile with name, types := sorts allRows, terms := allRows },
+   { lexical profile with name := name ++ "Lexical", startSort := start }⟩
+
+theorem extended_retains_rows (profile : Profile) (extra : List GrammarRule) (start name : String) :
+    (grammar profile).terms ⊆ (extended profile extra start name).grammar.terms := by
+  intro rule present
+  exact List.mem_append_left _ present
+
 def selection (profile : Profile) : List SourceSyntax.FamilyFilter :=
   let rest := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789".toList.map Char.toNat
   let graphics := "#$&*+-./:<=>?@\\^~".toList.map Char.toNat

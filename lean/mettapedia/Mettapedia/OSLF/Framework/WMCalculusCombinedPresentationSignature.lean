@@ -37,7 +37,7 @@ theorem same_signature_different_directed_rule :
       ruleCombineComm ∉ combinedStructuralLanguageDef.rewrites := by
   constructor
   · change ruleCombineComm ∈ coreRules ++ [ruleOverlapExtract] ++
-      [ruleForgetOutsideGuarded, ruleForgetIdempotent]
+      [ruleForgetOutside, ruleForgetIdempotent]
     simp [coreRules]
   · intro member
     have named : ruleCombineComm.name ∈

@@ -101,6 +101,7 @@ lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/export_match_automata_controls.lean
 !lean/mettapedia/scripts/check_resource_history.lean
 !lean/mettapedia/scripts/check_headline_witnesses.py
+!lean/mettapedia/scripts/check_observation_qualified_regions.py
 !lean/mettapedia/scripts/headline_witness_scan.lean
 !lean/mettapedia/scripts/headline_witnesses.toml
 !lean/mettapedia/scripts/test_metamath_mm2_raw_unit.sh
@@ -109,6 +110,11 @@ lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/conformance/
 lean/mettapedia/scripts/conformance/*
 !lean/mettapedia/scripts/conformance/build_cetta_qualification.py
+!lean/mettapedia/scripts/conformance/qualify_region_sources.py
+!lean/mettapedia/scripts/conformance/region_sources/
+!lean/mettapedia/scripts/conformance/region_sources/**
+!lean/mettapedia/scripts/conformance/region_probes/
+!lean/mettapedia/scripts/conformance/region_probes/**
 !lean/mettapedia/scripts/conformance/check_cetta_allocation_failure.py
 !lean/mettapedia/scripts/conformance/cetta_allocation_fault_probe.c
 !lean/mettapedia/scripts/conformance/inductive_array_backend.txt

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.DeclarationFaces.Faces
-import Mettapedia.Algebra.CollectionFold
+import Mettapedia.Algebra.Collections.Free
 import Mathlib.Data.Finsupp.Multiset
 import Mathlib.Data.Finsupp.Pointwise
 
@@ -26,7 +26,7 @@ laws of the formal-methods lane require.
   `count_ne_zero_mul`); on K-relations with values in ℕ it sends sums to unions and pointwise
   products to intersections (`support_add`, `support_mul`).
 * **Folds** (`count_not_set_function`, `fold_set_iff`): a fold consumes a set exactly when its
-  generator's values are idempotent (`Mettapedia.Algebra.CollectionFold.Boom.foldList_factors_set_iff`);
+  generator's values are idempotent (`Mettapedia.Algebra.Collections.foldList_factors_set_iff`);
   counting is a fold on bags and not a function on sets.
 
 Positive controls: `{|a b|} = {|b a a|}` as sets; `{a b} = {b a}` as bags; a bag of sets compares
@@ -227,14 +227,14 @@ theorem support_bag_add (A : CSort) (m m' : Multiset (Den B A)) :
 
 /-! ## Folds -/
 
-open Mettapedia.Algebra.CollectionFold.Boom in
+open Mettapedia.Algebra.Collections in
 /-- **A fold consumes sets exactly when its generator's values are idempotent.** -/
 theorem fold_set_iff {α M : Type*} [CommMonoid M] [DecidableEq α] (generator : α → M) :
     (∃ consume : Finset α → M, ∀ values : List α, foldList generator values = consume values.toFinset) ↔
       ∀ value, IsIdempotentElem (generator value) :=
   foldList_factors_set_iff generator
 
-open Mettapedia.Algebra.CollectionFold.Boom in
+open Mettapedia.Algebra.Collections in
 /-- **Counting is not a function on sets**: the fold that counts elements, a fold on bags, does not
 factor through the set of elements. -/
 theorem count_not_set_function {α : Type*} [DecidableEq α] [Nonempty α] :
@@ -247,7 +247,7 @@ theorem count_not_set_function {α : Type*} [DecidableEq α] [Nonempty α] :
   have h := congrArg Multiplicative.toAdd this
   simp at h
 
-open Mettapedia.Algebra.CollectionFold.Boom in
+open Mettapedia.Algebra.Collections in
 /-- **Counting is a function on bags.** -/
 theorem count_bag_function {α : Type*} :
     ∃ consume : Multiset α → Multiplicative ℕ, ∀ values : List α,

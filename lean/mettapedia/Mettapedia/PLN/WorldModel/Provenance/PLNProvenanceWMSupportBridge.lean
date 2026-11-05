@@ -8,6 +8,13 @@ import Provenance.Semirings.Which
 
 Bridge the LP provenance interface (`KRelation`, `Which`) to WM support-tracked
 forgetting interfaces without changing core WM semantics.
+
+Lineage (`Which`) records which sources a claim used, not how they combined, so
+it cannot carry exact deletion: two annotations with the same lineage can need
+different results after a source is withdrawn
+(`ProvenanceRetraction.lineage_not_deletion_compatible`).  Exact deletion lives
+on how-provenance polynomials (`ProvenanceRetraction`) and on scope-labelled
+tracked chunks (`ScopedTrackedRetraction.scopedSupportClosedLayer`).
 -/
 
 namespace Mettapedia.PLN.WorldModel.Provenance
@@ -110,63 +117,5 @@ theorem krelationWhich_zeroPreserving :
       (Query := GroundAtom σ) (Ev := Which (Fin n)) := by
   intro q
   rfl
-
-/-- Concrete support-tracked forgetting instance over `Which` K-relations with an
-empty scope footprint. The only revisions admitted by support containment are
-zero revisions, making exact inverse forgetting theorem-complete. -/
-noncomputable def whichEmptyScopeForgettingLayer :
-    SupportTrackedForgettingLayer
-      (KRelation σ (Which (Fin n))) Unit (GroundAtom σ) (Which (Fin n)) (Option (Fin n)) where
-  inScope := fun _ _ => False
-  forget := fun _ W => W
-  idempotent := by
-    intro S W
-    rfl
-  outsideInvariant := by
-    intro S W q hout
-    rfl
-  scopeFootprint := fun _ => ∅
-  support := whichSupportTagged (σ := σ) (n := n)
-  exactInverse_of_supported := by
-    intro S Δ hsupp W
-    funext q
-    have hΔq : Δ q = 0 := by
-      exact which_eq_zero_of_supportTagged_subset_empty
-        (σ := σ) (n := n) Δ q (by simpa using hsupp q)
-    simp [Pi.add_apply, hΔq]
-
-theorem whichEmptyScope_exactInverse_of_supported
-    {Δ : KRelation σ (Which (Fin n))}
-    (hsupp :
-      ∀ q, whichSupportTagged (σ := σ) (n := n) Δ q ⊆ (∅ : Finset (Option (Fin n)))) :
-    ∀ W : KRelation σ (Which (Fin n)),
-      (whichEmptyScopeForgettingLayer (σ := σ) (n := n)).forget () (W + Δ) = W := by
-  exact SupportTrackedForgettingLayer.exactInverse_revision_of_support_subset
-    (F := whichEmptyScopeForgettingLayer (σ := σ) (n := n))
-    (S := ()) (Δ := Δ)
-    (by
-      intro q
-      exact hsupp q)
-
-theorem whichEmptyScope_revision_zero_of_supported
-    {Δ : KRelation σ (Which (Fin n))}
-    (hsupp :
-      ∀ q, whichSupportTagged (σ := σ) (n := n) Δ q ⊆ (∅ : Finset (Option (Fin n)))) :
-    ∀ q,
-      AdditiveWorldModel.extract
-        (State := KRelation σ (Which (Fin n)))
-        (Query := GroundAtom σ) (Ev := Which (Fin n)) Δ q = 0 := by
-  intro q
-  have hout :
-      ¬ (whichEmptyScopeForgettingLayer (σ := σ) (n := n)).inScope () q := by
-    simp [whichEmptyScopeForgettingLayer]
-  exact SupportTrackedForgettingLayer.exactInverse_revision_supported_outside_zero
-    (F := whichEmptyScopeForgettingLayer (σ := σ) (n := n))
-    (hzero := krelationWhich_zeroPreserving (σ := σ) (n := n))
-    (S := ()) (Δ := Δ)
-    (hsupp := by
-      intro q'
-      exact hsupp q')
-    q hout
 
 end Mettapedia.PLN.WorldModel.Provenance

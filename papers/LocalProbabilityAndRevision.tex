@@ -1,0 +1,248 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,booktabs,xurl}
+\usepackage[margin=1in]{geometry}
+\usepackage[colorlinks=true,urlcolor=blue,linkcolor=blue]{hyperref}
+\newtheorem{proposition}{Proposition}
+\newcommand{\lean}[1]{\nolinkurl{#1}}
+\title{Local Bayesian Models, Global Coherence, and Revision}
+\author{Mettapedia Working Note}
+\date{November 2, 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+Bayesian revision requires a joint interpretation of the question and its
+observations. This requirement does not entail a largest working context,
+a materialized distribution over everything, or a uniquely determined coupling
+of partially specified models. We distinguish these claims, identify the
+extension assumptions under which local semantics admits an abstract global
+measure, and connect the distinction to checked finite Bayesian conditioning.
+Positive and negative examples delimit what local probability models license.
+\end{abstract}
+
+\section{Four different global claims}
+A \emph{context} specifies quantities, their interpretations and a probability
+model. Larger contexts may expose additional quantities. Four claims should
+be kept separate:
+\begin{enumerate}
+\item A system stores or computes one universal joint distribution.
+\item Its working contexts have a greatest member containing every quantity.
+\item Its local laws admit at least one common joint interpretation.
+\item Its retained information uniquely determines that interpretation.
+\end{enumerate}
+Claims 1 and 2 are unnecessary for local computation. Claim 3 is the substantive
+coherence requirement when several contexts are asserted to describe the same
+jointly meaningful classical quantities. Claim 4 need not hold: incomplete
+knowledge can specify a family of admissible couplings.
+
+For example, let contexts be finite subsets of a countably infinite variable
+set. Two contexts have the common enlargement $C\cup D$. Every finite context
+has a strict enlargement, so there is no greatest context. Nevertheless, an
+infinite product of independent fair coins has exactly these coherent finite
+marginals. Absence of a largest context and existence of a global measure are
+therefore compatible. Conversely, two valid local models need not have a
+compatible common enlargement when they impose additional overlapping
+constraints.
+
+\section{The precise revision law}
+For a finite context with prior $p$, observation map $e$, query map $q$ and
+nonnegative observation likelihood $\ell$, define
+\[
+ Z=\sum_x p(x)\ell(e(x)),\qquad
+ p_E(x)=p(x)\ell(e(x))/Z \quad (Z>0).
+\]
+A zero normalizer does not define a posterior. Let $r(x)=(q(x),e(x))$.
+\begin{proposition}[Context-independent evaluation on a fixed joint law]
+The posterior query law depends only on $r_*p$, the joint law of the query
+and observation. Any two finite contexts with the same $r_*p$ have the same
+normalizer and, when it is positive, the same posterior query law.
+\end{proposition}
+\begin{proof}
+The existing finite coarsening theorem gives
+\[
+ r_*\bigl(\operatorname{Bayes}(p,\ell\circ\pi_2\circ r)\bigr)
+ =\operatorname{Bayes}(r_*p,\ell\circ\pi_2).
+\]
+Project the result along $\pi_1$. The same fibre-sum identity gives equality
+of normalizers, so the zero-evidence boundary agrees as well.
+\end{proof}
+This is a theorem about fixed observations and a fixed interpreted likelihood.
+Adding new evidence may change the answer. Retaining only a current posterior
+also need not retain enough information for future evidence retraction.
+
+A compatible directed family of finite contexts can use this proposition
+without selecting a greatest context: each finite query and observation set
+is evaluated in a suitable covering context, and compatibility makes the
+answer independent of that choice. The existence of suitable covering
+\emph{probability models} must be established, not inferred merely from the
+existence of unions of variable names.
+
+\section{Why separate marginals do not suffice}
+Let $X$ and $Y$ both be fair bits. Three possible joint laws are:
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Joint model & $P(X=1)$ & $P(Y=1)$ & $P(X=1\mid Y=1)$\\
+\midrule
+$X=Y$ & $1/2$ & $1/2$ & $1$\\
+$X=1-Y$ & $1/2$ & $1/2$ & $0$\\
+Independent & $1/2$ & $1/2$ & $1/2$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Thus knowing the two marginals cannot determine how observing one quantity
+revises the other. For disjoint variable sets, taking a product is a valid
+coupling; choosing it asserts independence. A system may instead retain all
+compatible couplings and return bounds. For two fair bits the conjunction
+probability ranges from $0$ to $1/2$, and the displayed conditional ranges
+from $0$ to $1$.
+
+For two finite models $p(a,s)$ and $q(s,b)$ with the same overlap marginal
+$r(s)$, a common enlargement can be constructed explicitly:
+\[
+ \mu(a,s,b)=\begin{cases}p(a,s)q(s,b)/r(s)&r(s)>0,\\0&r(s)=0.\end{cases}
+\]
+Summing over $b$ recovers $p$ and summing over $a$ recovers $q$; zero-marginal
+rows vanish by nonnegativity. This construction selects conditional independence
+of the private parts given the overlap. Compatibility permits this selection;
+it does not establish that it matches the true dependence. More than two
+contexts can impose incompatible cyclic constraints.
+
+Even agreement on overlaps is insufficient. Consider three pair laws for
+$(X,Y)$, $(Y,Z)$ and $(X,Z)$, each assigning $1/16$ to each equal outcome and
+$7/16$ to each unequal outcome. Each pair is strictly positive and every
+single-bit marginal is fair. But every Boolean triple has at least one equal
+pair, hence any triple distribution must satisfy
+\[
+ P(X=Y)+P(Y=Z)+P(X=Z)\geq1.
+\]
+The specified pair laws give $3/8$, a contradiction. This is a classical
+marginal-extension obstruction \cite{vorobev}; it is also the example in
+\cite[Theorem 4.3]{omega}. It demonstrates that overlap consistency is weaker
+than joint coherence. It does not establish that contradictory assessments
+are simultaneously correct descriptions of one classical world. If quantities
+are instead context-indexed, the cross-context identifications require their
+own justification \cite{abramsky}.
+
+\section{When an abstract global law follows}
+Fix an index set $I$ and finite nonempty value sets $X_i$. Suppose a probability
+law $\mu_C$ is supplied for \emph{every} finite $C\subseteq I$, with
+\[
+ (\operatorname{restrict}_{D,C})_*\mu_D=\mu_C\qquad(C\subseteq D).
+\]
+The Kolmogorov extension theorem yields a unique probability measure on
+$\prod_{i\in I}X_i$ with its product sigma-algebra having these marginals.
+One proof assigns measures to cylinder events using the finite laws;
+compatibility makes this well-defined, and compactness of the product of finite
+discrete spaces supplies the required extension property. Standard Borel
+coordinate spaces admit the usual broader extension theorem. Arbitrary
+measurable spaces require care.
+
+Consequently, a system claiming mutually coherent exact classical probabilities
+for all finite combinations over such a fixed vocabulary already commits to
+an abstract global law in this sense. It can represent that law through local
+models, kernels, programs or constraints. It need not construct a global table,
+perform global inference on each update, or possess a greatest finite context.
+
+This theorem does not apply to an arbitrary collection of pair marginals
+without their higher-dimensional compatible laws. Nor does it supply a
+canonical choice when only some marginals are known. Open-ended changes of
+vocabulary or model class additionally require interpretation and compatibility
+maps; finite working contexts alone do not settle those extension obligations.
+
+\section{Probabilistic programs and truth-value interfaces}
+A prior $\pi(m)$ over normalized probabilistic programs with common observable
+semantics $p_m(x,e)$ gives a hierarchical model
+\[
+ p(m,x,e)=\pi(m)p_m(x,e),\qquad
+ P(x\mid e)=\frac{\sum_m\pi(m)p_m(x,e)}{\sum_m\pi(m)p_m(e)}.
+\]
+Model weights revise by $\pi(m\mid e)\propto\pi(m)p_m(e)$. Averaging program
+posteriors with unchanged prior weights generally gives a different answer.
+Programs with different output meanings first need a common observation
+interpretation. Weighted or nonterminating programs also require explicit
+normalization or subprobability semantics.
+
+This is a useful account of uncertainty over model structure. It does not
+supply a unique joint distribution from separate truth-value summaries.
+A Bernoulli parameter supplies a probability; a strength--confidence pair
+also needs an evidence or parameter-uncertainty interpretation. A conditional
+$P(B\mid A)$ differs from the material-implication probability
+$P(\neg A\lor B)$, so a link's interpretation must be declared.
+
+A transformer can supply a conditional distribution over token sequences.
+Using it as an enriched truth-value object additionally requires an event
+interpretation, model identity, conditioning information and an evidence
+interface. Calibration, uncertainty over parameters and revision laws do not
+follow from the presence of a tensor or a neural network.
+
+\section{Specification assessment and implementation boundary}
+MeTTaProN v0.3 already distinguishes proposal guidance from evidence admission,
+requires observations to be scored at their sites, and says in Rule 10.3 that
+lineage cannot supply statistical dependence. Section 17.4's packet admission
+rule should explicitly require either a joint observation model or the
+conditional-independence certificate that licenses multiplying packet
+likelihoods. Disjoint provenance establishes non-reuse, not independence.
+Successive \emph{conditional} likelihoods may also multiply by the chain rule;
+they must then be interpreted relative to the recorded preceding observations.
+A likelihood ratio alone does not determine an absolute evidence normalizer.
+
+Section 17.5's compilation of conditional truth values is a model construction
+requiring stated structural assumptions. Unrelated conditional summaries need
+not specify a complete or consistent generative model. Merely multiplying
+conditional factors on a cycle does not ensure that the normalized product
+retains those factors as its conditionals.
+
+The omega-PLN fidelity manuscript explicitly conditions its comparison on a
+gluable covering context \cite[Section 2.2]{fidelity}. Its introductory phrase
+``largest gluable context'' is stronger than required and needs an existence
+argument. A specified compatible covering context suffices; an uncertain family
+of completions can instead support lower and upper answers. If no completion
+exists under the chosen identifications, the result is an incompatibility
+report, not an ordinary global Bayesian answer.
+
+\section{Checked status and remaining work}
+The new Lean module
+\lean{ProbabilityTheory/BayesianInference/LocalContexts.lean} reuses the existing
+\lean{BayesianInference.coarsen_posterior} law from \lean{Coarsening.lean}.
+It proves query--evidence reduction, agreement of normalizers and revised
+answers between contexts, directedness without a greatest finite context,
+the two-coupling revision control and the strictly positive three-pair
+non-extension result. The theorem names include
+\lean{query_from_joint}, \lean{covering_evidence_agree},
+\lean{covering_contexts_agree}, \lean{finite_contexts_no_greatest},
+\lean{Controls.coupling_revision} and \lean{Controls.no_joint_for_noisy_pairs}.
+
+Existing indexed world-model and source-gluing modules supply context
+infrastructure and further non-gluing controls. They do not themselves
+establish probabilistic compatibility. The existing projective-credal layer
+has a compact-carrier/finite-intersection theorem for compatible precise
+previsions; its carrier, closedness and finite-feasibility assumptions remain
+explicit. The sigma-additive extension statement above is classical background,
+not a new theorem proved by LocalContexts. General infinite evidence and
+continuous conditioning require their appropriate measure-theoretic hypotheses.
+
+A concrete runtime integration should retain model and observation identities,
+record the coupling or compatibility authority for each cross-context operation,
+and distinguish a unique answer, bounded uncertainty, unavailable cross-context
+semantics and impossible evidence. Those are interface obligations beyond the
+finite mathematical result established here.
+
+\begin{thebibliography}{9}
+\bibitem{vorobev} N. N. Vorob'ev. Consistent Families of Measures and Their
+Extensions. \emph{Theory of Probability and its Applications} 7(2), 147--163,
+1962. \url{https://www.mathnet.ru/eng/tvp4710}.
+\bibitem{abramsky} S. Abramsky and A. Brandenburger. The Sheaf-Theoretic
+Structure of Non-Locality and Contextuality. \emph{New Journal of Physics} 13,
+113036, 2011. \url{https://arxiv.org/abs/1102.0264}.
+\bibitem{omega} B. Goertzel. Omega-PLN: Atlas-indexed reversible evidence-fibered
+geodesic PLN, with local Bayesian charts, higher proof geometry, and forgetting
+as holonomy. Manuscript v4, July 2026.
+\bibitem{fidelity} B. Goertzel. Probably approximately Bayesian: Fidelity of
+omega-PLN to global probabilistic reasoning, stability under approximate
+implementation, bounded compounding of cached inference, and what a Hyperon
+system must store, measure and learn. Manuscript v2, September 2026.
+\bibitem{spec} B. Goertzel. MeTTaProN specification. Draft 0.3, 2026.
+\end{thebibliography}
+\end{document}

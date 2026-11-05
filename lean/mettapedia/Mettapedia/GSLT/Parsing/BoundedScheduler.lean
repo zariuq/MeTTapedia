@@ -106,7 +106,7 @@ mutual
 end
 
 mutual
-  def eraseDerivation
+  theorem eraseDerivation
       {grammar : GuardCorrespondence.CompiledGrammar}
       {fullInput fuel category start stop tree} :
       DerivesWithin grammar fullInput fuel category start stop tree →
@@ -115,7 +115,7 @@ mutual
     | .apply production member body guards =>
         .apply production member (eraseBody body) (eraseGuards guards)
 
-  def eraseBody
+  theorem eraseBody
       {grammar : GuardCorrespondence.CompiledGrammar}
       {fullInput fuel symbols start stop trees} :
       BodyDerivesWithin grammar fullInput fuel symbols start stop trees →
@@ -129,7 +129,7 @@ mutual
     | .nonterminal head rest =>
         .nonterminal (eraseDerivation head) (eraseBody rest)
 
-  def eraseGuards
+  theorem eraseGuards
       {grammar : GuardCorrespondence.CompiledGrammar}
       {fullInput fuel guards cursor} :
       GuardsHoldWithin grammar fullInput fuel guards cursor →
@@ -145,7 +145,7 @@ mutual
 end
 
 mutual
-  def liftDerivationOne
+  theorem liftDerivationOne
       {grammar : GuardCorrespondence.CompiledGrammar}
       {input fuel category start stop tree} :
       DerivesWithin grammar input fuel category start stop tree →
@@ -153,7 +153,7 @@ mutual
     | .apply production member body guards =>
         .apply production member (liftBodyOne body) (liftGuardsOne guards)
 
-  def liftBodyOne
+  theorem liftBodyOne
       {grammar : GuardCorrespondence.CompiledGrammar}
       {input fuel symbols start stop trees} :
       BodyDerivesWithin grammar input fuel symbols start stop trees →
@@ -166,7 +166,7 @@ mutual
     | .nonterminal head rest =>
         .nonterminal (liftDerivationOne head) (liftBodyOne rest)
 
-  def liftGuardsOne
+  theorem liftGuardsOne
       {grammar : GuardCorrespondence.CompiledGrammar}
       {input fuel guards cursor} :
       GuardsHoldWithin grammar input fuel guards cursor →
@@ -181,7 +181,7 @@ mutual
         .lookahead (liftDerivationOne witness) (liftGuardsOne rest)
 end
 
-def liftDerivationBy
+theorem liftDerivationBy
     {grammar : GuardCorrespondence.CompiledGrammar}
     {input fuel category start stop tree} :
     (extra : Nat) → DerivesWithin grammar input fuel category start stop tree →
@@ -190,7 +190,7 @@ def liftDerivationBy
   | extra + 1, derivation =>
       liftDerivationOne (liftDerivationBy extra derivation)
 
-def liftBodyBy
+theorem liftBodyBy
     {grammar : GuardCorrespondence.CompiledGrammar}
     {input fuel symbols start stop trees} :
     (extra : Nat) →
@@ -199,7 +199,7 @@ def liftBodyBy
   | 0, derivation => derivation
   | extra + 1, derivation => liftBodyOne (liftBodyBy extra derivation)
 
-def liftGuardsBy
+theorem liftGuardsBy
     {grammar : GuardCorrespondence.CompiledGrammar}
     {input fuel guards cursor} :
     (extra : Nat) → GuardsHoldWithin grammar input fuel guards cursor →
@@ -207,7 +207,7 @@ def liftGuardsBy
   | 0, derivation => derivation
   | extra + 1, derivation => liftGuardsOne (liftGuardsBy extra derivation)
 
-def liftDerivationTo
+theorem liftDerivationTo
     {grammar : GuardCorrespondence.CompiledGrammar}
     {input fuel target category start stop tree}
     (le : fuel ≤ target)
@@ -216,7 +216,7 @@ def liftDerivationTo
   have lifted := liftDerivationBy (target - fuel) derivation
   simpa [Nat.add_sub_of_le le] using lifted
 
-def liftBodyTo
+theorem liftBodyTo
     {grammar : GuardCorrespondence.CompiledGrammar}
     {input fuel target symbols start stop trees}
     (le : fuel ≤ target)
@@ -225,7 +225,7 @@ def liftBodyTo
   have lifted := liftBodyBy (target - fuel) derivation
   simpa [Nat.add_sub_of_le le] using lifted
 
-def liftGuardsTo
+theorem liftGuardsTo
     {grammar : GuardCorrespondence.CompiledGrammar}
     {input fuel target guards cursor}
     (le : fuel ≤ target)

@@ -30,7 +30,7 @@ open _root_.Mettapedia.Languages.MeTTa.PeTTa.Effects (State)
 open Eval
 
 /-- The evaluator's special forms. An authored head is never one of them. -/
-def specialForms : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]
+def specialForms : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]
 
 /-- The head an arrow declaration `(: head (-> …))` declares. -/
 def arrowHead : Atom → Option String
@@ -118,6 +118,19 @@ theorem agreement (checked : L.check = true) : ProgramAgreementOn L.inherited L.
     have owned := List.all_eq_true.mp declarations _ member
     simpa [arrowHead, inherited] using owned
 
+/-- An owned head has exactly its component's source equations, including
+multi-clause definitions. Conservative loading excludes shadowing base rows. -/
+theorem owned_equations (checked : L.check = true) {head : String} (owned : L.owns head = true) :
+    L.runtime.equations.filter (·.head == head) = L.source.equations.filter (·.head == head) := by
+  obtain ⟨_, bases, _, _⟩ := check_parts checked
+  have below : L.base.equations.filter (·.head == head) = [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro other member selected
+    have kept := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp bases other member)).1
+    rw [beq_iff_eq.mp selected] at kept
+    simp only [inherited, owned, Bool.not_true, Bool.false_eq_true] at kept
+  simp only [runtime, SpaceSemantics.Program.append, List.filter_append, below, List.nil_append]
+
 /-- **A base computation runs unchanged in the runtime**, when its code calls no owned head. -/
 theorem lift (checked : L.check = true) {caller : Subst} {before after : State} {code answer : Atom}
     (supported : codeWithin L.inherited code = true)
@@ -147,20 +160,14 @@ private theorem defined_parts (checked : L.check = true) {head : String} {equati
   have formals : L.formals equation.head = formalNames equation := by simp [formals, found]
   rw [formals]
   refine ⟨?_, arguments, distinct, ordinary, notIO, notNative, ?_⟩
-  · have below : L.base.equations.filter (·.head == equation.head) = [] := by
-      rw [List.filter_eq_nil_iff]
-      intro other present equal
-      have kept := List.all_eq_true.mp bases other present
-      simp only [Bool.and_eq_true] at kept
-      rw [beq_iff_eq.mp equal] at kept
-      simp [inherited, owned] at kept
-    have own : L.source.equations.filter (·.head == equation.head) = [equation] := by
+  · have own : L.source.equations.filter (·.head == equation.head) = [equation] := by
       obtain ⟨only, rows⟩ := List.length_eq_one_iff.mp single
       have present : equation ∈ L.source.equations.filter (·.head == equation.head) :=
         List.mem_filter.mpr ⟨member, by simp⟩
       rw [rows] at present ⊢
       rw [List.mem_singleton.mp present]
-    simp only [runtime, SpaceSemantics.Program.append, List.filter_append, below, own, List.nil_append]
+    rw [owned_equations checked owned]
+    exact own
   · intro index bounded
     have fromSource := raw index bounded
     simp only [argumentIsRaw, notNative, Bool.false_eq_true, ↓reduceIte] at fromSource ⊢
@@ -314,7 +321,7 @@ theorem template_in_program {allowed : String → Bool} {first second : Program}
       simp only [codeWithin, expressionHeadWithin, Bool.and_eq_true,
         atomsWithin_eq_all, List.all_eq_true] at supported
       refine .constructor head arguments ?_ ordinary ?_
-      · rw [← agreement.dispatch head supported.1.1]
+      · rw [← agreement.dispatch head supported.1.1.1]
         exact inert
       · intro child member
         exact ih child member (supported.2 child (List.mem_cons_of_mem _ member))

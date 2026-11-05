@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Interoperability
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedReduction
 
 /-!
 # MeTTa-Calculus Paper Map
@@ -9,10 +10,11 @@ Theorem-level index mapping the equations and rules in:
 
 to concrete Lean theorem names in this repository.
 
-The executable canaries below concern the bounded, COMM-only-lookahead
-profile in `Reduction.lean`. The displayed recursive REFL rule is compared
-separately in `ReflectionClosure.lean`; its nested-reflection control rejects
-an unconditional identification of the two profiles. The shared-fragment
+The reduction canaries below concern the corrected step `Corrected.cstep`:
+COMM opens both inputs apart, unifies their patterns by the principal,
+idempotent unifier and applies the dot once; REFL is recursive. The canary's
+reduct is `@0 | a`; the naive reading's capturing reduct `@0 | @0` is the
+subject of the separating theorems in `Corrected.Controls`. The shared-fragment
 bridges retain their stated source restrictions.
 -/
 
@@ -38,25 +40,60 @@ theorem paper_equiv_par_assoc (p q r : Proc) :
 
 /-! ## Reduction rules (`COMM`, `REFL`) -/
 
+/-- The canary's `COMM` reduct `@0 | a`: the second input's free `a` stays free. -/
+def demoCommReduct : Proc := par (nQuote pZero) (.fvar "a")
+
+/-- The listener `REFL` emits for the canary. -/
+def demoReflectReduct : Proc := pFor (tProc demoCommReduct) demoChan pZero
+
 /-- Paper `COMM` canary (positive): a concrete symmetric rendezvous step. -/
 theorem paper_comm_positive :
-    demoCommTarget ∈ step demoCommSource := by
-  simpa using (show demoCommTarget ∈ step demoCommSource from by decide +kernel)
+    Corrected.cstep demoCommSource = [demoCommReduct] := by
+  decide +kernel
 
 /-- Paper `COMM` canary (negative): mismatched terms block rendezvous. -/
 theorem paper_comm_negative :
-    step demoBlocked = [] := by
-  simpa using (show step demoBlocked = [] from by decide +kernel)
+    Corrected.cstep demoBlocked = [] := by
+  decide +kernel
 
-/-- Paper `REFL` canary (positive): one-step reflection emits future state. -/
+/-- Paper `REFL` canary (positive): reflection emits the future state. -/
 theorem paper_refl_positive :
-    demoReflectTarget ∈ step demoReflectSource := by
-  simpa using (show demoReflectTarget ∈ step demoReflectSource from by decide +kernel)
+    Corrected.cstep demoReflectSource = [demoReflectReduct] := by
+  decide +kernel
 
 /-- Paper `REFL` canary (negative): no future step means no reflection output. -/
 theorem paper_refl_negative :
-    step (pReflect demoChan demoBlocked) = [] := by
-  simpa using (show step (pReflect demoChan demoBlocked) = [] from by decide +kernel)
+    Corrected.cstep (pReflect demoChan demoBlocked) = [] := by
+  decide +kernel
+
+/-- Paper `COMM` is a step of the relational rules: the corrected reduct is
+related to the canary under the variable convention. -/
+theorem paper_comm_relational :
+    Corrected.Step Corrected.conventional demoCommSource demoCommReduct :=
+  Corrected.cstep_sound (by decide +kernel) (by rw [paper_comm_positive]; exact List.mem_singleton_self _)
+
+/-! ## The corrected `COMM` and its metatheory -/
+
+/-- Soundness: every reduct of the corrected step of a calculus process is a
+step of the relational rules under the variable convention. -/
+theorem paper_comm_sound {p q : Proc} (inCalc : Corrected.calcTerm p = true)
+    (reduct : q ∈ Corrected.cstep p) : Corrected.Step Corrected.conventional p q :=
+  Corrected.cstep_sound inCalc reduct
+
+/-- Completeness up to alpha on the closing fragment. -/
+theorem paper_comm_complete {p q : Proc} (step : Corrected.Step Corrected.closing p q) :
+    ∃ q' ∈ Corrected.cstep p, Corrected.AlphaEq q' q :=
+  Corrected.cstep_complete step
+
+/-- Alpha-invariance: alpha-equivalent processes have the same reducts. -/
+theorem paper_comm_alpha_invariant {p p' : Proc} (alpha : Corrected.AlphaEq p p') :
+    Corrected.cstep p = Corrected.cstep p' :=
+  Corrected.cstep_alpha_invariant alpha
+
+/-- The unifier `COMM` uses is principal. -/
+theorem paper_comm_unifier_principal {t u : Term} {bs : Mettapedia.OSLF.MeTTaIL.Match.Bindings}
+    (found : Corrected.unify t u = some bs) : Corrected.Principal t u bs :=
+  Corrected.unify_principal found
 
 /-! ## Shared-fragment bridge theorems -/
 

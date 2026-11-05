@@ -459,35 +459,52 @@ def requested : GuardedParty :=
   ⟨.apply "Assignment" [tSym "Ada", .fvar "skill"],
     .apply "Use" [.fvar "skill"]⟩
 
-def sharedBinding : Bindings := [("skill", tSym "Rust"), ("person", tSym "Ada")]
+def sharedBinding : Bindings := [("person", tSym "Ada"), ("skill", tSym "Rust")]
 
-/-- Both parties contribute unknowns; the existing symmetric unifier solves
-them together instead of matching one ground message against one pattern. -/
+/-- Both parties contribute unknowns; the principal unifier solves them
+together instead of matching one ground message against one pattern. -/
 theorem complementary_terms_unify :
-    unifyPattern? offered.term requested.term = some sharedBinding := by
+    Corrected.unify offered.term requested.term = some sharedBinding := by
   decide +kernel
+
+/-- The two inputs are apart: neither mentions the other's pattern variable. -/
+theorem complementary_parties_apart :
+    Corrected.Apart offered.term offered.continuation requested.term requested.continuation := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> decide +kernel
+
+theorem complementary_parties_meet : correctedContact offered requested sharedBinding :=
+  ⟨⟨sharedBinding, complementary_terms_unify, by decide +kernel⟩, complementary_parties_apart⟩
 
 /-- A conflicting concrete skill prevents contact. -/
 theorem incompatible_terms_do_not_unify :
-    unifyPattern? offered.term (.apply "Assignment" [tSym "Ada", tSym "Python"]) = none := by
+    Corrected.unify offered.term (.apply "Assignment" [tSym "Ada", tSym "Python"]) = none := by
   decide +kernel
 
-/-- The actual direct COMM rule substitutes into both continuations. -/
+/-- The direct COMM rule substitutes into both continuations. -/
 theorem complementary_parties_contact (location : Name) :
-    DirectComm (pPar [guardedProcess location offered, guardedProcess location requested])
+    DirectComm correctedContact (pPar [guardedProcess location offered, guardedProcess location requested])
       (pPar [.apply "Assigned" [nQuote (tSym "Ada")],
         .apply "Use" [nQuote (tSym "Rust")]]) := by
-  have contact := DirectComm.contact (location := location)
-    (left := offered) (right := requested) complementary_terms_unify
+  have contact := DirectComm.contact (premise := correctedContact) (location := location)
+    (left := offered) (right := requested) complementary_parties_meet
   simpa [offered, requested, sharedBinding, applyDot, dotBindings, applyBindings] using contact
+
+/-- The contact is a step of the corrected relational semantics, with the
+uniform dot. -/
+theorem complementary_parties_step (location : Name) :
+    Corrected.Step Corrected.uniform
+      (pPar [guardedProcess location offered, guardedProcess location requested])
+      (pPar [.apply "Assigned" [nQuote (tSym "Ada")],
+        .apply "Use" [nQuote (tSym "Rust")]]) :=
+  correctedContact_step (complementary_parties_contact location)
 
 /-- This contact also executes through the same guarded transaction rules as
 the persistent relational query and the finite resource waves. -/
 theorem complementary_contact_is_transaction (location : Name) :
-    Fires directSelection (directCommand location offered requested)
+    Fires (directSelection correctedContact) (directCommand location offered requested)
       (directSource location offered requested)
       (directTarget location offered requested sharedBinding) :=
-  direct_contact_fires complementary_terms_unify
+  direct_contact_fires complementary_parties_meet
 
 end SymmetricControls
 

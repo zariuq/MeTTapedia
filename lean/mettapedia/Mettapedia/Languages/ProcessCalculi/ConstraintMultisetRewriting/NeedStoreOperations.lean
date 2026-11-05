@@ -55,6 +55,15 @@ def Event.rule (job snapshot : Nat) : Event → RuleInstance (Row Suspension)
       ⟨[.reply job snapshot,.metadata snapshot count trace],[.ready snapshot],[],[],
         [.reply job snapshot,.metadata snapshot count (trace++[event])]⟩
 
+/-- Final publication consumes the command without renewing it. The
+storage rows and all input checks remain those of the selected operation. -/
+def Event.publishedRule (job snapshot : Nat) (event : Event) : RuleInstance (Row Suspension) :=
+  {event.rule job snapshot with produce := (event.rule job snapshot).produce.tail}
+
+theorem Event.produce_head (job snapshot : Nat) (event : Event) :
+    (event.rule job snapshot).produce = .reply job snapshot :: (event.rule job snapshot).produce.tail := by
+  cases event <;> rfl
+
 /-- These are local data premises, recovered from selected rows. The
 out-of-bounds update keeps the source's `List.modify` no-op behavior. -/
 def Event.Matches (store : Store) : Event → Prop
@@ -563,5 +572,96 @@ theorem copy_and_operate (before : World Suspension) (job source destination : N
     exact fresh.not_has (.allocated source) (by simp [Row.mentions]) represented.allocated
   exact ⟨copied,after,events,event,copying,length,atOperation,step,
     preserves_other editable event step different parent,result⟩
+
+private theorem has_without_reply {world : Finset (Occurrence Suspension)} {command : Occurrence Suspension}
+    {job destination : Nat} (atCommand : label command = .reply job destination) (row : Row Suspension)
+    (different : row ≠ .reply job destination) : Has (insert command world) row ↔ Has world row := by
+  constructor
+  · rintro ⟨occurrence,present,same⟩
+    rcases Finset.mem_insert.mp present with rfl | old
+    · exact False.elim (different (same.symm.trans atCommand))
+    · exact ⟨occurrence,old,same⟩
+  · rintro ⟨occurrence,present,same⟩
+    exact ⟨occurrence,Finset.mem_insert_of_mem present,same⟩
+
+private theorem snapshot_without_reply {world : Finset (Occurrence Suspension)} {command : Occurrence Suspension}
+    {job destination snapshot : Nat} {values : List Suspension} {trace : List Nat}
+    (atCommand : label command = .reply job destination)
+    (represented : Snapshot (insert command world) snapshot values trace) : Snapshot world snapshot values trace := by
+  refine ⟨(has_without_reply atCommand _ (by simp)).mp represented.allocated,
+    ⟨(has_without_reply atCommand _ (by simp)).mp represented.metadata.present,?_⟩,
+    (has_without_reply atCommand _ (by simp)).mp represented.ready,⟨?_,?_⟩⟩
+  · intro count history present
+    exact represented.metadata.agreement count history ((has_without_reply atCommand _ (by simp)).mpr present)
+  · intro index value
+    exact (has_without_reply atCommand _ (by simp)).symm.trans (represented.cells.exact index value)
+  · intro first firstHere second secondHere index firstValue secondValue firstLabel secondLabel
+    exact represented.cells.unique first (Finset.mem_insert_of_mem firstHere)
+      second (Finset.mem_insert_of_mem secondHere) index firstValue secondValue firstLabel secondLabel
+
+/-- A proof-only extension restores the renewable command of the earlier
+operation theorem. The actual published world is unchanged, and both worlds
+have exactly the same equations. Only storage predicates are transported
+back; no observational equivalence including command counts is asserted. -/
+theorem published_extension {before after : World Suspension} {job snapshot : Nat} (event : Event)
+    (stepped : Step action label (event.publishedRule job snapshot) before after) :
+    ∃ extended command, Step action label (event.rule job snapshot) before extended ∧
+      label command = .reply job snapshot ∧ extended.present = insert command after.present ∧
+        extended.equations = after.equations := by
+  obtain ⟨picked,valid,rfl⟩ := stepped
+  obtain ⟨command,fresh,atCommand⟩ := IndexedOccurrences.supply
+    (before.present ∪ (picked.result label (event.publishedRule job snapshot) before).present) (.reply job snapshot)
+  change label command = .reply job snapshot at atCommand
+  have freshBefore : command ∉ before.present := fun member => fresh (Finset.mem_union_left _ member)
+  have freshAfter : command ∉ (picked.result label (event.publishedRule job snapshot) before).present :=
+    fun member => fresh (Finset.mem_union_right _ member)
+  let extended : Selection (Occurrence Suspension) := {picked with made := command :: picked.made}
+  have qualified : extended.Valid action label (event.rule job snapshot) before := by
+    refine ⟨valid.take_distinct,?_,valid.take_length,valid.read_length,?_,?_,valid.consistent,?_⟩
+    · apply List.nodup_cons.mpr
+      refine ⟨?_,valid.output_distinct⟩
+      intro made
+      exact freshAfter (made_subset_fire (by simpa [Selection.commit] using made))
+    · change label command :: picked.made.map label = (event.rule job snapshot).produce
+      rw [atCommand,valid.outputs]
+      exact (event.produce_head job snapshot).symm
+    · refine ⟨valid.occurrences.taken_subset,valid.occurrences.kept_subset,
+        valid.occurrences.apart,?_,by intro query member; cases member⟩
+      simpa only [extended,Selection.commit,List.toFinset_cons,Finset.disjoint_insert_left] using
+        And.intro freshBefore valid.occurrences.fresh
+    · intro check member
+      cases event <;> cases member
+  refine ⟨extended.result label (event.rule job snapshot) before,command,⟨extended,qualified,rfl⟩,atCommand,?_,rfl⟩
+  simp [Selection.result,fire,Selection.commit,extended]
+
+/-- The actual command-consuming publication retains the exact edited
+snapshot, its unique header, and no completed command occurrence. -/
+theorem published_preserves {before after : World Suspension} {job snapshot : Nat} {store : Store}
+    (represented : Editable before.present job snapshot store) (event : Event)
+    (stepped : Step action label (event.publishedRule job snapshot) before after) :
+    Snapshot after.present snapshot (event.operation.apply store).cells (event.operation.apply store).trace ∧
+      UniqueRow after.present (.metadata snapshot (event.operation.apply store).cells.length (event.operation.apply store).trace) ∧
+        ¬ Has after.present (.reply job snapshot) := by
+  obtain ⟨extended,command,full,atCommand,present,_⟩ := published_extension event stepped
+  have result := preserves represented event full
+  have matched := matches_of_step represented event full
+  rw [present] at result
+  refine ⟨snapshot_without_reply atCommand result.snapshot,?_,?_⟩
+  · intro first firstHere second secondHere firstLabel secondLabel
+    exact result.metadataUnique first (Finset.mem_insert_of_mem firstHere)
+      second (Finset.mem_insert_of_mem secondHere) firstLabel secondLabel
+  · obtain ⟨picked,valid,rfl⟩ := stepped
+    rw [Ground.rows_after valid (represented.unique_taken event matched)]
+    cases event <;> simp [Event.publishedRule,Event.rule]
+
+theorem published_preserves_other {before after : World Suspension} {job snapshot other : Nat} {store : Store}
+    {values : List Suspension} {trace : List Nat}
+    (represented : Editable before.present job snapshot store) (event : Event)
+    (stepped : Step action label (event.publishedRule job snapshot) before after) (different : other ≠ snapshot)
+    (retained : Snapshot before.present other values trace) : Snapshot after.present other values trace := by
+  obtain ⟨extended,command,full,atCommand,present,_⟩ := published_extension event stepped
+  have result := preserves_other represented event full different retained
+  rw [present] at result
+  exact snapshot_without_reply atCommand result
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NeedStoreOperations

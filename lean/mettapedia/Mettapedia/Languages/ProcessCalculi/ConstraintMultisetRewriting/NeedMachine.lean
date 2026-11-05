@@ -107,7 +107,24 @@ def commitRule (job : Nat) (input : Control Nat) (reads : List (SnapshotCopy.Row
   let plan : Plan := ⟨input,reads,.edit source event.operation resume⟩
   let rule := event.rule job job
   ⟨.waiting job plan :: rule.take.map .heap,rule.read.map .heap,[],[],
-    .control (job+1) (resumeAt job resume) :: rule.produce.map .heap⟩
+    .control (job+1) (resumeAt job resume) :: rule.produce.tail.map .heap⟩
+
+/-- The generated ordinary rule catalogue. The resource-operation rules
+are admitted only together with their matching waiting control. -/
+inductive Catalogue (program : Program) : RuleInstance Row → Prop where
+  | start (next : Nat) (intent : Intent program) : Catalogue program (startRule next intent)
+  | copy (job : Nat) (input : Control Nat) (reads : List (SnapshotCopy.Row Suspension))
+      (source : Nat) (operation : NeedStoreOperations.Operation) (resume : Resume)
+      (event : SnapshotCopy.Event Suspension) :
+      Catalogue program (copyRule job input reads source operation resume event)
+  | commit (job : Nat) (input : Control Nat) (reads : List (SnapshotCopy.Row Suspension))
+      (source : Nat) (resume : Resume) (event : NeedStoreOperations.Event) :
+      Catalogue program (commitRule job input reads source resume event)
+
+abbrev Executes (program : Program) (before after : World) : Prop :=
+  ∃ rule, Catalogue program rule ∧ Step action label rule before after
+
+abbrev Path (program : Program) := Relation.ReflTransGen (Executes program)
 
 def Has (world : Finset Occurrence) (row : Row) : Prop :=
   ∃ occurrence ∈ world, label occurrence = row
@@ -135,6 +152,12 @@ theorem read_rows (valid : picked.Valid action label rule before) (row : Row)
   rw [← (input_labels valid).2] at member
   obtain ⟨occurrence,selected,same⟩ := List.mem_map.mp member
   exact ⟨occurrence,valid.occurrences.kept_subset (by simpa [Selection.commit] using selected),same⟩
+
+theorem kept_rows (valid : picked.Valid action label rule before) (row : Row)
+    (member : row ∈ rule.read) : Has (picked.result label rule before).present row := by
+  rw [← (input_labels valid).2] at member
+  obtain ⟨occurrence,selected,same⟩ := List.mem_map.mp member
+  exact ⟨occurrence,valid.kept_survive selected,same⟩
 
 theorem take_rows (valid : picked.Valid action label rule before) (row : Row)
     (member : row ∈ rule.take) : Has before.present row := by
@@ -260,5 +283,141 @@ theorem direct_start_outputs {program : Program} {before after : World}
     Has after.present (.control next control) := by
   obtain ⟨picked,valid,rfl⟩ := stepped
   exact Selected.output_rows valid _ (by simp [startRule,direct])
+
+def Row.isController : Row → Bool
+  | .heap _ => false
+  | .control _ _ | .waiting _ _ => true
+
+def controllerCount (world : World) : Nat :=
+  (world.present.filter fun occurrence => (label occurrence).isController).card
+
+private theorem selected_controller_count (selected : List Occurrence) (distinct : selected.Nodup) :
+    (selected.toFinset.filter fun occurrence => (label occurrence).isController).card =
+      (selected.map label).countP Row.isController := by
+  simpa only [List.countP_map,Bool.decide_coe,Function.comp_def] using
+    (distinct.card_eq_countP (P := fun occurrence => (label occurrence).isController = true))
+
+/-- Resource validity and balanced control ports preserve the number of
+physical controllers. Equal control labels are not silently identified. -/
+theorem controller_count_of_balanced_step {before after : World} {rule : RuleInstance Row}
+    (balanced : rule.take.countP Row.isController = rule.produce.countP Row.isController)
+    (stepped : Step action label rule before after) : controllerCount after = controllerCount before := by
+  obtain ⟨picked,valid,rfl⟩ := stepped
+  let old := before.present.filter fun occurrence => (label occurrence).isController
+  let taken := picked.taken.toFinset.filter fun occurrence => (label occurrence).isController
+  let made := picked.made.toFinset.filter fun occurrence => (label occurrence).isController
+  have removed : taken ⊆ old := by
+    intro occurrence member
+    obtain ⟨selected,kind⟩ := Finset.mem_filter.mp member
+    exact Finset.mem_filter.mpr ⟨valid.occurrences.taken_subset selected,kind⟩
+  have apart : Disjoint (old \ taken) made := by
+    apply Finset.disjoint_left.mpr
+    intro occurrence retained created
+    have oldMember := (Finset.mem_filter.mp (Finset.mem_sdiff.mp retained).1).1
+    have newMember := (Finset.mem_filter.mp created).1
+    exact Finset.disjoint_left.mp valid.occurrences.fresh newMember oldMember
+  have sameShape : (picked.result label rule before).present.filter (fun occurrence => (label occurrence).isController) =
+      (old \ taken) ∪ made := by
+    ext occurrence
+    cases kind : (label occurrence).isController <;>
+      simp [old,taken,made,Selection.result,fire,Selection.commit,kind]
+  have takeCount : taken.card = rule.take.countP Row.isController := by
+    rw [← (Selected.input_labels valid).1]
+    exact selected_controller_count picked.taken valid.take_distinct
+  have makeCount : made.card = rule.produce.countP Row.isController := by
+    rw [← valid.outputs]
+    exact selected_controller_count picked.made valid.output_distinct
+  have equalCount : made.card = taken.card := by rw [makeCount,takeCount,balanced]
+  change ((picked.result label rule before).present.filter _).card = old.card
+  rw [sameShape,Finset.card_union_of_disjoint apart,equalCount]
+  exact Finset.card_sdiff_add_card_eq_card removed
+
+theorem Catalogue.controller_balance {program : Program} {rule : RuleInstance Row} (catalogue : Catalogue program rule) :
+    rule.take.countP Row.isController = rule.produce.countP Row.isController := by
+  cases catalogue with
+  | start next intent => cases selected : intent.plan.action <;> simp [startRule,selected,Row.isController]
+  | copy job input reads source operation resume event =>
+      cases event <;> simp [copyRule,Row.isController,SnapshotCopy.Event.rule,SnapshotCopy.beginRule,
+        SnapshotCopy.copyRule,SnapshotCopy.finishRule]
+  | commit job input reads source resume event =>
+      cases event <;> simp [commitRule,Row.isController,NeedStoreOperations.Event.rule]
+
+theorem Executes.controller_count {program : Program} {before after : World} (execution : Executes program before after) :
+    controllerCount after = controllerCount before := by
+  obtain ⟨rule,catalogue,stepped⟩ := execution
+  exact controller_count_of_balanced_step catalogue.controller_balance stepped
+
+theorem Path.controller_count {program : Program} {before after : World} (path : Path program before after) :
+    controllerCount after = controllerCount before := by
+  induction path with
+  | refl => rfl
+  | tail earlier step ih => exact step.controller_count.trans ih
+
+theorem Path.single_controller {program : Program} {before after : World} (path : Path program before after)
+    (single : controllerCount before = 1) : controllerCount after = 1 := path.controller_count.trans single
+
+theorem controller_unique {world : World} {first second : Row}
+    (single : controllerCount world = 1) (firstHere : Has world.present first) (secondHere : Has world.present second)
+    (firstKind : first.isController = true) (secondKind : second.isController = true) : first = second := by
+  obtain ⟨left,leftHere,leftLabel⟩ := firstHere
+  obtain ⟨right,rightHere,rightLabel⟩ := secondHere
+  obtain ⟨only,exactly⟩ := Finset.card_eq_one.mp single
+  have leftPresent : left ∈ world.present.filter (fun occurrence => (label occurrence).isController) :=
+    Finset.mem_filter.mpr ⟨leftHere,by rw [leftLabel]; exact firstKind⟩
+  have rightPresent : right ∈ world.present.filter (fun occurrence => (label occurrence).isController) :=
+    Finset.mem_filter.mpr ⟨rightHere,by rw [rightLabel]; exact secondKind⟩
+  rw [exactly] at leftPresent rightPresent
+  have equal : left = right := (Finset.mem_singleton.mp leftPresent).trans (Finset.mem_singleton.mp rightPresent).symm
+  exact leftLabel.symm.trans ((congrArg label equal).trans rightLabel)
+
+/-- With one running control, the catalogue cannot choose an unrelated
+copy or commit event. Its start must match both the counter and control. -/
+theorem running_step_is_start {program : Program} {before after : World} (next : Nat) (current : Control Nat)
+    (single : controllerCount before = 1) (active : Has before.present (.control next current))
+    (execution : Executes program before after) :
+    ∃ intent : Intent program, intent.plan.input = current ∧ Step action label (startRule next intent) before after := by
+  obtain ⟨rule,catalogue,stepped⟩ := execution
+  obtain ⟨picked,valid,result⟩ := stepped
+  cases catalogue with
+  | start other intent =>
+      have selected := Selected.take_rows valid (.control other intent.plan.input)
+        (by cases actionAt : intent.plan.action <;> simp [startRule,actionAt])
+      obtain ⟨rfl,equal⟩ := Row.control.inj (controller_unique single active selected rfl rfl)
+      exact ⟨intent,equal.symm,⟨picked,valid,result⟩⟩
+  | copy job input reads source operation resume event =>
+      have selected := Selected.read_rows valid (.waiting job ⟨input,reads,.edit source operation resume⟩) (by simp [copyRule])
+      have impossible := controller_unique single active selected rfl rfl
+      cases impossible
+  | commit job input reads source resume event =>
+      have selected := Selected.take_rows valid (.waiting job ⟨input,reads,.edit source event.operation resume⟩) (by simp [commitRule])
+      have impossible := controller_unique single active selected rfl rfl
+      cases impossible
+
+/-- Waiting fixes the job, operation and continuation of every possible
+catalogue step. This is a derived invariant of the ordinary row matching. -/
+theorem waiting_step_matches_plan {program : Program} {before after : World} (job : Nat) (plan : Plan)
+    (single : controllerCount before = 1) (waiting : Has before.present (.waiting job plan))
+    (execution : Executes program before after) :
+    ∃ input reads source operation resume, plan = ⟨input,reads,.edit source operation resume⟩ ∧
+      ((∃ event : SnapshotCopy.Event Suspension,
+          Step action label (copyRule job input reads source operation resume event) before after) ∨
+        ∃ event : NeedStoreOperations.Event, event.operation = operation ∧
+          Step action label (commitRule job input reads source resume event) before after) := by
+  obtain ⟨rule,catalogue,stepped⟩ := execution
+  obtain ⟨picked,valid,result⟩ := stepped
+  cases catalogue with
+  | start next intent =>
+      have selected := Selected.take_rows valid (.control next intent.plan.input)
+        (by cases actionAt : intent.plan.action <;> simp [startRule,actionAt])
+      have impossible := controller_unique single waiting selected rfl rfl
+      cases impossible
+  | copy other input reads source operation resume event =>
+      have selected := Selected.read_rows valid (.waiting other ⟨input,reads,.edit source operation resume⟩) (by simp [copyRule])
+      obtain ⟨rfl,rfl⟩ := Row.waiting.inj (controller_unique single waiting selected rfl rfl)
+      exact ⟨input,reads,source,operation,resume,rfl,Or.inl ⟨event,picked,valid,result⟩⟩
+  | commit other input reads source resume event =>
+      have selected := Selected.take_rows valid (.waiting other ⟨input,reads,.edit source event.operation resume⟩) (by simp [commitRule])
+      obtain ⟨rfl,rfl⟩ := Row.waiting.inj (controller_unique single waiting selected rfl rfl)
+      exact ⟨input,reads,source,event.operation,resume,rfl,Or.inr ⟨event,rfl,picked,valid,result⟩⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NeedMachine

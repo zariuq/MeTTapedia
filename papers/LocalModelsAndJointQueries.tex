@@ -1,0 +1,143 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,booktabs,xurl}
+\usepackage[margin=0.8in]{geometry}
+\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlength{\emergencystretch}{2em}
+\newcommand{\heading}[1]{\vspace{4pt}\textbf{#1}\par\nopagebreak}
+\title{Local Models and Joint Queries\\\large What coherent revision requires}
+\author{}
+\date{}
+\begin{document}
+\begin{center}{\LARGE Local Models and Joint Queries}\\[3pt]{\large What coherent revision requires}\end{center}
+\textbf{A reasoner can work with local probability models and have no largest
+working context. For each joint question it answers, it must justify the
+relevant joint interpretation---or report what remains undetermined.}
+
+\heading{1. Three meanings of ``global''}
+A \emph{working context} contains a set of quantities and a probability model
+for them. A \emph{joint model} connects quantities that a question uses
+together. A \emph{global extension} is one probability measure whose marginals
+match every local model under consideration.
+
+A joint model can be global relative to one query and still be small relative
+to the whole system. Its existence does not require a master table, a largest
+context, or exhaustive inference over everything the system knows. An abstract
+global distribution, however, is still a global distribution mathematically;
+``abstract'' does not mean it has disappeared.
+
+\heading{2. No largest context is required}
+Take all finite subsets of an infinite variable set. Any two have a common
+enlargement, their union. Every context can grow, so none is greatest.
+Independent fair coins give a coherent example: each finite context has its
+finite product distribution, and there is also an infinite product measure.
+Thus \emph{no largest finite context} and \emph{a global extension exists} can
+both be true.
+
+More generally, fix finite, nonempty value sets for the variables. If a joint
+law $\mu_C$ is supplied for \emph{every finite variable set} $C$, and
+\[
+  (\text{restriction from }D\text{ to }C)_*\mu_D=\mu_C
+  \qquad(C\subseteq D),
+\]
+then there is a unique global probability measure on the product
+sigma-algebra with these finite marginals. This is the Kolmogorov extension
+theorem in its finite-state form. It establishes existence, not an efficient
+global algorithm.
+
+The words \emph{every finite variable set} matter. Agreement between the
+overlaps of a few local models is a weaker condition. For a partial collection of prescribed
+finite marginals, if \emph{every finite collection of constraints}
+has a common realization, compactness gives at least one global extension;
+it need not be unique. Checking only pairs of constraints does not suffice.
+These statements assume a fixed, commonly interpreted variable family.
+
+\heading{3. A local joint is enough, but its dependence must be specified}
+Suppose $X$ and $Y$ are both fair bits. Their separate laws allow:
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Joint relationship & $P(X=1,Y=1)$ & $P(X=1\mid Y=1)$\\
+\midrule
+Always equal & $1/2$ & $1$\\
+Independent & $1/4$ & $1/2$\\
+Always opposite & $0$ & $0$\\
+\bottomrule
+\end{tabular}
+\end{center}
+A local joint model for $(X,Y)$ answers the revision question. The marginals
+alone do not select it. Taking their product is a legitimate modeling choice
+that asserts independence. Distinct variable names or evidence IDs do not
+establish that assumption.
+
+\heading{4. What failure of a global extension actually shows}
+Consider three fair-bit pair models for $(X,Y)$, $(Y,Z)$ and $(X,Z)$. In each,
+assign probability $1/16$ to each equal outcome and $7/16$ to each unequal
+outcome. All single-bit overlaps agree. Yet every Boolean triple has at least
+one equal pair, so any triple law must satisfy
+\[
+ P(X=Y)+P(Y=Z)+P(X=Z)\geq1.
+\]
+The proposed pair laws give $3/8$. No triple joint can realize all three.
+
+This disproves the claim that overlap agreement always permits joining local
+models. It does not disprove the extension theorem: the required law on
+$\{X,Y,Z\}$ is precisely what is missing. It also does not make the local
+calculations useless. They remain valid within their declared contexts;
+combining all three as one classical joint interpretation is unavailable.
+Treating $X$ in one chart and $X$ in another as different variables is a
+legitimate move, but it changes the problem: the identification must be
+dropped explicitly, not silently.
+
+For \emph{two} finite models $p(a,s)$ and $q(s,b)$ with the same overlap
+marginal $r(s)$ and no extra cross-constraints, one possible joining is
+\[
+ \mu(a,s,b)=\begin{cases}p(a,s)q(s,b)/r(s),&r(s)>0,\\0,&r(s)=0.\end{cases}
+\]
+This conditional-independence bridge preserves both supplied marginals.
+For the triangle, joining the first two charts gives
+$P(X=1\mid Z=1)=25/32$, whereas the third gives $1/8$.
+A path label records which model was used; it does not reconcile the answers.
+
+\heading{5. Say what the information supports}
+Let $\mathcal K$ be the set of joint models consistent with the declared
+constraints on a requested context.
+\begin{itemize}
+\setlength{\itemsep}{0pt}
+\item If $\mathcal K$ is nonempty and all its models agree on the query, return that answer,
+      even when the full joint model is not unique.
+\item If answers vary, return bounds or expose the assumption selecting one
+      model. For two fair bits, the conjunction lies in $[0,1/2]$ and the
+      conditional in the table lies in $[0,1]$.
+\item If $\mathcal K$ is empty, report incompatible joint constraints.
+      Preserve useful context-specific results, or explicitly repair/select
+      the assumptions. Do not manufacture a probability for the empty model set.
+\end{itemize}
+For conditioning on $E$, evaluate $P(A\mid E)$ only for admissible models
+with $P(E)>0$. Impossible evidence, unknown dependence, and incompatible
+constraints are different outcomes. The failure of one joint request need not
+silence the rest of the reasoner.
+
+A prior over candidate models is one way to supply joint models. When the
+candidates describe the same observables, their mixture is a joint model and
+evidence revises the weights, $\pi(m\mid e)\propto\pi(m)\,P(e\mid m)$:
+likelihoods $9/10$ and $1/10$ turn equal weights into $9/10$ and $1/10$. No
+largest context is needed, only an agreed meaning for the shared variables.
+
+\heading{6. The operational contract and checked result}
+Retain the model, evidence identities, query interpretation, and the
+justification for each coupling or likelihood product. Work in any context sufficient for
+the current question; enlarge it when needed. Different larger contexts give
+the same revised answer if they agree on the joint query--evidence law and
+use the same likelihood. New evidence may change the answer.
+
+\textbf{Checked in Lean:} the finite query--evidence reduction and normalizer
+agreement, directed finite contexts without a greatest member, the two-coupling
+revision control, the strictly positive triangle obstruction, the two-chart
+bridge ($25/32$ against $1/8$), and the model-prior update. See the Mettapedia module
+\texttt{ProbabilityTheory/\allowbreak BayesianInference/\allowbreak LocalContexts.lean}.
+The general extension/compactness statements above are classical mathematical
+background, not new Lean results in that module.
+\end{document}

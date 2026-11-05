@@ -64,7 +64,7 @@ theorem namesFresh_of_entryChecks (spec : Spec) (name : String) (standard : spec
   simp only [beginBody,runBody,exploreBody,edgesBody,codeWithin,expressionHeadWithin,atomsWithin,
     backendAtom,plan,normal,beginAllowed,advanceAllowed,traceAllowed,exploreAllowed,roundsAllowed,
     statesAllowed,edgesAllowed,letAllowed,Bool.true_and,Bool.and_true]
-  decide +kernel
+  simp +decide
 
 #print axioms plan_supported
 #print axioms namesFresh_of_entryChecks

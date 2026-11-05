@@ -54,6 +54,20 @@ def guarded : Program :=
   ⟨[⟨"blocked", 1⟩,⟨"released", 1⟩],
     [⟨"release", [], [h "blocked" [v 0]], [cmp .less (i 0) (num 0)], [.tell (h "released" [v 0])]⟩]⟩
 
+def partnerChoice : Program :=
+  ⟨[⟨"gate",0⟩,⟨"item",1⟩,⟨"chosen",1⟩],
+    [⟨"pick", [], [h "gate" [],h "item" [v 0]], [], [.tell (h "chosen" [v 0])]⟩]⟩
+
+def partnerPair : Program :=
+  ⟨[⟨"pair_gate",0⟩,⟨"pair_item",1⟩,⟨"chosen_pair",2⟩],
+    [⟨"pick_pair", [], [h "pair_gate" [],h "pair_item" [v 0],h "pair_item" [v 1]], [],
+      [.tell (h "chosen_pair" [v 0,v 1])]⟩]⟩
+
+def guardedPartner : Program :=
+  ⟨[⟨"guard_gate",0⟩,⟨"guard_item",1⟩,⟨"guard_chosen",1⟩],
+    [⟨"guarded_pick", [], [h "guard_gate" [],h "guard_item" [v 0]],
+      [cmp .greater (i 0) (num 1)], [.tell (h "guard_chosen" [v 0])]⟩]⟩
+
 structure Example where
   name : String
   program : Program
@@ -75,6 +89,18 @@ def examples : List Example :=
       ["a","b","c"].flatMap (fun left => ["a","b","c"].map (fun right => fact "path" [.atom left,.atom right]))⟩,
    ⟨"empty", ⟨[],[]⟩, [], []⟩,
    ⟨"guard_false", guarded, [fact "blocked" [.integer 0]], [fact "blocked" [.integer 0]]⟩,
-   ⟨"guard_true", guarded, [fact "blocked" [.integer (-1)]], [fact "released" [.integer (-1)]]⟩]
+   ⟨"guard_true", guarded, [fact "blocked" [.integer (-1)]], [fact "released" [.integer (-1)]]⟩,
+   ⟨"partner_choice", partnerChoice,
+      [fact "item" [.integer 2],fact "item" [.integer 1],fact "gate" []],
+      [fact "item" [.integer 2],fact "chosen" [.integer 1]]⟩,
+   ⟨"partner_choice_wide", partnerChoice,
+      (List.range 20).map (fun n => fact "item" [.integer n]) ++ [fact "gate" []],
+      (List.range 19).map (fun n => fact "item" [.integer n]) ++ [fact "chosen" [.integer 19]]⟩,
+   ⟨"partner_pair", partnerPair,
+      [1,2,3].map (fun n => fact "pair_item" [.integer n]) ++ [fact "pair_gate" []],
+      [fact "pair_item" [.integer 1],fact "chosen_pair" [.integer 3,.integer 2]]⟩,
+   ⟨"guarded_partner", guardedPartner,
+      [fact "guard_item" [.integer 3],fact "guard_item" [.integer 1],fact "guard_gate" []],
+      [fact "guard_item" [.integer 1],fact "guard_chosen" [.integer 3]]⟩]
 
 end Mettapedia.Languages.CHR.Examples

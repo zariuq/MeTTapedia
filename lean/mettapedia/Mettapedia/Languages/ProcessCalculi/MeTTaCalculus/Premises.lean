@@ -11,17 +11,24 @@ IR-level premise program for the MeTTa-calculus rewrite rules:
 
 ## Design note
 
-The executable reduction in `Reduction.lean` remains the operational source of
-truth (`mettaCalcRelEnv`) and uses direct Lean functions for unification and
-COMM-only stepping. This file provides the backend-facing datalog contract with
-named builtins so exporters and artifact checks can reason about premise wiring.
+The operational semantics is the corrected step `Corrected.cstep` and the
+relational `Corrected.Step` (`CorrectedReduction.lean`). This file provides the
+backend-facing datalog contract with named builtins so exporters and artifact
+checks can reason about premise wiring. The runtime that answers it is
+`Adequacy.correctedRelEnv`; the naive reading's environment `mettaCalcRelEnv`
+in `Reduction.lean` is kept only for the separating theorems.
 
 ## Builtin contracts
 
 - `mettaCommWitness(t, u, p, q)` returns zero or more witness values encoded as
-  `MRef(pOut, qOut)`.
+  `MRef(pOut, qOut)`: the two inputs opened apart with fresh names, their
+  patterns unified by the principal, idempotent unifier, and the dot applied
+  once to each continuation with every pattern variable quoted
+  (`Adequacy.correctedCommWitness`). A rule sees only its own bag, so the
+  runtime supplies the free names of the process being stepped, and the fresh
+  names avoid them as well.
 - `mettaCommOnlyStep(src)` returns zero or more `tgt` one-step COMM-only
-  reducts (`mettaCalcCommOnly`).
+  reducts (`mettaCalcCommOnly`) under that witness.
 
 ## Source attribution
 

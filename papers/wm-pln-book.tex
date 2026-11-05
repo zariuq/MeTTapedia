@@ -4058,7 +4058,7 @@ develops the third and fourth verbs of the kernel interface---forgetting
 and explanation---and proves that they satisfy precise conservation laws.\\[4pt]
 \textbf{Layer:} State management.\\
 \textbf{Semantic object:} \code{ForgettingLayer}, \code{EvidenceConservationPack}, \code{TrackedWhichState}.\\
-\textbf{Proved:} Noether conservation; anti-hallucination; zero-leakage; exact-inverse no-go; provenance factorization.\\
+\textbf{Proved:} Noether conservation; anti-hallucination; zero-leakage; erasure no-go; exact unlearning on clean bases; provenance factorization.\\
 \textbf{Assumed:} Zero-preserving world model (for conservation theorems).
 \end{quote}
 
@@ -4129,15 +4129,23 @@ layer's forgetting is independent and scope-delimited.}
 
 \section{Conservation Theorems}
 
-Under \emph{exact inverse forgetting}---where forgetting scope~$S$
-exactly undoes a revision $\Delta$ that was entirely within~$S$---a
-family of conservation laws holds:
+The conservation laws concern a revision~$\Delta$ that forgetting its
+scope~$S$ \emph{erases}: $\mathrm{forget}(S, \Delta) = 0$.  Undoing
+$\Delta$ on every base cannot be asked: if
+$\mathrm{forget}(S, W + \Delta) = W$ for all~$W$, then forgetting~$S$ is
+the identity and $\Delta = 0$ (\code{exactInverse\_everywhere\_degenerate}).
+In a \code{SupportTrackedForgettingLayer}, a revision supported inside
+the footprint of~$S$ is erased and absorbed on every base,
+$\mathrm{forget}(S, W + \Delta) = \mathrm{forget}(S, W)$
+(\code{forget\_add\_of\_supported}), and undone exactly on bases clean
+for~$S$, $\mathrm{forget}(S, W + \Delta) = W$
+(\code{exactInverse\_of\_clean}).
 
 \begin{theorem}[Evidence conservation (\claimCore{})]
 \label{thm:conservation}
-If $\Delta$ is a revision whose evidence lies entirely within scope~$S$
-(i.e., $\forall W,\; \mathrm{forget}(S, W + \Delta) = W$), then for
-every query $q$ outside~$S$:
+In a zero-preserving world model, if forgetting scope~$S$ erases the
+revision~$\Delta$ ($\mathrm{forget}(S, \Delta) = 0$), then for every
+query $q$ outside~$S$:
 \begin{enumerate}
 \item \textbf{Anti-hallucination}: $\mathrm{ev}(\Delta, q) = 0$.
   The revision contributes zero evidence outside its scope.
@@ -4154,18 +4162,21 @@ These are packaged as \code{EvidenceConservationPack} and proved
 canonically for every forgetting layer with a zero-preserving world
 model (\code{evidenceConservationPack\_of\_forgetting}).
 
-\begin{theorem}[Exact-inverse no-go (\claimBoundary{})]
-If a revision $\Delta$ has nonzero evidence at any query outside
-scope~$S$, then no forgetting operation can exactly undo~$\Delta$.
+\begin{theorem}[Erasure no-go (\claimBoundary{})]
+In a zero-preserving world model, if a revision $\Delta$ has nonzero
+evidence at any query outside scope~$S$, then forgetting~$S$ does not
+erase~$\Delta$: $\mathrm{forget}(S, \Delta) \neq 0$.
 \end{theorem}
 
 \noindent
-This is the precise boundary: forgetting cannot undo what leaked.
+This is the precise boundary: forgetting cannot erase what leaked.
 
 See \codepath{Mettapedia/PLN/WorldModel/GenericWorldModelForgetting.lean}
-(185~lines, 0~sorry) and
+(214~lines, 0~sorry),
+\codepath{Mettapedia/PLN/WorldModel/PLNWorldModelSupportForgetting.lean}
+(116~lines, 0~sorry) and
 \codepath{Mettapedia/PLN/WorldModel/WorldModelConservationPack.lean}
-(220~lines, 0~sorry).
+(235~lines, 0~sorry).
 
 \section{Provenance and Explanation}
 \label{sec:provenance}
@@ -4244,7 +4255,8 @@ The key difference: PLN v0.9 checks \texttt{StampDisjoint} at
 \emph{runtime}; the WM calculus proves it at \emph{compile time}
 via \code{decide}.  And PLN v0.9 has \emph{no forgetting}: once
 evidence enters a stamp, it cannot be retracted.  The WM calculus
-adds exact forgetting (\code{forgetScopedByScope\_exactInverse},
+adds forgetting that is exact on clean bases
+(\code{forgetScopedByScope\_exactInverse\_of\_supported\_of\_clean},
 Theorem~\ref{thm:conservation}) with proved conservation.
 
 The formalization verifies all three PLN v0.9 flagship examples
@@ -9299,21 +9311,26 @@ $(\mathsf{Evidence}, +, 0)$.
 Each rule is encoded as a \texttt{RewriteRule} structure with a
 \texttt{typeContext} (typed metavariables), \texttt{premises} (side
 conditions), \texttt{left} and \texttt{right} patterns.  The core rules
-have empty premises.  Sixteen step
+have empty premises.  Eighteen step
 lemmas are kernel-checked: 3~core (evidence-add, revision-comm,
-revision-assoc) at both extended and full vertices, plus 10~extension-axis
-lemmas (overlap, forgetting, exact-inverse, provenance-symmetry,
-closure-fixpoint, swap-anomaly, anti-hallucination, experiment,
-Kripke, generic carrier).
+revision-assoc) at both extended and full vertices, plus 12~extension-axis
+lemmas (overlap, forgetting, support-tracked absorption and clean-base
+identity, provenance-symmetry, closure-fixpoint, swap-anomaly,
+anti-hallucination, Noether conservation, experiment, Kripke, generic
+carrier).  The forgetting, support-tracked and conservation lemmas hold for a
+relation environment that supplies their premise rows.
 
 \subsection{The 2\texttimes 2 Calculus Square}
 \label{sec:wm-guarded}
 \label{sec:wm-context-closure}
 
 In the \emph{raw} (schematic) calculus, all extension rules fire
-unconditionally.  The \emph{guarded} (faithful) calculus makes side
-conditions explicit as \texttt{Premise.relationQuery} entries---for example,
-the forgetting rule requires $\mathsf{outsideScope}(S, q)$.
+unconditionally, except the outside-scope forgetting rule, the two
+support-tracked forgetting rules and the two conservation rules, which keep
+their premises in both calculi.  The \emph{guarded} (faithful) calculus makes
+the remaining side conditions explicit as \texttt{Premise.relationQuery}
+entries---for example, fallback revision decomposes additively only under
+$\mathsf{sourceCompatible}(W_1, W_2)$.
 
 The core WM patterns use \texttt{.apply} constructors.  The shared pattern
 representation grants them no implicit subterm reduction.  The
@@ -9367,7 +9384,7 @@ Step~2 uses \texttt{ruleCombineCongLeft} to apply evidence-add
 
 \noindent
 See \codepath{Mettapedia/OSLF/Framework/WMCalculusLanguageDef.lean}
-(17~guarded rules),
+(12~guarded rules),
 \codepath{Mettapedia/OSLF/Framework/WMCalculusContextClosure.lean}
 (463~lines, 0~sorry), and
 \codepath{Mettapedia/OSLF/Framework/WMCalculusOSLFBridge.lean}
@@ -9521,7 +9538,7 @@ The WM calculus variants are indexed by a 13-axis \texttt{WMFullVertex}:
      & $2 \times 2 \times 3 \times 2 = 24$
      & model-level (same rules) \\
 5 & Overlap & additive $|$ overlapAware & +1 rule \\
-6 & Forgetting & none $|$ scopeBased $|$ supportTracked & +2--3 rules \\
+6 & Forgetting & none $|$ scopeBased $|$ supportTracked & +2--4 rules \\
 7 & Provenance & none $|$ sourceLabeled & +6 rules \\
 8 & Fixpoint & none $|$ closure $|$ policy $|$ cascade & +2--4 rules \\
 9 & Cost & none $|$ costTracked & +3 rules \\
@@ -9545,7 +9562,7 @@ The minimal vertex (all extensions disabled) has exactly~5 rewrite rules
 \end{theorem}
 
 \begin{theorem}[\texttt{wmFullVertexMaximal\_ruleCount}, kernel-checked]
-The maximal vertex (all extensions enabled at strongest level) has exactly~36
+The maximal vertex (all extensions enabled at strongest level) has exactly~37
 rewrite rules.
 \end{theorem}
 
@@ -9559,13 +9576,20 @@ $\mathsf{Extract}(\mathsf{OverlapMerge}(W_1, W_2), q)
 \;\leadsto\; \mathsf{OverlapCorrect}(\mathsf{Extract}(W_1,q),\;
 \mathsf{Extract}(W_2,q),\; \mathsf{OverlapFactor}(W_1,W_2,q))$.
 
-\paragraph{Forgetting (2--3 rules).}
-Outside-scope invariance:
+\paragraph{Forgetting (2--4 rules).}
+Outside-scope invariance,
 $\mathsf{Extract}(\mathsf{Forget}(S, W), q)
-\;\leadsto\; \mathsf{Extract}(W, q)$ (when $q \notin \mathrm{scope}(S)$).
-Idempotence:
-$\mathsf{Forget}(S, \mathsf{Forget}(S, W)) \;\leadsto\; \mathsf{Forget}(S, W)$.
-Support-tracked mode adds the exact-inverse rule.
+\;\leadsto\; \mathsf{Extract}(W, q)$, when $q$ lies outside~$S$: the rule
+carries the premise $\mathsf{outsideScope}(S, q)$, and inside the scope,
+where forgetting changes the evidence, it does not fire.
+Idempotence,
+$\mathsf{Forget}(S, \mathsf{Forget}(S, W)) \;\leadsto\; \mathsf{Forget}(S, W)$,
+needs no premise: every forgetting layer forgets idempotently.
+Support-tracked mode adds two rules with premises: absorption,
+$\mathsf{Forget}(S, \mathsf{Revise}(W, D)) \;\leadsto\; \mathsf{Forget}(S, W)$
+(when $D$ is supported in~$S$), and the clean-base identity,
+$\mathsf{Forget}(S, W) \;\leadsto\; W$ (when $W$ is clean for~$S$).
+Applied in turn, they undo a supported revision of a clean base.
 
 \paragraph{Provenance (6 rules).}
 Source-compatibility symmetry, fallback decomposition (compatible/incompatible
@@ -9580,7 +9604,12 @@ and cardinality-bounded stabilization (cascade mode).
 Swap anomaly symmetry, swap anomaly zero, and schedule error symmetry.
 
 \paragraph{Conservation (2 rules).}
-Anti-hallucination and Noether conservation.
+Anti-hallucination, $\mathsf{Extract}(D, q) \;\leadsto\; \mathsf{EvidenceZero}$,
+and Noether conservation,
+$\mathsf{Extract}(\mathsf{Revise}(W, D), q) \;\leadsto\; \mathsf{Extract}(W, q)$,
+both when forgetting some scope~$S$ erases~$D$ and $q$ lies outside~$S$.
+The scope is a rule variable: the erasure premise binds it, and the
+outside-scope premise reads it.
 
 \paragraph{Experiment channels (3--7 rules).}
 Experiment evidence additivity, Blackwell factorization pullback, channel
@@ -9601,7 +9630,7 @@ that $\bot$~=~most rules).  The product of these 9~per-axis preorders
 gives a preorder on \texttt{WMFullVertex}:
 
 \begin{theorem}[\texttt{wmFullVertexMaximal\_le}, kernel-checked]
-For every $w : \mathsf{WMFullVertex}$, the maximal vertex (36~rules)
+For every $w : \mathsf{WMFullVertex}$, the maximal vertex (37~rules)
 satisfies $\mathsf{wmFullVertexMaximal} \le w$.
 \end{theorem}
 
@@ -9680,14 +9709,15 @@ These operators have concrete evidence-theoretic meaning:
 
 \item[Vertex dependence.]
   At the minimal vertex (5~rules), $\Diamond$ is small (few rewrites
-  reachable).  At the maximal vertex (36~rules), $\Diamond$ is much
+  reachable).  At the maximal vertex (37~rules), $\Diamond$ is much
   larger.  The Galois connection tightens:
   more $\Diamond$ means weaker~$\Box$.
 
 \item[Conservation as $\Box$-safety.]
   With conservation rules enabled, $\Box(\text{outsideScope} \Rightarrow
-  \text{preserved})$ holds at any $\mathsf{Revise}(W, \Delta)$: backward
-  safety captures the Noether-style conservation guarantee.
+  \text{preserved})$ holds at any $\mathsf{Revise}(W, \Delta)$ where
+  forgetting a scope erases~$\Delta$: backward safety captures the
+  Noether-style conservation guarantee.
 \end{description}
 
 \subsection{Diamond Theorems and Galois Corollaries}
@@ -9850,15 +9880,16 @@ interpretation).
 \section{Compiled BN Inference Bridge}
 \label{sec:wm-bn-bridge}
 
-The guarded forgetting rule
+The forgetting rule
 $\mathsf{Extract}(\mathsf{Forget}(S,W), q) \leadsto \mathsf{Extract}(W, q)$
-requires a side-condition oracle answering $\mathsf{outsideScope}(S, q)$.
+requires, in the raw and the guarded calculus alike, a side-condition oracle
+answering $\mathsf{outsideScope}(S, q)$.
 This oracle encodes d-separation: a BN topology determines which
 scope/query pairs are outside scope.
 
 \paragraph{Positive theorem.}
 Given \emph{any} \texttt{RelationEnv} that satisfies the
-$\mathsf{outsideScope}$ premise, the guarded rule fires:
+$\mathsf{outsideScope}$ premise, the rule fires:
 
 \begin{theorem}[\texttt{guarded\_forget\_of\_dsep}, kernel-checked]
 If $\mathsf{OutsideScope}(\rho, L, S, q)$ holds for a
@@ -9880,21 +9911,21 @@ No d-separation certificate is available, so the rule is dead code.
 \end{theorem}
 
 \paragraph{Completeness.}
-In the guarded calculus, $\mathsf{ruleForgetOutsideGuarded}$ is the
+Among the forgetting rules, $\mathsf{ruleForgetOutside}$ is the
 \emph{unique} rule whose left-hand side matches
 $\mathsf{Extract}(\mathsf{Forget}(S,W), q)$:
 
-\begin{theorem}[\texttt{forgettingRulesGuarded\_unique\_match}, kernel-checked]
-For every rule~$r$ in the guarded forgetting rules,
+\begin{theorem}[\texttt{forgettingRules\_unique\_match}, kernel-checked]
+For every rule~$r$ in the forgetting rules,
 $\mathsf{matchPattern}(r.\mathit{left},\;
 \mathsf{Extract}(\mathsf{Forget}(S,W), q)) \ne [\,]$
-implies $r = \mathsf{ruleForgetOutsideGuarded}$.
+implies $r = \mathsf{ruleForgetOutside}$.
 \end{theorem}
 
 \noindent
 Combined with the negative theorem: under the empty oracle,
 $\mathsf{Extract}(\mathsf{Forget}(S,W), q)$ is \emph{irreducible} in
-the guarded calculus.
+the raw and the guarded calculus alike.
 
 %% ---------------------------------------------------------------
 \section{Formalization Inventory and Future Work}
@@ -9909,8 +9940,8 @@ All results in this chapter are kernel-checked in Lean~4.28 (0~sorry):
 \textbf{File} & \textbf{Contents} & \textbf{Status} \\
 \midrule
 \texttt{WMCalculusLanguageDef.lean}
-  & 37 raw + 17 guarded rewrite rules, 7 axis types,
-    \texttt{WMFullVertex}, 16 step lemmas, guarded LanguageDefs
+  & 37 raw + 12 guarded rewrite rules, 7 axis types,
+    \texttt{WMFullVertex}, 18 step lemmas, guarded LanguageDefs
   & proved \\
 \texttt{WMCalculusGSLTVertex.lean}
   & fiber, transport, rule counts, OSLF per vertex, NTT scope
@@ -11515,7 +11546,7 @@ deployed reasoning.
 
 \paragraph{Process-algebraic packaging.}
 The WM calculus variants have been packaged as a 13-axis
-\texttt{WMFullVertex} family with 36~rewrite rules across 11~extension
+\texttt{WMFullVertex} family with 37~rewrite rules across 11~extension
 families (Chapter~\ref{ch:wm-gslt}).  The OSLF-derived $\Diamond/\Box$
 operators, Galois connections, the vertex preorder with ForwardFiber
 functor, and the compiled BN inference bridge (positive/negative/completeness)

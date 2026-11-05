@@ -185,7 +185,7 @@ structure ExecutedAnswer {State Query Ev Ov Scope : Type}
   admitted : occurrence ∈ rewriteAtOccurrences
     (engineBasePremises (relationEnv provider)) CombinedLang 1
     (pExtract (pForget scopeHandle world) query)
-  rule : occurrence.ruleName = "WM_ForgetOutside_Guarded"
+  rule : occurrence.ruleName = "WM_ForgetOutside"
   target : occurrence.target = pExtract world query
   intrinsic : evidenceAnswerFamily reading
     (FirstOrder.substitute receipt.sigma receipt.supported extractFragment)
@@ -237,7 +237,7 @@ def ExecutedAnswer.proofRelevantEvent
     (execution : ExecutedAnswer reading provider receipt environment scopeHandle scope answer) :
     eventSite (engineBasePremises (relationEnv provider)) CombinedLang 1
       execution.proofRelevantEvent =
-        (execution.occurrence.ruleIndex, "WM_ForgetOutside_Guarded",
+        (execution.occurrence.ruleIndex, "WM_ForgetOutside",
           execution.occurrence.alternativeIndex) := by
   rw [eventSite, execution.proofRelevantEvent_occurrence, execution.rule]
 
@@ -255,7 +255,7 @@ theorem ExecutedAnswer.authoredRuleSelected
     (execution : ExecutedAnswer reading provider receipt environment scopeHandle scope answer) :
     ∃ rule,
       CombinedLang.rewrites[execution.occurrence.ruleIndex]? = some rule ∧
-      rule.name = "WM_ForgetOutside_Guarded" ∧
+      rule.name = "WM_ForgetOutside" ∧
       (applyRuleUsing (engineBasePremises (relationEnv provider)) CombinedLang
         (rewriteAt (engineBasePremises (relationEnv provider)) CombinedLang 0)
         rule (pExtract (pForget scopeHandle world) query))[execution.occurrence.alternativeIndex]? =
@@ -283,7 +283,7 @@ theorem execute_checked_extract {State Query Ev Ov Scope : Type}
       some (receipt.queryValue reading environment))
     (success : [("q", query), ("W", world), ("S", scopeHandle)] ∈
       applyPremisesWithEnv (relationEnv provider) CombinedLang
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scopeHandle)]) :
     Nonempty (ExecutedAnswer reading provider receipt environment scopeHandle scope
       (reading.core.extract (receipt.worldValue reading environment)
@@ -320,7 +320,7 @@ theorem checkedOpenAnswers_execute
             some (receipt.queryValue reading environment) →
           [("q", query), ("W", world), ("S", scopeHandle)] ∈
             applyPremisesWithEnv (relationEnv provider) CombinedLang
-              ruleForgetOutsideGuarded.premises
+              ruleForgetOutside.premises
               [("q", query), ("W", world), ("S", scopeHandle)] →
           Nonempty (ExecutedAnswer reading provider receipt environment scopeHandle scope
             (reading.core.extract (receipt.worldValue reading environment)
@@ -664,7 +664,7 @@ def provider (queryValue : String) :
 
 theorem outside_premise : [("q", query), ("W", world), ("S", scopeHandle)] ∈
     applyPremisesWithEnv (relationEnv (provider "y")) CombinedLang
-      ruleForgetOutsideGuarded.premises
+      ruleForgetOutside.premises
       [("q", query), ("W", world), ("S", scopeHandle)] := by
   decide +kernel
 
@@ -705,7 +705,7 @@ theorem wrong_answer_rejected :
 
 theorem inside_premise_rejected :
     applyPremisesWithEnv (relationEnv (provider "x")) CombinedLang
-      ruleForgetOutsideGuarded.premises
+      ruleForgetOutside.premises
       [("q", query), ("W", world), ("S", scopeHandle)] = [] := by
   decide +kernel
 

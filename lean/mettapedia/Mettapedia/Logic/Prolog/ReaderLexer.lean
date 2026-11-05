@@ -93,8 +93,16 @@ private def takeWhile (predicate : Char -> Bool) :
 private def isIdentifierContinue (character : Char) : Bool :=
   character.isAlphanum || character = '_'
 
-private def isGraphic (character : Char) : Bool :=
-  "#$&*+-./:<=>?@\\^~".toList.contains character
+def isGraphic (character : Char) : Bool :=
+  ['#', '$', '&', '*', '+', '-', '.', '/', ':', '<', '=', '>', '?', '@', '\\', '^', '~'].contains character
+
+theorem isGraphic_spelling (character : Char) :
+    isGraphic character = "#$&*+-./:<=>?@\\^~".toList.contains character := by
+  have characters : "#$&*+-./:<=>?@\\^~".toList =
+      ['#', '$', '&', '*', '+', '-', '.', '/', ':', '<', '=', '>', '?', '@', '\\', '^', '~'] := by
+    decide +kernel
+  rw [characters]
+  rfl
 
 private def isNumberContinue (previous character : Char) : Bool :=
   character.isAlphanum || character = '_' || character = '\'' ||

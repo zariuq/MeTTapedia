@@ -61,14 +61,14 @@ structure Prepared (program : SpaceSemantics.Program) (head : String) (left righ
   notIO : ioHead head = false
   notNative : StdLib.known head = false
   registered : program.equations.any (·.head == head) = true
-  ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]
+  ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]
 
 def prepare (program : SpaceSemantics.Program) (head : String) (left right : Atom) :
     Option (Prepared program head left right) := do
   if notIO : ioHead head = false then
     if notNative : StdLib.known head = false then
       if registered : program.equations.any (·.head == head) = true then
-        if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"] then
+        if ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"] then
           match selected : clauses program head [left, right] with
           | [.evaluate callee body] =>
               let compiled ← ScalarBody.elaborate program (environment callee) body
@@ -87,7 +87,7 @@ theorem prepare_selected (program : SpaceSemantics.Program) (head : String) (lef
     (callee : Subst) (body : Atom)
     (notIO : ioHead head = false) (notNative : StdLib.known head = false)
     (registered : program.equations.any (·.head == head) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (selected : clauses program head [left, right] = [.evaluate callee body]) :
     prepare program head left right = do
       let compiled ← ScalarBody.elaborate program (environment callee) body

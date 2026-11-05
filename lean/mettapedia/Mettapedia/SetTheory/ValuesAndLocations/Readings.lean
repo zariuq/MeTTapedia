@@ -11,7 +11,7 @@ import Mathlib.Tactic
 
 `{a b}` is a value. Read as a set it is an element of `Finset A`, the free idempotent commutative
 monoid on `A`; read as a bag, an element of `Multiset A`, the free commutative monoid.
-`Mettapedia.Algebra.CollectionFold` proves these universal properties and says which folds
+`Mettapedia.Algebra.Collections.Free` proves these universal properties and says which folds
 descend to which reading. Equality is by elements: two sets are equal when they have the same
 members (`Finset.ext`), two bags when every element occurs equally often (`Multiset.ext`).
 Adding is a function, `insert c {a b} = {a b c}` (`Controls.set_insert`), and a name bound to

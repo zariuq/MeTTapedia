@@ -1,65 +1,79 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.PaperMap
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CorrectedCongruence
 
 /-!
 # MeTTa-Calculus Regression Corpus
 
-Focused positive/negative regression corpus with exact expected outputs.
-`reg_*_raw_exact` capture raw list-level enumerator behavior, while
-`reg_*_exact` use canonical duplicate-insensitive outputs.
+Focused positive/negative regression corpus with exact expected outputs of the
+corrected step. `reg_*_raw_exact` capture the raw list of `Corrected.cstep`,
+`reg_*_exact` its duplicate-insensitive set, and `reg_*_bag_exact` the step
+modulo the bag laws, `Corrected.cstepBag`, which fires COMM at any pair of
+guards and so returns the reduct in both orders.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus
 
-/-- Positive COMM raw regression: symmetric duplicate witness in list output. -/
+/-- Positive COMM raw regression: the capture-free reduct `@0 | a`. -/
 theorem reg_comm_raw_exact :
-    step demoCommSource = [demoCommTarget, demoCommTarget] := by
+    Corrected.cstep demoCommSource = [demoCommReduct] := by
   decide +kernel
 
 /-- Positive COMM canonical regression: duplicate-insensitive singleton target. -/
 theorem reg_comm_exact :
-    stepCanonical demoCommSource = ({demoCommTarget} : Finset Proc) := by
+    (Corrected.cstep demoCommSource).toFinset = ({demoCommReduct} : Finset Proc) := by
+  decide +kernel
+
+/-- Positive COMM regression modulo the bag laws: the reduct in both orders. -/
+theorem reg_comm_bag_exact :
+    Corrected.cstepBag demoCommSource =
+      [pPar [demoCommReduct], pPar [par (.fvar "a") (nQuote pZero)]] := by
   decide +kernel
 
 /-- Negative COMM raw regression: mismatched terms produce no result. -/
 theorem reg_comm_blocked_raw_exact :
-    step demoBlocked = [] := by
+    Corrected.cstep demoBlocked = [] := by
   decide +kernel
 
 /-- Negative COMM canonical regression: empty canonical output. -/
 theorem reg_comm_blocked_exact :
-    stepCanonical demoBlocked = (∅ : Finset Proc) := by
+    (Corrected.cstep demoBlocked).toFinset = (∅ : Finset Proc) := by
   decide +kernel
 
-/-- Positive REFL raw regression: symmetric duplicate witness in list output. -/
+/-- Negative COMM regression modulo the bag laws. -/
+theorem reg_comm_blocked_bag_exact :
+    Corrected.cstepBag demoBlocked = [] := by
+  decide +kernel
+
+/-- Positive REFL raw regression: the listener quotes the capture-free reduct. -/
 theorem reg_refl_raw_exact :
-    step demoReflectSource = [demoReflectTarget, demoReflectTarget] := by
+    Corrected.cstep demoReflectSource = [demoReflectReduct] := by
   decide +kernel
 
 /-- Positive REFL canonical regression: duplicate-insensitive singleton target. -/
 theorem reg_refl_exact :
-    stepCanonical demoReflectSource = ({demoReflectTarget} : Finset Proc) := by
+    (Corrected.cstep demoReflectSource).toFinset = ({demoReflectReduct} : Finset Proc) := by
   decide +kernel
 
 /-- Negative REFL raw regression: non-stepping body produces no reflection result. -/
 theorem reg_refl_blocked_raw_exact :
-    step (pReflect demoChan demoBlocked) = [] := by
+    Corrected.cstep (pReflect demoChan demoBlocked) = [] := by
   decide +kernel
 
 /-- Negative REFL canonical regression: empty canonical output. -/
 theorem reg_refl_blocked_exact :
-    stepCanonical (pReflect demoChan demoBlocked) = (∅ : Finset Proc) := by
+    (Corrected.cstep (pReflect demoChan demoBlocked)).toFinset = (∅ : Finset Proc) := by
   decide +kernel
 
 /-- Context regression: COMM fires inside a parallel bag context at one position. -/
 def regContextSource : Proc := pPar [demoCommSource, pZero]
-def regContextTarget : Proc := pPar [demoCommTarget, pZero]
+def regContextTarget : Proc := pPar [demoCommReduct, pZero]
 
 theorem reg_context_raw_exact :
-    step regContextSource = [regContextTarget, regContextTarget] := by
+    Corrected.cstep regContextSource = [regContextTarget] := by
   decide +kernel
 
 theorem reg_context_exact :
-    stepCanonical regContextSource = ({regContextTarget} : Finset Proc) := by
+    (Corrected.cstep regContextSource).toFinset = ({regContextTarget} : Finset Proc) := by
   decide +kernel
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Commits
-import Mettapedia.Algebra.CollectionRest
+import Mettapedia.Algebra.Collections.Rest
 
 /-!
 # Occurrences, bags and sets, and matching a bag pattern with a witness
@@ -23,7 +23,7 @@ the identities are forgotten and the labels kept with their counts, the result i
 
 A bag pattern with named elements and a rest, `{t₁ … tₖ | rest}`, matches a bag modulo
 associativity and commutativity when `{t₁ … tₖ} + rest` is the bag, and the rest is then the
-difference (`CollectionRest.bag_rest_iff`). Over a store, a **witness** (`Witness`) is the list of
+difference (`Collections.Rest.bag_rest_iff`). Over a store, a **witness** (`Witness`) is the list of
 the occurrences the named elements picked: distinct occurrences of the store carrying the named
 labels in order.
 
@@ -38,7 +38,7 @@ labels in order.
   (matching modulo AC: Benanav, Kapur and Narendran, 1987); for a fixed pattern of `k` elements
   it is a search over at most `n ^ k` lists.
 * Sets: a set pattern's elements may pick one occurrence twice (idempotence), so its witness need
-  not be duplicate-free (`set_witness_iff`); `CollectionRest.card_setRests` counts its rests.
+  not be duplicate-free (`set_witness_iff`); `Collections.Rest.card_setRests` counts its rests.
 
 ## Controls
 
@@ -148,9 +148,9 @@ theorem match_iff_witness [DecidableEq R] (label : O → R) (X : Finset O) (ts :
   rw [exists_witness_iff]
   constructor
   · rintro ⟨rest, eq⟩
-    exact ((Mettapedia.Algebra.CollectionRest.bag_rest_iff _ rest _).mp eq).1
+    exact ((Mettapedia.Algebra.Collections.Rest.bag_rest_iff _ rest _).mp eq).1
   · intro le
-    exact ⟨_, (Mettapedia.Algebra.CollectionRest.bag_rest_iff _ _ _).mpr ⟨le, rfl⟩⟩
+    exact ⟨_, (Mettapedia.Algebra.Collections.Rest.bag_rest_iff _ _ _).mpr ⟨le, rfl⟩⟩
 
 /-! ## Checking a witness in one pass -/
 

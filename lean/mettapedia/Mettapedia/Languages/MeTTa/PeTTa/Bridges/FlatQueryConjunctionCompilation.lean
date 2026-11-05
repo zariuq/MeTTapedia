@@ -31,13 +31,16 @@ variable {Value : Type} [DecidableEq Value]
 structure Leg (codec : Codec Value) (names : Inventory String) (rows : List Atom) where
   source : Atom
   pattern : Compiled codec names source
+  notConjunction : pattern.head ≠ ","
   relation : Relation pattern 0 rows
 
 def compileLeg (codec : Codec Value) (names : Inventory String) (rows : List Atom) (source : Atom) :
     Option (Leg codec names rows) := do
   let pattern ← compilePattern codec names source
-  let relation ← FlatQueryRelationCompilation.compile pattern 0 rows
-  return ⟨source, pattern, relation⟩
+  if active : pattern.head = "," then none
+  else
+    let relation ← FlatQueryRelationCompilation.compile pattern 0 rows
+    return ⟨source, pattern, active, relation⟩
 
 def compile (codec : Codec Value) (names : Inventory String) (rows sources : List Atom) :
     Option (List (Leg codec names rows)) := sources.mapM (compileLeg codec names rows)
@@ -47,9 +50,24 @@ theorem compileLeg_source (codec : Codec Value) (names : Inventory String) (rows
     leg.source = source := by
   unfold compileLeg at compiled
   obtain ⟨pattern, _, remaining⟩ := Option.bind_eq_some_iff.mp compiled
+  split at remaining
+  · cases remaining
   obtain ⟨relation, _, same⟩ := Option.bind_eq_some_iff.mp remaining
   cases Option.some.inj same
   rfl
+
+/-- Comma is a source query operation, not an ordinary relation head. The
+empty comma query is also active and has one reference witness. -/
+theorem compileLeg_conjunction_refuses (codec : Codec Value) (names : Inventory String)
+    (rows patterns : List Atom) :
+    compileLeg codec names rows (.expression (.symbol "," :: patterns)) = none := by
+  cases compiled : compilePattern codec names (.expression (.symbol "," :: patterns)) with
+  | none => simp [compileLeg, compiled]
+  | some selected =>
+      have head : selected.head = "," := by
+        have same := selected.exact
+        exact Atom.symbol.inj (List.cons.inj (Atom.expression.inj same)).1
+      simp [compileLeg, compiled, head]
 
 theorem compile_sources (codec : Codec Value) (names : Inventory String) (rows sources : List Atom)
     (legs : List (Leg codec names rows)) (compiled : compile codec names rows sources = some legs) :

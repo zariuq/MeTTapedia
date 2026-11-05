@@ -19,8 +19,11 @@ execute distinct-location interactions in parallel without selecting a new
 semantics.  Same-location contact remains an atomic transaction.
 
 The final section connects this boundary to the direct `COMM` redex of the
-MeTTa-calculus.  It concerns the direct rule shape; contextual and structural
-closure remain the responsibility of the existing reduction modules.
+MeTTa-calculus, for any premise saying which parties meet with which
+bindings. The MeTTa-calculus premise is the corrected one (the inputs apart,
+the principal unifier of their patterns), `TransactionResources.correctedContact`.
+It concerns the direct rule shape; contextual and structural closure are the
+corrected relational semantics `Corrected.Step`.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SpaceInteraction
@@ -731,7 +734,15 @@ end Canary
 
 end GuardedTransaction
 
-/-! ## Direct MeTTa-calculus contact -/
+/-! ## Direct MeTTa-calculus contact
+
+The direct `COMM` rule takes its premise as a parameter: which two guarded
+parties may meet, and with which bindings. The footprint and transaction facts
+below hold for every premise. The MeTTa-calculus premise is the corrected one,
+`TransactionResources.correctedContact`: the two inputs are apart, as the
+variable convention requires, and the bindings are the principal unifier of
+their patterns. Its contacts are steps of the corrected relational semantics
+(`TransactionResources.correctedContact_step`). -/
 
 /-- One guarded party in a symmetric MeTTa-calculus contact. -/
 structure GuardedParty where
@@ -745,54 +756,57 @@ def guardedProcess (location : Name) (party : GuardedParty) : Proc :=
 def contactFootprint (left right : GuardedParty) : Store GuardedParty :=
   left ::ₘ right ::ₘ 0
 
+/-- Which two guarded parties may meet, and with which bindings. -/
+abbrev ContactPremise := GuardedParty → GuardedParty → Bindings → Prop
+
 /-- The direct `COMM` rule, before contextual and structural closure.  The
-unification witness determines both residual continuations. -/
-inductive DirectComm : Proc → Proc → Prop where
+admitted bindings determine both residual continuations. -/
+inductive DirectComm (premise : ContactPremise) : Proc → Proc → Prop where
   | contact {location : Name} {left right : GuardedParty}
       {substitution : Bindings}
-      (unifies : unifyPattern? left.term right.term = some substitution) :
-      DirectComm
+      (admitted : premise left right substitution) :
+      DirectComm premise
         (pPar [guardedProcess location left, guardedProcess location right])
         (pPar [applyDot substitution left.continuation,
           applyDot substitution right.continuation])
 
 /-- Every direct `COMM` redex has a two-occurrence linear footprint. -/
-theorem directComm_has_linear_footprint
-    {source target : Proc} (step : DirectComm source target) :
+theorem directComm_has_linear_footprint {premise : ContactPremise}
+    {source target : Proc} (step : DirectComm premise source target) :
     ∃ location left right substitution,
-      unifyPattern? left.term right.term = some substitution ∧
+      premise left right substitution ∧
       source = pPar [guardedProcess location left, guardedProcess location right] ∧
       target = pPar [applyDot substitution left.continuation,
         applyDot substitution right.continuation] ∧
       Sequential (LinearTake left) (LinearTake right)
         (contactFootprint left right) 0 := by
   cases step with
-  | @contact location left right substitution unifies =>
-      exact ⟨location, left, right, substitution, unifies, rfl, rfl,
+  | @contact location left right substitution admitted =>
+      exact ⟨location, left, right, substitution, admitted, rfl, rfl,
         two_party_linear_footprint left right⟩
 
 /-- A direct contact cannot be interpreted as two persistent observations
 that consume their participants. -/
-theorem directComm_footprint_not_persistent
-    {source target : Proc} (step : DirectComm source target) :
+theorem directComm_footprint_not_persistent {premise : ContactPremise}
+    {source target : Proc} (step : DirectComm premise source target) :
     ∃ left right,
       ¬ Sequential (PersistentRead left) (PersistentRead right)
         (contactFootprint left right) 0 := by
-  obtain ⟨_location, left, right, _substitution, _unifies,
+  obtain ⟨_location, left, right, _substitution, _admitted,
       _source, _target, _linear⟩ := directComm_has_linear_footprint step
   exact ⟨left, right, two_persistent_reads_do_not_consume left right⟩
 
-/-- Positive direct-contact example requiring no executable proof shortcut. -/
-theorem identical_zero_guards_contact (location : Name) :
-    DirectComm
+/-- Positive direct-contact example: two inert guards on inert patterns meet
+whenever the premise admits them with no bindings, and their continuations
+are unchanged. -/
+theorem identical_zero_guards_contact {premise : ContactPremise} (location : Name)
+    (admitted : premise ⟨pZero, pZero⟩ ⟨pZero, pZero⟩ []) :
+    DirectComm premise
       (pPar [pFor pZero location pZero, pFor pZero location pZero])
       (pPar [pZero, pZero]) := by
-  let party : GuardedParty := ⟨pZero, pZero⟩
-  have unifies : unifyPattern? party.term party.term = some [] := by
-    exact unifyPattern_self party.term
-  simpa [party, guardedProcess, applyDot, dotBindings, pZero, applyBindings] using
-    (DirectComm.contact (location := location) (left := party) (right := party)
-      unifies)
+  simpa [guardedProcess, applyDot, dotBindings, pZero, applyBindings] using
+    (DirectComm.contact (premise := premise) (location := location)
+      (left := ⟨pZero, pZero⟩) (right := ⟨pZero, pZero⟩) admitted)
 
 /-! ## Direct COMM through the guarded transactional waist -/
 
@@ -812,8 +826,8 @@ contact location. -/
 abbrev ContactLocation := Option Name
 
 /-- Collective selection for symmetric COMM.  Unlike componentwise matching,
-the unification premise relates the two selected parties. -/
-def directSelection :
+the contact premise relates the two selected parties. -/
+def directSelection (premise : ContactPremise) :
     Selection ContactLocation ContactOccurrence GuardedParty Bindings :=
   fun guards atoms substitution =>
     ∃ location left right,
@@ -821,7 +835,7 @@ def directSelection :
         [⟨.consume, some location, left⟩,
           ⟨.consume, some location, right⟩] ∧
       atoms = [.party left, .party right] ∧
-      unifyPattern? left.term right.term = some substitution
+      premise left right substitution
 
 def directCommand (location : Name) (left right : GuardedParty) :
     Command ContactLocation ContactOccurrence GuardedParty Bindings where
@@ -851,20 +865,20 @@ def directTarget (location : Name) (left right : GuardedParty)
   publishAll ((directCommand location left right).continuation substitution)
     (directAfterBoth location left right)
 
-/-- The manuscript's unification premise is sufficient to execute the exact
-two-party contact through the neutral transaction rule. -/
-theorem direct_contact_fires
+/-- The contact premise is sufficient to execute the exact two-party contact
+through the neutral transaction rule. -/
+theorem direct_contact_fires {premise : ContactPremise}
     {location : Name} {left right : GuardedParty}
     {substitution : Bindings}
-    (unifies : unifyPattern? left.term right.term = some substitution) :
-    Fires directSelection (directCommand location left right)
+    (admitted : premise left right substitution) :
+    Fires (directSelection premise) (directCommand location left right)
       (directSource location left right)
       (directTarget location left right substitution) := by
   apply Fires.fire
       (atoms := [.party left, .party right])
       (environment := substitution)
       (residual := directAfterBoth location left right)
-  · exact ⟨location, left, right, rfl, rfl, unifies⟩
+  · exact ⟨location, left, right, rfl, rfl, admitted⟩
   · exact .consume (.consume .nil)
   · apply Consumes.consume
     · exact LocatedStep.consume
@@ -879,23 +893,23 @@ theorem direct_contact_fires
           (by simp [directAfterLeft])
       · exact .nil
 
-/-- Every direct manuscript COMM step therefore has a corresponding guarded
-transaction with the same unification witness and residual continuations. -/
-theorem directComm_factors_through_guarded_transaction
-    {source target : Proc} (step : DirectComm source target) :
+/-- Every direct COMM step therefore has a corresponding guarded transaction
+with the same admitted bindings and residual continuations. -/
+theorem directComm_factors_through_guarded_transaction {premise : ContactPremise}
+    {source target : Proc} (step : DirectComm premise source target) :
     ∃ location left right substitution,
-      unifyPattern? left.term right.term = some substitution ∧
+      premise left right substitution ∧
       source = pPar [guardedProcess location left,
         guardedProcess location right] ∧
       target = pPar [applyDot substitution left.continuation,
         applyDot substitution right.continuation] ∧
-      Fires directSelection (directCommand location left right)
+      Fires (directSelection premise) (directCommand location left right)
         (directSource location left right)
         (directTarget location left right substitution) := by
   cases step with
-  | @contact location left right substitution unifies =>
-      exact ⟨location, left, right, substitution, unifies, rfl, rfl,
-        direct_contact_fires unifies⟩
+  | @contact location left right substitution admitted =>
+      exact ⟨location, left, right, substitution, admitted, rfl, rfl,
+        direct_contact_fires admitted⟩
 
 end DirectCommBridge
 

@@ -95,7 +95,7 @@ def coreToCombined : StructuralMorphism coreValidated combinedValidated where
     simp only [mapRewriteRule_id]
     change rewrite ∈ coreRules at member
     change rewrite ∈ coreRules ++ [ruleOverlapExtract] ++
-      [ruleForgetOutsideGuarded, ruleForgetIdempotent]
+      [ruleForgetOutside, ruleForgetIdempotent]
     simp [member]
 
 def coreSignatureMap :
@@ -404,7 +404,7 @@ theorem forgetIdempotent_raw (scope world : Pattern) :
   apply step_of_rule (rule := ruleForgetIdempotent)
     (initialBindings := bs) (finalBindings := bs)
   · simp [wmExtVertexLanguageDefGuarded, combinedVertex,
-      forgettingRulesGuarded]
+      forgettingRules]
   · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
     simp [bs, ruleForgetIdempotent, pForget, matchPattern,
       matchArgs, mergeBindings]
@@ -433,9 +433,9 @@ empty provider supplies none, even though `Forget` is a typed constructor. -/
 theorem forgetOutside_empty_premise (scope world query : Pattern) :
     applyPremisesWithEnv RelationEnv.empty
       (wmExtVertexLanguageDefGuarded combinedVertex)
-      ruleForgetOutsideGuarded.premises
+      ruleForgetOutside.premises
       [("q", query), ("W", world), ("S", scope)] = [] := by
-  simp [applyPremisesWithEnv, ruleForgetOutsideGuarded, premiseStepWithEnv,
+  simp [applyPremisesWithEnv, ruleForgetOutside, premiseStepWithEnv,
     relationQueryStep, builtinRelationTuples, RelationEnv.empty,
     applyBindings, mergeBindings]
 
@@ -446,7 +446,7 @@ theorem forgetOutside_raw_of_guard (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     langSemanticReducesUsing relEnv
       (wmExtVertexLanguageDefGuarded combinedVertex)
@@ -455,19 +455,19 @@ theorem forgetOutside_raw_of_guard (relEnv : RelationEnv)
   apply langReducesUsing_to_semantic
   unfold langReducesUsing
   apply step_of_rule
-    (rule := ruleForgetOutsideGuarded)
+    (rule := ruleForgetOutside)
     (initialBindings := [("q", query), ("W", world), ("S", scope)])
     (finalBindings := [("q", query), ("W", world), ("S", scope)])
   · simp [wmExtVertexLanguageDefGuarded, combinedVertex,
-      forgettingRulesGuarded]
+      forgettingRules]
   · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
-    simp [ruleForgetOutsideGuarded, pExtract, pForget,
+    simp [ruleForgetOutside, pExtract, pForget,
       matchPattern, matchArgs, mergeBindings]
   · exact .relationQuery .nil
   · exact guard
   · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
       _ _ _ (by decide +kernel)]
-    simp [ruleForgetOutsideGuarded, pExtract, applyBindings]
+    simp [ruleForgetOutside, pExtract, applyBindings]
 
 /-- The guarded observation is available for typed combined terms exactly
 when the supplied relation environment accepts their erased scope and query. -/
@@ -479,7 +479,7 @@ theorem intrinsic_forgetOutside_of_guard {Γ : Ctx CombinedSignature}
     (guard : [("q", erase query), ("W", erase world), ("S", erase scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", erase query), ("W", erase world), ("S", erase scope)]) :
     langSemanticReducesUsing relEnv
       (wmExtVertexLanguageDefGuarded combinedVertex)

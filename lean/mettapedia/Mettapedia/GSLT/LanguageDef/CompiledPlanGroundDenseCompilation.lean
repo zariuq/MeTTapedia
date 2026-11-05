@@ -447,7 +447,7 @@ mutual
 /-- A successfully compiled bounded term has exactly the independent source
 matcher semantics whenever the two environments have the same decoded
 observation. -/
-private def refineTerm
+private theorem refineTerm
     (width : UInt32) (source : Term) (compiled : DenseTerm width)
     (accepted : compileTerm? width source = some compiled)
     (sourceEnvironment : SourceEnvironment)
@@ -518,7 +518,7 @@ private def refineTerm
 
 /-- The list-shaped companion theorem threads exactly the environment returned
 by each compiled child into the next child. -/
-private def refineTerms
+private theorem refineTerms
     (width : UInt32) (source : Terms) (compiled : DenseTerms width)
     (accepted : compileTerms? width source = some compiled)
     (sourceEnvironment : SourceEnvironment)

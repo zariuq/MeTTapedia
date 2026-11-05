@@ -1,0 +1,6 @@
+import Mettapedia.Machines.ShortestPathRoundsControls
+import Mettapedia.Logic.KernelFoundationManifest
+
+#foundation_manifest_module Mettapedia.Machines.ShortestPathRounds
+#foundation_manifest_module Mettapedia.Machines.ShortestPathRoundsControls
+#foundation_manifest_module Mettapedia.Machines.WeightedPathTransport

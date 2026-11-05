@@ -58,8 +58,11 @@ theorem planned_phase_preserves_store_and_count :
   have ready : (choices caller pattern rows).all (fun bindings => GuardedInsertionSource.dataRow
       (Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings template)) = true := by decide +kernel
   have count : (choices caller pattern rows).length = 2 := by decide +kernel
+  have closed : ClosedQueryAdmission.phaseReady caller pattern rows before .self
+      ((choices caller pattern rows).map (fun bindings =>
+        Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings template)) = true := by decide +kernel
   simp only [plan, region, Store.read_self, before_core, List.all_map, Function.comp_def, List.length_map, ready,
-    ↓reduceIte, store_only_worker_does_not_need_success_atoms, count]
+    closed, Bool.true_and, ↓reduceIte, store_only_worker_does_not_need_success_atoms, count]
   rfl
 
 def unavailableCaller : Subst := [("input", .symbol "&self"), ("target", Effects.handleValue (.privateSpace 0))]
@@ -73,12 +76,10 @@ theorem empty_query_does_not_observe_missing_target :
 
 theorem nonempty_query_cannot_treat_missing_target_as_empty_output :
     unavailablePlan.attempt before = .declined before := by
-  have ready : (choices unavailableCaller pattern rows).all (fun bindings => GuardedInsertionSource.dataRow
-      (Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings template)) = true := by decide +kernel
-  have missing : installRows (.privateSpace 0) ((choices unavailableCaller pattern rows).map
-      (fun bindings => Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings template)) before = none := by
-    decide +kernel
-  simp only [unavailablePlan, region, Store.read_self, before_core, List.all_map, Function.comp_def, ready, ↓reduceIte, missing]
+  have closed : ClosedQueryAdmission.phaseReady unavailableCaller pattern rows before (.privateSpace 0)
+      ((choices unavailableCaller pattern rows).map (fun bindings =>
+        Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings template)) = false := by decide +kernel
+  simp only [unavailablePlan, region, Store.read_self, before_core, closed, Bool.false_and, Bool.false_eq_true, ↓reduceIte]
 
 def openTemplate : Atom := app "sat" [.symbol "f", .var "unbound"]
 def openPlan := region program caller "space" "space" "payload" .self .self pattern openTemplate
@@ -87,7 +88,8 @@ def openPlan := region program caller "space" "space" "payload" .self .self patt
 theorem unbound_output_payload_refuses : openPlan.attempt before = .declined before := by
   have refused : (choices caller pattern rows).all (fun bindings => GuardedInsertionSource.dataRow
       (Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings openTemplate)) = false := by decide +kernel
-  simp only [openPlan, region, Store.read_self, before_core, List.all_map, Function.comp_def, refused, Bool.false_eq_true, ↓reduceIte]
+  simp only [openPlan, region, Store.read_self, before_core, List.all_map, Function.comp_def, refused,
+    Bool.and_false, Bool.false_eq_true, ↓reduceIte]
 
 def declarationTemplate : Atom := app ":" [.symbol "f", .symbol "Atom"]
 def declarationPlan := region program caller "space" "space" "payload" .self .self pattern declarationTemplate
@@ -96,7 +98,8 @@ def declarationPlan := region program caller "space" "space" "payload" .self .se
 theorem program_mutation_is_not_a_data_phase : declarationPlan.attempt before = .declined before := by
   have refused : (choices caller pattern rows).all (fun bindings => GuardedInsertionSource.dataRow
       (Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings declarationTemplate)) = false := by decide +kernel
-  simp only [declarationPlan, region, Store.read_self, before_core, List.all_map, Function.comp_def, refused, Bool.false_eq_true, ↓reduceIte]
+  simp only [declarationPlan, region, Store.read_self, before_core, List.all_map, Function.comp_def, refused,
+    Bool.and_false, Bool.false_eq_true, ↓reduceIte]
 
 theorem occupied_temporary_does_not_bind_the_payload :
     matchBinding [("x", integer 0)] (.var "x") payload = none := by decide +kernel
@@ -121,5 +124,28 @@ theorem newly_matching_row_is_not_a_new_captured_choice :
 theorem discarding_payload_duplicates_loses_success_count :
     emitRows .self [payload, payload] (before, []) = some (after, [Effects.boolean true, Effects.boolean true]) ∧
     emitRows .self [payload] (before, []) = some (after, [Effects.boolean true]) := ⟨rfl, rfl⟩
+
+def openInput : Effects.State := Store.new [app "edge" [.var "u", integer 1]] []
+def openTarget : Effects.State := Store.new (rows ++ [app "sat" [.symbol "f", .var "u"]]) []
+
+theorem open_input_requires_the_unifying_route : plan.attempt openInput = .declined openInput := by
+  have refused : ClosedQueryAdmission.rowsReady pattern openInput.core = false := by decide +kernel
+  simp only [plan, region, Store.read_self, ClosedQueryAdmission.phaseReady, refused,
+    Bool.and_false, Bool.false_and, Bool.false_eq_true, ↓reduceIte]
+
+theorem open_destination_cannot_certify_ground_absence : plan.attempt openTarget = .declined openTarget := by
+  have refused : ClosedQueryAdmission.phaseReady caller pattern openTarget.core openTarget .self
+      ((choices caller pattern openTarget.core).map (fun bindings =>
+        Mettapedia.Languages.ProcessCalculi.MORK.applySubst bindings template)) = false := by decide +kernel
+  simp only [plan, region, Store.read_self, refused, Bool.false_and, Bool.false_eq_true, ↓reduceIte]
+
+def openCapture : Subst := [("space", .symbol "&self"), ("x", app "f" [.var "u"])]
+def openCapturePlan := region program openCapture "space" "space" "payload" .self .self pattern template
+  rfl rfl rfl (by decide) (by decide)
+
+theorem open_capture_cannot_certify_an_empty_query : openCapturePlan.attempt before = .declined before := by
+  have refused : ClosedQueryAdmission.capturesReady openCapture pattern = false := by decide +kernel
+  simp only [openCapturePlan, region, Store.read_self, ClosedQueryAdmission.phaseReady, refused,
+    Bool.false_and, Bool.false_eq_true, ↓reduceIte]
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.QuerySetMaterialization.Controls

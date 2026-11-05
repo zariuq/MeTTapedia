@@ -1,0 +1,1804 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,booktabs,tabularx,hyperref}
+\usepackage[margin=1in]{geometry}
+\newtheorem{theorem}{Theorem}
+\newcommand{\Sol}{\operatorname{Sol}}
+\newcommand{\Models}{\operatorname{Models}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\title{A Transform Candidate for Higher-Order MeTTa Prime\\
+\large Atomic interaction, contextual solutions and justified absence}
+\author{Oru\v{z}i}
+\date{5 November 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The candidate treats communication, query selection and rule execution as
+uses of one guarded occurrence transformation. Its information component is
+the joint solution set of constraints, not one chosen unifier. We describe
+the existing atomic rule, prove a sufficient guarded commutation law with
+nontrivial shared equations, compare actual contextual solver outputs across
+different helper declarations, characterize coverage sufficient for
+negative queries, and compare finite clause programs with actual solver
+histories. These results support a common interaction mechanism.
+They do not yet establish a compositional foundation for every required
+Prime program or an unrestricted equivalence with other MeTTa semantics.
+\end{abstract}
+
+\section{The question and the comparison criterion}
+
+An adequate common calculus must explain how programs are formed and how
+their behavior is preserved in surrounding programs. Calling an opaque
+evaluator from a transformation does not establish this correspondence.
+The comparison sources remain independently specified: the register
+semantics of Meta-MeTTa~\cite{metametta}, HE's minimal instructions, the
+declared rho-calculus profile, the symmetric reflective MeTTa-calculus,
+and the Prime proposals.
+
+An exact restriction, a compositional encoding and an essential extension
+are different possible results. Each comparison must declare its source
+fragment and observations: answers, repeated occurrences, required order,
+binding correlations, effects and suspension. A comparison for translated
+source contexts is not automatically valid for all richer target contexts.
+An inability to complete a proof is not an impossibility result.
+
+The first independent register comparison already separates a local
+prototype from the published source. The finite extensional source profile
+in \code{OSLFCore.MetaMeTTa} records the eight displayed register rules,
+a declared principal-unifier interpretation and a named choice about empty match families.
+Comprehensions, streams and host arithmetic are outside this profile.
+With the same input representation and exact output observation, the older
+workspace prototype cannot simulate one Transform example even through
+arbitrarily many finite steps. A distinct encoding is not excluded.
+
+Several boundaries matter for the common calculus. A source answer
+family can use $x=a$ and $x=b$ in separate instances; conjoining them under
+one shared variable loses those answers. A concrete CMR comparison rejects
+that identification and constructs a two-answer firing using fresh private
+variables, preserving the caller's observations outside those names.
+This selected example is not a uniform compiler: unrestricted core reads
+also permit duplicate selection of one knowledge occurrence. The source
+family's occurrence-selection discipline must be preserved separately.
+Also, the paper's printed remainder-insensitivity condition only inspects
+equation left-hand sides. In its literal finite profile, Transform may leave
+a matching non-equation entry unselected, changing result counts. Complete
+contextual coverage is a stronger, separately stated condition. These facts
+prevent inferring a full-language specialization from similarly named rules.
+
+Operational equations require a separate distinction. A source instruction
+$a\longrightarrow b$ can execute while the structural constraint $a=b$ is
+inconsistent for distinct constants. The core performs that change by
+consuming and producing occurrences; it need not assert $a=b$. Likewise,
+substituting only a selected replacement need not equal substituting its
+entire surrounding context. The two readings agree when the context is
+fixed by the substitution, and a checked example separates them otherwise.
+
+\section{The atomic transform rule}
+
+Let $O$ be physical occurrence identities, $T$ a declared term syntax and
+$\sigma$ a substitution with a declared equality relation $E$. A state is
+$(C,W)$, where $C$ is an equation store and $W\subseteq O$ is finite.
+An occurrence has a syntax label $\ell(o)$. Its value is interpreted under
+the same $\sigma$ as all other labels and equations.
+
+A rule instance has lists of take patterns $t$, read patterns $r$, tells
+$c$, checks $g$ and output terms $p$. A selection has lists of occurrences
+$T_0,R_0,P_0$, in port order. Write
+\[
+ C' = C \mathbin{+\!+} \operatorname{eq}(t,\ell(T_0))
+        \mathbin{+\!+} \operatorname{eq}(r,\ell(R_0))
+        \mathbin{+\!+} c .
+\]
+The transition is
+\[
+ (C,W)\longrightarrow
+ \bigl(C',\ (W\setminus\operatorname{set}(T_0))\cup
+                         \operatorname{set}(P_0)\bigr)
+\]
+under the following obligations:
+\begin{enumerate}
+\item Port lengths agree, and selected output labels equal $p$.
+\item Takes and outputs are individually distinct. Takes and reads are
+present, no taken occurrence is also read, and outputs are fresh in $W$.
+Reads may repeat an occurrence.
+\item $\Sol(C')\ne\varnothing$.
+\item Every $\sigma\in\Sol(C')$ satisfies every check in the original
+physical world $W$.
+\end{enumerate}
+
+This is the existing \code{OccurrenceStep.Selection.Valid} judgment and
+\code{Selection.result}, not a second transition relation. The rule is
+already freshened at this level. Contextual activation gives each schematic
+use fresh declarations while retaining explicitly shared caller captures.
+Its endpoints also carry the scope inventory and actual solver return.
+Space permissions are additional formation obligations; physical presence
+does not supply authority.
+
+For contextual terms, solvability must range over assignments into future
+declaration families. In a constructor-free signature with only a binary
+hole, $M(x,y)=M(y,x)$ has no endomorphic solution in its original family:
+such a solution would require a closed term there. A fresh nullary helper
+$H$ supplies the symbolic solution $M(x,y)=H$. Adding an unused nullary
+declaration can therefore change fixed-family consistency while leaving
+the original semantic problem unchanged.
+
+The indexed interface \code{SemanticAdmission} combines port and resource
+conditions, the original all-future guards, and future-family solvability.
+The older fixed-family validity judgment embeds into it as a proper
+restriction. Injective arity-preserving declaration extension preserves
+and reflects this admission, including output shape; no arbitrary
+substitution is given that reflection law.
+
+\begin{theorem}[Contextual realization]
+Within the declared structural-pattern fragment, semantic admission holds
+exactly when the existing worklist has a completed admitted return at some
+finite fuel. With the original scope coverage, the return constructs an
+actual firing and its complete computed endpoint. Every completed firing
+recovers semantic admission, including outside that complete fragment.
+\end{theorem}
+
+The worklist computes unification. Guard admission is a separate proved
+obligation retained in the return; the theorem does not claim that
+unification alone decides every possible guard.
+
+The consuming control starts with occurrences $\{7,8\}$, uses the
+nontrivial swapped-hole equation to consume $7$, and produces $99$.
+Its computed target has occurrences $\{8,99\}$ even though the original
+family has no endomorphic model. The fresh helper is an unconstrained
+symbolic parameter, not a proved ground value or a discarded residual
+equation. Additional solver declarations preserve solvability and all
+equality, absence and count asks written over the original post-activation
+interface. This does not grant invariance to observations inspecting the
+private helper representation itself.
+
+The proposed Formation--Resources--Information organization is dependent:
+formation determines ports and scopes, physical selection determines the
+equations, and those equations determine what the guards establish.
+Splitting the predicate does not prove independence of three parameters.
+
+\section{What actually commutes}
+
+\begin{theorem}[Guarded interaction diamond]
+Suppose two selected events are each admitted at the same initial state.
+Suppose their physical commits are independent and their combined equation
+problem is consistent. For each absence or count check, suppose every
+occurrence taken or made by the other event is non-unifiable with its
+pattern under the combined equations. Both event orders are admitted and
+end with the same physical occurrences and the same equation solutions.
+Every fixed continuation schedule therefore has the same admission result.
+\end{theorem}
+
+The proof transfers resource admission by the existing occurrence
+independence theorem. Each later equation problem still satisfies the
+earlier event's equations. Excluded matching writes preserve its queried
+occurrences. The final equation lists differ only by order. The Lean entry
+is \code{ConstraintMultisetRewriting.Core}; its substantive witness consumes
+two distinct requests imposing $X=f(Y)$ and $Y=1$, shares a persistent read
+(including repeated read ports), and retains equality and absence checks.
+The final solution fixes $X=f(1)$ and $Y=1$.
+
+This theorem compares endpoints and subsequent fixed schedules. It does not
+identify intermediate effect histories or permit arbitrary atomic fusion.
+Nor does it say that all useful interactions commute: one event can enable
+another by adding information.
+
+For contextual terms, a solver may replace its declaration family and
+introduce private helpers. A principal answer $a$ to $C$ satisfies
+\[
+ \Models(\delta,C)\quad\Longleftrightarrow\quad
+ \exists\rho.\;\delta=\rho\circ a
+\]
+on every original declaration, with $\delta$ ranging over every future
+declaration family. Solving $C$ and then the residual of $D$ gives a
+principal answer to $C\mathbin{+\!+}D$. Principal solutions produced in
+the opposite order factor through each other on all original terms.
+An isomorphism between their complete helper families is not required.
+
+The frame-unifier theorem \code{Principal.solve\_orders} proves this comparison.
+The update theorem \code{Update.completed\_orders} applies it to actual
+completed worklist updates. Controls solve a swapped-parameter equation
+$M(x,y)=M(y,x)$ followed by a body constraint, and the reverse order.
+One construction changes a two-parameter declaration to a nullary helper;
+the original term instances still agree. The executable worklist also
+solves the constraint with body $\lambda z.z$, preserving its local binder.
+Unfinished residual queues are excluded from these completion claims.
+
+\begin{theorem}[Two actual contextual orders]
+Let two original events be semantically admitted at the same endpoint.
+Suppose each resource selection remains available after the other event,
+the two joint contextual problems are solvable structural-pattern problems,
+and each event's guards hold at its respective second admission cut.
+Then both actual two-event paths exist. After exchanging the two private
+event interfaces and fixing the original caller interface, every final
+all-future equality, absence and occurrence-count question agrees.
+\end{theorem}
+
+The construction supplies both completed worklist returns, fresh scope
+relocations, complete inventories and original firing edges. It does not
+take either path as a premise. If $C_i$ is event $i$'s added equation list,
+the independently prepared common problem is
+\[
+  \iota(C)\mathbin{+\!+}\iota_1(C_1)\mathbin{+\!+}\iota_2(C_2).
+\]
+The actual second problem is an injective declaration extension of this
+problem. A completed first solver has an empty residual worklist, but its
+original equations remain in the endpoint; they must not be erased.
+The full final row inventory is likewise transported from the common frame.
+Exchanging event-private summands exchanges the two contributions, fixes
+caller captures and preserves the joint solution set. No isomorphism of
+the complete solver-helper families is assumed.
+
+The construction is \code{ContextualPairFrames.realize\_two\_orders};
+its observation theorem reuses the existing contextual firing relation.
+A concrete instance consumes different requests, uses two independent
+views of the same schema occurrence in one event, and shares that occurrence
+with the other event. The events jointly impose
+\[
+ M(x,y)=M(y,x),\quad X=\operatorname{pair}(Y,Y),\quad
+ Y=a,\quad M(x,y)=\lambda z.z.
+\]
+Both paths exist, retain the incoming equation $Z=a$, and entail
+$X=\operatorname{pair}(a,a)$ while preserving the lambda's own binder.
+A separating model shows the second event alone cannot justify this value
+of $X$. Thus retaining only its equation contribution loses an observable
+constraint, even though both unifier worklists may finish.
+
+The guard clauses remain semantic obligations at their original cuts;
+resource independence alone does not prove them. The result concerns the
+declared final questions, not observers inspecting solver internals or
+intermediate effect histories.
+
+\begin{theorem}[Causal contextual realization]
+Suppose the first event is semantically admitted in the structural-pattern
+fragment. Prepare each second-event input from its origin: a produced row
+uses the first event's live output; an older row uses its declared schema or
+live view at the consumer port. If resources are available after production,
+the joint problem is a solvable structural-pattern problem, output formation
+holds, and the consumer's guards hold at its admission cut, then an actual
+two-event path exists. Every final contextual Check agrees with the common
+producer-origin presentation.
+\end{theorem}
+
+The theorem \code{ContextualPairFrames.realize\_causal\_pair} supplies both
+solver returns and constructs the existing firing edges. The independent
+input theorem is its specialization: when no consumer input is produced by
+the first event, the two common equation problems are equal. Neither
+construction introduces a second transition relation.
+
+The causal control exports a private producer variable as live occurrence
+$99$. The consumer is unavailable beforehand. After production, it either
+reads $99$ twice or takes it, constraining its value to $\lambda z.z$.
+Its guard counts one physical matching occurrence, even with two read ports.
+The guarded take succeeds although the lambda is absent afterward; checking
+the same count in the final world would reject this valid execution.
+Two incompatible reads, demanding both the lambda and a distinct constant
+from the one live value, have no joint solution. Refusing that later
+constraint problem does not undo the producer's valid publication: an
+executed prefix and an atomic whole-chain refusal have different occurrence
+worlds. General surrounding continuations, joined-schema guards, authority
+integration and conditional atomic fusion remain separate obligations.
+
+\section{Absence is a justified observation}
+
+For a query $q$, the fixed-world absence guard is
+\[
+ \forall\sigma\in\Sol(C).\;\forall o\in W.\;
+     \neg E(\sigma q,\sigma\ell(o)).
+\]
+Equivalently, each $C\mathbin{+\!+}[(q,\ell(o))]$ is inconsistent.
+The transform separately requires consistency of its admitted equation
+store, so vacuous entailment from an inconsistent store cannot admit it.
+
+If $V\subseteq W$ is a scanned subset, a coverage certificate requires
+every occurrence that matches in any solution of $C$ to lie in $V$.
+Equivalently, every omitted occurrence is non-unifiable under $C$.
+Under this condition, scanning $V$ preserves both absence and actual
+occurrence counts. The existing complete first-order unifier constructs
+such a candidate subset; an unfinished scan supplies no such certificate.
+Full witness coverage is stronger than preserving absence alone: retaining
+one of two matching occurrences preserves whether a witness exists, but
+changes both the count and the retained provenance. These are different
+observation contracts, even when they use the same matching relation.
+
+The control Space contains $\operatorname{cancel}(0)$ and an open shared
+variable $u$. Initially, absence of $\operatorname{cancel}(u)$ is unresolved.
+Adding $u=1$ enables the selected guarded interaction; adding $u=0$ refuses
+it. Inserting $\operatorname{cancel}(1)$ invalidates the first negative
+observation, whereas an incompatible insertion does not. An empty partial
+scan would incorrectly accept the guard and fails the coverage contract.
+
+The Hyperseed d-calculus companion's~\cite{hyperseed} distinction between exhaustive
+candidate coverage and an empty observation list is directly applicable
+here. Existing Hyperseed visibility theory also characterizes when
+restricted unary inference preserves all visible conclusions at a fixed
+state. Joined rules and changing states require additional results.
+Distinction-calculus evidence~\cite{dcalc} retains support and opposition separately;
+missing evidence, explicit opposition, logical refutation, covered snapshot
+absence and adding $u\ne0$ must retain their distinct meanings.
+
+Adding a disequality is an information-changing operation. Equality of
+successful final solution sets does not make irreversible publications
+commute: a published output followed by inconsistency has a different
+observable prefix from inconsistency before publication.
+
+\section{Communication, quotation and the declared source profile}
+
+The intrinsic rho binding-signature profile has a finite-path comparison
+\code{source\_path\_iff\_firings} in the communication adequacy owner. Its
+process classes use declared equations, including parallel commutative-monoid
+laws and name quote/drop. Each source root compiles to an ordinary occurrence
+rule; duplicate components retain separate identities. Parallel contexts
+and ordinary capture-avoiding substitution are preserved. Successive firings
+retain their incoming equations rather than reconstructing an empty store.
+This is a process-class reachability result, not an executable complete
+unifier for all source equations or an equivalence in arbitrary target contexts.
+
+The source profile must be named precisely. The published rho presentation
+in~\cite{lybech} seals quoted bodies against enclosing-name substitution.
+Communication performs semantic substitution, which activates matching
+received drops; a free Drop has no independent reduction there. The
+intrinsic binding presentation instead substitutes through its ordinary
+constructor arguments and can select a separate free-Drop rule. A checked
+intrinsic receiver that refers to its input variable beneath quotation fails
+the canonical rho quotation-scope check. These two carriers cannot be
+identified by the unqualified constructor encoding.
+
+A structural receiver interpretation now separates the received name's
+ordinary name view from its active process view. It selects the view from
+each occurrence in the authored body instead of asking higher-order matching
+to infer a function from the compound spine $K[x,\operatorname{drop}(x)]$.
+The interpretation commutes with contextual metavariable assignment,
+including beneath nested input binders. The existing source quotation-safety
+judgment gives a stronger boundary: compiled sealed code is independent of
+the surrounding receiver environment. A nested-binder control agrees with
+the independent semantic substitution; a literal quoted Drop stays literal,
+and an outer-binder crossing beneath quotation fails the scope check.
+These results are in \code{RhoContinuation},
+\code{RhoContinuationSealing} and their controls. General agreement with
+canonical source substitution, descent through source equations and actual
+ordinary-rule execution remain required before claiming the full semantic
+communication comparison.
+
+An actual two-stage occurrence execution first publishes
+$\operatorname{drop}(\operatorname{quote}(P))$ and then publishes an active
+output $P$. A public absence query for $P$ succeeds at the intermediate state
+and fails at the final state. Thus agreement after both stages does not
+establish an atomic communication comparison in such observing contexts.
+An encoding must justify private preparation, atomic publication, or an
+explicit restriction on observations. This is an obstruction to that
+unqualified staging claim, not to the transform mechanism itself.
+
+The symmetric MeTTa-calculus manuscript has another independent boundary.
+Its displayed REFL rule takes a derivation of the same reduction relation
+as its premise, so reflection can be nested. The local executor instead
+uses a COMM-only lookahead with fixed unification and context bounds.
+\code{MeTTaCalculus.ReflectionClosure} states the displayed four-rule
+closure with explicit unification and equivalence contracts. With the same
+executable unifier, a two-level reflected COMM example has a derivation in
+that closure while the current executor returns no result. This does not
+supply complete alpha-equivalence or unifier semantics; it isolates why
+that executor cannot serve as the unrestricted source specification.
+
+Quotation remains a requirement of the Prime foundation. Existing candidate
+owners define names for quoted terms and an explicit evaluation request.
+The earlier guarded-rewriting reflection theory separates syntax and value
+readers, but its abstract evaluation step takes an effects function as an
+input. The mixed lexical-quotation construction below connects quoted lambda
+code, its captures and explicit activation to retained transform execution.
+Its quotation convention remains distinct from substitution-sealed rho names.
+
+\section{Ordinary application through contextual transforms}
+
+The independent source \code{LambdaContextualRung} has four operational
+rules: beta contraction, reduction on either side of application, and
+reduction beneath a lambda. Its object variables have intrinsic binding
+positions. A one-hole context $K:\Gamma\Rightarrow\Delta$ records which
+variables are available at the selected subterm, including binders crossed
+on the way there. Such a context cannot erase or duplicate its hole.
+
+For each selected context, the transform schema consumes
+\[
+ K[\operatorname{app}(\operatorname{lam}(B[x,\Delta]),A[\Delta])]
+\]
+and produces $K[B[A[\Delta],\Delta]]$. Here $B$ and $A$ are fresh private
+contextual declarations; the ordinary body and argument are obtained by
+unification with the input occurrence. No source evaluator or precomputed
+reduct is an input to this rule. The produced term may contain compound
+metavariable arguments; the input unification problem belongs to the proved
+structural-pattern fragment for every ordinary source body and argument.
+
+\begin{theorem}[Contextual lambda step comparison]
+For every source context $\Gamma$ and source terms $s,t$, the four-rule
+source reduces $s$ to $t$ exactly when a selected schema has a completed
+actual contextual-worklist return from the encoded input occurrence and
+its emitted value observes as the encoding of $t$. Every solution of the
+admitted input equations gives that same reduct. Encoding commutes with
+capture-avoiding object substitution and plugging a source context.
+\end{theorem}
+
+The theorem \code{LambdaComparison.source\_step\_iff\_executes} constructs
+the forward solver return and recovers an ordinary source redex in the
+reverse direction. The actual occurrence update consumes identity $0$ and
+publishes identity $1$. The emitted row remains a live term in the computed
+helper frame; interpreting its declarations gives the source reduct.
+This solver theorem concerns one step over a represented source input.
+Composition over retained inventories is supplied by a distinct semantic
+result below; it does not assume that later raw problems remain structural
+patterns merely because their represented values are ordinary lambda terms.
+
+\begin{theorem}[Retained lambda execution]
+The selected contextual-transform profile and the independent four-rule
+source simulate each other step by step. From the encoded initial state,
+finite paths have exactly the same represented lambda results. Intermediate
+core states are the actual activation inventories: old equations, emitted
+live terms, retained roots and the finite scope ledger persist. Every old
+joint solution extends through each source contraction, preserving all old
+term observations after the declared inclusion.
+\end{theorem}
+
+The theorem \code{LambdaExecution.finite\_execution\_iff} uses one local
+declaration family indexed by the selected object's context and the
+body/argument role. A later redex may therefore occur at a different binder
+depth without changing the language of local declarations. Its transition
+profile is generated by the context-indexed schemas above and the existing
+contextual step; neither a source reduction premise nor a represented-output
+premise appears in the transition definition. The proof recovers source
+steps from admitted core steps and constructs core steps from source steps.
+
+The control program first contracts beneath two binders, then beneath one.
+The second transform consumes the first endpoint's emitted live term.
+Both original matching equations remain afterward, and the occurrence
+identity advances twice. This separates the construction from resetting to
+an independently encoded source term between steps.
+
+\begin{theorem}[Incremental solver realization of retained lambda paths]
+The same finite source correspondence has an actual sequence of worklist
+computations. Each completed prefix update extends across the fresh local
+declarations without constraining them. Its computed answer transports the
+new matching equations into the structural-pattern fragment. Continuing
+the existing worklist completes at some finite fuel for every admitted
+source contraction and retains a certificate for the entire original
+equation prefix. Completed results recover source reductions without an
+assumed valid source step; inert source variables are certified refusals.
+\end{theorem}
+
+The entry \code{LambdaExecution.finite\_execution\_with\_solvers\_iff}
+records the actual calls in a solver history. The executable continuation
+keeps any unfinished prefix residual alongside transported new equations;
+fuel exhaustion never counts as completion. More generally, resumption
+decides the original joint problem whenever this transported queue is a
+structural pattern, even if its original syntax was not. For example,
+solving $F(x)=x$ under a binder exposes a later
+$F(\operatorname{pair}(X,a))=\operatorname{pair}(a,a)$ as a pattern problem
+and computes $X=a$. Replacing its right-hand side by $a$ is refuted. Omitting
+the earlier equation would admit the constant-function model instead.
+The two-step binder-depth control also executes through the cached solver,
+with both returned residuals empty. These are solver-termination results
+for selected interactions, not normalization or fairness of lambda programs.
+
+The rule family is indexed by explicit source one-hole contexts; a finite
+installed evaluator, arbitrary enriched target contexts and resource-aware
+evaluation strategies are additional constructions.
+
+Controls distinguish $(\lambda x.\lambda y.x)z\longrightarrow\lambda y.z$
+from the captured result $\lambda y.y$, and execute below lambdas and on
+both sides of application. A source variable admits no invented step.
+With $I=\lambda x.x$ and $\Omega=(\lambda x.xx)(\lambda x.xx)$,
+$(\lambda x.I)\Omega$ can reduce to $I$, but the same unrestricted source
+also permits repeatedly reducing $\Omega$. Consequently this comparison
+does not supply Prime's demanded evaluation policy, correlated sharing,
+effects or suspension. The demanded-machine comparison below treats those
+behaviors separately; full beta reduction must not be substituted for
+call-by-need semantics.
+
+\section{Mixed quotation and activation with retained solver histories}
+
+The independent \code{QuotedLambda} source adds
+$\mathsf{quote}(t)$ and $\mathsf{activate}(t)$ to the intrinsic lambda
+signature. Its active contexts close under application, lambda and the
+argument of activation, but never enter a quotation body. The new root is
+\[
+ \mathsf{activate}(\mathsf{quote}(t))\longrightarrow t.
+\]
+Object substitution still traverses quotation to preserve its lexical
+captures. A quotation can therefore be inert under reduction while changing
+when an enclosing lambda supplies one of its captured variables. This is
+not the substitution-sealed convention of the separate paper-faithful rho
+profile. A concrete substitution distinguishes those contracts.
+
+For each active context, beta and activation are ordinary transform schemas.
+The activation hole has the entire ambient object context as its declared
+arity. A nullary code hole would incorrectly require captured code to be
+closed. Matching inspects rigid syntax; the rule output is a contextual
+term, not the result of calling a source evaluator.
+
+\begin{theorem}[Mixed finite execution]
+Every finite reduction of the quoted-lambda source has an execution through
+the existing contextual transform inventories with actual incremental
+worklist computations. Conversely, every such selected execution from a
+represented source term returns a source-reachable answer. All intermediate
+equations, live output terms and scope inventories are retained. Each old
+joint solution extends through a source step without changing its old
+observations.
+\end{theorem}
+The theorem is \code{QuotedLambdaRetained.finite\_execution\_with\_solvers\_iff}.
+The independent source embedding preserves and reflects all finite pure
+lambda paths, and the new represented-answer comparison agrees with the
+previous \code{LambdaExecution} solver-path theorem. This compares answers;
+it does not identify private declaration tables from the two clients.
+
+A concrete mixed program evaluates
+\[
+ \mathsf{activate}((\lambda x.\mathsf{quote}(\lambda y.x))\,z)
+ \longrightarrow \mathsf{activate}(\mathsf{quote}(\lambda y.z))
+ \longrightarrow \lambda y.z.
+\]
+Its exact second endpoint retains both equations, and its solver history
+continues the first completed cache. The result cannot be read as the
+captured term $\lambda y.y$. An executable Lean probe completes both actual
+solver calls. It also refutes attempted execution of held quoted code and
+leaves a zero-fuel computation unresolved. The latter is not a negative
+answer. A quoted looping term has no execution in this profile, and one
+activation removes exactly one quotation layer.
+
+These results close the lexical quoted-lambda comparison, not Prime's
+complete reflection or evaluation policy. They do not provide a finite
+installed context selector, demanded sharing, effects, unrestricted syntax
+inspection, or composition with communication, complete querying and
+authority. In particular, beta reduction does not identify quoted syntax:
+the source has a beta step whose input and output have distinct quotations.
+
+\section{An exposed instruction target for demanded execution}
+
+The independently owned \code{CallTimeChoiceSpec} gives natural semantics
+for computations, memoized and ordinary suspensions, forcing, constructor
+cases, ordered equation dispatch, choice, failure, events, quoted code and
+activation. Results retain their own branch stores. Its existing source
+translation compares eager, call-by-name and call-by-need argument profiles;
+none is silently selected as Prime's default here.
+
+\code{CallTimeChoiceInstructions} exposes the recursive premises of those
+judgments as finite root instruction families and explicit continuation
+frames. An alternative frame retains the original store; sequencing forwards
+each result's own refined store. Result concatenation preserves order and
+duplicates. Neither instruction admission nor the executable next-step
+function calls the source interpreter or assumes a completed evaluation.
+
+\begin{theorem}[Complete source observations and explicit instructions]
+A source judgment derives an ordered result list exactly when the
+instruction execution reaches that list with an empty continuation stack.
+The correspondence preserves the complete resulting stores and their event
+traces. Every instruction agrees with the independently implemented
+next-step function, so all finite instruction paths are executable.
+\end{theorem}
+The \code{CallTimeChoiceInstructions} owner contains:
+\begin{itemize}
+\item \code{source\_iff\_instruction\_path};
+\item \code{instruction\_iff\_next};
+\item \code{source\_iff\_executable}.
+\end{itemize}
+Missing references and exhausted fuel
+retain unfinished control rather than producing a completed empty list.
+
+Bookkeeping cannot diverge on its own. Between authored computation/force
+boundaries, a lexicographic rank decreases: first the number of frames that
+can launch further work, then the pending result-list traversal and remaining
+stack. This is \code{administrative\_wellFounded}; it is not a normalization
+claim for recursively defined source programs.
+
+Executed controls distinguish two correlated shared-choice results from
+four independent results, one shared effect from two repeated effects,
+duplicate equation occurrences in their original order, unused recursive
+work, inert quotation, repeated code activation, and residual noncode
+activation. The source observation laws and code/heap names remain their
+existing owners.
+
+This instruction target is consumed by the per-cell construction below.
+Structural environment lookup, cell operations and finite rule selection
+are explicit data operations. Its comparison must preserve every inherited
+cell at a branch, the complete return stack, and the ordered observation of
+alternatives. Fresh branch names alone do not create inherited cells, and
+a single-cell cache projection does not establish a whole-machine
+simulation. No ordinary rule calls the instruction executor.
+
+\subsection{Per-cell snapshot copying}
+
+\code{SnapshotCopy} realizes copied stores by three ordinary rule families.
+Preparation consumes a request, reads source readiness and metadata, checks
+that the destination is unallocated, and produces a reservation and cursor.
+Each copying event consumes the current cursor, reads one source cell, and
+produces one destination cell and the next cursor. Completion consumes the
+exhausted cursor and produces destination readiness and a reply. The payload
+is closed data; this storage construction does not claim a new unification
+fragment or call a whole-store copying function.
+
+\begin{theorem}[Complete copying and all-execution progress]
+Given an exact immutable source snapshot of $n$ cells, a fresh destination,
+a present request and consistent equations, an ordinary execution copies
+the snapshot in $n+2$ events. Every admitted execution from a valid prefix
+with $r$ cells left has at most $r+1$ further events. If its destination is
+ready, those $r+1$ events have occurred and the complete destination agrees
+with the source, including cell indices, payloads and trace. There is no
+infinite copying execution from such a prefix.
+\end{theorem}
+The central proofs are:
+\begin{itemize}
+\item \code{snapshot\_can\_be\_copied};
+\item \code{Execution.ready\_iff\_completed};
+\item \code{no\_infinite\_copy}.
+\end{itemize}
+For every source store, \code{NeedSnapshots} establishes these premises.
+Each suspension retains its code, captured environment and memo state.
+Explicit selected executions copy two
+equal cached cells at distinct indices and an undemanded cell; all original
+physical cells and intermediate equations survive. Wrong-index reads,
+replayed cursors, incomplete completion and destination reuse are refused.
+
+The invariant and observation boundary are essential. A context permitted
+to read intermediate cells can see a partial copy. An external writer can
+forge an exhausted cursor and thereby obtain readiness without coverage;
+both separating examples are checked against actual ordinary firings.
+Consequently this construction is not an atomic public snapshot operation
+in arbitrary contexts. The joined instruction interpretation must protect
+protocol state, establish freshness and preserve the chosen observations.
+The global invariant below supplies these conditions for the generated
+instruction catalogue. The linear number of copying events is a reference
+cost, not an efficiency claim for a future persistent implementation.
+
+\subsection{Store operations on the retained copy}
+
+The copy proof now also derives unique destination metadata and reply
+occurrences. The source snapshot need not satisfy these stronger conditions:
+they follow from freshness and the actual produced rows. This matters when
+an operation consumes a header; a duplicate old header must not remain.
+
+\code{NeedStoreOperations} gives ordinary resource rules for allocation,
+updating one memo and appending an event. Their parameters contain local
+rows, code and environments, not a whole store or evaluator. A selected
+linear command and the affected rows are consumed atomically. Other cells
+remain in the frame. The independently defined source operations are
+\code{Store.alloc}, \code{Store.setMemo} and \code{Store.emit}.
+
+\begin{theorem}[Exact primitive store operations and retained frames]
+Every source store operation has an ordinary firing from its editable
+representation. Conversely, admission recovers its local source premises,
+and every admitted result represents exactly the source operation's store.
+All other snapshot identities retain their complete contents and physical
+cell occurrences. Copying and an operation compose through the actual
+intermediate world, preserving the original source snapshot.
+\end{theorem}
+The central results are:
+\begin{itemize}
+\item \code{admission\_iff\_matches} and \code{preserves};
+\item \code{preserves\_other} and \code{copy\_and\_operate}.
+\end{itemize}
+The source's out-of-bounds memo update is a no-op. Its rule reads the exact
+represented count and requires that the index lie outside it; it does not
+infer absence from an incomplete scan.
+
+A concrete retained execution changes one of two equal cached cells,
+appends a repeated event, allocates an undemanded captured suspension, and
+performs an out-of-bounds update. The other cached cell and original source
+snapshot remain unchanged. Stale commands, old memo contents, stale counts
+and a false out-of-bounds case are rejected. All prior equations survive.
+
+These results concern a selected store operation. An evaluator must join
+it atomically to the corresponding instruction control, preserving saved
+continuations and result-associated snapshots. Installing the resource
+families indiscriminately would not prove that comparison. The completed
+command is not itself a grant of authority, and the copying rank does not
+establish termination for arbitrary sequences of new source operations.
+
+\subsection{Explicit controls and a physical execution episode}
+
+\code{NeedControl} replaces store-valued positions in goals, continuations
+and result lists by snapshot references. Each of the 42 source instruction
+shapes has a plan with an input control, explicit data reads and either a
+direct successor or a requested store operation. An edit continuation is
+finite data: one marked position denotes the new snapshot, while marked old
+references retain saved alternatives and other result stores. No callback
+or whole source store is hidden in the continuation.
+
+\begin{theorem}[Complete local control comparison]
+A source instruction from an interpreted control exists exactly when a
+supported plan has that input and its interpreted action has the specified
+output. This covers the complete existing instruction grammar, including
+missing-cell suspension. Every declared plan with its read facts yields a
+source instruction.
+\end{theorem}
+The theorem is \code{source\_instruction\_iff\_supported\_plan}.
+Its store interpretation is mathematical comparison data, not a premise
+calling the source evaluator during rule admission.
+
+\code{NeedMachine} puts heap and control rows in one ordinary occurrence
+configuration. A direct start replaces the control and retains the heap;
+an edit start produces a copy request and waiting control. Copy events read
+that waiting control. Final commit consumes it with the actual requested
+store resources, resumes the recorded continuation and does not reissue
+the completed command. The operation and continuation are matched as part
+of the control row.
+
+A kernel-checked example performs thirteen actual firings. It copies the
+original snapshot, changes the new memo from 7 to 42, resumes execution,
+and returns the ordered pair of results 42 from the new snapshot and 7
+from the saved original. The final physical heap is checked exactly and all
+29 equations remain. The independent source instructions reach the same
+two stores and values. Different operations, substituted continuations,
+premature commits and replay are refused.
+
+This selected physical execution starts at an internal commit continuation.
+It is not yet a complete source-program entry comparison. The next results
+provide the general projection, support and control laws needed to extend
+it beyond a selected example.
+
+\subsection{General projection, saved references and controlled completion}
+
+The heap projection in \code{NeedMachineProjection} filters the actual
+physical occurrences and accumulated equations of a global configuration.
+It neither rebuilds a store from its values nor resets its constraint history.
+Its admission theorem is restricted explicitly to the ground machine's
+positive and heap-absence rules; it does not discard arbitrary guards.
+
+\begin{theorem}[Controlled heap correspondence and edit completion]
+Every controlled copy firing projects to an ordinary heap firing with the
+same physical heap selection and endpoint. Conversely, every heap-copy
+firing lifts in the presence of its waiting control and consistent global
+equations. Complete heap-copy executions lift through their actual
+intermediate worlds. From an exact source snapshot, fresh destination and
+matching request and waiting control, a finite ordinary execution completes
+the requested edit and resumes its recorded continuation. Every other
+snapshot retains its complete contents.
+\end{theorem}
+The final commit consumes the completed reply without renewing it.
+\code{published\_preserves} proves the edited snapshot law for this
+publication rule by relating it to the existing renewable-command
+operation. The extra command used in that proof is not a target execution
+step or an equivalence for observers that count commands.
+The principal results are \code{copy\_projects}, \code{copy\_lifts},
+\code{copy\_execution\_lifts} and \code{edit\_block\_completes}.
+The accompanying controls supply an inhabited finite physical instance
+for every independently defined source store.
+
+\code{NeedControlReferences} computes the finite snapshot support of
+goals, result lists and every continuation frame. Decoding depends only on
+this support. For all 42 plans, old output references and data-read
+references come from the input control. If those input references lie below
+the allocation frontier, filling the new-store marker and extending the
+store interpretation preserves every saved old reference. Repeated
+references are permitted: two branches may intentionally share a snapshot.
+Cell indices inside values remain relative to their store; they are not
+global snapshot names.
+
+The fresh-resumption control returns 42 from the edited snapshot and 7
+from its saved original. Reusing the old snapshot name instead returns 42
+twice. A separate control retains snapshot 3 in a later continuation while
+reading only snapshot 0 now. These examples show why freshness cannot be
+checked against the current read set alone.
+
+\begin{theorem}[Controller conservation and prepared waiting progress]
+Every rule in the generated catalogue preserves the number of physical
+controller occurrences. With exactly one controller, any firing from a
+running state is a matching instruction start; any firing from a waiting
+state is its matching copy or commit. From a valid prepared copying prefix,
+there is no infinite catalogue execution retaining that waiting control.
+\end{theorem}
+The proof uses the existing copying rank after preparation and the actual
+controller invariant. Two equal-labeled controller occurrences still count
+as two; equality of labels cannot certify uniqueness. A concrete prepared
+memo-update instance satisfies the no-infinite-waiting theorem.
+
+The prepared waiting theorem alone does not bound an arbitrary sequence of
+newly initiated edits. The following global invariant and rank supply the
+stronger fixed-program comparison. Permissioned interference, open
+constraints and changing definitions need their own joined comparison.
+
+\subsection{Whole-program correspondence for the fixed-program client}
+
+\code{NeedHeapFrames} distinguishes stored data below the allocation
+frontier from one physical auxiliary occurrence. A running state has no
+auxiliary occurrence. A waiting edit has exactly its request, current cursor
+or completed reply, as appropriate. \code{NeedCopyInvariant} carries this
+frame through the existing copying proofs, starting with the original
+request. Publication consumes the reply and leaves only bounded stored
+data. Equal labels cannot hide another reusable protocol token.
+
+\code{NeedMachineInvariant} interprets only a finite allocated prefix of
+the mathematical store map. Every live control, saved alternative and
+result reference lies below that frontier, and every store in the prefix
+has its actual snapshot representation. Running controls and waiting plans
+remain unique. An instruction start either replaces the running control
+or starts a waiting edit; copying preserves the saved stores; final commit
+publishes the exact edited store and resumes the recorded continuation.
+These properties hold for every admitted firing of the generated catalogue.
+The independent source judgment is \code{CallTimeChoice.Derives}.
+
+\begin{theorem}[Two-way finite execution from ordinary entry]
+For every fixed source program, initial store, environment and authored
+computation, the source judgment returns an ordered list of results exactly when an ordinary
+catalogue execution from its physical entry world reaches a represented
+running endpoint decoding to that list. The comparison preserves the full
+store associated with each result, including suspensions, captured
+environments, memo contents and ordered effect traces.
+\end{theorem}
+The principal results are \code{Running.source\_path\_iff} and
+\code{NeedMachine.source\_derivation\_iff}. The latter uses the existing
+source-to-instruction theorem and the new physical path comparison; the
+target observation is an ordinary path with represented stores, not a
+definition calling the source evaluator. Entry contains the source data
+and one running control, with no preinstalled copy request.
+
+Every physical step either realizes a source instruction or preserves the
+source control and strictly decreases remaining copy/publication work.
+Interpretation and remaining work are independent of the choice of
+proof-side model witness: metadata and cells determine each referenced
+store, while the controller and physical protocol token determine its
+phase.
+
+\begin{theorem}[Composed administrative progress]
+Between source-work boundaries, a lexicographic rank decreases: the
+existing source continuation rank first, then remaining copy/publication
+work. Every copying transition is included even when its decoded
+continuation is poised to perform source work. Consequently the generated
+machine has no infinite execution consisting solely of this bookkeeping.
+An unfinished copy has an available next firing; a missing source cell
+suspends the corresponding running catalogue state.
+\end{theorem}
+This is \code{NeedMachine.administrative\_wellFounded}, not a termination
+or fairness theorem for arbitrary recursive source programs.
+
+Concrete ordinary-entry observations are exact: shared choice returns two
+diagonal pairs; independent suspensions and ordinary delay return four;
+a shared effect occurs once and repeated delay emits it twice. Duplicate
+alternatives and definition occurrences retain order and multiplicity.
+Unused recursive work stays unforced, quotation stays inert, repeated
+activation repeats its declared effects, and noncode activation yields
+the declared residual. The comparison also excludes every different
+complete observation, using determinism of the independently specified
+ordered-result judgment.
+
+This closes the per-cell realization of this fixed-program, ground client.
+It does not close full Prime: its combination with contextual open
+unification, the quoted-lambda binding profile, changing definitions,
+queries and external authority still requires explicit comparison. Nor
+does the reference's retained snapshot prefix prescribe physical storage.
+Representation refinements must preserve their declared source observations;
+raw private heap and allocation-history observations are different contracts.
+
+\subsection{A concrete connection to native behavioral logic}
+
+OSLF derives logical observations from a declared operational
+presentation~\cite{logic-distributive}. A source language description and an
+ordinary transform execution are therefore compared by a semantic map;
+the availability of both descriptions does not make them isomorphic.
+
+\code{NeedCopyObservation} connects the controlled-copy subsystem directly
+to the existing native modal semantics. On one side, states are actual
+global configurations with consistent equations and the matching waiting
+control. On the other, they are the actual projected heap configurations.
+Events on both sides are ordinary copy firings. The state map forgets the
+controller, and its event map uses \code{copy\_projects}.
+\code{projection\_source\_lifts} uses \code{copy\_lifts} to lift every
+outgoing heap event at the observed state.
+
+\begin{theorem}[Exact future behavioral observations of copying]
+Let $h$ be this heap projection. For every formula $\varphi$ using only
+future modalities, with positive fixed-point bodies, and every environment
+$\eta$ of heap predicates,
+\[
+  h(w)\models_{\rm heap,\eta}\varphi
+  \quad\Longleftrightarrow\quad
+  w\models_{\rm controlled,h^*\eta}\varphi.
+\]
+This includes nested least and greatest fixed points. The proof reuses the
+native modal transport theorem with outgoing endpoint coverage derived
+from actual ordinary firings.
+\end{theorem}
+The result is \code{future\_formula\_iff}. A concrete preparation,
+cell-copy and completion execution witnesses
+$\mu X.(\mathit{ready}\lor\Diamond_{\rm future}X)$ on the controlled side.
+The observation restriction matters: this compares heap predicates and
+future behavior of copying, not raw controller observations, spatial
+decomposition, incoming history, event counts, fairness or whole programs.
+It is a semantic theorem, not a newly installed runtime model checker.
+
+The native framework distinguishes directions. Its adjoint OSLF box reads
+incoming predecessors, while a universal future box reads successors.
+At the concrete initial copy state, the former applied to false is true
+because there is no incoming copy; the latter is false because preparation
+can fire. Neither one-step operator alone means temporal ``always'' or
+``eventually''. Fair eventual service additionally requires a scheduling
+and progress contract.
+
+The source-name reuse corollary is deliberately narrower than physical
+implementation equivalence. If the requested source name does not occur
+among a continuation's retained old references, overwriting that entry in
+the mathematical store interpretation gives the intended decoded
+continuation, equal to fresh placement. An independent reader of that old
+name distinguishes the two placements, returning 42 after overwrite and 7
+after fresh placement. A physical refinement must therefore account for
+all permitted observers, aliasing, equations and effects.
+
+The reference copying construction does not prescribe a storage backend,
+an append-only history, or copying on every language operation. Direct
+updates, trails, persistent representations and other implementations
+remain candidates for explicit semantic and cost comparisons. A stored
+snapshot is also only one component of a behavioral state: active rules,
+control, permissions and definitions can affect its transitions.
+
+\subsection{Behavior at source-instruction boundaries}
+
+\code{NeedMachineEpisodes} defines one instruction episode entirely from
+ordinary firings: a direct start, or an edit start followed by only its
+copy rules and the matching commit. A source-instruction premise is absent
+from this definition. Every episode expands to an actual catalogue path.
+The global invariant proves that it realizes exactly one independent
+source instruction; conversely, every source instruction from a represented
+running state has such an episode. The original data admission cut and
+the full intermediate equation histories are retained.
+
+\code{NeedInstructionObservation} uses these episodes as its target
+reduction span and the existing instruction relation as its source span.
+Decoding represented running states defines the state map; the proved
+episode comparison defines its event map and outgoing endpoint lifting.
+
+\begin{theorem}[Exact future instruction observations]
+For any fixed source program and represented running state, source
+predicates and future-directed modal formulas with positive fixed-point
+bodies have the same truth value in the instruction span and the actual
+episode span. This includes nested least and greatest fixed points.
+Native reachability agrees with a physical catalogue path to a represented
+running endpoint satisfying the source predicate.
+\end{theorem}
+The central results in \code{NeedInstructionObservation} are:
+\begin{itemize}
+\item \code{projection\_source\_lifts};
+\item \code{future\_formula\_iff};
+\item \code{reachability\_iff\_physical\_path}.
+\end{itemize}
+Ordinary-entry shared choice
+instantiates the native reachability formula for its two diagonal results.
+The corresponding four-result resampling formula is refuted. A concrete
+memo edit is one episode but five raw firings; no single raw firing reaches
+its published endpoint.
+
+\begin{theorem}[Incoming-box boundary]
+Uniform preservation of the predecessor-universal box by this projection
+is equivalent to incoming endpoint lifting. That additional property fails
+for a concrete one-definition program: a fresh physical entry at the
+function body has empty matching-equation history and no incoming episode,
+while its decoded source control has a valid calling predecessor.
+\end{theorem}
+Thus the incoming box applied to false holds at that physical entry but
+fails at its source image. The proofs are
+\code{incoming\_box\_transport\_iff} and the accompanying
+\code{incoming\_box\_is\_not\_preserved} control. This is an obstruction
+to an unrestricted history-forgetting comparison under the stated
+observations, not an obstruction to transform execution.
+
+Logical source predecessors and physical execution history must therefore
+have declared interpretations. A different semantic quotient or history
+observation would need its own correspondence proof. No storage policy is
+selected by these results. Spatial decomposition, event multiplicity,
+scheduling fairness, external permissions and definition revisions remain
+separate comparison obligations; no new executable runtime model checker
+is supplied by the semantic transport theorem.
+
+\section{Resolved clauses and subsequent admission}
+
+\code{ContextualClauseSourceState} defines a source world of contextual
+declarations, equations, stored schemas or live references, and physical
+occurrences. Its update is constructed directly from an admitted resolved
+clause. Query variables are shared across that clause's ports; each use of
+a stored schema has its own private variables and latent equations.
+The source continuation retains its returned query environment.
+
+\code{ContextualClauseStateRefinement} compares this independent update
+with the actual clause compiler through an injective capture frame $h$.
+The comparison preserves information, solvability, physical effects,
+conditional row observations and the returned environment. Native helper
+allocation may change declaration families. Unfinished solver equations
+remain attached to reusable outputs.
+
+Subsequent joins require more than separate existential matches: all ports
+must use the same query assignment and caller valuation.
+\code{ContextualClauseWitnesses} supplies these shared assignments together
+with private witnesses for each port in one future family. The native/source
+row comparison preserves these simultaneous realizations, including each
+row's latent equations.
+
+\begin{theorem}[Subsequent resolved-clause admission]
+After an actual compiled clause, let $r$ be another resolved clause over
+the independent source result, with a selected occurrence list $s$.
+Transport $r$'s captured declarations through the actual frame $h$ while
+retaining its query variables. The transported clause is admitted in the
+native result exactly when $r$ is admitted in the source result.
+The equivalence preserves selected occurrences, joint solvability,
+shared equations, and equality, absence and count guards at the same
+observation world. For every finite solver budget, source admission is
+equivalent to existence of the corresponding next compiled firing at
+that budget, retaining any residual equations.
+\end{theorem}
+The owner is \code{ContextualClauseSequencing}.
+Its admission result is \code{next\_admitted\_iff}; the compiler result is
+\code{next\_compilation\_iff}.
+Unused private arities are supplied by actual captured declarations;
+the proof assumes no inhabitant at an arbitrary sort.
+
+A concrete first clause reads a stored function
+$\lambda z.\mathsf{pair}(z,2)$, applies its contextual body to $1$,
+uses the computed key to obtain answer $7$, consumes a permit and
+publishes a reusable answer. A second clause uses the retained binding,
+reads that published occurrence twice, checks the binding against $7$
+and publishes at another space. Its actual compiled output matches
+exactly answer $7$. Replacing the second read by a demand for $9$
+admits neither a source firing nor a compiled firing.
+
+\subsection{A comparison preserved by clause execution}
+
+Further execution may change the private declaration families differently
+on the two sides. The world comparison therefore fixes an exposed
+environment while allowing different private representations. Every model
+of either world has a corresponding model of the other in a fresh future.
+The models agree on the exposed bindings and on conditional matches of
+every present occurrence in all further fresh futures. Physical occurrence
+identities remain equal.
+
+Fresh witnesses of finitely many nonbinding row matches can be amalgamated
+without refining their shared query assignment. This supplies one joint
+model for all ports. It does not permit each port to choose its own query
+bindings. Fresh declaration extensions are logical renamings; they do not
+specify a runtime snapshot or copying operation.
+
+\begin{theorem}[Preservation of the world comparison]
+If two worlds satisfy this comparison, admission of the same authored
+resolved clause through their exposed environments agrees. Their source
+updates again satisfy the comparison, with the query bindings added to
+the exposed environment. An actual compiled firing preserves the same
+comparison between the independent source update and its native result.
+\end{theorem}
+Retained rows use the old comparison. Live outputs use equality of the
+returned environment. Reusable outputs use the two-way correspondence
+of complete conditional source instances, including their latent equations.
+The source-update result is in \code{ContextualWorldClauseResults}.
+The actual compiler-step result is in \code{ContextualWorldCompilerSteps}.
+
+\subsection{Finite authored programs}
+
+\code{ContextualClauseSequences} defines a finite resolved program fragment:
+return a contextual value, or execute an authored clause and continue with
+its query bindings and old exposed environment. Its source execution uses
+the independently constructed world update. Its native execution uses
+actual compiler firings. Both record an ordered list of physical selections.
+This is mathematical syntax for the comparison, without a textual scope
+or search-order policy.
+
+\begin{theorem}[Finite clause-sequence adequacy]
+For source and native worlds satisfying the world comparison, a finite
+authored clause sequence has a source execution with selection trace $\tau$
+and final conditional returned value $v$ exactly when it has a native
+compiler history with the same sequence, trace and returned value.
+Every native step carries an actual worklist computation; remaining
+equations are retained. The statement preserves duplicate reads and
+physical occurrence distinctions.
+\end{theorem}
+The theorem is \code{source\_iff\_native} in
+\code{ContextualClauseSequenceComparison}. Its induction uses preservation
+of the world comparison at each step and exposed-value instance agreement
+at return. Neither native admission nor a rule calls a whole source evaluator.
+Semantic admission evidence remains explicit; this does not provide a
+total automatic guard decision procedure or a completing solver budget.
+
+The computed two-clause example is now also an authored sequence with a
+source run and an actual native history, returning $7$ with exactly the
+declared physical selections. Its conflicting second read has neither
+history at that trace. A separate control proves that replacing the
+exposed answer $7$ by $9$ is not a world comparison even if the physical
+world stays the same.
+
+Composition of complete answer censuses, arbitrary active evaluator and
+recursive/choice contexts, and compilation of family-changing private
+effect episodes into one public update remain separate obligations.
+The finite sequence performs one atomic firing per clause; it does not
+fuse the entire sequence into one firing. Additional observations of
+private representations need their own comparison. No textual scope
+default or physical storage policy is selected here.
+
+\subsection{Publication prefixes in an atomic computed body}
+
+An ordinary schema published before a later caller binding retains its
+earlier meaning. A private body that first publishes
+$\mathsf{box}(X)$ while $X$ is free, then binds the caller's $X$ to $1$,
+still has a reusable schema matching $\mathsf{box}(2)$. Publishing
+$\mathsf{box}(X)$ against the final joint problem loses that answer.
+Likewise, a check that $X$ was already $1$ before the binding cannot be
+discharged by evaluating it only against the final information.
+
+\begin{theorem}[Independent prefix isolation]
+Let $P$ be the saved prefix problem and $Q$ a solvable later problem.
+Embed their declaration families into disjoint summands, with inclusions
+$\iota_P$ and $\iota_Q$, and form
+\[
+ R=\iota_P(P)\mathbin{+\!+}\iota_Q(Q).
+\]
+The conditional instances of $\iota_P(v)$ under $R$ are exactly the
+instances of $v$ under $P$. An original-cut guard on rows transported
+through $\iota_P$ is entailed by $R$ exactly when it was entailed by $P$,
+at the same watched occurrence world. Arbitrary contextual arities and
+latent equations are retained.
+\end{theorem}
+The owner is \code{ContextualPrefixIsolation}. A model of the saved
+prefix extends by a separate model of $Q$; unused arities receive actual
+fresh generators. This gives both instance preservation and reflection
+of universal guard asks. Solvability of $Q$ is essential to prevent a
+vacuous conclusion.
+
+The native construction is in \code{ContextualPrefixNativePublication}.
+Every finite budget has an actual worklist result when both factors are
+solvable. Its reusable output retains the actual residual equations and
+has exactly the saved prefix's instances. A concrete saved condition
+$Y=\mathsf{box}(Z)$ still admits $\mathsf{box}(2)$ after the ambient
+caller's own $Z$ becomes $1$, and excludes bare $2$. A zero-budget result
+retains a nonempty three-equation problem, with that same exclusion.
+
+For the open-schema example, a single existing compiler firing using a
+separate private schema variable has the same exposed post-state
+observations as the two private source steps. It preserves the caller's
+binding as well as the earlier schema's complete instance set. The
+construction selects no parent-space snapshot or physical copying policy.
+The concrete encoding is supplemented by a general selected-body lowering.
+\code{ContextualSourceSchedules} represents finite private clause schedules
+without assuming admission. Compilation in
+\code{ContextualScheduleCompilation} collects binding-equation deltas,
+guards at their original cuts, and production origins retaining their own
+declarations, conditions and values. It computes a net occurrence update
+and an initial resource precondition rather than executing the source
+schedule as a callback.
+
+\begin{theorem}[Exact admission of a compiled private schedule]
+The compiled shapes, resource precondition, joint information and original
+guard cuts hold exactly when the selected source schedule is admitted.
+For an admitted schedule, the compiled net resource update is enabled
+and yields exactly the source's final occurrence set.
+\end{theorem}
+The results are \code{Schedule.compile\_exact} and
+\code{Schedule.compile\_effect} in that compiler. The controls retain the
+earlier schema's answer while fixing the terminal caller, and reject both
+a conflicting second read and an earlier guard that only later becomes
+true. The latter has consistent terminal equations and resources, so those
+alone do not certify admission. Atomic assembly of the production origins
+into an actual firing, followed by evaluator and complete-census
+composition, remains open.
+
+\subsection{Bound allocation names at the atomic boundary}
+
+A source body can consume occurrence $0$ carrying $1$ and later reuse
+the number $0$ for a row carrying $2$. Both private steps satisfy local
+freshness. A single existing firing from the entry world cannot create
+that changed row at $0$, since its output identifiers must be fresh at
+entry. Its unchanged final occurrence set does not express the row
+replacement. \code{ContextualAtomicIdentityControls} proves this
+separation and constructs an actual solver-backed repair that consumes
+$0$ and produces the new row at fresh identifier $1$.
+
+The general resource comparison uses bound names for internal creations,
+leaving the existing source and step definitions unchanged. Entry names
+are embedded as $\mathsf{inl}(o)$; a creation at position $k$ receives
+$\mathsf{inr}(k,o)$. The current map is injective and erases back to $o$.
+It can therefore distinguish a reused number's new creation from its
+old entry occurrence. One global permutation fixing the old number would
+not make this distinction.
+
+\begin{theorem}[Fresh allocation comparison]
+Every admitted finite source schedule lifts to an executable resource
+schedule with these fresh creation names. Erasure recovers its exact
+ordered take, read and produce selections, and its final occurrence set.
+The lifted schedule has one enabled net occurrence commit whose result
+erases to that same source result.
+\end{theorem}
+\code{OccurrenceAllocationRenaming} proves the resource comparison;
+\code{ContextualScheduleAllocation} applies it to the independently
+admitted contextual schedules. The entry names and internal creations
+belong to separate summands. These are comparison names for physical
+occurrences, not changes to object-language numbers, space handles,
+logical variables or a required runtime representation. Conditional rows
+and original guard cuts still require their atomic assembly comparison;
+the resource theorem alone does not supply that result.
+
+\subsection{Conditional rows and guard cuts under allocation renaming}
+
+\code{ContextualOccurrenceRenaming} transports conditional row regions
+through an injective physical map. The represented region is exactly the
+image of the original region; absence and cardinality checks therefore
+agree. The row correspondence is needed only on live occurrences and
+retains their latent equations. Identifying two equal-valued schemas
+would preserve neither their physical multiplicity nor their count.
+
+\begin{theorem}[Original cuts and renamed clause publication]
+Every saved guard cut in a selected private body has the same all-future
+meaning after renaming by the allocation map at that cut. For a single
+clause, renaming retains its complete joint binding problem and source
+update row meanings. Source admission agrees with renamed admission
+together with the original source freshness condition. Every admitted
+renamed clause has an actual native compiler firing at every finite
+budget, whose conditional row observations agree with the original
+source update at the corresponding current occurrence names.
+\end{theorem}
+The saved-cut proof is implemented in
+\code{ContextualScheduleCutRenaming}.
+
+The per-clause result is implemented in
+\code{ContextualClauseOccurrenceRenaming}. Original freshness is
+essential: a renamed output may be physically fresh even when the
+source tried to overwrite an occupied identity without consuming it.
+That invalid source operation remains refused.
+
+The controls retain six pending equations from two uses of a conditional
+schema, construct an actual renamed publication with the source's row
+observations, and refuse a conflicting read. Earlier false guards stay
+false after later bindings. Two schemas with equal values still count
+as two occurrences; collapsing their names changes that count. These
+results leave the general assembly of all surviving production origins
+into one public firing open.
+
+\subsection{Constructed row payloads for the complete private body}
+
+The result data can now be assembled without reading the final source
+world's rows.
+
+\code{ContextualScheduleOrigins} traverses initial input
+rows and authored productions. It records retained input with its capture
+transport, ordinary schemas with their own saved conditions and values,
+and live expressions. Later equations act on the explicit capture maps;
+they do not enter an earlier ordinary schema's saved problem.
+
+\code{ContextualConditionalRowPacking} puts these independently indexed
+rows into one private bank. Both values and latent equations use the
+same inclusion; shared captures stay shared. A model for unused private
+arities is supplied by fresh formal generators in an extension, rather
+than by arbitrary inhabitants. Equal-valued occurrences are not merged.
+
+\begin{theorem}[Conditional observations of the assembled result]
+For every admitted selected private body, the compiled origins and packed
+rows have exactly the final source rows' conditional instances in every
+later declaration family. The assembled information is exactly the
+source's final information, and the renamed net resource update gives
+the corresponding final occurrence set. At every finite solver budget
+there is an actual worklist result over that information. Its constructed
+row store preserves those row observations and returned-value instances,
+including when the worklist retains pending equations.
+\end{theorem}
+The data assembly is implemented in \code{ContextualScheduleRowAssembly}.
+The bounded computation is implemented separately in
+\code{ContextualComputedRowAssembly}.
+Even an unfinished admitted result has a solvable retained equation queue.
+Unselected dormant row conditions are not conjoined with that queue.
+
+Controls retain the earlier schema's answer $\mathsf{box}(2)$ while
+fixing the caller to $1$, and keep one pending equation at zero fuel.
+A body computing a key through stored code accepts answer $7$ and
+excludes $9$. A separate capture control links a row-private variable
+to a shared reference; packing preserves the link, whereas dropping
+its latent equation invents an answer.
+
+This constructs the complete result data for the selected ordinary/live
+clause profile. It does not identify that construction with an ordinary
+single-clause native firing. Such a lowering must account for per-output
+creation conditions and original guard contexts. No evaluator callback,
+new firing-graph edge or physical copying policy is introduced here.
+
+\subsection{Uniform publication of independently scoped birth problems}
+
+The ordinary native publication form need not be changed merely because
+outputs have different creation conditions. Each produced descriptor
+retains a solvable creation problem. Put these genuinely private copies
+in separately tagged declaration families, alongside the current caller
+problem, and solve their conjunction with the existing bounded worklist.
+The descriptor also retains a decidable name-equality dictionary for
+that actual computation.
+
+\begin{theorem}[Uniform private-condition representation]
+For an admitted selected body, every current caller model extends to
+the combined problem with its assignment fixed. Each creation value has
+exactly its original conditional instances under the combined problem.
+At every finite budget, one actual returned update can therefore supply
+the unchanged ordinary publication constructor for every birth, with
+those same instances. Independent satisfiable blocks also preserve a
+guard ask at its own original watched world.
+\end{theorem}
+The general block comparison is in
+\code{ContextualIndependentProblems}.
+The body-specific construction is in
+\code{ContextualUniformBirthProblem}.
+
+One actual ordinary native firing publishes two schemas together: the
+earlier schema admits $\mathsf{box}(2)$, while the later one admits
+$\mathsf{box}(1)$ and excludes $\mathsf{box}(2)$. Both use the same
+existing solver and publication operation, at every finite budget.
+
+Private independence is essential. In a separate control, two row
+conditions share one captured variable. Their conjunction is globally
+satisfiable when that capture is $9$, but suppresses an otherwise valid
+row at capture $7$. The private-block theorem does not apply to that
+shared condition. Dormant input rows remain conditional, and explicitly
+shared captures are preserved under the same caller model. The general
+ordinary firing lowering and conditional captured-template integration
+are still open.
+
+The production lookup now connects the finite net output set to actual
+creation descriptors. Every physical net output has a surviving source
+production index. The resulting ordinary and shared output forms, together
+with retained conditional inputs, preserve all source row instances under
+the returned caller environment. A four-clause control recycles source
+occurrence $0$ twice; its surviving value is $3$, with creation name $(3,0)$,
+rather than either earlier value.
+
+\begin{theorem}[Joint information preserves original guards]
+For any selected body, place each original guard problem in a separate
+private declaration block beside the current and creation problems.
+The joint problem is solvable exactly when the terminal source problem
+is solvable; no guard-success assumption is needed. Shapes, the compiled
+resource precondition, joint solvability and all original-world guard
+views are together equivalent to source admission. Every actual bounded
+worklist return preserves and reflects these guard verdicts, even when
+its remaining equation queue is nonempty.
+\end{theorem}
+The production connection is in
+\code{ContextualProductionAllocation}.
+The guard comparison is in
+\code{ContextualGuardedScheduleProblem}.
+The controls include a consistent final problem with an earlier false
+guard, and an admitted computed join with a true answer guard. Representing
+the saved guard worlds in a native entry inventory remains a separate
+operational obligation. These logical declaration blocks prescribe no
+physical snapshot or copying policy.
+
+\subsection{Entry-world regression and data dependencies}
+
+Row comparison can precede admission: output shapes suffice for its
+conditional instances, and resource executability suffices for its
+physical projection. The compiler therefore constructs guard views even
+for a candidate with a refused guard. At the same information cut,
+conditional matching obeys the existing occurrence-query equation
+\[
+ R_{W\setminus T\,\cup P}
+   = (R_W\setminus R_T)\cup R_P.
+\]
+When retained row meanings agree, absence checks both surviving inputs
+and creations, while a fresh update has count
+$|R_W|-|R_T|+|R_P|$. The original clause's own port and tell equations
+remain in its guard problem. These constructions are in
+\code{ContextualGuardEntryViews}.
+
+A pointwise truth query at one marker does not validate the row data
+captured by its predicate. A native control inserts a matching fact and
+still satisfies the marker query, while its resulting world violates
+the intended count. Native query labels now expose the actual conditional
+row as well as its occurrence identity. A complete query of that row
+region detects the matching insertion and permits an unrelated one.
+The adapter reuses the existing predicate-query record; it is in
+\code{ContextualPredicateQueryAdmission}.
+
+\begin{theorem}[Principal count-query translation]
+Let an actual completed update of $C$ return principal assignment
+$\theta$, and let $S_\theta$ be the matching occurrence set under
+$\theta$. Then
+\[
+ \operatorname{Ask}_{C}(\#p=n)
+ \quad\Longleftrightarrow\quad
+ |S_\theta|=n\ \land\
+ \operatorname{Ask}_{C}(\operatorname{region}(p)=S_\theta).
+\]
+The query reads actual conditional row labels. Private matching witnesses
+transport through further assignments, and every model of $C$ factors
+through $\theta$. Thus $S_\theta$ is included in every model's matching
+set; equal finite counts force equality of those occurrence sets.
+\end{theorem}
+This is proved in
+\code{ContextualPrincipalCountQueries}.
+Its native instance counts two identical conditional schemas at distinct
+occurrences and publishes value $7$. A separate control has completed
+unification and an empty principal table, yet a later caller assignment
+creates a match; the complete query remains necessary. This translation
+does not erase a pending equation queue or establish a total guard
+decision procedure. A fixed matching set is specific to this
+completed-principal profile; a conditional data table permits a more
+general count comparison below.
+
+\begin{theorem}[Native binding preserves every source model]
+Let a finite selected private body have the stated port shapes and an
+executable resource schedule. Its net take/read patterns and one explicit
+conditional control row determine an ordinary native binding problem.
+Every model of the terminal source information extends to a model of
+that actual native problem through an injective fresh declaration frame.
+The current source assignment is retained on every original name.
+Conversely, every native binding model projects to a source model.
+\end{theorem}
+The construction is in
+\code{ContextualNativeBindingProblem}.
+Input witnesses are extracted from source ports in
+\code{ContextualScheduleInputModels}; unused stored conditions are not
+conjoined. Packed inputs retain their conditional instances, and the
+initial declaration extension preserves the entry problem. The control
+row is explicit program data. Erasing it is a declared projection, not
+equality for observers of the complete inventory.
+
+The concrete body opens a stored lambda, computes a lookup key, consumes
+a permit and reuses the answer twice. Every native binding model retains
+answer $7$, and incompatible reuse demanding $9$ has no model. Adding an
+unused inconsistent schema leaves the binding problem consistent.
+A separate control still has a binding model when an earlier guard is
+false. Thus the binding comparison alone does not discharge guard admission.
+
+\begin{theorem}[Original-cut native equality and absence]
+Every authored cut has a finite entry descriptor with the same information
+problem, checks and guard meaning. Its occurrence world is
+$(W\setminus T_g)\cup P_g$, where $W$ is the entry world and $T_g,P_g$ are
+the compiled prefix delta at that cut. In the actual native binding
+problem, equality uses the original cut's copied terms. Absence is
+equivalent to the conjunction of a complete query of surviving actual
+entry labels and a finite absence check on the authored creations $P_g$.
+\end{theorem}
+The source descriptors are constructed in
+\code{ContextualEntryGuardCompilation}.
+
+\code{ContextualNativeGuardViews} resets actual row captures to the saved
+cut, retaining private schema conditions. Every original-cut model extends
+through the native information, so later equations do not erase its
+countermodels. The actual-row predicate uses the supplied label data;
+the creation check reads only compiled prefix descriptors.
+
+The controls reject an earlier absence of $\operatorname{box}(2)$ from a
+live $\operatorname{box}(X)$ even when a later clause sets $X=1$.
+The same equation in the guarded clause itself correctly admits the check.
+A matching insertion invalidates the query, while an unrelated insertion
+does not. An empty entry inventory can still produce a matching schema
+inside the private prefix: the entry query alone passes, and the creation
+check restores refusal.
+
+The comparisons fix the constructed entry world and compiled physical
+selection. Production meanings,
+conditional captured outputs and program-context observations still need
+their joined one-firing comparison. No parent-space copying policy follows
+from the logical declaration reset.
+
+\begin{theorem}[Conditional count-table translation]
+A finite table $T$ stores row data on support $D$. For each admissible
+candidate $a$, its query validates equality of the actual and recorded
+matching predicates on $D$, and rules out actual matches outside $D$.
+Whenever this query succeeds, the actual matching region is exactly
+\[
+ M_T(a)=\{o\in D\mid\operatorname{matches}(a,T(o))\}.
+\]
+At an authored guard cut with prefix removals $T_g$ and creations $P_g$,
+the source count guard is equivalent to that actual-data query together
+with the finite check
+\[
+ |M_T(a)|+|M_{P_g}(a)|=n
+\]
+for every model of the actual native binding information. The table reads
+only surviving entry occurrences; creations retain their own authored
+conditional meanings. No completed principal assignment is required.
+\end{theorem}
+The reconstruction handles arbitrary supplied row labels and worlds.
+Its generic owner is \code{SymbolicPredicateTable}.
+The original-cut comparison is in
+\code{ContextualSymbolicCountQueries}. A suitable support is the subset of
+the finite inventory that matches in some admissible model. This is a
+semantic construction, not an algorithm completing arbitrary higher-order
+matching. The read validates matching behavior, not arbitrary payload or
+weighted observations.
+
+In a concrete contextual constraint, the unknown two-parameter term
+context satisfies $F(0,1)=0$. Every solution is the constant $0$ or the
+first projection, including in arbitrary future declaration families.
+Consequently $F(1,0)$ matches exactly one of the stored literals $0,1$,
+but its matching occurrence differs between these solutions. A fixed
+successful-match table cannot work, and no completed principal update
+exists. An actual firing at every finite worklist budget retains the
+constraint and publishes $7$; its published row denotes that value.
+The symbolic table validates at the same information cut. A changed
+relevant payload or a new matching duplicate occurrence refuses its read.
+A separate native compiler instance counts
+$\operatorname{box}(1)$ after the guarded clause's own equation $X=1$,
+accepting count one and refusing count zero.
+
+These count comparisons retain the fixed constructed selection and the
+stated source shape and resource hypotheses. Joining exact publication,
+captured outputs and full program observations to the same actual firing
+remains open.
+
+\begin{theorem}[Native birth instances and conditional publication]
+Under the selected body's shape and resource hypotheses, and consistency
+of its terminal information, the actual native binding problem preserves
+and reflects every original value instance in a saved birth block.
+An actual conditional firing whose declared ordinary output is that
+birth value publishes exactly its original conditional instances.
+Shared outputs retain the current caller interpretation; retained input
+metadata retains its original conditional instances under the returned
+caller. The target information is satisfiable and projects to the source
+terminal information.
+\end{theorem}
+The comparison in \code{ContextualNativeBirthPublication} first extends
+each given compiled model through the actual selected input conditions.
+Independent satisfiable birth blocks preserve the selected birth value.
+It then applies the existing conditional producer's ordinary, live and
+retained-row laws. Physical presence is determined separately by the
+same firing's resource result.
+
+A concrete native producer constructs an earlier reusable
+$\operatorname{box}(X)$ followed by the caller equation $X=1$.
+At every finite solver budget, its published schema still admits
+$\operatorname{box}(2)$, and its returned caller remains $X=1$.
+Replacing the saved birth block by the current block loses that answer.
+A separate shared-output producer follows the current caller, admitting
+$\operatorname{box}(1)$ and refusing $\operatorname{box}(2)$; its returned
+information has a model.
+
+These are output comparisons for actual firings with the specified rule,
+selection and output syntax, with concrete solver-backed instances.
+The complete selected ordinary/shared body is joined next. General
+program-context observations remain separate obligations; invocation
+completion is established below.
+
+\begin{theorem}[Conditional constructed-template publication]
+A single authored template clause may publish ordinary values, shared
+references, and schemas with private holes, explicit actor captures and
+latent equations. Both a schema's body and its equations are transported
+by the same binding map. Its body decodes from the actual prepared
+production, and its conditional instances are exactly the source row's
+instances under the returned actor environment.
+
+Every given actor information model extends through the publication, and
+every result model projects back. Schema conditions remain local: an
+incompatible dormant row does not make the actor information inconsistent.
+\end{theorem}
+The construction is in \code{ContextualConditionalTemplates},
+\code{ContextualConditionalTemplateSource} and
+\code{ContextualConditionalTemplateExecution}. It reuses the existing
+template production grammar and conditional execution, installing the
+authored conditional metadata without a second resource transition.
+
+The concrete mixed clause establishes $X=0$ and publishes two schemas
+$\mathsf{pair}(X,\mathsf{pair}(Y,Y))$, conditioned respectively by $X=0$
+and $X=1$, beside ordinary and shared outputs. A following actual clause
+reads the first schema twice, with private values $0$ and $1$, in one
+joint firing. The second schema remains present and unmatched. Selecting
+it instead is refused at every solver budget. Repeated $Y$ occurrences
+within one use cannot disagree, the captured $X$ cannot be chosen again,
+and erasing the condition admits an otherwise invalid source answer.
+The controls are in \code{ContextualConditionalTemplateControls} and
+\code{ContextualConditionalTemplateReuse}.
+
+The independent update in \code{ContextualConditionalTemplateState}
+permits incoming row locals to differ from the clause's query variables.
+Its ordinary, shared, captured and retained rows are constructed from
+source syntax. \code{ContextualConditionalTemplateClauses} uses the
+existing resolved-clause compiler. Its decoder connects actual prepared
+outputs to the final published schema body.
+
+\begin{theorem}[Conditional template clause comparison]
+At every finite solver budget, source admission holds if and only if an
+actual compiled clause exists with the source-equivalent result world.
+The comparison preserves physical occurrences, returned actor bindings,
+every information model in both directions and every conditional
+row-matching observation in fresh declaration extensions.
+\end{theorem}
+The joined comparison is in
+\code{ContextualConditionalTemplateClauseResult}.
+
+\code{ContextualConditionalTemplateSchedules} additionally permits finite
+bodies mixing these template clauses with existing ordinary/shared
+segments. Birth descriptions retain the authored conditional row and a
+separate transport for its captures. Admission compilation preserves and
+reflects source admission, using final information, original guard cuts,
+port shapes and the complete resource precondition, including intermediate
+freshness. The net resource effect gives the exact source occurrence set.
+These are admission and resource results; native one-firing realization
+for the extended grammar remains open.
+
+The concrete mixed source body publishes the two schemas above, then reads
+the compatible occurrence twice with private values $0$ and $1$. Both the
+good body and the version selecting the incompatible row have available
+physical resources, but only the good body is admitted. Its dormant row
+remains present. The actual clause comparison also constructs two
+source-linked native firings and excludes the incompatible native second
+read, at arbitrary declared budgets. These controls are in
+\code{ContextualConditionalTemplateSourceControls}.
+
+\begin{theorem}[Surviving conditional births and native net inputs]
+Under the authored port shapes, each final mixed-body row has exactly the
+conditional instances of its latest saved production, or of the retained
+entry row under the composed capture transport. This comparison holds
+before guard or resource admission is established.
+
+Every model of the final source information supplies matching witnesses
+for all tracked initial inputs. Any finite list of those inputs can be
+opened together in a fresh extension, preserving the given source model's
+names. Under source resource executability, every actual allocated net
+input is one of these entry occurrences. Every net output selects a saved
+conditional birth with exactly the final source row's meaning.
+\end{theorem}
+The origin comparison is in
+\code{ContextualConditionalTemplateOriginSemantics}.
+
+Joint witnesses are in \code{ContextualConditionalTemplateInputModels}.
+
+The resource-net links are in
+\code{ContextualConditionalTemplateAllocation}.
+The lookup is computed from authored selections and birth descriptions,
+without using a final source-row oracle.
+
+The entry control reads a row conditioned by $X=0$ beside an unused row
+conditioned by $X=1$. Every source model supplies the used input witness;
+the unused row remains incompatible. The allocated net reads only the
+used entry. A separate control consumes logical occurrence 10, then
+recreates it in a later clause. The new allocation generation is in the
+net output set; its old generation and entry name are not. Its meaning
+comes from the later production. The entry and logical reuse controls are
+in \code{ContextualConditionalTemplateOriginControls}.
+
+The allocation controls are in
+\code{ContextualConditionalTemplateAllocationControls}.
+
+\begin{theorem}[Mixed native producer and conditional result]
+Assume the mixed body's authored port shapes, complete source resource
+executability and consistent final information. At every finite solver
+budget there is an actual native binding/resource producer firing with
+the constructed rule, selection, output expressions and publication
+flags. Its conditional publication has the same visible occurrences,
+returned caller bindings and conditional row instances as the source
+result, under the declared bound-name projection. Every source model
+extends to a returned model, and every returned model projects to a source
+model; row instances agree in every fresh future.
+\end{theorem}
+The binding construction is in
+\code{ContextualConditionalTemplateNativeBinding}.
+
+The actual output decoding is in
+\code{ContextualConditionalTemplateNativePublicationValues}.
+
+The world comparison is in
+\code{ContextualConditionalTemplateNativeResult}.
+
+Output-private declarations carry no global assertion of their row
+conditions. Value and conditional metadata use the same role transport.
+The controls fuse two compatible private reads, preserve an unused
+incompatible entry, and exclude a firing that selects the incompatible
+row.
+
+The controls are in
+\code{ContextualConditionalTemplateNativeControls}.
+
+This is a result comparison, not yet an admission equivalence for the
+mixed grammar: original-cut data queries are not attached to this producer.
+A control has consistent information and available resources while a
+private creation refutes a later absence guard. The source is refused,
+but the binding/resource producer executes. Thus producer existence alone
+cannot replace source admission. This control is in
+\code{ContextualConditionalTemplateNativeGuardBoundaryControls}.
+
+The following joined admission theorem continues to concern the
+ordinary/shared grammar.
+
+\begin{theorem}[Selected private body to one native firing]
+For the finite authored clause grammar with ordinary and shared
+productions, source admission holds if and only if there exists one
+actual query-admitted native firing with the constructed rule, physical
+selection, output function, publication flags and query list, at any
+declared finite solver budget. No source shape, resource-validity or
+successful-execution premise is supplied to the native side.
+
+The invocation control is consumed. After decoding bound creation names,
+its world is conditionally equivalent to the source result:
+physical occurrences agree, every source information model extends to a
+native model, every native model projects to a source model, returned
+bindings agree, and conditional row-matching observations agree in every
+fresh declaration extension.
+\end{theorem}
+The admission theorem is in \code{ContextualNativeProgramExecution}.
+
+The joined theorem is \code{source\_iff\_native\_body}.
+
+It and the world comparison are in \code{ContextualNativeProgramResult}.
+
+The producer reads authored birth descriptors, not the final source row
+store. Its ordinary values retain their birth problem; shared values use
+the returned caller. Resource queries check required and forbidden entry
+identities against actual inventory data. The original finite compiled
+resource precondition includes intermediate freshness tests that the net
+effect alone can erase. Static port shapes and its store-independent
+possibility flag are checked separately on the control row. Guard queries
+then retain each clause's original information cut, including its own
+port and tell equations.
+
+The concrete compiler instances include a stored-lambda application that
+computes a lookup key, takes a permit and reuses its answer twice; an
+incompatible reuse is refused. An earlier reusable schema keeps its
+answers, whereas a later tell cannot repair an earlier failed guard.
+A count guard uses its own clause's equation. A make-then-take program
+with an occupied creation identity has an enabled net effect but fails
+the complete resource condition and its actual native absence query;
+the same internal program is admitted from an empty entry.
+
+The comparison fixes the selected authored body and uses the stated
+conditional row-and-model observation. Its entry control and helper
+encodings remain observable to unrestricted native programs.
+Guard-complete selectively captured body lowering, arbitrary target
+selections and program observers, full active evaluation, collection
+composition, fairness and cost retain their separate obligations.
+Semantic support tables do not supply a total higher-order matching or
+guard-decision procedure.
+
+\begin{theorem}[Selected invocation completion]
+The compiled firing takes its invocation control after the data takes
+and never produces a replacement control. Every successful invocation
+therefore removes that control and strictly decreases its pending
+indicator from one to zero, while preserving the source/result comparison.
+No subsequent admission requiring the same control is possible after any
+intervening data steps that do not produce a control occurrence.
+\end{theorem}
+The theorem and the strengthened source comparison are in
+\code{ContextualNativeInvocation}.
+Appending the control preserves every data opening ordinal and the
+control's own former read ordinal. This is ordinary resource consumption,
+not a new identity or occurrence-lifetime model. A fresh control production
+is an explicit boundary; standing installation, cancellation and retry
+contracts remain separate.
+
+The concrete empty source body has an actual native firing at every finite
+solver budget. Its public result is empty, its private control is consumed,
+and no further invocation admission is possible without a new control.
+By contrast, a read gate is enabled for arbitrarily many resource
+executions without changing its store. The completion result does not
+infer successful execution merely from control absence in an arbitrary
+environment.
+
+\section{From interaction to the full language}
+
+The following comparisons remain the acceptance criteria for a common
+foundation. Existing restricted results are inputs to them.
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Construction & Required account \\
+\midrule
+Querying & Complete selection, answer multiplicity, bindings and any required order. \\
+Communication & Consumption or shared reading, continuation activation and contextual name equality. \\
+Expression execution & Application, lexical binding, shared versus independent choice, effects and suspension. \\
+Reflection & Inert quoted data, explicit activation and declared restrictions on syntax observations. \\
+Changing definitions & The equations and versions used by each computation and retained conclusion. \\
+Checked inference & Ordinary rule construction corresponding to independent inference judgments, with hypotheses and authority retained. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The target is a concise semantic account plus qualified constructions and
+obstructions. Runtime convenience operations, source filenames, and
+module counts do not establish these comparisons. Internal administrative
+steps need a termination or explicit suspension argument; costs and
+fairness have their own assumptions. The candidate is retained for this
+investigation, with the full foundation judgment still open.
+
+\begin{thebibliography}{9}
+\bibitem{logic-distributive}
+M. Stay and L. G. Meredith.
+\emph{Logic as a distributive law}. 2016.
+\url{https://arxiv.org/abs/1610.02247}.
+\bibitem{metametta}
+L. G. Meredith, B. Goertzel, J. Warrell and A. Vandervorst.
+\emph{Meta-MeTTa: an operational semantics for MeTTa}. 2023.
+\url{https://arxiv.org/abs/2305.17218}.
+\bibitem{dcalc}
+B. Goertzel. \emph{The Distinction Calculus: d-Forms for Hives of
+Reflexively Self-Modifying Systems}. Corrected manuscript, September 2026.
+\bibitem{hyperseed}
+\emph{Hyperseed in the d-Calculus}, mathematical companion to Ben Goertzel's
+\emph{Hyperseed}, Chapter 7: signed event calculus and explicit absence.
+Version 1, September 2026.
+\bibitem{lybech}
+S. Lybech. \emph{Encodability and Separation for a Reflective Higher-Order
+Calculus}. EPTCS 368, 2022, pp.\ 95--112, Section 2.
+\url{https://arxiv.org/abs/2209.02356}.
+\end{thebibliography}
+\end{document}

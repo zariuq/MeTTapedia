@@ -37,35 +37,35 @@ theorem checked_forget_rule_result (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     pExtract world query ∈
       applyRuleUsing (engineBasePremises relEnv)
         (wmExtVertexLanguageDefGuarded combinedVertex)
         (rewriteAt (engineBasePremises relEnv)
           (wmExtVertexLanguageDefGuarded combinedVertex) 0)
-        ruleForgetOutsideGuarded
+        ruleForgetOutside
         (pExtract (pForget scope world) query) := by
   let bindings : Bindings := [("q", query), ("W", world), ("S", scope)]
   have matched : bindings ∈
       matchPatternForRule (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded (pExtract (pForget scope world) query) := by
+        ruleForgetOutside (pExtract (pForget scope world) query) := by
     rw [matchPatternForRule_eq_syntactic]
-    simp [bindings, ruleForgetOutsideGuarded, pExtract, pForget,
+    simp [bindings, ruleForgetOutside, pExtract, pForget,
       matchPattern, matchArgs, mergeBindings]
   have premises : bindings ∈
       premisesUsing (engineBasePremises relEnv)
         (wmExtVertexLanguageDefGuarded combinedVertex)
         (rewriteAt (engineBasePremises relEnv)
           (wmExtVertexLanguageDefGuarded combinedVertex) 0)
-        ruleForgetOutsideGuarded.premises bindings := by
+        ruleForgetOutside.premises bindings := by
     simpa [bindings, premisesUsing, premiseStepUsing, engineBasePremises,
-      applyPremisesWithEnv, ruleForgetOutsideGuarded] using guard
+      applyPremisesWithEnv, ruleForgetOutside] using guard
   have target :
       applyBindingsForRule (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded bindings = pExtract world query := by
+        ruleForgetOutside bindings = pExtract world query := by
     rw [applyBindingsForRule_eq_applyBindings _ _ _ (by decide +kernel)]
-    simp [bindings, ruleForgetOutsideGuarded, pExtract, applyBindings]
+    simp [bindings, ruleForgetOutside, pExtract, applyBindings]
   simp only [applyRuleUsing, List.mem_flatMap, List.mem_map]
   exact ⟨bindings, matched, bindings, premises, target⟩
 
@@ -76,27 +76,27 @@ theorem checked_forget_named_occurrence (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     ∃ occurrence ∈
       rewriteAtOccurrences (engineBasePremises relEnv)
         (wmExtVertexLanguageDefGuarded combinedVertex) 1
         (pExtract (pForget scope world) query),
       occurrence.target = pExtract world query ∧
-      occurrence.ruleName = "WM_ForgetOutside_Guarded" := by
-  have ruleMember : ruleForgetOutsideGuarded ∈
+      occurrence.ruleName = "WM_ForgetOutside" := by
+  have ruleMember : ruleForgetOutside ∈
       (wmExtVertexLanguageDefGuarded combinedVertex).rewrites :=
-    Mettapedia.OSLF.Framework.WMCalculusBNBridge.ruleForgetOutsideGuarded_mem_guarded
+    Mettapedia.OSLF.Framework.WMCalculusBNBridge.ruleForgetOutside_mem_guarded
       combinedVertex (Or.inl rfl)
   obtain ⟨occurrence, member, target, ruleName⟩ :=
     rewriteAtOccurrences_named_of_rule_result
       (engineBasePremises relEnv)
       (wmExtVertexLanguageDefGuarded combinedVertex) 0
-      ruleForgetOutsideGuarded
+      ruleForgetOutside
       (pExtract (pForget scope world) query) (pExtract world query)
       ruleMember (checked_forget_rule_result relEnv scope world query guard)
   exact ⟨occurrence, member, target,
-    by simpa [ruleForgetOutsideGuarded] using ruleName⟩
+    by simpa [ruleForgetOutside] using ruleName⟩
 
 /-- The concrete accepted counting-provider row executes the guarded rule
 with its authored identity retained. -/
@@ -106,7 +106,7 @@ theorem counting_outside_named_occurrence :
         (wmExtVertexLanguageDefGuarded combinedVertex) 1
         (pExtract (pForget scopeHandle worldHandle) outsideHandle),
       occurrence.target = pExtract worldHandle outsideHandle ∧
-      occurrence.ruleName = "WM_ForgetOutside_Guarded" := by
+      occurrence.ruleName = "WM_ForgetOutside" := by
   exact checked_forget_named_occurrence (relationEnv demoTable)
     scopeHandle worldHandle outsideHandle outside_premise_accepted
 
@@ -118,7 +118,7 @@ theorem counting_inside_no_named_occurrence :
       rewriteAtOccurrences (engineBasePremises (relationEnv demoTable))
         (wmExtVertexLanguageDefGuarded combinedVertex) 1
         (pExtract (pForget scopeHandle worldHandle) insideHandle),
-      occurrence.ruleName = "WM_ForgetOutside_Guarded" := by
+      occurrence.ruleName = "WM_ForgetOutside" := by
   decide +kernel
 
 /-- An accepted guard reduces under the authored Combine-left congruence
@@ -129,7 +129,7 @@ theorem checked_forget_under_combine_left_at_two (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     StepAt (engineBasePremises relEnv)
       (wmExtVertexLanguageDefGuardedWithCong combinedVertex)
@@ -147,8 +147,8 @@ theorem checked_forget_under_combine_left_at_two (relEnv : RelationEnv)
       (pExtract world query) := by
     apply mem_rewriteAt_iff_stepAt.mp
     simp only [rewriteAt, List.mem_flatMap]
-    exact ⟨ruleForgetOutsideGuarded,
-      Mettapedia.OSLF.Framework.WMCalculusBNBridge.ruleForgetOutsideGuarded_mem_guarded
+    exact ⟨ruleForgetOutside,
+      Mettapedia.OSLF.Framework.WMCalculusBNBridge.ruleForgetOutside_mem_guarded
         combinedVertex (Or.inl rfl),
       checked_forget_rule_result relEnv scope world query guard⟩
   have innerCongAt : StepAt (engineBasePremises relEnv)
@@ -186,7 +186,7 @@ theorem checked_forget_under_combine_left (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     langReducesUsing relEnv
       (wmExtVertexLanguageDefGuardedWithCong combinedVertex)
@@ -202,7 +202,7 @@ theorem checked_forget_combine_rule_result (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     pCombine (pExtract world query) other ∈
       applyRuleUsing (engineBasePremises relEnv)
@@ -222,8 +222,8 @@ theorem checked_forget_combine_rule_result (relEnv : RelationEnv)
       (pExtract world query) := by
     apply mem_rewriteAt_iff_stepAt.mp
     simp only [rewriteAt, List.mem_flatMap]
-    exact ⟨ruleForgetOutsideGuarded,
-      Mettapedia.OSLF.Framework.WMCalculusBNBridge.ruleForgetOutsideGuarded_mem_guarded
+    exact ⟨ruleForgetOutside,
+      Mettapedia.OSLF.Framework.WMCalculusBNBridge.ruleForgetOutside_mem_guarded
         combinedVertex (Or.inl rfl),
       checked_forget_rule_result relEnv scope world query guard⟩
   have innerMember : pExtract world query ∈
@@ -272,7 +272,7 @@ theorem checked_forget_under_combine_left_occurs (relEnv : RelationEnv)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
         (wmExtVertexLanguageDefGuarded combinedVertex)
-        ruleForgetOutsideGuarded.premises
+        ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     ∃ occurrence ∈
       rewriteAtOccurrences (engineBasePremises relEnv)

@@ -119,23 +119,29 @@ def filterData : SourceSyntax.FamilyFilter → Pattern
       list (points.map (atom ∘ toString)), list (openers.map atom)]
 
 def common : ModuleSource.Module := {
-  name := "CommonSyntax", imports := [], entry := some (["Grammar"], [])
+  name := "PrologCommonSyntax", imports := [], entry := some (["Grammar"], [])
   theories := [⟨"Grammar", [], .extend none [
     .types ((PrologSyntax.sorts PrologSyntax.commonRows).map TypeDecl.plain),
     .terms PrologSyntax.commonRows]⟩] }
 
-def module (profile : Profile) : ModuleSource.Module := {
-  name := if profile.dialect == .iso then "ISOSyntax" else "SWISyntax"
-  imports := [⟨"CommonSyntax.module", "common"⟩], entry := some (["Grammar"], [])
+def moduleWithRows (profile : Profile) (extra : List GrammarRule) (start name : String) : ModuleSource.Module :=
+  let description := PrologSyntax.extended profile extra start name
+  {
+  name
+  imports := [⟨"PrologCommonSyntax.module", "common"⟩], entry := some (["Grammar"], [])
   theories := [
     ⟨"Grammar", [], .extend (some (.apply ["common","Grammar"] [])) [
-      .types (((PrologSyntax.grammar profile).types.filter
+      .types ((description.grammar.types.filter
         (fun sort => !(PrologSyntax.sorts PrologSyntax.commonRows).contains sort.name))),
-      .terms (PrologSyntax.extensionRows profile ++ PrologSyntax.operatorRows profile)]⟩,
-    dataTheory "LexicalProfile" "GetLexicalProfile" "ReturnLexicalProfile" (Portable.lexicalData (PrologSyntax.lexical profile)),
+      .terms (PrologSyntax.extensionRows profile ++ PrologSyntax.operatorRows profile ++ extra)]⟩,
+    dataTheory "LexicalProfile" "GetLexicalProfile" "ReturnLexicalProfile" (Portable.lexicalData description.profile),
     dataTheory "SourceSelection" "GetSourceSelection" "ReturnSourceSelection"
       (.apply "SourceSelectionV1" [list ((PrologSyntax.selection profile).map filterData)]),
     dataTheory "ReaderProfile" "GetPrologReaderProfile" "ReturnPrologReaderProfile" (profileData profile)] }
+
+def module (profile : Profile) : ModuleSource.Module :=
+  let name := if profile.dialect == .iso then "ISOSyntax" else "SWISyntax"
+  { moduleWithRows profile [] "PlSentence" (PrologSyntax.grammar profile).name with name }
 
 def profile? (library : List (String × ModuleSource.Module)) (module : ModuleSource.Module) : Option Profile := do
   let (_, payload) ← SourceSyntax.replyAt? library module "ReaderProfile" "ReturnPrologReaderProfile"

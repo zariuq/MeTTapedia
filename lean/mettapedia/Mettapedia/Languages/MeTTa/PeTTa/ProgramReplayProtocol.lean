@@ -170,7 +170,7 @@ private def patternProfile (program : SpaceSemantics.Program) (pattern : Atom) :
   unless passivePattern program pattern do throw "computed patterns are outside the passive-pattern profile"
 
 private def controlHead (head : String) : Bool :=
-  head ∈ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]
+  head ∈ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]
 
 mutual
   private def closedExpression (program : SpaceSemantics.Program) (bound : List String) :

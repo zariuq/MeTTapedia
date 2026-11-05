@@ -187,5 +187,13 @@ theorem chainBridge_revision :
   norm_num [Prob.coarsen_apply, pushforward_eq_sum_ite, posterior_apply,
     evidence, chainBridge, noisyAnti, trueLikelihood, Fintype.sum_prod_type]
 
+/-- A prior over two model hypotheses performs an ordinary Bayesian update:
+the observation is nine times likelier under the first hypothesis. -/
+theorem model_prior_revision :
+    (posterior fair (fun m => if m then (9/10 : ℝ) else 1/10)
+      (fun m => by cases m <;> norm_num)
+      (by norm_num [evidence, fair])).1 true = 9/10 := by
+  norm_num [posterior_apply, evidence, fair]
+
 end Controls
 end Mettapedia.ProbabilityTheory.BayesianInference.LocalContexts

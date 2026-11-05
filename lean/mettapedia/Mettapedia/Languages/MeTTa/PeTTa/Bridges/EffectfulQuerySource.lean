@@ -35,6 +35,25 @@ theorem traverse_append (body : Body) (first later : List Subst) (receipt : Effe
   | cons bindings rest ih =>
       simp only [List.cons_append, traverse, ih, Option.bind_assoc]
 
+theorem traverse_answers_extend (body : Body) (captured : List Subst)
+    (before after : Effects.State) (collected answers : List Atom)
+    (completed : traverse body captured (before, collected) = some (after, answers)) :
+    ∃ suffix, answers = collected ++ suffix := by
+  induction captured generalizing before collected with
+  | nil =>
+      have same : (before, collected) = (after, answers) := Option.some.inj completed
+      exact ⟨[], by simpa using (Prod.mk.inj same).2.symm⟩
+  | cons bindings rest ih =>
+      obtain ⟨next, _, later⟩ := Option.bind_eq_some_iff.mp completed
+      obtain ⟨suffix, returned⟩ := ih next.1 (collected ++ next.2) later
+      exact ⟨next.2 ++ suffix, by simpa only [List.append_assoc] using returned⟩
+
+theorem empty_result_has_empty_prefix (body : Body) (captured : List Subst)
+    (before after : Effects.State) (collected : List Atom)
+    (completed : traverse body captured (before, collected) = some (after, [])) : collected = [] := by
+  obtain ⟨_, equal⟩ := traverse_answers_extend body captured before after collected [] completed
+  exact (List.append_eq_nil_iff.mp equal.symm).1
+
 theorem sequence_returns (program : Program) (expression : Atom) (body : Body) (captured : List Subst)
     (law : ∀ bindings ∈ captured, ∀ before after answers, body bindings before = some (after, answers) →
       Returns program bindings before expression after answers)

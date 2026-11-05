@@ -38,6 +38,6 @@ theorem entry_bodies_supported (spec : Spec) (name : String) (allowed : String â
     codeWithin, expressionHeadWithin, atomsWithin, backendAtom, plan, normal,
     letAllowed, beginAllowed, advanceAllowed, traceAllowed, exploreAllowed, roundsAllowed, statesAllowed, edgesAllowed,
     Bool.true_and, Bool.and_true]
-  decide +kernel
+  simp +decide
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteEmissionCodeSupport

@@ -1,10 +1,10 @@
-import Mettapedia.Algebra.CollectionCanonicalForm
+import Mettapedia.Algebra.Collections.CanonicalForm
 import Mettapedia.Languages.MeTTa.SpaceValues
 
 /-!
 # Collection values and the values of spaces
 
-Bridges between the collection values of `Algebra.CollectionCanonicalForm`
+Bridges between the collection values of `Algebra.Collections.CanonicalForm`
 and the operations on values of `Languages.MeTTa.SpaceValues`.
 
 * **`unique-atom` is the insertion-ordered set.** Thawing a list into an
@@ -24,7 +24,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.CollectionValueBridges
 
-open Mettapedia.Algebra.CollectionCanonicalForm
+open Mettapedia.Algebra.Collections.CanonicalForm
 open Mettapedia.Languages.MeTTa.WeightedAnswerAlgebra
 open Mettapedia.Languages.MeTTa.SpaceKinds
 open Mettapedia.Languages.MeTTa.SpaceValues

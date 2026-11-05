@@ -343,6 +343,9 @@ theorem zero_job_refused : mint initial 3 ⟨3, 0⟩ = none := by decide
 theorem no_source_cannot_park : park issued 3 job = none := by decide
 theorem early_wake_not_lost :
     ((park earlyWake 3 job).getD initial).entries job = some ⟨3, .running, some 9, false, false⟩ := by decide
+theorem duplicate_wake_remains_pending :
+    (wake earlyWake job 9).map (fun ledger => ledger.entries job) =
+      some (some ⟨3, .running, some 9, true, false⟩) := by decide
 theorem parked_requires_notification : resume parked 3 job = none := by decide
 theorem foreign_wake_refused : wake parked job 8 = none := by decide
 theorem matching_wake_resumes :
@@ -354,6 +357,9 @@ theorem transferred_holder_is_exclusive :
     ((transfer issued 3 4 job).bind fun s => transfer s 3 5 job) = none := by decide
 theorem terminal_job_cannot_be_minted_again :
     ((finish issued 3 job .superseded).bind fun s => mint s 3 job) = none := by decide
+theorem unperformed_effect_cannot_claim_completion : finish issued 3 job .complete = none := by decide
+theorem holder_death_can_discharge_as_indeterminate :
+    (finish issued 3 job .indeterminate).isSome = true := by decide
 
 end Controls
 

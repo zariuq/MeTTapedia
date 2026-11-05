@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CapturedQuerySource
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ClosedQueryAdmission
 
 /-!
 # Source-level insertion-on-absence with an explicit success observation
@@ -219,29 +220,37 @@ def region (program : Program) (bindings : Subst) (spaceName rowName : String) (
     CertifiedRegion (PureCallPortfolio.boundary program bindings (source spaceName rowName)) Nat where
   regime := 0
   Artifact := PureCallPortfolio.Completed
-  attempt before := match update before handle row with
+  attempt before := if ClosedQueryAdmission.targetReady before handle [row] then
+    match update before handle row with
     | none => .declined before
     | some after => .committed ⟨after, [Effects.boolean true], [], []⟩
+    else .declined before
   decode observed := {observed}
   restores before restored declined := by
-    cases updated : update before handle row with
-    | none => exact (PartialRegionPlan.Attempt.declined.inj (by simpa only [updated] using declined)).symm
-    | some after => simp only [updated] at declined; cases declined
+    dsimp only at declined
+    split at declined
+    · cases updated : update before handle row with
+      | none => exact (PartialRegionPlan.Attempt.declined.inj (by simpa only [updated] using declined)).symm
+      | some after => simp only [updated] at declined; cases declined
+    · exact (PartialRegionPlan.Attempt.declined.inj declined).symm
   exact before observed accepted := by
-    cases updated : update before handle row with
-    | none => simp only [updated] at accepted; cases accepted
-    | some after =>
-        have same : (PureCallPortfolio.Completed.mk after [Effects.boolean true] [] []) = observed := by
-          simpa only [updated, PartialRegionPlan.Attempt.committed.injEq] using accepted
-        subst observed
-        exact (source_meaning program bindings before after spaceName rowName handle row location bound updated).symm
+    split at accepted
+    · cases updated : update before handle row with
+      | none => simp only [updated] at accepted; cases accepted
+      | some after =>
+          have same : (PureCallPortfolio.Completed.mk after [Effects.boolean true] [] []) = observed := by
+            simpa only [updated, PartialRegionPlan.Attempt.committed.injEq] using accepted
+          subst observed
+          exact (source_meaning program bindings before after spaceName rowName handle row location bound updated).symm
+    · cases accepted
 
 theorem missing_handle_declines_without_changing_state (program : Program) (bindings : Subst)
     (spaceName rowName : String) (handle : Handle) (row : Atom)
     (location : Subst.lookup bindings spaceName = some (Effects.handleValue handle))
     (bound : Subst.lookup bindings rowName = some row) (before : Effects.State) (missing : before.read handle = none) :
     (region program bindings spaceName rowName handle row location bound).attempt before = .declined before := by
-  simp only [region, missing_space_is_not_presence before handle row missing]
+  simp only [region, ClosedQueryAdmission.missing_nonempty_target_refuses before handle row [] missing,
+    Bool.false_eq_true, ↓reduceIte]
 
 /-- The data-only adapter excludes open rows and declaration/equation writes.
 Those writes have additional program-revision obligations not discharged here. -/

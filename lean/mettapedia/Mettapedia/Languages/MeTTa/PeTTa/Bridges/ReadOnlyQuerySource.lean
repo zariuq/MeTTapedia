@@ -242,7 +242,7 @@ theorem data_arguments (program : Program) (caller : Subst) (state : Effects.Sta
 
 def data {program : Program} {caller : Subst} {head : String} {sources : List Atom}
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (arguments : Arguments program caller sources) : Certified program caller (.expression (.symbol head :: sources)) where
   reads := arguments.reads
   values := [.expression (.symbol head :: arguments.values)]

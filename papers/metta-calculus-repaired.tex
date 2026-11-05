@@ -1,0 +1,298 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,booktabs,tabularx,hyperref}
+\usepackage[margin=1in]{geometry}
+\newtheorem{theorem}{Theorem}
+\newcommand{\Sol}{\operatorname{Sol}}
+\newcommand{\data}{\mathsf{data}}
+\newcommand{\req}{\mathsf{request}}
+\newcommand{\rep}{\mathsf{reply}}
+\newcommand{\peer}{\mathsf{party}}
+\newcommand{\take}{\mathsf{take}}
+\newcommand{\readp}{\mathsf{read}}
+\newcommand{\make}{\mathsf{produce}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\title{MeTTa-calculus-repaired\\
+\large An attributed transform interpretation of active interaction and stored data}
+\author{Oru\v{z}i\\\small Repair proposal and Lean formalization}
+\date{2 November 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+L.~G.~Meredith's \emph{The MeTTa calculus} proposes a symmetric,
+reflective, higher-order interaction calculus~\cite{meredith}.
+We retain its central idea of atomic unifying rendezvous and distinguish
+that operation from passive storage, insertion, removal and observation.
+The repair is expressed through the existing constraint multiset transform
+rule, with physical occurrence identities and a common constraint store.
+Lean proofs establish the store-operation distinctions, including a read
+admission characterization for open terms and examples that bind caller
+variables. A separate source counterexample identifies the problem with
+the manuscript's literal identical store encodings. This is an initial
+repaired variant, not a claim that the complete reflective language or its
+translation has been qualified.
+\end{abstract}
+
+\section{Provenance and the scope of the repair}
+
+The original calculus, symmetric communication rule, procedural reflection
+proposal and discussion of Spaces as tags belong to Meredith~\cite{meredith}.
+The inspected manuscript lists L.~G.~Meredith as its author and F1R3FLY.io
+as the affiliation. We use the name \emph{MeTTa-calculus-repaired} for this
+explicitly distinct proposal; it does not imply endorsement by the original
+author. The original manuscript and its formal comparison owners are
+preserved.
+
+The design question is behavioral: can communication, querying and execution
+use one transform mechanism while retaining the distinctions that programs
+observe? Shared notation alone does not settle it. The original source and
+this variant must remain independently identifiable. In particular, the
+following critique is relative to a passive multiset store interpretation,
+not an impossibility theorem about all encodings in the original calculus.
+
+\section{A specific counterexample, and what it does not show}
+
+Meredith's symmetric communication rule has the form
+\[
+ \frac{\sigma\in\operatorname{Unify}(t,u)}
+ {\mathsf{for}(t\leftrightarrow s)P\mid
+  \mathsf{for}(u\leftrightarrow s)Q
+  \longrightarrow P\dot\sigma\mid Q\dot\sigma}.
+\]
+The manuscript's illustrative table uses the same expression
+$\mathsf{for}(t\leftrightarrow s)0$ for insertion, removal and query.
+With reflexive unification and the usual parallel unit law, this gives
+\[
+ \mathsf{for}(t\leftrightarrow s)0\mid
+ \mathsf{for}(t\leftrightarrow s)0\longrightarrow 0.
+\]
+Two intended stored occurrences can therefore consume one another without
+a store request. The Lean theorem
+\code{Repaired.literal\_fact\_pair\_consumes\_both}
+derives this through the independently specified recursive source relation,
+using the existing executable unifier's reflexive case.
+
+This counterexample rejects that literal passive-store interpretation.
+It does not reject active symmetric rendezvous: two consenting participants
+may intentionally consume their offers and continue. Nor does it exclude a
+different storage protocol in the original calculus. The repair below makes
+the intended distinction explicit instead of relying on an unstated protocol.
+
+\section{The common transform rule}
+
+An immutable label $\ell(o)$ belongs to each occurrence identity $o$.
+Labels may contain open terms. A configuration $(C,W)$ consists of a finite
+constraint store $C$ and a finite set $W$ of present identities. An already
+freshened rule instance declares take patterns $t$, read patterns $r$,
+equations $e$, checks $g$ and output labels $p$.
+
+A selection chooses take, read and output lists $T,R,P$ in port order.
+It forms one problem
+\[
+ C'=C\mathbin{+\!+}\operatorname{eq}(t,\ell(T))
+       \mathbin{+\!+}\operatorname{eq}(r,\ell(R))
+       \mathbin{+\!+}e
+\]
+and changes the present identities to
+\[
+ W'=(W\setminus\operatorname{set}(T))\cup\operatorname{set}(P).
+\]
+Takes are distinct and present; reads are present and may alias each other
+but not a take. Outputs are distinct and fresh, with the declared labels.
+Port lengths agree. The joint problem must have a solution, and each check
+must hold in every solution at the original physical observation $W$.
+Thus an inconsistent problem never authorizes a check by vacuity.
+
+These are the existing \code{OccurrenceStep.Selection.Valid} and
+\code{Selection.result} definitions. No additional transition primitive is
+introduced by this repair. Operational rewriting changes occurrences;
+structural equality is a separately declared relation on terms.
+
+\section{Stored data and operations are different roles}
+
+For this interpretation a label is $(\rho,s,v)$: a rigid role $\rho$,
+a Space identity $s$, and a value $v$. Substitution acts on $v$ and fixes
+$(\rho,s)$. Equal values in different Spaces or roles cannot unify as rows.
+The role tags are ordinary data in this interpretation, not new operations
+in the core calculus and not, by themselves, unforgeable permissions.
+
+Write $D_s(t)=\data(s,t)$, $Q_s^m(t)=\req(m,s,t)$ and
+$A_s^m(t)=\rep(m,s,t)$. Here $m$ is insert, erase or read.
+Each invocation contributes one request occurrence. Three ordinary rule
+schemas are
+\begin{align*}
+ \take\ Q_s^{\mathrm{insert}}(X)
+   &\quad\longmapsto\quad
+       \make\ D_s(X),A_s^{\mathrm{insert}}(X),\\
+ \take\ Q_s^{\mathrm{erase}}(X),D_s(X)
+   &\quad\longmapsto\quad
+       \make\ A_s^{\mathrm{erase}}(X),\\
+ \take\ Q_s^{\mathrm{read}}(X),\quad\readp\ D_s(X)
+   &\quad\longmapsto\quad
+       \make\ A_s^{\mathrm{read}}(X).
+\end{align*}
+Every use freshens its schematic locals; a request's actual caller variables
+retain their declared sharing. The already freshened instance is what the
+store-operation proofs take as input. This is one-witness querying. An
+exhaustive answer family needs an additional coverage and answer-instance
+construction; it is not obtained merely by repeating this equation.
+
+\begin{theorem}[Open-term read admission]
+Suppose invocation $q$ has label $Q_s^{\mathrm{read}}(u)$, datum $d$ has
+label $D_s(v)$, and a candidate result $a$ has label
+$A_s^{\mathrm{read}}(p)$. The selection $([q],[d],[a])$ is admitted exactly
+when $q,d\in W$, $a\notin W$, and there exists one assignment $\sigma$
+modeling $C$ for which
+\[
+       \sigma p =_E \sigma u =_E \sigma v.
+\]
+\end{theorem}
+This is \code{Repaired.read\_admission\_iff}. The role equations imply
+$q\ne d$. The common solution requirement preserves correlations between
+the local pattern, the caller's request and the stored term. Independent
+solutions to the two equations would not establish it.
+
+\begin{theorem}[Store distinctions]
+Every admitted store operation consumes an actual request occurrence.
+Every admitted read requires and retains an actual data occurrence in its
+declared Space. Every admitted erasure consumes an actual data occurrence.
+A world consisting only of passive data cannot start these operation rules;
+a world containing requests but no data cannot satisfy a read.
+\end{theorem}
+The generic theorem names are:
+\begin{itemize}
+\item \code{request\_required};
+\item \code{read\_requires\_and\_keeps\_data};
+\item \code{erase\_requires\_and\_consumes\_data};
+\item \code{passive\_data\_do\_not\_supply\_requests};
+\item \code{requests\_cannot\_answer\_an\_empty\_data\_store}.
+\end{itemize}
+They concern these rule schemas; deliberately installing another rule that
+consumes data changes the declared behavior.
+
+Concrete first-order controls start with a request containing a caller
+variable and two distinct data identities both carrying $7$. Reading
+retains both data identities and forces the caller variable to $7$ in every
+solution. Erasing consumes exactly the chosen one. Inserting $7$ creates
+a fresh third data identity. Two queries alone cannot furnish a datum.
+The positive cases have actual valid selections; the controls do not pass
+merely by refusing every interaction.
+
+\section{Preserving symmetric rendezvous}
+
+Meredith's useful active-peer interaction is retained as a separate
+interpretation. Explicit party rows $\peer(s,t)$ and $\peer(s,u)$ are
+consumed together; their continuation templates are produced under one
+constraint store containing $t=u$. The theorem
+\code{rendezvous\_uses\_one\_joint\_solution} establishes that every model
+of an admitted interaction solves this equation. This retains symmetric
+unification without treating passive data as active offers.
+
+Continuation representation, contextual freshening and any conversion of
+process-valued substitutions to names must be specified before claiming a
+full source COMM correspondence. The generic template law alone is not
+that correspondence. In particular, neither printed variable spelling nor
+execution provenance supplies authority to change another caller's protected
+joint observations or to install a rule.
+
+\section{Binding, quotation and reflection contracts}
+
+The following obligations are necessary for the complete repaired language.
+They are not credited as completed by the store-operation theorems.
+\begin{enumerate}
+\item \textbf{Binding.} State which pattern variables bind, which capture
+caller variables, and how each activation obtains fresh locals. Renaming
+must avoid all relevant free variables, including those in the pattern.
+The manuscript's printed freshness condition on the continuation alone
+does not specify this full contract. A complete account of alpha-equivalence
+can also supply standardization apart; an omitted algorithmic instruction
+alone is not proof that all original COMM derivations capture variables.
+\item \textbf{Quotation.} Named code is inert under the declared execution
+contexts; activation is explicit and preserves permitted lexical captures.
+Syntax inspection and equality of meanings have different observations.
+No unrestricted source-code inspection theorem follows from beta-equivalence.
+The mixed \code{QuotedLambdaRetained} comparison now supplies finite paths
+with actual incremental solver runs, preserving captures and retained
+equations across beta reduction and activation. This is a lexical quotation
+profile: it remains distinct from substitution-sealed rho names and does
+not yet compose the complete repaired reflective language.
+\item \textbf{Substitution and dereferencing.} Decide by a declared profile
+whether activation is a separate step or is part of semantic communication
+substitution. A missing standalone Drop rule is not by itself a defect if
+semantic substitution supplies the intended behavior. For a staged encoding,
+an enriched target observer may distinguish the intermediate suspended state.
+\item \textbf{Procedural reflection.} Meredith's core REFL rule permits
+one step derived from the same relation, including reflection. The
+implementation discussion instead describes one COMM event. Both are
+meaningful profiles. The Lean recursive relation admits a nested reflection
+example that the existing COMM-only lookahead does not. Consuming a one-shot
+reflection wrapper is not intrinsically erroneous.
+\item \textbf{Authority and observations.} Ordinary labels do not authenticate
+permissions. A complete construction must connect rule installation and
+Space access to the declared permissions, retain the observation cut, and
+separate speculative child execution from committed parent effects.
+\end{enumerate}
+The manuscript's deep-copy implementation is also separate from these
+semantic obligations. No representation-independent copying lower bound
+has been established here.
+
+\section{A checked obstruction to an attractive communication shortcut}
+
+A proposed two-parameter continuation would reconstruct a receiver from
+$K[x,\mathsf{drop}(x)]$ and produce $K[\mathsf{quote}(Q),Q]$.
+This does not uniquely determine the required output. Both
+\[
+ K_1(x,z)=z,\qquad K_2(x,z)=\mathsf{drop}(x)
+\]
+reconstruct the body $\mathsf{drop}(x)$, but their outputs are $Q$ and
+$\mathsf{drop}(\mathsf{quote}(Q))$. The Lean construction in
+\code{ContextualCommunicationControls}, namespace \code{SemanticPorts}, shows
+that both assignments solve the actual selected transform problem and
+that the rule is admitted. Its outputs remain different under the source
+observation used by the intrinsic rho comparison.
+
+Moreover, the proposed compound argument spine is outside the structural
+pattern fragment. A certificate for a canonical factorization or an
+explicitly represented two-binder receiver could repair this proposal.
+Neither uniqueness nor solver completeness can be inferred from the
+unrestricted equation alone. This obstruction concerns the proposed
+encoding, not Meredith's original calculus or the impossibility of an
+adequate communication construction.
+
+\section{Proof map and remaining acceptance}
+
+The formal owners are in
+\code{Mettapedia.Languages.ProcessCalculi.MeTTaCalculus}:
+\begin{itemize}
+\item \code{Repaired}: ordinary rules, generic store laws and exact
+open-term read admission; the literal source encoding counterexample.
+\item \code{RepairedControls}: positive insertion, erasure and read,
+caller binding, duplicate identities and query-only rejection.
+\item \code{ReflectionClosure}: an independently parameterized recursive
+source relation and the nested-reflection separator.
+\end{itemize}
+The arity-two counterexample has this owner:
+\begin{quote}
+\code{ConstraintMultisetRewriting}\\
+\code{ContextualCommunicationControls}, namespace \code{SemanticPorts}.
+\end{quote}
+The shared core and contextual solver development remain their existing
+owners, not copies introduced by this proposal.
+
+The remaining acceptance is compositional: join scoped continuation
+substitution, quotation and activation, selected reflection, Space
+permissions and ordinary program execution; prove source preservation
+and no invention for their declared observations. One-witness store access
+must not be confused with exhaustive querying, and separate client
+correspondences must not be confused with a mixed-language theorem.
+
+\begin{thebibliography}{9}
+\bibitem{meredith}
+L.~G.~Meredith.
+\emph{The MeTTa calculus}. F1R3FLY manuscript.
+Core calculus, implementation discussion and example section, repository
+revision \code{34c894a4988dd8ce0ddb391df2252d2be5644cc7}.
+\href{https://github.com/leithaus/rho4u/tree/34c894a4988dd8ce0ddb391df2252d2be5644cc7/metta-calculus}{Source manuscript}.
+\end{thebibliography}
+\end{document}

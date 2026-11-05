@@ -38,7 +38,7 @@ def passivePattern (program : Program) (pattern : Atom) : Bool :=
   (SpaceSemantics.patternHeads pattern).all fun head =>
     head == "cons" || !(ioHead head || StdLib.known head ||
       program.equations.any (·.head == head) ||
-      head ∈ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+      head ∈ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
 
 def constructorPatterns (program : Program) : Bool :=
   (SpaceSemantics.programPatterns program).all (passivePattern program)
@@ -222,6 +222,13 @@ def nestedLets : List Atom → Atom → Option Atom
       (.expression [.symbol "let", pattern, value, ·]) <$> nestedLets rest body
   | _, _ => none
 
+/-- The source `unique` rewrite collects its whole producer before applying
+stable deduplication and the value-unpacking primitive. Using argument frames
+does not re-enter the literal-branch syntax of `superpose` or invent binders. -/
+def uniqueFrames (bindings : Subst) : List Frame :=
+  [.collect, .argument bindings (.function "unique-atom") [] [] 0,
+    .argument bindings (.function "superpose") [] [] 0]
+
 end Mettapedia.Languages.MeTTa.PeTTa.Eval
 
 namespace Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
@@ -240,6 +247,7 @@ def controlForm : Atom → Bool
   | .expression [.symbol "case", _, .expression _]
   | .expression [.symbol "if", _, _, _]
   | .expression [.symbol "collapse", _]
+  | .expression [.symbol "unique", _]
   | .expression [.symbol "superpose", .expression _]
   | .expression [.symbol "empty"]
   | .expression [.symbol "quote", _]
@@ -376,6 +384,10 @@ inductive Transition (program : Program) : Configuration → Configuration → P
         (.expression [.symbol "collapse", expression])) :
       Transition program source
         { source with control := .evaluate bindings expression, frames := .collect :: source.frames }
+  | unique_enter {source : Configuration} {bindings : Subst} {expression : Atom}
+      (control : source.control = .evaluate bindings (.expression [.symbol "unique", expression])) :
+      Transition program source
+        { source with control := .evaluate bindings expression, frames := uniqueFrames bindings ++ source.frames }
   | superpose_enter {source : Configuration} {bindings : Subst} {alternatives : List Atom}
       (control : source.control = .evaluate bindings
         (.expression [.symbol "superpose", .expression alternatives])) :

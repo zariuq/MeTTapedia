@@ -177,7 +177,7 @@ def program (spec : Spec) (name : String) (profile : SearchProfile spec := .clas
 
 /-! ## Admission -/
 
-def specialHeads : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"]
+def specialHeads : List String := ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"]
 
 /-- The heads that are not the module's own entries. -/
 def allowed (name : String) (head : String) : Bool := !(entries name).contains head

@@ -220,17 +220,17 @@ theorem collection_fold_model {operations : String → List A → A}
     (ready : binaryFoldReady value op = true)
     (commutative : kind ≠ .vec → holdsOf value statesCommutative op = true)
     (idempotent : kind = .hashSet → holdsOf value statesIdempotent op = true) :
-    ∃ unit : String, ∃ fold : Mettapedia.Algebra.CollectionFold.Model A,
+    ∃ unit : String, ∃ fold : Mettapedia.Algebra.Collections.Folds.Model A,
       fold.fold [] = operations unit [] ∧
       (∀ first second, fold.fold [first, second] = operations op [first, second]) ∧
       (kind ≠ .vec → fold.PermutationInvariant) ∧
       (kind = .hashSet → fold.MembershipInvariant) := by
   obtain ⟨unit, algebra, empty, binary⟩ := binaryFoldReady_model holds ready
   let _ := algebra
-  let fold := Mettapedia.Algebra.CollectionFold.ofMonoid (A := A)
+  let fold := Mettapedia.Algebra.Collections.Folds.ofMonoid (A := A)
   have onBinary (first second : A) :
       fold.fold [first, second] = operations op [first, second] := by
-    exact (Mettapedia.Algebra.CollectionFold.ofMonoid_binary first second).trans (binary first second)
+    exact (Mettapedia.Algebra.Collections.Folds.ofMonoid_binary first second).trans (binary first second)
   have onPermutation (unordered : kind ≠ .vec) : fold.PermutationInvariant := by
     apply fold.permutationInvariant_iff.mpr
     obtain ⟨left, right, checked, interpreted⟩ := recognized_equation holds (commutative unordered)
@@ -271,7 +271,7 @@ theorem admitted_collection_fold_model {operations : String → List A → A}
     (target : new.params = [.simple name (.collection kind element)])
     (accepted : checkFaithful value old new = .ok ())
     (holds : SourceEquationsHold operations value) :
-    ∃ unit : String, ∃ fold : Mettapedia.Algebra.CollectionFold.Model A,
+    ∃ unit : String, ∃ fold : Mettapedia.Algebra.Collections.Folds.Model A,
       fold.fold [] = operations unit [] ∧
       (∀ first second, fold.fold [first, second] = operations old.label [first, second]) ∧
       (kind ≠ .vec → fold.PermutationInvariant) ∧
@@ -292,7 +292,7 @@ theorem replacement_collection_fold_model {operations : String → List A → A}
     (body : item.body = .term old) (source : collectionParameterKind old = none)
     (target : replacement.rule.params = [.simple name (.collection kind element)])
     (holds : SourceEquationsHold operations value) :
-    ∃ unit : String, ∃ fold : Mettapedia.Algebra.CollectionFold.Model A,
+    ∃ unit : String, ∃ fold : Mettapedia.Algebra.Collections.Folds.Model A,
       fold.fold [] = operations unit [] ∧
       (∀ first second, fold.fold [first, second] = operations old.label [first, second]) ∧
       (kind ≠ .vec → fold.PermutationInvariant) ∧

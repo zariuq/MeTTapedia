@@ -55,6 +55,33 @@ def installRows (target : Handle) : List Atom → Effects.State → Option Effec
   | payload :: rest, before =>
       (GuardedInsertionSource.update before target payload).bind (installRows target rest)
 
+theorem installRows_exists_read (target : Handle) (payloads : List Atom) (before : Effects.State)
+    (rows : List Atom) (snapshot : before.read target = some rows) :
+    ∃ after result, installRows target payloads before = some after ∧ after.read target = some result := by
+  induction payloads generalizing before rows with
+  | nil => exact ⟨before, rows, rfl, snapshot⟩
+  | cons payload rest ih =>
+      obtain ⟨middle, updated⟩ := GuardedInsertionSource.update_exists snapshot payload
+      obtain ⟨_, _, middleRead⟩ := GuardedInsertionSource.update_reads_back updated
+      obtain ⟨after, result, installed, afterRead⟩ := ih middle _ middleRead
+      exact ⟨after, result, by simp [installRows, updated, installed], afterRead⟩
+
+theorem installRows_receipt (target : Handle) (payloads : List Atom) (before after : Effects.State)
+    (rows : List Atom) (snapshot : before.read target = some rows) (distinct : rows.Nodup)
+    (completed : installRows target payloads before = some after) :
+    ∃ result, after.read target = some result ∧ result.Nodup ∧ result.toFinset = rows.toFinset ∪ payloads.toFinset := by
+  induction payloads generalizing before rows with
+  | nil =>
+      have same : before = after := Option.some.inj completed
+      subst after
+      exact ⟨rows, snapshot, distinct, by simp⟩
+  | cons payload rest ih =>
+      obtain ⟨middle, updated, installed⟩ := Option.bind_eq_some_iff.mp completed
+      obtain ⟨middleRows, middleRead, middleDistinct, middleSupport⟩ :=
+        GuardedInsertionSource.update_nodup snapshot distinct updated
+      obtain ⟨result, afterRead, afterDistinct, support⟩ := ih middle middleRows middleRead middleDistinct installed
+      exact ⟨result, afterRead, afterDistinct, by simpa [middleSupport] using support⟩
+
 theorem emitRows_install_exact (target : Handle) (payloads : List Atom) (before : Effects.State) (collected : List Atom) :
     emitRows target payloads (before, collected) =
       (installRows target payloads before).map (fun after =>
@@ -129,22 +156,13 @@ theorem traverse_receipt (target : Handle) (template : Atom) (captured : List Su
     ∃ result, after.read target = some result ∧ result.Nodup ∧
       result.toFinset = rows.toFinset ∪ (captured.map (fun bindings => applySubst bindings template)).toFinset ∧
       answers = collected ++ List.replicate captured.length (Effects.boolean true) := by
-  induction captured generalizing before rows collected with
-  | nil =>
-      have same : (before, collected) = (after, answers) := Option.some.inj completed
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
-      exact ⟨rows, snapshot, distinct, by simp, by simp⟩
-  | cons bindings rest ih =>
-      obtain ⟨next, first, later⟩ := Option.bind_eq_some_iff.mp completed
-      obtain ⟨middle, updated, same⟩ := Option.map_eq_some_iff.mp first
-      cases same
-      obtain ⟨middleRows, middleRead, middleDistinct, middleSupport⟩ :=
-        GuardedInsertionSource.update_nodup snapshot distinct updated
-      obtain ⟨result, afterRead, afterDistinct, support, returned⟩ :=
-        ih middle middleRows (collected ++ [Effects.boolean true]) middleRead middleDistinct later
-      refine ⟨result, afterRead, afterDistinct, ?_, ?_⟩
-      · simpa [middleSupport] using support
-      · simpa [List.replicate_succ, List.append_assoc] using returned
+  have returned := traverse_answers target template captured before after collected answers completed
+  rw [traverse_install_exact] at completed
+  obtain ⟨finish, installed, same⟩ := Option.map_eq_some_iff.mp completed
+  have equalState : finish = after := (Prod.mk.inj same).1
+  subst finish
+  obtain ⟨result, afterRead, afterDistinct, support⟩ := installRows_receipt target _ before after rows snapshot distinct installed
+  exact ⟨result, afterRead, afterDistinct, support, returned⟩
 
 theorem query_returns (program : Program) (caller : Subst) (before after : Effects.State)
     (inputName targetName temporary : String) (input target : Handle)
@@ -226,7 +244,7 @@ def region (program : Program) (caller : Subst) (inputName targetName temporary 
     | some rows =>
         let captured := choices caller pattern rows
         let payloads := captured.map (fun bindings => applySubst bindings template)
-        if payloads.all GuardedInsertionSource.dataRow then
+        if ClosedQueryAdmission.phaseReady caller pattern rows before target payloads && payloads.all GuardedInsertionSource.dataRow then
           match installRows target payloads before with
           | none => .declined before
           | some after => .committed ⟨after, [.grounded (.int payloads.length)], [], []⟩

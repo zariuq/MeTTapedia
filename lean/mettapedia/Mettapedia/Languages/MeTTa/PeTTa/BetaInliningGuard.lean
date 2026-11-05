@@ -482,7 +482,7 @@ theorem beta_case (program : Program) (f : String) (pattern body : Atom) (a : St
     (closed : Within (freeVars pattern) body)
     (injective : Injective names (freeVars pattern))
     (notPrimitive : StdLib.known f = false) (notIO : ioHead f = false)
-    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : f ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (caller : Subst) (fresh : ∀ x ∈ freeVars pattern, Subst.lookup caller (names x) = none) :
     Equivalent program (.evaluate caller (.expression [.symbol f, .var a]))
       (.evaluate caller (.expression [.symbol "case", .var a,

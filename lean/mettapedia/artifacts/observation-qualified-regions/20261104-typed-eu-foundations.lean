@@ -1,0 +1,15 @@
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilScopedRoundControls
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundPublication
+import Mettapedia.Logic.KernelFoundationManifest
+
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.NamedGuardedCandidateExecution
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.GuardedNestedQuerySource
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedMatchEntry
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedNestedQueryExecution
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilLeafPublication
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilScopedCapture
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilScopedFrame
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilScopedRound
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundViews
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilRoundPublication
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilScopedRoundControls

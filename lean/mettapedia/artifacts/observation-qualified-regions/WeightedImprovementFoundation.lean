@@ -1,0 +1,12 @@
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.KeyedImprovementRowsControls
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.WeightedImprovementControls
+import Mettapedia.Logic.KernelFoundationManifest
+
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.KeyedImprovementSource
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.KeyedImprovementEntry
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.KeyedImprovementControls
+#foundation_manifest_module Mettapedia.Machines.OrderedKeyedRows
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.KeyedImprovementRows
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.KeyedImprovementRowsControls
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.WeightedImprovementSource
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.Bridges.WeightedImprovementControls

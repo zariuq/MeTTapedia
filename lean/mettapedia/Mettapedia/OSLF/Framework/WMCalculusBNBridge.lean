@@ -7,7 +7,8 @@ import Mettapedia.PLN.Evidence.BinaryEvidence
 /-!
 # WM Calculus — Guarded Inference and Evidence Interpretation
 
-The guarded rule `ruleForgetOutsideGuarded` has premise
+The forgetting rule `ruleForgetOutside` has, in the raw and the guarded calculus
+alike, the premise
 `[.relationQuery "outsideScope" [.fvar "S", .fvar "q"]]`.
 A `RelationEnv` supplies relation-query answers. These results describe what
 happens when an `outsideScope(S, q)` answer survives premise evaluation; they do
@@ -43,15 +44,15 @@ open Mettapedia.OSLF.Framework.WMCalculusEncoding
 
 /-! ## §1: Rule Membership -/
 
-/-- `ruleForgetOutsideGuarded` is in the guarded ext vertex rule set
+/-- `ruleForgetOutside` is in the guarded ext vertex rule set
     when forgetting is enabled (scopeBased or supportTracked). -/
-theorem ruleForgetOutsideGuarded_mem_guarded (v : WMExtVertex)
+theorem ruleForgetOutside_mem_guarded (v : WMExtVertex)
     (hf : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked) :
-    ruleForgetOutsideGuarded ∈ (wmExtVertexLanguageDefGuarded v).rewrites := by
+    ruleForgetOutside ∈ (wmExtVertexLanguageDefGuarded v).rewrites := by
   simp only [wmExtVertexLanguageDefGuarded, List.mem_append]
   cases hf with
-  | inl h => rw [h]; simp [forgettingRulesGuarded]
-  | inr h => rw [h]; simp [forgettingRulesGuarded]
+  | inl h => rw [h]; simp [forgettingRules]
+  | inr h => rw [h]; simp [forgettingRules]
 
 /-! ## §2: Positive Theorem — Guarded Forgetting Fires (Parametric)
 
@@ -73,7 +74,7 @@ theorem guarded_forget_of_dsep
     (relEnv : RelationEnv) (pS pW pq : Pattern)
     (hprem : [("q", pq), ("W", pW), ("S", pS)] ∈
       applyPremisesWithEnv relEnv (wmExtVertexLanguageDefGuarded v)
-        ruleForgetOutsideGuarded.premises [("q", pq), ("W", pW), ("S", pS)]) :
+        ruleForgetOutside.premises [("q", pq), ("W", pW), ("S", pS)]) :
     langReducesUsing relEnv
       (wmExtVertexLanguageDefGuarded v)
       (pExtract (pForget pS pW) pq)
@@ -82,11 +83,11 @@ theorem guarded_forget_of_dsep
   exact step_of_rule
     (relEnv := relEnv)
     (lang := wmExtVertexLanguageDefGuarded v)
-    (rule := ruleForgetOutsideGuarded)
+    (rule := ruleForgetOutside)
     (initialBindings := [("q", pq), ("W", pW), ("S", pS)])
     (finalBindings := [("q", pq), ("W", pW), ("S", pS)])
-    (ruleForgetOutsideGuarded_mem_guarded v hf)
-    (by simp [ruleForgetOutsideGuarded, pExtract, pForget,
+    (ruleForgetOutside_mem_guarded v hf)
+    (by simp [ruleForgetOutside, pExtract, pForget,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       matchPattern, matchArgs, mergeBindings])
     (.relationQuery .nil)
@@ -94,7 +95,7 @@ theorem guarded_forget_of_dsep
     (by
       rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
         _ _ _ (by decide +kernel)]
-      simp [ruleForgetOutsideGuarded, pExtract, applyBindings])
+      simp [ruleForgetOutside, pExtract, applyBindings])
 
 /-- Transports an assumed successful provider to an existential reduction.
     This theorem does not itself construct a provider or a network witness. -/
@@ -104,7 +105,7 @@ theorem guarded_forget_possible
     (hprem : ∃ relEnv : RelationEnv,
       [("q", pq), ("W", pW), ("S", pS)] ∈
         applyPremisesWithEnv relEnv (wmExtVertexLanguageDefGuarded v)
-          ruleForgetOutsideGuarded.premises [("q", pq), ("W", pW), ("S", pS)]) :
+          ruleForgetOutside.premises [("q", pq), ("W", pW), ("S", pS)]) :
     ∃ relEnv : RelationEnv,
       langReducesUsing relEnv
         (wmExtVertexLanguageDefGuarded v)
@@ -119,11 +120,11 @@ With `RelationEnv.empty`, the `outsideScope` premise can never be satisfied.
 The legacy theorem names below do not supply a collider interpretation. -/
 
 /-- With the empty oracle, the outsideScope premise evaluation returns `[]`.
-    No bindings survive, so `ruleForgetOutsideGuarded` cannot fire. -/
+    No bindings survive, so `ruleForgetOutside` cannot fire. -/
 theorem collider_premise_empty (v : WMExtVertex) (pS pW pq : Pattern) :
     applyPremisesWithEnv RelationEnv.empty (wmExtVertexLanguageDefGuarded v)
-      ruleForgetOutsideGuarded.premises [("q", pq), ("W", pW), ("S", pS)] = [] := by
-  simp [applyPremisesWithEnv, ruleForgetOutsideGuarded, premiseStepWithEnv,
+      ruleForgetOutside.premises [("q", pq), ("W", pW), ("S", pS)] = [] := by
+  simp [applyPremisesWithEnv, ruleForgetOutside, premiseStepWithEnv,
         relationQueryStep, builtinRelationTuples, RelationEnv.empty,
         applyBindings, mergeBindings]
 
@@ -131,7 +132,7 @@ theorem collider_premise_empty (v : WMExtVertex) (pS pW pq : Pattern) :
 theorem collider_no_premise_satisfaction (v : WMExtVertex) (pS pW pq : Pattern)
     (bs : Bindings) :
     bs ∉ applyPremisesWithEnv RelationEnv.empty (wmExtVertexLanguageDefGuarded v)
-      ruleForgetOutsideGuarded.premises [("q", pq), ("W", pW), ("S", pS)] := by
+      ruleForgetOutside.premises [("q", pq), ("W", pW), ("S", pS)] := by
   rw [collider_premise_empty]; exact List.not_mem_nil
 
 /-! ## §4: BinaryEvidence-Add Core Rules (Oracle-Independent)
@@ -172,7 +173,7 @@ theorem compiled_dsep_forget_evidenceAdd
     (relEnv : RelationEnv) (pS pW₁ pW₂ pq : Pattern)
     (hprem : [("q", pq), ("W", pRevise pW₁ pW₂), ("S", pS)] ∈
       applyPremisesWithEnv relEnv (wmExtVertexLanguageDefGuarded v)
-        ruleForgetOutsideGuarded.premises [("q", pq), ("W", pRevise pW₁ pW₂), ("S", pS)]) :
+        ruleForgetOutside.premises [("q", pq), ("W", pRevise pW₁ pW₂), ("S", pS)]) :
     langReducesUsing relEnv
       (wmExtVertexLanguageDefGuarded v)
       (pExtract (pForget pS (pRevise pW₁ pW₂)) pq)
@@ -184,14 +185,14 @@ theorem compiled_dsep_forget_evidenceAdd
 Wrap the raw `applyPremisesWithEnv` membership without changing its meaning. -/
 
 /-- `OutsideScope relEnv lang pS pq` holds when the bindings from matching
-    `ruleForgetOutsideGuarded` survive premise evaluation for every `pW`.
+    `ruleForgetOutside` survive premise evaluation for every `pW`.
 
     It abbreviates operational query success, not Bayesian d-separation. -/
 def OutsideScope (relEnv : RelationEnv) (lang : LanguageDef)
     (pS pq : Pattern) : Prop :=
   ∀ pW : Pattern, [("q", pq), ("W", pW), ("S", pS)] ∈
     applyPremisesWithEnv relEnv lang
-      ruleForgetOutsideGuarded.premises [("q", pq), ("W", pW), ("S", pS)]
+      ruleForgetOutside.premises [("q", pq), ("W", pW), ("S", pS)]
 
 /-- The operational `OutsideScope` predicate fails for the empty provider. -/
 theorem outsideScope_empty_false (v : WMExtVertex) (pS pq : Pattern) :
@@ -240,23 +241,23 @@ private theorem forgetIdempotent_no_match_forgetExtract (pS pW pq : Pattern) :
     matchPattern ruleForgetIdempotent.left (pExtract (pForget pS pW) pq) = [] := by
   simp [ruleForgetIdempotent, pExtract, pForget, matchPattern]
 
-/-- In the guarded forgetting rules, only `ruleForgetOutsideGuarded` matches
+/-- Among the forgetting rules, only `ruleForgetOutside` matches
     `Extract(Forget(S, W), q)`. -/
-private theorem forgettingRulesGuarded_unique_match (mode : WMForgettingMode)
+private theorem forgettingRules_unique_match (mode : WMForgettingMode)
     (pS pW pq : Pattern) :
-    ∀ r ∈ forgettingRulesGuarded mode,
+    ∀ r ∈ forgettingRules mode,
       matchPattern r.left (pExtract (pForget pS pW) pq) ≠ [] →
-      r = ruleForgetOutsideGuarded := by
+      r = ruleForgetOutside := by
   intro r hr hne
   cases mode with
-  | none => simp [forgettingRulesGuarded] at hr
+  | none => simp [forgettingRules] at hr
   | scopeBased =>
-    simp [forgettingRulesGuarded] at hr
+    simp [forgettingRules] at hr
     rcases hr with rfl | rfl
     · rfl
     · exact absurd (forgetIdempotent_no_match_forgetExtract pS pW pq) hne
   | supportTracked =>
-    simp [forgettingRulesGuarded] at hr
+    simp [forgettingRules] at hr
     rcases hr with rfl | rfl
     · rfl
     · exact absurd (forgetIdempotent_no_match_forgetExtract pS pW pq) hne

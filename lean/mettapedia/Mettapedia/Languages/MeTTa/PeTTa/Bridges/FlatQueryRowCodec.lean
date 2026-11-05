@@ -60,6 +60,16 @@ def booleans : Codec Bool where
     · cases decoded
   literal value := .grounded (.bool value)
 
+def symbols : Codec String where
+  encode value := .symbol value
+  decode atom := match atom with | .symbol value => some value | _ => none
+  roundtrip _ := rfl
+  exact atom value decoded := by
+    split at decoded
+    · cases decoded; rfl
+    · cases decoded
+  literal value := .symbol value
+
 def Represents (codec : Codec Value) (names : Inventory String)
     (environment : DenseEnvironment names Value) (bindings : Subst) : Prop :=
   ∀ slot, Subst.lookup bindings (names.reify slot) = (environment slot).map codec.encode
