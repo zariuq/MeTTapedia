@@ -1477,7 +1477,7 @@ open PeTTa.SpaceSemantics (Equation Program)
 /-- Head admission is a language-level pure-fragment policy. -/
 def OrdinaryHead (head : String) : Prop :=
   PeTTa.Eval.ioHead head = false ∧ PeTTa.StdLib.known head = false ∧
-    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","match","eval",
+    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","unique","match","eval",
       "evalc","chain","unify","function","return","cons-atom","decons-atom",
       "collapse-bind","superpose-bind","metta","context-space","call-native",
       "switch-minimal","Error","Empty","NotReducible"]
@@ -2009,7 +2009,7 @@ theorem ClauseScan.petta_exact {head : String} {values : List Atom} {position : 
         MORK.matchAtom_complete matched,ih]
 
 private theorem OrdinaryHead.control_free {head : String} (ordinary : OrdinaryHead head) :
-    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote"] := by
+    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","unique"] := by
   intro member
   exact ordinary.2.2 (by
     simp only [List.mem_cons,List.not_mem_nil,or_false] at member ⊢
@@ -2017,7 +2017,7 @@ private theorem OrdinaryHead.control_free {head : String} (ordinary : OrdinaryHe
 
 /-- An ordinary head is not `match`, which is a primitive name. -/
 private theorem OrdinaryHead.call_free {head : String} (ordinary : OrdinaryHead head) :
-    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","match"] := by
+    head ∉ ["let","let*","case","if","collapse","superpose","empty","quote","unique","match"] := by
   intro member
   exact ordinary.2.2 (by
     simp only [List.mem_cons,List.not_mem_nil,or_false] at member ⊢
