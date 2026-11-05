@@ -169,13 +169,18 @@ theorem filter_sublist_of_imp {α} (l : List α) (p q : α → Bool) (h : ∀ x,
       · simp [hq]; exact ih.cons x
       · simp [hq]; exact ih
 
-theorem take_contains_mono (order : List Nat) (a b : Nat) (hab : a ≤ b) (i : Nat)
-    (h : (order.take a).contains i = true) : (order.take b).contains i = true := by
-  simp only [List.contains_iff_mem] at *
-  have : (order.take a).Sublist (order.take b) := by
-    have := List.take_sublist_take_left (l := order) hab
-    exact this
-  exact this.subset h
+/-- A longer prefix contains what a shorter one does (by structure: the library's prefix and
+membership lemmas use choice). -/
+theorem take_contains_mono : ∀ (order : List Nat) (a b : Nat), a ≤ b → ∀ (i : Nat),
+    (order.take a).contains i = true → (order.take b).contains i = true
+  | [], _, _, _, _, h => by simp at h
+  | _ :: _, 0, _, _, _, h => by simp at h
+  | _ :: _, _ + 1, 0, hab, _, _ => absurd hab (by omega)
+  | x :: xs, a + 1, b + 1, hab, i, h => by
+    simp only [List.take_succ_cons, List.contains_cons, Bool.or_eq_true] at h ⊢
+    rcases h with h | h
+    · exact Or.inl h
+    · exact Or.inr (take_contains_mono xs a b (by omega) i h)
 
 theorem fit_monotone (narrow wide : Nat) (order : List Nat) (fs : List Field) (hw : narrow ≤ wide) :
     (fitRow narrow order fs).Sublist (fitRow wide order fs) := by
