@@ -151,6 +151,17 @@ are derived from the models, deployed, and re-observed live.
   removals answered; marking removed rows and filtering at commit keeps the
   rows that erasing them kept; and with ground keyed rows a read visits only
   the pattern's bucket.
+- `LlmLedger.lean` — the LLM call ledger as native transitions: the host's
+  Python path completed (or failed) a request and settled its call in two
+  transactions, so a crash between them left a completed request with an
+  active call; the native transition does both or nothing, and leaves no such
+  state; with the epoch that owns the call it is exactly the two steps in
+  sequence, and a stale epoch changes nothing; a failure raises its provider's
+  cooldown in the same transition and a cooldown never shortens; the history
+  keeps the first event of each pair; an operation repeated under its request
+  id returns its first answer without a second effect; and inserting a call
+  keeps the newest-first list of turn calls ordered by creation time, calls of
+  one time in their arrival order.
 - `RepeatedOccurrence.lean` — a publication may edit an occurrence once:
   checking the collected keys for a repeat only where staging stops (at the
   end, before a failed edit, at a failed count or index step) gives exactly
@@ -309,6 +320,7 @@ lean TurnLedger.lean
 lean ObservedReceipts.lean
 lean RemoveByIndex.lean
 lean OverlayIndex.lean
+lean LlmLedger.lean
 lean RepeatedOccurrence.lean
 lean InputDelivery.lean
 LEAN_PATH=. lean AgentArchitecture.lean
