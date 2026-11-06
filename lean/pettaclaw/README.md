@@ -162,6 +162,57 @@ are derived from the models, deployed, and re-observed live.
   id returns its first answer without a second effect; and inserting a call
   keeps the newest-first list of turn calls ordered by creation time, calls of
   one time in their arrival order.
+- `CodingSessionLifecycle.lean` — the classifier and the view behind the
+  agent's coding sessions. Under the given world, the resume guard is
+  equivalent to the stated predicate for a safe resume on the pin: the bundle
+  is present, no dependency is retired or of unknown backend selection, the
+  engine binary exists, and a recorded hash still matches. Each refusal names
+  a reason that holds. A pin without an engine hash is allowed by policy, and
+  is labelled unverified, never resumable. An unknown selection is labelled
+  unverified and refused, retryably. The unbounded view lists every listed
+  session once and nothing else: a running session always, a held session
+  only from its review date (or not at all while held without one).
+  Recomputing it is idempotent, and it does not change between review dates.
+  The bounded rendering shows or counts every listed session, and counts every
+  session under its verdict; a hidden tail can stay hidden, so this is no
+  fairness claim. Outside the model: checkpoint decoding, the completeness of
+  the retirement table, filesystem coherence, launch races and legacy engines.
+- `CodingSessionAuthority.lean` — resumes, systemd scopes and the turn-start
+  reaper, with the reaper's observation and publication as separate steps.
+  Two traces are decided. A paused reaper marks a live successor run
+  interrupted, even when the resume settled the old ending first. A launch
+  delayed past a later run's whole life still starts. With conditional
+  publication (the state must still name the observed run) and run tokens (a
+  resume reserves a fresh token under the session lock, and a worker starts
+  only by consuming the current one), no ending is ever published over a live
+  run, a token is consumed at most once, only the newest reservation can be
+  consumed, and a superseded launch exits in either order of registration.
+  A stop must revoke a pending reservation: otherwise the stopped launch
+  starts afterwards (decided), and with the revocation it never does.
+  That one worker runs is systemd's unit-name uniqueness, assumed.
+- `CodingSessionLaunch.lean` — the adapter steps the authority model
+  assumes atomic. Two decided traces: a launch that rereads the manifest's
+  newest token runs its own bundle under a later re-pin's authority, and a
+  resume whose liveness check ran outside the lock replaces the token of a
+  live worker. With a reservation that refuses while a consumed worker is
+  alive, a launch that carries its descriptor unchanged, and a consumption
+  that requires the descriptor's token and bundle to equal the manifest's,
+  every live authority holds the manifest's token and runs its bundle.
+- `CodingSessionRepin.lean` — re-pinning a stopped session to the current
+  runtime keeps every execution record, so an uncertain execution stays
+  uncertain and the dispatchable identities are unchanged; a recorded
+  identity is never dispatchable; a failed checkpoint check changes nothing;
+  re-pinning to the pin itself is a no-op; the kept record is the replaced
+  pin; and at every crash point the pin a resume reads is the old record or
+  the checked new one. The check runs outside the lock on one checkpoint
+  revision, and the publication rechecks it, so a published pin was checked
+  against the checkpoint it pairs with; without the recheck, a checkpoint that
+  changed during the check pairs with an unchecked bundle (decided). Inbox
+  lines appended meanwhile are kept. The manifest is rechecked as well: a
+  re-pin that rechecks only the checkpoint overwrites a reservation made
+  during the check (decided), and with the manifest rechecked a publication
+  replaces exactly the manifest it observed. The check itself is a given
+  verdict.
 - `RepeatedOccurrence.lean` — a publication may edit an occurrence once:
   checking the collected keys for a repeat only where staging stops (at the
   end, before a failed edit, at a failed count or index step) gives exactly
@@ -321,6 +372,10 @@ lean ObservedReceipts.lean
 lean RemoveByIndex.lean
 lean OverlayIndex.lean
 lean LlmLedger.lean
+lean CodingSessionLifecycle.lean
+lean CodingSessionAuthority.lean
+lean CodingSessionRepin.lean
+lean CodingSessionLaunch.lean
 lean RepeatedOccurrence.lean
 lean InputDelivery.lean
 LEAN_PATH=. lean AgentArchitecture.lean
