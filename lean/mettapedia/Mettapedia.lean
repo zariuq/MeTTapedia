@@ -970,6 +970,7 @@ import Mettapedia.GSLT.GradedObservers
 import Mettapedia.GSLT.IdentityAsObservation
 import Mettapedia.GSLT.Distinction
 import Mettapedia.Languages.MeTTa.HE.OrderedEffectObservation
+import Mettapedia.Languages.MeTTa.HE.DeclaredApplicationTypes
 import Mettapedia.GSLT.Logic.ViewPluralism
 import Mettapedia.GSLT.Logic.PrivilegedView
 import Mettapedia.GSLT.ScopeAlgebra
