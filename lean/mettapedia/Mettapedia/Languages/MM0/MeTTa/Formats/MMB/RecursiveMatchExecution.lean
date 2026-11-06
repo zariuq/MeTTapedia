@@ -49,7 +49,7 @@ def callExpression (head : String) : Atom :=
 private theorem decrement_call_returns (state : State) (head : String) (fuel : Nat)
     (matching codes target answer : Atom) (bindings : Subst) (remaining : List Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (number : argumentIsRaw program head 0 = false)
     (raw : ∀ offset < remaining.length, argumentIsRaw program head (1 + offset) = true)
     (fuelCaptured : applySubst bindings (.var "fuel") = natural (fuel + 1))

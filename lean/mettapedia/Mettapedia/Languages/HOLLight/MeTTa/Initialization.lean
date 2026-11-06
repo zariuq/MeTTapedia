@@ -28,8 +28,8 @@ open Representation (registeredOperatorAtom)
 special form. -/
 private theorem notForm (head : String)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"]) :
-    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "match"] := by
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"]) :
+    head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"] := by
   have notMatch : head ≠ "match" := ne_match_of_not_known (by
     simp only [Bool.or_eq_false_iff] at inert
     exact inert.1.2)
@@ -39,7 +39,7 @@ private theorem notForm (head : String)
 
 private theorem two_literal (head : String) (first second : Atom)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (left : PureData.Literal program first) (right : PureData.Literal program second) :
     PureData.Literal program (.expression [.symbol head, first, second]) := by
   apply PureData.Literal.constructor head [first, second] inert (notForm head inert ordinary)
@@ -51,7 +51,7 @@ private theorem two_literal (head : String) (first second : Atom)
 
 private theorem one_literal (head : String) (value : Atom)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (child : PureData.Literal program value) :
     PureData.Literal program (.expression [.symbol head, value]) := by
   apply PureData.Literal.constructor head [value] inert (notForm head inert ordinary)
