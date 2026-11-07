@@ -1,43 +1,36 @@
 import Mettapedia.CognitiveArchitecture.Memory.GateEvidence
 
 /-!
-# Write authority as information flow: the gate as the only declassifier
+# Influence through a gate: how a gated store's contents are accounted for
 
-The question is which writers can influence the trusted (curated) tier of a
-memory, and how. The classical frame is non-interference (Goguen and Meseguer
-1982) in its intransitive form (Rushby 1992; van der Meyden 2007). The policy
-lets the agent's notes reach the curated tier only *through* a gate. The gate
-is a declassifier: what it decides may depend on the notes. The curated tier
-may depend on the notes in no other way.
+Some memory designs, such as OpenClaw's memory core, keep a curated store that
+notes reach through a promotion gate. This file describes that external
+pattern as information flow, following non-interference (Goguen and Meseguer
+1982) in its intransitive form (Rushby 1992), where a gate acts as a
+declassifier.
 
-In the model, agents write episodic notes, a human edits the curated tier
-directly, and the gate promotes a text when enough distinct principals
-support it (`GateEvidence`).
+**What this file is.** It is descriptive mathematics. It neither recommends
+nor requires anything of any agent. In godelclaw, agents keep full write
+authority over their own memory, prompts, timers and instructions, and
+nothing here constrains that.
+
+Model: notes from principals, direct edits, and a gate that promotes a text
+when enough distinct principals support it (`GateEvidence`).
 
 Results:
-* **The gate is the only channel.** The curated tier is a function of the
-  human edits, the gate's invocations and the gate's decisions. Notes enter
-  only through those decisions (`curated_determined_by_decisions`).
-* **A direct-write design breaks this.** If an agent can also write the
-  curated tier itself, two traces with the same edits, invocations and
-  decisions end with different curated tiers (`direct_write_breaks_mediation`).
-* **One principal alone never reaches the curated tier.** Under a gate
-  counting at least two principals, if every note comes from one principal,
-  every gate decision is a refusal (`one_principal_no_promotion`).
-* **A pivotal principal does.** With two supporting principals and a gate of
-  two, removing either one's notes removes the promotion
-  (`pivotal_principal_changes_curated`). So non-interference from an
-  individual principal is impossible for any quorum gate. The exact boundary
-  is pivotality: a principal influences the curated tier precisely when its
-  support tips a decision.
-
-The theorems are structural consequences of the authority design. The content
-is the shape of the guarantee (Rushby's mediation), the counterexample for
-direct writes, and the pivotality boundary obtained by composing with
-`GateEvidence`.
+* The curated store is a function of the direct edits, the gate's invocations
+  and the gate's decisions. Notes affect it only through those decisions
+  (`curated_determined_by_decisions`).
+* When notes can also be written straight into the store, the gate's
+  decisions no longer account for its contents
+  (`second_channel_needs_its_own_record`).
+* Under a gate counting at least two principals, one principal alone never
+  triggers a promotion (`one_principal_no_promotion`). A pivotal principal
+  does (`pivotal_principal_changes_curated`). A principal's influence on a
+  quorum is exactly its pivotality.
 -/
 
-namespace Mettapedia.CognitiveArchitecture.Memory.WriteAuthority
+namespace Mettapedia.CognitiveArchitecture.Memory.GatedInfluence
 
 open Mettapedia.CognitiveArchitecture.Memory.GateEvidence
 
@@ -95,13 +88,13 @@ theorem curated_determined_by_decisions (k : Nat) (s : State) (acts : List Act) 
       · simp only [run, ok, decide_false, Bool.false_eq_true, if_false, replay]
         exact ih _
 
-/-! ## A design with direct agent writes -/
+/-! ## A design with a second, direct channel -/
 
 inductive Act' where
   | note (p t : Nat)
   | edit (t : Nat)
   | promote (t : Nat)
-  /-- An agent writes the curated tier directly. -/
+  /-- A direct write into the curated store, a second channel. -/
   | curate (p t : Nat)
   deriving DecidableEq, Repr
 
@@ -115,7 +108,7 @@ def run' (k : Nat) : State → List Act' → State × List Bool
     let next := run' k (if ok then { s with curated := t :: s.curated } else s) rest
     (next.1, ok :: next.2)
 
-/-- The edits and gate invocations of a trace; agent actions dropped. -/
+/-- The edits and gate invocations of a trace; other actions dropped. -/
 def skeleton : List Act' → List Act'
   | [] => []
   | Act'.edit t :: rest => Act'.edit t :: skeleton rest
@@ -123,8 +116,8 @@ def skeleton : List Act' → List Act'
   | _ :: rest => skeleton rest
 
 /-- Two traces with the same skeleton and the same gate decisions, yet
-different curated tiers: a direct write bypasses the gate. -/
-theorem direct_write_breaks_mediation :
+different curated stores: the gate's record no longer accounts for them. -/
+theorem second_channel_needs_its_own_record :
     let a := [Act'.curate 1 5]
     let b : List Act' := []
     skeleton a = skeleton b ∧ (run' 2 ⟨[], []⟩ a).2 = (run' 2 ⟨[], []⟩ b).2 ∧
@@ -181,8 +174,8 @@ theorem pivotal_principal_changes_curated :
   decide
 
 #print axioms curated_determined_by_decisions
-#print axioms direct_write_breaks_mediation
+#print axioms second_channel_needs_its_own_record
 #print axioms one_principal_no_promotion
 #print axioms pivotal_principal_changes_curated
 
-end Mettapedia.CognitiveArchitecture.Memory.WriteAuthority
+end Mettapedia.CognitiveArchitecture.Memory.GatedInfluence

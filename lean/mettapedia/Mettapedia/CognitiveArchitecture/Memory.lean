@@ -10,4 +10,4 @@ import Mettapedia.CognitiveArchitecture.Memory.MemoryTiers
 import Mettapedia.CognitiveArchitecture.Memory.PinSupersession
 import Mettapedia.CognitiveArchitecture.Memory.SourceObservations
 import Mettapedia.CognitiveArchitecture.Memory.WorkingMemory
-import Mettapedia.CognitiveArchitecture.Memory.WriteAuthority
+import Mettapedia.CognitiveArchitecture.Memory.GatedInfluence

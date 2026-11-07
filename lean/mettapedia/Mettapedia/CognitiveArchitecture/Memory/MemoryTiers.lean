@@ -39,7 +39,11 @@ Results:
   recall, and the injected size is bounded by the tier budgets
   (`view_excludes_review`, `view_length_le`).
 
-**Status: a model of one design, not a theory of memory tiers.** These
+**Status: a model of one external design, OpenClaw's, not a theory of memory tiers.**
+**What this file is.** It is descriptive mathematics. It neither recommends
+nor requires anything of any agent. In godelclaw, agents keep full write
+authority over their own memory, prompts, timers and instructions, and
+nothing here constrains that. These
 choices are that design's, not derived:
 - the five tiers and who may write each;
 - distinct-session counting as the gate's evidence;

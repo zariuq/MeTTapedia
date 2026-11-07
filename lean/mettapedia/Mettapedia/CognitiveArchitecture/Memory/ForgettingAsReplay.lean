@@ -1,6 +1,11 @@
 /-!
 # Forgetting as counterfactual replay: what a memory must keep to forget exactly
 
+**What this file is.** It is descriptive mathematics. It neither recommends
+nor requires anything of any agent. In godelclaw, agents keep full write
+authority over their own memory, prompts, timers and instructions, and
+nothing here constrains that.
+
 **Exact forgetting.** Forgetting source `s` is exact when the memory left
 afterwards is the one that replaying the log without `s`'s writes would have
 built. This is the criterion of exact machine unlearning ("as if retrained

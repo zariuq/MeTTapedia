@@ -1,6 +1,11 @@
 /-!
 # When does a promotion gate mean something? Independent evidence and its count
 
+**What this file is.** It is descriptive mathematics. It neither recommends
+nor requires anything of any agent. In godelclaw, agents keep full write
+authority over their own memory, prompts, timers and instructions, and
+nothing here constrains that.
+
 A memory that promotes a note into a trusted tier once "enough sources"
 support it is only as sound as its notion of source. Two classical results
 fix the semantics.
