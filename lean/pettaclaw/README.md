@@ -112,6 +112,20 @@ are derived from the models, deployed, and re-observed live.
   does not erase them. Dependency soundness remains a host obligation. Without
   a claim gate the false claim still goes out
   (`hybrid_without_claim_gate_admits_claim`).
+- `SteeringComparison.lean` — a message arriving mid-batch, two ways. All-call
+  dispatch (the current contract) runs every emitted call. Steering, as in
+  OpenClaw's sequential `steer` mode, ends the batch once the running call
+  returns and gives the unstarted tail `skipped` receipts.
+  - Both pair every call with exactly one receipt.
+  - With no message, steering is exactly all-call dispatch
+    (`steer_without_message`). So a hybrid that steers only on an explicitly
+    marked operator message keeps the contract until one arrives.
+  - A skipped call has no effect (`skipped_never_ran`), and steering adds no
+    uncertain outcome (`steer_adds_no_uncertainty`).
+  - On three calls with the message arriving during the first, all-call runs
+    three and steer runs one.
+  - When a message arrives before the last call, no receipt list is both
+    complete and responsive (`complete_and_responsive_conflict`).
 - `CommandHolds.lean` — what the historical dependency hold and failure stop
   cost, against a runner that executes every emitted call, as Codex,
   opencode, Claude Code and Iter do.  If the model re-proposes what was held,
