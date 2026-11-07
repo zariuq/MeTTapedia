@@ -1,6 +1,8 @@
 import Mettapedia.CognitiveArchitecture.Memory.BitemporalClaims
 import Mettapedia.CognitiveArchitecture.Memory.ContextViews
 import Mettapedia.CognitiveArchitecture.Memory.EventSourcedMemory
+import Mettapedia.CognitiveArchitecture.Memory.ForgettingAsReplay
+import Mettapedia.CognitiveArchitecture.Memory.GateEvidence
 import Mettapedia.CognitiveArchitecture.Memory.HierarchicalSummary
 import Mettapedia.CognitiveArchitecture.Memory.Indexing
 import Mettapedia.CognitiveArchitecture.Memory.MemoryRefinement
