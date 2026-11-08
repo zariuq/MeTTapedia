@@ -112,6 +112,20 @@ are derived from the models, deployed, and re-observed live.
   does not erase them. Dependency soundness remains a host obligation. Without
   a claim gate the false claim still goes out
   (`hybrid_without_claim_gate_admits_claim`).
+- `SteeringComparison.lean` — a message arriving mid-batch, two ways. All-call
+  dispatch (the current contract) runs every emitted call. Steering, as in
+  OpenClaw's sequential `steer` mode, ends the batch once the running call
+  returns and gives the unstarted tail `skipped` receipts.
+  - Both pair every call with exactly one receipt.
+  - With no message, steering is exactly all-call dispatch
+    (`steer_without_message`). So a hybrid that steers only on an explicitly
+    marked operator message keeps the contract until one arrives.
+  - A skipped call has no effect (`skipped_never_ran`), and steering adds no
+    uncertain outcome (`steer_adds_no_uncertainty`).
+  - On three calls with the message arriving during the first, all-call runs
+    three and steer runs one.
+  - When a message arrives before the last call, no receipt list is both
+    complete and responsive (`complete_and_responsive_conflict`).
 - `CommandHolds.lean` — what the historical dependency hold and failure stop
   cost, against a runner that executes every emitted call, as Codex,
   opencode, Claude Code and Iter do.  If the model re-proposes what was held,
@@ -142,6 +156,77 @@ are derived from the models, deployed, and re-observed live.
   rows the scan removes; removing one occurrence agrees with the scan only for
   an index that follows row order, and the store's index (exact values, then
   variables) does not, so a bounded removal keeps the scan.
+- `OverlayIndex.lean` — a transaction's own edits read through an index
+  instead of a scan: a row that unifies with a pattern lies in the slot list of
+  the pattern's key, the keyless list or the variable list; the cursor's
+  three-way walk of those lists yields the scan's matching rows in slot order,
+  whichever exact position it reads; an open cursor is unchanged by later
+  edits; the hash set of removed stored rows answers what the old scan of the
+  removals answered; marking removed rows and filtering at commit keeps the
+  rows that erasing them kept; and with ground keyed rows a read visits only
+  the pattern's bucket.
+- `LlmLedger.lean` — the LLM call ledger as native transitions: the host's
+  Python path completed (or failed) a request and settled its call in two
+  transactions, so a crash between them left a completed request with an
+  active call; the native transition does both or nothing, and leaves no such
+  state; with the epoch that owns the call it is exactly the two steps in
+  sequence, and a stale epoch changes nothing; a failure raises its provider's
+  cooldown in the same transition and a cooldown never shortens; the history
+  keeps the first event of each pair; an operation repeated under its request
+  id returns its first answer without a second effect; and inserting a call
+  keeps the newest-first list of turn calls ordered by creation time, calls of
+  one time in their arrival order.
+- `CodingSessionLifecycle.lean` — the classifier and the view behind the
+  agent's coding sessions. Under the given world, the resume guard is
+  equivalent to the stated predicate for a safe resume on the pin: the bundle
+  is present, no dependency is retired or of unknown backend selection, the
+  engine binary exists, and a recorded hash still matches. Each refusal names
+  a reason that holds. A pin without an engine hash is allowed by policy, and
+  is labelled unverified, never resumable. An unknown selection is labelled
+  unverified and refused, retryably. The unbounded view lists every listed
+  session once and nothing else: a running session always, a held session
+  only from its review date (or not at all while held without one).
+  Recomputing it is idempotent, and it does not change between review dates.
+  The bounded rendering shows or counts every listed session, and counts every
+  session under its verdict; a hidden tail can stay hidden, so this is no
+  fairness claim. Outside the model: checkpoint decoding, the completeness of
+  the retirement table, filesystem coherence, launch races and legacy engines.
+- `CodingSessionAuthority.lean` — resumes, systemd scopes and the turn-start
+  reaper, with the reaper's observation and publication as separate steps.
+  Two traces are decided. A paused reaper marks a live successor run
+  interrupted, even when the resume settled the old ending first. A launch
+  delayed past a later run's whole life still starts. With conditional
+  publication (the state must still name the observed run) and run tokens (a
+  resume reserves a fresh token under the session lock, and a worker starts
+  only by consuming the current one), no ending is ever published over a live
+  run, a token is consumed at most once, only the newest reservation can be
+  consumed, and a superseded launch exits in either order of registration.
+  A stop must revoke a pending reservation: otherwise the stopped launch
+  starts afterwards (decided), and with the revocation it never does.
+  That one worker runs is systemd's unit-name uniqueness, assumed.
+- `CodingSessionLaunch.lean` — the adapter steps the authority model
+  assumes atomic. Two decided traces: a launch that rereads the manifest's
+  newest token runs its own bundle under a later re-pin's authority, and a
+  resume whose liveness check ran outside the lock replaces the token of a
+  live worker. With a reservation that refuses while a consumed worker is
+  alive, a launch that carries its descriptor unchanged, and a consumption
+  that requires the descriptor's token and bundle to equal the manifest's,
+  every live authority holds the manifest's token and runs its bundle.
+- `CodingSessionRepin.lean` — re-pinning a stopped session to the current
+  runtime keeps every execution record, so an uncertain execution stays
+  uncertain and the dispatchable identities are unchanged; a recorded
+  identity is never dispatchable; a failed checkpoint check changes nothing;
+  re-pinning to the pin itself is a no-op; the kept record is the replaced
+  pin; and at every crash point the pin a resume reads is the old record or
+  the checked new one. The check runs outside the lock on one checkpoint
+  revision, and the publication rechecks it, so a published pin was checked
+  against the checkpoint it pairs with; without the recheck, a checkpoint that
+  changed during the check pairs with an unchecked bundle (decided). Inbox
+  lines appended meanwhile are kept. The manifest is rechecked as well: a
+  re-pin that rechecks only the checkpoint overwrites a reservation made
+  during the check (decided), and with the manifest rechecked a publication
+  replaces exactly the manifest it observed. The check itself is a given
+  verdict.
 - `RepeatedOccurrence.lean` — a publication may edit an occurrence once:
   checking the collected keys for a repeat only where staging stops (at the
   end, before a failed edit, at a failed count or index step) gives exactly
@@ -299,6 +384,12 @@ lean ConsoleView.lean
 lean TurnLedger.lean
 lean ObservedReceipts.lean
 lean RemoveByIndex.lean
+lean OverlayIndex.lean
+lean LlmLedger.lean
+lean CodingSessionLifecycle.lean
+lean CodingSessionAuthority.lean
+lean CodingSessionRepin.lean
+lean CodingSessionLaunch.lean
 lean RepeatedOccurrence.lean
 lean InputDelivery.lean
 LEAN_PATH=. lean AgentArchitecture.lean

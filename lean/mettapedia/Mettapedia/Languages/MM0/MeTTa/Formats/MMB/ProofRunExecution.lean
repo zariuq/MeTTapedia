@@ -116,7 +116,7 @@ private theorem substituted_list (bindings : Subst) (arguments : List Atom) :
 private theorem constructor_returns (bindings : Subst) (state : State) (head : String)
     (arguments : List Atom)
     (inert : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = false)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (computed : ∀ argument ∈ arguments,
       PureReturns program bindings state argument state (applySubst bindings argument)) :
     PureReturns program bindings state (.expression (.symbol head :: arguments)) state

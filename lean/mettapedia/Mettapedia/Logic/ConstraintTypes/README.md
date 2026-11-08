@@ -99,6 +99,39 @@ theorem proves that connection; the existing direct/indirect/partial route
 laws apply to this runtime instance. Source parsing, evaluator compilation and
 native constraint propagation remain separate implementation obligations.
 
+## Unshared parameters and the cost of checks
+
+`UnsharedParameters` states when a check can be dropped. A parameter that is the
+whole check of one input, and occurs in no other input or in the result,
+constrains that value only to belong to some proper type. `waive_entry_iff` and
+`waive_joint_iff` prove that replacing such a check by the wildcard changes no
+admitted call and no allowed result, given that the value has a proper type.
+`untyped_value_rejected` shows the hypothesis is needed. `matches_congr` is the
+supporting law: a check depends on an assignment only through the parameters it
+mentions. `allowed_map_iff` lifts a per-signature rewrite to overloaded
+declarations. A shared parameter is unaffected; `shared_parameter_iff_common_type`
+remains its meaning. Values are finite trees, so finiteness belongs to the
+value domain; an implementation that admits cyclic terms is outside these laws.
+`RuntimeTyping.CanonicalTypes` discharges the hypothesis for PeTTa: every
+ground atom has a canonical type (a primitive or grounded type, `Symbol` or a
+declared nominal type, or the structural tuple of its elements), so in any PeTTa
+model containing these facts an unshared parameter imposes no check on a ground
+argument (`waive_entry_iff_on_ground`, `waive_joint_iff_on_ground`).
+
+`CheckCost` counts element checks for a structural element-wise check.
+Re-checking every known element after each arrival costs `n (n + 1) / 2` checks
+for `n` arrivals (`revalidation_quadratic`). Checking each arrival once costs `n`
+and gives the same verdict after every arrival (`incremental_exact`). A
+recursive walk that checks its argument on every call also costs
+`n (n + 1) / 2` (`walk_quadratic`). For a fixed predicate, passing the entry check
+implies that every suffix passes (`entry_check_covers_suffixes`), so the inner
+checks can be skipped. A check that reads state a body may edit is not a fixed
+predicate. `CheckCostControls.matches_list_iff` proves that the structural list
+operator is such an element-wise check, and two controls compare an unshared
+parameter with its waived form on an accepted and a rejected call. These are
+laws of the abstract checker and its cost measure, not measurements of an
+implementation.
+
 ## The symbolic algorithm and its correctness
 
 `SymbolicTypes` translates the existing `TypeExpr` representation losslessly to

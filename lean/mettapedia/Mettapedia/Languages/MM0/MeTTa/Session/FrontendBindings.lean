@@ -279,7 +279,7 @@ theorem Request.returns (request : Request) (value : Atom) (encoded : request.En
     (before after : State) (head : String) (first : Subst) (one answer : Atom)
     (dispatch : (ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true)
     (raw : argumentIsRaw program head 0 = true)
-    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote"])
+    (ordinary : head ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique"])
     (capturedOne : applySubst first one = value)
     (returned : PureReturns program first before (.expression [.symbol head, one]) after answer) :
     PureReturns program [] before (request.body head) after answer := by
